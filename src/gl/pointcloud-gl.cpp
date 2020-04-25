@@ -427,9 +427,12 @@ void pointcloud_gl::get_texture_map(
         uint32_t fbo1_xyz;
         uint32_t fbo1_uv;
 
-        // when occlusion is turned on, output from fbo1 will be feed into fbo2 for additional processing before rendering to
+        // run glsl occlusion removal if filter is active and between different sensors
+        bool run_glsl_occlusion_removal = _occlusion_filter->active() && !_occlusion_filter->is_same_sensor(extr);
+
+        // when occlusion is turned on, output from fbo1 will be fed into fbo2 for additional processing before rendering to
         // to final output output_xyz and output_uv, otherwise, fbo1 renders directly to final output
-        if (_occlusion_filter->active())
+        if (run_glsl_occlusion_removal)
         {
             glGenTextures(1, &fbo1_xyz);
             glGenTextures(1, &fbo1_uv);
@@ -490,7 +493,7 @@ void pointcloud_gl::get_texture_map(
         fbo1.unbind();
 
         // fbo2 - occlusion with glsl
-        if (_occlusion_filter->active() && !_occlusion_filter->is_same_sensor(extr))
+        if (run_glsl_occlusion_removal)
         {
             auto oviz = _occu_renderer;
 
@@ -527,8 +530,8 @@ void pointcloud_gl::get_texture_map(
 
             occu_shader.begin();
 
-            occu_shader.set_width(width);
-            occu_shader.set_height(height);
+            occu_shader.set_width((float) width);
+            occu_shader.set_height((float) height);
 
             occu_shader.set_xyz_sampler(0);
             occu_shader.set_uv_sampler(1);
@@ -577,5 +580,6 @@ rs2::points pointcloud_gl::allocate_points(
 
 bool pointcloud_gl::run__occlusion_filter(const rs2_extrinsics& extr)
 {
+    // skip cpu filter when occlusion removed on gpu
     return false;
 }
