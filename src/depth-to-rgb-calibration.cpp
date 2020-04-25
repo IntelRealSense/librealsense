@@ -5,6 +5,7 @@
 #include <librealsense2/rs.hpp>
 #include "core/streaming.h"
 #include "context.h"
+#include <direct.h>
 
 #define AC_LOG_PREFIX "AC1: "
 #define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
