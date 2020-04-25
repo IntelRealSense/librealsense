@@ -1540,12 +1540,12 @@ static double calc_cost(
     const z_frame_data & z_data,
     const yuy2_frame_data & yuy_data,
     const std::vector< double2 > & uv,
-    iteration_data_collect & data = iteration_data_collect()
+    iteration_data_collect * data = nullptr
 )
 {
     double cost = 0;
     size_t N = 0;
-    data.d_vals = calc_cost_per_vertex_fn(z_data, yuy_data, uv,
+    auto d_vals = calc_cost_per_vertex_fn(z_data, yuy_data, uv,
         [&](size_t i, double d_val, double weight, double vertex_cost)
         {
             if( d_val != std::numeric_limits<double>::max() )
@@ -1554,6 +1554,8 @@ static double calc_cost(
                 ++N;
             }
         } );
+    if( data )
+        data->d_vals = d_vals;
     return N ? cost / N : 0.;
 }
 
@@ -1725,12 +1727,13 @@ static calib calc_gradients(
     const yuy2_frame_data& yuy_data,
     const std::vector<double2>& uv,
     const calib& curr_calib,
-    iteration_data_collect& data
+    iteration_data_collect * data = nullptr
 )
 {
     calib res;
     auto interp_IDT_x = biliniar_interp( yuy_data.edges_IDTx, yuy_data.width, yuy_data.height, uv );
-    data.d_vals_x = interp_IDT_x;
+    if( data )
+        data->d_vals_x = interp_IDT_x;
 #if 0
     std::ofstream f;
     f.open( "res" );
@@ -1743,7 +1746,8 @@ static calib calc_gradients(
 #endif
 
     auto interp_IDT_y = biliniar_interp( yuy_data.edges_IDTy, yuy_data.width, yuy_data.height, uv );
-    data.d_vals_y = interp_IDT_y;
+    if( data )
+        data->d_vals_y = interp_IDT_y;
 
     auto rc = calc_rc( z_data, yuy_data, curr_calib );
 
@@ -1758,11 +1762,12 @@ std::pair<double, calib> calc_cost_and_grad(
     const z_frame_data & z_data,
     const yuy2_frame_data & yuy_data,
     const calib& curr_calib,
-    iteration_data_collect& data = iteration_data_collect()
+    iteration_data_collect * data = nullptr
 )
 {
     auto uvmap = get_texture_map(z_data.vertices, curr_calib);
-    data.uvmap = uvmap;
+    if( data )
+        data->uvmap = uvmap;
 
     auto cost = calc_cost(z_data, yuy_data, uvmap, data);
     auto grad = calc_gradients(z_data, yuy_data, uvmap, curr_calib, data);
@@ -2183,7 +2188,7 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
         iteration_data_collect data;
         data.iteration = n_iterations;
 
-        auto res = calc_cost_and_grad( _z, _yuy, _params_curr.curr_calib, data );
+        auto res = calc_cost_and_grad( _z, _yuy, _params_curr.curr_calib, &data );
         _params_curr.cost = res.first;
         _params_curr.calib_gradients = res.second;
         AC_LOG( DEBUG, n_iterations << ": Cost = " << std::fixed << std::setprecision( 15 ) << _params_curr.cost );

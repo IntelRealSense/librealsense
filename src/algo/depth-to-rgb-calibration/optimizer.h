@@ -137,7 +137,6 @@ namespace depth_to_rgb_calibration {
         optimaization_params back_tracking_line_search( const z_frame_data & z_data, const yuy2_frame_data& yuy_data, optimaization_params opt_params );
         double calc_step_size( optimaization_params opt_params );
         double calc_t( optimaization_params opt_params );
-        calib calc_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<double2>& uv, const calib& curr_calib, iteration_data_collect& data = iteration_data_collect());
         rotation_in_angles calc_rotation_gradients( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy );
 
         // input validation
