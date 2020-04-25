@@ -5,7 +5,7 @@
 #include <librealsense2/rs.hpp>
 #include "core/streaming.h"
 #include "context.h"
-#include <direct.h>
+#include <sys/stat.h>  // mkdir
 
 #define AC_LOG_PREFIX "AC1: "
 #define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
@@ -60,7 +60,7 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
 
     std::string dir = "C:\\work\\autocal\\data\\";
     dir += to_string() << depth.get_frame_number();
-    if( _mkdir( dir.c_str() ) == 0 )
+    if( mkdir( dir.c_str() ) == 0 )
         _algo.write_data_to( dir );
     else
         AC_LOG( WARNING, "Failed to write AC frame data to: " << dir );
