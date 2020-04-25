@@ -15,6 +15,7 @@
 #
 
 import sys, os, subprocess, locale, re
+from glob import glob
 
 if len(sys.argv) != 3:
     ourname = os.path.basename(sys.argv[0])
@@ -159,13 +160,17 @@ def process_cpp( dir, builddir ):
             cmd, *rest = context['line'][m.end():].split()
             if cmd == 'add-file':
                 for additional_file in rest:
-                    abs_file = additional_file
+                    files = additional_file
                     if not os.path.isabs( additional_file ):
-                        abs_file = os.path.normpath( dir + '/' + testparent + '/' + additional_file )
-                    abs_file = abs_file.replace( '\\', '/' )
-                    if not os.path.exists( abs_file ):
-                        error( f + '+' + str(index) + ': file not found "' + additional_file + '"' )
-                    else:
+                        files = dir + '/' + testparent + '/' + additional_file
+                    files = glob( files )
+                    if not files:
+                        error( f + '+' + str(index) + ': no files match "' + additional_file + '"' )
+                    for abs_file in files:
+                        abs_file = os.path.normpath( abs_file )
+                        abs_file = abs_file.replace( '\\', '/' )
+                        if not os.path.exists( abs_file ):
+                            error( f + '+' + str(index) + ': file not found "' + additional_file + '"' )
                         debug( '   add file:', abs_file )
                         filelist.append( abs_file )
                         if( os.path.splitext( abs_file )[0] == 'cpp' ):
