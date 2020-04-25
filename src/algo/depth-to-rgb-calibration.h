@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <vector>
 #include <map>
-#include "../types.h"
+#include <types.h>
 
 
 namespace librealsense {
@@ -326,11 +326,22 @@ namespace depth_to_rgb_calibration {
             rs2_intrinsics_double const & depth_intrinsics,
             float depth_units );
 
+        // Write dumps of all the pertinent data from the above to a directory of choice, so that
+        // a reproduction can be made
         void write_data_to( std::string const & directory );
 
+        // (optional) Return whether the scene passed in is valid and can go thru optimization
         bool is_scene_valid();
+
+        // Optimize the calibration, optionally calling the callback after each iteration
         size_t optimize( std::function< void( iteration_data_collect const & data ) > iteration_callback = nullptr );
+
+        // (optional) Return whether the results of calibration are valid:
+        //      1. If pixel movement is acceptable
+        //      2. Movement from the camera's factory settings is within thresholds
+        //      3. No worsening of the fit in any image section
         bool is_valid_results();
+
         calib const & get_calibration() const;
         double get_cost() const;
         double calc_correction_in_pixels( calib const & from_calibration ) const;
