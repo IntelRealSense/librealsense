@@ -19,7 +19,7 @@ namespace librealsense
     void frame_validator::release()
     {}
 
-    frame_validator::frame_validator(std::shared_ptr<sensor_interface> sensor, frame_callback_ptr user_callback, stream_profiles current_requests, stream_profiles validator_requests) :
+    frame_validator::frame_validator(std::shared_ptr<sensor_base> sensor, frame_callback_ptr user_callback, stream_profiles current_requests, stream_profiles validator_requests) :
         _sensor(sensor), 
         _user_callback(user_callback), 
         _user_requests(current_requests),
@@ -75,6 +75,11 @@ namespace librealsense
         {
 
             LOG_ERROR("frame_source received corrupted frame ("<<(float)invalid_pixels/(w*h)<<"% invalid pixels), restarting the sensor...");
+            
+            _sensor->get_notifications_processor()->raise_notification({ RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED ,
+                                                                         0,
+                                                                         RS2_LOG_SEVERITY_INFO,
+                                                                         "Corrupted Frame Detected\n" });
             auto s = _sensor;
             auto vr = _validator_requests;
             auto uc = _user_callback;
