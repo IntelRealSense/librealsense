@@ -4,6 +4,9 @@
 #include "calibration-types.h"
 #include <cmath>
 #include <cstdlib>
+#include <stdexcept>
+#include <sstream>
+#include <iomanip>
 
 
 namespace librealsense {
@@ -43,6 +46,30 @@ namespace depth_to_rgb_calibration {
         return res;
     }
 
+#if 0
+    double determinant( double const r[9] )
+    {
+        // |A| = aei + bfg + cdh - ceg - bdi - afh
+        return r[0] * r[4] * r[8]  // aei
+            + r[1] * r[5] * r[6]   // bfg
+            + r[2] * r[3] * r[7]   // cdh
+            - r[2] * r[4] * r[6]   // ceg
+            - r[1] * r[3] * r[8]   // bdi
+            - r[0] * r[5] * r[7];  // afh
+    }
+
+    rotation inverse( rotation const & r )
+    {
+
+    }
+
+    inline double3 operator*( const rotation & a, const rotation & b ) { return { dot( a.x,b ), dot( a.y,b ), dot( a.z,b ) }; }
+    inline rotation operator*( const rotation & a, const rotation & b )
+    {
+        return{ a*b.x, a*b.y, a*b.z };
+    }
+#endif
+
     rotation_in_angles extract_angles_from_rotation( const double r[9] )
     {
         rotation_in_angles res;
@@ -57,16 +84,30 @@ namespace depth_to_rgb_calibration {
         // -> additional code is in the original function that catches some corner
         //    case, but since these have never occurred we were told not to use it 
 
+#if 0
         // TODO Sanity-check: can be removed
         rotation rot = extract_rotation_from_angles( res );
-        double sum = 0;
-        for( auto i = 0; i < 9; i++ )
+        double const epsilon = 1e-8;
+        if( determinant( rot * inverse(r) - I ) > epsilon )
         {
-            sum += rot.rot[i] - r[i];
+            std::ostringstream ss;
+            ss << std::setprecision( 15 );
+            ss << "angles_from_rotation != rotation_from_angles!";
+            ss << "\n    " << r[0] << "  " << r[1] << "  " << r[2]
+                << "\n    " << r[3] << "  " << r[4] << "  " << r[5]
+                << "\n    " << r[6] << "  " << r[7] << "  " << r[8];
+            ss << "\nvs:"
+                << "\n    " << rot.rot[0] << "  " << rot.rot[1] << "  " << rot.rot[2]
+                << "\n    " << rot.rot[3] << "  " << rot.rot[4] << "  " << rot.rot[5]
+                << "\n    " << rot.rot[6] << "  " << rot.rot[7] << "  " << rot.rot[8];
+            ss << "\nangles:"
+                << "\n    alpha= " << res.alpha
+                << "\n    beta = " << res.beta
+                << "\n    gamma= " << res.gamma;
+            ss << "\nsum= " << sum;
+            throw std::runtime_error( ss.str() );
         }
-        auto epsilon = 0.00001;
-        if( (abs( sum )) > epsilon )
-            throw "No fit";
+#endif
         return res;
     }
 
