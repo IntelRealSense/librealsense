@@ -5,7 +5,7 @@
 #include "../include/librealsense2/rsutil.h"
 #include "proc/synthetic-stream.h"
 #include "proc/occlusion-filter.h"
-#include  "../../common/tiny-profiler.h"
+//#include  "../../common/tiny-profiler.h"
 #include <vector>
 #include <cmath>
 
@@ -85,12 +85,9 @@ namespace librealsense
 
        if (_occlusion_scanning == horizontal)
        {
-
            {
-               scoped_timer t1("Horizontal Scan");
                for (size_t y = 0; y < points_height; ++y)
                {
-
                    maxInLine = -1;
                    maxZ = 0;
                    int occDilationLeft = 0;
