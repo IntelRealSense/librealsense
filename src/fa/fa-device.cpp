@@ -298,15 +298,6 @@ namespace librealsense
 
         //LOW LIGHT COMPENSATION
         //ir_ep->register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
-
-        /*USB TYPE DESCRIPTION
-        auto _usb_mode = platform::usb_spec::usb3_type;
-        std::string usb_type_str(platform::usb_spec_names.at(_usb_mode));
-        _usb_mode = raw_ir_ep.get_usb_specification();
-        if (platform::usb_spec_names.count(_usb_mode) && (platform::usb_undefined != _usb_mode)) {
-            usb_type_str = platform::usb_spec_names.at(_usb_mode);
-            register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
-        }*/
     }
 
     void register_options(std::shared_ptr<fa_ir_sensor> left_ir_ep,
@@ -373,6 +364,15 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, uvc_infos.front().unique_id);
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, uvc_infos.front().device_path);
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_str);
+
+        //USB TYPE DESCRIPTION
+        auto _usb_mode = platform::usb_spec::usb3_type;
+        std::string usb_type_str(platform::usb_spec_names.at(_usb_mode));
+        _usb_mode = left_raw_ir_ep->get_usb_specification();
+        if (platform::usb_spec_names.count(_usb_mode) && (platform::usb_undefined != _usb_mode)) {
+            usb_type_str = platform::usb_spec_names.at(_usb_mode);
+            register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
+        }
                 
         // Metadata registration
         register_metadata();
