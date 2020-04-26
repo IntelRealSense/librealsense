@@ -2011,9 +2011,9 @@ void write_matlab_camera_params_file(
 
 
     //depth intrinsics
-    write_obj( f, _intr_depth.width );
-    write_obj( f, _intr_depth.height );
-    write_obj( f, _depth_units );
+    write_obj( f, (double)_intr_depth.width );
+    write_obj( f, (double)_intr_depth.height );
+    write_obj( f, (double)_depth_units );
 
     double k_depth[9] = { _intr_depth.fx, 0, _intr_depth.ppx,
                         0, _intr_depth.fy, _intr_depth.ppy,
@@ -2026,8 +2026,8 @@ void write_matlab_camera_params_file(
     //color intrinsics
     rs2_intrinsics _intr_rgb = rgb_calibration.get_intrinsics();
     
-    write_obj( f, _intr_rgb.width );
-    write_obj( f, _intr_rgb.height );
+    write_obj( f, (double)_intr_rgb.width );
+    write_obj( f, (double)_intr_rgb.height );
 
     double k_rgb[9] = { _intr_rgb.fx, 0, _intr_rgb.ppx,
                         0, _intr_rgb.fy, _intr_rgb.ppy,
