@@ -17,7 +17,9 @@ INITIALIZE_EASYLOGGINGPP
 #undef CHECK
 
 // Let Catch define its own main() function
+#if ! defined( NO_CATCH_CONFIG_MAIN )
 #define CATCH_CONFIG_MAIN
+#endif
 #ifdef _MSC_VER
 /*
 The .hpp gives the following warning C4244:
@@ -75,12 +77,3 @@ c:\work\git\lrs\unit-tests\algo\../catch/catch.hpp(5788): note: see reference to
 //     #define TRACE(X) if( catch_session.configData().verbosity == ... ) {}
 // With Catch2, we can turn this into SCOPED_INFO.
 #define TRACE(X) std::cout << (std::string)( librealsense::to_string() << X ) << std::endl
-
-//static char const * root_data_dir = "C:\\work\\autocal\\";
-static char const * root_data_dir = "..\\unit-tests\\algo\\depth-to-rgb-calibration\\19.2.20\\";
-
-static char const * const data_dirs[] = {
-    "F9440687\\Snapshots\\LongRange_D_768x1024_RGB_1920x1080"
-};
-
-static size_t const n_data_dirs = sizeof( data_dirs ) / sizeof( data_dirs[0] );

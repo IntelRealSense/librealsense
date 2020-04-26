@@ -6,16 +6,7 @@
 // We have our own main
 #define NO_CATCH_CONFIG_MAIN
 
-#include "../../../src/algo/depth-to-rgb-calibration/optimizer.h"
-#include "../algo-common.h"
-#include "ac-logger.h"
-#include "F9440687.h"
-
-ac_logger LOG_TO_STDOUT;
-
-
-namespace algo = librealsense::algo::depth_to_rgb_calibration;
-using librealsense::to_string;
+#include "d2rgb-common.h"
 
 
 template< typename T >
@@ -37,54 +28,6 @@ void read_binary_file( char const * dir, char const * bin, T * data )
     std::vector< T > vec( cb / sizeof( T ));
     f.read( (char*) data, cb );
     f.close();
-}
-
-template<class T>
-std::vector< T > read_image_file( std::string const & file, size_t width, size_t height )
-{
-    std::ifstream f;
-    f.open( file, std::ios::in | std::ios::binary );
-    if( !f.good() )
-        throw std::runtime_error( "invalid file: " + file );
-    f.seekg( 0, f.end );
-    size_t cb = f.tellg();
-    f.seekg( 0, f.beg );
-    if( cb != sizeof( T ) * width * height )
-        throw std::runtime_error( to_string()
-            << "file size (" << cb << ") does not match expected size (" << sizeof( T ) * width * height << "): " << file );
-    std::vector< T > data( width * height );
-    f.read( (char*) data.data(), width * height * sizeof( T ));
-    return data;
-}
-
-void init_algo(algo::optimizer & cal,
-    std::string const & dir,
-    char const * yuy,
-    char const * yuy_prev,
-    char const * ir,
-    char const * z,
-    camera_info const & camera
-)
-{
-    TRACE( "Loading " << dir << " ..." );
-
-    algo::calib calibration( camera.rgb, camera.extrinsics );
-
-    cal.set_yuy_data(
-        read_image_file< algo::yuy_t >( dir + yuy, camera.rgb.width, camera.rgb.height ),
-        read_image_file< algo::yuy_t >( dir + yuy_prev, camera.rgb.width, camera.rgb.height ),
-        calibration
-    );
-
-    cal.set_ir_data(
-        read_image_file< algo::ir_t >( dir + ir, camera.z.width, camera.z.height ),
-        camera.z.width, camera.z.height
-    );
-
-    cal.set_z_data(
-        read_image_file< algo::z_t >( dir + z, camera.z.width, camera.z.height ),
-        camera.z, camera.z_units
-    );
 }
 
 int main( int argc, char * argv[] )

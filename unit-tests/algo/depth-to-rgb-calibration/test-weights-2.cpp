@@ -3,15 +3,9 @@
 
 //#cmake:add-file ../../../src/algo/depth-to-rgb-calibration/*.cpp
 
-#include "../../../src/algo/depth-to-rgb-calibration/optimizer.h"
-#include "../algo-common.h"
-#include "ac-logger.h"
+#include "d2rgb-common.h"
 #include "F9440687.h"
-
-ac_logger LOG_TO_STDOUT;
-
-
-namespace algo = librealsense::algo::depth_to_rgb_calibration;
+#include <type_traits>
 
 
 std::string test_dir( char const * data_dir, char const * test )
@@ -45,7 +39,6 @@ std::vector< T > read_bin_file( char const * data_dir, char const * test, char c
     return vec;
 }
 
-#include <type_traits>
 
 template< typename F, typename D >
 bool compare_same_vectors( std::vector< F > const & matlab, std::vector< D > const & cpp )
@@ -151,38 +144,6 @@ std::pair<std::vector< F >, std::vector< D > > sort_vectors(std::vector< F > con
     return { f,d };
 }
 
-template<class T>
-std::vector< T > read_image_file( std::string const & file, size_t width, size_t height )
-{
-    std::ifstream f;
-    f.open( file, std::ios::binary );
-    if( !f.good() )
-        throw std::runtime_error( "invalid file: " + file );
-    std::vector< T > data( width * height );
-    f.read( (char*) data.data(), width * height * sizeof( T ));
-    return data;
-}
-
-template< typename T >
-void dump_vec( std::vector< double > const & cpp, std::vector< T > const & matlab,
-    char const * basename,
-    size_t width, size_t height
-)
-{
-    std::string filename = basename;
-    filename += ".dump";
-#if 0
-    std::fstream f = std::fstream( filename, std::ios::out );
-    if( !f )
-        throw std::runtime_error( "failed to write file:\n" + filename );
-    for( size_t x =  )
-    std::vector< T > vec( cb / sizeof( T ) );
-    f.read( (char*)vec.data(), cb );
-    f.close();
-    return vec;
-#endif
-}
-
 template< typename F, typename D >  // F=in bin; D=in memory
 bool compare_to_bin_file(
     std::vector< D > const & vec,
@@ -266,7 +227,7 @@ bool get_calib_from_raw_data(algo::calib& calib, double& cost, char const * dir,
 }
 
 template< typename D>
-bool compare_and_trace(D val_matlab, D val_cpp, std::string compared)
+bool compare_and_trace(D val_matlab, D val_cpp, std::string const & compared)
 {
     if (val_matlab != approx(val_cpp))
     {
@@ -276,9 +237,16 @@ bool compare_and_trace(D val_matlab, D val_cpp, std::string compared)
     return true;
 }
 
-bool compare_calib_to_bin_file(algo::calib calib, double cost, char const * dir, char const * test, char const * filename, bool gradient = false)
+bool compare_calib_to_bin_file(
+    algo::calib const & calib,
+    double cost,
+    char const * dir,
+    char const * test,
+    char const * filename,
+    bool gradient = false
+)
 {
-    TRACE("Comparing " << filename << ".bin ...");
+    TRACE( "Comparing " << filename << ".bin ..." );
     algo::calib calib_from_file;
     double cost_matlab;
     auto res = get_calib_from_raw_data(calib_from_file, cost_matlab, dir, test, filename);
@@ -309,68 +277,22 @@ bool compare_calib_to_bin_file(algo::calib calib, double cost, char const * dir,
     else
     {
         for (auto i = 0; i < 9; i++)
-        {
-            std::stringstream str;
-            str << i;
-            ok &= compare_and_trace(extr_matlab.rotation[i], extr_cpp.rotation[i], "rotation[" + str.str() + "]");
-        }
+            ok &= compare_and_trace(extr_matlab.rotation[i], extr_cpp.rotation[i], "rotation[" + std::to_string( i ) + "]");
     }
 
     for (auto i = 0; i < 3; i++)
-    {
-        std::stringstream str;
-        str << i;
-        ok &= compare_and_trace(extr_matlab.translation[i], extr_cpp.translation[i], "translation[" + str.str() + "]");
-    }
+        ok &= compare_and_trace(extr_matlab.translation[i], extr_cpp.translation[i], "translation[" + std::to_string( i ) + "]");
 
     for (auto i = 0; i < 12; i++)
-    {
-        std::stringstream str;
-        str << i;
-        ok &= compare_and_trace(pmat_matlab.vals[i], pmat_cpp.vals[i], "pmat[" + str.str() + "]");
-    }
-
+        ok &= compare_and_trace(pmat_matlab.vals[i], pmat_cpp.vals[i], "pmat[" + std::to_string( i ) + "]");
 
     return ok;
-}
-
-void init_algo(algo::optimizer & cal,
-    char const * data_dir, char const * test,
-    char const * yuy,
-    char const * yuy_prev,
-    char const * ir,
-    char const * z,
-    camera_info const & camera
-)
-{
-    std::string dir = test_dir( data_dir, test );
-    TRACE( "Loading " << dir << " ..." );
-
-    algo::calib calibration( camera.rgb, camera.extrinsics );
-
-    cal.set_yuy_data(
-        read_image_file< algo::yuy_t >( dir + yuy, camera.rgb.width, camera.rgb.height ),
-        read_image_file< algo::yuy_t >( dir + yuy_prev, camera.rgb.width, camera.rgb.height ),
-        calibration
-    );
-
-    cal.set_ir_data(
-        read_image_file< algo::ir_t >( dir + ir, camera.z.width, camera.z.height ),
-        camera.z.width, camera.z.height
-    );
-
-    cal.set_z_data(
-        read_image_file< algo::z_t >( dir + z, camera.z.width, camera.z.height ),
-        camera.z, camera.z_units
-    );
 }
 
 
 std::string generate_file_name( std::string const & prefix, size_t num, std::string const & suffix)
 {
-    std::ostringstream s;
-    s << num;
-    return prefix + std::string(s.str()) + suffix;
+    return prefix + std::to_string(num) + suffix;
 }
 
 TEST_CASE("Weights calc", "[d2rgb]")
@@ -378,7 +300,7 @@ TEST_CASE("Weights calc", "[d2rgb]")
     for (auto dir : data_dirs)
     {
         algo::optimizer cal;
-        init_algo( cal, dir, "2",
+        init_algo( cal, test_dir( dir, "2" ),
             "YUY2_YUY2_1920x1080_00.00.26.6355_F9440687_0000.raw",
             "YUY2_YUY2_1920x1080_00.00.26.7683_F9440687_0001.raw",
             "I_GrayScale_1024x768_00.00.26.7119_F9440687_0000.raw",
