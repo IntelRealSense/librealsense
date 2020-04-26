@@ -162,7 +162,8 @@ namespace librealsense
                 return from_pose(get_color_stream_extrinsic(*_color_extrinsics_table_raw));
             } );
         // Note this is from color->depth!
-        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
+        //environment::get_instance().get_extrinsics_graph().register_extrinsics( *_color_stream, *_depth_stream, _color_extrinsic );
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_color_stream, _color_extrinsic);
         register_stream_to_extrinsic_group(*_color_stream, 0);
 
 
@@ -183,9 +184,10 @@ namespace librealsense
                         AC_LOG( DEBUG, "------> updating extrinsics..." );
 
                         // _color_extrinsic is color->depth and the auto-cal extr are depth->color so we have to invert:
-                        rs2_extrinsics extr_i = inverse( _autocal->get_extrinsics() );
-                        //*_color_extrinsic = [=]() { return extr_i; };
-                        environment::get_instance().get_extrinsics_graph().override_extrinsics( *_color_stream, *_depth_stream, extr_i );
+                        //rs2_extrinsics extr_i = inverse( _autocal->get_extrinsics() );
+                        ////*_color_extrinsic = [=]() { return extr_i; };
+                        //environment::get_instance().get_extrinsics_graph().override_extrinsics( *_color_stream, *_depth_stream, extr_i );
+                        environment::get_instance().get_extrinsics_graph().override_extrinsics( *_depth_stream, *_color_stream, _autocal->get_extrinsics() );
 
                         AC_LOG( DEBUG, "done" );
                     }
@@ -309,9 +311,10 @@ namespace librealsense
 
     void l500_color_sensor::override_extrinsics( rs2_extrinsics const& extr )
     {
-        rs2_extrinsics extr_i = inverse( extr );
-        //*_owner->_color_extrinsic = [=]() { return extr_i; };
-        environment::get_instance().get_extrinsics_graph().override_extrinsics( *_owner->_color_stream, *_owner->_depth_stream, extr_i );
+        //rs2_extrinsics extr_i = inverse( extr );
+        ////*_owner->_color_extrinsic = [=]() { return extr_i; };
+        //environment::get_instance().get_extrinsics_graph().override_extrinsics( *_owner->_color_stream, *_owner->_depth_stream, extr_i );
+        environment::get_instance().get_extrinsics_graph().override_extrinsics( *_owner->_depth_stream, *_owner->_color_stream, extr );
     }
 
 
