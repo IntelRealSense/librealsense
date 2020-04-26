@@ -130,6 +130,7 @@ namespace depth_to_rgb_calibration {
         std::vector<uint8_t> get_luminance_from_yuy2( std::vector<uint16_t> yuy2_imagh );
 
         std::vector<uint8_t> get_logic_edges( std::vector<double> edges );
+        bool is_movement_in_images(yuy2_frame_data & yuy );
         std::vector<double> calculate_weights( z_frame_data& z_data );
         std::vector <double3> subedges2vertices(z_frame_data& z_data, const rs2_intrinsics_double& intrin, double depth_units);
         
@@ -139,7 +140,6 @@ namespace depth_to_rgb_calibration {
         rotation_in_angles calc_rotation_gradients( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy );
 
         // input validation
-        bool is_movement_in_images(yuy2_frame_data& yuy);
         bool is_edge_distributed( z_frame_data & z_data, yuy2_frame_data & yuy_data );
         void section_per_pixel( frame_data const &, size_t section_w, size_t section_h, byte * section_map );
         bool is_grad_dir_balanced(z_frame_data& z_data);
