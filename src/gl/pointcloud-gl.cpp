@@ -203,7 +203,7 @@ public:
             texture_2d_shader::default_vertex_shader(), 
             project_fragment_text, 
             "position", "textureCoords", 
-            "texture_xyz", "texture_uv"))
+            "output_xyz", "output_uv"))
     {
         _focal_location[0] = _shader->get_uniform_location("focal1");
         _principal_location[0] = _shader->get_uniform_location("principal1");
@@ -288,7 +288,7 @@ public:
             occulution_vertex_shader_text,
             occulution_fragment_text,
             "position", "textureCoords",
-            "output_xyz", "output_uv"))
+            "texture_xyz", "texture_uv"))
     {
         _width_location = _shader->get_uniform_location("width");
         _height_location = _shader->get_uniform_location("height");
