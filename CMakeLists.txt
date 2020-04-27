@@ -17,7 +17,7 @@ if(BUILD_WITH_TM2 AND NOT INTERNET_CONNECTION)
     set(BUILD_WITH_TM2 OFF)
 endif()
 
-# Checking Internet connection, as TM2 needs to download the FW from amazon cloud
+# Checking Internet connection, as DEPTH CAM needs to download the FW from amazon cloud
 if(IMPORT_DEPTH_CAM_FW AND NOT INTERNET_CONNECTION)
     message(WARNING "No internet connection, disabling IMPORT_DEPTH_CAM_FW")
     set(IMPORT_DEPTH_CAM_FW OFF)

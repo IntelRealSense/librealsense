@@ -195,7 +195,7 @@ namespace rs2
         std::recursive_mutex m;
         bool new_log = false;
 
-        std::vector<std::string> log;
+        std::deque<std::string> log;
         std::shared_ptr<notification_model> selected;
         std::chrono::system_clock::time_point last_snoozed;
     };

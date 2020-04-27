@@ -34,7 +34,7 @@ namespace librealsense
     class frame_validator : public rs2_frame_callback
     {
     public:
-        explicit frame_validator(std::shared_ptr<sensor_interface> sensor, frame_callback_ptr user_callback, stream_profiles user_requests, stream_profiles validator_requests);
+        explicit frame_validator(std::shared_ptr<sensor_base> sensor, frame_callback_ptr user_callback, stream_profiles user_requests, stream_profiles validator_requests);
         virtual ~frame_validator();
 
         void on_frame(rs2_frame * f) override;
@@ -64,6 +64,6 @@ namespace librealsense
         frame_callback_ptr _user_callback;
         stream_profiles _user_requests;
         stream_profiles _validator_requests;
-        std::shared_ptr<sensor_interface> _sensor;
+        std::shared_ptr<sensor_base> _sensor;
     };
 }

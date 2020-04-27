@@ -9,6 +9,7 @@
 #include "RsMediaSession.hh"
 
 #include <ctype.h>
+#include <iostream>
 
 // RsMediaSession
 
@@ -84,6 +85,23 @@ Boolean RsMediaSubsession::createSourceObjects(int useSpecialRTPoffset)
         // This subsession uses our custom RTP payload format:
         std::string mimeTypeString = RS_MEDIA_TYPE + "/" + RS_PAYLOAD_FORMAT;
         fReadSource = fRTPSource = SimpleRTPSource::createNew(env(), fRTPSocket, fRTPPayloadFormat, fRTPTimestampFrequency, mimeTypeString.c_str());
+
+#if defined(_WIN32)
+        if(rtpSource() != NULL)
+        {
+            // configure a  time threshold
+            // for reordering misordered incoming packets:
+            unsigned const thresh = 33000; // 33 ms
+            rtpSource()->setPacketReorderingThresholdTime(thresh);
+
+            // Set the RTP source's OS socket buffer size as appropriate
+            int socketNum = rtpSource()->RTPgs()->socketNum();
+            unsigned curBufferSize = getReceiveBufferSize(env(), socketNum);
+            unsigned newBufferSize = 1024 * 1024 * 8; // 8M
+            newBufferSize = setReceiveBufferTo(env(), socketNum, newBufferSize);
+            env() << "Changed socket receive buffer size for the \"" << mediumName() << "/" << codecName() << "\" subsession from " << curBufferSize << " to " << newBufferSize << " bytes\n";
+        }
+#endif
         return True;
     }
     else

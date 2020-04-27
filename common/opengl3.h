@@ -202,6 +202,7 @@ namespace rs2
         void set_scale(float2 scale) { _scale = scale; }
 
         void draw(texture_2d_shader& shader, uint32_t tex);
+        void draw(texture_2d_shader& shader, uint32_t tex1, uint32_t tex2);
 
     private:
         static obj_mesh create_mesh();
@@ -225,6 +226,7 @@ namespace rs2
         }
 
         void draw_texture(uint32_t tex, float opacity = 1.f);
+        void draw_texture(uint32_t tex1, uint32_t tex2, float opacity = 1.f);
 
         void draw_texture(float2 pos, float2 scale, uint32_t tex)
         {
@@ -232,6 +234,15 @@ namespace rs2
             _visualizer.set_position(pos);
             _visualizer.set_scale(scale);
             _visualizer.draw(*tex_2d_shader, tex);
+            tex_2d_shader->end();
+        }
+
+        void draw_texture(float2 pos, float2 scale, uint32_t tex1, uint32_t tex2)
+        {
+            tex_2d_shader->begin();
+            _visualizer.set_position(pos);
+            _visualizer.set_scale(scale);
+            _visualizer.draw(*tex_2d_shader, tex1, tex2);
             tex_2d_shader->end();
         }
 

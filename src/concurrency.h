@@ -273,7 +273,7 @@ public:
 
         //wait
         std::unique_lock<std::mutex> lk(_blocking_invoke_mutex);
-        while(_blocking_invoke_cv.wait_for(lk, std::chrono::milliseconds(10), [&](){ return !done && !exit_condition(); }));
+        _blocking_invoke_cv.wait(lk, [&](){ return done || exit_condition(); });
     }
 
     void start()

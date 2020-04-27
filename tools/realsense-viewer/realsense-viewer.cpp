@@ -295,18 +295,6 @@ int main(int argc, const char** argv) try
     std::vector<device> connected_devs;
     std::mutex m;
 
-    if (argc == 2)
-    {
-        try
-        {
-            is_ip_device_connected = add_remote_device(ctx, argv[1]);;
-        }
-        catch (std::runtime_error e)
-        {
-            error_message = e.what();
-        }
-    }
-
 #ifdef BUILD_SHARED_LIBS
     // Configure the logger
     el::Configurations conf;
@@ -323,11 +311,14 @@ int main(int argc, const char** argv) try
     protected:
         void handle( const el::LogDispatchData* data ) noexcept override
         {
-            vm->not_model.add_log( 
-                data->logMessage()->logger()->logBuilder()->build(
-                    data->logMessage(),
-                    data->dispatchAction() == el::base::DispatchAction::NormalLog
-                ));
+            // TODO align LRS and Easyloging severity levels. W/A for easylogging on Linux
+            if (data->logMessage()->level() > el::Level::Debug)
+            {
+                vm->not_model.add_log(
+                    data->logMessage()->logger()->logBuilder()->build(
+                        data->logMessage(),
+                        data->dispatchAction() == el::base::DispatchAction::NormalLog));
+            }
         }
     };
     el::Helpers::installLogDispatchCallback< viewer_model_dispatcher >( "viewer_model_dispatcher" );
@@ -380,6 +371,17 @@ int main(int argc, const char** argv) try
         return true;
     };
 
+    if (argc == 2)
+    {
+        try
+        {
+            is_ip_device_connected = add_remote_device(ctx, argv[1]);;
+        }
+        catch (std::runtime_error e)
+        {
+            error_message = e.what();
+        }
+    }
 
     // Closing the window
     while (window)
@@ -545,7 +547,7 @@ int main(int argc, const char** argv) try
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
                     
                     bool connect = false;
-                    static char ip_input[17];
+                    static char ip_input[255];
                     std::copy(ip_address.begin(), ip_address.end(), ip_input);
                     ip_input[ip_address.size()] = '\0';
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
@@ -554,19 +556,14 @@ int main(int argc, const char** argv) try
                     ImGui::SameLine(); 
                     //ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 1);
                     ImGui::PushItemWidth(width - ImGui::GetCursorPosX() - 10);
-                    if (ImGui::GetWindowIsFocused() && 
-                        !ImGui::IsAnyItemActive() && ip_address == "") 
+                    if (ImGui::GetWindowIsFocused() && !ImGui::IsAnyItemActive()) 
                     {
                         ImGui::SetKeyboardFocusHere();
                     }
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
 
-
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 3);
-                    if (ImGui::InputText("##ip", ip_input, 16, 
-                        ImGuiInputTextFlags_CharsDecimal || 
-                        ImGuiInputTextFlags_EnterReturnsTrue
-                        ))
+                    if (ImGui::InputText("##ip", ip_input, 255))
                     {
                         ip_address = ip_input;
                     }
@@ -577,31 +574,23 @@ int main(int argc, const char** argv) try
                     ImGui::PopItemWidth();
                     ImGui::SetCursorPosX(width / 2 - 105);
 
-                    std::regex rgx("\\d{1,3}(\\.\\d{1,3}){3}");
-                    if (!std::regex_match(ip_address,rgx))
+                    if (ImGui::ButtonEx("OK",{100.f, 25.f}) || ImGui::IsKeyDown(GLFW_KEY_ENTER) || ImGui::IsKeyDown(GLFW_KEY_KP_ENTER))
                     {
-                        ImGui::ButtonEx("OK",{100.f, 25.f}, ImGuiButtonFlags_Disabled);
-                    }
-                    else
-                    {
-                        if (ImGui::ButtonEx("OK",{100.f, 25.f}) || ImGui::IsKeyDown(GLFW_KEY_ENTER) || ImGui::IsKeyDown(GLFW_KEY_KP_ENTER))
+                        try
                         {
-                            try
-                            {
-                                is_ip_device_connected = add_remote_device(ctx, ip_address);;
-                                refresh_devices(m, ctx, devices_connection_changes, connected_devs, device_names, *device_models, viewer_model, error_message);
-                                auto dev = connected_devs[connected_devs.size()-1];
-                                device_models->emplace_back(new device_model(dev, error_message, viewer_model));
-                                config_file::instance().set(configurations::viewer::last_ip, ip_address);
-                            }
-                            catch (std::runtime_error e)
-                            {
-                                error_message = e.what();
-                            }
-                            ip_address = "";
-                            close_ip_popup = true;
-                            ImGui::CloseCurrentPopup();
+                            is_ip_device_connected = add_remote_device(ctx, ip_address);;
+                            refresh_devices(m, ctx, devices_connection_changes, connected_devs, device_names, *device_models, viewer_model, error_message);
+                            auto dev = connected_devs[connected_devs.size()-1];
+                            device_models->emplace_back(new device_model(dev, error_message, viewer_model));
+                            config_file::instance().set(configurations::viewer::last_ip, ip_address);
                         }
+                        catch (std::runtime_error e)
+                        {
+                            error_message = e.what();
+                        }
+                        ip_address = "";
+                        close_ip_popup = true;
+                        ImGui::CloseCurrentPopup();
                     }
                     ImGui::SameLine();
                     ImGui::SetCursorPosX(width / 2 + 5);
