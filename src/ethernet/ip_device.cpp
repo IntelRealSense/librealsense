@@ -22,7 +22,7 @@ std::string sensors_str[] = {STEREO_SENSOR_NAME, RGB_SENSOR_NAME};
 //WA for stop
 void ip_device::recover_rtsp_client(int sensor_index)
 {
-    remote_sensors[sensor_index]->rtsp_client = RsRTSPClient::getRtspClient(std::string("rtsp://" + ip_address + ":" + std::to_string(ip_port) + "/" + sensors_str[sensor_index]).c_str(), "ethernet_device");
+    remote_sensors[sensor_index]->rtsp_client = RsRTSPClient::createNew(std::string("rtsp://" + ip_address + ":" + std::to_string(ip_port) + "/" + sensors_str[sensor_index]).c_str(), "rs_network_device", 0, sensor_index);
 
     ((RsRTSPClient*)remote_sensors[sensor_index]->rtsp_client)->initFunc(&rs_rtp_stream::get_memory_pool());
     ((RsRTSPClient*)remote_sensors[sensor_index]->rtsp_client)->getStreams();
@@ -120,7 +120,7 @@ bool ip_device::init_device_data(rs2::software_device sw_device)
 
         remote_sensors[sensor_id] = new ip_sensor();
 
-        remote_sensors[sensor_id]->rtsp_client = RsRTSPClient::getRtspClient(url.c_str(), "ip_device_device");
+        remote_sensors[sensor_id]->rtsp_client = RsRTSPClient::createNew(url.c_str(), "rs_network_device", 0, sensor_id);
         ((RsRTSPClient*)remote_sensors[sensor_id]->rtsp_client)->initFunc(&rs_rtp_stream::get_memory_pool());
 
         rs2::software_sensor tmp_sensor = sw_device.add_sensor(sensor_name);
