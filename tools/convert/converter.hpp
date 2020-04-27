@@ -23,7 +23,6 @@ namespace rs2 {
 
                 file.open(filename);
 
-                //    std::cout << "Writing metadata to " << filename << endl;
                 file << "Stream: " << rs2_stream_to_string(frm.get_profile().stream_type()) << "\nMetadata Attribute: Value\n";
 
                 // Record all the available metadata attributes

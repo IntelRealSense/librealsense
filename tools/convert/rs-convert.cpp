@@ -171,6 +171,7 @@ int main(int argc, char** argv) try
 
         }
 
+        cout << "\r    \r";
         while (true)
         {
             std::lock_guard<std::mutex> lock(mutex);
