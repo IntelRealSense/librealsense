@@ -552,17 +552,38 @@ namespace librealsense
     inline float3 operator + (const float3 & a, const float3 & b) { return{ a.x + b.x, a.y + b.y, a.z + b.z }; }
     inline float3 operator - (const float3 & a, const float3 & b) { return{ a.x - b.x, a.y - b.y, a.z - b.z }; }
     inline float3 operator * (const float3 & a, float b) { return{ a.x*b, a.y*b, a.z*b }; }
+    inline float dot( float3 const & a, float3 const & b ) { return a.x * b.x + a.y * b.y + a.z * b.z; }
     inline bool operator == (const float4 & a, const float4 & b) { return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w; }
     inline float4 operator + (const float4 & a, const float4 & b) { return{ a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w }; }
     inline float4 operator - (const float4 & a, const float4 & b) { return{ a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w }; }
     inline bool operator == (const float3x3 & a, const float3x3 & b) { return a.x == b.x && a.y == b.y && a.z == b.z; }
-    inline float3 operator * (const float3x3 & a, const float3 & b) { return a.x*b.x + a.y*b.y + a.z*b.z; }
-    inline float3x3 operator * (const float3x3 & a, const float3x3 & b) { return{ a*b.x, a*b.y, a*b.z }; }
+    //inline float3 operator * ( const float3x3 & a, const float3 & b ) { return a.x*b.x + a.y*b.y + a.z*b.z; }
+    inline float3 operator * (const float3x3 & a, const float3 & b) { return { dot(a.x,b), dot(a.y,b), dot(a.z,b) }; }
+    //inline float3x3 operator * (const float3x3 & a, const float3x3 & b) { return{ a*b.x, a*b.y, a*b.z }; }
+    inline float3x3 operator * ( const float3x3 & a, const float3x3 & b ) {
+        return {
+            {
+                /* x.x= */ a.x.x * b.x.x + a.x.y * b.y.x + a.x.z * b.z.x,  // Result[0][0] = SrcA00 * SrcB00 + SrcA10 * SrcB01 + SrcA20 * SrcB02;
+                /* x.y= */ a.x.x * b.x.y + a.x.y * b.y.y + a.x.z * b.z.y,  // Result[1][0] = SrcA00 * SrcB10 + SrcA10 * SrcB11 + SrcA20 * SrcB12;
+                /* x.z= */ a.x.x * b.x.z + a.x.y * b.y.z + a.x.z * b.z.z   // Result[2][0] = SrcA00 * SrcB20 + SrcA10 * SrcB21 + SrcA20 * SrcB22;
+            },
+            {
+                /* y.x= */ a.y.x * b.x.x + a.y.y * b.y.x + a.y.z * b.z.x,  // Result[0][1] = SrcA01 * SrcB00 + SrcA11 * SrcB01 + SrcA21 * SrcB02;
+                /* y.y= */ a.y.x * b.x.y + a.y.y * b.y.y + a.y.z * b.z.y,  // Result[1][1] = SrcA01 * SrcB10 + SrcA11 * SrcB11 + SrcA21 * SrcB12;
+                /* y.z= */ a.y.x * b.x.z + a.y.y * b.y.z + a.y.z * b.z.z   // Result[2][1] = SrcA01 * SrcB20 + SrcA11 * SrcB21 + SrcA21 * SrcB22;
+            },
+            {
+                /* z.x= */ a.z.x * b.x.x + a.z.y * b.y.x + a.z.z * b.z.x,  // Result[0][2] = SrcA02 * SrcB00 + SrcA12 * SrcB01 + SrcA22 * SrcB02;
+                /* z.y= */ a.z.x * b.x.y + a.z.y * b.y.y + a.z.z * b.z.y,  // Result[1][2] = SrcA02 * SrcB10 + SrcA12 * SrcB11 + SrcA22 * SrcB12;
+                /* z.z= */ a.z.x * b.x.z + a.z.y * b.y.z + a.z.z * b.z.z,  // Result[2][2] = SrcA02 * SrcB20 + SrcA12 * SrcB21 + SrcA22 * SrcB22;
+            }
+        };
+    }
     inline float3x3 transpose(const float3x3 & a) { return{ {a.x.x,a.y.x,a.z.x}, {a.x.y,a.y.y,a.z.y}, {a.x.z,a.y.z,a.z.z} }; }
     inline bool operator == (const pose & a, const pose & b) { return a.orientation == b.orientation && a.position == b.position; }
     inline float3 operator * (const pose & a, const float3 & b) { return a.orientation * b + a.position; }
     inline pose operator * (const pose & a, const pose & b) { return{ a.orientation * b.orientation, a * b.position }; }
-    inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return{ inv, inv * a.position * -1 }; }
+    inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return{ inv, inv * ( a.position * -1 ) }; }
     inline pose to_pose(const rs2_extrinsics& a)
     {
         pose r{};

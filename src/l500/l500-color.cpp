@@ -159,7 +159,7 @@ namespace librealsense
         _color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>(
             [this]()
             {
-                return from_pose(get_color_stream_extrinsic(*_color_extrinsics_table_raw));
+                return get_color_stream_extrinsic(*_color_extrinsics_table_raw);
             } );
         // Note this is from color->depth!
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);

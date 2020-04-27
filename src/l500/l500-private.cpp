@@ -15,20 +15,26 @@ namespace librealsense
 {
     namespace ivcam2
     {
-        pose get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data)
+        rs2_extrinsics get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data)
         {
             if (raw_data.size() < sizeof(pose))
                 throw invalid_value_exception("size of extrinsic invalid");
-            auto res = *((pose*)raw_data.data());
+            assert( sizeof( pose ) == sizeof( rs2_extrinsics ) );
+            auto res = *(rs2_extrinsics*)raw_data.data();
+            AC_LOG( DEBUG, "raw extrinsics pose data from camera:\n" << std::setprecision(15) << res );
             float trans_scale = 0.001f; // Convert units from mm to meter
 
-            if (res.position.y > 0.f) // Extrinsic of color is referenced to the Depth Sensor CS
+            if( res.translation[1] > 0.f ) // Extrinsic of color is referenced to the Depth Sensor CS
                 trans_scale *= -1;
 
-            res.position.x *= trans_scale;
-            res.position.y *= trans_scale;
-            res.position.z *= trans_scale;
-            return res;
+            res.translation[0] *= trans_scale;
+            res.translation[1] *= trans_scale;
+            res.translation[2] *= trans_scale;
+
+            std::swap( res.rotation[1], res.rotation[3] );
+            std::swap( res.rotation[2], res.rotation[6] );
+            std::swap( res.rotation[5], res.rotation[7] );
+            return inverse(res);
         }
 
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,

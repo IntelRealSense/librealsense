@@ -15,6 +15,18 @@
 using namespace librealsense;
 namespace impl = librealsense::algo::depth_to_rgb_calibration;
 
+inline rs2_extrinsics fix_extrinsics( rs2_extrinsics extr, float by )
+{
+    extr.translation[0] *= by;
+    extr.translation[1] *= by;
+    extr.translation[2] *= by;
+    std::swap( extr.rotation[1], extr.rotation[3] );
+    std::swap( extr.rotation[2], extr.rotation[6] );
+    std::swap( extr.rotation[5], extr.rotation[7] );
+    return extr;
+}
+
+
 depth_to_rgb_calibration::depth_to_rgb_calibration(
     rs2::frame depth,
     rs2::frame ir,
@@ -22,7 +34,7 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     rs2::frame prev_yuy
 )
     : _intr( yuy.get_profile().as< rs2::video_stream_profile >().get_intrinsics() )
-    , _extr( depth.get_profile().get_extrinsics_to( yuy.get_profile()))
+    , _extr( fix_extrinsics( depth.get_profile().get_extrinsics_to( yuy.get_profile() ), 1000 ))
     , _depth_units(depth.as< rs2::depth_frame >().get_units())
     , _from( depth.get_profile().get()->profile )
     , _to( yuy.get_profile().get()->profile )
@@ -94,7 +106,7 @@ rs2_calibration_status depth_to_rgb_calibration::optimize()
         //AC_LOG( INFO, "Calibration finished; original cost= " << original_cost << "  optimized cost= " << params_curr.cost );
 
         _intr = _algo.get_calibration().get_intrinsics();
-        _extr = _algo.get_calibration().get_extrinsics();
+        _extr = fix_extrinsics( _algo.get_calibration().get_extrinsics(), 0.001 );
         debug_calibration( "new" );
 
         return RS2_CALIBRATION_SUCCESSFUL;

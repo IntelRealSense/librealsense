@@ -212,7 +212,7 @@ namespace librealsense
         };
 #pragma pack(pop)
 
-        pose get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
+        rs2_extrinsics get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
 
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
                                          const platform::uvc_device_info& info, platform::usb_device_info& result);
