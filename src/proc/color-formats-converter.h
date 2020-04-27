@@ -38,14 +38,14 @@ namespace librealsense
         void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size) override;
     };
 
-    class LRS_EXTENSION_API uyvy_to_yuyv_converter : public color_converter
+    class LRS_EXTENSION_API raw16_to_y16_converter : public color_converter
     {
     public:
-        uyvy_to_yuyv_converter(rs2_format target_format, rs2_stream target_stream = RS2_STREAM_COLOR) :
-            uyvy_to_yuyv_converter("UYVY TO YUYV Converter", target_format, target_stream) {};
+        raw16_to_y16_converter(rs2_format target_format, rs2_stream target_stream = RS2_STREAM_COLOR) :
+            raw16_to_y16_converter("RAW16 To Y16 Converter", target_format, target_stream) {};
 
     protected:
-        uyvy_to_yuyv_converter(const char* name, rs2_format target_format, rs2_stream target_stream) :
+        raw16_to_y16_converter(const char* name, rs2_format target_format, rs2_stream target_stream) :
             color_converter(name, target_format, target_stream) {};
         void process_function(byte* const dest[], const byte* source, int width, int height, int actual_size, int input_size) override;
     };
