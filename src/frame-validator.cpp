@@ -78,8 +78,8 @@ namespace librealsense
             
             _sensor->get_notifications_processor()->raise_notification({ RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED ,
                                                                          0,
-                                                                         RS2_LOG_SEVERITY_INFO,
-                                                                         "Corrupted Frame Detected\n" });
+                                                                         RS2_LOG_SEVERITY_WARN,
+                                                                         "L500 Corrupted Frame Detected\n" });
             auto s = _sensor;
             auto vr = _validator_requests;
             auto uc = _user_callback;
