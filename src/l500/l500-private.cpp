@@ -20,16 +20,14 @@ namespace librealsense
             if (raw_data.size() < sizeof(pose))
                 throw invalid_value_exception("size of extrinsic invalid");
             auto res = *((pose*)raw_data.data());
-            AC_LOG( DEBUG, "raw extrinsics pose data from camera:\n" << std::setprecision(15) << res );
             float trans_scale = 0.001f; // Convert units from mm to meter
 
-            if( res.position.y > 0.f ) // Extrinsic of color is referenced to the Depth Sensor CS
-                ; // trans_scale *= -1;
+            if (res.position.y > 0.f) // Extrinsic of color is referenced to the Depth Sensor CS
+                trans_scale *= -1;
 
             res.position.x *= trans_scale;
             res.position.y *= trans_scale;
             res.position.z *= trans_scale;
-            res.orientation = transpose( res.orientation );
             return res;
         }
 
