@@ -17,6 +17,27 @@ namespace rs2 {
     namespace tools {
         namespace converter {
 
+            void metadata_to_txtfile(const rs2::frame& frm, const std::string& filename)
+            {
+                std::ofstream file;
+
+                file.open(filename);
+
+                file << "Stream: " << rs2_stream_to_string(frm.get_profile().stream_type()) << "\nMetadata Attribute: Value\n";
+
+                // Record all the available metadata attributes
+                for (size_t i = 0; i < RS2_FRAME_METADATA_COUNT; i++)
+                {
+                    if (frm.supports_frame_metadata((rs2_frame_metadata_value)i))
+                    {
+                        file << rs2_frame_metadata_to_string((rs2_frame_metadata_value)i) << ": "
+                            << frm.get_frame_metadata((rs2_frame_metadata_value)i) << "\n";
+                    }
+                }
+
+                file.close();
+            }
+
             typedef unsigned long long frame_number_t;
 
             class converter_base {
@@ -63,7 +84,7 @@ namespace rs2 {
                 }
 
             public:
-                virtual void convert(rs2::frameset& frameset) = 0;
+                virtual void convert(rs2::frame& frame) = 0;
                 virtual std::string name() const = 0;
 
                 virtual std::string get_statistics()
