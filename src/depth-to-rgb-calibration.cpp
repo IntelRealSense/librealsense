@@ -15,11 +15,19 @@
 using namespace librealsense;
 namespace impl = librealsense::algo::depth_to_rgb_calibration;
 
-inline rs2_extrinsics fix_extrinsics( rs2_extrinsics extr, float by )
+
+static rs2_extrinsics fix_extrinsics( rs2_extrinsics extr, float by )
 {
+    // The extrinsics we get are based in meters, and AC algo is based in millimeters
+    // NOTE that the scaling here needs to be accompanied by the same scaling of the depth
+    // units!
     extr.translation[0] *= by;
     extr.translation[1] *= by;
     extr.translation[2] *= by;
+    // This transposing is absolutely mandatory because our internal algorithms are
+    // written with a transposed matrix in mind! (see rs2_transform_point_to_point)
+    // This is the opposite transpose to the one we do with the extrinsics we get
+    // from the camera...
     std::swap( extr.rotation[1], extr.rotation[3] );
     std::swap( extr.rotation[2], extr.rotation[6] );
     std::swap( extr.rotation[5], extr.rotation[7] );
@@ -35,7 +43,6 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
 )
     : _intr( yuy.get_profile().as< rs2::video_stream_profile >().get_intrinsics() )
     , _extr( fix_extrinsics( depth.get_profile().get_extrinsics_to( yuy.get_profile() ), 1000 ))
-    , _depth_units(depth.as< rs2::depth_frame >().get_units())
     , _from( depth.get_profile().get()->profile )
     , _to( yuy.get_profile().get()->profile )
 {
@@ -66,9 +73,10 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     _algo.set_z_data(
         std::vector< impl::z_t >( z_data, z_data + depth.get_data_size() / sizeof( impl::z_t ) ),
         z_profile.get_intrinsics(),
-        depth.as< rs2::depth_frame >().get_units()
+        depth.as< rs2::depth_frame >().get_units() * 1000.   // same scaling as for extrinsics!
     );
 
+    // TODO REMOVE
 #ifdef _WIN32
     std::string dir = "C:\\work\\autocal\\data\\";
     dir += to_string() << depth.get_frame_number();

@@ -23,7 +23,6 @@ namespace librealsense
         // input/output
         rs2_extrinsics _extr;
         rs2_intrinsics _intr;
-        float          _depth_units;
 
         algo::depth_to_rgb_calibration::optimizer _algo;
 
