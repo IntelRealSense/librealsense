@@ -38,28 +38,39 @@ int RsRTSPClient::getPhysicalSensorUniqueKey(rs2_stream stream_type, int sensors
     return stream_type * 10 + sensors_index;
 }
 
-IRsRtsp *RsRTSPClient::getRtspClient(char const *t_rtspURL, char const *t_applicationName, portNumBits t_tunnelOverHTTPPortNum)
+IRsRtsp *RsRTSPClient::createNew(char const *t_rtspURL, char const *t_applicationName, portNumBits t_tunnelOverHTTPPortNum, int idx)
 {
     TaskScheduler *scheduler = BasicTaskScheduler::createNew();
     UsageEnvironment *env = RSUsageEnvironment::createNew(*scheduler);
 
     RTSPClient::responseBufferSize = 100000;
-    return (IRsRtsp *)new RsRTSPClient(scheduler, env, t_rtspURL, RTSP_CLIENT_VERBOSITY_LEVEL, t_applicationName, t_tunnelOverHTTPPortNum);
+    return (IRsRtsp *)new RsRTSPClient(scheduler, env, t_rtspURL, RTSP_CLIENT_VERBOSITY_LEVEL, t_applicationName, t_tunnelOverHTTPPortNum, idx);
 }
 
-RsRTSPClient::RsRTSPClient(TaskScheduler *t_scheduler, UsageEnvironment *t_env, char const *t_rtspURL, int t_verbosityLevel, char const *t_applicationName, portNumBits t_tunnelOverHTTPPortNum)
+RsRTSPClient::RsRTSPClient(TaskScheduler *t_scheduler, UsageEnvironment *t_env, char const *t_rtspURL, int t_verbosityLevel, char const *t_applicationName, portNumBits t_tunnelOverHTTPPortNum, int idx)
     : RTSPClient(*t_env, t_rtspURL, t_verbosityLevel, t_applicationName, t_tunnelOverHTTPPortNum, -1)
 {
     m_lastReturnValue.exit_code = RsRtspReturnCode::OK;
     m_env = t_env;
     m_scheduler = t_scheduler;
+    m_idx = idx;
 }
 
 RsRTSPClient::~RsRTSPClient() {}
 
+std::string g_sdp[2];
+
 std::vector<rs2_video_stream> RsRTSPClient::getStreams()
 {
-    this->sendDescribeCommand(this->continueAfterDESCRIBE);
+    if (g_sdp[m_idx].size() == 0)
+    {
+        this->sendDescribeCommand(this->continueAfterDESCRIBE);
+    }
+    else
+    {
+        char* buf = strdup(g_sdp[m_idx].c_str());
+        this->continueAfterDESCRIBE(this, 0, buf);
+    }
 
     // wait for continueAfterDESCRIBE to finish
     std::unique_lock<std::mutex> lck(m_commandMtx);
@@ -388,6 +399,8 @@ void RsRTSPClient::continueAfterDESCRIBE(RTSPClient *rtspClient, int resultCode,
             env << "Failed to get a SDP description: " << resultStr.c_str() << "\n";
             break;
         }
+
+        g_sdp[rsRtspClient->m_idx] = resultStr;
 
         // Create a media session object from this SDP description(resultString):
         scs.m_session = RsMediaSession::createNew(env, resultStr.c_str());
