@@ -15,5 +15,10 @@ classdef depth_frame < realsense.video_frame
             validateattributes(y, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'y', 2);
             distance = realsense.librealsense_mex('rs2::depth_frame', 'get_distance', this.objectHandle, int64(x), int64(y));
         end
+
+        function unit = get_units(this)
+            narginchk(1, 1)
+            distance = realsense.librealsense_mex('rs2::depth_frame', 'get_units', this.objectHandle);
+        end
     end
 end
