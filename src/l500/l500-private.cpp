@@ -48,6 +48,7 @@ namespace librealsense
                     result = *it;
                     switch(info.pid)
                     {
+                    case L515_PID_PRE_PRQ:
                     case L515_PID:
                         if(result.mi == 7)
                         {
