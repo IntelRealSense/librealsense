@@ -149,7 +149,16 @@ RsRTSPServer::RsRTSPClientSession ::RsRTSPClientSession(RTSPServer& t_ourServer,
     : RTSPClientSession(t_ourServer, t_sessionId)
 {}
 
-RsRTSPServer::RsRTSPClientSession::~RsRTSPClientSession() {}
+RsRTSPServer::RsRTSPClientSession::~RsRTSPClientSession() {
+    try
+    {
+        closeRsCamera();
+    }
+    catch(const std::exception& e)
+    {
+        std::cout << "Camera closed already\n";
+    }
+}
 
 void RsRTSPServer::RsRTSPClientSession::handleCmd_TEARDOWN(RTSPClientConnection* t_ourClientConnection, ServerMediaSubsession* t_subsession)
 {

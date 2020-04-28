@@ -11,7 +11,7 @@
 class RsRTSPServer : public RTSPServer
 {
 public:
-    static RsRTSPServer* createNew(UsageEnvironment& t_env, std::shared_ptr<RsDevice> t_device, Port t_ourPort = 554, UserAuthenticationDatabase* t_authDatabase = NULL, unsigned t_reclamationSeconds = 0);
+    static RsRTSPServer* createNew(UsageEnvironment& t_env, std::shared_ptr<RsDevice> t_device, Port t_ourPort = 554, UserAuthenticationDatabase* t_authDatabase = NULL, unsigned t_reclamationSeconds = 20);
     void setSupportedOptions(std::string t_key, std::vector<RsOption> t_supportedOptions);
 
 protected:
