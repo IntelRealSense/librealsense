@@ -377,8 +377,9 @@ namespace librealsense
         _range = [this]()
         {
             return option_range{ ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT,
-                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_MAX - 1,
-                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT, 1 };
+                                 2,
+                                 1, 
+                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT};
         };
     }
 
@@ -402,6 +403,54 @@ namespace librealsense
     }
 
     option_range external_sync_mode::get_range() const
+    {
+        return *_range;
+    }
+
+    external_sync_mode2::external_sync_mode2(hw_monitor& hwm, sensor_base* ep)
+        : _hwm(hwm), _sensor(ep)
+    {
+        _range = [this]()
+        {
+            return option_range{ ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT,
+                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_MAX,
+                                 1,
+                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT };
+        };
+    }
+
+    void external_sync_mode2::set(float value)
+    {
+        if (_sensor->is_streaming())
+            throw std::runtime_error("Cannot change Inter-camera HW synchronization mode while streaming!");
+
+        command cmd(ds::SET_CAM_SYNC);
+        if (value < 4)
+            cmd.param1 = static_cast<int>(value);
+        else
+        {
+            cmd.param1 = 4;
+            cmd.param1 |= (static_cast<int>(value - 3)) << 8;
+        }
+
+        _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float external_sync_mode2::query() const
+    {
+        command cmd(ds::GET_CAM_SYNC);
+        auto res = _hwm.send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("external_sync_mode::query result is empty!");
+
+        if (res.front() < 4)
+            return (res.front());
+        else
+            return (static_cast<float>(res[1]) + 3.0f);
+    }
+
+    option_range external_sync_mode2::get_range() const
     {
         return *_range;
     }

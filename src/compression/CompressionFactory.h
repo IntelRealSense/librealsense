@@ -4,7 +4,7 @@
 #pragma once
 
 #include "ICompression.h"
-#define IS_COMPRESSION_ENABLED 1
+#define IS_COMPRESSION_ENABLED 1 // enabled by default
 
 typedef enum ZipMethod
 {

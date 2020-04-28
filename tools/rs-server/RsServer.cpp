@@ -13,6 +13,12 @@
 #include "RsRTSPServer.hh"
 #include "RsServerMediaSession.h"
 #include "RsCommon.h"
+#include <compression/CompressionFactory.h>
+
+#include "tclap/CmdLine.h"
+#include "tclap/ValueArg.h"
+
+using namespace TCLAP;
 
 struct server
 {
@@ -23,6 +29,7 @@ struct server
     std::vector<rs2::video_stream_profile> supported_stream_profiles; // streams for extrinsics map creation
     std::vector<RsSensor> sensors;
     TaskScheduler* scheduler;
+    unsigned int port = 8554;
 
     void main(int argc, char** argv)
     {
@@ -30,14 +37,42 @@ struct server
 
         START_EASYLOGGINGPP(argc, argv);
 
-        OutPacketBuffer::increaseMaxSizeTo(MAX_MESSAGE_SIZE);
+        CmdLine cmd("LRS Network Extentions Server", ' ', RS2_API_VERSION_STR);
 
+        SwitchArg arg_enable_compression("c", "enable-compression", "Enable video compression");
+        ValueArg<std::string> arg_address("i", "interface-address", "Address of the interface to bind on", false, "", "string");
+        ValueArg<unsigned int> arg_port("p", "port", "RTSP port to listen on", false, 8554, "integer");
+
+        cmd.add(arg_enable_compression);
+        cmd.add(arg_address);
+        cmd.add(arg_port);
+
+        cmd.parse(argc, argv);
+
+        CompressionFactory::getIsEnabled() = 0;
+        if (arg_enable_compression.isSet())
+        {
+            CompressionFactory::getIsEnabled() = 1;
+        }
+
+        if (arg_address.isSet()) 
+        {
+            ReceivingInterfaceAddr = our_inet_addr(arg_address.getValue().c_str());
+        }
+
+        if (arg_port.isSet())
+        {
+            port = arg_port.getValue();
+        }
+        
+        OutPacketBuffer::increaseMaxSizeTo(MAX_MESSAGE_SIZE);
+        
         // Begin by setting up our usage environment:
         scheduler = BasicTaskScheduler::createNew();
         env = RSUsageEnvironment::createNew(*scheduler);
 
         rsDevice = std::make_shared<RsDevice>(env);
-        rtspServer = RsRTSPServer::createNew(*env, rsDevice, 8554);
+        rtspServer = RsRTSPServer::createNew(*env, rsDevice, port);
 
         if(rtspServer == NULL)
         {
@@ -51,7 +86,7 @@ struct server
             RsServerMediaSession* sms;
             if(sensor.getSensorName().compare(STEREO_SENSOR_NAME) == 0 || sensor.getSensorName().compare(RGB_SENSOR_NAME) == 0)
             {
-                sms = RsServerMediaSession::createNew(*env, sensor, sensor.getSensorName().data(), "", "Session streamed by \"realsense streamer\"", True);
+                sms = RsServerMediaSession::createNew(*env, sensor, sensor.getSensorName().data(), "", "Session streamed by \"realsense streamer\"", False);
             }
             else
             {

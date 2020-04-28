@@ -3,15 +3,12 @@
 
 #include "../include/librealsense2/rs.hpp"
 #include "../include/librealsense2/rsutil.h"
-
-#include "proc/synthetic-stream.h"
 #include "environment.h"
 #include "proc/occlusion-filter.h"
 #include "proc/pointcloud.h"
 #include "option.h"
 #include "environment.h"
 #include "context.h"
-
 #include <iostream>
 
 #ifdef RS2_USE_CUDA
@@ -20,7 +17,6 @@
 #ifdef __SSSE3__
 #include "proc/sse/sse-pointcloud.h"
 #endif
-
 
 namespace librealsense
 {
@@ -203,9 +199,14 @@ namespace librealsense
 
             get_texture_map(res, points, width, height, mapped_intr, extr, pixels_ptr);
 
-            if (_occlusion_filter->active())
+            if (run__occlusion_filter(extr))
             {
-                _occlusion_filter->process(pframe->get_vertices(), pframe->get_texture_coordinates(), _pixels_map);
+                if (_occlusion_filter->find_scanning_direction(extr) == vertical)
+                {
+                    _occlusion_filter->set_scanning(static_cast<uint8_t>(vertical));
+                    _occlusion_filter->_depth_units = _depth_units.value();
+                }
+                _occlusion_filter->process(pframe->get_vertices(), pframe->get_texture_coordinates(), _pixels_map, depth);
             }
         }
         return res;
@@ -223,7 +224,7 @@ namespace librealsense
         auto occlusion_invalidation = std::make_shared<ptr_option<uint8_t>>(
             occlusion_none,
             occlusion_max - 1, 1,
-            occlusion_none,
+            occlusion_monotonic_scan,
             (uint8_t*)&_occlusion_filter->_occlusion_filter,
             "Occlusion removal");
         occlusion_invalidation->on_set([this, occlusion_invalidation](float val)
@@ -235,10 +236,8 @@ namespace librealsense
             _occlusion_filter->set_mode(static_cast<uint8_t>(val));
 
         });
-
-        occlusion_invalidation->set_description(0.f, "Off");
-        occlusion_invalidation->set_description(1.f, "Heuristic");
-        occlusion_invalidation->set_description(2.f, "Exhaustive");
+        occlusion_invalidation->set_description(1.f, "Off");
+        occlusion_invalidation->set_description(2.f, "On");
         register_option(RS2_OPTION_FILTER_MAGNITUDE, occlusion_invalidation);
     }
 
@@ -321,5 +320,10 @@ namespace librealsense
             return std::make_shared<librealsense::pointcloud>();
         #endif
         #endif
+    }
+
+    bool pointcloud::run__occlusion_filter(const rs2_extrinsics& extr)
+    {
+        return (_occlusion_filter->active() && !_occlusion_filter->is_same_sensor(extr));
     }
 }
