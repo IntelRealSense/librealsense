@@ -376,6 +376,7 @@ TEST_CASE("Weights calc", "[d2rgb]")
     {
         int iteration_num = 5;
         double correction_in_pixels = 2.9144;
+        int num_of_edges;
         std::string rgb_file;
         std::string rgb_prev_file;
         std::string ir_file;
@@ -390,7 +391,7 @@ TEST_CASE("Weights calc", "[d2rgb]")
         algo::optimizer cal;
 
         auto scene = "2";
-        scene_metadata md = { 5, 2.914122625391939, "YUY2_YUY2_1920x1080_00.00.26.6355_F9440687_0000.raw",
+        scene_metadata md = { 5, 2.914122625391939, 5089, "YUY2_YUY2_1920x1080_00.00.26.6355_F9440687_0000.raw",
             "YUY2_YUY2_1920x1080_00.00.26.7683_F9440687_0001.raw",
             "I_GrayScale_1024x768_00.00.26.7119_F9440687_0000.raw",
             "Z_GrayScale_1024x768_00.00.26.7119_F9440687_0000.raw" };
@@ -400,7 +401,7 @@ TEST_CASE("Weights calc", "[d2rgb]")
         if (read_calib_from_file)
         {
             ci = read_camera_info(dir);
-            md = { 5, 2.914122625391939, "rgb.raw",
+            md = { 5, 2.914122625391939, 5089, "rgb.raw",
             "rgb.raw",
             "ir.raw",
             "depth.raw" };
@@ -423,7 +424,6 @@ TEST_CASE("Weights calc", "[d2rgb]")
         auto rgb_w = ci.rgb.width;
         auto z_h = ci.z.height;
         auto z_w = ci.z.width;
-        auto num_of_edges = 5089;
         auto num_of_calib_elements = 32;
 
         CHECK(compare_to_bin_file< double >(yuy_data.edges, dir, scene, FILE_NAME("YUY2_edge", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors));
@@ -442,9 +442,9 @@ TEST_CASE("Weights calc", "[d2rgb]")
         CHECK(compare_to_bin_file< double >(z_data.subpixels_x, dir, scene, FILE_NAME("Z_edgeSubPixel", z_w, z_h, "double_01").c_str(), z_h, z_w, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(z_data.subpixels_y, dir, scene, FILE_NAME("Z_edgeSubPixel", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
 
-        CHECK(compare_to_bin_file< double >(z_data.weights, dir, scene, FILE_NAME("weightsT", 1, num_of_edges,"double_00").c_str(), num_of_edges, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(z_data.weights, dir, scene, FILE_NAME("weightsT", 1, md.num_of_edges,"double_00").c_str(), md.num_of_edges, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(z_data.closest, dir, scene, FILE_NAME("Z_valuesForSubEdges", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
-        CHECK(compare_to_bin_file< algo::double3 >(z_data.vertices, dir, scene, FILE_NAME("vertices", 3, num_of_edges, "double_00").c_str(), num_of_edges, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< algo::double3 >(z_data.vertices, dir, scene, FILE_NAME("vertices", 3, md.num_of_edges, "double_00").c_str(), md.num_of_edges, 1, compare_same_vectors));
 
 
         // ---
@@ -453,7 +453,7 @@ TEST_CASE("Weights calc", "[d2rgb]")
 
         // edge distribution
         CHECK( compare_to_bin_file< double >( z_data.sum_weights_per_section, dir, scene, FILE_NAME("depthEdgeWeightDistributionPerSectionDepth", 1, 4,"double_00").c_str(), 4, 1, compare_same_vectors ) );
-        CHECK( compare_to_bin_file< byte >( z_data.section_map, dir, scene, FILE_NAME("sectionMapDepth_trans", 1, num_of_edges, "uint8_00").c_str(), num_of_edges, 1, compare_same_vectors ) );
+        CHECK( compare_to_bin_file< byte >( z_data.section_map, dir, scene, FILE_NAME("sectionMapDepth_trans", 1, md.num_of_edges, "uint8_00").c_str(), md.num_of_edges, 1, compare_same_vectors ) );
         CHECK( compare_to_bin_file< byte >( yuy_data.section_map, dir, scene, FILE_NAME("sectionMapRgb_trans", 1, rgb_w*rgb_h,"uint8_00").c_str(), rgb_w*rgb_h, 1, compare_same_vectors ) );
         CHECK(compare_to_bin_file< double >(yuy_data.sum_weights_per_section, dir, scene, FILE_NAME("edgeWeightDistributionPerSectionRgb", 1, 4, "double_00").c_str(), 4, 1, compare_same_vectors));
 
@@ -481,17 +481,17 @@ TEST_CASE("Weights calc", "[d2rgb]")
             auto file = ITERATION_FILE_NAME("calib_iteration", data.iteration + 1, num_of_calib_elements, 1,"double_00");
             CHECK(compare_calib_to_bin_file(data.params.curr_calib, data.params.cost, dir, scene, file.c_str()));
 
-            file = ITERATION_FILE_NAME("uvmap_iteration", data.iteration + 1, 2, num_of_edges,"double_00");
+            file = ITERATION_FILE_NAME("uvmap_iteration", data.iteration + 1, 2, md.num_of_edges,"double_00");
             CHECK(compare_to_bin_file< algo::double2 >(data.uvmap, dir, scene, file.c_str(), 5089, 1, compare_same_vectors));
 
-            file = ITERATION_FILE_NAME("DVals_iteration", data.iteration + 1, 1, num_of_edges, "double_00");
-            CHECK(compare_to_bin_file< double >(data.d_vals, dir, scene, file.c_str(), num_of_edges, 1, compare_same_vectors, sort_vectors));
+            file = ITERATION_FILE_NAME("DVals_iteration", data.iteration + 1, 1, md.num_of_edges, "double_00");
+            CHECK(compare_to_bin_file< double >(data.d_vals, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
 
-            file = ITERATION_FILE_NAME("DxVals_iteration", data.iteration + 1, 1, num_of_edges, "double_00");
-            CHECK(compare_to_bin_file< double >(data.d_vals_x, dir, scene, file.c_str(), num_of_edges, 1, compare_same_vectors, sort_vectors));
+            file = ITERATION_FILE_NAME("DxVals_iteration", data.iteration + 1, 1, md.num_of_edges, "double_00");
+            CHECK(compare_to_bin_file< double >(data.d_vals_x, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
 
-            file = ITERATION_FILE_NAME("DyVals_iteration", data.iteration + 1, 1, num_of_edges,"double_00");
-            CHECK(compare_to_bin_file< double >(data.d_vals_y, dir, scene, file.c_str(), num_of_edges, 1, compare_same_vectors, sort_vectors));
+            file = ITERATION_FILE_NAME("DyVals_iteration", data.iteration + 1, 1, md.num_of_edges,"double_00");
+            CHECK(compare_to_bin_file< double >(data.d_vals_y, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
 
             file = ITERATION_FILE_NAME("grad_iteration", data.iteration + 1, num_of_calib_elements, 1, "double_00");
             CHECK(compare_calib_to_bin_file(data.params.calib_gradients, 0, dir, scene, file.c_str(), true));
