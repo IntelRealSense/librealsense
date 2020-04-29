@@ -18,25 +18,14 @@ namespace librealsense
     class fa_device : public virtual device, public debug_interface, public global_time_interface, public updatable
     {
     public:
-        synthetic_sensor& get_left_ir_sensor()
+        synthetic_sensor& get_ir_sensor()
         {
             return dynamic_cast<synthetic_sensor&>(get_sensor(0));
         }
 
-        uvc_sensor& get_left_raw_ir_sensor()
+        uvc_sensor& get_raw_ir_sensor()
         {
-            synthetic_sensor& ir_sensor = get_left_ir_sensor();
-            return dynamic_cast<uvc_sensor&>(*ir_sensor.get_raw_sensor());
-        }
-
-        synthetic_sensor& get_right_ir_sensor()
-        {
-            return dynamic_cast<synthetic_sensor&>(get_sensor(1));
-        }
-
-        uvc_sensor& get_right_raw_ir_sensor()
-        {
-            synthetic_sensor& ir_sensor = get_right_ir_sensor();
+            synthetic_sensor& ir_sensor = get_ir_sensor();
             return dynamic_cast<uvc_sensor&>(*ir_sensor.get_raw_sensor());
         }
 
