@@ -38,26 +38,14 @@ namespace librealsense
         void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size) override;
     };
 
-    class LRS_EXTENSION_API raw16_to_y16_converter : public color_converter
+    class LRS_EXTENSION_API memcpy_converter : public color_converter
     {
     public:
-        raw16_to_y16_converter(rs2_format target_format, rs2_stream target_stream = RS2_STREAM_COLOR) :
-            raw16_to_y16_converter("RAW16 To Y16 Converter", target_format, target_stream) {};
+        memcpy_converter(rs2_format target_format, rs2_stream target_stream = RS2_STREAM_COLOR) :
+            memcpy_converter("MEMCPY Converter", target_format, target_stream) {};
 
     protected:
-        raw16_to_y16_converter(const char* name, rs2_format target_format, rs2_stream target_stream) :
-            color_converter(name, target_format, target_stream) {};
-        void process_function(byte* const dest[], const byte* source, int width, int height, int actual_size, int input_size) override;
-    };
-
-    class LRS_EXTENSION_API z16_to_raw16_converter : public color_converter
-    {
-    public:
-        z16_to_raw16_converter(rs2_format target_format, rs2_stream target_stream = RS2_STREAM_COLOR) :
-            z16_to_raw16_converter("Z16 TO RAW16 Converter", target_format, target_stream) {};
-
-    protected:
-        z16_to_raw16_converter(const char* name, rs2_format target_format, rs2_stream target_stream) :
+        memcpy_converter(const char* name, rs2_format target_format, rs2_stream target_stream) :
             color_converter(name, target_format, target_stream) {};
         void process_function(byte* const dest[], const byte* source, int width, int height, int actual_size, int input_size) override;
     };

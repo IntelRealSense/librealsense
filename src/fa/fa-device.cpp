@@ -87,8 +87,7 @@ namespace librealsense
         std::vector<uint8_t> flash;
         flash.reserve(flash_size);
 		
-		//TODO - REMI - right sensor to be checked also
-        uvc_sensor& raw_ir_sensor = get_left_raw_ir_sensor();
+        uvc_sensor& raw_ir_sensor = get_raw_ir_sensor();
         raw_ir_sensor.invoke_powered([&](platform::uvc_device& dev)
             {
                 for (int i = 0; i < max_iterations; i++)
@@ -205,8 +204,8 @@ namespace librealsense
     {
         if (_is_locked)
             throw std::runtime_error("this camera is locked and doesn't allow direct flash write, for firmware update use rs2_update_firmware method (DFU)");
-		//TODO - REMI - right sensor to be checked also
-        uvc_sensor& raw_ir_sensor = get_left_raw_ir_sensor();
+
+        uvc_sensor& raw_ir_sensor = get_raw_ir_sensor();
         raw_ir_sensor.invoke_powered([&](platform::uvc_device& dev)
             {
                 command cmdPFD(ds::PFD);
@@ -239,12 +238,10 @@ namespace librealsense
     class fa_ir_sensor : public synthetic_sensor
     {
     public:
-        fa_ir_sensor(std::string name,
-            fa_device* owner,
-            std::shared_ptr<uvc_sensor> uvc_sensor,
-            std::shared_ptr<stream_interface> ir_stream)
-            : synthetic_sensor(name, uvc_sensor, owner, fa_ir_fourcc_to_rs2_format, fa_ir_fourcc_to_rs2_stream),
-            _ir_stream(ir_stream), _name(name){}
+        fa_ir_sensor(fa_device* owner,
+            std::shared_ptr<uvc_sensor> uvc_sensor)
+            : synthetic_sensor("Infrared Camera", uvc_sensor, owner, fa_ir_fourcc_to_rs2_format, fa_ir_fourcc_to_rs2_stream),
+            _owner(owner) {}
 
         stream_profiles init_stream_profiles() override
         {
@@ -255,10 +252,15 @@ namespace librealsense
             for (auto&& p : results)
             {
                 // Register stream types
-                if (p->get_stream_type() == RS2_STREAM_INFRARED)
+                if (p->get_stream_type() == RS2_STREAM_INFRARED && p->get_stream_index() == 0)
                 {
-                    assign_stream(_ir_stream, p);
-					environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_ir_stream, *p);
+                    assign_stream(_owner->_left_ir_stream, p);
+                    environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_owner->_left_ir_stream, *p);
+                }
+                else if (p->get_stream_type() == RS2_STREAM_INFRARED && p->get_stream_index() == 1)
+                {
+                    assign_stream(_owner->_right_ir_stream, p);
+                    environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_owner->_right_ir_stream, *p);
                 }
             }
 
@@ -266,12 +268,10 @@ namespace librealsense
         }
 
     private:
-        std::shared_ptr<stream_interface> _ir_stream;
-        std::string _name;
+        const fa_device* _owner;
     };
 
-    void register_options_for_one_sensor(std::shared_ptr<fa_ir_sensor> ir_ep,
-        std::shared_ptr<uvc_sensor> raw_ir_ep)
+    void register_options(std::shared_ptr<fa_ir_sensor> ir_ep, std::shared_ptr<uvc_sensor> raw_ir_ep)
     {
         // OPTIONS
         // EXPOSURE
@@ -299,62 +299,48 @@ namespace librealsense
         //LOW LIGHT COMPENSATION
         //ir_ep->register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
     }
-
-    void register_options(std::shared_ptr<fa_ir_sensor> left_ir_ep,
-        std::shared_ptr<uvc_sensor> left_raw_ir_ep,
-        std::shared_ptr<fa_ir_sensor> right_ir_ep,
-        std::shared_ptr<uvc_sensor> right_raw_ir_ep)
-    {
-        register_options_for_one_sensor(left_ir_ep, left_raw_ir_ep);
-
-        register_options_for_one_sensor(right_ir_ep, right_raw_ir_ep);
-    }
     
     fa_device::fa_device(const std::shared_ptr<context>& ctx,
         const std::vector<platform::uvc_device_info>& uvc_infos,
         const platform::backend_device_group& group,
         bool register_device_notifications)
         : device(ctx, group, register_device_notifications),
-        _left_ir_stream(new stream(RS2_STREAM_INFRARED)),
-        _right_ir_stream(new stream(RS2_STREAM_INFRARED))
+        _left_ir_stream(new stream(RS2_STREAM_INFRARED, 0)),
+        _right_ir_stream(new stream(RS2_STREAM_INFRARED, 1))
     {
         std::vector<std::shared_ptr<platform::uvc_device>> devs;
         for (auto&& info : uvc_infos)
             devs.push_back(ctx->get_backend().create_uvc_device(info));
 
-        // LEFT SENSOR
-        std::vector<std::shared_ptr<platform::uvc_device>> left_dev;
-        left_dev.push_back(devs[0]);
-        std::string left_sensor_name("Infrared Camera Left");
-        auto left_raw_ir_ep = std::make_shared<uvc_sensor>(left_sensor_name,
-            std::make_shared<platform::multi_pins_uvc_device>(left_dev),
+        auto raw_ir_ep = std::make_shared<uvc_sensor>("Infrared Camera",
+            std::make_shared<platform::multi_pins_uvc_device>(devs),
             std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(environment::get_instance().get_time_service())),
             this);
-        auto left_ir_ep = std::make_shared<fa_ir_sensor>(left_sensor_name, this, left_raw_ir_ep, _left_ir_stream);
 
-        left_ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>
-            (RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_INFRARED));
-        left_ir_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_INFRARED));
-        left_ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<raw16_to_y16_converter>
-            (RS2_FORMAT_RAW16, { RS2_FORMAT_Y16 }, RS2_STREAM_INFRARED));
-        add_sensor(left_ir_ep);
+        auto ir_ep = std::make_shared<fa_ir_sensor>(this, raw_ir_ep);
+        ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>
+            (RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_INFRARED, 0));
 
-        // RIGHT SENSOR
-        std::vector<std::shared_ptr<platform::uvc_device>> right_dev;
-        right_dev.push_back(devs[1]);
-        std::string right_sensor_name("Infrared Camera Right");
-        auto right_raw_ir_ep = std::make_shared<uvc_sensor>(right_sensor_name,
-            std::make_shared<platform::multi_pins_uvc_device>(right_dev),
-            std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(environment::get_instance().get_time_service())),
-            this);
-        auto right_ir_ep = std::make_shared<fa_ir_sensor>(right_sensor_name, this, right_raw_ir_ep, _right_ir_stream);
+        // Second Infrared is marked as UYVY so that the streams will have different profiles - needed because of design of mf-uvc class 
+        // It is then converted back to YUYV for streaming
+        // TODO Remi - composite processing block to be used so that uyvy will be read as yuyv, and the color formats will be still available
+        ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>
+            (RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_INFRARED, 1));
 
-        right_ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>
-            (RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_INFRARED, 1));
-        right_ir_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_INFRARED, 1));
-        right_ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<raw16_to_y16_converter>
-            (RS2_FORMAT_RAW16, { RS2_FORMAT_Y16 }, RS2_STREAM_INFRARED, 1));
-        add_sensor(right_ir_ep);
+
+        // RAW STREAM
+        ir_ep->register_processing_block(processing_block_factory::
+            create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_INFRARED, 0));
+        ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<memcpy_converter>
+            (RS2_FORMAT_RAW16, { RS2_FORMAT_Y16 }, RS2_STREAM_INFRARED, 0));
+        /*ir_ep->register_processing_block(processing_block_factory::
+            create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_INFRARED, 1));*/
+        std::vector<rs2_format> target = { RS2_FORMAT_RAW16, RS2_FORMAT_Y16 };
+        ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<memcpy_converter>
+            (RS2_FORMAT_Z16, target, RS2_STREAM_INFRARED, 1));
+        /*ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<raw16_to_y16_converter>
+            (RS2_FORMAT_Z16, { RS2_FORMAT_Y16 }, RS2_STREAM_INFRARED, 1));*/
+        add_sensor(ir_ep);
         
         // CAMERA INFO
         register_info(RS2_CAMERA_INFO_NAME, "F450 Camera");
@@ -368,7 +354,7 @@ namespace librealsense
         //USB TYPE DESCRIPTION
         auto _usb_mode = platform::usb_spec::usb3_type;
         std::string usb_type_str(platform::usb_spec_names.at(_usb_mode));
-        _usb_mode = left_raw_ir_ep->get_usb_specification();
+        _usb_mode = raw_ir_ep->get_usb_specification();
         if (platform::usb_spec_names.count(_usb_mode) && (platform::usb_undefined != _usb_mode)) {
             usb_type_str = platform::usb_spec_names.at(_usb_mode);
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
@@ -378,11 +364,14 @@ namespace librealsense
         register_metadata();
         
         // Options registration
-        register_options(left_ir_ep, left_raw_ir_ep, right_ir_ep, right_raw_ir_ep);
+        register_options(ir_ep, raw_ir_ep);
     }
     
-    void register_metadata_for_one_sensor(synthetic_sensor& ir_sensor)
+    
+    void fa_device::register_metadata()
     {
+        auto& ir_sensor = get_ir_sensor();
+
         ir_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP,
             make_uvc_header_parser(&platform::uvc_header::timestamp));
 
@@ -425,15 +414,6 @@ namespace librealsense
             make_attribute_parser(&md_f400_header::preset_id,
                 md_f400_capture_timing_attributes::preset_id_attribute, md_prop_offset));
 
-    }
-
-    void fa_device::register_metadata()
-    {
-        auto& left_ir_sensor = get_left_ir_sensor();
-        register_metadata_for_one_sensor(left_ir_sensor);
-
-        auto& right_ir_sensor = get_right_ir_sensor();
-        register_metadata_for_one_sensor(right_ir_sensor);
     }
 
     notification fa_notification_decoder::decode(int value)
