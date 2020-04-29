@@ -6,6 +6,7 @@
 #include "RTSPRegisterSender.hh"
 #include "Base64.hh"
 #include <GroupsockHelper.hh>
+#include "RsCommon.h"
 #include "RsRTSPServer.hh"
 #include "RsServerMediaSession.h"
 #include "RsServerMediaSubsession.h"
@@ -68,6 +69,13 @@ RsRTSPServer::RsRTSPClientConnection ::RsRTSPClientConnection(RsRTSPServer& t_ou
 {}
 
 RsRTSPServer::RsRTSPClientConnection::~RsRTSPClientConnection() {}
+
+void RsRTSPServer::RsRTSPClientConnection::handleCmd_DESCRIBE(char const* urlPreSuffix, char const* urlSuffix, char const* fullRequestStr) {
+    fOurRTSPServer.closeAllClientSessionsForServerMediaSession(STEREO_SENSOR_NAME.c_str());
+    fOurRTSPServer.closeAllClientSessionsForServerMediaSession(RGB_SENSOR_NAME.c_str());
+    
+    RTSPServer::RTSPClientConnection::handleCmd_DESCRIBE(urlPreSuffix, urlSuffix, fullRequestStr);
+}
 
 void RsRTSPServer::RsRTSPClientConnection::handleCmd_GET_PARAMETER(char const* t_fullRequestStr)
 {

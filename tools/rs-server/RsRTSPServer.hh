@@ -33,6 +33,7 @@ public:
         virtual ~RsRTSPClientConnection();
         virtual void handleCmd_GET_PARAMETER(char const* fullRequestStr);
         virtual void handleCmd_SET_PARAMETER(char const* fullRequestStr);
+        virtual void handleCmd_DESCRIBE(char const* urlPreSuffix, char const* urlSuffix, char const* fullRequestStr);
 
         RsRTSPServer& m_fOurRsRTSPServer;
 
