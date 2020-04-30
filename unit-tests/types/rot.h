@@ -6,8 +6,12 @@
 inline
 float3x3 rotx( float a )
 {
-    a = a * M_PI / 180.;
-    return { { 1,0,0 }, { 0,cos( a ),-sin( a ) }, { 0,sin(a),cos(a) } };
+    double rad = a * M_PI / 180.;
+    return { 
+        { 1,      0,               0           },
+        { 0, float(cos(rad)), float(-sin(rad)) },
+        { 0, float(sin(rad)), float(cos(rad))  }
+    };
 }
 
 
