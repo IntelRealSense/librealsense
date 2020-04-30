@@ -117,6 +117,13 @@ namespace depth_to_rgb_calibration {
     };
 
 
+    // Map 3D points to a UV-map given a calibration
+    std::vector< double2 > get_texture_map(
+        std::vector< double3 > const & points,
+        calib const & curr_calib
+    );
+
+
 }
 }
 }

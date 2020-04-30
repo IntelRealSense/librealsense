@@ -40,7 +40,7 @@ namespace depth_to_rgb_calibration {
         std::vector<double> gradient_x;
         std::vector<double> gradient_y;
         std::vector<double> edges;
-        std::vector<double> supressed_edges;
+        std::vector<double> supressed_edges;                
         size_t n_strong_edges;
         std::vector<direction> directions;
         std::vector<double> subpixels_x;
@@ -72,13 +72,13 @@ namespace depth_to_rgb_calibration {
         std::vector<double> gaussian_filtered_image;
         std::vector<double> gaussian_diff_masked;
         std::vector<uint8_t> move_suspect;
-        std::vector<double> edges;
-        std::vector<double> prev_edges;
+        std::vector<double> edges;                          // W*H, pre-smearing
+        std::vector<double> prev_edges;                     // W*H, for prev_frame
         std::vector<uint8_t> logic_edges;
         std::vector<uint8_t> prev_logic_edges;
-        std::vector<double> edges_IDT;
-        std::vector<double> edges_IDTx;
-        std::vector<double> edges_IDTy;
+        std::vector<double> edges_IDT;                      // W*H, smeared, for cost
+        std::vector<double> edges_IDTx;                     // W*H, smeared, dedge/dx, for gradients
+        std::vector<double> edges_IDTy;                     // W*H, smeared, dedge/dy, for gradients
         std::vector<unsigned char> section_map;
         bool is_edge_distributed;
         std::vector<double>sum_weights_per_section;

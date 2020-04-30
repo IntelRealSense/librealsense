@@ -327,6 +327,7 @@ camera_info read_camera_info(char const * dir)
 {
     struct params_bin
     {
+        // Some units are supposed to be int but we made matlab write out doubles....
         double depth_width;
         double depth_height;
         double depth_units;
@@ -346,25 +347,25 @@ camera_info read_camera_info(char const * dir)
     {
         // RGB
         {
-            param.rgb_width, param.rgb_height,
-            param.k_rgb[2],  param.k_rgb[5],
-            param.k_rgb[0],  param.k_rgb[4],
+            int(param.rgb_width), int(param.rgb_height),
+            float(param.k_rgb[2]),  float(param.k_rgb[5]),
+            float(param.k_rgb[0]),  float(param.k_rgb[4]),
             RS2_DISTORTION_BROWN_CONRADY,
             { (float)param.coeffs[0], (float)param.coeffs[1], (float)param.coeffs[2], (float)param.coeffs[3], (float)param.coeffs[4] }
         },
         // Z
         {
-            param.depth_width, param.depth_height,
-            param.k_depth[2],  param.k_depth[5],
-            param.k_depth[0],  param.k_depth[4],
+            int(param.depth_width), int(param.depth_height),
+            float(param.k_depth[2]),  float(param.k_depth[5]),
+            float(param.k_depth[0]),  float(param.k_depth[4]),
             RS2_DISTORTION_NONE, {0, 0, 0, 0, 0}
         },
         // EXTRINSICS
         {
-            {  param.rotation[0], param.rotation[1], param.rotation[2],
-               param.rotation[3], param.rotation[4], param.rotation[5],
-               param.rotation[6], param.rotation[7], param.rotation[8] },
-            { param.translation[0], param.translation[1],  param.translation[2] }
+            { float(param.rotation[0]), float(param.rotation[1]), float(param.rotation[2]),
+              float(param.rotation[3]), float(param.rotation[4]), float(param.rotation[5]),
+              float(param.rotation[6]), float(param.rotation[7]), float(param.rotation[8]) },
+            { float(param.translation[0]), float(param.translation[1]), float(param.translation[2]) }
         }
     };
     return ci;

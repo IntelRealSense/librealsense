@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <array>
 #include "coeffs.h"
+#include "cost.h"
+#include "uvmap.h"
 #include "debug.h"
 
 using namespace librealsense::algo::depth_to_rgb_calibration;
@@ -493,25 +495,6 @@ static void deproject_pixel_to_point(double point[3], const struct rs2_intrinsic
     point[1] = depth * y;
     point[2] = depth;
 }
-/* Transform 3D coordinates relative to one sensor to 3D coordinates relative to another viewpoint */
-static void transform_point_to_point(double to_point[3], const rs2_extrinsics_double & extr, const double from_point[3])
-{
-    to_point[0] = (double)extr.rotation[0] * from_point[0] + (double)extr.rotation[3] * from_point[1] + (double)extr.rotation[6] * from_point[2] + (double)extr.translation[0];
-    to_point[1] = (double)extr.rotation[1] * from_point[0] + (double)extr.rotation[4] * from_point[1] + (double)extr.rotation[7] * from_point[2] + (double)extr.translation[1];
-    to_point[2] = (double)extr.rotation[2] * from_point[0] + (double)extr.rotation[5] * from_point[1] + (double)extr.rotation[8] * from_point[2] + (double)extr.translation[2];
-}
-
-static void transform_point_to_uv(double pixel[2], const struct p_matrix& pmat, const double point[3])
-{
-    auto p = pmat.vals;
-    double to_point[3];
-    to_point[0] = p[0] * point[0] + p[1] * point[1] + p[2] * point[2] + p[3];
-    to_point[1] = p[4] * point[0] + p[5] * point[1] + p[6] * point[2] + p[7];
-    to_point[2] = p[8] * point[0] + p[9] * point[1] + p[10] * point[2] + p[11];
-
-    pixel[0] = to_point[0] / to_point[2];
-    pixel[1] = to_point[1] / to_point[2];
-}
 
 /* Given a point in 3D space, compute the corresponding pixel coordinates in an image with no distortion or forward distortion coefficients produced by the same camera */
 static void project_point_to_pixel(double pixel[2], const struct rs2_intrinsics_double * intrin, const double point[3])
@@ -525,31 +508,6 @@ static void project_point_to_pixel(double pixel[2], const struct rs2_intrinsics_
 
         double xcd = x * f;
         double ycd = y * f;
-
-        double dx = xcd + 2 * intrin->coeffs[2] * x*y + intrin->coeffs[3] * (r2 + 2 * x*x);
-        double dy = ycd + 2 * intrin->coeffs[3] * x*y + intrin->coeffs[2] * (r2 + 2 * y*y);
-
-        x = dx;
-        y = dy;
-    }
-
-    pixel[0] = x * (double)intrin->fx + (double)intrin->ppx;
-    pixel[1] = y * (double)intrin->fy + (double)intrin->ppy;
-}
-
-/* Given a point in 3D space, compute the corresponding pixel coordinates in an image with no distortion or forward distortion coefficients produced by the same camera */
-static void distort_pixel(double pixel[2], const struct rs2_intrinsics_double * intrin, const double point[2])
-{
-    double x = (point[0] - intrin->ppx) / intrin->fx;
-    double y = (point[1] - intrin->ppy) / intrin->fy;
-
-    if (intrin->model == RS2_DISTORTION_BROWN_CONRADY)
-    {
-        double r2 = x * x + y * y;
-        double r2c = 1 + intrin->coeffs[0] * r2 + intrin->coeffs[1] * r2*r2 + intrin->coeffs[4] * r2*r2*r2;
-
-        double xcd = x * r2c;
-        double ycd = y * r2c;
 
         double dx = xcd + 2 * intrin->coeffs[2] * x*y + intrin->coeffs[3] * (r2 + 2 * x*x);
         double dy = ycd + 2 * intrin->coeffs[3] * x*y + intrin->coeffs[2] * (r2 + 2 * y*y);
@@ -712,152 +670,6 @@ std::vector<double3> optimizer::subedges2vertices(z_frame_data& z_data, const rs
     return res;
 }
 
-std::vector<double> biliniar_interp(std::vector<double> const & vals, size_t width, size_t height, std::vector<double2> const & uv)
-{
-    std::vector<double> res(uv.size());
-
-    for (auto i = 0; i < uv.size(); i++)
-    {
-        auto x = uv[i].x;
-        auto x1 = floor(x);
-        auto x2 = ceil(x);
-        auto y = uv[i].y;
-        auto y1 = floor(y);
-        auto y2 = ceil(y);
-
-        if (x1 < 0 || x1 >= width || x2 < 0 || x2 >= width ||
-            y1 < 0 || y1 >= height || y2 < 0 || y2 >= height)
-        {
-            res[i] = std::numeric_limits<double>::max();
-            continue;
-        }
-
-        // x1 y1    x2 y1
-        // x1 y2    x2 y2
-
-        // top_l    top_r
-        // bot_l    bot_r
-
-        auto top_l = vals[int(y1*width + x1)];
-        auto top_r = vals[int(y1*width + x2)];
-        auto bot_l = vals[int(y2*width + x1)];
-        auto bot_r = vals[int(y2*width + x2)];
-
-        double interp_x_top, interp_x_bot;
-        if (x1 == x2)
-        {
-            interp_x_top = top_l;
-            interp_x_bot = bot_l;
-        }
-        else
-        {
-            interp_x_top = ((double)(x2 - x) / (double)(x2 - x1))*(double)top_l + ((double)(x - x1) / (double)(x2 - x1))*(double)top_r;
-            interp_x_bot = ((double)(x2 - x) / (double)(x2 - x1))*(double)bot_l + ((double)(x - x1) / (double)(x2 - x1))*(double)bot_r;
-        }
-
-        if (y1 == y2)
-        {
-            res[i] = interp_x_bot;
-            continue;
-        }
-
-        auto interp_y_x = ((double)(y2 - y) / (double)(y2 - y1))*(double)interp_x_top + ((double)(y - y1) / (double)(y2 - y1))*(double)interp_x_bot;
-        res[i] = interp_y_x;
-    }
-
-#if 0
-    std::ofstream f;
-    f.open("interp_y_x");
-    f.precision(16);
-    for (auto i = 0; i < res.size(); i++)
-    {
-        f << res[i] << std::endl;
-    }
-    f.close();
-#endif
-    return res;
-}
-
-static
-std::vector< double2 > get_texture_map(
-    std::vector<double3> const & points,
-    calib const & curr_calib
-)
-{
-    auto intrinsics = curr_calib.get_intrinsics();
-    auto extr = curr_calib.get_extrinsics();
-    auto p = curr_calib.get_p_matrix();
-
-    std::vector<double2> uv_map( points.size() );
-
-    for( auto i = 0; i < points.size(); ++i )
-    {
-        double2 uv = {};
-        transform_point_to_uv( &uv.x, p, &points[i].x );
-
-        double2 uvmap = {};
-        distort_pixel( &uvmap.x, &intrinsics, &uv.x );
-        uv_map[i] = uvmap;
-        /* double3 p = {};
-         transform_point_to_point(&p.x, extr, &points[i].x);
-
-         double2 pixel = {};
-         project_point_to_pixel(&pixel.x, &intrinsics, &p.x);
-         uv[i] = pixel;*/
-    }
-
-    return uv_map;
-}
-
-
-template< typename T >
-std::vector< double > calc_cost_per_vertex_fn(
-    z_frame_data const & z_data,
-    yuy2_frame_data const & yuy_data,
-    std::vector< double2 > const & uv,
-    T fn
-)
-{
-    auto d_vals = biliniar_interp( yuy_data.edges_IDT, yuy_data.width, yuy_data.height, uv );
-
-    double cost = 0;
-    std::vector< double > cost_per_vertex;
-    cost_per_vertex.reserve( uv.size() );
-
-    for( size_t i = 0; i < z_data.weights.size(); i++ )
-    {
-        double d_val = d_vals[i];  // may be std::numeric_limits<double>::max()?
-        double weight = z_data.weights[i];
-        double cost = d_val * weight;
-        fn( i, d_val, weight, cost );
-    }
-
-    return d_vals;
-}
-
-
-static double calc_cost(
-    const z_frame_data & z_data,
-    const yuy2_frame_data & yuy_data,
-    const std::vector< double2 > & uv,
-    iteration_data_collect * data = nullptr
-)
-{
-    double cost = 0;
-    size_t N = 0;
-    auto d_vals = calc_cost_per_vertex_fn(z_data, yuy_data, uv,
-        [&](size_t i, double d_val, double weight, double vertex_cost)
-        {
-            if( d_val != std::numeric_limits<double>::max() )
-            {
-                cost += vertex_cost;
-                ++N;
-            }
-        } );
-    if( data )
-        data->d_vals = d_vals;
-    return N ? cost / N : 0.;
-}
 
 static translation calc_translation_gradients( const z_frame_data & z_data, const yuy2_frame_data & yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib& yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy )
 {
@@ -995,8 +807,6 @@ std::pair< std::vector<double2>, std::vector<double>> calc_rc(
 
     for( auto i = 0; i < z_data.vertices.size(); ++i )
     {
-        //rs2_vertex p = {};
-        //rs2_transform_point_to_point(&p.xyz[0], &yuy_extrin, &v[i].xyz[0]);
         double x = v[i].x;
         double y = v[i].y;
         double z = v[i].z;
@@ -1069,7 +879,7 @@ std::pair<double, calib> calc_cost_and_grad(
     if( data )
         data->uvmap = uvmap;
 
-    auto cost = calc_cost(z_data, yuy_data, uvmap, data);
+    auto cost = calc_cost(z_data, yuy_data, uvmap, data ? &data->d_vals : nullptr );
     auto grad = calc_gradients(z_data, yuy_data, uvmap, curr_calib, data);
     return { cost, grad };
 }
@@ -1099,162 +909,6 @@ void params::set_depth_resolution( size_t width, size_t height )
 void params::set_rgb_resolution( size_t width, size_t height )
 {
     AC_LOG( DEBUG, "... RGB resolution= " << width << "x" << height );
-}
-
-// Return the average pixel movement from the calibration
-double optimizer::calc_correction_in_pixels( calib const & from_calibration ) const
-{
-    //%    [uvMap,~,~] = OnlineCalibration.aux.projectVToRGB(frame.vertices,params.rgbPmat,params.Krgb,params.rgbDistort);
-    //% [uvMapNew,~,~] = OnlineCalibration.aux.projectVToRGB(frame.vertices,newParams.rgbPmat,newParams.Krgb,newParams.rgbDistort);
-    auto old_uvmap = get_texture_map( _z.vertices, from_calibration );
-    auto new_uvmap = get_texture_map( _z.vertices, _params_curr.curr_calib );
-    if( old_uvmap.size() != new_uvmap.size() )
-        throw std::runtime_error( to_string() << "did not expect different uvmap sizes (" << old_uvmap.size() << " vs " << new_uvmap.size() << ")" );
-    // uvmap is Nx[x,y]
-
-    //% xyMovement = mean(sqrt(sum((uvMap-uvMapNew).^2,2)));
-    // note: "the mean of a vector containing NaN values is also NaN"
-    // note: .^ = element-wise power
-    // note: "if A is a matrix, then sum(A,2) is a column vector containing the sum of each row"
-    // -> so average of sqrt( dx^2 + dy^2 )
-    
-    size_t const n_pixels = old_uvmap.size();
-    if( !n_pixels )
-        throw std::runtime_error( "no pixels found in uvmap" );
-    double sum = 0;
-    for( auto i = 0; i < n_pixels; i++ )
-    {
-        double2 const & o = old_uvmap[i];
-        double2 const & n = new_uvmap[i];
-        double dx = o.x - n.x, dy = o.y - n.y;
-        double movement = sqrt( dx * dx + dy * dy );
-        sum += movement;
-    }
-    return sum / n_pixels;
-}
-
-// Movement of pixels should clipped by a certain number of pixels
-// This function actually changes the calibration if it exceeds this number of pixels!
-void optimizer::clip_pixel_movement( size_t iteration_number )
-{
-    double xy_movement = calc_correction_in_pixels();
-
-    // Clip any (average) movement of pixels if it's too big
-    AC_LOG( DEBUG, "... average pixel movement= " << xy_movement );
-
-    size_t n_max_movements = sizeof( _params.max_xy_movement_per_calibration ) / sizeof( _params.max_xy_movement_per_calibration[0] );
-    double const max_movement = _params.max_xy_movement_per_calibration[std::min( n_max_movements - 1, iteration_number )];
-
-    if( xy_movement > max_movement )
-    {
-        AC_LOG( WARNING, "Pixel movement too big: clipping at limit for iteration (" << iteration_number << ")= " << max_movement );
-
-        //% mulFactor = maxMovementInThisIteration/xyMovement;
-        double const mul_factor = max_movement / xy_movement;
-
-        //% if ~strcmp( params.derivVar, 'P' )
-        // -> assuming params.derivVar == 'KrgbRT'!!
-        //%     optParams = { 'xAlpha'; 'yBeta'; 'zGamma'; 'Trgb'; 'Kdepth'; 'Krgb' };
-        // -> note we don't do Kdepth at this time!
-        //%     for fn = 1:numel( optParams )
-        //%         diff = newParams.(optParams{ fn }) - params.(optParams{ fn });
-        //%         newParams.(optParams{ fn }) = params.(optParams{ fn }) + diff * mulFactor;
-        //%     end
-        calib const & old_calib = _original_calibration;
-        calib & new_calib = _params_curr.curr_calib;
-        new_calib = old_calib + (new_calib - old_calib) * mul_factor;
-
-        //%     newParams.Rrgb = OnlineCalibration.aux.calcRmatRromAngs( newParams.xAlpha, newParams.yBeta, newParams.zGamma );
-        new_calib.rot = extract_rotation_from_angles( new_calib.rot_angles );
-        new_calib.calc_p_mat();
-        //%     newParams.rgbPmat = newParams.Krgb*[newParams.Rrgb, newParams.Trgb];
-        // -> we don't use rgbPmat
-    }
-}
-
-std::vector< double > optimizer::cost_per_section( calib const & calibration )
-{
-    // We require here that the section_map is initialized and ready
-    if( _z.section_map.size() != _z.weights.size() )
-        throw std::runtime_error( "section_map has not been initialized" );
-
-    auto uvmap = get_texture_map( _z.vertices, calibration );
-
-    size_t const n_sections_x = _params.num_of_sections_for_edge_distribution_x;
-    size_t const n_sections_y = _params.num_of_sections_for_edge_distribution_y;
-    size_t const n_sections = n_sections_x * n_sections_y;
-
-    std::vector< double > cost_per_section(n_sections, 0.);
-    std::vector< size_t > N_per_section(n_sections, 0);
-    calc_cost_per_vertex_fn(_z, _yuy, uvmap,
-        [&](size_t i, double d_val, double weight, double vertex_cost)
-    {
-        if (d_val != std::numeric_limits<double>::max())
-        {
-            byte section = _z.section_map[i];
-            cost_per_section[section] += vertex_cost;
-            ++N_per_section[section];
-        }
-    }
-    );
-    for( size_t x = 0; x < n_sections; ++x )
-    {
-        double & cost = cost_per_section[x];
-        size_t N = N_per_section[x];
-        if( N )
-            cost /= N;
-    }
-    return cost_per_section;
-}
-
-bool optimizer::is_valid_results()
-{
-    // Clip any (average) movement of pixels if it's too big
-    clip_pixel_movement();
-
-    // Based on (possibly new, clipped) calibration values, see if we've strayed too
-    // far away from the camera's original factory calibration -- which we may not have
-    if( _factory_calibration.width  &&  _factory_calibration.height )
-    {
-        double xy_movement = calc_correction_in_pixels();
-        AC_LOG( DEBUG, "... average pixel movement from factory calibration= " << xy_movement );
-        if( xy_movement > _params.max_xy_movement_from_origin )
-        {
-            AC_LOG( ERROR, "Calibration has moved too far from the original factory calibration (" << xy_movement << " pixels)" );
-            return false;
-        }
-    }
-    else
-    {
-        AC_LOG( DEBUG, "... no factory calibration available; skipping distance check" );
-    }
-
-    //%% Check and see that the score didn't increased by a lot in one image section and decreased in the others
-    //% [c1, costVecOld] = OnlineCalibration.aux.calculateCost( frame.vertices, frame.weights, frame.rgbIDT, params );
-    //% [c2, costVecNew] = OnlineCalibration.aux.calculateCost( frame.vertices, frame.weights, frame.rgbIDT, newParams );
-    //% scoreDiffPerVertex = costVecNew - costVecOld;
-    //% for i = 0:(params.numSectionsH*params.numSectionsV) - 1
-    //%     scoreDiffPersection( i + 1 ) = nanmean( scoreDiffPerVertex( frame.sectionMapDepth == i ) );
-    //% end
-    auto cost_per_section_old = cost_per_section( _original_calibration );
-    auto cost_per_section_new = cost_per_section( _params_curr.curr_calib );
-    _z.cost_diff_per_section = cost_per_section_new;
-    for( size_t x = 0; x < cost_per_section_old.size(); ++x )
-        _z.cost_diff_per_section[x] -= cost_per_section_old[x];
-    //% validOutputStruct.minImprovementPerSection = min( scoreDiffPersection );
-    //% validOutputStruct.maxImprovementPerSection = max( scoreDiffPersection );
-    double min_cost_diff = *std::min_element( _z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end() );
-    double max_cost_diff = *std::max_element( _z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end() );
-    AC_LOG( DEBUG, "... min cost diff= " << min_cost_diff << "  max= " << max_cost_diff );
-    if( min_cost_diff < 0. )
-    {
-        AC_LOG( ERROR, "Some image sections were hurt by the optimization; invalidating calibration!" );
-        for( size_t x = 0; x < cost_per_section_old.size(); ++x )
-            AC_LOG( DEBUG, "... cost diff in section " << x << "= " << _z.cost_diff_per_section[x] );
-        return false;
-    }
-
-    return true;
 }
 
 calib const & optimizer::get_calibration() const

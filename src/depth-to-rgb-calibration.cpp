@@ -73,7 +73,7 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     _algo.set_z_data(
         std::vector< impl::z_t >( z_data, z_data + depth.get_data_size() / sizeof( impl::z_t ) ),
         z_profile.get_intrinsics(),
-        depth.as< rs2::depth_frame >().get_units() * 1000.   // same scaling as for extrinsics!
+        depth.as< rs2::depth_frame >().get_units() * 1000.f   // same scaling as for extrinsics!
     );
 
     // TODO REMOVE
@@ -114,7 +114,7 @@ rs2_calibration_status depth_to_rgb_calibration::optimize()
         //AC_LOG( INFO, "Calibration finished; original cost= " << original_cost << "  optimized cost= " << params_curr.cost );
 
         _intr = _algo.get_calibration().get_intrinsics();
-        _extr = fix_extrinsics( _algo.get_calibration().get_extrinsics(), 0.001 );
+        _extr = fix_extrinsics( _algo.get_calibration().get_extrinsics(), 0.001f );
         debug_calibration( "new" );
 
         return RS2_CALIBRATION_SUCCESSFUL;
