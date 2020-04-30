@@ -99,7 +99,6 @@ namespace rs2
     };
 
 
-
     class sensor : public options
     {
     public:
@@ -212,7 +211,6 @@ namespace rs2
                 new notifications_callback<T>(std::move(callback)), &e);
             error::handle(e);
         }
-
 
         /**
         * Retrieves the list of stream profiles supported by the sensor.
@@ -663,6 +661,39 @@ namespace rs2
 
         operator bool() const { return _sensor.get() != nullptr; }
         explicit wheel_odometer(std::shared_ptr<rs2_sensor> dev) : wheel_odometer(sensor(dev)) {}
+    };
+
+    class override_trinsics_sensor : public sensor
+    {
+    public:
+        override_trinsics_sensor( sensor s )
+            : sensor( s.get() )
+        {
+            rs2_error* e = nullptr;
+            if( rs2_is_sensor_extendable_to( _sensor.get(), RS2_EXTENSION_OVERRIDE_TRINSICS_SENSOR, &e ) == 0 && !e )
+            {
+                _sensor.reset();
+            }
+            error::handle( e );
+        }
+
+        operator bool() const { return _sensor.get() != nullptr; }
+
+        /** Override the intrinsics at the sensor level, as DEPTH_TO_RGB calibration does */
+        void override_intrinsics( rs2_intrinsics const& intr )
+        {
+            rs2_error* e = nullptr;
+            rs2_override_intrinsics( _sensor.get(), &intr, &e );
+            error::handle( e );
+        }
+
+        /** Override the intrinsics at the sensor level, as DEPTH_TO_RGB calibration does */
+        void override_extrinsics( rs2_extrinsics const& extr )
+        {
+            rs2_error* e = nullptr;
+            rs2_override_extrinsics( _sensor.get(), &extr, &e );
+            error::handle( e );
+        }
     };
 }
 #endif // LIBREALSENSE_RS2_SENSOR_HPP

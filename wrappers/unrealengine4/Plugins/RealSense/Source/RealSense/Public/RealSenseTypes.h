@@ -125,6 +125,7 @@ enum class ERealSenseOptionType : uint8
     AMBIENT_LIGHT                              , /**< Change the depth ambient light see rs2_ambient_light for values */
     SENSOR_MODE                                , /**< The resolution mode: see rs2_sensor_mode for values */
     EMITTER_ALWAYS_ON                          , /**< Enable Laser On constantly (GS SKU Only) */
+	AUTO_CALIBRATION_ENABLED                   , /**< Enable depth & color frame sync with periodic calibration for proper alignment */
 };
 
 UENUM(Blueprintable)

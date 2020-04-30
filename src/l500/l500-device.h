@@ -20,7 +20,11 @@
 namespace librealsense
 {
 
-    class l500_device : public virtual device, public debug_interface, public global_time_interface, public updatable
+    class l500_device
+        : public virtual device
+        , public debug_interface
+        , public global_time_interface
+        , public updatable
     {
     public:
         l500_device(std::shared_ptr<context> ctx,
@@ -28,6 +32,8 @@ namespace librealsense
 
         std::shared_ptr<synthetic_sensor> create_depth_device(std::shared_ptr<context> ctx,
             const std::vector<platform::uvc_device_info>& all_device_infos);
+
+        virtual void configure_depth_options();
 
         synthetic_sensor& get_depth_sensor() { return dynamic_cast<synthetic_sensor&>(get_sensor(_depth_device_idx)); }
 
@@ -75,6 +81,8 @@ namespace librealsense
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _ir_stream;
         std::shared_ptr<stream_interface> _confidence_stream;
+        
+        std::shared_ptr< ivcam2::auto_calibration > _autocal;
 
         void force_hardware_reset() const;
         bool _is_locked = true;

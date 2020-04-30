@@ -180,6 +180,9 @@ typedef enum rs2_extension
     RS2_EXTENSION_FISHEYE_SENSOR,
     RS2_EXTENSION_DEPTH_HUFFMAN_DECODER,
     RS2_EXTENSION_SERIALIZABLE,
+    RS2_EXTENSION_AUTO_CALIBRATION_FILTER,
+    RS2_EXTENSION_DEVICE_CALIBRATION,
+    RS2_EXTENSION_OVERRIDE_TRINSICS_SENSOR,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);
@@ -244,7 +247,7 @@ typedef struct rs2_options_list rs2_options_list;
 typedef struct rs2_devices_changed_callback rs2_devices_changed_callback;
 typedef struct rs2_notification rs2_notification;
 typedef struct rs2_notifications_callback rs2_notifications_callback;
-typedef void (*rs2_log_callback_ptr)(rs2_log_severity, rs2_log_message const *, void * arg);
+typedef void (*rs2_log_callback_ptr)(rs2_log_severity, rs2_log_message const*, void* arg);
 typedef void (*rs2_notification_callback_ptr)(rs2_notification*, void*);
 typedef void(*rs2_software_device_destruction_callback_ptr)(void*);
 typedef void (*rs2_devices_changed_callback_ptr)(rs2_device_list*, rs2_device_list*, void*);

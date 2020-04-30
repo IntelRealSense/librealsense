@@ -252,6 +252,8 @@ namespace librealsense
         bool is_true() { return (_value > _opt_range.min); }
         // TODO: expose this outwards
         const char* get_description() const override { return "A simple custom option for a processing block"; }
+
+        using ptr = std::shared_ptr< bool_option >;
     };
 
     class uvc_pu_option : public option

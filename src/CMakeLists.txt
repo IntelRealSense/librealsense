@@ -1,6 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 string(REPLACE ${PROJECT_SOURCE_DIR}/ "" _rel_path ${CMAKE_CURRENT_LIST_DIR})
+include(${_rel_path}/algo/CMakeLists.txt)
 include(${_rel_path}/core/CMakeLists.txt)
 include(${_rel_path}/ds5/CMakeLists.txt)
 include(${_rel_path}/ivcam/CMakeLists.txt)
@@ -92,6 +93,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/types.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/verify.c"
         "${CMAKE_CURRENT_LIST_DIR}/frame-validator.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/depth-to-rgb-calibration.cpp"
 
         "${CMAKE_CURRENT_LIST_DIR}/algo.h"
         "${CMAKE_CURRENT_LIST_DIR}/api.h"
@@ -121,5 +123,8 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/command_transfer.h"
         "${CMAKE_CURRENT_LIST_DIR}/frame-validator.h"
         "${CMAKE_CURRENT_LIST_DIR}/auto-calibrated-device.h"
+        "${CMAKE_CURRENT_LIST_DIR}/device-calibration.h"
+        "${CMAKE_CURRENT_LIST_DIR}/override-trinsics-sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/serializable-interface.h"
+        "${CMAKE_CURRENT_LIST_DIR}/depth-to-rgb-calibration.h"
 )

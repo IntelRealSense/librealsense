@@ -502,9 +502,9 @@ namespace librealsense
     // Enumerated type support //
     /////////////////////////////
 
-#define RS2_ENUM_HELPERS(TYPE, PREFIX) RS2_ENUM_HELPERS_CUSTOMIZED(TYPE, PREFIX, 0, RS2_##PREFIX##_COUNT)
+#define RS2_ENUM_HELPERS(TYPE, PREFIX) RS2_ENUM_HELPERS_CUSTOMIZED(TYPE, 0, RS2_##PREFIX##_COUNT)
 
-#define RS2_ENUM_HELPERS_CUSTOMIZED(TYPE, PREFIX, START, END) LRS_EXTENSION_API const char* get_string(TYPE value); \
+#define RS2_ENUM_HELPERS_CUSTOMIZED(TYPE, START, END) LRS_EXTENSION_API const char* get_string(TYPE value); \
         inline bool is_valid(TYPE value) { return value >= START && value <END; } \
         inline std::ostream & operator << (std::ostream & out, TYPE value) { if(is_valid(value)) return out << get_string(value); else return out << (int)value; } \
         inline bool try_parse(const std::string& str, TYPE& res)       \
@@ -532,7 +532,10 @@ namespace librealsense
     RS2_ENUM_HELPERS(rs2_matchers, MATCHER)
     RS2_ENUM_HELPERS(rs2_sensor_mode, SENSOR_MODE)
     RS2_ENUM_HELPERS(rs2_l500_visual_preset, L500_VISUAL_PRESET)
-    RS2_ENUM_HELPERS_CUSTOMIZED(rs2_ambient_light, AMBIENT_LIGHT, RS2_AMBIENT_LIGHT_NO_AMBIENT, RS2_AMBIENT_LIGHT_LOW_AMBIENT)
+    RS2_ENUM_HELPERS(rs2_calibration_type, CALIBRATION_TYPE)
+    RS2_ENUM_HELPERS_CUSTOMIZED(rs2_calibration_status, RS2_CALIBRATION_STATUS_FIRST, RS2_CALIBRATION_STATUS_LAST )
+    RS2_ENUM_HELPERS_CUSTOMIZED(rs2_ambient_light, RS2_AMBIENT_LIGHT_NO_AMBIENT, RS2_AMBIENT_LIGHT_LOW_AMBIENT)
+
 
     ////////////////////////////////////////////
     // World's tiniest linear algebra library //
@@ -651,6 +654,8 @@ namespace librealsense
         int index;
         uint32_t width, height, fps;
         resolution_func stream_resolution; // Calculates the relevant resolution from the given backend resolution.
+
+        std::pair< uint32_t, uint32_t > width_height() const { return std::make_pair( width, height ); }
     };
 
 
@@ -1045,6 +1050,7 @@ namespace librealsense
     typedef std::shared_ptr<rs2_frame_callback> frame_callback_ptr;
     typedef std::shared_ptr<rs2_frame_processor_callback> frame_processor_callback_ptr;
     typedef std::shared_ptr<rs2_notifications_callback> notifications_callback_ptr;
+    typedef std::shared_ptr<rs2_calibration_change_callback> calibration_change_callback_ptr;
     typedef std::shared_ptr<rs2_software_device_destruction_callback> software_device_destruction_callback_ptr;
     typedef std::shared_ptr<rs2_devices_changed_callback> devices_changed_callback_ptr;
     typedef std::shared_ptr<rs2_update_progress_callback> update_progress_callback_ptr;
@@ -1756,6 +1762,15 @@ namespace librealsense
         T _value;
     };
 
+}
+
+inline std::ostream& operator<<( std::ostream& out, rs2_extrinsics const & e )
+{
+    return out
+        << "[ r["
+        << e.rotation[0] << "," << e.rotation[1] << "," << e.rotation[2] << "," << e.rotation[3] << "," << e.rotation[4] << ","
+        << e.rotation[5] << "," << e.rotation[6] << "," << e.rotation[7] << "," << e.rotation[8]
+        << "]  t[" << e.translation[0] << "," << e.translation[1] << "," << e.translation[2] << "] ]";
 }
 
 template<typename T>

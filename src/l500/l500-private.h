@@ -6,16 +6,23 @@
 #include "backend.h"
 #include "types.h"
 #include "option.h"
+#include "core/extension.h"
 #include "fw-update/fw-update-unsigned.h"
 
 static const int NUM_OF_RGB_RESOLUTIONS = 5;
 static const int NUM_OF_DEPTH_RESOLUTIONS = 2;
 
+#define AC_LOG_PREFIX "AC1: "
+#define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
+//#define AC_LOG(TYPE,MSG) LOG_ERROR( AC_LOG_PREFIX << MSG )
+//#define AC_LOG(TYPE,MSG) std::cout << "-D- " << MSG << std::endl
+
 namespace librealsense
 {
     const uint16_t L500_RECOVERY_PID    = 0x0b55;
     const uint16_t L500_PID             = 0x0b0d;
-    const uint16_t L515_PID             = 0x0b3d;
+    const uint16_t L515_PID_PRE_PRQ     = 0x0b3d;
+    const uint16_t L515_PID             = 0x0b64;
 
     namespace ivcam2
     {
@@ -59,6 +66,7 @@ namespace librealsense
             RGB_INTRINSIC_GET           = 0x81,
             RGB_EXTRINSIC_GET           = 0x82,
             FALL_DETECT_ENABLE          = 0x9D, // Enable (by default) free-fall sensor shutoff (0=disable; 1=enable)
+            GET_SPECIAL_FRAME           = 0xA0  // Request auto-calibration (0) special frames (#)
         };
 
         enum gvd_fields
@@ -78,6 +86,7 @@ namespace librealsense
         static const std::map<std::uint16_t, std::string> rs500_sku_names = {
             { L500_RECOVERY_PID,    "Intel RealSense L5xx Recovery"},
             { L500_PID,             "Intel RealSense L500"},
+            { L515_PID_PRE_PRQ,     "Intel RealSense L515 (pre-PRQ)"},
             { L515_PID,             "Intel RealSense L515"},
         };
 
@@ -205,7 +214,7 @@ namespace librealsense
         };
 #pragma pack(pop)
 
-        pose get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
+        rs2_extrinsics get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
 
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
                                          const platform::uvc_device_info& info, platform::usb_device_info& result);
@@ -364,6 +373,113 @@ namespace librealsense
             std::function<void( const option& )> _record_action = []( const option& ) {};
             hw_monitor& _hwm;
             std::shared_ptr< freefall_option > _freefall_opt;
+        };
+
+        /*
+        */
+        class auto_calibration
+        {
+            rs2::frameset _sf;
+            rs2::frame _cf, _pcf;  // Keep the last and previous frame!
+
+            hw_monitor & _hwm;
+
+            std::atomic_bool _is_processing;
+            std::thread _worker;
+            unsigned _n_retries;
+
+            rs2_extrinsics _extr;
+            rs2_intrinsics _intr;
+            stream_profile_interface* _from_profile;
+            stream_profile_interface* _to_profile;
+
+            class retrier;
+            std::shared_ptr< retrier > _retrier;
+
+        public:
+            /* For RS2_OPTION_AUTO_CALIBRATION_ENABLED */
+            class enabler_option : public bool_option
+            {
+                std::shared_ptr< auto_calibration > _autocal;
+
+            public:
+                enabler_option( std::shared_ptr< auto_calibration > const & autocal );
+
+                virtual void set( float value ) override;
+                virtual const char* get_description() const override
+                {
+                    return "Enable to ask FW for a special frame for auto calibration";
+                }
+                virtual void enable_recording( std::function<void( const option& )> record_action ) override { _record_action = record_action; }
+
+            private:
+                std::function<void( const option& )> _record_action = []( const option& ) {};
+            };
+
+        public:
+            auto_calibration( hw_monitor & hwm );
+            ~auto_calibration();
+
+            void trigger_special_frame( bool is_retry = false );
+            bool is_processing() const { return _is_processing; }
+
+            rs2_extrinsics const & get_extrinsics() const { return _extr; }
+            rs2_intrinsics const & get_intrinsics() const { return _intr; }
+            stream_profile_interface * get_from_profile() const { return _from_profile; }
+            stream_profile_interface * get_to_profile() const { return _to_profile; }
+
+            void set_special_frame( rs2::frameset const& );
+            void set_color_frame( rs2::frame const& );
+
+            using callback = std::function< void( rs2_calibration_status ) >;
+            void register_callback( callback cb )
+            {
+                _callbacks.push_back( cb );
+            }
+        private:
+            std::vector< callback > _callbacks;
+
+            void call_back( rs2_calibration_status status ) const
+            {
+                for( auto && cb : _callbacks )
+                    cb( status );
+            }
+
+            bool check_color_depth_sync();
+            void start();
+            void reset();
+        };
+
+        /* Depth frame processing for Auto Calibration: detect special frames
+        */
+        class autocal_depth_processing_block : public generic_processing_block
+        {
+            std::shared_ptr< auto_calibration > _autocal;
+
+        public:
+            autocal_depth_processing_block( std::shared_ptr< auto_calibration > autocal );
+
+            rs2::frame process_frame( const rs2::frame_source& source, const rs2::frame& f ) override;
+
+        private:
+            bool should_process( const rs2::frame& frame ) override;
+            rs2::frame prepare_output( const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results ) override;
+        };
+
+        /* Depth frame processing for Auto Calibration: detect special frames
+        */
+        class autocal_color_processing_block : public generic_processing_block
+        {
+            std::shared_ptr< auto_calibration > _autocal;
+
+        public:
+            autocal_color_processing_block( std::shared_ptr< auto_calibration > autocal );
+
+            rs2::frame process_frame( const rs2::frame_source& source, const rs2::frame& f ) override;
+
+        private:
+            bool should_process( const rs2::frame& frame ) override;
+            //rs2::frame prepare_output( const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results ) override;
         };
 
 

@@ -151,7 +151,37 @@ namespace librealsense
         }
 #undef CASE
     }
-    
+
+    const char* get_string( rs2_calibration_type type )
+    {
+#define CASE(X) STRCASE(CALIBRATION, X)
+        switch( type )
+        {
+            CASE( DEPTH_TO_RGB )
+        default: assert( !is_valid( type ) ); return UNKNOWN_VALUE;
+        }
+#undef CASE
+    }
+
+    const char* get_string( rs2_calibration_status value )
+    {
+#define CASE(X) STRCASE(CALIBRATION, X)
+        switch( value )
+        {
+            CASE( SPECIAL_FRAME )
+            CASE( STARTED )
+            CASE( NOT_NEEDED )
+            CASE( SUCCESSFUL )
+            
+            CASE( FAILED )
+            CASE( SCENE_INVALID )
+            CASE( BAD_RESULT )
+            CASE( RETRY )
+        default: assert( !is_valid( value ) ); return UNKNOWN_VALUE;
+        }
+#undef CASE
+    }
+
     const char* get_string(rs2_ambient_light value)
     {
 #define CASE(X) STRCASE(AMBIENT_LIGHT, X)
@@ -216,6 +246,8 @@ namespace librealsense
             CASE(FISHEYE_SENSOR)
             CASE(DEPTH_HUFFMAN_DECODER)
             CASE(SERIALIZABLE)
+            CASE(DEVICE_CALIBRATION)
+            CASE(OVERRIDE_TRINSICS_SENSOR)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -328,6 +360,7 @@ namespace librealsense
             CASE(AMBIENT_LIGHT)
             CASE(SENSOR_MODE)
             CASE(EMITTER_ALWAYS_ON)
+            CASE(AUTO_CALIBRATION_ENABLED)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

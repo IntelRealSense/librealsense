@@ -39,8 +39,28 @@ namespace librealsense
         color_ep->register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, color_devices_info.front().device_path);
 
         // processing blocks
-        color_ep->register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
-        
+        if( _autocal )
+        {
+            color_ep->register_processing_block(
+                processing_block_factory::create_pbf_vector< yuy2_converter >(
+                    RS2_FORMAT_YUYV,                                                      // from
+                    map_supported_color_formats( RS2_FORMAT_YUYV ), RS2_STREAM_COLOR,     // to
+                    [=]( std::shared_ptr< generic_processing_block > pb )
+                    {
+                        auto cpb = std::make_shared< composite_processing_block >();
+                        cpb->add(std::make_shared< autocal_color_processing_block >(_autocal));
+                        cpb->add( pb );
+                        return cpb;
+                    } ) );
+        }
+        else
+        {
+            color_ep->register_processing_block(
+                processing_block_factory::create_pbf_vector< yuy2_converter >(
+                    RS2_FORMAT_YUYV,                                                      // from
+                    map_supported_color_formats( RS2_FORMAT_YUYV ), RS2_STREAM_COLOR ) ); // to
+        }
+
         // options
         color_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
         color_ep->get_option(RS2_OPTION_GLOBAL_TIME_ENABLED).set(0);
@@ -132,13 +152,161 @@ namespace librealsense
         _color_intrinsics_table_raw = [this]() { return get_raw_intrinsics_table(); };
         _color_extrinsics_table_raw = [this]() { return get_raw_extrinsics_table(); };
 
-        _color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>([this]() { return from_pose(get_color_stream_extrinsic(*_color_extrinsics_table_raw)); });
-        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
-        register_stream_to_extrinsic_group(*_color_stream, 0);
+        // This lazy instance will get shared between all the extrinsics edges. If you ever need to override
+        // it, be careful not to overwrite the shared-ptr itself (register_extrinsics) or the sharing
+        // will get ruined. Instead, overwriting the lazy<> function should do it:
+        //      *_color_extrinsic = [=]() { return extr; };
+        _color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>(
+            [this]()
+            {
+                return get_color_stream_extrinsic(*_color_extrinsics_table_raw);
+            } );
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_color_stream, _color_extrinsic);
+        register_stream_to_extrinsic_group(*_depth_stream, 0);
 
 
         _color_device_idx = add_sensor(create_color_device(ctx, color_devs_info));
+
+        if( _autocal )
+        {
+            // Have the auto-calibration mechanism notify us when calibration has finished
+            _autocal->register_callback(
+                [&]( rs2_calibration_status status )
+                {
+                    if( status == RS2_CALIBRATION_SUCCESSFUL )
+                    {
+                        AC_LOG( DEBUG, "------> updating intrinsics..." );
+                        auto && intr = _autocal->get_intrinsics();
+                        auto profile = to_profile( _autocal->get_to_profile() );
+                        update_intrinsics( profile, intr );
+                        AC_LOG( DEBUG, "------> updating extrinsics..." );
+                        environment::get_instance().get_extrinsics_graph().override_extrinsics( *_depth_stream, *_color_stream, _autocal->get_extrinsics() );
+
+                        AC_LOG( DEBUG, "done" );
+                    }
+                    for( auto&& cb : _calibration_change_callbacks )
+                        cb->on_calibration_change( status );
+            } );
+        }
     }
+
+    void l500_color::trigger_device_calibration( rs2_calibration_type type )
+    {
+        if( type != RS2_CALIBRATION_DEPTH_TO_RGB )
+            throw std::runtime_error( to_string() << "unsupported calibration type (" << type << ")" );
+        if( _autocal )
+            _autocal->trigger_special_frame();
+    }
+
+
+    rs2_intrinsics l500_color_sensor::get_intrinsics( const stream_profile& profile ) const
+    {
+        using namespace ivcam2;
+
+        auto intrinsic = check_calib<intrinsic_rgb>( *_owner->_color_intrinsics_table_raw );
+
+        auto num_of_res = intrinsic->resolution.num_of_resolutions;
+
+        for( auto i = 0; i < num_of_res; i++ )
+        {
+            auto model = intrinsic->resolution.intrinsic_resolution[i];
+            if( model.height == profile.height && model.width == profile.width )
+            {
+                 AC_LOG( DEBUG, "getting intrinsics from profile " << i << " res " << model.width << 'x' << model.height );
+
+                rs2_intrinsics intrinsics;
+                intrinsics.width = model.width;
+                intrinsics.height = model.height;
+                intrinsics.fx = model.ipm.focal_length.x;
+                intrinsics.fy = model.ipm.focal_length.y;
+                intrinsics.ppx = model.ipm.principal_point.x;
+                intrinsics.ppy = model.ipm.principal_point.y;
+
+                if( model.distort.radial_k1 || model.distort.radial_k2 || model.distort.tangential_p1 || model.distort.tangential_p2 || model.distort.radial_k3 )
+                {
+                    intrinsics.coeffs[0] = model.distort.radial_k1;
+                    intrinsics.coeffs[1] = model.distort.radial_k2;
+                    intrinsics.coeffs[2] = model.distort.tangential_p1;
+                    intrinsics.coeffs[3] = model.distort.tangential_p2;
+                    intrinsics.coeffs[4] = model.distort.radial_k3;
+
+                    intrinsics.model = RS2_DISTORTION_INVERSE_BROWN_CONRADY;
+                }
+
+                return intrinsics;
+            }
+        }
+        throw std::runtime_error( to_string() << "intrinsics for resolution " << profile.width << "," << profile.height << " don't exist" );
+    }
+
+
+
+    void l500_color::update_intrinsics( stream_profile const& profile, rs2_intrinsics const& intr )
+    {
+        if( intr.width != profile.width  ||  intr.height != profile.height )
+            throw std::runtime_error( to_string() << "new calibration intrinsics do not match profile! (" << intr.width << 'x' << intr.height << "; expected " << profile.width << 'x' << profile.height << ")" );
+
+        using namespace ivcam2;
+
+        auto & intrinsic = *const_cast<intrinsic_rgb *>( check_calib< intrinsic_rgb >( *_color_intrinsics_table_raw ));
+        auto num_of_res = intrinsic.resolution.num_of_resolutions;
+        bool found = false;
+        for( auto i = 0; i < num_of_res; i++ )
+        {
+            auto & model = intrinsic.resolution.intrinsic_resolution[i];
+            if( model.height != profile.height || model.width != profile.width )
+                continue;
+
+            AC_LOG( DEBUG, "new intr (" << i << ")"
+                << ": width: " << intr.width
+                << ", height: " << intr.height
+                << ", ppx: " << intr.ppx
+                << ", ppy: " << intr.ppy
+                << ", fx: " << intr.fx
+                << ", fy: " << intr.fy
+                << ", model: " << intr.model
+                << ", coeffs: ["
+                << intr.coeffs[0] << ", " << intr.coeffs[1] << ", " << intr.coeffs[2] << ", " << intr.coeffs[3] << ", " << intr.coeffs[4]
+                << "]" );
+
+            model.ipm.focal_length.x = intr.fx;
+            model.ipm.focal_length.y = intr.fy;
+            model.ipm.principal_point.x = intr.ppx;
+            model.ipm.principal_point.y = intr.ppy;
+
+            bool const is_inverse = (intr.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY);
+
+            model.distort.radial_k1     = is_inverse ? intr.coeffs[0] : 0;
+            model.distort.radial_k2     = is_inverse ? intr.coeffs[1] : 0;
+            model.distort.tangential_p1 = is_inverse ? intr.coeffs[2] : 0;
+            model.distort.tangential_p2 = is_inverse ? intr.coeffs[3] : 0;
+            model.distort.radial_k3     = is_inverse ? intr.coeffs[4] : 0;
+            found = true;
+        }
+        if( ! found )
+            throw std::runtime_error( to_string() << "intrinsics for resolution " << profile.width << "," << profile.height << " don't exist" );
+    }
+
+
+    void l500_color_sensor::override_intrinsics( rs2_intrinsics const& intr )
+    {
+        auto&& active_streams = get_active_streams();
+        if( active_streams.size() != 1 )
+            throw std::runtime_error( to_string() << "expected 1 active stream; found " << active_streams.size() );
+        std::shared_ptr< stream_profile_interface > spi = active_streams.front();
+        auto vspi = dynamic_cast<video_stream_profile_interface*>(spi.get());
+        if( !vspi )
+            throw std::runtime_error( "could not get video stream profile" );
+        _owner->update_intrinsics(
+            { vspi->get_format(), vspi->get_stream_type(), vspi->get_stream_index(), vspi->get_width(), vspi->get_height(), 0 },
+            intr );
+    }
+
+    void l500_color_sensor::override_extrinsics( rs2_extrinsics const& extr )
+    {
+        environment::get_instance().get_extrinsics_graph().override_extrinsics( *_owner->_depth_stream, *_owner->_color_stream, extr );
+    }
+
 
     std::vector<tagged_profile> l500_color::get_profiles_tags() const
     {

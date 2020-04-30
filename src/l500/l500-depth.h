@@ -171,13 +171,14 @@ namespace librealsense
 
             auto intrinsic_params = get_intrinsic_params(profile.width, profile.height, get_intrinsic());
 
-            rs2_intrinsics intrinsics;
+            rs2_intrinsics intrinsics = { 0 };
             intrinsics.width = intrinsic_params.pinhole_cam_model.width;
             intrinsics.height = intrinsic_params.pinhole_cam_model.height;
             intrinsics.fx = intrinsic_params.pinhole_cam_model.ipm.focal_length.x;
             intrinsics.fy = intrinsic_params.pinhole_cam_model.ipm.focal_length.y;
             intrinsics.ppx = intrinsic_params.pinhole_cam_model.ipm.principal_point.x;
             intrinsics.ppy = intrinsic_params.pinhole_cam_model.ipm.principal_point.y;
+            intrinsics.model = RS2_DISTORTION_NONE;
             return intrinsics;
         }
 

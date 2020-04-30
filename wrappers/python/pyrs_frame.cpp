@@ -130,8 +130,26 @@ void init_frame(py::module &m) {
         .def(BIND_DOWNCAST(frame, video_frame))
         .def(BIND_DOWNCAST(frame, depth_frame))
         .def(BIND_DOWNCAST(frame, motion_frame))
-        .def(BIND_DOWNCAST(frame, pose_frame));
+        .def(BIND_DOWNCAST(frame, pose_frame))
         // No apply_filter?
+        .def( "__repr__", []( const rs2::frame &self )
+        {
+            std::stringstream ss;
+            ss << "<" << SNAME << ".frame";
+            if( auto fs = self.as< rs2::frameset >() )
+            {
+                ss << "set";
+                for( auto sf : fs )
+                    ss << " " << rs2_format_to_string( sf.get_profile().format() );
+            }
+            else
+            {
+                ss << " " << rs2_format_to_string( self.get_profile().format() );
+            }
+            ss << " #" << self.get_frame_number();
+            ss << ">";
+            return ss.str();
+        });
 
     py::class_<rs2::video_frame, rs2::frame> video_frame(m, "video_frame", "Extends the frame class with additional video related attributes and functions.");
     video_frame.def(py::init<rs2::frame>())

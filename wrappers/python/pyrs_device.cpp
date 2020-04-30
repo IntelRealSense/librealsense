@@ -31,6 +31,7 @@ void init_device(py::module &m) {
         .def(BIND_DOWNCAST(device, updatable))
         .def(BIND_DOWNCAST(device, update_device))
         .def(BIND_DOWNCAST(device, auto_calibrated_device))
+        .def(BIND_DOWNCAST(device, device_calibration))
         .def("__repr__", [](const rs2::device &self) {
             std::stringstream ss;
             ss << "<" SNAME ".device: " << self.get_info(RS2_CAMERA_INFO_NAME)
@@ -90,6 +91,24 @@ void init_device(py::module &m) {
         .def("get_calibration_table", &rs2::auto_calibrated_device::get_calibration_table, "Read current calibration table from flash.")
         .def("set_calibration_table", &rs2::auto_calibrated_device::set_calibration_table, "Set current table to dynamic area.")
         .def("reset_to_factory_calibration", &rs2::auto_calibrated_device::reset_to_factory_calibration, "Reset device to factory calibration.");
+
+    py::class_<rs2::device_calibration, rs2::device> device_calibration( m, "device_calibration" );
+    device_calibration.def( py::init<rs2::device>(), "device"_a )
+        .def( "trigger_device_calibration", &rs2::device_calibration::trigger_device_calibration, "TODO", "calibration_type"_a )
+        .def( "register_calibration_change_callback",
+            []( rs2::device_calibration& self, std::function<void( rs2_calibration_status )> callback )
+            {
+                self.register_calibration_change_callback( 
+					[callback]( rs2_calibration_status status )
+					{
+						// "When calling a C++ function from Python, the GIL is always held"
+						// -- since we're not being called from Python but instead are calling it,
+						// we need to acquire it to not have issues with other threads...
+						py::gil_scoped_acquire gil;
+						callback( status );
+					} );
+            },
+            "TODO", "callback"_a );
 
 
     py::class_<rs2::debug_protocol> debug_protocol(m, "debug_protocol"); // No docstring in C++

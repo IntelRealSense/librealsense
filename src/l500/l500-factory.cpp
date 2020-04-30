@@ -71,7 +71,6 @@ namespace librealsense
         {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
-
     };
 
     std::shared_ptr<device_interface> l500_info::create(std::shared_ptr<context> ctx,
@@ -85,6 +84,7 @@ namespace librealsense
         {
         case L500_PID:
             return std::make_shared<rs500_device>(ctx, group, register_device_notifications);
+        case L515_PID_PRE_PRQ:
         case L515_PID:
             return std::make_shared<rs515_device>(ctx, group, register_device_notifications);
        default:
@@ -100,7 +100,7 @@ namespace librealsense
         std::vector<platform::uvc_device_info> chosen;
         std::vector<std::shared_ptr<device_info>> results;
 
-        auto correct_pid = filter_by_product(group.uvc_devices, { L500_PID, L515_PID });
+        auto correct_pid = filter_by_product(group.uvc_devices, { L500_PID, L515_PID, L515_PID_PRE_PRQ });
         auto group_devices = group_devices_and_hids_by_unique_id(group_devices_by_unique_id(correct_pid), group.hid_devices);
         for (auto& g : group_devices)
         {
