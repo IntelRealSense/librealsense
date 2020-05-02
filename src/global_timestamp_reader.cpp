@@ -243,12 +243,9 @@ namespace librealsense
 
     void time_diff_keeper::polling(dispatcher::cancellable_timer cancellable_timer)
     {
+        update_diff_time();
         unsigned int time_to_sleep = _poll_intervals_ms + _coefs.is_full() * (9 * _poll_intervals_ms);
-        if (cancellable_timer.try_sleep(time_to_sleep))
-        {
-            update_diff_time();
-        }
-        else
+        if (!cancellable_timer.try_sleep(time_to_sleep))
         {
             LOG_DEBUG("Notification: time_diff_keeper polling loop is being shut-down");
         }
