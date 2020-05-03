@@ -235,45 +235,16 @@ namespace librealsense
             });
     }
 
-    class fa_ir_sensor : public synthetic_sensor
-    {
-    public:
-        fa_ir_sensor(fa_device* owner,
-            std::shared_ptr<uvc_sensor> uvc_sensor)
-            : synthetic_sensor("Infrared Camera", uvc_sensor, owner, fa_ir_fourcc_to_rs2_format, fa_ir_fourcc_to_rs2_stream),
-            _owner(owner) {}
-
-        stream_profiles init_stream_profiles() override
-        {
-            auto lock = environment::get_instance().get_extrinsics_graph().lock();
-
-            auto results = synthetic_sensor::init_stream_profiles();
-
-            for (auto&& p : results)
-            {
-                // Register stream types
-                if (p->get_stream_type() == RS2_STREAM_INFRARED && p->get_stream_index() == 0)
-                {
-                    assign_stream(_owner->_left_ir_stream, p);
-                    environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_owner->_left_ir_stream, *p);
-                }
-                else if (p->get_stream_type() == RS2_STREAM_INFRARED && p->get_stream_index() == 1)
-                {
-                    assign_stream(_owner->_right_ir_stream, p);
-                    environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_owner->_right_ir_stream, *p);
-                }
-            }
-
-            return results;
-        }
-
-    private:
-        const fa_device* _owner;
-    };
-
     void register_options(std::shared_ptr<fa_ir_sensor> ir_ep, std::shared_ptr<uvc_sensor> raw_ir_ep)
     {
-        // OPTIONS
+        using namespace librealsense::fa;
+
+        // GAIN
+        ir_ep->register_pu(RS2_OPTION_GAIN);
+
+        // make sure the XU is initialized every time we power the camera
+        raw_ir_ep->register_xu(ir_xu); 
+
         // EXPOSURE
         auto exposure_option = std::make_shared<uvc_pu_option>(*raw_ir_ep, RS2_OPTION_EXPOSURE);
         auto auto_exposure_option = std::make_shared<uvc_pu_option>(*raw_ir_ep, RS2_OPTION_ENABLE_AUTO_EXPOSURE);
@@ -284,20 +255,20 @@ namespace librealsense
                 exposure_option,
                 auto_exposure_option));
 
-        // GAIN
-        ir_ep->register_pu(RS2_OPTION_GAIN);
-        //WHITE BALANCE
-        /*auto white_balance_option = std::make_shared<uvc_pu_option>(*raw_ir_ep, RS2_OPTION_WHITE_BALANCE);
-        auto auto_white_balance_option = std::make_shared<uvc_pu_option>(*raw_ir_ep, RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
-        ir_ep->register_option(RS2_OPTION_WHITE_BALANCE, white_balance_option);
-        ir_ep->register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, auto_white_balance_option);
-        ir_ep->register_option(RS2_OPTION_WHITE_BALANCE,
-            std::make_shared<auto_disabling_control>(
-                white_balance_option,
-                auto_white_balance_option));*/
+        // LED
+        ir_ep->register_option(RS2_OPTION_LED_POWER,
+            std::make_shared<uvc_xu_option<uint8_t>>(*raw_ir_ep, ir_xu, FA_LED_POWER,
+                "Set the power level of the LED, with 0 meaning LED off"));
 
-        //LOW LIGHT COMPENSATION
-        //ir_ep->register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
+        // LASER
+        /*ir_ep->register_option(RS2_OPTION_LASER_POWER,
+            std::make_shared<uvc_xu_option<uint8_t>>(*raw_ir_ep, ir_xu, FA_LASER_POWER,
+                "Set the power level of the LASER, with 0 meaning LASER off"));*/
+
+        // EXPOSURE
+        /*ir_ep->register_option(RS2_OPTION_EXPOSURE,
+            std::make_shared<uvc_xu_option<uint64_t>>(*raw_ir_ep, ir_xu, FA_EXPOSURE,
+                "Exposure Control"));*/
     }
     
     fa_device::fa_device(const std::shared_ptr<context>& ctx,
@@ -329,13 +300,12 @@ namespace librealsense
 
 
         // RAW STREAM
-        ir_ep->register_processing_block(processing_block_factory::
-            create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_INFRARED, 0));
+        std::vector<rs2_format> target = { RS2_FORMAT_Y16, RS2_FORMAT_RAW16 };
         ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<memcpy_converter>
-            (RS2_FORMAT_RAW16, { RS2_FORMAT_Y16 }, RS2_STREAM_INFRARED, 0));
+            (RS2_FORMAT_RAW16, target, RS2_STREAM_INFRARED, 0));
         /*ir_ep->register_processing_block(processing_block_factory::
             create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_INFRARED, 1));*/
-        std::vector<rs2_format> target = { RS2_FORMAT_RAW16, RS2_FORMAT_Y16 };
+        
         ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<memcpy_converter>
             (RS2_FORMAT_Z16, target, RS2_STREAM_INFRARED, 1));
         /*ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<raw16_to_y16_converter>
@@ -350,6 +320,8 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, uvc_infos.front().unique_id);
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, uvc_infos.front().device_path);
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_str);
+        firmware_version fwVer(0,0,0,38);
+        register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, fwVer);
 
         //USB TYPE DESCRIPTION
         auto _usb_mode = platform::usb_spec::usb3_type;
@@ -467,4 +439,36 @@ namespace librealsense
         double ts = dt * TIMESTAMP_USEC_TO_MSEC;
         return ts;*/
     }
+
+
+    fa_ir_sensor::fa_ir_sensor(fa_device* owner,
+        std::shared_ptr<uvc_sensor> uvc_sensor)
+        : synthetic_sensor("Infrared Camera", uvc_sensor, owner, fa_ir_fourcc_to_rs2_format, fa_ir_fourcc_to_rs2_stream),
+        _owner(owner) {}
+
+    stream_profiles fa_ir_sensor::init_stream_profiles() 
+    {
+        auto lock = environment::get_instance().get_extrinsics_graph().lock();
+
+        auto results = synthetic_sensor::init_stream_profiles();
+
+        for (auto&& p : results)
+        {
+            // Register stream types
+            if (p->get_stream_type() == RS2_STREAM_INFRARED && p->get_stream_index() == 0)
+            {
+                assign_stream(_owner->_left_ir_stream, p);
+                environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_owner->_left_ir_stream, *p);
+            }
+            else if (p->get_stream_type() == RS2_STREAM_INFRARED && p->get_stream_index() == 1)
+            {
+                assign_stream(_owner->_right_ir_stream, p);
+                environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_owner->_right_ir_stream, *p);
+            }
+        }
+
+        return results;
+    }
+
 }
+
