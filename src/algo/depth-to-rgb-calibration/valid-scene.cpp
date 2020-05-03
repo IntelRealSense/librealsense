@@ -287,6 +287,8 @@ void optimizer::check_edge_distribution(
           fprintf('isEdgeDistributed: Ratio between min and max is too small: %0.5f, threshold is %0.5f\n',minMaxRatio, params.edgeDistributMinMaxRatio);
           return;
       end*/
+    is_edge_distributed = true;
+
     double z_max = *std::max_element(sum_weights_per_section.begin(), sum_weights_per_section.end());
     double z_min = *std::min_element(sum_weights_per_section.begin(), sum_weights_per_section.end());
     min_max_ratio = z_min / z_max;
@@ -322,7 +324,7 @@ end*/
         AC_LOG(DEBUG, "threshold is: " << _params.min_weighted_edge_per_section);
         return;
     }
-    is_edge_distributed = true;
+    
 }
 bool optimizer::is_edge_distributed(z_frame_data& z, yuy2_frame_data& yuy)
 {
@@ -349,7 +351,7 @@ bool optimizer::is_edge_distributed(z_frame_data& z, yuy2_frame_data& yuy)
     AC_LOG(DEBUG, "    sum_per_section(yuy), section #3  " << *(it + 3));
     check_edge_distribution(yuy.sum_weights_per_section, yuy.min_max_ratio, yuy.is_edge_distributed);
 
-    return (z.is_edge_distributed && yuy.is_edge_distributed);
+    return  (z.is_edge_distributed && yuy.is_edge_distributed);
 }
 
 bool optimizer::is_grad_dir_balanced(
@@ -712,6 +714,7 @@ bool optimizer::is_scene_valid()
     // remove pixels in section map where edges_IDT > 0
     int i = 0;
     AC_LOG(DEBUG, "... " << _z.supressed_edges.size() << " total edges IDT");
+
     for (auto it = _yuy.edges_IDT.begin(); it != _yuy.edges_IDT.end(); ++it, ++i)
     {
         if (*it > 0)
@@ -725,5 +728,5 @@ bool optimizer::is_scene_valid()
     bool res_edges = is_edge_distributed(_z, _yuy);
     bool res_gradient = is_grad_dir_balanced(_z);
 
-    return ((!res_movement) && res_edges && res_gradient);
+    return((!res_movement) && res_edges && res_gradient);
 }
