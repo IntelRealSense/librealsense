@@ -110,7 +110,7 @@ namespace librealsense
     {
         return std::find_if(_user_requests.begin(), _user_requests.end(), [&](std::shared_ptr<stream_profile_interface> sp)
         {
-            return stream_profiles_correspond(frame->get_stream().get(), sp.get());
+            return stream_profiles_equal(frame->get_stream().get(), sp.get());
         }) != _user_requests.end();
     }
 }
