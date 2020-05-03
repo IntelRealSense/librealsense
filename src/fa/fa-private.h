@@ -22,18 +22,10 @@ namespace librealsense
         const uint16_t RS450_UART_PID = 0x00DD;	// F450 - UART PID
 
 
-        // DS5 depth XU identifiers
-        const uint8_t DS5_HWMONITOR = 1;
-        const uint8_t DS5_DEPTH_EMITTER_ENABLED = 2;
-        const uint8_t DS5_EXPOSURE = 3;
-        const uint8_t DS5_LASER_POWER = 4;
-        const uint8_t DS5_HARDWARE_PRESET = 6;
-        const uint8_t DS5_ERROR_REPORTING = 7;
-        const uint8_t DS5_EXT_TRIGGER = 8;
-        const uint8_t DS5_ASIC_AND_PROJECTOR_TEMPERATURES = 9;
-        const uint8_t DS5_ENABLE_AUTO_WHITE_BALANCE = 0xA;
-        const uint8_t DS5_ENABLE_AUTO_EXPOSURE = 0xB;
-        const uint8_t DS5_LED_PWR = 0xE;
+        // FA ir XU identifiers
+        const uint8_t FA_LED_POWER = 10;
+        const uint8_t FA_LASER_POWER = 11;
+        const uint8_t FA_EXPOSURE = 12;
 
         // Devices supported by the current version
         static const std::set<std::uint16_t> rs_fa_sku_pid = {
@@ -47,8 +39,7 @@ namespace librealsense
 
 
         // subdevice[h] unit[fw], node[h] guid[fw]
-        //TODO - Remi - check ir_xu
-        const platform::extension_unit ir_xu = { 0, 3, 2,
+        const platform::extension_unit ir_xu = { 6, 3, 2,
         { 0xC9606CCB, 0x594C, 0x4D25,{ 0xaf, 0x47, 0xcc, 0xc4, 0x96, 0x43, 0x59, 0x95 } } };
 
         const int REGISTER_CLOCK_0 = 0x0001613c;

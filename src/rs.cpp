@@ -41,6 +41,7 @@
 #include "software-device.h"
 #include "global_timestamp_reader.h"
 #include "auto-calibrated-device.h"
+#include "fa/fa-device.h"
 ////////////////////////
 // API implementation //
 ////////////////////////
@@ -1254,6 +1255,7 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
     case RS2_EXTENSION_COLOR_SENSOR        : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::color_sensor)           != nullptr;
     case RS2_EXTENSION_MOTION_SENSOR       : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::motion_sensor)          != nullptr;
     case RS2_EXTENSION_FISHEYE_SENSOR      : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::fisheye_sensor)         != nullptr;
+    case RS2_EXTENSION_F450_SENSOR         : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::fa_ir_sensor)           != nullptr;
 
     default:
         return false;
