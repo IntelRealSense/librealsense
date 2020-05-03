@@ -135,8 +135,8 @@ void RsSink::afterGettingFrame(unsigned t_frameSize, unsigned t_numTruncatedByte
     }
     else
     {
-        m_memPool->returnMem(m_receiveBuffer);
-        envir() << m_streamId << ":corrupted frame!!!: data size is " << header->data.frameSize << " frame size is " << t_frameSize << "\n";
+                envir() << m_streamId << ":corrupted frame!!!: data size is " << header->data.frameSize << " frame size is " << t_frameSize << "\n";
+                m_memPool->returnMem(m_receiveBuffer);
     }
     m_receiveBuffer = nullptr;
 

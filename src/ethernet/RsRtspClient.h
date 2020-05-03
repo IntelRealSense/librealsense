@@ -26,7 +26,7 @@
 class RsRTSPClient : public RTSPClient, IRsRtsp
 {
 public:
-    static IRsRtsp* getRtspClient(char const* t_rtspURL, char const* t_applicationName = NULL, portNumBits t_tunnelOverHTTPPortNum = 0);
+    static IRsRtsp* createNew(char const* t_rtspURL, char const* t_applicationName, portNumBits t_tunnelOverHTTPPortNum, int idx);
     void describe();
     void setup(rs2_video_stream t_stream);
     void initFunc(MemoryPool* t_pool);
@@ -74,7 +74,7 @@ public:
     Boolean setRequestFields(RequestRecord* request, char*& cmdURL, Boolean& cmdURLWasAllocated, char const*& protocolStr, char*& extraHeaders, Boolean& extraHeadersWereAllocated);
 
 private:
-    RsRTSPClient(TaskScheduler* t_scheduler, UsageEnvironment* t_env, char const* t_rtspURL, int t_verbosityLevel, char const* t_applicationName, portNumBits t_tunnelOverHTTPPortNum);
+    RsRTSPClient(TaskScheduler* t_scheduler, UsageEnvironment* t_env, char const* t_rtspURL, int t_verbosityLevel, char const* t_applicationName, portNumBits t_tunnelOverHTTPPortNum, int idx);
 
     // called only by createNew();
     virtual ~RsRTSPClient();
@@ -96,4 +96,6 @@ private:
     UsageEnvironment* m_env;
     char m_eventLoopWatchVariable = 0;
     std::mutex m_taskSchedulerMutex;
+
+    int m_idx;
 };

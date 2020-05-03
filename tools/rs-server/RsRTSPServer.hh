@@ -11,7 +11,7 @@
 class RsRTSPServer : public RTSPServer
 {
 public:
-    static RsRTSPServer* createNew(UsageEnvironment& t_env, std::shared_ptr<RsDevice> t_device, Port t_ourPort = 554, UserAuthenticationDatabase* t_authDatabase = NULL, unsigned t_reclamationSeconds = 0);
+    static RsRTSPServer* createNew(UsageEnvironment& t_env, std::shared_ptr<RsDevice> t_device, Port t_ourPort = 554, UserAuthenticationDatabase* t_authDatabase = NULL, unsigned t_reclamationSeconds = 20);
     void setSupportedOptions(std::string t_key, std::vector<RsOption> t_supportedOptions);
 
 protected:
@@ -33,6 +33,7 @@ public:
         virtual ~RsRTSPClientConnection();
         virtual void handleCmd_GET_PARAMETER(char const* fullRequestStr);
         virtual void handleCmd_SET_PARAMETER(char const* fullRequestStr);
+        virtual void handleCmd_DESCRIBE(char const* urlPreSuffix, char const* urlSuffix, char const* fullRequestStr);
 
         RsRTSPServer& m_fOurRsRTSPServer;
 
