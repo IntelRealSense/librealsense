@@ -664,5 +664,23 @@ namespace rs2
         operator bool() const { return _sensor.get() != nullptr; }
         explicit wheel_odometer(std::shared_ptr<rs2_sensor> dev) : wheel_odometer(sensor(dev)) {}
     };
+
+    class fa_infrared_sensor : public sensor
+    {
+    public:
+        fa_infrared_sensor(sensor s)
+            : sensor(s.get())
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_F450_SENSOR, &e) == 0 && !e)
+            {
+                _sensor.reset();
+            }
+            error::handle(e);
+        }
+
+        operator bool() const { return _sensor.get() != nullptr; }
+        explicit fa_infrared_sensor(std::shared_ptr<rs2_sensor> dev) : fa_infrared_sensor(sensor(dev)) {}
+    };
 }
 #endif // LIBREALSENSE_RS2_SENSOR_HPP

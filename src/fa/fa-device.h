@@ -83,6 +83,20 @@ namespace librealsense
 
     };
 
+    class fa_ir_sensor : public synthetic_sensor
+    {
+    public:
+        fa_ir_sensor(fa_device* owner,
+            std::shared_ptr<uvc_sensor> uvc_sensor);
+            
+        stream_profiles init_stream_profiles() override;        
+
+    private:
+        const fa_device* _owner;
+    };
+
+    MAP_EXTENSION(RS2_EXTENSION_F450_SENSOR, librealsense::fa_ir_sensor);
+
     class fa_notification_decoder : public notification_decoder
     {
     public:
