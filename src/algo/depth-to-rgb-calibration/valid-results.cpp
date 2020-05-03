@@ -79,39 +79,55 @@ void optimizer::clip_pixel_movement( size_t iteration_number )
     }
 }
 
-std::vector< double > optimizer::cost_per_section( calib const & calibration )
+std::vector< double > optimizer::cost_per_section_diff(calib const & old_calib, calib const & new_calib)
 {
     // We require here that the section_map is initialized and ready
-    if( _z.section_map.size() != _z.weights.size() )
-        throw std::runtime_error( "section_map has not been initialized" );
+    if (_z.section_map.size() != _z.weights.size())
+        throw std::runtime_error("section_map has not been initialized");
 
-    auto uvmap = get_texture_map( _z.vertices, calibration );
+    auto uvmap_old = get_texture_map(_z.vertices, old_calib);
+    auto uvmap_new = get_texture_map(_z.vertices, new_calib);
 
     size_t const n_sections_x = _params.num_of_sections_for_edge_distribution_x;
     size_t const n_sections_y = _params.num_of_sections_for_edge_distribution_y;
     size_t const n_sections = n_sections_x * n_sections_y;
 
-    std::vector< double > cost_per_section( n_sections, 0. );
-    std::vector< size_t > N_per_section( n_sections, 0 );
-    calc_cost_per_vertex( _z, _yuy, uvmap,
-        [&]( size_t i, double d_val, double weight, double vertex_cost )
-        {
-            if( d_val != std::numeric_limits<double>::max() )
-            {
-                byte section = _z.section_map[i];
-                cost_per_section[section] += vertex_cost;
-                ++N_per_section[section];
-            }
-        }
-    );
-    for( size_t x = 0; x < n_sections; ++x )
+    std::vector< double > cost_per_section_diff(n_sections, 0.);
+    std::vector< size_t > N_per_section(n_sections, 0);
+
+    //old
+    auto d_vals_old = biliniar_interp(_yuy.edges_IDT, _yuy.width, _yuy.height, uvmap_old);
+
+    auto cost_per_vertex_old = calc_cost_per_vertex(d_vals_old, _z, _yuy,
+        [&](size_t i, double d_val, double weight, double vertex_cost) {});
+
+    //new
+    auto d_vals_new = biliniar_interp(_yuy.edges_IDT, _yuy.width, _yuy.height, uvmap_new);
+
+    auto cost_per_vertex_new = calc_cost_per_vertex(d_vals_new, _z, _yuy,
+        [&](size_t i, double d_val, double weight, double vertex_cost) {});
+
+
+    for (auto i = 0; i < cost_per_vertex_new.size(); i++)
     {
-        double & cost = cost_per_section[x];
+        if (d_vals_old[i] != std::numeric_limits<double>::max() && d_vals_new[i] != std::numeric_limits<double>::max())
+        {
+            byte section = _z.section_map[i];
+            cost_per_section_diff[section] += (cost_per_vertex_new[i] - cost_per_vertex_old[i]);
+            ++N_per_section[section];
+        }
+    }
+
+    for (size_t x = 0; x < n_sections; ++x)
+    {
+
+        double & cost = cost_per_section_diff[x];
         size_t N = N_per_section[x];
-        if( N )
+        if (N)
             cost /= N;
     }
-    return cost_per_section;
+
+    return cost_per_section_diff;
 }
 
 bool optimizer::is_valid_results()
@@ -143,11 +159,8 @@ bool optimizer::is_valid_results()
     //% for i = 0:(params.numSectionsH*params.numSectionsV) - 1
     //%     scoreDiffPersection( i + 1 ) = nanmean( scoreDiffPerVertex( frame.sectionMapDepth == i ) );
     //% end
-    auto cost_per_section_old = cost_per_section( _original_calibration );
-    auto cost_per_section_new = cost_per_section( _params_curr.curr_calib );
-    _z.cost_diff_per_section = cost_per_section_new;
-    for( size_t x = 0; x < cost_per_section_old.size(); ++x )
-        _z.cost_diff_per_section[x] -= cost_per_section_old[x];
+
+    _z.cost_diff_per_section = cost_per_section_diff(_original_calibration, _params_curr.curr_calib);
     //% validOutputStruct.minImprovementPerSection = min( scoreDiffPersection );
     //% validOutputStruct.maxImprovementPerSection = max( scoreDiffPersection );
     double min_cost_diff = *std::min_element( _z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end() );
@@ -156,7 +169,7 @@ bool optimizer::is_valid_results()
     if( min_cost_diff < 0. )
     {
         AC_LOG( ERROR, "Some image sections were hurt by the optimization; invalidating calibration!" );
-        for( size_t x = 0; x < cost_per_section_old.size(); ++x )
+        for( size_t x = 0; x < _z.cost_diff_per_section.size(); ++x )
             AC_LOG( DEBUG, "... cost diff in section " << x << "= " << _z.cost_diff_per_section[x] );
         return false;
     }

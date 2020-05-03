@@ -454,7 +454,7 @@ TEST_CASE("Weights calc", "[d2rgb]")
         // ---
         TRACE( "\nChecking scene validity:" );
 
-        CHECK(cal.is_scene_valid());
+        CHECK(!cal.is_scene_valid());
 
         //// edge distribution
         CHECK( compare_to_bin_file< double >( z_data.sum_weights_per_section, dir, scene, FILE_NAME("depthEdgeWeightDistributionPerSectionDepth", 1, 4,"double_00").c_str(), 4, 1, compare_same_vectors ) );
@@ -514,9 +514,10 @@ TEST_CASE("Weights calc", "[d2rgb]")
         //--
         TRACE( "\nChecking output validity:" );
         CHECK( ! cal.is_valid_results() );
-        // pixel movement is OK, but some sections have negative cost
-        //CHECK( cal.calc_correction_in_pixels() == approx(md.correction_in_pixels));
 
-        //CHECK( compare_to_bin_file< double >( z_data.cost_diff_per_section, dir, scene, FILE_NAME("costDiffPerSection", 4, 1, "double_00").c_str(), 1, 4, compare_same_vectors ) );
+        //pixel movement is OK, but some sections have negative cost
+        CHECK( cal.calc_correction_in_pixels() == approx(md.correction_in_pixels));
+
+        CHECK( compare_to_bin_file< double >( z_data.cost_diff_per_section, dir, scene, FILE_NAME("costDiffPerSection", 4, 1, "double_00").c_str(), 1, 4, compare_same_vectors ) );
      }
 }

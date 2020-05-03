@@ -10,27 +10,28 @@ namespace depth_to_rgb_calibration {
 
 
     std::vector< double > calc_cost_per_vertex(
+        std::vector<double> const & d_vals,
         z_frame_data const & z_data,
         yuy2_frame_data const & yuy_data,
-        std::vector< double2 > const & uv,
         std::function< void( size_t i, double d_val, double weight, double vertex_cost ) > fn
     )
     {
-        auto d_vals = biliniar_interp( yuy_data.edges_IDT, yuy_data.width, yuy_data.height, uv );
-
         double cost = 0;
-        std::vector< double > cost_per_vertex;
-        cost_per_vertex.reserve( uv.size() );
+        std::vector< double > cost_per_vertex(d_vals.size());
 
-        for( size_t i = 0; i < z_data.weights.size(); i++ )
+        for (size_t i = 0; i < z_data.weights.size(); i++)
         {
             double d_val = d_vals[i];  // may be std::numeric_limits<double>::max()?
             double weight = z_data.weights[i];
-            double cost = d_val * weight;
-            fn( i, d_val, weight, cost );
-        }
+            double cost = d_val;
+            if (d_val != std::numeric_limits<double>::max())
+                cost = d_val * weight;
 
-        return d_vals;
+            cost_per_vertex[i] = cost;
+            fn(i, d_val, weight, cost);
+
+        }
+        return cost_per_vertex;
     }
 
 
@@ -43,7 +44,10 @@ namespace depth_to_rgb_calibration {
     {
         double cost = 0;
         size_t N = 0;
-        auto interpolated_edges = calc_cost_per_vertex( z_data, yuy_data, uv,
+
+        auto d_vals = biliniar_interp(yuy_data.edges_IDT, yuy_data.width, yuy_data.height, uv);
+
+        auto cost_per_vertex = calc_cost_per_vertex(d_vals, z_data, yuy_data,
             [&]( size_t i, double d_val, double weight, double vertex_cost )
             {
                 if( d_val != std::numeric_limits<double>::max() )
@@ -53,7 +57,7 @@ namespace depth_to_rgb_calibration {
                 }
             } );
         if( p_interpolated_edges )
-            *p_interpolated_edges = interpolated_edges;
+            *p_interpolated_edges = d_vals;
         return N ? cost / N : 0.;
     }
 
