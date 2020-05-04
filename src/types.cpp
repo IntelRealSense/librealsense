@@ -261,6 +261,8 @@ namespace librealsense
             CASE(CONTRAST)
             CASE(EXPOSURE)
             CASE(GAIN)
+            CASE(EXPOSURE_SECOND)
+            CASE(GAIN_SECOND)
             CASE(GAMMA)
             CASE(HUE)
             CASE(SATURATION)
