@@ -11,7 +11,7 @@ namespace librealsense
 
     std::string frame_to_string(frame_holder& f)
     {
-        std::stringstream s;
+        std::ostringstream s;
         auto composite = dynamic_cast<composite_frame*>(f.frame);
         if(composite)
         {
@@ -23,7 +23,11 @@ namespace librealsense
         }
         else
         {
-             s<<f->get_stream()->get_stream_type()<<" "<<f->get_frame_number()<<" "<<std::fixed <<(double)f->get_frame_timestamp()<<" ";
+            s << f->get_stream()->get_stream_type();
+            s << " " << f->get_stream()->get_unique_id();
+            s << " " << f->get_frame_number();
+            s << " " << std::fixed << (double)f->get_frame_timestamp();
+            s << " ";
         }
         return s.str();
     }
@@ -176,13 +180,17 @@ namespace librealsense
                 matcher = _matchers[stream_id];
                 if (!matcher)
                 {
+                    std::ostringstream ss;
+                    for( auto const & it : _matchers )
+                        ss << ' ' << it.first;
+                    LOG_DEBUG( "stream id " << stream_id << " was not found; trying to create, existing streams=" << ss.str() );
                     matcher = dev->create_matcher(frame);
 
-
-                    matcher->set_callback([&](frame_holder f, syncronization_environment env)
-                    {
-                        sync(std::move(f), env);
-                    });
+                    matcher->set_callback(
+                        [&](frame_holder f, syncronization_environment env)
+                        {
+                            sync(std::move(f), env);
+                        });
 
                     for (auto stream : matcher->get_streams())
                     {
@@ -192,7 +200,6 @@ namespace librealsense
                         }
                         _matchers[stream] = matcher;
                         _streams_id.push_back(stream);
-
                     }
                     for (auto stream : matcher->get_streams_types())
                     {
@@ -204,14 +211,16 @@ namespace librealsense
                         LOG_ERROR("Stream matcher not found! stream=" << rs2_stream_to_string(stream_type));
                     }
                 }
-
                 else if(!matcher->get_active())
                 {
-
                      matcher->set_active(true);
                      _frames_queue[matcher.get()].start();
                 }
             }
+        }
+        else
+        {
+            LOG_DEBUG( "sensor does not exist" );
         }
 
         if(!dev_exist)
@@ -253,7 +262,7 @@ namespace librealsense
 
     void composite_matcher::sync(frame_holder f, syncronization_environment env)
     {
-        std::stringstream s;
+        std::ostringstream s;
         s <<"SYNC "<<_name<<"--> "<< frame_to_string(f)<<"\n";
         LOG_DEBUG(s.str());
 
