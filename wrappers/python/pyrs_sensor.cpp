@@ -106,6 +106,8 @@ void init_sensor(py::module &m) {
     ot_sensor.def( py::init<rs2::sensor>(), "sensor"_a )
         .def( "override_intrinsics", &rs2::override_trinsics_sensor::override_intrinsics, "intrinsics"_a )
         .def( "override_extrinsics", &rs2::override_trinsics_sensor::override_extrinsics, "extrinsics"_a )
+        .def( "get_dsm_params", &rs2::override_trinsics_sensor::get_dsm_params )
+        .def( "override_dsm_params", &rs2::override_trinsics_sensor::override_dsm_params, "dsm_params"_a )
         .def( "__nonzero__", &rs2::override_trinsics_sensor::operator bool );
 
     // rs2::depth_stereo_sensor

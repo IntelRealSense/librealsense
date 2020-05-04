@@ -18,6 +18,7 @@
 #include "error-handling.h"
 #include "frame-validator.h"
 #include "l500-options.h"
+#include "override-trinsics-sensor.h"
 
 namespace librealsense
 {
@@ -83,43 +84,20 @@ namespace librealsense
         float _baseline;
     };
 
-    class l500_depth_sensor : public synthetic_sensor, public video_sensor_interface, public virtual depth_sensor, public virtual l500_depth_sensor_interface
+    class l500_depth_sensor
+        : public synthetic_sensor
+        , public video_sensor_interface
+        , public virtual depth_sensor
+        , public virtual l500_depth_sensor_interface
+        , public override_trinsics_sensor
     {
     public:
-        explicit l500_depth_sensor(l500_device* owner, std::shared_ptr<uvc_sensor> uvc_sensor, std::map<uint32_t,rs2_format> l500_depth_fourcc_to_rs2_format_map, std::map<uint32_t, rs2_stream> l500_depth_fourcc_to_rs2_stream_map)
-            : synthetic_sensor("L500 Depth Sensor", uvc_sensor, owner, l500_depth_fourcc_to_rs2_format_map, l500_depth_fourcc_to_rs2_stream_map), _owner(owner)
-        {
-#ifdef ENABLE_L500_DEPTH_INVALIDATION
-          _depth_invalidation_enabled = true;
-#else
-          _depth_invalidation_enabled = false;
-#endif
-           
-            register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
-                lazy<float>([&]() {
-                return read_znorm(); })));
-
-            register_option(RS2_OPTION_DEPTH_OFFSET, std::make_shared<const_value_option>("Offset from sensor to depth origin in millimetrers",
-                lazy<float>([&]() {
-                return get_depth_offset(); })));
-
-            _depth_invalidation_option = std::make_shared<depth_invalidation_option>(
-                0,
-                1,
-                1,
-                0,
-                &_depth_invalidation_enabled,
-                "depth invalidation enabled");
-            _depth_invalidation_option->on_set([this](float val)
-            {
-                if (!_depth_invalidation_option->is_valid(val))
-                    throw invalid_value_exception(to_string()
-                        << "Unsupported depth invalidation enabled " << val << " is out of range.");
-            });
-
-            // The depth invalidation enable option is deprecated for now.
-            //register_option(static_cast<rs2_option>(RS2_OPTION_DEPTH_INVALIDATION_ENABLE), _depth_invalidation_option);
-        }
+        explicit l500_depth_sensor(
+            l500_device * owner,
+            std::shared_ptr< uvc_sensor > uvc_sensor,
+            std::map< uint32_t, rs2_format > l500_depth_sourcc_to_rs2_format_map,
+            std::map< uint32_t, rs2_stream > l500_depth_sourcc_to_rs2_stream_map
+        );
 
         std::vector<rs2_option> get_supported_options() const override
         {
@@ -181,6 +159,12 @@ namespace librealsense
             intrinsics.model = RS2_DISTORTION_NONE;
             return intrinsics;
         }
+
+        // override_trinsics_sensor
+        void override_intrinsics( rs2_intrinsics const & intr ) override;
+        void override_extrinsics( rs2_extrinsics const & extr ) override;
+        rs2_dsm_params get_dsm_params() const override;
+        void override_dsm_params( rs2_dsm_params const & dsm_params ) override;
 
         stream_profiles init_stream_profiles() override
         {
@@ -270,6 +254,7 @@ namespace librealsense
         action_delayer _action_delayer;
         const l500_device* _owner;
         float _depth_units;
+        rs2_dsm_params _dsm_params;
         stream_profiles _user_requests;
         stream_profiles _validator_requests;
         bool _depth_invalidation_enabled;

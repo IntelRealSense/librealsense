@@ -76,6 +76,8 @@ namespace librealsense
         // override_trinsics_sensor
         void override_intrinsics( rs2_intrinsics const& intr ) override;
         void override_extrinsics( rs2_extrinsics const& extr ) override;
+        rs2_dsm_params get_dsm_params() const override;
+        void override_dsm_params( rs2_dsm_params const & dsm_params ) override;
 
         stream_profiles init_stream_profiles() override
         {

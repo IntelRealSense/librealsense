@@ -694,6 +694,26 @@ namespace rs2
             rs2_override_extrinsics( _sensor.get(), &extr, &e );
             error::handle( e );
         }
+
+        /** Override the intrinsics at the sensor level, as DEPTH_TO_RGB calibration does */
+        rs2_dsm_params get_dsm_params() const
+        {
+            rs2_error* e = nullptr;
+            rs2_dsm_params params;
+            rs2_get_dsm_params( _sensor.get(), &params, &e );
+            error::handle( e );
+            return params;
+        }
+
+        /** Set the sensor DSM parameters
+         * This should ideally be done when the stream is NOT running. If it is, the
+         * parameters may not take effect immediately. */
+        void override_dsm_params( rs2_dsm_params const & params )
+        {
+            rs2_error* e = nullptr;
+            rs2_override_dsm_params( _sensor.get(), &params, &e );
+            error::handle( e );
+        }
     };
 }
 #endif // LIBREALSENSE_RS2_SENSOR_HPP

@@ -1111,6 +1111,26 @@ void rs2_override_extrinsics( const rs2_sensor* sensor, const rs2_extrinsics* ex
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , sensor, extrinsics )
 
+void rs2_get_dsm_params( const rs2_sensor * sensor, rs2_dsm_params * p_params_out, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( sensor );
+    VALIDATE_NOT_NULL( p_params_out );
+
+    auto ois = VALIDATE_INTERFACE( sensor->sensor, librealsense::override_trinsics_sensor );
+    *p_params_out = ois->get_dsm_params();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , sensor, p_params_out )
+
+void rs2_override_dsm_params( const rs2_sensor * sensor, rs2_dsm_params const * p_params, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( sensor );
+    VALIDATE_NOT_NULL( p_params );
+
+    auto ois = VALIDATE_INTERFACE( sensor->sensor, librealsense::override_trinsics_sensor );
+    ois->override_dsm_params( *p_params );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , sensor, p_params )
+
 void rs2_hardware_reset(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);

@@ -67,6 +67,16 @@ typedef struct rs2_intrinsics
     float         coeffs[5]; /**< Distortion coefficients */
 } rs2_intrinsics;
 
+/** \brief Video stream DSM parameters for calibration */
+typedef struct rs2_dsm_params
+{
+    float         h_scale;     /**< the scale factor to horizontal DSM scale thermal results */
+    float         v_scale;     /**< the scale factor to vertical DSM scale thermal results */
+    float         h_offset;    /**< the offset to horizontal DSM offset thermal results */
+    float         v_offset;    /**< the offset to vertical DSM offset thermal results */
+    float         rtd_offset;  /**< the offset to the Round-Trip-Distance delay thermal results */
+} rs2_dsm_params;
+
 /** \brief Motion device intrinsics: scale, bias, and variances. */
 typedef struct rs2_motion_device_intrinsic
 {

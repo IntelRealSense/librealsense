@@ -141,6 +141,52 @@ namespace librealsense
         return std::make_shared<timestamp_composite_matcher>(matchers);
     }
 
+    l500_depth_sensor::l500_depth_sensor(
+        l500_device* owner,
+        std::shared_ptr<uvc_sensor> uvc_sensor,
+        std::map<uint32_t, rs2_format> l500_depth_fourcc_to_rs2_format_map,
+        std::map<uint32_t, rs2_stream> l500_depth_fourcc_to_rs2_stream_map
+    )
+        : synthetic_sensor( "L500 Depth Sensor",
+            uvc_sensor,
+            owner,
+            l500_depth_fourcc_to_rs2_format_map,
+            l500_depth_fourcc_to_rs2_stream_map )
+        , _owner( owner )
+        , _dsm_params{ 0 }
+    {
+#ifdef ENABLE_L500_DEPTH_INVALIDATION
+        _depth_invalidation_enabled = true;
+#else
+        _depth_invalidation_enabled = false;
+#endif
+
+        register_option( RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>( "Number of meters represented by a single depth unit",
+            lazy<float>( [&]() {
+                return read_znorm(); } ) ) );
+
+        register_option( RS2_OPTION_DEPTH_OFFSET, std::make_shared<const_value_option>( "Offset from sensor to depth origin in millimetrers",
+            lazy<float>( [&]() {
+                return get_depth_offset(); } ) ) );
+
+        _depth_invalidation_option = std::make_shared<depth_invalidation_option>(
+            0,
+            1,
+            1,
+            0,
+            &_depth_invalidation_enabled,
+            "depth invalidation enabled" );
+        _depth_invalidation_option->on_set( [this]( float val )
+            {
+                if( !_depth_invalidation_option->is_valid( val ) )
+                    throw invalid_value_exception( to_string()
+                        << "Unsupported depth invalidation enabled " << val << " is out of range." );
+            } );
+
+        // The depth invalidation enable option is deprecated for now.
+        //register_option(static_cast<rs2_option>(RS2_OPTION_DEPTH_INVALIDATION_ENABLE), _depth_invalidation_option);
+    }
+
     int l500_depth_sensor::read_algo_version()
     {
         const int algo_version_address = 0xa0020bd8;
@@ -154,6 +200,37 @@ namespace librealsense
         auto ver = data[0] + 100* data[1];
         return ver;
     }
+
+    void l500_depth_sensor::override_intrinsics( rs2_intrinsics const & intr )
+    {
+        throw std::logic_error( "depth sensor does not support intrinsics override" );
+    }
+
+    void l500_depth_sensor::override_extrinsics( rs2_extrinsics const & extr )
+    {
+        throw std::logic_error( "depth sensor does not support extrinsics override" );
+    }
+
+    rs2_dsm_params l500_depth_sensor::get_dsm_params() const
+    {
+        command cmd( ivcam2::fw_cmd::READ_TABLE, ac_depth_results::table_id );
+        std::vector< byte > data = _owner->_hw_monitor->send( cmd );
+        if( data.size() != sizeof( ac_depth_results ) )
+            throw std::runtime_error( to_string() << "data size received= " << data.size() );
+        ac_depth_results const & table = *(ac_depth_results *)data.data();
+        return table.params;
+    }
+
+    void l500_depth_sensor::override_dsm_params( rs2_dsm_params const & dsm_params )
+    {
+        command cmd( ivcam2::fw_cmd::WRITE_TABLE, ac_depth_results::table_id );
+        ac_depth_results table( dsm_params );
+        cmd.data.resize( sizeof( table ));
+        memcpy( cmd.data.data(), &table, sizeof( table ));
+        _owner->_hw_monitor->send( cmd );
+        _dsm_params = dsm_params;
+    }
+
 
     float l500_depth_sensor::read_baseline() const
     {
@@ -336,7 +413,8 @@ namespace librealsense
                     }
                 }
                 
-                sensor_mode_option.set(get_resolution_from_width_height(vs->get_width(), vs->get_height()));
+                sensor_mode_option.set(
+                    (float) get_resolution_from_width_height( vs->get_width(), vs->get_height() ));
             }
 
 
