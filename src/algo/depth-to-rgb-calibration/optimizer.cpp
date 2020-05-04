@@ -373,12 +373,12 @@ void set_margin(
         *(it + width + i) = 0;
         *(it + width*(height-2) + i) = 0;
     }
-    //for (auto i = 0; i < height; i++)
-    //{
-    //    // zero mask of 2nd column, and column before the last
-    //    *(it + i*width+1) = 0;
-    //    *(it + i * width + 1) = 0;
-    //}
+    for (auto i = 0; i < height; i++)
+    {
+        // zero mask of 2nd column, and column before the last
+        *(it + i*width+1) = 0;
+        *(it + i * width + (width-2)) = 0;
+    }
 }
 void optimizer::set_depth_data(
     std::vector< z_t >&& depth_data,
