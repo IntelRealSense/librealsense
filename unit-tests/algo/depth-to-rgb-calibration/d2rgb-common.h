@@ -5,6 +5,7 @@
 
 #include "../algo-common.h"
 #include "../../../src/algo/depth-to-rgb-calibration/optimizer.h"
+#include "../../../src/algo/depth-to-rgb-calibration/coeffs.h"
 #include "ac-logger.h"
 #include "../camera-info.h"
 

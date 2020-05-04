@@ -69,6 +69,19 @@ namespace depth_to_rgb_calibration {
         double fy;
         double ppx;
         double ppy;
+
+        bool operator==(const k_matrix& other)
+        {
+            return fx == other.fx && fy == other.fy && ppx == other.ppx && ppy == other.ppy;
+        }
+        bool operator!=(const k_matrix& other)
+        {
+            return !(*this == other);
+        }
+        k_matrix operator+(const k_matrix& other)
+        {
+            return {};
+        }
     };
 
 }  // librealsense::algo::depth_to_rgb_calibration

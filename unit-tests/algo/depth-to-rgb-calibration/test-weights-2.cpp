@@ -38,7 +38,19 @@ std::vector< T > read_bin_file( char const * data_dir, char const * test, char c
     f.close();
     return vec;
 }
+template< typename F, typename D >
+void print(size_t x, F f, D d)
+{
+    // bytes will be written to stdout as characters, which we never want... hence '+fx'
+    AC_LOG(DEBUG, "... " << x << ": {matlab}" << +f << " != " << +d << "{c++} (exact)");
+}
 
+template<  >
+void print<algo::double2, algo::double2>(size_t x, algo::double2 f, algo::double2 d)
+{
+    // bytes will be written to stdout as characters, which we never want... hence '+fx'
+    AC_LOG(DEBUG, "... " << x << ": {matlab}" << f << " != " << d << "{c++} (exact)");
+}
 
 template< typename F, typename D >
 bool compare_same_vectors( std::vector< F > const & matlab, std::vector< D > const & cpp )
@@ -53,9 +65,9 @@ bool compare_same_vectors( std::vector< F > const & matlab, std::vector< D > con
         bool const is_comparable = std::numeric_limits< D >::is_exact || std::is_enum< D >::value;
         if( is_comparable )
         {
-            if( fx != dx && ++n_mismatches <= 5 )
+            if (fx != dx && ++n_mismatches <= 5)
                 // bytes will be written to stdout as characters, which we never want... hence '+fx'
-                AC_LOG( DEBUG, "... " << x << ": {matlab}" << +fx << " != " << +dx << "{c++} (exact)" );
+                print(x, fx, dx);
         }
         else if( fx != approx(dx) )
         {
@@ -68,37 +80,37 @@ bool compare_same_vectors( std::vector< F > const & matlab, std::vector< D > con
     return (n_mismatches == 0);
 }
 
-template<>
-bool compare_same_vectors<algo::double2, algo::double2>(std::vector< algo::double2> const & matlab, std::vector< algo::double2> const & cpp)
-{
-    assert(matlab.size() == cpp.size());
-    size_t n_mismatches = 0;
-    size_t size = matlab.size();
-    auto cpp_vac = cpp;
-    auto matlab_vac = matlab;
-    std::sort(matlab_vac.begin(), matlab_vac.end(), [](algo::double2 d1, algo::double2 d2) {return d1.x < d2.x; });
-    std::sort(cpp_vac.begin(), cpp_vac.end(), [](algo::double2 d1, algo::double2 d2) {return d1.x < d2.x; });
-    for (size_t x = 0; x < size; ++x)
-    {
-        auto fx = matlab_vac[x];
-        auto dx = cpp_vac[x];
-        bool const is_comparable = std::numeric_limits<double>::is_exact || std::is_enum< double >::value;
-        if (is_comparable)
-        {
-            if (fx != dx && ++n_mismatches <= 5)
-                // bytes will be written to stdout as characters, which we never want... hence '+fx'
-                AC_LOG(DEBUG, "... " << x << ": {matlab}" << fx.x << " " << fx.y << " != " << dx.x << " " << dx.y << "{c++} (exact)");
-        }
-        else if (fx.x != approx(dx.x) || fx.y != approx(dx.y))
-        {
-            if (++n_mismatches <= 5)
-                AC_LOG(DEBUG, "... " << x << ": {matlab}" << std::setprecision(12) << fx.x << " " << fx.y << " != " << dx.x << " " << dx.y << "{c++}");
-        }
-    }
-    if (n_mismatches)
-        AC_LOG(DEBUG, "... " << n_mismatches << " mismatched values of " << size);
-    return (n_mismatches == 0);
-}
+//template<>
+//bool compare_same_vectors<algo::double2, algo::double2>(std::vector< algo::double2> const & matlab, std::vector< algo::double2> const & cpp)
+//{
+//    assert(matlab.size() == cpp.size());
+//    size_t n_mismatches = 0;
+//    size_t size = matlab.size();
+//    auto cpp_vac = cpp;
+//    auto matlab_vac = matlab;
+//    std::sort(matlab_vac.begin(), matlab_vac.end(), [](algo::double2 d1, algo::double2 d2) {return d1.x < d2.x; });
+//    std::sort(cpp_vac.begin(), cpp_vac.end(), [](algo::double2 d1, algo::double2 d2) {return d1.x < d2.x; });
+//    for (size_t x = 0; x < size; ++x)
+//    {
+//        auto fx = matlab_vac[x];
+//        auto dx = cpp_vac[x];
+//        bool const is_comparable = std::numeric_limits<double>::is_exact || std::is_enum< double >::value;
+//        if (is_comparable)
+//        {
+//            if (fx != dx && ++n_mismatches <= 5)
+//                // bytes will be written to stdout as characters, which we never want... hence '+fx'
+//                AC_LOG(DEBUG, "... " << x << ": {matlab}" << fx.x << " " << fx.y << " != " << dx.x << " " << dx.y << "{c++} (exact)");
+//        }
+//        else if (fx.x != approx(dx.x) || fx.y != approx(dx.y))
+//        {
+//            if (++n_mismatches <= 5)
+//                AC_LOG(DEBUG, "... " << x << ": {matlab}" << std::setprecision(12) << fx.x << " " << fx.y << " != " << dx.x << " " << dx.y << "{c++}");
+//        }
+//    }
+//    if (n_mismatches)
+//        AC_LOG(DEBUG, "... " << n_mismatches << " mismatched values of " << size);
+//    return (n_mismatches == 0);
+//}
 
 template<>
 bool compare_same_vectors<algo::double3, algo::double3>(std::vector< algo::double3> const & matlab, std::vector< algo::double3> const & cpp)
@@ -405,7 +417,12 @@ TEST_CASE("Weights calc", "[d2rgb]")
         }
         else
         {
-            ci = F9440687;
+           ci = F9440687;
+           /* md = { 14, 2.914122625391939, 3659, "YUY2_YUY2_1920x1080_00.06.13.1372_F9440687_0000.raw",
+            "YUY2_YUY2_1920x1080_00.06.13.2368_F9440687_0001.raw",
+            "I_GrayScale_1024x768_00.06.13.1484_F9440687_0000.raw",
+            "Z_GrayScale_1024x768_00.06.13.1484_F9440687_0000.raw" };*/
+
             md = { 5, 2.914122625391939, 5089, "YUY2_YUY2_1920x1080_00.00.26.6355_F9440687_0000.raw",
             "YUY2_YUY2_1920x1080_00.00.26.7683_F9440687_0001.raw",
             "I_GrayScale_1024x768_00.00.26.7119_F9440687_0000.raw",
@@ -498,6 +515,9 @@ TEST_CASE("Weights calc", "[d2rgb]")
 
             file = ITERATION_FILE_NAME("DyVals_iteration", data.iteration + 1, 1, md.num_of_edges,"double_00");
             CHECK(compare_to_bin_file< double >(data.d_vals_y, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
+
+            //file = ITERATION_FILE_NAME("xCoeffKrgb", data.iteration + 1, sizeof(algo::k_matrix) / sizeof(double), md.num_of_edges, "double_00");
+            //(compare_to_bin_file< algo::k_matrix>(data.coeffs_k.x_coeffs, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors/*, sort_vectors*/));
 
             file = ITERATION_FILE_NAME("grad_iteration", data.iteration + 1, num_of_calib_elements, 1, "double_00");
             CHECK(compare_calib_to_bin_file(data.params.calib_gradients, 0, dir, scene, file.c_str(), true));

@@ -38,13 +38,15 @@ namespace depth_to_rgb_calibration {
         const std::vector<double>& rc,
         const std::vector<double2>& xy
     );
-    
+    struct iteration_data_collect;
+
     coeffs< k_matrix > calc_k_gradients_coefs(
         const z_frame_data& z_data,
         const yuy2_frame_data& yuy_data,
         const calib & yuy_intrin_extrin,
         const std::vector<double>& rc,
-        const std::vector<double2>& xy
+        const std::vector<double2>& xy,
+        iteration_data_collect * data = nullptr
     );
 
 }  // librealsense::algo::depth_to_rgb_calibration

@@ -739,7 +739,10 @@ static rotation_in_angles calc_rotation_gradients(
     return averages;
 }
 
-static k_matrix calc_k_gradients( const z_frame_data & z_data, const yuy2_frame_data & yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy )
+static k_matrix calc_k_gradients( const z_frame_data & z_data, const yuy2_frame_data & yuy_data, 
+    std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib & yuy_intrin_extrin, 
+    const std::vector<double>& rc, const std::vector<double2>& xy,
+    iteration_data_collect * data = nullptr)
 {
     auto coefs = calc_k_gradients_coefs( z_data, yuy_data, yuy_intrin_extrin, rc, xy );
 

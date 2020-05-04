@@ -4,7 +4,7 @@
 #include "coeffs.h"
 #include "calibration.h"
 #include "frame-data.h"
-
+#include "optimizer.h"
 
 namespace librealsense {
 namespace algo {
@@ -690,7 +690,9 @@ namespace depth_to_rgb_calibration {
         return res;
     }
 
-    coeffs< k_matrix > calc_k_gradients_coefs( const z_frame_data & z_data, const yuy2_frame_data & yuy_data, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy )
+    coeffs< k_matrix > calc_k_gradients_coefs( const z_frame_data & z_data, const yuy2_frame_data & yuy_data, 
+        const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy,
+        iteration_data_collect * data)
     {
         coeffs<k_matrix> res;
         auto v = z_data.vertices;
@@ -702,7 +704,8 @@ namespace depth_to_rgb_calibration {
             res.x_coeffs[i] = calculate_k_gradients_x_coeff( v[i], rc[i], xy[i], yuy_intrin_extrin );
             res.y_coeffs[i] = calculate_k_gradients_y_coeff( v[i], rc[i], xy[i], yuy_intrin_extrin );
         }
-
+        if (data)
+            data->coeffs_k = res;
         return res;
     }
 
