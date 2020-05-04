@@ -31,7 +31,7 @@ namespace librealsense
             return list;
         }
 
-        static std::vector<std::shared_ptr<device_info>> fa_info::pick_fa_devices(
+        static std::vector<std::shared_ptr<device_info>> pick_fa_devices(
             std::shared_ptr<context> ctx,
             const std::vector<platform::uvc_device_info>& uvc_devices);
 

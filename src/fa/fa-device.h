@@ -29,7 +29,7 @@ namespace librealsense
             return dynamic_cast<uvc_sensor&>(*ir_sensor.get_raw_sensor());
         }
 
-        fa_device::fa_device(const std::shared_ptr<context>& ctx,
+        fa_device(const std::shared_ptr<context>& ctx,
             const std::vector<platform::uvc_device_info>& uvc_infos,
             const platform::backend_device_group& group,
             bool register_device_notifications);
