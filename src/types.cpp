@@ -247,7 +247,7 @@ namespace librealsense
             CASE(DEPTH_HUFFMAN_DECODER)
             CASE(SERIALIZABLE)
             CASE(DEVICE_CALIBRATION)
-            CASE(OVERRIDE_TRINSICS_SENSOR)
+            CASE(CALIBRATED_SENSOR)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

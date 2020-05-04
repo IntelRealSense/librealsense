@@ -18,7 +18,7 @@
 #include "error-handling.h"
 #include "frame-validator.h"
 #include "l500-options.h"
-#include "override-trinsics-sensor.h"
+#include "calibrated-sensor.h"
 
 namespace librealsense
 {
@@ -89,7 +89,7 @@ namespace librealsense
         , public video_sensor_interface
         , public virtual depth_sensor
         , public virtual l500_depth_sensor_interface
-        , public override_trinsics_sensor
+        , public calibrated_sensor
     {
     public:
         explicit l500_depth_sensor(
@@ -160,7 +160,7 @@ namespace librealsense
             return intrinsics;
         }
 
-        // override_trinsics_sensor
+        // calibrated_sensor
         void override_intrinsics( rs2_intrinsics const & intr ) override;
         void override_extrinsics( rs2_extrinsics const & extr ) override;
         rs2_dsm_params get_dsm_params() const override;

@@ -663,14 +663,14 @@ namespace rs2
         explicit wheel_odometer(std::shared_ptr<rs2_sensor> dev) : wheel_odometer(sensor(dev)) {}
     };
 
-    class override_trinsics_sensor : public sensor
+    class calibrated_sensor : public sensor
     {
     public:
-        override_trinsics_sensor( sensor s )
+        calibrated_sensor( sensor s )
             : sensor( s.get() )
         {
             rs2_error* e = nullptr;
-            if( rs2_is_sensor_extendable_to( _sensor.get(), RS2_EXTENSION_OVERRIDE_TRINSICS_SENSOR, &e ) == 0 && !e )
+            if( rs2_is_sensor_extendable_to( _sensor.get(), RS2_EXTENSION_CALIBRATED_SENSOR, &e ) == 0 && !e )
             {
                 _sensor.reset();
             }

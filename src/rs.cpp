@@ -42,7 +42,7 @@
 #include "global_timestamp_reader.h"
 #include "auto-calibrated-device.h"
 #include "device-calibration.h"
-#include "override-trinsics-sensor.h"
+#include "calibrated-sensor.h"
 ////////////////////////
 // API implementation //
 ////////////////////////
@@ -1106,7 +1106,7 @@ void rs2_override_extrinsics( const rs2_sensor* sensor, const rs2_extrinsics* ex
     VALIDATE_NOT_NULL( sensor );
     VALIDATE_NOT_NULL( extrinsics );
 
-    auto ois = VALIDATE_INTERFACE( sensor->sensor, librealsense::override_trinsics_sensor );
+    auto ois = VALIDATE_INTERFACE( sensor->sensor, librealsense::calibrated_sensor );
     ois->override_extrinsics( *extrinsics );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , sensor, extrinsics )
@@ -1116,7 +1116,7 @@ void rs2_get_dsm_params( const rs2_sensor * sensor, rs2_dsm_params * p_params_ou
     VALIDATE_NOT_NULL( sensor );
     VALIDATE_NOT_NULL( p_params_out );
 
-    auto ois = VALIDATE_INTERFACE( sensor->sensor, librealsense::override_trinsics_sensor );
+    auto ois = VALIDATE_INTERFACE( sensor->sensor, librealsense::calibrated_sensor );
     *p_params_out = ois->get_dsm_params();
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , sensor, p_params_out )
@@ -1126,7 +1126,7 @@ void rs2_override_dsm_params( const rs2_sensor * sensor, rs2_dsm_params const * 
     VALIDATE_NOT_NULL( sensor );
     VALIDATE_NOT_NULL( p_params );
 
-    auto ois = VALIDATE_INTERFACE( sensor->sensor, librealsense::override_trinsics_sensor );
+    auto ois = VALIDATE_INTERFACE( sensor->sensor, librealsense::calibrated_sensor );
     ois->override_dsm_params( *p_params );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , sensor, p_params )
@@ -1358,7 +1358,7 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
     case RS2_EXTENSION_COLOR_SENSOR        : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::color_sensor)           != nullptr;
     case RS2_EXTENSION_MOTION_SENSOR       : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::motion_sensor)          != nullptr;
     case RS2_EXTENSION_FISHEYE_SENSOR      : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::fisheye_sensor)         != nullptr;
-    case RS2_EXTENSION_OVERRIDE_TRINSICS_SENSOR : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::override_trinsics_sensor)    != nullptr;
+    case RS2_EXTENSION_CALIBRATED_SENSOR   : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::calibrated_sensor)      != nullptr;
 
     default:
         return false;
@@ -2584,7 +2584,7 @@ void rs2_override_intrinsics( const rs2_sensor* sensor, const rs2_intrinsics* in
     VALIDATE_NOT_NULL( sensor );
     VALIDATE_NOT_NULL( intrinsics );
     
-    auto ois = VALIDATE_INTERFACE( sensor->sensor, librealsense::override_trinsics_sensor );
+    auto ois = VALIDATE_INTERFACE( sensor->sensor, librealsense::calibrated_sensor );
     ois->override_intrinsics( *intrinsics );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , sensor, intrinsics )
