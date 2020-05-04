@@ -31,6 +31,7 @@ namespace depth_to_rgb_calibration {
         std::vector< double > ir_edges;
         std::vector<double> gradient_x;
         std::vector<double> gradient_y;
+        std::vector<double> edges;
     };
 
     struct z_frame_data : frame_data

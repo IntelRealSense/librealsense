@@ -451,11 +451,13 @@ TEST_CASE("Weights calc", "[d2rgb]")
         CHECK(compare_to_bin_file< algo::double3 >(z_data.vertices, dir, scene, FILE_NAME("vertices", 3, md.num_of_edges, "double_00").c_str(), md.num_of_edges, 1, compare_same_vectors));
 
         // smearing
-        //CHECK(compare_to_bin_file< double >(depth_data.gradient_x, dir, scene, FILE_NAME("Zx", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
-        //CHECK(compare_to_bin_file< double >(depth_data.gradient_y, dir, scene, FILE_NAME("Zy", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
-        //CHECK(compare_to_bin_file< double >(ir_data.gradient_x, dir, scene, FILE_NAME("Ix", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
-        //CHECK(compare_to_bin_file< double >(ir_data.gradient_y, dir, scene, FILE_NAME("Iy", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
-
+        /*CHECK(compare_to_bin_file< double >(depth_data.gradient_x, dir, scene, FILE_NAME("Zx", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.gradient_y, dir, scene, FILE_NAME("Zy", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(ir_data.gradient_x, dir, scene, FILE_NAME("Ix", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(ir_data.gradient_y, dir, scene, FILE_NAME("Iy", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(ir_data.edges, dir, scene, FILE_NAME("iEdge", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.edges, dir, scene, FILE_NAME("zEdge", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
+        */
         // ---
         TRACE( "\nChecking scene validity:" );
 

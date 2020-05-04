@@ -408,8 +408,12 @@ void optimizer::set_depth_data(
     set_margin(_ir.gradient_x, 2, _depth.width, _depth.height);
     set_margin(_ir.gradient_y, 2, _depth.width, _depth.height);
 
-    /*_depth.edges = calc_intensity(_depth.gradient_x, _depth.gradient_y);
-    _depth.directions = get_direction(_depth.gradient_x, _depth.gradient_y);
+    _depth.edges = calc_intensity(_depth.gradient_x, _depth.gradient_y);
+    _ir.edges = calc_intensity(_ir.gradient_x, _ir.gradient_y);
+
+
+
+    /*_depth.directions = get_direction(_depth.gradient_x, _depth.gradient_y);
     _depth.direction_deg = get_direction_deg(_depth.gradient_x, _depth.gradient_y);
     suppress_weak_edges(_depth, _ir, _params);
 
