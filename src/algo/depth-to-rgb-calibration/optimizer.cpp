@@ -360,7 +360,71 @@ void optimizer::set_z_data(
 
     auto vertices = subedges2vertices( _z, depth_intrinsics, depth_units );
 }
- 
+void set_margin(
+    std::vector<double>& gradient,
+    double margin,
+    size_t width,
+    size_t height)
+{
+    auto it = gradient.begin();
+    for (auto i = 0; i < width; i++)
+    {
+        // zero mask of 2nd row, and row before the last
+        *(it + width + i) = 0;
+        *(it + width*(height-2) + i) = 0;
+    }
+    //for (auto i = 0; i < height; i++)
+    //{
+    //    // zero mask of 2nd column, and column before the last
+    //    *(it + i*width+1) = 0;
+    //    *(it + i * width + 1) = 0;
+    //}
+}
+void optimizer::set_depth_data(
+    std::vector< z_t >&& depth_data,
+    std::vector< ir_t >&& ir_data,
+    rs2_intrinsics_double const& depth_intrinsics,
+    float depth_units)
+{
+    /*[zEdge,Zx,Zy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.z),2); % Added the second input - margin to zero out
+    [iEdge,Ix,Iy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.i),2); % Added the second input - margin to zero out
+    validEdgePixelsByIR = iEdge>params.gradITh; */
+    _params.set_depth_resolution(depth_intrinsics.width, depth_intrinsics.height);
+    _depth.width = depth_intrinsics.width;
+    _depth.height = depth_intrinsics.height;
+    _depth.intrinsics = depth_intrinsics;
+    _depth.depth_units = depth_units;
+
+    _depth.frame = std::move(depth_data);
+
+    _depth.gradient_x = calc_vertical_gradient(_depth.frame, depth_intrinsics.width, depth_intrinsics.height);
+    _depth.gradient_y = calc_horizontal_gradient(_depth.frame, depth_intrinsics.width, depth_intrinsics.height);
+    _ir.gradient_x = calc_vertical_gradient(_ir.ir_frame, depth_intrinsics.width, depth_intrinsics.height);
+    _ir.gradient_y = calc_horizontal_gradient(_ir.ir_frame, depth_intrinsics.width, depth_intrinsics.height);
+
+    // set margin of 2 pixels to 0
+    set_margin(_depth.gradient_x, 2, _depth.width, _depth.height);
+    set_margin(_depth.gradient_y, 2, _depth.width, _depth.height);
+    set_margin(_ir.gradient_x, 2, _depth.width, _depth.height);
+    set_margin(_ir.gradient_y, 2, _depth.width, _depth.height);
+
+    /*_depth.edges = calc_intensity(_depth.gradient_x, _depth.gradient_y);
+    _depth.directions = get_direction(_depth.gradient_x, _depth.gradient_y);
+    _depth.direction_deg = get_direction_deg(_depth.gradient_x, _depth.gradient_y);
+    suppress_weak_edges(_depth, _ir, _params);
+
+    auto subpixels = calc_subpixels(_depth, _ir,
+        _params.grad_ir_threshold, _params.grad_z_threshold,
+        depth_intrinsics.width, depth_intrinsics.height);
+    _depth.subpixels_x = subpixels.first;
+    _depth.subpixels_y = subpixels.second;
+
+    _depth.closest = get_closest_edges(_depth, _ir, depth_intrinsics.width, depth_intrinsics.height);
+
+    calculate_weights(_depth);
+
+    auto vertices = subedges2vertices(_depth, depth_intrinsics, depth_units);*/
+}
 
 void optimizer::set_yuy_data(
     std::vector< yuy_t > && yuy_data,
