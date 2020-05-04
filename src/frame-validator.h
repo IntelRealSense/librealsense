@@ -40,33 +40,6 @@ namespace librealsense
         void on_frame(rs2_frame * f) override;
         void release() override;
 
-        static bool stream_profiles_correspond(stream_profile_interface* l, stream_profile_interface* r)
-        {
-            auto vl = dynamic_cast<video_stream_profile_interface*>(l);
-            auto vr = dynamic_cast<video_stream_profile_interface*>(r);
-
-            if (!vl || !vr)
-                return false;
-
-            return  l->get_framerate() == r->get_framerate() &&
-                vl->get_width() == vr->get_width() &&
-                vl->get_height() == vr->get_height();
-        }
-
-        bool stream_profiles_equal(stream_profile_interface* l, stream_profile_interface* r)
-        {
-            auto vl = dynamic_cast<video_stream_profile_interface*>(l);
-            auto vr = dynamic_cast<video_stream_profile_interface*>(r);
-
-            if (!vl || !vr)
-                return false;
-
-            return  l->get_framerate() == r->get_framerate() &&
-                vl->get_width() == vr->get_width() &&
-                vl->get_height() == vr->get_height() &&
-                vl->get_stream_type() == vr->get_stream_type();
-        }
-
     private:
         bool propagate(frame_interface* frame);
         bool is_user_requested_frame(frame_interface* frame);
