@@ -25,7 +25,11 @@ namespace librealsense
         // FA ir XU identifiers
         const uint8_t FA_LED_POWER = 10;
         const uint8_t FA_LASER_POWER = 11;
-        const uint8_t FA_EXPOSURE = 12;
+        const uint8_t FA_EXPOSURE_MODE = 12;
+        const uint32_t FA_EXPOSURE_TIME_FIRST = 13;
+        const uint32_t FA_EXPOSURE_TIME_SECOND = 14;
+        const uint16_t FA_GAIN_FIRST = 15;
+        const uint16_t FA_GAIN_SECOND = 16;
 
         // Devices supported by the current version
         static const std::set<std::uint16_t> rs_fa_sku_pid = {

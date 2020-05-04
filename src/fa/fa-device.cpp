@@ -239,21 +239,29 @@ namespace librealsense
     {
         using namespace librealsense::fa;
 
-        // GAIN
-        ir_ep->register_pu(RS2_OPTION_GAIN);
-
         // make sure the XU is initialized every time we power the camera
         raw_ir_ep->register_xu(ir_xu); 
 
-        // EXPOSURE
-        auto exposure_option = std::make_shared<uvc_pu_option>(*raw_ir_ep, RS2_OPTION_EXPOSURE);
-        auto auto_exposure_option = std::make_shared<uvc_pu_option>(*raw_ir_ep, RS2_OPTION_ENABLE_AUTO_EXPOSURE);
-        ir_ep->register_option(RS2_OPTION_EXPOSURE, exposure_option);
-        ir_ep->register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, auto_exposure_option);
+        // GAIN
+        ir_ep->register_option(RS2_OPTION_GAIN,
+            std::make_shared<uvc_xu_option<uint16_t>>(*raw_ir_ep, ir_xu, FA_GAIN_FIRST,
+                "Gain for left sensor"));
+        ir_ep->register_option(RS2_OPTION_GAIN_SECOND,
+            std::make_shared<uvc_xu_option<uint16_t>>(*raw_ir_ep, ir_xu, FA_GAIN_SECOND,
+                "Gain for right sensor"));
+
+        // EXPOSURE MODE
+        ir_ep->register_option(RS2_OPTION_AUTO_EXPOSURE_MODE,
+            std::make_shared<uvc_xu_option<uint8_t>>(*raw_ir_ep, ir_xu, FA_EXPOSURE_MODE,
+                "Exposure Mode Manual = 0, Auto = 1, Preset = 2"));
+
+        // EXPOSURE TIME
         ir_ep->register_option(RS2_OPTION_EXPOSURE,
-            std::make_shared<auto_disabling_control>(
-                exposure_option,
-                auto_exposure_option));
+            std::make_shared<uvc_xu_option<uint32_t>>(*raw_ir_ep, ir_xu, FA_EXPOSURE_TIME_FIRST,
+                "Exposure for left sensor in us"));
+        ir_ep->register_option(RS2_OPTION_EXPOSURE_SECOND,
+            std::make_shared<uvc_xu_option<uint32_t>>(*raw_ir_ep, ir_xu, FA_EXPOSURE_TIME_SECOND,
+                "Exposure for right sensor in us"));
 
         // LED
         ir_ep->register_option(RS2_OPTION_LED_POWER,
@@ -264,11 +272,6 @@ namespace librealsense
         /*ir_ep->register_option(RS2_OPTION_LASER_POWER,
             std::make_shared<uvc_xu_option<uint8_t>>(*raw_ir_ep, ir_xu, FA_LASER_POWER,
                 "Set the power level of the LASER, with 0 meaning LASER off"));*/
-
-        // EXPOSURE
-        /*ir_ep->register_option(RS2_OPTION_EXPOSURE,
-            std::make_shared<uvc_xu_option<uint64_t>>(*raw_ir_ep, ir_xu, FA_EXPOSURE,
-                "Exposure Control"));*/
     }
     
     fa_device::fa_device(const std::shared_ptr<context>& ctx,
