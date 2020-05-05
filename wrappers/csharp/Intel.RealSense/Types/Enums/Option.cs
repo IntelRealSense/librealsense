@@ -225,6 +225,9 @@ namespace Intel.RealSense
         SensorMode = 70,
 
         /// <summary>Enable Laser On constantly (GS SKU Only)</summary>
-        EmitterAlwaysOn = 71
+        EmitterAlwaysOn = 71,
+
+        /// <summary>Depth Thermal Compensation for selected D400 SKUs</summary>
+        ThermalCompensation = 72
     }
 }
