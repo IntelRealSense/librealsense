@@ -53,6 +53,22 @@ namespace depth_to_rgb_calibration {
         double alpha;
         double beta;
         double gamma;
+
+        bool operator==(const rotation_in_angles& other)
+        {
+            return alpha == other.alpha && beta == other.beta && gamma == other.gamma;
+        }
+        bool operator!=(const rotation_in_angles& other)
+        {
+            return !(*this == other);
+        }
+        bool operator<(const rotation_in_angles& other)
+        {
+            return (alpha < other.alpha) ||
+                (alpha == other.alpha && beta < other.beta) ||
+                (alpha == other.alpha && beta == other.beta && gamma < other.gamma);
+
+        }
     };
 
     rotation extract_rotation_from_angles( const rotation_in_angles & rot_angles );
@@ -78,9 +94,13 @@ namespace depth_to_rgb_calibration {
         {
             return !(*this == other);
         }
-        k_matrix operator+(const k_matrix& other)
+        bool operator<(const k_matrix& other)
         {
-            return {};
+            return (fx < other.fx) ||
+                (fx == other.fx && fy < other.fy) ||
+                (fx == other.fx && fy == other.fy && ppx < other.ppx) ||
+                (fx == other.fx && fy == other.fy && ppx == other.ppx && ppy < other.ppy);
+                
         }
     };
 

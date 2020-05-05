@@ -706,10 +706,15 @@ static rotation_in_angles calc_rotation_gradients(
     std::vector<double> interp_IDT_y,
     const calib & yuy_intrin_extrin,
     const std::vector<double>& rc,
-    const std::vector<double2>& xy
+    const std::vector<double2>& xy,
+    iteration_data_collect * data = nullptr
 )
 {
     auto coefs = calc_rotation_coefs( z_data, yuy_data, yuy_intrin_extrin, rc, xy );
+
+    if (data)
+        data->coeffs_r = coefs;
+
     auto w = z_data.weights;
 
     rotation_in_angles sums = { 0 };
@@ -745,6 +750,8 @@ static k_matrix calc_k_gradients( const z_frame_data & z_data, const yuy2_frame_
     iteration_data_collect * data = nullptr)
 {
     auto coefs = calc_k_gradients_coefs( z_data, yuy_data, yuy_intrin_extrin, rc, xy );
+    if (data)
+        data->coeffs_k = coefs;
 
     auto w = z_data.weights;
 
@@ -864,9 +871,9 @@ static calib calc_gradients(
 
     auto rc = calc_rc( z_data, yuy_data, curr_calib );
 
-    res.rot_angles = calc_rotation_gradients( z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first );
+    res.rot_angles = calc_rotation_gradients( z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first, data);
     res.trans = calc_translation_gradients( z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first );
-    res.k_mat = calc_k_gradients( z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first );
+    res.k_mat = calc_k_gradients( z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first, data );
     res.rot = extract_rotation_from_angles( res.rot_angles );
     return res;
 }

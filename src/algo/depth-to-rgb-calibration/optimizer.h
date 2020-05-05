@@ -78,6 +78,7 @@ namespace depth_to_rgb_calibration {
         std::vector< double > d_vals_x;
         std::vector< double > d_vals_y;
         coeffs<k_matrix> coeffs_k;
+        coeffs<rotation_in_angles> coeffs_r;
     };
 
     class optimizer
