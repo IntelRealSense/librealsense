@@ -3,7 +3,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
 #include "../include/librealsense2/hpp/rs_sensor.hpp"
-#include "override-trinsics-sensor.h"
+#include "calibrated-sensor.h"
 
 void init_sensor(py::module &m) {
     /** rs_sensor.hpp **/
@@ -72,7 +72,7 @@ void init_sensor(py::module &m) {
         .def(BIND_DOWNCAST(sensor, motion_sensor))
         .def(BIND_DOWNCAST(sensor, fisheye_sensor))
         .def(BIND_DOWNCAST(sensor, pose_sensor))
-        .def(BIND_DOWNCAST(sensor, override_trinsics_sensor))
+        .def(BIND_DOWNCAST(sensor, calibrated_sensor))
         .def(BIND_DOWNCAST(sensor, wheel_odometer));
 
     // rs2::sensor_from_frame [frame.def("get_sensor", ...)?
@@ -102,11 +102,13 @@ void init_sensor(py::module &m) {
     fisheye_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
         .def("__nonzero__", &rs2::fisheye_sensor::operator bool); // No docstring in C++
 
-    py::class_<rs2::override_trinsics_sensor, rs2::sensor> ot_sensor( m, "override_trinsics_sensor" );
-    ot_sensor.def( py::init<rs2::sensor>(), "sensor"_a )
-        .def( "override_intrinsics", &rs2::override_trinsics_sensor::override_intrinsics, "intrinsics"_a )
-        .def( "override_extrinsics", &rs2::override_trinsics_sensor::override_extrinsics, "extrinsics"_a )
-        .def( "__nonzero__", &rs2::override_trinsics_sensor::operator bool );
+    py::class_<rs2::calibrated_sensor, rs2::sensor> cal_sensor( m, "calibrated_sensor" );
+    cal_sensor.def( py::init<rs2::sensor>(), "sensor"_a )
+        .def( "override_intrinsics", &rs2::calibrated_sensor::override_intrinsics, "intrinsics"_a )
+        .def( "override_extrinsics", &rs2::calibrated_sensor::override_extrinsics, "extrinsics"_a )
+        .def( "get_dsm_params", &rs2::calibrated_sensor::get_dsm_params )
+        .def( "override_dsm_params", &rs2::calibrated_sensor::override_dsm_params, "dsm_params"_a )
+        .def( "__nonzero__", &rs2::calibrated_sensor::operator bool );
 
     // rs2::depth_stereo_sensor
     py::class_<rs2::depth_stereo_sensor, rs2::depth_sensor> depth_stereo_sensor(m, "depth_stereo_sensor"); // No docstring in C++

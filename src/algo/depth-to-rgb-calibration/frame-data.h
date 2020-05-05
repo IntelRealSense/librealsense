@@ -29,6 +29,21 @@ namespace depth_to_rgb_calibration {
     {
         std::vector< ir_t > ir_frame;
         std::vector< double > ir_edges;
+        std::vector<double> edges;
+
+        // smearing
+        std::vector<double> gradient_x;
+        std::vector<double> gradient_y;
+        std::vector< byte > section_map_depth;
+        std::vector<uint8_t> valid_edge_pixels_by_ir;
+        std::vector<byte> valid_section_map;
+        std::vector<double>valid_gradient_x;
+        std::vector<double>valid_gradient_y;
+        std::vector<direction> directions;
+        std::vector<double> direction_deg;
+        std::vector<double> valid_location_rc_x;
+        std::vector<double> valid_location_rc_y;
+        std::vector<double> direction_per_pixel;
     };
 
     struct z_frame_data : frame_data
@@ -50,6 +65,8 @@ namespace depth_to_rgb_calibration {
         std::vector<double> direction_deg;
         std::vector<double3> vertices;
 
+        //smearing
+        std::vector< byte > section_map_depth;
         // input validation
         std::vector<byte> section_map;
         bool is_edge_distributed;

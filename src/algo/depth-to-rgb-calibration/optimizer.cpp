@@ -141,7 +141,26 @@ static std::vector< double > get_direction_deg(
     }
     return res;
 }
+static std::vector< double > get_direction_deg2(
+    std::vector<double> const& gradient_x,
+    std::vector<double> const& gradient_y
+    )
+{
+#define PI 3.14159265
+    std::vector<double> res(gradient_x.size(), deg_none);
 
+    for (auto i = 0; i < gradient_x.size(); i++)
+    {
+        int closest = -1;
+        auto angle = atan2(gradient_y[i], gradient_x[i])*180.f  / PI;
+        angle = angle < 0 ?  360+angle : angle;
+        auto dir = fmod(angle, 360);
+
+
+        res[i] = dir;
+    }
+    return res;
+}
 static
 std::pair< int, int > get_prev_index(
     direction dir,
@@ -360,7 +379,174 @@ void optimizer::set_z_data(
 
     auto vertices = subedges2vertices( _z, depth_intrinsics, depth_units );
 }
- 
+void set_margin(
+    std::vector<double>& gradient,
+    double margin,
+    size_t width,
+    size_t height)
+{
+    auto it = gradient.begin();
+    for (auto i = 0; i < width; i++)
+    {
+        // zero mask of 2nd row, and row before the last
+        *(it + width + i) = 0;
+        *(it + width*(height-2) + i) = 0;
+    }
+    for (auto i = 0; i < height; i++)
+    {
+        // zero mask of 2nd column, and column before the last
+        *(it + i*width+1) = 0;
+        *(it + i * width + (width-2)) = 0;
+    }
+}
+template<class T>
+void valid_by_ir(
+    std::vector<T>& filtered,
+    std::vector<T>& origin,
+    std::vector<uint8_t>& valid_edge_by_ir,
+    size_t width,
+    size_t height)
+{
+    // origin and valid_edge_by_ir are of same size
+    for (auto j = 0; j < width; j++)
+    {
+        for (auto i = 0; i < height; i++)
+        {
+            auto idx = i * width + j;
+            if (valid_edge_by_ir[idx])
+            {
+                filtered.push_back(origin[idx]);
+            }
+        }
+    }
+}
+void grid_xy(
+    std::vector<double>& gridx,
+    std::vector<double>& gridy,
+    size_t width,
+    size_t height)
+{
+    for (auto i = 1; i <= height; i++)
+    {
+        for (auto j = 1; j <= width; j++)
+        {
+            gridx.push_back(j);
+            gridy.push_back(i);
+        }
+    }
+}
+
+void optimizer::set_depth_data(
+    std::vector< z_t >&& depth_data,
+    std::vector< ir_t >&& ir_data,
+    rs2_intrinsics_double const& depth_intrinsics,
+    float depth_units)
+{
+    /*[zEdge,Zx,Zy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.z),2); % Added the second input - margin to zero out
+    [iEdge,Ix,Iy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.i),2); % Added the second input - margin to zero out
+    validEdgePixelsByIR = iEdge>params.gradITh; */
+    _params.set_depth_resolution(depth_intrinsics.width, depth_intrinsics.height);
+    _depth.width = depth_intrinsics.width;
+    _depth.height = depth_intrinsics.height;
+    _depth.intrinsics = depth_intrinsics;
+    _depth.depth_units = depth_units;
+
+    _depth.frame = std::move(depth_data);
+
+    _depth.gradient_x = calc_vertical_gradient(_depth.frame, depth_intrinsics.width, depth_intrinsics.height);
+    _depth.gradient_y = calc_horizontal_gradient(_depth.frame, depth_intrinsics.width, depth_intrinsics.height);
+    _ir.gradient_x = calc_vertical_gradient(_ir.ir_frame, depth_intrinsics.width, depth_intrinsics.height);
+    _ir.gradient_y = calc_horizontal_gradient(_ir.ir_frame, depth_intrinsics.width, depth_intrinsics.height);
+
+    // set margin of 2 pixels to 0
+    set_margin(_depth.gradient_x, 2, _depth.width, _depth.height);
+    set_margin(_depth.gradient_y, 2, _depth.width, _depth.height);
+    set_margin(_ir.gradient_x, 2, _depth.width, _depth.height);
+    set_margin(_ir.gradient_y, 2, _depth.width, _depth.height);
+
+    _depth.edges = calc_intensity(_depth.gradient_x, _depth.gradient_y);
+    _ir.edges = calc_intensity(_ir.gradient_x, _ir.gradient_y);
+
+    for (auto it = _ir.edges.begin(); it < _ir.edges.end(); it++)
+    {
+        if (*it > _params.grad_ir_threshold)
+        {
+            _ir.valid_edge_pixels_by_ir.push_back(1);
+        }
+        else
+        {
+            _ir.valid_edge_pixels_by_ir.push_back(0);
+        }
+    }
+    /*sz = size(frame.i);
+    [gridX,gridY] = meshgrid(1:sz(2),1:sz(1)); % gridX/Y contains the indices of the pixels
+    sectionMapDepth = OnlineCalibration.aux.sectionPerPixel(params);
+*/
+// Get a map for each pixel to its corresponding section
+    _depth.section_map_depth.resize(_depth.width * _depth.height);
+    size_t const section_w = _params.num_of_sections_for_edge_distribution_x;  //% params.numSectionsH
+    size_t const section_h = _params.num_of_sections_for_edge_distribution_y;  //% params.numSectionsH
+    section_per_pixel(_depth, section_w, section_h, _depth.section_map_depth.data());
+
+    /*locRC = [gridY(validEdgePixelsByIR),gridX(validEdgePixelsByIR)];
+    sectionMapValid = sectionMapDepth(validEdgePixelsByIR);
+    IxValid = Ix(validEdgePixelsByIR);
+    IyValid = Iy(validEdgePixelsByIR);
+    directionInDeg = atan2d(IyValid,IxValid);
+    directionInDeg(directionInDeg<0) = directionInDeg(directionInDeg<0) + 360;
+    [~,directionIndex] = min(abs(directionInDeg - [0:45:315]),[],2); % Quantize the direction to 4 directions (don't care about the sign)
+ */
+    
+    std::vector<double> grid_x;
+    std::vector<double> grid_y;
+    grid_xy(grid_x, grid_y, _depth.width, _depth.height);
+
+    valid_by_ir(_ir.valid_location_rc_x, grid_x, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
+    valid_by_ir(_ir.valid_location_rc_y, grid_y,_ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
+    valid_by_ir(_ir.valid_section_map, _depth.section_map_depth, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
+    valid_by_ir(_ir.valid_gradient_x, _ir.gradient_x, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
+    valid_by_ir(_ir.valid_gradient_y, _ir.gradient_y, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
+
+    _ir.direction_deg = get_direction_deg2(_ir.valid_gradient_x, _ir.valid_gradient_y); // used for debug only
+    _ir.directions = get_direction2(_ir.valid_gradient_x, _ir.valid_gradient_y);
+
+    /*dirsVec = [0,1; 1,1; 1,0; 1,-1]; % These are the 4 directions
+    dirsVec = [dirsVec;-dirsVec];
+    if 1
+        % Take the right direction
+        dirPerPixel = dirsVec(directionIndex,:);
+        localRegion = locRC + dirPerPixel.*reshape(vec(-2:1),1,1,[]);
+        localEdges = squeeze(interp2(iEdge,localRegion(:,2,:),localRegion(:,1,:)));
+        isSupressed = localEdges(:,3) >= localEdges(:,2) & localEdges(:,3) >= localEdges(:,4);
+
+        fraqStep = (-0.5*(localEdges(:,4)-localEdges(:,2))./(localEdges(:,4)+localEdges(:,2)-2*localEdges(:,3))); % The step we need to move to reach the subpixel gradient i nthe gradient direction
+        fraqStep((localEdges(:,4)+localEdges(:,2)-2*localEdges(:,3))==0) = 0;
+
+        locRCsub = locRC + fraqStep.*dirPerPixel;*/
+    double directions[8][2] = { {0,1},{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{-1,1} };
+     for (auto i = 0; i < _ir.directions.size(); i++)
+    {
+         int idx = _ir.directions[i];
+        _ir.direction_per_pixel.push_back(directions[idx][0]); 
+        _ir.direction_per_pixel.push_back(directions[idx][1]);
+    }
+
+    // old code :
+    /*
+    suppress_weak_edges(_depth, _ir, _params);
+
+    auto subpixels = calc_subpixels(_depth, _ir,
+        _params.grad_ir_threshold, _params.grad_z_threshold,
+        depth_intrinsics.width, depth_intrinsics.height);
+    _depth.subpixels_x = subpixels.first;
+    _depth.subpixels_y = subpixels.second;
+
+    _depth.closest = get_closest_edges(_depth, _ir, depth_intrinsics.width, depth_intrinsics.height);
+
+    calculate_weights(_depth);
+
+    auto vertices = subedges2vertices(_depth, depth_intrinsics, depth_units);*/
+}
 
 void optimizer::set_yuy_data(
     std::vector< yuy_t > && yuy_data,
@@ -440,7 +626,30 @@ std::vector< direction > optimizer::get_direction( std::vector<double> gradient_
     }
     return res;
 }
+std::vector< direction > optimizer::get_direction2(std::vector<double> gradient_x, std::vector<double> gradient_y)
+{
+#define PI 3.14159265
+    std::vector<direction> res(gradient_x.size(), deg_none);
+    
+    std::map<int, direction> angle_dir_map = { {0, deg_0}, {45,deg_45} , {90,deg_90}, {135,deg_135} , { 180,deg_180 }, { 225,deg_225 }, { 270,deg_270 }, { 315,deg_315 } };
 
+
+
+    for (auto i = 0; i < gradient_x.size(); i++)
+    {
+        int closest = -1;
+        auto angle = atan2(gradient_y[i], gradient_x[i]) * 180.f / PI;
+        angle = angle < 0 ? 360 + angle : angle;
+        auto dir = fmod(angle, 360);
+
+        for (auto d : angle_dir_map)
+        {
+            closest = closest == -1 || abs(dir - d.first) < abs(dir - closest) ? d.first : closest;
+        }
+        res[i] = angle_dir_map[closest];
+    }
+    return res;
+}
 std::vector< uint16_t > optimizer::get_closest_edges(
     z_frame_data const & z_data,
     ir_frame_data const & ir_data,

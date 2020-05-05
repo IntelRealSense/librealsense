@@ -29,10 +29,15 @@ namespace depth_to_rgb_calibration {
 
     enum direction :uint8_t
     {
-        deg_0, //0, 1
+        //deg_111, //to be aligned with matlab (maybe should be removed later) 
+        deg_0, // 0, 1
         deg_45, //1, 1
         deg_90, //1, 0
         deg_135, //1, -1
+        deg_180, //
+        deg_225, //
+        deg_270, //
+        deg_315, //
         deg_none
     };
 

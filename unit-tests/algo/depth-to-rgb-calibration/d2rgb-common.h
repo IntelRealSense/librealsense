@@ -20,8 +20,9 @@ using librealsense::to_string;
 //static char const * const data_dirs[] = {""
 //};
 
-static char const * root_data_dir = "C:\\work\\librealsense\\build\\unit-tests\\algo\\depth-to-rgb-calibration\\19.2.20\\";
-static char const * const data_dirs[] = {
+static char const * root_data_dir = "..\\unit-tests\\algo\\depth-to-rgb-calibration\\19.2.20\\";
+
+static char const* const data_dirs[] = {
     "F9440687\\Snapshots\\LongRange_D_768x1024_RGB_1920x1080"
 };
 
@@ -94,4 +95,10 @@ void init_algo( algo::optimizer & cal,
         read_image_file< algo::z_t >( dir + z, camera.z.width, camera.z.height ),
         camera.z, camera.z_units
     );
+
+    cal.set_depth_data(
+        read_image_file< algo::z_t >(dir + z, camera.z.width, camera.z.height),
+        read_image_file< algo::ir_t >(dir + ir, camera.z.width, camera.z.height),
+        camera.z, camera.z_units
+        );
 }

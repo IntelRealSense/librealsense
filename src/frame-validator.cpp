@@ -7,6 +7,21 @@
 
 namespace librealsense
 {
+
+    bool stream_profiles_equal(stream_profile_interface* l, stream_profile_interface* r)
+    {
+        auto vl = dynamic_cast<video_stream_profile_interface*>(l);
+        auto vr = dynamic_cast<video_stream_profile_interface*>(r);
+
+        if (!vl || !vr)
+            return false;
+
+        return  l->get_framerate() == r->get_framerate() &&
+            vl->get_width() == vr->get_width() &&
+            vl->get_height() == vr->get_height() &&
+            vl->get_stream_type() == vr->get_stream_type();
+    }
+
     void frame_validator::on_frame(rs2_frame * f)
     {
         if (!_stopped && propagate((frame_interface*)f))
@@ -110,7 +125,7 @@ namespace librealsense
     {
         return std::find_if(_user_requests.begin(), _user_requests.end(), [&](std::shared_ptr<stream_profile_interface> sp)
         {
-            return stream_profiles_correspond(frame->get_stream().get(), sp.get());
+            return stream_profiles_equal(frame->get_stream().get(), sp.get());
         }) != _user_requests.end();
     }
 }

@@ -97,7 +97,11 @@ namespace depth_to_rgb_calibration {
             std::vector< z_t > && z_data,
             rs2_intrinsics_double const & depth_intrinsics,
             float depth_units );
-
+        void set_depth_data(
+            std::vector< z_t >&& z_data,
+            std::vector< ir_t >&& ir_data,
+            rs2_intrinsics_double const& depth_intrinsics,
+            float depth_units);
         // Write dumps of all the pertinent data from the above to a directory of choice, so that
         // a reproduction can be made
         void write_data_to( std::string const & directory );
@@ -123,11 +127,12 @@ namespace depth_to_rgb_calibration {
         z_frame_data    const & get_z_data() const   { return _z; }
         yuy2_frame_data const & get_yuy_data() const { return _yuy; }
         ir_frame_data   const & get_ir_data() const  { return _ir; }
-
+        z_frame_data    const& get_depth_data() const { return _depth; }
         // impl
     private:
         void zero_invalid_edges( z_frame_data& z_data, ir_frame_data const & ir_data );
         std::vector<direction> get_direction( std::vector<double> gradient_x, std::vector<double> gradient_y );
+        std::vector<direction> get_direction2(std::vector<double> gradient_x, std::vector<double> gradient_y);
         std::vector<uint16_t> get_closest_edges( const z_frame_data& z_data, ir_frame_data const & ir_data, size_t width, size_t height );
         std::vector<double> blur_edges( std::vector<double> const & edges, size_t image_width, size_t image_height );
         std::vector<uint8_t> get_luminance_from_yuy2( std::vector<uint16_t> yuy2_imagh );
@@ -160,6 +165,7 @@ namespace depth_to_rgb_calibration {
         yuy2_frame_data _yuy;
         ir_frame_data _ir;
         z_frame_data _z;
+        z_frame_data _depth;
         calib _original_calibration;         // starting state of auto-calibration
         calib _factory_calibration;          // factory default calibration of the camera
         optimaization_params _params_curr;   // last-known setting
