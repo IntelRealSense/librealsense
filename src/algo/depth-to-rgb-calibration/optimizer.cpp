@@ -420,6 +420,22 @@ void valid_by_ir(
         }
     }
 }
+void grid_xy(
+    std::vector<double>& gridx,
+    std::vector<double>& gridy,
+    size_t width,
+    size_t height)
+{
+    for (auto i = 1; i <= height; i++)
+    {
+        for (auto j = 1; j <= width; j++)
+        {
+            gridx.push_back(j);
+            gridy.push_back(i);
+        }
+    }
+}
+
 void optimizer::set_depth_data(
     std::vector< z_t >&& depth_data,
     std::vector< ir_t >&& ir_data,
@@ -479,19 +495,36 @@ void optimizer::set_depth_data(
     directionInDeg = atan2d(IyValid,IxValid);
     directionInDeg(directionInDeg<0) = directionInDeg(directionInDeg<0) + 360;
     [~,directionIndex] = min(abs(directionInDeg - [0:45:315]),[],2); % Quantize the direction to 4 directions (don't care about the sign)
-    dirsVec = [0,1; 1,1; 1,0; 1,-1]; % These are the 4 directions
-    dirsVec = [dirsVec;-dirsVec];*/
-    std::vector<double> valid_location_rc_x;
-    std::vector<double> valid_location_rc_y;
+ */
     
-    //valid_by_ir(valid_location_rc_x, _ir.valid_edge_pixels_by_ir);
-    //valid_by_ir(valid_location_rc_y, _ir.valid_edge_pixels_by_ir);
+    std::vector<double> grid_x;
+    std::vector<double> grid_y;
+    grid_xy(grid_x, grid_y, _depth.width, _depth.height);
+
+    valid_by_ir(_ir.valid_location_rc_x, grid_x, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
+    valid_by_ir(_ir.valid_location_rc_y, grid_y,_ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
     valid_by_ir(_ir.valid_section_map, _depth.section_map_depth, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
     valid_by_ir(_ir.valid_gradient_x, _ir.gradient_x, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
     valid_by_ir(_ir.valid_gradient_y, _ir.gradient_y, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
 
     _ir.direction_deg = get_direction_deg2(_ir.valid_gradient_x, _ir.valid_gradient_y); // used for debug only
     _ir.directions = get_direction2(_ir.valid_gradient_x, _ir.valid_gradient_y);
+
+    /*dirsVec = [0,1; 1,1; 1,0; 1,-1]; % These are the 4 directions
+    dirsVec = [dirsVec;-dirsVec];
+    if 1
+        % Take the right direction
+        dirPerPixel = dirsVec(directionIndex,:);
+        localRegion = locRC + dirPerPixel.*reshape(vec(-2:1),1,1,[]);
+        localEdges = squeeze(interp2(iEdge,localRegion(:,2,:),localRegion(:,1,:)));
+        isSupressed = localEdges(:,3) >= localEdges(:,2) & localEdges(:,3) >= localEdges(:,4);
+
+        fraqStep = (-0.5*(localEdges(:,4)-localEdges(:,2))./(localEdges(:,4)+localEdges(:,2)-2*localEdges(:,3))); % The step we need to move to reach the subpixel gradient i nthe gradient direction
+        fraqStep((localEdges(:,4)+localEdges(:,2)-2*localEdges(:,3))==0) = 0;
+
+        locRCsub = locRC + fraqStep.*dirPerPixel;*/
+
+
 
     /*
     suppress_weak_edges(_depth, _ir, _params);

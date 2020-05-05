@@ -41,6 +41,8 @@ namespace depth_to_rgb_calibration {
         std::vector<double>valid_gradient_y;
         std::vector<direction> directions;
         std::vector<double> direction_deg;
+        std::vector<double> valid_location_rc_x;
+        std::vector<double> valid_location_rc_y;
     };
 
     struct z_frame_data : frame_data
