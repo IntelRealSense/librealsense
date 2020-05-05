@@ -525,7 +525,7 @@ void optimizer::set_depth_data(
         locRCsub = locRC + fraqStep.*dirPerPixel;*/
 
 
-
+    // old code :
     /*
     suppress_weak_edges(_depth, _ir, _params);
 
