@@ -19,8 +19,9 @@ using librealsense::to_string;
 //static char const * const data_dirs[] = {""
 //};
 
-static char const * root_data_dir = "C:\\work\\librealsense\\build\\unit-tests\\algo\\depth-to-rgb-calibration\\19.2.20\\";
-static char const * const data_dirs[] = {
+static char const* root_data_dir = "C:\\Users\\nyassin\\Documents\\realsense_all\\debug_scene\\"; // "C:\\Users\\nyassin\\Documents\\realsense_all\\";// "..\\unit-tests\\algo\\depth-to-rgb-calibration\\19.2.20\\";
+
+static char const* const data_dirs[] = {
     "LongRange 768X1024 (RGB 1920X1080)"//"binFiles_avishag"//"F9440687\\Snapshots\\LongRange_D_768x1024_RGB_1920x1080"
 };
 
