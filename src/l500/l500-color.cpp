@@ -307,6 +307,17 @@ namespace librealsense
         environment::get_instance().get_extrinsics_graph().override_extrinsics( *_owner->_depth_stream, *_owner->_color_stream, extr );
     }
 
+    rs2_dsm_params l500_color_sensor::get_dsm_params() const
+    {
+        throw std::logic_error( "color sensor does not support DSM parameters" );
+    }
+
+    void l500_color_sensor::override_dsm_params( rs2_dsm_params const & dsm )
+    {
+        throw std::logic_error( "color sensor does not support DSM parameters" );
+    }
+
+
 
     std::vector<tagged_profile> l500_color::get_profiles_tags() const
     {

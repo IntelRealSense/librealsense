@@ -60,6 +60,22 @@ void init_c_files(py::module &m) {
             return ss.str();
         });
 
+    py::class_<rs2_dsm_params> dsm_params( m, "dsm_params", "Video stream DSM parameters" );
+    dsm_params.def( py::init<>() )
+        .def_readwrite( "h_scale", &rs2_dsm_params::h_scale, "horizontal DSM scale" )
+        .def_readwrite( "v_scale", &rs2_dsm_params::v_scale, "vertical DSM scale" )
+        .def_readwrite( "h_offset", &rs2_dsm_params::h_offset, "horizontal DSM offset" )
+        .def_readwrite( "v_offset", &rs2_dsm_params::v_offset, "vertical DSM offset" )
+        .def_readwrite( "rtd_offset", &rs2_dsm_params::rtd_offset, "the Round-Trip-Distance delay" )
+        .def( "__repr__",
+            []( const rs2_dsm_params & self )
+            {
+                std::stringstream ss;
+                ss << "x[ " << self.h_scale << " " << self.v_scale << "] ";
+                ss << "+[ " << self.h_offset << " " << self.v_offset << " rtd " << self.rtd_offset << "]";
+                return ss.str();
+            } );
+
     py::class_<rs2_motion_device_intrinsic> motion_device_intrinsic(m, "motion_device_intrinsic", "Motion device intrinsics: scale, bias, and variances.");
     motion_device_intrinsic.def(py::init<>())
         .def_property(BIND_RAW_2D_ARRAY_PROPERTY(rs2_motion_device_intrinsic, data, float, 3, 4), "3x4 matrix with 3x3 scale and cross axis and 3x1 biases")

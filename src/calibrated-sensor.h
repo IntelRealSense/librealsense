@@ -8,12 +8,15 @@
 
 namespace librealsense
 {
-    class override_trinsics_sensor
+    class calibrated_sensor
     {
     public:
         virtual void override_intrinsics( rs2_intrinsics const & ) = 0;
         virtual void override_extrinsics( rs2_extrinsics const & ) = 0;
+
+        virtual rs2_dsm_params get_dsm_params() const = 0;
+        virtual void override_dsm_params( rs2_dsm_params const & ) = 0;
     };
-    MAP_EXTENSION(RS2_EXTENSION_OVERRIDE_TRINSICS_SENSOR, override_trinsics_sensor );
+    MAP_EXTENSION(RS2_EXTENSION_CALIBRATED_SENSOR, calibrated_sensor );
 }
 

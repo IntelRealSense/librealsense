@@ -67,6 +67,16 @@ typedef struct rs2_intrinsics
     float         coeffs[5]; /**< Distortion coefficients */
 } rs2_intrinsics;
 
+/** \brief Video stream DSM parameters for calibration */
+typedef struct rs2_dsm_params
+{
+    float         h_scale;     /**< the scale factor to horizontal DSM scale thermal results */
+    float         v_scale;     /**< the scale factor to vertical DSM scale thermal results */
+    float         h_offset;    /**< the offset to horizontal DSM offset thermal results */
+    float         v_offset;    /**< the offset to vertical DSM offset thermal results */
+    float         rtd_offset;  /**< the offset to the Round-Trip-Distance delay thermal results */
+} rs2_dsm_params;
+
 /** \brief Motion device intrinsics: scale, bias, and variances. */
 typedef struct rs2_motion_device_intrinsic
 {
@@ -182,7 +192,7 @@ typedef enum rs2_extension
     RS2_EXTENSION_SERIALIZABLE,
     RS2_EXTENSION_AUTO_CALIBRATION_FILTER,
     RS2_EXTENSION_DEVICE_CALIBRATION,
-    RS2_EXTENSION_OVERRIDE_TRINSICS_SENSOR,
+    RS2_EXTENSION_CALIBRATED_SENSOR,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);

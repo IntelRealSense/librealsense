@@ -148,6 +148,7 @@ namespace librealsense
 
     std::shared_ptr<matcher> rs515_device::create_matcher(const frame_holder & frame) const
     {
+        LOG_DEBUG( "rs515_device::create_matcher" );
         std::vector<std::shared_ptr<matcher>> depth_rgb_matchers = { l500_depth::create_matcher(frame),
             std::make_shared<identity_matcher>(_color_stream->get_unique_id(), _color_stream->get_stream_type())};
 

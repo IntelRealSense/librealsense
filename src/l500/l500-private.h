@@ -60,6 +60,8 @@ namespace librealsense
             AMCSET                      = 0x2B, // Set options (L515)
             AMCGET                      = 0x2C, // Get options (L515)
             PFD                         = 0x3B, // Disable power features <Parameter1 Name="0 - Disable, 1 - Enable" />
+            READ_TABLE                  = 0x43,
+            WRITE_TABLE                 = 0x44,
             DPT_INTRINSICS_GET          = 0x5A,
             TEMPERATURES_GET            = 0x6A,
             DPT_INTRINSICS_FULL_GET     = 0x7F,
@@ -68,6 +70,23 @@ namespace librealsense
             FALL_DETECT_ENABLE          = 0x9D, // Enable (by default) free-fall sensor shutoff (0=disable; 1=enable)
             GET_SPECIAL_FRAME           = 0xA0  // Request auto-calibration (0) special frames (#)
         };
+
+#pragma pack(push, 1)
+        struct ac_depth_results  // aka "Algo_AutoCalibration" in FW
+        {
+            static const int table_id = 0x240;
+
+            double timestamp = 0;
+            byte major_version = 0;
+            byte minor_version = 0;
+            byte flags[6] = { 0 };
+            rs2_dsm_params params = { 0 };
+            byte reserved[12] = { 0 };
+
+            ac_depth_results() = default;
+            ac_depth_results( rs2_dsm_params const & dsm_params ) : params( dsm_params ) {}
+        };
+#pragma pack(pop)
 
         enum gvd_fields
         {
