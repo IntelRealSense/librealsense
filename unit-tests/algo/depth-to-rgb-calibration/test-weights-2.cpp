@@ -465,7 +465,9 @@ TEST_CASE("Weights calc", "[d2rgb]")
         CHECK(compare_to_bin_file< double >(ir_data.valid_gradient_x, dir, scene, FILE_NAME("IxValid", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(ir_data.valid_gradient_y, dir, scene, FILE_NAME("IyValid", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(ir_data.direction_deg, dir, scene, FILE_NAME("directionInDeg", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
-        CHECK(compare_to_bin_file< double >(ir_data.directions, dir, scene, FILE_NAME("directionIndex", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
+        //CHECK(compare_to_bin_file< double >(ir_data.directions, dir, scene, FILE_NAME("directionIndex", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors)); // it passed, depends on index definition
+        CHECK(compare_to_bin_file< double >(ir_data.direction_per_pixel, dir, scene, FILE_NAME("dirPerPixel", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
+
         //CHECK(compare_to_bin_file< double >(ir_data.edges, dir, scene, FILE_NAME("I_edge", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
         //CHECK(compare_to_bin_file< double >(depth_data.edges, dir, scene, FILE_NAME("Z_edge", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
         

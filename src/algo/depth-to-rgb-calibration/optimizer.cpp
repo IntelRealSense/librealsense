@@ -523,7 +523,13 @@ void optimizer::set_depth_data(
         fraqStep((localEdges(:,4)+localEdges(:,2)-2*localEdges(:,3))==0) = 0;
 
         locRCsub = locRC + fraqStep.*dirPerPixel;*/
-
+    double directions[8][2] = { {0,1},{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{-1,1} };
+     for (auto i = 0; i < _ir.directions.size(); i++)
+    {
+         int idx = _ir.directions[i];
+        _ir.direction_per_pixel.push_back(directions[idx][0]); 
+        _ir.direction_per_pixel.push_back(directions[idx][1]);
+    }
 
     // old code :
     /*
