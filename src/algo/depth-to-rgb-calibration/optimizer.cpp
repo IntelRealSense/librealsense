@@ -380,6 +380,27 @@ void set_margin(
         *(it + i * width + (width-2)) = 0;
     }
 }
+template<class T>
+void valid_by_ir(
+    std::vector<T>& filtered,
+    std::vector<T>& origin,
+    std::vector<uint8_t>& valid_edge_by_ir,
+    size_t width,
+    size_t height)
+{
+    // origin and valid_edge_by_ir are of same size
+    for (auto j = 0; j < width; j++)
+    {
+        for (auto i = 0; i < height; i++)
+        {
+            auto idx = i * width + j;
+            if (valid_edge_by_ir[idx])
+            {
+                filtered.push_back(origin[idx]);
+            }
+        }
+    }
+}
 void optimizer::set_depth_data(
     std::vector< z_t >&& depth_data,
     std::vector< ir_t >&& ir_data,
@@ -411,7 +432,42 @@ void optimizer::set_depth_data(
     _depth.edges = calc_intensity(_depth.gradient_x, _depth.gradient_y);
     _ir.edges = calc_intensity(_ir.gradient_x, _ir.gradient_y);
 
+    for (auto it = _ir.edges.begin(); it < _ir.edges.end(); it++)
+    {
+        if (*it > _params.grad_ir_threshold)
+        {
+            _ir.valid_edge_pixels_by_ir.push_back(1);
+        }
+        else
+        {
+            _ir.valid_edge_pixels_by_ir.push_back(0);
+        }
+    }
+    /*sz = size(frame.i);
+    [gridX,gridY] = meshgrid(1:sz(2),1:sz(1)); % gridX/Y contains the indices of the pixels
+    sectionMapDepth = OnlineCalibration.aux.sectionPerPixel(params);
+*/
+// Get a map for each pixel to its corresponding section
+    _depth.section_map_depth.resize(_depth.width * _depth.height);
+    size_t const section_w = _params.num_of_sections_for_edge_distribution_x;  //% params.numSectionsH
+    size_t const section_h = _params.num_of_sections_for_edge_distribution_y;  //% params.numSectionsH
+    section_per_pixel(_depth, section_w, section_h, _depth.section_map_depth.data());
 
+    /*locRC = [gridY(validEdgePixelsByIR),gridX(validEdgePixelsByIR)];
+    sectionMapValid = sectionMapDepth(validEdgePixelsByIR);
+    IxValid = Ix(validEdgePixelsByIR);
+    IyValid = Iy(validEdgePixelsByIR);
+    directionInDeg = atan2d(IyValid,IxValid);
+    directionInDeg(directionInDeg<0) = directionInDeg(directionInDeg<0) + 360;
+    [~,directionIndex] = min(abs(directionInDeg - [0:45:315]),[],2); % Quantize the direction to 4 directions (don't care about the sign)
+    dirsVec = [0,1; 1,1; 1,0; 1,-1]; % These are the 4 directions
+    dirsVec = [dirsVec;-dirsVec];*/
+    std::vector<double> valid_location_rc_x;
+    std::vector<double> valid_location_rc_y;
+    
+    //valid_by_ir(valid_location_rc_x, _ir.valid_edge_pixels_by_ir);
+    //valid_by_ir(valid_location_rc_y, _ir.valid_edge_pixels_by_ir);
+    valid_by_ir(_ir.valid_section_map, _depth.section_map_depth, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
 
     /*_depth.directions = get_direction(_depth.gradient_x, _depth.gradient_y);
     _depth.direction_deg = get_direction_deg(_depth.gradient_x, _depth.gradient_y);
