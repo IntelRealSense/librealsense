@@ -37,6 +37,10 @@ namespace depth_to_rgb_calibration {
         std::vector< byte > section_map_depth;
         std::vector<uint8_t> valid_edge_pixels_by_ir;
         std::vector<byte> valid_section_map;
+        std::vector<double>valid_gradient_x;
+        std::vector<double>valid_gradient_y;
+        std::vector<direction> directions;
+        std::vector<double> direction_deg;
     };
 
     struct z_frame_data : frame_data

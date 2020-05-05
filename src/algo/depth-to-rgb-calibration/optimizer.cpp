@@ -141,7 +141,26 @@ static std::vector< double > get_direction_deg(
     }
     return res;
 }
+static std::vector< double > get_direction_deg2(
+    std::vector<double> const& gradient_x,
+    std::vector<double> const& gradient_y
+    )
+{
+#define PI 3.14159265
+    std::vector<double> res(gradient_x.size(), deg_none);
 
+    for (auto i = 0; i < gradient_x.size(); i++)
+    {
+        int closest = -1;
+        auto angle = atan2(gradient_y[i], gradient_x[i])*180.f  / PI;
+        angle = angle < 0 ?  360+angle : angle;
+        auto dir = fmod(angle, 360);
+
+
+        res[i] = dir;
+    }
+    return res;
+}
 static
 std::pair< int, int > get_prev_index(
     direction dir,
@@ -468,9 +487,12 @@ void optimizer::set_depth_data(
     //valid_by_ir(valid_location_rc_x, _ir.valid_edge_pixels_by_ir);
     //valid_by_ir(valid_location_rc_y, _ir.valid_edge_pixels_by_ir);
     valid_by_ir(_ir.valid_section_map, _depth.section_map_depth, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
+    valid_by_ir(_ir.valid_gradient_x, _ir.gradient_x, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
+    valid_by_ir(_ir.valid_gradient_y, _ir.gradient_y, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
 
-    /*_depth.directions = get_direction(_depth.gradient_x, _depth.gradient_y);
-    _depth.direction_deg = get_direction_deg(_depth.gradient_x, _depth.gradient_y);
+    //_ir.directions = get_direction(_ir.valid_gradient_x, _ir.valid_gradient_y);
+    _ir.direction_deg = get_direction_deg2(_ir.valid_gradient_x, _ir.valid_gradient_y);
+    /*
     suppress_weak_edges(_depth, _ir, _params);
 
     auto subpixels = calc_subpixels(_depth, _ir,
