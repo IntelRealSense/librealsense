@@ -490,8 +490,9 @@ void optimizer::set_depth_data(
     valid_by_ir(_ir.valid_gradient_x, _ir.gradient_x, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
     valid_by_ir(_ir.valid_gradient_y, _ir.gradient_y, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
 
-    //_ir.directions = get_direction(_ir.valid_gradient_x, _ir.valid_gradient_y);
-    _ir.direction_deg = get_direction_deg2(_ir.valid_gradient_x, _ir.valid_gradient_y);
+    _ir.direction_deg = get_direction_deg2(_ir.valid_gradient_x, _ir.valid_gradient_y); // used for debug only
+    _ir.directions = get_direction2(_ir.valid_gradient_x, _ir.valid_gradient_y);
+
     /*
     suppress_weak_edges(_depth, _ir, _params);
 
@@ -586,7 +587,30 @@ std::vector< direction > optimizer::get_direction( std::vector<double> gradient_
     }
     return res;
 }
+std::vector< direction > optimizer::get_direction2(std::vector<double> gradient_x, std::vector<double> gradient_y)
+{
+#define PI 3.14159265
+    std::vector<direction> res(gradient_x.size(), deg_none);
+    
+    std::map<int, direction> angle_dir_map = { {0, deg_0}, {45,deg_45} , {90,deg_90}, {135,deg_135} , { 180,deg_180 }, { 225,deg_225 }, { 270,deg_270 }, { 315,deg_315 } };
 
+
+
+    for (auto i = 0; i < gradient_x.size(); i++)
+    {
+        int closest = -1;
+        auto angle = atan2(gradient_y[i], gradient_x[i]) * 180.f / PI;
+        angle = angle < 0 ? 360 + angle : angle;
+        auto dir = fmod(angle, 360);
+
+        for (auto d : angle_dir_map)
+        {
+            closest = closest == -1 || abs(dir - d.first) < abs(dir - closest) ? d.first : closest;
+        }
+        res[i] = angle_dir_map[closest];
+    }
+    return res;
+}
 std::vector< uint16_t > optimizer::get_closest_edges(
     z_frame_data const & z_data,
     ir_frame_data const & ir_data,

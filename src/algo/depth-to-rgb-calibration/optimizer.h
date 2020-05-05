@@ -129,6 +129,7 @@ namespace depth_to_rgb_calibration {
     private:
         void zero_invalid_edges( z_frame_data& z_data, ir_frame_data const & ir_data );
         std::vector<direction> get_direction( std::vector<double> gradient_x, std::vector<double> gradient_y );
+        std::vector<direction> get_direction2(std::vector<double> gradient_x, std::vector<double> gradient_y);
         std::vector<uint16_t> get_closest_edges( const z_frame_data& z_data, ir_frame_data const & ir_data, size_t width, size_t height );
         std::vector<double> blur_edges( std::vector<double> const & edges, size_t image_width, size_t image_height );
         std::vector<uint8_t> get_luminance_from_yuy2( std::vector<uint16_t> yuy2_imagh );
