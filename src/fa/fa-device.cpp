@@ -269,9 +269,9 @@ namespace librealsense
                 "Set the power level of the LED, with 0 meaning LED off"));
 
         // LASER
-        /*ir_ep->register_option(RS2_OPTION_LASER_POWER,
+        ir_ep->register_option(RS2_OPTION_LASER_POWER,
             std::make_shared<uvc_xu_option<uint8_t>>(*raw_ir_ep, ir_xu, FA_LASER_POWER,
-                "Set the power level of the LASER, with 0 meaning LASER off"));*/
+                "Set the power level of the LASER, with 0 meaning LASER off"));
     }
     
     fa_device::fa_device(const std::shared_ptr<context>& ctx,
