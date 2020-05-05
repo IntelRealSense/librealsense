@@ -73,7 +73,12 @@ macro(global_set_flags)
         add_definitions(-DNET_DEVICE)
         set(LRS_NET_TARGET realsense2-net)
     endif()
-
+	
+	if(ENABLE_RS_AUTO_UPDATER)
+		include(CMake/external_libcurl.cmake)
+		add_definitions(-DENABLE_RS_AUTO_UPDATER)
+	endif()
+	
     add_definitions(-D${BACKEND} -DUNICODE)
 endmacro()
 
@@ -95,6 +100,9 @@ macro(global_target_config)
             $<INSTALL_INTERFACE:include>
             PRIVATE ${USB_INCLUDE_DIRS}
     )
+	
+
+
 endmacro()
 
 macro(add_tm2)

@@ -33,7 +33,13 @@
 #define FW_SR3XX_FW_IMAGE_VERSION ""
 #endif // INTERNAL_FW
 
+#ifdef ENABLE_RS_AUTO_UPDATER
+#include "auto_updater/update_handler.h"
+#endif // ENABLE_RS_AUTO_UPDATER
+
 #include <easylogging++.h>
+
+
 #ifdef BUILD_SHARED_LIBS
 // With static linkage, ELPP is initialized by librealsense, so doing it here will
 // create errors. When we're using the shared .so/.dll, the two are separate and we have
@@ -273,6 +279,16 @@ bool refresh_devices(std::mutex& m,
 
 int main(int argc, const char** argv) try
 {
+    ////// Test libcurl //////////
+#ifdef ENABLE_RS_AUTO_UPDATER
+    update_handler up_handler;
+    auto ver = up_handler.check_for_updates(update_handler::LIBREALSENSE, update_handler::RECOMMENDED);
+    std::string ver_link;
+    auto res = up_handler.get_download_link(update_handler::LIBREALSENSE, 234000001, ver_link);
+    
+#endif
+    /////////////////////////////
+
     rs2::log_to_console(RS2_LOG_SEVERITY_WARN);
 
     context ctx;

@@ -20,7 +20,7 @@ set( ELPP_FILES
 include(../../common/CMakeLists.txt)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
-set(RS_VIEWER_CPP
+    set(RS_VIEWER_CPP
     ${COMMON_SRC}
     realsense-viewer.cpp
     ../../third-party/imgui/imgui.cpp
@@ -107,6 +107,18 @@ if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
 
 endif()
 
+if(ENABLE_RS_AUTO_UPDATER)
+    message( STATUS "Enabling RS auto updater for realsense-viewer ..." )
+    set(AUTO_UPDATE_FILES
+        auto_updater/http_downloader.h
+        auto_updater/http_downloader.cpp
+        auto_updater/update_handler.h
+        auto_updater/update_handler.cpp)
+    set(RS_VIEWER_CPP
+        ${RS_VIEWER_CPP}
+        ${AUTO_UPDATE_FILES})
+endif()
+
 
 # config-ui
 if(WIN32)
@@ -156,6 +168,15 @@ set_property(TARGET realsense-viewer PROPERTY CXX_STANDARD 11)
 
 set(RS_VIEWER_LIBS ${GTK3_LIBRARIES} Threads::Threads realsense2-gl)
 
+if (ENABLE_RS_AUTO_UPDATER)
+    add_dependencies(realsense-viewer libcurl)
+    set(RS_VIEWER_LIBS ${RS_VIEWER_LIBS} curl)
+    add_definitions(-DCURL_STATICLIB) # Mandatory for building libcurl as static lib
+    if (WIN32)
+        target_link_libraries(realsense-viewer ws2_32.lib)
+    endif()
+endif()
+
 if (IMPORT_DEPTH_CAM_FW)
     add_definitions(-DINTERNAL_FW)
     target_link_libraries(realsense-viewer fw)
@@ -171,6 +192,7 @@ target_link_libraries(realsense-viewer ${DEPENDENCIES} ${RS_VIEWER_LIBS})
 set_target_properties (realsense-viewer PROPERTIES
     FOLDER Tools
 )
+
 
 install(
     TARGETS
