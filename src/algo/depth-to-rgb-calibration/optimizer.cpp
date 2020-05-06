@@ -507,6 +507,14 @@ void optimizer::set_depth_data(
     valid_by_ir(_ir.valid_gradient_x, _ir.gradient_x, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
     valid_by_ir(_ir.valid_gradient_y, _ir.gradient_y, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
 
+    //edges:
+    auto grad_itx = _ir.valid_gradient_x.begin();
+    auto grad_ity = _ir.valid_gradient_y.begin();
+    for (auto i = 0; i < _ir.valid_gradient_x.size(); i++)
+    {
+        auto val = sqrt((*grad_itx * *grad_itx) + (*grad_ity * *grad_ity));
+        _ir.edges2.push_back(val);
+    }
     auto itx = _ir.valid_location_rc_x.begin();
     auto ity = _ir.valid_location_rc_y.begin();
     for (auto i = 0; i < _ir.valid_location_rc_x.size(); i++)
@@ -539,23 +547,60 @@ void optimizer::set_depth_data(
         int idx = _ir.directions[i];
         _ir.direction_per_pixel.push_back(directions[idx][0]);
         _ir.direction_per_pixel.push_back(directions[idx][1]);
+
+        //for debug
+        _ir.direction_per_pixel_x.push_back(directions[idx][0]);
+        _ir.direction_per_pixel_y.push_back(directions[idx][1]);
     }
      double vec[4] = {-2,-1,0,1}; // one pixel along gradient direction, 2 pixels against gradient direction
-     
-     //auto loc_reg_it_k = local_region_k.begin();
+
      auto loc_it = _ir.valid_location_rc.begin();
      auto dir_pp_it = _ir.direction_per_pixel.begin();
 
      for (auto k = 0; k < 4; k++)
      {
-         //std::vector<double> local_region_k;
          for (auto i = 0; i < _ir.direction_per_pixel.size(); i++)
          {
              double val = *(loc_it + i) +*(dir_pp_it + i) * vec[k];
-             //local_region_k.push_back(val);
              _ir.local_region[k].push_back(val);
          }
      }
+
+     // interpolation - for debug
+     
+     for (auto k = 0; k < 4; k++)
+     {
+         auto loc_it_x = _ir.valid_location_rc_x.begin();
+         auto loc_it_y = _ir.valid_location_rc_y.begin();
+         auto dir_pp_it_x = _ir.direction_per_pixel_x.begin();
+         auto dir_pp_it_y = _ir.direction_per_pixel_y.begin();
+         for (auto i = 0; i < _ir.valid_location_rc_x.size(); i++)
+         {
+             //double val_x = *(loc_it_x + i) + *(dir_pp_it_x + i) * vec[k];
+             //double val_y = *(loc_it_y + i) + *(dir_pp_it_y + i) * vec[k];
+             double val_x = *loc_it_x + *dir_pp_it_x * vec[k];
+             double val_y = *loc_it_y + *dir_pp_it_y * vec[k];
+             _ir.local_region_x[k].push_back(val_x);
+             _ir.local_region_y[k].push_back(val_y);
+
+             loc_it_x++; loc_it_y++; dir_pp_it_x++; dir_pp_it_y++;
+         }
+     }
+     auto iedge_it = _ir.edges2.begin();
+     for (auto k = 0; k < 4; k++)
+     {
+         auto loc_reg_x = _ir.local_region_x[k].begin();
+         auto loc_reg_y = _ir.local_region_y[k].begin();
+         for (auto i = 0; i < _ir.valid_location_rc_x.size(); i++, loc_reg_x++, loc_reg_y++) // iEdge
+         {
+             auto idx = *loc_reg_x;
+             auto idy = *loc_reg_y;
+             auto val = 1;// *(iedge_it + _ir.width * idx + idy);
+             // find index value in iEdge
+             _ir.local_edges.push_back(val);
+         }
+     }
+
     // old code :
     /*
     suppress_weak_edges(_depth, _ir, _params);
