@@ -353,6 +353,9 @@ rs2_raw_data_buffer* rs2_serialize_json(rs2_device* dev, rs2_error** error);
 /* Load JSON and apply advanced-mode controls */
 void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_size, rs2_error** error);
 
+/* Get firmware Logs */
+const rs2_raw_data_buffer* rs2_get_firmware_logs(rs2_device* dev, rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

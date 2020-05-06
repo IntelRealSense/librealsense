@@ -22,6 +22,8 @@
 #include "ds5-motion.h"
 #include "sync.h"
 
+#include "../firmware_logger_device.h"
+
 namespace librealsense
 {
     // PSR
@@ -471,7 +473,8 @@ namespace librealsense
     // AWGC
     class rs435_device : public ds5_active,
                          public ds5_color,
-                         public ds5_advanced_mode_base
+                         public ds5_advanced_mode_base,
+                         public firmware_logger_device
     {
     public:
         rs435_device(std::shared_ptr<context> ctx,
@@ -481,7 +484,8 @@ namespace librealsense
               ds5_device(ctx, group),
               ds5_active(ctx, group),
               ds5_color(ctx,  group),
-              ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
+              ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()), 
+              firmware_logger_device(ds5_device::_hw_monitor, get_depth_sensor().get_info(RS2_CAMERA_INFO_DEBUG_OP_CODE)) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
