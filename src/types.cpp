@@ -246,6 +246,7 @@ namespace librealsense
             CASE(FISHEYE_SENSOR)
             CASE(DEPTH_HUFFMAN_DECODER)
             CASE(SERIALIZABLE)
+            CASE(AUTO_CALIBRATION_FILTER)
             CASE(DEVICE_CALIBRATION)
             CASE(CALIBRATED_SENSOR)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
