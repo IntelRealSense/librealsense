@@ -507,6 +507,18 @@ void optimizer::set_depth_data(
     valid_by_ir(_ir.valid_gradient_x, _ir.gradient_x, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
     valid_by_ir(_ir.valid_gradient_y, _ir.gradient_y, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
 
+    //edges:
+    _ir.edges2 = calc_intensity(_ir.gradient_x, _ir.gradient_y);
+    auto itx = _ir.valid_location_rc_x.begin();
+    auto ity = _ir.valid_location_rc_y.begin();
+    for (auto i = 0; i < _ir.valid_location_rc_x.size(); i++)
+    {
+        auto x = *(itx + i);
+        auto y = *(ity + i);
+        _ir.valid_location_rc.push_back(y);
+        _ir.valid_location_rc.push_back(x);
+    }
+
     _ir.direction_deg = get_direction_deg2(_ir.valid_gradient_x, _ir.valid_gradient_y); // used for debug only
     _ir.directions = get_direction2(_ir.valid_gradient_x, _ir.valid_gradient_y);
 
@@ -524,13 +536,64 @@ void optimizer::set_depth_data(
 
         locRCsub = locRC + fraqStep.*dirPerPixel;*/
     double directions[8][2] = { {0,1},{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{-1,1} };
-     for (auto i = 0; i < _ir.directions.size(); i++)
+    for (auto i = 0; i < _ir.directions.size(); i++)
     {
-         int idx = _ir.directions[i];
-        _ir.direction_per_pixel.push_back(directions[idx][0]); 
+        int idx = _ir.directions[i];
+        _ir.direction_per_pixel.push_back(directions[idx][0]);
         _ir.direction_per_pixel.push_back(directions[idx][1]);
     }
+     double vec[4] = {-2,-1,0,1}; // one pixel along gradient direction, 2 pixels against gradient direction
 
+     auto loc_it = _ir.valid_location_rc.begin();
+     auto dir_pp_it = _ir.direction_per_pixel.begin();
+
+     for (auto k = 0; k < 4; k++)
+     {
+         for (auto i = 0; i < _ir.direction_per_pixel.size(); i++)
+         {
+             double val = *(loc_it + i) +*(dir_pp_it + i) * vec[k];
+             _ir.local_region[k].push_back(val);
+         }
+     }
+
+     // interpolation - for debug
+     for (auto k = 0; k < 4; k++)
+     {
+         for (auto i = 0; i < 2*_ir.valid_location_rc_x.size(); i++)
+         {
+             _ir.local_region_y[k].push_back(*(_ir.local_region[k].begin()+i));
+             i++;
+             _ir.local_region_x[k].push_back(*(_ir.local_region[k].begin() + i));
+         }
+     }
+
+     auto iedge_it = _ir.edges2.begin();// iEdge   
+     std::vector<double>::iterator loc_reg_x[4] = { _ir.local_region_x[0].begin() ,_ir.local_region_x[1].begin() ,_ir.local_region_x[2].begin() ,_ir.local_region_x[3].begin()  };
+     std::vector<double>::iterator loc_reg_y[4] = { _ir.local_region_y[0].begin() ,_ir.local_region_y[1].begin(),_ir.local_region_y[2].begin() ,_ir.local_region_y[3].begin()  };
+     
+     for (auto i = 0; i < _ir.valid_location_rc_x.size(); i++)
+     {
+         for (auto k = 0; k < 4; k++)
+         {
+             auto idx = *(loc_reg_x[k]+i) - 1;
+             auto idy = *(loc_reg_y[k]+i) - 1;
+             assert(_ir.width * idy + idx <= _ir.width * _ir.height);
+             auto val = *(iedge_it + _ir.width * idy + idx);// find value in iEdge
+             _ir.local_edges.push_back(val);
+         }
+     }
+
+     auto loc_edg_it = _ir.local_edges.begin();
+     for (auto i = 0; i < _ir.valid_location_rc_x.size(); i++)
+     {
+         //isSupressed = localEdges(:,3) >= localEdges(:,2) & localEdges(:,3) >= localEdges(:,4);
+         auto vec2 = *(loc_edg_it+1);
+         auto vec3 = *(loc_edg_it+2);
+         auto vec4 = *(loc_edg_it+3);
+         loc_edg_it += 4;
+         bool res = (vec3 >= vec2) && (vec3 >= vec4);
+         _ir.is_supressed.push_back(res);
+     }
     // old code :
     /*
     suppress_weak_edges(_depth, _ir, _params);
