@@ -541,10 +541,6 @@ void optimizer::set_depth_data(
         int idx = _ir.directions[i];
         _ir.direction_per_pixel.push_back(directions[idx][0]);
         _ir.direction_per_pixel.push_back(directions[idx][1]);
-
-        //for debug
-        _ir.direction_per_pixel_x.push_back(directions[idx][0]);
-        _ir.direction_per_pixel_y.push_back(directions[idx][1]);
     }
      double vec[4] = {-2,-1,0,1}; // one pixel along gradient direction, 2 pixels against gradient direction
 
@@ -563,28 +559,12 @@ void optimizer::set_depth_data(
      // interpolation - for debug
      for (auto k = 0; k < 4; k++)
      {
-         auto loc_it_x = _ir.valid_location_rc_x.begin();
-         auto loc_it_y = _ir.valid_location_rc_y.begin();
-         auto dir_pp_it_x = _ir.direction_per_pixel_x.begin();
-         auto dir_pp_it_y = _ir.direction_per_pixel_y.begin();
          for (auto i = 0; i < 2*_ir.valid_location_rc_x.size(); i++)
          {
              _ir.local_region_y[k].push_back(*(_ir.local_region[k].begin()+i));
              i++;
              _ir.local_region_x[k].push_back(*(_ir.local_region[k].begin() + i));
-
-             /*double val_x = *loc_it_x + *dir_pp_it_x * vec[k];
-             double val_y = *loc_it_y + *dir_pp_it_y * vec[k];
-             _ir.local_region_x[k].push_back(val_x);
-             _ir.local_region_y[k].push_back(val_y);*/
-
-             //loc_it_x++; loc_it_y++; dir_pp_it_x++; dir_pp_it_y++;
-
          }
-        /* for (auto i = 0; i < _ir.valid_location_rc_x.size(); i++)
-         {
-             _ir.local_region_y[k].push_back(*(_ir.local_region[k].begin() + i+ii));
-         }*/
      }
 
      auto iedge_it = _ir.edges2.begin();// iEdge   
