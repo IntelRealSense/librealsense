@@ -708,7 +708,6 @@ namespace librealsense
             }
 #endif
 
-            depth_sensor.register_pu(RS2_OPTION_GAIN);
             auto exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(raw_depth_sensor,
                 depth_xu,
                 DS5_EXPOSURE,
@@ -721,9 +720,17 @@ namespace librealsense
                 "Enable Auto Exposure");
             depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
 
+            auto gain_option = std::make_shared<uvc_pu_option>(raw_depth_sensor, RS2_OPTION_GAIN);
+            depth_sensor.register_option(RS2_OPTION_GAIN, gain_option);
+
             depth_sensor.register_option(RS2_OPTION_EXPOSURE,
                 std::make_shared<auto_disabling_control>(
                     exposure_option,
+                    enable_auto_exposure));
+
+            depth_sensor.register_option(RS2_OPTION_GAIN,
+                std::make_shared<auto_disabling_control>(
+                    gain_option,
                     enable_auto_exposure));
         }
 
