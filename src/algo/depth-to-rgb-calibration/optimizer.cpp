@@ -570,10 +570,10 @@ void optimizer::set_depth_data(
      auto iedge_it = _ir.edges2.begin();// iEdge   
      std::vector<double>::iterator loc_reg_x[4] = { _ir.local_region_x[0].begin() ,_ir.local_region_x[1].begin() ,_ir.local_region_x[2].begin() ,_ir.local_region_x[3].begin()  };
      std::vector<double>::iterator loc_reg_y[4] = { _ir.local_region_y[0].begin() ,_ir.local_region_y[1].begin(),_ir.local_region_y[2].begin() ,_ir.local_region_y[3].begin()  };
-
+     
      for (auto i = 0; i < _ir.valid_location_rc_x.size(); i++)
      {
-       for (auto k = 0; k < 4; k++)
+         for (auto k = 0; k < 4; k++)
          {
              auto idx = *(loc_reg_x[k]+i) - 1;
              auto idy = *(loc_reg_y[k]+i) - 1;
@@ -583,6 +583,17 @@ void optimizer::set_depth_data(
          }
      }
 
+     auto loc_edg_it = _ir.local_edges.begin();
+     for (auto i = 0; i < _ir.valid_location_rc_x.size(); i++)
+     {
+         //isSupressed = localEdges(:,3) >= localEdges(:,2) & localEdges(:,3) >= localEdges(:,4);
+         auto vec2 = *(loc_edg_it+1);
+         auto vec3 = *(loc_edg_it+2);
+         auto vec4 = *(loc_edg_it+3);
+         loc_edg_it += 4;
+         bool res = (vec3 >= vec2) && (vec3 >= vec4);
+         _ir.is_supressed.push_back(res);
+     }
     // old code :
     /*
     suppress_weak_edges(_depth, _ir, _params);

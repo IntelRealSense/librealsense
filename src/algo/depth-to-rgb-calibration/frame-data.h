@@ -51,8 +51,8 @@ namespace depth_to_rgb_calibration {
         std::vector<double> local_region[4];
         std::vector<double> local_region_x[4];//for debug
         std::vector<double> local_region_y[4]; // for debug
-        //std::vector<double> local_edges[4];
         std::vector<double> local_edges;
+        std::vector<uint8_t> is_supressed;
 
     };
 
