@@ -61,7 +61,7 @@ RsSink::~RsSink()
 {
     if(m_receiveBuffer != nullptr)
     {
-        m_memPool->returnMem(m_receiveBuffer);
+        delete [] m_receiveBuffer;
     }
     delete[] m_streamId;
     //fclose(fp);
@@ -107,7 +107,7 @@ void RsSink::afterGettingFrame(unsigned t_frameSize, unsigned t_numTruncatedByte
         {
             if(CompressionFactory::isCompressionSupported(m_stream.fmt, m_stream.type) && m_iCompress != nullptr)
             {
-                m_to = m_memPool->getNextMem();
+                m_to = new unsigned char[MAX_MESSAGE_SIZE];
                 if(m_to == nullptr)
                 {
                     return;
@@ -119,7 +119,7 @@ void RsSink::afterGettingFrame(unsigned t_frameSize, unsigned t_numTruncatedByte
                     memcpy(m_to + sizeof(RsNetworkHeader), m_receiveBuffer + sizeof(RsNetworkHeader), sizeof(RsMetadataHeader));
                     this->m_rtpCallback->on_frame((u_int8_t*)m_to + sizeof(RsNetworkHeader), decompressedSize + sizeof(RsMetadataHeader), t_presentationTime);
                 }
-                m_memPool->returnMem(m_receiveBuffer);
+                delete [] m_receiveBuffer;
             }
             else
             {
@@ -129,14 +129,14 @@ void RsSink::afterGettingFrame(unsigned t_frameSize, unsigned t_numTruncatedByte
         else
         {
             // TODO: error, no call back
-            m_memPool->returnMem(m_receiveBuffer);
+            delete [] m_receiveBuffer;
             envir() << "Frame call back is NULL\n";
         }
     }
     else
     {
                 envir() << m_streamId << ":corrupted frame!!!: data size is " << header->data.frameSize << " frame size is " << t_frameSize << "\n";
-                m_memPool->returnMem(m_receiveBuffer);
+                delete [] m_receiveBuffer;
     }
     m_receiveBuffer = nullptr;
 
@@ -150,7 +150,7 @@ Boolean RsSink::continuePlaying()
         return False; // sanity check (should not happen)
 
     // Request the next frame of data from our input source.  "afterGettingFrame()" will get called later, when it arrives:
-    m_receiveBuffer = m_memPool->getNextMem();
+    m_receiveBuffer = new unsigned char[MAX_MESSAGE_SIZE];
     if(m_receiveBuffer == nullptr)
     {
         return false;

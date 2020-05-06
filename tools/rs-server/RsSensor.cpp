@@ -76,15 +76,15 @@ int RsSensor::start(std::unordered_map<long long int, rs2::frame_queue>& t_strea
             std::chrono::duration<double> timeSpan = std::chrono::duration_cast<std::chrono::duration<double>>(curSample - m_prevSample[profileKey]);
             if(CompressionFactory::isCompressionSupported(frame.get_profile().format(), frame.get_profile().stream_type()))
             {
-                unsigned char* buff = m_memPool->getNextMem();
+                unsigned char* buff = new unsigned char[MAX_MESSAGE_SIZE];
                 int frameSize = m_iCompress.at(profileKey)->compressBuffer((unsigned char*)frame.get_data(), frame.get_data_size(), buff);
                 if(frameSize == -1)
                 {
-                    m_memPool->returnMem(buff);
+                    delete [] buff;
                     return;
                 }
                 memcpy((unsigned char*)frame.get_data(), buff, frameSize);
-                m_memPool->returnMem(buff);
+                delete[] buff;
             }
             //push frame to its queue
             t_streamProfilesQueues[profileKey].enqueue(frame);

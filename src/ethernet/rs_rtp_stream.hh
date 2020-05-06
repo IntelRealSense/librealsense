@@ -89,8 +89,7 @@ public:
     {
         while(!frames_queue.empty())
         {
-            Raw_Frame* frame = frames_queue.front();
-            get_memory_pool().returnMem((unsigned char*)frame->m_buffer - sizeof(RsFrameHeader));
+            frame_deleter(frames_queue.front());
             frames_queue.pop();
         }
         INF << "Frames queue cleaned for " << m_rs_stream.uid;
@@ -117,7 +116,8 @@ public:
 private:
     static void frame_deleter(void* p)
     {
-        get_memory_pool().returnMem((unsigned char*)p - sizeof(RsFrameHeader));
+        // this frame buffer is the part of the bigger message with the header
+        delete [] ((unsigned char*)p - sizeof(RsFrameHeader));
     }
 
     rs2::stream_profile m_stream_profile;
