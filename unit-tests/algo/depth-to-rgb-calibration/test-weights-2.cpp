@@ -38,7 +38,51 @@ std::vector< T > read_bin_file( char const * data_dir, char const * test, char c
     f.close();
     return vec;
 }
+template< typename F, typename D >
+void print(size_t x, F f, D d)
+{
+    // bytes will be written to stdout as characters, which we never want... hence '+fx'
+    AC_LOG(DEBUG, "... " << x << ": {matlab}" << +f << " != " << +d << "{c++} (exact)");
+}
 
+template<>
+void print<algo::k_matrix, algo::k_matrix>(size_t x, algo::k_matrix f, algo::k_matrix d)
+{
+    // bytes will be written to stdout as characters, which we never want... hence '+fx'
+    AC_LOG(DEBUG, "... " <<std::setprecision(15)<< x << ": {matlab}" << f.fx <<" "<< f.fy <<" "<< f.ppx << " " << f.ppy << " != " 
+        << d.fx << " " << d.fy << " " << d.ppx << " " << d.ppy << "{c++} (exact)");
+}
+
+template<>
+void print<algo::rotation_in_angles, algo::rotation_in_angles>(size_t x, algo::rotation_in_angles f, algo::rotation_in_angles d)
+{
+    // bytes will be written to stdout as characters, which we never want... hence '+fx'
+    AC_LOG(DEBUG, "... " << std::setprecision(15) << x << ": {matlab}" << f.alpha << " " << f.beta << " " << f.gamma << " != "
+        << d.alpha << " " << d.beta << " " << d.gamma << "{c++} (exact)");
+}
+
+template< typename F, typename D >
+bool is_equal_approximetly(F fx, D dx)
+{
+    return fx == approx(dx);
+}
+
+template<>
+bool is_equal_approximetly<algo::k_matrix, algo::k_matrix>(algo::k_matrix fx, algo::k_matrix dx)
+{
+    return fx.fx == approx(dx.fx) && 
+           fx.fy == approx(dx.fy) &&
+           fx.ppx == approx(dx.ppx) &&
+           fx.ppy == approx(dx.ppy);
+}
+
+template<>
+bool is_equal_approximetly<algo::rotation_in_angles, algo::rotation_in_angles>(algo::rotation_in_angles fx, algo::rotation_in_angles dx)
+{
+    return fx.alpha == approx(dx.alpha) &&
+        fx.beta== approx(dx.beta) &&
+        fx.gamma == approx(dx.gamma) ;
+}
 
 template< typename F, typename D >
 bool compare_same_vectors( std::vector< F > const & matlab, std::vector< D > const & cpp )
@@ -53,14 +97,14 @@ bool compare_same_vectors( std::vector< F > const & matlab, std::vector< D > con
         bool const is_comparable = std::numeric_limits< D >::is_exact || std::is_enum< D >::value;
         if( is_comparable )
         {
-            if( fx != dx && ++n_mismatches <= 5 )
+            if (fx != dx && ++n_mismatches <= 5)
                 // bytes will be written to stdout as characters, which we never want... hence '+fx'
-                AC_LOG( DEBUG, "... " << x << ": {matlab}" << +fx << " != " << +dx << "{c++} (exact)" );
+                print(x, fx, dx);
         }
-        else if( fx != approx(dx) )
+        else if(!is_equal_approximetly(fx, dx))
         {
             if( ++n_mismatches <= 5 )
-                AC_LOG( DEBUG, "... " << x << ": {matlab}" << std::setprecision( 12 ) << fx << " != " << dx << "{c++}" );
+                print(x, fx, dx);
         }
     }
     if( n_mismatches )
@@ -138,7 +182,7 @@ std::pair<std::vector< F >, std::vector< D > > sort_vectors(std::vector< F > con
     auto f = matlab;
     auto d = cpp;
 
-    std::sort(f.begin(), f.end(), [](F f1, F f2) {if (isnan(f1)) return false;  return f1 < f2; });
+    std::sort(f.begin(), f.end(), [](F f1, F f2) {return f1 < f2; });
     std::sort(d.begin(), d.end(), [](D d1, D d2) {return d1 < d2; });
 
     return { f,d };
@@ -405,7 +449,13 @@ TEST_CASE("Weights calc", "[d2rgb]")
         }
         else
         {
-            ci = F9440687;
+           ci = F9440687;
+
+         /*   md = { 14, 2.914122625391939, 3659, "YUY2_YUY2_1920x1080_00.06.13.1372_F9440687_0000.raw",
+            "YUY2_YUY2_1920x1080_00.06.13.2368_F9440687_0001.raw",
+            "I_GrayScale_1024x768_00.06.13.1484_F9440687_0000.raw",
+            "Z_GrayScale_1024x768_00.06.13.1484_F9440687_0000.raw" };*/
+
             md = { 5, 2.914122625391939, 5089, "YUY2_YUY2_1920x1080_00.00.26.6355_F9440687_0000.raw",
             "YUY2_YUY2_1920x1080_00.00.26.7683_F9440687_0001.raw",
             "I_GrayScale_1024x768_00.00.26.7119_F9440687_0000.raw",
@@ -518,6 +568,15 @@ TEST_CASE("Weights calc", "[d2rgb]")
 
             file = ITERATION_FILE_NAME("DyVals_iteration", data.iteration + 1, 1, md.num_of_edges,"double_00");
             CHECK(compare_to_bin_file< double >(data.d_vals_y, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
+
+            file = ITERATION_FILE_NAME("xCoeff_Krgb", data.iteration + 1, sizeof(algo::k_matrix) / sizeof(double), md.num_of_edges, "double_00");
+            CHECK(compare_to_bin_file< algo::k_matrix>(data.coeffs_k.x_coeffs, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
+
+            file = ITERATION_FILE_NAME("yCoeff_Krgb", data.iteration + 1, sizeof(algo::k_matrix) / sizeof(double), md.num_of_edges, "double_00");
+            CHECK(compare_to_bin_file< algo::k_matrix>(data.coeffs_k.y_coeffs, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
+
+            file = ITERATION_FILE_NAME("xCoeff_R", data.iteration + 1, sizeof(algo::rotation_in_angles) / sizeof(double), md.num_of_edges, "double_00");
+            CHECK(compare_to_bin_file< algo::rotation_in_angles>(data.coeffs_r.x_coeffs, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
 
             file = ITERATION_FILE_NAME("grad_iteration", data.iteration + 1, num_of_calib_elements, 1, "double_00");
             CHECK(compare_calib_to_bin_file(data.params.calib_gradients, 0, dir, scene, file.c_str(), true));
