@@ -426,9 +426,9 @@ void grid_xy(
     size_t width,
     size_t height)
 {
-    for (auto i = 0; i < height; i++)
+    for (auto i = 1; i <= height; i++)
     {
-        for (auto j = 0; j < width; j++)
+        for (auto j = 1; j <= width; j++)
         {
             gridx.push_back(j);
             gridy.push_back(i);
@@ -509,13 +509,6 @@ void optimizer::set_depth_data(
 
     //edges:
     _ir.edges2 = calc_intensity(_ir.gradient_x, _ir.gradient_y);
-    /*auto grad_itx = _ir.gradient_x.begin();
-    auto grad_ity = _ir.gradient_y.begin();
-    for (auto i = 0; i < _ir.gradient_x.size(); i++)
-    {
-        auto val = sqrt((*grad_itx * *grad_itx) + (*grad_ity * *grad_ity));
-        _ir.edges2.push_back(val);
-    }*/
     auto itx = _ir.valid_location_rc_x.begin();
     auto ity = _ir.valid_location_rc_y.begin();
     for (auto i = 0; i < _ir.valid_location_rc_x.size(); i++)
@@ -585,20 +578,21 @@ void optimizer::set_depth_data(
              loc_it_x++; loc_it_y++; dir_pp_it_x++; dir_pp_it_y++;
          }
      }
-     auto iedge_it = _ir.edges2.begin();
-     
-     
-     for (auto i = 0; i < _ir.valid_location_rc_x.size(); i++) // iEdge
+
+     auto iedge_it = _ir.edges2.begin();// iEdge   
+     //std::vector<double>::iterator loc_reg_x[4] = { _ir.local_region_x[0].begin() + i,_ir.local_region_x[1].begin() + i,_ir.local_region_x[2].begin() + i,_ir.local_region_x[3].begin() + i };
+     //std::vector<double>::iterator loc_reg_y[4] = { _ir.local_region_y[0].begin() + i,_ir.local_region_y[1].begin() + i,_ir.local_region_y[2].begin() + i,_ir.local_region_y[3].begin() + i };
+     std::vector<double>::iterator loc_reg_x[4] = { _ir.local_region_x[0].begin() ,_ir.local_region_x[1].begin() ,_ir.local_region_x[2].begin() ,_ir.local_region_x[3].begin()  };
+     std::vector<double>::iterator loc_reg_y[4] = { _ir.local_region_y[0].begin() ,_ir.local_region_y[1].begin(),_ir.local_region_y[2].begin() ,_ir.local_region_y[3].begin()  };
+
+     for (auto i = 0; i < _ir.valid_location_rc_x.size(); i++)
      {
-         std::vector<double>::iterator loc_reg_x[4] = { _ir.local_region_x[0].begin()+i,_ir.local_region_x[1].begin() + i,_ir.local_region_x[2].begin() + i,_ir.local_region_x[3].begin() + i };
-         std::vector<double>::iterator loc_reg_y[4] = { _ir.local_region_y[0].begin() + i,_ir.local_region_y[1].begin() + i,_ir.local_region_y[2].begin() + i,_ir.local_region_y[3].begin() + i };
-         for (auto k = 0; k < 4; k++)
+       for (auto k = 0; k < 4; k++)
          {
-             auto idx = *loc_reg_x[k];
-             auto idy = *loc_reg_y[k];
+             auto idx = *(loc_reg_x[k]+i) - 1;
+             auto idy = *(loc_reg_y[k]+i) - 1;
              assert(_ir.width * idy + idx <= _ir.width * _ir.height);
-             auto val = *(iedge_it + _ir.width * idy + idx);
-             // find index value in iEdge
+             auto val = *(iedge_it + _ir.width * idy + idx);// find value in iEdge
              _ir.local_edges.push_back(val);
          }
      }
