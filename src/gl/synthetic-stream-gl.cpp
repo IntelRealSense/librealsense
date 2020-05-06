@@ -320,6 +320,8 @@ namespace librealsense
                         glDeleteTextures(1, &res);
                         
                         fbo.unbind();
+
+                        preloaded = true;
                     }
                 }, [&]{
                     memcpy(to, backup.get(), get_frame_size());

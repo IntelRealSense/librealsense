@@ -273,7 +273,9 @@ namespace librealsense
                 auto depth_data = reinterpret_cast<const float*>(depth.get_data());
                 // convert from depth min max to disparity min max
                 // note: max min value is inverted in disparity domain
-                auto max = (_d2d_convert_factor / (_min + 0.1)) * _depth_units + .5f;
+                auto __min = _min;
+                if (__min < 1e-6f) { __min = 1e-6f; } // Min value set to prevent zero division. only when _min is zero. 
+                auto max = (_d2d_convert_factor / (__min)) * _depth_units + .5f;
                 auto min = (_d2d_convert_factor / (_max)) * _depth_units + .5f;
                 auto coloring_function = [&, this](float data) {
                     return (data - min) / (max - min);

@@ -29,5 +29,8 @@ namespace Intel.RealSense
 
         /// <summary> Current firmware version installed is not the latest available</summary>
         FirmwareUpdateRecommended = 5,
+
+        /// <summary> A relocalization event has updated the pose provided by a pose sensor</summary>
+        PoseRelocalization = 6,
     }
 }

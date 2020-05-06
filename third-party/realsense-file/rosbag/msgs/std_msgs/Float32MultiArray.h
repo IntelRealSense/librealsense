@@ -45,15 +45,15 @@ struct Float32MultiArray_
 
 
 
-  typedef boost::shared_ptr< ::std_msgs::Float32MultiArray_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::std_msgs::Float32MultiArray_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::std_msgs::Float32MultiArray_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::std_msgs::Float32MultiArray_<ContainerAllocator> const> ConstPtr;
 
 }; // struct Float32MultiArray_
 
 typedef ::std_msgs::Float32MultiArray_<std::allocator<void> > Float32MultiArray;
 
-typedef boost::shared_ptr< ::std_msgs::Float32MultiArray > Float32MultiArrayPtr;
-typedef boost::shared_ptr< ::std_msgs::Float32MultiArray const> Float32MultiArrayConstPtr;
+typedef std::shared_ptr< ::std_msgs::Float32MultiArray > Float32MultiArrayPtr;
+typedef std::shared_ptr< ::std_msgs::Float32MultiArray const> Float32MultiArrayConstPtr;
 
 // constants requiring out of line definition
 

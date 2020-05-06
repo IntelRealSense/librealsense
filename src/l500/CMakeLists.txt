@@ -8,10 +8,20 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/l500-device.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/l500-motion.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/l500-factory.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/l500-fw-update-device.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/l500-serializable.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/l500-options.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/l500-depth.h"
         "${CMAKE_CURRENT_LIST_DIR}/l500-private.h"
         "${CMAKE_CURRENT_LIST_DIR}/l500-color.h"
         "${CMAKE_CURRENT_LIST_DIR}/l500-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/l500-motion.h"
         "${CMAKE_CURRENT_LIST_DIR}/l500-factory.h"
+        "${CMAKE_CURRENT_LIST_DIR}/l500-fw-update-device.h"
+        "${CMAKE_CURRENT_LIST_DIR}/l500-serializable.h"
+        "${CMAKE_CURRENT_LIST_DIR}/l500-options.h"
 )
+
+if (ENABLE_L500_DEPTH_INVALIDATION)
+    add_definitions(-DENABLE_L500_DEPTH_INVALIDATION)
+endif()

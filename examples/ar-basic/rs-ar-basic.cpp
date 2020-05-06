@@ -69,9 +69,7 @@ int main(int argc, char * argv[]) try
     rs2::stream_profile fisheye_stream = pipe_profile.get_stream(RS2_STREAM_FISHEYE, fisheye_sensor_idx);
     rs2_intrinsics intrinsics = fisheye_stream.as<rs2::video_stream_profile>().get_intrinsics();
 
-    // Get fisheye sensor extrinsics parameters.
-    // This is the pose of the fisheye sensor relative to the T265 coordinate system.
-    rs2_extrinsics extrinsics = fisheye_stream.get_extrinsics_to(pipe_profile.get_stream(RS2_STREAM_POSE));
+    rs2_extrinsics pose_to_fisheye_extrinsics = pipe_profile.get_stream(RS2_STREAM_POSE).get_extrinsics_to(fisheye_stream);
 
     std::cout << "Device got. Streaming data" << std::endl;
 
@@ -135,7 +133,7 @@ int main(int argc, char * argv[]) try
         object object_in_sensor;
         for (size_t i = 0; i < object_in_device.size(); ++i)
         {
-            rs2_transform_point_to_point(object_in_sensor[i].f, &extrinsics, object_in_device[i].f);
+            rs2_transform_point_to_point(object_in_sensor[i].f, &pose_to_fisheye_extrinsics, object_in_device[i].f);
         }
 
         for (size_t i = 1; i < object_in_sensor.size(); ++i)

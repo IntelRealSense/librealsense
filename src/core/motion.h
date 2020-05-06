@@ -30,6 +30,7 @@ namespace librealsense
         virtual bool import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const = 0;
         virtual bool set_static_node(const std::string& guid, const float3& pos, const float4& orient_quat) const = 0;
         virtual bool get_static_node(const std::string& guid, float3& pos, float4& orient_quat) const = 0;
+        virtual bool remove_static_node(const std::string& guid) const = 0;
         virtual ~pose_sensor_interface() = default;
     };
     MAP_EXTENSION(RS2_EXTENSION_POSE_SENSOR, librealsense::pose_sensor_interface);
@@ -43,7 +44,7 @@ namespace librealsense
     };
     MAP_EXTENSION(RS2_EXTENSION_WHEEL_ODOMETER, librealsense::wheel_odometry_interface);
 
-     class tm2_extensions
+    class tm2_extensions
     {
     public:
         virtual void enable_loopback(const std::string& input) = 0;
@@ -54,4 +55,15 @@ namespace librealsense
         virtual ~tm2_extensions() = default;
     };
     MAP_EXTENSION(RS2_EXTENSION_TM2, librealsense::tm2_extensions);
+
+    class tm2_sensor_interface
+    {
+    public:
+        virtual void set_intrinsics(const stream_profile_interface& stream_profile, const rs2_intrinsics& intr) = 0;
+        virtual void set_extrinsics(const stream_profile_interface& from_profile, const stream_profile_interface& to_profile, const rs2_extrinsics& extr) = 0;
+        virtual void set_motion_device_intrinsics(const stream_profile_interface& stream_profile, const rs2_motion_device_intrinsic& intr) = 0;
+        virtual void reset_to_factory_calibration() = 0;
+        virtual void write_calibration() = 0;
+    };
+    MAP_EXTENSION(RS2_EXTENSION_TM2_SENSOR, librealsense::tm2_sensor_interface);
 }

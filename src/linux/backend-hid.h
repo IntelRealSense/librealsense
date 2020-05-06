@@ -193,6 +193,8 @@ namespace librealsense
 
             ~v4l_hid_device();
 
+            void register_profiles(const std::vector<hid_profile>& hid_profiles) override { _hid_profiles = hid_profiles;}
+
             void open(const std::vector<hid_profile>& hid_profiles);
 
             void close();

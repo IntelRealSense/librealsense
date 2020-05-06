@@ -14,7 +14,7 @@ function check_folder {
           if [[ $(grep -oP "Software License Agreement" $filename | wc -l) -ne 0 ]]; then
                echo "[WARNING] $filename contains 3rd-party license agreement"
           else
-               if [[ ! $filename == *"libuvc"* ]]; then
+               if [[ ! $filename == *"usbhost"* ]]; then
                     # Only check files that are not .gitignore-d
                     if [[ $(git check-ignore $filename | wc -l) -eq 0 ]]; then
                          if [[ $(grep -oP "(?<=\(c\) )(.*)(?= Intel)" $filename | wc -l) -eq 0 ]]; then

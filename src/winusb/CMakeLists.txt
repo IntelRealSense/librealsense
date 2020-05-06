@@ -11,4 +11,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/enumerator-winusb.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/messenger-winusb.h"
         "${CMAKE_CURRENT_LIST_DIR}/messenger-winusb.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/request-winusb.h"
+        "${CMAKE_CURRENT_LIST_DIR}/request-winusb.cpp"
 )

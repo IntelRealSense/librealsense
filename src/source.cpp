@@ -91,7 +91,7 @@ namespace librealsense
         return it->second->alloc_and_track(size, additional_data, requires_memory);
     }
 
-    void frame_source::set_sensor(std::shared_ptr<sensor_interface> s)
+    void frame_source::set_sensor(const std::shared_ptr<sensor_interface>& s)
     {
         for (auto&& a : _archive)
         {
@@ -124,6 +124,10 @@ namespace librealsense
                     std::swap(frame.frame, ref);
                     _callback->on_frame((rs2_frame*)ref);
                 }
+            }
+            catch( const std::exception & e )
+            {
+                LOG_ERROR( "Exception was thrown during user callback: " + std::string( e.what() ));
             }
             catch(...)
             {

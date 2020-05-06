@@ -45,6 +45,19 @@ Java_com_intel_realsense_librealsense_Config_nEnableDeviceFromFile(JNIEnv *env, 
 }
 
 extern "C" JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_Config_nEnableDevice(JNIEnv *env, jclass type,
+                                                                   jlong handle,
+                                                                   jstring serial_) {
+    const char *serial = env->GetStringUTFChars(serial_, 0);
+
+    rs2_error *e = NULL;
+    rs2_config_enable_device(reinterpret_cast<rs2_config *>(handle), serial, &e);
+    handle_error(env, e);
+
+    env->ReleaseStringUTFChars(serial_, serial);
+}
+
+extern "C" JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_Config_nEnableRecordToFile(JNIEnv *env, jclass type,
                                                                  jlong handle, jstring filePath_) {
     const char *filePath = env->GetStringUTFChars(filePath_, 0);

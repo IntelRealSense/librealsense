@@ -7,8 +7,9 @@
 
 int main(int argc, const char * argv[]) try
 {
-    rs2::ux_window window("Depth Quality Tool");
-    rs2::depth_quality::tool_model model;
+    rs2::context ctx;
+    rs2::ux_window window("Depth Quality Tool", ctx);
+    rs2::depth_quality::tool_model model(ctx);
 
     using namespace rs2::depth_quality;
 

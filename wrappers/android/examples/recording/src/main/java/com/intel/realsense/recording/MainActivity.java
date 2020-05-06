@@ -20,10 +20,12 @@ import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
 import com.intel.realsense.librealsense.Pipeline;
+import com.intel.realsense.librealsense.PipelineProfile;
 import com.intel.realsense.librealsense.RsContext;
 import com.intel.realsense.librealsense.StreamType;
 
 import java.io.File;
+import java.nio.channels.Pipe;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -32,7 +34,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int PERMISSIONS_REQUEST_CAMERA = 0;
     private static final int PERMISSIONS_REQUEST_WRITE = 1;
 
-    private boolean mPermissionsGrunted = false;
+    private boolean mPermissionsGranted = false;
 
     private Context mAppContext;
     private TextView mBackGroundText;
@@ -83,7 +85,13 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        mPermissionsGrunted = true;
+        mPermissionsGranted = true;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mGLSurfaceView.close();
     }
 
     @Override
@@ -98,14 +106,14 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        mPermissionsGrunted = true;
+        mPermissionsGranted = true;
     }
 
     @Override
     protected void onResume() {
         super.onResume();
 
-        if(mPermissionsGrunted)
+        if(mPermissionsGranted)
             init();
         else
             Log.e(TAG, "missing permissions");
@@ -209,7 +217,8 @@ public class MainActivity extends AppCompatActivity {
                 cfg.enableStream(StreamType.COLOR, 640, 480);
                 if (record)
                     cfg.enableRecordToFile(getFilePath());
-                mPipeline.start(cfg);
+                // try statement needed here to release resources allocated by the Pipeline:start() method
+                try(PipelineProfile pp = mPipeline.start(cfg)){}
             }
             mIsStreaming = true;
             mHandler.post(mStreaming);
@@ -227,6 +236,7 @@ public class MainActivity extends AppCompatActivity {
             mIsStreaming = false;
             mHandler.removeCallbacks(mStreaming);
             mPipeline.stop();
+            mGLSurfaceView.clear();
             Log.d(TAG, "streaming stopped successfully");
         }  catch (Exception e) {
             Log.d(TAG, "failed to stop streaming");

@@ -53,7 +53,7 @@ void post_processing_filters::configure(const ppf_test_config& filters_cfg)
     dec_pb = (filters_cfg.downsample_scale != 1);
     dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, (float)filters_cfg.downsample_scale);
 
-    if (spat_pb = filters_cfg.spatial_filter)
+    if ((spat_pb = filters_cfg.spatial_filter))
     {
         spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, filters_cfg.spatial_alpha);
         spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, filters_cfg.spatial_delta);
@@ -61,14 +61,14 @@ void post_processing_filters::configure(const ppf_test_config& filters_cfg)
         //spat_filter.set_option(RS2_OPTION_HOLES_FILL, filters_cfg.holes_filling_mode);      // Currently disabled
     }
 
-    if (temp_pb = filters_cfg.temporal_filter)
+    if ((temp_pb = filters_cfg.temporal_filter))
     {
         temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, filters_cfg.temporal_alpha);
         temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, filters_cfg.temporal_delta);
         temp_filter.set_option(RS2_OPTION_HOLES_FILL, filters_cfg.temporal_persistence);
     }
 
-    if (holes_pb = filters_cfg.holes_filter)
+    if ((holes_pb = filters_cfg.holes_filter))
     {
         hole_filling_filter.set_option(RS2_OPTION_HOLES_FILL, float(filters_cfg.holes_filling_mode));
     }
@@ -368,7 +368,7 @@ bool is_equal(rs2::frameset org, rs2::frameset processed)
     {
         auto curr_profile = o.get_profile();
         bool found = false;
-        processed.foreach([&curr_profile, &found](const rs2::frame& f)
+        processed.foreach_rs([&curr_profile, &found](const rs2::frame& f)
         {
             auto processed_profile = f.get_profile();
             if (curr_profile.unique_id() == processed_profile.unique_id())
@@ -552,7 +552,7 @@ TEST_CASE("Post-Processing processing pipe", "[post-processing-filters]")
         full_pipe = full_pipe.apply_filter(pc);
 
         //printf("test frame:\n");
-        full_pipe.foreach([&](const rs2::frame& f) {
+        full_pipe.foreach_rs([&](const rs2::frame& f) {
             uids.insert(f.get_profile().unique_id());
             //printf("stream: %s, format: %d, uid: %d\n", f.get_profile().stream_name().c_str(), f.get_profile().format(), f.get_profile().unique_id());
         });
@@ -566,7 +566,7 @@ TEST_CASE("Post-Processing processing pipe", "[post-processing-filters]")
     pipe.stop();
 }
 
-TEST_CASE("Align Processing Block", "[live][pipeline][post-processing-filters]") {
+TEST_CASE("Align Processing Block", "[live][pipeline][post-processing-filters][!mayfail]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.20.0"))

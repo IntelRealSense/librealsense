@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent"
+    android:background="@drawable/fragment_template"
+    android:layout_height="wrap_content">
+
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/controls_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Projector"
+            android:textColor="#ffffff"
+            android:textSize="20dp"
+            android:textStyle="bold"
+            android:layout_marginBottom="5dp"/>
+
+        <RadioGroup xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@+id/controls_radio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/controls_title"
+            android:orientation="vertical"
+            android:layout_marginBottom="20dp">
+            <RadioButton android:id="@+id/radio_no_projector"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="OFF"
+                android:textColor="#ffffff"
+                android:textSize="14dp"
+                android:onClick="onRadioButtonClicked"/>
+            <RadioButton android:id="@+id/radio_laser"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#ffffff"
+                android:textSize="14dp"
+                android:text="LASER"
+                android:onClick="onRadioButtonClicked"/>
+            <RadioButton android:id="@+id/radio_laser_auto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#ffffff"
+                android:textSize="14dp"
+                android:text="LASER AUTO"
+                android:onClick="onRadioButtonClicked"/>
+            <RadioButton android:id="@+id/radio_led"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#ffffff"
+                android:textSize="14dp"
+                android:text="LED"
+                android:onClick="onRadioButtonClicked"/>
+        </RadioGroup>
+
+        <TextView
+            android:id="@+id/hw_preset_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hardware Preset"
+            android:textColor="#ffffff"
+            android:textSize="20dp"
+            android:textStyle="bold"
+            android:layout_marginBottom="5dp"
+            android:layout_below="@id/controls_radio"/>
+
+        <RadioGroup xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@+id/hw_preset_radio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/hw_preset_title"
+            android:orientation="vertical">
+            <RadioButton android:id="@+id/radio_custom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CUSTOM"
+                android:textColor="#ffffff"
+                android:textSize="14dp"
+                android:onClick="onRadioButtonClicked"/>
+            <RadioButton android:id="@+id/radio_burst"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#ffffff"
+                android:textSize="14dp"
+                android:text="BURST"
+                android:onClick="onRadioButtonClicked"/>
+        </RadioGroup>
+
+        <Button android:id="@+id/controls_close_button"
+            android:layout_below="@id/hw_preset_radio"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14dp"
+            android:text="Close"
+            android:layout_alignParentEnd="true"
+            android:textAllCaps="false"
+            android:textStyle="bold"/>
+    </RelativeLayout>
+</android.support.constraint.ConstraintLayout>

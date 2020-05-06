@@ -36,6 +36,7 @@ public class VideoFrame extends Frame {
 
     protected VideoFrame(long handle) {
         super(handle);
+        mOwner = false;
     }
 
     private static native int nGetWidth(long handle);

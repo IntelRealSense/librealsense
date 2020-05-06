@@ -152,7 +152,7 @@ namespace librealsense
         if (opCodeAsUint32 != opCodeXmit)
         {
             auto err_type = static_cast<hwmon_response>(opCodeAsUint32);
-            throw invalid_value_exception(to_string() << "hwmon command 0x" << std::hex << opCodeXmit << " failed. Error type: "
+            throw invalid_value_exception(to_string() << "hwmon command 0x" << std::hex << opCodeXmit << " failed.\nError type: "
                 << hwmon_error2str(err_type) << " (" << std::dec <<(int)err_type  << ").");
         }
 

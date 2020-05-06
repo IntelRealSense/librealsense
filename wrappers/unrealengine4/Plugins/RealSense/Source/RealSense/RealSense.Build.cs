@@ -13,6 +13,8 @@ public class RealSense : ModuleRules
 
 		PrivatePCHHeaderFile = "Private/PCH.h";
 
+		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+
 		PublicDependencyModuleNames.AddRange(
 			new string[] {
 				"Core",
@@ -39,11 +41,20 @@ public class RealSense : ModuleRules
 		}
 
 		//string RealSenseDirectory = Environment.GetEnvironmentVariable("RSSDK_DIR");
-		string RealSenseDirectory = "C:/Program Files (x86)/Intel RealSense SDK 2.0";
-
-		PublicIncludePaths.Add(Path.Combine(RealSenseDirectory, "include"));
-		PublicLibraryPaths.Add(Path.Combine(RealSenseDirectory, "lib", "x64"));
-		PublicLibraryPaths.Add(Path.Combine(RealSenseDirectory, "bin", "x64"));
-		PublicAdditionalLibraries.Add("realsense2.lib");
+		if (Target.Platform == UnrealTargetPlatform.Linux)
+		{
+			string RealSenseDirectory = "/usr/local/";
+			PublicIncludePaths.Add(Path.Combine(RealSenseDirectory, "include"));
+			PublicAdditionalLibraries.Add(Path.Combine(RealSenseDirectory, "lib64/librealsense2.so"));
+		}
+		else
+		if (Target.Platform == UnrealTargetPlatform.Win64)
+		{
+			string RealSenseDirectory = "C:/Program Files (x86)/Intel RealSense SDK 2.0";
+			PublicIncludePaths.Add(Path.Combine(RealSenseDirectory, "include"));
+			PublicLibraryPaths.Add(Path.Combine(RealSenseDirectory, "lib", "x64"));
+			PublicLibraryPaths.Add(Path.Combine(RealSenseDirectory, "bin", "x64"));
+			PublicAdditionalLibraries.Add("realsense2.lib");
+		}
 	}
 }

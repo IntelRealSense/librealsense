@@ -40,6 +40,8 @@ public class Config extends LrsClass {
         nEnableDeviceFromFile(mHandle, filePath);
     }
 
+    public void enableDevice(String serial) { nEnableDevice(mHandle, serial); }
+
     public boolean canResolve(Pipeline pipeline){
         return nCanResolve(mHandle, pipeline.mHandle);
     }
@@ -62,6 +64,7 @@ public class Config extends LrsClass {
     private static native void nEnableAllStreams(long handle);
     private static native void nDisableAllStreams(long handle);
     private static native void nEnableDeviceFromFile(long handle, String filePath);
+    private static native void nEnableDevice(long handle, String serial);
     private static native void nEnableRecordToFile(long handle, String filePath);
     private static native boolean nCanResolve(long handle, long pipelineHandle);
     private static native long nResolve(long handle, long pipelineHandle);

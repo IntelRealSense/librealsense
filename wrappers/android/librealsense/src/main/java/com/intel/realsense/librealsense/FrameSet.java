@@ -14,7 +14,7 @@ public class FrameSet extends LrsClass {
 
     public Frame first(StreamType type, StreamFormat format) {
         for(int i = 0; i < mSize; i++) {
-            Frame f = Frame.create(nExtractFrame(mHandle, i));
+            Frame f = new Frame(nExtractFrame(mHandle, i));
             try(StreamProfile p = f.getProfile()){
                 if(p.getType() == type && (p.getFormat() == format || format == StreamFormat.ANY))
                     return f;
@@ -26,7 +26,7 @@ public class FrameSet extends LrsClass {
 
     public void foreach(FrameCallback callback) {
         for(int i = 0; i < mSize; i++) {
-            try(Frame f = Frame.create(nExtractFrame(mHandle, i))){
+            try(Frame f = new Frame(nExtractFrame(mHandle, i))){
                 callback.onFrame(f);
             }
         }

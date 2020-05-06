@@ -79,6 +79,8 @@ protected:
 	std::vector<Rs2StreamProfileInfo> m_profiles;
 	OniVideoMode m_videoMode;
 	rs2_intrinsics m_intrinsics;
+	rs2_extrinsics m_extrinsicsDepthToColor;
+	bool m_needUpdateExtrinsicsDepthToColor;
 	float m_depthScale;
 	float m_fovX;
 	float m_fovY;

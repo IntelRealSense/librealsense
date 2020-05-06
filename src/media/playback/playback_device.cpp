@@ -138,8 +138,8 @@ std::shared_ptr<stream_profile_interface> playback_device::get_stream(const std:
 
 rs2_extrinsics playback_device::calc_extrinsic(const rs2_extrinsics& from, const rs2_extrinsics& to)
 {
-    //NOTE: Assuming here that recording is writing extrinsics **from** some reference point **to** the stream at hand
-    return from_pose(inverse(to_pose(from)) * to_pose(to));
+    //NOTE: Assuming here that recording is writing extrinsics **from** the stream at hand **to** some reference point
+    return from_pose(to_pose(to) * inverse(to_pose(from)));
 }
 
 playback_device::~playback_device()
@@ -696,7 +696,11 @@ bool playback_device::try_extend_snapshot(std::shared_ptr<extension_snapshot>& e
     case RS2_EXTENSION_VIDEO:   return try_extend<video_sensor_interface>(e, ext);
     case RS2_EXTENSION_ROI:     return try_extend<roi_sensor_interface>(e, ext);
     case RS2_EXTENSION_DEPTH_SENSOR: return try_extend<depth_sensor>(e, ext);
+    case RS2_EXTENSION_L500_DEPTH_SENSOR: return try_extend<l500_depth_sensor_interface>(e, ext);
     case RS2_EXTENSION_DEPTH_STEREO_SENSOR: return try_extend<depth_stereo_sensor>(e, ext);
+    case RS2_EXTENSION_COLOR_SENSOR: return try_extend<color_sensor>(e, ext);
+    case RS2_EXTENSION_MOTION_SENSOR: return try_extend<motion_sensor>(e, ext);
+    case RS2_EXTENSION_FISHEYE_SENSOR: return try_extend<fisheye_sensor>(e, ext);
     case RS2_EXTENSION_UNKNOWN: //[[fallthrough]]
     case RS2_EXTENSION_COUNT:   //[[fallthrough]]
     default:

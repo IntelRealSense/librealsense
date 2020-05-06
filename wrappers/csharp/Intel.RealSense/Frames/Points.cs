@@ -42,11 +42,11 @@ namespace Intel.RealSense
             }
         }
 
-        private void Copy<T>(IntPtr src, IntPtr dst)
+        private void Copy<T>(IntPtr src, IntPtr dst, int size)
         {
             Debug.Assert(src != IntPtr.Zero);
             Debug.Assert(dst != IntPtr.Zero);
-            NativeMethods.Memcpy(dst, src, Count * Marshal.SizeOf(typeof(T)));
+            NativeMethods.Memcpy(dst, src, size);
         }
 
         /// <summary>
@@ -66,7 +66,7 @@ namespace Intel.RealSense
             var handle = GCHandle.Alloc(vertices, GCHandleType.Pinned);
             try
             {
-                Copy<T>(VertexData, handle.AddrOfPinnedObject());
+                Copy<T>(VertexData, handle.AddrOfPinnedObject(), Count * 3 * sizeof(float));
             }
             finally
             {
@@ -105,7 +105,7 @@ namespace Intel.RealSense
             var handle = GCHandle.Alloc(textureArray, GCHandleType.Pinned);
             try
             {
-                Copy<T>(TextureData, handle.AddrOfPinnedObject());
+                Copy<T>(TextureData, handle.AddrOfPinnedObject(), Count * 2 * sizeof(float));
             }
             finally
             {

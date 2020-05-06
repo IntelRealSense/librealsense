@@ -431,7 +431,7 @@ namespace rs2
 
         /**
         * Start the pipeline streaming with its default configuration.
-        * The pipeline captures samples from the device, and delivers them to the through the provided frame callback.
+        * The pipeline captures samples from the device, and delivers them to the provided frame callback.
         * Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.
         * When starting the pipeline with a callback both \c wait_for_frames() and \c poll_for_frames() will throw exception.
         *
@@ -452,7 +452,7 @@ namespace rs2
 
         /**
         * Start the pipeline streaming according to the configuraion.
-        * The pipeline captures samples from the device, and delivers them to the through the provided frame callback.
+        * The pipeline captures samples from the device, and delivers them to the provided frame callback.
         * Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.
         * When starting the pipeline with a callback both \c wait_for_frames() and \c poll_for_frames() will throw exception.
         * The pipeline selects and activates the device upon start, according to configuration or a default configuration.

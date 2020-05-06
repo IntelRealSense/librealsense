@@ -83,8 +83,8 @@ namespace librealsense
     public:
         virtual rs2_metadata_type get_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const = 0;
         virtual bool supports_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const = 0;
+        virtual int get_frame_data_size() const = 0;
         virtual const byte* get_frame_data() const = 0;
-        //TODO: add virtual uint64_t get_frame_data_size() const = 0;
         virtual rs2_time_t get_frame_timestamp() const = 0;
         virtual rs2_timestamp_domain get_frame_timestamp_domain() const = 0;
         virtual void set_timestamp(double new_ts) = 0;
@@ -164,6 +164,14 @@ namespace librealsense
     using stream_profiles = std::vector<std::shared_ptr<stream_profile_interface>>;
     using processing_blocks = std::vector<std::shared_ptr<processing_block_interface>>;
 
+    inline std::ostream& operator << (std::ostream& os, const stream_profiles& profiles)
+    {
+        for (auto&& p : profiles)
+        {
+            os << rs2_format_to_string(p->get_format()) << " " << rs2_stream_to_string(p->get_stream_type()) << ", ";
+        }
+        return os;
+    }
 
     class recommended_proccesing_blocks_interface
     {
@@ -268,6 +276,37 @@ namespace librealsense
     };
 
     class depth_stereo_sensor;
+
+    class color_sensor : public recordable<color_sensor>
+    {
+    public:
+        virtual ~color_sensor() = default;
+
+        void create_snapshot(std::shared_ptr<color_sensor>& snapshot) const override;
+        void enable_recording(std::function<void(const color_sensor&)> recording_function) override {};
+    };
+
+    MAP_EXTENSION(RS2_EXTENSION_COLOR_SENSOR, librealsense::color_sensor);
+
+    class color_sensor_snapshot : public virtual color_sensor, public extension_snapshot
+    {
+    public:
+        color_sensor_snapshot() {}
+
+        void update(std::shared_ptr<extension_snapshot> ext) override
+        {
+        }
+
+        void create_snapshot(std::shared_ptr<color_sensor>& snapshot) const  override
+        {
+            snapshot = std::make_shared<color_sensor_snapshot>(*this);
+        }
+        void enable_recording(std::function<void(const color_sensor&)> recording_function) override
+        {
+            //empty
+        }
+    };
+
 
     class depth_sensor : public recordable<depth_sensor>
     {

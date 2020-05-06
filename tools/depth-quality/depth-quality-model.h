@@ -85,8 +85,15 @@ namespace rs2
                     {
                         std::string filename = _filename_base + "_configuration.json";
                         std::ofstream out(filename);
-                        out << adv.serialize_json();
-                        out.close();
+                        try
+                        {
+                            out << adv.serialize_json();
+                        }
+                        catch (...)
+                        {
+                            _viewer_model.not_model.add_notification(notification_data{ to_string() << "Metrics Recording: JSON Serializaion has failed",
+                                RS2_LOG_SEVERITY_WARN, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                        }
                     }
                 }
                 _samples.clear();
@@ -346,7 +353,7 @@ namespace rs2
         class tool_model
         {
         public:
-            tool_model();
+            tool_model(rs2::context& ctx);
 
             bool start(ux_window& win);
 
@@ -374,6 +381,7 @@ namespace rs2
 
             std::string capture_description();
 
+            rs2::context&                   _ctx;
             pipeline                        _pipe;
             std::shared_ptr<device_model>   _device_model;
             viewer_model                    _viewer_model;
@@ -401,7 +409,6 @@ namespace rs2
 
             float                           _min_dist, _max_dist, _max_angle;
             std::mutex                      _mutex;
-            rs2::context                    _ctx;
 
             bool                            _use_ground_truth = false;
             int                             _ground_truth = 0;

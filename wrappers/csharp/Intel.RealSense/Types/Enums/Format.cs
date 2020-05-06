@@ -74,5 +74,25 @@ namespace Intel.RealSense
         /// <summary>32-bit float-point depth distance value.</summary>
         Distance = 21,
 
+        /// <summary>Bitstream encoding for video in which an image of each frame is encoded as JPEG-DIB.</summary>
+        Mjpeg = 22,
+
+        /// <summary>8-bit per pixel interleaved. 8-bit left, 8-bit right.</summary>
+        Y8i = 23,
+
+        /// <summary>12-bit per pixel interleaved. 12-bit left, 12-bit right. Each pixel is stored in a 24-bit word in little-endian order.</summary>
+        Y12I = 24,
+
+        /// <summary>multi-planar Depth 16bit + IR 10bit.</summary>
+        Inzi = 25,
+
+        /// <summary>8-bit IR stream.</summary>
+        Invi = 26,
+
+        /// <summary>Grey-scale image as a bit-packed array. 4 pixel data stream taking 5 bytes.</summary>
+        W10 = 27,
+
+        /// <summary>Variable-length Huffman-compressed 16-bit depth values.</summary>
+        Z16H = 28
     }
 }

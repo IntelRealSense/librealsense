@@ -284,6 +284,17 @@ void visualizer_2d::draw_texture(uint32_t tex, float opacity)
     check_gl_error();
 }
 
+void visualizer_2d::draw_texture(uint32_t tex1, uint32_t tex2, float opacity)
+{
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    tex_2d_shader->begin();
+    tex_2d_shader->set_opacity(opacity);
+    tex_2d_shader->end();
+    draw_texture({ 0.f, 0.f }, { 1.0f, 1.0f }, tex1, tex2);
+    glDisable(GL_BLEND);
+}
+
 void texture_2d_shader::set_position_and_scale(
     const float2& position,
     const float2& scale)
@@ -345,6 +356,22 @@ void texture_visualizer::draw(texture_2d_shader& shader, uint32_t tex)
     glBindTexture(GL_TEXTURE_2D, 0);
     shader.end();
     check_gl_error();
+}
+
+void texture_visualizer::draw(texture_2d_shader& shader, uint32_t tex1, uint32_t tex2)
+{
+    shader.begin();
+    shader.set_position_and_scale(_position, _scale);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, tex1);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, tex2);
+
+    _geometry->draw();
+    glBindTexture(GL_TEXTURE_2D, 0);
+    shader.end();
 }
 
 obj_mesh texture_visualizer::create_mesh()

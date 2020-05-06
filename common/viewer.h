@@ -6,9 +6,50 @@
 #include "model-views.h"
 #include "notifications.h"
 #include "viewer.h"
+#include <librealsense2/hpp/rs_export.hpp>
 
 namespace rs2
 {
+    struct popup
+    {
+        const std::string header;
+        const std::string message;
+        std::function<void()> custom_command;
+
+        bool operator =(const popup& p)
+        {
+            return p.message == message;
+        }
+    };
+
+    class viewer_model;
+
+    class frameset_allocator : public filter
+    {
+    public:
+        frameset_allocator(viewer_model* viewer);
+    private:
+        viewer_model* owner;
+    };
+
+    struct export_model
+    {
+        template<typename T, size_t sz>
+        static export_model make_exporter(std::string name, std::string extension, T (&filters_str)[sz])
+        {
+            return export_model(name, extension, filters_str, sz);
+            
+        }
+        std::string name;
+        std::string extension;
+        std::vector<char> filters;
+        std::map<rs2_option, int> options;
+
+    private:
+        export_model(std::string name, std::string extension, const char* filters_str, size_t filters_size) : name(name),
+            extension(extension), filters(filters_str, filters_str + filters_size) {};
+    };
+
     class viewer_model
     {
     public:
@@ -21,10 +62,10 @@ namespace rs2
         const float default_log_h = 110.f;
 
         float get_output_height() const { return (is_output_collapsed ? default_log_h : 15); }
-          
+
         rs2::frame handle_ready_frames(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message);
 
-        viewer_model();
+        viewer_model(context &ctx_);
 
         ~viewer_model()
         {
@@ -34,6 +75,8 @@ namespace rs2
         }
 
         void begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p);
+
+        std::shared_ptr<texture_buffer> get_last_texture();
 
         std::vector<frame> get_frames(frame set);
         frame get_3d_depth_source(frame f);
@@ -48,17 +91,14 @@ namespace rs2
 
         void show_no_stream_overlay(ImFont* font, int min_x, int min_y, int max_x, int max_y);
         void show_no_device_overlay(ImFont* font, int min_x, int min_y);
+        void show_rendering_not_supported(ImFont* font_18, int min_x, int min_y, int max_x, int max_y, rs2_format format);
 
         void show_paused_icon(ImFont* font, int x, int y, int id);
         void show_recording_icon(ImFont* font_18, int x, int y, int id, float alpha_delta);
 
         void popup_if_error(const ux_window& window, std::string& error_message);
 
-        void popup_if_fw_update_required(const ux_window& window, const fw_update_device_info& ud, bool& update);
-
-        void popup_fw_file_select(const ux_window& window, const fw_update_device_info& ud, std::vector<uint8_t>& fw, bool& cancel);
-
-        void popup(const ux_window& window, const std::string& header, const std::string& message, std::function<void()> configure);
+        void show_popup(const ux_window& window, const popup& p);
 
         void popup_firmware_update_progress(const ux_window& window, const float progress);
 
@@ -67,7 +107,7 @@ namespace rs2
         void render_pose(rs2::rect stream_rect, float buttons_heights);
         void try_select_pointcloud(ux_window& win);
 
-        void show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message);
+        void show_3dviewer_header(ImFont* large_font, ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message);
 
         void update_3d_camera(ux_window& win, const rect& viewer_rect, bool force = false);
 
@@ -89,13 +129,20 @@ namespace rs2
         std::shared_ptr<syncer_model> syncer;
         post_processing_filters ppf;
 
-        context ctx;
+        context &ctx;
         notifications_model not_model;
         bool is_output_collapsed = false;
         bool is_3d_view = false;
         bool paused = false;
         bool metric_system = true;
+        uint32_t ground_truth_r = 2500;
 
+        enum export_type
+        {
+            ply
+        };
+        std::map<export_type, export_model> exporters;
+        frameset_allocator frameset_alloc;
 
         void draw_viewport(const rect& viewer_rect, 
             ux_window& window, int devices, std::string& error_message, 
@@ -129,7 +176,7 @@ namespace rs2
     private:
         void check_permissions();
 
-        bool popup_triggered = false;
+        std::vector<popup> _active_popups;
 
         struct rgb {
             uint32_t r, g, b;
@@ -151,6 +198,8 @@ namespace rs2
                               float ruler_length,
                               const std::string& ruler_units);
         float calculate_ruler_max_distance(const std::vector<float>& distances) const;
+
+        void set_export_popup(ImFont* large_font, ImFont* font, rect stream_rect, std::string& error_message, config_file& temp_cfg);
 
         streams_layout _layout;
         streams_layout _old_layout;

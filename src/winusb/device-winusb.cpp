@@ -30,8 +30,56 @@ namespace librealsense
 {
     namespace platform
     {
+        USB_DEVICE_DESCRIPTOR get_device_descriptor(WINUSB_INTERFACE_HANDLE handle)
+        {
+            USB_DEVICE_DESCRIPTOR desc;
+            ULONG return_length = 0;
+            if (!WinUsb_GetDescriptor(handle, USB_DEVICE_DESCRIPTOR_TYPE, 0, 0, (PUCHAR)&desc, sizeof(desc), &return_length))
+            {
+                throw winapi_error("WinUsb action failed, last error: " + GetLastError());
+            }
+            return desc;
+        }
 
-        std::vector<std::shared_ptr<usb_interface>> query_device_interfaces(const std::wstring& path)
+        std::vector<uint8_t> get_device_descriptors(WINUSB_INTERFACE_HANDLE handle)
+        {
+            USB_CONFIGURATION_DESCRIPTOR desc;
+            ULONG return_length = 0;
+            if (!WinUsb_GetDescriptor(handle, USB_CONFIGURATION_DESCRIPTOR_TYPE, 0, 0, (PUCHAR)&desc, sizeof(desc), &return_length))
+            {
+                throw winapi_error("WinUsb action failed, last error: " + GetLastError());
+            }
+
+            std::vector<uint8_t> rv(desc.wTotalLength);
+
+            // Returns configuration descriptor - including all interface, endpoint, class-specific, and vendor-specific descriptors
+            if (!WinUsb_GetDescriptor(handle, USB_CONFIGURATION_DESCRIPTOR_TYPE, 0, 0, rv.data(), desc.wTotalLength, &return_length))
+            {
+                throw winapi_error("WinUsb action failed, last error: " + GetLastError());
+            }
+
+            return rv;
+        }
+
+        void usb_device_winusb::parse_descriptor(WINUSB_INTERFACE_HANDLE handle)
+        {
+            auto device_descriptor = get_device_descriptor(handle);
+            _info.conn_spec = (usb_spec)device_descriptor.bcdUSB;
+
+            auto descriptors = get_device_descriptors(handle);
+
+            for (int i = 0; i < descriptors.size(); )
+            {
+                auto l = descriptors[i];
+                auto dt = descriptors[i + 1];
+                usb_descriptor ud = { l, dt, std::vector<uint8_t>(l) };
+                memcpy(ud.data.data(), &descriptors[i], l);
+                _descriptors.push_back(ud);
+                i += l;
+            }
+        }
+
+        std::vector<std::shared_ptr<usb_interface>> usb_device_winusb::query_device_interfaces(const std::wstring& path)
         {
             std::vector<std::shared_ptr<usb_interface>> rv;
             handle_winusb handle;
@@ -39,33 +87,19 @@ namespace librealsense
             if (sts != RS2_USB_STATUS_SUCCESS)
                 throw winapi_error("WinUsb action failed, " + GetLastError());
 
-            USB_INTERFACE_DESCRIPTOR desc;
-            if (!WinUsb_QueryInterfaceSettings(handle.get_first_interface(), 0, &desc)) {
-                throw winapi_error("WinUsb action failed, last error: " + GetLastError());
-            }
+            auto handles = handle.get_handles();
+            auto descriptors = handle.get_descriptors();
 
-            auto intf = std::make_shared<usb_interface_winusb>(handle.get_first_interface(), desc, path);
-            rv.push_back(intf);
-
-            for (UCHAR interface_number = 0; interface_number < 256; interface_number++) {
-                WINUSB_INTERFACE_HANDLE h;
-                USB_INTERFACE_DESCRIPTOR descriptor;
-
-                if (!WinUsb_GetAssociatedInterface(handle.get_first_interface(), interface_number, &h)) {
-                    auto error = GetLastError();
-                    if (error != ERROR_NO_MORE_ITEMS)
-                        throw winapi_error("WinUsb action failed, last error: " + error);
-                    break;
-                }
-
-                if (!WinUsb_QueryInterfaceSettings(h, 0 /*assod.bInterfaceNumber*/, &descriptor)) {
-                    throw winapi_error("WinUsb action failed, last error: " + GetLastError());
-                }
-
-                auto intf = std::make_shared<usb_interface_winusb>(h, descriptor, path);
+            for (auto&& i : handle.get_handles())
+            {
+                auto d = descriptors.at(i.first);
+                auto intf = std::make_shared<usb_interface_winusb>(i.second, d, path);
                 rv.push_back(intf);
-                WinUsb_Free(h);
             }
+
+            parse_descriptor(handle.get_first_interface());
+
+
             return rv;
         }
 
@@ -79,9 +113,26 @@ namespace librealsense
             }
         }
 
-        const std::shared_ptr<usb_messenger> usb_device_winusb::open()
+        const rs_usb_interface usb_device_winusb::get_interface(uint8_t interface_number) const
         {
-            return std::make_shared<usb_messenger_winusb>(shared_from_this());
+            auto it = std::find_if(_interfaces.begin(), _interfaces.end(),
+                [interface_number](const rs_usb_interface& i) { return interface_number == i->get_number(); });
+            if (it == _interfaces.end())
+                return nullptr;
+            return *it;
+        }
+
+        const std::shared_ptr<usb_messenger> usb_device_winusb::open(uint8_t interface_number)
+        {
+            auto i = get_interface(interface_number);
+            if (!i)
+                return nullptr;
+            auto intf = std::static_pointer_cast<usb_interface_winusb>(i);
+            auto dh = std::make_shared<handle_winusb>();
+            auto sts = dh->open(intf->get_device_path());
+            if (sts != RS2_USB_STATUS_SUCCESS)
+                return nullptr;
+            return std::make_shared<usb_messenger_winusb>(shared_from_this(), dh);
         }
     }
 }

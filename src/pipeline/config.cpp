@@ -16,7 +16,7 @@ namespace librealsense
         {
             std::lock_guard<std::mutex> lock(_mtx);
             _resolved_profile.reset();
-            _stream_requests[{stream, index}] = { stream, index, width, height, fps, format };
+            _stream_requests[{stream, index}] = { format, stream, index, width, height, fps };
         }
 
         void config::enable_all_stream()

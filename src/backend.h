@@ -9,6 +9,7 @@
 #include "../include/librealsense2/h/rs_option.h"
 #include "usb/usb-types.h"
 #include "usb/usb-device.h"
+#include "hid/hid-types.h"
 #include "command_transfer.h"
 
 #include <memory>       // For shared_ptr
@@ -234,37 +235,7 @@ namespace librealsense
                 (a.conn_spec == b.conn_spec);
         }
 
-        struct hid_device_info
-        {
-            std::string id;
-            std::string vid;
-            std::string pid;
-            std::string unique_id;
-            std::string device_path;
-            std::string serial_number;
 
-            operator std::string()
-            {
-                std::stringstream s;
-                s << "id- " << id <<
-                    "\nvid- " << std::hex << vid <<
-                    "\npid- " << std::hex << pid <<
-                    "\nunique_id- " << unique_id <<
-                    "\npath- " << device_path;
-
-                return s.str();
-            }
-        };
-
-        inline bool operator==(const hid_device_info& a,
-            const hid_device_info& b)
-        {
-            return  (a.id == b.id) &&
-                (a.vid == b.vid) &&
-                (a.pid == b.pid) &&
-                (a.unique_id == b.unique_id) &&
-                (a.device_path == b.device_path);
-        }
 
         struct playback_device_info
         {
@@ -359,6 +330,7 @@ namespace librealsense
         {
         public:
             virtual ~hid_device() = default;
+            virtual void register_profiles(const std::vector<hid_profile>& hid_profiles) = 0;// TODO: this should be queried from the device
             virtual void open(const std::vector<hid_profile>& hid_profiles) = 0;
             virtual void close() = 0;
             virtual void stop_capture() = 0;
@@ -554,14 +526,12 @@ namespace librealsense
             std::vector<usb_device_info> usb_devices;
             std::vector<hid_device_info> hid_devices;
             std::vector<playback_device_info> playback_devices;
-            std::vector<tm2_device_info> tm2_devices;
 
             bool operator == (const backend_device_group& other)
             {
                 return !list_changed(uvc_devices, other.uvc_devices) &&
                     !list_changed(hid_devices, other.hid_devices) &&
-                    !list_changed(playback_devices, other.playback_devices) &&
-                    !list_changed(tm2_devices, other.tm2_devices);
+                    !list_changed(playback_devices, other.playback_devices);
             }
 
             operator std::string()
@@ -631,6 +601,7 @@ namespace librealsense
         class multi_pins_hid_device : public hid_device
         {
         public:
+            void register_profiles(const std::vector<hid_profile>& hid_profiles) override { _hid_profiles = hid_profiles; }
             void open(const std::vector<hid_profile>& sensor_iio) override
             {
                 for (auto&& dev : _dev) dev->open(sensor_iio);
@@ -670,6 +641,7 @@ namespace librealsense
 
         private:
             std::vector<std::shared_ptr<hid_device>> _dev;
+            std::vector<hid_profile> _hid_profiles;
         };
 
         class multi_pins_uvc_device : public uvc_device

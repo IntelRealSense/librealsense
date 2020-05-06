@@ -35,6 +35,7 @@ private:
 
 public:
 
+	/*Constructor, copies the whole mesh data to feed to UE */
 	FRuntimeMeshComponentSceneProxy(URuntimeMeshComponent* Component);
 
 	virtual ~FRuntimeMeshComponentSceneProxy();

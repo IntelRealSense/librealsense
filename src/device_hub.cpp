@@ -27,10 +27,6 @@ namespace librealsense
                     break;
                 }
             }
-
-            // TODO: enable T265 filter by VID:PID via tm2_device_info
-            if ((!filtered) && data.tm2_devices.size())
-                result.push_back(dev);
         }
         return result;
     }

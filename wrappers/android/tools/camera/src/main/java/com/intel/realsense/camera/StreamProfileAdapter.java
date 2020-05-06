@@ -11,6 +11,8 @@ import android.widget.CompoundButton;
 import android.widget.Spinner;
 import android.widget.Switch;
 
+import com.intel.realsense.librealsense.Extension;
+import com.intel.realsense.librealsense.StreamProfile;
 import com.intel.realsense.librealsense.VideoStreamProfile;
 
 import java.util.ArrayList;
@@ -70,10 +72,13 @@ public class StreamProfileAdapter extends ArrayAdapter<StreamProfileSelector> {
         Set<String> frameRatesSet = new HashSet<>();
         Set<String> resolutionsSet = new HashSet<>();
 
-        for(VideoStreamProfile sp : sps.getProfiles()){
+        for(StreamProfile sp : sps.getProfiles()){
             formatsSet.add(sp.getFormat().name());
             frameRatesSet.add(String.valueOf(sp.getFrameRate()));
-            resolutionsSet.add(String.valueOf(sp.getWidth()) + "x" + String.valueOf(sp.getHeight()));
+            if(!sp.is(Extension.VIDEO_PROFILE))
+                continue;
+            VideoStreamProfile vsp = sp.as(Extension.VIDEO_PROFILE);
+            resolutionsSet.add(String.valueOf(vsp.getWidth()) + "x" + String.valueOf(vsp.getHeight()));
         }
 
         ArrayList<String> formats = new ArrayList<>(formatsSet);

@@ -97,7 +97,7 @@ config_file::config_file(std::string filename)
         auto j = json::parse(str);
         for (json::iterator it = j.begin(); it != j.end(); ++it) 
         {
-            _values[it.key()] = it.value();
+            _values[it.key()] = it.value().get<std::string>();
         }
     }
     catch(...)

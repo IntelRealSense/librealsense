@@ -2,8 +2,8 @@
 
 ## Overview
 
-This tutorial shows simple method for measuring real-world distances using depth data. 
-> **Note:** Measuring dimensions of real-world objects is one of the obvious applications of a depth camera. This sample is not indented to be a proper measurement tool, but rather to showcase critical concepts.
+This tutorial shows simple method for measuring real-world distances using depth data.
+> **Note:** Measuring dimensions of real-world objects is one of the obvious applications of a depth camera. This sample is not intended to be a proper measurement tool, but rather to showcase critical concepts.
 > With better algorithms measurement results can be improved considerably.
 
 In this tutorial you will learn how to:
@@ -20,7 +20,7 @@ In this tutorial you will learn how to:
 
 This demo lets the user measure distance between two points in the physical world.
 
-## Code Overview 
+## Code Overview
 
 ### Depth Processing Pipeline
 
@@ -43,7 +43,7 @@ rs2::disparity_transform disparity2depth(false);
 rs2::spatial_filter spat;
 // Enable hole-filling
 // Hole filling is an aggressive heuristic and it gets the depth wrong many times
-// However, this demo is not built to handle holes 
+// However, this demo is not built to handle holes
 // (the shortest-path will always prefer to "cut" through the holes since they have zero 3D distance)
 spat.set_option(RS2_OPTION_HOLES_FILL, 5); // 5 = fill all the zero pixels
 // Define temporal filter
@@ -72,13 +72,13 @@ The best way to reduce the number of missing pixels is by letting the hardware d
 The D400 cameras have a **High Density** preset we can take advantage of.
 ```cpp
 auto sensor = profile.get_device().first<rs2::depth_sensor>();
-    
+
 // Set the device to High Accuracy preset
 auto sensor = profile.get_device().first<rs2::depth_sensor>();
 sensor.set_option(RS2_OPTION_VISUAL_PRESET, RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY);
 ```
 
-Given a frame-set, we are going to apply all the processing blocks in order. 
+Given a frame-set, we are going to apply all the processing blocks in order.
 First we apply the `align` processing block to align color frame to depth viewport:
 ```cpp
 // First make the frames spatially aligned
@@ -90,7 +90,7 @@ Next, we invoke the depth post-processing flow:
 rs2::frame depth = data.get_depth_frame();
 // Decimation will reduce the resultion of the depth image,
 // closing small holes and speeding-up the algorithm
-depth = dec.process(depth); 
+depth = dec.process(depth);
 // To make sure far-away objects are filtered proportionally
 // we try to switch to disparity domain
 depth = depth2disparity.process(depth);
@@ -122,7 +122,7 @@ auto stream = profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>
 auto intrinsics = stream.get_intrinsics(); // Calibration data
 ```
 
-Distance in meters can be acquired using `get_distance` function of `depth_frame` class. 
+Distance in meters can be acquired using `get_distance` function of `depth_frame` class.
 
 > Calling `get_distance` excessively can result in bad performance, since the compiler can't optimize across module boundaries, so it could be beneficial to read the `DEPTH_UNITS` option directly from the `depth_sensor` and use it to convert raw depth pixels to meters.
 
@@ -163,7 +163,7 @@ float dist_3d(const rs2_intrinsics& intr, const rs2::depth_frame& frame, pixel u
 
 ### Running Processing on a Background Thread
 
-Post-processing calculations in this example can be relatively slow. To not block the main (UI) thread, we are going to have a dedicated thread for post-processing. 
+Post-processing calculations in this example can be relatively slow. To not block the main (UI) thread, we are going to have a dedicated thread for post-processing.
 
 #### Video-Processing Thread
 
@@ -173,11 +173,11 @@ while (alive)
 {
     // Fetch frames from the pipeline and send them for processing
     rs2::frameset fs;
-    if (pipe.poll_for_frames(&fs)) 
+    if (pipe.poll_for_frames(&fs))
     {
         // Apply post processing
         // ...
-        
+
         // Send resulting frames for visualization in the main thread
         postprocessed_frames.enqueue(data);
     }
@@ -219,7 +219,7 @@ while(app) // Application still alive?
 		// Render the ruler
 		app_state.ruler_start.render(app);
 		app_state.ruler_end.render(app);
-			
+
 		glDisable(GL_BLEND);
 	}
 }
@@ -228,6 +228,5 @@ We use `glBlendFunc` to overlay aligned-color on top of depth using colors alpha
 
 ----------------------------------
 
-This example demonstrates a short yet complex processing flow. Each thread has somewhat different rate and they all need to synchronize but not block one another. 
+This example demonstrates a short yet complex processing flow. Each thread has somewhat different rate and they all need to synchronize but not block one another.
 This is achieved using thread-safe `frame_queue`s as synchronization primitives and `rs2::frame` reference counting for object lifetime management across threads.
-

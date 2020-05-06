@@ -167,7 +167,64 @@ namespace Intel.RealSense
         /// <summary>MA temperature</summary>
         MATemperature = 51,
 
+        /// <summary>Hardware stream configuration</summary>
+        HardwarePreset = 52,
+
+        /// <summary>Disable global time</summary>
+        GlobalTimeEnabled = 53,
+
         /// <summary>APD temperature</summary>
         APDTemperature = 54,
+
+        /// <summary>Enable an internal map</summary>
+        EnableMapping = 55,
+
+        /// <summary>Enable appearance based relocalization</summary>
+        EnableRelocalization = 56,
+
+        /// <summary>Enable position jumping</summary>
+        EnablePoseJumping = 57,
+
+        /// <summary>Enable dynamic calibration</summary>
+        EnableDynamicCalibration = 58,
+
+        /// <summary>Offset from sensor to depth origin in millimetrers</summary>
+        DepthOffset = 59,
+
+        /// <summary>Power of the LED (light emitting diode), with 0 meaning LED off</summary>
+        LedPower = 60,
+
+        /// <summary>Toggle Zero-Order mode</summary>
+        ZeroOrderEnabled = 61,
+
+        /// <summary>Preserve previous map when starting</summary>
+        EnableMapPreservation = 62,
+
+        /// <summary>Enable/disable sensor shutdown when a free-fall is detected (on by default)</summary>
+        FreeFallDetectionEnabled = 63,
+
+        /// <summary>Changes the exposure time of Avalanche Photo Diode in the receiver</summary>
+        APDExposureTime = 64,
+
+        /// <summary>Changes the amount of sharpening in the post-processed image</summary>
+        PostProcessingSharpening = 65,
+
+        /// <summary>Changes the amount of sharpening in the pre-processed image</summary>
+        PreProcessingSharpening = 66,
+
+        /// <summary>Control edges and background noise</summary>
+        NoiseFilterLevel = 67,
+
+        /// <summary>Enable\disable pixel invalidation</summary>
+        InvalidationBypass = 68,
+
+        /// <summary>Change the depth ambient light see rs2_ambient_light for values</summary>
+        AmbientLightEnvLevel = 69,
+
+        /// <summary>The resolution mode: see rs2_sensor_mode for values</summary>
+        SensorMode = 70,
+
+        /// <summary>Enable Laser On constantly (GS SKU Only)</summary>
+        EmitterAlwaysOn = 71
     }
 }

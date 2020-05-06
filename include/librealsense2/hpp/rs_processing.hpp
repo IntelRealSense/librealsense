@@ -26,7 +26,7 @@ namespace rs2
         * \param[in] new_bpp     Frame bit per pixel to create.
         * \param[in] new_width   Frame width to create.
         * \param[in] new_height  Frame height to create.
-        * \param[in] new_stride  Frame stride to crate.
+        * \param[in] new_stride  Frame stride to create.
         * \param[in] frame_type  Which frame type are going to create.
         * \return   The allocated frame
         */
@@ -41,6 +41,25 @@ namespace rs2
             rs2_error* e = nullptr;
             auto result = rs2_allocate_synthetic_video_frame(_source, profile.get(),
                 original.get(), new_bpp, new_width, new_height, new_stride, frame_type, &e);
+            error::handle(e);
+            return result;
+        }
+
+        /**
+        * Allocate a new motion frame with given params
+        *
+        * \param[in] profile     Stream profile going to allocate.
+        * \param[in] original    Original frame.
+        * \param[in] frame_type  Which frame type are going to create.
+        * \return   The allocated frame
+        */
+        frame allocate_motion_frame(const stream_profile& profile,
+            const frame& original,
+            rs2_extension frame_type = RS2_EXTENSION_MOTION_FRAME) const
+        {
+            rs2_error* e = nullptr;
+            auto result = rs2_allocate_synthetic_motion_frame(_source, profile.get(),
+                original.get(), frame_type, &e);
             error::handle(e);
             return result;
         }
@@ -119,8 +138,9 @@ namespace rs2
         * create frame queue. frame queues are the simplest x-platform synchronization primitive provided by librealsense
         * to help developers who are not using async APIs
         * param[in] capacity size of the frame queue
+        * param[in] keep_frames  if set to true, the queue automatically calls keep() on every frame enqueued into it.
         */
-        explicit frame_queue(unsigned int capacity) : _capacity(capacity)
+        explicit frame_queue(unsigned int capacity, bool keep_frames = false) : _capacity(capacity), _keep(keep_frames)
         {
             rs2_error* e = nullptr;
             _queue = std::shared_ptr<rs2_frame_queue>(
@@ -137,6 +157,7 @@ namespace rs2
         */
         void enqueue(frame f) const
         {
+            if (_keep) f.keep();
             rs2_enqueue_frame(f.frame_ref, _queue.get()); // noexcept
             f.frame_ref = nullptr; // frame has been essentially moved from
         }
@@ -194,9 +215,16 @@ namespace rs2
         */
         size_t capacity() const { return _capacity; }
 
+        /**
+        * Return whether or not the queue calls keep on enqueued frames
+        * \return keeping frames
+        */
+        bool keep_frames() const { return _keep; }
+
     private:
         std::shared_ptr<rs2_frame_queue> _queue;
         size_t _capacity;
+        bool _keep;
     };
 
     /**
@@ -647,6 +675,8 @@ namespace rs2
         */
         align(rs2_stream align_to) : filter(init(align_to), 1) {}
 
+        using filter::process;
+
         /**
         * Run the alignment process on the given frames to get an aligned set of frames
         *
@@ -957,6 +987,40 @@ namespace rs2
             rs2_error* e = nullptr;
             auto block = std::shared_ptr<rs2_processing_block>(
                 rs2_create_zero_order_invalidation_block(&e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return block;
+        }
+    };
+
+    class depth_huffman_decoder : public filter
+    {
+    public:
+        /**
+        * Create decoder for Huffman-code compressed Depth frames
+        */
+        depth_huffman_decoder() : filter(init())
+        {}
+
+        depth_huffman_decoder(filter f) :filter(f)
+        {
+            rs2_error* e = nullptr;
+            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_DEPTH_HUFFMAN_DECODER, &e) && !e)
+            {
+                _block.reset();
+            }
+            error::handle(e);
+        }
+
+    private:
+        friend class context;
+
+        std::shared_ptr<rs2_processing_block> init()
+        {
+            rs2_error* e = nullptr;
+            auto block = std::shared_ptr<rs2_processing_block>(
+                rs2_create_huffman_depth_decompress_block(&e),
                 rs2_delete_processing_block);
             error::handle(e);
 

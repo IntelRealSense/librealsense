@@ -10,6 +10,7 @@ public class VideoStreamProfile extends StreamProfile {
 
     VideoStreamProfile(long handle) {
         super(handle);
+        mOwner = false;
         mResolutionParams = new ResolutionParams();
         nGetResolution(mHandle, mResolutionParams);
     }

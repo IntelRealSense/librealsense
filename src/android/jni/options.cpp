@@ -40,12 +40,14 @@ Java_com_intel_realsense_librealsense_Options_nGetRange(JNIEnv *env, jclass type
     float step = -1;
     float def = -1;
     rs2_error *e = NULL;
+    jclass clazz = env->GetObjectClass(outParams);
 
     rs2_get_option_range(reinterpret_cast<const rs2_options *>(handle),
                          static_cast<rs2_option>(option), &min, &max, &step, &def, &e);
     handle_error(env, e);
 
-    jclass clazz = env->GetObjectClass(outParams);
+    if(e)
+        return;
 
     jfieldID minField = env->GetFieldID(clazz, "min", "F");
     jfieldID maxField = env->GetFieldID(clazz, "max", "F");

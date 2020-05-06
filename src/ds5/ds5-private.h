@@ -5,11 +5,11 @@
 
 #include "backend.h"
 #include "types.h"
+#include "fw-update/fw-update-unsigned.h"
 
 #include <map>
 #include <iomanip>
 #include <string>
-
 
 namespace librealsense
 {
@@ -31,11 +31,14 @@ namespace librealsense
         const uint16_t RS430_MM_RGB_PID     = 0x0b01; // AWGCT
         const uint16_t RS460_PID            = 0x0b03; // DS5U
         const uint16_t RS435_RGB_PID        = 0x0b07; // AWGC
-        const uint16_t RS405_PID            = 0x0b0c; // DS5U
+        const uint16_t RS405U_PID           = 0x0b0c; // DS5U
         const uint16_t RS435I_PID           = 0x0b3a; // D435i
-        const uint16_t RS416_PID            = 0x0b49;
+        const uint16_t RS416_PID            = 0x0b49; // F416
         const uint16_t RS430I_PID           = 0x0b4b; // D430i
-        const uint16_t RS465_PID            = 0x0b4d;
+        const uint16_t RS465_PID            = 0x0b4d; // D465
+        const uint16_t RS416_RGB_PID        = 0x0B52; // F416 RGB
+        const uint16_t RS405_PID            = 0x0B5B; // D405
+        const uint16_t RS455_PID            = 0x0B5C; // D455
 
         // DS5 depth XU identifiers
         const uint8_t DS5_HWMONITOR                       = 1;
@@ -48,15 +51,14 @@ namespace librealsense
         const uint8_t DS5_ASIC_AND_PROJECTOR_TEMPERATURES = 9;
         const uint8_t DS5_ENABLE_AUTO_WHITE_BALANCE       = 0xA;
         const uint8_t DS5_ENABLE_AUTO_EXPOSURE            = 0xB;
+        const uint8_t DS5_LED_PWR                         = 0xE;
 
         // Devices supported by the current version
         static const std::set<std::uint16_t> rs400_sku_pid = {
             ds::RS400_PID,
             ds::RS410_PID,
             ds::RS415_PID,
-            ds::RS416_PID,
             ds::RS430_PID,
-            ds::RS430I_PID,
             ds::RS430_MM_PID,
             ds::RS_USB2_PID,
             ds::RS400_IMU_PID,
@@ -67,9 +69,14 @@ namespace librealsense
             ds::RS430_MM_RGB_PID,
             ds::RS460_PID,
             ds::RS435_RGB_PID,
-            ds::RS405_PID,
+            ds::RS405U_PID,
             ds::RS435I_PID,
+            ds::RS416_RGB_PID,
+            ds::RS430I_PID,
             ds::RS465_PID,
+            ds::RS416_PID,
+            ds::RS405_PID,
+            ds::RS455_PID,
         };
 
         static const std::set<std::uint16_t> multi_sensors_pid = {
@@ -82,12 +89,27 @@ namespace librealsense
             ds::RS435_RGB_PID,
             ds::RS435I_PID,
             ds::RS465_PID,
+            ds::RS405_PID,
+            ds::RS455_PID,
         };
 
         static const std::set<std::uint16_t> hid_sensors_pid = {
             ds::RS435I_PID,
             ds::RS430I_PID,
-            ds::RS465_PID
+            ds::RS465_PID,
+            ds::RS405_PID,
+            ds::RS455_PID,
+        };
+
+        static const std::set<std::uint16_t> hid_bmi_055_pid = {
+            ds::RS435I_PID,
+            ds::RS430I_PID,
+            ds::RS405_PID,
+            ds::RS455_PID
+        };
+
+        static const std::set<std::uint16_t> hid_bmi_085_pid = {
+            RS465_PID
         };
 
         static const std::set<std::uint16_t> fisheye_pid = {
@@ -99,28 +121,30 @@ namespace librealsense
         };
 
         static const std::map<std::uint16_t, std::string> rs400_sku_names = {
+            { RS400_PID,            "Intel RealSense D400"},
+            { RS410_PID,            "Intel RealSense D410"},
+            { RS415_PID,            "Intel RealSense D415"},
+            { RS430_PID,            "Intel RealSense D430"},
+            { RS430_MM_PID,         "Intel RealSense D430 with Tracking Module"},
+            { RS_USB2_PID,          "Intel RealSense USB2" },
             { RS_RECOVERY_PID,      "Intel RealSense D4xx Recovery"},
             { RS_USB2_RECOVERY_PID, "Intel RealSense USB2 D4xx Recovery"},
-            { RS400_PID,            "Intel RealSense D400"},
-            { RS400_MM_PID,         "Intel RealSense D400 with Tracking Module"},
-            { RS410_PID,            "Intel RealSense D410"},
-            { RS410_MM_PID,         "Intel RealSense D410 with Tracking Module"},
-            { RS415_PID,            "Intel RealSense D415"},
-            { RS416_PID,            "Intel RealSense F416"},
+            { RS400_IMU_PID,        "Intel RealSense IMU" },
             { RS420_PID,            "Intel RealSense D420"},
             { RS420_MM_PID,         "Intel RealSense D420 with Tracking Module"},
-            { RS430_PID,            "Intel RealSense D430"},
-            { RS430I_PID,           "Intel RealSense D430I"},
-            { RS430_MM_PID,         "Intel RealSense D430 with Tracking Module"},
+            { RS410_MM_PID,         "Intel RealSense D410 with Tracking Module"},
+            { RS400_MM_PID,         "Intel RealSense D400 with Tracking Module"},
             { RS430_MM_RGB_PID,     "Intel RealSense D430 with Tracking and RGB Modules"},
-            { RS435_RGB_PID,        "Intel RealSense D435"},
             { RS460_PID,            "Intel RealSense D460" },
-            { RS405_PID,            "Intel RealSense D405" },
+            { RS435_RGB_PID,        "Intel RealSense D435"},
+            { RS405U_PID,           "Intel RealSense DS5U" },
             { RS435I_PID,           "Intel RealSense D435I" },
+            { RS416_PID,            "Intel RealSense F416"},
+            { RS430I_PID,           "Intel RealSense D430I"},
             { RS465_PID,            "Intel RealSense D465" },
-            { RS_USB2_PID,          "Intel RealSense USB2" },
-            { RS400_IMU_PID,        "Intel RealSense IMU" }
-
+            { RS416_RGB_PID,        "Intel RealSense F416 with RGB Module"},
+            { RS405_PID,            "Intel RealSense D405" },
+            { RS455_PID,            "Intel RealSense D455" },
         };
 
         // DS5 fisheye XU identifiers
@@ -135,13 +159,27 @@ namespace librealsense
 
         const int REGISTER_CLOCK_0 = 0x0001613c;
 
+        const uint32_t FLASH_SIZE = 0x00200000;
+        const uint32_t FLASH_SECTOR_SIZE = 0x1000;
+        const uint32_t FLASH_RW_TABLE_OF_CONTENT_OFFSET = 0x0017FF80;
+        const uint32_t FLASH_RO_TABLE_OF_CONTENT_OFFSET = 0x001FFE80;
+        const uint32_t FLASH_INFO_HEADER_OFFSET = 0x001FFF00;
+
+        flash_info get_flash_info(const std::vector<uint8_t>& flash_buffer);
+
         enum fw_cmd : uint8_t
         {
             MRD             = 0x01,     // Read Register
             FRB             = 0x09,     // Read from flash
+            FWB             = 0x0a,     // Write to flash <Parameter1 Name="StartIndex"> <Parameter2 Name="Size">
+            FES             = 0x0b,     // Erase flash sector <Parameter1 Name="Sector Index"> <Parameter2 Name="Number of Sectors">
+            FEF             = 0x0c,     // Erase flash full <Parameter1 Name="0xACE">
+            FSRU            = 0x0d,     // Flash status register unlock
+            FPLOCK          = 0x0e,     // Permanent lock on lower Quarter region of the flash
             GLD             = 0x0f,     // FW logs
             GVD             = 0x10,     // camera details
             GETINTCAL       = 0x15,     // Read calibration table
+            SETINTCAL       = 0x16,     // Set Internal sub calibration table
             LOADINTCAL      = 0x1D,     // Get Internal sub calibration table
             DFU             = 0x1E,     // Enter to FW update mode
             HWRST           = 0x20,     // hardware reset
@@ -150,9 +188,11 @@ namespace librealsense
             GET_ADV         = 0x2C,     // get advanced mode control
             EN_ADV          = 0x2D,     // enable advanced mode
             UAMG            = 0X30,     // get advanced mode status
+            PFD             = 0x3b,     // Disable power features <Parameter1 Name="0 - Disable, 1 - Enable" />
             SETAEROI        = 0x44,     // set auto-exposure region of interest
             GETAEROI        = 0x45,     // get auto-exposure region of interest
             MMER            = 0x4F,     // MM EEPROM read ( from DS5 cache )
+            CALIBRECALC     = 0x51,     // Calibration recalc and update on the fly
             GET_EXTRINSICS  = 0x53,     // get extrinsics
             CAL_RESTORE_DFLT= 0x61,     // Reset Depth/RGB calibration to factory settings
             SETINTCALNEW    = 0x62,     // Set Internal sub calibration table
@@ -165,6 +205,9 @@ namespace librealsense
             SETSUBPRESET    = 0x7B,     // Download sub-preset
             GETSUBPRESET    = 0x7C,     // Upload the current sub-preset
             GETSUBPRESETNAME= 0x7D,     // Retrieve sub-preset's name
+            RECPARAMSGET    = 0x7E,     // Retrieve depth calibration table in new format (fw >= 5.11.12.100)
+            LASERONCONST    = 0x7F,     // Enable Laser On constantly (GS SKU Only)
+            AUTO_CALIB      = 0x80      // auto calibration commands
         };
 
         #define TOSTRING(arg) #arg
@@ -212,10 +255,11 @@ namespace librealsense
 
         enum inter_cam_sync_mode
         {
-            INTERCAM_SYNC_DEFAULT,
-            INTERCAM_SYNC_MASTER,
-            INTERCAM_SYNC_SLAVE,
-            INTERCAM_SYNC_MAX
+            INTERCAM_SYNC_DEFAULT    = 0,
+            INTERCAM_SYNC_MASTER     = 1,
+            INTERCAM_SYNC_SLAVE      = 2,
+            INTERCAM_SYNC_FULL_SLAVE = 3,
+            INTERCAM_SYNC_MAX        = 258 // 4-258 are for Genlock with burst count of 1-255 frames for each trigger
         };
 
         enum class d400_caps : uint16_t
@@ -227,6 +271,8 @@ namespace librealsense
             CAP_IMU_SENSOR              = (1u << 3),
             CAP_GLOBAL_SHUTTER          = (1u << 4),
             CAP_ROLLING_SHUTTER         = (1u << 5),
+            CAP_BMI_055                 = (1u << 6),
+            CAP_BMI_085                 = (1u << 7),
             CAP_MAX
         };
 
@@ -237,7 +283,9 @@ namespace librealsense
             { d400_caps::CAP_FISHEYE_SENSOR,   "Fisheye Sensor"    },
             { d400_caps::CAP_IMU_SENSOR,       "IMU Sensor"        },
             { d400_caps::CAP_GLOBAL_SHUTTER,   "Global Shutter"    },
-            { d400_caps::CAP_ROLLING_SHUTTER,  "Rolling Shutter"   }
+            { d400_caps::CAP_ROLLING_SHUTTER,  "Rolling Shutter"   },
+            { d400_caps::CAP_BMI_055,          "IMU BMI_055"       },
+            { d400_caps::CAP_BMI_085,          "IMU BMI_085"       }
         };
 
         inline d400_caps operator &(const d400_caps lhs, const d400_caps rhs)
@@ -255,11 +303,17 @@ namespace librealsense
             return lhs = lhs | rhs;
         }
 
+        inline bool operator &&(d400_caps l, d400_caps r)
+        {
+            return !!(static_cast<uint8_t>(l) & static_cast<uint8_t>(r));
+        }
+
         inline std::ostream& operator <<(std::ostream& stream, const d400_caps& cap)
         {
             for (auto i : { d400_caps::CAP_ACTIVE_PROJECTOR,d400_caps::CAP_RGB_SENSOR,
                             d400_caps::CAP_FISHEYE_SENSOR,  d400_caps::CAP_IMU_SENSOR,
-                            d400_caps::CAP_GLOBAL_SHUTTER,  d400_caps::CAP_ROLLING_SHUTTER })
+                            d400_caps::CAP_GLOBAL_SHUTTER,  d400_caps::CAP_ROLLING_SHUTTER,
+                            d400_caps::CAP_BMI_055,         d400_caps::CAP_BMI_085 })
             {
                 if (i==(i&cap))
                     stream << d400_capabilities_names.at(i) << " ";
@@ -269,6 +323,7 @@ namespace librealsense
 
         const std::string DEPTH_STEREO = "Stereo Module";
 
+#pragma pack(push, 1)
         struct table_header
         {
             big_endian<uint16_t>    version;        // major.minor. Big-endian
@@ -277,6 +332,7 @@ namespace librealsense
             uint32_t                param;          // This field content is defined ny table type
             uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
         };
+#pragma pack(pop)
 
         enum ds5_rect_resolutions : unsigned short
         {
@@ -312,6 +368,16 @@ namespace librealsense
             uint8_t             reserved1[88];
             float4              rect_params[max_ds5_rect_resolutions];
             uint8_t             reserved2[64];
+        };
+
+        struct new_calibration_item
+        {
+            uint16_t width;
+            uint16_t height;
+            float  fx;
+            float  fy;
+            float  ppx;
+            float  ppy;
         };
 
         template<class T>
@@ -517,8 +583,8 @@ namespace librealsense
             float3              translation;                // RGB translation vector, mm
             // RGB Projection
             float               projection[12];             // Projection matrix from depth to RGB [3 X 4]
-            uint16_t            width;                      // original calibrated resolution
-            uint16_t            height;
+            uint16_t            calib_width;                // original calibrated resolution
+            uint16_t            calib_height;
             // RGB Rectification Coefficients
             float3x3            intrinsic_matrix_rect;      // RGB intrinsic matrix after rectification
             float3x3            rotation_matrix_rect;       // Rotation matrix for rectification of RGB
@@ -559,6 +625,12 @@ namespace librealsense
             rgb_sensor                      = 174,
             imu_sensor                      = 178,
             motion_module_fw_version_offset = 212
+        };
+
+        enum gvd_fields_size
+        {
+            // Keep sorted
+            module_serial_size = 6
         };
 
         enum calibration_table_id
@@ -619,6 +691,9 @@ namespace librealsense
 
 
         ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height);
+
+        bool try_get_intrinsic_by_resolution_new(const std::vector<uint8_t>& raw_data,
+                uint32_t width, uint32_t height, rs2_intrinsics* result);
 
         rs2_intrinsics get_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, calibration_table_id table_id, uint32_t width, uint32_t height);
         rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);

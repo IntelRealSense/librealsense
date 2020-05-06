@@ -129,7 +129,7 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    const rs2_stream_profile* stream_profile = rs2_get_stream_profile(stream_profile_list, 0, &e);
+    rs2_stream_profile* stream_profile = (rs2_stream_profile*)rs2_get_stream_profile(stream_profile_list, 0, &e);
     if (e)
     {
         printf("Failed to create stream profile!\n");

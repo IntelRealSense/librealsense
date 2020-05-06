@@ -4,7 +4,7 @@
 #include "RuntimeMeshComponentPlugin.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "PhysicsEngine/PhysicsSettings.h"
-#include "Physics/IPhysXCookingModule.h"
+#include "IPhysXCookingModule.h"
 #include "RuntimeMeshComponent.h"
 #include "RuntimeMeshProxy.h"
 #include "RuntimeMeshBuilder.h"
@@ -145,6 +145,12 @@ UMaterialInterface* URuntimeMesh::GetMaterialFromCollisionFaceIndex(int32 FaceIn
 int32 URuntimeMesh::GetSectionIdFromCollisionFaceIndex(int32 FaceIndex) const
 {
 	return GetRuntimeMeshData()->GetSectionFromCollisionFaceIndex(FaceIndex);
+}
+
+void URuntimeMesh::GetSectionIdAndFaceIdFromCollisionFaceIndex(int32 FaceIndex, int32 & SectionIndex, int32 & SectionFaceIndex) const
+{
+	SectionFaceIndex = FaceIndex;
+	SectionIndex = GetRuntimeMeshData()->GetSectionAndFaceFromCollisionFaceIndex(SectionFaceIndex);
 }
 
 void URuntimeMesh::MarkCollisionDirty()

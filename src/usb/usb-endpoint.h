@@ -2,9 +2,11 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
+
+#include "usb-types.h"
+
 #include <memory>
 #include <stdint.h>
-#include "usb-types.h"
 
 namespace librealsense
 {

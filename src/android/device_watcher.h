@@ -19,8 +19,6 @@ namespace librealsense
             virtual void stop() override;
 
             void notify();
-            std::vector<uvc_device_info> query_uvc_devices();
-
             static std::shared_ptr<device_watcher_usbhost> instance();
 
         private:

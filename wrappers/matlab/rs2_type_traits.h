@@ -1,5 +1,6 @@
 #pragma once
 #include "librealsense2/rs.hpp"
+#include "librealsense2/rs_advanced_mode.hpp"
 #include <type_traits>
 
 // extra checks to help specialization priority resoultion
@@ -87,6 +88,11 @@ template<> struct MatlabParamParser::type_traits<rs2::device_hub> { using rs2_in
 template<> struct MatlabParamParser::type_traits<rs2::pipeline> { using rs2_internal_t = std::shared_ptr<rs2_pipeline>; };
 template<> struct MatlabParamParser::type_traits<rs2::config> { using rs2_internal_t = std::shared_ptr<rs2_config>; };
 template<> struct MatlabParamParser::type_traits<rs2::pipeline_profile> { using rs2_internal_t = std::shared_ptr<rs2_pipeline_profile>; };
+
+// rs_advanced_mode.hpp
+template <> struct MatlabParamParser::type_traits<rs400::advanced_mode> : MatlabParamParser::type_traits<rs2::device> {
+    static rs400::advanced_mode from_internal(rs2_internal_t * ptr) { return traits_trampoline::from_internal<rs2::device>(ptr); }
+};
 
 // This needs to go at the bottom so that all the relevant type_traits specializations will have already occured.
 MatlabParamParser::type_traits<rs2::options>::carrier::~carrier() {

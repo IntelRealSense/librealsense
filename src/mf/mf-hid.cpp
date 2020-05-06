@@ -24,6 +24,7 @@
 #include <initguid.h>
 #include <propkeydef.h>
 #include <comutil.h>
+#include <string>
 
 #pragma comment(lib, "Sensorsapi.lib")
 #pragma comment(lib, "PortableDeviceGuids.lib")
@@ -206,6 +207,7 @@ namespace librealsense
 
                 pSensor->GetFriendlyName(&fName);
                 d.sensor.name = CW2A(fName);
+                SysFreeString(fName); // free string after it was copied to sensor data
 
                 d.fo.pixels = &data;
                 d.fo.metadata = &meta_data;
@@ -349,15 +351,8 @@ namespace librealsense
         {
             std::vector<hid_sensor> sensors;
 
-            HRESULT res = S_OK;
-            BSTR fName{};
-
-            for (auto& sensor : _opened_sensors)
-            {
-                sensors.push_back({ sensor->get_sensor_name() });
-            }
-
-            SysFreeString(fName);
+            for (auto& sensor : _hid_profiles)
+                sensors.push_back({ sensor.sensor_name });
 
             return sensors;
         }
@@ -395,7 +390,8 @@ namespace librealsense
                             /* Retrieve SENSOR_PROPERTY_FRIENDLY_NAME which is the sensor name that is intended to be seen by the user */
                             BSTR fName{};
                             LOG_HR(res = pSensor->GetFriendlyName(&fName));
-                            if (FAILED(res)) fName= L"Unidentified HID sensor";
+                            if (FAILED(res))
+                                fName= L"Unidentified HID sensor";
 
                             /* Retrieve SENSOR_PROPERTY_PERSISTENT_UNIQUE_ID which is a GUID that uniquely identifies the sensor on the current computer */
                             SENSOR_ID id{};
@@ -429,21 +425,45 @@ namespace librealsense
                                         {
                                             if (IsEqualPropertyKey(propertyKey, SENSOR_PROPERTY_DEVICE_PATH))
                                             {
-                                                info.device_path = std::string(propertyValue.pwszVal, propertyValue.pwszVal + wcslen(propertyValue.pwszVal));
-                                                info.id = std::string(fName, fName + wcslen(fName));
+                                                info.device_path = win_to_utf( propertyValue.pwszVal );
+                                                info.id = win_to_utf( fName );
 
                                                 uint16_t vid, pid, mi;
                                                 std::string uid, guid;
                                                 if (parse_usb_path_multiple_interface(vid, pid, mi, uid, info.device_path, guid))
                                                 {
-                                                    info.unique_id = "*";
+                                                    auto node = cm_node::from_device_path( propertyValue.pwszVal );
+                                                    if( node.valid() )
+                                                    {
+                                                        // We take the "unique id" (really, the composite ID used to associate all the devices belonging to
+                                                        // a single composite device) of the PARENT of the HID device:
+                                                        //     17 USB\VID_8086&PID_0B4D\012345678901 "USB Composite Device"
+                                                        //         18 USB\VID_8086&PID_0B4D&MI_00\6&CB1C340&0&0000 "Intel(R) RealSense(TM) Depth Camera 465  Depth"
+                                                        //         19 USB\VID_8086&PID_0B4D&MI_03\6&CB1C340&0&0003 "Intel(R) RealSense(TM) Depth Camera 465  RGB"
+                                                        //         20 USB\VID_8086&PID_0B4D&MI_05\6&CB1C340&0&0005 "USB Input Device"
+                                                        //             21 HID\VID_8086&PID_0B4D&MI_05\7&24FD3503&0&0000 "HID Sensor Collection V2"
+                                                        //         22 USB\VID_8086&PID_0B4D&MI_06\6&CB1C340&0&0006 "Intel(R) RealSense(TM) Depth Camera 465 "
+                                                        // (the first number is the CM DEVINST handle for each node)
+                                                        // Note that all the USB devices have the same "CB1C340" ID, while the HID device is "24FD3503".
+                                                        // Because the HID devices are "inside" a USB device parent in the OS's CM tree, we can try to get the
+                                                        // parent UID:
+                                                        info.unique_id = node.get_parent().get_uid();
+                                                    }
+                                                    else
+                                                    {
+                                                        LOG_WARNING( "Parent for HID device not available: " << info.device_path );
+                                                        // Leave it empty: it won't be matched against anything
+                                                    }
+
                                                     info.pid = to_string() << std::hex << pid;
                                                     info.vid = to_string() << std::hex << vid;
                                                 }
                                             }
                                             if (IsEqualPropertyKey(propertyKey, SENSOR_PROPERTY_SERIAL_NUMBER))
                                             {
-                                                info.serial_number = std::string(propertyValue.pwszVal, propertyValue.pwszVal + wcslen(propertyValue.pwszVal));
+                                                auto str = win_to_utf( propertyValue.pwszVal );
+                                                std::transform(begin(str), end(str), begin(str), ::tolower);
+                                                info.serial_number = str;
                                             }
                                         }
 

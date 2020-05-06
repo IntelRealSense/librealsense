@@ -59,7 +59,6 @@ Java_com_intel_realsense_librealsense_Device_nQuerySensors(JNIEnv *env, jclass t
     jlongArray rv = env->NewLongArray(sensors.size());
     env->SetLongArrayRegion(rv, 0, sensors.size(), reinterpret_cast<const jlong *>(sensors.data()));
     return rv;
-
 }
 
 extern "C"
@@ -69,6 +68,25 @@ Java_com_intel_realsense_librealsense_Updatable_nEnterUpdateState(JNIEnv *env, j
     rs2_error *e = NULL;
     rs2_enter_update_state(reinterpret_cast<const rs2_device *>(handle), &e);
     handle_error(env, e);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_Updatable_nUpdateFirmwareUnsigned(JNIEnv *env,
+                                                                        jobject instance,
+                                                                        jlong handle,
+                                                                        jbyteArray image_,
+                                                                        jint update_mode) {
+    jbyte *image = env->GetByteArrayElements(image_, NULL);
+    auto length = env->GetArrayLength(image_);
+    rs2_error *e = NULL;
+    jclass cls = env->GetObjectClass(instance);
+    jmethodID id = env->GetMethodID(cls, "onProgress", "(F)V");
+    auto cb = [&](float progress){ env->CallVoidMethod(instance, id, progress); };
+    rs2_update_firmware_unsigned_cpp(reinterpret_cast<const rs2_device *>(handle), image, length,
+                                     new rs2::update_progress_callback<decltype(cb)>(cb), update_mode, &e);
+    handle_error(env, e);
+    env->ReleaseByteArrayElements(image_, image, 0);
 }
 
 extern "C"
@@ -93,8 +111,9 @@ Java_com_intel_realsense_librealsense_Updatable_nCreateFlashBackup(JNIEnv *env, 
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_intel_realsense_librealsense_UpdateDevice_nUpdate(JNIEnv *env, jobject instance,
-                                                           jlong handle, jbyteArray image_) {
+Java_com_intel_realsense_librealsense_UpdateDevice_nUpdateFirmware(JNIEnv *env, jobject instance,
+                                                                   jlong handle,
+                                                                   jbyteArray image_) {
     jbyte *image = env->GetByteArrayElements(image_, NULL);
     auto length = env->GetArrayLength(image_);
     rs2_error *e = NULL;
@@ -102,7 +121,7 @@ Java_com_intel_realsense_librealsense_UpdateDevice_nUpdate(JNIEnv *env, jobject 
     jmethodID id = env->GetMethodID(cls, "onProgress", "(F)V");
     auto cb = [&](float progress){ env->CallVoidMethod(instance, id, progress); };
     rs2_update_firmware_cpp(reinterpret_cast<const rs2_device *>(handle), image, length,
-                   new rs2::update_progress_callback<decltype(cb)>(cb), &e);
+                            new rs2::update_progress_callback<decltype(cb)>(cb), &e);
     handle_error(env, e);
     env->ReleaseByteArrayElements(image_, image, 0);
 }

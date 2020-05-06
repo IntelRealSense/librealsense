@@ -10,8 +10,11 @@ import android.widget.TextView;
 
 import com.intel.realsense.librealsense.DepthFrame;
 import com.intel.realsense.librealsense.DeviceListener;
+import com.intel.realsense.librealsense.Extension;
+import com.intel.realsense.librealsense.Frame;
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.Pipeline;
+import com.intel.realsense.librealsense.PipelineProfile;
 import com.intel.realsense.librealsense.RsContext;
 import com.intel.realsense.librealsense.StreamType;
 
@@ -87,14 +90,16 @@ public class MainActivity extends AppCompatActivity {
     //Start streaming and print the distance of the center pixel in the depth frame.
     private void stream() throws Exception {
         Pipeline pipe = new Pipeline();
-        pipe.start();
+        // try statement needed here to release resources allocated by the Pipeline:start() method
+        try(PipelineProfile pp = pipe.start()){}
         final DecimalFormat df = new DecimalFormat("#.##");
 
         while (!mStreamingThread.isInterrupted())
         {
             try (FrameSet frames = pipe.waitForFrames()) {
-                try (final DepthFrame depth = frames.first(StreamType.DEPTH).as(DepthFrame.class))
+                try (Frame f = frames.first(StreamType.DEPTH))
                 {
+                    DepthFrame depth = f.as(Extension.DEPTH_FRAME);
                     final float deptValue = depth.getDistance(depth.getWidth()/2, depth.getHeight()/2);
                     runOnUiThread(new Runnable() {
                         @Override

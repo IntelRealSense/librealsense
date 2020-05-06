@@ -23,6 +23,13 @@ namespace rs2
             return res;
         }
 
+        // When converting config_value to string, we can't use >> operator since it reads until first whitespace rather than the whole string;
+        // Therefore we use a different overload for strings
+        operator std::string()
+        {
+            return _val;
+        }
+
         config_value(std::string val) : _val(std::move(val)) {}
 
     private:

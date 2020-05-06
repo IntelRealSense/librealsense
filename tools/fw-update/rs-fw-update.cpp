@@ -49,10 +49,28 @@ void print_device_info(rs2::device d)
 
     std::cout << "Name: " << camera_info[RS2_CAMERA_INFO_NAME] <<
         ", serial number: " << camera_info[RS2_CAMERA_INFO_SERIAL_NUMBER] <<
-        ", ASIC serial number: " << camera_info[RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER] <<
+        ", update serial number: " << camera_info[RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID] <<
         ", firmware version: " << camera_info[RS2_CAMERA_INFO_FIRMWARE_VERSION] <<
         ", USB type: " << camera_info[RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR] << std::endl;
 }
+
+std::vector<uint8_t> read_firmware_data(bool is_set, const std::string& file_path)
+{
+    if (!is_set)
+    {
+        throw rs2::error("firmware file must be selected");
+    }
+
+    std::vector<uint8_t> fw_image = read_fw_file(file_path);
+
+    if (fw_image.size() == 0)
+    {
+        throw rs2::error("failed to read firmware file");
+    }
+
+    return fw_image;
+}
+
 
 void update(rs2::update_device fwu_dev, std::vector<uint8_t> fw_image)
 {  
@@ -104,13 +122,17 @@ int main(int argc, char** argv) try
 
     SwitchArg list_devices_arg("l", "list_devices", "List all available devices");
     SwitchArg recover_arg("r", "recover", "Recover all connected devices which are in recovery mode");
+    SwitchArg unsigned_arg("u", "unsigned", "Update unsigned firmware, available only for unlocked cameras");
+    ValueArg<std::string> backup_arg("b", "backup", "Create a backup to the camera flash and saved it to the given path", false, "", "string");
     ValueArg<std::string> file_arg("f", "file", "Path of the firmware image file", false, "", "string");
     ValueArg<std::string> serial_number_arg("s", "serial_number", "The serial number of the device to be update, this is mandetory if more than one device is connected", false, "", "string");
 
     cmd.add(list_devices_arg);
     cmd.add(recover_arg);
+    cmd.add(unsigned_arg);
     cmd.add(file_arg);
     cmd.add(serial_number_arg);
+    cmd.add(backup_arg);
 
     cmd.parse(argc, argv);
 
@@ -122,35 +144,27 @@ int main(int argc, char** argv) try
         return EXIT_SUCCESS;
     }
 
+    if (!file_arg.isSet() && !backup_arg.isSet())
+    {
+        std::cout << std::endl << "nothing to do, run again with -h for help" << std::endl;
+        return EXIT_FAILURE;
+    }
+
     if (serial_number_arg.isSet())
     {
         selected_serial_number = serial_number_arg.getValue();
         std::cout << std::endl << "search for device with serial number: " << selected_serial_number << std::endl;
     }
 
-    if (!file_arg.isSet())
-    {
-        std::cout << std::endl << "firmware file must be selected" << std::endl << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    std::string fw_file_path = file_arg.getValue();
-    std::vector<uint8_t> fw_image = read_fw_file(fw_file_path);
-
-    if (fw_image.size() == 0)
-    {
-        std::cout << std::endl << "failed to read firmware file" << std::endl << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    std::cout << std::endl << "update to FW: " << fw_file_path << std::endl;
-
-    std::string asic_serial_number;
+    std::string update_serial_number;
 
     // Recovery
     bool recovery_executed = false;
-    if (recover_arg.isSet())
+    if (recover_arg.isSet() )
     {
+        std::vector<uint8_t> fw_image = read_firmware_data(file_arg.isSet(), file_arg.getValue());
+
+        std::cout << std::endl << "update to FW: " << file_arg.getValue() << std::endl;
         auto devs = ctx.query_devices(RS2_PRODUCT_LINE_DEPTH);
         for (auto&& d : devs)
         {
@@ -187,7 +201,7 @@ int main(int argc, char** argv) try
         for (auto&& d : info.get_new_devices())
         {
             std::lock_guard<std::mutex> lk(mutex);
-            if (d.is<rs2::update_device>() && (d.get_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER) == asic_serial_number))
+            if (d.is<rs2::update_device>() && (d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID) == update_serial_number))
                 new_fw_update_device = d;
             else
                 new_device = d;
@@ -208,7 +222,7 @@ int main(int argc, char** argv) try
 
     for (auto&& d : devs)
     {
-        if (!d.is<rs2::updatable>() || !(d.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) && d.supports(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER)))
+        if (!d.is<rs2::updatable>() || !(d.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) && d.supports(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID)))
             continue;
 
         if (d.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
@@ -219,7 +233,7 @@ int main(int argc, char** argv) try
             }
         }
 
-        asic_serial_number = d.get_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER);
+        update_serial_number = d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
 
         auto sn = d.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
         if (sn != selected_serial_number && devs.size() != 1)
@@ -227,21 +241,53 @@ int main(int argc, char** argv) try
         device_found = true;
         auto fw = d.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
 
+        if (backup_arg.isSet())
+        {
+            std::cout << std::endl << "backing-up device flash: " << std::endl;
+
+            auto flash = d.as<rs2::updatable>().create_flash_backup([&](const float progress)
+            {
+                printf("\rflash backup progress: %d[%%]", (int)(progress * 100));
+            });
+
+            auto temp = backup_arg.getValue();
+            std::ofstream file(temp.c_str(), std::ios::binary);
+            file.write((const char*)flash.data(), flash.size());
+        }
+
+        if (!file_arg.isSet())
+            continue;
+
+        std::vector<uint8_t> fw_image = read_firmware_data(file_arg.isSet(), file_arg.getValue());
+
         std::cout << std::endl << "updating device: " << std::endl;
         print_device_info(d);
 
-        d.as<rs2::updatable>().enter_update_state();
-
-        std::unique_lock<std::mutex> lk(mutex);
-        if (!cv.wait_for(lk, std::chrono::seconds(WAIT_FOR_DEVICE_TIMEOUT), [&] { return new_fw_update_device; }))
+        if (unsigned_arg.isSet())
         {
-            std::cout << std::endl << "failed to locate a device in FW update mode" << std::endl;
-            return EXIT_FAILURE;
-        }
+            std::cout << std::endl << "firmware update started" << std::endl << std::endl;
 
-        update(new_fw_update_device, fw_image);
-        done = true;
-        break;
+            d.as<rs2::updatable>().update_unsigned(fw_image, [&](const float progress)
+            {
+                printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
+            });
+            std::cout << std::endl << std::endl << "firmware update done" << std::endl;
+        }
+        else
+        {
+            d.as<rs2::updatable>().enter_update_state();
+
+            std::unique_lock<std::mutex> lk(mutex);
+            if (!cv.wait_for(lk, std::chrono::seconds(WAIT_FOR_DEVICE_TIMEOUT), [&] { return new_fw_update_device; }))
+            {
+                std::cout << std::endl << "failed to locate a device in FW update mode" << std::endl;
+                return EXIT_FAILURE;
+            }
+
+            update(new_fw_update_device, fw_image);
+            done = true;
+            break;
+        }
     }
 
     if (!device_found)

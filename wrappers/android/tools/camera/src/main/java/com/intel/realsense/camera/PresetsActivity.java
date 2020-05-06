@@ -65,7 +65,7 @@ public class PresetsActivity extends AppCompatActivity {
                         finish();
                     }
                     try(Device device = devices.createDevice(0)){
-                        if(!device.isInAdvancedMode()){
+                        if(device == null || !device.isInAdvancedMode()){
                             Log.e(TAG, "failed to set preset, device not in advanced mode");
                             finish();
                         }

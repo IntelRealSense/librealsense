@@ -104,6 +104,11 @@ namespace librealsense {
             module_serial_offset = 132
         };
 
+        enum gvd_fields_size
+        {
+            // Keep sorted
+            module_serial_size = 6
+        };
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
             const platform::uvc_device_info& info, platform::usb_device_info& result);
 

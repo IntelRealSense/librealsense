@@ -1,7 +1,7 @@
 // Copyright 2016-2018 Chris Conway (Koderz). All Rights Reserved.
 
-using UnrealBuildTool;
 using System.IO;
+using UnrealBuildTool;
 
 public class RuntimeMeshComponentEditor : ModuleRules
 {
@@ -9,10 +9,24 @@ public class RuntimeMeshComponentEditor : ModuleRules
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PrivateIncludePaths.AddRange(new string[] { Path.Combine(ModuleDirectory, "Private") });
-		PublicIncludePaths.AddRange(new string[] { Path.Combine(ModuleDirectory, "Public") });
+        // HORU: this was throwing warnings
+        //     PublicIncludePaths.AddRange(
+        //         new string[] {
+        //             "RuntimeMeshComponentEditor/Public"
+        //	// ... add public include paths required here ...
+        //}
+        //         );
 
-		PublicDependencyModuleNames.AddRange(
+        // HORU: this was throwing warnings
+        //     PrivateIncludePaths.AddRange(
+        //         new string[] {
+        //             "RuntimeMeshComponentEditor/Private",
+        //	// ... add other private include paths required here ...
+        //}
+        //         );
+
+
+        PublicDependencyModuleNames.AddRange(
             new string[]
             {
                 "Core",
@@ -31,13 +45,8 @@ public class RuntimeMeshComponentEditor : ModuleRules
                 "Slate",
                 "SlateCore",
                 "RenderCore",
-#if !UE_4_22_OR_LATER
-				"ShaderCore", // ShaderCore was Merged into RenderCore in 4.22
-#endif
-				"RHI",
-#if UE_4_20_OR_LATER
-				"NavigationSystem",
-#endif
+                "RHI",
+                "NavigationSystem",
                 "UnrealEd",
                 "LevelEditor",
                 "PropertyEditor",

@@ -15,11 +15,15 @@ namespace librealsense
             }
             case 1:
             {
-                return "On";
+                return "Laser";
             }
             case 2:
             {
-                return "Auto";
+                return "Laser Auto";
+            }
+            case 3:
+            {
+                return "LED";
             }
             default:
                 throw invalid_value_exception("value not found");
@@ -28,7 +32,7 @@ namespace librealsense
 
     emitter_option::emitter_option(uvc_sensor& ep)
         : uvc_xu_option(ep, ds::depth_xu, ds::DS5_DEPTH_EMITTER_ENABLED,
-                        "Power Control for D400 Projector, 0-off, 1-on, (2-deprecated)")
+                        "Emitter select, 0-disable all emitters, 1-enable laser, 2-enable laser auto (opt), 3-enable LED (opt)")
     {}
 
     float asic_and_projector_temperature_options::query() const
@@ -164,43 +168,20 @@ namespace librealsense
         if (!is_valid(value))
             throw invalid_value_exception(to_string() << "set(enable_motion_correction) failed! Given value " << value << " is out of range.");
 
-        _is_enabled = value > _opt_range.min;
+        _is_active = value > _opt_range.min;
         _recording_function(*this);
     }
 
     float enable_motion_correction::query() const
     {
-        auto is_enabled = _is_enabled.load();
-        return is_enabled ? _opt_range.max : _opt_range.min;
+        auto is_active = _is_active.load();
+        return is_active ? _opt_range.max : _opt_range.min;
     }
 
     enable_motion_correction::enable_motion_correction(sensor_base* mm_ep,
-                                                       const ds::imu_intrinsic& accel,
-                                                       const ds::imu_intrinsic& gyro,
-                                                       std::shared_ptr<librealsense::lazy<rs2_extrinsics>> depth_to_imu,
-                                                       on_before_frame_callback frame_callback,
                                                        const option_range& opt_range)
-        : option_base(opt_range), _is_enabled(true), _accel(accel), _gyro(gyro), _depth_to_imu(**depth_to_imu)
-    {
-        mm_ep->register_on_before_frame_callback(
-            [this, frame_callback](rs2_stream stream, frame_interface* fr, callback_invocation_holder callback)
-            {
-                if (_is_enabled.load() && fr->get_stream()->get_format() == RS2_FORMAT_MOTION_XYZ32F)
-                {
-                    auto xyz = (float3*)(fr->get_frame_data());
-
-                    if (stream == RS2_STREAM_ACCEL)
-                        *xyz = (_accel.sensitivity * (*xyz)) - _accel.bias;
-
-                    if (stream == RS2_STREAM_GYRO)
-                        *xyz = _gyro.sensitivity * (*xyz) - _gyro.bias;
-                }
-
-                // Align IMU axes to the established Coordinates System
-                if (frame_callback)
-                    frame_callback(stream, fr, std::move(callback));
-            });
-    }
+        : option_base(opt_range), _is_active(true)
+    {}
 
     void enable_auto_exposure_option::set(float value)
     {
@@ -232,7 +213,7 @@ namespace librealsense
         return _auto_exposure_state->get_enable_auto_exposure();
     }
 
-    enable_auto_exposure_option::enable_auto_exposure_option(uvc_sensor* fisheye_ep,
+    enable_auto_exposure_option::enable_auto_exposure_option(synthetic_sensor* fisheye_ep,
                                                              std::shared_ptr<auto_exposure_mechanism> auto_exposure,
                                                              std::shared_ptr<auto_exposure_state> auto_exposure_state,
                                                              const option_range& opt_range)
@@ -240,19 +221,7 @@ namespace librealsense
           _auto_exposure_state(auto_exposure_state),
           _to_add_frames((_auto_exposure_state->get_enable_auto_exposure())),
           _auto_exposure(auto_exposure)
-    {
-        fisheye_ep->register_on_before_frame_callback(
-                    [this](rs2_stream stream, frame_interface* f, callback_invocation_holder callback)
-        {
-            if (!_to_add_frames || stream != RS2_STREAM_FISHEYE)
-                return;
-
-            ((frame*)f)->additional_data.fisheye_ae_mode = true;
-
-            f->acquire();
-            _auto_exposure->add_frame(f, std::move(callback));
-        });
-    }
+    {}
 
     auto_exposure_mode_option::auto_exposure_mode_option(std::shared_ptr<auto_exposure_mechanism> auto_exposure,
                                                          std::shared_ptr<auto_exposure_state> auto_exposure_state,
@@ -408,8 +377,9 @@ namespace librealsense
         _range = [this]()
         {
             return option_range{ ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT,
-                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_MAX - 1,
-                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT, 1 };
+                                 2,
+                                 1, 
+                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT};
         };
     }
 
@@ -433,6 +403,54 @@ namespace librealsense
     }
 
     option_range external_sync_mode::get_range() const
+    {
+        return *_range;
+    }
+
+    external_sync_mode2::external_sync_mode2(hw_monitor& hwm, sensor_base* ep)
+        : _hwm(hwm), _sensor(ep)
+    {
+        _range = [this]()
+        {
+            return option_range{ ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT,
+                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_MAX,
+                                 1,
+                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT };
+        };
+    }
+
+    void external_sync_mode2::set(float value)
+    {
+        if (_sensor->is_streaming())
+            throw std::runtime_error("Cannot change Inter-camera HW synchronization mode while streaming!");
+
+        command cmd(ds::SET_CAM_SYNC);
+        if (value < 4)
+            cmd.param1 = static_cast<int>(value);
+        else
+        {
+            cmd.param1 = 4;
+            cmd.param1 |= (static_cast<int>(value - 3)) << 8;
+        }
+
+        _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float external_sync_mode2::query() const
+    {
+        command cmd(ds::GET_CAM_SYNC);
+        auto res = _hwm.send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("external_sync_mode::query result is empty!");
+
+        if (res.front() < 4)
+            return (res.front());
+        else
+            return (static_cast<float>(res[1]) + 3.0f);
+    }
+
+    option_range external_sync_mode2::get_range() const
     {
         return *_range;
     }
@@ -503,5 +521,40 @@ namespace librealsense
 
         static std::vector<uint8_t> alt_emitter_name(ds::alternating_emitter_pattern.begin()+2,ds::alternating_emitter_pattern.begin()+22);
         return (alt_emitter_name == res);
+    }
+
+    emitter_always_on_option::emitter_always_on_option(hw_monitor& hwm, sensor_base* ep)
+        : _hwm(hwm), _sensor(ep)
+    {
+        _range = [this]()
+        {
+            return option_range{ 0, 1, 1, 0 };
+        };
+    }
+
+    void emitter_always_on_option::set(float value)
+    {
+        command cmd(ds::LASERONCONST);
+        cmd.param1 = static_cast<int>(value);
+
+        _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float emitter_always_on_option::query() const
+    {
+        command cmd(ds::LASERONCONST);
+        cmd.param1 = 2;
+
+        auto res = _hwm.send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("emitter_always_on_option::query result is empty!");
+
+        return (res.front());
+    }
+
+    option_range emitter_always_on_option::get_range() const
+    {
+        return *_range;
     }
 }

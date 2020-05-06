@@ -31,11 +31,8 @@ class Enumerator {
 
             switch(action){
                 case UsbManager.ACTION_USB_DEVICE_ATTACHED:
-                    onDeviceAttach(context);
-                    break;
                 case UsbUtilities.ACTION_USB_PERMISSION:
-                    if(UsbUtilities.hasUsbPermission(context))
-                        onDeviceAttach(context);
+                    onDeviceAttach(context);
                     break;
                 case UsbManager.ACTION_USB_DEVICE_DETACHED:
                     onDeviceDetach();
@@ -116,10 +113,7 @@ class Enumerator {
 
     private void onDeviceAttach(Context context){
         Message msg = Message.obtain();
-        if(!UsbUtilities.hasUsbPermission(context)){
-            UsbUtilities.grantUsbPermission(context);
-            return;
-        }
+        UsbUtilities.grantUsbPermissionIfNeeded(context);
         msg.what = MessagesHandler.ON_DEVICE_AVAILABLE;
         mHandler.sendMessage(msg);
     }

@@ -1,0 +1,4 @@
+#include "D4XX_FW_Image.rc"
+#include "D4XX_RC_Image.rc"
+#include "SR3XX_FW_Image.rc"
+#include "target.rc"

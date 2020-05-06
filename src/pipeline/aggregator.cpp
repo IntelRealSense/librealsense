@@ -13,7 +13,8 @@ namespace librealsense
             processing_block("aggregator"),
             _queue(new single_consumer_frame_queue<frame_holder>(1)),
             _streams_to_aggregate_ids(streams_to_aggregate),
-            _streams_to_sync_ids(streams_to_sync)
+            _streams_to_sync_ids(streams_to_sync),
+            _accepting(true)
         {
             auto processing_callback = [&](frame_holder frame, synthetic_source_interface* source)
             {
@@ -26,6 +27,13 @@ namespace librealsense
 
         void aggregator::handle_frame(frame_holder frame, synthetic_source_interface* source)
         {
+            if (!_accepting) {
+                // If this causes stopping a pipeline with realtime=false playback device to
+                // generate high CPU utilization for a significant length of time, adding a
+                // short sleep here should mitigate it.
+//                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                return;
+            }
             std::lock_guard<std::mutex> lock(_mutex);
             auto comp = dynamic_cast<composite_frame*>(frame.frame);
             if (comp)
@@ -102,6 +110,17 @@ namespace librealsense
         bool aggregator::try_dequeue(frame_holder* item)
         {
             return _queue->try_dequeue(item);
+        }
+
+        void aggregator::start()
+        {
+            _accepting = true;
+        }
+
+        void aggregator::stop()
+        {
+            _accepting = false;
+            _queue->clear();
         }
     }
 }

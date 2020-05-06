@@ -123,7 +123,6 @@ namespace rs2
             std::shared_ptr<rs2_options_list> options_list(
                 rs2_get_options_list(_options, &e),
                 rs2_delete_options_list);
-        
 
             for (auto opt = 0; opt < rs2_get_options_list_size(options_list.get(), &e);opt++)
             {

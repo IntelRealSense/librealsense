@@ -19,6 +19,7 @@ import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
 import com.intel.realsense.librealsense.Pipeline;
+import com.intel.realsense.librealsense.PipelineProfile;
 import com.intel.realsense.librealsense.RsContext;
 import com.intel.realsense.librealsense.StreamType;
 
@@ -26,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "librs capture example";
     private static final int PERMISSIONS_REQUEST_CAMERA = 0;
 
-    private boolean mPermissionsGrunted = false;
+    private boolean mPermissionsGranted = false;
 
     private Context mAppContext;
     private TextView mBackGroundText;
@@ -60,7 +61,13 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        mPermissionsGrunted = true;
+        mPermissionsGranted = true;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mGLSurfaceView.close();
     }
 
     @Override
@@ -69,13 +76,13 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, PERMISSIONS_REQUEST_CAMERA);
             return;
         }
-        mPermissionsGrunted = true;
+        mPermissionsGranted = true;
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if(mPermissionsGrunted)
+        if(mPermissionsGranted)
             init();
         else
             Log.e(TAG, "missing permissions");
@@ -87,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
         if(mRsContext != null)
             mRsContext.close();
         stop();
+        mColorizer.close();
         mPipeline.close();
     }
 
@@ -154,7 +162,8 @@ public class MainActivity extends AppCompatActivity {
         {
             config.enableStream(StreamType.DEPTH, 640, 480);
             config.enableStream(StreamType.COLOR, 640, 480);
-            mPipeline.start(config);
+            // try statement needed here to release resources allocated by the Pipeline:start() method
+            try(PipelineProfile pp = mPipeline.start(config)){}
         }
     }
 
@@ -181,6 +190,7 @@ public class MainActivity extends AppCompatActivity {
             mIsStreaming = false;
             mHandler.removeCallbacks(mStreaming);
             mPipeline.stop();
+            mGLSurfaceView.clear();
             Log.d(TAG, "streaming stopped successfully");
         } catch (Exception e) {
             Log.d(TAG, "failed to stop streaming");

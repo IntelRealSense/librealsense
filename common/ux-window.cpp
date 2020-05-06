@@ -25,6 +25,10 @@ namespace rs2
 {
     void prepare_config_file()
     {
+        config_file::instance().set_default(configurations::update::allow_rc_firmware, false);
+        config_file::instance().set_default(configurations::update::recommend_calibration, true);
+        config_file::instance().set_default(configurations::update::recommend_updates, true);
+
         config_file::instance().set_default(configurations::window::is_fullscreen, false);
         config_file::instance().set_default(configurations::window::saved_pos, false);
         config_file::instance().set_default(configurations::window::saved_size, false);
@@ -34,6 +38,7 @@ namespace rs2
         config_file::instance().set_default(configurations::viewer::log_to_file, false);
         config_file::instance().set_default(configurations::viewer::log_severity, 2);
         config_file::instance().set_default(configurations::viewer::metric_system, true);
+        config_file::instance().set_default(configurations::viewer::ground_truth_r, 2500);
 
         config_file::instance().set_default(configurations::record::compression_mode, 2); // Let the device decide
         config_file::instance().set_default(configurations::record::default_path, get_folder_path(special_folder::user_documents));
@@ -41,6 +46,10 @@ namespace rs2
 
         config_file::instance().set_default(configurations::performance::show_fps, false);
         config_file::instance().set_default(configurations::performance::vsync, true);
+
+        config_file::instance().set_default(configurations::ply::mesh, true);
+        config_file::instance().set_default(configurations::ply::use_normals, false);
+        config_file::instance().set_default(configurations::ply::encoding, configurations::ply::binary);
 
 #ifdef __APPLE__
         config_file::instance().set_default(configurations::performance::font_oversample, 8);
@@ -346,11 +355,11 @@ namespace rs2
         stbi_image_free(r);
     }
 
-    ux_window::ux_window(const char* title) :
+    ux_window::ux_window(const char* title, context &ctx) :
         _win(nullptr), _width(0), _height(0), _output_height(0),
         _font_14(nullptr), _font_18(nullptr), _app_ready(false),
         _first_frame(true), _query_devices(true), _missing_device(false),
-        _hourglass_index(0), _dev_stat_message{}, _keep_alive(true), _title(title)
+        _hourglass_index(0), _dev_stat_message{}, _keep_alive(true), _title(title), _ctx(ctx)
     {
         open_window();
 
@@ -411,7 +420,7 @@ namespace rs2
         bool do_200ms = every_200ms;
         if (_query_devices && do_200ms)
         {
-            _missing_device = rs2::context().query_devices(RS2_PRODUCT_LINE_ANY).size() == 0;
+            _missing_device = _ctx.query_devices(RS2_PRODUCT_LINE_ANY).size() == 0;
             _hourglass_index = (_hourglass_index + 1) % 5;
 
             if (!_missing_device)

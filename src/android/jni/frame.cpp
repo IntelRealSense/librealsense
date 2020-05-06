@@ -26,6 +26,16 @@ Java_com_intel_realsense_librealsense_Frame_nGetStreamProfile(JNIEnv *env, jclas
     return (jlong) rv;
 }
 
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_intel_realsense_librealsense_Frame_nGetDataSize(JNIEnv *env, jclass type, jlong handle) {
+
+    rs2_error *e = NULL;
+    auto rv = rs2_get_frame_data_size(reinterpret_cast<const rs2_frame *>(handle), &e);
+    handle_error(env, e);
+    return (jint)rv;
+}
+
 extern "C" JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_Frame_nGetData(JNIEnv *env, jclass type, jlong handle,
                                                      jbyteArray data_) {
@@ -33,6 +43,29 @@ Java_com_intel_realsense_librealsense_Frame_nGetData(JNIEnv *env, jclass type, j
     rs2_error *e = NULL;
     env->SetByteArrayRegion(data_, 0, length, static_cast<const jbyte *>(rs2_get_frame_data(
                 reinterpret_cast<const rs2_frame *>(handle), &e)));
+    handle_error(env, e);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_Points_nGetData(JNIEnv *env, jclass type, jlong handle,
+                                                      jfloatArray data_) {
+    jsize length = env->GetArrayLength(data_);
+    rs2_error *e = NULL;
+    env->SetFloatArrayRegion(data_, 0, length, static_cast<const jfloat *>(rs2_get_frame_data(
+            reinterpret_cast<const rs2_frame *>(handle), &e)));
+    handle_error(env, e);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_Points_nGetTextureCoordinates(JNIEnv *env, jclass type,
+                                                                    jlong handle,
+                                                                    jfloatArray data_) {
+    jsize length = env->GetArrayLength(data_);
+    rs2_error *e = NULL;
+    env->SetFloatArrayRegion(data_, 0, length, reinterpret_cast<const jfloat *>(rs2_get_frame_texture_coordinates(
+            reinterpret_cast<const rs2_frame *>(handle), &e)));
     handle_error(env, e);
 }
 
@@ -97,6 +130,14 @@ Java_com_intel_realsense_librealsense_DepthFrame_nGetDistance(JNIEnv *env, jclas
     return rv;
 }
 
+extern "C" JNIEXPORT jfloat JNICALL
+Java_com_intel_realsense_librealsense_DepthFrame_nGetUnits( JNIEnv *env, jclass type, jlong handle ) {
+    rs2_error *e = NULL;
+    float rv = rs2_depth_frame_get_units( reinterpret_cast<const rs2_frame *>(handle), &e );
+    handle_error( env, e );
+    return rv;
+}
+
 extern "C" JNIEXPORT jint JNICALL
 Java_com_intel_realsense_librealsense_Points_nGetCount(JNIEnv *env, jclass type, jlong handle) {
     rs2_error *e = NULL;
@@ -142,4 +183,14 @@ Java_com_intel_realsense_librealsense_Frame_nGetMetadata(JNIEnv *env, jclass typ
                                      static_cast<rs2_frame_metadata_value>(metadata_type), &e);
     handle_error(env, e);
     return rv;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_intel_realsense_librealsense_Frame_nSupportsMetadata(JNIEnv *env, jclass type, jlong handle,
+                                                         jint metadata_type) {
+    rs2_error *e = NULL;
+    int rv = rs2_supports_frame_metadata(reinterpret_cast<const rs2_frame *>(handle),
+                                     static_cast<rs2_frame_metadata_value>(metadata_type), &e);
+    handle_error(env, e);
+    return rv > 0;
 }

@@ -34,11 +34,17 @@ namespace librealsense
 
             virtual const usb_device_info get_info() const override { return _info; }
             virtual const std::vector<rs_usb_interface> get_interfaces() const override { return _interfaces; }
-            virtual const rs_usb_messenger open() override;
-            
+            virtual const rs_usb_interface get_interface(uint8_t interface_number) const override;
+            virtual const rs_usb_messenger open(uint8_t interface_number) override;
+            virtual const std::vector<usb_descriptor> get_descriptors() const override { return _descriptors; }
+
         private:
-            const usb_device_info _info;
+            usb_device_info _info;
             std::vector<rs_usb_interface> _interfaces;
+            std::vector<usb_descriptor> _descriptors;
+
+            void parse_descriptor(WINUSB_INTERFACE_HANDLE handle);
+            std::vector<std::shared_ptr<usb_interface>> query_device_interfaces(const std::wstring& path);
         };
     }
 }

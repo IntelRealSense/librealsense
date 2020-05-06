@@ -2,7 +2,10 @@ package com.intel.realsense.camera;
 
 import android.support.annotation.NonNull;
 
+import com.intel.realsense.librealsense.Extension;
+import com.intel.realsense.librealsense.MotionStreamProfile;
 import com.intel.realsense.librealsense.StreamFormat;
+import com.intel.realsense.librealsense.StreamProfile;
 import com.intel.realsense.librealsense.StreamType;
 import com.intel.realsense.librealsense.VideoStreamProfile;
 
@@ -15,9 +18,9 @@ public class StreamProfileSelector implements Comparable<StreamProfileSelector> 
     private int mFps = 0;
     private boolean mEnabled;
     private int mIndex;
-    private List<VideoStreamProfile> mProfiles;
+    private List<StreamProfile> mProfiles;
 
-    public StreamProfileSelector(boolean enable, int index, List<VideoStreamProfile> profiles)
+    public StreamProfileSelector(boolean enable, int index, List<StreamProfile> profiles)
     {
         mIndex = index < profiles.size() ? index : 0;
         mEnabled = enable;
@@ -26,33 +29,48 @@ public class StreamProfileSelector implements Comparable<StreamProfileSelector> 
 
     public boolean isEnabled() { return mEnabled; }
 
-    public List<VideoStreamProfile> getProfiles() { return mProfiles; }
+    public List<StreamProfile> getProfiles() { return mProfiles; }
 
     public int getIndex() { return mIndex; }
 
     public String getName(){
-        VideoStreamProfile p = getProfile();
+        StreamProfile p = getProfile();
         if(p.getType() == StreamType.INFRARED)
             return p.getType().name() + "-" + p.getIndex();
         return p.getType().name();
     }
 
-    public VideoStreamProfile getProfile() {
+    public StreamProfile getProfile() {
         if(mIndex < 0 || mIndex >= mProfiles.size())
             return mProfiles.get(0);
         return mProfiles.get(mIndex);
     }
 
-    public String getResolutionString() { return String.valueOf(getProfile().getWidth()) + "x" + String.valueOf(getProfile().getHeight()); }
+    public String getResolutionString() {
+        if(!getProfile().is(Extension.VIDEO_PROFILE))
+            return "";
+        VideoStreamProfile vsp = getProfile().as(Extension.VIDEO_PROFILE);
+        return String.valueOf(vsp.getWidth()) + "x" + String.valueOf(vsp.getHeight());
+    }
 
     private int findIndex(StreamFormat format, int fps, int width, int height){
         int currIndex = 0;
-        for(VideoStreamProfile vsp : mProfiles){
-            if(vsp.getFormat() == format &&
-                    vsp.getWidth() == width &&
-                    vsp.getHeight() == height &&
-                    vsp.getFrameRate() == fps){
-                return currIndex;
+        for(StreamProfile sp : mProfiles){
+            if(sp.is(Extension.VIDEO_PROFILE)) {
+                VideoStreamProfile vsp = sp.as(Extension.VIDEO_PROFILE);
+                if (vsp.getFormat() == format &&
+                        vsp.getWidth() == width &&
+                        vsp.getHeight() == height &&
+                        vsp.getFrameRate() == fps) {
+                    return currIndex;
+                }
+            }
+            if(sp.is(Extension.MOTION_PROFILE)) {
+                MotionStreamProfile msp = sp.as(Extension.MOTION_PROFILE);
+                if (msp.getFormat() == format &&
+                        msp.getFrameRate() == fps) {
+                    return currIndex;
+                }
             }
             currIndex++;
         }

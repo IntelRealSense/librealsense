@@ -6,5 +6,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/fw-update-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/fw-update-device.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/fw-update-factory.h"
-        "${CMAKE_CURRENT_LIST_DIR}/fw-update-factory.cpp"        
+        "${CMAKE_CURRENT_LIST_DIR}/fw-update-factory.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/fw-update-unsigned.h"
+        "${CMAKE_CURRENT_LIST_DIR}/fw-update-unsigned.cpp"        
 )

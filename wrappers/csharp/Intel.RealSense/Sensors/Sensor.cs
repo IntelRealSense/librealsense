@@ -12,10 +12,24 @@ namespace Intel.RealSense
     using System.Runtime.InteropServices;
 
     // TODO: subclasses - DepthSensor, DepthStereoSensor, PoseSensor...
-    public class Sensor : Base.PooledObject, IOptions
+    public class Sensor : Base.RefCountedPooledObject, IOptions
     {
+        protected static Hashtable refCountTable = new Hashtable();
+        protected static readonly object tableLock = new object();
+
         internal override void Initialize()
         {
+            lock (tableLock)
+            {
+                if (refCountTable.Contains(Handle))
+                    refCount = refCountTable[Handle] as Base.RefCount;
+                else
+                {
+                    refCount = new Base.RefCount();
+                    refCountTable[Handle] = refCount;
+                }
+                Retain();
+            }
             Info = new InfoCollection(NativeMethods.rs2_supports_sensor_info, NativeMethods.rs2_get_sensor_info, Handle);
             Options = new OptionsList(Handle);
         }
@@ -32,18 +46,45 @@ namespace Intel.RealSense
             return ObjectPool.Get<T>(ptr);
         }
 
+        /// <summary>Returns a strongly-typed clone</summary>
+        /// <typeparam name="T"><see cref="Sensor"/> type or subclass</typeparam>
+        /// <param name="other"><see cref="Sensor"/> to clone</param>
+        /// <returns>an instance of <typeparamref name="T"/></returns>
+        public static T Create<T>(Sensor other)
+            where T : Sensor
+        {
+            object error;
+            return ObjectPool.Get<T>(other.Handle);
+        }
+
         internal Sensor(IntPtr sensor)
             : base(sensor, NativeMethods.rs2_delete_sensor)
         {
-            Info = new InfoCollection(NativeMethods.rs2_supports_sensor_info, NativeMethods.rs2_get_sensor_info, Handle);
-            Options = new OptionsList(Handle);
+            Initialize();
         }
 
         protected override void Dispose(bool disposing)
         {
+            if (m_instance.IsInvalid)
+            {
+                return;
+            }
+
             //m_queue.Dispose();
             (Options as OptionsList).Dispose();
-            base.Dispose(disposing);
+
+            lock (tableLock)
+            {
+                IntPtr localHandle = Handle;
+                System.Diagnostics.Debug.Assert(refCountTable.Contains(localHandle));
+
+                base.Dispose(disposing);
+
+                if (refCount.count == 0)
+                {
+                    refCountTable.Remove(localHandle);
+                }
+            }
         }
 
         public class CameraInfos : IEnumerable<KeyValuePair<CameraInfo, string>>
@@ -181,6 +222,15 @@ namespace Intel.RealSense
         {
             object error;
             return NativeMethods.rs2_is_sensor_extendable_to(Handle, ext, out error) != 0;
+        }
+
+        /// <summary>Returns a strongly-typed clone</summary>
+        /// <typeparam name="T"><see cref="Sensor"/> type or subclass</typeparam>
+        /// <returns>an instance of <typeparamref name="T"/></returns>
+        public T As<T>()
+            where T : Sensor
+        {
+            return Create<T>(this);
         }
 
         /// <summary>
