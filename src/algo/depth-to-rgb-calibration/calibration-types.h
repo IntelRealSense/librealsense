@@ -82,6 +82,32 @@ namespace depth_to_rgb_calibration {
     struct p_matrix
     {
         double vals[12];
+
+        bool operator==(const p_matrix& other)
+        {
+            for (auto i = 0; i < 12; i++)
+            {
+                if (vals[i] != other.vals[i])
+                    return false;
+            }
+            return true;
+        }
+        bool operator!=(const p_matrix& other)
+        {
+            return !(*this == other);
+        }
+
+        bool operator<(const p_matrix& other)
+        {
+            for (auto i = 0; i < 12; i++)
+            {
+                if (vals[i] < other.vals[i]) 
+                    return false;
+                if (vals[i] > other.vals[i])
+                    return true;
+            }
+            return true;
+        }
     };
 
     struct k_matrix

@@ -68,6 +68,22 @@ void print<algo::rotation_in_angles, algo::rotation_in_angles>(size_t x, algo::r
         << d.alpha << " " << d.beta << " " << d.gamma << "{c++} (exact)");
 }
 
+template<>
+void print<algo::p_matrix, algo::p_matrix>(size_t x, algo::p_matrix f, algo::p_matrix d)
+{
+    std::stringstream s_f;
+    std::stringstream s_d;
+
+    for (auto i = 0; i < 12; i++)
+    {
+        s_f << f.vals[i] << " ";
+        s_d << d.vals[i] << " ";
+    }
+
+    AC_LOG(DEBUG, "... " << std::setprecision(15) << x << ": {matlab}" << s_f.str() << " != "
+        << s_d.str() << "{c++} (exact)");
+}
+
 template< typename F, typename D >
 bool is_equal_approximetly(F fx, D dx)
 {
@@ -89,6 +105,17 @@ bool is_equal_approximetly<algo::rotation_in_angles, algo::rotation_in_angles>(a
     return fx.alpha == approx(dx.alpha) &&
         fx.beta== approx(dx.beta) &&
         fx.gamma == approx(dx.gamma) ;
+}
+
+template<>
+bool is_equal_approximetly<algo::p_matrix, algo::p_matrix>(algo::p_matrix fx, algo::p_matrix dx)
+{
+    for (auto i = 0; i < 12; i++)
+    {
+        if(fx.vals[i] != approx(dx.vals[i]))
+            return false;
+    }
+    return true;
 }
 
 template<>
@@ -538,7 +565,6 @@ TEST_CASE("Weights calc", "[d2rgb]")
         // ---
         TRACE( "\nChecking scene validity:" );
 
-        CHECK(!cal.is_scene_valid());
 
         //// edge distribution
         CHECK( compare_to_bin_file< double >( z_data.sum_weights_per_section, dir, scene, FILE_NAME("depthEdgeWeightDistributionPerSectionDepth", 1, 4,"double_00").c_str(), 4, 1, compare_same_vectors ) );
@@ -582,6 +608,9 @@ TEST_CASE("Weights calc", "[d2rgb]")
 
             file = ITERATION_FILE_NAME("DyVals_iteration", data.iteration + 1, 1, md.num_of_edges,"double_00");
             CHECK(compare_to_bin_file< double >(data.d_vals_y, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
+
+           /* file = ITERATION_FILE_NAME("xCoeff_P", data.iteration + 1, sizeof(algo::p_matrix) / sizeof(double), md.num_of_edges, "double_00");
+            CHECK(compare_to_bin_file< algo::p_matrix>(data.coeffs_p.x_coeffs, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));*/
 
             /*file = ITERATION_FILE_NAME("xCoeff_Krgb", data.iteration + 1, sizeof(algo::k_matrix) / sizeof(double), md.num_of_edges, "double_00");
             CHECK(compare_to_bin_file< algo::k_matrix>(data.coeffs_k.x_coeffs, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));

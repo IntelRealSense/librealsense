@@ -23,6 +23,14 @@ namespace depth_to_rgb_calibration {
     struct yuy2_frame_data;
     struct calib;
 
+    coeffs< p_matrix > calc_p_coefs(
+        const z_frame_data& z_data,
+        const yuy2_frame_data& yuy_data,
+        const calib & yuy_intrin_extrin,
+        const std::vector<double>& rc,
+        const std::vector<double2>& xy
+    );
+
     coeffs< translation > calc_translation_coefs(
         const z_frame_data& z_data,
         const yuy2_frame_data& yuy_data,

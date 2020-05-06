@@ -879,6 +879,46 @@ std::vector<double3> optimizer::subedges2vertices(z_frame_data& z_data, const rs
     return res;
 }
 
+static p_matrix calc_p_gradients(const z_frame_data & z_data, 
+    const yuy2_frame_data & yuy_data, 
+    std::vector<double> interp_IDT_x, 
+    std::vector<double> interp_IDT_y, 
+    const calib& yuy_intrin_extrin, 
+    const std::vector<double>& rc, 
+    const std::vector<double2>& xy,
+    iteration_data_collect * data = nullptr)
+{
+    auto coefs = calc_p_coefs(z_data, yuy_data, yuy_intrin_extrin, rc, xy);
+    auto w = z_data.weights;
+
+    if (data)
+        data->coeffs_p = coefs;
+
+    p_matrix sums = { 0 };
+    auto sum_of_valids = 0;
+
+    for (auto i = 0; i < coefs.x_coeffs.size(); i++)
+    {
+        if (interp_IDT_x[i] == std::numeric_limits<double>::max() || interp_IDT_y[i] == std::numeric_limits<double>::max())
+            continue;
+
+        sum_of_valids++;
+
+        for (auto j = 0; j < 12; j++)
+        {
+            sums.vals[j] += w[i] * (interp_IDT_x[i] * coefs.x_coeffs[i].vals[j] + interp_IDT_y[i] * coefs.y_coeffs[i].vals[j]);
+        }
+        
+    }
+
+    p_matrix averages;
+    for (auto i = 0; i < 12; i++)
+    {
+        averages.vals[i] += (double)sums.vals[i] / (double)sum_of_valids;
+    }
+
+    return averages;
+}
 
 static translation calc_translation_gradients( const z_frame_data & z_data, const yuy2_frame_data & yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib& yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy )
 {
@@ -1080,6 +1120,7 @@ static calib calc_gradients(
 
     auto rc = calc_rc( z_data, yuy_data, curr_calib );
 
+    res.p_mat = calc_p_gradients(z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first, data);
     res.rot_angles = calc_rotation_gradients( z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first, data);
     res.trans = calc_translation_gradients( z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first );
     res.k_mat = calc_k_gradients( z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first, data );
