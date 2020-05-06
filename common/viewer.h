@@ -211,6 +211,7 @@ namespace rs2
         float3 up;
         bool fixed_up = true;
         bool render_quads = true;
+        bool render_shaded = true;
 
         float view[16];
         bool texture_wrapping_on = true;

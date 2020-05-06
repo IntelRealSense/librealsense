@@ -398,7 +398,7 @@ namespace rs2
 
         auto top_bar_height = 32.f;
         const auto buttons_heights = top_bar_height;
-        const auto num_of_buttons = 5;
+        const auto num_of_buttons = 6;
 
         if (num_of_buttons * 40 + combo_boxes * (combo_box_width + 100) > stream_rect.w || pose_render)
             top_bar_height = 2 * top_bar_height;
@@ -560,6 +560,36 @@ namespace rs2
             if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
             {
                 render_quads = true;
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Render Points");
+            }
+        }
+        ImGui::SameLine();
+
+
+        if (render_shaded)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+            label = to_string() << textual_icons::cubes << "##Render Shaded";
+            if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
+            {
+                render_shaded = false;
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Render Quads");
+            }
+            ImGui::PopStyleColor(2);
+        }
+        else
+        {
+            label = to_string() << textual_icons::cubes << "##Render Shaded";
+            if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
+            {
+                render_shaded = true;
             }
             if (ImGui::IsItemHovered())
             {
@@ -2029,6 +2059,7 @@ namespace rs2
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
 
             _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_FILLED, render_quads ? 1.f : 0.f);
+            _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_SHADED, render_shaded ? 1.f : 0.f);
 
             _pc_renderer.set_matrix(RS2_GL_MATRIX_CAMERA, r2 * view_mat);
             _pc_renderer.set_matrix(RS2_GL_MATRIX_PROJECTION, perspective_mat);
@@ -2056,7 +2087,7 @@ namespace rs2
                 picked = true;
                 *picked_xyz = p;
 
-                try_select_pointcloud(win);
+                //try_select_pointcloud(win);
             }
 
             glDisable(GL_TEXTURE_2D);

@@ -267,17 +267,18 @@ namespace rs2
             }
 
             static const auto OPTION_FILLED = rs2_option(RS2_OPTION_COUNT + 1);
+            static const auto OPTION_SHADED = rs2_option(RS2_OPTION_COUNT + 2);
 
-            static const auto OPTION_MOUSE_X = rs2_option(RS2_OPTION_COUNT + 2);
-            static const auto OPTION_MOUSE_Y = rs2_option(RS2_OPTION_COUNT + 3);
-            static const auto OPTION_MOUSE_PICK = rs2_option(RS2_OPTION_COUNT + 4);
+            static const auto OPTION_MOUSE_X = rs2_option(RS2_OPTION_COUNT + 3);
+            static const auto OPTION_MOUSE_Y = rs2_option(RS2_OPTION_COUNT + 4);
+            static const auto OPTION_MOUSE_PICK = rs2_option(RS2_OPTION_COUNT + 5);
 
-            static const auto OPTION_PICKED_X = rs2_option(RS2_OPTION_COUNT + 5);
-            static const auto OPTION_PICKED_Y = rs2_option(RS2_OPTION_COUNT + 6);
-            static const auto OPTION_PICKED_Z = rs2_option(RS2_OPTION_COUNT + 7);
+            static const auto OPTION_PICKED_X = rs2_option(RS2_OPTION_COUNT + 6);
+            static const auto OPTION_PICKED_Y = rs2_option(RS2_OPTION_COUNT + 7);
+            static const auto OPTION_PICKED_Z = rs2_option(RS2_OPTION_COUNT + 8);
 
-            static const auto OPTION_PICKED_ID = rs2_option(RS2_OPTION_COUNT + 8);
-            static const auto OPTION_SELECTED  = rs2_option(RS2_OPTION_COUNT + 9);
+            static const auto OPTION_PICKED_ID = rs2_option(RS2_OPTION_COUNT + 9);
+            static const auto OPTION_SELECTED  = rs2_option(RS2_OPTION_COUNT + 10);
         private:
             friend class context;
 

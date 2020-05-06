@@ -33,6 +33,7 @@ namespace librealsense
             void set_min_delta_z(float min_delta_z);
             void set_mouse_xy(float x, float y);
             void set_picked_id(float pid);
+            void set_shaded(bool shaded);
         protected:
             pointcloud_shader(std::unique_ptr<rs2::shader_program> shader);
 
@@ -49,6 +50,7 @@ namespace librealsense
             uint32_t _min_delta_z_location;
             uint32_t _mouse_xy_location;
             uint32_t _picked_id_location;
+            uint32_t _shaded_location;
         };
 
         class blit_shader : public rs2::texture_2d_shader
@@ -71,18 +73,19 @@ namespace librealsense
             ~pointcloud_renderer() override;
 
             static const auto OPTION_FILLED = rs2_option(RS2_OPTION_COUNT + 1);
+            static const auto OPTION_SHADED = rs2_option(RS2_OPTION_COUNT + 2);
 
-            static const auto OPTION_MOUSE_X = rs2_option(RS2_OPTION_COUNT + 2);
-            static const auto OPTION_MOUSE_Y = rs2_option(RS2_OPTION_COUNT + 3);
-            static const auto OPTION_MOUSE_PICK = rs2_option(RS2_OPTION_COUNT + 4);
+            static const auto OPTION_MOUSE_X = rs2_option(RS2_OPTION_COUNT + 3);
+            static const auto OPTION_MOUSE_Y = rs2_option(RS2_OPTION_COUNT + 4);
+            static const auto OPTION_MOUSE_PICK = rs2_option(RS2_OPTION_COUNT + 5);
 
-            static const auto OPTION_PICKED_X = rs2_option(RS2_OPTION_COUNT + 5);
-            static const auto OPTION_PICKED_Y = rs2_option(RS2_OPTION_COUNT + 6);
-            static const auto OPTION_PICKED_Z = rs2_option(RS2_OPTION_COUNT + 7);
+            static const auto OPTION_PICKED_X = rs2_option(RS2_OPTION_COUNT + 6);
+            static const auto OPTION_PICKED_Y = rs2_option(RS2_OPTION_COUNT + 7);
+            static const auto OPTION_PICKED_Z = rs2_option(RS2_OPTION_COUNT + 8);
 
-            static const auto OPTION_PICKED_ID = rs2_option(RS2_OPTION_COUNT + 8);
+            static const auto OPTION_PICKED_ID = rs2_option(RS2_OPTION_COUNT + 9);
 
-            static const auto OPTION_SELECTED = rs2_option(RS2_OPTION_COUNT + 9);
+            static const auto OPTION_SELECTED = rs2_option(RS2_OPTION_COUNT + 10);
 
             void cleanup_gpu_resources() override;
             void create_gpu_resources() override;
@@ -100,7 +103,8 @@ namespace librealsense
             int _width = 0;
             int _height = 0;
             option *_filled_opt, *_mouse_x_opt, *_mouse_y_opt, *_mouse_pick_opt,
-                *_picked_id_opt, *_picked_x_opt, *_picked_y_opt, *_picked_z_opt, *_selected_opt;
+                *_picked_id_opt, *_picked_x_opt, *_picked_y_opt, *_picked_z_opt, 
+                *_selected_opt, *_shaded_opt;
             uint32_t color_tex;
             uint32_t depth_tex;
             uint32_t xyz_tex;

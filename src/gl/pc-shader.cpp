@@ -16,6 +16,7 @@ static const char* vertex_shader_text =
 "out float valid;\n"
 "out vec2 sampledUvs;\n"
 "out vec4 outPos;\n"
+"out vec3 normal;\n"
 "\n"
 "uniform mat4 transformationMatrix;\n"
 "uniform mat4 projectionMatrix;\n"
@@ -45,6 +46,10 @@ static const char* vertex_shader_text =
 "    vec4 pos_top = texture2D(positionsSampler, tex_top);\n"
 "    vec4 pos_buttom = texture2D(positionsSampler, tex_buttom);\n"
 "\n"
+"    vec3 axis1 = vec3(normalize(mix(pos_right - pos, pos - pos_left, 0.5)));\n"
+"    vec3 axis2 = vec3(normalize(mix(pos_top - pos, pos - pos_buttom, 0.5)));\n"
+"    normal = cross(axis1, axis2);\n"
+"\n"
 "    valid = 0.0;\n"
 "    if (uvs.x < 0.0) valid = 1.0;\n"
 "    if (uvs.y < 0.0) valid = 1.0;\n"
@@ -70,16 +75,56 @@ static const char* fragment_shader_text =
 "in float valid;\n"
 "in vec4  outPos;\n"
 "in vec2 sampledUvs;\n"
+"in vec3 normal;\n"
 "out vec4 output_rgb;\n"
 "out vec4 output_xyz;\n"
 "\n"
 "uniform sampler2D textureSampler;\n"
 "uniform vec2 mouseXY;\n"
 "uniform float pickedID;\n"
+"uniform float shaded;\n"
 "\n"
+"const float Epsilon = 1e-10;\n"
+"\n"
+"vec3 RGBtoHSV(in vec3 RGB)\n"
+"{\n"
+"    vec4  P   = (RGB.g < RGB.b) ? vec4(RGB.bg, -1.0, 2.0/3.0) : vec4(RGB.gb, 0.0, -1.0/3.0);\n"
+"    vec4  Q   = (RGB.r < P.x) ? vec4(P.xyw, RGB.r) : vec4(RGB.r, P.yzx);\n"
+"    float C   = Q.x - min(Q.w, Q.y);\n"
+"    float H   = abs((Q.w - Q.y) / (6.0 * C + Epsilon) + Q.z);\n"
+"    vec3  HCV = vec3(H, C, Q.x);\n"
+"    float S   = HCV.y / (HCV.z + Epsilon);\n"
+"    return vec3(HCV.x, S, HCV.z);\n"
+"}\n"
+"vec3 HSVtoRGB(in vec3 HSV)\n"
+"{\n"
+"    float H   = HSV.x;\n"
+"    float R   = abs(H * 6.0 - 3.0) - 1.0;\n"
+"    float G   = 2.0 - abs(H * 6.0 - 2.0);\n"
+"    float B   = 2.0 - abs(H * 6.0 - 4.0);\n"
+"    vec3  RGB = clamp( vec3(R,G,B), 0.0, 1.0 );\n"
+"    return ((RGB - 1.0) * HSV.y + 1.0) * HSV.z;\n"
+"}\n"
 "void main(void) {\n"
 "    if (valid > 0.0) discard;\n"
 "    vec4 color = texture2D(textureSampler, sampledUvs);\n"
+"    if (shaded > 0.0) {\n"
+"    vec3 light0 = vec3(0.0, 1.0, 0.0);"
+"    vec3 light1 = vec3(1.0, -1.0, 0.0);"
+"    vec3 light2 = vec3(-1.0, -1.0, 0.0);"
+"    vec3 light_dir0 = light0 - vec3(outPos);\n"
+"    vec3 light_dir1 = light1 - vec3(outPos);\n"
+"    vec3 light_dir2 = light2 - vec3(outPos);\n"
+"    float diffuse_factor0 = max(dot(normal,light_dir0), 0.0);\n"
+"    float diffuse_factor1 = max(dot(normal,light_dir1), 0.0);\n"
+"    float diffuse_factor2 = max(dot(normal,light_dir2), 0.0);\n"
+"    float diffuse_factor = 0.8 + diffuse_factor0 * 0.1 + diffuse_factor1 * 0.1 + diffuse_factor2 * 0.1;\n"
+"    //color = mix(vec4(0.5), color, diffuse_factor);\n"
+"    vec3 col_hsv = RGBtoHSV(color.rgb);\n"
+"    col_hsv.z = clamp(col_hsv.z * diffuse_factor, 0.0, 1.0);\n"
+"    col_hsv.y = clamp(col_hsv.y * clamp(diffuse_factor, 0.0, 1.0), 0.0, 1.0);\n"
+"    color = vec4(HSVtoRGB(col_hsv.rgb), 1.0);\n"
+"    }\n"
 "    float dist = length(mouseXY - gl_FragCoord.xy);\n"
 "    float t = 0.4 + smoothstep(0.0, 5.0, dist) * 0.6;\n" 
 "\n"
@@ -165,6 +210,7 @@ namespace librealsense
             _min_delta_z_location = _shader->get_uniform_location("minDeltaZ");
             _mouse_xy_location = _shader->get_uniform_location("mouseXY");
             _picked_id_location = _shader->get_uniform_location("pickedID");
+            _shaded_location = _shader->get_uniform_location("shaded");
 
             auto texture0_sampler_location = _shader->get_uniform_location("textureSampler");
             auto texture1_sampler_location = _shader->get_uniform_location("positionsSampler");
@@ -205,6 +251,11 @@ namespace librealsense
         void pointcloud_shader::set_picked_id(float pid)
         {
             _shader->load_uniform(_picked_id_location, pid);
+        }
+
+        void pointcloud_shader::set_shaded(bool shaded)
+        {
+            _shader->load_uniform(_shaded_location, shaded);
         }
 
         void pointcloud_shader::set_min_delta_z(float min_delta_z)
@@ -287,6 +338,7 @@ namespace librealsense
             : stream_filter_processing_block("Pointcloud Renderer")
         {
             register_option(OPTION_FILLED, std::make_shared<librealsense::float_option>(option_range{ 0, 1, 0, 1 }));
+            register_option(OPTION_SHADED, std::make_shared<librealsense::float_option>(option_range{ 0, 1, 0, 1 }));
             register_option(OPTION_MOUSE_X, std::make_shared<librealsense::float_option>(option_range{ 0, 10000, 1, 0 }));
             register_option(OPTION_MOUSE_Y, std::make_shared<librealsense::float_option>(option_range{ 0, 10000, 1, 0 }));
             register_option(OPTION_MOUSE_PICK, std::make_shared<librealsense::float_option>(option_range{ 0, 1, 1, 0 }));   
@@ -307,6 +359,7 @@ namespace librealsense
             _picked_z_opt = &get_option(OPTION_PICKED_Z);
             _picked_id_opt = &get_option(OPTION_PICKED_ID);
             _selected_opt = &get_option(OPTION_SELECTED);
+            _shaded_opt = &get_option(OPTION_SHADED);
 
             initialize();
         }
@@ -401,6 +454,7 @@ namespace librealsense
                             _shader->set_image_size(vf_profile.width(), vf_profile.height());
 
                             _shader->set_picked_id(_picked_id_opt->query());
+                            _shader->set_shaded(_shaded_opt->query());
 
                             if (_mouse_pick_opt->query() > 0.f)
                             {
