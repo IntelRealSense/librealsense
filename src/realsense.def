@@ -355,7 +355,9 @@ EXPORTS
     rs2_run_tare_calibration
     rs2_get_calibration_table
     rs2_set_calibration_table
-
+    
+    rs2_get_firmware_logs
+    
     rs2_create_terminal_parser
     rs2_delete_terminal_parser
     rs2_terminal_parse_command 
