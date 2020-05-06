@@ -135,6 +135,11 @@ namespace rs2
         }
     };
 
+    struct float4
+    {
+        float x, y, z, w;
+    };
+
     inline float3 cross(const float3& a, const float3& b)
     {
         return { a.y * b.z - b.y * a.z, a.x * b.z - b.x * a.z, a.x * b.y - a.y * b.x };
@@ -272,6 +277,7 @@ namespace rs2
         }
 
         float& operator()(int i, int j) { return mat[i][j]; }
+        const float& operator()(int i, int j) const { return mat[i][j]; }
 
         //init rotation matrix from quaternion
         matrix4(const rs2_quaternion& q)
@@ -378,6 +384,17 @@ namespace rs2
                 res.mat[i][j] = sum;
             }
         }
+        return res;
+    }
+
+    inline float4 operator*(const matrix4& a, const float4& b)
+    {
+        float4 res;
+        int i = 0;
+        res.x = a(0, i) * b.x + a(1, i) * b.y + a(2, i) * b.z + a(3, i) * b.w; i++;
+        res.y = a(0, i) * b.x + a(1, i) * b.y + a(2, i) * b.z + a(3, i) * b.w; i++;
+        res.z = a(0, i) * b.x + a(1, i) * b.y + a(2, i) * b.z + a(3, i) * b.w; i++;
+        res.w = a(0, i) * b.x + a(1, i) * b.y + a(2, i) * b.z + a(3, i) * b.w; i++;
         return res;
     }
 

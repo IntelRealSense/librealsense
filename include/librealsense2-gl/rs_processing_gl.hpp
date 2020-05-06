@@ -279,6 +279,12 @@ namespace rs2
 
             static const auto OPTION_PICKED_ID = rs2_option(RS2_OPTION_COUNT + 9);
             static const auto OPTION_SELECTED  = rs2_option(RS2_OPTION_COUNT + 10);
+            static const auto OPTION_ORIGIN_PICKED  = rs2_option(RS2_OPTION_COUNT + 11);
+
+            static const auto OPTION_NORMAL_X = rs2_option(RS2_OPTION_COUNT + 12);
+            static const auto OPTION_NORMAL_Y = rs2_option(RS2_OPTION_COUNT + 13);
+            static const auto OPTION_NORMAL_Z = rs2_option(RS2_OPTION_COUNT + 14);
+            
         private:
             friend class context;
 

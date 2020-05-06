@@ -78,6 +78,7 @@ static const char* fragment_shader_text =
 "in vec3 normal;\n"
 "out vec4 output_rgb;\n"
 "out vec4 output_xyz;\n"
+"out vec4 output_normal;\n"
 "\n"
 "uniform sampler2D textureSampler;\n"
 "uniform vec2 mouseXY;\n"
@@ -130,6 +131,7 @@ static const char* fragment_shader_text =
 "\n"
 "    output_rgb = t * vec4(color.xyz, 1.0) + (1.0 - t) * vec4(1.0);\n"
 "    output_xyz = outPos;\n"
+"    output_normal = vec4(normal, 1.0);\n"
 "}\n";
 
 static const char* blit_vertex_shader_text =
@@ -292,6 +294,7 @@ namespace librealsense
             glDeleteTextures(1, &color_tex);
             glDeleteTextures(1, &depth_tex);
             glDeleteTextures(1, &xyz_tex);
+            glDeleteTextures(1, &normal_tex);
 
             _shader.reset();
             _model.reset();
@@ -331,6 +334,7 @@ namespace librealsense
                 glGenTextures(1, &color_tex);
                 glGenTextures(1, &depth_tex);
                 glGenTextures(1, &xyz_tex);
+                glGenTextures(1, &normal_tex);
             }
         }
 
@@ -349,6 +353,11 @@ namespace librealsense
             register_option(OPTION_PICKED_ID, std::make_shared<librealsense::float_option>(option_range{ 0, 32, 1, 0 }));
 
             register_option(OPTION_SELECTED, std::make_shared<librealsense::float_option>(option_range{ 0, 1, 0, 1 }));
+            register_option(OPTION_ORIGIN_PICKED, std::make_shared<librealsense::float_option>(option_range{ 0, 1, 0, 1 }));
+
+            register_option(OPTION_NORMAL_X, std::make_shared<librealsense::float_option>(option_range{ -1.f, 1.f, 0, 0 }));
+            register_option(OPTION_NORMAL_Y, std::make_shared<librealsense::float_option>(option_range{ -1.f, 1.f, 0, 0 }));
+            register_option(OPTION_NORMAL_Z, std::make_shared<librealsense::float_option>(option_range{ -1.f, 1.f, 0, 0 }));
 
             _filled_opt = &get_option(OPTION_FILLED);
             _mouse_x_opt = &get_option(OPTION_MOUSE_X);
@@ -360,6 +369,10 @@ namespace librealsense
             _picked_id_opt = &get_option(OPTION_PICKED_ID);
             _selected_opt = &get_option(OPTION_SELECTED);
             _shaded_opt = &get_option(OPTION_SHADED);
+            _origin_picked_opt = &get_option(OPTION_ORIGIN_PICKED);
+            _normal_x_opt = &get_option(OPTION_NORMAL_X);
+            _normal_y_opt = &get_option(OPTION_NORMAL_Y);
+            _normal_z_opt = &get_option(OPTION_NORMAL_Z);
 
             initialize();
         }
@@ -435,12 +448,20 @@ namespace librealsense
                             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
                             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, xyz_tex, 0);
+
+                            glBindTexture(GL_TEXTURE_2D, normal_tex);
+                            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, vp[2], vp[3], 0, GL_RGB, GL_FLOAT, nullptr);
+                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+                            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, normal_tex, 0);
+
                             glBindTexture(GL_TEXTURE_2D, 0);
 
                             _fbo->bind();
 
-                            GLuint attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-                            glDrawBuffers(2, attachments);
+                            GLuint attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+                            glDrawBuffers(3, attachments);
 
                             glClearColor(0, 0, 0, 0);
                             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -489,14 +510,26 @@ namespace librealsense
                                 auto x = _mouse_x_opt->query() - vp[0];
                                 auto y = vp[3] + vp[1] - _mouse_y_opt->query();
 
-                                glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo->get());
-                                glReadBuffer(GL_COLOR_ATTACHMENT1);
+                                auto proj = get_matrix(RS2_GL_MATRIX_PROJECTION) * get_matrix(RS2_GL_MATRIX_CAMERA) * get_matrix(RS2_GL_MATRIX_TRANSFORMATION);
 
+                                rs2::float4 origin { 0.f, 0.f, 0.f, 1.f };
+                                rs2::float4 projected = proj * origin;
+
+                                projected.x /= projected.z;
+                                projected.y /= -projected.z;
+                                projected.x = (projected.x + 1.f) / 2.f;
+                                projected.y = (projected.y + 1.f) / 2.f;
+
+                                glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo->get());
+                                glReadBuffer(GL_COLOR_ATTACHMENT2);
+                                float3 normal;
+                                glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, &normal);
+
+                                glReadBuffer(GL_COLOR_ATTACHMENT1);
                                 float3 pos;
                                 glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, &pos);
 
                                 glReadBuffer(GL_COLOR_ATTACHMENT0);
-
                                 uint8_t rgba[4];
                                 glReadPixels(x, y, 1, 1, GL_RGBA, GL_BYTE, &rgba);
 
@@ -506,6 +539,9 @@ namespace librealsense
                                     _picked_x_opt->set(pos.x);
                                     _picked_y_opt->set(pos.y);
                                     _picked_z_opt->set(pos.z);
+                                    _normal_x_opt->set(normal.x);
+                                    _normal_y_opt->set(normal.y);
+                                    _normal_z_opt->set(normal.z);
                                 }
 
                                 glReadBuffer(GL_NONE);

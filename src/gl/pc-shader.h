@@ -86,6 +86,11 @@ namespace librealsense
             static const auto OPTION_PICKED_ID = rs2_option(RS2_OPTION_COUNT + 9);
 
             static const auto OPTION_SELECTED = rs2_option(RS2_OPTION_COUNT + 10);
+            static const auto OPTION_ORIGIN_PICKED = rs2_option(RS2_OPTION_COUNT + 11);
+
+            static const auto OPTION_NORMAL_X = rs2_option(RS2_OPTION_COUNT + 12);
+            static const auto OPTION_NORMAL_Y = rs2_option(RS2_OPTION_COUNT + 13);
+            static const auto OPTION_NORMAL_Z = rs2_option(RS2_OPTION_COUNT + 14);
 
             void cleanup_gpu_resources() override;
             void create_gpu_resources() override;
@@ -104,10 +109,12 @@ namespace librealsense
             int _height = 0;
             option *_filled_opt, *_mouse_x_opt, *_mouse_y_opt, *_mouse_pick_opt,
                 *_picked_id_opt, *_picked_x_opt, *_picked_y_opt, *_picked_z_opt, 
-                *_selected_opt, *_shaded_opt;
+                *_selected_opt, *_shaded_opt, *_origin_picked_opt,
+                *_normal_x_opt, *_normal_y_opt, *_normal_z_opt;
             uint32_t color_tex;
             uint32_t depth_tex;
             uint32_t xyz_tex;
+            uint32_t normal_tex;
         };
     }
 }

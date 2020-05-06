@@ -1838,6 +1838,14 @@ namespace rs2
 
         matrix4 perspective_mat = create_perspective_projection_matrix(viewer_rect.w, win.framebuf_height(), 60, 0.001f, 100.f);
 
+        glLoadIdentity();
+
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        gluPerspective(60, viewer_rect.w / win.framebuf_height(), 0.001f, 100.0f);
+        glGetFloatv(GL_PROJECTION_MATRIX, perspective_mat);
+        glPopMatrix();
+
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
         glLoadMatrixf((float*)perspective_mat.mat);
@@ -2086,6 +2094,14 @@ namespace rs2
                 };
                 picked = true;
                 *picked_xyz = p;
+                _picked = p;
+
+                float3 normal {
+                    _pc_renderer.get_option(gl::pointcloud_renderer::OPTION_NORMAL_X),
+                    _pc_renderer.get_option(gl::pointcloud_renderer::OPTION_NORMAL_Y),
+                    _pc_renderer.get_option(gl::pointcloud_renderer::OPTION_NORMAL_Z),
+                };
+                _normal = normal;
 
                 //try_select_pointcloud(win);
             }
@@ -2117,16 +2133,23 @@ namespace rs2
                     // Render camera model (based on source_frame camera type)
                     source_frame.apply_filter(_cam_renderer);
 
-                    if (_cam_renderer.get_option(gl::camera_renderer::OPTION_WAS_PICKED) > 0.f)
-                    {
-                        try_select_pointcloud(win);
-                    }
+                    // if (_cam_renderer.get_option(gl::camera_renderer::OPTION_WAS_PICKED) > 0.f)
+                    // {
+                    //     try_select_pointcloud(win);
+                    // }
 
                     glDisable(GL_BLEND);
                     glEnable(GL_DEPTH_TEST);
                 }
             }
         }
+
+        glLineWidth(1.f);
+        glBegin(GL_LINES);
+        glColor4f(light_blue.x, light_blue.y, light_blue.z, 0.5f);
+        auto end = _picked + _normal * 0.1f;
+        glVertex3fv(&_picked.x); glVertex3fv(&end.x);
+        glEnd();
 
         glPopMatrix();
 

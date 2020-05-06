@@ -231,5 +231,6 @@ namespace rs2
         bool _pc_selected_down = false;
         bool _pc_selected = false;
         double _selection_started = 0.0;
+        float3 _normal, _picked;
     };
 }
