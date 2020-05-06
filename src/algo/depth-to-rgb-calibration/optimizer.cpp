@@ -561,27 +561,33 @@ void optimizer::set_depth_data(
      }
 
      // interpolation - for debug
-     
      for (auto k = 0; k < 4; k++)
      {
          auto loc_it_x = _ir.valid_location_rc_x.begin();
          auto loc_it_y = _ir.valid_location_rc_y.begin();
          auto dir_pp_it_x = _ir.direction_per_pixel_x.begin();
          auto dir_pp_it_y = _ir.direction_per_pixel_y.begin();
-         for (auto i = 0; i < _ir.valid_location_rc_x.size(); i++)
+         for (auto i = 0; i < 2*_ir.valid_location_rc_x.size(); i++)
          {
-             double val_x = *loc_it_x + *dir_pp_it_x * vec[k];
+             _ir.local_region_y[k].push_back(*(_ir.local_region[k].begin()+i));
+             i++;
+             _ir.local_region_x[k].push_back(*(_ir.local_region[k].begin() + i));
+
+             /*double val_x = *loc_it_x + *dir_pp_it_x * vec[k];
              double val_y = *loc_it_y + *dir_pp_it_y * vec[k];
              _ir.local_region_x[k].push_back(val_x);
-             _ir.local_region_y[k].push_back(val_y);
+             _ir.local_region_y[k].push_back(val_y);*/
 
-             loc_it_x++; loc_it_y++; dir_pp_it_x++; dir_pp_it_y++;
+             //loc_it_x++; loc_it_y++; dir_pp_it_x++; dir_pp_it_y++;
+
          }
+        /* for (auto i = 0; i < _ir.valid_location_rc_x.size(); i++)
+         {
+             _ir.local_region_y[k].push_back(*(_ir.local_region[k].begin() + i+ii));
+         }*/
      }
 
      auto iedge_it = _ir.edges2.begin();// iEdge   
-     //std::vector<double>::iterator loc_reg_x[4] = { _ir.local_region_x[0].begin() + i,_ir.local_region_x[1].begin() + i,_ir.local_region_x[2].begin() + i,_ir.local_region_x[3].begin() + i };
-     //std::vector<double>::iterator loc_reg_y[4] = { _ir.local_region_y[0].begin() + i,_ir.local_region_y[1].begin() + i,_ir.local_region_y[2].begin() + i,_ir.local_region_y[3].begin() + i };
      std::vector<double>::iterator loc_reg_x[4] = { _ir.local_region_x[0].begin() ,_ir.local_region_x[1].begin() ,_ir.local_region_x[2].begin() ,_ir.local_region_x[3].begin()  };
      std::vector<double>::iterator loc_reg_y[4] = { _ir.local_region_y[0].begin() ,_ir.local_region_y[1].begin(),_ir.local_region_y[2].begin() ,_ir.local_region_y[3].begin()  };
 
