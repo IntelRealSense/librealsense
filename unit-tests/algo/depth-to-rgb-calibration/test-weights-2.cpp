@@ -511,16 +511,18 @@ TEST_CASE("Weights calc", "[d2rgb]")
         CHECK(compare_to_bin_file< uint8_t >(ir_data.valid_edge_pixels_by_ir, dir, scene, FILE_NAME("validEdgePixelsByIR", z_w, z_h, "uint8_00").c_str(), z_h, z_w, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(ir_data.valid_location_rc_x, dir, scene, FILE_NAME("gridXValid", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(ir_data.valid_location_rc_y, dir, scene, FILE_NAME("gridYValid", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(ir_data.valid_location_rc, dir, scene, FILE_NAME("locRC", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
         CHECK(compare_to_bin_file< uint8_t >(ir_data.valid_section_map, dir, scene, FILE_NAME("sectionMapValid", 1, 105794, "uint8_00").c_str(), 105794, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(ir_data.valid_gradient_x, dir, scene, FILE_NAME("IxValid", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(ir_data.valid_gradient_y, dir, scene, FILE_NAME("IyValid", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(ir_data.direction_deg, dir, scene, FILE_NAME("directionInDeg", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
         //CHECK(compare_to_bin_file< double >(ir_data.directions, dir, scene, FILE_NAME("directionIndex", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors)); // it passed, depends on index definition
         CHECK(compare_to_bin_file< double >(ir_data.direction_per_pixel, dir, scene, FILE_NAME("dirPerPixel", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(ir_data.local_region[0], dir, scene, FILE_NAME("localRegion_1", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(ir_data.local_region[1], dir, scene, FILE_NAME("localRegion_2", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(ir_data.local_region[2], dir, scene, FILE_NAME("localRegion_3", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(ir_data.local_region[3], dir, scene, FILE_NAME("localRegion_4", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
 
-        //CHECK(compare_to_bin_file< double >(ir_data.edges, dir, scene, FILE_NAME("I_edge", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
-        //CHECK(compare_to_bin_file< double >(depth_data.edges, dir, scene, FILE_NAME("Z_edge", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
-        
         // ---
         TRACE( "\nChecking scene validity:" );
 

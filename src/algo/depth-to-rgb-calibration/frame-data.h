@@ -43,7 +43,9 @@ namespace depth_to_rgb_calibration {
         std::vector<double> direction_deg;
         std::vector<double> valid_location_rc_x;
         std::vector<double> valid_location_rc_y;
+        std::vector<double> valid_location_rc;
         std::vector<double> direction_per_pixel;
+        std::vector<double> local_region[4];
     };
 
     struct z_frame_data : frame_data
