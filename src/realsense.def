@@ -355,4 +355,4 @@ EXPORTS
     rs2_run_tare_calibration
     rs2_get_calibration_table
     rs2_set_calibration_table
-
+    rs2_get_firmware_logs
