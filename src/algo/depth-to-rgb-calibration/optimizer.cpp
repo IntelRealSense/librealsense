@@ -435,8 +435,8 @@ void grid_xy(
         }
     }
 }
-
-std::vector<double> interpolation(std::vector<double> &grid_points, std::vector<double> x[], std::vector<double> y[], int dim, int valid_size, int valid_width)
+template<class T>
+std::vector<double> interpolation(std::vector<T> const &grid_points, std::vector<double> x[], std::vector<double> y[], int dim, int valid_size, int valid_width)
 {
     // interpolation 
 
@@ -690,7 +690,9 @@ void optimizer::set_depth_data(
      _depth.local_x = interpolation(_depth.gradient_x, local_region_x, local_region_y, 2, _ir.valid_location_rc_x.size(), _depth.width);
      _depth.local_y = interpolation(_depth.gradient_y, local_region_x, local_region_y, 2, _ir.valid_location_rc_x.size(), _depth.width);
      _depth.gradient = depth_mean(_depth.local_x, _depth.local_y);
-     
+     //zGradInDirection = abs(sum(zGrad.*normr(dirPerPixel), 2));
+     _depth.local_values = interpolation(_depth.frame, _ir.local_region_x, _ir.local_region_y,4, _ir.valid_location_rc_x.size(), _depth.width);
+     calculate_weights(_depth);
     // old code :
     /*
     suppress_weak_edges(_depth, _ir, _params);

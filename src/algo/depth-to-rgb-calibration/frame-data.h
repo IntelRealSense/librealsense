@@ -81,6 +81,7 @@ namespace depth_to_rgb_calibration {
         std::vector<double> local_x;
         std::vector<double> local_y;
         std::vector<double> gradient;
+        std::vector<double> local_values;
       
         // input validation
         std::vector<byte> section_map;
