@@ -38,41 +38,42 @@ std::vector< T > read_bin_file( char const * data_dir, char const * test, char c
     f.close();
     return vec;
 }
+
 template< typename F, typename D >
-void print(size_t x, F f, D d)
+void print( size_t x, F f, D d, bool is_approx = false)
 {
     // bytes will be written to stdout as characters, which we never want... hence '+fx'
-    AC_LOG(DEBUG, "... " << x << ": {matlab}" << +f << " != " << +d << "{c++} (exact)");
+    AC_LOG( DEBUG, "... " << x << ": {matlab}" << +f << (is_approx ? " !~ " : " != ") << +d << "{c++}");
 }
 
 template<>
-void print<algo::k_matrix, algo::k_matrix>(size_t x, algo::k_matrix f, algo::k_matrix d)
+void print<algo::k_matrix, algo::k_matrix>(size_t x, algo::k_matrix f, algo::k_matrix d, bool is_approx)
 {
     // bytes will be written to stdout as characters, which we never want... hence '+fx'
-    AC_LOG(DEBUG, "... " <<std::setprecision(15)<< x << ": {matlab}" << f.fx <<" "<< f.fy <<" "<< f.ppx << " " << f.ppy << " != " 
-        << d.fx << " " << d.fy << " " << d.ppx << " " << d.ppy << "{c++} (exact)");
+    AC_LOG( DEBUG, "... " <<std::setprecision(15)<< x << ": {matlab}" << f.fx << " " << f.fy <<" "<< f.ppx << " " << f.ppy << (is_approx ? " !~ " : " != ")
+        << d.fx << " " << d.fy << " " << d.ppx << " " << d.ppy << "{c++}");
 }
 
 template<>
-void print<algo::double2, algo::double2>(size_t x, algo::double2 f, algo::double2 d)
+void print<algo::double2, algo::double2>(size_t x, algo::double2 f, algo::double2 d, bool is_approx)
 {
     // bytes will be written to stdout as characters, which we never want... hence '+fx'
-    AC_LOG(DEBUG, "... " << std::setprecision(15) << x << ": {matlab}" << f.x << " " << f.y << " != "
-        << d.x << " " << d.y << "{c++} (exact)");
+    AC_LOG(DEBUG, "... " << std::setprecision(15) << x << ": {matlab}" << f.x << " " << f.y << (is_approx ? " !~ " : " != ")
+        << d.x << " " << d.y << "{c++}");
 }
 template<>
-void print<algo::rotation_in_angles, algo::rotation_in_angles>(size_t x, algo::rotation_in_angles f, algo::rotation_in_angles d)
+void print<algo::rotation_in_angles, algo::rotation_in_angles>(size_t x, algo::rotation_in_angles f, algo::rotation_in_angles d, bool is_approx)
 {
     // bytes will be written to stdout as characters, which we never want... hence '+fx'
-    AC_LOG(DEBUG, "... " << std::setprecision(15) << x << ": {matlab}" << f.alpha << " " << f.beta << " " << f.gamma << " != "
-        << d.alpha << " " << d.beta << " " << d.gamma << "{c++} (exact)");
+    AC_LOG(DEBUG, "... " << std::setprecision(15) << x << ": {matlab}" << f.alpha << " " << f.beta << " " << f.gamma << (is_approx ? " !~ " : " != ")
+        << d.alpha << " " << d.beta << " " << d.gamma << "{c++}");
 }
 
 template<>
-void print<algo::p_matrix, algo::p_matrix>(size_t x, algo::p_matrix f, algo::p_matrix d)
+void print<algo::p_matrix, algo::p_matrix>(size_t x, algo::p_matrix f, algo::p_matrix d, bool is_approx)
 {
-    std::stringstream s_f;
-    std::stringstream s_d;
+    std::ostringstream s_f;
+    std::ostringstream s_d;
 
     for (auto i = 0; i < 12; i++)
     {
@@ -80,8 +81,8 @@ void print<algo::p_matrix, algo::p_matrix>(size_t x, algo::p_matrix f, algo::p_m
         s_d << d.vals[i] << " ";
     }
 
-    AC_LOG(DEBUG, "... " << std::setprecision(15) << x << ": {matlab}" << s_f.str() << " != "
-        << s_d.str() << "{c++} (exact)");
+    AC_LOG(DEBUG, "... " << std::setprecision(15) << x << ": {matlab}" << s_f.str() << (is_approx ? " !~ " : " != ")
+        << s_d.str() << "{c++}");
 }
 
 template< typename F, typename D >
@@ -145,7 +146,7 @@ bool compare_same_vectors( std::vector< F > const & matlab, std::vector< D > con
         else if(!is_equal_approximetly(fx, dx))
         {
             if( ++n_mismatches <= 5 )
-                print(x, fx, dx);
+                print(x, fx, dx, true);
         }
     }
     if( n_mismatches )
@@ -655,11 +656,11 @@ TEST_CASE("Weights calc", "[d2rgb]")
 
         //--
         TRACE( "\nChecking output validity:" );
+        // Pixel movement is OK, but some sections have negative cost
         CHECK( ! cal.is_valid_results() );
+        
+        CHECK( cal.calc_correction_in_pixels() == approx(md.correction_in_pixels));
 
-        //pixel movement is OK, but some sections have negative cost
-        //CHECK( cal.calc_correction_in_pixels() == approx(md.correction_in_pixels));
-
-        //CHECK( compare_to_bin_file< double >( z_data.cost_diff_per_section, dir, scene, FILE_NAME("costDiffPerSection", 4, 1, "double_00").c_str(), 1, 4, compare_same_vectors ) );
+        CHECK( compare_to_bin_file< double >( z_data.cost_diff_per_section, dir, scene, FILE_NAME("costDiffPerSection", 4, 1, "double_00").c_str(), 1, 4, compare_same_vectors ) );
      }
 }
