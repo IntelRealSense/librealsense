@@ -2096,6 +2096,8 @@ namespace rs2
                 *picked_xyz = p;
                 _picked = p;
 
+                target = _picked;
+
                 float3 normal {
                     _pc_renderer.get_option(gl::pointcloud_renderer::OPTION_NORMAL_X),
                     _pc_renderer.get_option(gl::pointcloud_renderer::OPTION_NORMAL_Y),
@@ -2144,12 +2146,77 @@ namespace rs2
             }
         }
 
-        glLineWidth(1.f);
-        glBegin(GL_LINES);
-        glColor4f(light_blue.x, light_blue.y, light_blue.z, 0.5f);
-        auto end = _picked + _normal * 0.1f;
-        glVertex3fv(&_picked.x); glVertex3fv(&end.x);
+        glDisable(GL_DEPTH_TEST);
+        glLineWidth(2.f);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBegin(GL_TRIANGLES);
+
+        if (isnanf(_curr_normal.x) || isnanf(_curr_normal.y) || isnanf(_curr_normal.z))
+            _curr_normal = _normal;
+
+        float size = _picked.z * 0.03f;
+
+        _curr_normal = lerp(_curr_normal, _normal, 0.1f);
+
+        auto end = _picked + _curr_normal * size;
+        _curr_normal.normalize();
+        auto axis1 = cross(vec3d{ _curr_normal.x, _curr_normal.y, _curr_normal.z }, vec3d{ 0.f, 1.f, 0.f });
+        auto faxis1 = float3 { axis1.x, axis1.y, axis1.z };
+        faxis1.normalize();
+        auto axis2 = cross(vec3d{ _curr_normal.x, _curr_normal.y, _curr_normal.z }, axis1);
+        auto faxis2 = float3 { axis2.x, axis2.y, axis2.z };
+        faxis2.normalize();
+
+        matrix4 basis = matrix4::identity();
+        basis(0, 0) = faxis1.x;
+        basis(0, 1) = faxis1.y;
+        basis(0, 2) = faxis1.z;
+
+        basis(1, 0) = faxis2.x;
+        basis(1, 1) = faxis2.y;
+        basis(1, 2) = faxis2.z;
+
+        basis(2, 0) = _curr_normal.x;
+        basis(2, 1) = _curr_normal.y;
+        basis(2, 2) = _curr_normal.z;
+
+        const int segments = 50;
+        for (int i = 0; i < segments; i++)
+        {
+            auto t1 = 2 * M_PI * ((float)i / segments);
+            auto t2 = 2 * M_PI * ((float)(i+1) / segments);
+            float4 xy1 { cosf(t1) * size, sinf(t1) * size, 0.f, 1.f };
+            xy1 = basis * xy1;
+            xy1 = float4 { _picked.x + xy1.x, _picked.y + xy1.y, _picked.z  + xy1.z, 1.f };
+            float4 xy2 { cosf(t1) * size * 0.5f, sinf(t1) * size * 0.5f, 0.f, 1.f };
+            xy2 = basis * xy2;
+            xy2 = float4 { _picked.x + xy2.x, _picked.y + xy2.y, _picked.z  + xy2.z, 1.f };
+            float4 xy3 { cosf(t2) * size * 0.5f, sinf(t2) * size * 0.5f, 0.f, 1.f };
+            xy3 = basis * xy3;
+            xy3 = float4 { _picked.x + xy3.x, _picked.y + xy3.y, _picked.z  + xy3.z, 1.f };
+            float4 xy4 { cosf(t2) * size, sinf(t2) * size, 0.f, 1.f };
+            xy4 = basis * xy4;
+            xy4 = float4 { _picked.x + xy4.x, _picked.y + xy4.y, _picked.z  + xy4.z, 1.f };
+            //glVertex3fv(&_picked.x); 
+
+            glColor4f(white.x, white.y, white.z, 0.3f);
+            glVertex3fv(&xy1.x);
+            glColor4f(white.x, white.y, white.z, 0.5f);
+            glVertex3fv(&xy2.x);
+            glVertex3fv(&xy3.x);
+
+            glColor4f(white.x, white.y, white.z, 0.3f);
+            glVertex3fv(&xy1.x);
+            glVertex3fv(&xy4.x);
+            glColor4f(white.x, white.y, white.z, 0.5f);
+            glVertex3fv(&xy3.x);
+        }
+
+        //glVertex3fv(&_picked.x); glVertex3fv(&end.x);
         glEnd();
+        glDisable(GL_BLEND);
+        glEnable(GL_DEPTH_TEST);
 
         glPopMatrix();
 

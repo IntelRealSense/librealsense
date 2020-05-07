@@ -232,5 +232,6 @@ namespace rs2
         bool _pc_selected = false;
         double _selection_started = 0.0;
         float3 _normal, _picked;
+        float3 _curr_normal { 0.f, 0.f, 1.f };
     };
 }
