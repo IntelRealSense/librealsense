@@ -2,12 +2,8 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "RsSink.h"
-#include <ipDeviceCommon/RsCommon.h>
-
-#include "stdio.h"
-#include <string>
-
-#include <NetdevLog.h>
+#include <RsCommon.h>
+#include <RsNetDevLog.h>
 
 #define WRITE_FRAMES_TO_FILE 0
 
@@ -17,35 +13,20 @@ RsSink* RsSink::createNew(UsageEnvironment& t_env, MediaSubsession& t_subsession
 }
 
 RsSink::RsSink(UsageEnvironment& t_env, MediaSubsession& t_subsession, rs2_video_stream t_stream, char const* t_streamId)
-    : MediaSink(t_env)
-    , m_subsession(t_subsession)
+    : MediaSink(t_env),
+    m_subsession(t_subsession), 
+    m_receiveBuffer(nullptr),
+    m_to(nullptr),
+    m_stream(t_stream)
 {
-    m_stream = t_stream;
     m_streamId = strDup(t_streamId);
     m_bufferSize = t_stream.width * t_stream.height * t_stream.bpp + sizeof(RsFrameHeader);
-    m_receiveBuffer = nullptr;
-    m_to = nullptr;
-    std::string urlStr = m_streamId;
+
     m_afterGettingFunctions.push_back(afterGettingFrameUid0);
     m_afterGettingFunctions.push_back(afterGettingFrameUid1);
     m_afterGettingFunctions.push_back(afterGettingFrameUid2);
     m_afterGettingFunctions.push_back(afterGettingFrameUid3);
 
-    // Remove last "/"
-    /*
-    urlStr = urlStr.substr(0, urlStr.size()-1);
-    std::size_t streamNameIndex = urlStr.find_last_of("/") + 1;
-    std::string streamName = urlStr.substr(streamNameIndex, urlStr.size());
-
-    if (streamName.compare("depth") == 0)
-    {
-        fp = fopen("file_depth.bin", "ab");
-    }
-    else if((streamName.compare("color") == 0))
-    {
-        fp = fopen("file_rgb.bin", "ab");
-    }
-    */
     if(CompressionFactory::isCompressionSupported(m_stream.fmt, m_stream.type))
     {
         m_iCompress = CompressionFactory::getObject(m_stream.width, m_stream.height, m_stream.fmt, m_stream.type, m_stream.bpp);
@@ -63,7 +44,6 @@ RsSink::~RsSink()
         delete [] m_receiveBuffer;
     }
     delete[] m_streamId;
-    //fclose(fp);
 }
 
 void RsSink::afterGettingFrameUid0(void* t_clientData, unsigned t_frameSize, unsigned t_numTruncatedBytes, struct timeval t_presentationTime, unsigned t_durationInMicroseconds)
@@ -134,8 +114,8 @@ void RsSink::afterGettingFrame(unsigned t_frameSize, unsigned t_numTruncatedByte
     }
     else
     {
-                envir() << m_streamId << ":corrupted frame!!!: data size is " << header->data.frameSize << " frame size is " << t_frameSize << "\n";
-                delete [] m_receiveBuffer;
+        envir() << m_streamId << ":corrupted frame!!!: data size is " << header->data.frameSize << " frame size is " << t_frameSize << "\n";
+        delete [] m_receiveBuffer;
     }
     m_receiveBuffer = nullptr;
 
@@ -145,8 +125,10 @@ void RsSink::afterGettingFrame(unsigned t_frameSize, unsigned t_numTruncatedByte
 
 Boolean RsSink::continuePlaying()
 {
-    if(fSource == NULL)
+    if (fSource == NULL)
+    {
         return False; // sanity check (should not happen)
+    }
 
     // Request the next frame of data from our input source.  "afterGettingFrame()" will get called later, when it arrives:
     m_receiveBuffer = new unsigned char[MAX_MESSAGE_SIZE];
@@ -167,7 +149,7 @@ Boolean RsSink::continuePlaying()
     return True;
 }
 
-void RsSink::setCallback(rtp_callback* t_callback)
+void RsSink::setCallback(rs_rtp_callback* t_callback)
 {
     this->m_rtpCallback = t_callback;
 }

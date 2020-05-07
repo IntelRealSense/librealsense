@@ -6,10 +6,9 @@
 #include "BasicUsageEnvironment.hh"
 #include "liveMedia.hh"
 
-#include "IRsRtsp.h"
-#include "StreamClientState.h"
-#include "common/RsRtspCommon.h"
-#include <ipDeviceCommon/RsCommon.h>
+#include "RsMediaSession.h"
+#include "RsRtsp.h"
+#include <RsCommon.h>
 
 #include <librealsense2/hpp/rs_internal.hpp>
 
@@ -22,10 +21,38 @@
 
 #define SDP_EXTRINSICS_ARGS 13
 
-class RsRTSPClient : public RTSPClient, IRsRtsp
+enum RsRtspReturnCode
+{
+    OK,
+    ERROR_GENERAL,
+    ERROR_NETWROK,
+    ERROR_TIME_OUT,
+    ERROR_WRONG_FLOW
+};
+
+struct RsRtspReturnValue
+{
+    RsRtspReturnCode exit_code;
+    std::string msg;
+};
+
+class StreamClientState
 {
 public:
-    static IRsRtsp* createNew(char const* t_rtspURL, char const* t_applicationName, portNumBits t_tunnelOverHTTPPortNum, int idx);
+    StreamClientState() : m_session(NULL) {}
+    virtual ~StreamClientState()
+    {
+        Medium::close(m_session);
+    }
+
+public:
+    RsMediaSession* m_session;
+};
+
+class RsRTSPClient : public RTSPClient, RsRtsp
+{
+public:
+    static RsRtsp* createNew(char const* t_rtspURL, char const* t_applicationName, portNumBits t_tunnelOverHTTPPortNum, int idx);
     void describe();
     void setup(rs2_video_stream t_stream);
     void initFunc();
@@ -36,7 +63,7 @@ public:
 
     // IcamOERtsp functions
     virtual std::vector<rs2_video_stream> getStreams();
-    virtual int addStream(rs2_video_stream t_stream, rtp_callback* t_frameCallBack);
+    virtual int addStream(rs2_video_stream t_stream, rs_rtp_callback* t_frameCallBack);
     virtual int start();
     virtual int stop();
     virtual int close();

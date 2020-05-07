@@ -6,7 +6,7 @@
 #include "liveMedia.hh"
 
 #include "RsCommon.h"
-#include "RsMediaSession.hh"
+#include "RsMediaSession.h"
 
 #include <ctype.h>
 #include <iostream>

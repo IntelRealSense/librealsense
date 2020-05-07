@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <NetdevLog.h>
+#include <RsNetDevLog.h>
 
 #include <librealsense2/rs.hpp>
 

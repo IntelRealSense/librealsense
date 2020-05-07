@@ -4,8 +4,7 @@
 #pragma once
 
 #include "RsRtspClient.h"
-#include "ip_sensor.hh"
-#include "rs_rtp_callback.hh"
+#include "RsRtpCallback.h"
 
 #include "option.h"
 #include "software-device.h"
@@ -28,12 +27,27 @@
 
 #define DEFAULT_PROFILE_COLOR_FORMAT RS2_FORMAT_RGB8 
 
-class ip_device
+class ip_sensor
+{
+public:
+    ip_sensor() : is_enabled(false) {};
+    ~ip_sensor() {};
+
+    std::shared_ptr<rs2::software_sensor> sw_sensor; // TODO: remove smart ptr here
+    std::list<long long int> active_streams_keys;
+    std::map<rs2_option, float> sensors_option;
+
+    bool is_enabled;
+
+    RsRtsp* rtsp_client; // TODO: get smart ptr from rtsp client creator
+};
+
+class rs_net_device
 {
 
 public:
-    ip_device(rs2::software_device sw_device, std::string ip_address);
-    ~ip_device();
+    rs_net_device(rs2::software_device sw_device, std::string ip_address);
+    ~rs_net_device();
 
     ip_sensor* remote_sensors[NUM_OF_SENSORS];
 

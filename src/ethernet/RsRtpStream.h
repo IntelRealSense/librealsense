@@ -3,13 +3,13 @@
 
 #pragma once
 
-#include "RsRtspClient.h"
-#include "RsSink.h"
-
-#include "software-device.h"
 #include <librealsense2/rs.hpp>
+#include <librealsense2/hpp/rs_internal.hpp>
 
-#include <NetdevLog.h>
+#include <RsCommon.h>
+#include <RsNetDevLog.h>
+
+#include <queue>
 
 const int RTP_QUEUE_MAX_SIZE = 30;
 

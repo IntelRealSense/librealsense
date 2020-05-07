@@ -3,14 +3,14 @@
 
 #pragma once
 
-#include "rs_rtp_stream.hh"
+#include "RsRtpStream.h"
 
 #include <memory>
 #include <mutex>
 #include <queue>
 #include <time.h>
 
-class rs_rtp_callback : public rtp_callback
+class rs_rtp_callback
 {
 private:
     std::shared_ptr<rs_rtp_stream> m_rtp_stream;
@@ -26,9 +26,12 @@ public:
         m_stream_uid = m_rtp_stream.get()->m_rs_stream.uid;
     }
 
-    ~rs_rtp_callback();
+    ~rs_rtp_callback() {};
 
-    void on_frame(unsigned char* buffer, ssize_t size, struct timeval presentationTime);
+    void on_frame(unsigned char* buffer, ssize_t size, struct timeval presentationTime)
+    {
+        m_rtp_stream.get()->insert_frame(new Raw_Frame((char*)buffer, size, presentationTime));
+    }
 
     int arrived_frames()
     {

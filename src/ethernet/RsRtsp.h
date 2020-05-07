@@ -3,9 +3,8 @@
 
 #pragma once
 
-#include "RsSink.h"
-#include "rtp_callback.hh"
-#include <ipDeviceCommon/RsCommon.h>
+#include "RsRtpCallback.h"
+#include <RsCommon.h>
 
 #include <librealsense2/hpp/rs_internal.hpp>
 
@@ -18,11 +17,11 @@ struct DeviceData
     std::string usbType;
 };
 
-class IRsRtsp
+class RsRtsp
 {
 public:
     virtual std::vector<rs2_video_stream> getStreams() = 0;
-    virtual int addStream(rs2_video_stream t_stream, rtp_callback* t_frameCallBack) = 0;
+    virtual int addStream(rs2_video_stream t_stream, rs_rtp_callback* t_frameCallBack) = 0;
     virtual int start() = 0;
     virtual int stop() = 0;
     virtual int close() = 0;

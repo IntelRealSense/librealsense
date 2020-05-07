@@ -3,6 +3,7 @@
 
 #include "liveMedia.hh"
 
+#include "RsSink.h"
 #include "RsRtspClient.h"
 #include <RsUsageEnvironment.h>
 #include <ipDeviceCommon/RsCommon.h>
@@ -38,13 +39,13 @@ int RsRTSPClient::getPhysicalSensorUniqueKey(rs2_stream stream_type, int sensors
     return stream_type * 10 + sensors_index;
 }
 
-IRsRtsp *RsRTSPClient::createNew(char const *t_rtspURL, char const *t_applicationName, portNumBits t_tunnelOverHTTPPortNum, int idx)
+RsRtsp *RsRTSPClient::createNew(char const *t_rtspURL, char const *t_applicationName, portNumBits t_tunnelOverHTTPPortNum, int idx)
 {
     TaskScheduler *scheduler = BasicTaskScheduler::createNew();
     UsageEnvironment *env = RSUsageEnvironment::createNew(*scheduler);
 
     RTSPClient::responseBufferSize = 100000;
-    return (IRsRtsp *)new RsRTSPClient(scheduler, env, t_rtspURL, RTSP_CLIENT_VERBOSITY_LEVEL, t_applicationName, t_tunnelOverHTTPPortNum, idx);
+    return (RsRtsp *)new RsRTSPClient(scheduler, env, t_rtspURL, RTSP_CLIENT_VERBOSITY_LEVEL, t_applicationName, t_tunnelOverHTTPPortNum, idx);
 }
 
 RsRTSPClient::RsRTSPClient(TaskScheduler *t_scheduler, UsageEnvironment *t_env, char const *t_rtspURL, int t_verbosityLevel, char const *t_applicationName, portNumBits t_tunnelOverHTTPPortNum, int idx)
@@ -97,7 +98,7 @@ std::vector<rs2_video_stream> RsRTSPClient::getStreams()
     return this->m_supportedProfiles;
 }
 
-int RsRTSPClient::addStream(rs2_video_stream t_stream, rtp_callback *t_callbackObj)
+int RsRTSPClient::addStream(rs2_video_stream t_stream, rs_rtp_callback *t_callbackObj)
 {
     long long int uniqueKey = getStreamProfileUniqueKey(t_stream);
     RsMediaSubsession *subsession = this->m_subsessionMap.find(uniqueKey)->second;
