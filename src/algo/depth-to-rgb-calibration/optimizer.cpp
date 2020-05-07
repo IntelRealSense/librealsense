@@ -556,7 +556,7 @@ void optimizer::set_depth_data(
          }
      }
 
-     // interpolation - for debug
+    
      for (auto k = 0; k < 4; k++)
      {
          for (auto i = 0; i < 2*_ir.valid_location_rc_x.size(); i++)
@@ -566,7 +566,7 @@ void optimizer::set_depth_data(
              _ir.local_region_x[k].push_back(*(_ir.local_region[k].begin() + i));
          }
      }
-
+     // interpolation 
      auto iedge_it = _ir.edges2.begin();// iEdge   
      std::vector<double>::iterator loc_reg_x[4] = { _ir.local_region_x[0].begin() ,_ir.local_region_x[1].begin() ,_ir.local_region_x[2].begin() ,_ir.local_region_x[3].begin()  };
      std::vector<double>::iterator loc_reg_y[4] = { _ir.local_region_y[0].begin() ,_ir.local_region_y[1].begin(),_ir.local_region_y[2].begin() ,_ir.local_region_y[3].begin()  };
