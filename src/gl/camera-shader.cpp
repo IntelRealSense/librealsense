@@ -243,8 +243,36 @@ namespace librealsense
                             glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo->get());
                             glReadBuffer(GL_COLOR_ATTACHMENT0);
 
+#if MOUSE_PICK_USE_PBO
+                            GLubyte* pData = NULL;
+                            GLuint pboId;
+                            glGenBuffers(1, &pboId);
+
+                            glBindBuffer(GL_PIXEL_PACK_BUFFER, pboId);
+                            glBufferData(GL_PIXEL_PACK_BUFFER, 4, 0, GL_STREAM_READ);
+
+                            glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+#endif
+
                             uint8_t rgba[4];
+#if MOUSE_PICK_USE_PBO
+                            glBindBuffer(GL_PIXEL_PACK_BUFFER, pboId);
+                            glReadPixels(x, y, 1, 1, GL_RGBA, GL_BYTE, 0);
+
+                            glBindBuffer(GL_PIXEL_PACK_BUFFER, pboId);
+                            pData = (GLubyte*) glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+
+                            if (pData)
+                            {
+                                memcpy(rgba, (void*)pData, sizeof(rgba));
+                                glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+                            }
+
+                            glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+                            glDeleteBuffers(1, &pboId);
+#else
                             glReadPixels(x, y, 1, 1, GL_RGBA, GL_BYTE, &rgba);
+#endif
 
                             if (rgba[3] > 0)
                             {

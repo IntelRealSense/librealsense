@@ -12,6 +12,8 @@ void clear_gl_errors();
 
 #define check_gl_error() _check_gl_error(__FILE__,__LINE__)
 
+#define MOUSE_PICK_USE_PBO     1                   // use pbo to improve performance, for debug only
+
 namespace rs2
 {
     enum class shader_type
