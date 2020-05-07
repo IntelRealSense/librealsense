@@ -510,6 +510,23 @@ std::vector<double> sum_gradient_depth(std::vector<double> &gradient, std::vecto
     }
     return res;
 }
+std::vector<double> find_local_values_min(std::vector<double>& local_values)
+{
+    std::vector<double> res;
+    size_t size = local_values.size() / 4;
+    auto it = local_values.begin();
+    for (auto i = 0; i < size; i++)
+    {
+        auto val1 = *it;
+        auto val2 = *(it + 1);
+        auto val3 = *(it + 2);
+        auto val4 = *(it + 3);
+        it += 4;
+        double res_val = std::min(val1, std::min(val2, std::min(val3, val4)));
+        res.push_back(res_val);
+    }
+    return res;
+}
 void optimizer::set_depth_data(
     std::vector< z_t >&& depth_data,
     std::vector< ir_t >&& ir_data,
@@ -709,9 +726,9 @@ void optimizer::set_depth_data(
      //zGradInDirection = abs(sum(zGrad.*normr(dirPerPixel), 2));
      _depth.grad_in_direction = sum_gradient_depth(_depth.gradient, _ir.direction_per_pixel);
      _depth.local_values = interpolation(_depth.frame, _ir.local_region_x, _ir.local_region_y,4, _ir.valid_location_rc_x.size(), _depth.width);
+     _depth.values_for_subedges = find_local_values_min(_depth.local_values);
      
      
-
     // old code :
     /*
     suppress_weak_edges(_depth, _ir, _params);

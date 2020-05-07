@@ -582,6 +582,7 @@ TEST_CASE("Weights calc", "[d2rgb]")
         CHECK(compare_to_bin_file< double >(depth_data.gradient, dir, scene, FILE_NAME("zGrad", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(depth_data.grad_in_direction, dir, scene, FILE_NAME("zGradInDirection", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(depth_data.local_values, dir, scene, FILE_NAME("localZvalues", 4, 105794, "double_00").c_str(), 105794, 4, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.values_for_subedges, dir, scene, FILE_NAME("zValuesForSubEdges", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
         //// ---
         //TRACE( "\nChecking scene validity:" );
 
