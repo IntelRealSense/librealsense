@@ -56,10 +56,10 @@ static const char* vertex_shader_text =
 "    if (uvs.y < 0.0) valid = 1.0;\n"
 "    if (uvs.x >= 1.0) valid = 1.0;\n"
 "    if (uvs.y >= 1.0) valid = 1.0;\n"
-"    if (abs(pos_left.z - pos.z) > minDeltaZ) valid = 1.0;\n"
-"    if (abs(pos_right.z - pos.z) > minDeltaZ) valid = 1.0;\n"
-"    if (abs(pos_top.z - pos.z) > minDeltaZ) valid = 1.0;\n"
-"    if (abs(pos_buttom.z - pos.z) > minDeltaZ) valid = 1.0;\n"
+"    if (abs(pos_left.z - pos.z) > minDeltaZ * pos.z) valid = 1.0;\n"
+"    if (abs(pos_right.z - pos.z) > minDeltaZ * pos.z) valid = 1.0;\n"
+"    if (abs(pos_top.z - pos.z) > minDeltaZ * pos.z) valid = 1.0;\n"
+"    if (abs(pos_buttom.z - pos.z) > minDeltaZ * pos.z) valid = 1.0;\n"
 "    if (abs(pos.z) < 0.01) valid = 1.0;\n"
 "    if (valid > 0.0) pos = vec4(1.0, 1.0, 1.0, 0.0);\n"
 "    else pos = vec4(pos.xyz, 1.0);\n"
@@ -219,7 +219,7 @@ namespace librealsense
             auto texture2_sampler_location = _shader->get_uniform_location("uvsSampler");
 
             _shader->begin();
-            _shader->load_uniform(_min_delta_z_location, 0.2f);
+            _shader->load_uniform(_min_delta_z_location, 0.05f);
             _shader->load_uniform(texture0_sampler_location, texture_slot());
             _shader->load_uniform(texture1_sampler_location, geometry_slot());
             _shader->load_uniform(texture2_sampler_location, uvs_slot());
@@ -417,7 +417,7 @@ namespace librealsense
             {
                 perform_gl_action([&]()
                 {
-                    scoped_timer t("pointcloud_renderer.gl");
+                    //scoped_timer t("pointcloud_renderer.gl");
 
                     GLint curr_tex;
                     glGetIntegerv(GL_TEXTURE_BINDING_2D, &curr_tex);
@@ -540,7 +540,7 @@ namespace librealsense
 
                             if (_mouse_pick_opt->query() > 0.f)
                             {
-                                scoped_timer t("mouse pick");
+                                //scoped_timer t("mouse pick");
                                 auto x = _mouse_x_opt->query() - vp[0];
                                 auto y = vp[3] + vp[1] - _mouse_y_opt->query();
 
@@ -567,7 +567,7 @@ namespace librealsense
                                 glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[0 + index]);
                                 check_gl_error();
                                 {
-                                    scoped_timer t("normal");
+                                    //scoped_timer t("normal");
                                     glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, 0);
                                     check_gl_error();
                                 }
@@ -575,7 +575,7 @@ namespace librealsense
                                 glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[0 + (1 - index)]);
                                 check_gl_error();
                                 {
-                                    scoped_timer t("normal map");
+                                    //scoped_timer t("normal map");
                                     pData = (GLubyte*) glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
                                     check_gl_error();
                                 }
@@ -607,7 +607,7 @@ namespace librealsense
                                 glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[2 + index]);
                                 check_gl_error();
                                 {
-                                    scoped_timer t("pos");
+                                    //scoped_timer t("pos");
                                     glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, 0);
                                     check_gl_error();
                                 }
@@ -615,7 +615,7 @@ namespace librealsense
                                 glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[2 + (1 - index)]);
                                 check_gl_error();
                                 {
-                                    scoped_timer t("pos map");
+                                    //scoped_timer t("pos map");
                                     pData = (GLubyte*) glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
                                 }
                                 check_gl_error();
@@ -639,7 +639,7 @@ namespace librealsense
                                 glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[4 + index]);
                                 check_gl_error();
                                 {
-                                    scoped_timer t("rgba");
+                                    //scoped_timer t("rgba");
                                     glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, 0);
                                     check_gl_error();
                                 }
@@ -647,7 +647,7 @@ namespace librealsense
                                 glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[4 + (1 - index)]);
                                 check_gl_error();
                                 {
-                                    scoped_timer t("rgba map");
+                                    //scoped_timer t("rgba map");
                                     pData = (GLubyte*) glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
                                 }
                                 check_gl_error();
