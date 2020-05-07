@@ -9,7 +9,6 @@
 
 #include "rtp_callback.hh"
 #include <compression/CompressionFactory.h>
-#include <ipDeviceCommon/MemoryPool.h>
 
 #include <librealsense2/hpp/rs_internal.hpp>
 
@@ -19,13 +18,12 @@ public:
     static RsSink* createNew(UsageEnvironment& t_env,
                              MediaSubsession& t_subsession,
                              rs2_video_stream t_stream, // identifies the kind of data that's being received
-                             MemoryPool* t_mempool,
                              char const* t_streamId = NULL); // identifies the stream itself (optional)
 
     void setCallback(rtp_callback* t_callback);
 
 private:
-    RsSink(UsageEnvironment& t_env, MediaSubsession& t_subsession, rs2_video_stream t_stream, MemoryPool* t_mempool, char const* t_streamId);
+    RsSink(UsageEnvironment& t_env, MediaSubsession& t_subsession, rs2_video_stream t_stream, char const* t_streamId);
     // called only by "createNew()"
     virtual ~RsSink();
 
@@ -50,7 +48,6 @@ private:
     rtp_callback* m_rtpCallback;
     rs2_video_stream m_stream;
     std::shared_ptr<ICompression> m_iCompress;
-    MemoryPool* m_memPool;
     std::vector<FramedSource::afterGettingFunc*> m_afterGettingFunctions;
 };
 

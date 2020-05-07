@@ -5,7 +5,7 @@
 
 #include "compression/ICompression.h"
 #include <chrono>
-#include <ipDeviceCommon/MemoryPool.h>
+#include <ipDeviceCommon/RsCommon.h>
 #include <librealsense2/hpp/rs_types.hpp>
 #include <librealsense2/rs.hpp>
 #include <unordered_map>
@@ -47,6 +47,5 @@ private:
     std::unordered_map<long long int, rs2::video_stream_profile> m_streamProfiles;
     std::unordered_map<long long int, std::shared_ptr<ICompression>> m_iCompress;
     rs2::device m_device;
-    MemoryPool* m_memPool;
     std::unordered_map<long long int, std::chrono::high_resolution_clock::time_point> m_prevSample;
 };

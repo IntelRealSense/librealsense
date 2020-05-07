@@ -40,9 +40,6 @@ public:
 private:
     bool is_device_alive;
 
-    //TODO: get smart ptr
-    MemoryPool* memory_pool;
-
     std::string  ip_address;
     unsigned int ip_port;
 

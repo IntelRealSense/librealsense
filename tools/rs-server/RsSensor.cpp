@@ -24,7 +24,6 @@ RsSensor::RsSensor(UsageEnvironment* t_env, rs2::sensor t_sensor, rs2::device t_
             m_prevSample.emplace(getStreamProfileKey(streamProfile), std::chrono::high_resolution_clock::now());
         }
     }
-    m_memPool = new MemoryPool();
 }
 
 int RsSensor::open(std::unordered_map<long long int, rs2::frame_queue>& t_streamProfilesQueues)

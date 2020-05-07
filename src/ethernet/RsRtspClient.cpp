@@ -132,7 +132,7 @@ int RsRTSPClient::addStream(rs2_video_stream t_stream, rtp_callback *t_callbackO
         throw std::runtime_error(format_error_msg(__FUNCTION__, m_lastReturnValue));
     }
 
-    subsession->sink = RsSink::createNew(this->envir(), *subsession, t_stream, m_memPool, this->url());
+    subsession->sink = RsSink::createNew(this->envir(), *subsession, t_stream, this->url());
     // perhaps use your own custom "MediaSink" subclass instead
     if (subsession->sink == NULL)
     {
@@ -303,11 +303,10 @@ void schedulerThread(RsRTSPClient *t_rtspClientInstance)
     lk.unlock();
 }
 
-void RsRTSPClient::initFunc(MemoryPool *t_pool)
+void RsRTSPClient::initFunc()
 {
     std::thread thread_scheduler(schedulerThread, this);
     thread_scheduler.detach();
-    m_memPool = t_pool;
 }
 
 void RsRTSPClient::setDeviceData(DeviceData t_data)

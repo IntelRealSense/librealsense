@@ -101,12 +101,6 @@ public:
         return frames_queue.size();
     }
 
-    static MemoryPool& get_memory_pool()
-    {
-        static MemoryPool memory_pool_instance = MemoryPool();
-        return memory_pool_instance;
-    }
-
     bool is_enabled;
 
     rs2_video_stream m_rs_stream;

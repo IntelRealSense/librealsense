@@ -9,7 +9,6 @@
 #include "IRsRtsp.h"
 #include "StreamClientState.h"
 #include "common/RsRtspCommon.h"
-#include <ipDeviceCommon/MemoryPool.h>
 #include <ipDeviceCommon/RsCommon.h>
 
 #include <librealsense2/hpp/rs_internal.hpp>
@@ -29,7 +28,7 @@ public:
     static IRsRtsp* createNew(char const* t_rtspURL, char const* t_applicationName, portNumBits t_tunnelOverHTTPPortNum, int idx);
     void describe();
     void setup(rs2_video_stream t_stream);
-    void initFunc(MemoryPool* t_pool);
+    void initFunc();
 
     static long long int getStreamProfileUniqueKey(rs2_video_stream t_profile);
     static int getPhysicalSensorUniqueKey(rs2_stream stream_type, int sensors_index);
@@ -90,7 +89,6 @@ private:
     std::mutex m_commandMtx;
     bool m_commandDone = false;
     DeviceData m_deviceData;
-    MemoryPool* m_memPool;
     float m_getParamRes;
     TaskScheduler* m_scheduler;
     UsageEnvironment* m_env;

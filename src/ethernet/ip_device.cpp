@@ -24,7 +24,7 @@ void ip_device::recover_rtsp_client(int sensor_index)
 {
     remote_sensors[sensor_index]->rtsp_client = RsRTSPClient::createNew(std::string("rtsp://" + ip_address + ":" + std::to_string(ip_port) + "/" + sensors_str[sensor_index]).c_str(), "rs_network_device", 0, sensor_index);
 
-    ((RsRTSPClient*)remote_sensors[sensor_index]->rtsp_client)->initFunc(&rs_rtp_stream::get_memory_pool());
+    ((RsRTSPClient*)remote_sensors[sensor_index]->rtsp_client)->initFunc();
     ((RsRTSPClient*)remote_sensors[sensor_index]->rtsp_client)->getStreams();
 }
 
@@ -121,7 +121,7 @@ bool ip_device::init_device_data(rs2::software_device sw_device)
         remote_sensors[sensor_id] = new ip_sensor();
 
         remote_sensors[sensor_id]->rtsp_client = RsRTSPClient::createNew(url.c_str(), "rs_network_device", 0, sensor_id);
-        ((RsRTSPClient*)remote_sensors[sensor_id]->rtsp_client)->initFunc(&rs_rtp_stream::get_memory_pool());
+        ((RsRTSPClient*)remote_sensors[sensor_id]->rtsp_client)->initFunc();
 
         rs2::software_sensor tmp_sensor = sw_device.add_sensor(sensor_name);
 
@@ -186,7 +186,6 @@ bool ip_device::init_device_data(rs2::software_device sw_device)
             auto stream_profile = remote_sensors[sensor_id]->sw_sensor->add_video_stream(st, is_default);
             device_streams.push_back(stream_profile);
             streams_collection[stream_key] = std::make_shared<rs_rtp_stream>(st, stream_profile);
-            memory_pool = &rs_rtp_stream::get_memory_pool();
         }
         DBG << "Init done adding streams for sensor ID: " << sensor_id;
     }

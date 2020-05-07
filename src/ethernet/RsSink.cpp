@@ -2,7 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "RsSink.h"
-#include <ipDeviceCommon/Statistic.h>
+#include <ipDeviceCommon/RsCommon.h>
 
 #include "stdio.h"
 #include <string>
@@ -11,14 +11,13 @@
 
 #define WRITE_FRAMES_TO_FILE 0
 
-RsSink* RsSink::createNew(UsageEnvironment& t_env, MediaSubsession& t_subsession, rs2_video_stream t_stream, MemoryPool* t_memPool, char const* t_streamId)
+RsSink* RsSink::createNew(UsageEnvironment& t_env, MediaSubsession& t_subsession, rs2_video_stream t_stream, char const* t_streamId)
 {
-    return new RsSink(t_env, t_subsession, t_stream, t_memPool, t_streamId);
+    return new RsSink(t_env, t_subsession, t_stream, t_streamId);
 }
 
-RsSink::RsSink(UsageEnvironment& t_env, MediaSubsession& t_subsession, rs2_video_stream t_stream, MemoryPool* t_memPool, char const* t_streamId)
+RsSink::RsSink(UsageEnvironment& t_env, MediaSubsession& t_subsession, rs2_video_stream t_stream, char const* t_streamId)
     : MediaSink(t_env)
-    , m_memPool(t_memPool)
     , m_subsession(t_subsession)
 {
     m_stream = t_stream;
