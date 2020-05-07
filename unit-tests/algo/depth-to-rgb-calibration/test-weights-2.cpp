@@ -559,6 +559,7 @@ TEST_CASE("Weights calc", "[d2rgb]")
         CHECK(compare_to_bin_file< double >(ir_data.direction_deg, dir, scene, FILE_NAME("directionInDeg", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
         //CHECK(compare_to_bin_file< double >(ir_data.directions, dir, scene, FILE_NAME("directionIndex", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors)); // it passed, depends on index definition
         CHECK(compare_to_bin_file< double >(ir_data.direction_per_pixel, dir, scene, FILE_NAME("dirPerPixel", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.direction_per_pixel, dir, scene, FILE_NAME("validdirPerPixel", 1, 4259, "double_00").c_str(), 4259, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(ir_data.local_region[0], dir, scene, FILE_NAME("localRegion", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(ir_data.local_region[1], dir, scene, FILE_NAME("localRegion", 2, 105794, "double_01").c_str(), 105794, 2, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(ir_data.local_region[2], dir, scene, FILE_NAME("localRegion", 2, 105794, "double_02").c_str(), 105794, 2, compare_same_vectors));
@@ -580,9 +581,13 @@ TEST_CASE("Weights calc", "[d2rgb]")
         CHECK(compare_to_bin_file< double >(depth_data.local_x, dir, scene, FILE_NAME("localZx", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(depth_data.local_y, dir, scene, FILE_NAME("localZy", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(depth_data.gradient, dir, scene, FILE_NAME("zGrad", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
-        CHECK(compare_to_bin_file< double >(depth_data.grad_in_direction, dir, scene, FILE_NAME("zGradInDirection", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
+        //CHECK(compare_to_bin_file< double >(depth_data.grad_in_direction, dir, scene, FILE_NAME("zGradInDirection", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.grad_in_direction, dir, scene, FILE_NAME("validzGradInDirection", 1, 4259, "double_00").c_str(), 4259, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(depth_data.local_values, dir, scene, FILE_NAME("localZvalues", 4, 105794, "double_00").c_str(), 105794, 4, compare_same_vectors));
-        CHECK(compare_to_bin_file< double >(depth_data.values_for_subedges, dir, scene, FILE_NAME("zValuesForSubEdges", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
+        //CHECK(compare_to_bin_file< double >(depth_data.values_for_subedges, dir, scene, FILE_NAME("zValuesForSubEdges", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.values_for_subedges, dir, scene, FILE_NAME("validzValuesForSubEdges", 1, 4259, "double_00").c_str(), 4259, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< uint8_t >(depth_data.valid_edge_pixels, dir, scene, FILE_NAME("validEdgePixels", 1, 105794, "uint8_00").c_str(), 105794, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< uint8_t >(depth_data.valid_section_map, dir, scene, FILE_NAME("validsectionMapDepth", 1, 4259, "uint8_00").c_str(), 4259, 1, compare_same_vectors));
         //// ---
         //TRACE( "\nChecking scene validity:" );
 

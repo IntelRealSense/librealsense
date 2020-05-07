@@ -510,6 +510,26 @@ std::vector<double> sum_gradient_depth(std::vector<double> &gradient, std::vecto
     }
     return res;
 }
+std::vector< byte > find_valid_depth_edges(std::vector<double> grad_in_direction, std::vector<uint8_t> is_supressed, std::vector<double>values_for_subedges, int threshold)
+{
+    std::vector< byte > res;
+    //validEdgePixels = zGradInDirection > params.gradZTh & isSupressed & zValuesForSubEdges > 0;
+    for (int i = 0; i < grad_in_direction.size(); i++)
+    {
+        bool cond1 = *(grad_in_direction.begin() + i) > threshold;
+        bool cond2 = *(is_supressed.begin() + i) == true;
+        bool cond3 = *(values_for_subedges.begin() + i) > 0;
+        if (cond1 && cond2 && cond3)
+        {
+            res.push_back(1);
+        }
+        else
+        {
+            res.push_back(0);
+        }
+    }
+    return res;
+}
 std::vector<double> find_local_values_min(std::vector<double>& local_values)
 {
     std::vector<double> res;
@@ -711,24 +731,40 @@ void optimizer::set_depth_data(
      }
      std::vector<double> local_region_x[2] = { _ir.local_region_x[1] ,_ir.local_region_x[2] };
      std::vector<double> local_region_y[2] = { _ir.local_region_y[1] ,_ir.local_region_y[2] };
-    /* for (auto k = 0; k < 4; k++)
-     {
-         for (auto i = 0; i < 2 * _ir.valid_location_rc_x.size(); i++)
-         {
-             local_region_y[k].push_back(*(_ir.local_region[k].begin() + i));
-             i++;
-             local_region_x[k].push_back(*(_ir.local_region[k].begin() + i));
-         }
-     }*/
      _depth.local_x = interpolation(_depth.gradient_x, local_region_x, local_region_y, 2, _ir.valid_location_rc_x.size(), _depth.width);
      _depth.local_y = interpolation(_depth.gradient_y, local_region_x, local_region_y, 2, _ir.valid_location_rc_x.size(), _depth.width);
      _depth.gradient = depth_mean(_depth.local_x, _depth.local_y);
-     //zGradInDirection = abs(sum(zGrad.*normr(dirPerPixel), 2));
      _depth.grad_in_direction = sum_gradient_depth(_depth.gradient, _ir.direction_per_pixel);
      _depth.local_values = interpolation(_depth.frame, _ir.local_region_x, _ir.local_region_y,4, _ir.valid_location_rc_x.size(), _depth.width);
      _depth.values_for_subedges = find_local_values_min(_depth.local_values);
      
      
+     
+     /* validEdgePixels = zGradInDirection > params.gradZTh & isSupressed & zValuesForSubEdges > 0;
+    
+    zGradInDirection = zGradInDirection(validEdgePixels);
+    edgeSubPixel = edgeSubPixel(validEdgePixels,:);
+    zValuesForSubEdges = zValuesForSubEdges(validEdgePixels);
+    dirPerPixel = dirPerPixel(validEdgePixels);
+    sectionMapDepth = sectionMapValid(validEdgePixels);
+    directionIndex = directionIndex(validEdgePixels);
+    directionIndex(directionIndex>4) = directionIndex(directionIndex>4)-4;% Like taking abosoulte value on the direction
+    */
+     _depth.valid_edge_pixels = find_valid_depth_edges(_depth.grad_in_direction, _ir.is_supressed, _depth.values_for_subedges, _params.grad_z_threshold);
+     std::vector<double> valid_grad_in_direction;
+     std::vector<double> valid_values_for_subedges;
+
+     valid_by_ir(valid_grad_in_direction, _depth.grad_in_direction, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size());
+     //edgeSubPixel = edgeSubPixel(validEdgePixels,:);
+     valid_by_ir(valid_values_for_subedges, _depth.values_for_subedges, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size());
+     valid_by_ir(_depth.direction_per_pixel, _ir.direction_per_pixel, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size()); //new
+     valid_by_ir(_depth.valid_section_map, _ir.valid_section_map, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size());
+     //valid_by_ir(valid_direction_index, _ir.directions, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size());
+     
+     _depth.grad_in_direction = valid_grad_in_direction;
+     _depth.values_for_subedges = valid_values_for_subedges;
+
+
     // old code :
     /*
     suppress_weak_edges(_depth, _ir, _params);

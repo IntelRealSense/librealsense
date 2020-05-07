@@ -84,7 +84,10 @@ namespace depth_to_rgb_calibration {
         std::vector<double> local_values;
         std::vector<double> grad_in_direction;
         std::vector<double> values_for_subedges;
-      
+        std::vector< byte > valid_edge_pixels;
+        std::vector<double> direction_per_pixel;
+        std::vector<byte> valid_section_map;
+
         // input validation
         std::vector<byte> section_map;
         bool is_edge_distributed;
