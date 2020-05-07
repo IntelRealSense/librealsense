@@ -519,18 +519,86 @@ namespace librealsense
                                 projected.x = (projected.x + 1.f) / 2.f;
                                 projected.y = (projected.y + 1.f) / 2.f;
 
+#if MOUSE_PICK_USE_PBO
+                                GLubyte* pData = NULL;
+                                GLuint pboIds[3];
+                                glGenBuffers(3, pboIds);
+
+                                glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[0]);
+                                glBufferData(GL_PIXEL_PACK_BUFFER, 12, 0, GL_STREAM_READ);
+
+                                glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[1]);
+                                glBufferData(GL_PIXEL_PACK_BUFFER, 12, 0, GL_STREAM_READ);
+
+                                glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[2]);
+                                glBufferData(GL_PIXEL_PACK_BUFFER, 4, 0, GL_STREAM_READ);
+
+                                glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+#endif
                                 glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo->get());
                                 glReadBuffer(GL_COLOR_ATTACHMENT2);
-                                float3 normal;
+
+                                float3 normal = { 0.0, 0.0, 0.0 };
+#if MOUSE_PICK_USE_PBO
+                                glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[0]);
+                                glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, 0);
+
+                                glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[0]);
+                                pData = (GLubyte*) glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+
+                                if (pData)
+                                {
+                                    normal = *(float3*)pData;
+                                    glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+                                }
+#else
                                 glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, &normal);
+#endif
+
 
                                 glReadBuffer(GL_COLOR_ATTACHMENT1);
-                                float3 pos;
+
+                                float3 pos = { 0.0, 0.0, 0.0 };
+
+#if MOUSE_PICK_USE_PBO
+                                glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[1]);
+                                glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, 0);
+
+                                glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[1]);
+                                pData = (GLubyte*) glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+
+                                if (pData)
+                                {
+                                    pos = *(float3*) pData;
+                                    glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+                                }
+#else
                                 glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, &pos);
+#endif
 
                                 glReadBuffer(GL_COLOR_ATTACHMENT0);
+
                                 uint8_t rgba[4];
+
+#if MOUSE_PICK_USE_PBO
+                                glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[2]);
+                                glReadPixels(x, y, 1, 1, GL_RGBA, GL_BYTE, 0);
+
+                                glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[2]);
+                                pData = (GLubyte*) glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+
+                                if (pData)
+                                {
+                                    memcpy(rgba, (void*)pData, sizeof(rgba));
+                                    glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+                                }
+
+                                glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+                                glDeleteBuffers(3, pboIds);
+#else
                                 glReadPixels(x, y, 1, 1, GL_RGBA, GL_BYTE, &rgba);
+
+#endif
 
                                 if (rgba[3] > 0)
                                 {
@@ -545,6 +613,7 @@ namespace librealsense
 
                                 glReadBuffer(GL_NONE);
                                 glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
 
                                 _mouse_pick_opt->set(0.f);
                             }
