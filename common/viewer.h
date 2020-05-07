@@ -227,11 +227,33 @@ namespace rs2
         rs2::gl::camera_renderer _cam_renderer;
         rs2::gl::pointcloud_renderer _pc_renderer;
 
-        double _last_no_pick_time = 0.0;
-        bool _pc_selected_down = false;
+        struct mouse_control
+        {
+            bool mouse_down = false;
+            bool click = false;
+            double selection_started = 0.0;
+            float2 down_pos { 0.f, 0.f };
+            int mouse_wheel = 0;
+        };
+        mouse_control input_ctrl;
+
+
         bool _pc_selected = false;
-        double _selection_started = 0.0;
+        double last_pick_time = 0.0;
+
+        bool recently_picked(ux_window& win) { return win.time() - last_pick_time < 0.1; }
+
         float3 _normal, _picked;
-        float3 _curr_normal { 0.f, 0.f, 1.f };
+        float3 _curr_normal { 0.f, 0.f, 0.f };
+
+        struct interest_point
+        {
+            float3 pos;
+            float3 normal;
+            matrix4 basis;
+        };
+
+        interest_point selection_point;
+        std::vector<interest_point> selected_points;
     };
 }

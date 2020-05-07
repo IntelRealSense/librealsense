@@ -1799,25 +1799,27 @@ namespace rs2
         }
     }
 
-    void viewer_model::try_select_pointcloud(ux_window& win)
-    {
-        win.link_hovered();
-        if (win.get_mouse().mouse_down && !_pc_selected_down) 
-        {
-            _pc_selected_down = true;
-            _selection_started = win.time();
-        }
-        if (_pc_selected_down && !win.get_mouse().mouse_down)
-        {
-            _pc_selected_down = false;
-            if (win.time() - _selection_started < 0.5)
-                _pc_selected = !_pc_selected;
-        }
-    }
-
     bool viewer_model::render_3d_view(const rect& viewer_rect, ux_window& win, 
         std::shared_ptr<texture_buffer> texture, rs2::points points, ImFont *font1, float3* picked_xyz)
     {
+        input_ctrl.click = false;
+        if (win.get_mouse().mouse_down && !input_ctrl.mouse_down) 
+        {
+            input_ctrl.mouse_down = true;
+            input_ctrl.down_pos = win.get_mouse().cursor;
+            input_ctrl.selection_started = win.time();
+        }
+        if (input_ctrl.mouse_down && !win.get_mouse().mouse_down)
+        {
+            input_ctrl.mouse_down = false;
+            if (win.time() - input_ctrl.selection_started < 0.5 && 
+                (win.get_mouse().cursor - input_ctrl.down_pos).length() < 100)
+            {
+                input_ctrl.click = true;
+            }
+        }
+
+
         bool picked = false;
         auto top_bar_height = 32.f;
 
@@ -2105,6 +2107,31 @@ namespace rs2
                 };
                 _normal = normal;
 
+                win.link_hovered();
+
+                auto x1x2 = target - pos;
+                auto x1x0 = _picked - pos;
+                auto t = (x1x2 * x1x0) / (x1x2 * x1x2);
+                auto p1 = pos + x1x2* t;
+
+                target = lerp(p1, target, 0.9f);
+
+                if (input_ctrl.mouse_wheel != win.get_mouse().mouse_wheel)
+                {
+                    input_ctrl.mouse_wheel = win.get_mouse().mouse_wheel;
+                    if (win.get_mouse().mouse_wheel > 0)
+                    {
+                        pos = lerp(_picked, pos, 0.9f);
+                        target = lerp(_picked, target, 0.9f);
+                    }
+                }
+
+                if (input_ctrl.click) {
+
+                    
+                    //_pc_selected = !_pc_selected;
+                }
+
                 //try_select_pointcloud(win);
             }
 
@@ -2146,86 +2173,91 @@ namespace rs2
             }
         }
 
-        glDisable(GL_DEPTH_TEST);
-        glLineWidth(2.f);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glBegin(GL_TRIANGLES);
-
-        if (isnanf(_curr_normal.x) || isnanf(_curr_normal.y) || isnanf(_curr_normal.z))
-            _curr_normal = _normal;
-
-        float size = _picked.z * 0.03f;
-
-        _curr_normal = lerp(_curr_normal, _normal, 0.1f);
-
-        auto end = _picked + _curr_normal * size;
-        _curr_normal.normalize();
-        auto axis1 = cross(vec3d{ _curr_normal.x, _curr_normal.y, _curr_normal.z }, vec3d{ 0.f, 1.f, 0.f });
-        auto faxis1 = float3 { axis1.x, axis1.y, axis1.z };
-        faxis1.normalize();
-        auto axis2 = cross(vec3d{ _curr_normal.x, _curr_normal.y, _curr_normal.z }, axis1);
-        auto faxis2 = float3 { axis2.x, axis2.y, axis2.z };
-        faxis2.normalize();
-
-        matrix4 basis = matrix4::identity();
-        basis(0, 0) = faxis1.x;
-        basis(0, 1) = faxis1.y;
-        basis(0, 2) = faxis1.z;
-
-        basis(1, 0) = faxis2.x;
-        basis(1, 1) = faxis2.y;
-        basis(1, 2) = faxis2.z;
-
-        basis(2, 0) = _curr_normal.x;
-        basis(2, 1) = _curr_normal.y;
-        basis(2, 2) = _curr_normal.z;
-
-        const int segments = 50;
-        for (int i = 0; i < segments; i++)
+        if (recently_picked(win))
         {
-            auto t1 = 2 * M_PI * ((float)i / segments);
-            auto t2 = 2 * M_PI * ((float)(i+1) / segments);
-            float4 xy1 { cosf(t1) * size, sinf(t1) * size, 0.f, 1.f };
-            xy1 = basis * xy1;
-            xy1 = float4 { _picked.x + xy1.x, _picked.y + xy1.y, _picked.z  + xy1.z, 1.f };
-            float4 xy2 { cosf(t1) * size * 0.5f, sinf(t1) * size * 0.5f, 0.f, 1.f };
-            xy2 = basis * xy2;
-            xy2 = float4 { _picked.x + xy2.x, _picked.y + xy2.y, _picked.z  + xy2.z, 1.f };
-            float4 xy3 { cosf(t2) * size * 0.5f, sinf(t2) * size * 0.5f, 0.f, 1.f };
-            xy3 = basis * xy3;
-            xy3 = float4 { _picked.x + xy3.x, _picked.y + xy3.y, _picked.z  + xy3.z, 1.f };
-            float4 xy4 { cosf(t2) * size, sinf(t2) * size, 0.f, 1.f };
-            xy4 = basis * xy4;
-            xy4 = float4 { _picked.x + xy4.x, _picked.y + xy4.y, _picked.z  + xy4.z, 1.f };
-            //glVertex3fv(&_picked.x); 
+            glDisable(GL_DEPTH_TEST);
+            glLineWidth(2.f);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glBegin(GL_TRIANGLES);
 
-            glColor4f(white.x, white.y, white.z, 0.3f);
-            glVertex3fv(&xy1.x);
-            glColor4f(white.x, white.y, white.z, 0.5f);
-            glVertex3fv(&xy2.x);
-            glVertex3fv(&xy3.x);
+            if (isnanf(_curr_normal.x) || isnanf(_curr_normal.y) || isnanf(_curr_normal.z))
+                _curr_normal = _normal;
+            if (fabs(_curr_normal.x * _curr_normal.y * _curr_normal.z) == 0.f)
+                _curr_normal = _normal;
 
-            glColor4f(white.x, white.y, white.z, 0.3f);
-            glVertex3fv(&xy1.x);
-            glVertex3fv(&xy4.x);
-            glColor4f(white.x, white.y, white.z, 0.5f);
-            glVertex3fv(&xy3.x);
+            float size = _picked.z * 0.03f;
+
+            _curr_normal = lerp(_curr_normal, _normal, 0.1f);
+
+            auto end = _picked + _curr_normal * size;
+            _curr_normal.normalize();
+            auto axis1 = cross(vec3d{ _curr_normal.x, _curr_normal.y, _curr_normal.z }, vec3d{ 0.f, 1.f, 0.f });
+            auto faxis1 = float3 { axis1.x, axis1.y, axis1.z };
+            faxis1.normalize();
+            auto axis2 = cross(vec3d{ _curr_normal.x, _curr_normal.y, _curr_normal.z }, axis1);
+            auto faxis2 = float3 { axis2.x, axis2.y, axis2.z };
+            faxis2.normalize();
+
+            matrix4 basis = matrix4::identity();
+            basis(0, 0) = faxis1.x;
+            basis(0, 1) = faxis1.y;
+            basis(0, 2) = faxis1.z;
+
+            basis(1, 0) = faxis2.x;
+            basis(1, 1) = faxis2.y;
+            basis(1, 2) = faxis2.z;
+
+            basis(2, 0) = _curr_normal.x;
+            basis(2, 1) = _curr_normal.y;
+            basis(2, 2) = _curr_normal.z;
+
+            const int segments = 50;
+            for (int i = 0; i < segments; i++)
+            {
+                auto t1 = 2 * M_PI * ((float)i / segments);
+                auto t2 = 2 * M_PI * ((float)(i+1) / segments);
+                float4 xy1 { cosf(t1) * size, sinf(t1) * size, 0.f, 1.f };
+                xy1 = basis * xy1;
+                xy1 = float4 { _picked.x + xy1.x, _picked.y + xy1.y, _picked.z  + xy1.z, 1.f };
+                float4 xy2 { cosf(t1) * size * 0.5f, sinf(t1) * size * 0.5f, 0.f, 1.f };
+                xy2 = basis * xy2;
+                xy2 = float4 { _picked.x + xy2.x, _picked.y + xy2.y, _picked.z  + xy2.z, 1.f };
+                float4 xy3 { cosf(t2) * size * 0.5f, sinf(t2) * size * 0.5f, 0.f, 1.f };
+                xy3 = basis * xy3;
+                xy3 = float4 { _picked.x + xy3.x, _picked.y + xy3.y, _picked.z  + xy3.z, 1.f };
+                float4 xy4 { cosf(t2) * size, sinf(t2) * size, 0.f, 1.f };
+                xy4 = basis * xy4;
+                xy4 = float4 { _picked.x + xy4.x, _picked.y + xy4.y, _picked.z  + xy4.z, 1.f };
+                //glVertex3fv(&_picked.x); 
+
+                glColor4f(white.x, white.y, white.z, 0.3f);
+                glVertex3fv(&xy1.x);
+                glColor4f(white.x, white.y, white.z, 0.5f);
+                glVertex3fv(&xy2.x);
+                glVertex3fv(&xy3.x);
+
+                glColor4f(white.x, white.y, white.z, 0.3f);
+                glVertex3fv(&xy1.x);
+                glVertex3fv(&xy4.x);
+                glColor4f(white.x, white.y, white.z, 0.5f);
+                glVertex3fv(&xy3.x);
+            }
+
+            //glVertex3fv(&_picked.x); glVertex3fv(&end.x);
+            glEnd();
+            glDisable(GL_BLEND);
+            glEnable(GL_DEPTH_TEST);
+
+            glPopMatrix();
+
+            glPopMatrix();
+            glMatrixMode(GL_PROJECTION);
+            glPopMatrix();
+            glPopAttrib();
+
+            glDisable(GL_DEPTH_TEST);
         }
-
-        //glVertex3fv(&_picked.x); glVertex3fv(&end.x);
-        glEnd();
-        glDisable(GL_BLEND);
-        glEnable(GL_DEPTH_TEST);
-
-        glPopMatrix();
-
-        glPopMatrix();
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-        glPopAttrib();
-
-        glDisable(GL_DEPTH_TEST);
 
         if (ImGui::IsKeyPressed('R') || ImGui::IsKeyPressed('r'))
         {
@@ -3164,12 +3196,12 @@ namespace rs2
 
             float3 picked_xyz;
             auto picked = render_3d_view(new_rect, window, texture, points, window.get_font(), &picked_xyz);
-            if (!picked) _last_no_pick_time = window.time();
+            if (picked) last_pick_time = window.time();
 
-            if (window.time() - _last_no_pick_time > 0.5)
+            if (recently_picked(window))
             {
                 std::string tt = to_string() << std::fixed << std::setprecision(2) 
-                    << picked_xyz.x << ", " << picked_xyz.y << ", " << picked_xyz.z << " meters";
+                    << _picked.x << ", " << _picked.y << ", " << _picked.z << " meters";
                 ImGui::SetTooltip(tt.c_str());
             }
         }
