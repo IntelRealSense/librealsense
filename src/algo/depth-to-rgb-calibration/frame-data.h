@@ -53,6 +53,7 @@ namespace depth_to_rgb_calibration {
         std::vector<double> local_region_y[4]; // for debug
         std::vector<double> local_edges;
         std::vector<uint8_t> is_supressed;
+        std::vector<double> fraq_step;
 
     };
 
@@ -77,6 +78,10 @@ namespace depth_to_rgb_calibration {
 
         //smearing
         std::vector< byte > section_map_depth;
+        std::vector<double> local_x;
+        std::vector<double> local_y;
+        std::vector<double> gradient;
+      
         // input validation
         std::vector<byte> section_map;
         bool is_edge_distributed;

@@ -576,7 +576,10 @@ TEST_CASE("Weights calc", "[d2rgb]")
 
         CHECK(compare_to_bin_file< double >(ir_data.local_edges, dir, scene, FILE_NAME("localEdges", 4, 105794, "double_00").c_str(), 105794, 4, compare_same_vectors));
         CHECK(compare_to_bin_file< uint8_t >(ir_data.is_supressed, dir, scene, FILE_NAME("isSupressed", 1, 105794, "uint8_00").c_str(), 105794, 1, compare_same_vectors));
-
+        //CHECK(compare_to_bin_file< double >(ir_data.fraq_step, dir, scene, FILE_NAME("fraqStep", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.local_x, dir, scene, FILE_NAME("localZx", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.local_y, dir, scene, FILE_NAME("localZy", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.gradient, dir, scene, FILE_NAME("zGrad", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
         //// ---
         //TRACE( "\nChecking scene validity:" );
 

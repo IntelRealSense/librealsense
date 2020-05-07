@@ -436,6 +436,64 @@ void grid_xy(
     }
 }
 
+std::vector<double> interpolation(std::vector<double> &grid_points, std::vector<double> x[], std::vector<double> y[], int dim, int valid_size, int valid_width)
+{
+    // interpolation 
+
+    std::vector<double> local_interp;
+    auto iedge_it = grid_points.begin();// iEdge   
+    std::vector<double>::iterator loc_reg_x[4];
+    std::vector<double>::iterator loc_reg_y[4];
+    for (auto i=0;i<dim;i++)
+    {
+        loc_reg_x[i] = x[i].begin();
+        loc_reg_y[i] = y[i].begin();
+    }
+    for (auto i = 0; i < valid_size; i++)
+    {
+        for (auto k = 0; k < dim; k++)
+        {
+            auto idx = *(loc_reg_x[k] + i) - 1;
+            auto idy = *(loc_reg_y[k] + i) - 1;
+            //assert(_ir.width * idy + idx <= _ir.width * _ir.height);
+            auto val = *(iedge_it + valid_width * idy + idx);// find value in iEdge
+            local_interp.push_back(val);
+        }
+    }
+    return local_interp;
+}
+std::vector<uint8_t> is_suppressed(std::vector<double>& local_edges, int valid_size)
+{
+    std::vector<uint8_t> is_supressed;
+    auto loc_edg_it = local_edges.begin();
+    for (auto i = 0; i < valid_size; i++)
+    {
+        //isSupressed = localEdges(:,3) >= localEdges(:,2) & localEdges(:,3) >= localEdges(:,4);
+        auto vec2 = *(loc_edg_it + 1);
+        auto vec3 = *(loc_edg_it + 2);
+        auto vec4 = *(loc_edg_it + 3);
+        loc_edg_it += 4;
+        bool res = (vec3 >= vec2) && (vec3 >= vec4);
+        is_supressed.push_back(res);
+    }
+    return is_supressed;
+}
+std::vector<double> depth_mean(std::vector<double>& local_x, std::vector<double>& local_y)
+{
+    std::vector<double> res;
+    size_t size = local_x.size() / 2;
+    auto itx = local_x.begin();
+    auto ity = local_y.begin();
+    for (auto i = 0; i < size; i++, ity += 2, itx += 2)
+    {
+        double valy = (*ity + *(ity + 1)) / 2;
+        double valx = (*itx + *(itx + 1)) / 2;
+        res.push_back(valy);
+        res.push_back(valx);
+    }
+
+    return res;
+}
 void optimizer::set_depth_data(
     std::vector< z_t >&& depth_data,
     std::vector< ir_t >&& ir_data,
@@ -555,8 +613,6 @@ void optimizer::set_depth_data(
              _ir.local_region[k].push_back(val);
          }
      }
-
-    
      for (auto k = 0; k < 4; k++)
      {
          for (auto i = 0; i < 2*_ir.valid_location_rc_x.size(); i++)
@@ -567,33 +623,74 @@ void optimizer::set_depth_data(
          }
      }
      // interpolation 
-     auto iedge_it = _ir.edges2.begin();// iEdge   
-     std::vector<double>::iterator loc_reg_x[4] = { _ir.local_region_x[0].begin() ,_ir.local_region_x[1].begin() ,_ir.local_region_x[2].begin() ,_ir.local_region_x[3].begin()  };
-     std::vector<double>::iterator loc_reg_y[4] = { _ir.local_region_y[0].begin() ,_ir.local_region_y[1].begin(),_ir.local_region_y[2].begin() ,_ir.local_region_y[3].begin()  };
-     
-     for (auto i = 0; i < _ir.valid_location_rc_x.size(); i++)
-     {
-         for (auto k = 0; k < 4; k++)
-         {
-             auto idx = *(loc_reg_x[k]+i) - 1;
-             auto idy = *(loc_reg_y[k]+i) - 1;
-             assert(_ir.width * idy + idx <= _ir.width * _ir.height);
-             auto val = *(iedge_it + _ir.width * idy + idx);// find value in iEdge
-             _ir.local_edges.push_back(val);
-         }
-     }
+     _ir.local_edges = interpolation(_ir.edges2, _ir.local_region_x, _ir.local_region_y, 4, _ir.valid_location_rc_x.size(), _ir.width);
+     //
+     //auto iedge_it = _ir.edges2.begin();// iEdge   
+     //std::vector<double>::iterator loc_reg_x[4] = { _ir.local_region_x[0].begin() ,_ir.local_region_x[1].begin() ,_ir.local_region_x[2].begin() ,_ir.local_region_x[3].begin()  };
+     //std::vector<double>::iterator loc_reg_y[4] = { _ir.local_region_y[0].begin() ,_ir.local_region_y[1].begin(),_ir.local_region_y[2].begin() ,_ir.local_region_y[3].begin()  };
+     //
+     //for (auto i = 0; i < _ir.valid_location_rc_x.size(); i++)
+     //{
+     //    for (auto k = 0; k < 4; k++)
+     //    {
+     //        auto idx = *(loc_reg_x[k]+i) - 1;
+     //        auto idy = *(loc_reg_y[k]+i) - 1;
+     //        assert(_ir.width * idy + idx <= _ir.width * _ir.height);
+     //        auto val = *(iedge_it + _ir.width * idy + idx);// find value in iEdge
+     //        _ir.local_edges.push_back(val);
+     //    }
+     //}
 
+     // is suppressed
+     _ir.is_supressed = is_suppressed(_ir.local_edges, _ir.valid_location_rc_x.size());
+
+
+     /*fraqStep = (-0.5*(localEdges(:,4)-localEdges(:,2))./(localEdges(:,4)+localEdges(:,2)-2*localEdges(:,3))); % The step we need to move to reach the subpixel gradient i nthe gradient direction
+        fraqStep((localEdges(:,4)+localEdges(:,2)-2*localEdges(:,3))==0) = 0;
+
+        locRCsub = locRC + fraqStep.*dirPerPixel;
+
+        % Calculate the Z gradient for thresholding
+        localZx = squeeze(interp2(Zx,localRegion(:,2,2:3),localRegion(:,1,2:3)));
+        localZy = squeeze(interp2(Zy,localRegion(:,2,2:3),localRegion(:,1,2:3)));
+        zGrad = [mean(localZy,2) ,mean(localZx,2)];
+        zGradInDirection = abs(sum(zGrad.*normr(dirPerPixel),2));
+        % Take the z value of the closest part of the edge
+        localZvalues = squeeze(interp2(frame.z,localRegion(:,2,:),localRegion(:,1,:)));
+        
+        zValuesForSubEdges = min(localZvalues,[],2);
+        edgeSubPixel = fliplr(locRCsub);% From Row-Col to XY*/
+#define INF -8.90102e+14
      auto loc_edg_it = _ir.local_edges.begin();
      for (auto i = 0; i < _ir.valid_location_rc_x.size(); i++)
      {
-         //isSupressed = localEdges(:,3) >= localEdges(:,2) & localEdges(:,3) >= localEdges(:,4);
-         auto vec2 = *(loc_edg_it+1);
-         auto vec3 = *(loc_edg_it+2);
-         auto vec4 = *(loc_edg_it+3);
+         auto vec2 = *(loc_edg_it + 1);
+         auto vec3 = *(loc_edg_it + 2);
+         auto vec4 = *(loc_edg_it + 3);
          loc_edg_it += 4;
-         bool res = (vec3 >= vec2) && (vec3 >= vec4);
-         _ir.is_supressed.push_back(res);
+         double res = (-0.5 * (vec4 - vec2) / (vec4 + vec2 - 2 * vec3));
+         /*if (vec4 + vec2 - 2 * vec3 == INF)
+         {
+             res = 0;
+         }*/
+         _ir.fraq_step.push_back(res);
+       
      }
+     std::vector<double> local_region_x[2] = { _ir.local_region_x[1] ,_ir.local_region_x[2] };
+     std::vector<double> local_region_y[2] = { _ir.local_region_y[1] ,_ir.local_region_y[2] };
+    /* for (auto k = 0; k < 4; k++)
+     {
+         for (auto i = 0; i < 2 * _ir.valid_location_rc_x.size(); i++)
+         {
+             local_region_y[k].push_back(*(_ir.local_region[k].begin() + i));
+             i++;
+             local_region_x[k].push_back(*(_ir.local_region[k].begin() + i));
+         }
+     }*/
+     _depth.local_x = interpolation(_depth.gradient_x, local_region_x, local_region_y, 2, _ir.valid_location_rc_x.size(), _depth.width);
+     _depth.local_y = interpolation(_depth.gradient_y, local_region_x, local_region_y, 2, _ir.valid_location_rc_x.size(), _depth.width);
+     _depth.gradient = depth_mean(_depth.local_x, _depth.local_y);
+     
     // old code :
     /*
     suppress_weak_edges(_depth, _ir, _params);
