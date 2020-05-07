@@ -541,6 +541,7 @@ TEST_CASE("Weights calc", "[d2rgb]")
         //CHECK(compare_to_bin_file< double >(z_data.closest, dir, scene, FILE_NAME("Z_valuesForSubEdges", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
         //CHECK(compare_to_bin_file< algo::double3 >(z_data.vertices, dir, scene, FILE_NAME("vertices", 3, md.num_of_edges, "double_00").c_str(), md.num_of_edges, 1, compare_same_vectors));
 
+#if 0
         // smearing
         CHECK(compare_to_bin_file< double >(depth_data.gradient_x, dir, scene, FILE_NAME("Zx", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(depth_data.gradient_y, dir, scene, FILE_NAME("Zy", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
@@ -576,54 +577,56 @@ TEST_CASE("Weights calc", "[d2rgb]")
 
         CHECK(compare_to_bin_file< double >(ir_data.local_edges, dir, scene, FILE_NAME("localEdges", 4, 105794, "double_00").c_str(), 105794, 4, compare_same_vectors));
         CHECK(compare_to_bin_file< uint8_t >(ir_data.is_supressed, dir, scene, FILE_NAME("isSupressed", 1, 105794, "uint8_00").c_str(), 105794, 1, compare_same_vectors));
+#endif
 
-        //// ---
-        //TRACE( "\nChecking scene validity:" );
+        // ---
+        TRACE( "\nChecking scene validity:" );
 
-        //CHECK(!cal.is_scene_valid());
+        CHECK(!cal.is_scene_valid());
 
-        ////// edge distribution
-        //CHECK( compare_to_bin_file< double >( z_data.sum_weights_per_section, dir, scene, FILE_NAME("depthEdgeWeightDistributionPerSectionDepth", 1, 4,"double_00").c_str(), 4, 1, compare_same_vectors ) );
-        //
-        ////CHECK( compare_to_bin_file< byte >( z_data.section_map, dir, scene, FILE_NAME("sectionMapDepth_trans", 1, md.num_of_edges, "uint8_00").c_str(), md.num_of_edges, 1, compare_same_vectors ) );
-        ////CHECK( compare_to_bin_file< byte >( yuy_data.section_map, dir, scene, FILE_NAME("sectionMapRgb_trans", 1, rgb_w*rgb_h, "uint8_00").c_str(), rgb_w*rgb_h, 1, compare_same_vectors ) );
-        //CHECK(compare_to_bin_file< double >(yuy_data.sum_weights_per_section, dir, scene, FILE_NAME("edgeWeightDistributionPerSectionRgb", 1, 4, "double_00").c_str(), 4, 1, compare_same_vectors));
+        // edge distribution
+        CHECK( compare_to_bin_file< double >( z_data.sum_weights_per_section, dir, scene, FILE_NAME("depthEdgeWeightDistributionPerSectionDepth", 1, 4,"double_00").c_str(), 4, 1, compare_same_vectors ) );
+        
+        CHECK( compare_to_bin_file< byte >( z_data.section_map, dir, scene, FILE_NAME("sectionMapDepth_trans", 1, md.num_of_edges, "uint8_00").c_str(), md.num_of_edges, 1, compare_same_vectors ) );
+        CHECK( compare_to_bin_file< byte >( yuy_data.section_map, dir, scene, FILE_NAME("sectionMapRgb_trans", 1, rgb_w*rgb_h, "uint8_00").c_str(), rgb_w*rgb_h, 1, compare_same_vectors ) );
+        CHECK( compare_to_bin_file< double >(yuy_data.sum_weights_per_section, dir, scene, FILE_NAME("edgeWeightDistributionPerSectionRgb", 1, 4, "double_00").c_str(), 4, 1, compare_same_vectors));
 
-        //// gradient balanced
+        // gradient balanced
+        // TODO NOHA
         //CHECK(compare_to_bin_file< double >(z_data.sum_weights_per_direction, dir, scene, FILE_NAME("edgeWeightsPerDir", 1, 4, "double_00").c_str(), 4, 1, compare_same_vectors));
 
-        //// movment check
-        //// 1. dilation
-        //CHECK( compare_to_bin_file< uint8_t >( yuy_data.prev_logic_edges, dir, scene, FILE_NAME("logicEdges", rgb_w, rgb_h, "uint8_00").c_str(), rgb_h, rgb_w, compare_same_vectors ) );
-        //CHECK( compare_to_bin_file< double >( yuy_data.dilated_image, dir, scene, FILE_NAME("dilatedIm", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors ) );
+        // movment check
+        // 1. dilation
+        CHECK( compare_to_bin_file< uint8_t >( yuy_data.prev_logic_edges, dir, scene, FILE_NAME("logicEdges", rgb_w, rgb_h, "uint8_00").c_str(), rgb_h, rgb_w, compare_same_vectors ) );
+        CHECK( compare_to_bin_file< double >( yuy_data.dilated_image, dir, scene, FILE_NAME("dilatedIm", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors ) );
 
-        //// 2. gausssian
-        //CHECK( compare_to_bin_file< double >( yuy_data.yuy_diff, dir, scene, FILE_NAME("diffIm_01", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors ) );
-        //CHECK( compare_to_bin_file< double >( yuy_data.gaussian_filtered_image, dir, scene, FILE_NAME("diffIm", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors ) );
+        // 2. gausssian
+        CHECK( compare_to_bin_file< double >( yuy_data.yuy_diff, dir, scene, FILE_NAME("diffIm_01", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors ) );
+        CHECK( compare_to_bin_file< double >( yuy_data.gaussian_filtered_image, dir, scene, FILE_NAME("diffIm", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors ) );
 
-        //// 3. movemont
-        //CHECK( compare_to_bin_file< double >( yuy_data.gaussian_diff_masked, dir, scene, FILE_NAME("IDiffMasked", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors ) );
-        //CHECK( compare_to_bin_file< uint8_t >( yuy_data.move_suspect, dir, scene, FILE_NAME("ixMoveSuspect", rgb_w, rgb_h, "uint8_00").c_str(), rgb_h, rgb_w, compare_same_vectors ) );
+        // 3. movemont
+        CHECK( compare_to_bin_file< double >( yuy_data.gaussian_diff_masked, dir, scene, FILE_NAME("IDiffMasked", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors ) );
+        CHECK( compare_to_bin_file< uint8_t >( yuy_data.move_suspect, dir, scene, FILE_NAME("ixMoveSuspect", rgb_w, rgb_h, "uint8_00").c_str(), rgb_h, rgb_w, compare_same_vectors ) );
 
 
-        ////--
-        //TRACE( "\nOptimizing:" );
-        //auto cb = [&]( algo::iteration_data_collect const & data )
-        //{
-        //    auto file = ITERATION_FILE_NAME("calib_iteration", data.iteration + 1, num_of_calib_elements, 1,"double_00");
-        //    CHECK(compare_calib_to_bin_file(data.params.curr_calib, data.params.cost, dir, scene, file.c_str()));
+        //--
+        TRACE( "\nOptimizing:" );
+        auto cb = [&]( algo::iteration_data_collect const & data )
+        {
+            auto file = ITERATION_FILE_NAME("calib_iteration", data.iteration + 1, num_of_calib_elements, 1,"double_00");
+            CHECK(compare_calib_to_bin_file(data.params.curr_calib, data.params.cost, dir, scene, file.c_str()));
 
-        //    file = ITERATION_FILE_NAME("uvmap_iteration", data.iteration + 1, 2, md.num_of_edges,"double_00");
-        //    CHECK(compare_to_bin_file< algo::double2 >(data.uvmap, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors));
+            file = ITERATION_FILE_NAME("uvmap_iteration", data.iteration + 1, 2, md.num_of_edges,"double_00");
+            CHECK(compare_to_bin_file< algo::double2 >(data.uvmap, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors));
 
-        //    file = ITERATION_FILE_NAME("DVals_iteration", data.iteration + 1, 1, md.num_of_edges, "double_00");
-        //    CHECK(compare_to_bin_file< double >(data.d_vals, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
+            file = ITERATION_FILE_NAME("DVals_iteration", data.iteration + 1, 1, md.num_of_edges, "double_00");
+            CHECK(compare_to_bin_file< double >(data.d_vals, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
 
-        //    file = ITERATION_FILE_NAME("DxVals_iteration", data.iteration + 1, 1, md.num_of_edges, "double_00");
-        //    CHECK(compare_to_bin_file< double >(data.d_vals_x, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
+            file = ITERATION_FILE_NAME("DxVals_iteration", data.iteration + 1, 1, md.num_of_edges, "double_00");
+            CHECK(compare_to_bin_file< double >(data.d_vals_x, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
 
-        //    file = ITERATION_FILE_NAME("DyVals_iteration", data.iteration + 1, 1, md.num_of_edges,"double_00");
-        //    CHECK(compare_to_bin_file< double >(data.d_vals_y, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
+            file = ITERATION_FILE_NAME("DyVals_iteration", data.iteration + 1, 1, md.num_of_edges,"double_00");
+            CHECK(compare_to_bin_file< double >(data.d_vals_y, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
 
            /* file = ITERATION_FILE_NAME("xCoeff_P", data.iteration + 1, sizeof(algo::p_matrix) / sizeof(double), md.num_of_edges, "double_00");
             CHECK(compare_to_bin_file< algo::p_matrix>(data.coeffs_p.x_coeffs, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));*/
@@ -637,23 +640,24 @@ TEST_CASE("Weights calc", "[d2rgb]")
             file = ITERATION_FILE_NAME("xCoeff_R", data.iteration + 1, sizeof(algo::rotation_in_angles) / sizeof(double), md.num_of_edges, "double_00");
             CHECK(compare_to_bin_file< algo::rotation_in_angles>(data.coeffs_r.x_coeffs, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));*/
 
-        //    file = ITERATION_FILE_NAME("grad_iteration", data.iteration + 1, num_of_calib_elements, 1, "double_00");
-        //    CHECK(compare_calib_to_bin_file(data.params.calib_gradients, 0, dir, scene, file.c_str(), true));
-        //};
+            // TODO Avishag
+            //file = ITERATION_FILE_NAME("grad_iteration", data.iteration + 1, num_of_calib_elements, 1, "double_00");
+            //CHECK(compare_calib_to_bin_file(data.params.calib_gradients, 0, dir, scene, file.c_str(), true));
+        };
 
-        //REQUIRE( cal.optimize( cb ) == md.iteration_num);  // n_iterations
+        REQUIRE( cal.optimize( cb ) == md.iteration_num);  // n_iterations
 
-        //auto new_calibration = cal.get_calibration();
-        //auto cost = cal.get_cost();
+        auto new_calibration = cal.get_calibration();
+        auto cost = cal.get_cost();
 
-        //CHECK(compare_calib_to_bin_file(new_calibration, cost, dir, scene, FILE_NAME("new_calib", num_of_calib_elements, 1, "double_00").c_str()));
+        CHECK(compare_calib_to_bin_file(new_calibration, cost, dir, scene, FILE_NAME("new_calib", num_of_calib_elements, 1, "double_00").c_str()));
 
 
-        ////--
-        //TRACE( "\nChecking output validity:" );
-        //CHECK( ! cal.is_valid_results() );
+        //--
+        TRACE( "\nChecking output validity:" );
+        CHECK( ! cal.is_valid_results() );
 
-        ////pixel movement is OK, but some sections have negative cost
+        //pixel movement is OK, but some sections have negative cost
         //CHECK( cal.calc_correction_in_pixels() == approx(md.correction_in_pixels));
 
         //CHECK( compare_to_bin_file< double >( z_data.cost_diff_per_section, dir, scene, FILE_NAME("costDiffPerSection", 4, 1, "double_00").c_str(), 1, 4, compare_same_vectors ) );
