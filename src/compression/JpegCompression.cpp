@@ -6,7 +6,6 @@
 #include <cstdint>
 #include <cstring>
 #include <iostream>
-#include <ipDeviceCommon/Statistic.h>
 #include <stdio.h>
 #include <time.h>
 

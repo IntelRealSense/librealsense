@@ -5,7 +5,6 @@
 #include <cstdint>
 #include <cstring>
 #include <iostream>
-#include <ipDeviceCommon/Statistic.h>
 
 RvlCompression::RvlCompression(int t_width, int t_height, rs2_format t_format, int t_bpp)
     :ICompression(t_width, t_height, t_format, t_bpp)

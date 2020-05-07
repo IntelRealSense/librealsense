@@ -2,7 +2,6 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "ip_device.hh"
-#include <ipDeviceCommon/Statistic.h>
 
 #include "api.h"
 #include <librealsense2-net/rs_net.h>
