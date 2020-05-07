@@ -2096,7 +2096,7 @@ namespace rs2
                 *picked_xyz = p;
                 _picked = p;
 
-                target = _picked;
+                //target = _picked;
 
                 float3 normal {
                     _pc_renderer.get_option(gl::pointcloud_renderer::OPTION_NORMAL_X),
