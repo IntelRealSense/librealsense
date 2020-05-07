@@ -691,6 +691,13 @@ namespace librealsense
                     "Set the power level of the LED, with 0 meaning LED off"));
         }
 
+        if ((pid == RS405_PID || pid == RS455_PID) && _fw_version >= firmware_version("5.12.4.0"))
+        {
+            depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
+                std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_THERMAL_COMPENSATION,
+                    "Toggle Depth Sensor Thermal Compensation"));
+        }
+
         if (_fw_version >= firmware_version("5.6.3.0"))
         {
             _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);

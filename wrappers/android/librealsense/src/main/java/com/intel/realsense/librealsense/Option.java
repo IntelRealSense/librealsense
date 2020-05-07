@@ -72,7 +72,8 @@ public enum Option {
     INVALIDATION_BYPASS(68),
     AMBIENT_LIGHT(69),
     SENSOR_MODE(70),
-    EMITTER_ALWAYS_ON(71);
+    EMITTER_ALWAYS_ON(71),
+    THERMAL_COMPENSATION(72);
 
     private final int mValue;
 

@@ -4932,6 +4932,7 @@ const option = {
    * @type {Integer}
    */
   OPTION_EMITTER_ALWAYS_ON: RS2.RS2_OPTION_EMITTER_ALWAYS_ON,
+  OPTION_THERMAL_COMPENSATION: RS2.RS2_OPTION_THERMAL_COMPENSATION,
   /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
@@ -5078,6 +5079,8 @@ const option = {
         return this.option_freefall_detection_enabled;
       case this.OPTION_EMITTER_ALWAYS_ON:
         return this.option_emitter_always_on;
+      case this.OPTION_THERMAL_COMPENSATION:
+        return this.option_thermal_compensation;
       default:
         throw new TypeError(
             'option.optionToString(option) expects a valid value as the 1st argument');
