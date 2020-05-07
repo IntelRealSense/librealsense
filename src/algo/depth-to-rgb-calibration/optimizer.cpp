@@ -494,6 +494,22 @@ std::vector<double> depth_mean(std::vector<double>& local_x, std::vector<double>
 
     return res;
 }
+std::vector<double> sum_gradient_depth(std::vector<double> &gradient, std::vector<double> &direction_per_pixel)
+{
+    std::vector<double> res;
+    size_t size = direction_per_pixel.size() / 2;
+    auto it_dir = direction_per_pixel.begin();
+    auto it_grad = gradient.begin();
+    for (auto i = 0; i < size; i++, it_dir+=2, it_grad+=2)
+    {
+        // normalize : res = val/sqrt(row_sum)
+        auto rorm_dir1 = *it_dir / sqrt(abs(*it_dir) + abs(*(it_dir + 1)));
+        auto rorm_dir2 = *(it_dir+1) / sqrt(abs(*it_dir) + abs(*(it_dir + 1)));
+        auto val = abs(*it_grad * rorm_dir1 + *(it_grad + 1) * rorm_dir2);
+        res.push_back(val);
+    }
+    return res;
+}
 void optimizer::set_depth_data(
     std::vector< z_t >&& depth_data,
     std::vector< ir_t >&& ir_data,
@@ -691,8 +707,11 @@ void optimizer::set_depth_data(
      _depth.local_y = interpolation(_depth.gradient_y, local_region_x, local_region_y, 2, _ir.valid_location_rc_x.size(), _depth.width);
      _depth.gradient = depth_mean(_depth.local_x, _depth.local_y);
      //zGradInDirection = abs(sum(zGrad.*normr(dirPerPixel), 2));
+     _depth.grad_in_direction = sum_gradient_depth(_depth.gradient, _ir.direction_per_pixel);
      _depth.local_values = interpolation(_depth.frame, _ir.local_region_x, _ir.local_region_y,4, _ir.valid_location_rc_x.size(), _depth.width);
-     calculate_weights(_depth);
+     
+     
+
     // old code :
     /*
     suppress_weak_edges(_depth, _ir, _params);
