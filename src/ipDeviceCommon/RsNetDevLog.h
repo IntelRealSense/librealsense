@@ -3,9 +3,11 @@
 
 #pragma once
 
-#include <easylogging++.h>
+// #include <easylogging++.h>
 
-#define DBG CLOG(DEBUG, "librealsense")
-#define ERR CLOG(ERROR, "librealsense")
-#define WRN CLOG(WARNING, "librealsense")
-#define INF CLOG(INFO, "librealsense")
+#include <iostream>
+
+#define DBG std::cout // CLOG(DEBUG, "librealsense")
+#define ERR std::cout // CLOG(ERROR, "librealsense")
+#define WRN std::cout // CLOG(WARNING, "librealsense")
+#define INF std::cout // CLOG(INFO, "librealsense")

@@ -6,10 +6,11 @@
 #include "BasicUsageEnvironment.hh"
 #include "liveMedia.hh"
 
+#include <librealsense2/rs.hpp>
+#include <librealsense2/hpp/rs_internal.hpp>
+
 #include "RsRtpCallback.h"
 #include <compression/CompressionFactory.h>
-
-#include <librealsense2/hpp/rs_internal.hpp>
 
 class RsSink : public MediaSink
 {

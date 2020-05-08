@@ -35,7 +35,7 @@ struct server
     {
         std::cout << "Rs-server is running\n";
 
-        START_EASYLOGGINGPP(argc, argv);
+        // START_EASYLOGGINGPP(argc, argv);
 
         CmdLine cmd("LRS Network Extentions Server", ' ', RS2_API_VERSION_STR);
 

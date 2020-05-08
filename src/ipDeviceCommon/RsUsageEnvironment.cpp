@@ -1,6 +1,6 @@
 // License:    Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
-
+#if 0
 #include "RsUsageEnvironment.h"
 
 #ifdef BUILD_EASYLOGGINGPP
@@ -108,3 +108,4 @@ UsageEnvironment& RSUsageEnvironment::operator<<(void* p)
     check();
     return *this;
 }
+#endif

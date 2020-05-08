@@ -10,6 +10,8 @@
 #include <RsNetDevLog.h>
 
 #include <queue>
+#include <map>
+#include <mutex>
 
 const int RTP_QUEUE_MAX_SIZE = 30;
 

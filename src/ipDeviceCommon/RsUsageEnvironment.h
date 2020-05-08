@@ -4,13 +4,14 @@
 #pragma once
 
 #include <BasicUsageEnvironment.hh>
-#include <easylogging++.h>
+// #include <easylogging++.h>
 
 #define RS_MAX_LOG_MSG_SIZE 1024
 #define RS_MAX_LOG_MSG_THLD 128
 
 class RSUsageEnvironment : public BasicUsageEnvironment
 {
+#if 0
 public:
     static RSUsageEnvironment* createNew(TaskScheduler& taskScheduler);
 
@@ -34,4 +35,5 @@ private:
 
     el::Logger* netdev_log;
     el::Logger* lrs_log;
+#endif
 };

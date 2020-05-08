@@ -25,10 +25,10 @@ file(GLOB REALSENSE_NET_CPP
 )
 list(REMOVE_ITEM REALSENSE_NET_CPP "${LIVE}/liveMedia/ADTSAudioStreamDiscreteFramer.cpp")
 
-if (${BUILD_SHARED_LIBS} AND ${BUILD_EASYLOGGINGPP})
-    list(APPEND REALSENSE_NET_CPP ../../third-party/easyloggingpp/src/easylogging++.cc)
-endif()
-add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
+#if (${BUILD_SHARED_LIBS} AND ${BUILD_EASYLOGGINGPP})
+#    list(APPEND REALSENSE_NET_CPP ../../third-party/easyloggingpp/src/easylogging++.cc)
+#endif()
+#add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 
 add_library(${PROJECT_NAME} ${REALSENSE_NET_CPP})
 
