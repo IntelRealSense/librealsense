@@ -810,6 +810,9 @@ namespace rs2
 
             rs2::log_to_file(min_severity, filename.c_str());
         }
+
+        show_skybox = config_file::instance().get_or_default(
+            configurations::performance::show_skybox, true);
     }
 
     viewer_model::viewer_model(context &ctx_)
@@ -1515,6 +1518,34 @@ namespace rs2
         return std::ceil((mean + 1.5f * standard_deviation) / length_jump) * length_jump;
     }
 
+    void draw_sphere(const float3& pos, float r, int lats, int longs) 
+    {
+        for(int i = 0; i <= lats; i++) 
+        {
+            float lat0 = M_PI * (-0.5 + (float) (i - 1) / lats);
+            float z0  = sin(lat0);
+            float zr0 =  cos(lat0);
+
+            float lat1 = M_PI * (-0.5 + (float) i / lats);
+            float z1 = sin(lat1);
+            float zr1 = cos(lat1);
+
+            glBegin(GL_QUAD_STRIP);
+            for(int j = 0; j <= longs; j++) 
+            {
+                float lng = 2 * M_PI * (float) (j - 1) / longs;
+                float x = cos(lng);
+                float y = sin(lng);
+
+                glNormal3f(pos.x + x * zr0, pos.y + y * zr0, pos.z + z0);
+                glVertex3f(pos.x + r * x * zr0, pos.y + r * y * zr0, pos.z + r * z0);
+                glNormal3f(pos.x + x * zr1, pos.y + y * zr1, pos.z + z1);
+                glVertex3f(pos.x + r * x * zr1, pos.y + r * y * zr1, pos.z + r * z1);
+            }
+            glEnd();
+        }
+    }
+
     void viewer_model::render_2d_view(const rect& view_rect,
         ux_window& win, int output_height,
         ImFont *font1, ImFont *font2, size_t dev_model_num,
@@ -1816,6 +1847,7 @@ namespace rs2
                 (win.get_mouse().cursor - input_ctrl.down_pos).length() < 100)
             {
                 input_ctrl.click = true;
+                input_ctrl.click_time = glfwGetTime();
             }
         }
 
@@ -1838,13 +1870,12 @@ namespace rs2
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        matrix4 perspective_mat = create_perspective_projection_matrix(viewer_rect.w, win.framebuf_height(), 60, 0.001f, 100.f);
-
         glLoadIdentity();
 
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
-        gluPerspective(60, viewer_rect.w / win.framebuf_height(), 0.001f, 100.0f);
+        gluPerspective(40, viewer_rect.w / win.framebuf_height(), 0.001f, 100.0f);
+        matrix4 perspective_mat;
         glGetFloatv(GL_PROJECTION_MATRIX, perspective_mat);
         glPopMatrix();
 
@@ -1862,6 +1893,8 @@ namespace rs2
         glDisable(GL_TEXTURE_2D);
 
         glEnable(GL_DEPTH_TEST);
+
+        if (show_skybox) _skybox.render();
 
         auto r1 = matrix4::identity();
         auto r2 = matrix4::identity();
@@ -2126,12 +2159,6 @@ namespace rs2
                     }
                 }
 
-                if (input_ctrl.click) {
-
-                    
-                    //_pc_selected = !_pc_selected;
-                }
-
                 //try_select_pointcloud(win);
             }
 
@@ -2188,6 +2215,14 @@ namespace rs2
 
             float size = _picked.z * 0.03f;
 
+            auto single_wave = [](float x) -> float
+            {
+                auto c = clamp(x, 0.f, 1.f);
+                return 0.5f * (sinf(2.f * M_PI * c - M_PI_2) + 1.f);
+            };
+            if (input_ctrl.mouse_down) size -= _picked.z * 0.01f;
+            size += _picked.z * 0.03f * single_wave(input_ctrl.click_period());
+
             _curr_normal = lerp(_curr_normal, _normal, 0.1f);
 
             auto end = _picked + _curr_normal * size;
@@ -2211,6 +2246,10 @@ namespace rs2
             basis(2, 0) = _curr_normal.x;
             basis(2, 1) = _curr_normal.y;
             basis(2, 2) = _curr_normal.z;
+
+            if (input_ctrl.click) {
+                selected_points.push_back({ _picked, _normal, basis });
+            }
 
             const int segments = 50;
             for (int i = 0; i < segments; i++)
@@ -2243,21 +2282,36 @@ namespace rs2
                 glColor4f(white.x, white.y, white.z, 0.5f);
                 glVertex3fv(&xy3.x);
             }
-
             //glVertex3fv(&_picked.x); glVertex3fv(&end.x);
             glEnd();
             glDisable(GL_BLEND);
             glEnable(GL_DEPTH_TEST);
-
-            glPopMatrix();
-
-            glPopMatrix();
-            glMatrixMode(GL_PROJECTION);
-            glPopMatrix();
-            glPopAttrib();
-
-            glDisable(GL_DEPTH_TEST);
         }
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        for (auto&& points: selected_points)
+        {
+            glColor4f(light_blue.x, light_blue.y, light_blue.z, 0.4f);
+            draw_sphere(points.pos, 0.011f, 20, 20);
+        }
+        glDisable(GL_DEPTH_TEST);
+        for (auto&& points: selected_points)
+        {
+            glColor4f(white.x, white.y, white.z, 0.4f);
+            draw_sphere(points.pos, 0.009f, 20, 20);
+        }
+        glEnable(GL_DEPTH_TEST);
+        glDisable(GL_BLEND);
+
+        glPopMatrix();
+
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glPopAttrib();
+
+        glDisable(GL_DEPTH_TEST);
 
         if (ImGui::IsKeyPressed('R') || ImGui::IsKeyPressed('r'))
         {
@@ -2620,6 +2674,12 @@ namespace rs2
                     {
                         reload_required = true;
                         temp_cfg.set(configurations::window::is_fullscreen, fullscreen);
+                    }
+
+                    bool show_skybox = temp_cfg.get(configurations::performance::show_skybox);
+                    if (ImGui::Checkbox("Show Skybox in 3D View", &show_skybox))
+                    {
+                        temp_cfg.set(configurations::performance::show_skybox, show_skybox);
                     }
                 }
 

@@ -6,6 +6,7 @@
 #include "model-views.h"
 #include "notifications.h"
 #include "viewer.h"
+#include "skybox.h"
 #include <librealsense2/hpp/rs_export.hpp>
 
 namespace rs2
@@ -234,6 +235,8 @@ namespace rs2
             double selection_started = 0.0;
             float2 down_pos { 0.f, 0.f };
             int mouse_wheel = 0;
+            double click_time = 0.0;
+            float click_period() { return clamp((glfwGetTime() - click_time) * 10, 0.f, 1.f); }
         };
         mouse_control input_ctrl;
 
@@ -252,6 +255,9 @@ namespace rs2
             float3 normal;
             matrix4 basis;
         };
+
+        bool show_skybox = true;
+        skybox _skybox;
 
         interest_point selection_point;
         std::vector<interest_point> selected_points;

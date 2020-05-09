@@ -257,7 +257,7 @@ namespace librealsense
                             uint8_t rgba[4];
 #if MOUSE_PICK_USE_PBO
                             glBindBuffer(GL_PIXEL_PACK_BUFFER, pboId);
-                            glReadPixels(x, y, 1, 1, GL_RGBA, GL_BYTE, 0);
+                            //glReadPixels(x, y, 1, 1, GL_RGBA, GL_BYTE, 0);
 
                             glBindBuffer(GL_PIXEL_PACK_BUFFER, pboId);
                             pData = (GLubyte*) glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);

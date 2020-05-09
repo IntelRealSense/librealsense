@@ -84,6 +84,7 @@ namespace rs2
 
         if (use_glsl)
         {
+            config_file::instance().set_default(configurations::performance::show_skybox, true);
             config_file::instance().set_default(configurations::performance::font_oversample, 2);
             config_file::instance().set_default(configurations::performance::enable_msaa, false);
             config_file::instance().set_default(configurations::performance::msaa_samples, 2);
@@ -92,6 +93,7 @@ namespace rs2
         }
         else
         {
+            config_file::instance().set_default(configurations::performance::show_skybox, false);
             config_file::instance().set_default(configurations::performance::font_oversample, 1);
             config_file::instance().set_default(configurations::performance::enable_msaa, false);
             config_file::instance().set_default(configurations::performance::msaa_samples, 2);
