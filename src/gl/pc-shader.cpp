@@ -376,8 +376,8 @@ namespace librealsense
         {
             register_option(OPTION_FILLED, std::make_shared<librealsense::float_option>(option_range{ 0, 1, 0, 1 }));
             register_option(OPTION_SHADED, std::make_shared<librealsense::float_option>(option_range{ 0, 1, 0, 1 }));
-            register_option(OPTION_MOUSE_X, std::make_shared<librealsense::float_option>(option_range{ 0, 10000, 1, 0 }));
-            register_option(OPTION_MOUSE_Y, std::make_shared<librealsense::float_option>(option_range{ 0, 10000, 1, 0 }));
+            register_option(OPTION_MOUSE_X, std::make_shared<librealsense::float_option>(option_range{ 0, 10000, 0, 0 }));
+            register_option(OPTION_MOUSE_Y, std::make_shared<librealsense::float_option>(option_range{ 0, 10000, 0, 0 }));
             register_option(OPTION_MOUSE_PICK, std::make_shared<librealsense::float_option>(option_range{ 0, 1, 1, 0 }));   
 
             register_option(OPTION_PICKED_X, std::make_shared<librealsense::float_option>(option_range{ -1000, 1000, 0, 0 }));
@@ -495,6 +495,9 @@ namespace librealsense
 
                             GLuint attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
                             glDrawBuffers(3, attachments);
+
+                            auto t = _fbo->get_status();
+                            std::cout << t << std::endl;
 
                             glClearColor(0, 0, 0, 0);
                             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
