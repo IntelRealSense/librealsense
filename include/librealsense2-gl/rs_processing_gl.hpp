@@ -284,6 +284,8 @@ namespace rs2
             static const auto OPTION_NORMAL_X = rs2_option(RS2_OPTION_COUNT + 12);
             static const auto OPTION_NORMAL_Y = rs2_option(RS2_OPTION_COUNT + 13);
             static const auto OPTION_NORMAL_Z = rs2_option(RS2_OPTION_COUNT + 14);
+
+            static const auto OPTION_SCALE_FACTOR = rs2_option(RS2_OPTION_COUNT + 15);
             
         private:
             friend class context;

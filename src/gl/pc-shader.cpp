@@ -387,6 +387,8 @@ namespace librealsense
             register_option(OPTION_NORMAL_Y, std::make_shared<librealsense::float_option>(option_range{ -1.f, 1.f, 0, 0 }));
             register_option(OPTION_NORMAL_Z, std::make_shared<librealsense::float_option>(option_range{ -1.f, 1.f, 0, 0 }));
 
+            register_option(OPTION_SCALE_FACTOR, std::make_shared<librealsense::float_option>(option_range{ 1, 4, 0, 1 }));
+            
             _filled_opt = &get_option(OPTION_FILLED);
             _mouse_x_opt = &get_option(OPTION_MOUSE_X);
             _mouse_y_opt = &get_option(OPTION_MOUSE_Y);
@@ -401,6 +403,7 @@ namespace librealsense
             _normal_x_opt = &get_option(OPTION_NORMAL_X);
             _normal_y_opt = &get_option(OPTION_NORMAL_Y);
             _normal_z_opt = &get_option(OPTION_NORMAL_Z);
+            _scale_factor_opt = &get_option(OPTION_SCALE_FACTOR);
 
             initialize();
         }
@@ -462,7 +465,9 @@ namespace librealsense
                             glGetIntegerv(GL_VIEWPORT, vp);
                             check_gl_error();
 
-                            _fbo->set_dims(vp[2], vp[3]);
+                            float scale = _scale_factor_opt->query();
+
+                            _fbo->set_dims(vp[2] / scale, vp[3] / scale);
 
                             glBindFramebuffer(GL_FRAMEBUFFER, _fbo->get());
                             glDrawBuffer(GL_COLOR_ATTACHMENT0);
@@ -471,7 +476,9 @@ namespace librealsense
                             _fbo->createDepthTextureAttachment(depth_tex);
 
                             glBindTexture(GL_TEXTURE_2D, xyz_tex);
-                            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, vp[2], vp[3], 0, GL_RGB, GL_HALF_FLOAT, nullptr);
+                            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+                            glPixelStorei(GL_PACK_ALIGNMENT, 1);
+                            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, vp[2] / scale, vp[3] / scale, 0, GL_RGB, GL_HALF_FLOAT, nullptr);
                             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -500,8 +507,8 @@ namespace librealsense
 
                             if (_mouse_pick_opt->query() > 0.f)
                             {
-                                auto x = _mouse_x_opt->query() - vp[0];
-                                auto y = vp[3] + vp[1] - _mouse_y_opt->query();
+                                auto x = _mouse_x_opt->query() - vp[0] / scale;
+                                auto y = vp[3] / scale + vp[1] / scale - _mouse_y_opt->query();
                                 _shader->set_mouse_xy(x, y);
                             }
                             else _shader->set_mouse_xy(-1, -1);
@@ -529,8 +536,8 @@ namespace librealsense
                             if (_mouse_pick_opt->query() > 0.f)
                             {
                                 scoped_timer t("mouse pick");
-                                auto x = _mouse_x_opt->query() - vp[0];
-                                auto y = vp[3] + vp[1] - _mouse_y_opt->query();
+                                auto x = _mouse_x_opt->query() - vp[0] / scale;
+                                auto y = vp[3] / scale + vp[1] / scale - _mouse_y_opt->query();
 
                                 auto proj = get_matrix(RS2_GL_MATRIX_PROJECTION) * get_matrix(RS2_GL_MATRIX_CAMERA) * get_matrix(RS2_GL_MATRIX_TRANSFORMATION);
 
@@ -545,19 +552,17 @@ namespace librealsense
 
                                 glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo->get());
                                 check_gl_error();
-                                glReadBuffer(GL_COLOR_ATTACHMENT2);
-                                check_gl_error();
 
                                 float3 normal = { 0.0, 0.0, 0.0 };
 
                                 glReadBuffer(GL_COLOR_ATTACHMENT1);
                                 check_gl_error();
 
-                                half3 pos { 0, 0, 0 };
+                                half4 pos { 0, 0, 0, 0 };
 
                                 {
                                     scoped_timer t("xyz");
-                                    _xyz_pbo.query(&pos, x, y, 1, 1, GL_RGB, GL_HALF_FLOAT);
+                                    _xyz_pbo.query(&pos, x, y, 1, 1, GL_RGBA, GL_HALF_FLOAT);
                                 }
 
                                 glReadBuffer(GL_COLOR_ATTACHMENT0);

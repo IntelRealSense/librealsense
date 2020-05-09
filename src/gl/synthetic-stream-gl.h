@@ -79,6 +79,9 @@ namespace librealsense
                 glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[next_idx]);
                 check_gl_error();
                 {
+                    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+                    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+
                     glReadPixels(x0, y0, w, h, format, type, 0);
                     check_gl_error();
                 }

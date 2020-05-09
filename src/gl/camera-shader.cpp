@@ -197,7 +197,7 @@ namespace librealsense
             {
                 perform_gl_action([&]()
                 {
-                    //scoped_timer t("camera_renderer.gl");
+                    scoped_timer t("camera_renderer.gl");
 
                     if (glsl_enabled())
                     {

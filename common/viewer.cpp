@@ -2102,11 +2102,18 @@ namespace rs2
             _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_SELECTED, _pc_selected ? 1.f : 0.f);
 
             auto cursor = win.get_mouse().cursor;
+            cursor.x *= win.get_scale_factor();
+            cursor.y *= win.get_scale_factor();
             if (viewer_rect.contains(cursor))
             {
+                cursor.x /= win.get_scale_factor();
+                cursor.y /= win.get_scale_factor();
+
                 _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_MOUSE_PICK, 1.f);
-                _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_MOUSE_X, cursor.x * win.get_scale_factor());
-                _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_MOUSE_Y, cursor.y * win.get_scale_factor());
+                _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_SCALE_FACTOR, win.get_scale_factor());
+
+                _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_MOUSE_X, cursor.x);
+                _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_MOUSE_Y, cursor.y);
             }
 
             // Render Point-Cloud

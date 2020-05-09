@@ -14,7 +14,7 @@ namespace librealsense
     {
 #pragma pack(push, 1)
         struct rgba8 { uint8_t r, g, b, a; };
-        struct half3 { uint16_t x, y, z, a, b, c; };
+        struct half4 { uint16_t x, y, z, w; };
 #pragma pack(pop)
 
         class pointcloud_shader
@@ -97,6 +97,8 @@ namespace librealsense
             static const auto OPTION_NORMAL_Y = rs2_option(RS2_OPTION_COUNT + 13);
             static const auto OPTION_NORMAL_Z = rs2_option(RS2_OPTION_COUNT + 14);
 
+            static const auto OPTION_SCALE_FACTOR = rs2_option(RS2_OPTION_COUNT + 15);
+
             void cleanup_gpu_resources() override;
             void create_gpu_resources() override;
 
@@ -115,12 +117,12 @@ namespace librealsense
             option *_filled_opt, *_mouse_x_opt, *_mouse_y_opt, *_mouse_pick_opt,
                 *_picked_id_opt, *_picked_x_opt, *_picked_y_opt, *_picked_z_opt, 
                 *_selected_opt, *_shaded_opt, *_origin_picked_opt,
-                *_normal_x_opt, *_normal_y_opt, *_normal_z_opt;
+                *_normal_x_opt, *_normal_y_opt, *_normal_z_opt, *_scale_factor_opt;
             uint32_t color_tex;
             uint32_t depth_tex;
             uint32_t xyz_tex;
 
-            pbo<half3> _xyz_pbo;
+            pbo<half4> _xyz_pbo;
             pbo<rgba8> _rgba_pbo;
         };
     }
