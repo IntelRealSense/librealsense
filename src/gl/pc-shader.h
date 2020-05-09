@@ -14,6 +14,7 @@ namespace librealsense
     {
 #pragma pack(push, 1)
         struct rgba8 { uint8_t r, g, b, a; };
+        struct half3 { uint16_t x, y, z, a, b, c; };
 #pragma pack(pop)
 
         class pointcloud_shader
@@ -119,8 +120,8 @@ namespace librealsense
             uint32_t depth_tex;
             uint32_t xyz_tex;
 
-            pbo<float3, 3> _xyz_pbo;
-            pbo<rgba8, 3> _rgba_pbo;
+            pbo<half3> _xyz_pbo;
+            pbo<rgba8> _rgba_pbo;
         };
     }
 }

@@ -181,6 +181,33 @@ namespace librealsense
 {
     namespace gl
     {
+        union Fp32
+        {
+            uint32_t u;
+            float f;
+        };
+
+        float halfToNativeIeee(uint16_t value)
+        {
+            /*
+            * https://gist.github.com/rygorous/2144712
+            * Public domain, by Fabian "ryg" Giesen
+            */
+            const Fp32 magic = { (254U - 15U) << 23 };
+            const Fp32 was_infnan = { (127U + 16U) << 23 };
+            Fp32 out;
+
+            out.u = (value & 0x7FFFU) << 13;   /* exponent/mantissa bits */
+            out.f *= magic.f;                  /* exponent adjust */
+            if (out.f >= was_infnan.f)         /* make sure Inf/NaN survive */
+            {
+                out.u |= 255U << 23;
+            }
+            out.u |= (value & 0x8000U) << 16;  /* sign bit */
+
+            return out.f;
+        }
+
         pointcloud_shader::pointcloud_shader(std::unique_ptr<shader_program> shader)
             : _shader(std::move(shader))
         {
@@ -444,7 +471,7 @@ namespace librealsense
                             _fbo->createDepthTextureAttachment(depth_tex);
 
                             glBindTexture(GL_TEXTURE_2D, xyz_tex);
-                            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, vp[2], vp[3], 0, GL_RGBA, GL_FLOAT, nullptr);
+                            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, vp[2], vp[3], 0, GL_RGB, GL_HALF_FLOAT, nullptr);
                             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -526,11 +553,11 @@ namespace librealsense
                                 glReadBuffer(GL_COLOR_ATTACHMENT1);
                                 check_gl_error();
 
-                                float3 pos { 0.f, 0.f, 0.f };
+                                half3 pos { 0, 0, 0 };
 
                                 {
                                     scoped_timer t("xyz");
-                                    _xyz_pbo.query(&pos, x, y, 1, 1, GL_RGB, GL_FLOAT);
+                                    _xyz_pbo.query(&pos, x, y, 1, 1, GL_RGB, GL_HALF_FLOAT);
                                 }
 
                                 glReadBuffer(GL_COLOR_ATTACHMENT0);
@@ -546,10 +573,14 @@ namespace librealsense
 
                                 if (rgba.a > 0)
                                 { 
+                                    auto x = halfToNativeIeee(pos.x);
+                                    auto y = halfToNativeIeee(pos.y);
+                                    auto z = halfToNativeIeee(pos.z);
+
                                     _picked_id_opt->set(1.f);
-                                    _picked_x_opt->set(pos.x);
-                                    _picked_y_opt->set(pos.y);
-                                    _picked_z_opt->set(pos.z);
+                                    _picked_x_opt->set(x);
+                                    _picked_y_opt->set(y);
+                                    _picked_z_opt->set(z);
                                     _normal_x_opt->set(normal.x);
                                     _normal_y_opt->set(normal.y);
                                     _normal_z_opt->set(normal.z);
