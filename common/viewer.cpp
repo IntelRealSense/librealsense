@@ -3255,7 +3255,7 @@ namespace rs2
 
             if (mouse_picked_event.eval())
             {
-                std::string tt = to_string() << std::fixed << std::setprecision(2) 
+                std::string tt = to_string() << std::fixed << std::setprecision(3) 
                     << _picked.x << ", " << _picked.y << ", " << _picked.z << " meters";
                 ImGui::SetTooltip("%s", tt.c_str());
             }
