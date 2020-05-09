@@ -170,9 +170,9 @@ static const char* blit_frag_shader_text =
 "    float selected = 0.0;"
 "    if (alpha < maxAlpha) selected = is_selected;\n"
 "    gl_FragColor = color * (1.0 - selected) + selected * vec4(0.0, 0.68, 0.93, 0.8);\n"
-"    if (alpha > 0) gl_FragDepth = texture2D(depthSampler, textCoords[4]).x;"
-"    else if (selected > 0) gl_FragDepth = 0.0;"
-"    else gl_FragDepth = 65000.0;"
+"    if (alpha > 0) gl_FragDepth = texture2D(depthSampler, textCoords[4]).x;\n"
+"    else if (selected > 0) gl_FragDepth = 0.0;\n"
+"    else gl_FragDepth = 65000.0;\n"
 "}";
 
 using namespace rs2;
@@ -403,7 +403,7 @@ namespace librealsense
             {
                 perform_gl_action([&]()
                 {
-                    //scoped_timer t("pointcloud_renderer.gl");
+                    scoped_timer t("pointcloud_renderer.gl");
 
                     GLint curr_tex;
                     glGetIntegerv(GL_TEXTURE_BINDING_2D, &curr_tex);
