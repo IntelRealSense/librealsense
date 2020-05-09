@@ -1385,6 +1385,7 @@ namespace librealsense
         _profiles_to_processing_block.erase(begin(_profiles_to_processing_block), end(_profiles_to_processing_block));
         _cached_requests.erase(_cached_requests.begin(), _cached_requests.end());
         set_active_streams({});
+        _post_process_callback.reset();
     }
 
     template<class T>
@@ -1392,7 +1393,7 @@ namespace librealsense
     {
         return {
             new internal_frame_callback<T>(callback),
-            [](rs2_frame_callback* p) { /*p->release(); */}
+            [](rs2_frame_callback* p) { p->release(); }
         };
     }
 
