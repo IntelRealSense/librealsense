@@ -195,6 +195,7 @@ namespace rs2
             static const char* show_fps            { "performance.show_fps" };
             static const char* vsync               { "performance.vsync" };
             static const char* font_oversample     { "performance.font_oversample.v2" };
+            static const char* show_skybox         { "viewer_model.show_skybox" };
         }
         namespace ply
         {

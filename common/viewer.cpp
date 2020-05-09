@@ -810,6 +810,9 @@ namespace rs2
 
             rs2::log_to_file(min_severity, filename.c_str());
         }
+
+        show_skybox = config_file::instance().get_or_default(
+            configurations::performance::show_skybox, true);
     }
 
     viewer_model::viewer_model(context &ctx_)
@@ -1515,6 +1518,34 @@ namespace rs2
         return std::ceil((mean + 1.5f * standard_deviation) / length_jump) * length_jump;
     }
 
+    void draw_sphere(const float3& pos, float r, int lats, int longs) 
+    {
+        for(int i = 0; i <= lats; i++) 
+        {
+            float lat0 = M_PI * (-0.5 + (float) (i - 1) / lats);
+            float z0  = sin(lat0);
+            float zr0 =  cos(lat0);
+
+            float lat1 = M_PI * (-0.5 + (float) i / lats);
+            float z1 = sin(lat1);
+            float zr1 = cos(lat1);
+
+            glBegin(GL_QUAD_STRIP);
+            for(int j = 0; j <= longs; j++) 
+            {
+                float lng = 2 * M_PI * (float) (j - 1) / longs;
+                float x = cos(lng);
+                float y = sin(lng);
+
+                glNormal3f(pos.x + x * zr0, pos.y + y * zr0, pos.z + z0);
+                glVertex3f(pos.x + r * x * zr0, pos.y + r * y * zr0, pos.z + r * z0);
+                glNormal3f(pos.x + x * zr1, pos.y + y * zr1, pos.z + z1);
+                glVertex3f(pos.x + r * x * zr1, pos.y + r * y * zr1, pos.z + r * z1);
+            }
+            glEnd();
+        }
+    }
+
     void viewer_model::render_2d_view(const rect& view_rect,
         ux_window& win, int output_height,
         ImFont *font1, ImFont *font2, size_t dev_model_num,
@@ -1799,22 +1830,6 @@ namespace rs2
         }
     }
 
-    void viewer_model::try_select_pointcloud(ux_window& win)
-    {
-        win.link_hovered();
-        if (win.get_mouse().mouse_down && !_pc_selected_down) 
-        {
-            _pc_selected_down = true;
-            _selection_started = win.time();
-        }
-        if (_pc_selected_down && !win.get_mouse().mouse_down)
-        {
-            _pc_selected_down = false;
-            if (win.time() - _selection_started < 0.5)
-                _pc_selected = !_pc_selected;
-        }
-    }
-
     bool viewer_model::render_3d_view(const rect& viewer_rect, ux_window& win, 
         std::shared_ptr<texture_buffer> texture, rs2::points points, ImFont *font1, float3* picked_xyz)
     {
@@ -1836,13 +1851,12 @@ namespace rs2
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        matrix4 perspective_mat = create_perspective_projection_matrix(viewer_rect.w, win.framebuf_height(), 60, 0.001f, 100.f);
-
         glLoadIdentity();
 
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
-        gluPerspective(60, viewer_rect.w / win.framebuf_height(), 0.001f, 100.0f);
+        gluPerspective(40, viewer_rect.w / win.framebuf_height(), 0.001f, 100.0f);
+        matrix4 perspective_mat;
         glGetFloatv(GL_PROJECTION_MATRIX, perspective_mat);
         glPopMatrix();
 
@@ -1860,6 +1874,8 @@ namespace rs2
         glDisable(GL_TEXTURE_2D);
 
         glEnable(GL_DEPTH_TEST);
+
+        if (show_skybox) _skybox.render();
 
         auto r1 = matrix4::identity();
         auto r2 = matrix4::identity();
@@ -1972,7 +1988,7 @@ namespace rs2
         }
 
         {
-            float tiles = 12;
+            float tiles = 24;
             if (!metric_system) tiles *= 1.f / FEET_TO_METER;
 
             // Render "floor" grid
@@ -2105,6 +2121,28 @@ namespace rs2
                 };
                 _normal = normal;
 
+                win.link_hovered();
+
+                if (!input_ctrl.mouse_down)
+                {
+                    auto x1x2 = target - pos;
+                    auto x1x0 = _picked - pos;
+                    auto t = (x1x2 * x1x0) / (x1x2 * x1x2);
+                    auto p1 = pos + x1x2* t;
+
+                    target = lerp(p1, target, 0.9f);
+
+                    if (input_ctrl.mouse_wheel != win.get_mouse().mouse_wheel)
+                    {
+                        input_ctrl.mouse_wheel = win.get_mouse().mouse_wheel;
+                        if (win.get_mouse().mouse_wheel > 0)
+                        {
+                            pos = lerp(_picked, pos, 0.9f);
+                            target = lerp(_picked, target, 0.9f);
+                        }
+                    }
+                }
+
                 //try_select_pointcloud(win);
             }
 
@@ -2146,77 +2184,109 @@ namespace rs2
             }
         }
 
-        glDisable(GL_DEPTH_TEST);
-        glLineWidth(2.f);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glBegin(GL_TRIANGLES);
-
-        if (isnanf(_curr_normal.x) || isnanf(_curr_normal.y) || isnanf(_curr_normal.z))
-            _curr_normal = _normal;
-
-        float size = _picked.z * 0.03f;
-
-        _curr_normal = lerp(_curr_normal, _normal, 0.1f);
-
-        auto end = _picked + _curr_normal * size;
-        _curr_normal.normalize();
-        auto axis1 = cross(vec3d{ _curr_normal.x, _curr_normal.y, _curr_normal.z }, vec3d{ 0.f, 1.f, 0.f });
-        auto faxis1 = float3 { axis1.x, axis1.y, axis1.z };
-        faxis1.normalize();
-        auto axis2 = cross(vec3d{ _curr_normal.x, _curr_normal.y, _curr_normal.z }, axis1);
-        auto faxis2 = float3 { axis2.x, axis2.y, axis2.z };
-        faxis2.normalize();
-
-        matrix4 basis = matrix4::identity();
-        basis(0, 0) = faxis1.x;
-        basis(0, 1) = faxis1.y;
-        basis(0, 2) = faxis1.z;
-
-        basis(1, 0) = faxis2.x;
-        basis(1, 1) = faxis2.y;
-        basis(1, 2) = faxis2.z;
-
-        basis(2, 0) = _curr_normal.x;
-        basis(2, 1) = _curr_normal.y;
-        basis(2, 2) = _curr_normal.z;
-
-        const int segments = 50;
-        for (int i = 0; i < segments; i++)
+        if (mouse_picked_event.eval())
         {
-            auto t1 = 2 * M_PI * ((float)i / segments);
-            auto t2 = 2 * M_PI * ((float)(i+1) / segments);
-            float4 xy1 { cosf(t1) * size, sinf(t1) * size, 0.f, 1.f };
-            xy1 = basis * xy1;
-            xy1 = float4 { _picked.x + xy1.x, _picked.y + xy1.y, _picked.z  + xy1.z, 1.f };
-            float4 xy2 { cosf(t1) * size * 0.5f, sinf(t1) * size * 0.5f, 0.f, 1.f };
-            xy2 = basis * xy2;
-            xy2 = float4 { _picked.x + xy2.x, _picked.y + xy2.y, _picked.z  + xy2.z, 1.f };
-            float4 xy3 { cosf(t2) * size * 0.5f, sinf(t2) * size * 0.5f, 0.f, 1.f };
-            xy3 = basis * xy3;
-            xy3 = float4 { _picked.x + xy3.x, _picked.y + xy3.y, _picked.z  + xy3.z, 1.f };
-            float4 xy4 { cosf(t2) * size, sinf(t2) * size, 0.f, 1.f };
-            xy4 = basis * xy4;
-            xy4 = float4 { _picked.x + xy4.x, _picked.y + xy4.y, _picked.z  + xy4.z, 1.f };
-            //glVertex3fv(&_picked.x); 
+            glDisable(GL_DEPTH_TEST);
+            glLineWidth(2.f);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glBegin(GL_TRIANGLES);
 
-            glColor4f(white.x, white.y, white.z, 0.3f);
-            glVertex3fv(&xy1.x);
-            glColor4f(white.x, white.y, white.z, 0.5f);
-            glVertex3fv(&xy2.x);
-            glVertex3fv(&xy3.x);
+            if (isnanf(_curr_normal.x) || isnanf(_curr_normal.y) || isnanf(_curr_normal.z))
+                _curr_normal = _normal;
+            if (fabs(_curr_normal.x * _curr_normal.y * _curr_normal.z) == 0.f)
+                _curr_normal = _normal;
 
-            glColor4f(white.x, white.y, white.z, 0.3f);
-            glVertex3fv(&xy1.x);
-            glVertex3fv(&xy4.x);
-            glColor4f(white.x, white.y, white.z, 0.5f);
-            glVertex3fv(&xy3.x);
+            float size = _picked.z * 0.03f;
+
+            auto single_wave = [](float x) -> float
+            {
+                auto c = clamp(x, 0.f, 1.f);
+                return 0.5f * (sinf(2.f * M_PI * c - M_PI_2) + 1.f);
+            };
+            if (input_ctrl.mouse_down) size -= _picked.z * 0.01f;
+            size += _picked.z * 0.03f * single_wave(input_ctrl.click_period());
+
+            _curr_normal = lerp(_curr_normal, _normal, 0.1f);
+
+            auto end = _picked + _curr_normal * size;
+            _curr_normal.normalize();
+            auto axis1 = cross(vec3d{ _curr_normal.x, _curr_normal.y, _curr_normal.z }, vec3d{ 0.f, 1.f, 0.f });
+            auto faxis1 = float3 { axis1.x, axis1.y, axis1.z };
+            faxis1.normalize();
+            auto axis2 = cross(vec3d{ _curr_normal.x, _curr_normal.y, _curr_normal.z }, axis1);
+            auto faxis2 = float3 { axis2.x, axis2.y, axis2.z };
+            faxis2.normalize();
+
+            matrix4 basis = matrix4::identity();
+            basis(0, 0) = faxis1.x;
+            basis(0, 1) = faxis1.y;
+            basis(0, 2) = faxis1.z;
+
+            basis(1, 0) = faxis2.x;
+            basis(1, 1) = faxis2.y;
+            basis(1, 2) = faxis2.z;
+
+            basis(2, 0) = _curr_normal.x;
+            basis(2, 1) = _curr_normal.y;
+            basis(2, 2) = _curr_normal.z;
+
+            if (input_ctrl.click) {
+                selected_points.push_back({ _picked, _normal, basis });
+            }
+
+            const int segments = 50;
+            for (int i = 0; i < segments; i++)
+            {
+                auto t1 = 2 * M_PI * ((float)i / segments);
+                auto t2 = 2 * M_PI * ((float)(i+1) / segments);
+                float4 xy1 { cosf(t1) * size, sinf(t1) * size, 0.f, 1.f };
+                xy1 = basis * xy1;
+                xy1 = float4 { _picked.x + xy1.x, _picked.y + xy1.y, _picked.z  + xy1.z, 1.f };
+                float4 xy2 { cosf(t1) * size * 0.5f, sinf(t1) * size * 0.5f, 0.f, 1.f };
+                xy2 = basis * xy2;
+                xy2 = float4 { _picked.x + xy2.x, _picked.y + xy2.y, _picked.z  + xy2.z, 1.f };
+                float4 xy3 { cosf(t2) * size * 0.5f, sinf(t2) * size * 0.5f, 0.f, 1.f };
+                xy3 = basis * xy3;
+                xy3 = float4 { _picked.x + xy3.x, _picked.y + xy3.y, _picked.z  + xy3.z, 1.f };
+                float4 xy4 { cosf(t2) * size, sinf(t2) * size, 0.f, 1.f };
+                xy4 = basis * xy4;
+                xy4 = float4 { _picked.x + xy4.x, _picked.y + xy4.y, _picked.z  + xy4.z, 1.f };
+                //glVertex3fv(&_picked.x); 
+
+                glColor4f(white.x, white.y, white.z, 0.3f);
+                glVertex3fv(&xy1.x);
+                glColor4f(white.x, white.y, white.z, 0.5f);
+                glVertex3fv(&xy2.x);
+                glVertex3fv(&xy3.x);
+
+                glColor4f(white.x, white.y, white.z, 0.3f);
+                glVertex3fv(&xy1.x);
+                glVertex3fv(&xy4.x);
+                glColor4f(white.x, white.y, white.z, 0.5f);
+                glVertex3fv(&xy3.x);
+            }
+            //glVertex3fv(&_picked.x); glVertex3fv(&end.x);
+            glEnd();
+            glDisable(GL_BLEND);
+            glEnable(GL_DEPTH_TEST);
         }
 
-        //glVertex3fv(&_picked.x); glVertex3fv(&end.x);
-        glEnd();
-        glDisable(GL_BLEND);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        for (auto&& points: selected_points)
+        {
+            glColor4f(light_blue.x, light_blue.y, light_blue.z, 0.4f);
+            draw_sphere(points.pos, 0.011f, 20, 20);
+        }
+        glDisable(GL_DEPTH_TEST);
+        for (auto&& points: selected_points)
+        {
+            glColor4f(white.x, white.y, white.z, 0.4f);
+            draw_sphere(points.pos, 0.009f, 20, 20);
+        }
         glEnable(GL_DEPTH_TEST);
+        glDisable(GL_BLEND);
 
         glPopMatrix();
 
@@ -2589,6 +2659,12 @@ namespace rs2
                         reload_required = true;
                         temp_cfg.set(configurations::window::is_fullscreen, fullscreen);
                     }
+
+                    bool show_skybox = temp_cfg.get(configurations::performance::show_skybox);
+                    if (ImGui::Checkbox("Show Skybox in 3D View", &show_skybox))
+                    {
+                        temp_cfg.set(configurations::performance::show_skybox, show_skybox);
+                    }
                 }
 
                 if (tab == 2)
@@ -2901,6 +2977,27 @@ namespace rs2
         ImGui::PopStyleVar();
     }
 
+    void viewer_model::update_input(ux_window& win)
+    {
+        input_ctrl.click = false;
+        if (win.get_mouse().mouse_down && !input_ctrl.mouse_down) 
+        {
+            input_ctrl.mouse_down = true;
+            input_ctrl.down_pos = win.get_mouse().cursor;
+            input_ctrl.selection_started = win.time();
+        }
+        if (input_ctrl.mouse_down && !win.get_mouse().mouse_down)
+        {
+            input_ctrl.mouse_down = false;
+            if (win.time() - input_ctrl.selection_started < 0.5 && 
+                (win.get_mouse().cursor - input_ctrl.down_pos).length() < 100)
+            {
+                input_ctrl.click = true;
+                input_ctrl.click_time = glfwGetTime();
+            }
+        }
+    }
+
     void viewer_model::update_3d_camera(
         ux_window& win,
         const rect& viewer_rect, bool force)
@@ -3158,18 +3255,20 @@ namespace rs2
 
             update_3d_camera(window, viewer_rect);
 
+            update_input(window);
+
             rect window_size{ 0, 0, (float)window.width(), (float)window.height() };
             rect fb_size{ 0, 0, (float)window.framebuf_width(), (float)window.framebuf_height() };
             rect new_rect = viewer_rect.normalize(window_size).unnormalize(fb_size);
 
             float3 picked_xyz;
             auto picked = render_3d_view(new_rect, window, texture, points, window.get_font(), &picked_xyz);
-            if (!picked) _last_no_pick_time = window.time();
+            mouse_picked_event.add_value(picked && !input_ctrl.mouse_down);
 
-            if (window.time() - _last_no_pick_time > 0.5)
+            if (mouse_picked_event.eval())
             {
                 std::string tt = to_string() << std::fixed << std::setprecision(2) 
-                    << picked_xyz.x << ", " << picked_xyz.y << ", " << picked_xyz.z << " meters";
+                    << _picked.x << ", " << _picked.y << ", " << _picked.z << " meters";
                 ImGui::SetTooltip(tt.c_str());
             }
         }
