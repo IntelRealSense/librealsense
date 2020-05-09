@@ -11,12 +11,6 @@ message(STATUS "Fetching recommended firmwares:")
 set(REALSENSE_FIRMWARE_URL "http://realsense-hw-public.s3.amazonaws.com" CACHE STRING
     "URL to download firmware binaries from")
 
-string(REGEX MATCH "D4XX_RC_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
-set(D4XX_RC_VERSION ${CMAKE_MATCH_1})
-message(STATUS "D4XX_RC_VERSION: ${D4XX_RC_VERSION}")
-set(D4XX_RC_SHA1 be77db800142110b35d1cc7f12dfc77e75ed9c8a)
-set(D4XX_RC_URL "${REALSENSE_FIRMWARE_URL}/Releases/RS4xx/FW")
-
 string(REGEX MATCH "D4XX_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
 set(D4XX_FW_VERSION ${CMAKE_MATCH_1})
 message(STATUS "D4XX_FW_VERSION: ${D4XX_FW_VERSION}")
@@ -78,7 +72,6 @@ function(target_binary url version sha1 symbol ext)
 endfunction()
 
 target_binary( "${D4XX_FW_URL}"  "${D4XX_FW_VERSION}"  "${D4XX_FW_SHA1}" D4XX_FW_Image .bin)
-target_binary( "${D4XX_RC_URL}"  "${D4XX_RC_VERSION}"  "${D4XX_RC_SHA1}" D4XX_RC_Image .bin)
 target_binary( "${SR3XX_FW_URL}"  "${SR3XX_FW_VERSION}"  "${SR3XX_FW_SHA1}" SR3XX_FW_Image .bin)
 target_binary( "${T26X_FW_URL}"  "${T26X_FW_VERSION}"  "${T26X_FW_SHA1}" target .mvcmd)
 
