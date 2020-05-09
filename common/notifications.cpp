@@ -258,9 +258,52 @@ namespace rs2
         ImGui::SetCursorScreenPos({ float(x + width - 105), float(y + height - 25) });
 
         string id = to_string() << "Dismiss" << "##" << index;
+
+        ImGui::PushStyleColor(ImGuiCol_Text, black);
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, light_blue);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+
+        ImGui::PushFont(win.get_font());
+
+        ImGui::SetNextWindowPos({ float(x + width - 125), float(y + height - 25) });
+        ImGui::SetNextWindowSize({ 120, 70 });
+
+        std::string dismiss_popup = to_string() << "Dismiss Options" << "##" << index;
+        if (ImGui::BeginPopup(dismiss_popup.c_str()))
+        {
+            if (ImGui::Selectable("Just this time"))
+            {
+                dismiss(true);
+            }
+
+            if (ImGui::Selectable("Remind me later"))
+            {
+                delay(7);
+                dismiss(true);
+            }
+
+            if (ImGui::Selectable("Don't show again"))
+            {
+                delay(1000);
+                dismiss(true);
+            }
+
+            ImGui::EndPopup();
+        }
+
+        ImGui::PopFont();
+        ImGui::PopStyleColor(4);
+
         if (ImGui::Button(id.c_str(), { 100, 20 }))
         {
-            dismiss(true);
+            if (enable_complex_dismiss)
+                ImGui::OpenPopup(dismiss_popup.c_str());
+            else dismiss(true);
+        }
+        if (ImGui::IsItemHovered())
+        {
+            win.link_hovered();
         }
     }
 
@@ -1038,5 +1081,25 @@ namespace rs2
         {
             ImGui::SetTooltip("%s", "Enables metadata on connected devices (you may be prompted for administrator privileges)");
         }
+    }
+
+    bool notification_model::is_delayed() const
+    {
+        // Make sure we don't spam calibration remainders too often:
+        time_t rawtime;
+        time(&rawtime);
+        std::string str = to_string() << "notifications." << delay_id << ".next";
+        long long next_time = config_file::instance().get_or_default(str.c_str(), (long long)0);
+
+        return rawtime < next_time;
+    }
+
+    void notification_model::delay(int days)
+    {
+        // Make sure we don't spam calibration remainders too often:
+        time_t rawtime;
+        time(&rawtime);
+        std::string str = to_string() << "notifications." << delay_id << ".next";
+        config_file::instance().set(str.c_str(), (long long)(rawtime + days * 60 * 60 * 24));
     }
 }
