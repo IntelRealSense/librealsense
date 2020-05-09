@@ -1833,25 +1833,6 @@ namespace rs2
     bool viewer_model::render_3d_view(const rect& viewer_rect, ux_window& win, 
         std::shared_ptr<texture_buffer> texture, rs2::points points, ImFont *font1, float3* picked_xyz)
     {
-        input_ctrl.click = false;
-        if (win.get_mouse().mouse_down && !input_ctrl.mouse_down) 
-        {
-            input_ctrl.mouse_down = true;
-            input_ctrl.down_pos = win.get_mouse().cursor;
-            input_ctrl.selection_started = win.time();
-        }
-        if (input_ctrl.mouse_down && !win.get_mouse().mouse_down)
-        {
-            input_ctrl.mouse_down = false;
-            if (win.time() - input_ctrl.selection_started < 0.5 && 
-                (win.get_mouse().cursor - input_ctrl.down_pos).length() < 100)
-            {
-                input_ctrl.click = true;
-                input_ctrl.click_time = glfwGetTime();
-            }
-        }
-
-
         bool picked = false;
         auto top_bar_height = 32.f;
 
@@ -2007,7 +1988,7 @@ namespace rs2
         }
 
         {
-            float tiles = 12;
+            float tiles = 24;
             if (!metric_system) tiles *= 1.f / FEET_TO_METER;
 
             // Render "floor" grid
@@ -2142,20 +2123,23 @@ namespace rs2
 
                 win.link_hovered();
 
-                auto x1x2 = target - pos;
-                auto x1x0 = _picked - pos;
-                auto t = (x1x2 * x1x0) / (x1x2 * x1x2);
-                auto p1 = pos + x1x2* t;
-
-                target = lerp(p1, target, 0.9f);
-
-                if (input_ctrl.mouse_wheel != win.get_mouse().mouse_wheel)
+                if (!input_ctrl.mouse_down)
                 {
-                    input_ctrl.mouse_wheel = win.get_mouse().mouse_wheel;
-                    if (win.get_mouse().mouse_wheel > 0)
+                    auto x1x2 = target - pos;
+                    auto x1x0 = _picked - pos;
+                    auto t = (x1x2 * x1x0) / (x1x2 * x1x2);
+                    auto p1 = pos + x1x2* t;
+
+                    target = lerp(p1, target, 0.9f);
+
+                    if (input_ctrl.mouse_wheel != win.get_mouse().mouse_wheel)
                     {
-                        pos = lerp(_picked, pos, 0.9f);
-                        target = lerp(_picked, target, 0.9f);
+                        input_ctrl.mouse_wheel = win.get_mouse().mouse_wheel;
+                        if (win.get_mouse().mouse_wheel > 0)
+                        {
+                            pos = lerp(_picked, pos, 0.9f);
+                            target = lerp(_picked, target, 0.9f);
+                        }
                     }
                 }
 
@@ -2200,7 +2184,7 @@ namespace rs2
             }
         }
 
-        if (recently_picked(win))
+        if (mouse_picked_event.eval())
         {
             glDisable(GL_DEPTH_TEST);
             glLineWidth(2.f);
@@ -2993,6 +2977,27 @@ namespace rs2
         ImGui::PopStyleVar();
     }
 
+    void viewer_model::update_input(ux_window& win)
+    {
+        input_ctrl.click = false;
+        if (win.get_mouse().mouse_down && !input_ctrl.mouse_down) 
+        {
+            input_ctrl.mouse_down = true;
+            input_ctrl.down_pos = win.get_mouse().cursor;
+            input_ctrl.selection_started = win.time();
+        }
+        if (input_ctrl.mouse_down && !win.get_mouse().mouse_down)
+        {
+            input_ctrl.mouse_down = false;
+            if (win.time() - input_ctrl.selection_started < 0.5 && 
+                (win.get_mouse().cursor - input_ctrl.down_pos).length() < 100)
+            {
+                input_ctrl.click = true;
+                input_ctrl.click_time = glfwGetTime();
+            }
+        }
+    }
+
     void viewer_model::update_3d_camera(
         ux_window& win,
         const rect& viewer_rect, bool force)
@@ -3250,15 +3255,17 @@ namespace rs2
 
             update_3d_camera(window, viewer_rect);
 
+            update_input(window);
+
             rect window_size{ 0, 0, (float)window.width(), (float)window.height() };
             rect fb_size{ 0, 0, (float)window.framebuf_width(), (float)window.framebuf_height() };
             rect new_rect = viewer_rect.normalize(window_size).unnormalize(fb_size);
 
             float3 picked_xyz;
             auto picked = render_3d_view(new_rect, window, texture, points, window.get_font(), &picked_xyz);
-            if (picked) last_pick_time = window.time();
+            mouse_picked_event.add_value(picked && !input_ctrl.mouse_down);
 
-            if (recently_picked(window))
+            if (mouse_picked_event.eval())
             {
                 std::string tt = to_string() << std::fixed << std::setprecision(2) 
                     << _picked.x << ", " << _picked.y << ", " << _picked.z << " meters";

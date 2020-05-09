@@ -111,6 +111,7 @@ namespace rs2
         void show_3dviewer_header(ImFont* large_font, ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message);
 
         void update_3d_camera(ux_window& win, const rect& viewer_rect, bool force = false);
+        void update_input(ux_window& win);
 
         void show_top_bar(ux_window& window, const rect& viewer_rect, const device_models_list& devices);
 
@@ -242,9 +243,7 @@ namespace rs2
 
 
         bool _pc_selected = false;
-        double last_pick_time = 0.0;
-
-        bool recently_picked(ux_window& win) { return win.time() - last_pick_time < 0.1; }
+        temporal_event mouse_picked_event;
 
         float3 _normal, _picked;
         float3 _curr_normal { 0.f, 0.f, 0.f };
