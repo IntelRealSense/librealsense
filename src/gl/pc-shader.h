@@ -114,8 +114,7 @@ namespace librealsense
             uint32_t color_tex;
             uint32_t depth_tex;
             uint32_t xyz_tex;
-            uint32_t normal_tex;
-            GLuint pboIds[6];
+            GLuint pboIds[4];
             int index = 0;
         };
     }
