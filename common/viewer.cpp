@@ -2789,17 +2789,6 @@ namespace rs2
 
                 if (tab == 3)
                 {
-                    bool recommend_calibration = temp_cfg.get(configurations::update::recommend_calibration);
-                    if (ImGui::Checkbox("Recommend Camera Calibration", &recommend_calibration))
-                    {
-                        temp_cfg.set(configurations::update::recommend_calibration, recommend_calibration);
-                        refresh_updates = true;
-                    }
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("%s", "When checked, the Viewer / DQT will post weekly remainders for on-chip calibration");
-                    }
-
                     bool recommend_fw_updates = temp_cfg.get(configurations::update::recommend_updates);
                     if (ImGui::Checkbox("Recommend Firmware Updates", &recommend_fw_updates))
                     {
@@ -2809,18 +2798,6 @@ namespace rs2
                     if (ImGui::IsItemHovered())
                     {
                         ImGui::SetTooltip("%s", "When firmware of the device is below the version bundled with this software release\nsuggest firmware update");
-                    }
-
-                    bool allow_rc_firmware = temp_cfg.get(configurations::update::allow_rc_firmware);
-                    if (ImGui::Checkbox("Access Pre-Release Firmware Updates", &allow_rc_firmware))
-                    {
-                        temp_cfg.set(configurations::update::allow_rc_firmware, allow_rc_firmware);
-                        refresh_updates = true;
-                    }
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("%s", "Firmware Releases recommended for production-use are published at dev.intelrealsense.com/docs/firmware-releases\n"
-                        "After firmware version passes basic regression tests and until it is published on the site, it is available as a Pre-Release\n");
                     }
                 }
 

@@ -1100,6 +1100,6 @@ namespace rs2
         time_t rawtime;
         time(&rawtime);
         std::string str = to_string() << "notifications." << delay_id << ".next";
-        config_file::instance().set(str.c_str(), (long long)(rawtime + days * 60));
+        config_file::instance().set(str.c_str(), (long long)(rawtime + days * 60 * 60 * 24));
     }
 }
