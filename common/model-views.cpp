@@ -3327,11 +3327,16 @@ namespace rs2
                         {
                             auto n = std::make_shared<fw_update_notification_model>(
                                 msg.str(), manager, false);
-                            viewer.not_model.add_notification(n);
+                            n->delay_id = "dfu." + name.second;
+                            n->enable_complex_dismiss = true;
+                            if (!n->is_delayed())
+                            {
+                                viewer.not_model.add_notification(n);
 
-                            fw_update_required = true;
+                                fw_update_required = true;
 
-                            related_notifications.push_back(n);
+                                related_notifications.push_back(n);
+                            }
                         }
                     }
                 }

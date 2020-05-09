@@ -690,10 +690,14 @@ namespace rs2
             if(!(f_man.good() || f_deb.good()))
             {
                 message = "RealSense UDEV-Rules are missing!\n" + message;
-                not_model.add_notification({ message,
+                auto n = not_model.add_notification({ message,
                      RS2_LOG_SEVERITY_WARN,
                      RS2_NOTIFICATION_CATEGORY_COUNT });
                 create_file = true;
+
+                n->enable_complex_dismiss = true;
+                n->delay_id = "missing-udev";
+                if (n->is_delayed()) n->dismiss(true);
             }
             else
             {
@@ -705,9 +709,12 @@ namespace rs2
                     {
                         std::string duplicates = "Multiple realsense udev-rules were found! :\n1:" + udev_rules_man
                                     + "\n2: " + udev_rules_deb+ "\nMake sure to remove redundancies!";
-                        not_model.add_notification({ duplicates,
+                        auto n = not_model.add_notification({ duplicates,
                              RS2_LOG_SEVERITY_WARN,
                              RS2_NOTIFICATION_CATEGORY_COUNT });
+                        n->enable_complex_dismiss = true;
+                        n->delay_id = "multiple-udev";
+                        if (n->is_delayed()) n->dismiss(true);
                     }
                     f.swap(f_man);
                     udev_fname = udev_rules_man;
@@ -741,10 +748,14 @@ namespace rs2
                 {
                     std::stringstream s;
                     s << "RealSense UDEV-Rules file:\n " << udev_fname <<"\n is not up-to date! Version " << built_in_file_ver << " can be applied\n";
-                    not_model.add_notification({ 
+                    auto n = not_model.add_notification({ 
                         s.str() + message,
                         RS2_LOG_SEVERITY_WARN,
                         RS2_NOTIFICATION_CATEGORY_COUNT });
+
+                    n->enable_complex_dismiss = true;
+                    n->delay_id = "udev-version";
+                    if (n->is_delayed()) n->dismiss(true);
                 }
             }
 
@@ -3269,7 +3280,7 @@ namespace rs2
             {
                 std::string tt = to_string() << std::fixed << std::setprecision(2) 
                     << _picked.x << ", " << _picked.y << ", " << _picked.z << " meters";
-                ImGui::SetTooltip(tt.c_str());
+                ImGui::SetTooltip("%s", tt.c_str());
             }
         }
 
