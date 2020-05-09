@@ -12,6 +12,10 @@ namespace librealsense
 {
     namespace gl
     {
+#pragma pack(push, 1)
+        struct rgba8 { uint8_t r, g, b, a; };
+#pragma pack(pop)
+
         class pointcloud_shader
         {
         public:
@@ -114,8 +118,9 @@ namespace librealsense
             uint32_t color_tex;
             uint32_t depth_tex;
             uint32_t xyz_tex;
-            GLuint pboIds[4];
-            int index = 0;
+
+            pbo<float3, 3> _xyz_pbo;
+            pbo<rgba8, 3> _rgba_pbo;
         };
     }
 }

@@ -291,7 +291,9 @@ namespace librealsense
             glDeleteTextures(1, &color_tex);
             glDeleteTextures(1, &depth_tex);
             glDeleteTextures(1, &xyz_tex);
-            glDeleteBuffers(6, pboIds);
+
+            _rgba_pbo.reset();
+            _xyz_pbo.reset();
 
             _shader.reset();
             _model.reset();
@@ -332,28 +334,8 @@ namespace librealsense
                 glGenTextures(1, &depth_tex);
                 glGenTextures(1, &xyz_tex);
 
-                glGenBuffers(4, pboIds);
-
-                glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[0]);
-                check_gl_error();
-                glBufferData(GL_PIXEL_PACK_BUFFER, 12, 0, GL_STREAM_READ);
-                check_gl_error();
-                glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[1]);
-                check_gl_error();
-                glBufferData(GL_PIXEL_PACK_BUFFER, 12, 0, GL_STREAM_READ);
-                check_gl_error();
-
-                glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[2]);
-                check_gl_error();
-                glBufferData(GL_PIXEL_PACK_BUFFER, 4, 0, GL_STREAM_READ);
-                check_gl_error();
-                glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[3]);
-                check_gl_error();
-                glBufferData(GL_PIXEL_PACK_BUFFER, 4, 0, GL_STREAM_READ);
-                check_gl_error();
-
-                glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-                check_gl_error();
+                _xyz_pbo.init(1, 1);
+                _rgba_pbo.init(1, 1);
             }
         }
 
@@ -533,9 +515,7 @@ namespace librealsense
                                 projected.x = (projected.x + 1.f) / 2.f;
                                 projected.y = (projected.y + 1.f) / 2.f;
 
-#if MOUSE_PICK_USE_PBO
-                                GLubyte* pData = NULL;
-#endif
+
                                 glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo->get());
                                 check_gl_error();
                                 glReadBuffer(GL_COLOR_ATTACHMENT2);
@@ -548,70 +528,23 @@ namespace librealsense
 
                                 float3 pos { 0.f, 0.f, 0.f };
 
-#if MOUSE_PICK_USE_PBO
-                                glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[0 + index]);
-                                check_gl_error();
                                 {
-                                    scoped_timer t("pos");
-                                    glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, 0);
-                                    check_gl_error();
+                                    scoped_timer t("xyz");
+                                    _xyz_pbo.query(&pos, x, y, 1, 1, GL_RGB, GL_FLOAT);
                                 }
 
-                                glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[0 + (1 - index)]);
-                                check_gl_error();
-                                {
-                                    //scoped_timer t("pos map");
-                                    pData = (GLubyte*) glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
-                                }
-                                check_gl_error();
-
-                                if (pData)
-                                {
-                                    pos = *(float3*)pData;
-                                    glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-                                    check_gl_error();
-                                }
-#else
-                                glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, &pos);
-#endif
                                 glReadBuffer(GL_COLOR_ATTACHMENT0);
                                 check_gl_error();
 
-                                uint8_t rgba[4];
-#if MOUSE_PICK_USE_PBO
-                                glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[2 + index]);
-                                check_gl_error();
+                                rgba8 rgba { 0, 0, 0, 0 };
+
                                 {
-                                    //scoped_timer t("rgba");
-                                    glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-                                    check_gl_error();
+                                    scoped_timer t("rgba");
+                                    _rgba_pbo.query(&rgba, x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE);
                                 }
+                                
 
-                                glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[2 + (1 - index)]);
-                                check_gl_error();
-                                {
-                                    //scoped_timer t("rgba map");
-                                    pData = (GLubyte*) glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
-                                }
-                                check_gl_error();
-
-                                if (pData)
-                                {
-                                    memcpy(rgba, (void*)pData, sizeof(rgba));
-                                    glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-                                    check_gl_error();
-                                }
-
-                                glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-                                check_gl_error();
-
-                                index = (index + 1) % 2;
-#else
-                                glReadPixels(x, y, 1, 1, GL_RGBA, GL_BYTE, &rgba);
-
-#endif
-
-                                if (rgba[3] > 0)
+                                if (rgba.a > 0)
                                 { 
                                     _picked_id_opt->set(1.f);
                                     _picked_x_opt->set(pos.x);
