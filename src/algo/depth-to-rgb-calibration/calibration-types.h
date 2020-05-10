@@ -15,16 +15,12 @@ namespace depth_to_rgb_calibration {
     {
         double x, y, z;
         double & operator [] ( int i ) { return (&x)[i]; }
-        bool operator == ( const double3 d ) { return x == d.x && y == d.y && z == d.z; }
-        bool operator != ( const double3 d ) { return !(*this == d); }
     };
 
     struct double2
     {
         double x, y;
         double & operator [] ( int i ) { return (&x)[i]; };
-        bool operator == ( const double2 d ) { return x == d.x && y == d.y; }
-        bool operator != ( const double2 d ) { return !(*this == d); }
     };
 
     enum direction :uint8_t
@@ -58,22 +54,6 @@ namespace depth_to_rgb_calibration {
         double alpha;
         double beta;
         double gamma;
-
-        bool operator==(const rotation_in_angles& other)
-        {
-            return alpha == other.alpha && beta == other.beta && gamma == other.gamma;
-        }
-        bool operator!=(const rotation_in_angles& other)
-        {
-            return !(*this == other);
-        }
-        bool operator<(const rotation_in_angles& other)
-        {
-            return (alpha < other.alpha) ||
-                (alpha == other.alpha && beta < other.beta) ||
-                (alpha == other.alpha && beta == other.beta && gamma < other.gamma);
-
-        }
     };
 
     rotation extract_rotation_from_angles( const rotation_in_angles & rot_angles );
@@ -82,32 +62,6 @@ namespace depth_to_rgb_calibration {
     struct p_matrix
     {
         double vals[12];
-
-        bool operator==(const p_matrix& other)
-        {
-            for (auto i = 0; i < 12; i++)
-            {
-                if (vals[i] != other.vals[i])
-                    return false;
-            }
-            return true;
-        }
-        bool operator!=(const p_matrix& other)
-        {
-            return !(*this == other);
-        }
-
-        bool operator<(const p_matrix& other)
-        {
-            for (auto i = 0; i < 12; i++)
-            {
-                if (vals[i] < other.vals[i]) 
-                    return false;
-                if (vals[i] > other.vals[i])
-                    return true;
-            }
-            return true;
-        }
     };
 
     struct k_matrix
@@ -116,23 +70,6 @@ namespace depth_to_rgb_calibration {
         double fy;
         double ppx;
         double ppy;
-
-        bool operator==(const k_matrix& other)
-        {
-            return fx == other.fx && fy == other.fy && ppx == other.ppx && ppy == other.ppy;
-        }
-        bool operator!=(const k_matrix& other)
-        {
-            return !(*this == other);
-        }
-        bool operator<(const k_matrix& other)
-        {
-            return (fx < other.fx) ||
-                (fx == other.fx && fy < other.fy) ||
-                (fx == other.fx && fy == other.fy && ppx < other.ppx) ||
-                (fx == other.fx && fy == other.fy && ppx == other.ppx && ppy < other.ppy);
-                
-        }
     };
 
 }  // librealsense::algo::depth_to_rgb_calibration
