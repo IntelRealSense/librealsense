@@ -441,6 +441,7 @@ namespace librealsense
 
             void trigger_special_frame( bool is_retry = false );
             bool is_processing() const { return _is_processing; }
+            bool is_expecting_special_frame() const { return !! _retrier; }
 
             rs2_extrinsics const & get_extrinsics() const { return _extr; }
             rs2_intrinsics const & get_intrinsics() const { return _intr; }
