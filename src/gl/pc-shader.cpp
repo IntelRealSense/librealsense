@@ -515,7 +515,7 @@ namespace librealsense
                             if (_mouse_pick_opt->query() > 0.f)
                             {
                                 auto x = _mouse_x_opt->query() - viewport_x;
-                                auto y = viewport_y + fbo_height - _mouse_y_opt->query();
+                                auto y = _mouse_y_opt->query() - viewport_y;
                                 _shader->set_mouse_xy(x, y);
                             }
                             else _shader->set_mouse_xy(-1, -1);
@@ -545,8 +545,10 @@ namespace librealsense
                                     _picked_id_opt->set(0.f);
 
                                     scoped_timer t("mouse pick");
-                                    auto x = _mouse_x_opt->query() - viewport_x;
-                                    auto y = viewport_y + fbo_height - _mouse_y_opt->query();
+                                    auto cursor_x = _mouse_x_opt->query();
+                                    auto cursor_y = _mouse_y_opt->query();
+                                    auto x = cursor_x - viewport_x;
+                                    auto y = cursor_y - viewport_y;
 
                                     auto proj = get_matrix(RS2_GL_MATRIX_PROJECTION) * get_matrix(RS2_GL_MATRIX_CAMERA) * get_matrix(RS2_GL_MATRIX_TRANSFORMATION);
 
