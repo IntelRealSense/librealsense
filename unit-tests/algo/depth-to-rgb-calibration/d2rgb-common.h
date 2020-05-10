@@ -20,7 +20,7 @@ using librealsense::to_string;
 //static char const * const data_dirs[] = {""
 //};
 
-static char const * root_data_dir = "..\\unit-tests\\algo\\depth-to-rgb-calibration\\19.2.20\\";
+static char const * root_data_dir = "C:\\work\\librealsense\\build\\unit-tests\\algo\\depth-to-rgb-calibration\\19.2.20\\";
 
 static char const* const data_dirs[] = {
     "F9440687\\Snapshots\\LongRange_D_768x1024_RGB_1920x1080"
