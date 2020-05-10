@@ -77,3 +77,17 @@ dl_algo_file( "${F9440687}/2/binFiles/grad_iteration_6_1x32_double_00.bin" "791b
 
 dl_algo_file( "${F9440687}/2/binFiles/new_calib_1x32_double_00.bin" "653181b6a947916eb2a2102025f1a4d442e074be" )
 
+dl_algo_file( "${F9440687}/2/binFiles/rc_iteration_1_5089x1_double_00.bin" "")
+dl_algo_file( "${F9440687}/2/binFiles/rc_iteration_2_5089x1_double_00.bin" "")
+dl_algo_file( "${F9440687}/2/binFiles/rc_iteration_3_5089x1_double_00.bin" "")
+dl_algo_file( "${F9440687}/2/binFiles/rc_iteration_4_5089x1_double_00.bin" "")
+dl_algo_file( "${F9440687}/2/binFiles/rc_iteration_5_5089x1_double_00.bin" "")
+dl_algo_file( "${F9440687}/2/binFiles/rc_iteration_6_5089x1_double_00.bin" "")
+
+dl_algo_file( "${F9440687}/2/binFiles/xy_iteration_1_5089x2_double_00.bin" "")
+dl_algo_file( "${F9440687}/2/binFiles/xy_iteration_2_5089x2_double_00.bin" "")
+dl_algo_file( "${F9440687}/2/binFiles/xy_iteration_3_5089x2_double_00.bin" "")
+dl_algo_file( "${F9440687}/2/binFiles/xy_iteration_4_5089x2_double_00.bin" "")
+dl_algo_file( "${F9440687}/2/binFiles/xy_iteration_5_5089x2_double_00.bin" "")
+dl_algo_file( "${F9440687}/2/binFiles/xy_iteration_6_5089x2_double_00.bin" "")
+
