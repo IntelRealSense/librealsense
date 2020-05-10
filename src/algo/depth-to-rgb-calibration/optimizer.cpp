@@ -647,11 +647,13 @@ void optimizer::set_depth_data(
 
         locRCsub = locRC + fraqStep.*dirPerPixel;*/
     double directions[8][2] = { {0,1},{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{-1,1} };
+    std::vector<double> direction_per_pixel_x; //used later when finding valid direction per pixel
     for (auto i = 0; i < _ir.directions.size(); i++)
     {
         int idx = _ir.directions[i];
         _ir.direction_per_pixel.push_back(directions[idx][0]);
         _ir.direction_per_pixel.push_back(directions[idx][1]);
+        direction_per_pixel_x.push_back(directions[idx][0]);
     }
      double vec[4] = {-2,-1,0,1}; // one pixel along gradient direction, 2 pixels against gradient direction
 
@@ -743,13 +745,9 @@ void optimizer::set_depth_data(
          dir_per_pixel_it++;
          _depth.local_rc_subpixel.push_back(valx);
          _depth.local_rc_subpixel.push_back(valy);
-         /* loc_rc_sub_it++;
-          valid_loc_rc++;
-          dir_per_pixel_it++;
-          *loc_rc_sub_it = *valid_loc_rc + res * *dir_per_pixel_it;
-          loc_rc_sub_it++;
-          valid_loc_rc++;
-          dir_per_pixel_it++;*/
+
+         _depth.edge_sub_pixel.push_back(valy);
+         _depth.edge_sub_pixel.push_back(valx);
      }
     
      std::vector<double> local_region_x[2] = { _ir.local_region_x[1] ,_ir.local_region_x[2] };
@@ -761,8 +759,7 @@ void optimizer::set_depth_data(
      _depth.local_values = interpolation(_depth.frame, _ir.local_region_x, _ir.local_region_y,4, _ir.valid_location_rc_x.size(), _depth.width);
      _depth.values_for_subedges = find_local_values_min(_depth.local_values);
      
-     
-     
+
      /* validEdgePixels = zGradInDirection > params.gradZTh & isSupressed & zValuesForSubEdges > 0;
     
     zGradInDirection = zGradInDirection(validEdgePixels);
@@ -780,7 +777,7 @@ void optimizer::set_depth_data(
      valid_by_ir(valid_grad_in_direction, _depth.grad_in_direction, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size());
      //edgeSubPixel = edgeSubPixel(validEdgePixels,:);
      valid_by_ir(valid_values_for_subedges, _depth.values_for_subedges, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size());
-     valid_by_ir(_depth.valid_direction_per_pixel, _ir.direction_per_pixel, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size()); //new
+     valid_by_ir(_depth.valid_direction_per_pixel, direction_per_pixel_x, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size()); //new
      valid_by_ir(_depth.valid_section_map, _ir.valid_section_map, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size());
      //valid_by_ir(valid_direction_index, _ir.directions, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size());
      
