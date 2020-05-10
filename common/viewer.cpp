@@ -2490,7 +2490,7 @@ namespace rs2
                 return 0.5f * (sinf(2.f * M_PI * c - M_PI_2) + 1.f);
             };
             if (input_ctrl.mouse_down) size -= _picked.z * 0.01f;
-            size += _picked.z * 0.03f * single_wave(input_ctrl.click_period());
+            size += _picked.z * 0.01f * single_wave(input_ctrl.click_period());
 
             auto end = _picked + _normal * size;
             auto axis1 = cross(vec3d{ _normal.x, _normal.y, _normal.z }, vec3d{ 0.f, 1.f, 0.f });
@@ -2514,7 +2514,10 @@ namespace rs2
             basis(2, 2) = _normal.z;
 
             if (input_ctrl.click) {
-                selected_points.push_back({ _picked, _normal, basis });
+                if (measurement_active)
+                {
+                    selected_points.push_back({ _picked, _normal, basis });
+                }
             }
 
             const int segments = 50;
