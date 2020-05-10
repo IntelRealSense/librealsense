@@ -1447,9 +1447,9 @@ namespace rs2
 
         void draw_grid(float step)
         {
+            glLineWidth(1);
             glBegin(GL_LINES);
             glColor4f(0.1f, 0.1f, 0.1f, 0.8f);
-            glLineWidth(1);
             
             for (float x = -1.5; x < 1.5; x += step)
             {

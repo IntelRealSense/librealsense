@@ -1056,6 +1056,22 @@ namespace rs2
             configurations::performance::show_skybox, true);
     }
 
+    void GLAPIENTRY MessageCallback( GLenum source,
+                    GLenum type,
+                    GLuint id,
+                    GLenum severity,
+                    GLsizei length,
+                    const GLchar* message,
+                    const void* userParam )
+    {
+        if (type == GL_DEBUG_TYPE_ERROR)
+        {
+            fprintf( stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+                ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
+                    type, severity, message );
+        }
+    }
+
     viewer_model::viewer_model(context &ctx_)
             : ppf(*this),
               ctx(ctx_),
@@ -1063,6 +1079,10 @@ namespace rs2
               synchronization_enable(true),
               zo_sensors(0)
     {
+        // During init, enable debug output
+        glEnable              ( GL_DEBUG_OUTPUT );
+        glDebugMessageCallback( MessageCallback, 0 );
+
         syncer = std::make_shared<syncer_model>();
         reset_camera();
         rs2_error* e = nullptr;
@@ -2103,6 +2123,8 @@ namespace rs2
         glGetFloatv(GL_PROJECTION_MATRIX, perspective_mat);
         glPopMatrix();
 
+        check_gl_error();
+
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
         glLoadMatrixf((float*)perspective_mat.mat);
@@ -2230,19 +2252,22 @@ namespace rs2
             }
         }
 
+
+        check_gl_error();
+
         {
             float tiles = 24;
             if (!metric_system) tiles *= 1.f / FEET_TO_METER;
 
-            // Render "floor" grid
+            glTranslatef(0, 0, -1);
             glLineWidth(1);
+
+            // Render "floor" grid
             glBegin(GL_LINES);
 
             auto T = tiles * 0.5f;
 
             if (!metric_system) T *= FEET_TO_METER;
-
-            glTranslatef(0, 0, -1);
 
             for (int i = 0; i <= ceil(tiles); i++)
             {
@@ -2260,6 +2285,8 @@ namespace rs2
             glEnd();
         }
 
+        check_gl_error();
+
         if (!pose && !_pc_selected)
         {
             glMatrixMode(GL_MODELVIEW);
@@ -2268,6 +2295,8 @@ namespace rs2
             texture_buffer::draw_axes(0.4f, 1);
             glPopMatrix();
         }
+
+        check_gl_error();
 
         glColor4f(1.f, 1.f, 1.f, 1.f);
 
@@ -2311,6 +2340,8 @@ namespace rs2
 
             glColor4f(1.f, 1.f, 1.f, 1.f);
         }
+
+        check_gl_error();
 
         if (last_points && last_texture)
         {
@@ -2434,6 +2465,8 @@ namespace rs2
             }
         }
 
+        check_gl_error();
+
         if (mouse_picked_event.eval())
         {
             glDisable(GL_DEPTH_TEST);
@@ -2542,7 +2575,6 @@ namespace rs2
         glPopMatrix();
         glMatrixMode(GL_PROJECTION);
         glPopMatrix();
-        glPopAttrib();
 
         glDisable(GL_DEPTH_TEST);
 
