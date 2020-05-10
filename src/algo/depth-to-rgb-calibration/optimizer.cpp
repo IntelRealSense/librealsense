@@ -721,6 +721,9 @@ void optimizer::set_depth_data(
      auto valid_loc_rc = _ir.valid_location_rc.begin(); // locRC
      auto  dir_per_pixel_it = _ir.direction_per_pixel.begin(); // dirPerPixel
 
+     std::vector<double > edge_sub_pixel_x;
+     std::vector<double > edge_sub_pixel_y;
+
      for (auto i = 0; i < _ir.valid_location_rc_x.size(); i++)
      {
          double vec2 = *(loc_edg_it + 1);
@@ -735,8 +738,6 @@ void optimizer::set_depth_data(
              res = 0;
          }
          _ir.fraq_step.push_back(res);
-         //auto valx = *(valid_loc_rc + i) + *(dir_per_pixel_it + i) * res;
-         //auto valy = *(valid_loc_rc + i + 1) + *(dir_per_pixel_it + i + 1) * res;
          auto valx = *valid_loc_rc + *dir_per_pixel_it  * res;
          valid_loc_rc++;
          dir_per_pixel_it++;
@@ -748,6 +749,8 @@ void optimizer::set_depth_data(
 
          _depth.edge_sub_pixel.push_back(valy);
          _depth.edge_sub_pixel.push_back(valx);
+         edge_sub_pixel_x.push_back(valy);
+         edge_sub_pixel_y.push_back(valx);
      }
     
      std::vector<double> local_region_x[2] = { _ir.local_region_x[1] ,_ir.local_region_x[2] };
@@ -774,8 +777,17 @@ void optimizer::set_depth_data(
      std::vector<double> valid_grad_in_direction;
      std::vector<double> valid_values_for_subedges;
 
+     std::vector<double > valid_edge_sub_pixel_x;
+     std::vector<double > valid_edge_sub_pixel_y;
+
      valid_by_ir(valid_grad_in_direction, _depth.grad_in_direction, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size());
-     valid_by_ir(_depth.valid_edge_sub_pixel, _depth.edge_sub_pixel, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size()); //edgeSubPixel = edgeSubPixel(validEdgePixels,:);
+     valid_by_ir(valid_edge_sub_pixel_x, edge_sub_pixel_x, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size()); //edgeSubPixel = edgeSubPixel(validEdgePixels,:);
+     valid_by_ir(valid_edge_sub_pixel_y, edge_sub_pixel_y, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size()); //edgeSubPixel = edgeSubPixel(validEdgePixels,:);
+     for (auto i = 0; i < valid_edge_sub_pixel_x.size(); i++)
+     {
+         _depth.valid_edge_sub_pixel.push_back(*(valid_edge_sub_pixel_x.begin()+i));
+         _depth.valid_edge_sub_pixel.push_back(*(valid_edge_sub_pixel_y.begin() + i));
+     }
      valid_by_ir(valid_values_for_subedges, _depth.values_for_subedges, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size());
      valid_by_ir(_depth.valid_direction_per_pixel, direction_per_pixel_x, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size()); //new
      valid_by_ir(_depth.valid_section_map, _ir.valid_section_map, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size());
