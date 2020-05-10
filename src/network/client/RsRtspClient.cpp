@@ -6,7 +6,7 @@
 #include "RsSink.h"
 #include "RsRtspClient.h"
 #include <RsUsageEnvironment.h>
-#include <ipDeviceCommon/RsCommon.h>
+#include <common/RsCommon.h>
 
 #include <algorithm>
 #include <iostream>
@@ -14,6 +14,8 @@
 #include <string>
 #include <thread>
 #include <vector>
+
+#include <types.h>
 
 #define RTSP_CLIENT_VERBOSITY_LEVEL 0 // by default, print verbose output from each "RTSPClient"
 #define REQUEST_STREAMING_OVER_TCP 0
@@ -670,7 +672,7 @@ void RsRTSPClient::continueAfterGETCOMMAND(RTSPClient *rtspClient, int resultCod
     }
     UsageEnvironment &env = rtspClient->envir();                           // alias
     RsRTSPClient *rsRtspClient = dynamic_cast<RsRTSPClient *>(rtspClient); // alias
-    DBG << "continueAfterGETCOMMAND: resultCode " << resultCode << ", resultString '" << resultStr.c_str();
+    env << "continueAfterGETCOMMAND: resultCode " << resultCode << ", resultString '" << resultStr.c_str();
 
     if (!resultStr.empty())
     {

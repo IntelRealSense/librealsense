@@ -23,10 +23,7 @@ using namespace TCLAP;
 
 server::server(rs2::device dev, std::string addr, int port)
 {
-    std::cout << "Rs-server is running\n";
-
     ReceivingInterfaceAddr = our_inet_addr(addr.c_str());
-
     OutPacketBuffer::increaseMaxSizeTo(MAX_MESSAGE_SIZE);
 
     // Begin by setting up our usage environment:
@@ -34,9 +31,7 @@ server::server(rs2::device dev, std::string addr, int port)
     env = RSUsageEnvironment::createNew(*scheduler);
 
     rsDevice = std::make_shared<RsDevice>(env, dev);
-
     rtspServer = RsRTSPServer::createNew(*env, rsDevice, port);
-
     if (rtspServer == NULL)
     {
         *env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";
@@ -136,57 +131,5 @@ server::~server()
     env = NULL;
     delete scheduler;
     scheduler = NULL;
-    std::cout << "Rs-server downloading\n";
 }
 
-void sigint_handler(int sig);
-
-int main(int argc, char** argv)
-{
-    CmdLine cmd("LRS Network Extentions Server", ' ', RS2_API_VERSION_STR);
-
-    SwitchArg arg_enable_compression("c", "enable-compression", "Enable video compression");
-    ValueArg<std::string> arg_address("i", "interface-address", "Address of the interface to bind on", false, "", "string");
-    ValueArg<unsigned int> arg_port("p", "port", "RTSP port to listen on", false, 8554, "integer");
-
-    cmd.add(arg_enable_compression);
-    cmd.add(arg_address);
-    cmd.add(arg_port);
-
-    cmd.parse(argc, argv);
-
-/*
-    CompressionFactory::getIsEnabled() = 0;
-    if (arg_enable_compression.isSet())
-    {
-        CompressionFactory::getIsEnabled() = 1;
-    }
-*/
-    std::string addr = "0.0.0.0";
-    if (arg_address.isSet())
-    {
-        addr = arg_address.getValue();
-    }
-
-    int port = 8445;
-    if (arg_port.isSet())
-    {
-        port = arg_port.getValue();
-    }
-
-    rs2::context ctx;
-    rs2::device_list devices = ctx.query_devices();
-    rs2::device dev = devices[0];
-
-    server s(dev, addr, port);
-
-    s.start();
-
-    return 0;
-}
-
-void sigint_handler(int sig)
-{
-    // server::instance().sigint_handler(sig);
-    exit(sig);
-}

@@ -11,7 +11,7 @@
 #include "RsServerMediaSession.h"
 #include "RsServerMediaSubsession.h"
 #include "librealsense2/hpp/rs_options.hpp"
-#include <ipDeviceCommon/RsCommon.h>
+#include <common/RsCommon.h>
 #include "RsUsageEnvironment.h"
 
 // RTSPServer implementation

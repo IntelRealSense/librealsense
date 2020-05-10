@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <RsNetDevLog.h>
+#include <types.h>
 
 #include <librealsense2/rs.hpp>
 

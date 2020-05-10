@@ -1,13 +1,9 @@
 // License:    Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
-#if 0
+
 #include "RsUsageEnvironment.h"
 
-#ifdef BUILD_EASYLOGGINGPP
-#ifdef BUILD_SHARED_LIBS
-INITIALIZE_EASYLOGGINGPP
-#endif
-#endif
+#include <types.h>
 
 RSUsageEnvironment::RSUsageEnvironment(TaskScheduler& taskScheduler)
     : BasicUsageEnvironment(taskScheduler)
@@ -15,10 +11,7 @@ RSUsageEnvironment::RSUsageEnvironment(TaskScheduler& taskScheduler)
 
 RSUsageEnvironment::~RSUsageEnvironment()
 {
-    CLOG(INFO, "netdev") << "RealSense network logging closed";
-
-    el::Loggers::unregisterLogger("librealsense");
-    el::Loggers::unregisterLogger("netdev");
+    LOG_INFO("RealSense network logging closed");
 }
 
 RSUsageEnvironment* RSUsageEnvironment::createNew(TaskScheduler& taskScheduler)
@@ -28,15 +21,7 @@ RSUsageEnvironment* RSUsageEnvironment::createNew(TaskScheduler& taskScheduler)
     if(env)
     {
         env->ptr = env->buffer;
-        env->netdev_log = el::Loggers::getLogger("netdev");
-        env->lrs_log = el::Loggers::getLogger("librealsense");
-
-        el::Loggers::reconfigureAllLoggers(el::Level::Global, el::ConfigurationType::Format, "%datetime{%y%M%d%H%m%s.%g} [%logger]\t%levshort: %msg");
-        el::Loggers::reconfigureAllLoggers(el::Level::Debug, el::ConfigurationType::Enabled, "false");
-        el::Loggers::reconfigureAllLoggers(el::Level::Global, el::ConfigurationType::ToStandardOutput, "false");
-        el::Loggers::reconfigureAllLoggers(el::Level::Global, el::ConfigurationType::ToFile, "true");
-
-        CLOG(INFO, "netdev") << "RealSense network logging initialized";
+        LOG_INFO("RealSense network logging initialized");
     }
 
     return env;
@@ -45,7 +30,7 @@ RSUsageEnvironment* RSUsageEnvironment::createNew(TaskScheduler& taskScheduler)
 void RSUsageEnvironment::flush()
 {
     *ptr = '\0';
-    CLOG(INFO, "netdev") << buffer;
+    LOG_INFO(buffer);
     ptr = buffer;
 }
 
@@ -108,4 +93,3 @@ UsageEnvironment& RSUsageEnvironment::operator<<(void* p)
     check();
     return *this;
 }
-#endif

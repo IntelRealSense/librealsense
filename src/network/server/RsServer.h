@@ -26,7 +26,7 @@ public:
     void stop();
 
 private:
-    void server::calculate_extrinsics();
+    void calculate_extrinsics();
 
     rs2::device selected_device;
     RsRTSPServer* rtspServer;

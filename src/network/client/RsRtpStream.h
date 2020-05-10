@@ -3,11 +3,11 @@
 
 #pragma once
 
+#include <types.h>
 #include <librealsense2/rs.hpp>
 #include <librealsense2/hpp/rs_internal.hpp>
 
 #include <RsCommon.h>
-#include <RsNetDevLog.h>
 
 #include <queue>
 #include <map>
@@ -66,7 +66,7 @@ public:
     {
         if(queue_size() > RTP_QUEUE_MAX_SIZE)
         {
-            ERR << "Queue is full. Dropping frame for: " << this->m_rs_stream.uid;
+            LOG_ERROR("Queue is full. Dropping frame for: " << this->m_rs_stream.uid);
         }
         else
         {
@@ -94,7 +94,6 @@ public:
             frame_deleter(frames_queue.front());
             frames_queue.pop();
         }
-        INF << "Frames queue cleaned for " << m_rs_stream.uid;
     }
 
     int queue_size()

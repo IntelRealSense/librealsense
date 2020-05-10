@@ -82,13 +82,13 @@ int RvlCompression::compressBuffer(unsigned char* t_buffer, int t_size, unsigned
     int compressWithHeaderSize = compressedSize + sizeof(compressedSize);
     if(compressWithHeaderSize > t_size)
     {
-        ERR << "Compression overflow, destination buffer is smaller than the compressed size";
+        LOG_ERROR("Compression overflow, destination buffer is smaller than the compressed size");
         return -1;
     }
     memcpy(t_compressedBuf, &compressedSize, sizeof(compressedSize));
     if(m_compFrameCounter++ % 50 == 0)
     {
-        INF << "frame " << m_compFrameCounter << "\tdepth\tcompression\tlz4\t" << t_size << "\t/\t" << compressedSize;
+        LOG_DEBUG("Frame " << m_compFrameCounter << "\tdepth\tcompression\tlz4\t" << t_size << "\t/\t" << compressedSize);
     }
     memcpy(t_compressedBuf, &compressedSize, sizeof(compressedSize));
     return compressWithHeaderSize;
@@ -122,7 +122,7 @@ int RvlCompression::decompressBuffer(unsigned char* t_buffer, int t_size, unsign
     int uncompressedSize = int((char*)currentPtr - (char*)t_uncompressedBuf);
     if(m_decompFrameCounter++ % 50 == 0)
     {
-        INF << "frame " << m_decompFrameCounter << "\tdepth\tcompression\tlz4\t" << compressedSize << "\t/\t" << uncompressedSize;
+        LOG_DEBUG("Frame " << m_decompFrameCounter << "\tdepth\tcompression\tlz4\t" << compressedSize << "\t/\t" << uncompressedSize);
     }
     return uncompressedSize;
 }

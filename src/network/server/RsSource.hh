@@ -7,7 +7,7 @@
 
 #include <condition_variable>
 #include <mutex>
-#include <rs.hpp> // Include RealSense Cross Platform API
+#include <librealsense2/rs.hpp>
 
 class RsDeviceSource : public FramedSource
 {

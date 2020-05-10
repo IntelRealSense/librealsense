@@ -5,7 +5,7 @@
 
 #include "compression/ICompression.h"
 #include <chrono>
-#include <ipDeviceCommon/RsCommon.h>
+#include <common/RsCommon.h>
 #include <librealsense2/hpp/rs_types.hpp>
 #include <librealsense2/rs.hpp>
 #include <unordered_map>

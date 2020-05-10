@@ -12,8 +12,6 @@
 #include <iostream>
 #include <string>
 
-#include <RsNetDevLog.h>
-
 extern std::map<std::pair<int, int>, rs2_extrinsics> minimal_extrinsics_map;
 
 std::string sensors_str[] = {STEREO_SENSOR_NAME, RGB_SENSOR_NAME};
@@ -29,8 +27,6 @@ void rs_net_device::recover_rtsp_client(int sensor_index)
 
 rs_net_device::~rs_net_device()
 {
-    DBG << "Destroying rs_net_device";
-    
     try
     {
         is_device_alive = false;
@@ -48,16 +44,15 @@ rs_net_device::~rs_net_device()
     }
     catch (const std::exception &e)
     {
-        ERR << e.what();
+        LOG_ERROR(e.what());
     }
-    DBG << "Destroying rs_net_device completed";
 }
 
 void rs_net_device::stop_sensor_streams(int sensor_index)
 {
     for(long long int key : remote_sensors[sensor_index]->active_streams_keys)
     {
-        DBG << "Stopping stream [uid:key] " << streams_collection[key].get()->m_rs_stream.uid << ":" << key << "]";
+        LOG_DEBUG("Stopping stream [uid:key] " << streams_collection[key].get()->m_rs_stream.uid << ":" << key << "]");
         streams_collection[key].get()->is_enabled = false;
         if(inject_frames_thread[key].joinable())
             inject_frames_thread[key].join();
@@ -85,7 +80,6 @@ rs_net_device::rs_net_device(rs2::software_device sw_device, std::string ip_addr
 
 std::vector<rs2_video_stream> rs_net_device::query_streams(int sensor_id)
 {
-    DBG << "query_streams";
     std::vector<rs2_video_stream> streams;
 
     if(remote_sensors[sensor_id]->rtsp_client == NULL)
@@ -98,9 +92,9 @@ std::vector<rs2_video_stream> rs_net_device::query_streams(int sensor_id)
     streams = remote_sensors[sensor_id]->rtsp_client->getStreams();
     return streams;
 }
+
 std::vector<IpDeviceControlData> rs_net_device::get_controls(int sensor_id)
 {
-    DBG << "get_controls";
     std::vector<IpDeviceControlData> controls;
     controls = remote_sensors[sensor_id]->rtsp_client->getControls();
 
@@ -134,7 +128,7 @@ bool rs_net_device::init_device_data(rs2::software_device sw_device)
 
                 float val = NAN;
 
-                INF << "Init sensor " << control.sensorId << ", option '" << control.option << "', value " << control.range.def;
+                LOG_DEBUG("Init sensor " << control.sensorId << ", option '" << control.option << "', value " << control.range.def);
 
                 if(control.range.min == control.range.max)
                 {
@@ -155,14 +149,14 @@ bool rs_net_device::init_device_data(rs2::software_device sw_device)
                 }
                 catch(const std::exception& e)
                 {
-                    ERR << e.what();
+                    LOG_ERROR(e.what());
                 }
             }
         }
 
         auto streams = query_streams(sensor_id);
 
-        DBG << "Init got " << streams.size() << " streams per sensor " << sensor_id;
+        LOG_DEBUG("Detected " << streams.size() << " streams per sensor " << sensor_id);
 
         for(int stream_index = 0; stream_index < streams.size(); stream_index++)
         {
@@ -186,7 +180,7 @@ bool rs_net_device::init_device_data(rs2::software_device sw_device)
             device_streams.push_back(stream_profile);
             streams_collection[stream_key] = std::make_shared<rs_rtp_stream>(st, stream_profile);
         }
-        DBG << "Init done adding streams for sensor ID: " << sensor_id;
+        LOG_DEBUG("Init done adding streams for sensor ID: " << sensor_id);
     }
 
     for(auto stream_profile_from : device_streams)
@@ -198,7 +192,7 @@ bool rs_net_device::init_device_data(rs2::software_device sw_device)
 
             if(minimal_extrinsics_map.find(std::make_pair(from_key, to_key)) == minimal_extrinsics_map.end())
             {
-                ERR << "Extrinsics data is missing.";
+                LOG_ERROR("Extrinsics data is missing.");
             }
             rs2_extrinsics extrinisics = minimal_extrinsics_map[std::make_pair(from_key, to_key)];
 
@@ -235,7 +229,7 @@ void rs_net_device::polling_state_loop()
                     }
                     catch(const std::exception& e)
                     {
-                        ERR << e.what();
+                        LOG_ERROR(e.what());
                         update_sensor_state(i, {}, true);
                         rs2_software_notification notification;
                         notification.description = e.what();
@@ -253,7 +247,7 @@ void rs_net_device::polling_state_loop()
                     {
                         //TODO: get from map once to reduce logarithmic complexity
                         remote_sensors[i]->sensors_option[opt] = (float)sw_sensor->get_option(opt);
-                        INF << "Option '" << opt << "' has changed to: " << remote_sensors[i]->sensors_option[opt];
+                        LOG_DEBUG("Option '" << opt << "' has changed to: " << remote_sensors[i]->sensors_option[opt]);
                         update_option_value(i, opt, remote_sensors[i]->sensors_option[opt]);
                     }
                 }
@@ -261,7 +255,7 @@ void rs_net_device::polling_state_loop()
         }
         catch(const std::exception& e)
         {
-            ERR << e.what();
+            LOG_ERROR(e.what());
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(POLLING_SW_DEVICE_STATE_INTERVAL));
     }
@@ -276,7 +270,7 @@ void rs_net_device::update_option_value(int sensor_index, rs2_option opt, float 
     {
         //TODO:: to uncomment after adding exception handling
         //throw std::runtime_error("[update_option_value] error");
-        ERR << "Cannot update option value.";
+        LOG_ERROR("Cannot update option value.");
     }
 }
 
@@ -342,7 +336,8 @@ void rs_net_device::update_sensor_state(int sensor_index, std::vector<rs2::strea
     }
 
     remote_sensors[sensor_index]->rtsp_client->start();
-    INF << "Stream started for sensor " << sensor_index;
+
+    LOG_DEBUG("Stream started for sensor " << sensor_index);
 }
 
 int stream_type_to_sensor_id(rs2_stream type)
@@ -386,68 +381,11 @@ void rs_net_device::inject_frames_loop(std::shared_ptr<rs_rtp_stream> rtp_stream
         }
 
         rtp_stream.get()->reset_queue();
-        DBG << "Polling data at stream " << rtp_stream.get()->m_rs_stream.uid << " completed";
+
+        LOG_DEBUG("Polling data at stream " << rtp_stream.get()->m_rs_stream.uid << " completed");
     }
     catch(const std::exception& ex)
     {
-        ERR << ex.what();
+        LOG_ERROR(ex.what());
     }
-}
-
-rs2_device* rs2_create_net_device(int api_version, const char* address, rs2_error** error) BEGIN_API_CALL
-{
-    verify_version_compatibility(api_version);
-    VALIDATE_NOT_NULL(address);
-
-    std::string addr(address);
-
-    // create sw device
-    rs2::software_device sw_dev = rs2::software_device([](rs2_device*) {});
-    // create IP instance
-    rs_net_device* ip_dev = new rs_net_device(sw_dev, addr);
-    // set client destruction functioun
-    sw_dev.set_destruction_callback([ip_dev] { delete ip_dev; });
-    // register device info to sw device
-    DeviceData data = ip_dev->remote_sensors[0]->rtsp_client->getDeviceData();
-    sw_dev.update_info(RS2_CAMERA_INFO_NAME, data.name + " IP Device");
-    sw_dev.register_info(rs2_camera_info::RS2_CAMERA_INFO_IP_ADDRESS, addr);
-    sw_dev.register_info(rs2_camera_info::RS2_CAMERA_INFO_SERIAL_NUMBER, data.serialNum);
-    sw_dev.register_info(rs2_camera_info::RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, data.usbType);
-
-    return sw_dev.get().get();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, address)
-
-// rs_server
-rs_server* rs2_create_server(int api_version, rs2_device* dev, rs_server_params params, rs2_error** error)
-{
-    ERR << "create server\n";
-    return NULL;
-}
-
-int rs2_start_server(int api_version, rs_server* srv, rs2_error** error)
-{
-    if (!srv) return -1; // ERR_NOSERVER
-
-    ERR << "start server\n";
-
-    return -1; // ERR_NOTIMPLEMENTED
-}
-
-int rs2_stop_server(int api_version, rs_server* srv, rs2_error** error)
-{
-    if (!srv) return -1; // ERR_NOSERVER
-
-    ERR << "stop server\n";
-
-    return -1; // ERR_NOTIMPLEMENTED
-}
-
-int rs2_destroy_server(int api_version, rs_server* srv, rs2_error** error)
-{
-    if (!srv) return -1; // ERR_NOSERVER
-
-    ERR << "destroy server\n";
-
-    return -1; // ERR_NOTIMPLEMENTED
 }

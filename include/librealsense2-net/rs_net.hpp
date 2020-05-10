@@ -47,11 +47,11 @@ namespace rs2
         class net_server 
         {
         public:
-            net_server(rs2_device* dev, rs_server_params params)
+            net_server(rs2::device dev, rs_server_params params)
                 : m_params(params)
             {
                 rs2_error* e = nullptr;
-                m_server = rs2_create_server(RS2_API_VERSION, dev, m_params, &e);
+                m_server = rs2_create_server(RS2_API_VERSION, dev.get().get(), m_params, &e);
                 error::handle(e);
             }
 

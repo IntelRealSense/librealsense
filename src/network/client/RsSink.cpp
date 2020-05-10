@@ -3,7 +3,10 @@
 
 #include "RsSink.h"
 #include <RsCommon.h>
-#include <RsNetDevLog.h>
+
+// NOTE: Should be the last include othervise causes Winsock2 
+//       linking error with Easylogging++
+#include <types.h>
 
 #define WRITE_FRAMES_TO_FILE 0
 
@@ -33,7 +36,7 @@ RsSink::RsSink(UsageEnvironment& t_env, MediaSubsession& t_subsession, rs2_video
     }
     else
     {
-        INF << "compression is disabled or configured unsupported format to zip, run without compression";
+        LOG_DEBUG("Compression is disabled or configured unsupported format to zip, run without compression");
     }
 }
 
