@@ -2376,7 +2376,7 @@ namespace rs2
                 _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_SCALE_FACTOR, win.get_scale_factor());
 
                 _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_MOUSE_X, cursor.x);
-                _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_MOUSE_Y, cursor.y);
+                _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_MOUSE_Y, win.framebuf_height() / win.get_scale_factor() - cursor.y);
             }
 
             // Render Point-Cloud
