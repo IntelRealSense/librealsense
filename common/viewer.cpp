@@ -472,7 +472,7 @@ namespace rs2
         std::string label = to_string() << "header of 3dviewer";
 
         ImGui::GetWindowDrawList()->AddRectFilled({ stream_rect.x, stream_rect.y },
-                    { stream_rect.x + stream_rect.w, stream_rect.y + top_bar_height }, ImColor(sensor_bg));
+                     { stream_rect.x + stream_rect.w, stream_rect.y + top_bar_height }, ImColor(sensor_bg));
 
         ImGui::SetCursorPos({ 0, 0 });
         auto cursor = ImGui::GetCursorScreenPos();
@@ -2085,9 +2085,11 @@ namespace rs2
         {
             last_texture = texture;
         }
+
+        auto bottom_y = win.framebuf_height() - viewer_rect.y - viewer_rect.h;
         
-        glViewport(static_cast<GLint>(viewer_rect.x), static_cast<GLint>(win.framebuf_height() - top_bar_height - viewer_rect.y - viewer_rect.h),
-            static_cast<GLsizei>(viewer_rect.w), static_cast<GLsizei>(win.framebuf_height() - top_bar_height - viewer_rect.y));
+        glViewport(static_cast<GLint>(viewer_rect.x), static_cast<GLint>(bottom_y),
+            static_cast<GLsizei>(viewer_rect.w), static_cast<GLsizei>(viewer_rect.h - top_bar_height));
 
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -2332,7 +2334,6 @@ namespace rs2
             _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_SELECTED, _pc_selected ? 1.f : 0.f);
 
             auto viewport_rect = viewer_rect;
-            viewport_rect.y += top_bar_height;
 
             auto cursor = win.get_mouse().cursor;
             auto scaled_cursor = cursor;
