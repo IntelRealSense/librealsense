@@ -29,6 +29,8 @@ void skybox::render()
     }
     glEnable(GL_TEXTURE_2D);
 
+    glColor3f(1.f, 1.f, 1.f);
+
     const auto r = 50.f;
     const auto re = 49.999f;
 

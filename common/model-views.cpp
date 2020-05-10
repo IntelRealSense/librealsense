@@ -27,6 +27,9 @@
 #include <imgui_internal.h>
 #include <time.h>
 
+#include "imgui-fonts-karla.hpp"
+#include "imgui-fonts-fontawesome.hpp"
+
 #include "os.h"
 
 #include "metadata-helper.h"
@@ -140,9 +143,8 @@ namespace rs2
 
         const int OVERSAMPLE = config_file::instance().get(configurations::performance::font_oversample);
 
-        static const ImWchar icons_ranges[] = { 0xf000, 0xf3ff, 0 }; // will not be copied by AddFont* so keep in scope.
+        static const ImWchar icons_ranges[] = { 0xf000, 0xf999, 0 }; // will not be copied by AddFont* so keep in scope.
 
-                                                                     // Load 14px size fonts
         {
             ImFontConfig config_words;
             config_words.OversampleV = OVERSAMPLE;
@@ -170,6 +172,7 @@ namespace rs2
             config_glyphs.OversampleH = OVERSAMPLE;
             font_18 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
                 font_awesome_compressed_size, 20.f, &config_glyphs, icons_ranges);
+
         }
 
         style.WindowRounding = 0.0f;

@@ -296,10 +296,83 @@ namespace rs2
         ImGui::PopStyleColor(3);
     }
 
-    // Get both font and large_font for the export pop-up
-    void viewer_model::show_3dviewer_header(ImFont* large_font, ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message)
+    bool big_button(bool* status,
+        ux_window& win, 
+        int x, int y, 
+        const char* icon, 
+        const char* label, 
+        bool dropdown,
+        bool enabled,
+        const char* description
+        )
     {
-        int combo_boxes = 0;
+        auto disabled = !enabled;
+        auto font = win.get_font();
+        auto large_font = win.get_large_font();
+
+        bool hovered = false;
+        bool clicked = false;
+
+        if (!disabled)
+        {
+            if (*status)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+            }
+            else
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
+            }
+        }
+        else
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, grey);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, grey);
+        }
+        
+        ImGui::SetCursorPos({float(x), float(y)});
+        ImGui::PushFont(large_font);
+        clicked = clicked || ImGui::Button(icon, { 60, 50 });
+        ImGui::PopFont();
+        hovered = hovered || ImGui::IsItemHovered();
+
+        ImGui::SetCursorPos({float(x + 45), float(y)});
+        ImGui::PushFont(font);
+        if (dropdown)
+        {
+            clicked = clicked || ImGui::Button("\uf078", { 20, 55 });
+            hovered = hovered || ImGui::IsItemHovered();
+        }
+
+        ImGui::SetCursorPos({ float(x), float(y + 35)});
+        clicked = clicked || ImGui::Button(label, { 60, 20 });
+        ImGui::PopFont();
+        hovered = hovered || ImGui::IsItemHovered();
+
+        if (hovered && !disabled)
+        {
+            win.link_hovered();
+            ImGui::SetTooltip("%s", description);
+        }
+
+        if (clicked && !disabled) 
+        {
+            *status = !(*status);
+        }
+
+        ImGui::PopStyleColor(2);
+
+        return clicked && !disabled;
+    }
+
+    // Get both font and large_font for the export pop-up
+    void viewer_model::show_3dviewer_header(ux_window& win, rs2::rect stream_rect, bool& paused, std::string& error_message)
+    {
+        auto font = win.get_font();
+        auto large_font = win.get_large_font();
+
         const float combo_box_width = 200;
 
         // Draw pose header if pose stream exists
@@ -348,7 +421,6 @@ namespace rs2
                 i++;
             }
         }
-        if (depth_sources_str.size() > 0 && allow_3d_source_change) combo_boxes++;
 
         int selected_tex_source = 0;
         std::vector<std::string> tex_sources_str;
@@ -388,25 +460,11 @@ namespace rs2
             }
         }
 
-        if (tex_sources_str.size() && depth_sources_str.size())
-        {
-            combo_boxes++;
-            if(streams.find(selected_tex_source_uid)!= streams.end())
-                if (RS2_STREAM_COLOR == streams[selected_tex_source_uid].profile.stream_type())
-                    combo_boxes++;
-        }
-
-        auto top_bar_height = 32.f;
-        const auto buttons_heights = top_bar_height;
-        const auto num_of_buttons = 6;
-
-        if (num_of_buttons * 40 + combo_boxes * (combo_box_width + 100) > stream_rect.w || pose_render)
-            top_bar_height = 2 * top_bar_height;
+        const auto top_bar_height = 60.f;
 
         ImGui::PushFont(font);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-
         ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
@@ -416,14 +474,95 @@ namespace rs2
         ImGui::GetWindowDrawList()->AddRectFilled({ stream_rect.x, stream_rect.y },
                     { stream_rect.x + stream_rect.w, stream_rect.y + top_bar_height }, ImColor(sensor_bg));
 
-        if (depth_sources_str.size() > 0 && allow_3d_source_change)
-        {
-            ImGui::SetCursorPos({ 7, 7 });
-            ImGui::Text("Depth Source:"); ImGui::SameLine();
+        ImGui::SetCursorPos({ 0, 0 });
+        auto cursor = ImGui::GetCursorScreenPos();
 
-            ImGui::SetCursorPosY(7);
-            ImGui::PushItemWidth(combo_box_width);
-            draw_combo_box("##Depth Source", depth_sources_str, selected_depth_source);
+        auto left = 5;
+
+        const auto has_stream = tex_sources_str.size() && depth_sources_str.size();
+
+        // ------------ Pause Stream    --------------
+
+        if (paused)
+        {
+            bool active = true;
+            if (big_button(&active, win, 5 + left, 0, textual_icons::play, "Resume", false, has_stream, "Resume streaming"))
+            {
+                for(auto&& s : streams)
+                    if (s.second.dev) s.second.dev->resume();
+                paused = false;
+            }
+        }
+        else
+        {
+            bool active = false;
+            if (big_button(&active, win, 5 + left, 0, textual_icons::pause, "Pause", false, has_stream, "Pause streaming"))
+            {
+                for(auto&& s : streams)
+                    if (s.second.dev) s.second.dev->pause();
+                paused = true;
+            }
+        }
+        left += 60;
+
+        // ------------ Reset Viewport ---------------
+
+        bool default_view = (pos - float3{ 0.f, 0.f, -1.f }).length() < 0.001f && 
+                            (target - float3{ 0.f, 0.f, 0.f }).length() < 0.001f;
+        bool active = false;
+        if (big_button(&active, win, 5 + left, 0, u8"\uf01e", "Reset", false, !default_view, "Reset 3D viewport to initial state"))
+        {
+            reset_camera();
+        }
+        
+        left += 60;
+
+        // ------------    Lock Mode  ---------------
+
+        if (synchronization_enable)
+        {
+            bool active = true;
+            if (big_button(&active, win, 5 + left, 0, textual_icons::lock, "Unlock", false, 
+                support_non_syncronized_mode && has_stream, "Unlock texture data from pointcloud"))
+            {
+                synchronization_enable = false;
+            }
+        }
+        else
+        {
+            bool active = false;
+            if (big_button(&active, win, 5 + left, 0, textual_icons::unlock, "Lock", false, 
+                support_non_syncronized_mode && has_stream, "Lock pointcloud and texture data together"))
+            {
+                synchronization_enable = true;
+            }
+        }
+        left += 70;
+
+        ImGui::GetWindowDrawList()->AddLine({ cursor.x + left - 1, cursor.y + 5 }, 
+            { cursor.x + left - 1, cursor.y + top_bar_height - 5 }, ImColor(grey));
+
+        // ------------ Depth Selection --------------
+
+        const auto source_selection_popup = "Source Selection";
+
+        if (big_button(&select_3d_source, win, left, 0, u8"\uf1b2", 
+                       "Source", true,
+                       has_stream,
+                       "List of available 3D data sources"))
+        {
+            ImGui::OpenPopup(source_selection_popup);
+        }
+
+        ImGui::PushStyleColor(ImGuiCol_Text, black);
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, light_blue);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        ImGui::SetNextWindowPos({ cursor.x + left + 5, cursor.y + 60 });
+        if (ImGui::BeginPopup(source_selection_popup))
+        {
+            select_3d_source = true;
+
             i = 0;
             for (auto&& s : streams)
             {
@@ -431,236 +570,330 @@ namespace rs2
                     s.second.texture->get_last_frame() &&
                     s.second.profile.stream_type() == RS2_STREAM_DEPTH)
                 {
-                    if (i == selected_depth_source)
+                    std::string id = to_string() << depth_sources_str[i] << "##DepthSource-" << i;
+
+                    bool selected = i == selected_depth_source;
+                    if (ImGui::MenuItem(id.c_str(), nullptr, &selected))
                     {
-                        selected_depth_source_uid =  streams_origin[s.second.profile.unique_id()];
+                        if (selected)
+                        {
+                            selected_depth_source_uid = streams_origin[s.second.profile.unique_id()];
+                        }
                     }
                     i++;
                 }
             }
 
-            ImGui::PopItemWidth();
-
-            if (buttons_heights == top_bar_height) ImGui::SameLine();
-        }
-
-        if (!allow_3d_source_change) ImGui::SetCursorPos({ 7, 7 });
-
-        // Only allow to change texture if we have something to put it on:
-        if (tex_sources_str.size() && depth_sources_str.size())
-        {
-            if (buttons_heights == top_bar_height) ImGui::SetCursorPosY(7);
-            else ImGui::SetCursorPos({ 7, buttons_heights + 7 });
-
-            ImGui::Text("Texture Source:"); ImGui::SameLine();
-
-            if (buttons_heights == top_bar_height) ImGui::SetCursorPosY(7);
-            else ImGui::SetCursorPosY(buttons_heights + 7);
-
-            ImGui::PushItemWidth(combo_box_width);
-            draw_combo_box("##Tex Source", tex_sources_str, selected_tex_source);
-            if (streams.find(tex_sources[selected_tex_source]) != streams.end())
-                selected_tex_source_uid = tex_sources[selected_tex_source];
-
-            ImGui::PopItemWidth();
-
-            ImGui::SameLine();
-
-            // Occlusion control for RGB UV-Map uses option's description as label
-            // Position is dynamically adjusted to avoid overlapping on resize
-            if (streams.find(selected_tex_source_uid) != streams.end())
-                if (RS2_STREAM_COLOR==streams[selected_tex_source_uid].profile.stream_type())
-                {
-                    ImGui::PushItemWidth(combo_box_width);
-                    ppf.get_pc_model()->get_option(rs2_option::RS2_OPTION_FILTER_MAGNITUDE).draw(error_message,
-                        not_model, stream_rect.w < 1000, false);
-                    ImGui::PopItemWidth();
-                }
-        }
-
-        ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons - 5, 0 });
-
-        if (paused)
-        {
-            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-            label = to_string() << textual_icons::play << "##Resume 3d";
-            if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
-            {
-                paused = false;
-                for (auto&& s : streams)
-                {
-                    if (s.second.dev) s.second.dev->resume();
-                }
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Resume All");
-            }
-            ImGui::PopStyleColor(2);
+            ImGui::EndPopup();
         }
         else
         {
-            label = to_string() << textual_icons::pause << "##Pause 3d";
-            if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
+            select_3d_source = false;
+        }
+        left += 80;
+
+        // ------------ Texture Selection --------------
+
+        const auto tex_selection_popup = "Tex Selection";
+        if (big_button(&select_tex_source, win, left, 0, u8"\uf576", 
+                       "Texture", true, 
+                       has_stream,
+                       "List of available texture sources"))
+        {
+            ImGui::OpenPopup(tex_selection_popup);
+        }
+
+        ImGui::SetNextWindowPos({ cursor.x + left + 5, cursor.y + 60 });
+        if (ImGui::BeginPopup(tex_selection_popup))
+        {
+            select_tex_source = true;
+
+            for (int i = 0; i < tex_sources_str.size(); i++)
             {
-                paused = true;
-                for (auto&& s : streams)
+                std::string id = to_string() << tex_sources_str[i] << "##TexSource-" << i;
+
+                bool selected = i == selected_tex_source;
+                if (ImGui::MenuItem(id.c_str(), nullptr, &selected))
                 {
-                    if (s.second.dev) s.second.dev->pause();
+                    if (selected)
+                    {
+                        selected_tex_source_uid = tex_sources[i];
+                    }
                 }
             }
-            if (ImGui::IsItemHovered())
+
+            ImGui::EndPopup();
+        }
+        else
+        {
+            select_tex_source = false;
+        }
+
+        left += 80;
+
+        // ------------ Shader Selection --------------
+
+        const auto using_glsl = config_file::instance().get_or_default(configurations::performance::glsl_for_rendering, false);
+
+        const auto shader_selection_popup = "Shading Selection";
+        if (big_button(&select_shader_source, win, left, 0, u8"\uf5aa", 
+                       "Shading", true, true,
+                       "List of available shading modes"))
+        {
+            ImGui::OpenPopup(shader_selection_popup);
+        }
+
+        ImGui::SetNextWindowPos({ cursor.x + left + 5, cursor.y + 60 });
+        if (ImGui::BeginPopup(shader_selection_popup))
+        {
+            select_shader_source = true;
+
+            bool selected = selected_shader == shader_type::points;
+            if (ImGui::MenuItem("Raw Point-Cloud", nullptr, &selected))
             {
-                ImGui::SetTooltip("Pause All");
+                if (selected) selected_shader = shader_type::points;
+            }
+
+            selected = selected_shader == shader_type::flat;
+            if (ImGui::MenuItem("Flat-Shaded Mesh", nullptr, &selected))
+            {
+                if (selected) selected_shader = shader_type::flat;
+            }
+
+            selected = selected_shader == shader_type::diffuse;
+            if (ImGui::MenuItem("With Diffuse Lighting", nullptr, &selected, using_glsl))
+            {
+                if (selected) selected_shader = shader_type::diffuse;
+            }
+
+            ImGui::EndPopup();
+        }
+        else
+        {
+            select_shader_source = false;
+        }
+        left += 80;
+
+        //-----------------------------
+
+        ImGui::PopStyleColor(4);
+
+        ImGui::GetWindowDrawList()->AddLine({ cursor.x + left - 1, cursor.y + 5 }, 
+            { cursor.x + left - 1, cursor.y + top_bar_height - 5 }, ImColor(grey));
+
+        // -------------------- Measure ----------------
+
+        std::string measure_tooltip = "Measure distance between points";
+        if (!using_glsl) measure_tooltip += "\nRequires GLSL acceleration!";
+        if (measurement_active)
+        {
+            bool active = true;
+            if (big_button(&active, win, 5 + left, 0, textual_icons::measure, "Measure", false, using_glsl, measure_tooltip.c_str()))
+            {
+                measurement_active = false;
             }
         }
+        else
+        {
+            bool active = false;
+            if (big_button(&active, win, 5 + left, 0, textual_icons::measure, "Measure", false, using_glsl, measure_tooltip.c_str()))
+            {
+                measurement_active = true;
+            }
+        }
+        left += 60;
+
+        // -------------------- Trajectory (T265) -------------------
+
+        active = trajectory_button.is_pressed();
+        if (big_button(&active, win, 5 + left, 0, u8"\uf1b0", 
+            "Route", false, pose_render, "Show 6-dof Pose Trajectory\nRequires T265 tracking device"))
+        {
+            trajectory_button.toggle_button();
+            for (auto&& s : streams)
+            {
+                if (s.second.profile.stream_type() == RS2_STREAM_POSE)
+                    streams[s.second.profile.unique_id()].dev->tm2.record_trajectory(trajectory_button.is_pressed());
+            }
+        }
+
+        left += 60;
+
+        // -------------------- Export ------------------
 
         static config_file temp_cfg;
         set_export_popup(large_font, font, stream_rect, error_message, temp_cfg);
 
-        ImGui::SameLine();
-        if (ImGui::Button(textual_icons::floppy, { 24, buttons_heights }))
+        active = false;
+        if (big_button(&active, win, 5 + left, 0, textual_icons::floppy, "Export", false, last_points, "Export 3D model to 3rd-party application"))
         {
             temp_cfg = config_file::instance();
             ImGui::OpenPopup("Export");
         }
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Export 3D model to PLY format");
+        
+        left += 60;
 
-        ImGui::SameLine();
+        // ---------------------- Help --------------------
 
-        if (ImGui::Button(textual_icons::refresh, { 24, buttons_heights }))
+        active = show_help_screen;
+        if (big_button(&active, win, stream_rect.w - 65, 0, u8"\uf059", "Help", false, true, "Show 3D Viewer Controls"))
         {
-            reset_camera();
+            show_help_screen = !show_help_screen;
         }
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Reset View");
-
-        ImGui::SameLine();
-
-        if (render_quads)
-        {
-            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-            label = to_string() << textual_icons::cubes << "##Render Quads";
-            if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
-            {
-                render_quads = false;
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Render Quads");
-            }
-            ImGui::PopStyleColor(2);
-        }
-        else
-        {
-            label = to_string() << textual_icons::cubes << "##Render Points";
-            if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
-            {
-                render_quads = true;
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Render Points");
-            }
-        }
-        ImGui::SameLine();
+        
+        left += 60;
 
 
-        if (render_shaded)
-        {
-            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-            label = to_string() << textual_icons::cubes << "##Render Shaded";
-            if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
-            {
-                render_shaded = false;
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Render Quads");
-            }
-            ImGui::PopStyleColor(2);
-        }
-        else
-        {
-            label = to_string() << textual_icons::cubes << "##Render Shaded";
-            if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
-            {
-                render_shaded = true;
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Render Points");
-            }
-        }
-        ImGui::SameLine();
+        // ImGui::PopStyleColor(4);
+        // ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons - 5, 0 });
 
-        if (support_non_syncronized_mode)
-        {
-            if (synchronization_enable)
-            {
-                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-                if (ImGui::Button(textual_icons::lock, { 24, buttons_heights }))
-                {
-                    synchronization_enable = false;
-                }
-                if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("Disable syncronization between the pointcloud and the texture");
-                ImGui::PopStyleColor(2);
-            }
-            else
-            {
-                if (ImGui::Button(textual_icons::unlock, { 24, buttons_heights }))
-                {
-                    synchronization_enable = true;
-                }
-                if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("Keep the pointcloud and the texture sycronized");
-            }
-        }
+        
+
+        // static config_file temp_cfg;
+        // set_export_popup(large_font, font, stream_rect, error_message, temp_cfg);
+
+        // ImGui::SameLine();
+        // if (ImGui::Button(textual_icons::floppy, { 24, buttons_heights }))
+        // {
+        //     temp_cfg = config_file::instance();
+        //     ImGui::OpenPopup("Export");
+        // }
+        // if (ImGui::IsItemHovered())
+        //     ImGui::SetTooltip("Export 3D model to PLY format");
+
+        // ImGui::SameLine();
+
+        // if (ImGui::Button(textual_icons::refresh, { 24, buttons_heights }))
+        // {
+        //     reset_camera();
+        // }
+        // if (ImGui::IsItemHovered())
+        //     ImGui::SetTooltip("Reset View");
+
+        // ImGui::SameLine();
+
+        // if (render_quads)
+        // {
+        //     ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+        //     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+        //     label = to_string() << textual_icons::cubes << "##Render Quads";
+        //     if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
+        //     {
+        //         render_quads = false;
+        //     }
+        //     if (ImGui::IsItemHovered())
+        //     {
+        //         ImGui::SetTooltip("Render Quads");
+        //     }
+        //     ImGui::PopStyleColor(2);
+        // }
+        // else
+        // {
+        //     label = to_string() << textual_icons::cubes << "##Render Points";
+        //     if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
+        //     {
+        //         render_quads = true;
+        //     }
+        //     if (ImGui::IsItemHovered())
+        //     {
+        //         ImGui::SetTooltip("Render Points");
+        //     }
+        // }
+        // ImGui::SameLine();
 
 
-        //ImGui::End();
+        // if (render_shaded)
+        // {
+        //     ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+        //     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+        //     label = to_string() << textual_icons::cubes << "##Render Shaded";
+        //     if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
+        //     {
+        //         render_shaded = false;
+        //     }
+        //     if (ImGui::IsItemHovered())
+        //     {
+        //         ImGui::SetTooltip("Render Quads");
+        //     }
+        //     ImGui::PopStyleColor(2);
+        // }
+        // else
+        // {
+        //     label = to_string() << textual_icons::cubes << "##Render Shaded";
+        //     if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
+        //     {
+        //         render_shaded = true;
+        //     }
+        //     if (ImGui::IsItemHovered())
+        //     {
+        //         ImGui::SetTooltip("Render Points");
+        //     }
+        // }
+        // ImGui::SameLine();
 
-        if (pose_render)
-        {
-            render_pose(stream_rect, buttons_heights);
-        }
+        // if (support_non_syncronized_mode)
+        // {
+        //     if (synchronization_enable)
+        //     {
+        //         ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+        //         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+        //         if (ImGui::Button(textual_icons::lock, { 24, buttons_heights }))
+        //         {
+        //             synchronization_enable = false;
+        //         }
+        //         if (ImGui::IsItemHovered())
+        //             ImGui::SetTooltip("Disable syncronization between the pointcloud and the texture");
+        //         ImGui::PopStyleColor(2);
+        //     }
+        //     else
+        //     {
+        //         if (ImGui::Button(textual_icons::unlock, { 24, buttons_heights }))
+        //         {
+        //             synchronization_enable = true;
+        //         }
+        //         if (ImGui::IsItemHovered())
+        //             ImGui::SetTooltip("Keep the pointcloud and the texture sycronized");
+        //     }
+        // }
 
-        auto total_top_bar_height = top_bar_height * (1 + pose_render); // may include single bar or additional bar for pose
-        ImGui::PopStyleColor(5);
 
-        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        // //ImGui::End();
 
-        ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
+        // if (pose_render)
+        // {
+        //     render_pose(stream_rect, buttons_heights);
+        // }
 
-        auto old_pos = ImGui::GetCursorScreenPos();
-        ImVec2 pos { stream_rect.x + stream_rect.w - 215, stream_rect.y + total_top_bar_height + 5 };
-        ImGui::SetCursorScreenPos(pos);
-        ImGui::GetWindowDrawList()->AddRectFilled(pos, { pos.x + 260, pos.y + 65 }, ImColor(dark_sensor_bg));
+        // auto total_top_bar_height = top_bar_height * (1 + pose_render); // may include single bar or additional bar for pose
+        // ImGui::PopStyleColor(5);
 
-        ImGui::SetCursorScreenPos({ pos.x + 5, pos.y + 2 });
-        ImGui::Text("Rotate:");
-        ImGui::SetCursorScreenPos({ pos.x + 5, pos.y + 22 });
-        ImGui::Text("Pan:");
-        ImGui::SetCursorScreenPos({ pos.x + 5, pos.y + 42 });
-        ImGui::Text("Zoom:");
+        // ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        // ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
 
-        ImGui::SetCursorScreenPos({ pos.x + 65, pos.y + 2 });
-        ImGui::Text("Left Mouse Button");
-        ImGui::SetCursorScreenPos({ pos.x + 65, pos.y + 22 });
-        ImGui::Text("Middle Mouse Button");
-        ImGui::SetCursorScreenPos({ pos.x + 65, pos.y + 42 });
-        ImGui::Text("Mouse Wheel");
+        // ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
+        // ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
+        // ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
 
-        ImGui::SetCursorScreenPos(old_pos);
+        // auto old_pos = ImGui::GetCursorScreenPos();
+        // ImVec2 pos { stream_rect.x + stream_rect.w - 215, stream_rect.y + total_top_bar_height + 5 };
+        // ImGui::SetCursorScreenPos(pos);
+        // ImGui::GetWindowDrawList()->AddRectFilled(pos, { pos.x + 260, pos.y + 65 }, ImColor(dark_sensor_bg));
+
+        // ImGui::SetCursorScreenPos({ pos.x + 5, pos.y + 2 });
+        // ImGui::Text("Rotate:");
+        // ImGui::SetCursorScreenPos({ pos.x + 5, pos.y + 22 });
+        // ImGui::Text("Pan:");
+        // ImGui::SetCursorScreenPos({ pos.x + 5, pos.y + 42 });
+        // ImGui::Text("Zoom:");
+
+        // ImGui::SetCursorScreenPos({ pos.x + 65, pos.y + 2 });
+        // ImGui::Text("Left Mouse Button");
+        // ImGui::SetCursorScreenPos({ pos.x + 65, pos.y + 22 });
+        // ImGui::Text("Middle Mouse Button");
+        // ImGui::SetCursorScreenPos({ pos.x + 65, pos.y + 42 });
+        // ImGui::Text("Mouse Wheel");
+
+        // ImGui::SetCursorScreenPos(old_pos);
         ImGui::PopStyleColor(5);
 
 
@@ -790,9 +1023,6 @@ namespace rs2
             config_file::instance().set(configurations::viewer::sdk_version, version);
         }
 
-        continue_with_ui_not_aligned = config_file::instance().get_or_default(
-            configurations::viewer::continue_with_ui_not_aligned, false);
-
         continue_with_current_fw = config_file::instance().get_or_default(
             configurations::viewer::continue_with_current_fw, false);
 
@@ -802,8 +1032,8 @@ namespace rs2
         ground_truth_r = config_file::instance().get_or_default(
             configurations::viewer::ground_truth_r, 2500);
 
-        metric_system = config_file::instance().get_or_default(
-            configurations::viewer::metric_system, true);
+        selected_shader = (shader_type)config_file::instance().get_or_default(
+            configurations::viewer::shading_mode, 2);
 
         auto min_severity = (rs2_log_severity)config_file::instance().get_or_default(
             configurations::viewer::log_severity, 2);
@@ -1845,7 +2075,7 @@ namespace rs2
         std::shared_ptr<texture_buffer> texture, rs2::points points, ImFont *font1, float3* picked_xyz)
     {
         bool picked = false;
-        auto top_bar_height = 32.f;
+        auto top_bar_height = 60.f;
 
         if (points)
         {
@@ -1855,9 +2085,9 @@ namespace rs2
         {
             last_texture = texture;
         }
-
-        glViewport(static_cast<GLint>(viewer_rect.x), 0,
-            static_cast<GLsizei>(viewer_rect.w), static_cast<GLsizei>(win.framebuf_height()));
+        
+        glViewport(static_cast<GLint>(viewer_rect.x), static_cast<GLint>(win.framebuf_height() - top_bar_height - viewer_rect.y - viewer_rect.h),
+            static_cast<GLsizei>(viewer_rect.w), static_cast<GLsizei>(win.framebuf_height() - top_bar_height - viewer_rect.y));
 
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1866,7 +2096,7 @@ namespace rs2
 
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
-        gluPerspective(40, viewer_rect.w / win.framebuf_height(), 0.001f, 100.0f);
+        gluPerspective(45, viewer_rect.w / win.framebuf_height(), 0.001f, 100.0f);
         matrix4 perspective_mat;
         glGetFloatv(GL_PROJECTION_MATRIX, perspective_mat);
         glPopMatrix();
@@ -2093,22 +2323,23 @@ namespace rs2
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
 
-            _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_FILLED, render_quads ? 1.f : 0.f);
-            _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_SHADED, render_shaded ? 1.f : 0.f);
+            _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_FILLED, selected_shader != shader_type::points ? 1.f : 0.f);
+            _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_SHADED, selected_shader == shader_type::diffuse ? 1.f : 0.f);
 
             _pc_renderer.set_matrix(RS2_GL_MATRIX_CAMERA, r2 * view_mat);
             _pc_renderer.set_matrix(RS2_GL_MATRIX_PROJECTION, perspective_mat);
 
             _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_SELECTED, _pc_selected ? 1.f : 0.f);
 
-            auto cursor = win.get_mouse().cursor;
-            cursor.x *= win.get_scale_factor();
-            cursor.y *= win.get_scale_factor();
-            if (viewer_rect.contains(cursor))
-            {
-                cursor.x /= win.get_scale_factor();
-                cursor.y /= win.get_scale_factor();
+            auto viewport_rect = viewer_rect;
+            viewport_rect.y += top_bar_height;
 
+            auto cursor = win.get_mouse().cursor;
+            auto scaled_cursor = cursor;
+            scaled_cursor.x *= win.get_scale_factor();
+            scaled_cursor.y *= win.get_scale_factor();
+            if (viewport_rect.contains(scaled_cursor))
+            {
                 _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_MOUSE_PICK, 1.f);
                 _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_SCALE_FACTOR, win.get_scale_factor());
 
@@ -2210,11 +2441,6 @@ namespace rs2
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glBegin(GL_TRIANGLES);
 
-            if (isnanf(_curr_normal.x) || isnanf(_curr_normal.y) || isnanf(_curr_normal.z))
-                _curr_normal = _normal;
-            if (fabs(_curr_normal.x * _curr_normal.y * _curr_normal.z) == 0.f)
-                _curr_normal = _normal;
-
             float size = _picked.z * 0.03f;
 
             auto single_wave = [](float x) -> float
@@ -2225,14 +2451,11 @@ namespace rs2
             if (input_ctrl.mouse_down) size -= _picked.z * 0.01f;
             size += _picked.z * 0.03f * single_wave(input_ctrl.click_period());
 
-            _curr_normal = lerp(_curr_normal, _normal, 0.1f);
-
-            auto end = _picked + _curr_normal * size;
-            _curr_normal.normalize();
-            auto axis1 = cross(vec3d{ _curr_normal.x, _curr_normal.y, _curr_normal.z }, vec3d{ 0.f, 1.f, 0.f });
+            auto end = _picked + _normal * size;
+            auto axis1 = cross(vec3d{ _normal.x, _normal.y, _normal.z }, vec3d{ 0.f, 1.f, 0.f });
             auto faxis1 = float3 { axis1.x, axis1.y, axis1.z };
             faxis1.normalize();
-            auto axis2 = cross(vec3d{ _curr_normal.x, _curr_normal.y, _curr_normal.z }, axis1);
+            auto axis2 = cross(vec3d{ _normal.x, _normal.y, _normal.z }, axis1);
             auto faxis2 = float3 { axis2.x, axis2.y, axis2.z };
             faxis2.normalize();
 
@@ -2245,9 +2468,9 @@ namespace rs2
             basis(1, 1) = faxis2.y;
             basis(1, 2) = faxis2.z;
 
-            basis(2, 0) = _curr_normal.x;
-            basis(2, 1) = _curr_normal.y;
-            basis(2, 2) = _curr_normal.z;
+            basis(2, 0) = _normal.x;
+            basis(2, 1) = _normal.y;
+            basis(2, 2) = _normal.z;
 
             if (input_ctrl.click) {
                 selected_points.push_back({ _picked, _normal, basis });
@@ -3244,9 +3467,9 @@ namespace rs2
         else
         {
             if (paused)
-                show_paused_icon(window.get_large_font(), static_cast<int>(panel_width + 15), static_cast<int>(panel_y + 15 + 32), 0);
+                show_paused_icon(window.get_large_font(), static_cast<int>(panel_width + 15), static_cast<int>(panel_y + 15 + 60), 0);
 
-            show_3dviewer_header(window.get_large_font(), window.get_font(), viewer_rect, paused, error_message);
+            show_3dviewer_header(window, viewer_rect, paused, error_message);
 
             update_3d_camera(window, viewer_rect);
 

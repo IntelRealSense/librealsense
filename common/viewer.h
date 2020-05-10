@@ -108,7 +108,7 @@ namespace rs2
         void render_pose(rs2::rect stream_rect, float buttons_heights);
         void try_select_pointcloud(ux_window& win);
 
-        void show_3dviewer_header(ImFont* large_font, ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message);
+        void show_3dviewer_header(ux_window& window, rs2::rect stream_rect, bool& paused, std::string& error_message);
 
         void update_3d_camera(ux_window& win, const rect& viewer_rect, bool force = false);
         void update_input(ux_window& win);
@@ -164,10 +164,23 @@ namespace rs2
         int selected_depth_source_uid = -1;
         int selected_tex_source_uid = -1;
 
+        enum class shader_type
+        {
+            points,
+            flat,
+            diffuse
+        };
+        shader_type selected_shader = shader_type::diffuse;
+
         float dim_level = 1.f;
 
-        bool continue_with_ui_not_aligned = false;
         bool continue_with_current_fw = false;
+
+        bool select_3d_source = false;
+        bool select_tex_source = false;
+        bool select_shader_source = false;
+        bool measurement_active = false;
+        bool show_help_screen = false;
 
         press_button_model trajectory_button{ u8"\uf1b0", u8"\uf1b0","Draw trajectory", "Stop drawing trajectory", true };
         press_button_model grid_object_button{ u8"\uf1cb", u8"\uf1cb",  "Configure Grid", "Configure Grid", false };
@@ -212,8 +225,6 @@ namespace rs2
         float3 target = { 0.0f, 0.0f, 0.0f };
         float3 up;
         bool fixed_up = true;
-        bool render_quads = true;
-        bool render_shaded = true;
 
         float view[16];
         bool texture_wrapping_on = true;
@@ -243,10 +254,9 @@ namespace rs2
 
 
         bool _pc_selected = false;
-        temporal_event mouse_picked_event;
+        temporal_event mouse_picked_event { std::chrono::milliseconds(2000) };
 
         float3 _normal, _picked;
-        float3 _curr_normal { 0.f, 0.f, 0.f };
 
         struct interest_point
         {

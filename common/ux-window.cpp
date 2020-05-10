@@ -90,6 +90,7 @@ namespace rs2
             config_file::instance().set_default(configurations::performance::msaa_samples, 2);
             config_file::instance().set_default(configurations::performance::glsl_for_processing, true);
             config_file::instance().set_default(configurations::performance::glsl_for_rendering, true);
+            config_file::instance().set_default(configurations::viewer::shading_mode, 2);
         }
         else
         {
@@ -99,6 +100,7 @@ namespace rs2
             config_file::instance().set_default(configurations::performance::msaa_samples, 2);
             config_file::instance().set_default(configurations::performance::glsl_for_processing, false);
             config_file::instance().set_default(configurations::performance::glsl_for_rendering, false);
+            config_file::instance().set_default(configurations::viewer::shading_mode, 0);
         }
 #endif
     }
