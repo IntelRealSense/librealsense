@@ -804,7 +804,7 @@ void optimizer::set_depth_data(
 
    [uv,~,~] = OnlineCalibration.aux.projectVToRGB(vertices,params.rgbPmat,params.Krgb,params.rgbDistort);
    isInside = OnlineCalibration.aux.isInsideImage(uv,params.rgbRes);
-
+   
    xim = xim(isInside);
    yim = yim(isInside);
    zValuesForSubEdges = zValuesForSubEdges(isInside);
@@ -816,7 +816,7 @@ void optimizer::set_depth_data(
    //_params.constant_weights;
     transform(_depth.valid_edge_sub_pixel_x.begin(), _depth.valid_edge_sub_pixel_x.end(), _depth.valid_edge_sub_pixel_x.begin(), bind2nd(std::plus<double>(), -1.0));
     transform(_depth.valid_edge_sub_pixel_y.begin(), _depth.valid_edge_sub_pixel_y.end(), _depth.valid_edge_sub_pixel_y.begin(), bind2nd(std::plus<double>(), -1.0));
-    for (auto i = 0; i < _depth.sub_points.size(); i+=3)
+    for (auto i = 0; i < _depth.sub_points.size(); i += 3)
     {
         double sub_points_mult[3] = { 0,0,0 };
         double vec1 = *(_depth.sub_points.begin() + i);
@@ -830,10 +830,10 @@ void optimizer::set_depth_data(
         auto val1 = sub_points_mult[0] * *(_depth.values_for_subedges.begin() + i / 3) / _params.max_sub_mm_z;
         auto val2 = sub_points_mult[1] * *(_depth.values_for_subedges.begin() + i / 3) / _params.max_sub_mm_z;
         auto val3 = sub_points_mult[2] * *(_depth.values_for_subedges.begin() + i / 3) / _params.max_sub_mm_z;
-        _depth.vertices2.push_back(val1);
-        _depth.vertices2.push_back(val2);
-        _depth.vertices2.push_back(val3);
+        _depth.vertices2.push_back({val1, val2, val3});
     }
+    
+    _depth.uvmap2 = get_texture_map(_depth.vertices2, _params_curr.curr_calib);
 
     // old code :
     /*

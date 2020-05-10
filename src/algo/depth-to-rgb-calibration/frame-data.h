@@ -95,7 +95,9 @@ namespace depth_to_rgb_calibration {
         std::vector<double > valid_edge_sub_pixel_x;
         std::vector<double > valid_edge_sub_pixel_y;
         std::vector<double> sub_points;
-        std::vector<double> vertices2;
+        std::vector<double3> vertices2;
+        std::vector<double> vertices3;
+        std::vector<double2> uvmap2;
 
         // input validation
         std::vector<byte> section_map;
