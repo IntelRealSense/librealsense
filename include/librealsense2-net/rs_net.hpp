@@ -43,5 +43,46 @@ namespace rs2
                 return dev;
             }
         };
+
+        class net_server 
+        {
+        public:
+            net_server(rs2_device* dev, rs_server_params params)
+                : m_params(params)
+            {
+                rs2_error* e = nullptr;
+                m_server = rs2_create_server(RS2_API_VERSION, dev, m_params, &e);
+                error::handle(e);
+            }
+
+            ~net_server()
+            {
+                rs2_error* e = nullptr;
+                rs2_destroy_server(RS2_API_VERSION, m_server, &e);
+                error::handle(e);
+            }
+            
+            int start()
+            {
+                rs2_error* e = nullptr;
+                int result = rs2_start_server(RS2_API_VERSION, m_server, &e);
+                error::handle(e);
+
+                return result;
+            }
+
+            int stop()
+            {
+                rs2_error* e = nullptr;
+                int result = rs2_stop_server(RS2_API_VERSION, m_server, &e);
+                error::handle(e);
+
+                return result;
+            }
+
+        private:
+            rs_server*       m_server;
+            rs_server_params m_params;
+        };
 }
 #endif // LIBREALSENSE_RS2_NET_HPP

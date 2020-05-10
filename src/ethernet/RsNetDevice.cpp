@@ -417,3 +417,37 @@ rs2_device* rs2_create_net_device(int api_version, const char* address, rs2_erro
     return sw_dev.get().get();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, address)
+
+// rs_server
+rs_server* rs2_create_server(int api_version, rs2_device* dev, rs_server_params params, rs2_error** error)
+{
+    ERR << "create server\n";
+    return NULL;
+}
+
+int rs2_start_server(int api_version, rs_server* srv, rs2_error** error)
+{
+    if (!srv) return -1; // ERR_NOSERVER
+
+    ERR << "start server\n";
+
+    return -1; // ERR_NOTIMPLEMENTED
+}
+
+int rs2_stop_server(int api_version, rs_server* srv, rs2_error** error)
+{
+    if (!srv) return -1; // ERR_NOSERVER
+
+    ERR << "stop server\n";
+
+    return -1; // ERR_NOTIMPLEMENTED
+}
+
+int rs2_destroy_server(int api_version, rs_server* srv, rs2_error** error)
+{
+    if (!srv) return -1; // ERR_NOSERVER
+
+    ERR << "destroy server\n";
+
+    return -1; // ERR_NOTIMPLEMENTED
+}
