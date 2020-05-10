@@ -8,10 +8,12 @@
 #include "RsSensor.hh"
 #include <map>
 
+#include <librealsense2/hpp/rs_device.hpp>
+
 class RsDevice
 {
 public:
-    RsDevice(UsageEnvironment* t_env);
+    RsDevice(UsageEnvironment *t_env, rs2::device dev);
     ~RsDevice();
     std::vector<RsSensor>& getSensors()
     {

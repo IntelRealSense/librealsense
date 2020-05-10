@@ -21,7 +21,7 @@
 
 using namespace TCLAP;
 
-server::server(std::string addr, int port)
+server::server(rs2::device dev, std::string addr, int port)
 {
     std::cout << "Rs-server is running\n";
 
@@ -33,7 +33,8 @@ server::server(std::string addr, int port)
     scheduler = BasicTaskScheduler::createNew();
     env = RSUsageEnvironment::createNew(*scheduler);
 
-    rsDevice = std::make_shared<RsDevice>(env);
+    rsDevice = std::make_shared<RsDevice>(env, dev);
+
     rtspServer = RsRTSPServer::createNew(*env, rsDevice, port);
 
     if (rtspServer == NULL)
@@ -173,7 +174,11 @@ int main(int argc, char** argv)
         port = arg_port.getValue();
     }
 
-    server s(addr, port);
+    rs2::context ctx;
+    rs2::device_list devices = ctx.query_devices();
+    rs2::device dev = devices[0];
+
+    server s(dev, addr, port);
 
     s.start();
 

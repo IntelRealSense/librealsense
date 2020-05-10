@@ -12,12 +12,14 @@
 #include "RsCommon.h"
 #include <compression/CompressionFactory.h>
 
+#include <librealsense2/hpp/rs_device.hpp>
+
 #include <string>
 
 class server
 {
 public:
-    server(std::string addr, int port);
+    server(rs2::device dev, std::string addr, int port);
     ~server();
 
     void start();

@@ -6,50 +6,17 @@
 #include <iostream>
 #include <thread>
 
+#include <librealsense2/hpp/rs_device.hpp>
+
 int RsDevice::getPhysicalSensorUniqueKey(rs2_stream stream_type, int sensors_index)
 {
     return stream_type * 10 + sensors_index;
 }
 
-RsDevice::RsDevice(UsageEnvironment* t_env)
-    : env(t_env)
+RsDevice::RsDevice(UsageEnvironment* t_env, rs2::device dev)
+    : env(t_env), m_device(dev)
 {
-    //get LRS device
-    // The context represents the current platform with respect to connected devices
-
-    bool found = false;
-    bool first = true;
-    do
-    {
-        rs2::context ctx;
-        rs2::device_list devices = ctx.query_devices();
-        rs2::device dev;
-        if(devices.size())
-        {
-            try
-            {
-                m_device = devices[0]; // Only one device is supported
-                *env << "RealSense Device Connected\n";
-
-                found = true;
-            }
-            catch(const std::exception& e)
-            {
-                std::cerr << e.what() << '\n';
-            }
-        }
-        if(!found)
-        {
-            if(first)
-            {
-                std::cerr << "Waiting for Device..." << std::endl;
-                first = false;
-            }
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
-    } while(!found);
-
-    //get RS sensors
+    // get device sensors
     for(auto& sensor : m_device.query_sensors())
     {
         m_sensors.push_back(RsSensor(env, sensor, m_device));
