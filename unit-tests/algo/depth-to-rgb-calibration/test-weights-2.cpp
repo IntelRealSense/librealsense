@@ -592,6 +592,10 @@ TEST_CASE("Weights calc", "[d2rgb]")
         CHECK(compare_to_bin_file< uint8_t >(depth_data.valid_section_map, dir, scene, FILE_NAME("validsectionMapDepth", 1, 4259, "uint8_00").c_str(), 4259, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(depth_data.valid_direction_index, dir, scene, FILE_NAME("validdirectionIndex", 1, 4259, "double_00").c_str(), 4259, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(depth_data.valid_edge_sub_pixel, dir, scene, FILE_NAME("validedgeSubPixel", 2, 4259, "double_00").c_str(), 4259, 2, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.valid_edge_sub_pixel_x, dir, scene, FILE_NAME("xim", 1, 4259, "double_00").c_str(), 4259, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.valid_edge_sub_pixel_y, dir, scene, FILE_NAME("yim", 1, 4259, "double_00").c_str(), 4259, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double>(depth_data.sub_points, dir, scene, FILE_NAME("subPoints", 3, 4259, "double_00").c_str(), 4259, 3, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.vertices2, dir, scene, FILE_NAME("vertices", 3, 4259, "double_00").c_str(), 4259, 3, compare_same_vectors));
         //// ---
         //TRACE( "\nChecking scene validity:" );
 

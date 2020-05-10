@@ -29,9 +29,9 @@ namespace depth_to_rgb_calibration {
     struct params
     {
         params();
-        
-        void set_depth_resolution( size_t width, size_t height );
-        void set_rgb_resolution( size_t width, size_t height );
+
+        void set_depth_resolution(size_t width, size_t height);
+        void set_rgb_resolution(size_t width, size_t height);
 
         double gamma = 0.9;
         double alpha = (double)1 / (double)3;
@@ -63,6 +63,12 @@ namespace depth_to_rgb_calibration {
         double move_thresh_pix_val = 20;
         double move_threshold_pix_num = 62.2080;
 
+        //smearing
+        double max_sub_mm_z = 4;
+        double k_depth[3][3] = { {731.27344,0,529.27344 },{0,731.97656,402.32031},{0,0,1} };
+        double k_depth_pinv_trans[3][3] = { { 0.0013674778, -1.1641532e-10,	2.3283064e-10 }, //pinv(params.Kdepth)';
+                                            { 8.7311491e-11,0.0013661643 ,-2.9103830e-11}, 
+                                            {  -0.72376943, -0.54963547,0.99999988 } };
         // output validation
         double const max_xy_movement_per_calibration[3] = { 10, 2, 2 };
         double const max_xy_movement_from_origin = 20;
