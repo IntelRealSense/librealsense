@@ -124,6 +124,7 @@ namespace librealsense
 
             pbo<half4> _xyz_pbo;
             pbo<rgba8> _rgba_pbo;
+            rs2::periodic_timer _when_to_pick { std::chrono::milliseconds(50) };
         };
     }
 }

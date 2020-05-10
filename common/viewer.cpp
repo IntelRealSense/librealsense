@@ -2439,6 +2439,13 @@ namespace rs2
             glLineWidth(2.f);
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+            // glBegin(GL_LINES);
+            // glColor3f(1.f, 1.f, 1.f);
+            // glVertex3d(_picked.x, _picked.y, _picked.z);
+            // glVertex3d(_picked.x + _normal.x, _picked.y + _normal.y, _picked.z + _normal.z);
+            // glEnd();
+
             glBegin(GL_TRIANGLES);
 
             float size = _picked.z * 0.03f;

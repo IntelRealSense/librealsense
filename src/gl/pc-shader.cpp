@@ -175,6 +175,8 @@ static const char* blit_frag_shader_text =
 "    else gl_FragDepth = 65000.0;\n"
 "}";
 
+#define NORMAL_WINDOW_SIZE 9
+
 using namespace rs2;
 
 namespace librealsense
@@ -361,7 +363,7 @@ namespace librealsense
                 glGenTextures(1, &depth_tex);
                 glGenTextures(1, &xyz_tex);
 
-                _xyz_pbo.init(1, 1);
+                _xyz_pbo.init(NORMAL_WINDOW_SIZE, NORMAL_WINDOW_SIZE);
                 _rgba_pbo.init(1, 1);
             }
         }
@@ -467,7 +469,12 @@ namespace librealsense
 
                             float scale = _scale_factor_opt->query();
 
-                            _fbo->set_dims(vp[2] / scale, vp[3] / scale);
+                            const auto fbo_width = vp[2] / scale;
+                            const auto fbo_height = vp[3] / scale;
+                            const auto viewport_x = vp[0] / scale;
+                            const auto viewport_y = vp[1] / scale;
+
+                            _fbo->set_dims(fbo_width, fbo_height);
 
                             glBindFramebuffer(GL_FRAMEBUFFER, _fbo->get());
                             glDrawBuffer(GL_COLOR_ATTACHMENT0);
@@ -478,7 +485,7 @@ namespace librealsense
                             glBindTexture(GL_TEXTURE_2D, xyz_tex);
                             glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
                             glPixelStorei(GL_PACK_ALIGNMENT, 1);
-                            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, vp[2] / scale, vp[3] / scale, 0, GL_RGB, GL_HALF_FLOAT, nullptr);
+                            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, fbo_width, fbo_height, 0, GL_RGBA, GL_HALF_FLOAT, nullptr);
                             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -507,8 +514,8 @@ namespace librealsense
 
                             if (_mouse_pick_opt->query() > 0.f)
                             {
-                                auto x = _mouse_x_opt->query() - vp[0] / scale;
-                                auto y = vp[3] / scale + vp[1] / scale - _mouse_y_opt->query();
+                                auto x = _mouse_x_opt->query() - viewport_x;
+                                auto y = viewport_y + fbo_height - _mouse_y_opt->query();
                                 _shader->set_mouse_xy(x, y);
                             }
                             else _shader->set_mouse_xy(-1, -1);
@@ -531,68 +538,96 @@ namespace librealsense
 
                             _fbo->unbind();
 
-                            _picked_id_opt->set(0.f);
-
                             if (_mouse_pick_opt->query() > 0.f)
                             {
-                                scoped_timer t("mouse pick");
-                                auto x = _mouse_x_opt->query() - vp[0] / scale;
-                                auto y = vp[3] / scale + vp[1] / scale - _mouse_y_opt->query();
-
-                                auto proj = get_matrix(RS2_GL_MATRIX_PROJECTION) * get_matrix(RS2_GL_MATRIX_CAMERA) * get_matrix(RS2_GL_MATRIX_TRANSFORMATION);
-
-                                rs2::float4 origin { 0.f, 0.f, 0.f, 1.f };
-                                rs2::float4 projected = proj * origin;
-
-                                projected.x /= projected.z;
-                                projected.y /= -projected.z;
-                                projected.x = (projected.x + 1.f) / 2.f;
-                                projected.y = (projected.y + 1.f) / 2.f;
-
-
-                                glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo->get());
-                                check_gl_error();
-
-                                float3 normal = { 0.0, 0.0, 0.0 };
-
-                                glReadBuffer(GL_COLOR_ATTACHMENT1);
-                                check_gl_error();
-
-                                half4 pos { 0, 0, 0, 0 };
-
+                                if (_when_to_pick)
                                 {
-                                    scoped_timer t("xyz");
-                                    _xyz_pbo.query(&pos, x, y, 1, 1, GL_RGBA, GL_HALF_FLOAT);
+                                    _picked_id_opt->set(0.f);
+
+                                    scoped_timer t("mouse pick");
+                                    auto x = _mouse_x_opt->query() - viewport_x;
+                                    auto y = viewport_y + fbo_height - _mouse_y_opt->query();
+
+                                    auto proj = get_matrix(RS2_GL_MATRIX_PROJECTION) * get_matrix(RS2_GL_MATRIX_CAMERA) * get_matrix(RS2_GL_MATRIX_TRANSFORMATION);
+
+                                    rs2::float4 origin { 0.f, 0.f, 0.f, 1.f };
+                                    rs2::float4 projected = proj * origin;
+
+                                    projected.x /= projected.z;
+                                    projected.y /= -projected.z;
+                                    projected.x = (projected.x + 1.f) / 2.f;
+                                    projected.y = (projected.y + 1.f) / 2.f;
+
+
+                                    glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo->get());
+                                    check_gl_error();
+
+                                    glReadBuffer(GL_COLOR_ATTACHMENT0);
+                                    check_gl_error();
+
+                                    rgba8 rgba { 0, 0, 0, 0 };
+
+                                    {
+                                        scoped_timer t("rgba");
+                                        _rgba_pbo.query(&rgba, x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE);
+                                    }
+                                    
+                                    if (rgba.a > 0)
+                                    { 
+                                        glReadBuffer(GL_COLOR_ATTACHMENT1);
+                                        check_gl_error();
+
+                                        const auto size = NORMAL_WINDOW_SIZE * NORMAL_WINDOW_SIZE;
+                                        const auto center = size / 2;
+                                        const auto half_window = NORMAL_WINDOW_SIZE / 2;
+
+                                        std::vector<half4> pos_halfs(size);
+
+                                        {
+                                            // Make sure we query inside the texture:
+                                            auto cropped_x = std::max(float(half_window), std::min(x, fbo_width - half_window - 1));
+                                            auto cropped_y = std::max(float(half_window), std::min(y, fbo_height - half_window - 1));
+
+                                            scoped_timer t("xyz");
+                                            _xyz_pbo.query(pos_halfs.data(), cropped_x, cropped_y, 
+                                                NORMAL_WINDOW_SIZE, NORMAL_WINDOW_SIZE, 
+                                                GL_RGBA, GL_HALF_FLOAT);
+                                        }
+
+                                        std::vector<rs2::float3> pos_floats(size);
+                                        for (int i = 0; i < size; i++)
+                                        {
+                                            auto pos = pos_halfs[i];
+                                            auto x = halfToNativeIeee(pos.x);
+                                            auto y = halfToNativeIeee(pos.y);
+                                            auto z = halfToNativeIeee(pos.z);
+                                            pos_floats[i] = { x, y, z };
+                                        }
+
+                                        auto up = pos_floats[center - half_window * NORMAL_WINDOW_SIZE];
+                                        auto down = pos_floats[center + half_window * NORMAL_WINDOW_SIZE];
+                                        auto left = pos_floats[center - half_window];
+                                        auto right = pos_floats[center + half_window];
+                                        auto pos = pos_floats[center];
+
+                                        auto right_left = lerp(pos - left, right - pos, 0.5f);
+                                        auto down_up = lerp(pos - up, down - pos, 0.5f);
+                                        auto normal = cross(right_left, down_up).normalize();
+
+                                        _normal_x_opt->set(normal.x);
+                                        _normal_y_opt->set(-normal.y); 
+                                        _normal_z_opt->set(normal.z);
+
+                                        _picked_x_opt->set(pos.x);
+                                        _picked_y_opt->set(pos.y);
+                                        _picked_z_opt->set(pos.z);
+
+                                        _picked_id_opt->set(1.f);
+                                    }
+
+                                    glReadBuffer(GL_NONE);
+                                    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
                                 }
-
-                                glReadBuffer(GL_COLOR_ATTACHMENT0);
-                                check_gl_error();
-
-                                rgba8 rgba { 0, 0, 0, 0 };
-
-                                {
-                                    scoped_timer t("rgba");
-                                    _rgba_pbo.query(&rgba, x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE);
-                                }
-                                
-
-                                if (rgba.a > 0)
-                                { 
-                                    auto x = halfToNativeIeee(pos.x);
-                                    auto y = halfToNativeIeee(pos.y);
-                                    auto z = halfToNativeIeee(pos.z);
-
-                                    _picked_id_opt->set(1.f);
-                                    _picked_x_opt->set(x);
-                                    _picked_y_opt->set(y);
-                                    _picked_z_opt->set(z);
-                                    _normal_x_opt->set(normal.x);
-                                    _normal_y_opt->set(normal.y);
-                                    _normal_z_opt->set(normal.z);
-                                }
-
-                                glReadBuffer(GL_NONE);
-                                glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
                                 _mouse_pick_opt->set(0.f);
                             }
