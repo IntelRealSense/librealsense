@@ -775,11 +775,20 @@ void optimizer::set_depth_data(
      std::vector<double> valid_values_for_subedges;
 
      valid_by_ir(valid_grad_in_direction, _depth.grad_in_direction, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size());
-     //edgeSubPixel = edgeSubPixel(validEdgePixels,:);
+     valid_by_ir(_depth.valid_edge_sub_pixel, _depth.edge_sub_pixel, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size()); //edgeSubPixel = edgeSubPixel(validEdgePixels,:);
      valid_by_ir(valid_values_for_subedges, _depth.values_for_subedges, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size());
      valid_by_ir(_depth.valid_direction_per_pixel, direction_per_pixel_x, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size()); //new
      valid_by_ir(_depth.valid_section_map, _ir.valid_section_map, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size());
-     //valid_by_ir(valid_direction_index, _ir.directions, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size());
+     std::vector<double> edited_ir_directions;
+
+     for (auto i = 0; i < _ir.directions.size(); i++)
+     {
+         auto val =double( *(_ir.directions.begin() + i));
+         val = val + 1;// +1 to align with matlab
+         val = val > 4 ? val - 4 : val;
+         edited_ir_directions.push_back(val); 
+     }
+     valid_by_ir(_depth.valid_direction_index, edited_ir_directions, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size());
      
      _depth.grad_in_direction = valid_grad_in_direction;
      _depth.values_for_subedges = valid_values_for_subedges;

@@ -90,6 +90,8 @@ namespace depth_to_rgb_calibration {
         std::vector<byte> valid_section_map;
         std::vector<double> local_rc_subpixel;
         std::vector<double> edge_sub_pixel;
+        std::vector<double> valid_direction_index;
+        std::vector<double> valid_edge_sub_pixel;
 
         // input validation
         std::vector<byte> section_map;
