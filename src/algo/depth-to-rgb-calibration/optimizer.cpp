@@ -713,22 +713,45 @@ void optimizer::set_depth_data(
         
         zValuesForSubEdges = min(localZvalues,[],2);
         edgeSubPixel = fliplr(locRCsub);% From Row-Col to XY*/
-#define INF -8.90102e+14
-     auto loc_edg_it = _ir.local_edges.begin();
+
+     std::vector<double > ::iterator loc_edg_it = _ir.local_edges.begin();
+     //std::vector<double > ::iterator loc_rc_sub_it = _depth.local_rc_subpixel.begin(); // locRCsub
+     auto valid_loc_rc = _ir.valid_location_rc.begin(); // locRC
+     auto  dir_per_pixel_it = _ir.direction_per_pixel.begin(); // dirPerPixel
+
      for (auto i = 0; i < _ir.valid_location_rc_x.size(); i++)
      {
-         auto vec2 = *(loc_edg_it + 1);
-         auto vec3 = *(loc_edg_it + 2);
-         auto vec4 = *(loc_edg_it + 3);
+         double vec2 = *(loc_edg_it + 1);
+         double vec3 = *(loc_edg_it + 2);
+         double vec4 = *(loc_edg_it + 3);
          loc_edg_it += 4;
-         double res = (-0.5 * (vec4 - vec2) / (vec4 + vec2 - 2 * vec3));
-         /*if (vec4 + vec2 - 2 * vec3 == INF)
+
+         double res = double(-0.5 * (vec4 - vec2) / double(vec4 + vec2 - 2 * vec3));
+
+         if ((vec4 + vec2 - 2 * vec3) == 0)
          {
              res = 0;
-         }*/
+         }
          _ir.fraq_step.push_back(res);
-       
+         //auto valx = *(valid_loc_rc + i) + *(dir_per_pixel_it + i) * res;
+         //auto valy = *(valid_loc_rc + i + 1) + *(dir_per_pixel_it + i + 1) * res;
+         auto valx = *valid_loc_rc + *dir_per_pixel_it  * res;
+         valid_loc_rc++;
+         dir_per_pixel_it++;
+         auto valy = *valid_loc_rc + *dir_per_pixel_it * res;
+         valid_loc_rc++;
+         dir_per_pixel_it++;
+         _depth.local_rc_subpixel.push_back(valx);
+         _depth.local_rc_subpixel.push_back(valy);
+         /* loc_rc_sub_it++;
+          valid_loc_rc++;
+          dir_per_pixel_it++;
+          *loc_rc_sub_it = *valid_loc_rc + res * *dir_per_pixel_it;
+          loc_rc_sub_it++;
+          valid_loc_rc++;
+          dir_per_pixel_it++;*/
      }
+    
      std::vector<double> local_region_x[2] = { _ir.local_region_x[1] ,_ir.local_region_x[2] };
      std::vector<double> local_region_y[2] = { _ir.local_region_y[1] ,_ir.local_region_y[2] };
      _depth.local_x = interpolation(_depth.gradient_x, local_region_x, local_region_y, 2, _ir.valid_location_rc_x.size(), _depth.width);
@@ -757,7 +780,7 @@ void optimizer::set_depth_data(
      valid_by_ir(valid_grad_in_direction, _depth.grad_in_direction, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size());
      //edgeSubPixel = edgeSubPixel(validEdgePixels,:);
      valid_by_ir(valid_values_for_subedges, _depth.values_for_subedges, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size());
-     valid_by_ir(_depth.direction_per_pixel, _ir.direction_per_pixel, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size()); //new
+     valid_by_ir(_depth.valid_direction_per_pixel, _ir.direction_per_pixel, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size()); //new
      valid_by_ir(_depth.valid_section_map, _ir.valid_section_map, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size());
      //valid_by_ir(valid_direction_index, _ir.directions, _depth.valid_edge_pixels, 1, _depth.grad_in_direction.size());
      

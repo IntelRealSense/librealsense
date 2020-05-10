@@ -559,7 +559,7 @@ TEST_CASE("Weights calc", "[d2rgb]")
         CHECK(compare_to_bin_file< double >(ir_data.direction_deg, dir, scene, FILE_NAME("directionInDeg", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
         //CHECK(compare_to_bin_file< double >(ir_data.directions, dir, scene, FILE_NAME("directionIndex", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors)); // it passed, depends on index definition
         CHECK(compare_to_bin_file< double >(ir_data.direction_per_pixel, dir, scene, FILE_NAME("dirPerPixel", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
-        CHECK(compare_to_bin_file< double >(depth_data.direction_per_pixel, dir, scene, FILE_NAME("validdirPerPixel", 1, 4259, "double_00").c_str(), 4259, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.valid_direction_per_pixel, dir, scene, FILE_NAME("validdirPerPixel", 1, 4259, "double_00").c_str(), 4259, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(ir_data.local_region[0], dir, scene, FILE_NAME("localRegion", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(ir_data.local_region[1], dir, scene, FILE_NAME("localRegion", 2, 105794, "double_01").c_str(), 105794, 2, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(ir_data.local_region[2], dir, scene, FILE_NAME("localRegion", 2, 105794, "double_02").c_str(), 105794, 2, compare_same_vectors));
@@ -577,7 +577,8 @@ TEST_CASE("Weights calc", "[d2rgb]")
 
         CHECK(compare_to_bin_file< double >(ir_data.local_edges, dir, scene, FILE_NAME("localEdges", 4, 105794, "double_00").c_str(), 105794, 4, compare_same_vectors));
         CHECK(compare_to_bin_file< uint8_t >(ir_data.is_supressed, dir, scene, FILE_NAME("isSupressed", 1, 105794, "uint8_00").c_str(), 105794, 1, compare_same_vectors));
-        //CHECK(compare_to_bin_file< double >(ir_data.fraq_step, dir, scene, FILE_NAME("fraqStep", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(ir_data.fraq_step, dir, scene, FILE_NAME("fraqStep", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.local_rc_subpixel, dir, scene, FILE_NAME("locRCsub", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(depth_data.local_x, dir, scene, FILE_NAME("localZx", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(depth_data.local_y, dir, scene, FILE_NAME("localZy", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(depth_data.gradient, dir, scene, FILE_NAME("zGrad", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
