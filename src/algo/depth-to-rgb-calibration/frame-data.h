@@ -98,6 +98,7 @@ namespace depth_to_rgb_calibration {
         std::vector<double3> vertices2;
         std::vector<double> vertices3;
         std::vector<double2> uvmap2;
+        std::vector<double> is_inside;
 
         // input validation
         std::vector<byte> section_map;

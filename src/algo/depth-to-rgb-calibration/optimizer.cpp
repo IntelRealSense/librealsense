@@ -832,25 +832,28 @@ void optimizer::set_depth_data(
         auto val3 = sub_points_mult[2] * *(_depth.values_for_subedges.begin() + i / 3) / _params.max_sub_mm_z;
         _depth.vertices2.push_back({val1, val2, val3});
     }
-    
-    //_params_curr.curr_calib.rot_angles = extract_angles_from_rotation(_params_curr.curr_calib.rot.rot);
+
     _depth.uvmap2 = get_texture_map(_depth.vertices2, _original_calibration);
+    //
+    /*function isInside = isInsideImage(xy,res)
+    isInside = xy(:,1) >= 0 & ...
+               xy(:,1) <= res(2)-1 & ...
+               xy(:,2) >= 0 & ...
+               xy(:,2) <= res(1)-1;
+end*/
+    for (auto i = 0; i < _depth.uvmap2.size(); i++)
+    {
+        bool cond_x = (_depth.uvmap2[i].x >= 0) && (_depth.uvmap2[i].x <= _yuy.height-1);
+        bool cond_y = (_depth.uvmap2[i].y >= 0) && (_depth.uvmap2[i].y <= _yuy.width-1);
+        double res = 0;
 
-    // old code :
-    /*
-    suppress_weak_edges(_depth, _ir, _params);
-
-    auto subpixels = calc_subpixels(_depth, _ir,
-        _params.grad_ir_threshold, _params.grad_z_threshold,
-        depth_intrinsics.width, depth_intrinsics.height);
-    _depth.subpixels_x = subpixels.first;
-    _depth.subpixels_y = subpixels.second;
-
-    _depth.closest = get_closest_edges(_depth, _ir, depth_intrinsics.width, depth_intrinsics.height);
-
-    calculate_weights(_depth);
-
-    auto vertices = subedges2vertices(_depth, depth_intrinsics, depth_units);*/
+        if (cond_x && cond_y)
+        {
+            res = 1;
+        }
+        _depth.is_inside.push_back(res);
+    }
+    
 }
 
 
