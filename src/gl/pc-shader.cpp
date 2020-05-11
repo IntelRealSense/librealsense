@@ -417,6 +417,18 @@ namespace librealsense
             {
                 perform_gl_action([&]()
                 {
+                    auto now = std::chrono::high_resolution_clock::now();
+                    while (_durations.size())
+                    {
+                        auto front = _durations.front();
+                        if (now - front > std::chrono::seconds(1))
+                            _durations.pop_front();
+                        else break;
+                    }
+                    _durations.push_back(now);
+
+                    const auto fps = _durations.size();
+
                     scoped_timer t("pointcloud_renderer.gl");
 
                     GLint curr_tex;
@@ -469,12 +481,18 @@ namespace librealsense
 
                             float scale = _scale_factor_opt->query();
 
-                            const auto fbo_width = vp[2] / scale;
-                            const auto fbo_height = vp[3] / scale;
+                            auto fbo_width = vp[2] / scale;
+                            auto fbo_height = vp[3] / scale;
                             const auto viewport_x = vp[0] / scale;
                             const auto viewport_y = vp[1] / scale;
 
-                            const auto do_mouse_pick = _when_to_pick && _mouse_pick_opt->query() > 0.f;
+                            auto boost = 1;
+                            if (fps < 26) boost = 2;
+
+                            fbo_width = fbo_width / boost;
+                            fbo_height = fbo_height / boost;
+
+                            const auto do_mouse_pick = _mouse_pick_opt->query() > 0.f;
 
                             if (do_mouse_pick) {
                                 _fbo->set_dims(fbo_width, fbo_height);
@@ -520,6 +538,8 @@ namespace librealsense
                             {
                                 auto x = _mouse_x_opt->query() - viewport_x;
                                 auto y = _mouse_y_opt->query() - viewport_y;
+                                x /= boost;
+                                y /= boost;
                                 _shader->set_mouse_xy(x, y);
                             }
                             else _shader->set_mouse_xy(-1, -1);
@@ -553,6 +573,9 @@ namespace librealsense
                                     auto cursor_y = _mouse_y_opt->query();
                                     auto x = cursor_x - viewport_x;
                                     auto y = cursor_y - viewport_y;
+
+                                    x /= boost;
+                                    y /= boost;
 
                                     auto proj = get_matrix(RS2_GL_MATRIX_PROJECTION) * get_matrix(RS2_GL_MATRIX_CAMERA) * get_matrix(RS2_GL_MATRIX_TRANSFORMATION);
 
@@ -593,7 +616,7 @@ namespace librealsense
                                         check_gl_error();
 
                                         scoped_timer t("xyz");
-                                        _xyz_pbo.query(pos_halfs.data(), cropped_x, cropped_y, 
+                                        _xyz_pbo.query(pos_halfs.data(), round(cropped_x), round(cropped_y), 
                                             NORMAL_WINDOW_SIZE, NORMAL_WINDOW_SIZE, 
                                             GL_RGBA, GL_HALF_FLOAT);
                                     }

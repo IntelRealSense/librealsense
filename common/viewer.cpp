@@ -2140,7 +2140,9 @@ namespace rs2
 
         glEnable(GL_DEPTH_TEST);
 
+        glDepthMask(GL_FALSE);
         if (show_skybox) _skybox.render();
+        glDepthMask(GL_TRUE);
 
         auto r1 = matrix4::identity();
         auto r2 = matrix4::identity();
@@ -2442,14 +2444,14 @@ namespace rs2
 
                     glBlendFunc(GL_ONE, GL_ONE);
 
-                    _cam_renderer.set_option(gl::camera_renderer::OPTION_SELECTED, _pc_selected ? 1.f : 0.f);
+                    // _cam_renderer.set_option(gl::camera_renderer::OPTION_SELECTED, _pc_selected ? 1.f : 0.f);
 
-                    if (viewer_rect.contains(cursor))
-                    {
-                        _cam_renderer.set_option(gl::camera_renderer::OPTION_MOUSE_PICK, 1.f);
-                        _cam_renderer.set_option(gl::camera_renderer::OPTION_MOUSE_X, cursor.x);
-                        _cam_renderer.set_option(gl::camera_renderer::OPTION_MOUSE_Y, cursor.y);
-                    }
+                    // if (viewer_rect.contains(cursor))
+                    // {
+                    //     _cam_renderer.set_option(gl::camera_renderer::OPTION_MOUSE_PICK, 1.f);
+                    //     _cam_renderer.set_option(gl::camera_renderer::OPTION_MOUSE_X, cursor.x);
+                    //     _cam_renderer.set_option(gl::camera_renderer::OPTION_MOUSE_Y, cursor.y);
+                    // }
 
                     // Render camera model (based on source_frame camera type)
                     source_frame.apply_filter(_cam_renderer);
