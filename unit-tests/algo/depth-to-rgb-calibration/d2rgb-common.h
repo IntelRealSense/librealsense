@@ -23,7 +23,7 @@ using librealsense::to_string;
 static char const * root_data_dir = "..\\unit-tests\\algo\\depth-to-rgb-calibration\\19.2.20\\";
 
 static char const* const data_dirs[] = {
-    "F9440687\\Snapshots\\LongRange_D_768x1024_RGB_1920x1080"
+    "F9440687\\LongRange_D_768x1024_RGB_1920x1080"
 };
 
 static size_t const n_data_dirs = sizeof( data_dirs ) / sizeof( data_dirs[0] );
