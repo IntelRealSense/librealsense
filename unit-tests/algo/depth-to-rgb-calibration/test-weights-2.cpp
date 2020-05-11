@@ -537,7 +537,7 @@ TEST_CASE("Weights calc", "[d2rgb]")
         //CHECK(compare_to_bin_file< double >(z_data.subpixels_x, dir, scene, FILE_NAME("Z_edgeSubPixel", z_w, z_h, "double_01").c_str(), z_h, z_w, compare_same_vectors)); // NOHA :: replaced (V)
         //CHECK(compare_to_bin_file< double >(z_data.subpixels_y, dir, scene, FILE_NAME("Z_edgeSubPixel", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors)); // NOHA :: replaced (V)
 
-        //CHECK(compare_to_bin_file< double >(z_data.weights, dir, scene, FILE_NAME("weightsT", 1, md.num_of_edges,"double_00").c_str(), md.num_of_edges, 1, compare_same_vectors));
+        //CHECK(compare_to_bin_file< double >(z_data.weights, dir, scene, FILE_NAME("weightsT", 1, md.num_of_edges,"double_00").c_str(), md.num_of_edges, 1, compare_same_vectors)); // NOHA :: replaced (V)
         //CHECK(compare_to_bin_file< double >(z_data.closest, dir, scene, FILE_NAME("Z_valuesForSubEdges", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors)); // NOHA :: replaced (V)
         //CHECK(compare_to_bin_file< algo::double3 >(z_data.vertices, dir, scene, FILE_NAME("vertices", 3, md.num_of_edges, "double_00").c_str(), md.num_of_edges, 1, compare_same_vectors)); // NOHA :: replaced (V)
 
@@ -636,23 +636,23 @@ TEST_CASE("Weights calc", "[d2rgb]")
 
 
         ////--
-        //TRACE( "\nOptimizing:" );
-        //auto cb = [&]( algo::iteration_data_collect const & data )
-        //{
-        //    auto file = ITERATION_FILE_NAME("calib_iteration", data.iteration + 1, num_of_calib_elements, 1,"double_00");
-        //    CHECK(compare_calib_to_bin_file(data.params.curr_calib, data.params.cost, dir, scene, file.c_str()));
+        TRACE( "\nOptimizing:" );
+        auto cb = [&]( algo::iteration_data_collect const & data )
+        {
+            auto file = ITERATION_FILE_NAME("calib_iteration", data.iteration + 1, num_of_calib_elements, 1,"double_00");
+            CHECK(compare_calib_to_bin_file(data.params.curr_calib, data.params.cost, dir, scene, file.c_str()));
 
-        //    file = ITERATION_FILE_NAME("uvmap_iteration", data.iteration + 1, 2, md.num_of_edges,"double_00");
-        //    CHECK(compare_to_bin_file< algo::double2 >(data.uvmap, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors));
+            file = ITERATION_FILE_NAME("uvmap_iteration", data.iteration + 1, 2, md.num_of_edges,"double_00");
+            CHECK(compare_to_bin_file< algo::double2 >(data.uvmap, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors));
 
-        //    file = ITERATION_FILE_NAME("DVals_iteration", data.iteration + 1, 1, md.num_of_edges, "double_00");
-        //    CHECK(compare_to_bin_file< double >(data.d_vals, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
+            file = ITERATION_FILE_NAME("DVals_iteration", data.iteration + 1, 1, md.num_of_edges, "double_00");
+            CHECK(compare_to_bin_file< double >(data.d_vals, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
 
-        //    file = ITERATION_FILE_NAME("DxVals_iteration", data.iteration + 1, 1, md.num_of_edges, "double_00");
-        //    CHECK(compare_to_bin_file< double >(data.d_vals_x, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
+            file = ITERATION_FILE_NAME("DxVals_iteration", data.iteration + 1, 1, md.num_of_edges, "double_00");
+            CHECK(compare_to_bin_file< double >(data.d_vals_x, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
 
-        //    file = ITERATION_FILE_NAME("DyVals_iteration", data.iteration + 1, 1, md.num_of_edges,"double_00");
-        //    CHECK(compare_to_bin_file< double >(data.d_vals_y, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
+            file = ITERATION_FILE_NAME("DyVals_iteration", data.iteration + 1, 1, md.num_of_edges,"double_00");
+            CHECK(compare_to_bin_file< double >(data.d_vals_y, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
 
            /* file = ITERATION_FILE_NAME("xCoeff_P", data.iteration + 1, sizeof(algo::p_matrix) / sizeof(double), md.num_of_edges, "double_00");
             CHECK(compare_to_bin_file< algo::p_matrix>(data.coeffs_p.x_coeffs, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));*/
@@ -666,9 +666,9 @@ TEST_CASE("Weights calc", "[d2rgb]")
             file = ITERATION_FILE_NAME("xCoeff_R", data.iteration + 1, sizeof(algo::rotation_in_angles) / sizeof(double), md.num_of_edges, "double_00");
             CHECK(compare_to_bin_file< algo::rotation_in_angles>(data.coeffs_r.x_coeffs, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));*/
 
-        //    file = ITERATION_FILE_NAME("grad_iteration", data.iteration + 1, num_of_calib_elements, 1, "double_00");
-        //    CHECK(compare_calib_to_bin_file(data.params.calib_gradients, 0, dir, scene, file.c_str(), true));
-        //};
+            file = ITERATION_FILE_NAME("grad_iteration", data.iteration + 1, num_of_calib_elements, 1, "double_00");
+            CHECK(compare_calib_to_bin_file(data.params.calib_gradients, 0, dir, scene, file.c_str(), true));
+        };
 
         //REQUIRE( cal.optimize( cb ) == md.iteration_num);  // n_iterations
 

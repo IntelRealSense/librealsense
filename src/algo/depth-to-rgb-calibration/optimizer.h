@@ -65,6 +65,7 @@ namespace depth_to_rgb_calibration {
 
         //smearing
         double max_sub_mm_z = 4;
+        double const_weights_val = 1000;
         double k_depth[3][3] = { {731.27344,0,529.27344 },{0,731.97656,402.32031},{0,0,1} };
         double k_depth_pinv_trans[3][3] = { { 0.0013674778, -1.1641532e-10,	2.3283064e-10 }, //pinv(params.Kdepth)';
                                             { 8.7311491e-11,0.0013661643 ,-2.9103830e-11}, 
@@ -145,7 +146,7 @@ namespace depth_to_rgb_calibration {
         std::vector<uint8_t> get_luminance_from_yuy2( std::vector<uint16_t> yuy2_imagh );
 
         std::vector<uint8_t> get_logic_edges( std::vector<double> edges );
-        std::vector<double> calculate_weights( z_frame_data& z_data );
+        //std::vector<double> calculate_weights( z_frame_data& z_data );
         std::vector <double3> subedges2vertices(z_frame_data& z_data, const rs2_intrinsics_double& intrin, double depth_units);
         
         optimaization_params back_tracking_line_search( const z_frame_data & z_data, const yuy2_frame_data& yuy_data, optimaization_params opt_params );

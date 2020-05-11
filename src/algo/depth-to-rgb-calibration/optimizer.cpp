@@ -746,7 +746,7 @@ void optimizer::set_depth_data(
     _z.local_values = interpolation(_z.frame, _ir.local_region_x, _ir.local_region_y, 4, _ir.valid_location_rc_x.size(), _z.width);
     _z.values_for_subedges = find_local_values_min(_z.local_values);
 
-
+    _params.alpha;
     /* validEdgePixels = zGradInDirection > params.gradZTh & isSupressed & zValuesForSubEdges > 0;
 
    zGradInDirection = zGradInDirection(validEdgePixels);
@@ -869,6 +869,10 @@ end*/
     depth_filter(_z.directions, _z.valid_directions, _z.is_inside, 1, _z.is_inside.size());
     depth_filter(_z.vertices, _z.vertices_all, _z.is_inside, 1, _z.is_inside.size());
     depth_filter(_z.section_map_depth_inside, _z.section_map_depth, _z.is_inside, 1, _z.is_inside.size());
+
+    for (auto i = 0; i < _z.is_inside.size(); i++) {
+        _z.weights.push_back(_params.const_weights_val);
+    }
 
 }
 
@@ -1159,20 +1163,20 @@ double get_min(double x, double y)
     return x < y ? x : y;
 }
 
-std::vector<double> optimizer::calculate_weights(z_frame_data& z_data)
-{
-    std::vector<double> res;
-
-    for (auto i = 0; i < z_data.supressed_edges.size(); i++)
-    {
-        if (z_data.supressed_edges[i])
-            z_data.weights.push_back(
-                get_min(get_max(z_data.supressed_edges[i] - _params.grad_z_min, (double)0),
-                    _params.grad_z_max - _params.grad_z_min));
-    }
-
-    return res;
-}
+//std::vector<double> optimizer::calculate_weights(z_frame_data& z_data)
+//{
+//    std::vector<double> res;
+//
+//    for (auto i = 0; i < z_data.supressed_edges.size(); i++)
+//    {
+//        if (z_data.supressed_edges[i])
+//            z_data.weights.push_back(
+//                get_min(get_max(z_data.supressed_edges[i] - _params.grad_z_min, (double)0),
+//                    _params.grad_z_max - _params.grad_z_min));
+//    }
+//
+//    return res;
+//}
 
 void deproject_sub_pixel(
     std::vector<double3>& points,
