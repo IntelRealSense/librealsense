@@ -474,32 +474,36 @@ namespace librealsense
                             const auto viewport_x = vp[0] / scale;
                             const auto viewport_y = vp[1] / scale;
 
-                            _fbo->set_dims(fbo_width, fbo_height);
+                            const auto do_mouse_pick = _when_to_pick && _mouse_pick_opt->query() > 0.f;
 
-                            glBindFramebuffer(GL_FRAMEBUFFER, _fbo->get());
-                            glDrawBuffer(GL_COLOR_ATTACHMENT0);
+                            if (do_mouse_pick) {
+                                _fbo->set_dims(fbo_width, fbo_height);
 
-                            _fbo->createTextureAttachment(color_tex);
-                            _fbo->createDepthTextureAttachment(depth_tex);
+                                glBindFramebuffer(GL_FRAMEBUFFER, _fbo->get());
+                                glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-                            glBindTexture(GL_TEXTURE_2D, xyz_tex);
-                            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-                            glPixelStorei(GL_PACK_ALIGNMENT, 1);
-                            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, fbo_width, fbo_height, 0, GL_RGBA, GL_HALF_FLOAT, nullptr);
-                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                                _fbo->createTextureAttachment(color_tex);
+                                _fbo->createDepthTextureAttachment(depth_tex);
 
-                            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, xyz_tex, 0);
+                                glBindTexture(GL_TEXTURE_2D, xyz_tex);
+                                glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+                                glPixelStorei(GL_PACK_ALIGNMENT, 1);
+                                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, fbo_width, fbo_height, 0, GL_RGBA, GL_HALF_FLOAT, nullptr);
+                                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-                            glBindTexture(GL_TEXTURE_2D, 0);
+                                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, xyz_tex, 0);
 
-                            _fbo->bind();
+                                glBindTexture(GL_TEXTURE_2D, 0);
 
-                            GLuint attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-                            glDrawBuffers(2, attachments);
+                                _fbo->bind();
 
-                            glClearColor(0, 0, 0, 0);
-                            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                                GLuint attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+                                glDrawBuffers(2, attachments);
+
+                                glClearColor(0, 0, 0, 0);
+                                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                            }
 
                             _shader->begin();
                             _shader->set_mvp(get_matrix(
@@ -536,12 +540,12 @@ namespace librealsense
 
                             _shader->end();
 
-                            _fbo->unbind();
-
                             if (_mouse_pick_opt->query() > 0.f)
                             {
-                                if (_when_to_pick)
+                                if (do_mouse_pick)
                                 {
+                                    _fbo->unbind();
+
                                     _picked_id_opt->set(0.f);
 
                                     scoped_timer t("mouse pick");
@@ -573,29 +577,29 @@ namespace librealsense
                                         scoped_timer t("rgba");
                                         _rgba_pbo.query(&rgba, x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE);
                                     }
-                                    
-                                    if (rgba.a > 0)
-                                    { 
+
+                                    const auto size = NORMAL_WINDOW_SIZE * NORMAL_WINDOW_SIZE;
+                                    const auto center = size / 2;
+                                    const auto half_window = NORMAL_WINDOW_SIZE / 2;
+
+                                    std::vector<half4> pos_halfs(size);
+
+                                    {
+                                        // Make sure we query inside the texture:
+                                        auto cropped_x = std::max(float(half_window), std::min(x, fbo_width - half_window - 1));
+                                        auto cropped_y = std::max(float(half_window), std::min(y, fbo_height - half_window - 1));
+
                                         glReadBuffer(GL_COLOR_ATTACHMENT1);
                                         check_gl_error();
 
-                                        const auto size = NORMAL_WINDOW_SIZE * NORMAL_WINDOW_SIZE;
-                                        const auto center = size / 2;
-                                        const auto half_window = NORMAL_WINDOW_SIZE / 2;
-
-                                        std::vector<half4> pos_halfs(size);
-
-                                        {
-                                            // Make sure we query inside the texture:
-                                            auto cropped_x = std::max(float(half_window), std::min(x, fbo_width - half_window - 1));
-                                            auto cropped_y = std::max(float(half_window), std::min(y, fbo_height - half_window - 1));
-
-                                            scoped_timer t("xyz");
-                                            _xyz_pbo.query(pos_halfs.data(), cropped_x, cropped_y, 
-                                                NORMAL_WINDOW_SIZE, NORMAL_WINDOW_SIZE, 
-                                                GL_RGBA, GL_HALF_FLOAT);
-                                        }
-
+                                        scoped_timer t("xyz");
+                                        _xyz_pbo.query(pos_halfs.data(), cropped_x, cropped_y, 
+                                            NORMAL_WINDOW_SIZE, NORMAL_WINDOW_SIZE, 
+                                            GL_RGBA, GL_HALF_FLOAT);
+                                    }
+                                    
+                                    if (rgba.a > 0)
+                                    {
                                         std::vector<rs2::float3> pos_floats(size);
                                         for (int i = 0; i < size; i++)
                                         {
@@ -632,21 +636,24 @@ namespace librealsense
                                 }
 
                                 _mouse_pick_opt->set(0.f);
+
+                                if (do_mouse_pick)
+                                {
+                                    glActiveTexture(GL_TEXTURE1);
+                                    glBindTexture(GL_TEXTURE_2D, depth_tex);
+                                    glActiveTexture(GL_TEXTURE0);
+                                    glBindTexture(GL_TEXTURE_2D, color_tex);
+
+                                    _blit->begin();
+                                    _blit->set_image_size(vp[2], vp[3]);
+                                    _blit->set_selected(_selected_opt->query() > 0.f);
+                                    _blit->end();
+
+                                    _viz->draw(*_blit, color_tex);
+
+                                    glActiveTexture(GL_TEXTURE0 + _shader->texture_slot());
+                                }
                             }
-
-                            glActiveTexture(GL_TEXTURE1);
-                            glBindTexture(GL_TEXTURE_2D, depth_tex);
-                            glActiveTexture(GL_TEXTURE0);
-                            glBindTexture(GL_TEXTURE_2D, color_tex);
-
-                            _blit->begin();
-                            _blit->set_image_size(vp[2], vp[3]);
-                            _blit->set_selected(_selected_opt->query() > 0.f);
-                            _blit->end();
-
-                            _viz->draw(*_blit, color_tex);
-
-                            glActiveTexture(GL_TEXTURE0 + _shader->texture_slot());
                         }
                     }
                     else
