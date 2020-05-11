@@ -33,6 +33,7 @@ namespace rs2
         config_file::instance().set_default(configurations::window::saved_pos, false);
         config_file::instance().set_default(configurations::window::saved_size, false);
 
+        config_file::instance().set_default(configurations::viewer::is_measuring, false);
         config_file::instance().set_default(configurations::viewer::log_filename, get_folder_path(special_folder::user_documents) + "librealsense.log");
         config_file::instance().set_default(configurations::viewer::log_to_console, true);
         config_file::instance().set_default(configurations::viewer::log_to_file, false);

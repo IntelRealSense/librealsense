@@ -691,6 +691,8 @@ namespace rs2
             if (big_button(&active, win, 5 + left, 0, textual_icons::measure, "Measure", false, using_glsl, measure_tooltip.c_str()))
             {
                 measurement_active = false;
+                selected_points.clear();
+                config_file::instance().set(configurations::viewer::is_measuring, false);
             }
         }
         else
@@ -699,6 +701,7 @@ namespace rs2
             if (big_button(&active, win, 5 + left, 0, textual_icons::measure, "Measure", false, using_glsl, measure_tooltip.c_str()))
             {
                 measurement_active = true;
+                config_file::instance().set(configurations::viewer::is_measuring, true);
             }
         }
         left += 60;
@@ -1027,7 +1030,10 @@ namespace rs2
             configurations::viewer::continue_with_current_fw, false);
 
         is_3d_view = config_file::instance().get_or_default(
-            configurations::viewer::is_3d_view, false);
+            configurations::viewer::is_3d_view, true);
+
+        measurement_active = config_file::instance().get_or_default(
+            configurations::viewer::is_measuring, false);
 
         occlusion_invalidation = config_file::instance().get_or_default(
             configurations::performance::occlusion_invalidation, true);
@@ -2409,6 +2415,15 @@ namespace rs2
 
                 win.link_hovered();
 
+                if (input_ctrl.click) {
+                    if (measurement_active)
+                    {
+                        if (selected_points.size() == 2) selected_points.clear();
+
+                        selected_points.push_back({ _picked, _normal });
+                    }
+                }
+
                 if (!input_ctrl.mouse_down)
                 {
                     auto x1x2 = target - pos;
@@ -2474,6 +2489,36 @@ namespace rs2
 
         check_gl_error();
 
+        auto draw_ruler = [this](float3 from, float3 to)
+        {
+            std::vector<float3> parts;
+            parts.push_back(from);
+            auto dir = to - from;
+            auto l = dir.length();
+            auto unit = metric_system ? 0.01f : 0.0254f;
+            if (l > 0.5f) unit = metric_system ? 0.1f : 0.03048f;
+            auto parts_num = l / unit;
+            for (int i = 0; i < parts_num; i++)
+            {
+                auto t = i / (float)parts_num;
+                parts.push_back(from + dir * t);
+            }
+            parts.push_back(to);
+
+            glLineWidth(3.f);
+            glBegin(GL_LINES);
+            for (int i = 1; i < parts.size(); i++)
+            {
+                if (i % 2 == 0) glColor4f(1.f, 1.f, 1.f, 0.9f);
+                else glColor4f(light_blue.x, light_blue.y, light_blue.z, 0.9f);
+                auto from = parts[i-1];
+                auto to = parts[i]; // intentional shadowing
+                glVertex3d(from.x, from.y, from.z);
+                glVertex3d(to.x, to.y, to.z);
+            }
+            glEnd();
+        };
+
         if (mouse_picked_event.eval())
         {
             glDisable(GL_DEPTH_TEST);
@@ -2521,13 +2566,6 @@ namespace rs2
             basis(2, 1) = _normal.y;
             basis(2, 2) = _normal.z;
 
-            if (input_ctrl.click) {
-                if (measurement_active)
-                {
-                    selected_points.push_back({ _picked, _normal, basis });
-                }
-            }
-
             const int segments = 50;
             for (int i = 0; i < segments; i++)
             {
@@ -2561,22 +2599,37 @@ namespace rs2
             }
             //glVertex3fv(&_picked.x); glVertex3fv(&end.x);
             glEnd();
+
+            if (selected_points.size() == 1)
+            {
+                auto p0 = selected_points.front();
+                draw_ruler(_picked, p0.pos);
+            }
+
             glDisable(GL_BLEND);
             glEnable(GL_DEPTH_TEST);
         }
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        if (selected_points.size() == 2)
+        {
+            glDisable(GL_DEPTH_TEST);
+            draw_ruler(selected_points[1].pos, selected_points[0].pos);
+            glEnable(GL_DEPTH_TEST);
+        }
+
         for (auto&& points: selected_points)
         {
-            glColor4f(light_blue.x, light_blue.y, light_blue.z, 0.4f);
+            glColor4f(light_blue.x, light_blue.y, light_blue.z, 0.9f);
             draw_sphere(points.pos, 0.011f, 20, 20);
         }
         glDisable(GL_DEPTH_TEST);
         for (auto&& points: selected_points)
         {
             glColor4f(white.x, white.y, white.z, 0.4f);
-            draw_sphere(points.pos, 0.009f, 20, 20);
+            draw_sphere(points.pos, 0.008f, 20, 20);
         }
         glEnable(GL_DEPTH_TEST);
         glDisable(GL_BLEND);
