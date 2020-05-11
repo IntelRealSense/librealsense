@@ -75,13 +75,9 @@ namespace librealsense
         struct ac_depth_results  // aka "Algo_AutoCalibration" in FW
         {
             static const int table_id = 0x240;
+            static const uint16_t this_version = (RS2_API_MAJOR_VERSION << 12 | RS2_API_MINOR_VERSION << 4 | RS2_API_PATCH_VERSION);
 
-            double timestamp = 0;
-            byte major_version = 0;
-            byte minor_version = 0;
-            byte flags[6] = { 0 };
             rs2_dsm_params params = { 0 };
-            byte reserved[12] = { 0 };
 
             ac_depth_results() = default;
             ac_depth_results( rs2_dsm_params const & dsm_params ) : params( dsm_params ) {}

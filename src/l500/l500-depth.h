@@ -254,7 +254,6 @@ namespace librealsense
         action_delayer _action_delayer;
         const l500_device* _owner;
         float _depth_units;
-        rs2_dsm_params _dsm_params;
         stream_profiles _user_requests;
         stream_profiles _validator_requests;
         bool _depth_invalidation_enabled;
