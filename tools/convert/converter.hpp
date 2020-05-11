@@ -23,7 +23,7 @@ namespace rs2 {
 
                 file.open(filename);
 
-                file << "Stream: " << rs2_stream_to_string(frm.get_profile().stream_type()) << "\nMetadata Attribute: Value\n";
+                file << "Stream: " << rs2_stream_to_string(frm.get_profile().stream_type()) << "\n";
 
                 // Record all the available metadata attributes
                 for (size_t i = 0; i < RS2_FRAME_METADATA_COUNT; i++)

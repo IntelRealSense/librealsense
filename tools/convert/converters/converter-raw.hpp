@@ -74,7 +74,6 @@ namespace rs2 {
                                     }
 
                                     metadata_to_txtfile(videoframe, metadataS);
-
                             });
 
                             wait_sub_workers();
