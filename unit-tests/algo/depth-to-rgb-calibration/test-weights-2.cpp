@@ -597,7 +597,16 @@ TEST_CASE("Weights calc", "[d2rgb]")
         CHECK(compare_to_bin_file< double>(depth_data.sub_points, dir, scene, FILE_NAME("subPoints", 3, 4259, "double_00").c_str(), 4259, 3, compare_same_vectors));
         CHECK(compare_to_bin_file< algo::double3>(depth_data.vertices2, dir, scene, FILE_NAME("vertices", 3, 4259, "double_00").c_str(), 4259, 3, compare_same_vectors));
         CHECK(compare_to_bin_file< algo::double2>(depth_data.uvmap2, dir, scene, FILE_NAME("uv", 2, 4259, "double_00").c_str(), 4259, 2, compare_same_vectors));
-        CHECK(compare_to_bin_file< double >(depth_data.is_inside, dir, scene, FILE_NAME("isInside", 1, 4259, "double_00").c_str(), 4259, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< uint8_t >(depth_data.is_inside, dir, scene, FILE_NAME("isInside", 1, 4259, "uint8_00").c_str(), 4259, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.valid_edge_sub_pixel_x_inside, dir, scene, FILE_NAME("Z_xim", 1, 2506, "double_00").c_str(), 2506, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.valid_edge_sub_pixel_y_inside, dir, scene, FILE_NAME("Z_yim", 1, 2506, "double_00").c_str(), 2506, 1, compare_same_vectors));
+
+        CHECK(compare_to_bin_file< double >(depth_data.values_for_subedges_inside, dir, scene, FILE_NAME("Z_valuesForSubEdges", 1, 2506, "double_00").c_str(), 2506, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.grad_in_direction_inside, dir, scene, FILE_NAME("zGradInDirection", 1, 2506, "double_00").c_str(), 2506, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.valid_direction_index_inside, dir, scene, FILE_NAME("directionIndexInside", 1, 2506, "double_00").c_str(), 2506, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< algo::double3 >(depth_data.vertices2_inside, dir, scene, FILE_NAME("vertices", 3, 2506, "double_00").c_str(), 2506, 3, compare_same_vectors));
+        CHECK(compare_to_bin_file< uint8_t >(depth_data.section_map_depth_inside, dir, scene, FILE_NAME("sectionMapDepthInside", 1, 2506, "uint8_00").c_str(), 2506, 1, compare_same_vectors));
+
         // ---
         //TRACE( "\nChecking scene validity:" );
 

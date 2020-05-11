@@ -400,7 +400,7 @@ void set_margin(
     }
 }
 template<class T>
-void valid_by_ir(
+void depth_filter(
     std::vector<T>& filtered,
     std::vector<T>& origin,
     std::vector<uint8_t>& valid_edge_by_ir,
@@ -612,11 +612,11 @@ void optimizer::set_depth_data(
     std::vector<double> grid_y;
     grid_xy(grid_x, grid_y, _depth.width, _depth.height);
 
-    valid_by_ir(_ir.valid_location_rc_x, grid_x, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
-    valid_by_ir(_ir.valid_location_rc_y, grid_y, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
-    valid_by_ir(_ir.valid_section_map, _depth.section_map_depth, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
-    valid_by_ir(_ir.valid_gradient_x, _ir.gradient_x, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
-    valid_by_ir(_ir.valid_gradient_y, _ir.gradient_y, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
+    depth_filter(_ir.valid_location_rc_x, grid_x, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
+    depth_filter(_ir.valid_location_rc_y, grid_y, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
+    depth_filter(_ir.valid_section_map, _depth.section_map_depth, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
+    depth_filter(_ir.valid_gradient_x, _ir.gradient_x, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
+    depth_filter(_ir.valid_gradient_y, _ir.gradient_y, _ir.valid_edge_pixels_by_ir, _depth.width, _depth.height);
 
     //edges:
     _ir.edges2 = calc_intensity(_ir.gradient_x, _ir.gradient_y);
@@ -763,9 +763,9 @@ void optimizer::set_depth_data(
 
 
 
-    valid_by_ir(valid_grad_in_direction, _depth.grad_in_direction, _depth.valid_edge_pixels, 1, _depth.valid_edge_pixels.size());
-    valid_by_ir(_depth.valid_edge_sub_pixel_x, edge_sub_pixel_x, _depth.valid_edge_pixels, 1, _depth.valid_edge_pixels.size()); //edgeSubPixel = edgeSubPixel(validEdgePixels,:);
-    valid_by_ir(_depth.valid_edge_sub_pixel_y, edge_sub_pixel_y, _depth.valid_edge_pixels, 1, _depth.valid_edge_pixels.size());
+    depth_filter(valid_grad_in_direction, _depth.grad_in_direction, _depth.valid_edge_pixels, 1, _depth.valid_edge_pixels.size());
+    depth_filter(_depth.valid_edge_sub_pixel_x, edge_sub_pixel_x, _depth.valid_edge_pixels, 1, _depth.valid_edge_pixels.size()); //edgeSubPixel = edgeSubPixel(validEdgePixels,:);
+    depth_filter(_depth.valid_edge_sub_pixel_y, edge_sub_pixel_y, _depth.valid_edge_pixels, 1, _depth.valid_edge_pixels.size());
     for (auto i = 0; i < _depth.valid_edge_sub_pixel_x.size(); i++)
     {
         _depth.valid_edge_sub_pixel.push_back(*(_depth.valid_edge_sub_pixel_x.begin() + i));
@@ -775,9 +775,9 @@ void optimizer::set_depth_data(
         _depth.sub_points.push_back(*(_depth.valid_edge_sub_pixel_y.begin() + i)-1);
         _depth.sub_points.push_back(1);
     }
-    valid_by_ir(valid_values_for_subedges, _depth.values_for_subedges, _depth.valid_edge_pixels, 1, _depth.valid_edge_pixels.size());
-    valid_by_ir(_depth.valid_direction_per_pixel, direction_per_pixel_x, _depth.valid_edge_pixels, 1, _depth.valid_edge_pixels.size());
-    valid_by_ir(_depth.valid_section_map, _ir.valid_section_map, _depth.valid_edge_pixels, 1, _depth.valid_edge_pixels.size());
+    depth_filter(valid_values_for_subedges, _depth.values_for_subedges, _depth.valid_edge_pixels, 1, _depth.valid_edge_pixels.size());
+    depth_filter(_depth.valid_direction_per_pixel, direction_per_pixel_x, _depth.valid_edge_pixels, 1, _depth.valid_edge_pixels.size());
+    depth_filter(_depth.valid_section_map, _ir.valid_section_map, _depth.valid_edge_pixels, 1, _depth.valid_edge_pixels.size());
     std::vector<double> edited_ir_directions;
 
     for (auto i = 0; i < _ir.directions.size(); i++)
@@ -787,7 +787,7 @@ void optimizer::set_depth_data(
         val = val > 4 ? val - 4 : val;
         edited_ir_directions.push_back(val);
     }
-    valid_by_ir(_depth.valid_direction_index, edited_ir_directions, _depth.valid_edge_pixels, 1, _depth.valid_edge_pixels.size());
+    depth_filter(_depth.valid_direction_index, edited_ir_directions, _depth.valid_edge_pixels, 1, _depth.valid_edge_pixels.size());
 
     _depth.grad_in_direction = valid_grad_in_direction;
     _depth.values_for_subedges = valid_values_for_subedges;
@@ -853,7 +853,23 @@ end*/
         }
         _depth.is_inside.push_back(res);
     }
-    
+
+    /*xim = xim(isInside);
+    yim = yim(isInside); 
+    zValuesForSubEdges = zValuesForSubEdges(isInside);
+    zGradInDirection = zGradInDirection(isInside);
+    directionIndex = directionIndex(isInside);
+    weights = weights(isInside);
+    vertices = vertices(isInside,:);
+    sectionMapDepth = sectionMapDepth(isInside);*/
+    depth_filter(_depth.valid_edge_sub_pixel_x_inside, _depth.valid_edge_sub_pixel_x, _depth.is_inside, 1, _depth.is_inside.size());
+    depth_filter(_depth.valid_edge_sub_pixel_y_inside, _depth.valid_edge_sub_pixel_y, _depth.is_inside, 1, _depth.is_inside.size());
+    depth_filter(_depth.values_for_subedges_inside, _depth.values_for_subedges, _depth.is_inside, 1, _depth.is_inside.size());
+    depth_filter(_depth.grad_in_direction_inside, _depth.grad_in_direction, _depth.is_inside, 1, _depth.is_inside.size());
+    depth_filter(_depth.valid_direction_index_inside, _depth.valid_direction_index, _depth.is_inside, 1, _depth.is_inside.size());
+    depth_filter(_depth.vertices2_inside, _depth.vertices2, _depth.is_inside, 1, _depth.is_inside.size());
+    depth_filter(_depth.section_map_depth_inside, _depth.section_map_depth, _depth.is_inside, 1, _depth.is_inside.size());
+
 }
 
 

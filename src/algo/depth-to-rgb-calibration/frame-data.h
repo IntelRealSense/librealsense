@@ -78,12 +78,15 @@ namespace depth_to_rgb_calibration {
 
         //smearing
         std::vector< byte > section_map_depth;
+        std::vector< byte > section_map_depth_inside;
         std::vector<double> local_x;
         std::vector<double> local_y;
         std::vector<double> gradient;
         std::vector<double> local_values;
         std::vector<double> grad_in_direction;
+        std::vector<double> grad_in_direction_inside;
         std::vector<double> values_for_subedges;
+        std::vector<double> values_for_subedges_inside;
         std::vector< byte > valid_edge_pixels;
         std::vector<double> direction_per_pixel;
         std::vector<double> valid_direction_per_pixel;
@@ -91,14 +94,18 @@ namespace depth_to_rgb_calibration {
         std::vector<double> local_rc_subpixel;
         std::vector<double> edge_sub_pixel;
         std::vector<double> valid_direction_index;
+        std::vector<double> valid_direction_index_inside;
         std::vector<double> valid_edge_sub_pixel;
         std::vector<double > valid_edge_sub_pixel_x;
         std::vector<double > valid_edge_sub_pixel_y;
+        std::vector<double > valid_edge_sub_pixel_x_inside;
+        std::vector<double > valid_edge_sub_pixel_y_inside;
         std::vector<double> sub_points;
         std::vector<double3> vertices2;
+        std::vector<double3> vertices2_inside;
         std::vector<double> vertices3;
         std::vector<double2> uvmap2;
-        std::vector<double> is_inside;
+        std::vector<uint8_t> is_inside;
 
         // input validation
         std::vector<byte> section_map;
