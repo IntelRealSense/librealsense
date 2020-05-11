@@ -15,7 +15,7 @@ namespace depth_to_rgb_calibration {
     /** \brief Video stream intrinsics. */
     struct rs2_intrinsics_double
     {
-        rs2_intrinsics_double(){}
+        rs2_intrinsics_double() = default;
 
         rs2_intrinsics_double( const int width, const int height,
             const k_matrix& k_mat, const rs2_distortion model, const double coeffs[5] )
