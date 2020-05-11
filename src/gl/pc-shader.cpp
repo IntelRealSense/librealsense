@@ -175,7 +175,7 @@ static const char* blit_frag_shader_text =
 "    else gl_FragDepth = 65000.0;\n"
 "}";
 
-#define NORMAL_WINDOW_SIZE 9
+#define NORMAL_WINDOW_SIZE 3
 
 using namespace rs2;
 
@@ -602,7 +602,7 @@ namespace librealsense
                                     }
 
                                     const auto size = NORMAL_WINDOW_SIZE * NORMAL_WINDOW_SIZE;
-                                    const auto center = size / 2;
+                                    auto center = size / 2;
                                     const auto half_window = NORMAL_WINDOW_SIZE / 2;
 
                                     std::vector<half4> pos_halfs(size);
@@ -631,6 +631,14 @@ namespace librealsense
                                             auto y = halfToNativeIeee(pos.y);
                                             auto z = halfToNativeIeee(pos.z);
                                             pos_floats[i] = { x, y, z };
+                                        }
+
+                                        if (pos_floats[center].length() < 0.001f)
+                                        {
+                                            if (pos_floats[center+1].length() > 0.001f) center += 1;
+                                            else if (pos_floats[center-1].length() > 0.001f) center -= 1;
+                                            else if (pos_floats[center-NORMAL_WINDOW_SIZE].length() > 0.001f) center -= NORMAL_WINDOW_SIZE;
+                                            else if (pos_floats[center+NORMAL_WINDOW_SIZE].length() > 0.001f) center += NORMAL_WINDOW_SIZE;
                                         }
 
                                         auto up = pos_floats[center - half_window * NORMAL_WINDOW_SIZE];

@@ -46,6 +46,7 @@ namespace rs2
 
         config_file::instance().set_default(configurations::performance::show_fps, false);
         config_file::instance().set_default(configurations::performance::vsync, true);
+        config_file::instance().set_default(configurations::performance::occlusion_invalidation, true);
 
         config_file::instance().set_default(configurations::ply::mesh, true);
         config_file::instance().set_default(configurations::ply::use_normals, false);

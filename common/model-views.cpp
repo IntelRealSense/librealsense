@@ -3651,6 +3651,8 @@ namespace rs2
                     default: break;
                 }
 
+                pc->set_option(RS2_OPTION_FILTER_MAGNITUDE, 
+                    viewer.occlusion_invalidation ? 2.f : 1.f);
                 res.push_back(pc->calculate(depth));
             }
             if(auto texture = viewer.get_3d_texture_source(filtered))

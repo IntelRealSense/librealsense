@@ -195,6 +195,7 @@ namespace rs2
             static const char* vsync               { "performance.vsync" };
             static const char* font_oversample     { "performance.font_oversample.v2" };
             static const char* show_skybox         { "performance.show_skybox" };
+            static const char* occlusion_invalidation { "performance.occlusion_invalidation" };
         }
         namespace ply
         {

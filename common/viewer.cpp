@@ -1029,6 +1029,9 @@ namespace rs2
         is_3d_view = config_file::instance().get_or_default(
             configurations::viewer::is_3d_view, false);
 
+        occlusion_invalidation = config_file::instance().get_or_default(
+            configurations::performance::occlusion_invalidation, true);
+
         ground_truth_r = config_file::instance().get_or_default(
             configurations::viewer::ground_truth_r, 2500);
 
@@ -2413,15 +2416,17 @@ namespace rs2
                     auto t = (x1x2 * x1x0) / (x1x2 * x1x2);
                     auto p1 = pos + x1x2* t;
 
-                    target = lerp(p1, target, 0.9f);
+                    if (t > 0) { // Don't adjust if pointcloud is behind us
+                        target = lerp(p1, target, 0.9f);
 
-                    if (input_ctrl.mouse_wheel != win.get_mouse().mouse_wheel)
-                    {
-                        input_ctrl.mouse_wheel = win.get_mouse().mouse_wheel;
-                        if (win.get_mouse().mouse_wheel > 0)
+                        if (input_ctrl.mouse_wheel != win.get_mouse().mouse_wheel)
                         {
-                            pos = lerp(_picked, pos, 0.9f);
-                            target = lerp(_picked, target, 0.9f);
+                            input_ctrl.mouse_wheel = win.get_mouse().mouse_wheel;
+                            if (win.get_mouse().mouse_wheel > 0)
+                            {
+                                pos = lerp(_picked, pos, 0.9f);
+                                target = lerp(_picked, target, 0.9f);
+                            }
                         }
                     }
                 }
@@ -2476,15 +2481,16 @@ namespace rs2
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            // glBegin(GL_LINES);
-            // glColor3f(1.f, 1.f, 1.f);
-            // glVertex3d(_picked.x, _picked.y, _picked.z);
-            // glVertex3d(_picked.x + _normal.x, _picked.y + _normal.y, _picked.z + _normal.z);
-            // glEnd();
+            float size = _picked.z * 0.03f;
+
+            glBegin(GL_LINES);
+            glColor3f(1.f, 1.f, 1.f);
+            glVertex3d(_picked.x, _picked.y, _picked.z);
+            auto nend = _picked + _normal * size * 0.3f;
+            glVertex3d(nend.x, nend.y, nend.z);
+            glEnd();
 
             glBegin(GL_TRIANGLES);
-
-            float size = _picked.z * 0.03f;
 
             auto single_wave = [](float x) -> float
             {
@@ -2541,16 +2547,16 @@ namespace rs2
                 xy4 = float4 { _picked.x + xy4.x, _picked.y + xy4.y, _picked.z  + xy4.z, 1.f };
                 //glVertex3fv(&_picked.x); 
 
-                glColor4f(white.x, white.y, white.z, 0.3f);
-                glVertex3fv(&xy1.x);
                 glColor4f(white.x, white.y, white.z, 0.5f);
+                glVertex3fv(&xy1.x);
+                glColor4f(white.x, white.y, white.z, 0.8f);
                 glVertex3fv(&xy2.x);
                 glVertex3fv(&xy3.x);
 
-                glColor4f(white.x, white.y, white.z, 0.3f);
+                glColor4f(white.x, white.y, white.z, 0.5f);
                 glVertex3fv(&xy1.x);
                 glVertex3fv(&xy4.x);
-                glColor4f(white.x, white.y, white.z, 0.5f);
+                glColor4f(white.x, white.y, white.z, 0.8f);
                 glVertex3fv(&xy3.x);
             }
             //glVertex3fv(&_picked.x); glVertex3fv(&end.x);
@@ -2929,6 +2935,9 @@ namespace rs2
                         reload_required = true;
                         temp_cfg.set(configurations::performance::show_fps, show_fps);
                     }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Show application refresh rate in window title\nThis rate is unrelated to camera FPS and measures application responsivness");
+
 
                     bool vsync = temp_cfg.get(configurations::performance::vsync);
                     if (ImGui::Checkbox("Enable VSync", &vsync))
@@ -2951,6 +2960,16 @@ namespace rs2
                     {
                         temp_cfg.set(configurations::performance::show_skybox, show_skybox);
                     }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("When enabled, this option provides background to the 3D view, instead of leaving it blank.\nThis is purely cosmetic");
+
+                    bool enable_occlusion_invalidation = temp_cfg.get(configurations::performance::occlusion_invalidation);
+                    if (ImGui::Checkbox("Perform Occlusion Invalidation", &enable_occlusion_invalidation))
+                    {
+                        temp_cfg.set(configurations::performance::occlusion_invalidation, enable_occlusion_invalidation);
+                    }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Occlusions are a natural side-effect of having multiple sensors\nWhen this option is enabled, the SDK will filter out occluded pixels");
                 }
 
                 if (tab == 2)

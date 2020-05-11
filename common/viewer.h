@@ -181,6 +181,7 @@ namespace rs2
         bool select_shader_source = false;
         bool measurement_active = false;
         bool show_help_screen = false;
+        bool occlusion_invalidation = true;
 
         press_button_model trajectory_button{ u8"\uf1b0", u8"\uf1b0","Draw trajectory", "Stop drawing trajectory", true };
         press_button_model grid_object_button{ u8"\uf1cb", u8"\uf1cb",  "Configure Grid", "Configure Grid", false };
