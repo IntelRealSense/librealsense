@@ -862,8 +862,8 @@ end*/
     weights = weights(isInside);
     vertices = vertices(isInside,:);
     sectionMapDepth = sectionMapDepth(isInside);*/
-    depth_filter(_z.valid_edge_sub_pixel_x_inside, _z.valid_edge_sub_pixel_x, _z.is_inside, 1, _z.is_inside.size());
-    depth_filter(_z.valid_edge_sub_pixel_y_inside, _z.valid_edge_sub_pixel_y, _z.is_inside, 1, _z.is_inside.size());
+    depth_filter(_z.subpixels_x, _z.valid_edge_sub_pixel_x, _z.is_inside, 1, _z.is_inside.size());
+    depth_filter(_z.subpixels_y, _z.valid_edge_sub_pixel_y, _z.is_inside, 1, _z.is_inside.size());
     depth_filter(_z.closest, _z.values_for_subedges, _z.is_inside, 1, _z.is_inside.size());
     depth_filter(_z.grad_in_direction_inside, _z.grad_in_direction, _z.is_inside, 1, _z.is_inside.size());
     depth_filter(_z.directions, _z.valid_directions, _z.is_inside, 1, _z.is_inside.size());
