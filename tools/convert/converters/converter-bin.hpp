@@ -73,15 +73,19 @@ namespace rs2 {
 
                 void convert(rs2::frame& frame) override
                 {
+                    rs2::depth_frame depthframe = frame.as<rs2::depth_frame>();
+
+                    if (!depthframe || !(_streamType == rs2_stream::RS2_STREAM_ANY || depthframe.get_profile().stream_type() == _streamType)) {
+                        return;
+                    }
+
+                    if (frames_map_get_and_set(depthframe.get_profile().stream_type(), depthframe.get_frame_number())) {
+                        return;
+                    }
+
                     start_worker(
                         [this, &frame] {
-                        rs2::depth_frame depthframe = frame.as<rs2::depth_frame>();
-
-                        if (depthframe && (_streamType == rs2_stream::RS2_STREAM_ANY || depthframe.get_profile().stream_type() == _streamType)) {
-                            if (frames_map_get_and_set(depthframe.get_profile().stream_type(), depthframe.get_frame_number())) {
-                                return;
-                            }
-
+                            rs2::depth_frame depthframe = frame.as<rs2::depth_frame>();
 
                             std::stringstream filename;
                             filename << _filePath
@@ -89,37 +93,37 @@ namespace rs2 {
                                 << "_" << std::setprecision(14) << std::fixed << depthframe.get_timestamp()
                                 << ".bin";
 
-                            std::string filenameS = filename.str();
-
-                            add_sub_worker(
-                                [filenameS, depthframe] {
-                                std::ofstream fs(filenameS, std::ios::binary | std::ios::trunc);
-
-                                if (fs) {
-                                    uint8_t buffer[4];
-
-                                    for (int y = 0; y < depthframe.get_height(); y++) {
-                                        for (int x = 0; x < depthframe.get_width(); x++) {
-                                            fs.write(
-                                                static_cast<const char *>(to_ieee754_32(depthframe.get_distance(x, y), buffer))
-                                                , sizeof buffer);
-                                        }
-                                    }
-
-                                    fs.flush();
-                                }
-                            });
                             std::stringstream metadata_file;
                             metadata_file << _filePath
                                 << "_" << depthframe.get_profile().stream_name()
-                                << "_" << std::setprecision(14) << std::fixed << depthframe.get_timestamp()
-                                << "_metadata.txt";
+                                << "_metadata_" << std::setprecision(14) << std::fixed << depthframe.get_timestamp()
+                                << ".txt";
 
-                            metadata_to_txtfile(depthframe, metadata_file.str());
+                            std::string filenameS = filename.str();
+                            std::string metadataS = metadata_file.str();
 
-                        }
+                            add_sub_worker(
+                                [filenameS, metadataS, depthframe] {
+                                    std::ofstream fs(filenameS, std::ios::binary | std::ios::trunc);
 
-                        wait_sub_workers();
+                                    if (fs) {
+                                        uint8_t buffer[4];
+
+                                        for (int y = 0; y < depthframe.get_height(); y++) {
+                                            for (int x = 0; x < depthframe.get_width(); x++) {
+                                                fs.write(
+                                                    static_cast<const char *>(to_ieee754_32(depthframe.get_distance(x, y), buffer))
+                                                    , sizeof buffer);
+                                            }
+                                        }
+
+                                        fs.flush();
+                                    }
+
+                                    metadata_to_txtfile(depthframe, metadataS);
+                            });
+
+                            wait_sub_workers();
                     });
                 }
             };

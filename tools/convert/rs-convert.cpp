@@ -46,6 +46,7 @@ int main(int argc, char** argv) try
     cmd.parse(argc, argv);
 
     vector<shared_ptr<rs2::tools::converter::converter_base>> converters;
+	shared_ptr<rs2::tools::converter::converter_ply> plyconverter;
 
     rs2_stream streamType = switchDepth.isSet() ? rs2_stream::RS2_STREAM_DEPTH
         : switchColor.isSet() ? rs2_stream::RS2_STREAM_COLOR
@@ -82,8 +83,6 @@ int main(int argc, char** argv) try
         throw runtime_error("output not defined");
     }
 
-    auto plyconverter = make_shared<rs2::tools::converter::converter_ply>(
-        outputFilenamePly.getValue());
 
     //in order to convert frames into ply we need synced depth and color frames, 
     //therefore we use pipeline
@@ -94,6 +93,9 @@ int main(int argc, char** argv) try
         // did not find a match and hence were not serviced
         auto pipe = std::shared_ptr<rs2::pipeline>(
             new rs2::pipeline(), [](rs2::pipeline*) {});
+
+        plyconverter = make_shared<rs2::tools::converter::converter_ply>(
+            outputFilenamePly.getValue());
 
         rs2::config cfg;
         cfg.enable_device_from_file(inputFilename.getValue());
@@ -139,9 +141,6 @@ int main(int argc, char** argv) try
         auto playback = ctx.load_device(inputFilename.getValue());
         playback.set_real_time(false);
         std::vector<rs2::sensor> sensors = playback.query_sensors();
-
-        rs2::frameset frameset;
-        auto frameNumber = 0ULL;
         std::mutex mutex;
 
         auto duration = playback.get_duration();
@@ -171,10 +170,11 @@ int main(int argc, char** argv) try
 
         }
 
+        //clears output in case ply wrote to it
         cout << "\r    \r";
+
         while (true)
         {
-            std::lock_guard<std::mutex> lock(mutex);
             int posP = static_cast<int>(posLast * 100. / duration.count());
 
             if (posP > progress) {

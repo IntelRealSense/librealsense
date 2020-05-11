@@ -32,14 +32,19 @@ namespace rs2 {
 
                 void convert(rs2::frame& frame) override
                 {
+                    rs2::video_frame videoframe = frame.as<rs2::video_frame>();
+
+                    if (!videoframe || !(_streamType == rs2_stream::RS2_STREAM_ANY || videoframe.get_profile().stream_type() == _streamType)) {
+                        return;
+                    }
+
+                    if (frames_map_get_and_set(videoframe.get_profile().stream_type(), videoframe.get_frame_number())) {
+                        return;
+                    }
+
                     start_worker(
                         [this, &frame] {
-                        rs2::video_frame videoframe = frame.as<rs2::video_frame>();
-
-                        if (videoframe && (_streamType == rs2_stream::RS2_STREAM_ANY || videoframe.get_profile().stream_type() == _streamType)) {
-                            if (!frames_map_get_and_set(videoframe.get_profile().stream_type(), videoframe.get_frame_number())) {
-                                return;
-                            }
+                            rs2::video_frame videoframe = frame.as<rs2::video_frame>();
 
                             std::stringstream filename;
                             filename << _filePath
@@ -47,30 +52,32 @@ namespace rs2 {
                                 << "_" << std::setprecision(14) << std::fixed << videoframe.get_timestamp()
                                 << ".raw";
 
-                            std::string filenameS = filename.str();
-
-                            add_sub_worker(
-                                [filenameS, videoframe] {
-                                std::ofstream fs(filenameS, std::ios::binary | std::ios::trunc);
-
-                                if (fs) {
-                                    fs.write(
-                                        static_cast<const char *>(videoframe.get_data())
-                                        , videoframe.get_stride_in_bytes() * videoframe.get_height());
-
-                                    fs.flush();
-                                }
-                            });
                             std::stringstream metadata_file;
                             metadata_file << _filePath
                                 << "_" << videoframe.get_profile().stream_name()
-                                << "_" << std::setprecision(14) << std::fixed << videoframe.get_timestamp()
-                                << "_metadata.txt";
+                                << "_metadata_" << std::setprecision(14) << std::fixed << videoframe.get_timestamp()
+                                << ".txt";
 
-                            metadata_to_txtfile(videoframe, metadata_file.str());
-                        }
+                            std::string filenameS = filename.str();
+                            std::string metadataS = metadata_file.str();
 
-                        wait_sub_workers();
+                            add_sub_worker(
+                                [filenameS, metadataS, videoframe] {
+                                    std::ofstream fs(filenameS, std::ios::binary | std::ios::trunc);
+
+                                    if (fs) {
+                                        fs.write(
+                                            static_cast<const char *>(videoframe.get_data())
+                                            , videoframe.get_stride_in_bytes() * videoframe.get_height());
+
+                                        fs.flush();
+                                    }
+
+                                    metadata_to_txtfile(videoframe, metadataS);
+
+                            });
+
+                            wait_sub_workers();
                     });
                 }
             };

@@ -33,15 +33,19 @@ namespace rs2 {
 
                 void convert(rs2::frame& frame) override
                 {
+                    auto depthframe = frame.as<rs2::depth_frame>();
+
+                    if (!depthframe || !(_streamType == rs2_stream::RS2_STREAM_ANY || depthframe.get_profile().stream_type() == _streamType)) {
+                        return;
+                    }
+
+                    if (frames_map_get_and_set(depthframe.get_profile().stream_type(), depthframe.get_frame_number())) {
+                        return;
+                    }
+
                     start_worker(
                         [this, &frame] {
-                        auto depthframe = frame.as<rs2::depth_frame>();
-
-                        if (depthframe && (_streamType == rs2_stream::RS2_STREAM_ANY || depthframe.get_profile().stream_type() == _streamType)) {
-                            if (frames_map_get_and_set(depthframe.get_profile().stream_type(), depthframe.get_frame_number())) {
-                                return;
-                            }
-
+                            auto depthframe = frame.as<rs2::depth_frame>();
 
                             std::stringstream filename;
                             filename << _filePath
@@ -49,38 +53,38 @@ namespace rs2 {
                                 << "_" << std::setprecision(14) << std::fixed << depthframe.get_timestamp()
                                 << ".csv";
 
-                            std::string filenameS = filename.str();
-
-                            add_sub_worker(
-                                [filenameS, depthframe] {
-                                std::ofstream fs(filenameS, std::ios::trunc);
-
-                                if (fs) {
-                                    for (int y = 0; y < depthframe.get_height(); y++) {
-                                        auto delim = "";
-
-                                        for (int x = 0; x < depthframe.get_width(); x++) {
-                                            fs << delim << depthframe.get_distance(x, y);
-                                            delim = ",";
-                                        }
-
-                                        fs << '\n';
-                                    }
-
-                                    fs.flush();
-                                }
-                            });
-
                             std::stringstream metadata_file;
                             metadata_file << _filePath
                                 << "_" << depthframe.get_profile().stream_name()
-                                << "_" << std::setprecision(14) << std::fixed << depthframe.get_timestamp()
-                                << "_metadata.txt";
+                                << "_metadata_" << std::setprecision(14) << std::fixed << depthframe.get_timestamp()
+                                << ".txt";
 
-                            metadata_to_txtfile(depthframe, metadata_file.str());
-                        }
+                            std::string filenameS = filename.str();
+                            std::string metadataS = metadata_file.str();
 
-                        wait_sub_workers();
+                            add_sub_worker(
+                                [filenameS, metadataS, depthframe] {
+                                    std::ofstream fs(filenameS, std::ios::trunc);
+
+                                    if (fs) {
+                                        for (int y = 0; y < depthframe.get_height(); y++) {
+                                            auto delim = "";
+
+                                            for (int x = 0; x < depthframe.get_width(); x++) {
+                                                fs << delim << depthframe.get_distance(x, y);
+                                                delim = ",";
+                                            }
+
+                                            fs << '\n';
+                                        }
+
+                                        fs.flush();
+                                    }
+
+                                    metadata_to_txtfile(depthframe, metadataS);
+                            });
+
+                            wait_sub_workers();
                     });
                 }
             };

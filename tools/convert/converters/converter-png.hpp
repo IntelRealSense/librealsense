@@ -35,14 +35,18 @@ namespace rs2 {
 
                 void convert(rs2::frame& frame) override
                 {
+                    rs2::video_frame videoframe = frame.as<rs2::video_frame>();
+                    if (!videoframe || !(_streamType == rs2_stream::RS2_STREAM_ANY || videoframe.get_profile().stream_type() == _streamType)) {
+                        return;
+                    }
+
+                    if (frames_map_get_and_set(videoframe.get_profile().stream_type(), videoframe.get_timestamp())) {
+                        return;
+                    }
+
                     start_worker(
                         [this, &frame] {
-                        rs2::video_frame videoframe = frame.as<rs2::video_frame>();
-                        if (videoframe && (_streamType == rs2_stream::RS2_STREAM_ANY || videoframe.get_profile().stream_type() == _streamType)) {
-                            if (frames_map_get_and_set(videoframe.get_profile().stream_type(), videoframe.get_timestamp())) {
-                                return;
-                            }
-
+                            rs2::video_frame videoframe = frame.as<rs2::video_frame>();
 
                             if (videoframe.get_profile().stream_type() == rs2_stream::RS2_STREAM_DEPTH) {
                                 videoframe = _colorizer.process(videoframe);
@@ -54,31 +58,30 @@ namespace rs2 {
                                 << "_" << std::setprecision(14) << std::fixed << videoframe.get_timestamp()
                                 << ".png";
 
-                            std::string filenameS = filename.str();
-
-                            add_sub_worker(
-                                [filenameS, videoframe] {
-                                stbi_write_png(
-                                    filenameS.c_str()
-                                    , videoframe.get_width()
-                                    , videoframe.get_height()
-                                    , videoframe.get_bytes_per_pixel()
-                                    , videoframe.get_data()
-                                    , videoframe.get_stride_in_bytes()
-                                );
-                            });
-
                             std::stringstream metadata_file;
                             metadata_file << _filePath
                                 << "_" << videoframe.get_profile().stream_name()
-                                << "_" << std::setprecision(14) << std::fixed << videoframe.get_timestamp()
-                                << "_metadata.txt";
+                                << "_metadata_" << std::setprecision(14) << std::fixed << videoframe.get_timestamp()
+                                << ".txt";
 
-                            metadata_to_txtfile(videoframe, metadata_file.str());
+                            std::string filenameS = filename.str();
+                            std::string metadataS = metadata_file.str();
 
-                        }
+                            add_sub_worker(
+                                [filenameS, metadataS, videoframe] {
+                                    stbi_write_png(
+                                        filenameS.c_str()
+                                        , videoframe.get_width()
+                                        , videoframe.get_height()
+                                        , videoframe.get_bytes_per_pixel()
+                                        , videoframe.get_data()
+                                        , videoframe.get_stride_in_bytes()
+                                    );
 
-                        wait_sub_workers();
+                                    metadata_to_txtfile(videoframe, metadataS);
+                            });
+
+                            wait_sub_workers();
                     });
                 }
             };
