@@ -46,7 +46,7 @@ int main(int argc, char** argv) try
     cmd.parse(argc, argv);
 
     vector<shared_ptr<rs2::tools::converter::converter_base>> converters;
-	shared_ptr<rs2::tools::converter::converter_ply> plyconverter;
+    shared_ptr<rs2::tools::converter::converter_ply> plyconverter;
 
     rs2_stream streamType = switchDepth.isSet() ? rs2_stream::RS2_STREAM_DEPTH
         : switchColor.isSet() ? rs2_stream::RS2_STREAM_COLOR
