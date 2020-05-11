@@ -597,16 +597,15 @@ TEST_CASE("Weights calc", "[d2rgb]")
         CHECK(compare_to_bin_file< double>(depth_data.sub_points, dir, scene, FILE_NAME("subPoints", 3, 4259, "double_00").c_str(), 4259, 3, compare_same_vectors));
         CHECK(compare_to_bin_file< algo::double3>(depth_data.vertices2, dir, scene, FILE_NAME("vertices", 3, 4259, "double_00").c_str(), 4259, 3, compare_same_vectors));
         CHECK(compare_to_bin_file< algo::double2>(depth_data.uvmap2, dir, scene, FILE_NAME("uv", 2, 4259, "double_00").c_str(), 4259, 2, compare_same_vectors));
-        //// ---
+        // ---
         //TRACE( "\nChecking scene validity:" );
 
         //CHECK(!cal.is_scene_valid());
 
-        ////// edge distribution
+        //// edge distribution
         //CHECK( compare_to_bin_file< double >( z_data.sum_weights_per_section, dir, scene, FILE_NAME("depthEdgeWeightDistributionPerSectionDepth", 1, 4,"double_00").c_str(), 4, 1, compare_same_vectors ) );
-        //
-        ////CHECK( compare_to_bin_file< byte >( z_data.section_map, dir, scene, FILE_NAME("sectionMapDepth_trans", 1, md.num_of_edges, "uint8_00").c_str(), md.num_of_edges, 1, compare_same_vectors ) );
-        ////CHECK( compare_to_bin_file< byte >( yuy_data.section_map, dir, scene, FILE_NAME("sectionMapRgb_trans", 1, rgb_w*rgb_h, "uint8_00").c_str(), rgb_w*rgb_h, 1, compare_same_vectors ) );
+        //CHECK( compare_to_bin_file< byte >( z_data.section_map, dir, scene, FILE_NAME("sectionMapDepth_trans", 1, md.num_of_edges, "uint8_00").c_str(), md.num_of_edges, 1, compare_same_vectors ) );
+        //CHECK( compare_to_bin_file< byte >( yuy_data.section_map, dir, scene, FILE_NAME("sectionMapRgb_trans", 1, rgb_w*rgb_h, "uint8_00").c_str(), rgb_w*rgb_h, 1, compare_same_vectors ) );
         //CHECK(compare_to_bin_file< double >(yuy_data.sum_weights_per_section, dir, scene, FILE_NAME("edgeWeightDistributionPerSectionRgb", 1, 4, "double_00").c_str(), 4, 1, compare_same_vectors));
 
         //// gradient balanced

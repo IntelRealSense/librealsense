@@ -833,7 +833,8 @@ void optimizer::set_depth_data(
         _depth.vertices2.push_back({val1, val2, val3});
     }
     
-    _depth.uvmap2 = get_texture_map(_depth.vertices2, _params_curr.curr_calib);
+    //_params_curr.curr_calib.rot_angles = extract_angles_from_rotation(_params_curr.curr_calib.rot.rot);
+    _depth.uvmap2 = get_texture_map(_depth.vertices2, _original_calibration);
 
     // old code :
     /*
