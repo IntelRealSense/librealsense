@@ -39,11 +39,11 @@ static void rs2_project_point_to_pixel(float pixel[2], const struct rs2_intrinsi
         float r2 = x * x + y * y;
         float f = 1 + intrin->coeffs[0] * r2 + intrin->coeffs[1] * r2*r2 + intrin->coeffs[4] * r2*r2*r2;
 
-        auto xcd = x * f;
-        auto ycd = y * f;
+        auto xf = x * f;
+        auto yf = y * f;
 
-        float dx = xcd + 2 * intrin->coeffs[2] * x*y + intrin->coeffs[3] * (r2 + 2 * x*x);
-        float dy = ycd + 2 * intrin->coeffs[3] * x*y + intrin->coeffs[2] * (r2 + 2 * y*y);
+        float dx = xf + 2 * intrin->coeffs[2] * x*y + intrin->coeffs[3] * (r2 + 2 * x*x);
+        float dy = yf + 2 * intrin->coeffs[3] * x*y + intrin->coeffs[2] * (r2 + 2 * y*y);
 
         x = dx;
         y = dy;
