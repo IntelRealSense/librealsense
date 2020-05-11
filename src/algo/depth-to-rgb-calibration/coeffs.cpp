@@ -510,26 +510,15 @@ namespace depth_to_rgb_calibration {
 
         double exp =  p[8] * x + p[9] * y + p[10] * z + p[11];
         double exp2 =  exp * exp;
-        double exp3 =  p[0] * x + p[1] * y + p[2] * z + p[3];
-        double exp5 =   2 * d[0] * y1 + 4 * d[1] * y1*(r2)+6 * d[4] * y1*r4;
-
-        double exp6 =  2 * d[3] * y1;
-        double exp8 =  2 * d[2];
+       
+        res.vals[8] = -(x*(p[0]*x + p[1]*y + p[2]*z + p[3]*1)
+            *(rc + 6*d[3]*x1 + 2*d[2]*y1 + x1*(2*d[0]*x1 + 4*d[1]*x1*(r2)+6*d[4]*x1*r4))
+            )/ exp2 - (fx*x*(2*d[2]*x1 + 2*d[3]*y1 + x1*(2*d[0]*y1 + 4*d[1]*y1*(r2)+6*d[4]*y1*r4))
+                *(p[4]*x + p[5]*y + p[6]*z + p[7]*1)
+                )/ (fy*(exp2));
         
-        double exp7 =  exp8 * x1;
 
-        double exp4 = exp7 + exp6 + x1 * (exp5);
-        double exp9 = p[4] * x + p[5] * y + p[6] * z + p[7] * 1;
-        double exp10 = rc + 6 * d[3] * x1 + 2 * d[2] * y1 + x1 * (2 * d[0] * x1 + 4 * d[1] * x1*(r2)+6 * d[4] * x1*r4);
-        double exp11 = x * (exp3)*(exp10);
-        double exp12 = -(exp11) / exp2;
-        double exp14 = fx * x;
-        double exp15 = (exp4)*(exp9);//
-        double exp13 = exp14 * exp15;//
-        res.vals[8] = exp12 - (exp13)/ (fy*exp2);
-
-        res.vals[8] = exp15;
-       /* res.vals[9] = - (y*(p[0]*x + p[1]*y + p[2]*z + p[3]*1)
+        res.vals[9] = - (y*(p[0]*x + p[1]*y + p[2]*z + p[3]*1)
                 *(rc + 6*d[3]*x1 + 2*d[2]*y1 + x1*(2*d[0]*x1 + 4*d[1]*x1*(r2)+6*d[4]*x1*r4))
                 ) / exp2 - (fx*y*(2*d[2]*x1 + 2*d[3]*y1 + x1*(2*d[0]*y1 + 4*d[1]*y1*(r2)+6*d[4]*y1*r4))
                 *(p[4]*x + p[5]*y + p[6]*z + p[7]*1)
@@ -545,7 +534,7 @@ namespace depth_to_rgb_calibration {
             *(rc + 6 * d[3] * x1 + 2 * d[2] * y1 + x1 * (2 * d[0] * x1 + 4 * d[1] * x1*(r2)+6 * d[4] * x1*r4))
             ) / exp2 - (fx * 1 * (2 * d[2] * x1 + 2 * d[3] * y1 + x1 * (2 * d[0] * y1 + 4 * d[1] * y1*(r2)+6 * d[4] * y1*r4))
                 *(p[4] * x + p[5] * y + p[6] * z + p[7] * 1)
-                ) / (fy*exp2);*/
+                ) / (fy*exp2);
 
         return res;
     }
@@ -557,6 +546,8 @@ namespace depth_to_rgb_calibration {
         const calib & yuy_intrin_extrin
     )
     {
+        p_matrix res{0};
+
         auto r = yuy_intrin_extrin.rot.rot;
         double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
         auto d = yuy_intrin_extrin.coeffs;
@@ -564,19 +555,59 @@ namespace depth_to_rgb_calibration {
         auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
         auto fx = (double)yuy_intrin_extrin.k_mat.fx;
         auto fy = (double)yuy_intrin_extrin.k_mat.fy;
+        auto p = yuy_intrin_extrin.p_mat.vals;
 
         auto x1 = (double)xy.x;
         auto y1 = (double)xy.y;
 
         auto x2 = x1 * x1;
         auto y2 = y1 * y1;
-        auto xy2 = x2 + y2;
-        auto x2_y2 = xy2 * xy2;
+        auto r2 = x2 + y2;
+        auto r4 = r2 * r2;
 
         auto x = v.x;
         auto y = v.y;
         auto z = v.z;
-        return {0};
+
+        double exp = p[8] * x + p[9] * y + p[10] * z + p[11] * 1;
+        double exp2 = exp * exp;
+        res.vals[0] = (fy*x*(2*d[2]*x1 + 2*d[3]*y1 + y1*(2*d[0]*x1 + 4*d[1]*x1*(r2)+6*d[4]*x1*r4)) 
+            )/ (fx*(p[8]*x + p[9]*y + p[10]*z + p[11]*1)); 
+        res.vals[1] = (fy*y*(2*d[2]*x1 + 2*d[3]*y1 + y1*(2*d[0]*x1 + 4*d[1]*x1*(r2)+6*d[4]*x1*r4)) 
+            )/ (fx*(p[8]*x + p[9]*y + p[10]*z + p[11]*1)); 
+        res.vals[2] = (fy*z*(2*d[2]*x1 + 2*d[3]*y1 + y1*(2*d[0]*x1 + 4*d[1]*x1*(r2)+6*d[4]*x1*r4)) 
+            )/ (fx*(p[8]*x + p[9]*y + p[10]*z + p[11]*1)); 
+        res.vals[3] = (fy*1*(2*d[2]*x1 + 2*d[3]*y1 + y1*(2*d[0]*x1 + 4*d[1]*x1*(r2)+6*d[4]*x1*r4)) 
+            )/ (fx*(p[8]*x + p[9]*y + p[10]*z + p[11]*1)); 
+        res.vals[4] = (x*(rc + 2*d[3]*x1 + 6*d[2]*y1 + y1*(2*d[0]*y1 + 4*d[1]*y1*(r2)+6*d[4]*y1*r4)) 
+            )/ (p[8]*x + p[9]*y + p[10]*z + p[11]*1); 
+        res.vals[5] = (y*(rc + 2*d[3]*x1 + 6*d[2]*y1 + y1*(2*d[0]*y1 + 4*d[1]*y1*(r2)+6*d[4]*y1*r4)) 
+            )/ (p[8]*x + p[9]*y + p[10]*z + p[11]*1); 
+        res.vals[6] = (z*(rc + 2*d[3]*x1 + 6*d[2]*y1 + y1*(2*d[0]*y1 + 4*d[1]*y1*(r2)+6*d[4]*y1*r4)) 
+            )/ (p[8]*x + p[9]*y + p[10]*z + p[11]*1); 
+        res.vals[7] = (1*(rc + 2*d[3]*x1 + 6*d[2]*y1 + y1*(2*d[0]*y1 + 4*d[1]*y1*(r2)+6*d[4]*y1*r4)) 
+            )/ (p[8]*x + p[9]*y + p[10]*z + p[11]*1); 
+        res.vals[8] = - (x*(p[4]*x + p[5]*y + p[6]*z + p[7]*1) 
+                *(rc + 2*d[3]*x1 + 6*d[2]*y1 + y1*(2*d[0]*y1 + 4*d[1]*y1*(r2)+6*d[4]*y1*r4)) 
+                )/ exp2 - (fy*x*(2*d[2]*x1 + 2*d[3]*y1 + y1*(2*d[0]*x1 + 4*d[1]*x1*(r2)+6*d[4]*x1*r4))
+                *(p[0]*x + p[1]*y + p[2]*z + p[3]*1) 
+                )/ (fx*exp2);
+        res.vals[9] = - (y*(p[4]*x + p[5]*y + p[6]*z + p[7]*1) 
+                *(rc + 2*d[3]*x1 + 6*d[2]*y1 + y1*(2*d[0]*y1 + 4*d[1]*y1*(r2)+6*d[4]*y1*r4)) 
+                )/ exp2 - (fy*y*(2*d[2]*x1 + 2*d[3]*y1 + y1*(2*d[0]*x1 + 4*d[1]*x1*(r2)+6*d[4]*x1*r4))
+                *(p[0]*x + p[1]*y + p[2]*z + p[3]*1) 
+                )/ (fx*exp2);
+        res.vals[10] = - (z*(p[4]*x + p[5]*y + p[6]*z + p[7]*1) 
+                *(rc + 2*d[3]*x1 + 6*d[2]*y1 + y1*(2*d[0]*y1 + 4*d[1]*y1*(r2)+6*d[4]*y1*r4)) 
+                )/ exp2 - (fy*z*(2*d[2]*x1 + 2*d[3]*y1 + y1*(2*d[0]*x1 + 4*d[1]*x1*(r2)+6*d[4]*x1*r4))
+                *(p[0]*x + p[1]*y + p[2]*z + p[3]*1) 
+                )/ (fx*exp2);
+        res.vals[11] = - (1*(p[4]*x + p[5]*y + p[6]*z + p[7]*1) 
+                *(rc + 2*d[3]*x1 + 6*d[2]*y1 + y1*(2*d[0]*y1 + 4*d[1]*y1*(r2)+6*d[4]*y1*r4)) 
+                )/ exp2 - (fy*1*(2*d[2]*x1 + 2*d[3]*y1 + y1*(2*d[0]*x1 + 4*d[1]*x1*(r2)+6*d[4]*x1*r4))
+                *(p[0]*x + p[1]*y + p[2]*z + p[3]*1) 
+                )/ (fx*exp2);
+        return res;
     }
 
     coeffs<rotation_in_angles> calc_rotation_coefs(

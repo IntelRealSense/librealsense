@@ -16,6 +16,7 @@ namespace depth_to_rgb_calibration {
     struct rs2_intrinsics_double
     {
         rs2_intrinsics_double() = default;
+
         rs2_intrinsics_double( const int width, const int height,
             const k_matrix& k_mat, const rs2_distortion model, const double coeffs[5] )
             :width( width ), height( height ),
@@ -56,6 +57,7 @@ namespace depth_to_rgb_calibration {
     /** \brief Cross-stream extrinsics: encodes the topology describing how the different devices are oriented. */
     struct rs2_extrinsics_double
     {
+        rs2_extrinsics_double() {}
         rs2_extrinsics_double( const rotation& rot, const translation& trans )
             :rotation{ rot.rot[0], rot.rot[1],rot.rot[2],
                   rot.rot[3], rot.rot[4], rot.rot[5],
