@@ -574,7 +574,7 @@ namespace depth_to_rgb_calibration {
     {
         coeffs<rotation_in_angles> res;
         auto engles = extract_angles_from_rotation( yuy_intrin_extrin.rot.rot );
-        auto v = z_data.vertices;
+        auto v = z_data.vertices_all;
         res.x_coeffs.resize( v.size() );
         res.y_coeffs.resize( v.size() );
 
@@ -704,7 +704,7 @@ namespace depth_to_rgb_calibration {
     {
         coeffs<p_matrix> res;
 
-        auto v = z_data.vertices;
+        auto v = z_data.vertices_all;
         res.y_coeffs.resize(v.size());
         res.x_coeffs.resize(v.size());
 
@@ -721,7 +721,7 @@ namespace depth_to_rgb_calibration {
     {
         coeffs<translation> res;
 
-        auto v = z_data.vertices;
+        auto v = z_data.vertices_all;
         res.y_coeffs.resize( v.size() );
         res.x_coeffs.resize( v.size() );
 
@@ -825,7 +825,7 @@ namespace depth_to_rgb_calibration {
         iteration_data_collect * data)
     {
         coeffs<k_matrix> res;
-        auto v = z_data.vertices;
+        auto v = z_data.vertices_all;
         res.x_coeffs.resize( v.size() );
         res.y_coeffs.resize( v.size() );
 

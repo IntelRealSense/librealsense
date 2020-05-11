@@ -521,35 +521,35 @@ TEST_CASE("Weights calc", "[d2rgb]")
         auto z_w = ci.z.width;
         auto num_of_calib_elements = 32;
 
-        //CHECK(compare_to_bin_file< double >(yuy_data.edges, dir, scene, FILE_NAME("YUY2_edge", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors));
-        //CHECK(compare_to_bin_file< double >(yuy_data.edges_IDT, dir, scene, FILE_NAME("YUY2_IDT", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors));
-        //CHECK(compare_to_bin_file< double >(yuy_data.edges_IDTx, dir, scene, FILE_NAME("YUY2_IDTx", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors));
-        //CHECK(compare_to_bin_file< double >(yuy_data.edges_IDTy, dir, scene, FILE_NAME("YUY2_IDTy", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(yuy_data.edges, dir, scene, FILE_NAME("YUY2_edge", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(yuy_data.edges_IDT, dir, scene, FILE_NAME("YUY2_IDT", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(yuy_data.edges_IDTx, dir, scene, FILE_NAME("YUY2_IDTx", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(yuy_data.edges_IDTy, dir, scene, FILE_NAME("YUY2_IDTy", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors));
 
         ////---
-        //CHECK(compare_to_bin_file< double >(ir_data.ir_edges, dir, scene, FILE_NAME("I_edge", z_w, z_h,  "double_00").c_str(), z_h, z_w, compare_same_vectors));
+        //CHECK(compare_to_bin_file< double >(ir_data.edges, dir, scene, FILE_NAME("I_edge", z_w, z_h,  "double_00").c_str(), z_h, z_w, compare_same_vectors)); // NOHA :: replaced (V)
 
         ////---
-        //CHECK(compare_to_bin_file< double >(z_data.edges, dir, scene, FILE_NAME("Z_edge", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
-        //CHECK(compare_to_bin_file< double >(z_data.supressed_edges, dir, scene, FILE_NAME("Z_edgeSupressed", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
-        //CHECK(compare_to_bin_file< byte >(z_data.directions, dir, scene, FILE_NAME("Z_dir", z_w, z_h, "uint8_00").c_str(), z_h, z_w, compare_same_vectors));
+        //CHECK(compare_to_bin_file< double >(z_data.edges, dir, scene, FILE_NAME("Z_edge", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors)); // NOHA :: replaced (V)
+        //CHECK(compare_to_bin_file< double >(z_data.supressed_edges, dir, scene, FILE_NAME("Z_edgeSupressed", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors)); // NOHA :: replaced (V)
+        //CHECK(compare_to_bin_file< byte >(z_data.directions, dir, scene, FILE_NAME("Z_dir", z_w, z_h, "uint8_00").c_str(), z_h, z_w, compare_same_vectors)); // NOHA :: replaced (V)
 
         //CHECK(compare_to_bin_file< double >(z_data.subpixels_x, dir, scene, FILE_NAME("Z_edgeSubPixel", z_w, z_h, "double_01").c_str(), z_h, z_w, compare_same_vectors));
         //CHECK(compare_to_bin_file< double >(z_data.subpixels_y, dir, scene, FILE_NAME("Z_edgeSubPixel", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
 
         //CHECK(compare_to_bin_file< double >(z_data.weights, dir, scene, FILE_NAME("weightsT", 1, md.num_of_edges,"double_00").c_str(), md.num_of_edges, 1, compare_same_vectors));
-        //CHECK(compare_to_bin_file< double >(z_data.closest, dir, scene, FILE_NAME("Z_valuesForSubEdges", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
-        //CHECK(compare_to_bin_file< algo::double3 >(z_data.vertices, dir, scene, FILE_NAME("vertices", 3, md.num_of_edges, "double_00").c_str(), md.num_of_edges, 1, compare_same_vectors));
+        //CHECK(compare_to_bin_file< double >(z_data.closest, dir, scene, FILE_NAME("Z_valuesForSubEdges", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors)); // NOHA :: replaced (V)
+        //CHECK(compare_to_bin_file< algo::double3 >(z_data.vertices, dir, scene, FILE_NAME("vertices", 3, md.num_of_edges, "double_00").c_str(), md.num_of_edges, 1, compare_same_vectors)); // NOHA :: replaced (V)
 
         // smearing
         CHECK(compare_to_bin_file< double >(depth_data.gradient_x, dir, scene, FILE_NAME("Zx", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(depth_data.gradient_y, dir, scene, FILE_NAME("Zy", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(ir_data.gradient_x, dir, scene, FILE_NAME("Ix", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(ir_data.gradient_y, dir, scene, FILE_NAME("Iy", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
-        CHECK(compare_to_bin_file< double >(ir_data.edges2, dir, scene, FILE_NAME("iEdge", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
-        //CHECK(compare_to_bin_file< double >(depth_data.edges2, dir, scene, FILE_NAME("zedge", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(ir_data.edges, dir, scene, FILE_NAME("iEdge", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.edges, dir, scene, FILE_NAME("zedge", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
         CHECK(compare_to_bin_file< uint8_t >(depth_data.section_map_depth, dir, scene, FILE_NAME("sectionMapDepth",  z_w, z_h, "uint8_00").c_str(), z_h, z_w, compare_same_vectors));
-        CHECK(compare_to_bin_file< uint8_t >(ir_data.valid_edge_pixels_by_ir, dir, scene, FILE_NAME("validEdgePixelsByIR", z_w, z_h, "uint8_00").c_str(), z_h, z_w, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(ir_data.valid_edge_pixels_by_ir, dir, scene, FILE_NAME("validEdgePixelsByIR", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(ir_data.valid_location_rc_x, dir, scene, FILE_NAME("gridXValid", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(ir_data.valid_location_rc_y, dir, scene, FILE_NAME("gridYValid", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(ir_data.valid_location_rc, dir, scene, FILE_NAME("locRC", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
@@ -588,23 +588,23 @@ TEST_CASE("Weights calc", "[d2rgb]")
         //CHECK(compare_to_bin_file< double >(depth_data.values_for_subedges, dir, scene, FILE_NAME("zValuesForSubEdges", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(depth_data.edge_sub_pixel, dir, scene, FILE_NAME("edgeSubPixel", 2, 105794, "double_00").c_str(), 105794, 2, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(depth_data.values_for_subedges, dir, scene, FILE_NAME("validzValuesForSubEdges", 1, 4259, "double_00").c_str(), 4259, 1, compare_same_vectors));
-        CHECK(compare_to_bin_file< uint8_t >(depth_data.valid_edge_pixels, dir, scene, FILE_NAME("validEdgePixels", 1, 105794, "uint8_00").c_str(), 105794, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.supressed_edges, dir, scene, FILE_NAME("validEdgePixels", 1, 105794, "double_00").c_str(), 105794, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< uint8_t >(depth_data.valid_section_map, dir, scene, FILE_NAME("validsectionMapDepth", 1, 4259, "uint8_00").c_str(), 4259, 1, compare_same_vectors));
-        CHECK(compare_to_bin_file< double >(depth_data.valid_direction_index, dir, scene, FILE_NAME("validdirectionIndex", 1, 4259, "double_00").c_str(), 4259, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.valid_directions, dir, scene, FILE_NAME("validdirectionIndex", 1, 4259, "double_00").c_str(), 4259, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(depth_data.valid_edge_sub_pixel, dir, scene, FILE_NAME("validedgeSubPixel", 2, 4259, "double_00").c_str(), 4259, 2, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(depth_data.valid_edge_sub_pixel_x, dir, scene, FILE_NAME("xim", 1, 4259, "double_00").c_str(), 4259, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(depth_data.valid_edge_sub_pixel_y, dir, scene, FILE_NAME("yim", 1, 4259, "double_00").c_str(), 4259, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double>(depth_data.sub_points, dir, scene, FILE_NAME("subPoints", 3, 4259, "double_00").c_str(), 4259, 3, compare_same_vectors));
-        CHECK(compare_to_bin_file< algo::double3>(depth_data.vertices2, dir, scene, FILE_NAME("vertices", 3, 4259, "double_00").c_str(), 4259, 3, compare_same_vectors));
-        CHECK(compare_to_bin_file< algo::double2>(depth_data.uvmap2, dir, scene, FILE_NAME("uv", 2, 4259, "double_00").c_str(), 4259, 2, compare_same_vectors));
-        CHECK(compare_to_bin_file< uint8_t >(depth_data.is_inside, dir, scene, FILE_NAME("isInside", 1, 4259, "uint8_00").c_str(), 4259, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< algo::double3>(depth_data.vertices_all, dir, scene, FILE_NAME("vertices", 3, 4259, "double_00").c_str(), 4259, 3, compare_same_vectors));
+        CHECK(compare_to_bin_file< algo::double2>(depth_data.uvmap, dir, scene, FILE_NAME("uv", 2, 4259, "double_00").c_str(), 4259, 2, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.is_inside, dir, scene, FILE_NAME("isInside", 1, 4259, "double_00").c_str(), 4259, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(depth_data.valid_edge_sub_pixel_x_inside, dir, scene, FILE_NAME("Z_xim", 1, 2506, "double_00").c_str(), 2506, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(depth_data.valid_edge_sub_pixel_y_inside, dir, scene, FILE_NAME("Z_yim", 1, 2506, "double_00").c_str(), 2506, 1, compare_same_vectors));
 
-        CHECK(compare_to_bin_file< double >(depth_data.values_for_subedges_inside, dir, scene, FILE_NAME("Z_valuesForSubEdges", 1, 2506, "double_00").c_str(), 2506, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.closest, dir, scene, FILE_NAME("Z_valuesForSubEdges", 1, 2506, "double_00").c_str(), 2506, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(depth_data.grad_in_direction_inside, dir, scene, FILE_NAME("zGradInDirection", 1, 2506, "double_00").c_str(), 2506, 1, compare_same_vectors));
-        CHECK(compare_to_bin_file< double >(depth_data.valid_direction_index_inside, dir, scene, FILE_NAME("directionIndexInside", 1, 2506, "double_00").c_str(), 2506, 1, compare_same_vectors));
-        CHECK(compare_to_bin_file< algo::double3 >(depth_data.vertices2_inside, dir, scene, FILE_NAME("vertices", 3, 2506, "double_00").c_str(), 2506, 3, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(depth_data.directions, dir, scene, FILE_NAME("directionIndexInside", 1, 2506, "double_00").c_str(), 2506, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< algo::double3 >(depth_data.vertices, dir, scene, FILE_NAME("vertices", 3, 2506, "double_00").c_str(), 2506, 3, compare_same_vectors));
         CHECK(compare_to_bin_file< uint8_t >(depth_data.section_map_depth_inside, dir, scene, FILE_NAME("sectionMapDepthInside", 1, 2506, "uint8_00").c_str(), 2506, 1, compare_same_vectors));
 
         // ---

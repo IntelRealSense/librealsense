@@ -91,10 +91,10 @@ void init_algo( algo::optimizer & cal,
         camera.z.width, camera.z.height
     );
 
-    cal.set_z_data(
+    /*cal.set_z_data(
         read_image_file< algo::z_t >( dir + z, camera.z.width, camera.z.height ),
         camera.z, camera.z_units
-    );
+    );*/
 
     cal.set_depth_data(
         read_image_file< algo::z_t >(dir + z, camera.z.width, camera.z.height),

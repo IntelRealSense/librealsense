@@ -13,8 +13,8 @@ double optimizer::calc_correction_in_pixels( calib const & from_calibration ) co
 {
     //%    [uvMap,~,~] = OnlineCalibration.aux.projectVToRGB(frame.vertices,params.rgbPmat,params.Krgb,params.rgbDistort);
     //% [uvMapNew,~,~] = OnlineCalibration.aux.projectVToRGB(frame.vertices,newParams.rgbPmat,newParams.Krgb,newParams.rgbDistort);
-    auto old_uvmap = get_texture_map( _z.vertices, from_calibration );
-    auto new_uvmap = get_texture_map( _z.vertices, _params_curr.curr_calib );
+    auto old_uvmap = get_texture_map( _z.vertices_all, from_calibration );
+    auto new_uvmap = get_texture_map( _z.vertices_all, _params_curr.curr_calib );
     if( old_uvmap.size() != new_uvmap.size() )
         throw std::runtime_error( to_string() << "did not expect different uvmap sizes (" << old_uvmap.size() << " vs " << new_uvmap.size() << ")" );
     // uvmap is Nx[x,y]
@@ -85,8 +85,8 @@ std::vector< double > optimizer::cost_per_section_diff(calib const & old_calib, 
     if (_z.section_map.size() != _z.weights.size())
         throw std::runtime_error("section_map has not been initialized");
 
-    auto uvmap_old = get_texture_map(_z.vertices, old_calib);
-    auto uvmap_new = get_texture_map(_z.vertices, new_calib);
+    auto uvmap_old = get_texture_map(_z.vertices_all, old_calib);
+    auto uvmap_new = get_texture_map(_z.vertices_all, new_calib);
 
     size_t const n_sections_x = _params.num_of_sections_for_edge_distribution_x;
     size_t const n_sections_y = _params.num_of_sections_for_edge_distribution_y;

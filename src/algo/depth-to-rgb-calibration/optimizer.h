@@ -100,10 +100,10 @@ namespace depth_to_rgb_calibration {
         void set_ir_data(
             std::vector< ir_t > && ir_data,
             size_t width, size_t height );
-        void set_z_data(
+        /*void set_z_data(
             std::vector< z_t > && z_data,
             rs2_intrinsics_double const & depth_intrinsics,
-            float depth_units );
+            float depth_units );*/
         void set_depth_data(
             std::vector< z_t >&& z_data,
             std::vector< ir_t >&& ir_data,
@@ -134,7 +134,7 @@ namespace depth_to_rgb_calibration {
         z_frame_data    const & get_z_data() const   { return _z; }
         yuy2_frame_data const & get_yuy_data() const { return _yuy; }
         ir_frame_data   const & get_ir_data() const  { return _ir; }
-        z_frame_data    const& get_depth_data() const { return _depth; }
+        z_frame_data    const& get_depth_data() const { return _z; }
         // impl
     private:
         void zero_invalid_edges( z_frame_data& z_data, ir_frame_data const & ir_data );
@@ -171,8 +171,8 @@ namespace depth_to_rgb_calibration {
         params _params;
         yuy2_frame_data _yuy;
         ir_frame_data _ir;
+        //z_frame_data _z;
         z_frame_data _z;
-        z_frame_data _depth;
         calib _original_calibration;         // starting state of auto-calibration
         calib _factory_calibration;          // factory default calibration of the camera
         optimaization_params _params_curr;   // last-known setting
