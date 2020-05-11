@@ -91,3 +91,11 @@ dl_algo_file( "${F9440687}/2/binFiles/xy_iteration_4_5089x2_double_00.bin" "")
 dl_algo_file( "${F9440687}/2/binFiles/xy_iteration_5_5089x2_double_00.bin" "")
 dl_algo_file( "${F9440687}/2/binFiles/xy_iteration_6_5089x2_double_00.bin" "")
 
+dl_algo_file( "${F9440687}/2/binFiles/xCoeff_P_1_5089x12_double_00.bin" "")
+dl_algo_file( "${F9440687}/2/binFiles/xCoeff_P_2_5089x12_double_00.bin" "")
+dl_algo_file( "${F9440687}/2/binFiles/xCoeff_P_3_5089x12_double_00.bin" "")
+dl_algo_file( "${F9440687}/2/binFiles/xCoeff_P_4_5089x12_double_00.bin" "")
+dl_algo_file( "${F9440687}/2/binFiles/xCoeff_P_5_5089x12_double_00.bin" "")
+dl_algo_file( "${F9440687}/2/binFiles/xCoeff_P_6_5089x12_double_00.bin" "")
+
+dl_algo_file( "${F9440687}/2/binFiles/camera_params" "")

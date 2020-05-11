@@ -1368,7 +1368,7 @@ void optimizer::write_data_to( std::string const & dir )
             _z.intrinsics,
             _original_calibration,
             _z.depth_units,
-            dir, "camera_params.matlab"
+            dir, "camera_params"
         );
     }
     catch( std::exception const & err )

@@ -4,7 +4,6 @@
 //#cmake:add-file ../../../src/algo/depth-to-rgb-calibration/*.cpp
 
 #include "d2rgb-common.h"
-#include "F9440687.h"
 #include <type_traits>
 
 
@@ -80,18 +79,26 @@ bool is_equal_approximetly<algo::double2, algo::double2>(algo::double2 f, algo::
         f.y == approx(d.y);
 }
 
+template<>
+bool is_equal_approximetly<algo::double3, algo::double3>(algo::double3 f, algo::double3 d)
+{
+    return f.x == approx(d.x) &&
+        f.y == approx(d.y) &&
+        f.z == approx(d.z);
+}
+
 template< typename F, typename D >
 void print( size_t x, F f, D d, bool is_approx = false)
 {
     // bytes will be written to stdout as characters, which we never want... hence '+fx'
-    AC_LOG( DEBUG, "... " << x << ": {matlab}" << +f << (is_approx ? " !~ " : " != ") << +d << "{c++}");
+    AC_LOG( DEBUG, "... "<<std::setprecision(15) << std::fixed << x << ": {matlab}" << +f << (is_approx ? " !~ " : " != ") << +d << "{c++}");
 }
 
 template<>
 void print<algo::k_matrix, algo::k_matrix>(size_t x, algo::k_matrix f, algo::k_matrix d, bool is_approx)
 {
     // bytes will be written to stdout as characters, which we never want... hence '+fx'
-    AC_LOG( DEBUG, "... " <<std::setprecision(15)<< x << ": {matlab}" << f.fx << " " << f.fy <<" "<< f.ppx << " " << f.ppy << (is_approx ? " !~ " : " != ")
+    AC_LOG( DEBUG, "... " <<std::setprecision(15) << std::fixed << x << ": {matlab}" << f.fx << " " << f.fy <<" "<< f.ppx << " " << f.ppy << (is_approx ? " !~ " : " != ")
         << d.fx << " " << d.fy << " " << d.ppx << " " << d.ppy << "{c++}");
 }
 
@@ -99,9 +106,18 @@ template<>
 void print<algo::double2, algo::double2>(size_t x, algo::double2 f, algo::double2 d, bool is_approx)
 {
     // bytes will be written to stdout as characters, which we never want... hence '+fx'
-    AC_LOG(DEBUG, "... " << std::setprecision(15) << x << ": {matlab}" << f.x << " " << f.y << (is_approx ? " !~ " : " != ")
+    AC_LOG(DEBUG, "... " << std::setprecision(15) <<std::fixed<< x << ": {matlab}" << f.x << " " << f.y << (is_approx ? " !~ " : " != ")
         << d.x << " " << d.y << "{c++}");
 }
+
+template<>
+void print<algo::double3, algo::double3>(size_t x, algo::double3 f, algo::double3 d, bool is_approx)
+{
+    // bytes will be written to stdout as characters, which we never want... hence '+fx'
+    AC_LOG(DEBUG, "... " << std::setprecision(15) << std::fixed << x << ": {matlab}" << f.x << " " << f.y << " " << f.z << (is_approx ? " !~ " : " != ")
+        << d.x << " " << d.y << " " << d.z << "{c++}");
+}
+
 template<>
 void print<algo::rotation_in_angles, algo::rotation_in_angles>(size_t x, algo::rotation_in_angles f, algo::rotation_in_angles d, bool is_approx)
 {
@@ -113,7 +129,7 @@ void print<algo::rotation_in_angles, algo::rotation_in_angles>(size_t x, algo::r
 template<>
 void print<algo::p_matrix, algo::p_matrix>(size_t x, algo::p_matrix f, algo::p_matrix d, bool is_approx)
 {
-    std::stringstream s;
+    std::ostringstream s;
 
     for (auto i = 0; i < 12; i++)
     {
@@ -125,7 +141,7 @@ void print<algo::p_matrix, algo::p_matrix>(size_t x, algo::p_matrix f, algo::p_m
 
     }
 
-    AC_LOG(DEBUG, "... " << x << " " << s.str());
+    AC_LOG(DEBUG, "... " << std::setprecision(15) << std::fixed << x << " " << s.str());
 }
 
 template< typename F, typename D >
@@ -313,10 +329,12 @@ std::string generate_file_name(std::string const & prefix, int w, int h, std::st
 }
 
 template< typename T >
-void read_binary_file(char const * dir, char const * bin, T * data)
+void read_binary_file(char const * data_dir, char const * test, char const * bin, T * data)
 {
-    std::string filename = dir;
+    std::string filename = test_dir(data_dir, test);
+    filename += "binFiles\\";
     filename += bin;
+
     AC_LOG(DEBUG, "... " << filename);
     std::fstream f = std::fstream(filename, std::ios::in | std::ios::binary);
     if (!f)
@@ -335,7 +353,7 @@ void read_binary_file(char const * dir, char const * bin, T * data)
 #define FILE_NAME(PRE, W, H, POST) generate_file_name(PRE, W, H, POST)
 #define ITERATION_FILE_NAME(PRE, N, W, H, POST) generate_file_name(PRE, N, W, H, POST)
 
-camera_info read_camera_info(char const * dir)
+camera_info read_camera_info(char const * dir, char const * test, char const * bin)
 {
     struct params_bin
     {
@@ -354,30 +372,32 @@ camera_info read_camera_info(char const * dir)
     };
 
     params_bin param;
-    read_binary_file(test_dir(dir, "2").c_str(), "camera_params.matlab", &param);
+    read_binary_file(dir, test, bin, &param);
+
+    double coeffs[5] = { 0 };
     const camera_info ci =
     {
         // RGB
         {
             int(param.rgb_width), int(param.rgb_height),
-            float(param.k_rgb[2]),  float(param.k_rgb[5]),
-            float(param.k_rgb[0]),  float(param.k_rgb[4]),
+            algo::k_matrix{param.k_rgb[0], param.k_rgb[4]
+            ,param.k_rgb[2], param.k_rgb[5]},
             RS2_DISTORTION_BROWN_CONRADY,
-            { (float)param.coeffs[0], (float)param.coeffs[1], (float)param.coeffs[2], (float)param.coeffs[3], (float)param.coeffs[4] }
+            param.coeffs
         },
         // Z
         {
             int(param.depth_width), int(param.depth_height),
-            float(param.k_depth[2]),  float(param.k_depth[5]),
-            float(param.k_depth[0]),  float(param.k_depth[4]),
-            RS2_DISTORTION_NONE, {0, 0, 0, 0, 0}
+            algo::k_matrix{param.k_depth[0], param.k_depth[4]
+            ,param.k_depth[2], param.k_depth[5]},
+            RS2_DISTORTION_NONE, coeffs
         },
         // EXTRINSICS
         {
-            { float(param.rotation[0]), float(param.rotation[1]), float(param.rotation[2]),
-              float(param.rotation[3]), float(param.rotation[4]), float(param.rotation[5]),
-              float(param.rotation[6]), float(param.rotation[7]), float(param.rotation[8]) },
-            { float(param.translation[0]), float(param.translation[1]), float(param.translation[2]) }
+            { param.rotation[0], param.rotation[1], param.rotation[2],
+              param.rotation[3], param.rotation[4], param.rotation[5],
+              param.rotation[6], param.rotation[7], param.rotation[8] },
+            { param.translation[0], param.translation[1], param.translation[2] }
         }
     };
     return ci;
@@ -407,9 +427,10 @@ TEST_CASE("Weights calc", "[d2rgb]")
         scene_metadata md;
         camera_info ci;
 
+        ci = read_camera_info(dir, scene, "camera_params");
+
         if (read_calib_from_file)
         {
-            ci = read_camera_info(dir);
             md = { 4, 2.914122625391939, 5235 , "rgb.raw",
             "rgb.raw",
             "ir.raw",
@@ -417,8 +438,6 @@ TEST_CASE("Weights calc", "[d2rgb]")
         }
         else
         {
-           ci = F9440687;
-
          /*   md = { 14, 2.914122625391939, 3659, "YUY2_YUY2_1920x1080_00.06.13.1372_F9440687_0000.raw",
             "YUY2_YUY2_1920x1080_00.06.13.2368_F9440687_0001.raw",
             "I_GrayScale_1024x768_00.06.13.1484_F9440687_0000.raw",
@@ -448,25 +467,25 @@ TEST_CASE("Weights calc", "[d2rgb]")
         auto z_w = ci.z.width;
         auto num_of_calib_elements = 32;
 
-        //CHECK(compare_to_bin_file< double >(yuy_data.edges, dir, scene, FILE_NAME("YUY2_edge", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors));
-        //CHECK(compare_to_bin_file< double >(yuy_data.edges_IDT, dir, scene, FILE_NAME("YUY2_IDT", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors));
-        //CHECK(compare_to_bin_file< double >(yuy_data.edges_IDTx, dir, scene, FILE_NAME("YUY2_IDTx", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors));
-        //CHECK(compare_to_bin_file< double >(yuy_data.edges_IDTy, dir, scene, FILE_NAME("YUY2_IDTy", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(yuy_data.edges, dir, scene, FILE_NAME("YUY2_edge", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(yuy_data.edges_IDT, dir, scene, FILE_NAME("YUY2_IDT", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(yuy_data.edges_IDTx, dir, scene, FILE_NAME("YUY2_IDTx", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(yuy_data.edges_IDTy, dir, scene, FILE_NAME("YUY2_IDTy", rgb_w, rgb_h, "double_00").c_str(), rgb_h, rgb_w, compare_same_vectors));
 
-        ////---
-        //CHECK(compare_to_bin_file< double >(ir_data.ir_edges, dir, scene, FILE_NAME("I_edge", z_w, z_h,  "double_00").c_str(), z_h, z_w, compare_same_vectors));
+        //---
+        CHECK(compare_to_bin_file< double >(ir_data.ir_edges, dir, scene, FILE_NAME("I_edge", z_w, z_h,  "double_00").c_str(), z_h, z_w, compare_same_vectors));
 
-        ////---
-        //CHECK(compare_to_bin_file< double >(z_data.edges, dir, scene, FILE_NAME("Z_edge", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
-        //CHECK(compare_to_bin_file< double >(z_data.supressed_edges, dir, scene, FILE_NAME("Z_edgeSupressed", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
-        //CHECK(compare_to_bin_file< byte >(z_data.directions, dir, scene, FILE_NAME("Z_dir", z_w, z_h, "uint8_00").c_str(), z_h, z_w, compare_same_vectors));
+        //---
+        CHECK(compare_to_bin_file< double >(z_data.edges, dir, scene, FILE_NAME("Z_edge", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(z_data.supressed_edges, dir, scene, FILE_NAME("Z_edgeSupressed", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
+        CHECK(compare_to_bin_file< byte >(z_data.directions, dir, scene, FILE_NAME("Z_dir", z_w, z_h, "uint8_00").c_str(), z_h, z_w, compare_same_vectors));
 
-        //CHECK(compare_to_bin_file< double >(z_data.subpixels_x, dir, scene, FILE_NAME("Z_edgeSubPixel", z_w, z_h, "double_01").c_str(), z_h, z_w, compare_same_vectors));
-        //CHECK(compare_to_bin_file< double >(z_data.subpixels_y, dir, scene, FILE_NAME("Z_edgeSubPixel", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(z_data.subpixels_x, dir, scene, FILE_NAME("Z_edgeSubPixel", z_w, z_h, "double_01").c_str(), z_h, z_w, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(z_data.subpixels_y, dir, scene, FILE_NAME("Z_edgeSubPixel", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
 
-        //CHECK(compare_to_bin_file< double >(z_data.weights, dir, scene, FILE_NAME("weightsT", 1, md.num_of_edges,"double_00").c_str(), md.num_of_edges, 1, compare_same_vectors));
-        //CHECK(compare_to_bin_file< double >(z_data.closest, dir, scene, FILE_NAME("Z_valuesForSubEdges", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
-        //CHECK(compare_to_bin_file< algo::double3 >(z_data.vertices, dir, scene, FILE_NAME("vertices", 3, md.num_of_edges, "double_00").c_str(), md.num_of_edges, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(z_data.weights, dir, scene, FILE_NAME("weightsT", 1, md.num_of_edges,"double_00").c_str(), md.num_of_edges, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(z_data.closest, dir, scene, FILE_NAME("Z_valuesForSubEdges", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
+        CHECK(compare_to_bin_file< algo::double3 >(z_data.vertices, dir, scene, FILE_NAME("vertices", 3, md.num_of_edges, "double_00").c_str(), md.num_of_edges, 1, compare_same_vectors));
 
 #if 0
         // smearing
@@ -517,7 +536,8 @@ TEST_CASE("Weights calc", "[d2rgb]")
         //TODO: Noha 
         /*CHECK( compare_to_bin_file< byte >( z_data.section_map, dir, scene, FILE_NAME("sectionMapDepth_trans", 1, md.num_of_edges, "uint8_00").c_str(), md.num_of_edges, 1, compare_same_vectors ) );
         CHECK( compare_to_bin_file< byte >( yuy_data.section_map, dir, scene, FILE_NAME("sectionMapRgb_trans", 1, rgb_w*rgb_h, "uint8_00").c_str(), rgb_w*rgb_h, 1, compare_same_vectors ) );
-     */   CHECK( compare_to_bin_file< double >(yuy_data.sum_weights_per_section, dir, scene, FILE_NAME("edgeWeightDistributionPerSectionRgb", 1, 4, "double_00").c_str(), 4, 1, compare_same_vectors));
+     */   
+        CHECK( compare_to_bin_file< double >(yuy_data.sum_weights_per_section, dir, scene, FILE_NAME("edgeWeightDistributionPerSectionRgb", 1, 4, "double_00").c_str(), 4, 1, compare_same_vectors));
 
         // gradient balanced
         // TODO NOHA
@@ -562,8 +582,8 @@ TEST_CASE("Weights calc", "[d2rgb]")
             file = ITERATION_FILE_NAME("rc_iteration", data.iteration + 1, 1, md.num_of_edges, "double_00");
             CHECK(compare_to_bin_file< double >(data.rc, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors));
 
-           /* file = ITERATION_FILE_NAME("xCoeff_P", data.iteration + 1, sizeof(algo::p_matrix) / sizeof(double), md.num_of_edges, "double_00");
-            CHECK(compare_to_bin_file< algo::p_matrix>(data.coeffs_p.x_coeffs, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));*/
+            file = ITERATION_FILE_NAME("xCoeff_P", data.iteration + 1, sizeof(algo::p_matrix) / sizeof(double), md.num_of_edges, "double_00");
+            CHECK(compare_to_bin_file< algo::p_matrix>(data.coeffs_p.x_coeffs, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors));
 
             /*file = ITERATION_FILE_NAME("xCoeff_Krgb", data.iteration + 1, sizeof(algo::k_matrix) / sizeof(double), md.num_of_edges, "double_00");
             CHECK(compare_to_bin_file< algo::k_matrix>(data.coeffs_k.x_coeffs, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));

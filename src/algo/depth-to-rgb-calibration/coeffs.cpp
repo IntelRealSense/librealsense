@@ -528,8 +528,7 @@ namespace depth_to_rgb_calibration {
         double exp13 = exp14 * exp15;//
         res.vals[8] = exp12 - (exp13)/ (fy*exp2);
 
-        res.vals[8] = exp15;
-       /* res.vals[9] = - (y*(p[0]*x + p[1]*y + p[2]*z + p[3]*1)
+        res.vals[9] = - (y*(p[0]*x + p[1]*y + p[2]*z + p[3]*1)
                 *(rc + 6*d[3]*x1 + 2*d[2]*y1 + x1*(2*d[0]*x1 + 4*d[1]*x1*(r2)+6*d[4]*x1*r4))
                 ) / exp2 - (fx*y*(2*d[2]*x1 + 2*d[3]*y1 + x1*(2*d[0]*y1 + 4*d[1]*y1*(r2)+6*d[4]*y1*r4))
                 *(p[4]*x + p[5]*y + p[6]*z + p[7]*1)
@@ -545,7 +544,7 @@ namespace depth_to_rgb_calibration {
             *(rc + 6 * d[3] * x1 + 2 * d[2] * y1 + x1 * (2 * d[0] * x1 + 4 * d[1] * x1*(r2)+6 * d[4] * x1*r4))
             ) / exp2 - (fx * 1 * (2 * d[2] * x1 + 2 * d[3] * y1 + x1 * (2 * d[0] * y1 + 4 * d[1] * y1*(r2)+6 * d[4] * y1*r4))
                 *(p[4] * x + p[5] * y + p[6] * z + p[7] * 1)
-                ) / (fy*exp2);*/
+                ) / (fy*exp2);
 
         return res;
     }
