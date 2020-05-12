@@ -32,7 +32,7 @@ c:\work\git\lrs\unit-tests\algo\../catch/catch.hpp(5788): note: see reference to
 #pragma warning (push)
 #pragma warning (disable : 4244)    // 'this': used in base member initializer list
 #endif
-#include "../catch/catch.hpp"
+#include "catch/catch.hpp"
 #ifdef _MSC_VER
 #pragma warning (pop)
 #endif
