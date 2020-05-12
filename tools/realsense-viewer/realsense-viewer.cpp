@@ -279,15 +279,169 @@ bool refresh_devices(std::mutex& m,
 
 int main(int argc, const char** argv) try
 {
-    ////// Test libcurl //////////
+
+
+////// Test Auto Update //////////
 #ifdef ENABLE_RS_AUTO_UPDATER
-    update_handler up_handler;
-    auto ver = up_handler.check_for_updates(update_handler::LIBREALSENSE, update_handler::RECOMMENDED);
-    std::string ver_link;
-    auto res = up_handler.get_download_link(update_handler::LIBREALSENSE, 234000001, ver_link);
-    
+
+//#define AUTO_UPDATER_UNIT_TEST  
+
+#ifdef AUTO_UPDATER_UNIT_TEST
+
+    // Set 3 callback functions for testing - SHOULD BE REMOVED!!
+
+    // Main Success Scenario callback
+    std::function<bool(uint64_t dl_current_bytes, uint64_t dl_total_bytes, double dl_time)> mss_process_cb = 
+        [](uint64_t dl_current_bytes, uint64_t dl_total_bytes, double dl_time) -> bool {
+        std::cout << "DOWN:" << dl_current_bytes << " of " << dl_total_bytes << " - TOTAL TIME: " << dl_time << std::endl;
+        return false;
+    };
+
+    std::function<bool(uint64_t dl_current_bytes, uint64_t dl_total_bytes, double dl_time)> stop_process_cb =
+        [](uint64_t dl_current_bytes, uint64_t dl_total_bytes, double dl_time) -> bool {
+        std::cout << "DOWN:" << dl_current_bytes << " of " << dl_total_bytes << " - TOTAL TIME: " << dl_time << std::endl;
+        return true;
+    };
+
+    std::function<bool(uint64_t dl_current_bytes, uint64_t dl_total_bytes, double dl_time)> empty_process_cb;
+
+
+    //////////////// TEST 1 START ////////////////
+    // Download from corrupted format URL test  //
+    // Expect Download fail                     //
+    //////////////////////////////////////////////
+    {
+        update_handler up_handler("Fake_URL...json");
+        long long ver(0);
+        bool res(false);
+        try {
+            res = up_handler.query_versions("Intel RealSense L515", update_handler::LIBREALSENSE, update_handler::RECOMMENDED, ver);
+        }
+        catch (const std::exception& e)
+        {
+            assert((false == res) && std::string(e.what()).substr(0, 14) == "Download error");
+        }
+    }
+
+    /////////// TEST 2 START /////////////
+    // Download from invalid URL test   //
+    // Expect Download fail             //
+    //////////////////////////////////////
+    {
+        update_handler up_handler("Fake_URL.json");
+        long long ver(0);
+        bool res(false);
+        try {
+            res = up_handler.query_versions("Intel RealSense L515", update_handler::LIBREALSENSE, update_handler::RECOMMENDED, ver);
+        }
+        catch (const std::exception& e)
+        {
+            assert((false == res) && std::string(e.what()).substr(0, 14) == "Download error");
+        }
+    }
+
+    /////////////// TEST 3 START ///////////////////
+    // Download from s3 - not a version json      //
+    // Expect Download OK - Parse Fail            //
+    ////////////////////////////////////////////////
+    {
+        update_handler up_handler("http://realsense-hw-public.s3.amazonaws.com/rs-tests/post_processing_tests_2018_ww18/1551257880762.0.Input.csv");
+        long long ver(0);
+        bool res(false);
+        try {
+            res = up_handler.query_versions("Intel RealSense L515", update_handler::LIBREALSENSE, update_handler::RECOMMENDED, ver);
+        }
+        catch (const std::exception& e)
+        {
+            assert(false == res && std::string(e.what()).substr(0, 11) == "parse error");
+        }
+    }
+    ////////////////////////// TEST 4 START /////////////////////////
+    // Download a big file with a callback - not a valid json file //
+    // Expect Download OK - Parse Fail                             //
+    /////////////////////////////////////////////////////////////////
+    {
+        update_handler up_handler("http://212.183.159.230/5MB.zip", false, mss_process_cb);
+        long long ver(0);
+        bool res(false);
+        try 
+        {
+            res = up_handler.query_versions("Intel RealSense L515", update_handler::LIBREALSENSE, update_handler::RECOMMENDED, ver);
+        }
+        catch (const std::exception& e)
+        {
+            assert(false == res && std::string(e.what()).substr(0, 11) == "parse error");
+        }
+    }
+
+    ////////////////////////// TEST 5 START /////////////////////////
+    // Download a big file with a callback - not a valid json file //
+    // Expect Download Fail                                        //
+    /////////////////////////////////////////////////////////////////
+    {
+        update_handler up_handler("http://212.183.159.230/5MB.zip", false, stop_process_cb);
+        long long ver(0);
+        bool res(false);
+        try
+        {
+            res = up_handler.query_versions("Intel RealSense L515", update_handler::LIBREALSENSE, update_handler::RECOMMENDED, ver);
+        }
+        catch (const std::exception& e)
+        {
+            assert(false == res && std::string(e.what()).substr(0, 36) == "Download error - Operation was abort");
+        }
+    }
+    ////////////////////////// TEST 6 START ///////////////////////////////////////////
+    // Download a big file with a callback - with an empty callback function         //
+    // Expect Download OK - Parse Fail                                               //
+    ///////////////////////////////////////////////////////////////////////////////////
+    {
+        update_handler up_handler("http://212.183.159.230/5MB.zip", false, empty_process_cb);
+        long long ver(0);
+        bool res(false);
+        try
+        {
+            res = up_handler.query_versions("Intel RealSense L515", update_handler::LIBREALSENSE, update_handler::RECOMMENDED, ver);
+        }
+        catch (const std::exception& e)
+        {
+            assert(false == res && std::string(e.what()).substr(0, 11) == "parse error");
+        }
+    }
+
+    ////////////////////////// TEST 7 START ///////////////////
+    // Download valid json file from S3 json  - should work  //
+    // Expect - SUCCESS                                      //
+    ///////////////////////////////////////////////////////////
+    {
+        update_handler up_handler("http://realsense-hw-public.s3-eu-west-1.amazonaws.com/rs-tests/sw-update/rs_versions_db.json");
+        long long ver(0);
+        bool res(false), ver_link_res(false), rel_notes_res(false), description_res(false);
+        std::string ver_link, rel_notes, description;
+        try
+        {
+            res = up_handler.query_versions("Intel RealSense L515", update_handler::LIBREALSENSE, update_handler::REQUIRED, ver);
+            ver_link_res = up_handler.get_ver_download_link(update_handler::LIBREALSENSE, ver, ver_link);
+            rel_notes_res = up_handler.get_ver_rel_notes(update_handler::LIBREALSENSE, ver, rel_notes);
+            description_res = up_handler.get_ver_description(update_handler::LIBREALSENSE, ver, description);
+        }
+        catch (const std::exception& e)
+        {
+            assert(std::string(e.what()).empty());
+        }
+        assert(res && ver_link_res && rel_notes_res && description_res);
+    }
+
+    ////////////////////////// TEST 8 START /////////////////
+    // Parse json local file - should work                 //
+    // Expect Download OK - Parse OK                       //
+    /////////////////////////////////////////////////////////
+
+
 #endif
-    /////////////////////////////
+
+#endif
+    
 
     rs2::log_to_console(RS2_LOG_SEVERITY_WARN);
 

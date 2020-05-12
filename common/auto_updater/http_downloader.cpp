@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include <sstream>
 #include <iostream>
@@ -16,10 +16,11 @@ namespace rs2
 {
     std::mutex initialize_mutex;
     static const curl_off_t HALF_SEC = 500000; // User call back func delay
+    static const int CONNECT_TIMEOUT = 5L; // Libcurl download timeout 5 [Sec]
 
     struct progress_data {
         curl_off_t last_run_time;
-        std::function<bool(uint64_t, uint64_t, double)> user_callback_func;
+        user_callback_func_type user_callback_func;
         CURL *curl;
     };
 
@@ -62,49 +63,64 @@ namespace rs2
 
     bool http_downloader::download_to_stream(const std::string& url, std::stringstream &output, user_callback_func_type user_callback_func)
     {
-        curl_easy_setopt(_curl, CURLOPT_URL, url.c_str());    // Set Required URL
-        curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);  // Set fllowing redirections
-        curl_easy_setopt(_curl, CURLOPT_NOSIGNAL, 1);         // Disable use of signals
+        set_common_options(url);
         curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, write_callback);
         curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &output);
-        curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, 1L);
-        progress_data progress_record;
+        
+        progress_data progress_record; // Should stay here - "curl_easy_perform" use it
         if (user_callback_func)
         {
             register_progress_call_back(progress_record, user_callback_func);
         }
+        auto res = curl_easy_perform(_curl);
 
-        return (curl_easy_perform(_curl) == CURLE_OK);
+        if(CURLE_OK != res)
+        {
+            throw std::runtime_error("Download error - " + std::string(curl_easy_strerror(res)));
+        }
+        return true;
     }
 
     bool http_downloader::download_to_file(const std::string& url, const std::string &file_name, user_callback_func_type user_callback_func)
     {
-        CURLcode res;
         /* open the file */
         FILE * out_file = fopen(file_name.c_str(), "wb");
         if (out_file)
         {
-            curl_easy_setopt(_curl, CURLOPT_URL, url.c_str());    // Set Required URL
+            set_common_options(url);
             curl_easy_setopt(_curl, CURLOPT_WRITEDATA, out_file);
-            curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);  // Set fllowing redirections
-            curl_easy_setopt(_curl, CURLOPT_NOSIGNAL, 1);         // Disable use of signals
-            curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, 1L);
-            progress_data progress_record;
+           
+            progress_data progress_record; // Should stay here - "curl_easy_perform" use it
             if (user_callback_func)
             {
                 register_progress_call_back(progress_record, user_callback_func);
             }
-            res = curl_easy_perform(_curl);
+            auto res = curl_easy_perform(_curl);
+
             fclose(out_file);
+
+            if (CURLE_OK != res)
+            {
+                throw std::runtime_error("Download error - " + std::string(curl_easy_strerror(res)));
+            }
         }
         else
         {
             return false;
         }
 
-        return (res == CURLE_OK);
+        return true;
     }
 
+    void http_downloader::set_common_options(const std::string &url)
+    {
+        curl_easy_setopt(_curl, CURLOPT_URL, url.c_str());                  // provide the URL to use in the request
+        curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);                // follow HTTP 3xx redirects
+        curl_easy_setopt(_curl, CURLOPT_NOSIGNAL, 1);                       // skip all signal handling
+        curl_easy_setopt(_curl, CURLOPT_CONNECTTIMEOUT, CONNECT_TIMEOUT);   // timeout for the connect phase
+        curl_easy_setopt(_curl, CURLOPT_FAILONERROR, 1L);                   // request failure on HTTP response >= 400
+        curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, 1L);                    // switch off the progress meter
+    }
     void http_downloader::register_progress_call_back(progress_data &progress_record, user_callback_func_type user_callback_func)
     {
         progress_record = { 0, user_callback_func, _curl };

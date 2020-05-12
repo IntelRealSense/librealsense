@@ -16,6 +16,7 @@
 
 #include <librealsense2/rs_advanced_mode.hpp>
 #include <librealsense2/rsutil.h>
+#include <librealsense2/rs.hpp>
 
 #include "model-views.h"
 #include "notifications.h"
@@ -30,6 +31,10 @@
 #include "os.h"
 
 #include "metadata-helper.h"
+
+#ifdef ENABLE_RS_AUTO_UPDATER
+#include "auto_updater/update_handler.h"
+#endif // ENABLE_RS_AUTO_UPDATER
 
 using namespace rs400;
 using namespace nlohmann;
@@ -3283,6 +3288,53 @@ namespace rs2
 
         auto name = get_device_name(dev);
 
+#ifdef ENABLE_RS_AUTO_UPDATER
+        try {
+            std::string dev_name = (dev.supports(RS2_CAMERA_INFO_NAME)) ? dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
+            update_handler up_handler("http://realsense-hw-public.s3-eu-west-1.amazonaws.com/rs-tests/sw-update/rs_versions_db.json", false);
+
+            long long required_version;
+            bool query_ok = up_handler.query_versions(dev_name, update_handler::LIBREALSENSE, update_handler::REQUIRED, required_version);
+            if (query_ok)
+            {
+                std::string ver_link;
+                auto dl_link_ok = up_handler.get_ver_download_link(update_handler::LIBREALSENSE, required_version, ver_link);
+
+                std::string rel_notes;
+                auto rel_ok = up_handler.get_ver_rel_notes(update_handler::LIBREALSENSE, required_version, rel_notes);
+
+                std::string description;
+                auto desc_ok = up_handler.get_ver_description(update_handler::LIBREALSENSE, required_version, description);
+
+                auto curr_full_ver = RS2_API_VERSION * 10000 + RS2_API_BUILD_VERSION;
+                if (curr_full_ver < required_version)
+                {
+                    std::stringstream full_curr_ver_str;
+                    full_curr_ver_str  << std::setfill('0') << std::setw(2) << RS2_API_MAJOR_VERSION << "."
+                                       << std::setfill('0') << std::setw(2) << RS2_API_MINOR_VERSION << "."
+                                       << std::setfill('0') << std::setw(2) << RS2_API_PATCH_VERSION << "."
+                                       << std::setfill('0') << std::setw(4) << RS2_API_BUILD_VERSION;
+                    std::stringstream msg;
+                    auto nir = std::to_string(required_version);
+                    msg << "Detected old version of libRealSense:\n"
+                        << "Current version: " << full_curr_ver_str.str() << "\n"
+                        << "Required version: " << up_handler.convert_ver_to_str(required_version) << "\n"
+                        << "Please download required version\n";
+                    if (dl_link_ok )    msg << "Download Link: " << ver_link << "\n";
+                    if (rel_ok)         msg << "Release Notes: " << rel_notes << "\n";
+                    if (desc_ok)        msg << "Description: " << description << "\n";
+                    
+                    notification_data nd{ msg.str(), RS2_LOG_SEVERITY_ERROR, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR };
+                    viewer.not_model.add_notification(nd);
+
+                }
+            }
+        }
+        catch (const std::exception& e)
+        {
+            auto err = e;
+        }
+#endif // ENABLE_RS_AUTO_UPDATER
         if ((bool)config_file::instance().get(configurations::update::recommend_updates))
         {
             bool fw_update_required = false;
