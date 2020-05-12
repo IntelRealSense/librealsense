@@ -80,6 +80,12 @@ namespace rs2
         bool enable_dismiss = true;
         bool enable_expand = true;
         bool enable_click = false;
+        bool enable_complex_dismiss = false;
+
+        std::string delay_id = "";
+
+        bool is_delayed() const;
+        void delay(int days);
 
         float last_x, last_y;
         bool animating = false;

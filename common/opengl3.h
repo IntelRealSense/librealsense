@@ -7,6 +7,13 @@
 #include <vector>
 #include <memory>
 
+void _check_gl_error(const char *file, int line);
+void clear_gl_errors();
+
+#define check_gl_error() _check_gl_error(__FILE__,__LINE__)
+
+#define MOUSE_PICK_USE_PBO     1                   // use pbo to improve performance, for debug only
+
 namespace rs2
 {
     enum class shader_type
@@ -305,6 +312,8 @@ namespace rs2
 
         std::string get_status();
 
+        void set_dims(int w, int h) { _w = w; _h = h; }
+
         int get_width() const { return _w; }
         int get_height() const { return _h; }
         uint32_t get() const { return _id; }
@@ -312,5 +321,6 @@ namespace rs2
         uint32_t _id;
         uint32_t _db = 0;
         int _w, _h;
+        int32_t _viewport[4];
     };
 }

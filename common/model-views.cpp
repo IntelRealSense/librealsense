@@ -27,6 +27,9 @@
 #include <imgui_internal.h>
 #include <time.h>
 
+#include "imgui-fonts-karla.hpp"
+#include "imgui-fonts-fontawesome.hpp"
+
 #include "os.h"
 
 #include "metadata-helper.h"
@@ -140,9 +143,8 @@ namespace rs2
 
         const int OVERSAMPLE = config_file::instance().get(configurations::performance::font_oversample);
 
-        static const ImWchar icons_ranges[] = { 0xf000, 0xf3ff, 0 }; // will not be copied by AddFont* so keep in scope.
+        static const ImWchar icons_ranges[] = { 0xf000, 0xf999, 0 }; // will not be copied by AddFont* so keep in scope.
 
-                                                                     // Load 14px size fonts
         {
             ImFontConfig config_words;
             config_words.OversampleV = OVERSAMPLE;
@@ -170,6 +172,7 @@ namespace rs2
             config_glyphs.OversampleH = OVERSAMPLE;
             font_18 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
                 font_awesome_compressed_size, 20.f, &config_glyphs, icons_ranges);
+
         }
 
         style.WindowRounding = 0.0f;
@@ -3327,11 +3330,16 @@ namespace rs2
                         {
                             auto n = std::make_shared<fw_update_notification_model>(
                                 msg.str(), manager, false);
-                            viewer.not_model.add_notification(n);
+                            n->delay_id = "dfu." + name.second;
+                            n->enable_complex_dismiss = true;
+                            if (!n->is_delayed())
+                            {
+                                viewer.not_model.add_notification(n);
 
-                            fw_update_required = true;
+                                fw_update_required = true;
 
-                            related_notifications.push_back(n);
+                                related_notifications.push_back(n);
+                            }
                         }
                     }
                 }
@@ -3643,6 +3651,8 @@ namespace rs2
                     default: break;
                 }
 
+                pc->set_option(RS2_OPTION_FILTER_MAGNITUDE, 
+                    viewer.occlusion_invalidation ? 2.f : 1.f);
                 res.push_back(pc->calculate(depth));
             }
             if(auto texture = viewer.get_3d_texture_source(filtered))

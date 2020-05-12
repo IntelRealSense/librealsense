@@ -6,6 +6,7 @@
 #include "model-views.h"
 #include "notifications.h"
 #include "viewer.h"
+#include "skybox.h"
 #include <librealsense2/hpp/rs_export.hpp>
 
 namespace rs2
@@ -105,15 +106,17 @@ namespace rs2
         void show_event_log(ImFont* font_14, float x, float y, float w, float h);
 
         void render_pose(rs2::rect stream_rect, float buttons_heights);
+        void try_select_pointcloud(ux_window& win);
 
-        void show_3dviewer_header(ImFont* large_font, ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message);
+        void show_3dviewer_header(ux_window& window, rs2::rect stream_rect, bool& paused, std::string& error_message);
 
         void update_3d_camera(ux_window& win, const rect& viewer_rect, bool force = false);
+        void update_input(ux_window& win);
 
         void show_top_bar(ux_window& window, const rect& viewer_rect, const device_models_list& devices);
 
-        void render_3d_view(const rect& view_rect, 
-            std::shared_ptr<texture_buffer> texture, rs2::points points, ImFont *font1);
+        bool render_3d_view(const rect& view_rect, ux_window& win, 
+            std::shared_ptr<texture_buffer> texture, rs2::points points, ImFont *font1, float3* picked);
 
         void render_2d_view(const rect& view_rect, ux_window& win, int output_height,
             ImFont *font1, ImFont *font2, size_t dev_model_num, const mouse_info &mouse, std::string& error_message);
@@ -161,10 +164,24 @@ namespace rs2
         int selected_depth_source_uid = -1;
         int selected_tex_source_uid = -1;
 
+        enum class shader_type
+        {
+            points,
+            flat,
+            diffuse
+        };
+        shader_type selected_shader = shader_type::diffuse;
+
         float dim_level = 1.f;
 
-        bool continue_with_ui_not_aligned = false;
         bool continue_with_current_fw = false;
+
+        bool select_3d_source = false;
+        bool select_tex_source = false;
+        bool select_shader_source = false;
+        bool measurement_active = false;
+        bool show_help_screen = false;
+        bool occlusion_invalidation = true;
 
         press_button_model trajectory_button{ u8"\uf1b0", u8"\uf1b0","Draw trajectory", "Stop drawing trajectory", true };
         press_button_model grid_object_button{ u8"\uf1cb", u8"\uf1cb",  "Configure Grid", "Configure Grid", false };
@@ -209,7 +226,6 @@ namespace rs2
         float3 target = { 0.0f, 0.0f, 0.0f };
         float3 up;
         bool fixed_up = true;
-        bool render_quads = true;
 
         float view[16];
         bool texture_wrapping_on = true;
@@ -224,5 +240,35 @@ namespace rs2
 
         rs2::gl::camera_renderer _cam_renderer;
         rs2::gl::pointcloud_renderer _pc_renderer;
+
+        struct mouse_control
+        {
+            bool mouse_down = false;
+            bool click = false;
+            double selection_started = 0.0;
+            float2 down_pos { 0.f, 0.f };
+            int mouse_wheel = 0;
+            double click_time = 0.0;
+            float click_period() { return clamp((glfwGetTime() - click_time) * 10, 0.f, 1.f); }
+        };
+        mouse_control input_ctrl;
+
+
+        bool _pc_selected = false;
+        temporal_event mouse_picked_event { std::chrono::milliseconds(1000) };
+
+        float3 _normal, _picked;
+
+        struct interest_point
+        {
+            float3 pos;
+            float3 normal;
+        };
+
+        bool show_skybox = true;
+        skybox _skybox;
+
+        interest_point selection_point;
+        std::vector<interest_point> selected_points;
     };
 }

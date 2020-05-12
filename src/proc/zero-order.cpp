@@ -516,6 +516,8 @@ namespace librealsense
             });
         }
 
-        return source.allocate_composite_frame(results);
+        if (results.size())
+            return source.allocate_composite_frame(results);
+        else return rs2::frame{};
     }
 }

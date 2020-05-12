@@ -135,6 +135,11 @@ namespace rs2
         }
     };
 
+    struct float4
+    {
+        float x, y, z, w;
+    };
+
     inline float3 cross(const float3& a, const float3& b)
     {
         return { a.y * b.z - b.y * a.z, a.x * b.z - b.x * a.z, a.x * b.y - a.y * b.x };
@@ -272,6 +277,7 @@ namespace rs2
         }
 
         float& operator()(int i, int j) { return mat[i][j]; }
+        const float& operator()(int i, int j) const { return mat[i][j]; }
 
         //init rotation matrix from quaternion
         matrix4(const rs2_quaternion& q)
@@ -381,6 +387,17 @@ namespace rs2
         return res;
     }
 
+    inline float4 operator*(const matrix4& a, const float4& b)
+    {
+        float4 res;
+        int i = 0;
+        res.x = a(0, i) * b.x + a(1, i) * b.y + a(2, i) * b.z + a(3, i) * b.w; i++;
+        res.y = a(0, i) * b.x + a(1, i) * b.y + a(2, i) * b.z + a(3, i) * b.w; i++;
+        res.z = a(0, i) * b.x + a(1, i) * b.y + a(2, i) * b.z + a(3, i) * b.w; i++;
+        res.w = a(0, i) * b.x + a(1, i) * b.y + a(2, i) * b.z + a(3, i) * b.w; i++;
+        return res;
+    }
+
     inline matrix4 tm2_pose_to_world_transformation(const rs2_pose& pose)
     {
         matrix4 rotation(pose.rotation);
@@ -412,73 +429,6 @@ namespace rs2
         res.translation.z = G_vr_body_to_vr_world.mat[2][3];
         res.rotation = G_vr_body_to_vr_world.to_quaternion();
         return res;
-    }
-
-    // return the distance between p and the line created by p1 and p2
-    inline float point_to_line_dist(float2 p1, float2 p2, float2 p)
-    {
-        float d = abs((p2.x - p1.x)*(p1.y - p.y) - (p1.x - p.x)*(p2.y - p1.y)) / sqrt((p2.x - p1.x)*(p2.x - p1.x) + (p2.y - p1.y)*(p2.y - p1.y));
-        return d;
-    }
-
-    inline std::vector<float2> simplify_line(const std::vector<float2>& points)
-    {
-        std::vector<float2> res;
-        float max_distance = 0.0f;
-        int max_distance_index = 0;
-        float distance_limit = 0.01f; //1 centimeter
-        // Find the point with the maximum distance from the 2 end points of the vector
-        for (size_t i = 1; i < points.size() - 1; i++)
-        {
-            float d = point_to_line_dist(points[0], points.back(), points[i]);
-            if (d > max_distance)
-            {
-                max_distance = d;
-                max_distance_index = (int)i;
-            }
-        }
-        // If max distance is greater than the limit, recursively simplify
-        if (max_distance > distance_limit)
-        {
-            // Recursive call
-            std::vector<float2> first_half(points.begin(), points.begin() + max_distance_index);
-            std::vector<float2> second_half(points.begin() + max_distance_index, points.end());
-            res = simplify_line(first_half);
-            std::vector<float2> res_second_half = simplify_line(second_half);
-            //check if the connection points of the 2 halves are too close
-            float2 p1 = res.back();
-            float2 p2 = res_second_half[0];
-            if (sqrt(pow((p1.x - p2.x), 2) + pow((p1.y - p2.y), 2)) < 0.01)
-            {
-                res.insert(res.end(), res_second_half.begin() + 1, res_second_half.end());
-            }
-            else
-            {
-                res.insert(res.end(), res_second_half.begin(), res_second_half.end());
-            }
-        }
-        else
-        {
-            res.push_back(points[0]);
-            res.push_back(points.back());
-        }
-
-        return res;
-    }
-
-    inline bool point_in_polygon_2D(const std::vector<float2>& polygon, float2 point)
-    {
-        bool inside = false;
-        int i = 0, j = 0;
-        for (i = 0, j = static_cast<int>(polygon.size()) - 1; i < static_cast<int>(polygon.size()); j = i++)
-        {
-            if (((polygon[i].y > point.y) != (polygon[j].y > point.y)) &&
-                (point.x < (polygon[j].x - polygon[i].x) * (point.y - polygon[i].y) / (polygon[j].y - polygon[i].y) + polygon[i].x))
-            {
-                inside = !inside;
-            }
-        }
-        return inside;
     }
 
     struct mouse_info
@@ -811,89 +761,6 @@ namespace rs2
         size_t _size; float3* _data;
     };
 
-    static color_map classic {{
-            { 255, 0, 0 },
-            { 0, 0, 255 },
-        }};
-
-    static color_map jet {{
-            { 0, 0, 255 },
-            { 0, 255, 255 },
-            { 255, 255, 0 },
-            { 255, 0, 0 },
-            { 50, 0, 0 },
-        }};
-
-    static color_map hsv {{
-            { 255, 0, 0 },
-            { 255, 255, 0 },
-            { 0, 255, 0 },
-            { 0, 255, 255 },
-            { 0, 0, 255 },
-            { 255, 0, 255 },
-            { 255, 0, 0 },
-        }};
-
-
-    static std::vector<color_map*> color_maps { &classic, &jet, &hsv };
-    static std::vector<const char*> color_maps_names { "Classic", "Jet", "HSV" };
-
-/*    inline void make_depth_histogram(const color_map& map, uint8_t rgb_image[], const uint16_t depth_image[], int width, int height, bool equalize, float min, float max)
-    {
-        const auto max_depth = 0x10000;
-        if (equalize)
-        {
-            static uint32_t histogram[max_depth];
-            memset(histogram, 0, sizeof(histogram));
-
-            for (auto i = 0; i < width*height; ++i) ++histogram[depth_image[i]];
-            for (auto i = 2; i < max_depth; ++i) histogram[i] += histogram[i - 1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
-            for (auto i = 0; i < width*height; ++i)
-            {
-                auto d = depth_image[i];
-
-                if (d)
-                {
-                    auto f = histogram[d] / (float)histogram[0xFFFF]; // 0-255 based on histogram location
-
-                    auto c = map.get(f);
-                    rgb_image[i * 3 + 0] = (uint8_t)c.x;
-                    rgb_image[i * 3 + 1] = (uint8_t)c.y;
-                    rgb_image[i * 3 + 2] = (uint8_t)c.z;
-                }
-                else
-                {
-                    rgb_image[i * 3 + 0] = 0;
-                    rgb_image[i * 3 + 1] = 0;
-                    rgb_image[i * 3 + 2] = 0;
-                }
-            }
-        }
-        else
-        {
-            for (auto i = 0; i < width*height; ++i)
-            {
-                auto d = depth_image[i];
-
-                if (d)
-                {
-                    auto f = (d - min) / (max - min);
-
-                    auto c = map.get(f);
-                    rgb_image[i * 3 + 0] = (uint8_t)c.x;
-                    rgb_image[i * 3 + 1] = (uint8_t)c.y;
-                    rgb_image[i * 3 + 2] = (uint8_t)c.z;
-                }
-                else
-                {
-                    rgb_image[i * 3 + 0] = 0;
-                    rgb_image[i * 3 + 1] = 0;
-                    rgb_image[i * 3 + 2] = 0;
-                }
-            }
-        }
-    } */
-
     using clock = std::chrono::steady_clock;
 
     // Helper class to keep track of time
@@ -1050,12 +917,12 @@ namespace rs2
 
         // Simplified version of upload that lets us load basic RGBA textures
         // This is used for the splash screen
-        void upload_image(int w, int h, void* data)
+        void upload_image(int w, int h, void* data, int format = GL_RGBA)
         {
             if (!texture)
                 glGenTextures(1, &texture);
             glBindTexture(GL_TEXTURE_2D, texture);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(GL_TEXTURE_2D, 0, format, w, h, 0, format, GL_UNSIGNED_BYTE, data);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
@@ -1497,9 +1364,9 @@ namespace rs2
 
         void draw_grid(float step)
         {
+            glLineWidth(1);
             glBegin(GL_LINES);
             glColor4f(0.1f, 0.1f, 0.1f, 0.8f);
-            glLineWidth(1);
             
             for (float x = -1.5; x < 1.5; x += step)
             {
@@ -1734,56 +1601,9 @@ namespace rs2
         }
     }
 
-    // RS4xx with RealTec RGB sensor may additionally require sensor orientation control to make runtime adjustments
-    inline void rotate_rgb_image(device& dev,uint32_t res_width)
-    {
-        static bool flip = true;
-        uint8_t hor_flip_val{}, ver_flip_val{};
-
-        if (flip)
-        {
-            hor_flip_val = ((res_width < 1280) ? (uint8_t)0x84 : (uint8_t)0x20);
-            ver_flip_val = ((res_width < 1280) ? (uint8_t)0x47 : (uint8_t)0x46);
-        }
-        else
-        {
-            hor_flip_val = ((res_width < 1280) ? (uint8_t)0x82 : (uint8_t)0x86);
-            ver_flip_val = ((res_width < 1280) ? (uint8_t)0x41 : (uint8_t)0x40);
-        }
-
-        std::vector<uint8_t> hor_flip{ 0x14, 0, 0xab, 0xcd, 0x29, 0, 0, 0, 0x20, 0x38, 0x0, 0x0,
-            hor_flip_val, 0,0,0,0,0,0,0,0,0,0,0 };
-        std::vector<uint8_t> ver_flip{ 0x14, 0, 0xab, 0xcd, 0x29, 0, 0, 0, 0x21, 0x38, 0x0, 0x0,
-            ver_flip_val, 0,0,0,0,0,0,0,0,0,0,0 };
-
-        dev.as<debug_protocol>().send_and_receive_raw_data(hor_flip);
-        dev.as<debug_protocol>().send_and_receive_raw_data(ver_flip);
-
-        flip = !flip;
-    }
-
     inline float to_rad(float deg)
     {
         return static_cast<float>(deg * (M_PI / 180.f));
-    }
-
-    inline matrix4 create_perspective_projection_matrix(float width, float height, float fov, float n, float f)
-    {
-        auto ar = width / height;
-        auto y_scale = (1.f / (float)std::tan(to_rad(fov / 2.f))) * ar;
-        auto x_scale = y_scale / ar;
-        auto length = f - n;
-
-        matrix4 res;
-        for (int i = 0; i < 4; i++)
-            for (int j = 0; j < 4; j++)
-                res.mat[0][0] = 0.f;
-        res.mat[0][0] = x_scale;
-        res.mat[1][1] = y_scale;
-        res.mat[2][2] = -((f + n) / length);
-        res.mat[2][3] = -1;
-        res.mat[3][2] = -((2 * n * f) / length);
-        return res;
     }
 
     inline matrix4 identity_matrix()

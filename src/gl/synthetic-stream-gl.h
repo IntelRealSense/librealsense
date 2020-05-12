@@ -52,6 +52,67 @@ namespace librealsense
             uint32_t data_type;
         };
 
+        template<class T, int N = 2>
+        class pbo
+        {
+        public:
+            void init(int w, int h) 
+            {
+                glGenBuffers(N, pboIds);
+                for (int i = 0; i < N; i++)
+                {
+                    glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[i]);
+                    check_gl_error();
+                    glBufferData(GL_PIXEL_PACK_BUFFER, sizeof(T) * w * h, 0, GL_STREAM_READ);
+                    check_gl_error();
+                }
+                
+                glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+                check_gl_error();
+            }
+
+            void query(T* res, int x0, int y0, int w, int h, uint32_t format, uint32_t type)
+            {
+                GLubyte* pData = NULL;
+                
+                int next_idx = (index + 1) % N;
+                glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[next_idx]);
+                check_gl_error();
+                {
+                    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+                    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+
+                    glReadPixels(x0, y0, w, h, format, type, 0);
+                    check_gl_error();
+                }
+
+                glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[index]);
+                check_gl_error();
+                {
+                    pData = (GLubyte*) glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+                }
+                check_gl_error();
+
+                if (pData)
+                {
+                    memcpy(res, (void*)pData, w * h * sizeof(T));
+                    glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+                    check_gl_error();
+                }
+
+                index = next_idx;
+            }
+
+            void reset()
+            {
+                glDeleteBuffers(N, pboIds);
+            }
+
+        private:
+            uint32_t pboIds[N];
+            int index = 0;
+        };
+
         texture_mapping& rs_format_to_gl_format(rs2_format type);
 
         class gpu_object;

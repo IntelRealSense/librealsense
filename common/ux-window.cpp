@@ -33,6 +33,7 @@ namespace rs2
         config_file::instance().set_default(configurations::window::saved_pos, false);
         config_file::instance().set_default(configurations::window::saved_size, false);
 
+        config_file::instance().set_default(configurations::viewer::is_measuring, false);
         config_file::instance().set_default(configurations::viewer::log_filename, get_folder_path(special_folder::user_documents) + "librealsense.log");
         config_file::instance().set_default(configurations::viewer::log_to_console, true);
         config_file::instance().set_default(configurations::viewer::log_to_file, false);
@@ -46,6 +47,7 @@ namespace rs2
 
         config_file::instance().set_default(configurations::performance::show_fps, false);
         config_file::instance().set_default(configurations::performance::vsync, true);
+        config_file::instance().set_default(configurations::performance::occlusion_invalidation, true);
 
         config_file::instance().set_default(configurations::ply::mesh, true);
         config_file::instance().set_default(configurations::ply::use_normals, false);
@@ -84,19 +86,23 @@ namespace rs2
 
         if (use_glsl)
         {
+            config_file::instance().set_default(configurations::performance::show_skybox, true);
             config_file::instance().set_default(configurations::performance::font_oversample, 2);
             config_file::instance().set_default(configurations::performance::enable_msaa, false);
             config_file::instance().set_default(configurations::performance::msaa_samples, 2);
             config_file::instance().set_default(configurations::performance::glsl_for_processing, true);
             config_file::instance().set_default(configurations::performance::glsl_for_rendering, true);
+            config_file::instance().set_default(configurations::viewer::shading_mode, 2);
         }
         else
         {
+            config_file::instance().set_default(configurations::performance::show_skybox, false);
             config_file::instance().set_default(configurations::performance::font_oversample, 1);
             config_file::instance().set_default(configurations::performance::enable_msaa, false);
             config_file::instance().set_default(configurations::performance::msaa_samples, 2);
             config_file::instance().set_default(configurations::performance::glsl_for_processing, false);
             config_file::instance().set_default(configurations::performance::glsl_for_rendering, false);
+            config_file::instance().set_default(configurations::viewer::shading_mode, 0);
         }
 #endif
     }
