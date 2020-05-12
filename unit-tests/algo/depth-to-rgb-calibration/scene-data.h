@@ -108,6 +108,8 @@ struct scene_metadata
     uint64_t n_iterations;        // how many steps through optimization, and how many iteration file sets
     double correction_in_pixels;  // XY movement
     uint64_t n_edges;             // strong edges, i.e. after suppression
+    bool is_scene_valid;
+    bool is_output_valid;
     std::string rgb_file;
     std::string rgb_prev_file;    // TODO: looks like these need to be turned around!!!
     std::string ir_file;
@@ -125,6 +127,9 @@ struct scene_metadata
         f.read( (char*)&correction_in_pixels, sizeof( correction_in_pixels ) );
         f.read( (char*)&n_edges, sizeof( n_edges ) );
         f.read( (char*)&n_iterations, sizeof( n_iterations ) );
+        byte b;
+        f.read( (char*)&b, 1 ); is_scene_valid = b;
+        f.read( (char*)&b, 1 ); is_output_valid = b;
         f.close();
     }
 };

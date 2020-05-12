@@ -46,7 +46,7 @@ int main( int argc, char * argv[] )
             algo::calib calibration;
             read_binary_file( dir, "rgb.calib", &calibration );
 
-            camera_info camera;
+            camera_params camera;
             camera.rgb = calibration.get_intrinsics();
             camera.extrinsics = calibration.get_extrinsics();
             algo::rs2_intrinsics_double d_intr;  // intrinsics written in double!
