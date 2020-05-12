@@ -323,7 +323,7 @@ std::string generate_file_name( std::string const & prefix, size_t num1, size_t 
     return prefix +"_"+ std::to_string(num1)+"_"+ std::to_string(h)+"x"+ std::to_string(w) +"_"+ suffix;
 }
 
-std::string generate_file_name(std::string const & prefix, int w, int h, std::string const & suffix)
+std::string generate_file_name(std::string const & prefix, size_t w, size_t h, std::string const & suffix)
 {
     return prefix + "_" + std::to_string(h) + "x" + std::to_string(w) + "_" + suffix;
 }
@@ -407,11 +407,11 @@ TEST_CASE("Weights calc", "[d2rgb]")
 {
     struct scene_metadata
     {
-        int iteration_num = 5;
-        double correction_in_pixels = 2.9144;
-        int num_of_edges;
+        uint64_t n_iterations;        // how many steps through optimization, and how many iteration file sets
+        double correction_in_pixels;  // XY movement
+        uint64_t n_edges;             // strong edges, i.e. after suppression
         std::string rgb_file;
-        std::string rgb_prev_file;
+        std::string rgb_prev_file;    // TODO: looks like these need to be turned around!!!
         std::string ir_file;
         std::string z_file;
         
@@ -431,22 +431,25 @@ TEST_CASE("Weights calc", "[d2rgb]")
 
         if (read_calib_from_file)
         {
-            md = { 4, 2.914122625391939, 5235 , "rgb.raw",
-            "rgb.raw",
-            "ir.raw",
-            "depth.raw" };
+            md = { 4, 2.914122625391939, 5235,
+                "rgb.raw",
+                "rgb_prev.raw",
+                "ir.raw",
+                "depth.raw" };
         }
         else
         {
-         /*   md = { 14, 2.914122625391939, 3659, "YUY2_YUY2_1920x1080_00.06.13.1372_F9440687_0000.raw",
-            "YUY2_YUY2_1920x1080_00.06.13.2368_F9440687_0001.raw",
-            "I_GrayScale_1024x768_00.06.13.1484_F9440687_0000.raw",
-            "Z_GrayScale_1024x768_00.06.13.1484_F9440687_0000.raw" };*/
+            std::string filenames = test_dir( dir, scene ) + "binFiles\\yuy_prev_z_i.files";
+            std::ifstream( filenames ) >> md.rgb_file >> md.rgb_prev_file >> md.z_file >> md.ir_file;
 
-            md = { 5, 2.914122625391939, 5089, "YUY2_YUY2_1920x1080_00.00.26.6355_F9440687_0000.raw",
-            "YUY2_YUY2_1920x1080_00.00.26.7683_F9440687_0001.raw",
-            "I_GrayScale_1024x768_00.00.26.7119_F9440687_0000.raw",
-            "Z_GrayScale_1024x768_00.00.26.7119_F9440687_0000.raw" };
+            std::string metadata = test_dir( dir, scene ) + "binFiles\\metadata";
+            std::fstream f = std::fstream( metadata, std::ios::in | std::ios::binary );
+            if( !f )
+                throw std::runtime_error( "failed to read file:\n" + metadata );
+            f.read( (char*)&md.correction_in_pixels, sizeof( md.correction_in_pixels ) );
+            f.read( (char*)&md.n_edges, sizeof( md.n_edges ) );
+            f.read( (char*)&md.n_iterations, sizeof( md.n_iterations ) );
+            f.close();
         }
         init_algo( cal, test_dir( dir, scene),
             md.rgb_file.c_str(),
@@ -483,9 +486,9 @@ TEST_CASE("Weights calc", "[d2rgb]")
         CHECK(compare_to_bin_file< double >(z_data.subpixels_x, dir, scene, FILE_NAME("Z_edgeSubPixel", z_w, z_h, "double_01").c_str(), z_h, z_w, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(z_data.subpixels_y, dir, scene, FILE_NAME("Z_edgeSubPixel", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
 
-        CHECK(compare_to_bin_file< double >(z_data.weights, dir, scene, FILE_NAME("weightsT", 1, md.num_of_edges,"double_00").c_str(), md.num_of_edges, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(z_data.weights, dir, scene, FILE_NAME("weightsT", 1, md.n_edges,"double_00").c_str(), md.n_edges, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(z_data.closest, dir, scene, FILE_NAME("Z_valuesForSubEdges", z_w, z_h, "double_00").c_str(), z_h, z_w, compare_same_vectors));
-        CHECK(compare_to_bin_file< algo::double3 >(z_data.vertices, dir, scene, FILE_NAME("vertices", 3, md.num_of_edges, "double_00").c_str(), md.num_of_edges, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< algo::double3 >(z_data.vertices, dir, scene, FILE_NAME("vertices", 3, md.n_edges, "double_00").c_str(), md.n_edges, 1, compare_same_vectors));
 
 #if 0
         // smearing
@@ -533,7 +536,7 @@ TEST_CASE("Weights calc", "[d2rgb]")
         // edge distribution
         CHECK( compare_to_bin_file< double >( z_data.sum_weights_per_section, dir, scene, FILE_NAME("depthEdgeWeightDistributionPerSectionDepth", 1, 4,"double_00").c_str(), 4, 1, compare_same_vectors ) );
         
-        CHECK( compare_to_bin_file< byte >( z_data.section_map, dir, scene, FILE_NAME("sectionMapDepth_trans", 1, md.num_of_edges, "uint8_00").c_str(), md.num_of_edges, 1, compare_same_vectors ) );
+        CHECK( compare_to_bin_file< byte >( z_data.section_map, dir, scene, FILE_NAME("sectionMapDepth_trans", 1, md.n_edges, "uint8_00").c_str(), md.n_edges, 1, compare_same_vectors ) );
         CHECK( compare_to_bin_file< byte >( yuy_data.section_map, dir, scene, FILE_NAME("sectionMapRgb_trans", 1, rgb_w*rgb_h, "uint8_00").c_str(), rgb_w*rgb_h, 1, compare_same_vectors ) );
         
         CHECK( compare_to_bin_file< double >(yuy_data.sum_weights_per_section, dir, scene, FILE_NAME("edgeWeightDistributionPerSectionRgb", 1, 4, "double_00").c_str(), 4, 1, compare_same_vectors));
@@ -560,45 +563,49 @@ TEST_CASE("Weights calc", "[d2rgb]")
         TRACE( "\nOptimizing:" );
         auto cb = [&]( algo::iteration_data_collect const & data )
         {
+            // data.iteration is 0-based!
+            REQUIRE( data.iteration < md.n_iterations );
+
             auto file = ITERATION_FILE_NAME("calib_iteration", data.iteration + 1, num_of_calib_elements, 1,"double_00");
             CHECK(compare_calib_to_bin_file(data.params.curr_calib, data.params.cost, dir, scene, file.c_str()));
 
-            file = ITERATION_FILE_NAME("uvmap_iteration", data.iteration + 1, 2, md.num_of_edges,"double_00");
-            CHECK(compare_to_bin_file< algo::double2 >(data.uvmap, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors));
+            file = ITERATION_FILE_NAME("uvmap_iteration", data.iteration + 1, 2, md.n_edges,"double_00");
+            CHECK(compare_to_bin_file< algo::double2 >(data.uvmap, dir, scene, file.c_str(), md.n_edges, 1, compare_same_vectors));
 
-            file = ITERATION_FILE_NAME("DVals_iteration", data.iteration + 1, 1, md.num_of_edges, "double_00");
-            CHECK(compare_to_bin_file< double >(data.d_vals, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors));
+            file = ITERATION_FILE_NAME("DVals_iteration", data.iteration + 1, 1, md.n_edges, "double_00");
+            CHECK(compare_to_bin_file< double >(data.d_vals, dir, scene, file.c_str(), md.n_edges, 1, compare_same_vectors));
 
-            file = ITERATION_FILE_NAME("DxVals_iteration", data.iteration + 1, 1, md.num_of_edges, "double_00");
-            CHECK(compare_to_bin_file< double >(data.d_vals_x, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors));
+            file = ITERATION_FILE_NAME("DxVals_iteration", data.iteration + 1, 1, md.n_edges, "double_00");
+            CHECK(compare_to_bin_file< double >(data.d_vals_x, dir, scene, file.c_str(), md.n_edges, 1, compare_same_vectors));
 
-            file = ITERATION_FILE_NAME("DyVals_iteration", data.iteration + 1, 1, md.num_of_edges,"double_00");
-            CHECK(compare_to_bin_file< double >(data.d_vals_y, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors));
+            file = ITERATION_FILE_NAME("DyVals_iteration", data.iteration + 1, 1, md.n_edges,"double_00");
+            CHECK(compare_to_bin_file< double >(data.d_vals_y, dir, scene, file.c_str(), md.n_edges, 1, compare_same_vectors));
 
-            file = ITERATION_FILE_NAME("xy_iteration", data.iteration + 1, 2, md.num_of_edges, "double_00");
-            CHECK(compare_to_bin_file< algo::double2 >(data.xy, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors));
+            file = ITERATION_FILE_NAME("xy_iteration", data.iteration + 1, 2, md.n_edges, "double_00");
+            CHECK(compare_to_bin_file< algo::double2 >(data.xy, dir, scene, file.c_str(), md.n_edges, 1, compare_same_vectors));
 
-            file = ITERATION_FILE_NAME("rc_iteration", data.iteration + 1, 1, md.num_of_edges, "double_00");
-            CHECK(compare_to_bin_file< double >(data.rc, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors));
+            file = ITERATION_FILE_NAME("rc_iteration", data.iteration + 1, 1, md.n_edges, "double_00");
+            CHECK(compare_to_bin_file< double >(data.rc, dir, scene, file.c_str(), md.n_edges, 1, compare_same_vectors));
 
-            file = ITERATION_FILE_NAME("xCoeff_P", data.iteration + 1, sizeof(algo::p_matrix) / sizeof(double), md.num_of_edges, "double_00");
-            CHECK(compare_to_bin_file< algo::p_matrix>(data.coeffs_p.x_coeffs, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors));
+            file = ITERATION_FILE_NAME("xCoeff_P", data.iteration + 1, sizeof(algo::p_matrix) / sizeof(double), md.n_edges, "double_00");
+            CHECK(compare_to_bin_file< algo::p_matrix>(data.coeffs_p.x_coeffs, dir, scene, file.c_str(), md.n_edges, 1, compare_same_vectors));
 
-            /*file = ITERATION_FILE_NAME("xCoeff_Krgb", data.iteration + 1, sizeof(algo::k_matrix) / sizeof(double), md.num_of_edges, "double_00");
-            CHECK(compare_to_bin_file< algo::k_matrix>(data.coeffs_k.x_coeffs, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
+            /*file = ITERATION_FILE_NAME("xCoeff_Krgb", data.iteration + 1, sizeof(algo::k_matrix) / sizeof(double), md.n_edges, "double_00");
+            CHECK(compare_to_bin_file< algo::k_matrix>(data.coeffs_k.x_coeffs, dir, scene, file.c_str(), md.n_edges, 1, compare_same_vectors, sort_vectors));
 
-            file = ITERATION_FILE_NAME("yCoeff_Krgb", data.iteration + 1, sizeof(algo::k_matrix) / sizeof(double), md.num_of_edges, "double_00");
-            CHECK(compare_to_bin_file< algo::k_matrix>(data.coeffs_k.y_coeffs, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));
+            file = ITERATION_FILE_NAME("yCoeff_Krgb", data.iteration + 1, sizeof(algo::k_matrix) / sizeof(double), md.n_edges, "double_00");
+            CHECK(compare_to_bin_file< algo::k_matrix>(data.coeffs_k.y_coeffs, dir, scene, file.c_str(), md.n_edges, 1, compare_same_vectors, sort_vectors));
 
-            file = ITERATION_FILE_NAME("xCoeff_R", data.iteration + 1, sizeof(algo::rotation_in_angles) / sizeof(double), md.num_of_edges, "double_00");
-            CHECK(compare_to_bin_file< algo::rotation_in_angles>(data.coeffs_r.x_coeffs, dir, scene, file.c_str(), md.num_of_edges, 1, compare_same_vectors, sort_vectors));*/
+            file = ITERATION_FILE_NAME("xCoeff_R", data.iteration + 1, sizeof(algo::rotation_in_angles) / sizeof(double), md.n_edges, "double_00");
+            CHECK(compare_to_bin_file< algo::rotation_in_angles>(data.coeffs_r.x_coeffs, dir, scene, file.c_str(), md.n_edges, 1, compare_same_vectors, sort_vectors));*/
 
             // TODO Avishag
             //file = ITERATION_FILE_NAME("grad_iteration", data.iteration + 1, num_of_calib_elements, 1, "double_00");
             //CHECK(compare_calib_to_bin_file(data.params.calib_gradients, 0, dir, scene, file.c_str(), true));
         };
 
-        REQUIRE( cal.optimize( cb ) == md.iteration_num);  // n_iterations
+        // Our code doesn't count the first iteration; the Matlab code starts at 1 even if it doesn't do anything...
+        REQUIRE( cal.optimize( cb ) + 1 == md.n_iterations );
 
         auto new_calibration = cal.get_calibration();
         auto cost = cal.get_cost();

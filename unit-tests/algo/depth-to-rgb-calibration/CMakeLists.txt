@@ -3,6 +3,9 @@ set(D2RGB "depth-to-rgb-calibration/19.2.20")
 
 # F9440687
 set(F9440687 "${D2RGB}/F9440687/LongRange_D_768x1024_RGB_1920x1080")
+dl_algo_file( "${F9440687}/2/binFiles/yuy_prev_z_i.files" "" )
+dl_algo_file( "${F9440687}/2/binFiles/metadata" "" )
+
 dl_algo_file( "${F9440687}/2/YUY2_YUY2_1920x1080_00.00.26.6355_F9440687_0000.raw" "7e5fec4f8a3c50e8fe3d94f81778d816088af286" )
 dl_algo_file( "${F9440687}/2/YUY2_YUY2_1920x1080_00.00.26.7683_F9440687_0001.raw" "cf306ef25f934bce4694fda69c8b646efd9b7127" )
 dl_algo_file( "${F9440687}/2/Z_GrayScale_1024x768_00.00.26.7119_F9440687_0000.raw" "fefaae459cb9facae7362f44a66e865e0dc9967f" )
