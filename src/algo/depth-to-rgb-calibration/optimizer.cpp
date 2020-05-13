@@ -1256,7 +1256,7 @@ void write_to_file( void const * data, size_t cb,
 )
 {
     std::string path = dir + '\\' + filename;
-    std::fstream f = std::fstream( path, std::ios::out | std::ios::binary );
+    std::fstream f( path, std::ios::out | std::ios::binary );
     if( !f )
         throw std::runtime_error( "failed to open file:\n" + path );
     f.write( (char const *) data, cb );
@@ -1287,7 +1287,7 @@ void write_matlab_camera_params_file(
 )
 {
     std::string path = dir + '\\' + filename;
-    std::fstream f = std::fstream( path, std::ios::out | std::ios::binary );
+    std::fstream f( path, std::ios::out | std::ios::binary );
     if( !f )
         throw std::runtime_error( "failed to open file:\n" + path );
 
