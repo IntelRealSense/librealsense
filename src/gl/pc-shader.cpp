@@ -577,16 +577,57 @@ namespace librealsense
                                     x /= boost;
                                     y /= boost;
 
-                                    auto proj = get_matrix(RS2_GL_MATRIX_PROJECTION) * get_matrix(RS2_GL_MATRIX_CAMERA) * get_matrix(RS2_GL_MATRIX_TRANSFORMATION);
 
-                                    rs2::float4 origin { 0.f, 0.f, 0.f, 1.f };
-                                    rs2::float4 projected = proj * origin;
+                                    //
+                                    // retrieve model view and projection matrix
+                                    //
+                                    //   RS2_GL_MATRIX_CAMERA contains the model view matrix
+                                    //   RS2_GL_MATRIX_TRANSFORMATION is identity matrix
+                                    //   RS2_GL_MATRIX_PROJECTION is the projection matrix
+                                    //
+                                    // internal representation is in column major order, i.e., 13th, 14th, and 15th elelments
+                                    // of the 16 element model view matrix represents translations
+                                    //   float mat[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+                                    //
+                                    //   rs2::matrix4 m = { {0, 1, 2, 3}, {4, 5, 6, 7}, {8, 9, 10, 11}, {12, 13, 14, 15} };
+                                    //       0     1     2     3
+                                    //       4     5     6     7
+                                    //       8     9    10    11
+                                    //       12   13    14    15
+                                    //
+                                    // when use matrix4 in glUniformMatrix4fv, transpose option is GL_FALSE so data is passed into
+                                    // shader as column major order
+                                    //
+                                    rs2::matrix4 p = get_matrix(RS2_GL_MATRIX_PROJECTION);
+                                    rs2::matrix4 v = get_matrix(RS2_GL_MATRIX_CAMERA);
+                                    rs2::matrix4 f = get_matrix(RS2_GL_MATRIX_TRANSFORMATION);
 
-                                    projected.x /= projected.z;
-                                    projected.y /= -projected.z;
-                                    projected.x = (projected.x + 1.f) / 2.f;
-                                    projected.y = (projected.y + 1.f) / 2.f;
+                                    // matrix * operation in column major, transpose matrix
+                                    //   0   4    8   12
+                                    //   1   5    9   13
+                                    //   2   6   10   14
+                                    //   3   7   11   15
+                                    //
+                                    rs2::matrix4 vc;
+                                    rs2::matrix4 pc;
+                                    rs2::matrix4 fc;
 
+                                    for (int i = 0; i < 4; i++)
+                                    {
+                                        for (int j = 0; j < 4; j++)
+                                        {
+                                            pc(i, j) = p(j, i);
+                                            vc(i, j) = v(j, i);
+                                            fc(i, j) = f(j, i);
+                                        }
+                                    }
+
+                                    // obtain the final transformation matrix
+                                    auto mvp = pc * vc * fc;
+
+                                    // test - center (0, 0, 0, 1) should be translated into (0, 0, 1, 1) at this point
+                                    rs2::float4 origin{ 0.f, 0.f, 0.f, 1.f };
+                                    rs2::float4 projected = mvp * origin;
 
                                     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo->get());
                                     check_gl_error();
@@ -627,10 +668,40 @@ namespace librealsense
                                         for (int i = 0; i < size; i++)
                                         {
                                             auto pos = pos_halfs[i];
-                                            auto x = halfToNativeIeee(pos.x);
-                                            auto y = halfToNativeIeee(pos.y);
-                                            auto z = halfToNativeIeee(pos.z);
-                                            pos_floats[i] = { x, y, z };
+                                            auto x1 = halfToNativeIeee(pos.x);
+                                            auto y1 = halfToNativeIeee(pos.y);
+                                            auto z1 = halfToNativeIeee(pos.z);
+                                            pos_floats[i] = { x1, y1, z1 };
+
+                                            // translate 3d vertex into 2d windows coordinates
+                                            rs2::float4 p3d;
+                                            p3d.x = x1;
+                                            p3d.y = y1;
+                                            p3d.z = z1;
+                                            p3d.w = 1.0;
+
+                                            // transform from object coordinates into clip coordinates
+                                            rs2::float4 p2d = mvp * p3d;
+
+                                            // clip and normalize
+                                            p2d.x /= p2d.w;
+                                            p2d.y /= p2d.w;
+                                            p2d.z /= p2d.w;
+                                            p2d.w /= p2d.w;
+
+                                            p2d.x = clamp(p2d.x, -1.0, 1.0);
+                                            p2d.y = clamp(p2d.y, -1.0, 1.0);
+                                            p2d.z = clamp(p2d.z, -1.0, 1.0);
+
+                                            // viewport coordinates
+                                            float x_vp = (p2d.x + 1.0) / 2.0 * vp[2];
+                                            float y_vp = (p2d.y + 1.0) / 2.0 * vp[3];
+
+                                            // winow coordinates
+                                            float x_w = vp[0] + x_vp;
+                                            float y_w = vp[1] + y_vp;
+
+                                            float cw = 0;
                                         }
 
                                         if (pos_floats[center].length() < 0.001f)
