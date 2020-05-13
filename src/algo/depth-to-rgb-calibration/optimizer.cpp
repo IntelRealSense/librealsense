@@ -746,7 +746,7 @@ void optimizer::set_depth_data(
     _z.local_values = interpolation(_z.frame, _ir.local_region_x, _ir.local_region_y, 4, _ir.valid_location_rc_x.size(), _z.width);
     _z.values_for_subedges = find_local_values_min(_z.local_values);
 
-    _params.alpha;
+    //_params.alpha;
     /* validEdgePixels = zGradInDirection > params.gradZTh & isSupressed & zValuesForSubEdges > 0;
 
    zGradInDirection = zGradInDirection(validEdgePixels);
@@ -813,7 +813,7 @@ void optimizer::set_depth_data(
    weights = weights(isInside);
    vertices = vertices(isInside,:);
    sectionMapDepth = sectionMapDepth(isInside);*/
-   //_params.constant_weights;
+   _params.constant_weights;
     transform(_z.valid_edge_sub_pixel_x.begin(), _z.valid_edge_sub_pixel_x.end(), _z.valid_edge_sub_pixel_x.begin(), bind2nd(std::plus<double>(), -1.0));
     transform(_z.valid_edge_sub_pixel_y.begin(), _z.valid_edge_sub_pixel_y.end(), _z.valid_edge_sub_pixel_y.begin(), bind2nd(std::plus<double>(), -1.0));
     for (auto i = 0; i < _z.sub_points.size(); i += 3)
@@ -871,7 +871,7 @@ end*/
     depth_filter(_z.section_map_depth_inside, _z.section_map_depth, _z.is_inside, 1, _z.is_inside.size());
 
     for (auto i = 0; i < _z.is_inside.size(); i++) {
-        _z.weights.push_back(_params.const_weights_val);
+        _z.weights.push_back(_params.constant_weights);
     }
 
 }
