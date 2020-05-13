@@ -252,6 +252,7 @@ typedef void (*rs2_devices_changed_callback_ptr)(rs2_device_list*, rs2_device_li
 typedef void (*rs2_frame_callback_ptr)(rs2_frame*, void*);
 typedef void (*rs2_frame_processor_callback_ptr)(rs2_frame*, rs2_source*, void*);
 typedef void(*rs2_update_progress_callback_ptr)(const float, void*);
+typedef struct rs2_firmware_logs_parser rs2_firmware_logs_parser;
 
 typedef double      rs2_time_t;     /**< Timestamp format. units are milliseconds */
 typedef long long   rs2_metadata_type; /**< Metadata attribute type is defined as 64 bit signed integer*/

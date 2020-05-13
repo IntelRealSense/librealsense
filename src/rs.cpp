@@ -42,6 +42,7 @@
 #include "global_timestamp_reader.h"
 #include "auto-calibrated-device.h"
 #include "firmware_logger_device.h"
+#include "fw-logs-parser/fw-logs-parser.h"
 ////////////////////////
 // API implementation //
 ////////////////////////
@@ -114,6 +115,13 @@ struct rs2_sensor_list
 {
     rs2_device dev;
 };
+
+struct rs2_firmware_logs_parser
+{
+    std::shared_ptr<librealsense::fw_logs_parsing::fw_logs_parser> firmware_logs_parser;
+};
+
+
 
 struct rs2_error
 {
@@ -2974,3 +2982,45 @@ const rs2_raw_data_buffer* rs2_get_firmware_logs(rs2_device* dev, rs2_error** er
     return new rs2_raw_data_buffer{ buffer };    
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev)
+
+rs2_firmware_logs_parser* rs2_create_firmware_logs_parser(const char* xml_path, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(xml_path);
+
+    return new rs2_firmware_logs_parser{ std::make_shared<librealsense::fw_logs_parsing::fw_logs_parser>(xml_path)};
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, xml_path)
+
+void rs2_delete_firmware_logs_parser(rs2_firmware_logs_parser* parser) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(parser);
+    delete parser;
+}
+NOEXCEPT_RETURN(, parser)
+
+rs2_raw_data_buffer* rs2_get_firmware_logs_parsed(rs2_firmware_logs_parser* fw_logs_parser, const void* raw_data, const int raw_data_size, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(fw_logs_parser);
+    VALIDATE_NOT_NULL(raw_data);
+
+    std::vector<uint8_t> raw_data_buffer((uint8_t*)raw_data, (uint8_t*)raw_data + raw_data_size);
+    librealsense::fw_logs_parsing::fw_logs_binary_data binary_data =
+        librealsense::fw_logs_parsing::fw_logs_binary_data{ raw_data_buffer };
+    std::vector<std::string> parsed_data_cpp = fw_logs_parser->firmware_logs_parser.get()->get_fw_log_lines(binary_data);
+    
+    // converting vector<string> to vector<uint8_t>
+    std::vector<uint8_t> result;
+
+    for (int i = 0; i < parsed_data_cpp.size(); ++i)
+    {
+        std::vector<uint8_t> current_string_vec(parsed_data_cpp[i].begin(), parsed_data_cpp[i].end());
+        result.insert(result.end(), current_string_vec.begin(), current_string_vec.end());
+        result.push_back(10);
+    }
+
+    return new rs2_raw_data_buffer { result };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, fw_logs_parser, raw_data)
+
+
+

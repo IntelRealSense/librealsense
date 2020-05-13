@@ -356,6 +356,31 @@ void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_s
 /* Get firmware Logs */
 const rs2_raw_data_buffer* rs2_get_firmware_logs(rs2_device* dev, rs2_error** error);
 
+/**
+* \brief Creates RealSense firmware logs parser.
+* \param[in] xml_path	path to xml file needed for parsing
+* \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return            firmware logs parser object
+*/
+rs2_firmware_logs_parser* rs2_create_firmware_logs_parser(const char* xml_path, rs2_error** error);
+
+/**
+* \brief Frees the relevant firmware logs parser object.
+* \param[in] firmware logs parser object that is no longer needed
+*/
+void rs2_delete_firmware_logs_parser(rs2_firmware_logs_parser* parser);
+
+/**
+* \brief Parses firmware logs.
+* \param[in] fw_logs_parser	firmware logs parser object 
+* \param[in] raw_data	firmware logs not parsed 
+* \param[in] raw_data_size firmware logs not parsed size
+* \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return 	firmware logs parsed
+*/
+rs2_raw_data_buffer* rs2_get_firmware_logs_parsed(rs2_firmware_logs_parser* fw_logs_parser,
+    const void* raw_data, const int raw_data_size, rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif
