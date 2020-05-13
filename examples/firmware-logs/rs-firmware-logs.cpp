@@ -6,6 +6,7 @@
 #include <thread>
 #include <string>
 #include <vector>
+#include <fstream>
 
 using namespace std;
 
@@ -68,20 +69,32 @@ int main(int argc, char * argv[])
             while (hub.is_connected(dev))
             {
                 this_thread::sleep_for(chrono::milliseconds(100));
-
+                
                 auto fw_log = res.get_device().as<rs2::firmware_logger>();
                 std::vector<uint8_t> raw_data = fw_log.get_firmware_logs();
                 vector<string> fw_log_lines = { "" };
                 if (raw_data.size() <= 4)
                     continue;
 
-                /*if (use_xml_file)
+                static bool usingParser = true;
+                if (usingParser)
                 {
-                    fw_logs_binary_data fw_logs_binary_data = { raw_data };
-                    fw_logs_binary_data.logs_buffer.erase(fw_logs_binary_data.logs_buffer.begin(), fw_logs_binary_data.logs_buffer.begin() + 4);
-                    fw_log_lines = fw_log_parser->get_fw_log_lines(fw_logs_binary_data);
-                    for (auto& elem : fw_log_lines)
-                        elem = datetime_string() + "  " + elem;
+                    std::string xml_path("HWLoggerEventsDS5.xml");
+                    if (!xml_path.empty())
+                    {
+                        ifstream f(xml_path);
+                        if (f.good())
+                        {
+                            unique_ptr<rs2::firmware_logs_parser> parser = 
+                                unique_ptr<rs2::firmware_logs_parser>(new rs2::firmware_logs_parser(xml_path));
+                            bool datetime = true;
+                            fw_log_lines = parser->get_firmware_logs_parsed(raw_data);
+                            
+                            for (auto& elem : fw_log_lines)
+                                elem = datetime_string() + "  " + elem;
+                        }
+                    }
+                    
                 }
                 else
                 {
@@ -91,15 +104,8 @@ int main(int argc, char * argv[])
                         sstr << hexify(raw_data[i]) << " ";
 
                     fw_log_lines.push_back(sstr.str());
-                }*/
-
-                stringstream sstr;
-                sstr << datetime_string() << "  FW_Log_Data:";
-                for (size_t i = 0; i < raw_data.size(); ++i)
-                    sstr << hexify(raw_data[i]) << " ";
-
-                fw_log_lines.push_back(sstr.str());
-
+                }
+                
                 for (auto& line : fw_log_lines)
                     cout << line << endl;
             }

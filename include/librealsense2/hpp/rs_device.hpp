@@ -226,7 +226,7 @@ namespace rs2
 
             results.insert(results.begin(), start, start + size);
 
-return results;
+            return results;
         }
 
         // Update an updatable device to the provided unsigned firmware. This call is executed on the caller's thread.
@@ -345,6 +345,59 @@ return results;
 
             return results;
         }
+    };
+
+    class firmware_logs_parser
+    {
+    public:
+        firmware_logs_parser(std::string xml_path)
+        {
+            rs2_error* e = nullptr;
+            _firmware_logs_parser = std::shared_ptr<rs2_firmware_logs_parser>(
+                rs2_create_firmware_logs_parser(xml_path.data(), &e),
+                rs2_delete_firmware_logs_parser);
+            error::handle(e);
+        }
+
+        std::vector<std::string> firmware_logs_parser::get_firmware_logs_parsed(const std::vector<uint8_t>& raw_data)
+        {
+            std::string results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_raw_data_buffer> parsed_logs(
+                rs2_get_firmware_logs_parsed(_firmware_logs_parser.get(), (const void*)raw_data.data(), (const int)raw_data.size(), &e),
+                rs2_delete_raw_data);
+            rs2::error::handle(e);
+
+            auto size = rs2_get_raw_data_size(parsed_logs.get(), &e);
+            rs2::error::handle(e);
+
+            auto start = rs2_get_raw_data(parsed_logs.get(), &e);
+            rs2::error::handle(e);
+
+            results.insert(results.begin(), start, start + size);
+
+            //transforming the string to vector<string> delimiter is '\n'
+            std::vector<std::string> log_lines;
+            std::size_t current_start = 0;
+            std::size_t delimiter_found = results.find_first_of("\n");
+            while (delimiter_found != std::string::npos)
+            {
+                log_lines.push_back(std::string(results.substr(current_start, delimiter_found - current_start)));
+                current_start = delimiter_found + 1;
+                delimiter_found = results.find_first_of("\n", delimiter_found + 1);
+            }
+
+            return log_lines;
+        }
+
+        firmware_logs_parser(std::shared_ptr<rs2_firmware_logs_parser> fw_logs_parser)
+            : _firmware_logs_parser(fw_logs_parser) {}
+
+        explicit operator std::shared_ptr<rs2_firmware_logs_parser>() { return _firmware_logs_parser; };
+
+    protected:
+        std::shared_ptr<rs2_firmware_logs_parser> _firmware_logs_parser;
     };
 
     class auto_calibrated_device : public calibrated_device
