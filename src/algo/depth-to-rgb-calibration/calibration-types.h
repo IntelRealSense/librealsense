@@ -15,16 +15,16 @@ namespace depth_to_rgb_calibration {
     {
         double x, y, z;
         double & operator [] ( int i ) { return (&x)[i]; }
-        bool operator == ( const double3 d ) { return x == d.x && y == d.y && z == d.z; }
-        bool operator != ( const double3 d ) { return !(*this == d); }
+        bool operator == (const double3 d) { return x == d.x && y == d.y && z == d.z; }
+        bool operator != (const double3 d) { return !(*this == d); }
     };
 
     struct double2
     {
         double x, y;
         double & operator [] ( int i ) { return (&x)[i]; };
-        bool operator == ( const double2 d ) { return x == d.x && y == d.y; }
-        bool operator != ( const double2 d ) { return !(*this == d); }
+        bool operator == (const double2 d) { return x == d.x && y == d.y; }
+        bool operator != (const double2 d) { return !(*this == d); }
     };
 
     enum direction :uint8_t
@@ -101,7 +101,7 @@ namespace depth_to_rgb_calibration {
         {
             for (auto i = 0; i < 12; i++)
             {
-                if (vals[i] < other.vals[i]) 
+                if (vals[i] < other.vals[i])
                     return false;
                 if (vals[i] > other.vals[i])
                     return true;
@@ -116,23 +116,6 @@ namespace depth_to_rgb_calibration {
         double fy;
         double ppx;
         double ppy;
-
-        bool operator==(const k_matrix& other)
-        {
-            return fx == other.fx && fy == other.fy && ppx == other.ppx && ppy == other.ppy;
-        }
-        bool operator!=(const k_matrix& other)
-        {
-            return !(*this == other);
-        }
-        bool operator<(const k_matrix& other)
-        {
-            return (fx < other.fx) ||
-                (fx == other.fx && fy < other.fy) ||
-                (fx == other.fx && fy == other.fy && ppx < other.ppx) ||
-                (fx == other.fx && fy == other.fy && ppx == other.ppx && ppy < other.ppy);
-                
-        }
     };
 
 }  // librealsense::algo::depth_to_rgb_calibration

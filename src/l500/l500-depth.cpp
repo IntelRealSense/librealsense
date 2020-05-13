@@ -154,7 +154,6 @@ namespace librealsense
             l500_depth_fourcc_to_rs2_format_map,
             l500_depth_fourcc_to_rs2_stream_map )
         , _owner( owner )
-        , _dsm_params{ 0 }
     {
 #ifdef ENABLE_L500_DEPTH_INVALIDATION
         _depth_invalidation_enabled = true;
@@ -216,7 +215,7 @@ namespace librealsense
     {
         command cmd( ivcam2::fw_cmd::READ_TABLE, ac_depth_results::table_id );
         std::vector< byte > data = _owner->_hw_monitor->send( cmd );
-        if( data.size() != sizeof( ac_depth_results ) )
+        if( data.size() != sizeof( ac_depth_results ))
             throw std::runtime_error( to_string() << "data size received= " << data.size() );
         ac_depth_results const & table = *(ac_depth_results *)data.data();
         return table.params;
@@ -224,12 +223,20 @@ namespace librealsense
 
     void l500_depth_sensor::override_dsm_params( rs2_dsm_params const & dsm_params )
     {
+        /*  Considerable values for DSM correction:
+            - h/vFactor: 0.98-1.02, representing up to 2% change in FOV.
+            - h/vOffset:
+                - Under AOT model: (-2)-2, representing up to 2deg FOV tilt
+                - Under TOA model: (-125)-125, representing up to approximately
+                  2deg FOV tilt
+            These values are extreme. For more reasonable values take 0.99-1.01
+            for h/vFactor and divide the suggested h/vOffset range by 10.
+        */
         command cmd( ivcam2::fw_cmd::WRITE_TABLE, ac_depth_results::table_id );
         ac_depth_results table( dsm_params );
         cmd.data.resize( sizeof( table ));
         memcpy( cmd.data.data(), &table, sizeof( table ));
         _owner->_hw_monitor->send( cmd );
-        _dsm_params = dsm_params;
     }
 
 

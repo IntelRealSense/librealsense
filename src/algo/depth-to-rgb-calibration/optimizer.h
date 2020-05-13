@@ -84,6 +84,8 @@ namespace depth_to_rgb_calibration {
         std::vector< double > d_vals;
         std::vector< double > d_vals_x;
         std::vector< double > d_vals_y;
+        std::vector < double2> xy;
+        std::vector<double > rc;
         coeffs<k_matrix> coeffs_k;
         coeffs<rotation_in_angles> coeffs_r;
         coeffs < p_matrix> coeffs_p;

@@ -1444,11 +1444,16 @@ static calib calc_gradients(
 #endif
 
     auto interp_IDT_y = biliniar_interp( yuy_data.edges_IDTy, yuy_data.width, yuy_data.height, uv );
-    if( data )
-        data->d_vals_y = interp_IDT_y;
 
     auto rc = calc_rc( z_data, yuy_data, curr_calib );
 
+    if (data)
+    {
+        data->d_vals_y = interp_IDT_y;
+        data->xy = rc.first;
+        data->rc = rc.second;
+    }
+        
     res.p_mat = calc_p_gradients(z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first, data);
     res.rot_angles = calc_rotation_gradients( z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first, data);
     res.trans = calc_translation_gradients( z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first );
@@ -1517,7 +1522,7 @@ void write_to_file( void const * data, size_t cb,
 )
 {
     std::string path = dir + '\\' + filename;
-    std::fstream f = std::fstream( path, std::ios::out | std::ios::binary );
+    std::fstream f( path, std::ios::out | std::ios::binary );
     if( !f )
         throw std::runtime_error( "failed to open file:\n" + path );
     f.write( (char const *) data, cb );
@@ -1548,7 +1553,7 @@ void write_matlab_camera_params_file(
 )
 {
     std::string path = dir + '\\' + filename;
-    std::fstream f = std::fstream( path, std::ios::out | std::ios::binary );
+    std::fstream f( path, std::ios::out | std::ios::binary );
     if( !f )
         throw std::runtime_error( "failed to open file:\n" + path );
 
@@ -1629,7 +1634,7 @@ void optimizer::write_data_to( std::string const & dir )
             _z.intrinsics,
             _original_calibration,
             _z.depth_units,
-            dir, "camera_params.matlab"
+            dir, "camera_params"
         );
     }
     catch( std::exception const & err )

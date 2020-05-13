@@ -99,14 +99,21 @@ void init_device(py::module &m) {
             []( rs2::device_calibration& self, std::function<void( rs2_calibration_status )> callback )
             {
                 self.register_calibration_change_callback( 
-					[callback]( rs2_calibration_status status )
-					{
-						// "When calling a C++ function from Python, the GIL is always held"
-						// -- since we're not being called from Python but instead are calling it,
-						// we need to acquire it to not have issues with other threads...
-						py::gil_scoped_acquire gil;
-						callback( status );
-					} );
+                    [callback]( rs2_calibration_status status )
+                    {
+                        try
+                        {
+                            // "When calling a C++ function from Python, the GIL is always held"
+                            // -- since we're not being called from Python but instead are calling it,
+                            // we need to acquire it to not have issues with other threads...
+                            py::gil_scoped_acquire gil;
+                            callback( status );
+                        }
+                        catch( ... )
+                        {
+                            std::cerr << "?!?!?!!? exception in python register_calibration_change_callback ?!?!?!?!?" << std::endl;
+                        }
+                    } );
             },
             "TODO", "callback"_a );
 

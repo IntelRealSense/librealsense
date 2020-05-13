@@ -58,7 +58,7 @@ rs2_extrinsics_double calib::get_extrinsics() const
     auto & r = rot.rot;
     auto & t = trans;
     return {
-        { r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8] },
+        { r[0] , r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8] },
         { t.t1, t.t2, t.t3 }
     };
 }

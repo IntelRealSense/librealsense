@@ -505,11 +505,34 @@ namespace librealsense
         {
         }
 
-        static bool is_special_frame( rs2::frame const& f )
+        static bool is_special_frame( rs2::depth_frame const& f )
         {
-            return(f
-                && f.supports_frame_metadata( RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE )
-                && 0x5F == f.get_frame_metadata( RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE ));
+            if( !f )
+                return false;
+
+            if( f.supports_frame_metadata( RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE ))
+            {
+                // We specified 0x5F (SF = Special Frame) when we asked for the SPECIAL_FRAME
+                auto mode = f.get_frame_metadata( RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE );
+                if( 0x5F == mode )
+                {
+                    AC_LOG( DEBUG, "frame " << f.get_frame_number() << " is our special frame" );
+                    return true;
+                }
+                return false;
+            }
+
+            // When the frame doesn't support metadata, we have to look at its
+            // contents: we take the first frame that has 100% fill rate, i.e.
+            // has no pixels with 0 in them...
+            uint16_t const * pd = reinterpret_cast< const uint16_t * >( f.get_data() );
+            for( size_t x = f.get_data_size() / sizeof( *pd ); x--; ++pd )
+            {
+                if( !*pd )
+                    return false;
+            }
+            AC_LOG( DEBUG, "frame " << f.get_frame_number() << " has no metadata but 100% fill rate -> assuming special frame" );
+            return true;  // None zero, assume special frame...
         }
 
         rs2::frame autocal_depth_processing_block::process_frame( const rs2::frame_source& source, const rs2::frame& f )
@@ -520,13 +543,13 @@ namespace librealsense
             if( fs )
             {
                 auto df = fs.get_depth_frame();
-                if( is_special_frame( df ))
+                if( _autocal->is_expecting_special_frame()  &&  is_special_frame( df ))
                     _autocal->set_special_frame( f );
                 // Disregard framesets: we'll get those broken down into individual frames by generic_processing_block's on_frame
                 return rs2::frame{};
             }
 
-            if( is_special_frame( f.as< rs2::depth_frame >() ) )
+            if( _autocal->is_expecting_special_frame()  &&  is_special_frame( f.as< rs2::depth_frame >() ) )
                 // We don't want the user getting this frame!
                 return rs2::frame{};
             
