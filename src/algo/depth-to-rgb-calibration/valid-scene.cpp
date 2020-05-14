@@ -386,12 +386,12 @@ weightsPerDir = [sum(weightIm(frame.dirI == 1));sum(weightIm(frame.dirI == 2));s
         }
     }
     std::vector<double> weights_per_dir(deg_none); // deg_non is number of directions
-    auto directions_iter = z_data.directions.begin();
+    auto directions_iter = z_data.valid_directions.begin();
     auto weights_per_dir_iter = weights_per_dir.begin();
     for (auto i = 0; i < deg_none; ++i)
     {
         *(weights_per_dir_iter + i) = 0; // init sum per direction
-        for (auto ii = 0; ii < z_data.directions.size(); ++ii) // directions size = z_data size = weights_im size
+        for (auto ii = 0; ii < z_data.valid_directions.size(); ++ii) // directions size = z_data size = weights_im size
         {
             if (*(directions_iter + ii) == i)
             {
@@ -702,13 +702,14 @@ bool optimizer::is_scene_valid()
 
     // remove pixels in section map that were removed in weights
     AC_LOG(DEBUG, "... " << _z.supressed_edges.size() << " total edges");
-    for (auto i = 0; i < _z.supressed_edges.size(); i++)
+    /*for (auto i = 0; i < _z.supressed_edges.size(); i++)
     {
         if (_z.supressed_edges[i])
         {
             _z.section_map.push_back(section_map_depth[i]);
         }
-    }
+    }*/
+    _z.section_map = _z.section_map_depth_inside; // NOHA :: taken from preprocessDepth
     AC_LOG(DEBUG, "... " << _z.section_map.size() << " not suppressed");
 
     // remove pixels in section map where edges_IDT > 0
