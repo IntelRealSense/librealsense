@@ -28,18 +28,18 @@ namespace depth_to_rgb_calibration {
     struct ir_frame_data : frame_data
     {
         std::vector< ir_t > ir_frame;
-        std::vector< double > edges;
-        std::vector< double > local_edges;
+        std::vector< double > ir_edges;
+        std::vector<double> edges;
 
         // smearing
         std::vector<double> gradient_x;
         std::vector<double> gradient_y;
         std::vector< byte > section_map_depth;
-        std::vector<double> valid_edge_pixels_by_ir;
+        std::vector<uint8_t> valid_edge_pixels_by_ir;
         std::vector<byte> valid_section_map;
         std::vector<double>valid_gradient_x;
         std::vector<double>valid_gradient_y;
-        //std::vector<double> edges;
+        std::vector<double> edges2;
         std::vector<direction> directions;
         std::vector<double> direction_deg;
         std::vector<double> valid_location_rc_x;
@@ -51,9 +51,8 @@ namespace depth_to_rgb_calibration {
         std::vector<double> local_region[4];
         std::vector<double> local_region_x[4];//for debug
         std::vector<double> local_region_y[4]; // for debug
-        //std::vector<double> ir_edges;
+        std::vector<double> local_edges;
         std::vector<uint8_t> is_supressed;
-        std::vector<double> fraq_step;
 
     };
 
@@ -68,43 +67,16 @@ namespace depth_to_rgb_calibration {
         std::vector<double> edges;
         std::vector<double> supressed_edges;                
         size_t n_strong_edges;
-        //std::vector<direction> valid_directions;
+        std::vector<direction> directions;
         std::vector<double> subpixels_x;
         std::vector<double> subpixels_y;
-        //std::vector< uint16_t> closest;
+        std::vector< uint16_t> closest;
         std::vector<double> weights;
         std::vector<double> direction_deg;
-        std::vector<double3> vertices_all;
+        std::vector<double3> vertices;
 
         //smearing
         std::vector< byte > section_map_depth;
-        std::vector< byte > section_map_depth_inside;
-        std::vector<double> local_x;
-        std::vector<double> local_y;
-        std::vector<double> gradient;
-        std::vector<double> local_values;
-        std::vector<double> grad_in_direction;
-        std::vector<double> grad_in_direction_inside;
-        std::vector<double> values_for_subedges;
-        std::vector<double> closest;
-        //std::vector< byte > supressed_edges;
-        std::vector<double> direction_per_pixel;
-        std::vector<double> valid_direction_per_pixel;
-        std::vector<byte> valid_section_map;
-        std::vector<double> local_rc_subpixel;
-        std::vector<double> edge_sub_pixel;
-        std::vector<double> valid_directions;
-        std::vector<double> directions;
-        std::vector<double> valid_edge_sub_pixel;
-        std::vector<double > valid_edge_sub_pixel_x;
-        std::vector<double > valid_edge_sub_pixel_y;
-        std::vector<double> sub_points;
-        //std::vector<double3> vertices;
-        std::vector<double3> vertices;
-        std::vector<double> vertices3;
-        std::vector<double2> uvmap;
-        std::vector<double> is_inside;
-
         // input validation
         std::vector<byte> section_map;
         bool is_edge_distributed;
