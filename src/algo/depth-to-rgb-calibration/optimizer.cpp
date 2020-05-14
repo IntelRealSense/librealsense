@@ -813,7 +813,7 @@ void optimizer::set_depth_data(
    weights = weights(isInside);
    vertices = vertices(isInside,:);
    sectionMapDepth = sectionMapDepth(isInside);*/
-   _params.constant_weights;
+   //_params.constant_weights;
     transform(_z.valid_edge_sub_pixel_x.begin(), _z.valid_edge_sub_pixel_x.end(), _z.valid_edge_sub_pixel_x.begin(), bind2nd(std::plus<double>(), -1.0));
     transform(_z.valid_edge_sub_pixel_y.begin(), _z.valid_edge_sub_pixel_y.end(), _z.valid_edge_sub_pixel_y.begin(), bind2nd(std::plus<double>(), -1.0));
     for (auto i = 0; i < _z.sub_points.size(); i += 3)
@@ -862,6 +862,11 @@ end*/
     weights = weights(isInside);
     vertices = vertices(isInside,:);
     sectionMapDepth = sectionMapDepth(isInside);*/
+    std::vector<double> weights;
+    for (auto i = 0; i < _z.is_inside.size(); i++) {
+
+        weights.push_back(_params.constant_weights);
+    }
     depth_filter(_z.subpixels_x, _z.valid_edge_sub_pixel_x, _z.is_inside, 1, _z.is_inside.size());
     depth_filter(_z.subpixels_y, _z.valid_edge_sub_pixel_y, _z.is_inside, 1, _z.is_inside.size());
     depth_filter(_z.closest, _z.values_for_subedges, _z.is_inside, 1, _z.is_inside.size());
@@ -869,10 +874,11 @@ end*/
     depth_filter(_z.directions, _z.valid_directions, _z.is_inside, 1, _z.is_inside.size());
     depth_filter(_z.vertices, _z.vertices_all, _z.is_inside, 1, _z.is_inside.size());
     depth_filter(_z.section_map_depth_inside, _z.section_map_depth, _z.is_inside, 1, _z.is_inside.size());
+    depth_filter(_z.weights, weights, _z.is_inside, 1, _z.is_inside.size());
+    /*for (auto i = 0; i < _z.is_inside.size(); i++) {
 
-    for (auto i = 0; i < _z.is_inside.size(); i++) {
         _z.weights.push_back(_params.constant_weights);
-    }
+    }*/
 
 }
 
@@ -1204,7 +1210,7 @@ std::vector<double3> optimizer::subedges2vertices(z_frame_data& z_data, const rs
 {
     std::vector<double3> res(z_data.n_strong_edges);
     deproject_sub_pixel(res, intrin, z_data.supressed_edges, z_data.subpixels_x.data(), z_data.subpixels_y.data(), z_data.closest.data(), depth_units);
-    z_data.vertices_all = res;
+    z_data.vertices = res;
     return res;
 }
 
@@ -1371,11 +1377,11 @@ std::pair< std::vector<double2>, std::vector<double>> calc_rc(
     const calib& curr_calib
 )
 {
-    auto v = z_data.vertices_all;
+    auto v = z_data.vertices;
 
-    std::vector<double2> f1( z_data.vertices_all.size() );
-    std::vector<double> r2( z_data.vertices_all.size() );
-    std::vector<double> rc( z_data.vertices_all.size() );
+    std::vector<double2> f1( z_data.vertices.size() );
+    std::vector<double> r2( z_data.vertices.size() );
+    std::vector<double> rc( z_data.vertices.size() );
 
     auto yuy_intrin = curr_calib.get_intrinsics();
     auto yuy_extrin = curr_calib.get_extrinsics();
@@ -1393,7 +1399,7 @@ std::pair< std::vector<double2>, std::vector<double>> calc_rc(
         fy*(double)r[1] + ppy * (double)r[2], fy*(double)r[4] + ppy * (double)r[5], fy*(double)r[7] + ppy * (double)r[8], fy*(double)t[1] + ppy * (double)t[2],
         r[2], r[5], r[8], t[2] };
 
-    for( auto i = 0; i < z_data.vertices_all.size(); ++i )
+    for( auto i = 0; i < z_data.vertices.size(); ++i )
     {
         double x = v[i].x;
         double y = v[i].y;
@@ -1469,7 +1475,7 @@ std::pair<double, calib> calc_cost_and_grad(
     iteration_data_collect * data = nullptr
 )
 {
-    auto uvmap = get_texture_map(z_data.vertices_all, curr_calib);
+    auto uvmap = get_texture_map(z_data.vertices, curr_calib);
     if( data )
         data->uvmap = uvmap;
 
@@ -1666,10 +1672,10 @@ optimaization_params optimizer::back_tracking_line_search( const z_frame_data & 
     new_params.curr_calib.rot = extract_rotation_from_angles( new_params.curr_calib.rot_angles );
     new_params.curr_calib.calc_p_mat();
 
-    auto uvmap = get_texture_map( z_data.vertices_all, curr_params.curr_calib );
+    auto uvmap = get_texture_map( z_data.vertices, curr_params.curr_calib );
     curr_params.cost = calc_cost( z_data, yuy_data, uvmap );
 
-    uvmap = get_texture_map( z_data.vertices_all, new_params.curr_calib );
+    uvmap = get_texture_map( z_data.vertices, new_params.curr_calib );
     new_params.cost = calc_cost( z_data, yuy_data, uvmap );
 
     auto iter_count = 0;
@@ -1682,7 +1688,7 @@ optimaization_params optimizer::back_tracking_line_search( const z_frame_data & 
         new_params.curr_calib.rot = extract_rotation_from_angles( new_params.curr_calib.rot_angles );
         new_params.curr_calib.calc_p_mat();
 
-        uvmap = get_texture_map( z_data.vertices_all, new_params.curr_calib );
+        uvmap = get_texture_map( z_data.vertices, new_params.curr_calib );
         new_params.cost = calc_cost( z_data, yuy_data, uvmap );
     }
 

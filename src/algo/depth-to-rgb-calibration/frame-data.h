@@ -74,7 +74,7 @@ namespace depth_to_rgb_calibration {
         //std::vector< uint16_t> closest;
         std::vector<double> weights;
         std::vector<double> direction_deg;
-        std::vector<double3> vertices_all;
+        std::vector<double3> vertices_all; //vertices_all
 
         //smearing
         std::vector< byte > section_map_depth;

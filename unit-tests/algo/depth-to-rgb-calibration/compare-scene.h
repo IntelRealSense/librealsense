@@ -110,9 +110,10 @@ void compare_scene( std::string const & scene_dir )
     CHECK(compare_to_bin_file< double >(depth_data.is_inside, scene_dir, "isInside", 1, 4259,  "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.subpixels_x, scene_dir, "Z_xim", 1, 2506,  "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.subpixels_y, scene_dir, "Z_yim", 1, 2506, "double_00", compare_same_vectors));
-    CHECK(compare_to_bin_file< double >(depth_data.closest, scene_dir, "Z_valuesForSubEdges", 1, 2506, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(depth_data.closest, scene_dir, "zValuesForSubEdges", 1, 2506, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.grad_in_direction_inside, scene_dir, "zGradInDirection", 1, 2506,  "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.directions, scene_dir, "directionIndexInside", 1, 2506,  "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(depth_data.weights, scene_dir, "weights", 1, 2506, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< algo::double3 >(depth_data.vertices, scene_dir, bin_file("vertices", 3, 2506, "double_00") + ".bin", 2506, 1, compare_same_vectors));
     //CHECK(compare_to_bin_file< uint8_t >(depth_data.section_map_depth_inside, scene_dir, "sectionMapDepthInside", 1, 2506,  "uint8_00", compare_same_vectors));
 #endif
