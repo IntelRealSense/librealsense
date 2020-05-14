@@ -19,8 +19,8 @@ set(LIVE ${CMAKE_BINARY_DIR}/third-party/live)
 file(GLOB RS_SERVER_SOURCES
     "*.h*"
     "*.c*"
-	"../../src/ipDeviceCommon/*.h*"
-	"../../src/ipDeviceCommon/*.c*"
+    "../../src/ipDeviceCommon/*.h*"
+    "../../src/ipDeviceCommon/*.c*"
     "${LIVE}/groupsock/*.c*"
     "${LIVE}/BasicUsageEnvironment/*.c*"
     "${LIVE}/liveMedia/*.c*"
@@ -31,15 +31,15 @@ file(GLOB RS_SERVER_SOURCES
 add_executable(${PROJECT_NAME} ${RS_SERVER_SOURCES})
 
 include_directories(${PROJECT_NAME}
-	../../common
-	../../src/ipDeviceCommon
-	../../include/librealsense2
-	../../third-party/tclap/include
-	../../third-party/easyloggingpp/src
-	${LIVE}/groupsock/include 
-	${LIVE}/liveMedia/include  
-	${LIVE}/UsageEnvironment/include 
-	${LIVE}/BasicUsageEnvironment/include     
+    ../../common
+    ../../src/ipDeviceCommon
+    ../../include/librealsense2
+    ../../third-party/tclap/include
+    ../../third-party/easyloggingpp/src
+    ${LIVE}/groupsock/include 
+    ${LIVE}/liveMedia/include  
+    ${LIVE}/UsageEnvironment/include 
+    ${LIVE}/BasicUsageEnvironment/include     
 )
 
 if(WIN32)
