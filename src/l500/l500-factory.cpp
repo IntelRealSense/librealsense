@@ -110,12 +110,12 @@ namespace librealsense
                 platform::usb_device_info hwm;
 
                 if (!ivcam2::try_fetch_usb_device(group.usb_devices, depth, hwm))
-                    LOG_WARNING("try_fetch_usb_device(...) failed.");
+                    LOG_DEBUG("try_fetch_usb_device(...) failed.");
 
                 if(g.first[0].pid != L500_PID)
                     if (g.second.size() < 2)
                     {
-                        LOG_WARNING("L500 partial enum: " << g.second.size() << " HID devices were recognized (2+ expected)");
+                        LOG_DEBUG("L500 partial enum: " << g.second.size() << " HID devices were recognized (2+ expected)");
 #if !defined(ANDROID) && !defined(__APPLE__) // Not supported by android & macos
                         continue;
 #endif // Not supported by android & macos
@@ -127,7 +127,7 @@ namespace librealsense
             }
             else
             {
-                LOG_WARNING("L500 group_devices is empty.");
+                LOG_DEBUG("L500 group_devices is empty.");
             }
         }
 

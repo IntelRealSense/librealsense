@@ -362,6 +362,7 @@ namespace librealsense
                 list.push_back(dev);
         }
 
+        LOG_INFO( "Found " << list.size() << " RealSense devices (mask " << mask << ")" );
         return list;
     }
 

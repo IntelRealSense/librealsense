@@ -84,7 +84,7 @@ namespace librealsense
                 if (to_throw)
                     throw windows_backend_exception(descr);
                 else
-                    LOG_INFO(descr);
+                    LOG_DEBUG(descr);
 
                 return false;
             }
