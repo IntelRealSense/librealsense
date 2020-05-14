@@ -87,7 +87,8 @@ void compare_scene( std::string const & scene_dir )
 
     CHECK(compare_to_bin_file< double >(ir_data.local_edges, scene_dir, "localEdges", 4, 105794,  "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< uint8_t >(ir_data.is_supressed, scene_dir, "isSupressed", 1, 105794,  "uint8_00", compare_same_vectors));
-    CHECK(compare_to_bin_file< double >(ir_data.fraq_step, scene_dir, "fraqStep", 1, 105794,  "double_00", compare_same_vectors));
+    //CHECK(compare_to_bin_file< double >(ir_data.fraq_step, scene_dir, "fraqStep2", 1, 105794,  "single_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(ir_data.fraq_step, scene_dir, "fraqStep", 1, 105794, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.local_rc_subpixel, scene_dir, "locRCsub", 2, 105794,  "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.local_x, scene_dir, "localZx", 2, 105794,  "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.local_y, scene_dir, "localZy", 2, 105794,  "double_00", compare_same_vectors));
@@ -105,8 +106,9 @@ void compare_scene( std::string const & scene_dir )
     CHECK(compare_to_bin_file< double >(depth_data.valid_edge_sub_pixel_x, scene_dir, "xim", 1, 4259,  "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.valid_edge_sub_pixel_y, scene_dir, "yim", 1, 4259,  "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double>(depth_data.sub_points, scene_dir, "subPoints", 3, 4259, "double_00", compare_same_vectors));
-    CHECK(compare_to_bin_file< algo::double3>(depth_data.vertices_all, scene_dir, "vertices", 3, 4259,  "double_00", compare_same_vectors));
-    CHECK(compare_to_bin_file< algo::double2>(depth_data.uvmap, scene_dir, "uv", 2, 4259, "double_00", compare_same_vectors));
+    //CHECK(compare_to_bin_file< algo::double3>(depth_data.vertices_all, scene_dir, "vertices_all", 3, 4259,  "double_00", compare_same_vectors));
+    //CHECK(compare_to_bin_file< algo::double2>(depth_data.uvmap, scene_dir, "uv", 2, 4259, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< algo::double2 >(depth_data.uvmap, scene_dir, bin_file("uv", 2, 4259, "double_00") + ".bin", 4259, 2, compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.is_inside, scene_dir, "isInside", 1, 4259,  "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.subpixels_x, scene_dir, "Z_xim", 1, 2506,  "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.subpixels_y, scene_dir, "Z_yim", 1, 2506, "double_00", compare_same_vectors));
@@ -114,7 +116,8 @@ void compare_scene( std::string const & scene_dir )
     CHECK(compare_to_bin_file< double >(depth_data.closest, scene_dir, "Z_valuesForSubEdges", 1, 2506, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.grad_in_direction_inside, scene_dir, "zGradInDirection", 1, 2506,  "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.directions, scene_dir, "directionIndexInside", 1, 2506,  "double_00", compare_same_vectors));
-    CHECK(compare_to_bin_file< algo::double3 >(depth_data.vertices, scene_dir, "vertices", 3, 2506,  "double_00", compare_same_vectors));
+    //CHECK(compare_to_bin_file< algo::double3 >(depth_data.vertices, scene_dir, "vertices", 3, 2506,  "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< algo::double3 >(depth_data.vertices, scene_dir, bin_file("vertices", 3, 2506, "double_00") + ".bin", 2506, 1, compare_same_vectors));
     //CHECK(compare_to_bin_file< uint8_t >(depth_data.section_map_depth_inside, scene_dir, "sectionMapDepthInside", 1, 2506,  "uint8_00", compare_same_vectors));
 #endif
 #if 0
@@ -148,7 +151,7 @@ void compare_scene( std::string const & scene_dir )
     CHECK( compare_to_bin_file< double >( yuy_data.gaussian_diff_masked, scene_dir, "IDiffMasked", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
     CHECK( compare_to_bin_file< uint8_t >( yuy_data.move_suspect, scene_dir, "ixMoveSuspect", rgb_w, rgb_h, "uint8_00", compare_same_vectors ) );
 #endif
-#if 1
+#if 0
     //--
     TRACE( "\nOptimizing:" );
     auto cb = [&]( algo::iteration_data_collect const & data )

@@ -17,7 +17,7 @@
 //     REQUIRE( <val> == Approx(2.1).epsilon(0.01) );  // allow up to 1% diff
 // So we want a macro that does this automatically:
 #if ! defined( __EPSILON )
-#define __EPSILON (std::numeric_limits<float>::epsilon()*1000)
+#define __EPSILON (std::numeric_limits<float>::epsilon())
 #endif
 #define approx(X) Approx(X).epsilon(__EPSILON)
 // Because we have our own macro (and because it's more verbose) we do NOT want
