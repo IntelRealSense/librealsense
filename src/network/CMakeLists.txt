@@ -15,64 +15,64 @@ add_definitions(-DNEWLOCALE_NOT_USED=1 -DBSD=1 -DSOCKLEN_T=socklen_t -D_FILE_OFF
 #target_compile_definitions(${PROJECT_NAME} PUBLIC RESPONSE_BUFFER_SIZE=100000)
 
 set(RS_CLIENT_NET_CPP
-	./client/RsMediaSession.cpp
-	./client/RsMediaSession.h
-	./client/RsNetDevice.cpp
-	./client/RsNetDevice.h
-	./client/RsRtpCallback.h
-	./client/RsRtpStream.h
-	./client/RsRtsp.h
-	./client/RsRtspClient.cpp
-	./client/RsRtspClient.h
-	./client/RsSink.cpp
-	./client/RsSink.h
+    ./client/RsMediaSession.cpp
+    ./client/RsMediaSession.h
+    ./client/RsNetDevice.cpp
+    ./client/RsNetDevice.h
+    ./client/RsRtpCallback.h
+    ./client/RsRtpStream.h
+    ./client/RsRtsp.h
+    ./client/RsRtspClient.cpp
+    ./client/RsRtspClient.h
+    ./client/RsSink.cpp
+    ./client/RsSink.h
 )
 
 set(RS_COMMON_NET_CPP
-	./common/RsCommon.h
-	./common/RsUsageEnvironment.cpp
-	./common/RsUsageEnvironment.h
+    ./common/RsCommon.h
+    ./common/RsUsageEnvironment.cpp
+    ./common/RsUsageEnvironment.h
 )
 
 set(RS_COMP_NET_CPP
-	./compression/CompressionFactory.cpp
-	./compression/CompressionFactory.h
-	./compression/ICompression.h
-	./compression/JpegCompression.cpp
-	./compression/JpegCompression.h
-	./compression/Lz4Compression.cpp
-	./compression/Lz4Compression.h
-	./compression/RvlCompression.cpp
-	./compression/RvlCompression.h
-	${LZ4_DIR}/lz4.h 
-	${LZ4_DIR}/lz4.c
+    ./compression/CompressionFactory.cpp
+    ./compression/CompressionFactory.h
+    ./compression/ICompression.h
+    ./compression/JpegCompression.cpp
+    ./compression/JpegCompression.h
+    ./compression/Lz4Compression.cpp
+    ./compression/Lz4Compression.h
+    ./compression/RvlCompression.cpp
+    ./compression/RvlCompression.h
+    ${LZ4_DIR}/lz4.h 
+    ${LZ4_DIR}/lz4.c
 )
 
 set(RS_SERVER_NET_CPP
-	./server/RsDevice.cpp
-	./server/RsDevice.hh
-	./server/RsRTSPServer.cpp
-	./server/RsRTSPServer.hh
-	./server/RsSensor.cpp
-	./server/RsSensor.hh
-	./server/RsServer.cpp
-	./server/RsServer.h
-	./server/RsServerMediaSession.cpp
-	./server/RsServerMediaSession.h
-	./server/RsServerMediaSubsession.cpp
-	./server/RsServerMediaSubsession.h
-	./server/RsSimpleRTPSink.cpp
-	./server/RsSimpleRTPSink.h
-	./server/RsSource.cpp
-	./server/RsSource.hh
+    ./server/RsDevice.cpp
+    ./server/RsDevice.hh
+    ./server/RsRTSPServer.cpp
+    ./server/RsRTSPServer.hh
+    ./server/RsSensor.cpp
+    ./server/RsSensor.hh
+    ./server/RsServer.cpp
+    ./server/RsServer.h
+    ./server/RsServerMediaSession.cpp
+    ./server/RsServerMediaSession.h
+    ./server/RsServerMediaSubsession.cpp
+    ./server/RsServerMediaSubsession.h
+    ./server/RsSimpleRTPSink.cpp
+    ./server/RsSimpleRTPSink.h
+    ./server/RsSource.cpp
+    ./server/RsSource.hh
 )
 
 set(REALSENSE_NET_CPP 
-	${RS_CLIENT_NET_CPP} 
-	${RS_COMMON_NET_CPP} 
-	${RS_COMP_NET_CPP} 
-	${RS_SERVER_NET_CPP}
-	rs_net.cpp
+    ${RS_CLIENT_NET_CPP} 
+    ${RS_COMMON_NET_CPP} 
+    ${RS_COMP_NET_CPP} 
+    ${RS_SERVER_NET_CPP}
+    rs_net.cpp
 )
 
 set(LIVE ${CMAKE_BINARY_DIR}/third-party/live)
@@ -103,16 +103,16 @@ set(REALSENSE_NET_PUBLIC_HEADERS
 set(CMAKECONFIG_NET_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
 
 include_directories(${PROJECT_NAME}
-	./
+    ./
     ./common
     ./client
     ./server
-	./compression
+    ./compression
 
-	../
+    ../
     ../../common
     ../../third-party/easyloggingpp/src
-	../../third-party/tclap/include
+    ../../third-party/tclap/include
 
     ${CMAKE_BINARY_DIR}/libjpeg-turbo/include
 
@@ -148,9 +148,9 @@ if(WIN32)
     add_definitions(-DELPP_WINSOCK2)
         
     set(WINLIB Ws2_32.lib)
-	set(JPGLIB "${CMAKE_BINARY_DIR}/libjpeg-turbo/lib/turbojpeg-static.lib")
+    set(JPGLIB "${CMAKE_BINARY_DIR}/libjpeg-turbo/lib/turbojpeg-static.lib")
 else(WIN32)
-	set(JPGLIB "${CMAKE_BINARY_DIR}/libjpeg-turbo/lib/libturbojpeg.a")
+    set(JPGLIB "${CMAKE_BINARY_DIR}/libjpeg-turbo/lib/libturbojpeg.a")
 endif(WIN32)
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
