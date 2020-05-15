@@ -2654,7 +2654,7 @@ namespace rs2
             glEnable(GL_DEPTH_TEST);
 
             // calculate center of the ruler line
-            float3 ctr = (selected_points[0].pos + selected_points[1].pos) / 2;
+            float3 ctr = selected_points[0].pos + (selected_points[1].pos - selected_points[0].pos) / 2;
             float distance = (selected_points[1].pos - selected_points[0].pos).length();
             draw_label(ctr, distance, win.framebuf_height());
         }
