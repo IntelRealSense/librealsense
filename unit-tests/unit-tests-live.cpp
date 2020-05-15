@@ -4442,7 +4442,7 @@ TEST_CASE("Empty Pipeline Profile", "[live][pipeline][using_pipeline]") {
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
-        REQUIRE_NOTHROW(rs2::pipeline_profile p);
+        REQUIRE_NOTHROW(rs2::pipeline_profile());
         rs2::pipeline_profile prof;
         REQUIRE_FALSE(prof);
         rs2::device dev;
@@ -4520,7 +4520,7 @@ TEST_CASE("Pipeline empty Config", "[live][pipeline][using_pipeline]") {
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
-        REQUIRE_NOTHROW(rs2::config c);
+        REQUIRE_NOTHROW(rs2::config());
         //Empty config
         rs2::pipeline p(ctx);
         rs2::config c1;
@@ -4541,8 +4541,6 @@ TEST_CASE("Pipeline 2 Configs", "[live][pipeline][using_pipeline]") {
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
         rs2::pipeline p(ctx);
-        REQUIRE_NOTHROW(rs2::config c1);
-        REQUIRE_NOTHROW(rs2::config c2);
         rs2::config c1;
         rs2::config c2;
         bool can_resolve1 = false;
@@ -5636,7 +5634,7 @@ TEST_CASE("Positional_Sensors_API", "[live]")
         {
             CAPTURE(dev);
             REQUIRE(dev.is<rs2::tm2>());
-            REQUIRE_NOTHROW(auto tmp_pos = dev.first<rs2::pose_sensor>());
+            REQUIRE_NOTHROW(dev.first<rs2::pose_sensor>());
             auto pose_snr = dev.first<rs2::pose_sensor>();
             CAPTURE(pose_snr);
             REQUIRE(pose_snr);

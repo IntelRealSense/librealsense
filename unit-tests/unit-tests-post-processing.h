@@ -252,7 +252,7 @@ inline bool load_test_configuration(const std::string test_name, ppf_test_config
     for (auto i = 0; i < test_config.frames_sequence_size; i++)
     {
         CAPTURE(test_config._input_frames[i].size());
-        CAPTURE(test_config._output_frames[i].size())
+        CAPTURE(test_config._output_frames[i].size());
     }
 
     CAPTURE(test_config.output_res_x);
@@ -380,8 +380,9 @@ inline bool profile_diffs(const std::string& plot_name, std::vector<T>& distance
     CAPTURE(max_allowed_std);
     CAPTURE(frame_idx);
 
-    INTERNAL_CATCH_TEST((standard_deviation <= max_allowed_std), Catch::ResultDisposition::ContinueOnFailure, "CHECK");
-    INTERNAL_CATCH_TEST((fabs((max_val)) <= outlier), Catch::ResultDisposition::ContinueOnFailure, "CHECK");
+    // CHECK is redefined in ELPP, so we lose the Catch2 version, which expands to:
+    INTERNAL_CATCH_TEST( "CHECK", Catch::ResultDisposition::ContinueOnFailure, standard_deviation <= max_allowed_std );
+    INTERNAL_CATCH_TEST( "CHECK", Catch::ResultDisposition::ContinueOnFailure, fabs( max_val ) <= outlier );
     //REQUIRE(standard_deviation <= max_allowed_std);
     //REQUIRE(fabs((max_val)) <= outlier);
 
