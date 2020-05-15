@@ -84,13 +84,51 @@ namespace depth_to_rgb_calibration {
         double translation[3]; /**< Three-element translation vector, in meters */
     };
 
+	struct p_matrix
+	{
+		double vals[12];
+
+		bool operator==(const p_matrix& other)
+		{
+			for (auto i = 0; i < 12; i++)
+			{
+				if (vals[i] != other.vals[i])
+					return false;
+			}
+			return true;
+		}
+		bool operator!=(const p_matrix& other)
+		{
+			return !(*this == other);
+		}
+
+		bool operator<(const p_matrix& other)
+		{
+			for (auto i = 0; i < 12; i++)
+			{
+				if (vals[i] < other.vals[i])
+					return false;
+				if (vals[i] > other.vals[i])
+					return true;
+			}
+			return true;
+		}
+		p_matrix operator*(double step_size) const;
+		p_matrix operator/(double factor) const;
+		p_matrix operator+(const p_matrix& c) const;
+		p_matrix operator-(const p_matrix& c) const;
+		p_matrix operator/(const p_matrix& c) const;
+		double get_norma();
+		double sum();
+		p_matrix normalize();
+
+	};
+
     struct calib
     {
-        rotation_in_angles rot_angles = { 0 };
         rotation rot = { { 0 } };
         translation trans = { 0 };
-        k_matrix k_mat = { 0 };
-        p_matrix p_mat = { { 0 } };
+        k_matrix k_mat = { 0 }; 
         int           width = 0;
         int           height = 0;
         rs2_distortion model;
@@ -103,9 +141,8 @@ namespace depth_to_rgb_calibration {
 
         rs2_intrinsics_double get_intrinsics() const;
         rs2_extrinsics_double get_extrinsics() const;
-        p_matrix const & get_p_matrix() const;
 
-        p_matrix const & calc_p_mat();
+        p_matrix const calc_p_mat() const;
 
         void copy_coefs( calib & obj ) const;
         calib operator*( double step_size ) const;
@@ -113,18 +150,9 @@ namespace depth_to_rgb_calibration {
         calib operator+( const calib& c ) const;
         calib operator-( const calib& c ) const;
         calib operator/( const calib& c ) const;
-        double get_norma();
-        double sum();
-        calib normalize();
     };
 
-
-    // Map 3D points to a UV-map given a calibration
-    std::vector< double2 > get_texture_map(
-        std::vector< double3 > const & points,
-        calib const & curr_calib
-    );
-
+	calib decompose(p_matrix mat);
 
 }
 }

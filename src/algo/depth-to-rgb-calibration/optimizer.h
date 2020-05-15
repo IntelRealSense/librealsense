@@ -20,8 +20,8 @@ namespace depth_to_rgb_calibration {
 
     struct optimaization_params
     {
-        calib curr_calib;
-        calib calib_gradients;
+        p_matrix curr_p_mat;
+		p_matrix calib_gradients;
         double cost;
         double step_size = 0;
     };
@@ -52,7 +52,7 @@ namespace depth_to_rgb_calibration {
         double min_weighted_edge_per_section = 19.5313;
         size_t num_of_sections_for_edge_distribution_x = 2;
         size_t num_of_sections_for_edge_distribution_y = 2;
-        calib normelize_mat;
+		p_matrix normelize_mat;
 
         double edge_distribution_min_max_ratio = 0.005;
         double grad_dir_ratio = 10;
@@ -170,6 +170,7 @@ namespace depth_to_rgb_calibration {
         z_frame_data _z;
         z_frame_data _depth;
         calib _original_calibration;         // starting state of auto-calibration
+		calib _final_calibration;         // starting state of auto-calibration
         calib _factory_calibration;          // factory default calibration of the camera
         optimaization_params _params_curr;   // last-known setting
     };

@@ -125,10 +125,10 @@ void compare_scene( std::string const & scene_dir )
         // data.iteration is 0-based!
         REQUIRE( data.iteration < md.n_iterations );
 
-        auto file = bin_file( "calib_iteration", data.iteration + 1, num_of_calib_elements, 1, "double_00.bin" );
-        CHECK( compare_calib_to_bin_file( data.params.curr_calib, data.params.cost, scene_dir, file ) );
+        /*auto file = bin_file( "calib_iteration", data.iteration + 1, num_of_calib_elements, 1, "double_00.bin" );
+        ( compare_calib_to_bin_file( data.params.curr_p_mat.vals, data.params.cost, scene_dir, file ) );*/
 
-        file = bin_file( "uvmap_iteration", data.iteration + 1, 2, md.n_edges, "double_00.bin" );
+        auto file = bin_file( "uvmap_iteration", data.iteration + 1, 2, md.n_edges, "double_00.bin" );
         CHECK( compare_to_bin_file< algo::double2 >( data.uvmap, scene_dir, file, md.n_edges, 1, compare_same_vectors ) );
 
         file = bin_file( "DVals_iteration", data.iteration + 1, 1, md.n_edges, "double_00.bin" );

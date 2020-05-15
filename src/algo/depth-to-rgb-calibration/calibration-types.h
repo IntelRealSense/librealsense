@@ -79,37 +79,6 @@ namespace depth_to_rgb_calibration {
     rotation extract_rotation_from_angles( const rotation_in_angles & rot_angles );
     rotation_in_angles extract_angles_from_rotation( const double r[9] );
 
-    struct p_matrix
-    {
-        double vals[12];
-
-        bool operator==(const p_matrix& other)
-        {
-            for (auto i = 0; i < 12; i++)
-            {
-                if (vals[i] != other.vals[i])
-                    return false;
-            }
-            return true;
-        }
-        bool operator!=(const p_matrix& other)
-        {
-            return !(*this == other);
-        }
-
-        bool operator<(const p_matrix& other)
-        {
-            for (auto i = 0; i < 12; i++)
-            {
-                if (vals[i] < other.vals[i])
-                    return false;
-                if (vals[i] > other.vals[i])
-                    return true;
-            }
-            return true;
-        }
-    };
-
     struct k_matrix
     {
         double fx;

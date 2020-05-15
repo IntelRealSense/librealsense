@@ -618,7 +618,7 @@ void optimizer::set_yuy_data(
 )
 {
     _original_calibration = calibration;
-    _original_calibration.calc_p_mat();
+
     _yuy.width = calibration.width;
     _yuy.height = calibration.height;
     _params.set_rgb_resolution( _yuy.width, _yuy.height );
@@ -945,13 +945,14 @@ std::vector<double3> optimizer::subedges2vertices(z_frame_data& z_data, const rs
 static p_matrix calc_p_gradients(const z_frame_data & z_data, 
     const yuy2_frame_data & yuy_data, 
     std::vector<double> interp_IDT_x, 
-    std::vector<double> interp_IDT_y, 
-    const calib& yuy_intrin_extrin, 
+    std::vector<double> interp_IDT_y,
+	const calib & cal,
+	const p_matrix & p_mat,
     const std::vector<double>& rc, 
     const std::vector<double2>& xy,
     iteration_data_collect * data = nullptr)
 {
-    auto coefs = calc_p_coefs(z_data, yuy_data, yuy_intrin_extrin, rc, xy);
+    auto coefs = calc_p_coefs(z_data, yuy_data, cal, p_mat, rc, xy);
     auto w = z_data.weights;
 
     if (data)
@@ -977,126 +978,11 @@ static p_matrix calc_p_gradients(const z_frame_data & z_data,
     p_matrix averages;
     for (auto i = 0; i < 12; i++)
     {
-        averages.vals[i] += (double)sums.vals[i] / (double)sum_of_valids;
+        averages.vals[i] = (double)sums.vals[i] / (double)sum_of_valids;
     }
 
     return averages;
 }
-
-static translation calc_translation_gradients( const z_frame_data & z_data, const yuy2_frame_data & yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib& yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy )
-{
-    auto coefs = calc_translation_coefs( z_data, yuy_data, yuy_intrin_extrin, rc, xy );
-    auto w = z_data.weights;
-
-    translation sums = { 0 };
-    auto sum_of_valids = 0;
-
-    for( auto i = 0; i < coefs.x_coeffs.size(); i++ )
-    {
-        if( interp_IDT_x[i] == std::numeric_limits<double>::max() || interp_IDT_y[i] == std::numeric_limits<double>::max() )
-            continue;
-
-        sum_of_valids++;
-
-        sums.t1 += w[i] * (interp_IDT_x[i] * coefs.x_coeffs[i].t1 + interp_IDT_y[i] * coefs.y_coeffs[i].t1);
-        sums.t2 += w[i] * (interp_IDT_x[i] * coefs.x_coeffs[i].t2 + interp_IDT_y[i] * coefs.y_coeffs[i].t2);
-        sums.t3 += w[i] * (interp_IDT_x[i] * coefs.x_coeffs[i].t3 + interp_IDT_y[i] * coefs.y_coeffs[i].t3);
-    }
-
-    translation averages{ (double)sums.t1 / (double)sum_of_valids,
-        (double)sums.t2 / (double)sum_of_valids,
-        (double)sums.t3 / (double)sum_of_valids };
-
-
-    return averages;
-}
-
-static rotation_in_angles calc_rotation_gradients(
-    const z_frame_data & z_data,
-    const yuy2_frame_data & yuy_data,
-    std::vector<double> interp_IDT_x,
-    std::vector<double> interp_IDT_y,
-    const calib & yuy_intrin_extrin,
-    const std::vector<double>& rc,
-    const std::vector<double2>& xy,
-    iteration_data_collect * data = nullptr
-)
-{
-    auto coefs = calc_rotation_coefs( z_data, yuy_data, yuy_intrin_extrin, rc, xy );
-
-    if (data)
-        data->coeffs_r = coefs;
-
-    auto w = z_data.weights;
-
-    rotation_in_angles sums = { 0 };
-    double sum_alpha = 0;
-    double sum_beta = 0;
-    double sum_gamma = 0;
-
-    auto sum_of_valids = 0;
-
-    for( auto i = 0; i < coefs.x_coeffs.size(); i++ )
-    {
-
-        if( interp_IDT_x[i] == std::numeric_limits<double>::max() || interp_IDT_y[i] == std::numeric_limits<double>::max() )
-            continue;
-
-        sum_of_valids++;
-
-        sum_alpha += (double)w[i] * (double)((double)interp_IDT_x[i] * (double)coefs.x_coeffs[i].alpha + (double)interp_IDT_y[i] * (double)coefs.y_coeffs[i].alpha);
-        sum_beta += (double)w[i] * (double)((double)interp_IDT_x[i] * (double)coefs.x_coeffs[i].beta + (double)interp_IDT_y[i] * (double)coefs.y_coeffs[i].beta);
-        sum_gamma += (double)w[i] * (double)((double)interp_IDT_x[i] * (double)coefs.x_coeffs[i].gamma + (double)interp_IDT_y[i] * (double)coefs.y_coeffs[i].gamma);
-    }
-
-    rotation_in_angles averages{ sum_alpha / (double)sum_of_valids,
-        sum_beta / (double)sum_of_valids,
-        sum_gamma / (double)sum_of_valids };
-
-    return averages;
-}
-
-static k_matrix calc_k_gradients( const z_frame_data & z_data, const yuy2_frame_data & yuy_data, 
-    std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib & yuy_intrin_extrin, 
-    const std::vector<double>& rc, const std::vector<double2>& xy,
-    iteration_data_collect * data = nullptr)
-{
-    auto coefs = calc_k_gradients_coefs( z_data, yuy_data, yuy_intrin_extrin, rc, xy );
-    if (data)
-        data->coeffs_k = coefs;
-
-    auto w = z_data.weights;
-
-    rotation_in_angles sums = { 0 };
-    double sum_fx = 0;
-    double sum_fy = 0;
-    double sum_ppx = 0;
-    double sum_ppy = 0;
-
-    auto sum_of_valids = 0;
-
-    for( auto i = 0; i < coefs.x_coeffs.size(); i++ )
-    {
-
-        if( interp_IDT_x[i] == std::numeric_limits<double>::max() || interp_IDT_y[i] == std::numeric_limits<double>::max() )
-            continue;
-
-        sum_of_valids++;
-
-        sum_fx += w[i] * (interp_IDT_x[i] * coefs.x_coeffs[i].fx + interp_IDT_y[i] * coefs.y_coeffs[i].fx);
-        sum_fy += w[i] * (interp_IDT_x[i] * coefs.x_coeffs[i].fy + interp_IDT_y[i] * coefs.y_coeffs[i].fy);
-        sum_ppx += w[i] * (interp_IDT_x[i] * coefs.x_coeffs[i].ppx + interp_IDT_y[i] * coefs.y_coeffs[i].ppx);
-        sum_ppy += w[i] * (interp_IDT_x[i] * coefs.x_coeffs[i].ppy + interp_IDT_y[i] * coefs.y_coeffs[i].ppy);
-
-    }
-    k_matrix averages{ sum_fx / (double)sum_of_valids,
-        sum_fy / (double)sum_of_valids,
-        sum_ppx / (double)sum_of_valids,
-        sum_ppy / (double)sum_of_valids };
-
-    return averages;
-}
-
 
 static
 std::pair< std::vector<double2>, std::vector<double>> calc_rc(
@@ -1154,32 +1040,23 @@ std::pair< std::vector<double2>, std::vector<double>> calc_rc(
     return { f1,rc };
 }
 
-static calib calc_gradients(
+static p_matrix calc_gradients(
     const z_frame_data& z_data,
     const yuy2_frame_data& yuy_data,
     const std::vector<double2>& uv,
-    const calib& curr_calib,
+	const calib & cal,
+	const p_matrix & p_mat,
     iteration_data_collect * data = nullptr
 )
 {
-    calib res;
+    p_matrix res;
     auto interp_IDT_x = biliniar_interp( yuy_data.edges_IDTx, yuy_data.width, yuy_data.height, uv );
     if( data )
         data->d_vals_x = interp_IDT_x;
-#if 0
-    std::ofstream f;
-    f.open( "res" );
-    f.precision( 16 );
-    for( auto i = 0; i < interp_IDT_x.size(); i++ )
-    {
-        f << uv[i].x << " " << uv[i].y << std::endl;
-    }
-    f.close();
-#endif
 
     auto interp_IDT_y = biliniar_interp( yuy_data.edges_IDTy, yuy_data.width, yuy_data.height, uv );
 
-    auto rc = calc_rc( z_data, yuy_data, curr_calib );
+    auto rc = calc_rc( z_data, yuy_data, cal);
 
     if (data)
     {
@@ -1188,35 +1065,41 @@ static calib calc_gradients(
         data->rc = rc.second;
     }
         
-    res.p_mat = calc_p_gradients(z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first, data);
-    res.rot_angles = calc_rotation_gradients( z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first, data);
-    res.trans = calc_translation_gradients( z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first );
-    res.k_mat = calc_k_gradients( z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first, data );
-    res.rot = extract_rotation_from_angles( res.rot_angles );
+    res = calc_p_gradients( z_data, yuy_data, interp_IDT_x, interp_IDT_y, cal, p_mat, rc.second, rc.first, data );
     return res;
 }
 
-std::pair<double, calib> calc_cost_and_grad(
+std::pair<double, p_matrix> calc_cost_and_grad(
     const z_frame_data & z_data,
     const yuy2_frame_data & yuy_data,
-    const calib& curr_calib,
+	const calib & cal,
+	const p_matrix & p_mat,
     iteration_data_collect * data = nullptr
 )
 {
-    auto uvmap = get_texture_map(z_data.vertices, curr_calib);
+    auto uvmap = get_texture_map(z_data.vertices, cal, p_mat);
     if( data )
         data->uvmap = uvmap;
 
     auto cost = calc_cost(z_data, yuy_data, uvmap, data ? &data->d_vals : nullptr );
-    auto grad = calc_gradients(z_data, yuy_data, uvmap, curr_calib, data);
+    auto grad = calc_gradients(z_data, yuy_data, uvmap, cal, p_mat, data);
     return { cost, grad };
 }
 
 params::params()
 {
-    normelize_mat.k_mat = { 0.354172020000000, 0.265703050000000,1.001765500000000, 1.006649100000000 };
-    normelize_mat.rot_angles = { 1508.94780000000, 1604.94300000000,649.384340000000 };
-    normelize_mat.trans = { 0.913008390000000, 0.916982890000000, 0.433054570000000 };
+	normelize_mat.vals[0] = 0.353692440000000;
+	normelize_mat.vals[1] = 0.266197740000000;
+	normelize_mat.vals[2] = 1.00926010000000;
+	normelize_mat.vals[3] = 0.000673204490000000;
+	normelize_mat.vals[4] = 0.355085250000000;
+	normelize_mat.vals[5] = 0.266275050000000;
+	normelize_mat.vals[6] = 1.01145800000000;
+	normelize_mat.vals[7] = 0.000675013750000000;
+	normelize_mat.vals[8] = 414.205570000000;
+	normelize_mat.vals[9] = 313.341060000000;
+	normelize_mat.vals[10] = 1187.34590000000;
+	normelize_mat.vals[11] = 0.791570250000000;
 
     // NOTE: until we know the resolution, the current state is just the default!
     // We need to get the depth and rgb resolutions to make final decisions!
@@ -1241,7 +1124,7 @@ void params::set_rgb_resolution( size_t width, size_t height )
 
 calib const & optimizer::get_calibration() const
 {
-    return _params_curr.curr_calib;
+    return _final_calibration;
 }
 
 double optimizer::get_cost() const
@@ -1338,13 +1221,6 @@ void write_matlab_camera_params_file(
         write_obj( f, (double)_extr.translation[i] );
     }
 
-    auto p_mat = rgb_calibration.get_p_matrix();
-
-    for( auto i = 0; i < 12; i++ )
-    {
-        write_obj( f, p_mat.vals[i] );
-    }
-
     f.close();
 }
 
@@ -1381,7 +1257,9 @@ void optimizer::write_data_to( std::string const & dir )
     }
 }
 
-optimaization_params optimizer::back_tracking_line_search( const z_frame_data & z_data, const yuy2_frame_data& yuy_data, optimaization_params curr_params )
+optimaization_params optimizer::back_tracking_line_search( const z_frame_data & z_data, 
+	const yuy2_frame_data& yuy_data, 
+	optimaization_params curr_params )
 {
     optimaization_params new_params;
 
@@ -1394,16 +1272,13 @@ optimaization_params optimizer::back_tracking_line_search( const z_frame_data & 
     auto t = calc_t( curr_params );
     auto step_size = calc_step_size( curr_params );
 
-    curr_params.curr_calib.rot_angles = extract_angles_from_rotation( curr_params.curr_calib.rot.rot );
     auto movement = unit_grad * step_size;
-    new_params.curr_calib = curr_params.curr_calib + movement;
-    new_params.curr_calib.rot = extract_rotation_from_angles( new_params.curr_calib.rot_angles );
-    new_params.curr_calib.calc_p_mat();
-
-    auto uvmap = get_texture_map( z_data.vertices, curr_params.curr_calib );
+    new_params.curr_p_mat = curr_params.curr_p_mat + movement;
+    
+    auto uvmap = get_texture_map( z_data.vertices, _original_calibration/*decompose(curr_params.curr_p_mat)*/, curr_params.curr_p_mat);
     curr_params.cost = calc_cost( z_data, yuy_data, uvmap );
 
-    uvmap = get_texture_map( z_data.vertices, new_params.curr_calib );
+    uvmap = get_texture_map( z_data.vertices, _original_calibration/*decompose(new_params.curr_p_mat)*/, new_params.curr_p_mat);
     new_params.cost = calc_cost( z_data, yuy_data, uvmap );
 
     auto iter_count = 0;
@@ -1412,11 +1287,9 @@ optimaization_params optimizer::back_tracking_line_search( const z_frame_data & 
         AC_LOG( DEBUG, "    back tracking line search cost= " << std::fixed << std::setprecision( 15 ) << new_params.cost );
         step_size = _params.tau*step_size;
 
-        new_params.curr_calib = curr_params.curr_calib + unit_grad * step_size;
-        new_params.curr_calib.rot = extract_rotation_from_angles( new_params.curr_calib.rot_angles );
-        new_params.curr_calib.calc_p_mat();
-
-        uvmap = get_texture_map( z_data.vertices, new_params.curr_calib );
+        new_params.curr_p_mat = curr_params.curr_p_mat + unit_grad * step_size;
+       
+        uvmap = get_texture_map( z_data.vertices, _original_calibration/*decompose(new_params.curr_p_mat)*/, new_params.curr_p_mat);
         new_params.cost = calc_cost( z_data, yuy_data, uvmap );
     }
 
@@ -1425,8 +1298,6 @@ optimaization_params optimizer::back_tracking_line_search( const z_frame_data & 
         new_params = orig;
     }
 
-    new_params.curr_calib.calc_p_mat();
-    new_params.curr_calib.rot = extract_rotation_from_angles( new_params.curr_calib.rot_angles );
     return new_params;
 }
 
@@ -1455,10 +1326,9 @@ double optimizer::calc_t( optimaization_params opt_params )
 size_t optimizer::optimize( std::function< void( iteration_data_collect const & data ) > cb )
 {
     optimaization_params params_orig;
-    params_orig.curr_calib = _original_calibration;
-    params_orig.curr_calib.rot_angles = extract_angles_from_rotation( params_orig.curr_calib.rot.rot );
-    params_orig.curr_calib.calc_p_mat();
-    auto res = calc_cost_and_grad( _z, _yuy, params_orig.curr_calib );
+    params_orig.curr_p_mat = _original_calibration.calc_p_mat();
+	
+    auto res = calc_cost_and_grad( _z, _yuy, _original_calibration, params_orig.curr_p_mat );
     params_orig.cost = res.first;
     params_orig.calib_gradients = res.second;
 
@@ -1470,7 +1340,7 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
         iteration_data_collect data;
         data.iteration = n_iterations;
 
-        auto res = calc_cost_and_grad( _z, _yuy, _params_curr.curr_calib, &data );
+        auto res = calc_cost_and_grad( _z, _yuy, _original_calibration/*decompose(_params_curr.curr_p_mat)*/, _params_curr.curr_p_mat, &data );
         _params_curr.cost = res.first;
         _params_curr.calib_gradients = res.second;
         AC_LOG( DEBUG, n_iterations << ": Cost = " << std::fixed << std::setprecision( 15 ) << _params_curr.cost );
@@ -1482,7 +1352,7 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
 
         auto prev_params = _params_curr;
         _params_curr = back_tracking_line_search( _z, _yuy, _params_curr );
-        auto norm = (_params_curr.curr_calib - prev_params.curr_calib).get_norma();
+        auto norm = (_params_curr.curr_p_mat - prev_params.curr_p_mat).get_norma();
         if( norm < _params.min_rgb_mat_delta )
         {
             AC_LOG( DEBUG, "... {normal(new-curr)} " << norm << " < " << _params.min_rgb_mat_delta << " {min_rgb_mat_delta}  -->  stopping" );
