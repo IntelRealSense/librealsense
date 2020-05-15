@@ -585,7 +585,7 @@ namespace librealsense
                                     y /= boost;
 
                                     // origin
-                                    rs2::float3 org{ 0.f, 0.f, -1.f };
+                                    rs2::float3 org{ 0.f, 0.f, 0.f };
                                     rs2::float2 origin = translate_3d_to_2d(org, p, v, f, vp);
                                     auto origin_x = origin.x;
                                     auto origin_y = origin.y;
@@ -635,6 +635,7 @@ namespace librealsense
                                     if (rgba.a > 0)
                                     {
                                         std::vector<rs2::float3> pos_floats(size);
+                                        rs2::float2 w_pos;
                                         for (int i = 0; i < size; i++)
                                         {
                                             auto pos = pos_halfs[i];
@@ -644,7 +645,7 @@ namespace librealsense
                                             pos_floats[i] = { x1, y1, z1 };
 
                                             // for debugging, valid translation from 3d to 2d
-                                            rs2::float2 w_pos = translate_3d_to_2d(pos_floats[i], p, v, f, vp);
+                                            w_pos = translate_3d_to_2d(pos_floats[i], p, v, f, vp);
                                         }
 
                                         if (pos_floats[center].length() < 0.001f)
