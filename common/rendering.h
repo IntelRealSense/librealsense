@@ -276,6 +276,26 @@ namespace rs2
             std::memcpy(mat,vals,sizeof(mat));
         }
 
+        // convert glGetFloatv output to matrix4
+        //
+        //   float m[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+        // into
+        //   rs2::matrix4 m = { {0, 1, 2, 3}, {4, 5, 6, 7}, {8, 9, 10, 11}, {12, 13, 14, 15} };
+        //       0     1     2     3
+        //       4     5     6     7
+        //       8     9    10    11
+        //       12   13    14    15
+        matrix4(float vals[16])
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                for (int j = 0; j < 4; j++)
+                {
+                    mat[i][j] = vals[i * 4 + j];
+                }
+            }
+        }
+
         float& operator()(int i, int j) { return mat[i][j]; }
         const float& operator()(int i, int j) const { return mat[i][j]; }
 
@@ -1613,5 +1633,90 @@ namespace rs2
             for (int j = 0; j < 4; j++)
                 data.mat[i][j] = (i == j) ? 1.f : 0.f;
         return data;
+    }
+
+    // convert 3d points into 2d viewport coordinates
+    inline	float2 translate_3d_to_2d(float3 p3, matrix4 p, matrix4 v, matrix4 f, int32_t vp[4])
+    {
+        //
+        // retrieve model view and projection matrix
+        //
+        //   RS2_GL_MATRIX_CAMERA contains the model view matrix
+        //   RS2_GL_MATRIX_TRANSFORMATION is identity matrix
+        //   RS2_GL_MATRIX_PROJECTION is the projection matrix
+        //
+        // internal representation is in column major order, i.e., 13th, 14th, and 15th elelments
+        // of the 16 element model view matrix represents translations
+        //   float mat[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+        //
+        //   rs2::matrix4 m = { {0, 1, 2, 3}, {4, 5, 6, 7}, {8, 9, 10, 11}, {12, 13, 14, 15} };
+        //       0     1     2     3
+        //       4     5     6     7
+        //       8     9    10    11
+        //       12   13    14    15
+        //
+        // when use matrix4 in glUniformMatrix4fv, transpose option is GL_FALSE so data is passed into
+        // shader as column major order
+        //
+        //			rs2::matrix4 p = get_matrix(RS2_GL_MATRIX_PROJECTION);
+        //			rs2::matrix4 v = get_matrix(RS2_GL_MATRIX_CAMERA);
+        //			rs2::matrix4 f = get_matrix(RS2_GL_MATRIX_TRANSFORMATION);
+
+        // matrix * operation in column major, transpose matrix
+        //   0   4    8   12
+        //   1   5    9   13
+        //   2   6   10   14
+        //   3   7   11   15
+        //
+        matrix4 vc;
+        matrix4 pc;
+        matrix4 fc;
+
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                pc(i, j) = p(j, i);
+                vc(i, j) = v(j, i);
+                fc(i, j) = f(j, i);
+             }
+        }
+
+        // obtain the final transformation matrix
+        auto mvp = pc * vc * fc;
+
+        // test - origin (0, 0, -1.0, 1) should be translated into (0, 0, 0, 1) at this point
+        float4 origin{ 0.f, 0.f, -1.f, 1.f };
+        float4 projected = mvp * origin;
+
+        // translate 3d vertex into 2d windows coordinates
+        float4 p3d;
+        p3d.x = p3.x;
+        p3d.y = p3.y;
+        p3d.z = p3.z;
+        p3d.w = 1.0;
+
+        // transform from object coordinates into clip coordinates
+        float4 p2d = mvp * p3d;
+
+        // clip and normalize
+        p2d.x /= p2d.w;
+        p2d.y /= p2d.w;
+        p2d.z /= p2d.w;
+        p2d.w /= p2d.w;
+
+        p2d.x = clamp(p2d.x, -1.0, 1.0);
+        p2d.y = clamp(p2d.y, -1.0, 1.0);
+        p2d.z = clamp(p2d.z, -1.0, 1.0);
+
+        // viewport coordinates
+        float x_vp = round((p2d.x + 1.0) / 2.0 * vp[2]);
+        float y_vp = round((p2d.y + 1.0) / 2.0 * vp[3]);
+
+        float2 p_w;
+        p_w.x = x_vp;
+        p_w.y = y_vp;
+
+        return p_w;
     }
 }

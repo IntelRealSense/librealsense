@@ -2473,8 +2473,12 @@ namespace rs2
                     //     _cam_renderer.set_option(gl::camera_renderer::OPTION_MOUSE_Y, cursor.y);
                     // }
 
-                    // Render camera model (based on source_frame camera type)
-                    source_frame.apply_filter(_cam_renderer);
+                    // only display camera when it does not occlude point cloud
+                    if (_pc_renderer.get_option(gl::pointcloud_renderer::OPTION_ORIGIN_PICKED) <= 0.f)
+                    {
+                        // Render camera model (based on source_frame camera type)
+                        source_frame.apply_filter(_cam_renderer);
+                    }
 
                     // if (_cam_renderer.get_option(gl::camera_renderer::OPTION_WAS_PICKED) > 0.f)
                     // {
@@ -2517,6 +2521,36 @@ namespace rs2
                 glVertex3d(to.x, to.y, to.z);
             }
             glEnd();
+        };
+
+        auto draw_label = [this](float3 pos, float distance, int vp_offset_y)
+        {
+            int32_t vp[4];
+            glGetIntegerv(GL_VIEWPORT, vp);
+            check_gl_error();
+
+            GLfloat model[16];
+            glGetFloatv(GL_MODELVIEW_MATRIX, model);
+            GLfloat proj[16];
+            glGetFloatv(GL_PROJECTION_MATRIX, proj);
+
+            rs2::matrix4 p(proj);
+            rs2::matrix4 v(model);
+
+            rs2::float2 w_pos = translate_3d_to_2d(pos, p, v, rs2::matrix4::identity(), vp);
+
+            std::string label = to_string() << std::fixed << std::setprecision(0) << "(" << w_pos.x << ", " << w_pos.y << ") " << std::setprecision(3) << distance << " meters";
+
+            auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
+
+            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, transparent);
+            ImGui::SetNextWindowPos(ImVec2(w_pos.x + vp[0], vp_offset_y - (w_pos.y + vp[1])));
+            ImGui::Begin("", nullptr, flags);
+            ImGui::Text(label.c_str());
+            ImGui::End();
+            ImGui::PopStyleColor();
+            ImGui::PopStyleColor();
         };
 
         if (mouse_picked_event.eval())
@@ -2618,6 +2652,11 @@ namespace rs2
             glDisable(GL_DEPTH_TEST);
             draw_ruler(selected_points[1].pos, selected_points[0].pos);
             glEnable(GL_DEPTH_TEST);
+
+            // calculate center of the ruler line
+            float3 ctr = (selected_points[0].pos + selected_points[1].pos) / 2;
+            float distance = (selected_points[1].pos - selected_points[0].pos).length();
+            draw_label(ctr, distance, win.framebuf_height());
         }
 
         for (auto&& points: selected_points)
