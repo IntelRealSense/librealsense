@@ -380,11 +380,8 @@ inline bool profile_diffs(const std::string& plot_name, std::vector<T>& distance
     CAPTURE(max_allowed_std);
     CAPTURE(frame_idx);
 
-    // CHECK is redefined in ELPP, so we lose the Catch2 version, which expands to:
-    INTERNAL_CATCH_TEST( "CHECK", Catch::ResultDisposition::ContinueOnFailure, standard_deviation <= max_allowed_std );
-    INTERNAL_CATCH_TEST( "CHECK", Catch::ResultDisposition::ContinueOnFailure, fabs( max_val ) <= outlier );
-    //REQUIRE(standard_deviation <= max_allowed_std);
-    //REQUIRE(fabs((max_val)) <= outlier);
+    CHECK( standard_deviation <= max_allowed_std );
+    CHECK( fabs(max_val) <= outlier );
 
     return ((fabs(max_val) <= outlier) && (standard_deviation <= max_allowed_std));
 }
