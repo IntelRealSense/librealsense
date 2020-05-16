@@ -342,7 +342,7 @@ namespace rs2
         ImGui::PushFont(font);
         if (dropdown)
         {
-            clicked = clicked || ImGui::Button("\uf078", { 20, 55 });
+            clicked = clicked || ImGui::Button(u8"\uf078", { 20, 55 });
             hovered = hovered || ImGui::IsItemHovered();
         }
 

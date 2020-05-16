@@ -437,7 +437,7 @@ namespace rs2
             }
         }
 
-        hourglass[2] += _hourglass_index;
+        //hourglass[2] += _hourglass_index;
 
         auto flags = ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |

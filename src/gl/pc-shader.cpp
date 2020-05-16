@@ -126,7 +126,7 @@ static const char* fragment_shader_text =
 "}\n";
 
 
-static const char* vertex_shader_text2 =
+static const char* vertex_shader_text_picking =
 "#version 130\n"
 "\n"
 "attribute vec3 position;\n"
@@ -183,7 +183,7 @@ static const char* vertex_shader_text2 =
 "    outPos = pos;\n"
 "}\n";
 
-static const char* fragment_shader_text2 =
+static const char* fragment_shader_text_picking =
 "#version 130\n"
 "\n"
 "in float valid;\n"
@@ -209,76 +209,7 @@ static const char* fragment_shader_text2 =
 
 using namespace rs2;
 
-struct Matrix4x4
-{
- // The elements of the 4x4 matrix are stored in
- // column-major order (see "OpenGL Programming Guide",
- // 3rd edition, pp 106, glLoadMatrix).
- float _11, _21, _31, _41;
- float _12, _22, _32, _42;
- float _13, _23, _33, _43;
- float _14, _24, _34, _44;
-};
-struct Plane { float a, b, c, d; };
-
-void NormalizePlane(Plane & plane)
-{
- float mag;
- mag = sqrt(plane.a * plane.a + plane.b * plane.b + plane.c * plane.c);
- plane.a = plane.a / mag;
- plane.b = plane.b / mag;
- plane.c = plane.c / mag;
- plane.d = plane.d / mag;
-}
-
-void ExtractPlanesGL(
- Plane * p_planes,
- const Matrix4x4 & comboMatrix,
- bool normalize)
-{
- // Left clipping plane
- p_planes[0].a = comboMatrix._41 + comboMatrix._11;
- p_planes[0].b = comboMatrix._42 + comboMatrix._12;
- p_planes[0].c = comboMatrix._43 + comboMatrix._13;
- p_planes[0].d = comboMatrix._44 + comboMatrix._14;
- // Right clipping plane
- p_planes[1].a = comboMatrix._41 - comboMatrix._11;
- p_planes[1].b = comboMatrix._42 - comboMatrix._12;
- p_planes[1].c = comboMatrix._43 - comboMatrix._13;
- p_planes[1].d = comboMatrix._44 - comboMatrix._14;
- // Top clipping plane
- p_planes[2].a = comboMatrix._41 - comboMatrix._21;
- p_planes[2].b = comboMatrix._42 - comboMatrix._22;
- p_planes[2].c = comboMatrix._43 - comboMatrix._23;
- p_planes[2].d = comboMatrix._44 - comboMatrix._24;
- // Bottom clipping plane
- p_planes[3].a = comboMatrix._41 + comboMatrix._21;
- p_planes[3].b = comboMatrix._42 + comboMatrix._22;
- p_planes[3].c = comboMatrix._43 + comboMatrix._23;
- p_planes[3].d = comboMatrix._44 + comboMatrix._24;
- // Near clipping plane
- p_planes[4].a = comboMatrix._41 + comboMatrix._31;
- p_planes[4].b = comboMatrix._42 + comboMatrix._32;
- p_planes[4].c = comboMatrix._43 + comboMatrix._33;
- p_planes[4].d = comboMatrix._44 + comboMatrix._34;
- // Far clipping plane
- p_planes[5].a = comboMatrix._41 - comboMatrix._31;
- p_planes[5].b = comboMatrix._42 - comboMatrix._32;
- p_planes[5].c = comboMatrix._43 - comboMatrix._33;
- p_planes[5].d = comboMatrix._44 - comboMatrix._34;
- // Normalize the plane equations, if requested
- if (normalize == true)
- {
- NormalizePlane(p_planes[0]);
- NormalizePlane(p_planes[1]);
- NormalizePlane(p_planes[2]);
- NormalizePlane(p_planes[3]);
- NormalizePlane(p_planes[4]);
- NormalizePlane(p_planes[5]);
- }
-}
-
-Matrix4x4 convert_to_gl(const matrix4& input)
+matrix4 convert_to_gl(const matrix4& input)
 {
     matrix4 output;
 
@@ -289,12 +220,10 @@ Matrix4x4 convert_to_gl(const matrix4& input)
             output(i, j) = input(j, i);
         }
     }
-    Matrix4x4 res;
-    memcpy(&res, output.mat, sizeof(Matrix4x4));
-    return res;
+    return output;
 }
 
-matrix4 Frustum(float left, float right, float bottom, float top, float zNear, float zFar, float ox, float oy)
+matrix4 frustum(float left, float right, float bottom, float top, float zNear, float zFar, float ox, float oy)
 {
     matrix4 res;
     auto& m = res.mat;
@@ -321,6 +250,7 @@ matrix4 Frustum(float left, float right, float bottom, float top, float zNear, f
     m[3][1]=0.0f;
     m[3][2]=-1.0f;
     m[3][3]=0.0f;
+
     return res;
 }
 
@@ -460,7 +390,7 @@ namespace librealsense
             if (glsl_enabled())
             {
                 _shader = std::make_shared<pointcloud_shader>(vertex_shader_text, fragment_shader_text);
-                _pick_shader = std::make_shared<pointcloud_shader>(vertex_shader_text2, fragment_shader_text2);
+                _pick_shader = std::make_shared<pointcloud_shader>(vertex_shader_text_picking, fragment_shader_text_picking);
 
                 _vertex_texture = std::make_shared<rs2::texture_buffer>();
                 _uvs_texture = std::make_shared<rs2::texture_buffer>();
@@ -630,20 +560,20 @@ namespace librealsense
                                 {
                                 auto gl_p = convert_to_gl(get_matrix(RS2_GL_MATRIX_PROJECTION));
 
-                                auto near   = gl_p._34/(gl_p._33-1);
-                                auto far    = gl_p._34/(gl_p._33+1);
-                                auto bottom = near * (gl_p._23-1)/gl_p._22;
-                                auto top    = near * (gl_p._23+1)/gl_p._22;
-                                auto left   = near * (gl_p._13-1)/gl_p._11;
-                                auto right  = near * (gl_p._13+1)/gl_p._11;
+                                auto near_plane = gl_p(3,4)/(gl_p(3,3)-1);
+                                auto far_plae   = gl_p(3,4)/(gl_p(3,3)+1);
+                                auto bottom     = near_plane * (gl_p(2,3)-1)/gl_p(2,2);
+                                auto top        = near_plane * (gl_p(2,3)+1)/gl_p(2,2);
+                                auto left       = near_plane * (gl_p(1,3)-1)/gl_p(1,1);
+                                auto right      = near_plane * (gl_p(1,3)+1)/gl_p(1,1);
                                 auto ox = 0.f;
                                 auto oy = 0.f;
 
                                 ox = (xy.x / wh.x) * 2 - 1;
                                 oy = (xy.y / wh.y) * 2 - 1;
 
-                                auto p = Frustum(left/(0.5*wh.x), right/(0.5*wh.x), 
-                                    bottom/(0.5*wh.y), top/(0.5*wh.y), near, far, 
+                                auto p = frustum(left/(0.5*wh.x), right/(0.5*wh.x), 
+                                    bottom/(0.5*wh.y), top/(0.5*wh.y), near_plane, far_plae, 
                                     ox * (0.5*wh.x), oy * (0.5*wh.y));
 
                                 auto fbo_width = 3;
@@ -780,18 +710,18 @@ namespace librealsense
                                 _mouse_pick_opt->set(0.f);
 
                                 glActiveTexture(GL_TEXTURE0 + _shader->texture_slot());
-                            }
 
-                            rs2::float3 org{ 0.f, 0.f, 0.f };
-                            rs2::float2 origin = translate_3d_to_2d(org, p, v, f, vp);
-                            origin.x = origin.x - vp[0];
-                            origin.y = origin.y - vp[1];
-                            _origin_picked_opt->set(0.f);
+                                rs2::float3 org{ 0.f, 0.f, 0.f };
+                                rs2::float2 origin = translate_3d_to_2d(org, p, v, f, vp);
+                                origin.x = origin.x - vp[0];
+                                origin.y = origin.y - vp[1];
+                                _origin_picked_opt->set(0.f);
 
-                            if (mouse_pick(origin, rs2::float2{ vp[2], vp[3] }, 
-                                _origin_rgba_pbo, false, nullptr, nullptr))
-                            {
-                                _origin_picked_opt->set(1.f);
+                                if (mouse_pick(origin, rs2::float2{ float(vp[2]), float(vp[3]) }, 
+                                    _origin_rgba_pbo, false, nullptr, nullptr))
+                                {
+                                    _origin_picked_opt->set(1.f);
+                                }
                             }
 
                             render_pc(_shader, get_matrix(RS2_GL_MATRIX_PROJECTION));
