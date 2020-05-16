@@ -257,6 +257,7 @@ namespace rs2
 
         bool _pc_selected = false;
         temporal_event mouse_picked_event { std::chrono::milliseconds(1000) };
+        temporal_event origin_occluded { std::chrono::milliseconds(3000) };
 
         float3 _normal, _picked;
 

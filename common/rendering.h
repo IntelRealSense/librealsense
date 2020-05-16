@@ -863,6 +863,11 @@ namespace rs2
 
         bool eval()
         {
+            return get_stat() > 0.5f;
+        }
+
+        float get_stat()
+        {
             std::lock_guard<std::mutex> lock(_m);
 
             if (_t.elapsed() < _window) return false; // Ensure no false alarms in the warm-up time
@@ -876,7 +881,7 @@ namespace rs2
                 [this](std::pair<clock::time_point, bool> pair) {
                 return pair.second;
             });
-            return size_t(trues * 2) > _measurements.size(); // At least 50% of observations agree
+            return size_t(trues) / (float)_measurements.size(); 
         }
 
         void reset()

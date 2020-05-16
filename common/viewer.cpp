@@ -2474,11 +2474,9 @@ namespace rs2
                     // }
 
                     // only display camera when it does not occlude point cloud
-                    if (_pc_renderer.get_option(gl::pointcloud_renderer::OPTION_ORIGIN_PICKED) <= 0.f)
-                    {
-                        // Render camera model (based on source_frame camera type)
-                        source_frame.apply_filter(_cam_renderer);
-                    }
+                    origin_occluded.add_value(_pc_renderer.get_option(gl::pointcloud_renderer::OPTION_ORIGIN_PICKED) <= 0.f);
+                    _cam_renderer.set_option(RS2_OPTION_FILTER_MAGNITUDE, powf(origin_occluded.get_stat(), 2.f));
+                    source_frame.apply_filter(_cam_renderer);
 
                     // if (_cam_renderer.get_option(gl::camera_renderer::OPTION_WAS_PICKED) > 0.f)
                     // {
