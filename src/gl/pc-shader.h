@@ -124,6 +124,7 @@ namespace librealsense
 
             pbo<half4> _xyz_pbo;
             pbo<rgba8> _rgba_pbo;
+            pbo<rgba8> _origin_rgba_pbo;
             std::deque<std::chrono::high_resolution_clock::time_point> _durations;
         };
     }

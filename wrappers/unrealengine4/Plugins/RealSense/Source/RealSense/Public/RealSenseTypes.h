@@ -3,14 +3,14 @@
 #include "RealSenseTypes.generated.h"
 
 namespace rs2 {
-	class config;
-	class device;
-	class pipeline;
-	class frameset;
-	class frame;
-	class align;
-	class pointcloud;
-	class points;
+    class config;
+    class device;
+    class pipeline;
+    class frameset;
+    class frame;
+    class align;
+    class pointcloud;
+    class points;
 }
 
 // typedef enum rs2_stream
@@ -125,80 +125,81 @@ enum class ERealSenseOptionType : uint8
     AMBIENT_LIGHT                              , /**< Change the depth ambient light see rs2_ambient_light for values */
     SENSOR_MODE                                , /**< The resolution mode: see rs2_sensor_mode for values */
     EMITTER_ALWAYS_ON                          , /**< Enable Laser On constantly (GS SKU Only) */
+    THERMAL_COMPENSATION                       , /**< Depth Thermal Compensation for selected D400 SKUs */
 };
 
 UENUM(Blueprintable)
 enum class ERealSensePipelineMode : uint8
 {
-	CaptureOnly,
-	RecordFile,
-	PlaybackFile,
+    CaptureOnly,
+    RecordFile,
+    PlaybackFile,
 };
 
 UENUM(Blueprintable)
 enum class ERealSenseDepthColormap : uint8
 {
-	Jet,
-	Classic,
-	WhiteToBlack,
-	BlackToWhite,
-	Bio,
-	Cold,
-	Warm,
-	Quantized,
-	Pattern,
+    Jet,
+    Classic,
+    WhiteToBlack,
+    BlackToWhite,
+    Bio,
+    Cold,
+    Warm,
+    Quantized,
+    Pattern,
 };
 
 USTRUCT(BlueprintType)
 struct FRealSenseStreamProfile
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
-	UPROPERTY(Category="RealSense", BlueprintReadWrite, EditAnywhere)
-	ERealSenseStreamType StreamType = ERealSenseStreamType::STREAM_ANY;
+    UPROPERTY(Category="RealSense", BlueprintReadWrite, EditAnywhere)
+    ERealSenseStreamType StreamType = ERealSenseStreamType::STREAM_ANY;
 
-	UPROPERTY(Category="RealSense", BlueprintReadWrite, EditAnywhere)
-	ERealSenseFormatType Format = ERealSenseFormatType::FORMAT_ANY;
+    UPROPERTY(Category="RealSense", BlueprintReadWrite, EditAnywhere)
+    ERealSenseFormatType Format = ERealSenseFormatType::FORMAT_ANY;
 
-	UPROPERTY(Category="RealSense", BlueprintReadWrite, EditAnywhere)
-	int32 Width = 640;
+    UPROPERTY(Category="RealSense", BlueprintReadWrite, EditAnywhere)
+    int32 Width = 640;
 
-	UPROPERTY(Category="RealSense", BlueprintReadWrite, EditAnywhere)
-	int32 Height = 480;
+    UPROPERTY(Category="RealSense", BlueprintReadWrite, EditAnywhere)
+    int32 Height = 480;
 
-	UPROPERTY(Category="RealSense", BlueprintReadWrite, EditAnywhere)
-	int32 Rate = 30;
+    UPROPERTY(Category="RealSense", BlueprintReadWrite, EditAnywhere)
+    int32 Rate = 30;
 };
 
 USTRUCT(BlueprintType)
 struct FRealSenseStreamMode
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
-	UPROPERTY(Category="RealSense", BlueprintReadWrite, EditAnywhere)
-	int32 Width = 640;
+    UPROPERTY(Category="RealSense", BlueprintReadWrite, EditAnywhere)
+    int32 Width = 640;
 
-	UPROPERTY(Category="RealSense", BlueprintReadWrite, EditAnywhere)
-	int32 Height = 480;
+    UPROPERTY(Category="RealSense", BlueprintReadWrite, EditAnywhere)
+    int32 Height = 480;
 
-	UPROPERTY(Category="RealSense", BlueprintReadWrite, EditAnywhere)
-	int32 Rate = 30;
+    UPROPERTY(Category="RealSense", BlueprintReadWrite, EditAnywhere)
+    int32 Rate = 30;
 };
 
 USTRUCT(BlueprintType)
 struct FRealSenseOptionRange
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
-	UPROPERTY(Category="RealSense", BlueprintReadOnly, VisibleAnywhere)
-	float Min;
+    UPROPERTY(Category="RealSense", BlueprintReadOnly, VisibleAnywhere)
+    float Min;
 
-	UPROPERTY(Category="RealSense", BlueprintReadOnly, VisibleAnywhere)
-	float Max;
+    UPROPERTY(Category="RealSense", BlueprintReadOnly, VisibleAnywhere)
+    float Max;
 
-	UPROPERTY(Category="RealSense", BlueprintReadOnly, VisibleAnywhere)
-	float Step;
+    UPROPERTY(Category="RealSense", BlueprintReadOnly, VisibleAnywhere)
+    float Step;
 
-	UPROPERTY(Category="RealSense", BlueprintReadOnly, VisibleAnywhere)
-	float Default;
+    UPROPERTY(Category="RealSense", BlueprintReadOnly, VisibleAnywhere)
+    float Default;
 };
