@@ -669,12 +669,12 @@ namespace librealsense
 
                             const auto do_mouse_pick = _mouse_pick_opt->query() > 0.f;
 
+                            _picked_id_opt->set(0.f);
+
                             if (do_mouse_pick) {
 
                                 auto x = _mouse_x_opt->query() - viewport_x;
                                 auto y = _mouse_y_opt->query() - viewport_y;
-
-                                _picked_id_opt->set(0.f);
                                 
                                 rs2::float3 normal, pos;
 
