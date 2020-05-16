@@ -248,6 +248,52 @@ void ExtractPlanesGL(
  }
 }
 
+Matrix4x4 convert_to_gl(const matrix4& input)
+{
+    matrix4 output;
+
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            output(i, j) = input(j, i);
+        }
+    }
+    Matrix4x4 res;
+    memcpy(&res, output.mat, sizeof(Matrix4x4));
+    return res;
+}
+
+matrix4 Frustum(float left, float right, float bottom, float top, float zNear, float zFar, float ox, float oy)
+{
+    matrix4 res;
+    auto& m = res.mat;
+    float zDelta = (zFar-zNear);
+    float w = (right-left);
+    float h = (top-bottom);
+
+    m[0][0]=2.0f*zNear/w;
+    m[0][1]=0.0f;
+    m[0][2]=2.0f*(right+left)/w;
+    m[0][3]=0.0f;
+    
+    m[1][0]=0.0f;
+    m[1][1]=2.0f*zNear/h;
+    m[1][2]=2.0f*(top+bottom)/h;
+    m[1][3]=0.0f;
+
+    m[2][0]=ox;
+    m[2][1]=oy;
+    m[2][2]=-(zFar+zNear)/zDelta;
+    m[2][3]=-(2.f * zNear*zFar)/zDelta;
+
+    m[3][0]=0.0f;
+    m[3][1]=0.0f;
+    m[3][2]=-1.0f;
+    m[3][3]=0.0f;
+    return res;
+}
+
 namespace librealsense
 {
     namespace gl
@@ -552,6 +598,35 @@ namespace librealsense
 
                         if (!error)
                         {
+                            auto render_pc = [this, &vf_profile, curr_tex, vertex_tex_id, uv_tex_id]
+                                (const rs2::matrix4& p){
+                                _shader->set_mvp(get_matrix(
+                                    RS2_GL_MATRIX_TRANSFORMATION),
+                                    get_matrix(RS2_GL_MATRIX_CAMERA),
+                                    p
+                                );
+                                _shader->set_image_size(vf_profile.width(), vf_profile.height());
+
+                                _shader->set_picked_id(_picked_id_opt->query());
+                                _shader->set_shaded(_shaded_opt->query());
+
+                                glActiveTexture(GL_TEXTURE0 + _shader->texture_slot());
+                                glBindTexture(GL_TEXTURE_2D, curr_tex);
+
+                                glActiveTexture(GL_TEXTURE0 + _shader->geometry_slot());
+                                glBindTexture(GL_TEXTURE_2D, vertex_tex_id);
+
+                                glActiveTexture(GL_TEXTURE0 + _shader->uvs_slot());
+                                glBindTexture(GL_TEXTURE_2D, uv_tex_id);
+
+                                if (_filled_opt->query() > 0.f) _model->draw();
+                                else _model->draw_points();
+
+                                glActiveTexture(GL_TEXTURE0 + _shader->texture_slot());
+
+                                _shader->end();
+                            };
+
                             int32_t vp[4];
                             glGetIntegerv(GL_VIEWPORT, vp);
                             check_gl_error();
@@ -564,14 +639,53 @@ namespace librealsense
                             const auto viewport_y = vp[1] / scale;
 
                             auto boost = 1;
-                            if (fps < 26) boost = 2;
+                            //if (fps < 26) boost = 2;
 
                             fbo_width = fbo_width / boost;
                             fbo_height = fbo_height / boost;
 
+
+                            _shader->begin();
+
                             const auto do_mouse_pick = _mouse_pick_opt->query() > 0.f;
 
+                            
+
                             if (do_mouse_pick) {
+
+                                auto gl_p = convert_to_gl(get_matrix(RS2_GL_MATRIX_PROJECTION));
+
+                                auto near   = gl_p._34/(gl_p._33-1);
+                                auto far    = gl_p._34/(gl_p._33+1);
+                                auto bottom = near * (gl_p._23-1)/gl_p._22;
+                                auto top    = near * (gl_p._23+1)/gl_p._22;
+                                auto left   = near * (gl_p._13-1)/gl_p._11;
+                                auto right  = near * (gl_p._13+1)/gl_p._11;
+                                auto ox = 0.f;
+                                auto oy = 0.f;
+
+                                Plane planes[6];
+                                ExtractPlanesGL(planes, gl_p, true);
+
+                                auto x = _mouse_x_opt->query() - viewport_x;
+                                auto y = _mouse_y_opt->query() - viewport_y;
+                                x /= boost;
+                                y /= boost;
+
+                                auto tx = x / fbo_width;
+                                auto ty = y / fbo_height;
+
+                                ox = tx * 2 - 1;
+                                oy = ty * 2 - 1;
+
+                                _shader->set_mouse_xy(x, y);
+
+                                p = Frustum(left/(0.5*fbo_width), right/(0.5*fbo_width), 
+                                    bottom/(0.5*fbo_height), top/(0.5*fbo_height), near, far, ox * (0.5*fbo_width), oy * (0.5*fbo_height));
+
+                                fbo_width = 3;
+                                fbo_height = 3;
+
                                 _fbo->set_dims(fbo_width, fbo_height);
 
                                 glBindFramebuffer(GL_FRAMEBUFFER, _fbo->get());
@@ -598,188 +712,137 @@ namespace librealsense
 
                                 glClearColor(0, 0, 0, 0);
                                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-                            }
+                            
+                                render_pc(p);
 
-                            _shader->begin();
-                            _shader->set_mvp(get_matrix(
-                                RS2_GL_MATRIX_TRANSFORMATION),
-                                get_matrix(RS2_GL_MATRIX_CAMERA),
-                                get_matrix(RS2_GL_MATRIX_PROJECTION)
-                            );
-                            _shader->set_image_size(vf_profile.width(), vf_profile.height());
+                                _fbo->unbind();
 
-                            _shader->set_picked_id(_picked_id_opt->query());
-                            _shader->set_shaded(_shaded_opt->query());
+                                _picked_id_opt->set(0.f);
+                                _origin_picked_opt->set(0.f);
 
-                            if (_mouse_pick_opt->query() > 0.f)
-                            {
-                                auto x = _mouse_x_opt->query() - viewport_x;
-                                auto y = _mouse_y_opt->query() - viewport_y;
-                                x /= boost;
-                                y /= boost;
-                                _shader->set_mouse_xy(x, y);
-                            }
-                            else _shader->set_mouse_xy(-1, -1);
+                                // origin
+                                rs2::float3 org{ 0.f, 0.f, 0.f };
+                                rs2::float2 origin = translate_3d_to_2d(org, p, v, f, vp);
+                                auto origin_x = origin.x;
+                                auto origin_y = origin.y;
 
-                            glActiveTexture(GL_TEXTURE0 + _shader->texture_slot());
-                            glBindTexture(GL_TEXTURE_2D, curr_tex);
+                                origin_x /= boost;
+                                origin_y /= boost;
 
-                            glActiveTexture(GL_TEXTURE0 + _shader->geometry_slot());
-                            glBindTexture(GL_TEXTURE_2D, vertex_tex_id);
+                                glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo->get());
+                                check_gl_error();
 
-                            glActiveTexture(GL_TEXTURE0 + _shader->uvs_slot());
-                            glBindTexture(GL_TEXTURE_2D, uv_tex_id);
+                                glReadBuffer(GL_COLOR_ATTACHMENT0);
+                                check_gl_error();
 
-                            if (_filled_opt->query() > 0.f) _model->draw();
-                            else _model->draw_points();
+                                rgba8 rgba { 0, 0, 0, 0 };
 
-                            glActiveTexture(GL_TEXTURE0 + _shader->texture_slot());
-
-                            _shader->end();
-
-                            rs2::matrix4 p = get_matrix(RS2_GL_MATRIX_PROJECTION);
-                            rs2::matrix4 v = get_matrix(RS2_GL_MATRIX_CAMERA);
-                            rs2::matrix4 f = get_matrix(RS2_GL_MATRIX_TRANSFORMATION);
-
-                            if (_mouse_pick_opt->query() > 0.f)
-                            {
-                                if (do_mouse_pick)
                                 {
-                                    _fbo->unbind();
-
-                                    _picked_id_opt->set(0.f);
-                                    _origin_picked_opt->set(0.f);
-
-                                    scoped_timer t("mouse pick");
-                                    auto cursor_x = _mouse_x_opt->query();
-                                    auto cursor_y = _mouse_y_opt->query();
-                                    auto x = cursor_x - viewport_x;
-                                    auto y = cursor_y - viewport_y;
-
-                                    x /= boost;
-                                    y /= boost;
-
-                                    // origin
-                                    rs2::float3 org{ 0.f, 0.f, 0.f };
-                                    rs2::float2 origin = translate_3d_to_2d(org, p, v, f, vp);
-                                    auto origin_x = origin.x;
-                                    auto origin_y = origin.y;
-
-                                    origin_x /= boost;
-                                    origin_y /= boost;
-
-                                    glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo->get());
-                                    check_gl_error();
-
-                                    glReadBuffer(GL_COLOR_ATTACHMENT0);
-                                    check_gl_error();
-
-                                    rgba8 rgba { 0, 0, 0, 0 };
-
-                                    {
-                                        scoped_timer t("rgba");
-                                        _rgba_pbo.query(&rgba, x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE);
-                                    }
-
-                                    rgba8 origin_rgba{ 0, 0, 0, 0 };
-                                    {
-                                        scoped_timer t("origin rgba");
-                                        _origin_rgba_pbo.query(&origin_rgba, origin_x, origin_y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE);
-                                    }
-
-                                    const auto size = NORMAL_WINDOW_SIZE * NORMAL_WINDOW_SIZE;
-                                    auto center = size / 2;
-                                    const auto half_window = NORMAL_WINDOW_SIZE / 2;
-
-                                    std::vector<half4> pos_halfs(size);
-
-                                    {
-                                        // Make sure we query inside the texture:
-                                        auto cropped_x = std::max(float(half_window), std::min(x, fbo_width - half_window - 1));
-                                        auto cropped_y = std::max(float(half_window), std::min(y, fbo_height - half_window - 1));
-
-                                        glReadBuffer(GL_COLOR_ATTACHMENT1);
-                                        check_gl_error();
-
-                                        scoped_timer t("xyz");
-                                        _xyz_pbo.query(pos_halfs.data(), round(cropped_x), round(cropped_y), 
-                                            NORMAL_WINDOW_SIZE, NORMAL_WINDOW_SIZE, 
-                                            GL_RGBA, GL_HALF_FLOAT);
-                                    }
-                                    
-                                    if (rgba.a > 0)
-                                    {
-                                        std::vector<rs2::float3> pos_floats(size);
-                                        rs2::float2 w_pos;
-                                        for (int i = 0; i < size; i++)
-                                        {
-                                            auto pos = pos_halfs[i];
-                                            auto x1 = halfToNativeIeee(pos.x);
-                                            auto y1 = halfToNativeIeee(pos.y);
-                                            auto z1 = halfToNativeIeee(pos.z);
-                                            pos_floats[i] = { x1, y1, z1 };
-
-                                            // for debugging, valid translation from 3d to 2d
-                                            w_pos = translate_3d_to_2d(pos_floats[i], p, v, f, vp);
-                                        }
-
-                                        if (pos_floats[center].length() < 0.001f)
-                                        {
-                                            if (pos_floats[center+1].length() > 0.001f) center += 1;
-                                            else if (pos_floats[center-1].length() > 0.001f) center -= 1;
-                                            else if (pos_floats[center-NORMAL_WINDOW_SIZE].length() > 0.001f) center -= NORMAL_WINDOW_SIZE;
-                                            else if (pos_floats[center+NORMAL_WINDOW_SIZE].length() > 0.001f) center += NORMAL_WINDOW_SIZE;
-                                        }
-
-                                        auto up = pos_floats[center - half_window * NORMAL_WINDOW_SIZE];
-                                        auto down = pos_floats[center + half_window * NORMAL_WINDOW_SIZE];
-                                        auto left = pos_floats[center - half_window];
-                                        auto right = pos_floats[center + half_window];
-                                        auto pos = pos_floats[center];
-
-                                        auto right_left = lerp(pos - left, right - pos, 0.5f);
-                                        auto down_up = lerp(pos - up, down - pos, 0.5f);
-                                        auto normal = cross(right_left, down_up).normalize();
-
-                                        _normal_x_opt->set(normal.x);
-                                        _normal_y_opt->set(-normal.y); 
-                                        _normal_z_opt->set(normal.z);
-
-                                        _picked_x_opt->set(pos.x);
-                                        _picked_y_opt->set(pos.y);
-                                        _picked_z_opt->set(pos.z);
-
-                                        _picked_id_opt->set(1.f);
-                                    }
-
-                                    if (origin_rgba.a > 0)
-                                    {
-                                        _origin_picked_opt->set(1.f);
-                                    }
-
-                                    glReadBuffer(GL_NONE);
-                                    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+                                    scoped_timer t("rgba");
+                                    _rgba_pbo.query(&rgba, 1, 1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE);
                                 }
+
+                                rgba8 origin_rgba{ 0, 0, 0, 0 };
+                                // {
+                                //     scoped_timer t("origin rgba");
+                                //     _origin_rgba_pbo.query(&origin_rgba, origin_x, origin_y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE);
+                                // }
+
+                                const auto size = NORMAL_WINDOW_SIZE * NORMAL_WINDOW_SIZE;
+                                auto center = size / 2;
+                                const auto half_window = NORMAL_WINDOW_SIZE / 2;
+
+                                std::vector<half4> pos_halfs(size);
+
+                                {
+                                    glReadBuffer(GL_COLOR_ATTACHMENT1);
+                                    check_gl_error();
+
+                                    scoped_timer t("xyz");
+                                    _xyz_pbo.query(pos_halfs.data(), 0, 0, 
+                                        NORMAL_WINDOW_SIZE, NORMAL_WINDOW_SIZE, 
+                                        GL_RGBA, GL_HALF_FLOAT);
+                                }
+                                
+                                if (rgba.a > 0)
+                                {
+                                    std::vector<rs2::float3> pos_floats(size);
+                                    rs2::float2 w_pos;
+                                    for (int i = 0; i < size; i++)
+                                    {
+                                        auto pos = pos_halfs[i];
+                                        auto x1 = halfToNativeIeee(pos.x);
+                                        auto y1 = halfToNativeIeee(pos.y);
+                                        auto z1 = halfToNativeIeee(pos.z);
+                                        pos_floats[i] = { x1, y1, z1 };
+
+                                        // for debugging, valid translation from 3d to 2d
+                                        w_pos = translate_3d_to_2d(pos_floats[i], p, v, f, vp);
+                                    }
+
+                                    // if (pos_floats[center].length() < 0.001f)
+                                    // {
+                                    //     if (pos_floats[center+1].length() > 0.001f) center += 1;
+                                    //     else if (pos_floats[center-1].length() > 0.001f) center -= 1;
+                                    //     else if (pos_floats[center-NORMAL_WINDOW_SIZE].length() > 0.001f) center -= NORMAL_WINDOW_SIZE;
+                                    //     else if (pos_floats[center+NORMAL_WINDOW_SIZE].length() > 0.001f) center += NORMAL_WINDOW_SIZE;
+                                    // }
+
+                                    auto up = pos_floats[center - half_window * NORMAL_WINDOW_SIZE];
+                                    auto down = pos_floats[center + half_window * NORMAL_WINDOW_SIZE];
+                                    auto left = pos_floats[center - half_window];
+                                    auto right = pos_floats[center + half_window];
+                                    auto pos = pos_floats[center];
+
+                                    auto right_left = lerp(pos - left, right - pos, 0.5f);
+                                    auto down_up = lerp(pos - up, down - pos, 0.5f);
+                                    auto normal = cross(right_left, down_up).normalize();
+
+                                    _normal_x_opt->set(normal.x);
+                                    _normal_y_opt->set(-normal.y); 
+                                    _normal_z_opt->set(normal.z);
+
+                                    _picked_x_opt->set(pos.x);
+                                    _picked_y_opt->set(pos.y);
+                                    _picked_z_opt->set(pos.z);
+
+                                    _picked_id_opt->set(1.f);
+                                }
+
+                                if (origin_rgba.a > 0)
+                                {
+                                    _origin_picked_opt->set(1.f);
+                                }
+
+                                glReadBuffer(GL_NONE);
+                                glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
                                 _mouse_pick_opt->set(0.f);
 
-                                if (do_mouse_pick)
-                                {
-                                    glActiveTexture(GL_TEXTURE1);
-                                    glBindTexture(GL_TEXTURE_2D, depth_tex);
-                                    glActiveTexture(GL_TEXTURE0);
-                                    glBindTexture(GL_TEXTURE_2D, color_tex);
+                                // glActiveTexture(GL_TEXTURE1);
+                                // glBindTexture(GL_TEXTURE_2D, depth_tex);
+                                // glActiveTexture(GL_TEXTURE0);
+                                // glBindTexture(GL_TEXTURE_2D, color_tex);
 
-                                    _blit->begin();
-                                    _blit->set_image_size(vp[2], vp[3]);
-                                    _blit->set_selected(_selected_opt->query() > 0.f);
-                                    _blit->end();
+                                // _blit->begin();
+                                // _blit->set_image_size(vp[2], vp[3]);
+                                // _blit->set_selected(_selected_opt->query() > 0.f);
+                                // _blit->end();
 
-                                    _viz->draw(*_blit, color_tex);
+                                //_viz->draw(*_blit, color_tex);
 
-                                    glActiveTexture(GL_TEXTURE0 + _shader->texture_slot());
-                                }
+                                glActiveTexture(GL_TEXTURE0 + _shader->texture_slot());
                             }
+                            else
+                            {
+                                _shader->set_mouse_xy(-1, -1);
+                            }
+
+
+                            _shader->begin();
+                            render_pc(get_matrix(RS2_GL_MATRIX_PROJECTION));
+
+                            _shader->end();
                         }
                     }
                     else
