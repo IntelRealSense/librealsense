@@ -2584,7 +2584,7 @@ namespace rs2
             draw_label(ctr, distance, win.framebuf_height());
         };
 
-        if (mouse_picked_event.eval())
+        if (mouse_picked_event.eval() && measurement_active)
         {
             glDisable(GL_DEPTH_TEST);
             glLineWidth(2.f);
@@ -3673,9 +3673,12 @@ namespace rs2
 
             if (mouse_picked_event.eval() && rect_copy.contains(window.get_mouse().cursor))
             {
-                std::string tt = to_string() << std::fixed << std::setprecision(3) 
-                    << _picked.x << ", " << _picked.y << ", " << _picked.z << " meters";
-                ImGui::SetTooltip("%s", tt.c_str());
+                if (!(measurement_active && selected_points.size() == 1))
+                {
+                    std::string tt = to_string() << std::fixed << std::setprecision(3) 
+                        << _picked.x << ", " << _picked.y << ", " << _picked.z << " meters";
+                    ImGui::SetTooltip("%s", tt.c_str());
+                }
             }
         }
 
