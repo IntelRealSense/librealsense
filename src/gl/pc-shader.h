@@ -20,7 +20,7 @@ namespace librealsense
         class pointcloud_shader
         {
         public:
-            pointcloud_shader();
+            pointcloud_shader(const char* vertex_shader, const char* fragment_shader);
 
             void begin();
             void end();
@@ -36,7 +36,6 @@ namespace librealsense
 
             void set_image_size(int width, int height);
             void set_min_delta_z(float min_delta_z);
-            void set_mouse_xy(float x, float y);
             void set_picked_id(float pid);
             void set_shaded(bool shaded);
         protected:
@@ -53,20 +52,8 @@ namespace librealsense
 
             uint32_t _width_location, _height_location;
             uint32_t _min_delta_z_location;
-            uint32_t _mouse_xy_location;
             uint32_t _picked_id_location;
             uint32_t _shaded_location;
-        };
-
-        class blit_shader : public rs2::texture_2d_shader
-        {
-        public:
-            blit_shader();
-            void set_image_size(int width, int height);
-            void set_selected(bool selected);
-
-        private:
-            uint32_t _image_dims_location, _is_selected_location;
         };
 
         class pointcloud_renderer : public stream_filter_processing_block, 
@@ -106,7 +93,7 @@ namespace librealsense
 
         private:
             std::shared_ptr<pointcloud_shader> _shader;
-            std::shared_ptr<blit_shader> _blit;
+            std::shared_ptr<pointcloud_shader> _pick_shader;
             std::shared_ptr<rs2::vao> _model;
             std::shared_ptr<rs2::texture_buffer> _vertex_texture;
             std::shared_ptr<rs2::texture_buffer> _uvs_texture;
@@ -119,7 +106,6 @@ namespace librealsense
                 *_selected_opt, *_shaded_opt, *_origin_picked_opt,
                 *_normal_x_opt, *_normal_y_opt, *_normal_z_opt, *_scale_factor_opt;
             uint32_t color_tex;
-            uint32_t depth_tex;
             uint32_t xyz_tex;
 
             pbo<half4> _xyz_pbo;

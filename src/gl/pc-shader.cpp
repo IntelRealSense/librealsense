@@ -78,10 +78,8 @@ static const char* fragment_shader_text =
 "in vec2 sampledUvs;\n"
 "in vec3 normal;\n"
 "out vec4 output_rgb;\n"
-"out vec3 output_xyz;\n"
 "\n"
 "uniform sampler2D textureSampler;\n"
-"uniform vec2 mouseXY;\n"
 "uniform float pickedID;\n"
 "uniform float shaded;\n"
 "\n"
@@ -124,56 +122,88 @@ static const char* fragment_shader_text =
 "    col_hsv.y = clamp(col_hsv.y * clamp(diffuse_factor, 0.0, 1.0), 0.0, 1.0);\n"
 "    color = vec4(hsv2rgb(col_hsv.rgb), 1.0);\n"
 "    }\n"
-"    float dist = length(mouseXY - gl_FragCoord.xy);\n"
-"    float t = 0.4 + smoothstep(0.0, 5.0, dist) * 0.6;\n" 
+"    output_rgb = vec4(color.xyz, 1.0);\n"
+"}\n";
+
+
+static const char* vertex_shader_text2 =
+"#version 130\n"
 "\n"
-"    output_rgb = t * vec4(color.xyz, 1.0) + (1.0 - t) * vec4(1.0);\n"
+"attribute vec3 position;\n"
+"attribute vec2 textureCoords;\n"
+"\n"
+"out float valid;\n"
+"out vec2 sampledUvs;\n"
+"out vec4 outPos;\n"
+"\n"
+"uniform mat4 transformationMatrix;\n"
+"uniform mat4 projectionMatrix;\n"
+"uniform mat4 cameraMatrix;\n"
+"\n"
+"uniform sampler2D uvsSampler;\n"
+"uniform sampler2D positionsSampler;\n"
+"\n"
+"uniform float imageWidth;\n"
+"uniform float imageHeight;\n"
+"uniform float minDeltaZ;\n"
+"\n"
+"void main(void) {\n"
+"    float pixelWidth = 1.0 / imageWidth;\n"
+"    float pixelHeight = 1.0 / imageHeight;\n"
+"    vec2 tex = vec2(textureCoords.x, textureCoords.y);\n"
+"    vec4 pos = texture2D(positionsSampler, tex);\n"
+"    vec4 uvs = texture2D(uvsSampler, tex);\n"
+"\n"
+"    vec2 tex_left = vec2(max(textureCoords.x - pixelWidth, 0.0), textureCoords.y);\n"
+"    vec2 tex_right = vec2(min(textureCoords.x + pixelWidth, 1.0), textureCoords.y);\n"
+"    vec2 tex_top = vec2(textureCoords.x, max(textureCoords.y - pixelHeight, 0.0));\n"
+"    vec2 tex_buttom = vec2(textureCoords.x, min(textureCoords.y + pixelHeight, 1.0));\n"
+"\n"
+"    vec4 pos_left = texture2D(positionsSampler, tex_left);\n"
+"    vec4 pos_right = texture2D(positionsSampler, tex_right);\n"
+"    vec4 pos_top = texture2D(positionsSampler, tex_top);\n"
+"    vec4 pos_buttom = texture2D(positionsSampler, tex_buttom);\n"
+"\n"
+"    valid = 0.0;\n"
+"    if (uvs.x < 0.0) valid = 1.0;\n"
+"    if (uvs.y < 0.0) valid = 1.0;\n"
+"    if (uvs.x >= 1.0) valid = 1.0;\n"
+"    if (uvs.y >= 1.0) valid = 1.0;\n"
+"    if (abs(pos_left.z - pos.z) > minDeltaZ * pos.z) valid = 1.0;\n"
+"    if (abs(pos_right.z - pos.z) > minDeltaZ * pos.z) valid = 1.0;\n"
+"    if (abs(pos_top.z - pos.z) > minDeltaZ * pos.z) valid = 1.0;\n"
+"    if (abs(pos_buttom.z - pos.z) > minDeltaZ * pos.z) valid = 1.0;\n"
+"    if (abs(pos.z) < 0.01) valid = 1.0;\n"
+"    if (valid > 0.0) pos = vec4(1.0, 1.0, 1.0, 0.0);\n"
+"    else pos = vec4(pos.xyz, 1.0);\n"
+"    vec4 worldPosition = transformationMatrix * pos;\n"
+"    gl_Position = projectionMatrix * cameraMatrix * worldPosition;\n"
+"\n"
+"    sampledUvs = uvs.xy;\n"
+"    outPos = pos;\n"
+"}\n";
+
+static const char* fragment_shader_text2 =
+"#version 130\n"
+"\n"
+"in float valid;\n"
+"in vec4  outPos;\n"
+"in vec2 sampledUvs;\n"
+"in vec3 normal;\n"
+"out vec4 output_rgb;\n"
+"out vec3 output_xyz;\n"
+"\n"
+"uniform sampler2D textureSampler;\n"
+"uniform float pickedID;\n"
+"uniform float shaded;\n"
+"\n"
+"void main(void) {\n"
+"    if (valid > 0.0) discard;\n"
+"    output_rgb = vec4(1.0);\n"
 "    output_xyz = outPos.xyz;\n"
 "}\n";
 
-static const char* blit_vertex_shader_text =
-"#version 130\n"
-"in vec3 position;\n"
-"in vec2 textureCoords;\n"
-"out vec2 textCoords[9];\n"
-"uniform vec2 elementPosition;\n"
-"uniform vec2 elementScale;\n"
-"uniform vec2 imageDims;\n"
-"void main(void)\n"
-"{\n"
-"    vec2 tex = vec2(textureCoords.x, 1.0 - textureCoords.y);\n"
-"    vec2 pixelSize = 1.0 / imageDims;\n"
-"    for (int i = -1; i <= 1; i++)\n"
-"       for (int j = -1; j <= 1; j++)\n"
-"       {\n"
-"           textCoords[(i + 1) * 3 + j + 1] = clamp(tex + pixelSize * vec2(i, j), vec2(0.0), vec2(1.0));\n"
-"       }\n"
-"    gl_Position = vec4(position * vec3(elementScale, 1.0) + vec3(elementPosition, 0.0), 1.0);\n"
-"}";
 
-static const char* blit_frag_shader_text =
-"#version 130\n"
-"in vec2 textCoords[9];\n"
-"uniform sampler2D textureSampler;\n"
-"uniform sampler2D depthSampler;\n"
-"uniform float opacity;\n"
-"uniform float is_selected;\n"
-"void main(void) {\n"
-"    vec4 color = texture2D(textureSampler, textCoords[4]);\n"
-"    float maxAlpha = 0.0;\n"
-"    for (int i = 0; i < 9; i++)\n"
-"    {\n"
-"        float a = texture2D(textureSampler, textCoords[i]).w;\n"
-"        maxAlpha = max(a, maxAlpha);\n"
-"    }\n"
-"    float alpha = texture2D(textureSampler, textCoords[4]).w;\n"
-"    float selected = 0.0;"
-"    if (alpha < maxAlpha) selected = is_selected;\n"
-"    gl_FragColor = color * (1.0 - selected) + selected * vec4(0.0, 0.68, 0.93, 0.8);\n"
-"    if (alpha > 0) gl_FragDepth = texture2D(depthSampler, textCoords[4]).x;\n"
-"    else if (selected > 0) gl_FragDepth = 0.0;\n"
-"    else gl_FragDepth = 65000.0;\n"
-"}";
 
 #define NORMAL_WINDOW_SIZE 3
 
@@ -331,11 +361,11 @@ namespace librealsense
             init();
         }
 
-        pointcloud_shader::pointcloud_shader()
+        pointcloud_shader::pointcloud_shader(const char* vertex_shader, const char* fragment_shader)
         {
             _shader = shader_program::load(
-                vertex_shader_text,
-                fragment_shader_text,
+                vertex_shader,
+                fragment_shader,
                 "position", "textureCoords",
                 "output_rgb", "output_xyz");
 
@@ -351,7 +381,6 @@ namespace librealsense
             _width_location = _shader->get_uniform_location("imageWidth");
             _height_location = _shader->get_uniform_location("imageHeight");
             _min_delta_z_location = _shader->get_uniform_location("minDeltaZ");
-            _mouse_xy_location = _shader->get_uniform_location("mouseXY");
             _picked_id_location = _shader->get_uniform_location("pickedID");
             _shaded_location = _shader->get_uniform_location("shaded");
 
@@ -385,12 +414,6 @@ namespace librealsense
             _shader->load_uniform(_height_location, (float)height);
         }
 
-        void pointcloud_shader::set_mouse_xy(float x, float y)
-        {
-            rs2::float2 xy{ x, y };
-            _shader->load_uniform(_mouse_xy_location, xy);
-        }
-
         void pointcloud_shader::set_picked_id(float pid)
         {
             _shader->load_uniform(_picked_id_location, pid);
@@ -406,34 +429,9 @@ namespace librealsense
             _shader->load_uniform(_min_delta_z_location, min_delta_z);
         }
 
-        void blit_shader::set_selected(bool selected)
-        {
-            _shader->load_uniform(_is_selected_location, selected ? 1.f : 0.f);
-        }
-
-        void blit_shader::set_image_size(int width, int height)
-        {
-            rs2::float2 xy{ width, height };
-            _shader->load_uniform(_image_dims_location, xy);
-        }
-
-        blit_shader::blit_shader()
-            : texture_2d_shader(shader_program::load(blit_vertex_shader_text, blit_frag_shader_text))
-        {
-            auto texture1_sampler_location = _shader->get_uniform_location("depthSampler");
-
-            _image_dims_location = _shader->get_uniform_location("imageDims");
-            _is_selected_location = _shader->get_uniform_location("is_selected");
-            
-            _shader->begin();
-            _shader->load_uniform(texture1_sampler_location, 1);
-            _shader->end();
-        }
-
         void pointcloud_renderer::cleanup_gpu_resources()
         {
             glDeleteTextures(1, &color_tex);
-            glDeleteTextures(1, &depth_tex);
             glDeleteTextures(1, &xyz_tex);
 
             _origin_rgba_pbo.reset();
@@ -441,11 +439,11 @@ namespace librealsense
             _xyz_pbo.reset();
 
             _shader.reset();
+            _pick_shader.reset();
             _model.reset();
             _vertex_texture.reset();
             _uvs_texture.reset();
             _viz.reset();
-            _blit.reset();
             _fbo.reset();
         }
 
@@ -461,7 +459,8 @@ namespace librealsense
         {
             if (glsl_enabled())
             {
-                _shader = std::make_shared<pointcloud_shader>();
+                _shader = std::make_shared<pointcloud_shader>(vertex_shader_text, fragment_shader_text);
+                _pick_shader = std::make_shared<pointcloud_shader>(vertex_shader_text2, fragment_shader_text2);
 
                 _vertex_texture = std::make_shared<rs2::texture_buffer>();
                 _uvs_texture = std::make_shared<rs2::texture_buffer>();
@@ -473,10 +472,8 @@ namespace librealsense
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
                 _viz = std::make_shared<rs2::texture_visualizer>();
-                _blit = std::make_shared<blit_shader>();
 
                 glGenTextures(1, &color_tex);
-                glGenTextures(1, &depth_tex);
                 glGenTextures(1, &xyz_tex);
 
                 _xyz_pbo.init(NORMAL_WINDOW_SIZE, NORMAL_WINDOW_SIZE);
@@ -599,60 +596,38 @@ namespace librealsense
                         if (!error)
                         {
                             auto render_pc = [this, &vf_profile, curr_tex, vertex_tex_id, uv_tex_id]
-                                (const rs2::matrix4& p){
-                                _shader->set_mvp(get_matrix(
+                                (std::shared_ptr<pointcloud_shader> shader, const rs2::matrix4& p){
+                                shader->begin();
+                                shader->set_mvp(get_matrix(
                                     RS2_GL_MATRIX_TRANSFORMATION),
                                     get_matrix(RS2_GL_MATRIX_CAMERA),
                                     p
                                 );
-                                _shader->set_image_size(vf_profile.width(), vf_profile.height());
+                                shader->set_image_size(vf_profile.width(), vf_profile.height());
 
-                                _shader->set_picked_id(_picked_id_opt->query());
-                                _shader->set_shaded(_shaded_opt->query());
+                                shader->set_picked_id(_picked_id_opt->query());
+                                shader->set_shaded(_shaded_opt->query());
 
-                                glActiveTexture(GL_TEXTURE0 + _shader->texture_slot());
+                                glActiveTexture(GL_TEXTURE0 + shader->texture_slot());
                                 glBindTexture(GL_TEXTURE_2D, curr_tex);
 
-                                glActiveTexture(GL_TEXTURE0 + _shader->geometry_slot());
+                                glActiveTexture(GL_TEXTURE0 + shader->geometry_slot());
                                 glBindTexture(GL_TEXTURE_2D, vertex_tex_id);
 
-                                glActiveTexture(GL_TEXTURE0 + _shader->uvs_slot());
+                                glActiveTexture(GL_TEXTURE0 + shader->uvs_slot());
                                 glBindTexture(GL_TEXTURE_2D, uv_tex_id);
 
                                 if (_filled_opt->query() > 0.f) _model->draw();
                                 else _model->draw_points();
 
-                                glActiveTexture(GL_TEXTURE0 + _shader->texture_slot());
+                                glActiveTexture(GL_TEXTURE0 + shader->texture_slot());
 
-                                _shader->end();
+                                shader->end();
                             };
 
-                            int32_t vp[4];
-                            glGetIntegerv(GL_VIEWPORT, vp);
-                            check_gl_error();
-
-                            float scale = _scale_factor_opt->query();
-
-                            auto fbo_width = vp[2] / scale;
-                            auto fbo_height = vp[3] / scale;
-                            const auto viewport_x = vp[0] / scale;
-                            const auto viewport_y = vp[1] / scale;
-
-                            auto boost = 1;
-                            //if (fps < 26) boost = 2;
-
-                            fbo_width = fbo_width / boost;
-                            fbo_height = fbo_height / boost;
-
-
-                            _shader->begin();
-
-                            const auto do_mouse_pick = _mouse_pick_opt->query() > 0.f;
-
-                            
-
-                            if (do_mouse_pick) {
-
+                            auto mouse_pick = [this, &render_pc](rs2::float2 xy, rs2::float2 wh, pbo<rgba8>& pbo,
+                                bool fetch_xyz, rs2::float3* xyz, rs2::float3* normal)
+                                {
                                 auto gl_p = convert_to_gl(get_matrix(RS2_GL_MATRIX_PROJECTION));
 
                                 auto near   = gl_p._34/(gl_p._33-1);
@@ -664,27 +639,15 @@ namespace librealsense
                                 auto ox = 0.f;
                                 auto oy = 0.f;
 
-                                Plane planes[6];
-                                ExtractPlanesGL(planes, gl_p, true);
+                                ox = (xy.x / wh.x) * 2 - 1;
+                                oy = (xy.y / wh.y) * 2 - 1;
 
-                                auto x = _mouse_x_opt->query() - viewport_x;
-                                auto y = _mouse_y_opt->query() - viewport_y;
-                                x /= boost;
-                                y /= boost;
+                                auto p = Frustum(left/(0.5*wh.x), right/(0.5*wh.x), 
+                                    bottom/(0.5*wh.y), top/(0.5*wh.y), near, far, 
+                                    ox * (0.5*wh.x), oy * (0.5*wh.y));
 
-                                auto tx = x / fbo_width;
-                                auto ty = y / fbo_height;
-
-                                ox = tx * 2 - 1;
-                                oy = ty * 2 - 1;
-
-                                _shader->set_mouse_xy(x, y);
-
-                                p = Frustum(left/(0.5*fbo_width), right/(0.5*fbo_width), 
-                                    bottom/(0.5*fbo_height), top/(0.5*fbo_height), near, far, ox * (0.5*fbo_width), oy * (0.5*fbo_height));
-
-                                fbo_width = 3;
-                                fbo_height = 3;
+                                auto fbo_width = 3;
+                                auto fbo_height = 3;
 
                                 _fbo->set_dims(fbo_width, fbo_height);
 
@@ -692,7 +655,6 @@ namespace librealsense
                                 glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
                                 _fbo->createTextureAttachment(color_tex);
-                                _fbo->createDepthTextureAttachment(depth_tex);
 
                                 glBindTexture(GL_TEXTURE_2D, xyz_tex);
                                 glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -713,21 +675,9 @@ namespace librealsense
                                 glClearColor(0, 0, 0, 0);
                                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                             
-                                render_pc(p);
+                                render_pc(_pick_shader, p);
 
                                 _fbo->unbind();
-
-                                _picked_id_opt->set(0.f);
-                                _origin_picked_opt->set(0.f);
-
-                                // origin
-                                rs2::float3 org{ 0.f, 0.f, 0.f };
-                                rs2::float2 origin = translate_3d_to_2d(org, p, v, f, vp);
-                                auto origin_x = origin.x;
-                                auto origin_y = origin.y;
-
-                                origin_x /= boost;
-                                origin_y /= boost;
 
                                 glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo->get());
                                 check_gl_error();
@@ -739,14 +689,8 @@ namespace librealsense
 
                                 {
                                     scoped_timer t("rgba");
-                                    _rgba_pbo.query(&rgba, 1, 1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE);
+                                    pbo.query(&rgba, 1, 1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE);
                                 }
-
-                                rgba8 origin_rgba{ 0, 0, 0, 0 };
-                                // {
-                                //     scoped_timer t("origin rgba");
-                                //     _origin_rgba_pbo.query(&origin_rgba, origin_x, origin_y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE);
-                                // }
 
                                 const auto size = NORMAL_WINDOW_SIZE * NORMAL_WINDOW_SIZE;
                                 auto center = size / 2;
@@ -754,6 +698,7 @@ namespace librealsense
 
                                 std::vector<half4> pos_halfs(size);
 
+                                if (fetch_xyz) 
                                 {
                                     glReadBuffer(GL_COLOR_ATTACHMENT1);
                                     check_gl_error();
@@ -762,44 +707,67 @@ namespace librealsense
                                     _xyz_pbo.query(pos_halfs.data(), 0, 0, 
                                         NORMAL_WINDOW_SIZE, NORMAL_WINDOW_SIZE, 
                                         GL_RGBA, GL_HALF_FLOAT);
-                                }
-                                
-                                if (rgba.a > 0)
-                                {
-                                    std::vector<rs2::float3> pos_floats(size);
-                                    rs2::float2 w_pos;
-                                    for (int i = 0; i < size; i++)
+
+                                    if (rgba.a > 0)
                                     {
-                                        auto pos = pos_halfs[i];
-                                        auto x1 = halfToNativeIeee(pos.x);
-                                        auto y1 = halfToNativeIeee(pos.y);
-                                        auto z1 = halfToNativeIeee(pos.z);
-                                        pos_floats[i] = { x1, y1, z1 };
+                                        std::vector<rs2::float3> pos_floats(size);
+                                        rs2::float2 w_pos;
+                                        for (int i = 0; i < size; i++)
+                                        {
+                                            auto pos = pos_halfs[i];
+                                            auto x1 = halfToNativeIeee(pos.x);
+                                            auto y1 = halfToNativeIeee(pos.y);
+                                            auto z1 = halfToNativeIeee(pos.z);
+                                            pos_floats[i] = { x1, y1, z1 };
+                                        }
 
-                                        // for debugging, valid translation from 3d to 2d
-                                        w_pos = translate_3d_to_2d(pos_floats[i], p, v, f, vp);
+                                        auto up = pos_floats[center - half_window * NORMAL_WINDOW_SIZE];
+                                        auto down = pos_floats[center + half_window * NORMAL_WINDOW_SIZE];
+                                        auto left = pos_floats[center - half_window];
+                                        auto right = pos_floats[center + half_window];
+                                        auto pos = pos_floats[center];
+
+                                        auto right_left = lerp(pos - left, right - pos, 0.5f);
+                                        auto down_up = lerp(pos - up, down - pos, 0.5f) * (-1.f);
+                                        *normal = cross(right_left, down_up).normalize();
+                                        *xyz = pos;
                                     }
+                                }
 
-                                    // if (pos_floats[center].length() < 0.001f)
-                                    // {
-                                    //     if (pos_floats[center+1].length() > 0.001f) center += 1;
-                                    //     else if (pos_floats[center-1].length() > 0.001f) center -= 1;
-                                    //     else if (pos_floats[center-NORMAL_WINDOW_SIZE].length() > 0.001f) center -= NORMAL_WINDOW_SIZE;
-                                    //     else if (pos_floats[center+NORMAL_WINDOW_SIZE].length() > 0.001f) center += NORMAL_WINDOW_SIZE;
-                                    // }
+                                glReadBuffer(GL_NONE);
+                                glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
-                                    auto up = pos_floats[center - half_window * NORMAL_WINDOW_SIZE];
-                                    auto down = pos_floats[center + half_window * NORMAL_WINDOW_SIZE];
-                                    auto left = pos_floats[center - half_window];
-                                    auto right = pos_floats[center + half_window];
-                                    auto pos = pos_floats[center];
+                                return (rgba.a > 0);
+                            };
 
-                                    auto right_left = lerp(pos - left, right - pos, 0.5f);
-                                    auto down_up = lerp(pos - up, down - pos, 0.5f);
-                                    auto normal = cross(right_left, down_up).normalize();
+                            int32_t vp[4];
+                            glGetIntegerv(GL_VIEWPORT, vp);
+                            check_gl_error();
 
+                            float scale = _scale_factor_opt->query();
+
+                            auto fbo_width = vp[2] / scale;
+                            auto fbo_height = vp[3] / scale;
+                            const auto viewport_x = vp[0] / scale;
+                            const auto viewport_y = vp[1] / scale;
+
+                            const auto do_mouse_pick = _mouse_pick_opt->query() > 0.f;
+
+                            if (do_mouse_pick) {
+
+                                auto x = _mouse_x_opt->query() - viewport_x;
+                                auto y = _mouse_y_opt->query() - viewport_y;
+
+                                _picked_id_opt->set(0.f);
+                                
+                                rs2::float3 normal, pos;
+
+                                if (mouse_pick(rs2::float2{ x, y }, 
+                                        rs2::float2{ fbo_width, fbo_height }, 
+                                        _rgba_pbo, true, &pos, &normal))
+                                {
                                     _normal_x_opt->set(normal.x);
-                                    _normal_y_opt->set(-normal.y); 
+                                    _normal_y_opt->set(normal.y); 
                                     _normal_z_opt->set(normal.z);
 
                                     _picked_x_opt->set(pos.x);
@@ -808,41 +776,25 @@ namespace librealsense
 
                                     _picked_id_opt->set(1.f);
                                 }
-
-                                if (origin_rgba.a > 0)
-                                {
-                                    _origin_picked_opt->set(1.f);
-                                }
-
-                                glReadBuffer(GL_NONE);
-                                glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-
+                                
                                 _mouse_pick_opt->set(0.f);
-
-                                // glActiveTexture(GL_TEXTURE1);
-                                // glBindTexture(GL_TEXTURE_2D, depth_tex);
-                                // glActiveTexture(GL_TEXTURE0);
-                                // glBindTexture(GL_TEXTURE_2D, color_tex);
-
-                                // _blit->begin();
-                                // _blit->set_image_size(vp[2], vp[3]);
-                                // _blit->set_selected(_selected_opt->query() > 0.f);
-                                // _blit->end();
-
-                                //_viz->draw(*_blit, color_tex);
 
                                 glActiveTexture(GL_TEXTURE0 + _shader->texture_slot());
                             }
-                            else
+
+                            rs2::float3 org{ 0.f, 0.f, 0.f };
+                            rs2::float2 origin = translate_3d_to_2d(org, p, v, f, vp);
+                            origin.x = origin.x - vp[0];
+                            origin.y = origin.y - vp[1];
+                            _origin_picked_opt->set(0.f);
+
+                            if (mouse_pick(origin, rs2::float2{ vp[2], vp[3] }, 
+                                _origin_rgba_pbo, false, nullptr, nullptr))
                             {
-                                _shader->set_mouse_xy(-1, -1);
+                                _origin_picked_opt->set(1.f);
                             }
 
-
-                            _shader->begin();
-                            render_pc(get_matrix(RS2_GL_MATRIX_PROJECTION));
-
-                            _shader->end();
+                            render_pc(_shader, get_matrix(RS2_GL_MATRIX_PROJECTION));
                         }
                     }
                     else

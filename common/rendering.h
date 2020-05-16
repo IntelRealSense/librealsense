@@ -1719,8 +1719,8 @@ namespace rs2
         p2d.z = clamp(p2d.z, -1.0, 1.0);
 
         // viewport coordinates
-        float x_vp = round((p2d.x + 1.0) / 2.0 * vp[2]);
-        float y_vp = round((p2d.y + 1.0) / 2.0 * vp[3]);
+        float x_vp = round((p2d.x + 1.0) / 2.0 * vp[2]) + vp[0];
+        float y_vp = round((p2d.y + 1.0) / 2.0 * vp[3]) + vp[1];
 
         float2 p_w;
         p_w.x = x_vp;
