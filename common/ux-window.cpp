@@ -422,7 +422,7 @@ namespace rs2
             _splash_tex.show({ 0.f,0.f,float(_width),float(_height) }, opacity);
         }
 
-        std::string hourglass = u8"\uf250";
+        std::string hourglass = u8"\uf251";
         static periodic_timer every_200ms(std::chrono::milliseconds(200));
         bool do_200ms = every_200ms;
         if (_query_devices && do_200ms)
@@ -437,7 +437,7 @@ namespace rs2
             }
         }
 
-        //hourglass[2] += _hourglass_index;
+        hourglass[2] += _hourglass_index;
 
         auto flags = ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |

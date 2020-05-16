@@ -209,20 +209,6 @@ static const char* fragment_shader_text_picking =
 
 using namespace rs2;
 
-matrix4 convert_to_gl(const matrix4& input)
-{
-    matrix4 output;
-
-    for (int i = 0; i < 4; i++)
-    {
-        for (int j = 0; j < 4; j++)
-        {
-            output(i, j) = input(j, i);
-        }
-    }
-    return output;
-}
-
 matrix4 frustum(float left, float right, float bottom, float top, float zNear, float zFar, float ox, float oy)
 {
     matrix4 res;
@@ -558,14 +544,14 @@ namespace librealsense
                             auto mouse_pick = [this, &render_pc](rs2::float2 xy, rs2::float2 wh, pbo<rgba8>& pbo,
                                 bool fetch_xyz, rs2::float3* xyz, rs2::float3* normal)
                                 {
-                                auto gl_p = convert_to_gl(get_matrix(RS2_GL_MATRIX_PROJECTION));
+                                auto gl_p = get_matrix(RS2_GL_MATRIX_PROJECTION);
 
-                                auto near_plane = gl_p(3,4)/(gl_p(3,3)-1);
-                                auto far_plae   = gl_p(3,4)/(gl_p(3,3)+1);
-                                auto bottom     = near_plane * (gl_p(2,3)-1)/gl_p(2,2);
-                                auto top        = near_plane * (gl_p(2,3)+1)/gl_p(2,2);
-                                auto left       = near_plane * (gl_p(1,3)-1)/gl_p(1,1);
-                                auto right      = near_plane * (gl_p(1,3)+1)/gl_p(1,1);
+                                auto near_plane = gl_p(2,3)/(gl_p(2,2)-1);
+                                auto far_plae   = gl_p(2,3)/(gl_p(2,2)+1);
+                                auto bottom     = near_plane * (gl_p(1,2)-1)/gl_p(1,1);
+                                auto top        = near_plane * (gl_p(1,2)+1)/gl_p(1,1);
+                                auto left       = near_plane * (gl_p(0,2)-1)/gl_p(0,0);
+                                auto right      = near_plane * (gl_p(0,2)+1)/gl_p(0,0);
                                 auto ox = 0.f;
                                 auto oy = 0.f;
 
