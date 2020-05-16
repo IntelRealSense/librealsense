@@ -325,6 +325,7 @@ namespace rs2
         {
             auto data = reinterpret_cast<ux_window*>(glfwGetWindowUserPointer(w));
             data->_mouse.mouse_down = (button == GLFW_MOUSE_BUTTON_1) && (action != GLFW_RELEASE);
+            data->_mouse.rmouse_down = (button == GLFW_MOUSE_BUTTON_2) && (action != GLFW_RELEASE);
         });
         glfwSetScrollCallback(_win, [](GLFWwindow * w, double xoffset, double yoffset)
         {

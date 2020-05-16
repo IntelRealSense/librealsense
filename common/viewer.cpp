@@ -632,9 +632,6 @@ namespace rs2
         left += 80;
 
         // ------------ Shader Selection --------------
-
-        const auto using_glsl = config_file::instance().get_or_default(configurations::performance::glsl_for_rendering, false);
-
         const auto shader_selection_popup = "Shading Selection";
         if (big_button(&select_shader_source, win, left, 0, u8"\uf5aa", 
                        "Shading", true, true,
@@ -661,7 +658,7 @@ namespace rs2
             }
 
             selected = selected_shader == shader_type::diffuse;
-            if (ImGui::MenuItem("With Diffuse Lighting", nullptr, &selected, using_glsl))
+            if (ImGui::MenuItem("With Diffuse Lighting", nullptr, &selected, glsl_available))
             {
                 if (selected) selected_shader = shader_type::diffuse;
             }
@@ -684,11 +681,11 @@ namespace rs2
         // -------------------- Measure ----------------
 
         std::string measure_tooltip = "Measure distance between points";
-        if (!using_glsl) measure_tooltip += "\nRequires GLSL acceleration!";
+        if (!glsl_available) measure_tooltip += "\nRequires GLSL acceleration!";
         if (measurement_active)
         {
             bool active = true;
-            if (big_button(&active, win, 5 + left, 0, textual_icons::measure, "Measure", false, using_glsl, measure_tooltip.c_str()))
+            if (big_button(&active, win, 5 + left, 0, textual_icons::measure, "Measure", false, glsl_available, measure_tooltip.c_str()))
             {
                 measurement_active = false;
                 selected_points.clear();
@@ -698,7 +695,7 @@ namespace rs2
         else
         {
             bool active = false;
-            if (big_button(&active, win, 5 + left, 0, textual_icons::measure, "Measure", false, using_glsl, measure_tooltip.c_str()))
+            if (big_button(&active, win, 5 + left, 0, textual_icons::measure, "Measure", false, glsl_available, measure_tooltip.c_str()))
             {
                 measurement_active = true;
                 config_file::instance().set(configurations::viewer::is_measuring, true);
@@ -1034,6 +1031,9 @@ namespace rs2
 
         measurement_active = config_file::instance().get_or_default(
             configurations::viewer::is_measuring, false);
+
+        glsl_available = config_file::instance().get(
+            configurations::performance::glsl_for_rendering);
 
         occlusion_invalidation = config_file::instance().get_or_default(
             configurations::performance::occlusion_invalidation, true);
@@ -2620,6 +2620,8 @@ namespace rs2
             glEnable(GL_DEPTH_TEST);
         }
 
+        if (win.get_mouse().rmouse_down) selected_points.clear();
+
         for (auto&& points: selected_points)
         {
             glColor4f(light_blue.x, light_blue.y, light_blue.z, 0.9f);
@@ -3600,7 +3602,11 @@ namespace rs2
             auto picked = render_3d_view(new_rect, window, texture, points, window.get_font(), &picked_xyz);
             mouse_picked_event.add_value(picked && !input_ctrl.mouse_down);
 
-            if (mouse_picked_event.eval())
+            auto rect_copy = viewer_rect;
+            rect_copy.y += 60;
+            rect_copy.h -= 60;
+
+            if (mouse_picked_event.eval() && rect_copy.contains(window.get_mouse().cursor))
             {
                 std::string tt = to_string() << std::fixed << std::setprecision(3) 
                     << _picked.x << ", " << _picked.y << ", " << _picked.z << " meters";
