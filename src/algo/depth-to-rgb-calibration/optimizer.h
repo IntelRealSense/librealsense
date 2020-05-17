@@ -67,10 +67,6 @@ namespace depth_to_rgb_calibration {
         double max_sub_mm_z = 4;
         double constant_weights = 1000;
         double k_depth[3][3] = { {731.27344,0,529.27344 },{0,731.97656,402.32031},{0,0,1} };
-        //double k_depth_pinv_trans[3][3] = { { 0.0013674778, -1.1641532e-10,	2.3283064e-10 }, //pinv(params.Kdepth)';
-        //                                    { 8.7311491e-11,0.0013661643 ,-2.9103830e-11}, 
-        //                                    {  -0.72376943, -0.54963547,0.99999988 } };
-
         double k_depth_pinv_trans[3][3] = { { 0.0013674775381131,5.42101086242752e-20,1.0842021724855e-19 }, //pinv(params.Kdepth)';
                                             { 2.16840434497101e-19,0.00136616396102163,-2.71050543121376e-19},
                                             { -0.723769537301155,-0.549635511724462,1 } };
@@ -107,11 +103,7 @@ namespace depth_to_rgb_calibration {
         void set_ir_data(
             std::vector< ir_t > && ir_data,
             size_t width, size_t height );
-        /*void set_z_data(
-            std::vector< z_t > && z_data,
-            rs2_intrinsics_double const & depth_intrinsics,
-            float depth_units );*/
-        void set_depth_data(
+        void set_z_data(
             std::vector< z_t >&& z_data,
             std::vector< ir_t >&& ir_data,
             rs2_intrinsics_double const& depth_intrinsics,
@@ -142,7 +134,7 @@ namespace depth_to_rgb_calibration {
         yuy2_frame_data const & get_yuy_data() const { return _yuy; }
         ir_frame_data   const & get_ir_data() const  { return _ir; }
         z_frame_data    const& get_depth_data() const { return _z; }
-        // impl
+       
     private:
         void zero_invalid_edges( z_frame_data& z_data, ir_frame_data const & ir_data );
         std::vector<direction> get_direction( std::vector<double> gradient_x, std::vector<double> gradient_y );
@@ -152,7 +144,6 @@ namespace depth_to_rgb_calibration {
         std::vector<uint8_t> get_luminance_from_yuy2( std::vector<uint16_t> yuy2_imagh );
 
         std::vector<uint8_t> get_logic_edges( std::vector<double> edges );
-        //std::vector<double> calculate_weights( z_frame_data& z_data );
         std::vector <double3> subedges2vertices(z_frame_data& z_data, const rs2_intrinsics_double& intrin, double depth_units);
         
         optimaization_params back_tracking_line_search( const z_frame_data & z_data, const yuy2_frame_data& yuy_data, optimaization_params opt_params );
@@ -178,7 +169,6 @@ namespace depth_to_rgb_calibration {
         params _params;
         yuy2_frame_data _yuy;
         ir_frame_data _ir;
-        //z_frame_data _z;
         z_frame_data _z;
         calib _original_calibration;         // starting state of auto-calibration
         calib _factory_calibration;          // factory default calibration of the camera

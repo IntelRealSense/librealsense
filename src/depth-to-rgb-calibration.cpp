@@ -70,7 +70,7 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     AC_LOG( DEBUG, "... setting z data" );
     auto z_profile = depth.get_profile().as< rs2::video_stream_profile >();
     auto z_data = (impl::z_t const *) depth.get_data();
-    _algo.set_depth_data(
+    _algo.set_z_data(
         std::vector< impl::z_t >( z_data, z_data + depth.get_data_size() / sizeof( impl::z_t ) ),
         std::vector< impl::ir_t >(ir_data, ir_data + ir.get_data_size() / sizeof(impl::ir_t)),
         z_profile.get_intrinsics(),
