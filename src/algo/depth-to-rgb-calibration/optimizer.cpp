@@ -547,7 +547,7 @@ std::vector<double> find_local_values_min(std::vector<double>& local_values)
     }
     return res;
 }
-void optimizer::set_depth_data(
+void optimizer::set_z_data(
     std::vector< z_t >&& depth_data,
     std::vector< ir_t >&& ir_data,
     rs2_intrinsics_double const& depth_intrinsics,
