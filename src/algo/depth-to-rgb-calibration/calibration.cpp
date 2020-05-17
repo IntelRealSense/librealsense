@@ -212,11 +212,20 @@ p_matrix p_matrix::operator-(const p_matrix & c) const
 	return res;
 }
 
+p_matrix p_matrix::operator*(const p_matrix & c) const
+{
+	p_matrix res;
+	for (auto i = 0; i < 12; i++)
+		res.vals[i] = vals[i] * c.vals[i];
+
+	return res;
+}
+
 p_matrix p_matrix::operator/(const p_matrix & c) const
 {
 	p_matrix res;
 	for (auto i = 0; i < 12; i++)
-		res.vals[i] = vals[i] / c.vals[i];
+		res.vals[i] = c.vals[i] == 0 ? 0 : vals[i] / c.vals[i];
 
 	return res;
 }

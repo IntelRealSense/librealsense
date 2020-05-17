@@ -82,6 +82,14 @@ namespace depth_to_rgb_calibration {
         coeffs<k_matrix> coeffs_k;
         coeffs<rotation_in_angles> coeffs_r;
         coeffs < p_matrix> coeffs_p;
+		p_matrix unit_grad;
+		p_matrix normalized_grads;
+		p_matrix grads_norm;
+		double grads_norma;
+		double cost;
+		int back_tracking_line_search_iters;
+		double t;
+		optimaization_params next_params;
     };
 
     class optimizer
@@ -144,11 +152,14 @@ namespace depth_to_rgb_calibration {
         std::vector<double> calculate_weights( z_frame_data& z_data );
         std::vector <double3> subedges2vertices(z_frame_data& z_data, const rs2_intrinsics_double& intrin, double depth_units);
         
-        optimaization_params back_tracking_line_search( const z_frame_data & z_data, const yuy2_frame_data& yuy_data, optimaization_params opt_params );
+        optimaization_params back_tracking_line_search( const z_frame_data & z_data, 
+			const yuy2_frame_data& yuy_data, 
+			optimaization_params opt_params,
+			iteration_data_collect * data = nullptr);
+
         double calc_step_size( optimaization_params opt_params );
         double calc_t( optimaization_params opt_params );
-        rotation_in_angles calc_rotation_gradients( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy );
-
+       
         // input validation
         bool is_movement_in_images(yuy2_frame_data& yuy);
         bool is_edge_distributed( z_frame_data & z_data, yuy2_frame_data & yuy_data );

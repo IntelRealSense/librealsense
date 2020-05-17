@@ -118,6 +118,7 @@ namespace depth_to_rgb_calibration {
 		p_matrix operator+(const p_matrix& c) const;
 		p_matrix operator-(const p_matrix& c) const;
 		p_matrix operator/(const p_matrix& c) const;
+		p_matrix operator*(const p_matrix& c) const;
 		double get_norma();
 		double sum();
 		p_matrix normalize();

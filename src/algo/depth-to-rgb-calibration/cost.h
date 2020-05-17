@@ -18,6 +18,12 @@ namespace depth_to_rgb_calibration {
         yuy2_frame_data const & yuy_data,std::function< void( size_t i, double d_val, double weight, double vertex_cost ) > fn
     );
 
+	 double calc_cost_per_vertex_diff(
+		z_frame_data const & z_data,
+		yuy2_frame_data const & yuy_data,
+		const uvmap_t & uvmap_old, 
+		const uvmap_t & uvmap_new
+	);
 
     double calc_cost(
         const z_frame_data & z_data,

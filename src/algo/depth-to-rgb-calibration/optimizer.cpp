@@ -975,8 +975,8 @@ static p_matrix calc_p_gradients(const z_frame_data & z_data,
         
     }
 
-    p_matrix averages;
-    for (auto i = 0; i < 12; i++)
+	p_matrix averages = { 0 };
+    for (auto i = 0; i < 8; i++) //zero the last line of P grad?
     {
         averages.vals[i] = (double)sums.vals[i] / (double)sum_of_valids;
     }
@@ -988,7 +988,8 @@ static
 std::pair< std::vector<double2>, std::vector<double>> calc_rc(
     const z_frame_data & z_data,
     const yuy2_frame_data & yuy_data,
-    const calib& curr_calib
+	const calib & cal,
+	const p_matrix & p_mat
 )
 {
     auto v = z_data.vertices;
@@ -997,8 +998,8 @@ std::pair< std::vector<double2>, std::vector<double>> calc_rc(
     std::vector<double> r2( z_data.vertices.size() );
     std::vector<double> rc( z_data.vertices.size() );
 
-    auto yuy_intrin = curr_calib.get_intrinsics();
-    auto yuy_extrin = curr_calib.get_extrinsics();
+    auto yuy_intrin = cal.get_intrinsics();
+    auto yuy_extrin = cal.get_extrinsics();
 
     auto fx = (double)yuy_intrin.fx;
     auto fy = (double)yuy_intrin.fy;
@@ -1008,20 +1009,21 @@ std::pair< std::vector<double2>, std::vector<double>> calc_rc(
     auto & r = yuy_extrin.rotation;
     auto & t = yuy_extrin.translation;
 
-    double mat[3][4] = {
+   /* double mat[3][4] = {
         fx*(double)r[0] + ppx * (double)r[2], fx*(double)r[3] + ppx * (double)r[5], fx*(double)r[6] + ppx * (double)r[8], fx*(double)t[0] + ppx * (double)t[2],
         fy*(double)r[1] + ppy * (double)r[2], fy*(double)r[4] + ppy * (double)r[5], fy*(double)r[7] + ppy * (double)r[8], fy*(double)t[1] + ppy * (double)t[2],
         r[2], r[5], r[8], t[2] };
-
+*/
+	auto mat = p_mat.vals;
     for( auto i = 0; i < z_data.vertices.size(); ++i )
     {
         double x = v[i].x;
         double y = v[i].y;
         double z = v[i].z;
 
-        double x1 = (double)mat[0][0] * (double)x + (double)mat[0][1] * (double)y + (double)mat[0][2] * (double)z + (double)mat[0][3];
-        double y1 = (double)mat[1][0] * (double)x + (double)mat[1][1] * (double)y + (double)mat[1][2] * (double)z + (double)mat[1][3];
-        double z1 = (double)mat[2][0] * (double)x + (double)mat[2][1] * (double)y + (double)mat[2][2] * (double)z + (double)mat[2][3];
+        double x1 = (double)mat[0] * (double)x + (double)mat[1] * (double)y + (double)mat[2] * (double)z + (double)mat[3];
+        double y1 = (double)mat[4] * (double)x + (double)mat[5] * (double)y + (double)mat[6] * (double)z + (double)mat[7];
+        double z1 = (double)mat[8] * (double)x + (double)mat[9] * (double)y + (double)mat[10] * (double)z + (double)mat[11];
 
         auto x_in = x1 / z1;
         auto y_in = y1 / z1;
@@ -1050,16 +1052,14 @@ static p_matrix calc_gradients(
 )
 {
     p_matrix res;
-    auto interp_IDT_x = biliniar_interp( yuy_data.edges_IDTx, yuy_data.width, yuy_data.height, uv );
-    if( data )
-        data->d_vals_x = interp_IDT_x;
-
+    auto interp_IDT_x = biliniar_interp( yuy_data.edges_IDTx, yuy_data.width, yuy_data.height, uv );      
     auto interp_IDT_y = biliniar_interp( yuy_data.edges_IDTy, yuy_data.width, yuy_data.height, uv );
 
-    auto rc = calc_rc( z_data, yuy_data, cal);
+    auto rc = calc_rc( z_data, yuy_data, cal, p_mat);
 
     if (data)
     {
+		data->d_vals_x = interp_IDT_x;
         data->d_vals_y = interp_IDT_y;
         data->xy = rc.first;
         data->rc = rc.second;
@@ -1259,14 +1259,13 @@ void optimizer::write_data_to( std::string const & dir )
 
 optimaization_params optimizer::back_tracking_line_search( const z_frame_data & z_data, 
 	const yuy2_frame_data& yuy_data, 
-	optimaization_params curr_params )
+	optimaization_params curr_params,
+	iteration_data_collect * data)
 {
     optimaization_params new_params;
 
-    auto orig = curr_params;
     auto grads_norm = curr_params.calib_gradients.normalize();
     auto normalized_grads = grads_norm / _params.normelize_mat;
-    auto normalized_grads_norm = normalized_grads.get_norma();
     auto unit_grad = normalized_grads.normalize();
 
     auto t = calc_t( curr_params );
@@ -1275,29 +1274,42 @@ optimaization_params optimizer::back_tracking_line_search( const z_frame_data & 
     auto movement = unit_grad * step_size;
     new_params.curr_p_mat = curr_params.curr_p_mat + movement;
     
-    auto uvmap = get_texture_map( z_data.vertices, _original_calibration/*decompose(curr_params.curr_p_mat)*/, curr_params.curr_p_mat);
-    curr_params.cost = calc_cost( z_data, yuy_data, uvmap );
+    auto uvmap_old = get_texture_map( z_data.vertices, _original_calibration/*decompose(curr_params.curr_p_mat)*/, curr_params.curr_p_mat);
+    curr_params.cost = calc_cost( z_data, yuy_data, uvmap_old);
+	
 
-    uvmap = get_texture_map( z_data.vertices, _original_calibration/*decompose(new_params.curr_p_mat)*/, new_params.curr_p_mat);
-    new_params.cost = calc_cost( z_data, yuy_data, uvmap );
+	auto uvmap_new = get_texture_map( z_data.vertices, _original_calibration/*decompose(new_params.curr_p_mat)*/, new_params.curr_p_mat);
+    new_params.cost = calc_cost( z_data, yuy_data, uvmap_new);
+
+	auto diff = calc_cost_per_vertex_diff(z_data, yuy_data, uvmap_old, uvmap_new);
 
     auto iter_count = 0;
-    while( (curr_params.cost - new_params.cost) >= step_size * t && abs( step_size ) > _params.min_step_size && iter_count++ < _params.max_back_track_iters )
+    while( diff >= step_size * t && abs( step_size ) > _params.min_step_size && iter_count++ < _params.max_back_track_iters )
     {
         AC_LOG( DEBUG, "    back tracking line search cost= " << std::fixed << std::setprecision( 15 ) << new_params.cost );
         step_size = _params.tau*step_size;
 
         new_params.curr_p_mat = curr_params.curr_p_mat + unit_grad * step_size;
-       
-        uvmap = get_texture_map( z_data.vertices, _original_calibration/*decompose(new_params.curr_p_mat)*/, new_params.curr_p_mat);
-        new_params.cost = calc_cost( z_data, yuy_data, uvmap );
+		
+		uvmap_new = get_texture_map( z_data.vertices, _original_calibration/*decompose(new_params.curr_p_mat)*/, new_params.curr_p_mat);
+		new_params.cost = calc_cost(z_data, yuy_data, uvmap_new);
+		diff = calc_cost_per_vertex_diff(z_data, yuy_data, uvmap_old, uvmap_new);
     }
 
-    if( curr_params.cost - new_params.cost >= step_size * t )
+    if(diff >= step_size * t )
     {
-        new_params = orig;
+        new_params = curr_params;
     }
 
+	if (data)
+	{
+		data->grads_norma = curr_params.calib_gradients.get_norma();
+		data->grads_norm = grads_norm;
+		data->normalized_grads = normalized_grads;
+		data->unit_grad = unit_grad;
+		data->back_tracking_line_search_iters = iter_count;
+		data->t = t;
+	}
     return new_params;
 }
 
@@ -1319,7 +1331,7 @@ double optimizer::calc_t( optimaization_params opt_params )
     auto normalized_grads_norm = normalized_grads.get_norma();
     auto unit_grad = normalized_grads.normalize();
 
-    auto t_vals = normalized_grads * -_params.control_param / unit_grad;
+    auto t_vals = (normalized_grads * -_params.control_param) * unit_grad;
     return t_vals.sum();
 }
 
@@ -1339,19 +1351,20 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
     {
         iteration_data_collect data;
         data.iteration = n_iterations;
-
-        auto res = calc_cost_and_grad( _z, _yuy, _original_calibration/*decompose(_params_curr.curr_p_mat)*/, _params_curr.curr_p_mat, &data );
+		auto res = calc_cost_and_grad( _z, _yuy, _original_calibration/*decompose(_params_curr.curr_p_mat)*/, _params_curr.curr_p_mat, &data );
         _params_curr.cost = res.first;
         _params_curr.calib_gradients = res.second;
         AC_LOG( DEBUG, n_iterations << ": Cost = " << std::fixed << std::setprecision( 15 ) << _params_curr.cost );
 
         data.params = _params_curr;
 
-        if( cb )
-            cb( data );
-
         auto prev_params = _params_curr;
-        _params_curr = back_tracking_line_search( _z, _yuy, _params_curr );
+        _params_curr = back_tracking_line_search( _z, _yuy, _params_curr, &data);
+		data.next_params = _params_curr;
+
+		if (cb)
+			cb(data);
+
         auto norm = (_params_curr.curr_p_mat - prev_params.curr_p_mat).get_norma();
         if( norm < _params.min_rgb_mat_delta )
         {

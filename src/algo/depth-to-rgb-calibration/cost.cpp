@@ -34,6 +34,44 @@ namespace depth_to_rgb_calibration {
         return cost_per_vertex;
     }
 
+	double calc_cost_per_vertex_diff(z_frame_data const & z_data, yuy2_frame_data const & yuy_data, const uvmap_t & uvmap_old, const uvmap_t & uvmap_new)
+	{
+		//old
+		auto d_vals_old = biliniar_interp(yuy_data.edges_IDT, yuy_data.width, yuy_data.height, uvmap_old);
+
+		auto cost_per_vertex_old = calc_cost_per_vertex(d_vals_old, z_data, yuy_data,
+			[&](size_t i, double d_val, double weight, double vertex_cost) {});
+
+		//new
+		auto d_vals_new = biliniar_interp(yuy_data.edges_IDT, yuy_data.width, yuy_data.height, uvmap_new);
+
+		auto cost_per_vertex_new = calc_cost_per_vertex(d_vals_new, z_data, yuy_data,
+			[&](size_t i, double d_val, double weight, double vertex_cost) {});
+
+		double diff = 0;
+		auto num = 0;
+		for (auto i = 0; i < cost_per_vertex_new.size(); i++)
+		{
+			if (cost_per_vertex_old[i] != std::numeric_limits<double>::max() &&
+				cost_per_vertex_new[i] != std::numeric_limits<double>::max())
+			{
+				diff += cost_per_vertex_old[i] - cost_per_vertex_new[i];
+				num++;
+			}
+		}
+		return diff / num;
+		
+	}
+
+	std::vector<double> calc_cost_per_vertex(z_frame_data const & z_data, yuy2_frame_data const & yuy_data,
+		const uvmap_t & uvmap)
+	{
+		auto d_vals = biliniar_interp(yuy_data.edges_IDT, yuy_data.width, yuy_data.height, uvmap);
+
+		return calc_cost_per_vertex(d_vals, z_data, yuy_data,
+			[&](size_t i, double d_val, double weight, double vertex_cost)
+		{});
+	}
 
     double calc_cost(
         const z_frame_data & z_data,
