@@ -702,13 +702,13 @@ bool optimizer::is_scene_valid()
 
     // remove pixels in section map that were removed in weights
     AC_LOG(DEBUG, "... " << _z.supressed_edges.size() << " total edges");
-    /*for (auto i = 0; i < _z.supressed_edges.size(); i++)
+    for (auto i = 0; i < _z.supressed_edges.size(); i++)
     {
         if (_z.supressed_edges[i])
         {
             _z.section_map.push_back(section_map_depth[i]);
         }
-    }*/
+    }
     _z.section_map = _z.section_map_depth_inside; // NOHA :: taken from preprocessDepth
     AC_LOG(DEBUG, "... " << _z.section_map.size() << " not suppressed");
 
