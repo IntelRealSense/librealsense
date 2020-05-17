@@ -13,7 +13,7 @@
 
 namespace librealsense
 {
-    namespace fw_logs_parsing
+    namespace fw_logs
     {
         struct fw_log_event
         {

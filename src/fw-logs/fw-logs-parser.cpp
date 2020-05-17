@@ -10,7 +10,7 @@ using namespace std;
 
 namespace librealsense
 {
-    namespace fw_logs_parsing
+    namespace fw_logs
     {
         fw_logs_parser::fw_logs_parser(string xml_full_file_path)
             : _fw_logs_formating_options(xml_full_file_path),
@@ -28,7 +28,6 @@ namespace librealsense
         vector<string> fw_logs_parser::get_fw_log_lines(const fw_logs_binary_data& fw_logs_data_binary)
         {
             fw_logs_binary_data binary_data = { fw_logs_data_binary };
-            binary_data.logs_buffer.erase(binary_data.logs_buffer.begin(), binary_data.logs_buffer.begin() + 4);
             vector<string> string_vector;
             int num_of_lines = int(binary_data.logs_buffer.size()) / sizeof(fw_log_binary);
             auto temp_pointer = reinterpret_cast<fw_log_binary const*>(binary_data.logs_buffer.data());
@@ -50,6 +49,32 @@ namespace librealsense
             fill_log_data(fw_logs, &log_data);
 
             return log_data.to_string();
+        }
+
+        fw_log_data fw_logs_parser::generate_log_data(char* fw_logs)
+        {
+            fw_log_data log_data;
+            fill_log_data(fw_logs, &log_data);
+
+            return log_data;
+        }
+
+        vector<fw_log_data> fw_logs_parser::get_fw_log_data(const fw_logs_binary_data& fw_logs_data_binary)
+        {
+            fw_logs_binary_data binary_data = { fw_logs_data_binary };
+            vector<fw_log_data> data_vector;
+            int num_of_lines = int(binary_data.logs_buffer.size()) / sizeof(fw_log_binary);
+            auto temp_pointer = reinterpret_cast<fw_log_binary const*>(binary_data.logs_buffer.data());
+
+            for (int i = 0; i < num_of_lines; i++)
+            {
+                fw_log_data data;
+                auto log = const_cast<char*>(reinterpret_cast<char const*>(temp_pointer));
+                data = generate_log_data(log);
+                data_vector.push_back(data);
+                temp_pointer++;
+            }
+            return data_vector;
         }
 
         void fw_logs_parser::fill_log_data(const char* fw_logs, fw_log_data* log_data)

@@ -312,6 +312,106 @@ namespace rs2
         }
     };
 
+    class firmware_logger_message
+    {
+    public:
+        firmware_logger_message(const std::vector<uint8_t>& fw_log_bytes)
+        {
+            int i = 0;
+            _magic_number = build_uint32_from4_uint8(fw_log_bytes.data() + i);
+            i += 4;
+            _severity = build_uint32_from4_uint8(fw_log_bytes.data() + i);
+            i += 4;
+            _file_id = build_uint32_from4_uint8(fw_log_bytes.data() + i);
+            i += 4;
+            _group_id = build_uint32_from4_uint8(fw_log_bytes.data() + i);
+            i += 4;
+            _event_id = build_uint32_from4_uint8(fw_log_bytes.data() + i);
+            i += 4;
+            _line = build_uint32_from4_uint8(fw_log_bytes.data() + i);
+            i += 4;
+            _sequence = build_uint32_from4_uint8(fw_log_bytes.data() + i);
+            i += 4;
+            _p1 = build_uint32_from4_uint8(fw_log_bytes.data() + i);
+            i += 4;
+            _p2 = build_uint32_from4_uint8(fw_log_bytes.data() + i);
+            i += 4;
+            _p3 = build_uint32_from4_uint8(fw_log_bytes.data() + i);
+            i += 4;
+            _timestamp = build_uint64_from8_uint8(fw_log_bytes.data() + i);
+            i += 8;
+            _delta = build_double_from8_uint8(fw_log_bytes.data() + i);
+            i += 8;
+            _thread_id = build_uint32_from4_uint8(fw_log_bytes.data() + i);
+        }
+
+        std::string to_string() const
+        {
+            std::stringstream fmt;
+            fmt << "magic number = " << _magic_number << ",\t"
+                << "severity = " <<_severity << ",\t"
+                << "file = " <<_file_id << ",\t"
+                << "group = " << _group_id << ",\t"
+                << "line = " << _line << ",\t"
+                << "sequ = " <<_sequence << ",\t"
+                << "timestamp = " << _timestamp << ",\t"
+                << "delta = " << _delta << ",\t"
+                << "thread = " << _thread_id;
+            return fmt.str();
+        }
+
+    private:
+        uint32_t build_uint32_from4_uint8(const uint8_t* start)
+        {
+            uint8_t first = *(start);
+            uint8_t second = (*(start + 1));
+            uint8_t third = (*(start + 2));
+            uint8_t fourth = (*(start + 3));
+            uint32_t res = first;
+            res += static_cast<uint32_t>(second << 8);
+            res += static_cast<uint32_t>(third << 16);
+            res += static_cast<uint32_t>(fourth << 24);
+            return res;
+        }
+
+        double build_double_from8_uint8(const uint8_t* start)
+        {
+            uint64_t resInInt = build_uint64_from8_uint8(start);
+            double res = *reinterpret_cast<double*>(&resInInt);
+            return res;
+        }
+
+        uint64_t build_uint64_from8_uint8(const uint8_t* start)
+        {
+            uint32_t first = build_uint32_from4_uint8(start);
+            start += 4;
+            uint32_t second = build_uint32_from4_uint8(start);
+            uint64_t res = first;
+            res += static_cast<uint64_t>(second << 32);
+
+            return res;
+        }
+        uint32_t _magic_number;
+        uint32_t _severity;
+        uint32_t _file_id;
+        uint32_t _group_id;
+        uint32_t _event_id;
+        uint32_t _line;
+        uint32_t _sequence;
+        uint32_t _p1;
+        uint32_t _p2;
+        uint32_t _p3;
+        uint64_t _timestamp;
+        double _delta;
+        uint32_t _thread_id;
+
+        std::string message;
+        std::string file_name;
+        std::string thread_name;
+    };
+
+    
+
     class firmware_logger : public device
     {
     public:
@@ -326,7 +426,7 @@ namespace rs2
             error::handle(e);
         }
 
-        std::vector<uint8_t> get_firmware_logs() const
+        std::vector<rs2::firmware_logger_message> get_firmware_logs() const
         {
             std::vector<uint8_t> results;
 
@@ -339,11 +439,25 @@ namespace rs2
             auto size = rs2_get_raw_data_size(list.get(), &e);
             error::handle(e);
 
-            auto start = rs2_get_raw_data(list.get(), &e);
+            auto sizeOfOneLog = rs2_get_firmware_logs_one_message_size(&e);
+			error::handle(e);
 
-            results.insert(results.begin(), start, start + size);
+            std::vector<rs2::firmware_logger_message> vec;
+            if (size > 0)
+            {
+                auto start = rs2_get_raw_data(list.get(), &e);
 
-            return results;
+                results.insert(results.begin(), start, start + size);
+                auto startIt = results.begin();
+                for (int i = 0; i < size / sizeOfOneLog; ++i)
+                {
+                    std::vector<uint8_t> resultsForOneLog;
+                    resultsForOneLog.insert(resultsForOneLog.begin(), startIt, startIt + sizeOfOneLog);
+                    vec.push_back(rs2::firmware_logger_message(resultsForOneLog));
+                    startIt += sizeOfOneLog;
+                }
+            }
+            return vec;
         }
     };
 
@@ -359,7 +473,7 @@ namespace rs2
             error::handle(e);
         }
 
-        std::vector<std::string> firmware_logs_parser::get_firmware_logs_parsed(const std::vector<uint8_t>& raw_data)
+        std::string firmware_logs_parser::get_firmware_logs_parsed(std::vector<uint8_t>& raw_data)
         {
             std::string results;
 
@@ -378,7 +492,7 @@ namespace rs2
             results.insert(results.begin(), start, start + size);
 
             //transforming the string to vector<string> delimiter is '\n'
-            std::vector<std::string> log_lines;
+            /*std::vector<std::string> log_lines;
             std::size_t current_start = 0;
             std::size_t delimiter_found = results.find_first_of("\n");
             while (delimiter_found != std::string::npos)
@@ -386,9 +500,9 @@ namespace rs2
                 log_lines.push_back(std::string(results.substr(current_start, delimiter_found - current_start)));
                 current_start = delimiter_found + 1;
                 delimiter_found = results.find_first_of("\n", delimiter_found + 1);
-            }
+            }*/
 
-            return log_lines;
+            return results;
         }
 
         firmware_logs_parser(std::shared_ptr<rs2_firmware_logs_parser> fw_logs_parser)

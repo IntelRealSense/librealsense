@@ -8,7 +8,7 @@
 using namespace std;
 namespace librealsense
 {
-    namespace fw_logs_parsing
+    namespace fw_logs
     {
         fw_log_event::fw_log_event()
             : num_of_params(0),

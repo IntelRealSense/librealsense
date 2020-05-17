@@ -8,12 +8,14 @@
 
 namespace librealsense
 {
-    namespace fw_logs_parsing
+    namespace fw_logs
     {
         struct fw_logs_binary_data
         {
             std::vector<uint8_t> logs_buffer;
         };
+
+        static const int BINARY_DATA_SIZE = 20;
 
         typedef union
         {
@@ -83,6 +85,8 @@ namespace librealsense
             uint32_t p3;
             uint64_t timestamp;
             double delta;
+
+            uint32_t thread_id;
 
             std::string message;
             std::string file_name;
