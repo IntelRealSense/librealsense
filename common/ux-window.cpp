@@ -611,6 +611,7 @@ namespace rs2
         {
             open_window();
             _reload = false;
+            on_reload_complete();
         }
 
         int w = _width; int h = _height;

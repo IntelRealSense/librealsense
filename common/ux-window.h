@@ -34,6 +34,7 @@ namespace rs2
     public:
         std::function<void(std::string)> on_file_drop = [](std::string) {};
         std::function<bool()>            on_load = []() { return false; };
+        std::function<void()>            on_reload_complete = []() { };
 
         ux_window(const char* title, context &ctx);
 

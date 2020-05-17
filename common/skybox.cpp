@@ -9,12 +9,25 @@
 #include "res/py.h"
 #include "res/pz.h"
 
+skybox::skybox()
+{
+    plus_x = nullptr;
+    plus_y = nullptr;
+    plus_z = nullptr;
+
+    minus_x = nullptr;
+    minus_y = nullptr;
+    minus_z = nullptr;
+}
+
 void skybox::render()
 {
-    auto init = [](const uint8_t* buff, int length, rs2::texture_buffer& tex){
+    auto init = [](const uint8_t* buff, int length, std::shared_ptr<rs2::texture_buffer>& tex){
+        if (tex) tex.reset();
+        tex = std::make_shared<rs2::texture_buffer>();
         int x, y, comp;
         auto data = stbi_load_from_memory(buff, length, &x, &y, &comp, 3);
-        tex.upload_image(x, y, data, GL_RGB);
+        tex->upload_image(x, y, data, GL_RGB);
         stbi_image_free(data);
     };
     if (!initialized)
@@ -34,7 +47,7 @@ void skybox::render()
     const auto r = 50.f;
     const auto re = 49.999f;
 
-    glBindTexture(GL_TEXTURE_2D, plus_z.get_gl_handle());
+    glBindTexture(GL_TEXTURE_2D, plus_z->get_gl_handle());
     glBegin(GL_QUAD_STRIP);
     {
         glTexCoord2f(0.f, 1.f); glVertex3f(-r, r, re);
@@ -44,7 +57,7 @@ void skybox::render()
     }
     glEnd();
 
-    glBindTexture(GL_TEXTURE_2D, minus_z.get_gl_handle());
+    glBindTexture(GL_TEXTURE_2D, minus_z->get_gl_handle());
     glBegin(GL_QUAD_STRIP);
     {
         glTexCoord2f(1.f, 1.f); glVertex3f(-r, r, -re);
@@ -54,7 +67,7 @@ void skybox::render()
     }
     glEnd();
 
-    glBindTexture(GL_TEXTURE_2D, minus_x.get_gl_handle());
+    glBindTexture(GL_TEXTURE_2D, minus_x->get_gl_handle());
     glBegin(GL_QUAD_STRIP);
     {
         glTexCoord2f(1.f, 0.f); glVertex3f(-re, -r, r);
@@ -64,7 +77,7 @@ void skybox::render()
     }
     glEnd();
 
-    glBindTexture(GL_TEXTURE_2D, plus_x.get_gl_handle());
+    glBindTexture(GL_TEXTURE_2D, plus_x->get_gl_handle());
     glBegin(GL_QUAD_STRIP);
     {
         glTexCoord2f(0.f, 0.f); glVertex3f(re, -r, r);
@@ -75,7 +88,7 @@ void skybox::render()
     glEnd();
 
 
-    glBindTexture(GL_TEXTURE_2D, minus_y.get_gl_handle());
+    glBindTexture(GL_TEXTURE_2D, minus_y->get_gl_handle());
     glBegin(GL_QUAD_STRIP);
     {
         glTexCoord2f(0.f, 0.f); glVertex3f(-r, re, r);
@@ -85,7 +98,7 @@ void skybox::render()
     }
     glEnd();
 
-    glBindTexture(GL_TEXTURE_2D, plus_y.get_gl_handle());
+    glBindTexture(GL_TEXTURE_2D, plus_y->get_gl_handle());
     glBegin(GL_QUAD_STRIP);
     {
         glTexCoord2f(0.f, 1.f); glVertex3f(-r, -re, r);

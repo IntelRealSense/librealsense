@@ -735,13 +735,13 @@ namespace rs2
 
         // ---------------------- Help --------------------
 
-        active = show_help_screen;
-        if (big_button(&active, win, stream_rect.w - 65, 0, u8"\uf059", "Help", false, true, "Show 3D Viewer Controls"))
-        {
-            show_help_screen = !show_help_screen;
-        }
+        // active = show_help_screen;
+        // if (big_button(&active, win, stream_rect.w - 65, 0, u8"\uf059", "Help", false, true, "Show 3D Viewer Controls"))
+        // {
+        //     show_help_screen = !show_help_screen;
+        // }
         
-        left += 60;
+        // left += 60;
 
 
         // ImGui::PopStyleColor(4);
@@ -1088,9 +1088,12 @@ namespace rs2
               synchronization_enable(true),
               zo_sensors(0)
     {
-        // During init, enable debug output
-        glEnable              ( GL_DEBUG_OUTPUT );
-        glDebugMessageCallback( MessageCallback, 0 );
+        if (glDebugMessageCallback)
+        {
+            // During init, enable debug output
+            glEnable              ( GL_DEBUG_OUTPUT );
+            glDebugMessageCallback( MessageCallback, 0 );
+        }
 
         syncer = std::make_shared<syncer_model>();
         reset_camera();
@@ -2767,7 +2770,7 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_Text, !settings_open ? light_grey : light_blue);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, !settings_open ? light_grey : light_blue);
         
-        if (ImGui::Button(u8"\uf013\uf0d7", { panel_y,panel_y }))
+        if (ImGui::Button(u8"\uf013", { panel_y,panel_y }))
         {
             ImGui::OpenPopup("More Options");
         }
@@ -3230,6 +3233,9 @@ namespace rs2
 
                 auto apply = [&](){
                     config_file::instance() = temp_cfg;
+                    window.on_reload_complete = [this](){
+                        _skybox.reset();
+                    };
                     if (reload_required) window.reload();
                     else if (refresh_required) window.refresh();
                     update_configuration();

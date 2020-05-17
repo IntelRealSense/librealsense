@@ -8,12 +8,13 @@
 class skybox
 {
 public:
-    skybox(){}
+    skybox();
     void render();
+    void reset() { initialized = false; }
 
 private:
-    rs2::texture_buffer plus_x, minus_x;
-    rs2::texture_buffer plus_y, minus_y;
-    rs2::texture_buffer plus_z, minus_z;
+    std::shared_ptr<rs2::texture_buffer> plus_x, minus_x;
+    std::shared_ptr<rs2::texture_buffer> plus_y, minus_y;
+    std::shared_ptr<rs2::texture_buffer> plus_z, minus_z;
     bool initialized = false;
 };
