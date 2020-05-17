@@ -8,7 +8,7 @@ using namespace rapidxml;
 
 namespace librealsense
 {
-    namespace fw_logs_parsing
+    namespace fw_logs
     {
         class fw_logs_xml_helper
         {
