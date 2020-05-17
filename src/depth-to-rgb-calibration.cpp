@@ -72,7 +72,6 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     auto z_data = (impl::z_t const *) depth.get_data();
     _algo.set_z_data(
         std::vector< impl::z_t >( z_data, z_data + depth.get_data_size() / sizeof( impl::z_t ) ),
-        std::vector< impl::ir_t >(ir_data, ir_data + ir.get_data_size() / sizeof(impl::ir_t)),
         z_profile.get_intrinsics(),
         depth.as< rs2::depth_frame >().get_units() * 1000.f   // same scaling as for extrinsics!
     );

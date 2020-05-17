@@ -66,8 +66,7 @@ namespace depth_to_rgb_calibration {
         //smearing
         double max_sub_mm_z = 4;
         double constant_weights = 1000;
-        double k_depth[3][3] = { {731.27344,0,529.27344 },{0,731.97656,402.32031},{0,0,1} };
-        double k_depth_pinv_trans[3][3] = { { 0.0013674775381131,5.42101086242752e-20,1.0842021724855e-19 }, //pinv(params.Kdepth)';
+        double k_depth_pinv_trans[3][3] = { { 0.0013674775381131,5.42101086242752e-20,1.0842021724855e-19 }, //output of running this command in Matlab: pinv(params.Kdepth)';
                                             { 2.16840434497101e-19,0.00136616396102163,-2.71050543121376e-19},
                                             { -0.723769537301155,-0.549635511724462,1 } };
         // output validation
@@ -105,7 +104,6 @@ namespace depth_to_rgb_calibration {
             size_t width, size_t height );
         void set_z_data(
             std::vector< z_t >&& z_data,
-            std::vector< ir_t >&& ir_data,
             rs2_intrinsics_double const& depth_intrinsics,
             float depth_units);
         // Write dumps of all the pertinent data from the above to a directory of choice, so that
