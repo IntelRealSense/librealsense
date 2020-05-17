@@ -353,8 +353,20 @@ rs2_raw_data_buffer* rs2_serialize_json(rs2_device* dev, rs2_error** error);
 /* Load JSON and apply advanced-mode controls */
 void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_size, rs2_error** error);
 
-/* Get firmware Logs */
+/**
+* \brief Gets RealSense firmware logs.
+* \param[in] dev	Device from which the FW logs should be taken
+* \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return            firmware logs
+*/
 const rs2_raw_data_buffer* rs2_get_firmware_logs(rs2_device* dev, rs2_error** error);
+
+/**
+* \brief Gets size of one firmware log.
+* \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return            size of one firmware log
+*/
+int rs2_get_firmware_logs_one_message_size(rs2_error** error);
 
 /**
 * \brief Creates RealSense firmware logs parser.

@@ -108,13 +108,6 @@ float rs2_depth_frame_get_distance(const rs2_frame* frame_ref, int x, int y, rs2
 */
 rs2_time_t rs2_get_time( rs2_error** error);
 
-/**
- * Get Firmware logs
- * \param[in] dev  The Device
- * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
- */
-const rs2_raw_data_buffer* rs2_get_firmware_logs(rs2_device* dev, rs2_error** error);
-
 #ifdef __cplusplus
 }
 #endif

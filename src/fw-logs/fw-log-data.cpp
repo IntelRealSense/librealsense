@@ -13,7 +13,7 @@ setfill(' ') << setw(num) << left << element \
 
 namespace librealsense
 {
-    namespace fw_logs_parsing
+    namespace fw_logs
     {
         fw_log_data::fw_log_data(void)
         {

@@ -10,7 +10,7 @@ using namespace std;
 
 namespace librealsense
 {
-    namespace fw_logs_parsing
+    namespace fw_logs
     {
         fw_logs_xml_helper::fw_logs_xml_helper(string xml_full_file_path)
             : _init_done(false),

@@ -11,7 +11,7 @@ using namespace std;
 
 namespace librealsense
 {
-    namespace fw_logs_parsing
+    namespace fw_logs
     {
         fw_string_formatter::fw_string_formatter(std::unordered_map<std::string, std::vector<kvp>> enums)
             :_enums(enums)

@@ -42,7 +42,7 @@
 #include "global_timestamp_reader.h"
 #include "auto-calibrated-device.h"
 #include "firmware_logger_device.h"
-#include "fw-logs-parser/fw-logs-parser.h"
+#include "fw-logs/fw-logs-parser.h"
 ////////////////////////
 // API implementation //
 ////////////////////////
@@ -118,10 +118,8 @@ struct rs2_sensor_list
 
 struct rs2_firmware_logs_parser
 {
-    std::shared_ptr<librealsense::fw_logs_parsing::fw_logs_parser> firmware_logs_parser;
+    std::shared_ptr<librealsense::fw_logs::fw_logs_parser> firmware_logs_parser;
 };
-
-
 
 struct rs2_error
 {
@@ -2978,16 +2976,32 @@ const rs2_raw_data_buffer* rs2_get_firmware_logs(rs2_device* dev, rs2_error** er
     VALIDATE_NOT_NULL(dev);
     auto fw_loggerable = VALIDATE_INTERFACE(dev->device, librealsense::firmware_logger_extensions);
     
-    std::vector<uint8_t> buffer = fw_loggerable->get_fw_logs();
-    return new rs2_raw_data_buffer{ buffer };    
+    std::vector<librealsense::fw_logs::fw_log_data> logs = fw_loggerable->get_fw_logs();
+    std::vector<uint8_t> buffer;
+    for (int i = 0; i < logs.size(); ++i)
+    {
+        uint32_t size = sizeof(logs[i]);
+        uint8_t* buf = reinterpret_cast<uint8_t*>(&logs[i]);
+        for (int j = 0; j < size; ++j)
+        {
+            buffer.push_back(*(buf + j));
+        }
+    }
+    return new rs2_raw_data_buffer{ buffer };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev)
+
+int rs2_get_firmware_logs_one_message_size(rs2_error** error) BEGIN_API_CALL
+{
+    return sizeof(librealsense::fw_logs::fw_log_data);
+}
+NOEXCEPT_RETURN(0, error)
 
 rs2_firmware_logs_parser* rs2_create_firmware_logs_parser(const char* xml_path, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(xml_path);
 
-    return new rs2_firmware_logs_parser{ std::make_shared<librealsense::fw_logs_parsing::fw_logs_parser>(xml_path)};
+    return new rs2_firmware_logs_parser{ std::make_shared<librealsense::fw_logs::fw_logs_parser>(xml_path)};
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, xml_path)
 
@@ -3004,8 +3018,8 @@ rs2_raw_data_buffer* rs2_get_firmware_logs_parsed(rs2_firmware_logs_parser* fw_l
     VALIDATE_NOT_NULL(raw_data);
 
     std::vector<uint8_t> raw_data_buffer((uint8_t*)raw_data, (uint8_t*)raw_data + raw_data_size);
-    librealsense::fw_logs_parsing::fw_logs_binary_data binary_data =
-        librealsense::fw_logs_parsing::fw_logs_binary_data{ raw_data_buffer };
+    librealsense::fw_logs::fw_logs_binary_data binary_data =
+        librealsense::fw_logs::fw_logs_binary_data{ raw_data_buffer };
     std::vector<std::string> parsed_data_cpp = fw_logs_parser->firmware_logs_parser.get()->get_fw_log_lines(binary_data);
     
     // converting vector<string> to vector<uint8_t>

@@ -11,7 +11,7 @@ include(${_rel_path}/proc/CMakeLists.txt)
 include(${_rel_path}/res/CMakeLists.txt)
 include(${_rel_path}/pipeline/CMakeLists.txt)
 include(${_rel_path}/usb/CMakeLists.txt)
-include(${_rel_path}/fw-logs-parser/CMakeLists.txt)
+include(${_rel_path}/fw-logs/CMakeLists.txt)
 include(${_rel_path}/fw-update/CMakeLists.txt)
 
 message(STATUS "using ${BACKEND}")
