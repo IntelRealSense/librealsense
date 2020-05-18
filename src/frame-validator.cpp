@@ -24,10 +24,15 @@ namespace librealsense
 
     void frame_validator::on_frame(rs2_frame * f)
     {
-        if (!_stopped && propagate((frame_interface*)f))
+        if (!_stopped && propagate((frame_interface*)f)
+             && is_user_requested_frame((frame_interface*)f))
         {
-            if(is_user_requested_frame((frame_interface*)f))
                 _user_callback->on_frame(f);
+        }
+        else
+        {
+            // Resource handling
+            ((frame_interface*)f)->release();
         }
     }
 
