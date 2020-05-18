@@ -185,6 +185,9 @@ namespace rs2
         bool show_help_screen = false;
         bool occlusion_invalidation = true;
         bool glsl_available = false;
+        bool dragging_measurement_point = false;
+        int  dragging_point_index = -1;
+        bool measurement_point_hovered = false;
 
         press_button_model trajectory_button{ u8"\uf1b0", u8"\uf1b0","Draw trajectory", "Stop drawing trajectory", true };
         press_button_model grid_object_button{ u8"\uf1cb", u8"\uf1cb",  "Configure Grid", "Configure Grid", false };

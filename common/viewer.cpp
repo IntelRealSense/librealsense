@@ -2500,8 +2500,7 @@ namespace rs2
 
         check_gl_error();
 
-        auto draw_label = [this](float3 pos, float distance, int vp_offset_y)
-        {
+        auto project_to_2d = [](float3 pos){
             int32_t vp[4];
             glGetIntegerv(GL_VIEWPORT, vp);
             check_gl_error();
@@ -2514,8 +2513,12 @@ namespace rs2
             rs2::matrix4 p(proj);
             rs2::matrix4 v(model);
 
-            rs2::float2 w_pos = translate_3d_to_2d(pos, p, v, rs2::matrix4::identity(), vp);
+            return translate_3d_to_2d(pos, p, v, rs2::matrix4::identity(), vp);
+        };
 
+        auto draw_label = [this, &project_to_2d](float3 pos, float distance, int vp_offset_y)
+        {
+            auto w_pos = project_to_2d(pos);
             std::string label = length_to_string(distance);
             auto size = ImGui::CalcTextSize(label.c_str());
 
@@ -2677,13 +2680,43 @@ namespace rs2
             draw_sphere(points.pos, 0.011f, 20, 20);
         }
         glDisable(GL_DEPTH_TEST);
+        int i = 0;
+        measurement_point_hovered = false;
         for (auto&& points: selected_points)
         {
-            glColor4f(white.x, white.y, white.z, 0.4f);
-            draw_sphere(points.pos, 0.008f, 20, 20);
+            auto pos_2d = project_to_2d(points.pos);
+            pos_2d.y = win.framebuf_height() - pos_2d.y;
+
+            if ((pos_2d - win.get_mouse().cursor).length() < 20)
+            {
+                dragging_point_index = i;
+                measurement_point_hovered = true;
+                if (win.get_mouse().mouse_down && input_ctrl.click_period() > 0.5f)
+                    dragging_measurement_point = true;
+            }
+
+            glColor4f(white.x, white.y, white.z, dragging_point_index == i ? 0.8f : 0.4f);
+            draw_sphere(points.pos, dragging_point_index == i ? 0.012f : 0.008f, 20, 20);
+
+            i++;
         }
         glEnable(GL_DEPTH_TEST);
         glDisable(GL_BLEND);
+
+        if (!win.get_mouse().mouse_down || input_ctrl.click_period() < 0.5f)
+        {
+            dragging_point_index = -1;
+            if (dragging_measurement_point)
+            {
+                dragging_measurement_point = false;
+                auto dist = selected_points[1].pos - selected_points[0].pos;
+                not_model.add_log(to_string() << "Adjusted measurement to " << length_to_string(dist.length()));
+            }
+        }
+        if (dragging_measurement_point)
+        {
+            selected_points[dragging_point_index].pos = _picked;
+        }
 
         glPopMatrix();
 
@@ -3425,6 +3458,8 @@ namespace rs2
         ux_window& win,
         const rect& viewer_rect, bool force)
     {
+        if (dragging_measurement_point) return;
+
         mouse_info& mouse = win.get_mouse();
         auto now = std::chrono::high_resolution_clock::now();
         static auto view_clock = std::chrono::high_resolution_clock::now();
@@ -3694,7 +3729,7 @@ namespace rs2
 
             if (mouse_picked_event.eval() && rect_copy.contains(window.get_mouse().cursor))
             {
-                if (!(measurement_active && selected_points.size() == 1))
+                if (!(measurement_active && selected_points.size() == 1) && !measurement_point_hovered)
                 {
                     std::string tt = to_string() << std::fixed << std::setprecision(3) 
                         << _picked.x << ", " << _picked.y << ", " << _picked.z << " meters";
