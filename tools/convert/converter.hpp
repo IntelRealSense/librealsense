@@ -28,10 +28,11 @@ namespace rs2 {
                 // Record all the available metadata attributes
                 for (size_t i = 0; i < RS2_FRAME_METADATA_COUNT; i++)
                 {
-                    if (frm.supports_frame_metadata((rs2_frame_metadata_value)i))
+                    rs2_frame_metadata_value metadata_val = (rs2_frame_metadata_value)i;
+                    if (frm.supports_frame_metadata(metadata_val))
                     {
-                        file << rs2_frame_metadata_to_string((rs2_frame_metadata_value)i) << ": "
-                            << frm.get_frame_metadata((rs2_frame_metadata_value)i) << "\n";
+                        file << rs2_frame_metadata_to_string(metadata_val) << ": "
+                            << frm.get_frame_metadata(metadata_val) << "\n";
                     }
                 }
 

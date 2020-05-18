@@ -170,7 +170,8 @@ int main(int argc, char** argv) try
 
         }
 
-        //clears output in case ply wrote to it
+        //we need to clear the output of ply progress before writing
+        //the progress of the other converters in the same line
         cout << "\r    \r";
 
         while (true)
