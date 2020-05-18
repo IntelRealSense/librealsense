@@ -90,19 +90,19 @@ void compare_scene( std::string const & scene_dir )
     CHECK(compare_to_bin_file< uint8_t >(depth_data.section_map_depth_inside, scene_dir, "ac1x\\sectionMapDepthInside", 1, md.n_edges, "uint8_00", compare_same_vectors));
 #endif
 
-#if 0
+#if 1
     // ---
     TRACE( "\nChecking scene validity:" );
 
     CHECK( cal.is_scene_valid() == md.is_scene_valid );
 
     // edge distribution
-    CHECK( compare_to_bin_file< double >( z_data.sum_weights_per_section, scene_dir, "depthEdgeWeightDistributionPerSectionDepth", 1, 4, "double_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< double >( z_data.sum_weights_per_section, scene_dir, "ac1x\\depthEdgeWeightDistributionPerSectionDepth", 1, 4, "double_00", compare_same_vectors ) );
 
     //CHECK( compare_to_bin_file< byte >( z_data.section_map, scene_dir, "sectionMapDepth_trans", 1, md.n_edges, "uint8_00", compare_same_vectors ) );
     //CHECK( compare_to_bin_file< byte >( yuy_data.section_map, scene_dir, "sectionMapRgb_trans", 1, rgb_w*rgb_h, "uint8_00", compare_same_vectors ) );
 
-    CHECK( compare_to_bin_file< double >( yuy_data.sum_weights_per_section, scene_dir, "edgeWeightDistributionPerSectionRgb", 1, 4, "double_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< double >( yuy_data.sum_weights_per_section, scene_dir, "ac1x\\edgeWeightDistributionPerSectionRgb", 1, 4, "double_00", compare_same_vectors ) );
 
     // gradient balanced
     // TODO NOHA
@@ -110,16 +110,16 @@ void compare_scene( std::string const & scene_dir )
 
     // movment check
     // 1. dilation
-    CHECK( compare_to_bin_file< uint8_t >( yuy_data.prev_logic_edges, scene_dir, "logicEdges", rgb_w, rgb_h, "uint8_00", compare_same_vectors ) );
-    CHECK( compare_to_bin_file< double >( yuy_data.dilated_image, scene_dir, "dilatedIm", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< uint8_t >( yuy_data.prev_logic_edges, scene_dir, "ac1x\\logicEdges", rgb_w, rgb_h, "uint8_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< double >( yuy_data.dilated_image, scene_dir, "ac1x\\dilatedIm", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
 
     // 2. gausssian
-    CHECK( compare_to_bin_file< double >( yuy_data.yuy_diff, scene_dir, "diffIm_01", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
-    CHECK( compare_to_bin_file< double >( yuy_data.gaussian_filtered_image, scene_dir, "diffIm", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< double >( yuy_data.yuy_diff, scene_dir, "ac1x\\diffIm_01", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< double >( yuy_data.gaussian_filtered_image, scene_dir, "ac1x\\diffIm", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
 
     // 3. movement
-    CHECK( compare_to_bin_file< double >( yuy_data.gaussian_diff_masked, scene_dir, "IDiffMasked", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
-    CHECK( compare_to_bin_file< uint8_t >( yuy_data.move_suspect, scene_dir, "ixMoveSuspect", rgb_w, rgb_h, "uint8_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< double >( yuy_data.gaussian_diff_masked, scene_dir, "ac1x\\IDiffMasked", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< uint8_t >( yuy_data.move_suspect, scene_dir, "ac1x\\ixMoveSuspect", rgb_w, rgb_h, "uint8_00", compare_same_vectors ) );
 #endif
 #if 1
     //--
@@ -129,28 +129,28 @@ void compare_scene( std::string const & scene_dir )
         // data.iteration is 0-based!
         REQUIRE( data.iteration < md.n_iterations );
 
-        auto file = bin_file( "calib_iteration", data.iteration + 1, num_of_calib_elements, 1, "double_00.bin" );
+        auto file = bin_file( "ac1x\\calib_iteration", data.iteration + 1, num_of_calib_elements, 1, "double_00.bin" );
         CHECK( compare_calib_to_bin_file( data.params.curr_calib, data.params.cost, scene_dir, file ) );
 
-        file = bin_file( "uvmap_iteration", data.iteration + 1, 2, md.n_edges, "double_00.bin" );
+        file = bin_file( "ac1x\\uvmap_iteration", data.iteration + 1, 2, md.n_edges, "double_00.bin" );
         CHECK( compare_to_bin_file< algo::double2 >( data.uvmap, scene_dir, file, md.n_edges, 1, compare_same_vectors ) );
 
-        file = bin_file( "DVals_iteration", data.iteration + 1, 1, md.n_edges, "double_00.bin" );
+        file = bin_file( "ac1x\\DVals_iteration", data.iteration + 1, 1, md.n_edges, "double_00.bin" );
         CHECK( compare_to_bin_file< double >( data.d_vals, scene_dir, file, md.n_edges, 1, compare_same_vectors ) );
 
-        file = bin_file( "DxVals_iteration", data.iteration + 1, 1, md.n_edges, "double_00.bin" );
+        file = bin_file( "ac1x\\DxVals_iteration", data.iteration + 1, 1, md.n_edges, "double_00.bin" );
         CHECK( compare_to_bin_file< double >( data.d_vals_x, scene_dir, file, md.n_edges, 1, compare_same_vectors ) );
 
-        file = bin_file( "DyVals_iteration", data.iteration + 1, 1, md.n_edges, "double_00.bin" );
+        file = bin_file( "ac1x\\DyVals_iteration", data.iteration + 1, 1, md.n_edges, "double_00.bin" );
         CHECK( compare_to_bin_file< double >( data.d_vals_y, scene_dir, file, md.n_edges, 1, compare_same_vectors ) );
 
-        file = bin_file( "xy_iteration", data.iteration + 1, 2, md.n_edges, "double_00.bin" );
+        file = bin_file( "ac1x\\xy_iteration", data.iteration + 1, 2, md.n_edges, "double_00.bin" );
         CHECK( compare_to_bin_file< algo::double2 >( data.xy, scene_dir, file, md.n_edges, 1, compare_same_vectors ) );
 
-        file = bin_file( "rc_iteration", data.iteration + 1, 1, md.n_edges, "double_00.bin" );
+        file = bin_file( "ac1x\\rc_iteration", data.iteration + 1, 1, md.n_edges, "double_00.bin" );
         CHECK( compare_to_bin_file< double >( data.rc, scene_dir, file, md.n_edges, 1, compare_same_vectors ) );
 
-        file = bin_file( "xCoeff_P", data.iteration + 1, sizeof( algo::p_matrix ) / sizeof( double ), md.n_edges, "double_00.bin" );
+        file = bin_file( "ac1x\\xCoeff_P", data.iteration + 1, sizeof( algo::p_matrix ) / sizeof( double ), md.n_edges, "double_00.bin" );
         CHECK( compare_to_bin_file< algo::p_matrix>( data.coeffs_p.x_coeffs, scene_dir, file, md.n_edges, 1, compare_same_vectors ) );
 
         /*file = bin_file("xCoeff_Krgb", data.iteration + 1, sizeof(algo::k_matrix) / sizeof(double), md.n_edges, "double_00.bin");
@@ -173,7 +173,7 @@ void compare_scene( std::string const & scene_dir )
     auto new_calibration = cal.get_calibration();
     auto cost = cal.get_cost();
 
-    CHECK( compare_calib_to_bin_file( new_calibration, cost, scene_dir, "new_calib", num_of_calib_elements, 1, "double_00" ) );
+    CHECK( compare_calib_to_bin_file( new_calibration, cost, scene_dir, "ac1x\\new_calib", num_of_calib_elements, 1, "double_00" ) );
 #endif
 #if 0
     //--
