@@ -9,10 +9,15 @@ namespace librealsense
 {
     void frame_validator::on_frame(rs2_frame * f)
     {
-        if (!_stopped && propagate((frame_interface*)f))
+        if (!_stopped && propagate((frame_interface*)f)
+             && is_user_requested_frame((frame_interface*)f))
         {
-            if(is_user_requested_frame((frame_interface*)f))
                 _user_callback->on_frame(f);
+        }
+        else
+        {
+            // No RAII - explicit release is required
+            ((frame_interface*)f)->release();
         }
     }
 
@@ -20,12 +25,12 @@ namespace librealsense
     {}
 
     frame_validator::frame_validator(std::shared_ptr<sensor_base> sensor, frame_callback_ptr user_callback, stream_profiles current_requests, stream_profiles validator_requests) :
-        _sensor(sensor), 
-        _user_callback(user_callback), 
+        _stopped(false),
+        _validated(false),
+        _user_callback(user_callback),
         _user_requests(current_requests),
         _validator_requests(validator_requests),
-        _stopped(false),
-        _validated(false)
+        _sensor(sensor)
     {}
 
     frame_validator::~frame_validator()
