@@ -72,14 +72,16 @@ int main(int argc, char * argv[])
                 
                 auto fw_log = res.get_device().as<rs2::firmware_logger>();
                 std::vector<rs2::firmware_logger_message> fw_log_messages = fw_log.get_firmware_logs();
-                vector<string> fw_log_lines = { "" };
-                if (fw_log_messages.size() <= 4)
+                
+                if (fw_log_messages.size() == 0)
                     continue;
 
-                static bool usingParser = false;;
+                std::vector<string> fw_log_lines;
+
+                static bool usingParser = true;
                 if (usingParser)
                 {
-                    /*std::string xml_path("HWLoggerEventsDS5.xml");
+                    std::string xml_path("HWLoggerEventsDS5.xml");
                     if (!xml_path.empty())
                     {
                         ifstream f(xml_path);
@@ -87,26 +89,17 @@ int main(int argc, char * argv[])
                         {
                             unique_ptr<rs2::firmware_logs_parser> parser = 
                                 unique_ptr<rs2::firmware_logs_parser>(new rs2::firmware_logs_parser(xml_path));
-                            // first 4 bytes must be deleted - TODO REMI - check why
-                            fw_log_messages.erase(fw_log_messages.begin(), fw_log_messages.begin() + 4);
-                            std::vector<uint8_t> one_raw_data;
-
-                            auto beginOfLogIterator = fw_log_messages.begin();
                             
-                            do {
-                                auto endOfLogIterator = beginOfLogIterator + 20;
-                                one_raw_data.insert(one_raw_data.begin(), beginOfLogIterator, endOfLogIterator);
-                                fw_log_lines.push_back(parser->get_firmware_logs_parsed(one_raw_data));
-                                beginOfLogIterator = endOfLogIterator;
-                                
-                                if (endOfLogIterator == fw_log_messages.end())
-                                    break;
-                            } while (1);
+                            for each (rs2::firmware_logger_message msg in fw_log_messages)
+                            {
+                                parser->parse_firmware_log(msg);
+                                fw_log_lines.push_back(msg.to_string());
+                            }
                             
-                            for (auto& elem : fw_log_lines)
-                                elem = datetime_string() + "  " + elem;
+                            /*for (auto& elem : fw_log_lines)
+                                elem = datetime_string() + "  " + elem;*/
                         }
-                    }*/
+                    }
                 }
                 else
                 {

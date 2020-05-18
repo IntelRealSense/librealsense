@@ -385,13 +385,17 @@ void rs2_delete_firmware_logs_parser(rs2_firmware_logs_parser* parser);
 /**
 * \brief Parses firmware logs.
 * \param[in] fw_logs_parser	firmware logs parser object 
-* \param[in] raw_data	firmware logs not parsed 
-* \param[in] raw_data_size firmware logs not parsed size
+* \param[in] event_id	code for event 
+* \param[in] p1		parameter used to parse the message
+* \param[in] p2		parameter used to parse the message
+* \param[in] p3		parameter used to parse the message
+* \param[in] file_id		code for file
+* \param[in] thread_id		code for the thread
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return 	firmware logs parsed
 */
-rs2_raw_data_buffer* rs2_get_firmware_logs_parsed(rs2_firmware_logs_parser* fw_logs_parser,
-    const void* raw_data, const int raw_data_size, rs2_error** error);
+rs2_raw_data_buffer* rs2_parse_firmware_log(rs2_firmware_logs_parser* fw_logs_parser,
+    int event_id, int p1, int p2, int p3, int file_id, int thread_id, rs2_error** error);
 
 #ifdef __cplusplus
 }
