@@ -368,19 +368,16 @@ weightIm(iWeights) = frame.weights;
 weightsPerDir = [sum(weightIm(frame.dirI == 1));sum(weightIm(frame.dirI == 2));sum(weightIm(frame.dirI == 3));sum(weightIm(frame.dirI == 4))];
 */
 //bool is_balanced = false;
-    auto i_weights = z_data.supressed_edges; // vector of 0,1 - put 1 when supressed edges is > 0
-    auto weights_im = z_data.supressed_edges;
-
-    auto i_weights_iter = i_weights.begin();
+    //auto i_weights = z_data.supressed_edges; // vector of 0,1 - put 1 when supressed edges is > 0
+    auto weights_im = z_data.is_inside;// supressed_edges;
     auto weights_im_iter = weights_im.begin();
-    auto supressed_edges_iter = z_data.supressed_edges.begin();
+    auto supressed_edges_iter = z_data.is_inside.begin();
     auto weights_iter = z_data.weights.begin();
     auto j = 0;
-    for (auto i = 0; i < z_data.supressed_edges.size(); ++i)
+    for (auto i = 0; i < z_data.is_inside.size(); ++i)
     {
         if (*(supressed_edges_iter + i) > 0)
         {
-            *(i_weights_iter + i) = 1; // is it needed ??
             *(weights_im_iter + i) = *(weights_iter + j);
             j++;
         }
