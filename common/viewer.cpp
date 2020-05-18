@@ -2424,6 +2424,12 @@ namespace rs2
                         if (selected_points.size() == 2) selected_points.clear();
 
                         selected_points.push_back({ _picked, _normal });
+
+                        if (selected_points.size() == 2)
+                        {
+                            auto dist = selected_points[1].pos - selected_points[0].pos;
+                            not_model.add_log(to_string() << "Measured distance of " << length_to_string(dist.length()));
+                        }
                     }
                 }
 
@@ -2510,32 +2516,7 @@ namespace rs2
 
             rs2::float2 w_pos = translate_3d_to_2d(pos, p, v, rs2::matrix4::identity(), vp);
 
-            std::string label;
-            
-            if (metric_system)
-            {
-                if (distance < 0.01f)
-                {
-                    label = to_string() << std::fixed << std::setprecision(3) << distance * 1000.f << " mm";
-                } else if (distance < 1.f) {
-                    label = to_string() << std::fixed << std::setprecision(3) << distance * 100.f << " cm";
-                } else {
-                    label = to_string() << std::fixed << std::setprecision(3) << distance << " meters";
-                }
-            } else 
-            {
-                if (distance < 0.0254f)
-                {
-                    label = to_string() << std::fixed << std::setprecision(3) << distance * 1000.f << " mm";
-                } else if (distance < 0.3048f) {
-                    label = to_string() << std::fixed << std::setprecision(3) << distance / 0.0254 << " in";
-                } else if (distance < 0.9144) {
-                    label = to_string() << std::fixed << std::setprecision(3) << distance / 0.3048f << " ft";
-                } else {
-                    label = to_string() << std::fixed << std::setprecision(3) << distance / 0.9144 << " yd";
-                }
-            }
-
+            std::string label = length_to_string(distance);
             auto size = ImGui::CalcTextSize(label.c_str());
 
             auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
@@ -2718,6 +2699,35 @@ namespace rs2
         }
 
         return picked;
+    }
+
+    std::string viewer_model::length_to_string(float distance)
+    {
+        std::string label;
+        if (metric_system)
+        {
+            if (distance < 0.01f)
+            {
+                label = to_string() << std::fixed << std::setprecision(3) << distance * 1000.f << " mm";
+            } else if (distance < 1.f) {
+                label = to_string() << std::fixed << std::setprecision(3) << distance * 100.f << " cm";
+            } else {
+                label = to_string() << std::fixed << std::setprecision(3) << distance << " meters";
+            }
+        } else 
+        {
+            if (distance < 0.0254f)
+            {
+                label = to_string() << std::fixed << std::setprecision(3) << distance * 1000.f << " mm";
+            } else if (distance < 0.3048f) {
+                label = to_string() << std::fixed << std::setprecision(3) << distance / 0.0254 << " in";
+            } else if (distance < 0.9144) {
+                label = to_string() << std::fixed << std::setprecision(3) << distance / 0.3048f << " ft";
+            } else {
+                label = to_string() << std::fixed << std::setprecision(3) << distance / 0.9144 << " yd";
+            }
+        }
+        return label;
     }
 
     void viewer_model::show_top_bar(ux_window& window, const rect& viewer_rect, const device_models_list& devices)
@@ -3385,8 +3395,10 @@ namespace rs2
         ImGui::PopStyleVar();
     }
 
-    void viewer_model::update_input(ux_window& win)
+    void viewer_model::update_input(ux_window& win, const rs2::rect& viewer_rect)
     {
+        auto rect_copy = viewer_rect;
+        rect_copy.y += 60;
         input_ctrl.click = false;
         if (win.get_mouse().mouse_down && !input_ctrl.mouse_down) 
         {
@@ -3400,8 +3412,11 @@ namespace rs2
             if (win.time() - input_ctrl.selection_started < 0.5 && 
                 (win.get_mouse().cursor - input_ctrl.down_pos).length() < 100)
             {
-                input_ctrl.click = true;
-                input_ctrl.click_time = glfwGetTime();
+                if (rect_copy.contains(win.get_mouse().cursor))
+                {
+                    input_ctrl.click = true;
+                    input_ctrl.click_time = glfwGetTime();
+                }
             }
         }
     }
@@ -3663,7 +3678,7 @@ namespace rs2
 
             update_3d_camera(window, viewer_rect);
 
-            update_input(window);
+            update_input(window, viewer_rect);
 
             rect window_size{ 0, 0, (float)window.width(), (float)window.height() };
             rect fb_size{ 0, 0, (float)window.framebuf_width(), (float)window.framebuf_height() };

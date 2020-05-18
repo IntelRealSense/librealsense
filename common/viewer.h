@@ -111,7 +111,9 @@ namespace rs2
         void show_3dviewer_header(ux_window& window, rs2::rect stream_rect, bool& paused, std::string& error_message);
 
         void update_3d_camera(ux_window& win, const rect& viewer_rect, bool force = false);
-        void update_input(ux_window& win);
+        void update_input(ux_window& win, const rect& viewer_rect);
+
+        std::string length_to_string(float distance);
 
         void show_top_bar(ux_window& window, const rect& viewer_rect, const device_models_list& devices);
 
