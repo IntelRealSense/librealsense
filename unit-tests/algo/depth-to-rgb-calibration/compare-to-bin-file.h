@@ -205,14 +205,12 @@ bool get_calib_from_raw_data(
     auto data_size = sizeof( algo::rotation ) +
         sizeof( algo::translation ) +
         sizeof( algo::k_matrix ) +
-        sizeof( algo::p_matrix ) +
-        3 * sizeof( double ) + // alpha, bata, gamma
         sizeof( double ); // cost
 
     auto bin = read_vector_from< double >( bin_dir( scene_dir ) + filename );
     if( bin.size() * sizeof( double ) != data_size )
     {
-        TRACE( filename << ": {matlab size}" << bin.size() << " != " << data_size );
+        TRACE( filename << ": {matlab size}" << bin.size() * sizeof(double) << " != " << data_size );
         return false;
     }
 
@@ -220,18 +218,10 @@ bool get_calib_from_raw_data(
 
     auto k = *(algo::k_matrix*)(data);
     data += sizeof( algo::k_matrix ) / sizeof( double );
-    auto a = *(double*)(data);
-    data += 1;
-    auto b = *(double*)(data);
-    data += 1;
-    auto g = *(double*)(data);
-    data += 1;
     auto rotation = *(algo::rotation*)(data);
     data += sizeof( algo::rotation ) / sizeof( double );
     auto translation = *(algo::translation*)(data);
     data += sizeof( algo::translation ) / sizeof( double );
-    auto p_mat = *(algo::p_matrix*)(data);
-    data += sizeof( algo::p_matrix ) / sizeof( double );
     cost = *(double*)(data);
 
     calib.k_mat = k;

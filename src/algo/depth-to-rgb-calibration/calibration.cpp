@@ -71,9 +71,9 @@ p_matrix const calib::calc_p_mat() const
     auto fy = k_mat.fy;
     auto ppx = k_mat.ppx;
     auto ppy = k_mat.ppy;
-    p_matrix p_mat = { fx* r[0] + ppx * r[2], fx* r[3] + ppx * r[5], fx* r[6] + ppx * r[8], fx* t.t1 + ppx * t.t3,
-              fy* r[1] + ppy * r[2], fy* r[4] + ppy * r[5], fy* r[7] + ppy * r[8], fy* t.t2 + ppy * t.t3,
-              r[2]                 , r[5]                 , r[8]                 , t.t3 };
+    p_matrix p_mat = { fx* r[0] + ppx * r[6], fx* r[1] + ppx * r[7], fx* r[2] + ppx * r[8], fx* t.t1 + ppx * t.t3,
+              fy* r[3] + ppy * r[6], fy* r[4] + ppy * r[7], fy* r[5] + ppy * r[8], fy* t.t2 + ppy * t.t3,
+              r[6]                 , r[7]                 , r[8]                 , t.t3 };
 
     return p_mat;
 }

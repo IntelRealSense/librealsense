@@ -653,6 +653,159 @@ void optimizer::set_ir_data(
 }
 
 
+double3x3 cholesky3x3(double3x3 mat)
+{
+	double3x3 res = { 0 };
+
+	for (auto i = 0; i < 3; i++)
+	{
+		for (auto j = 0; j <= i; j++)
+		{
+			double sum = 0;
+			
+			if(i==j)
+			{
+				for (auto l = 0; l < i; l++)
+				{
+					sum += res.mat[i][l] * res.mat[i][l];
+				}
+				res.mat[i][i] = sqrt(mat.mat[i][j] - sum);				
+			}
+			else
+			{
+				for (auto l = 0; l < j; l++)
+				{
+					sum += res.mat[i][l] * res.mat[j][l];
+				}
+				res.mat[i][j] = (mat.mat[i][j] - sum)/ res.mat[j][j];
+			}
+		}
+	}
+	return res;
+}
+
+void inv(const double x[9], double y[9])
+{
+	double b_x[9];
+	int p1;
+	int p2;
+	int p3;
+	double absx11;
+	double absx21;
+	double absx31;
+	int itmp;
+	memcpy(&b_x[0], &x[0], 9U * sizeof(double));
+	p1 = 0;
+	p2 = 3;
+	p3 = 6;
+	absx11 = std::abs(x[0]);
+	absx21 = std::abs(x[1]);
+	absx31 = std::abs(x[2]);
+	if ((absx21 > absx11) && (absx21 > absx31)) {
+		p1 = 3;
+		p2 = 0;
+		b_x[0] = x[1];
+		b_x[1] = x[0];
+		b_x[3] = x[4];
+		b_x[4] = x[3];
+		b_x[6] = x[7];
+		b_x[7] = x[6];
+	}
+	else {
+		if (absx31 > absx11) {
+			p1 = 6;
+			p3 = 0;
+			b_x[0] = x[2];
+			b_x[2] = x[0];
+			b_x[3] = x[5];
+			b_x[5] = x[3];
+			b_x[6] = x[8];
+			b_x[8] = x[6];
+		}
+	}
+
+	b_x[1] /= b_x[0];
+	b_x[2] /= b_x[0];
+	b_x[4] -= b_x[1] * b_x[3];
+	b_x[5] -= b_x[2] * b_x[3];
+	b_x[7] -= b_x[1] * b_x[6];
+	b_x[8] -= b_x[2] * b_x[6];
+	if (std::abs(b_x[5]) > std::abs(b_x[4])) {
+		itmp = p2;
+		p2 = p3;
+		p3 = itmp;
+		absx11 = b_x[1];
+		b_x[1] = b_x[2];
+		b_x[2] = absx11;
+		absx11 = b_x[4];
+		b_x[4] = b_x[5];
+		b_x[5] = absx11;
+		absx11 = b_x[7];
+		b_x[7] = b_x[8];
+		b_x[8] = absx11;
+	}
+
+	b_x[5] /= b_x[4];
+	b_x[8] -= b_x[5] * b_x[7];
+	absx11 = (b_x[5] * b_x[1] - b_x[2]) / b_x[8];
+	absx21 = -(b_x[1] + b_x[7] * absx11) / b_x[4];
+	y[p1] = ((1.0 - b_x[3] * absx21) - b_x[6] * absx11) / b_x[0];
+	y[p1 + 1] = absx21;
+	y[p1 + 2] = absx11;
+	absx11 = -b_x[5] / b_x[8];
+	absx21 = (1.0 - b_x[7] * absx11) / b_x[4];
+	y[p2] = -(b_x[3] * absx21 + b_x[6] * absx11) / b_x[0];
+	y[p2 + 1] = absx21;
+	y[p2 + 2] = absx11;
+	absx11 = 1.0 / b_x[8];
+	absx21 = -b_x[7] * absx11 / b_x[4];
+	y[p3] = -(b_x[3] * absx21 + b_x[6] * absx11) / b_x[0];
+	y[p3 + 1] = absx21;
+	y[p3 + 2] = absx11;
+}
+
+
+void librealsense::algo::depth_to_rgb_calibration::optimizer::decompose_p_mat()
+{
+	auto p_mat = _params_curr.curr_p_mat.vals;
+	double3x3 first_three_cols = { p_mat[0], p_mat[1], p_mat[2],
+									p_mat[4], p_mat[5], p_mat[6],
+									p_mat[8], p_mat[9], p_mat[10] };
+
+	auto k_square = first_three_cols* first_three_cols.transpose();
+	std::vector<double> inv_k_square_vac(9, 0);
+	inv(k_square.to_vector().data(), inv_k_square_vac.data());
+
+	double3x3 inv_k_square = {
+		inv_k_square_vac[0], inv_k_square_vac[1],inv_k_square_vac[2],
+		inv_k_square_vac[3], inv_k_square_vac[4],inv_k_square_vac[5],
+		inv_k_square_vac[6], inv_k_square_vac[7],inv_k_square_vac[8]
+	};
+
+	auto k_inv = cholesky3x3(inv_k_square).transpose();
+	std::vector<double> k_vac(9, 0);
+	inv(k_inv.to_vector().data(), k_vac.data());
+
+	for (auto i = 0; i < k_vac.size(); i++)
+		k_vac[i] /= k_vac[k_vac.size() - 1];
+
+	auto t = k_inv * double3{ p_mat[3], p_mat[7], p_mat[11] };
+
+	auto r = (k_inv * first_three_cols).to_vector();
+
+	for (auto i = 0; i < r.size(); i++)
+		_final_calibration.rot.rot[i] = r[i];
+
+	_final_calibration.trans = { t.x, t.y, t.z };
+	_final_calibration.k_mat.fx = _original_calibration.k_mat.fx;
+	_final_calibration.k_mat.fy = _original_calibration.k_mat.fy;
+	_final_calibration.k_mat.ppx = k_vac[2];
+	_final_calibration.k_mat.ppy = k_vac[5];
+
+	_original_calibration.copy_coefs(_final_calibration);
+};
+
+
 void optimizer::zero_invalid_edges( z_frame_data & z_data, ir_frame_data const & ir_data )
 {
     for( auto i = 0; i < ir_data.ir_edges.size(); i++ )
@@ -1395,6 +1548,8 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
     {
         AC_LOG( INFO, "Calibration finished after " << n_iterations << " iterations; original cost= " << params_orig.cost << "  optimized cost= " << _params_curr.cost );
     }
+
+	decompose_p_mat();
 
     return n_iterations;
 }

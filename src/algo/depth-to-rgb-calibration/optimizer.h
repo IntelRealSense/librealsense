@@ -141,6 +141,7 @@ namespace depth_to_rgb_calibration {
         z_frame_data    const& get_depth_data() const { return _depth; }
         // impl
     private:
+		void decompose_p_mat();
         void zero_invalid_edges( z_frame_data& z_data, ir_frame_data const & ir_data );
         std::vector<direction> get_direction( std::vector<double> gradient_x, std::vector<double> gradient_y );
         std::vector<direction> get_direction2(std::vector<double> gradient_x, std::vector<double> gradient_y);
