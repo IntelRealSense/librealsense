@@ -2,6 +2,7 @@
 # Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 target_sources(${LRS_TARGET}
     PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/fw-log-data.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/fw-log-data.h"
         "${CMAKE_CURRENT_LIST_DIR}/fw-logs-formating-options.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/fw-logs-formating-options.h"
