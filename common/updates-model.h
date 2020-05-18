@@ -111,6 +111,7 @@ namespace rs2
         int selected_index = 0;
         int selected_software_update_index = 0;
         int selected_firmware_update_index = 0;
+        bool ignore = false;
         std::vector<update_profile> _updates;
         std::shared_ptr<texture_buffer> _icon = nullptr;
         std::mutex _lock;

@@ -26,7 +26,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
 
     const auto window_name = "Updates Window";
 
-    if (updates_copy.size())
+    if (updates_copy.size() && !ignore)
         ImGui::OpenPopup(window_name);
 
     float w  = window.width()  * 0.6f;
@@ -101,7 +101,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             software_updates.push_back(swu.second);
         std::sort(software_updates.begin(), software_updates.end(), [](update_description& a, update_description& b){
             if (a.ver == b.ver) return 0;
-            else if (a.ver < b.ver) return 1;
+            else if (a.ver > b.ver) return 1;
             else return -1;
         });
         if (software_updates.size() <= selected_software_update_index) selected_software_update_index = 0;
@@ -112,12 +112,12 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             firmware_updates.push_back(swu.second);
         std::sort(firmware_updates.begin(), firmware_updates.end(), [](update_description& a, update_description& b){
             if (a.ver == b.ver) return 0;
-            else if (a.ver < b.ver) return 1;
+            else if (a.ver > b.ver) return 1;
             else return -1;
         });
         if (firmware_updates.size() <= selected_firmware_update_index) selected_firmware_update_index = 0;
 
-        if (firmware_updates.size() >= 2)
+        if (software_updates.size() >= 2)
         {
             std::vector<const char*> swu_labels;
             for (auto&& swu : software_updates)
@@ -125,13 +125,13 @@ void updates_model::draw(ux_window& window, std::string& error_message)
                 swu_labels.push_back(swu.name.c_str());
             }
 
-            ImGui::SetCursorScreenPos({ orig_pos.x + w - 135, orig_pos.y + 10 });
+            ImGui::SetCursorScreenPos({ orig_pos.x + w - 145, orig_pos.y + 10 });
             std::string combo_id = "##Software Update Version";
-            ImGui::PushItemWidth(120);
+            ImGui::PushItemWidth(130);
             ImGui::Combo(combo_id.c_str(), &selected_software_update_index, swu_labels.data(), swu_labels.size());
             ImGui::PopItemWidth();
 
-            ImGui::SetCursorScreenPos({ orig_pos.x + w - 195, orig_pos.y + 11 });
+            ImGui::SetCursorScreenPos({ orig_pos.x + w - 200, orig_pos.y + 11 });
             ImGui::Text("%s", "Update:");
         }
 
@@ -146,13 +146,13 @@ void updates_model::draw(ux_window& window, std::string& error_message)
                 fwu_labels.push_back(fwu.name.c_str());
             }
 
-            ImGui::SetCursorScreenPos({ orig_pos.x + w - 135, mid_y + 10 });
+            ImGui::SetCursorScreenPos({ orig_pos.x + w - 145, mid_y + 10 });
             std::string combo_id = "##Firmware Update Version";
-            ImGui::PushItemWidth(120);
+            ImGui::PushItemWidth(130);
             ImGui::Combo(combo_id.c_str(), &selected_firmware_update_index, fwu_labels.data(), fwu_labels.size());
             ImGui::PopItemWidth();
 
-            ImGui::SetCursorScreenPos({ orig_pos.x + w - 195, mid_y + 11 });
+            ImGui::SetCursorScreenPos({ orig_pos.x + w - 200, mid_y + 11 });
             ImGui::Text("%s", "Update:");
         }
 
@@ -160,11 +160,30 @@ void updates_model::draw(ux_window& window, std::string& error_message)
         auto fw_updated = selected_firmware_update.ver <= update.firmware_version;
 
         ImGui::SetCursorPos({ 145, h - 25 });
-        bool ignore = false;
         ImGui::Checkbox("I understand and would like to proceed anyway without updating", &ignore);
 
         ImGui::SetCursorPos({ w - 125, h - 25 });
-        if (ImGui::Button("OK", { 120, 20 })) ImGui::CloseCurrentPopup();
+        auto enabled = ignore || (sw_updated && fw_updated);
+        if (enabled)
+        {
+            if (ImGui::Button("OK", { 120, 20 })) 
+            {
+                ImGui::CloseCurrentPopup();
+                std::lock_guard<std::mutex> lock(_lock);
+                _updates.clear();
+                ignore = false;
+            }
+        }
+        else
+        {
+            ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
+            ImGui::PushStyleColor(ImGuiCol_Text, grey);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, grey);
+            ImGui::Button("OK", { 120, 20 });
+            ImGui::PopStyleColor(5);
+        }
 
         {
             ImGui::SetCursorScreenPos({ orig_pos.x + 150, orig_pos.y + 10 });
@@ -202,43 +221,67 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             ImGui::PopStyleColor();
             ImGui::Text("%s", "Responsible for stream alignment, texture mapping and camera accuracy health algorithms");
 
-            ImGui::SetCursorScreenPos({ orig_pos.x + 150, orig_pos.y + 90 });
-            ImGui::PushStyleColor(ImGuiCol_Text, white_color);
-            ImGui::Text("%s", "Version:"); ImGui::SameLine();
-            ImGui::PopStyleColor();
-            ImGui::Text("%s", std::string(selected_software_update.ver).c_str());
+            if (selected_software_update.ver != version(0))
+            {
+                ImGui::SetCursorScreenPos({ orig_pos.x + 150, orig_pos.y + 90 });
+                ImGui::PushStyleColor(ImGuiCol_Text, white_color);
+                ImGui::Text("%s", "Version:"); ImGui::SameLine();
+                ImGui::PopStyleColor();
+                ImGui::Text("%s", std::string(selected_software_update.ver).c_str());
+            }
 
-            ImGui::SetCursorScreenPos({ orig_pos.x + 150, orig_pos.y + 110 });
-            ImGui::PushStyleColor(ImGuiCol_Text, white_color);
-            ImGui::Text("%s", "Release Link:"); ImGui::SameLine();
-            ImGui::PopStyleColor();
-            ImGui::PushStyleColor(ImGuiCol_Text, link_color);
-            ImGui::Text("%s", selected_software_update.release_page.c_str());
-            ImGui::PopStyleColor();
-            if (ImGui::IsItemHovered())
-                window.link_hovered();
-            if (ImGui::IsItemClicked())
-                open_url(selected_software_update.release_page.c_str());
+            if (selected_software_update.release_page != "")
+            {
+                ImGui::SetCursorScreenPos({ orig_pos.x + 150, orig_pos.y + 110 });
+                ImGui::PushStyleColor(ImGuiCol_Text, white_color);
+                ImGui::Text("%s", "Release Link:"); ImGui::SameLine();
+                ImGui::PopStyleColor();
+                ImGui::PushStyleColor(ImGuiCol_Text, link_color);
+                ImGui::Text("%s", selected_software_update.release_page.c_str());
+                ImGui::PopStyleColor();
+                if (ImGui::IsItemHovered())
+                    window.link_hovered();
+                if (ImGui::IsItemClicked())
+                {
+                    try
+                    {
+                        open_url(selected_software_update.release_page.c_str());
+                    } catch(...)
+                    {
+                        error_message = "Could not open link";
+                        ImGui::CloseCurrentPopup();
+                        std::lock_guard<std::mutex> lock(_lock);
+                        _updates.clear();
+                    }
+                }
+            }
 
-            ImGui::SetCursorScreenPos({ orig_pos.x + 150, orig_pos.y + 130 });
-            ImGui::PushStyleColor(ImGuiCol_Text, white_color);
-            ImGui::Text("%s", "Description:");
-            ImGui::PopStyleColor();
+            if (selected_software_update.description != "")
+            {
+                ImGui::SetCursorScreenPos({ orig_pos.x + 150, orig_pos.y + 130 });
+                ImGui::PushStyleColor(ImGuiCol_Text, white_color);
+                ImGui::Text("%s", "Description:");
+                ImGui::PopStyleColor();
 
-            ImGui::PushTextWrapPos(w - 200);
-            ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
-            ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
-            ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
-            ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
-            ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
-            auto msg = selected_software_update.description.c_str();
-            ImGui::SetCursorScreenPos({ orig_pos.x + 146, orig_pos.y + 145 });
-            ImGui::InputTextMultiline("##Software Update Description", const_cast<char*>(msg),
-                strlen(msg) + 1, ImVec2(0,0),
-                ImGuiInputTextFlags_ReadOnly);
-            ImGui::PopStyleColor(6);
-            ImGui::PopTextWrapPos();
+                ImGui::PushTextWrapPos(w - 200);
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
+                ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
+                ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
+                ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
+                ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
+                auto msg = selected_software_update.description.c_str();
+                ImGui::SetCursorScreenPos({ orig_pos.x + 146, orig_pos.y + 145 });
+                ImGui::InputTextMultiline("##Software Update Description", const_cast<char*>(msg),
+                    strlen(msg) + 1, ImVec2(0,0),
+                    ImGuiInputTextFlags_ReadOnly);
+                ImGui::PopStyleColor(6);
+                ImGui::PopTextWrapPos();
+            }
+
+
+            ImGui::SetCursorScreenPos({ orig_pos.x + 150, mid_y - 25 });
+            ImGui::Text("%s", "Please follow instructions from the release page (link above) for your combination of platform and OS");
 
             ImGui::PopStyleColor();
         }
@@ -281,43 +324,66 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             ImGui::PopStyleColor();
             ImGui::Text("%s", "Control logic over various hardware subsystems - sensors, projector, IMU, etc...");
 
-            ImGui::SetCursorScreenPos({ orig_pos.x + 150, mid_y + 95 });
-            ImGui::PushStyleColor(ImGuiCol_Text, white_color);
-            ImGui::Text("%s", "Version:"); ImGui::SameLine();
-            ImGui::PopStyleColor();
-            ImGui::Text("%s", std::string(selected_firmware_update.ver).c_str());
+            if (selected_firmware_update.ver != version(0))
+            {
+                ImGui::SetCursorScreenPos({ orig_pos.x + 150, mid_y + 95 });
+                ImGui::PushStyleColor(ImGuiCol_Text, white_color);
+                ImGui::Text("%s", "Version:"); ImGui::SameLine();
+                ImGui::PopStyleColor();
+                ImGui::Text("%s", std::string(selected_firmware_update.ver).c_str());
+            }
 
-            ImGui::SetCursorScreenPos({ orig_pos.x + 150, mid_y + 115 });
-            ImGui::PushStyleColor(ImGuiCol_Text, white_color);
-            ImGui::Text("%s", "Release Link:"); ImGui::SameLine();
-            ImGui::PopStyleColor();
-            ImGui::PushStyleColor(ImGuiCol_Text, link_color);
-            ImGui::Text("%s", selected_firmware_update.release_page.c_str());
-            ImGui::PopStyleColor();
-            if (ImGui::IsItemHovered())
-                window.link_hovered();
-            if (ImGui::IsItemClicked())
-                open_url(selected_firmware_update.release_page.c_str());
+            if (selected_firmware_update.release_page != "")
+            {
+                ImGui::SetCursorScreenPos({ orig_pos.x + 150, mid_y + 115 });
+                ImGui::PushStyleColor(ImGuiCol_Text, white_color);
+                ImGui::Text("%s", "Release Link:"); ImGui::SameLine();
+                ImGui::PopStyleColor();
+                ImGui::PushStyleColor(ImGuiCol_Text, link_color);
+                ImGui::Text("%s", selected_firmware_update.release_page.c_str());
+                ImGui::PopStyleColor();
+                if (ImGui::IsItemHovered())
+                    window.link_hovered();
+                if (ImGui::IsItemClicked())
+                {
+                    try
+                    {
+                        open_url(selected_firmware_update.release_page.c_str());
+                    } catch(...)
+                    {
+                        error_message = "Could not open link";
+                        ImGui::CloseCurrentPopup();
+                        std::lock_guard<std::mutex> lock(_lock);
+                        _updates.clear();
+                    }
+                }
+            }
 
-            ImGui::SetCursorScreenPos({ orig_pos.x + 150, mid_y + 135 });
-            ImGui::PushStyleColor(ImGuiCol_Text, white_color);
-            ImGui::Text("%s", "Description:");
-            ImGui::PopStyleColor();
+            if (selected_firmware_update.description != "")
+            {
+                ImGui::SetCursorScreenPos({ orig_pos.x + 150, mid_y + 135 });
+                ImGui::PushStyleColor(ImGuiCol_Text, white_color);
+                ImGui::Text("%s", "Description:");
+                ImGui::PopStyleColor();
 
-            ImGui::PushTextWrapPos(w - 200);
-            ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
-            ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
-            ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
-            ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
-            ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
-            auto msg = selected_firmware_update.description.c_str();
-            ImGui::SetCursorScreenPos({ orig_pos.x + 146, mid_y + 150 });
-            ImGui::InputTextMultiline("##Firmware Update Description", const_cast<char*>(msg),
-                strlen(msg) + 1, ImVec2(0,0),
-                ImGuiInputTextFlags_ReadOnly);
-            ImGui::PopStyleColor(6);
-            ImGui::PopTextWrapPos();
+                ImGui::PushTextWrapPos(w - 200);
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
+                ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
+                ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
+                ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
+                ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
+                auto msg = selected_firmware_update.description.c_str();
+                ImGui::SetCursorScreenPos({ orig_pos.x + 146, mid_y + 150 });
+                ImGui::InputTextMultiline("##Firmware Update Description", const_cast<char*>(msg),
+                    strlen(msg) + 1, ImVec2(0,0),
+                    ImGuiInputTextFlags_ReadOnly);
+                ImGui::PopStyleColor(6);
+                ImGui::PopTextWrapPos();
+            }
+
+            ImGui::SetCursorScreenPos({ orig_pos.x + (150 + w) / 2 - 75, orig_pos.y + h - 95 });
+            ImGui::Button("Download & Install", ImVec2(140, 20));
 
             ImGui::PopStyleColor();
         }
