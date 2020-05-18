@@ -31,6 +31,7 @@ namespace librealsense
         _type(type),
         _resolution(resolution)
     {
+#if 1
         auto min = _hw_monitor->send(command{ AMCGET, _type, get_min });
         auto max = _hw_monitor->send(command{ AMCGET, _type, get_max });
         auto step = _hw_monitor->send(command{ AMCGET, _type, get_step });
@@ -48,6 +49,7 @@ namespace librealsense
             float(*(reinterpret_cast<int32_t*>(max.data()))),
             float(*(reinterpret_cast<int32_t*>(step.data()))),
             def };
+#endif
     }
 
     void l500_hw_options::enable_recording(std::function<void(const option&)> recording_action)

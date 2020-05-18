@@ -6,27 +6,36 @@
 #include <type_traits>
 
 
+//
+// In all the following:
+//     F = the type in the bin files, i.e. the "golden" value that we compare to
+//     D = the type in memory, i.e. the result of our own computations
+// Since approx compares approximately to a "golden", the golden needs to go to
+// approx!
+//
+
+
 template< typename F, typename D >
 bool is_equal_approximetly( F fx, D dx )
 {
-    return fx == approx( dx );
+    return dx == approx( fx );
 }
 
 template<>
 bool is_equal_approximetly<algo::k_matrix, algo::k_matrix>( algo::k_matrix fx, algo::k_matrix dx )
 {
-    return fx.fx == approx( dx.fx ) &&
-        fx.fy == approx( dx.fy ) &&
-        fx.ppx == approx( dx.ppx ) &&
-        fx.ppy == approx( dx.ppy );
+    return dx.fx == approx( fx.fx ) &&
+        dx.fy == approx( fx.fy ) &&
+        dx.ppx == approx( fx.ppx ) &&
+        dx.ppy == approx( fx.ppy );
 }
 
 template<>
 bool is_equal_approximetly<algo::rotation_in_angles, algo::rotation_in_angles>( algo::rotation_in_angles fx, algo::rotation_in_angles dx )
 {
-    return fx.alpha == approx( dx.alpha ) &&
-        fx.beta == approx( dx.beta ) &&
-        fx.gamma == approx( dx.gamma );
+    return dx.alpha == approx( fx.alpha ) &&
+        dx.beta == approx( fx.beta ) &&
+        dx.gamma == approx( fx.gamma );
 }
 
 template<>
@@ -34,7 +43,7 @@ bool is_equal_approximetly<algo::p_matrix, algo::p_matrix>( algo::p_matrix fx, a
 {
     for( auto i = 0; i < 12; i++ )
     {
-        if( fx.vals[i] != approx( dx.vals[i] ) )
+        if( dx.vals[i] != approx( fx.vals[i] ) )
             return false;
     }
     return true;
@@ -43,16 +52,16 @@ bool is_equal_approximetly<algo::p_matrix, algo::p_matrix>( algo::p_matrix fx, a
 template<>
 bool is_equal_approximetly<algo::double2, algo::double2>( algo::double2 f, algo::double2 d )
 {
-    return f.x == approx( d.x ) &&
-        f.y == approx( d.y );
+    return d.x == approx( f.x ) &&
+        d.y == approx( f.y );
 }
 
 template<>
 bool is_equal_approximetly<algo::double3, algo::double3>( algo::double3 f, algo::double3 d )
 {
-    return f.x == approx( d.x ) &&
-        f.y == approx( d.y ) &&
-        f.z == approx( d.z );
+    return d.x == approx( f.x ) &&
+        d.y == approx( f.y ) &&
+        d.z == approx( f.z );
 }
 
 template< typename F, typename D >
@@ -112,6 +121,24 @@ void print<algo::p_matrix, algo::p_matrix>( size_t x, algo::p_matrix f, algo::p_
     AC_LOG( DEBUG, "... " << std::setprecision( 15 ) << std::fixed << x << " " << s.str() );
 }
 
+template<
+    typename F, typename D,
+    std::enable_if_t< !std::numeric_limits< D >::is_exact && !std::is_enum< D >::value, int > = 0
+>
+bool compare_t( F f, D d )
+{
+    return is_equal_approximetly( f, d );
+}
+
+template< typename F, typename D,
+    std::enable_if_t< std::numeric_limits< D >::is_exact || std::is_enum< D >::value, int > = 0
+>
+bool compare_t( F f, D d )
+{
+    return f == d;
+}
+
+
 template< typename F, typename D >
 bool compare_same_vectors( std::vector< F > const & matlab, std::vector< D > const & cpp )
 {
@@ -122,17 +149,10 @@ bool compare_same_vectors( std::vector< F > const & matlab, std::vector< D > con
     {
         F fx = matlab[x];
         D dx = cpp[x];
-        bool const is_comparable = std::numeric_limits< D >::is_exact || std::is_enum< D >::value;
-        if( is_comparable )
-        {
-            if( fx != dx && ++n_mismatches <= 5 )
-                // bytes will be written to stdout as characters, which we never want... hence '+fx'
-                print( x, fx, dx );
-        }
-        else if( !is_equal_approximetly( fx, dx ) )
+        if( !compare_t( fx, dx ) )
         {
             if( ++n_mismatches <= 5 )
-                print( x, fx, dx, true );
+                print( x, fx, dx, !std::is_floating_point< F >::value );
         }
     }
     if( n_mismatches )

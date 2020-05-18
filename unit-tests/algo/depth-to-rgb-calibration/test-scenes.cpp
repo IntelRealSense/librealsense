@@ -20,9 +20,10 @@ int main( int argc, char * argv[] )
     LOG_TO_STDOUT.enable( false );
 
     Catch::ConfigData config;
-    config.verbosity = Catch::Verbosity::NoOutput;
+    config.verbosity = Catch::Verbosity::Normal;
 
     bool ok = true;
+    bool verbose = false;
     // Each of the arguments is the path to a directory to simulate
     // We skip argv[0] which is the path to the executable
     // We don't complain if no arguments -- that's how we'll run as part of unit-testing
@@ -30,21 +31,22 @@ int main( int argc, char * argv[] )
     {
         try
         {
-
             char const * dir = argv[i];
             if( !strcmp( dir, "-v" ) )
             {
-                LOG_TO_STDOUT.enable();
+                LOG_TO_STDOUT.enable( verbose = true );
                 continue;
             }
             TRACE( "\n\nProcessing: " << dir << " ..." );
-            Catch::CustomRunContext ctx( new Catch::Config( config ));
+            Catch::CustomRunContext ctx( config );
+            ctx.set_redirection( !verbose );
 
             glob( dir, "*.rsc",
                 [&]( std::string const & match )
                 {
-                    TRACE( match );
-                    ctx.test_case( match,
+                    if( !get_parent( match ).empty() )
+                        TRACE( get_parent( match ));
+                    ctx.run_test( match,
                         [&]()
                         {
                             REQUIRE_NOTHROW( compare_scene( get_parent( join( dir, match ) ) + native_separator ) );
