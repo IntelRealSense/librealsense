@@ -131,7 +131,6 @@ namespace depth_to_rgb_calibration {
         z_frame_data    const & get_z_data() const   { return _z; }
         yuy2_frame_data const & get_yuy_data() const { return _yuy; }
         ir_frame_data   const & get_ir_data() const  { return _ir; }
-        z_frame_data    const& get_depth_data() const { return _z; }
        
     private:
         void zero_invalid_edges( z_frame_data& z_data, ir_frame_data const & ir_data );

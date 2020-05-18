@@ -91,6 +91,7 @@ dl_algo_file( "${F9440687}/2/binFiles/xCoeff_P_5_5089x12_double_00.bin" "")
 dl_algo_file( "${F9440687}/2/binFiles/xCoeff_P_6_5089x12_double_00.bin" "")
 
 dl_algo_file( "${F9440687}/2/binFiles/camera_params" "")
+dl_algo_file( "${F9440687}/2/binFiles/ac1x/camera_params" "")
 
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/Zx_768x1024_double_00.bin" "")
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/Zy_768x1024_double_00.bin" "")
