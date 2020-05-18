@@ -3012,29 +3012,36 @@ void rs2_delete_firmware_logs_parser(rs2_firmware_logs_parser* parser) BEGIN_API
 }
 NOEXCEPT_RETURN(, parser)
 
-rs2_raw_data_buffer* rs2_get_firmware_logs_parsed(rs2_firmware_logs_parser* fw_logs_parser, const void* raw_data, const int raw_data_size, rs2_error** error) BEGIN_API_CALL
+rs2_raw_data_buffer* rs2_parse_firmware_log(rs2_firmware_logs_parser* fw_logs_parser,
+    int event_id, int p1, int p2, int p3, int file_id, int thread_id, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(fw_logs_parser);
-    VALIDATE_NOT_NULL(raw_data);
 
-    std::vector<uint8_t> raw_data_buffer((uint8_t*)raw_data, (uint8_t*)raw_data + raw_data_size);
-    librealsense::fw_logs::fw_logs_binary_data binary_data =
-        librealsense::fw_logs::fw_logs_binary_data{ raw_data_buffer };
-    std::vector<std::string> parsed_data_cpp = fw_logs_parser->firmware_logs_parser.get()->get_fw_log_lines(binary_data);
+    librealsense::fw_logs::fw_log_data fw_log = fw_logs_parser->firmware_logs_parser.get()->parse_fw_log(event_id, p1, p2, p3, file_id, thread_id);
     
-    // converting vector<string> to vector<uint8_t>
-    std::vector<uint8_t> result;
+    std::vector<char> message_bytes(fw_log.message.begin(), fw_log.message.end());
+    message_bytes.push_back('\0'); 
+    uint8_t msg_bytes_size = message_bytes.size();
 
-    for (int i = 0; i < parsed_data_cpp.size(); ++i)
-    {
-        std::vector<uint8_t> current_string_vec(parsed_data_cpp[i].begin(), parsed_data_cpp[i].end());
-        result.insert(result.end(), current_string_vec.begin(), current_string_vec.end());
-        result.push_back(10);
-    }
+    std::vector<char> file_name_bytes(fw_log.file_name.begin(), fw_log.file_name.end());
+    file_name_bytes.push_back('\0');
+    uint8_t file_name_bytes_size = file_name_bytes.size();
 
-    return new rs2_raw_data_buffer { result };
+    std::vector<char> thread_name_bytes(fw_log.thread_name.begin(), fw_log.thread_name.end());
+    thread_name_bytes.push_back('\0');
+    uint8_t thread_name_bytes_size = thread_name_bytes.size();
+
+    std::vector<uint8_t> msg_file_thread_bytes;
+    msg_file_thread_bytes.push_back(msg_bytes_size);
+    msg_file_thread_bytes.insert(msg_file_thread_bytes.end(), message_bytes.begin(), message_bytes.end());
+    msg_file_thread_bytes.push_back(file_name_bytes_size);
+    msg_file_thread_bytes.insert(msg_file_thread_bytes.end(), file_name_bytes.begin(), file_name_bytes.end());
+    msg_file_thread_bytes.push_back(thread_name_bytes_size);
+    msg_file_thread_bytes.insert(msg_file_thread_bytes.end(), thread_name_bytes.begin(), thread_name_bytes.end());
+
+    return new rs2_raw_data_buffer { msg_file_thread_bytes };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, fw_logs_parser, raw_data)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, fw_logs_parser)
 
 
 

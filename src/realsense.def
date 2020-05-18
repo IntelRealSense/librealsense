@@ -360,6 +360,6 @@ EXPORTS
     rs2_get_firmware_logs_one_message_size
     rs2_create_firmware_logs_parser
     rs2_delete_firmware_logs_parser
-    rs2_get_firmware_logs_parsed
+    rs2_parse_firmware_log
 
 

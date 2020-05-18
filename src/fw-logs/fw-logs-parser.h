@@ -16,18 +16,14 @@ namespace librealsense
         public:
             explicit fw_logs_parser(std::string xml_full_file_path);
             ~fw_logs_parser(void);
-            std::vector<std::string> get_fw_log_lines(const fw_logs_binary_data& fw_logs_data_binary);
-            std::vector<fw_log_data> get_fw_log_data(const fw_logs_binary_data& fw_logs_data_binary);
+            fw_log_data parse_fw_log(uint32_t event_id, uint32_t p1, uint32_t p2, uint32_t p3, 
+                uint32_t file_id, uint32_t thread_id);
             
 
         private:
-            std::string generate_log_line(char* fw_logs);
-            fw_log_data generate_log_data(char* fw_logs);
             void fill_log_data(const char* fw_logs, fw_log_data* log_data);
-            uint64_t _last_timestamp;
 
             fw_logs_formating_options _fw_logs_formating_options;
-            const double _timestamp_factor;
         };
     }
 }
