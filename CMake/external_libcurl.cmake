@@ -2,7 +2,7 @@ if(ENABLE_RS_AUTO_UPDATER)
     include(ExternalProject)
     message(STATUS "Building libcurl enabled")
     
-    set(CURL_FLAGS -DBUILD_CURL_EXE=OFF -DBUILD_SHARED_LIBS=OFF -DUSE_WIN32_LDAP=OFF -DHTTP_ONLY=ON -DCURL_ZLIB=OFF -DCURL_DISABLE_CRYPTO_AUTH=ON -DCMAKE_USE_OPENSSL=OFF -DCMAKE_USE_LIBSSH2=OFF -DCMAKE_DEBUG_POSTFIX=-all )
+    set(CURL_FLAGS -DBUILD_CURL_EXE=OFF -DBUILD_SHARED_LIBS=OFF -DUSE_WIN32_LDAP=OFF -DHTTP_ONLY=ON -DCURL_ZLIB=OFF -DCURL_DISABLE_CRYPTO_AUTH=ON -DCMAKE_USE_OPENSSL=OFF -DCMAKE_USE_LIBSSH2=OFF)
     if (WIN32)
         set(CURL_FLAGS ${CURL_FLAGS} -DCURL_STATIC_CRT=ON )
     endif()
@@ -22,8 +22,12 @@ if(ENABLE_RS_AUTO_UPDATER)
                     -DANDROID_STL=${ANDROID_STL} ${CURL_FLAGS}
     )
 
-    set(CURL_TARGET_NAME "libcurl-all")
+    set(CURL_DEBUG_TARGET_NAME "libcurl-d")
+    set(CURL_RELEASE_TARGET_NAME "libcurl")
     add_library(curl INTERFACE)
     target_include_directories(curl INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/libcurl/libcurl_install/include>)
-    target_link_libraries(curl INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/libcurl/libcurl_install/lib/${CURL_TARGET_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
+   
+    target_link_libraries(curl INTERFACE debug ${CMAKE_CURRENT_BINARY_DIR}/libcurl/libcurl_install/lib/${CURL_DEBUG_TARGET_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
+    target_link_libraries(curl INTERFACE optimized ${CMAKE_CURRENT_BINARY_DIR}/libcurl/libcurl_install/lib/${CURL_RELEASE_TARGET_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
+
 endif() #ENABLE_RS_AUTO_UPDATER

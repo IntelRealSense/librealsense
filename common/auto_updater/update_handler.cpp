@@ -196,8 +196,8 @@ namespace rs2
                 }
                 else
                 {
-                    LOG_WARNING("Server versions json file corrupted - not matching shema requirements \n");
-                    throw std::runtime_error("Server versions json file corrupted - not matching shema requirements \n");
+                    LOG_WARNING("Server versions json file corrupted - not matching schema requirements \n");
+                    throw std::runtime_error("Server versions json file corrupted - not matching schema requirements \n");
                 }
             }
         }
