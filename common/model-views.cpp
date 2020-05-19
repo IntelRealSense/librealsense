@@ -3249,7 +3249,7 @@ namespace rs2
             auto rel_ok = up_handler.get_ver_rel_notes(part, required_version, result.release_page);
             auto desc_ok = up_handler.get_ver_description(part, required_version, result.description);
             result.ver = version(required_version);
-            result.name = up_handler.convert_update_policy(policy);
+            result.name = to_string() << std::string(result.ver) << " (" << up_handler.convert_update_policy(policy) << ")";
         }
         return query_ok;
     }
@@ -3270,6 +3270,10 @@ namespace rs2
 
             update.software_version = version(); // version(RS2_API_FULL_VERSION_STR);
             update.firmware_version = version(firmware_ver);
+
+            update.ctx = viewer.ctx;
+            update.dev = dev;
+            update.dev_model = this;
 
             bool update_required = false;
 

@@ -5,11 +5,14 @@
 
 #include "auto_updater/update_handler.h"
 #include "ux-window.h"
+#include "notifications.h"
+#include "fw-update-helper.h"
 
 #include <string>
 #include <vector>
 #include <regex>
 #include <mutex>
+#include <atomic>
 
 namespace rs2
 {
@@ -90,6 +93,10 @@ namespace rs2
 
         std::map<version, update_description> software_versions;
         std::map<version, update_description> firmware_versions;
+
+        device dev;
+        context ctx;
+        device_model* dev_model;
     };
 
     class updates_model
@@ -115,5 +122,23 @@ namespace rs2
         std::vector<update_profile> _updates;
         std::shared_ptr<texture_buffer> _icon = nullptr;
         std::mutex _lock;
+
+        std::shared_ptr<firmware_update_manager> _fw_update = nullptr;
+
+        enum class fw_update_states
+        {
+            ready = 0,
+            downloading = 1,
+            started = 2,
+            completed = 3,
+            failed = 4
+        };
+        fw_update_states _fw_update_state = fw_update_states::ready;
+
+        progress_bar _progress;
+        std::atomic<int> _fw_download_progress { 0 };
+
+        std::shared_ptr<firmware_update_manager> _update_manager = nullptr;
+        std::vector<uint8_t> _fw_image;
     };
 }

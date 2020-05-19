@@ -4,6 +4,7 @@
 #include "os.h"
 #include "res/l515-icon.h"
 #include <stb_image.h>
+#include "auto_updater/http_downloader.h"
 
 using namespace rs2;
 
@@ -22,6 +23,8 @@ void updates_model::draw(ux_window& window, std::string& error_message)
         auto data = stbi_load_from_memory(camera_icon_l515_png_data, camera_icon_l515_png_size, &x, &y, &comp, 4);
         _icon->upload_image(x, y, data);
         stbi_image_free(data);
+
+        _progress.last_progress_time = std::chrono::system_clock::now();
     }
 
     const auto window_name = "Updates Window";
@@ -121,20 +124,20 @@ void updates_model::draw(ux_window& window, std::string& error_message)
                 swu_labels.push_back(swu.name.c_str());
             }
 
-            ImGui::SetCursorScreenPos({ orig_pos.x + w - 145, orig_pos.y + 10 });
+            ImGui::SetCursorScreenPos({ orig_pos.x + w - 185, orig_pos.y + 10 });
             std::string combo_id = "##Software Update Version";
-            ImGui::PushItemWidth(130);
+            ImGui::PushItemWidth(170);
             ImGui::Combo(combo_id.c_str(), &selected_software_update_index, swu_labels.data(), swu_labels.size());
             ImGui::PopItemWidth();
 
-            ImGui::SetCursorScreenPos({ orig_pos.x + w - 200, orig_pos.y + 11 });
+            ImGui::SetCursorScreenPos({ orig_pos.x + w - 240, orig_pos.y + 11 });
             ImGui::Text("%s", "Update:");
         }
 
         auto& selected_software_update = software_updates[selected_software_update_index];
         auto sw_updated = selected_software_update.ver <= update.software_version;
 
-        if (firmware_updates.size() >= 2)
+        if (firmware_updates.size() >= 2 && _fw_update_state == fw_update_states::ready)
         {
             std::vector<const char*> fwu_labels;
             for (auto&& fwu : firmware_updates)
@@ -142,13 +145,13 @@ void updates_model::draw(ux_window& window, std::string& error_message)
                 fwu_labels.push_back(fwu.name.c_str());
             }
 
-            ImGui::SetCursorScreenPos({ orig_pos.x + w - 145, mid_y + 10 });
+            ImGui::SetCursorScreenPos({ orig_pos.x + w - 185, mid_y + 10 });
             std::string combo_id = "##Firmware Update Version";
-            ImGui::PushItemWidth(130);
+            ImGui::PushItemWidth(170);
             ImGui::Combo(combo_id.c_str(), &selected_firmware_update_index, fwu_labels.data(), fwu_labels.size());
             ImGui::PopItemWidth();
 
-            ImGui::SetCursorScreenPos({ orig_pos.x + w - 200, mid_y + 11 });
+            ImGui::SetCursorScreenPos({ orig_pos.x + w - 240, mid_y + 11 });
             ImGui::Text("%s", "Update:");
         }
 
@@ -292,7 +295,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             ImGui::Text("FIRMWARE: "); 
             ImGui::PopStyleColor();
 
-            if (fw_updated)
+            if (fw_updated || _fw_update_state == fw_update_states::completed)
             {
                 ImGui::SameLine();
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
@@ -372,14 +375,87 @@ void updates_model::draw(ux_window& window, std::string& error_message)
                 auto msg = selected_firmware_update.description.c_str();
                 ImGui::SetCursorScreenPos({ orig_pos.x + 146, mid_y + 150 });
                 ImGui::InputTextMultiline("##Firmware Update Description", const_cast<char*>(msg),
-                    strlen(msg) + 1, ImVec2(0,0),
+                    strlen(msg) + 1, ImVec2(w - 200,80),
                     ImGuiInputTextFlags_ReadOnly);
                 ImGui::PopStyleColor(6);
                 ImGui::PopTextWrapPos();
             }
 
-            ImGui::SetCursorScreenPos({ orig_pos.x + (150 + w) / 2 - 75, orig_pos.y + h - 95 });
-            ImGui::Button("Download & Install", ImVec2(140, 20));
+
+            if (_fw_update_state == fw_update_states::ready)
+            {
+                ImGui::SetCursorScreenPos({ orig_pos.x + 150, orig_pos.y + h - 95 });
+                ImGui::PushStyleColor(ImGuiCol_Text, white_color);
+                if (ImGui::Button("Download & Install", ImVec2(w - 170, 25)))
+                {
+                    auto link = selected_firmware_update.download_link;
+                    std::thread download_thread([link, this](){
+                        std::stringstream ss;
+                        ss.clear();
+                        http_downloader client;
+
+                        client.download_to_stream(link, ss, 
+                            [this](uint64_t dl_current_bytes, uint64_t dl_total_bytes, double dl_time) -> bool {
+                                _fw_download_progress = (dl_current_bytes * 100) / dl_total_bytes;
+                                return 0;
+                            });
+
+                        std::vector<uint8_t> vec;
+                        uint8_t byte;
+                        while(ss >> std::noskipws >> byte) 
+                            vec.push_back(byte);
+                        _fw_image = vec;
+                            
+                        _fw_download_progress = 100;
+                    });
+                    download_thread.detach();
+                    
+                    _fw_update_state = fw_update_states::downloading; 
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("This will download selected firmware and install it to the device");
+                    window.link_hovered();
+                }
+                ImGui::PopStyleColor();
+            } 
+            else if (_fw_update_state == fw_update_states::downloading)
+            {
+                ImGui::SetCursorScreenPos({ orig_pos.x + 150, orig_pos.y + h - 95 });
+                _progress.draw(window, w - 170, _fw_download_progress / 3);
+                if (_fw_download_progress == 100)
+                {
+                    _fw_update_state = fw_update_states::started;
+
+                    _update_manager = std::make_shared<firmware_update_manager>(
+                        *update.dev_model, update.dev, update.ctx, _fw_image, true
+                    ); 
+                    auto invoke = [](std::function<void()> action) { action(); };
+                    _update_manager->start(invoke);
+                    // update.dev = rs2::device{};
+                    // update.dev_model->dev = rs2::device{};
+                }
+            } else if (_fw_update_state == fw_update_states::started)
+            {
+                ImGui::SetCursorScreenPos({ orig_pos.x + 150, orig_pos.y + h - 95 });
+                _progress.draw(window, w - 170, _update_manager->get_progress() * 0.66 + 33);
+                if (_update_manager->done()) {
+                    _fw_update_state = fw_update_states::completed;
+                }
+
+                if (error_message != "") error_message = "";
+
+                if (_update_manager->failed()) {
+                    _fw_update_state = fw_update_states::failed;
+                    ImGui::CloseCurrentPopup();
+                }
+
+            } 
+            else if (_fw_update_state == fw_update_states::completed)
+            {
+                ImGui::SetCursorScreenPos({ orig_pos.x + 150, orig_pos.y + h - 95 });
+                //_progress.draw(window, w - 170, 100);
+            }
 
             ImGui::PopStyleColor();
         }
