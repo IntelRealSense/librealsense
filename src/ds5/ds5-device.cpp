@@ -138,6 +138,7 @@ namespace librealsense
         std::vector<uint8_t> flash;
         flash.reserve(flash_size);
 
+        LOG_DEBUG("Flash backup started...");
         uvc_sensor& raw_depth_sensor = get_raw_depth_sensor();
         raw_depth_sensor.invoke_powered([&](platform::uvc_device& dev)
         {
@@ -164,6 +165,7 @@ namespace librealsense
 
                         flash.insert(flash.end(), res.begin(), res.end());
                         appended = true;
+                        LOG_DEBUG("Flash backup - " << flash.size() << "/" << flash_size << " bytes downloaded");
                     }
                     catch (...)
                     {

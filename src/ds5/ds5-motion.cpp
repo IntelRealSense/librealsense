@@ -215,7 +215,6 @@ namespace librealsense
         hid_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
 
         // register pre-processing
-        bool enable_imu_correction = false;
         std::shared_ptr<enable_motion_correction> mm_correct_opt = nullptr;
 
         //  Motion intrinsic calibration presents is a prerequisite for motion correction.
