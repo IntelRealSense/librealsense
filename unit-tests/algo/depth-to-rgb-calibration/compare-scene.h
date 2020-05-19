@@ -6,7 +6,7 @@ void compare_scene( std::string const & scene_dir )
 {
     TRACE( "Loading " << scene_dir << " ..." );
 
-    camera_params ci = read_camera_params( scene_dir, "camera_params" );
+    camera_params ci = read_camera_params( scene_dir, "ac1x\\camera_params" );
     scene_metadata md( scene_dir );
 
     algo::optimizer cal;
