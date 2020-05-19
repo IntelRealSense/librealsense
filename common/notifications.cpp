@@ -186,7 +186,7 @@ namespace rs2
         }
     }
 
-    const int notification_model::get_max_lifetime_ms() const
+    int notification_model::get_max_lifetime_ms() const
     {
         return 10000;
     }
