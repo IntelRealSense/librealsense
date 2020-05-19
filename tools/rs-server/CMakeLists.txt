@@ -32,6 +32,7 @@ else()
     "${LIVE}/liveMedia/*.c*"
     "${LIVE}/UsageEnvironment/*.c*"
   )
+  list(REMOVE_ITEM RS_SERVER_SOURCES "${LIVE}/liveMedia/ADTSAudioStreamDiscreteFramer.cpp")
   add_executable(${PROJECT_NAME} ${RS_SERVER_SOURCES})
   add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 
