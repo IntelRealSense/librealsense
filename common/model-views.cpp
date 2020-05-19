@@ -378,56 +378,6 @@ namespace rs2
         return res;
     }
 
-    inline std::string get_event_type(const std::string& data)
-    {
-        std::regex event_type(R"REGX("Event Type"\s*:\s*"([^"]+)")REGX");
-        std::smatch m;
-        if (std::regex_search(data, m, event_type))
-        {
-            return m[1];
-        }
-        throw std::runtime_error(std::string("Failed to match Event Type in string: ") + data);
-    }
-
-    inline std::string get_subtype(const std::string& data)
-    {
-        std::regex subtype(R"REGX("Sub Type"\s*:\s*"([^"]+)")REGX");
-        std::smatch m;
-        if (std::regex_search(data, m, subtype))
-        {
-            return m[1];
-        }
-        throw std::runtime_error(std::string("Failed to match Sub Type in string: ") + data);
-    }
-
-    inline int get_id(const std::string& data)
-    {
-        std::regex id_regex(R"REGX("ID" : (\d+))REGX");
-        std::smatch match;
-        if (std::regex_search(data, match, id_regex))
-        {
-            return std::stoi(match[1].str());
-        }
-        throw std::runtime_error(std::string("Failed to match ID in string: ") + data);
-    }
-
-    inline std::array<uint8_t, 6> get_mac(const std::string& data)
-    {
-        std::regex mac_addr_regex(R"REGX("MAC" : \[(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)\])REGX");
-        std::smatch match;
-
-        std::array<uint8_t, 6> mac_addr;
-        if (std::regex_search(data, match, mac_addr_regex))
-        {
-            for (size_t i = 1; i < match.size(); i++)
-            {
-                mac_addr[i - 1] = static_cast<uint8_t>(std::stol(match[i].str()));
-            }
-            return mac_addr;
-        }
-        throw std::runtime_error(std::string("Failed to match MAC in string: ") + data);
-    }
-
     option_model create_option_model(rs2_option opt,
         const std::string& opt_base_label,
         subdevice_model* model,
@@ -3282,6 +3232,25 @@ namespace rs2
         for (auto&& n : related_notifications) n->dismiss(false);
     }
 
+    bool try_parse_update(update_handler& up_handler, 
+        const std::string& dev_name,
+        update_handler::update_policy_type policy, 
+        update_handler::component_part_type part, 
+        update_description& result)
+    {
+        long long required_version;
+        bool query_ok = up_handler.query_versions(dev_name, part, policy, required_version);
+        if (query_ok)
+        {
+            auto dl_link_ok = up_handler.get_ver_download_link(part, required_version, result.download_link);
+            auto rel_ok = up_handler.get_ver_rel_notes(part, required_version, result.release_page);
+            auto desc_ok = up_handler.get_ver_description(part, required_version, result.description);
+            result.ver = version(required_version);
+            result.name = up_handler.convert_update_policy(policy);
+        }
+        return query_ok;
+    }
+
     void device_model::refresh_notifications(viewer_model& viewer)
     {
         for (auto&& n : related_notifications) n->dismiss(false);
@@ -3290,50 +3259,76 @@ namespace rs2
 
 #ifdef ENABLE_RS_AUTO_UPDATER
         try {
+            update_profile update;
+
             std::string dev_name = (dev.supports(RS2_CAMERA_INFO_NAME)) ? dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
+            std::string serial = (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER)) ? dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "Unknown";
+            std::string firmware_ver = (dev.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION)) ? dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) : "0.0.0";
+
+            update.software_version = version(); // version(RS2_API_FULL_VERSION_STR);
+            update.firmware_version = version(firmware_ver);
+
+            bool update_required = false;
+
             update_handler up_handler("http://realsense-hw-public.s3-eu-west-1.amazonaws.com/rs-tests/sw-update/rs_versions_db.json", false);
 
-            long long required_version;
-            bool query_ok = up_handler.query_versions(dev_name, update_handler::LIBREALSENSE, update_handler::REQUIRED, required_version);
-            if (query_ok)
             {
-                std::string ver_link;
-                auto dl_link_ok = up_handler.get_ver_download_link(update_handler::LIBREALSENSE, required_version, ver_link);
-
-                std::string rel_notes;
-                auto rel_ok = up_handler.get_ver_rel_notes(update_handler::LIBREALSENSE, required_version, rel_notes);
-
-                std::string description;
-                auto desc_ok = up_handler.get_ver_description(update_handler::LIBREALSENSE, required_version, description);
-
-                auto curr_full_ver = RS2_API_VERSION * 10000 + RS2_API_BUILD_VERSION;
-                if (curr_full_ver < required_version)
+                update_description experimental_software_update; 
+                if (try_parse_update(up_handler, dev_name, update_handler::EXPERIMENTAL, update_handler::LIBREALSENSE, experimental_software_update))
                 {
-                    std::stringstream full_curr_ver_str;
-                    full_curr_ver_str  << std::setfill('0') << std::setw(2) << RS2_API_MAJOR_VERSION << "."
-                                       << std::setfill('0') << std::setw(2) << RS2_API_MINOR_VERSION << "."
-                                       << std::setfill('0') << std::setw(2) << RS2_API_PATCH_VERSION << "."
-                                       << std::setfill('0') << std::setw(4) << RS2_API_BUILD_VERSION;
-                    std::stringstream msg;
-                    auto nir = std::to_string(required_version);
-                    msg << "Detected old version of libRealSense:\n"
-                        << "Current version: " << full_curr_ver_str.str() << "\n"
-                        << "Required version: " << up_handler.convert_ver_to_str(required_version) << "\n"
-                        << "Please download required version\n";
-                    if (dl_link_ok )    msg << "Download Link: " << ver_link << "\n";
-                    if (rel_ok)         msg << "Release Notes: " << rel_notes << "\n";
-                    if (desc_ok)        msg << "Description: " << description << "\n";
-                    
-                    notification_data nd{ msg.str(), RS2_LOG_SEVERITY_ERROR, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR };
-                    viewer.not_model.add_notification(nd);
-
+                    update.software_versions[experimental_software_update.ver] = experimental_software_update;
+                }
+                update_description recommened_software_update; 
+                if (try_parse_update(up_handler, dev_name, update_handler::RECOMMENDED, update_handler::LIBREALSENSE, recommened_software_update))
+                {
+                    update.software_versions[recommened_software_update.ver] = recommened_software_update;
+                }
+                update_description required_software_update;  
+                if (try_parse_update(up_handler, dev_name, update_handler::REQUIRED, update_handler::LIBREALSENSE, required_software_update))
+                {
+                    update.software_versions[required_software_update.ver] = required_software_update;
+                    update_required = update_required || (update.software_version < required_software_update.ver);
                 }
             }
+
+            {
+                update_description experimental_firmware_update; 
+                if (try_parse_update(up_handler, dev_name, update_handler::EXPERIMENTAL, update_handler::FIRMWARE, experimental_firmware_update))
+                {
+                    update.firmware_versions[experimental_firmware_update.ver] = experimental_firmware_update;
+                }
+                update_description recommened_firmware_update; 
+                if (try_parse_update(up_handler, dev_name, update_handler::RECOMMENDED, update_handler::FIRMWARE, recommened_firmware_update))
+                {
+                    update.firmware_versions[recommened_firmware_update.ver] = recommened_firmware_update;
+                }
+                update_description required_firmware_update;  
+                if (try_parse_update(up_handler, dev_name, update_handler::REQUIRED, update_handler::FIRMWARE, required_firmware_update))
+                {
+                    update.firmware_versions[required_firmware_update.ver] = required_firmware_update;
+                    update_required = update_required || (update.firmware_version < required_firmware_update.ver);
+                }
+            }
+
+            if (update_required)
+            {
+                if (!update.firmware_versions.size())
+                    update.firmware_versions[version(0)] = update_description { version(0), "N/A", "", "", "" };
+                    
+                if (!update.software_versions.size())
+                    update.software_versions[version(0)] = update_description { version(0), "N/A", "", "", "" };
+            }
+
+            update.device_name = dev_name;
+            update.serial_number = serial;
+
+            if (update_required) viewer.updates.add_profile(update);
         }
         catch (const std::exception& e)
         {
             auto err = e;
         }
+
 #endif // ENABLE_RS_AUTO_UPDATER
         if ((bool)config_file::instance().get(configurations::update::recommend_updates))
         {

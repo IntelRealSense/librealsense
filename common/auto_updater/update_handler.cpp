@@ -76,6 +76,16 @@ namespace rs2
         return false; // Nothing found
     }
 
+    std::string update_handler::convert_ver_to_str(const long long ver_num) const
+    {
+        std::stringstream raw_ver_str, fixed_ver_str;
+        raw_ver_str << std::setfill('0') << std::setw(10) << ver_num;
+        fixed_ver_str << raw_ver_str.str().substr(0,2)  << "."
+                        << raw_ver_str.str().substr(2, 2) << "."
+                        << raw_ver_str.str().substr(4, 2) << "."
+                        << raw_ver_str.str().substr(6, 4);
+        return fixed_ver_str.str();
+    }
 
     std::string update_handler::convert_component_name(const component_part_type& comp) const
     {
