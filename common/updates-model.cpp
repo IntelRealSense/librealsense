@@ -100,9 +100,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
         for (auto&& swu : update.software_versions)
             software_updates.push_back(swu.second);
         std::sort(software_updates.begin(), software_updates.end(), [](update_description& a, update_description& b){
-            if (a.ver == b.ver) return 0;
-            else if (a.ver > b.ver) return 1;
-            else return -1;
+            return a.ver < b.ver;
         });
         if (software_updates.size() <= selected_software_update_index) selected_software_update_index = 0;
 
@@ -111,9 +109,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
         for (auto&& swu : update.firmware_versions)
             firmware_updates.push_back(swu.second);
         std::sort(firmware_updates.begin(), firmware_updates.end(), [](update_description& a, update_description& b){
-            if (a.ver == b.ver) return 0;
-            else if (a.ver > b.ver) return 1;
-            else return -1;
+            return a.ver < b.ver;
         });
         if (firmware_updates.size() <= selected_firmware_update_index) selected_firmware_update_index = 0;
 

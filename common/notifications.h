@@ -100,7 +100,7 @@ namespace rs2
         process_manager(std::string name)
             : _process_name(name) {}
 
-        void start(std::shared_ptr<notification_model> n);
+        void start(invoker invoke);
         int get_progress() const { return _progress; }
         bool done() const { return _done; }
         bool started() const { return _started; }
@@ -129,6 +129,17 @@ namespace rs2
         std::string _process_name;
     };
 
+    struct progress_bar
+    {
+        void draw(ux_window& win, int w, int progress);
+
+        float progress_speed = 5.f;
+        std::chrono::system_clock::time_point last_progress_time;
+        int last_progress = 0;
+        float curr_progress_value = 0.f;
+        float threshold_progress = 5.f;
+    };
+
     struct process_notification_model : public notification_model
     {
         process_notification_model(std::shared_ptr<process_manager> manager)
@@ -140,11 +151,7 @@ namespace rs2
 
         std::shared_ptr<process_manager> update_manager = nullptr;
         int update_state = 0;
-        float progress_speed = 5.f;
-        std::chrono::system_clock::time_point last_progress_time;
-        int last_progress = 0;
-        float curr_progress_value = 0.f;
-        float threshold_progress = 5.f;
+        progress_bar _progress_bar;
     };
 
     struct version_upgrade_model : public process_notification_model

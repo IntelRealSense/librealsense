@@ -318,7 +318,10 @@ namespace rs2
         ns.add_notification(n);
         n->forced = true;
 
-        manager->start(n);
+        auto invoke = [n](std::function<void()> action) {
+            n->invoke(action);
+        };
+        manager->start(invoke);
     }
 
     bool save_frame_raw_data(const std::string& filename, rs2::frame frame)
@@ -3270,7 +3273,7 @@ namespace rs2
 
             bool update_required = false;
 
-            update_handler up_handler("http://realsense-hw-public.s3-eu-west-1.amazonaws.com/rs-tests/sw-update/rs_versions_db.json", false);
+            update_handler up_handler("/home/dorodnic/Downloads/rs_versions_db.json", true);
 
             {
                 update_description experimental_software_update; 
@@ -4324,7 +4327,10 @@ namespace rs2
                 if (dynamic_cast<fw_update_notification_model*>(n.get()))
                     n->dismiss(false);
 
-            manager->start(n);
+            auto invoke = [n](std::function<void()> action) {
+                n->invoke(action);
+            };
+            manager->start(invoke);
         }
         catch (const error& e)
         {
@@ -4370,7 +4376,11 @@ namespace rs2
             for (auto&& n : related_notifications)
                 n->dismiss(false);
 
-            manager->start(n);
+            auto invoke = [n](std::function<void()> action) {
+                n->invoke(action);
+            };
+            
+            manager->start(invoke);
         }
         catch (const error& e)
         {

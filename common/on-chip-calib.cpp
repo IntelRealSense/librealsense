@@ -675,7 +675,11 @@ namespace rs2
                     get_manager().restore_workspace([this](std::function<void()> a){ a(); });
                     get_manager().reset();
                     get_manager().tare = true;
-                    get_manager().start(shared_from_this());
+                    auto _this = shared_from_this();
+                    auto invoke = [_this](std::function<void()> action) {
+                        _this->invoke(action);
+                    };
+                    get_manager().start(invoke);
                     update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
                     enable_dismiss = false;
                 }
@@ -720,7 +724,11 @@ namespace rs2
                     get_manager().restore_workspace([this](std::function<void()> a) { a(); });
                     get_manager().reset();
                     get_manager().tare = false;
-                    get_manager().start(shared_from_this());
+                    auto _this = shared_from_this();
+                    auto invoke = [_this](std::function<void()> action) {
+                        _this->invoke(action);
+                    };
+                    get_manager().start(invoke);
                     update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
                     enable_dismiss = false;
                 }
@@ -748,7 +756,11 @@ namespace rs2
                 {
                     get_manager().restore_workspace([this](std::function<void()> a){ a(); });
                     get_manager().reset();
-                    get_manager().start(shared_from_this());
+                    auto _this = shared_from_this();
+                    auto invoke = [_this](std::function<void()> action) {
+                        _this->invoke(action);
+                    };
+                    get_manager().start(invoke);
                     update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
                     enable_dismiss = false;
                 }
@@ -945,7 +957,7 @@ namespace rs2
                         update_state = RS2_CALIB_STATE_COMPLETE;
                         pinned = false;
                         enable_dismiss = false;
-                        last_progress_time = last_interacted = system_clock::now() + milliseconds(500);
+                        _progress_bar.last_progress_time = last_interacted = system_clock::now() + milliseconds(500);
                     }
                     else dismiss(false);
 
@@ -991,11 +1003,16 @@ namespace rs2
 
                 if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }) || update_manager->started())
                 {
-                    if (!update_manager->started()) update_manager->start(shared_from_this());
+                    auto _this = shared_from_this();
+                    auto invoke = [_this](std::function<void()> action) {
+                        _this->invoke(action);
+                    };
+
+                    if (!update_manager->started()) update_manager->start(invoke);
 
                     update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
                     enable_dismiss = false;
-                    last_progress_time = system_clock::now();
+                    _progress_bar.last_progress_time = system_clock::now();
                 }
                 ImGui::PopStyleColor(2);
 
