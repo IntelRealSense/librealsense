@@ -2,12 +2,13 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 #include <fstream>
 #include <unordered_set>
+#include <unordered_map>
 #include <algorithm>
 #include <regex>
 
 #include "json.hpp"
-#include "update_handler.h"
-#include "http_downloader.h"
+#include "update-handler.h"
+#include "http-downloader.h"
 #include "types.h"
 
 namespace rs2
@@ -25,8 +26,8 @@ namespace rs2
 
         auto platform = get_platform();
 
-        std::string up_str(convert_update_policy(up));
-        std::string comp_str(convert_component_name(cp));
+        std::string up_str(to_string(up));
+        std::string comp_str(to_string(cp));
 
         if (up_str.empty() || comp_str.empty()) return false;
 
@@ -34,7 +35,7 @@ namespace rs2
         auto res = std::find_if(_server_versions_vec.begin(), _server_versions_vec.end(),
             [&, dev_name, up_str, comp_str, platform](std::unordered_map<std::string, std::string> ver)
         {
-            return (dev_name == ver["device_name"] && up_str == ver["policy_type"] && comp_str == ver["component"] && platform == ver["platform"]);
+            return (dev_name == ver["device_name"] && up_str == ver["policy_type"] && comp_str == ver["component"] && (platform == ver["platform"] || ver["platform"] == "*"));
         });
 
         if (res != _server_versions_vec.end())
@@ -55,7 +56,7 @@ namespace rs2
 
         std::string platform = get_platform();
 
-        std::string comp_str(convert_component_name(cp));
+        std::string comp_str(to_string(cp));
 
         if (comp_str.empty()) return false;
 
@@ -64,7 +65,7 @@ namespace rs2
             [this, version, comp_str, platform](std::unordered_map<std::string, std::string> ver)
         {
             long long version_num = std::stoll(ver["version"]);
-            return (version_num == version && comp_str == ver["component"] && platform == ver["platform"]);
+            return (version_num == version && comp_str == ver["component"] && (platform == ver["platform"] || ver["platform"] == "*"));
         });
 
         if (res != _server_versions_vec.end())
@@ -76,18 +77,18 @@ namespace rs2
         return false; // Nothing found
     }
 
-    std::string update_handler::convert_ver_to_str(const long long ver_num) const
+    std::string update_handler::convert_version_to_formatted_string(const long long ver_num) const
     {
         std::stringstream raw_ver_str, fixed_ver_str;
         raw_ver_str << std::setfill('0') << std::setw(10) << ver_num;
-        fixed_ver_str << raw_ver_str.str().substr(0,2)  << "."
-                        << raw_ver_str.str().substr(2, 2) << "."
-                        << raw_ver_str.str().substr(4, 2) << "."
-                        << raw_ver_str.str().substr(6, 4);
+        fixed_ver_str << raw_ver_str.str().substr(0, 2) << "."
+            << raw_ver_str.str().substr(2, 2) << "."
+            << raw_ver_str.str().substr(4, 2) << "."
+            << raw_ver_str.str().substr(6, 4);
         return fixed_ver_str.str();
     }
 
-    std::string update_handler::convert_component_name(const component_part_type& comp) const
+    std::string update_handler::to_string(const component_part_type& comp) const
     {
         switch (comp)
         {
@@ -102,7 +103,7 @@ namespace rs2
         return "";
     }
 
-    std::string update_handler::convert_update_policy(const update_policy_type& pol) const
+    std::string update_handler::to_string(const update_policy_type& pol) const
     {
 
         switch (pol)
@@ -115,6 +116,38 @@ namespace rs2
             break;
         }
         return "";
+    }
+
+    bool update_handler::from_string(std::string name, component_part_type& res) const
+    {
+        static std::unordered_map<std::string, component_part_type> map =
+        { {"LIBREALSENSE",LIBREALSENSE},
+        {"VIEWER", VIEWER} ,
+        {"DEPTH_QUALITY_TOOL", DEPTH_QUALITY_TOOL},
+        {"FIRMWARE", FIRMWARE} };
+
+        auto val = map.find(name);
+        if (val != map.end())
+        {
+            res = val->second;
+            return true;
+        }
+        return false;
+    }
+    bool update_handler::from_string(std::string name, update_policy_type& res) const
+    {
+        static std::unordered_map<std::string, update_policy_type> map =
+        { {"EXPERIMENTAL",EXPERIMENTAL},
+        {"RECOMMENDED", RECOMMENDED} ,
+        {"REQUIRED", REQUIRED} };
+
+        auto val = map.find(name);
+        if (val != map.end())
+        {
+            res = val->second;
+            return true;
+        }
+        return false;
     }
 
     bool update_handler::get_server_data(std::stringstream &ver_data)
@@ -271,7 +304,7 @@ namespace rs2
         verifier.emplace("policy_type", [](const std::string& val) -> bool {  return (val == "EXPERIMENTAL") || (val == "RECOMMENDED") || (val == "REQUIRED"); });
         verifier.emplace("component", [](const std::string& val) -> bool {  return (val == "LIBREALSENSE") || (val == "VIEWER") || (val == "DEPTH_QUALITY_TOOL") || (val == "FIRMWARE"); });
         verifier.emplace("version", [](const std::string& val) -> bool {  return (std::regex_match(val, std::regex("[0-9]{10}")));  });
-        verifier.emplace("platform", [&](const std::string& val) -> bool {  return (val == "Windows amd64") || (val == "Windows x86") || (val == "Linux amd64") || (val == "Linux arm") || (val == "Mac OS"); });
+        verifier.emplace("platform", [&](const std::string& val) -> bool {  return (val == "*") || (val == "Windows amd64") || (val == "Windows x86") || (val == "Linux amd64") || (val == "Linux arm") || (val == "Mac OS"); });
         verifier.emplace("link", [](const std::string& val) -> bool {  return true;  });
         verifier.emplace("release_notes_link", [](const std::string& val) -> bool {  return true;  });
         verifier.emplace("description", [](const std::string& val) -> bool {  return true;  });

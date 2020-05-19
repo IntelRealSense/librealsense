@@ -33,10 +33,7 @@
 #define FW_SR3XX_FW_IMAGE_VERSION ""
 #endif // INTERNAL_FW
 
-#ifdef ENABLE_RS_AUTO_UPDATER
-#include "auto_updater/update_handler.h"
-#endif // ENABLE_RS_AUTO_UPDATER
-
+#include "auto-updater/update-handler.h"
 #include <easylogging++.h>
 
 
@@ -283,7 +280,6 @@ int main(int argc, const char** argv) try
 
 ////// Test Auto Update //////////
 #ifdef ENABLE_RS_AUTO_UPDATER
-
 //#define AUTO_UPDATER_UNIT_TEST  
 
 #ifdef AUTO_UPDATER_UNIT_TEST
@@ -319,8 +315,9 @@ int main(int argc, const char** argv) try
         }
         catch (const std::exception& e)
         {
-            assert((false == res) && std::string(e.what()).substr(0, 14) == "Download error");
+            assert(std::string(e.what()).substr(0, 14) == "Download error");
         }
+        assert(false == res);
     }
 
     /////////// TEST 2 START /////////////
@@ -336,8 +333,9 @@ int main(int argc, const char** argv) try
         }
         catch (const std::exception& e)
         {
-            assert((false == res) && std::string(e.what()).substr(0, 14) == "Download error");
+            assert(std::string(e.what()).substr(0, 14) == "Download error");
         }
+        assert(false == res);
     }
 
     /////////////// TEST 3 START ///////////////////
@@ -353,8 +351,9 @@ int main(int argc, const char** argv) try
         }
         catch (const std::exception& e)
         {
-            assert(false == res && std::string(e.what()).substr(0, 11) == "parse error");
+            assert(std::string(e.what()).substr(0, 11) == "parse error");
         }
+        assert(false == res);
     }
     ////////////////////////// TEST 4 START /////////////////////////
     // Download a big file with a callback - not a valid json file //
@@ -370,8 +369,9 @@ int main(int argc, const char** argv) try
         }
         catch (const std::exception& e)
         {
-            assert(false == res && std::string(e.what()).substr(0, 11) == "parse error");
+            assert(std::string(e.what()).substr(0, 11) == "parse error");
         }
+        assert(false == res);
     }
 
     ////////////////////////// TEST 5 START /////////////////////////
@@ -388,8 +388,9 @@ int main(int argc, const char** argv) try
         }
         catch (const std::exception& e)
         {
-            assert(false == res && std::string(e.what()).substr(0, 36) == "Download error - Operation was abort");
+            assert(std::string(e.what()).substr(0, 36) == "Download error - Operation was abort");
         }
+        assert(false == res);
     }
     ////////////////////////// TEST 6 START ///////////////////////////////////////////
     // Download a big file with a callback - with an empty callback function         //
@@ -405,8 +406,9 @@ int main(int argc, const char** argv) try
         }
         catch (const std::exception& e)
         {
-            assert(false == res && std::string(e.what()).substr(0, 11) == "parse error");
+            assert(std::string(e.what()).substr(0, 11) == "parse error");
         }
+        assert(false == res);
     }
 
     ////////////////////////// TEST 7 START ///////////////////
@@ -421,27 +423,68 @@ int main(int argc, const char** argv) try
         try
         {
             res = up_handler.query_versions("Intel RealSense L515", update_handler::LIBREALSENSE, update_handler::REQUIRED, ver);
-            ver_link_res = up_handler.get_ver_download_link(update_handler::LIBREALSENSE, ver, ver_link);
-            rel_notes_res = up_handler.get_ver_rel_notes(update_handler::LIBREALSENSE, ver, rel_notes);
-            description_res = up_handler.get_ver_description(update_handler::LIBREALSENSE, ver, description);
+            ver_link_res = up_handler.get_version_download_link(update_handler::LIBREALSENSE, ver, ver_link);
+            rel_notes_res = up_handler.get_version_release_notes(update_handler::LIBREALSENSE, ver, rel_notes);
+            description_res = up_handler.get_version_description(update_handler::LIBREALSENSE, ver, description);
         }
         catch (const std::exception& e)
         {
-            assert(std::string(e.what()).empty());
+            assert(false);
         }
         assert(res && ver_link_res && rel_notes_res && description_res);
     }
 
     ////////////////////////// TEST 8 START /////////////////
-    // Parse json local file - should work                 //
+    // Parse json local file                               //
     // Expect Download OK - Parse OK                       //
     /////////////////////////////////////////////////////////
+    {
+        update_handler up_handler("rs_versions_db.json", true);
+        long long ver(0);
+        bool res(false), ver_link_res(false), rel_notes_res(false), description_res(false);
+        std::string ver_link, rel_notes, description;
+        try
+        {
+            res = up_handler.query_versions("Intel RealSense L515", update_handler::LIBREALSENSE, update_handler::REQUIRED, ver);
+            ver_link_res = up_handler.get_version_download_link(update_handler::LIBREALSENSE, ver, ver_link);
+            rel_notes_res = up_handler.get_version_release_notes(update_handler::LIBREALSENSE, ver, rel_notes);
+            description_res = up_handler.get_version_description(update_handler::LIBREALSENSE, ver, description);
+        }
+        catch (const std::exception& e)
+        {
+            assert(false);
+        }
+        assert(res && ver_link_res && rel_notes_res && description_res);
+    }
+
+    ////////////////////////// TEST 9 START ///////////////////
+    // Parse json local file - Check Platform don't care '*' //
+    // Expect Download OK - Parse OK                         //
+    ///////////////////////////////////////////////////////////
+    {
+        update_handler up_handler("rs_versions_db.json", true);
+        long long ver(0);
+        bool res(false), ver_link_res(false), rel_notes_res(false), description_res(false);
+        std::string ver_link, rel_notes, description;
+        try
+        {
+            res = up_handler.query_versions("Intel RealSense L515", update_handler::LIBREALSENSE, update_handler::RECOMMENDED, ver);
+            ver_link_res = up_handler.get_version_download_link(update_handler::LIBREALSENSE, 235000006, ver_link);
+            rel_notes_res = up_handler.get_version_release_notes(update_handler::LIBREALSENSE, 235000006, rel_notes);
+            description_res = up_handler.get_version_description(update_handler::LIBREALSENSE, 235000006, description);
+        }
+        catch (const std::exception& e)
+        {
+            assert(false);
+        }
+        assert(res && ver_link_res && rel_notes_res && description_res);
+        assert(ver == 235000006);
+    }
+   
 
 
 #endif
-
 #endif
-    
 
     rs2::log_to_console(RS2_LOG_SEVERITY_WARN);
 
