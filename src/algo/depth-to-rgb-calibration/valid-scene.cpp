@@ -685,6 +685,62 @@ end*/
 
     return false;
 }
+std::vector< double >  extract_features(decision_params& decision_params)
+{
+    svm_features features;
+    std::vector< double > res;
+    auto max_elem = *std::max_element(decision_params.distribution_per_section_depth.begin(), decision_params.distribution_per_section_depth.end() );
+    auto min_elem = *std::min_element(decision_params.distribution_per_section_depth.begin(), decision_params.distribution_per_section_depth.end());
+    features.max_over_min_depth = max_elem/ (min_elem+ 1e-3);
+    res.push_back(features.max_over_min_depth);
+
+    max_elem = *std::max_element(decision_params.distribution_per_section_rgb.begin(), decision_params.distribution_per_section_rgb.end());
+    min_elem = *std::min_element(decision_params.distribution_per_section_rgb.begin(), decision_params.distribution_per_section_rgb.end());
+    features.max_over_min_rgb = max_elem / (min_elem + 1e-3);
+    res.push_back(features.max_over_min_rgb);
+
+    std::vector<double>::iterator it = decision_params.edge_weights_per_dir.begin();
+    max_elem = std::max(*it, *(it+2));
+    min_elem = std::min(*it, *(it + 2));
+    features.max_over_min_perp = max_elem / (min_elem + 1e-3);
+    res.push_back(features.max_over_min_perp);
+
+    max_elem = std::max(*(it+1), *(it + 3));
+    min_elem = std::min(*(it+1), *(it + 3));
+    features.max_over_min_diag = max_elem / (min_elem + 1e-3);
+    res.push_back(features.max_over_min_diag);
+
+    features.initial_cost = decision_params.initial_cost;
+    features.final_cost = decision_params.new_cost;
+    res.push_back(features.initial_cost);
+    res.push_back(features.final_cost);
+
+    features.xy_movement = decision_params.xy_movement;
+    if (features.xy_movement > 100) { features.xy_movement = 100; }
+    features.xy_movement_from_origin = decision_params.xy_movement_from_origin;
+    if (features.xy_movement_from_origin > 100) { features.xy_movement_from_origin = 100; }
+    res.push_back(features.xy_movement);
+    res.push_back(features.xy_movement_from_origin);
+
+    std::vector<double>::iterator  iter = decision_params.improvement_per_section.begin();
+    features.positive_improvement_sum = 0;
+    features.negative_improvement_sum = 0;
+    for (int i = 0; i < decision_params.improvement_per_section.size(); i++)
+    {
+        if (*(iter + i) > 0)
+        {
+            features.positive_improvement_sum += *(iter + i);
+        }
+        else
+        {
+            features.negative_improvement_sum += *(iter + i);
+        }
+    }
+    res.push_back(features.positive_improvement_sum);
+    res.push_back(features.negative_improvement_sum);
+
+    return res;
+}
 void collect_decision_params(z_frame_data& z_data, yuy2_frame_data& yuy_data, decision_params& decision_params)
 {
 
@@ -699,11 +755,14 @@ void collect_decision_params(z_frame_data& z_data, yuy2_frame_data& yuy_data, de
     decision_params.is_valid_1 = 1;
     decision_params.moving_pixels = 0;
     decision_params.min_max_ratio_depth = 0.762463343108504;
-    decision_params.distribution_per_section_depth = z_data.sum_weights_per_section;
+    decision_params.distribution_per_section_depth = { 980000, 780000, 1023000, 816000 };// z_data.sum_weights_per_section;
     decision_params.min_max_ratio_rgb = 0.618130692181835;
-    decision_params.distribution_per_section_rgb = yuy_data.sum_weights_per_section;
+    decision_params.distribution_per_section_rgb = {3025208, 2.899468500000000e+06, 4471484, 2.763961500000000e+06};// yuy_data.sum_weights_per_section;
     decision_params.dir_ratio_1 = 2.072327044025157;
     decision_params.edge_weights_per_dir = { 636000, 898000, 1318000, 747000 };
+    decision_params.new_cost = 1.677282421875000e+04;
+
+    auto features = extract_features(decision_params);
 }
 bool optimizer::valid_by_svm()
 {

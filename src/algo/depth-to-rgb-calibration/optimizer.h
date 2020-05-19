@@ -93,6 +93,19 @@ namespace depth_to_rgb_calibration {
         std::vector< double > edge_weights_per_dir;
         double new_cost;
     };
+    struct svm_features
+    {
+        double max_over_min_depth;
+        double max_over_min_rgb;
+        double max_over_min_perp;
+        double max_over_min_diag;
+        double initial_cost;
+        double final_cost;
+        double xy_movement;
+        double xy_movement_from_origin;
+        double positive_improvement_sum;
+        double negative_improvement_sum;
+    };
     struct svm_model_linear
     {
         svm_model_linear();

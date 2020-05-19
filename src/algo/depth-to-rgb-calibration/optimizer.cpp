@@ -1325,7 +1325,12 @@ params::params()
     // NOTE: until we know the resolution, the current state is just the default!
     // We need to get the depth and rgb resolutions to make final decisions!
 }
-
+svm_model_linear::svm_model_linear()
+{
+}
+svm_model_gaussian::svm_model_gaussian()
+{
+}
 void params::set_depth_resolution( size_t width, size_t height )
 {
     AC_LOG( DEBUG, "... depth resolution= " << width << "x" << height );
