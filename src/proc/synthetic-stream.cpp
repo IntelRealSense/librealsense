@@ -44,10 +44,10 @@ namespace librealsense
             }
         }
 
-		catch (std::exception const & e)
-		{
-			LOG_ERROR("Exception was thrown during user processing callback: " + std::string(e.what()));
-		}
+        catch (std::exception const & e)
+        {
+            LOG_ERROR("Exception was thrown during user processing callback: " + std::string(e.what()));
+        }
         catch (...)
         {
             LOG_ERROR("Exception was thrown during user processing callback!");
