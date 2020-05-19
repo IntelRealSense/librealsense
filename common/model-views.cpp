@@ -3284,7 +3284,7 @@ namespace rs2
                     update.software_versions[recommened_software_update.ver] = recommened_software_update;
                 }
                 update_description required_software_update;  
-                if (try_parse_update(up_handler, dev_name, update_handler::REQUIRED, update_handler::LIBREALSENSE, required_software_update))
+                if (try_parse_update(up_handler, dev_name, update_handler::ESSENTIAL, update_handler::LIBREALSENSE, required_software_update))
                 {
                     update.software_versions[required_software_update.ver] = required_software_update;
                     update_required = update_required || (update.software_version < required_software_update.ver);
@@ -3303,7 +3303,7 @@ namespace rs2
                     update.firmware_versions[recommened_firmware_update.ver] = recommened_firmware_update;
                 }
                 update_description required_firmware_update;  
-                if (try_parse_update(up_handler, dev_name, update_handler::REQUIRED, update_handler::FIRMWARE, required_firmware_update))
+                if (try_parse_update(up_handler, dev_name, update_handler::ESSENTIAL, update_handler::FIRMWARE, required_firmware_update))
                 {
                     update.firmware_versions[required_firmware_update.ver] = required_firmware_update;
                     update_required = update_required || (update.firmware_version < required_firmware_update.ver);

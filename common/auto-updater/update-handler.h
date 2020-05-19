@@ -16,7 +16,7 @@ namespace rs2
     public:
         typedef std::function<bool(uint64_t dl_current_bytes, uint64_t dl_total_bytes, double dl_time)> user_callback_func_type;
 
-        enum update_policy_type { EXPERIMENTAL, RECOMMENDED, REQUIRED };
+        enum update_policy_type { EXPERIMENTAL, RECOMMENDED, ESSENTIAL };
         enum component_part_type { LIBREALSENSE , VIEWER, DEPTH_QUALITY_TOOL, FIRMWARE };
         enum update_source_type { FROM_FILE, FROM_SERVER };
 

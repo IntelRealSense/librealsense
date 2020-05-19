@@ -110,7 +110,7 @@ namespace rs2
         {
         case EXPERIMENTAL: return "EXPERIMENTAL";
         case RECOMMENDED: return "RECOMMENDED";
-        case REQUIRED: return "REQUIRED";
+        case ESSENTIAL: return "ESSENTIAL";
             break;
         default:
             break;
@@ -139,7 +139,7 @@ namespace rs2
         static std::unordered_map<std::string, update_policy_type> map =
         { {"EXPERIMENTAL",EXPERIMENTAL},
         {"RECOMMENDED", RECOMMENDED} ,
-        {"REQUIRED", REQUIRED} };
+        {"ESSENTIAL", ESSENTIAL} };
 
         auto val = map.find(name);
         if (val != map.end())
@@ -301,7 +301,7 @@ namespace rs2
     {
         // Builds a map of fields + validation function
         verifier.emplace("device_name", [](const std::string& val) -> bool {  return true;  });
-        verifier.emplace("policy_type", [](const std::string& val) -> bool {  return (val == "EXPERIMENTAL") || (val == "RECOMMENDED") || (val == "REQUIRED"); });
+        verifier.emplace("policy_type", [](const std::string& val) -> bool {  return (val == "EXPERIMENTAL") || (val == "RECOMMENDED") || (val == "ESSENTIAL"); });
         verifier.emplace("component", [](const std::string& val) -> bool {  return (val == "LIBREALSENSE") || (val == "VIEWER") || (val == "DEPTH_QUALITY_TOOL") || (val == "FIRMWARE"); });
         verifier.emplace("version", [](const std::string& val) -> bool {  return (std::regex_match(val, std::regex("[0-9]{10}")));  });
         verifier.emplace("platform", [&](const std::string& val) -> bool {  return (val == "*") || (val == "Windows amd64") || (val == "Windows x86") || (val == "Linux amd64") || (val == "Linux arm") || (val == "Mac OS"); });

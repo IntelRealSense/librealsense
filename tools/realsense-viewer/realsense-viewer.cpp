@@ -422,7 +422,7 @@ int main(int argc, const char** argv) try
         std::string ver_link, rel_notes, description;
         try
         {
-            res = up_handler.query_versions("Intel RealSense L515", update_handler::LIBREALSENSE, update_handler::REQUIRED, ver);
+            res = up_handler.query_versions("Intel RealSense L515", update_handler::LIBREALSENSE, update_handler::ESSENTIAL, ver);
             ver_link_res = up_handler.get_version_download_link(update_handler::LIBREALSENSE, ver, ver_link);
             rel_notes_res = up_handler.get_version_release_notes(update_handler::LIBREALSENSE, ver, rel_notes);
             description_res = up_handler.get_version_description(update_handler::LIBREALSENSE, ver, description);
@@ -445,7 +445,7 @@ int main(int argc, const char** argv) try
         std::string ver_link, rel_notes, description;
         try
         {
-            res = up_handler.query_versions("Intel RealSense L515", update_handler::LIBREALSENSE, update_handler::REQUIRED, ver);
+            res = up_handler.query_versions("Intel RealSense L515", update_handler::LIBREALSENSE, update_handler::ESSENTIAL, ver);
             ver_link_res = up_handler.get_version_download_link(update_handler::LIBREALSENSE, ver, ver_link);
             rel_notes_res = up_handler.get_version_release_notes(update_handler::LIBREALSENSE, ver, rel_notes);
             description_res = up_handler.get_version_description(update_handler::LIBREALSENSE, ver, description);
