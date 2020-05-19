@@ -66,10 +66,13 @@ namespace librealsense
         //after the validation all streams will be passeded to user callback directly
         if (stream->get_stream_type() != RS2_STREAM_INFRARED)
             return false;
+        // TODO review the above statement and check with PLM
 
+#if 0  // TODO WHY?
         //start to validate only from the second frame
         if(_ir_frame_num++ < 2)
             return false;
+#endif
 
         auto w = vf->get_width();
         auto h = vf->get_height();
