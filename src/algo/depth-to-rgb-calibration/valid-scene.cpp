@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <array>
 #include "coeffs.h"
+#include "cost.h"
 #include "debug.h"
 
 
@@ -684,7 +685,38 @@ end*/
 
     return false;
 }
+void collect_decision_params(z_frame_data& z_data, yuy2_frame_data& yuy_data, decision_params& decision_params)
+{
 
+    // NOHA :: TODO :: collect decision_params
+    decision_params.initial_cost = 1.560848046875000e+04;// calc_cost(z_data, yuy_data, z_data.uvmap);
+    decision_params.is_valid = 0;
+    decision_params.xy_movement = 2.376f; // calc_correction_in_pixels();
+    decision_params.xy_movement_from_origin = 2.376f;
+    decision_params.improvement_per_section = { -4.4229550,828.93903,1424.0482,2536.4409 }; // z_data.cost_diff_per_section;
+    decision_params.min_improvement_per_section = -4.422955036163330;// *std::min_element(_z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end());
+    decision_params.max_improvement_per_section = 2.536440917968750e+03;// *std::max_element(_z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end());
+    decision_params.is_valid_1 = 1;
+    decision_params.moving_pixels = 0;
+    decision_params.min_max_ratio_depth = 0.762463343108504;
+    decision_params.distribution_per_section_depth = z_data.sum_weights_per_section;
+    decision_params.min_max_ratio_rgb = 0.618130692181835;
+    decision_params.distribution_per_section_rgb = yuy_data.sum_weights_per_section;
+    decision_params.dir_ratio_1 = 2.072327044025157;
+    decision_params.edge_weights_per_dir = { 636000, 898000, 1318000, 747000 };
+}
+bool optimizer::valid_by_svm()
+{
+    bool res = true;
+    decision_params decision_params;
+    collect_decision_params(_z, _yuy, decision_params);
+    
+
+    
+    
+
+    return res;
+}
 bool optimizer::is_scene_valid()
 {
     std::vector< byte > section_map_depth(_z.width * _z.height);
@@ -726,5 +758,8 @@ bool optimizer::is_scene_valid()
     bool res_edges = is_edge_distributed(_z, _yuy);
     bool res_gradient = is_grad_dir_balanced(_z);
 
-    return((!res_movement) && res_edges && res_gradient);
+    bool res_svm = valid_by_svm();
+
+    //return((!res_movement) && res_edges && res_gradient);
+    return((!res_movement) && res_svm);
 }
