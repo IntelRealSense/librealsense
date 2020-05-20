@@ -1335,7 +1335,7 @@ unsigned rs2_get_log_message_line_number( rs2_log_message const* msg, rs2_error*
 {
     VALIDATE_NOT_NULL( msg );
     log_message const& wrapper = *(log_message const*) (msg);
-    return wrapper.el_msg.line();
+    return wrapper.get_log_message_line_number();
 }
 HANDLE_EXCEPTIONS_AND_RETURN( 0, msg )
 
@@ -1343,7 +1343,7 @@ const char* rs2_get_log_message_filename( rs2_log_message const* msg, rs2_error*
 {
     VALIDATE_NOT_NULL( msg );
     log_message const& wrapper = *(log_message const*) (msg);
-    return wrapper.el_msg.file().c_str();
+    return wrapper.get_log_message_filename();
 }
 HANDLE_EXCEPTIONS_AND_RETURN( nullptr, msg )
 
@@ -1351,7 +1351,7 @@ const char* rs2_get_raw_log_message( rs2_log_message const* msg, rs2_error** err
 {
     VALIDATE_NOT_NULL( msg );
     log_message const & wrapper = *( log_message const * )( msg );
-    return wrapper.el_msg.message().c_str();
+    return wrapper.get_raw_log_message();
 }
 HANDLE_EXCEPTIONS_AND_RETURN( nullptr, msg )
 
@@ -1359,12 +1359,7 @@ const char* rs2_get_full_log_message( rs2_log_message const* msg, rs2_error** er
 {
     VALIDATE_NOT_NULL( msg );
     log_message & wrapper = *( log_message * )( msg );
-    if( wrapper.built_msg.empty() )
-    {
-        bool const append_new_line = false;
-        wrapper.built_msg = wrapper.el_msg.logger()->logBuilder()->build( &wrapper.el_msg, append_new_line );
-    }
-    return wrapper.built_msg.c_str();
+    return wrapper.get_full_log_message();
 }
 HANDLE_EXCEPTIONS_AND_RETURN( nullptr, msg )
 

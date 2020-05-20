@@ -49,7 +49,7 @@ public:
 
     virtual void start( rs2::subdevice_model & model )
     {
-        LOG(INFO) << "Starting " + get_name();
+        LOG_INFO("Starting " + get_name());
     }
 
 protected:
