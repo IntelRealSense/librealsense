@@ -60,6 +60,37 @@ namespace librealsense
 		return vec;
 	}
 
+    std::vector<rs2_firmware_log_message> firmware_logger_device::get_fw_logs_msg()
+    {
+        auto res = _hw_monitor->send(_input_code);
+        if (res.empty())
+        {
+            throw std::runtime_error("Getting Firmware logs failed!");
+        }
+
+        //TODO - REMI - check why this is required
+        res.erase(res.begin(), res.begin() + 4);
+
+        std::vector<rs2_firmware_log_message> vec;
+        auto beginOfLogIterator = res.begin();
+        // convert bytes to rs2_firmware_log_message
+        for (int i = 0; i < res.size() / fw_logs::BINARY_DATA_SIZE; ++i)
+        {
+            auto endOfLogIterator = beginOfLogIterator + fw_logs::BINARY_DATA_SIZE;
+            std::vector<uint8_t> resultsForOneLog;
+            resultsForOneLog.insert(resultsForOneLog.begin(), beginOfLogIterator, endOfLogIterator);
+            auto temp_pointer = reinterpret_cast<std::vector<uint8_t> const*>(resultsForOneLog.data());
+            auto log = const_cast<char*>(reinterpret_cast<char const*>(temp_pointer));
+
+            fw_logs::fw_log_data data = fill_log_data(log);
+            rs2_firmware_log_message msg = data.to_rs2_firmware_log_message();
+            beginOfLogIterator = endOfLogIterator;
+
+            vec.push_back(msg);
+        }
+        return vec;
+    }
+
     fw_logs::fw_log_data firmware_logger_device::fill_log_data(const char* fw_logs)
     {
         fw_logs::fw_log_data log_data;

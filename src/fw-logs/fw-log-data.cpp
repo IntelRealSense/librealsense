@@ -56,5 +56,35 @@ namespace librealsense
             auto str = fmt.str();
             return str;
         }
+
+        rs2_firmware_log_message fw_log_data::to_rs2_firmware_log_message()
+        {
+            rs2_firmware_log_message msg;
+            msg._magic_number = this->magic_number;
+            msg._severity = this->severity;
+            msg._file_id = this->file_id;
+            msg._group_id = this->group_id;
+            msg._event_id = this->event_id;
+            msg._line = this->line;
+            msg._sequence = this->sequence;
+            msg._p1 = this->p1;
+            msg._p2 = this->p2;
+            msg._p3 = this->p3;
+            msg._timestamp = this->timestamp;
+            msg._thread_id = this->thread_id;
+
+
+            //TODO - REMI - check these pointers are deleted in rs2_firmware_log_message destructor
+            /*msg._message = new char[this->message.size()];
+            strcpy(msg._message, this->message.c_str());
+
+            msg._file_name = new char[this->file_name.size()];
+            strcpy(msg._file_name, this->file_name.c_str());
+
+            msg._thread_name = new char[this->thread_name.size()];
+            strcpy(msg._thread_name, this->thread_name.c_str());*/
+
+            return msg;
+        }
     }
 }

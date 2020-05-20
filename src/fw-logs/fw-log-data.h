@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
-
+#include "../types.h"       //for rs2_firmware_log_message
 
 namespace librealsense
 {
@@ -93,6 +93,7 @@ namespace librealsense
             std::string thread_name;
 
             std::string to_string();
+            rs2_firmware_log_message to_rs2_firmware_log_message();
         };
     }
 }

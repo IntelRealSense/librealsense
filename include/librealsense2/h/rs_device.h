@@ -359,14 +359,14 @@ void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_s
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return            firmware logs
 */
-const rs2_raw_data_buffer* rs2_get_firmware_logs(rs2_device* dev, rs2_error** error);
+rs2_firmware_log_message_list* rs2_get_firmware_logs_list(rs2_device* dev, rs2_error** error);
+
 
 /**
-* \brief Gets size of one firmware log.
-* \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
-* \return            size of one firmware log
+* \brief Frees the relevant firmware logs messages list object.
+* \param[in] firmware logs messages list object that is no longer needed
 */
-int rs2_get_firmware_logs_one_message_size(rs2_error** error);
+void rs2_delete_firmware_logs_list(rs2_firmware_log_message_list* fw_logs_list);
 
 /**
 * \brief Creates RealSense firmware logs parser.
