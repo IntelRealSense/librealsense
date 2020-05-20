@@ -13,8 +13,9 @@ namespace librealsense
 	class firmware_logger_extensions
 	{
 	public:
-		virtual std::vector<uint8_t> get_fw_binary_logs() const = 0;
+		virtual std::vector<uint8_t> get_fw_binary_logs() const = 0; 
 		virtual std::vector<fw_logs::fw_log_data> get_fw_logs() = 0;
+		virtual std::vector<rs2_firmware_log_message> get_fw_logs_msg() = 0;
 		virtual ~firmware_logger_extensions() = default;
 	};
 	MAP_EXTENSION(RS2_EXTENSION_FW_LOGGER, librealsense::firmware_logger_extensions);
@@ -28,6 +29,7 @@ namespace librealsense
 
 		std::vector<uint8_t> get_fw_binary_logs() const override;
 		std::vector<fw_logs::fw_log_data> get_fw_logs() override;
+		std::vector<rs2_firmware_log_message> get_fw_logs_msg() override;
 		fw_logs::fw_log_data fill_log_data(const char* fw_logs) ;
 
 	private:

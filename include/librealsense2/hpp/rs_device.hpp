@@ -387,6 +387,26 @@ namespace rs2
             _thread_id = firmware_logs_helper::build_uint32_from4_uint8(fw_log_bytes.data() + i);
         }
 
+        firmware_logger_message(const rs2_firmware_log_message& msg)
+        {
+            _magic_number = msg._magic_number;
+            _severity = msg._severity;
+            _file_id = msg._file_id;
+            _group_id = msg._group_id;
+            _event_id = msg._event_id;
+            _line = msg._line;
+            _sequence = msg._sequence;
+            _p1 = msg._p1;
+            _p2 = msg._p2;
+            _p3 = msg._p3;
+            _timestamp = msg._timestamp;
+            _delta = msg._delta;
+            _thread_id = msg._thread_id;
+            /*_message = std::string(msg._message);
+            _file_name = std::string(msg._file_name);
+            _thread_name = std::string(msg._thread_name);*/
+        }
+
         std::string to_string() const
         {
             std::stringstream fmt;
@@ -451,35 +471,29 @@ namespace rs2
 
         std::vector<rs2::firmware_logger_message> get_firmware_logs() const
         {
-            std::vector<uint8_t> results;
+            rs2_error* e = nullptr; 
 
-            rs2_error* e = nullptr;
-            std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_get_firmware_logs(_dev.get(), &e),
-                rs2_delete_raw_data);
+            std::shared_ptr<rs2_firmware_log_message_list> msg_list(
+                rs2_get_firmware_logs_list(_dev.get(), &e),
+                rs2_delete_firmware_logs_list);
             error::handle(e);
-
-            auto size = rs2_get_raw_data_size(list.get(), &e);
-            error::handle(e);
-
-            auto sizeOfOneLog = rs2_get_firmware_logs_one_message_size(&e);
-			error::handle(e);
 
             std::vector<rs2::firmware_logger_message> vec;
-            if (size > 0)
+            
+            if (msg_list)
             {
-                auto start = rs2_get_raw_data(list.get(), &e);
-
-                results.insert(results.begin(), start, start + size);
-                auto startIt = results.begin();
-                for (int i = 0; i < size / sizeOfOneLog; ++i)
+                size_t number_of_messages = msg_list.get()->_number_of_messages > 0;
+                if (number_of_messages > 0)
                 {
-                    std::vector<uint8_t> resultsForOneLog;
-                    resultsForOneLog.insert(resultsForOneLog.begin(), startIt, startIt + sizeOfOneLog);
-                    vec.push_back(rs2::firmware_logger_message(resultsForOneLog));
-                    startIt += sizeOfOneLog;
+                    // for each message: convert rs2_firmware_log_message to rs2::firmware_log_message
+                    for (int i = 0; i < number_of_messages; ++i)
+                    {
+                        rs2::firmware_logger_message message_received(msg_list.get()->_messages[i]);
+                        vec.push_back(message_received);
+                    }
                 }
             }
+            
             return vec;
         }
     };
@@ -500,19 +514,19 @@ namespace rs2
         {
             rs2_error* e = nullptr;
 
-            std::shared_ptr<rs2_raw_data_buffer> parsed_logs(
+            std::shared_ptr<rs2_raw_data_buffer> parsed_log(
                 rs2_parse_firmware_log(_firmware_logs_parser.get(), 
                 msg._event_id, msg._p1, msg._p2, msg._p3, msg._file_id, msg._thread_id, &e),
                 rs2_delete_raw_data);
             rs2::error::handle(e);
 
-            auto size = rs2_get_raw_data_size(parsed_logs.get(), &e);
+            auto size = rs2_get_raw_data_size(parsed_log.get(), &e);
             rs2::error::handle(e);
 
             
             if (size > 0)
             {
-                auto start = rs2_get_raw_data(parsed_logs.get(), &e);
+                auto start = rs2_get_raw_data(parsed_log.get(), &e);
 
                 int i = 0;
                 //retreive message
