@@ -686,10 +686,10 @@ end*/
 
     return false;
 }
-std::vector< double >  extract_features(decision_params& decision_params)
+std::vector< double > extract_features(decision_params &decision_params)
 {
     svm_features features;
-    std::vector< double > res;
+    std::vector< double > res; 
     auto max_elem = *std::max_element(decision_params.distribution_per_section_depth.begin(), decision_params.distribution_per_section_depth.end() );
     auto min_elem = *std::min_element(decision_params.distribution_per_section_depth.begin(), decision_params.distribution_per_section_depth.end());
     features.max_over_min_depth = max_elem/ (min_elem+ 1e-3);
@@ -765,6 +765,20 @@ void collect_decision_params(z_frame_data& z_data, yuy2_frame_data& yuy_data, de
 
     
 }
+decision_params& optimizer::get_decision_params()
+{
+    decision_params decision_params;
+    collect_decision_params(_z, _yuy, decision_params);
+    return decision_params;
+}
+std::vector< double >& optimizer::get_extracted_features()
+{
+    //decision_params& decision_params = get_decision_params();
+    decision_params decision_params;
+    collect_decision_params(_z, _yuy, decision_params);
+    auto features = extract_features(decision_params);
+    return features;
+}
 bool svm_rbf_predictor(std::vector< double >& features, svm_model_gaussian& svm_model)
 {
     bool res = TRUE;
@@ -816,6 +830,10 @@ bool optimizer::valid_by_svm(svm_model model)
 {
     bool is_valid = true;
     
+    //decision_params decision_params;
+    //collect_decision_params(_z, _yuy, decision_params);
+    //auto& decision_params = get_decision_params();
+    //auto& features = get_extracted_features();
     decision_params decision_params;
     collect_decision_params(_z, _yuy, decision_params);
     auto features = extract_features(decision_params);
@@ -887,7 +905,7 @@ bool optimizer::is_scene_valid()
     bool res_edges = is_edge_distributed(_z, _yuy);
     bool res_gradient = is_grad_dir_balanced(_z);
 
-    bool res_svm = valid_by_svm(gaussian);// (linear);
+    bool res_svm = valid_by_svm(linear); //(gaussian);// (linear);
 
     //return((!res_movement) && res_edges && res_gradient);
     return((!res_movement) && res_svm);

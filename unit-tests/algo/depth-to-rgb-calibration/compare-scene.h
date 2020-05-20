@@ -21,7 +21,8 @@ void compare_scene( std::string const & scene_dir )
     auto& ir_data = cal.get_ir_data();
     auto& yuy_data = cal.get_yuy_data();
     auto& depth_data = cal.get_z_data();
-
+    auto& decision_params = cal.get_decision_params();
+    auto& svm_features = cal.get_extracted_features();
     //---
     auto rgb_h = ci.rgb.height;
     auto rgb_w = ci.rgb.width;
@@ -29,7 +30,7 @@ void compare_scene( std::string const & scene_dir )
     auto z_w = ci.z.width;
     auto num_of_calib_elements = 32;
 
-#if 1
+#if 0
     // smearing
     CHECK(compare_to_bin_file< double >(depth_data.gradient_x, scene_dir, "ac1x\\Zx", z_w, z_h, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.gradient_y, scene_dir, "ac1x\\Zy", z_w, z_h, "double_00", compare_same_vectors));
@@ -120,8 +121,16 @@ void compare_scene( std::string const & scene_dir )
     // 3. movement
     CHECK( compare_to_bin_file< double >( yuy_data.gaussian_diff_masked, scene_dir, "ac1x\\IDiffMasked", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
     CHECK( compare_to_bin_file< uint8_t >( yuy_data.move_suspect, scene_dir, "ac1x\\ixMoveSuspect", rgb_w, rgb_h, "uint8_00", compare_same_vectors ) );
+
+    //svm
+    CHECK(compare_to_bin_file< double >(svm_features, scene_dir, "featuresMat", 10, 1, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(decision_params.distribution_per_section_depth, scene_dir, "edgeWeightDistributionPerSectionDepth", 1, 4, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(decision_params.distribution_per_section_rgb, scene_dir, "edgeWeightDistributionPerSectionRgb", 1, 4, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(decision_params.edge_weights_per_dir, scene_dir, "edgeWeightsPerDir", 1, 4, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(decision_params.improvement_per_section, scene_dir, "improvementPerSection", 4, 1, "double_00", compare_same_vectors));
+
 #endif
-#if 1
+#if 0
     //--
     TRACE( "\nOptimizing:" );
     auto cb = [&]( algo::iteration_data_collect const & data )
