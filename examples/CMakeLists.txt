@@ -21,6 +21,8 @@ else()
     endif()
 endif()
 
+set(DEPENDENCIES ${DEPENDENCIES} ${CC_LIBS})
+
 if(BUILD_NETWORK_DEVICE)
     add_subdirectory(server)
 endif()
