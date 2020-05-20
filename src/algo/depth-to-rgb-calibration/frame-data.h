@@ -28,7 +28,7 @@ namespace depth_to_rgb_calibration {
     struct ir_frame_data : frame_data
     {
         std::vector< ir_t > ir_frame;
-        std::vector< double > edges;
+        std::vector<double> edges;
         std::vector< double > local_edges;
 
         // smearing
@@ -98,7 +98,6 @@ namespace depth_to_rgb_calibration {
         std::vector<double> vertices3;
         std::vector<double2> uvmap;
         std::vector<double> is_inside;
-
         // input validation
         std::vector<byte> section_map;
         bool is_edge_distributed;

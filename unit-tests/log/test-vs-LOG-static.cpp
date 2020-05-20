@@ -7,7 +7,7 @@
 // Catch also defines CHECK(), and so we have to undefine it or we get compilation errors!
 #undef CHECK
 #define CATCH_CONFIG_MAIN
-#include "../catch/catch.hpp"
+#include "../catch.h"
  
 // With Catch2, turn this into SCOPED_INFO (right now, does not work)
 #if 1
@@ -45,15 +45,15 @@ TEST_CASE( "rs2_log vs LOG() - internal", "[log]" )
     el::Helpers::uninstallLogDispatchCallback< el::base::DefaultLogDispatchCallback >( "DefaultLogDispatchCallback" );
 
     // LOG(XXX) should log to the default logger, which is NOT the librealsense logger
-    REQUIRE_NOTHROW( LOG(INFO) << "Log message to default logger" );
+    LOG(INFO) << "Log message to default logger";
     REQUIRE( n_callbacks == 1 );
 
     // CLOG(XXX,"librealsense") is the librealsense logger
-    REQUIRE_NOTHROW( CLOG(INFO, "librealsense") << "Log message to \"librealsense\" logger" );
+    CLOG(INFO, "librealsense") << "Log message to \"librealsense\" logger";
     REQUIRE( n_callbacks == 2 );
 
     // LOG_XXX() is same as CLOG( ..., "librealsense" )
-    REQUIRE_NOTHROW( LOG_INFO( "Log message using LOG_INFO()" ) );
+    LOG_INFO( "Log message using LOG_INFO()" );
     REQUIRE( n_callbacks == 3 );
 
     // LOG_XXX() is same as CLOG( ..., "librealsense" )

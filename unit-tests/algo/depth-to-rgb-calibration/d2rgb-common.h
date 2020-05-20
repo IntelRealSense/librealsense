@@ -39,7 +39,7 @@ void init_algo( algo::optimizer & cal,
     );
 
     cal.set_z_data(
-        read_image_file< algo::z_t >(dir + z, camera.z.width, camera.z.height),
+        read_image_file< algo::z_t >( dir + z, camera.z.width, camera.z.height ),
         camera.z, float(camera.z_units)
-        );
+    );
 }

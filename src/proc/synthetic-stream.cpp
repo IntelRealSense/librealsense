@@ -43,6 +43,10 @@ namespace librealsense
                 _callback->on_frame((rs2_frame*)ptr, _source_wrapper.get_c_wrapper());
             }
         }
+        catch (std::exception const & e)
+        {
+            LOG_ERROR("Exception was thrown during user processing callback: " + std::string(e.what()));
+        }
         catch (...)
         {
             LOG_ERROR("Exception was thrown during user processing callback!");

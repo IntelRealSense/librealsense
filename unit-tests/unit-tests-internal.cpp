@@ -688,9 +688,9 @@ TEST_CASE("Extrinsic transformation between two streams is a rigid transform", "
                     REQUIRE_NOTHROW(b_to_a = profs_b[0].get_extrinsics_to(profs_a[0]));
 
                     require_transposed(a_to_b.rotation, b_to_a.rotation);
-                    REQUIRE(b_to_a.rotation[0] * a_to_b.translation[0] + b_to_a.rotation[3] * a_to_b.translation[1] + b_to_a.rotation[6] * a_to_b.translation[2] == Approx(-b_to_a.translation[0]));
-                    REQUIRE(b_to_a.rotation[1] * a_to_b.translation[0] + b_to_a.rotation[4] * a_to_b.translation[1] + b_to_a.rotation[7] * a_to_b.translation[2] == Approx(-b_to_a.translation[1]));
-                    REQUIRE(b_to_a.rotation[2] * a_to_b.translation[0] + b_to_a.rotation[5] * a_to_b.translation[1] + b_to_a.rotation[8] * a_to_b.translation[2] == Approx(-b_to_a.translation[2]));
+                    REQUIRE(b_to_a.rotation[0] * a_to_b.translation[0] + b_to_a.rotation[3] * a_to_b.translation[1] + b_to_a.rotation[6] * a_to_b.translation[2] == approx(-b_to_a.translation[0]));
+                    REQUIRE(b_to_a.rotation[1] * a_to_b.translation[0] + b_to_a.rotation[4] * a_to_b.translation[1] + b_to_a.rotation[7] * a_to_b.translation[2] == approx(-b_to_a.translation[1]));
+                    REQUIRE(b_to_a.rotation[2] * a_to_b.translation[0] + b_to_a.rotation[5] * a_to_b.translation[1] + b_to_a.rotation[8] * a_to_b.translation[2] == approx(-b_to_a.translation[2]));
                 }
             }
         }
@@ -744,20 +744,20 @@ TEST_CASE("Extrinsic transformations are transitive", "[live]")
                         }
 
                         // a_to_c.rotation == a_to_b.rotation * b_to_c.rotation
-                        REQUIRE(a_to_c.rotation[0] == Approx(a_to_b.rotation[0] * b_to_c.rotation[0] + a_to_b.rotation[3] * b_to_c.rotation[1] + a_to_b.rotation[6] * b_to_c.rotation[2]));
-                        REQUIRE(a_to_c.rotation[2] == Approx(a_to_b.rotation[2] * b_to_c.rotation[0] + a_to_b.rotation[5] * b_to_c.rotation[1] + a_to_b.rotation[8] * b_to_c.rotation[2]));
-                        REQUIRE(a_to_c.rotation[1] == Approx(a_to_b.rotation[1] * b_to_c.rotation[0] + a_to_b.rotation[4] * b_to_c.rotation[1] + a_to_b.rotation[7] * b_to_c.rotation[2]));
-                        REQUIRE(a_to_c.rotation[3] == Approx(a_to_b.rotation[0] * b_to_c.rotation[3] + a_to_b.rotation[3] * b_to_c.rotation[4] + a_to_b.rotation[6] * b_to_c.rotation[5]));
-                        REQUIRE(a_to_c.rotation[4] == Approx(a_to_b.rotation[1] * b_to_c.rotation[3] + a_to_b.rotation[4] * b_to_c.rotation[4] + a_to_b.rotation[7] * b_to_c.rotation[5]));
-                        REQUIRE(a_to_c.rotation[5] == Approx(a_to_b.rotation[2] * b_to_c.rotation[3] + a_to_b.rotation[5] * b_to_c.rotation[4] + a_to_b.rotation[8] * b_to_c.rotation[5]));
-                        REQUIRE(a_to_c.rotation[6] == Approx(a_to_b.rotation[0] * b_to_c.rotation[6] + a_to_b.rotation[3] * b_to_c.rotation[7] + a_to_b.rotation[6] * b_to_c.rotation[8]));
-                        REQUIRE(a_to_c.rotation[7] == Approx(a_to_b.rotation[1] * b_to_c.rotation[6] + a_to_b.rotation[4] * b_to_c.rotation[7] + a_to_b.rotation[7] * b_to_c.rotation[8]));
-                        REQUIRE(a_to_c.rotation[8] == Approx(a_to_b.rotation[2] * b_to_c.rotation[6] + a_to_b.rotation[5] * b_to_c.rotation[7] + a_to_b.rotation[8] * b_to_c.rotation[8]));
+                        REQUIRE(a_to_c.rotation[0] == approx(a_to_b.rotation[0] * b_to_c.rotation[0] + a_to_b.rotation[3] * b_to_c.rotation[1] + a_to_b.rotation[6] * b_to_c.rotation[2]));
+                        REQUIRE(a_to_c.rotation[2] == approx(a_to_b.rotation[2] * b_to_c.rotation[0] + a_to_b.rotation[5] * b_to_c.rotation[1] + a_to_b.rotation[8] * b_to_c.rotation[2]));
+                        REQUIRE(a_to_c.rotation[1] == approx(a_to_b.rotation[1] * b_to_c.rotation[0] + a_to_b.rotation[4] * b_to_c.rotation[1] + a_to_b.rotation[7] * b_to_c.rotation[2]));
+                        REQUIRE(a_to_c.rotation[3] == approx(a_to_b.rotation[0] * b_to_c.rotation[3] + a_to_b.rotation[3] * b_to_c.rotation[4] + a_to_b.rotation[6] * b_to_c.rotation[5]));
+                        REQUIRE(a_to_c.rotation[4] == approx(a_to_b.rotation[1] * b_to_c.rotation[3] + a_to_b.rotation[4] * b_to_c.rotation[4] + a_to_b.rotation[7] * b_to_c.rotation[5]));
+                        REQUIRE(a_to_c.rotation[5] == approx(a_to_b.rotation[2] * b_to_c.rotation[3] + a_to_b.rotation[5] * b_to_c.rotation[4] + a_to_b.rotation[8] * b_to_c.rotation[5]));
+                        REQUIRE(a_to_c.rotation[6] == approx(a_to_b.rotation[0] * b_to_c.rotation[6] + a_to_b.rotation[3] * b_to_c.rotation[7] + a_to_b.rotation[6] * b_to_c.rotation[8]));
+                        REQUIRE(a_to_c.rotation[7] == approx(a_to_b.rotation[1] * b_to_c.rotation[6] + a_to_b.rotation[4] * b_to_c.rotation[7] + a_to_b.rotation[7] * b_to_c.rotation[8]));
+                        REQUIRE(a_to_c.rotation[8] == approx(a_to_b.rotation[2] * b_to_c.rotation[6] + a_to_b.rotation[5] * b_to_c.rotation[7] + a_to_b.rotation[8] * b_to_c.rotation[8]));
 
                         // a_to_c.translation = a_to_b.transform(b_to_c.translation)
-                        REQUIRE(a_to_c.translation[0] == Approx(a_to_b.rotation[0] * b_to_c.translation[0] + a_to_b.rotation[3] * b_to_c.translation[1] + a_to_b.rotation[6] * b_to_c.translation[2] + a_to_b.translation[0]));
-                        REQUIRE(a_to_c.translation[1] == Approx(a_to_b.rotation[1] * b_to_c.translation[0] + a_to_b.rotation[4] * b_to_c.translation[1] + a_to_b.rotation[7] * b_to_c.translation[2] + a_to_b.translation[1]));
-                        REQUIRE(a_to_c.translation[2] == Approx(a_to_b.rotation[2] * b_to_c.translation[0] + a_to_b.rotation[5] * b_to_c.translation[1] + a_to_b.rotation[8] * b_to_c.translation[2] + a_to_b.translation[2]));
+                        REQUIRE(a_to_c.translation[0] == approx(a_to_b.rotation[0] * b_to_c.translation[0] + a_to_b.rotation[3] * b_to_c.translation[1] + a_to_b.rotation[6] * b_to_c.translation[2] + a_to_b.translation[0]));
+                        REQUIRE(a_to_c.translation[1] == approx(a_to_b.rotation[1] * b_to_c.translation[0] + a_to_b.rotation[4] * b_to_c.translation[1] + a_to_b.rotation[7] * b_to_c.translation[2] + a_to_b.translation[1]));
+                        REQUIRE(a_to_c.translation[2] == approx(a_to_b.rotation[2] * b_to_c.translation[0] + a_to_b.rotation[5] * b_to_c.translation[1] + a_to_b.rotation[8] * b_to_c.translation[2] + a_to_b.translation[2]));
                     }
                 }
             }
@@ -1478,9 +1478,9 @@ TEST_CASE("Check option API", "[live][options]")
                         REQUIRE(value <= range.max);
 
                         // value doesn't change between two gets (if no additional threads are calling set)
-                        REQUIRE(dev.get_option(opt) == Approx(value));
+                        REQUIRE(dev.get_option(opt) == approx(value));
 
-                        // REQUIRE(value == Approx(range.def)); // Not sure if this is a reasonable check
+                        // REQUIRE(value == approx(range.def)); // Not sure if this is a reasonable check
                         // TODO: make sure value == range.min + k*range.step for some k?
                     }
                 }
@@ -1524,15 +1524,15 @@ TEST_CASE("Check option API", "[live][options]")
 
                     // setting a valid value lets you get that value back
                     dev.set_option(opt, range.min);
-                    REQUIRE(dev.get_option(opt) == Approx(range.min));
+                    REQUIRE(dev.get_option(opt) == approx(range.min));
 
                     // setting an invalid value returns the last set valid value.
                     REQUIRE_THROWS(dev.set_option(opt, range.max + range.step));
-                    REQUIRE(dev.get_option(opt) == Approx(range.min));
+                    REQUIRE(dev.get_option(opt) == approx(range.min));
 
                     dev.set_option(opt, range.max);
                     REQUIRE_THROWS(dev.set_option(opt, range.min - range.step));
-                    REQUIRE(dev.get_option(opt) == Approx(range.max));
+                    REQUIRE(dev.get_option(opt) == approx(range.max));
 
                 }
                 SECTION("get_description returns a non-empty, non-null string") {
