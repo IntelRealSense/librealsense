@@ -3,7 +3,7 @@ set(D2RGB "depth-to-rgb-calibration/19.2.20")
 
 # F9440687
 set(F9440687 "${D2RGB}/F9440687/LongRange_D_768x1024_RGB_1920x1080")
-dl_algo_file( "${F9440687}/2/binFiles/yuy_prev_z_i.files" "" )
+dl_algo_file( "${F9440687}/2/binFiles/ac1x/yuy_prev_z_i.files" "" )
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/metadata" "" )
 
 dl_algo_file( "${F9440687}/2/YUY2_YUY2_1920x1080_00.00.26.6355_F9440687_0000.raw" "7e5fec4f8a3c50e8fe3d94f81778d816088af286" )
@@ -87,6 +87,7 @@ dl_algo_file( "${F9440687}/2/binFiles/ac1x/Iy_768x1024_double_00.bin" "")
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/iEdge_768x1024_double_00.bin" "")
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/zEdge_768x1024_double_00.bin" "")
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/sectionMapDepth_768x1024_uint8_00.bin" "")
+dl_algo_file( "${F9440687}/2/binFiles/ac1x/sectionMapDepthInside_2506x1_uint8_00.bin" "")
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/validEdgePixelsByIR_768x1024_double_00.bin" "")
 
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/gridXValid_105794x1_double_00.bin" "")
