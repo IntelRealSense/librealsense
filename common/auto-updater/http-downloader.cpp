@@ -12,8 +12,8 @@
 #include <curl/easy.h>
 #endif // ENABLE_RS_AUTO_UPDATER
 
-
 #include "http-downloader.h"
+#include "types.h"
 
 namespace rs2
 {
@@ -88,7 +88,8 @@ namespace rs2
 
         if(CURLE_OK != res)
         {
-            throw std::runtime_error("Download error - " + std::string(curl_easy_strerror(res)));
+            LOG_ERROR("Download error - " + std::string(curl_easy_strerror(res)));
+            return false;
         }
         return true;
 #else
@@ -117,7 +118,8 @@ namespace rs2
 
             if (CURLE_OK != res)
             {
-                throw std::runtime_error("Download error - " + std::string(curl_easy_strerror(res)));
+                LOG_ERROR("Download error - " + std::string(curl_easy_strerror(res)));
+                return false;
             }
         }
         else

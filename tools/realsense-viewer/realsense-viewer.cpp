@@ -313,9 +313,9 @@ int main(int argc, const char** argv) try
         try {
             res = up_handler.query_versions("Intel RealSense L515", update_handler::LIBREALSENSE, update_handler::RECOMMENDED, ver);
         }
-        catch (const std::exception& e)
+        catch (...)
         {
-            assert(std::string(e.what()).substr(0, 14) == "Download error");
+            assert(false);
         }
         assert(false == res);
     }
@@ -331,9 +331,9 @@ int main(int argc, const char** argv) try
         try {
             res = up_handler.query_versions("Intel RealSense L515", update_handler::LIBREALSENSE, update_handler::RECOMMENDED, ver);
         }
-        catch (const std::exception& e)
+        catch (...)
         {
-            assert(std::string(e.what()).substr(0, 14) == "Download error");
+            assert(false);
         }
         assert(false == res);
     }
@@ -386,9 +386,9 @@ int main(int argc, const char** argv) try
         {
             res = up_handler.query_versions("Intel RealSense L515", update_handler::LIBREALSENSE, update_handler::RECOMMENDED, ver);
         }
-        catch (const std::exception& e)
+        catch (...)
         {
-            assert(std::string(e.what()).substr(0, 36) == "Download error - Operation was abort");
+            assert(false);
         }
         assert(false == res);
     }
@@ -416,18 +416,18 @@ int main(int argc, const char** argv) try
     // Expect - SUCCESS                                      //
     ///////////////////////////////////////////////////////////
     {
-        update_handler up_handler("http://realsense-hw-public.s3-eu-west-1.amazonaws.com/rs-tests/sw-update/rs_versions_db.json");
+        update_handler up_handler("http://realsense-hw-public.s3-eu-west-1.amazonaws.com/rs-tests/sw-update/19_05_2020/rs_versions_db.json");
         long long ver(0);
         bool res(false), ver_link_res(false), rel_notes_res(false), description_res(false);
         std::string ver_link, rel_notes, description;
         try
         {
-            res = up_handler.query_versions("Intel RealSense L515", update_handler::LIBREALSENSE, update_handler::ESSENTIAL, ver);
+            res = up_handler.query_versions("Intel RealSense L515", update_handler::LIBREALSENSE, update_handler::RECOMMENDED, ver);
             ver_link_res = up_handler.get_version_download_link(update_handler::LIBREALSENSE, ver, ver_link);
             rel_notes_res = up_handler.get_version_release_notes(update_handler::LIBREALSENSE, ver, rel_notes);
             description_res = up_handler.get_version_description(update_handler::LIBREALSENSE, ver, description);
         }
-        catch (const std::exception& e)
+        catch (...)
         {
             assert(false);
         }
@@ -450,7 +450,7 @@ int main(int argc, const char** argv) try
             rel_notes_res = up_handler.get_version_release_notes(update_handler::LIBREALSENSE, ver, rel_notes);
             description_res = up_handler.get_version_description(update_handler::LIBREALSENSE, ver, description);
         }
-        catch (const std::exception& e)
+        catch (...)
         {
             assert(false);
         }
@@ -473,7 +473,7 @@ int main(int argc, const char** argv) try
             rel_notes_res = up_handler.get_version_release_notes(update_handler::LIBREALSENSE, 235000006, rel_notes);
             description_res = up_handler.get_version_description(update_handler::LIBREALSENSE, 235000006, description);
         }
-        catch (const std::exception& e)
+        catch (...)
         {
             assert(false);
         }
