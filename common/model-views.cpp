@@ -32,9 +32,7 @@
 
 #include "metadata-helper.h"
 
-#ifdef ENABLE_RS_AUTO_UPDATER
 #include "auto-updater/update-handler.h"
-#endif // ENABLE_RS_AUTO_UPDATER
 
 using namespace rs400;
 using namespace nlohmann;
@@ -3260,7 +3258,6 @@ namespace rs2
 
         auto name = get_device_name(dev);
 
-#ifdef ENABLE_RS_AUTO_UPDATER
         try {
             update_profile update;
 
@@ -3268,7 +3265,7 @@ namespace rs2
             std::string serial = (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER)) ? dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "Unknown";
             std::string firmware_ver = (dev.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION)) ? dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) : "0.0.0";
 
-            update.software_version = version(); // version(RS2_API_FULL_VERSION_STR);
+            update.software_version = version(RS2_API_FULL_VERSION_STR);
             update.firmware_version = version(firmware_ver);
 
             update.ctx = viewer.ctx;
@@ -3277,7 +3274,7 @@ namespace rs2
 
             bool update_required = false;
 
-            update_handler up_handler("/home/dorodnic/Downloads/rs_versions_db.json", true);
+            update_handler up_handler("http://realsense-hw-public.s3-eu-west-1.amazonaws.com/rs-tests/sw-update/19_05_2020/rs_versions_db.json", false);
 
             {
                 update_description experimental_software_update; 
@@ -3336,7 +3333,7 @@ namespace rs2
             auto err = e;
         }
 
-#endif // ENABLE_RS_AUTO_UPDATER
+
         if ((bool)config_file::instance().get(configurations::update::recommend_updates))
         {
             bool fw_update_required = false;
