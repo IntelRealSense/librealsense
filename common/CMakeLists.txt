@@ -30,15 +30,13 @@ set(COMMON_SRC
         "${CMAKE_CURRENT_LIST_DIR}/updates-model.cpp"
 )
 
-if(ENABLE_RS_AUTO_UPDATER)
     set(AUTO_UPDATE_FILES
-        "${CMAKE_CURRENT_LIST_DIR}/auto_updater/http_downloader.h"
-        "${CMAKE_CURRENT_LIST_DIR}/auto_updater/http_downloader.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/auto_updater/update_handler.h"
-        "${CMAKE_CURRENT_LIST_DIR}/auto_updater/update_handler.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/auto-updater/http-downloader.h"
+        "${CMAKE_CURRENT_LIST_DIR}/auto-updater/http-downloader.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/auto-updater/update-handler.h"
+        "${CMAKE_CURRENT_LIST_DIR}/auto-updater/update-handler.cpp"
         )
     set(COMMON_SRC
         ${COMMON_SRC}
         ${AUTO_UPDATE_FILES})
 
-endif()

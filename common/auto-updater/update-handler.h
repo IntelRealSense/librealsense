@@ -16,7 +16,7 @@ namespace rs2
     public:
         typedef std::function<bool(uint64_t dl_current_bytes, uint64_t dl_total_bytes, double dl_time)> user_callback_func_type;
 
-        enum update_policy_type { EXPERIMENTAL, RECOMMENDED, REQUIRED };
+        enum update_policy_type { EXPERIMENTAL, RECOMMENDED, ESSENTIAL };
         enum component_part_type { LIBREALSENSE , VIEWER, DEPTH_QUALITY_TOOL, FIRMWARE };
         enum update_source_type { FROM_FILE, FROM_SERVER };
 
@@ -24,13 +24,15 @@ namespace rs2
         ~update_handler() {};
         
         bool query_versions(const std::string &dev_name, const component_part_type cp, const update_policy_type up, long long &version);
-        bool get_ver_download_link(const component_part_type cp, const long long version, std::string& dl_link) { return get_ver_data(cp, version, "link", dl_link); };
-        bool get_ver_rel_notes(const component_part_type cp, const long long version, std::string& ver_rel_notes_link) { return get_ver_data(cp, version, "release_notes_link", ver_rel_notes_link); };
-        bool get_ver_description(const component_part_type cp, const long long version, std::string& ver_desc) { return get_ver_data(cp, version, "description", ver_desc); };
-        std::string convert_ver_to_str(const long long ver_num) const;
+        bool get_version_download_link(const component_part_type cp, const long long version, std::string& dl_link) { return get_ver_data(cp, version, "link", dl_link); };
+        bool get_version_release_notes(const component_part_type cp, const long long version, std::string& ver_rel_notes_link) { return get_ver_data(cp, version, "release_notes_link", ver_rel_notes_link); };
+        bool get_version_description(const component_part_type cp, const long long version, std::string& ver_desc) { return get_ver_data(cp, version, "description", ver_desc); };
+        std::string convert_version_to_formatted_string(const long long ver_num) const;
 
-        std::string convert_component_name(const component_part_type& comp) const;
-        std::string convert_update_policy(const update_policy_type& pol) const;
+        std::string to_string(const component_part_type& comp) const;
+        std::string to_string(const update_policy_type& pol) const;
+        bool from_string(std::string name, component_part_type& res) const;
+        bool from_string(std::string name, update_policy_type& res) const;
 
     private:
         struct server_version_type

@@ -4,7 +4,7 @@
 #include "os.h"
 #include "res/l515-icon.h"
 #include <stb_image.h>
-#include "auto_updater/http_downloader.h"
+#include "auto-updater/http-downloader.h"
 
 using namespace rs2;
 

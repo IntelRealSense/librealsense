@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "auto_updater/update_handler.h"
+#include "auto-updater/update-handler.h"
 #include "ux-window.h"
 #include "notifications.h"
 #include "fw-update-helper.h"

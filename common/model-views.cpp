@@ -33,7 +33,7 @@
 #include "metadata-helper.h"
 
 #ifdef ENABLE_RS_AUTO_UPDATER
-#include "auto_updater/update_handler.h"
+#include "auto-updater/update-handler.h"
 #endif // ENABLE_RS_AUTO_UPDATER
 
 using namespace rs400;
@@ -3245,11 +3245,11 @@ namespace rs2
         bool query_ok = up_handler.query_versions(dev_name, part, policy, required_version);
         if (query_ok)
         {
-            auto dl_link_ok = up_handler.get_ver_download_link(part, required_version, result.download_link);
-            auto rel_ok = up_handler.get_ver_rel_notes(part, required_version, result.release_page);
-            auto desc_ok = up_handler.get_ver_description(part, required_version, result.description);
+            auto dl_link_ok = up_handler.get_version_download_link(part, required_version, result.download_link);
+            auto rel_ok = up_handler.get_version_release_notes(part, required_version, result.release_page);
+            auto desc_ok = up_handler.get_version_description(part, required_version, result.description);
             result.ver = version(required_version);
-            result.name = to_string() << std::string(result.ver) << " (" << up_handler.convert_update_policy(policy) << ")";
+            result.name = to_string() << std::string(result.ver) << " (" << up_handler.to_string(policy) << ")";
         }
         return query_ok;
     }
@@ -3291,7 +3291,7 @@ namespace rs2
                     update.software_versions[recommened_software_update.ver] = recommened_software_update;
                 }
                 update_description required_software_update;  
-                if (try_parse_update(up_handler, dev_name, update_handler::REQUIRED, update_handler::LIBREALSENSE, required_software_update))
+                if (try_parse_update(up_handler, dev_name, update_handler::ESSENTIAL, update_handler::LIBREALSENSE, required_software_update))
                 {
                     update.software_versions[required_software_update.ver] = required_software_update;
                     update_required = update_required || (update.software_version < required_software_update.ver);
@@ -3310,7 +3310,7 @@ namespace rs2
                     update.firmware_versions[recommened_firmware_update.ver] = recommened_firmware_update;
                 }
                 update_description required_firmware_update;  
-                if (try_parse_update(up_handler, dev_name, update_handler::REQUIRED, update_handler::FIRMWARE, required_firmware_update))
+                if (try_parse_update(up_handler, dev_name, update_handler::ESSENTIAL, update_handler::FIRMWARE, required_firmware_update))
                 {
                     update.firmware_versions[required_firmware_update.ver] = required_firmware_update;
                     update_required = update_required || (update.firmware_version < required_firmware_update.ver);

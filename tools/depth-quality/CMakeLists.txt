@@ -84,11 +84,11 @@ if(BUILD_GRAPHICAL_EXAMPLES)
                                              ../../third-party/tclap/include)
     endif()
 
-source_group("EasyLogging++" FILES ${ELPP_FILES})
+    source_group("EasyLogging++" FILES ${ELPP_FILES})
+    source_group("Update Handler" FILES ${AUTO_UPDATE_FILES})
 
     if (ENABLE_RS_AUTO_UPDATER)
         message( STATUS "Enabling RS auto updater for realsense-depth-quality ..." )
-        source_group("Update Handler" FILES ${AUTO_UPDATE_FILES})
         add_dependencies(rs-depth-quality libcurl)
         target_link_libraries(rs-depth-quality curl)
         add_definitions(-DCURL_STATICLIB) # Mandatory for building libcurl as static lib
