@@ -40,7 +40,11 @@ namespace depth_to_rgb_calibration {
         deg_315, //
         deg_none
     };
-
+    enum svm_model :uint8_t
+    {
+        linear,
+        gaussian
+    };
     struct translation
     {
         double t1;

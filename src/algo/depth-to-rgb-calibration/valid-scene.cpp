@@ -744,7 +744,7 @@ std::vector< double >  extract_features(decision_params& decision_params)
 void collect_decision_params(z_frame_data& z_data, yuy2_frame_data& yuy_data, decision_params& decision_params)
 {
 
-    // NOHA :: TODO :: collect decision_params
+    // NOHA :: TODO :: collect decision_params from implemented functions
     decision_params.initial_cost = 1.560848046875000e+04;// calc_cost(z_data, yuy_data, z_data.uvmap);
     decision_params.is_valid = 0;
     decision_params.xy_movement = 2.376f; // calc_correction_in_pixels();
@@ -762,19 +762,47 @@ void collect_decision_params(z_frame_data& z_data, yuy2_frame_data& yuy_data, de
     decision_params.edge_weights_per_dir = { 636000, 898000, 1318000, 747000 };
     decision_params.new_cost = 1.677282421875000e+04;
 
-    auto features = extract_features(decision_params);
+    
 }
-bool optimizer::valid_by_svm()
+bool svmRbfPredictor()
 {
-    bool res = true;
+    bool res = TRUE;
+    return res;
+}
+bool optimizer::valid_by_svm(svm_model model)
+{
+    bool is_valid = true;
+    
     decision_params decision_params;
     collect_decision_params(_z, _yuy, decision_params);
-    
+    auto features = extract_features(decision_params);
+    double res = 0;
+    switch (model)
+    {
+    case linear:
+        for (auto i = 0; i < _svm_model_linear.mu.size(); i++)
+        {
+            // isValid = (featuresMat-SVMModel.Mu)./SVMModel.Sigma*SVMModel.Beta+SVMModel.Bias > 0;
+            auto res1 = (*(features.begin() + i) - *(_svm_model_linear.mu.begin() + i)) / (*(_svm_model_linear.sigma.begin() + i));// **(_svm_model_linear.beta.begin() + i) + _svm_model_linear.bias);
+            res += res1 * *(_svm_model_linear.beta.begin() + i);
+        }
+        res += _svm_model_linear.bias;
+        if (res < 0)
+        {
+            is_valid = false;
+        }
+        break;
 
-    
-    
+    case gaussian:
+        is_valid = svmRbfPredictor();
+        break;
+    default:
+        AC_LOG(DEBUG, "ERROR : Unknown SVM kernel " << model);
+        break;
+    }
 
-    return res;
+   
+    return is_valid;
 }
 bool optimizer::is_scene_valid()
 {
@@ -817,7 +845,7 @@ bool optimizer::is_scene_valid()
     bool res_edges = is_edge_distributed(_z, _yuy);
     bool res_gradient = is_grad_dir_balanced(_z);
 
-    bool res_svm = valid_by_svm();
+    bool res_svm = valid_by_svm(linear);
 
     //return((!res_movement) && res_edges && res_gradient);
     return((!res_movement) && res_svm);

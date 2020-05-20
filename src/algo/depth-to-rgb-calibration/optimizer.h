@@ -221,7 +221,7 @@ namespace depth_to_rgb_calibration {
         void gaussian_filter(yuy2_frame_data& yuy);
 
         // svm
-        bool valid_by_svm();
+        bool valid_by_svm(svm_model model);
 
         // output validation
         void clip_pixel_movement( size_t iteration_number = 0 );
