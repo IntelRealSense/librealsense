@@ -10,12 +10,17 @@ void compare_scene( std::string const & scene_dir )
     scene_metadata md( scene_dir );
 
     algo::optimizer cal;
+
+	rs2_dsm_params dsm_params{ 1.844674407370955e+19,
+		(15 << 8) + 255, 1, 1, 1, 0, 0, 0, 1.275000000000000e+02 };
+
     init_algo( cal, scene_dir,
         md.rgb_file,
         md.rgb_prev_file,
         md.ir_file,
         md.z_file,
-        ci );
+        ci,
+		dsm_params);
 
     auto& z_data = cal.get_z_data();
     auto& ir_data = cal.get_ir_data();

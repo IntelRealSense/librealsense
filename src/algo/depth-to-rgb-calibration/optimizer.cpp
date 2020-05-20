@@ -8,6 +8,7 @@
 #include "coeffs.h"
 #include "cost.h"
 #include "uvmap.h"
+#include "k-to-dsm.h"
 #include "debug.h"
 
 using namespace librealsense::algo::depth_to_rgb_calibration;
@@ -350,12 +351,19 @@ calc_subpixels(
 void optimizer::set_z_data(
     std::vector< z_t > && z_data,
     rs2_intrinsics_double const & depth_intrinsics,
-    float depth_units )
+    float depth_units,
+	rs2_dsm_params params)
 {
+	params.h_scale = 1;
+	params.version = 1;
+	params.h_offset = 0;
+	params.v_offset = 0;
+
     _params.set_depth_resolution( depth_intrinsics.width, depth_intrinsics.height );
+	_z.dsm_params;
     _z.width = depth_intrinsics.width;
     _z.height = depth_intrinsics.height;
-    _z.intrinsics = depth_intrinsics;
+    _z.orig_intrinsics = depth_intrinsics;
     _z.depth_units = depth_units;
 
     _z.frame = std::move( z_data );
@@ -448,7 +456,7 @@ void optimizer::set_depth_data(
     _params.set_depth_resolution(depth_intrinsics.width, depth_intrinsics.height);
     _depth.width = depth_intrinsics.width;
     _depth.height = depth_intrinsics.height;
-    _depth.intrinsics = depth_intrinsics;
+    _depth.orig_intrinsics = depth_intrinsics;
     _depth.depth_units = depth_units;
 
     _depth.frame = std::move(depth_data);
@@ -797,14 +805,23 @@ void librealsense::algo::depth_to_rgb_calibration::optimizer::decompose_p_mat()
 		_final_calibration.rot.rot[i] = r[i];
 
 	_final_calibration.trans = { t.x, t.y, t.z };
-	_final_calibration.k_mat.fx = _original_calibration.k_mat.fx;
-	_final_calibration.k_mat.fy = _original_calibration.k_mat.fy;
+
+	_final_calibration.k_mat.fx = k_vac[0];
+	_final_calibration.k_mat.fy = k_vac[4];
 	_final_calibration.k_mat.ppx = k_vac[2];
 	_final_calibration.k_mat.ppy = k_vac[5];
 
 	_original_calibration.copy_coefs(_final_calibration);
-};
 
+
+	_z.new_intrinsics = _z.orig_intrinsics;
+	_z.new_intrinsics.fx = _z.new_intrinsics.fx / _final_calibration.k_mat.fx*_original_calibration.k_mat.fx;
+	_z.new_intrinsics.fy = _z.new_intrinsics.fy / _final_calibration.k_mat.fy*_original_calibration.k_mat.fy;
+
+	_final_calibration.k_mat.fx = _original_calibration.k_mat.fx;
+	_final_calibration.k_mat.fy = _original_calibration.k_mat.fy;
+	
+}
 
 void optimizer::zero_invalid_edges( z_frame_data & z_data, ir_frame_data const & ir_data )
 {
@@ -1389,12 +1406,12 @@ void optimizer::write_data_to( std::string const & dir )
         write_vector_to_file( _z.frame, dir, "depth.raw" );
 
         write_to_file( &_original_calibration, sizeof( _original_calibration ), dir, "rgb.calib" );
-        write_to_file( &_z.intrinsics, sizeof( _z.intrinsics ), dir, "depth.intrinsics" );
+        write_to_file( &_z.orig_intrinsics, sizeof( _z.orig_intrinsics), dir, "depth.intrinsics" );
         write_to_file( &_z.depth_units, sizeof( _z.depth_units ), dir, "depth.units" );
 
         // This file is meant for matlab -- it packages all the information needed
         write_matlab_camera_params_file(
-            _z.intrinsics,
+            _z.orig_intrinsics,
             _original_calibration,
             _z.depth_units,
             dir, "camera_params"
@@ -1550,6 +1567,7 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
     }
 
 	decompose_p_mat();
+	convert_new_k_to_DSM(_z.orig_intrinsics, _z.new_intrinsics);
 
     return n_iterations;
 }

@@ -107,7 +107,8 @@ namespace depth_to_rgb_calibration {
         void set_z_data(
             std::vector< z_t > && z_data,
             rs2_intrinsics_double const & depth_intrinsics,
-            float depth_units );
+            float depth_units,
+			rs2_dsm_params params = {});
         void set_depth_data(
             std::vector< z_t >&& z_data,
             std::vector< ir_t >&& ir_data,
