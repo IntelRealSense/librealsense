@@ -15,13 +15,14 @@ inline std::string bin_dir( std::string const & scene_dir )
 }
 
 
-std::string bin_file( std::string const & prefix, size_t iteration, size_t w, size_t h, std::string const & suffix )
+std::string bin_file( std::string const &prefix, size_t iteration, size_t w, size_t h, std::string const &suffix )
 {
-    return prefix + "_" + std::to_string( iteration ) + "_" + std::to_string( h ) + "x" + std::to_string( w ) + "_" + suffix;
+    return prefix + "_" + std::to_string( iteration ) + "_" + std::to_string( h ) + "x" +
+           std::to_string( w ) + "_" + suffix;
 }
 
 
-std::string bin_file( std::string const & prefix, size_t w, size_t h, std::string const & suffix )
+std::string bin_file( std::string const &prefix, size_t w, size_t h, std::string const &suffix )
 {
     return prefix + "_" + std::to_string( h ) + "x" + std::to_string( w ) + "_" + suffix;
 }
@@ -40,7 +41,7 @@ void read_data_from( std::string const & filename, T * data )
         throw std::runtime_error( to_string()
             << "file size (" << cb << ") does not match data size (" << sizeof( T ) << "): " << filename );
     std::vector< T > vec( cb / sizeof( T ) );
-    f.read( (char*)data, cb );
+    f.read( (char *)data, cb );
     f.close();
 }
 
@@ -57,14 +58,14 @@ std::vector< T > read_vector_from( std::string const & filename )
     if( cb % sizeof( T ) )
         throw std::runtime_error( "file size is not a multiple of data size" );
     std::vector< T > vec( cb / sizeof( T ) );
-    f.read( (char*)vec.data(), cb );
+    f.read( (char *)vec.data(), cb );
     f.close();
     return vec;
 }
 
 
-template<class T>
-std::vector< T > read_image_file( std::string const & file, size_t width, size_t height )
+template < class T >
+std::vector< T > read_image_file( std::string const &file, size_t width, size_t height )
 {
     std::ifstream f;
     f.open( file, std::ios::in | std::ios::binary );
@@ -77,11 +78,11 @@ std::vector< T > read_image_file( std::string const & file, size_t width, size_t
         throw std::runtime_error( to_string()
             << "file size (" << cb << ") does not match expected size (" << sizeof( T ) * width * height << "): " << file );
     std::vector< T > data( width * height );
-    f.read( (char*)data.data(), width * height * sizeof( T ) );
+    f.read( (char *)data.data(), width * height * sizeof( T ) );
     return data;
 }
 
-template< typename T >
+template < typename T >
 void dump_vec( std::vector< double > const & cpp, std::vector< T > const & matlab,
     char const * basename,
     size_t width, size_t height
@@ -105,7 +106,7 @@ void dump_vec( std::vector< double > const & cpp, std::vector< T > const & matla
 // iteration data/results that we need for comparison
 struct scene_metadata
 {
-    uint64_t n_iterations;        // how many steps through optimization, and how many iteration file sets
+    uint64_t n_iterations;  // how many steps through optimization, and how many iteration file sets
     double correction_in_pixels;  // XY movement
     uint64_t n_edges;             // strong edges, i.e. after suppression
     uint64_t n_valid_pixels;
@@ -113,27 +114,31 @@ struct scene_metadata
     bool is_scene_valid;
     bool is_output_valid;
     std::string rgb_file;
-    std::string rgb_prev_file;    // TODO: looks like these need to be turned around!!!
+    std::string rgb_prev_file;  // TODO: looks like these need to be turned around!!!
     std::string ir_file;
     std::string z_file;
 
-    scene_metadata( std::string const & scene_dir )
+    scene_metadata( std::string const &scene_dir )
     {
-        std::ifstream( bin_dir( scene_dir ) + "yuy_prev_z_i.files" )
-            >> rgb_file >> rgb_prev_file >> z_file >> ir_file;
+        std::ifstream( bin_dir( scene_dir ) + "ac1x\\yuy_prev_z_i.files" ) >> rgb_file >>
+        rgb_prev_file >> z_file >> ir_file;
+        if( rgb_file.empty() )
+            throw std::runtime_error( "failed to read file:\n" + bin_dir( scene_dir ) + "ac1x\\yuy_prev_z_i.files" );
 
         std::string metadata = bin_dir( scene_dir ) + "ac1x\\metadata";
         std::fstream f = std::fstream( metadata, std::ios::in | std::ios::binary );
         if( !f )
             throw std::runtime_error( "failed to read file:\n" + metadata );
-        f.read( (char*)&correction_in_pixels, sizeof( correction_in_pixels ) );
-        f.read( (char*)&n_edges, sizeof( n_edges ) );
-        f.read((char*)&n_valid_ir_edges, sizeof(n_valid_ir_edges));
-        f.read((char*)&n_valid_pixels, sizeof(n_valid_pixels));
-        f.read( (char*)&n_iterations, sizeof( n_iterations ) );
+        f.read( (char *)&correction_in_pixels, sizeof( correction_in_pixels ) );
+        f.read( (char *)&n_edges, sizeof( n_edges ) );
+        f.read( (char *)&n_valid_ir_edges, sizeof( n_valid_ir_edges ) );
+        f.read( (char *)&n_valid_pixels, sizeof( n_valid_pixels ) );
+        f.read( (char *)&n_iterations, sizeof( n_iterations ) );
         byte b;
-        f.read( (char*)&b, 1 ); is_scene_valid = b;
-        f.read( (char*)&b, 1 ); is_output_valid = b;
+        f.read( (char *)&b, 1 );
+        is_scene_valid = b;
+        f.read( (char *)&b, 1 );
+        is_output_valid = b;
         f.close();
     }
 };
@@ -151,7 +156,7 @@ struct camera_params
 };
 
 
-camera_params read_camera_params( std::string const & scene_dir, std::string const & filename )
+camera_params read_camera_params( std::string const &scene_dir, std::string const &filename )
 {
     struct params_bin
     {
