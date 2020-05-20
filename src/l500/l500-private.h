@@ -59,6 +59,7 @@ namespace librealsense
             HW_RESET                    = 0x20, //"HW Reset"
             AMCSET                      = 0x2B, // Set options (L515)
             AMCGET                      = 0x2C, // Get options (L515)
+            DELETE_TABLE                = 0x2E,
             PFD                         = 0x3B, // Disable power features <Parameter1 Name="0 - Disable, 1 - Enable" />
             READ_TABLE                  = 0x43,
             WRITE_TABLE                 = 0x44,
@@ -77,9 +78,9 @@ namespace librealsense
             static const int table_id = 0x240;
             static const uint16_t this_version = (RS2_API_MAJOR_VERSION << 12 | RS2_API_MINOR_VERSION << 4 | RS2_API_PATCH_VERSION);
 
-            rs2_dsm_params params = { 0 };
+            rs2_dsm_params params;
 
-            ac_depth_results() = default;
+            ac_depth_results() {}
             ac_depth_results( rs2_dsm_params const & dsm_params ) : params( dsm_params ) {}
         };
 #pragma pack(pop)

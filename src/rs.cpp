@@ -1118,8 +1118,8 @@ void rs2_get_dsm_params( const rs2_sensor * sensor, rs2_dsm_params * p_params_ou
     VALIDATE_NOT_NULL( sensor );
     VALIDATE_NOT_NULL( p_params_out );
 
-    auto ois = VALIDATE_INTERFACE( sensor->sensor, librealsense::calibrated_sensor );
-    *p_params_out = ois->get_dsm_params();
+    auto cs = VALIDATE_INTERFACE( sensor->sensor, librealsense::calibrated_sensor );
+    *p_params_out = cs->get_dsm_params();
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , sensor, p_params_out )
 
@@ -1128,10 +1128,20 @@ void rs2_override_dsm_params( const rs2_sensor * sensor, rs2_dsm_params const * 
     VALIDATE_NOT_NULL( sensor );
     VALIDATE_NOT_NULL( p_params );
 
-    auto ois = VALIDATE_INTERFACE( sensor->sensor, librealsense::calibrated_sensor );
-    ois->override_dsm_params( *p_params );
+    auto cs = VALIDATE_INTERFACE( sensor->sensor, librealsense::calibrated_sensor );
+    cs->override_dsm_params( *p_params );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , sensor, p_params )
+
+void rs2_reset_sensor_calibration( rs2_sensor const * sensor, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( sensor );
+
+    auto cs = VALIDATE_INTERFACE( sensor->sensor, librealsense::calibrated_sensor );
+    cs->reset_calibration();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , sensor )
+
 
 void rs2_hardware_reset(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {

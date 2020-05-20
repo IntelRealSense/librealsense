@@ -714,6 +714,15 @@ namespace rs2
             rs2_override_dsm_params( _sensor.get(), &params, &e );
             error::handle( e );
         }
+
+        /** Reset the sensor DSM calibration
+         */
+        void reset_calibration()
+        {
+            rs2_error* e = nullptr;
+            rs2_reset_sensor_calibration( _sensor.get(), &e );
+            error::handle( e );
+        }
     };
 }
 #endif // LIBREALSENSE_RS2_SENSOR_HPP

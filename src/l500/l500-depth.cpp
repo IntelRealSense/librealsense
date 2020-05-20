@@ -211,14 +211,45 @@ namespace librealsense
         throw std::logic_error( "depth sensor does not support extrinsics override" );
     }
 
+#pragma pack(push, 1)
+    struct table_header
+    {
+        uint8_t                 major;
+        uint8_t                 minor;
+        uint16_t                table_id;
+        uint32_t                table_size;     // full size including: TOC header + TOC + actual tables
+        uint32_t                reserved;       // 0xFFFFFFFF
+        uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
+    };
+#pragma pack(pop)
+
     rs2_dsm_params l500_depth_sensor::get_dsm_params() const
     {
-        command cmd( ivcam2::fw_cmd::READ_TABLE, ac_depth_results::table_id );
-        std::vector< byte > data = _owner->_hw_monitor->send( cmd );
-        if( data.size() != sizeof( ac_depth_results ))
-            throw std::runtime_error( to_string() << "data size received= " << data.size() );
-        ac_depth_results const & table = *(ac_depth_results *)data.data();
-        return table.params;
+        try
+        {
+            command cmd( ivcam2::fw_cmd::READ_TABLE, ac_depth_results::table_id );
+            std::vector<byte> data = _owner->_hw_monitor->send( cmd );
+            if( data.size() != sizeof( table_header ) + sizeof( ac_depth_results ) )
+                throw std::runtime_error( to_string() << "data size received= " << data.size() );
+            ac_depth_results const &table = *(ac_depth_results *)( data.data() + sizeof( table_header ));
+            return table.params;
+        }
+        catch (std::exception const & e)
+        {
+            AC_LOG( DEBUG, "Failed to get DSM params: " << e.what() );
+            if( !strstr( e.what(), "Error type: Table is empty" ) )
+                throw;
+            // Initialize a new table
+            rs2_dsm_params p = { 0 };
+            //p.timestamp = std::chrono::system_clock::now().time_since_epoch().count();
+            time_t t;
+            time( &t );                           // local time
+            p.timestamp = mktime( gmtime( &t ));  // UTC time
+            p.version = (RS2_API_MAJOR_VERSION << 12) | (RS2_API_MINOR_VERSION << 4) | RS2_API_PATCH_VERSION;
+            p.model = RS2_DSM_CORRECTION_AOT;
+            p.h_scale = p.v_scale = 1.;
+            return p;
+        }
     }
 
     void l500_depth_sensor::override_dsm_params( rs2_dsm_params const & dsm_params )
@@ -232,10 +263,30 @@ namespace librealsense
             These values are extreme. For more reasonable values take 0.99-1.01
             for h/vFactor and divide the suggested h/vOffset range by 10.
         */
-        command cmd( ivcam2::fw_cmd::WRITE_TABLE, ac_depth_results::table_id );
+        command cmd( ivcam2::fw_cmd::WRITE_TABLE, 0 );
         ac_depth_results table( dsm_params );
-        cmd.data.resize( sizeof( table ));
-        memcpy( cmd.data.data(), &table, sizeof( table ));
+        //table.params.timestamp = std::chrono::system_clock::now().time_since_epoch().count();
+        time_t t;
+        time( &t );                            // local time
+        table.params.timestamp = mktime( gmtime( &t ) );  // UTC time
+        table.params.version = (RS2_API_MAJOR_VERSION << 12) | (RS2_API_MINOR_VERSION << 4) | RS2_API_PATCH_VERSION;
+        
+        cmd.data.resize( sizeof( table_header ) + sizeof( table ));
+        table_header * h = (table_header *)cmd.data.data();
+        h->major = 1;
+        h->minor = 0;
+        h->table_id = ac_depth_results::table_id;
+        h->table_size = sizeof( ac_depth_results );
+        h->reserved = 0xFFFFFFFF;
+        h->crc32 = calc_crc32( (byte *) &table, sizeof( table ));
+
+        memcpy( cmd.data.data() + sizeof( table_header ), &table, sizeof( table ));
+        _owner->_hw_monitor->send( cmd );
+    }
+
+    void l500_depth_sensor::reset_calibration()
+    {
+        command cmd( ivcam2::fw_cmd::DELETE_TABLE, ac_depth_results::table_id );
         _owner->_hw_monitor->send( cmd );
     }
 

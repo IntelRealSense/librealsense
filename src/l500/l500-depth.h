@@ -165,6 +165,7 @@ namespace librealsense
         void override_extrinsics( rs2_extrinsics const & extr ) override;
         rs2_dsm_params get_dsm_params() const override;
         void override_dsm_params( rs2_dsm_params const & dsm_params ) override;
+        void reset_calibration() override;
 
         stream_profiles init_stream_profiles() override
         {

@@ -16,6 +16,8 @@ namespace librealsense
 
         virtual rs2_dsm_params get_dsm_params() const = 0;
         virtual void override_dsm_params( rs2_dsm_params const & ) = 0;
+
+        virtual void reset_calibration() = 0;
     };
     MAP_EXTENSION(RS2_EXTENSION_CALIBRATED_SENSOR, calibrated_sensor );
 }
