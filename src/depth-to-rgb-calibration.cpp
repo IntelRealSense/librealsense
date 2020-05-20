@@ -96,12 +96,12 @@ rs2_calibration_status depth_to_rgb_calibration::optimize() {
         if( !_algo.is_scene_valid() ) {
             if( !getenv( DISABLE_RS2_CALIBRATION_CHECKS ) ) {
                 AC_LOG( ERROR, "Calibration scene was found invalid! Set "
-                                   << RS2_CALIBRATION_SCENE_INVALID << " to continue anyway" );
+                                   << DISABLE_RS2_CALIBRATION_CHECKS << " to continue anyway" );
                 return RS2_CALIBRATION_SCENE_INVALID;
             }
             else {
                 AC_LOG( ERROR, "Calibration scene was found invalid! "
-                                   << RS2_CALIBRATION_SCENE_INVALID << " is on; continuing" );
+                                   << DISABLE_RS2_CALIBRATION_CHECKS << " is on; continuing" );
             }
         }
 
