@@ -789,7 +789,7 @@ bool svm_rbf_predictor(std::vector< double >& features, svm_model_gaussian& svm_
     score = sum(alpha.*ySV.*innerProduct, 1) + bias;
     labels(iSample) = score > 0; % dealing with the theoretical possibility of score = 0*/
     std::vector< double > inner_product;
-    double score;
+    double score = 0;
 
     for (auto i = 0; i < y_sv.size(); i++)
     {
@@ -801,8 +801,15 @@ bool svm_rbf_predictor(std::vector< double >& features, svm_model_gaussian& svm_
         }
         double final_sum = exp(-gamma * sum_raw);
         inner_product.push_back(final_sum);
+        score += *(alpha.begin() + i) * *(y_sv.begin() + i) * final_sum;
+        //score = sum(alpha .* ySV .* innerProduct, 1) + bias;
     }
+    score += bias;
 
+    if (score < 0)
+    {
+        res = FALSE;
+    }
     return res;
 }
 bool optimizer::valid_by_svm(svm_model model)
