@@ -11,11 +11,13 @@ find_package(Threads REQUIRED)
 include_directories(${CMAKE_BINARY_DIR})
 
 set( ELPP_DIR ../../third-party/easyloggingpp/src )
-include_directories( ${ELPP_DIR} )
-set( ELPP_FILES
-    ${ELPP_DIR}/easylogging++.cc
-    ${ELPP_DIR}/easylogging++.h
-)
+if(${BUILD_EASYLOGGINGPP})
+    include_directories( ${ELPP_DIR} )
+    set( ELPP_FILES
+        ${ELPP_DIR}/easylogging++.cc
+        ${ELPP_DIR}/easylogging++.h
+    )
+endif()
 
 include(../../common/CMakeLists.txt)
 
