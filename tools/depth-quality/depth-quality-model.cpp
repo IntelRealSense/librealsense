@@ -688,12 +688,12 @@ namespace rs2
                         static float prev_metric_angle = 0;
                         if (_viewer_model.paused)
                         {
-                            ImGui::Text("%.2f mm", prev_metric_angle);
+                            ImGui::Text("%.2f deg", prev_metric_angle);
                         }
                         else
                         {
                             auto curr_metric_angle = _metrics_model.get_last_metrics().angle;
-                            ImGui::Text("%.2f mm", curr_metric_angle);
+                            ImGui::Text("%.2f deg", curr_metric_angle);
                             prev_metric_angle = curr_metric_angle;
                         }
 
@@ -1149,9 +1149,12 @@ namespace rs2
 
             // Generate columns header
             csv << "\nSample Id,Frame #,Timestamp (ms),";
-            for (auto&& matric : _metric_data)
+            auto records_data = _metric_data;
+            // Plane Fit RMS error will have dual representation both as mm and % of the range
+            records_data.push_back({ "Plane Fit RMS Error mm" , "" });
+            for (auto&& metric : records_data)
             {
-                csv << matric.name << " " << matric.units << ",";
+                csv << metric.name << " " << metric.units << ",";
             }
             csv << std::endl;
 
@@ -1160,10 +1163,11 @@ namespace rs2
             for (auto&& it: _samples)
             {
                 csv << i++ << ","<< it.frame_number << "," << std::fixed << std::setprecision(4) << it.timestamp << ",";
-                for (auto&& matric : _metric_data)
+                for (auto&& metric : records_data)
                 {
-                    auto samp = std::find_if(it.samples.begin(), it.samples.end(), [&](single_metric_data s) {return s.name == matric.name; });
-                    if(samp != it.samples.end())  csv << samp->val << ",";
+                    auto samp = std::find_if(it.samples.begin(), it.samples.end(), [&](single_metric_data s) {return s.name == metric.name; });
+                    if (samp != it.samples.end()) csv << samp->val;
+                    csv << ",";
                 }
                 csv << std::endl;
             }
