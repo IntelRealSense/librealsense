@@ -8,6 +8,7 @@
 #include "coeffs.h"
 #include "cost.h"
 #include "debug.h"
+#include <math.h>
 
 
 #define GAUSS_CONV_ROWS 4
@@ -764,9 +765,44 @@ void collect_decision_params(z_frame_data& z_data, yuy2_frame_data& yuy_data, de
 
     
 }
-bool svmRbfPredictor()
+bool svm_rbf_predictor(std::vector< double >& features, svm_model_gaussian& svm_model)
 {
     bool res = TRUE;
+    std::vector< double > x_norm;
+    // Applying the model
+    for (auto i = 0; i < features.size(); i++)
+    {
+        x_norm.push_back((*(features.begin() + i) - *(svm_model.mu.begin() + i)) / (*(svm_model.sigma.begin() + i)));
+    }
+
+    // Extracting model parameters
+    auto mu = svm_model.mu;
+    auto sigma = svm_model.sigma;
+    auto x_sv = svm_model.support_vectors;
+    auto y_sv = svm_model.support_vectors_labels;
+    auto alpha = svm_model.alpha;
+    auto bias = svm_model.bias;
+    auto gamma = 1 / (svm_model.kernel_param_scale * svm_model.kernel_param_scale);
+    int n_samples = 1;// size(featuresMat, 1);
+    //labels = zeros(nSamples, 1);
+   /* innerProduct = exp(-gamma * sum((xNorm(iSample, :) - xSV). ^ 2, 2));
+    score = sum(alpha.*ySV.*innerProduct, 1) + bias;
+    labels(iSample) = score > 0; % dealing with the theoretical possibility of score = 0*/
+    std::vector< double > inner_product;
+    double score;
+
+    for (auto i = 0; i < y_sv.size(); i++)
+    {
+        double sum_raw = 0;
+        for (auto k = 0; k < x_norm.size(); k++)
+        {
+            double res1 = *(x_norm.begin() + k) - *(x_sv[k].begin() + i);
+            sum_raw += res1 * res1;
+        }
+        double final_sum = exp(-gamma * sum_raw);
+        inner_product.push_back(final_sum);
+    }
+
     return res;
 }
 bool optimizer::valid_by_svm(svm_model model)
@@ -794,14 +830,13 @@ bool optimizer::valid_by_svm(svm_model model)
         break;
 
     case gaussian:
-        is_valid = svmRbfPredictor();
+        is_valid = svm_rbf_predictor(features, _svm_model_gaussian);
         break;
     default:
         AC_LOG(DEBUG, "ERROR : Unknown SVM kernel " << model);
         break;
     }
 
-   
     return is_valid;
 }
 bool optimizer::is_scene_valid()
@@ -845,7 +880,7 @@ bool optimizer::is_scene_valid()
     bool res_edges = is_edge_distributed(_z, _yuy);
     bool res_gradient = is_grad_dir_balanced(_z);
 
-    bool res_svm = valid_by_svm(linear);
+    bool res_svm = valid_by_svm(gaussian);// (linear);
 
     //return((!res_movement) && res_edges && res_gradient);
     return((!res_movement) && res_svm);
