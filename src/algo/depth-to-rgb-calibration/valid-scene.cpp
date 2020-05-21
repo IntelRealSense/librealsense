@@ -392,7 +392,7 @@ weightsPerDir = [sum(weightIm(frame.dirI == 1));sum(weightIm(frame.dirI == 2));s
         *(weights_per_dir_iter + i) = 0; // init sum per direction
         for (auto ii = 0; ii < z_data.valid_directions.size(); ++ii) // directions size = z_data size = weights_im size
         {
-            if (*(directions_iter + ii) == i+1) // avoid 0
+            if (*(directions_iter + ii) == i+1) // avoid direction 0
             {
                 *(weights_per_dir_iter + i) += *(weights_im_iter + ii);
             }
@@ -746,7 +746,7 @@ void optimizer::collect_decision_params(z_frame_data& z_data, yuy2_frame_data& y
 {
 
     // NOHA :: TODO :: collect decision_params from implemented functions
-    _decision_params.initial_cost = 1.560848046875000e+04;// calc_cost(z_data, yuy_data, z_data.uvmap);
+    _decision_params.initial_cost = calc_cost(z_data, yuy_data, z_data.uvmap); 1.560848046875000e+04;// calc_cost(z_data, yuy_data, z_data.uvmap);
     _decision_params.is_valid = 0;
     _decision_params.xy_movement = 2.376f; // calc_correction_in_pixels();
     _decision_params.xy_movement_from_origin = 2.376f;
@@ -760,7 +760,7 @@ void optimizer::collect_decision_params(z_frame_data& z_data, yuy2_frame_data& y
     _decision_params.min_max_ratio_rgb = 0.618130692181835;
     _decision_params.distribution_per_section_rgb = yuy_data.sum_weights_per_section; //{3025208, 2.899468500000000e+06, 4471484, 2.763961500000000e+06};// yuy_data.sum_weights_per_section;
     _decision_params.dir_ratio_1 = 2.072327044025157;
-    _decision_params.edge_weights_per_dir = { 636000, 898000, 1318000, 747000 };
+    _decision_params.edge_weights_per_dir = z_data.sum_weights_per_direction;// { 636000, 898000, 1318000, 747000 };
     _decision_params.new_cost = 1.677282421875000e+04;
 
 }
