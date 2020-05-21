@@ -122,13 +122,6 @@ void compare_scene( std::string const & scene_dir )
     CHECK( compare_to_bin_file< double >( yuy_data.gaussian_diff_masked, scene_dir, "ac1x\\IDiffMasked", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
     CHECK( compare_to_bin_file< uint8_t >( yuy_data.move_suspect, scene_dir, "ac1x\\ixMoveSuspect", rgb_w, rgb_h, "uint8_00", compare_same_vectors ) );
 
-    //svm
-    CHECK(compare_to_bin_file< double >(svm_features, scene_dir, "featuresMat", 10, 1, "double_00", compare_same_vectors));
-    CHECK(compare_to_bin_file< double >(decision_params.distribution_per_section_depth, scene_dir, "edgeWeightDistributionPerSectionDepth", 1, 4, "double_00", compare_same_vectors));
-    CHECK(compare_to_bin_file< double >(decision_params.distribution_per_section_rgb, scene_dir, "edgeWeightDistributionPerSectionRgb", 1, 4, "double_00", compare_same_vectors));
-    CHECK(compare_to_bin_file< double >(decision_params.edge_weights_per_dir, scene_dir, "edgeWeightsPerDir", 1, 4, "double_00", compare_same_vectors));
-    CHECK(compare_to_bin_file< double >(decision_params.improvement_per_section, scene_dir, "improvementPerSection", 4, 1, "double_00", compare_same_vectors));
-
 #endif
 #if 0
     //--
@@ -184,14 +177,21 @@ void compare_scene( std::string const & scene_dir )
 
     CHECK( compare_calib_to_bin_file( new_calibration, cost, scene_dir, "ac1x\\new_calib", num_of_calib_elements, 1, "double_00" ) );
 #endif
-#if 0
+#if 1
     //--
     TRACE( "\nChecking output validity:" );
     // Pixel movement is OK, but some sections have negative cost
     CHECK( cal.is_valid_results() == md.is_output_valid );
 
-    CHECK( cal.calc_correction_in_pixels() == approx( md.correction_in_pixels ) );
+    //CHECK( cal.calc_correction_in_pixels() == approx( md.correction_in_pixels ) );
 
-    CHECK( compare_to_bin_file< double >( z_data.cost_diff_per_section, scene_dir, "costDiffPerSection", 4, 1, "double_00", compare_same_vectors ) );
+    //CHECK( compare_to_bin_file< double >( z_data.cost_diff_per_section, scene_dir, "costDiffPerSection", 4, 1, "double_00", compare_same_vectors ) );
+
+    //svm
+    CHECK(compare_to_bin_file< double >(svm_features, scene_dir, "featuresMat", 10, 1, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(decision_params.distribution_per_section_depth, scene_dir, "edgeWeightDistributionPerSectionDepth", 1, 4, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(decision_params.distribution_per_section_rgb, scene_dir, "edgeWeightDistributionPerSectionRgb", 1, 4, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(decision_params.edge_weights_per_dir, scene_dir, "edgeWeightsPerDir", 1, 4, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(decision_params.improvement_per_section, scene_dir, "improvementPerSection", 4, 1, "double_00", compare_same_vectors));
 #endif
 }
