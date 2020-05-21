@@ -15,6 +15,7 @@ double optimizer::calc_correction_in_pixels( calib const & from_calibration ) co
     //% [uvMapNew,~,~] = OnlineCalibration.aux.projectVToRGB(frame.vertices,newParams.rgbPmat,newParams.Krgb,newParams.rgbDistort);
     auto old_uvmap = get_texture_map( _z.vertices, from_calibration );
     auto new_uvmap = get_texture_map( _z.vertices, _params_curr.curr_calib );
+
     if( old_uvmap.size() != new_uvmap.size() )
         throw std::runtime_error( to_string() << "did not expect different uvmap sizes (" << old_uvmap.size() << " vs " << new_uvmap.size() << ")" );
     // uvmap is Nx[x,y]
@@ -188,39 +189,25 @@ std::vector< double > extract_features(decision_params& decision_params)
 void optimizer::collect_decision_params(z_frame_data& z_data, yuy2_frame_data& yuy_data)
 {
 
-    // NOHA :: TODO :: collect decision_params from implemented functions
-    _decision_params.initial_cost = calc_cost(z_data, yuy_data, z_data.uvmap); 1.560848046875000e+04;// calc_cost(z_data, yuy_data, z_data.uvmap);
-    _decision_params.is_valid = 0;
-    _decision_params.xy_movement = 2.376f; // calc_correction_in_pixels();
-    _decision_params.xy_movement_from_origin = 2.376f;
-    _decision_params.improvement_per_section = { -4.4229550,828.93903,1424.0482,2536.4409 }; // z_data.cost_diff_per_section;
-    _decision_params.min_improvement_per_section = -4.422955036163330;// *std::min_element(_z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end());
-    _decision_params.max_improvement_per_section = 2.536440917968750e+03;// *std::max_element(_z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end());
-    _decision_params.is_valid_1 = 1;
-    _decision_params.moving_pixels = 0;
-    _decision_params.min_max_ratio_depth = 0.762463343108504;
-    _decision_params.distribution_per_section_depth = z_data.sum_weights_per_section; //{ 980000, 780000, 1023000, 816000 };// z_data.sum_weights_per_section;
-    _decision_params.min_max_ratio_rgb = 0.618130692181835;
-    _decision_params.distribution_per_section_rgb = yuy_data.sum_weights_per_section; //{3025208, 2.899468500000000e+06, 4471484, 2.763961500000000e+06};// yuy_data.sum_weights_per_section;
-    _decision_params.dir_ratio_1 = 2.072327044025157;
+    _decision_params.initial_cost = calc_cost(z_data, yuy_data, z_data.uvmap); //1.560848046875000e+04;
+    //_decision_params.is_valid = 0;
+    _decision_params.xy_movement = calc_correction_in_pixels(); //2.376f; // 
+    _decision_params.xy_movement_from_origin = calc_correction_in_pixels(); //2.376f;
+    _decision_params.improvement_per_section = _z.cost_diff_per_section; // { -4.4229550, 828.93903, 1424.0482, 2536.4409 }; 
+    _decision_params.min_improvement_per_section = *std::min_element(_z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end());// -4.422955036163330;
+    _decision_params.max_improvement_per_section = *std::max_element(_z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end()); //2.536440917968750e+03;// 
+    //_decision_params.is_valid_1 = 1;
+    //_decision_params.moving_pixels = 0;
+    _decision_params.min_max_ratio_depth = z_data.min_max_ratio; // 0.762463343108504;
+    _decision_params.distribution_per_section_depth = z_data.sum_weights_per_section; //{ 980000, 780000, 1023000, 816000 };
+    _decision_params.min_max_ratio_rgb = yuy_data.min_max_ratio; // 0.618130692181835;
+    _decision_params.distribution_per_section_rgb = yuy_data.sum_weights_per_section; //{3025208, 2.899468500000000e+06, 4471484, 2.763961500000000e+06};
+    _decision_params.dir_ratio_1 = z_data.dir_ratio1;// 2.072327044025157;
+    _decision_params.dir_ratio_2 = z_data.dir_ratio2;
     _decision_params.edge_weights_per_dir = z_data.sum_weights_per_direction;// { 636000, 898000, 1318000, 747000 };
     _decision_params.new_cost = 1.677282421875000e+04;
 
 }
-//decision_params& optimizer::get_decision_params()
-//{
-//    decision_params decision_params;
-//    collect_decision_params(_z, _yuy, decision_params);
-//    return decision_params;
-//}
-//std::vector< double >& optimizer::get_extracted_features()
-//{
-//    //decision_params& decision_params = get_decision_params();
-//    decision_params decision_params;
-//    collect_decision_params(_z, _yuy, decision_params);
-//    auto features = extract_features(decision_params);
-//    return features;
-//}
 bool svm_rbf_predictor(std::vector< double >& features, svm_model_gaussian& svm_model)
 {
     bool res = TRUE;
@@ -304,49 +291,50 @@ bool optimizer::valid_by_svm(svm_model model)
 }
 bool optimizer::is_valid_results()
 {
-    // Clip any (average) movement of pixels if it's too big
-    //clip_pixel_movement();
+    bool res = TRUE;
+     //Clip any (average) movement of pixels if it's too big
+    clip_pixel_movement();
 
-    //// Based on (possibly new, clipped) calibration values, see if we've strayed too
-    //// far away from the camera's original factory calibration -- which we may not have
-    //if( _factory_calibration.width  &&  _factory_calibration.height )
-    //{
-    //    double xy_movement = calc_correction_in_pixels();
-    //    AC_LOG( DEBUG, "... average pixel movement from factory calibration= " << xy_movement );
-    //    if( xy_movement > _params.max_xy_movement_from_origin )
-    //    {
-    //        AC_LOG( ERROR, "Calibration has moved too far from the original factory calibration (" << xy_movement << " pixels)" );
-    //        return false;
-    //    }
-    //}
-    //else
-    //{
-    //    AC_LOG( DEBUG, "... no factory calibration available; skipping distance check" );
-    //}
+    // Based on (possibly new, clipped) calibration values, see if we've strayed too
+    // far away from the camera's original factory calibration -- which we may not have
+    if( _factory_calibration.width  &&  _factory_calibration.height )
+    {
+        double xy_movement = calc_correction_in_pixels();
+        AC_LOG( DEBUG, "... average pixel movement from factory calibration= " << xy_movement );
+        if( xy_movement > _params.max_xy_movement_from_origin )
+        {
+            AC_LOG( ERROR, "Calibration has moved too far from the original factory calibration (" << xy_movement << " pixels)" );
+            return false;
+        }
+    }
+    else
+    {
+        AC_LOG( DEBUG, "... no factory calibration available; skipping distance check" );
+    }
 
-    ////%% Check and see that the score didn't increased by a lot in one image section and decreased in the others
-    ////% [c1, costVecOld] = OnlineCalibration.aux.calculateCost( frame.vertices, frame.weights, frame.rgbIDT, params );
-    ////% [c2, costVecNew] = OnlineCalibration.aux.calculateCost( frame.vertices, frame.weights, frame.rgbIDT, newParams );
-    ////% scoreDiffPerVertex = costVecNew - costVecOld;
-    ////% for i = 0:(params.numSectionsH*params.numSectionsV) - 1
-    ////%     scoreDiffPersection( i + 1 ) = nanmean( scoreDiffPerVertex( frame.sectionMapDepth == i ) );
-    ////% end
-
-    //_z.cost_diff_per_section = cost_per_section_diff(_original_calibration, _params_curr.curr_calib);
-    ////% validOutputStruct.minImprovementPerSection = min( scoreDiffPersection );
-    ////% validOutputStruct.maxImprovementPerSection = max( scoreDiffPersection );
-    //double min_cost_diff = *std::min_element( _z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end() );
-    //double max_cost_diff = *std::max_element( _z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end() );
-    //AC_LOG( DEBUG, "... min cost diff= " << min_cost_diff << "  max= " << max_cost_diff );
-    //if( min_cost_diff < 0. )
-    //{
-    //    AC_LOG( ERROR, "Some image sections were hurt by the optimization; invalidating calibration!" );
-    //    for( size_t x = 0; x < _z.cost_diff_per_section.size(); ++x )
-    //        AC_LOG( DEBUG, "... cost diff in section " << x << "= " << _z.cost_diff_per_section[x] );
-    //    return false;
-    //}
+   /* %% Check and see that the score didn't increased by a lot in one image section and decreased in the others
+    % [c1, costVecOld] = OnlineCalibration.aux.calculateCost( frame.vertices, frame.weights, frame.rgbIDT, params );
+    % [c2, costVecNew] = OnlineCalibration.aux.calculateCost( frame.vertices, frame.weights, frame.rgbIDT, newParams );
+    % scoreDiffPerVertex = costVecNew - costVecOld;
+    % for i = 0:(params.numSectionsH*params.numSectionsV) - 1
+    %     scoreDiffPersection( i + 1 ) = nanmean( scoreDiffPerVertex( frame.sectionMapDepth == i ) );
+    % end*/
+    _z.cost_diff_per_section = cost_per_section_diff(_original_calibration, _params_curr.curr_calib); 
+    //% validOutputStruct.minImprovementPerSection = min( scoreDiffPersection );
+    //% validOutputStruct.maxImprovementPerSection = max( scoreDiffPersection );
+    double min_cost_diff = *std::min_element( _z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end() );
+    double max_cost_diff = *std::max_element( _z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end() );
+    AC_LOG( DEBUG, "... min cost diff= " << min_cost_diff << "  max= " << max_cost_diff );
+    if( min_cost_diff < 0. )
+    {
+        AC_LOG( ERROR, "Some image sections were hurt by the optimization; invalidating calibration!" );
+        for( size_t x = 0; x < _z.cost_diff_per_section.size(); ++x )
+            AC_LOG( DEBUG, "... cost diff in section " << x << "= " << _z.cost_diff_per_section[x] );
+        //return false;
+        res = FALSE;
+    }
 
     bool res_svm = valid_by_svm(linear); //(gaussian);// (linear);
-    return res_svm;
+    return (res && res_svm);
 }
 

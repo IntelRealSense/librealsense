@@ -90,6 +90,7 @@ namespace depth_to_rgb_calibration {
         double min_max_ratio_rgb;// edgeDistributionMinMaxRatioRgb;
         std::vector< double > distribution_per_section_rgb;// edgeWeightDistributionPerSectionRgb;
         double dir_ratio_1; // dirRatio1;
+        double dir_ratio_2;
         std::vector< double > edge_weights_per_dir;
         double new_cost;
     };

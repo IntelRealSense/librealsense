@@ -417,15 +417,15 @@ weightsPerDir = [sum(weightIm(frame.dirI == 1));sum(weightIm(frame.dirI == 2));s
     /* if (ix_match == 0) {
          ix_match = 3;
      }*/
-    double dir_ratio1;
-    double dir_ratio2;
+    //double dir_ratio1;
+    //double dir_ratio2;
     if (weights_per_dir.at(ix_match) < 1e-3) //%Don't devide by zero...
     {
-        dir_ratio1 = 1e6;
+        z_data.dir_ratio1 = 1e6;
     }
     else
     {
-        dir_ratio1 = *max_val / weights_per_dir.at(ix_match);
+        z_data.dir_ratio1 = *max_val / weights_per_dir.at(ix_match);
     }
     /*
 if dirRatio1 > params.gradDirRatio
@@ -451,7 +451,7 @@ end
 isBalanced = true;
     */
 
-    if (dir_ratio1 > _params.grad_dir_ratio)
+    if (z_data.dir_ratio1 > _params.grad_dir_ratio)
     {
         std::vector<double> ix_check(4); // 4=deg_non is number of directions
         auto ix_check_iter = ix_check.begin();
@@ -478,15 +478,15 @@ isBalanced = true;
         auto perp_ratio = *max_val / max_val_perp;
         if (perp_ratio > _params.grad_dir_ratio_prep)
         {
-            AC_LOG(DEBUG, "is_grad_dir_balanced: gradient direction is not balanced : " << dir_ratio1);
+            AC_LOG(DEBUG, "is_grad_dir_balanced: gradient direction is not balanced : " << z_data.dir_ratio1);
             AC_LOG(DEBUG, "threshold is: " << _params.grad_dir_ratio);
             return false;
         }
         if (min_val_perp < 1e-3)// % Don't devide by zero...
         {
-            AC_LOG(DEBUG, "is_grad_dir_balanced: gradient direction is not balanced : " << dir_ratio1);
+            AC_LOG(DEBUG, "is_grad_dir_balanced: gradient direction is not balanced : " << z_data.dir_ratio1);
             AC_LOG(DEBUG, "threshold is: " << _params.grad_dir_ratio);
-            dir_ratio2 = DBL_MAX; // = nan 
+            z_data.dir_ratio2 = DBL_MAX; // = nan 
             return false;
         }
 
@@ -500,10 +500,10 @@ isBalanced = true;
                 filtered_weights_per_dir.push_back(*it);
             }
         }
-        dir_ratio2 = max_val_perp / *std::min_element(filtered_weights_per_dir.begin(), filtered_weights_per_dir.end());
-        if (dir_ratio2 > _params.grad_dir_ratio)
+        z_data.dir_ratio2 = max_val_perp / *std::min_element(filtered_weights_per_dir.begin(), filtered_weights_per_dir.end());
+        if (z_data.dir_ratio2 > _params.grad_dir_ratio)
         {
-            AC_LOG(DEBUG, "is_grad_dir_balanced: gradient direction is not balanced : " << dir_ratio1);
+            AC_LOG(DEBUG, "is_grad_dir_balanced: gradient direction is not balanced : " << z_data.dir_ratio1);
             AC_LOG(DEBUG, "threshold is: " << _params.grad_dir_ratio);
             return false;
         }
@@ -727,5 +727,6 @@ bool optimizer::is_scene_valid()
     bool res_edges = is_edge_distributed(_z, _yuy);
     bool res_gradient = is_grad_dir_balanced(_z);
 
+    //return((!res_movement) && res_edges && res_gradient);
     return(!res_movement);
 }

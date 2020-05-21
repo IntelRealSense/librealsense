@@ -109,6 +109,10 @@ namespace depth_to_rgb_calibration {
 
         // output validation
         std::vector< double > cost_diff_per_section;
+
+        //svm
+        double dir_ratio1;
+        double dir_ratio2;
     };
 
     struct yuy2_frame_data : frame_data

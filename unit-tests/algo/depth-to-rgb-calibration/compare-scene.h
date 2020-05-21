@@ -123,7 +123,7 @@ void compare_scene( std::string const & scene_dir )
     CHECK( compare_to_bin_file< uint8_t >( yuy_data.move_suspect, scene_dir, "ac1x\\ixMoveSuspect", rgb_w, rgb_h, "uint8_00", compare_same_vectors ) );
 
 #endif
-#if 0
+#if 1
     //--
     TRACE( "\nOptimizing:" );
     auto cb = [&]( algo::iteration_data_collect const & data )
@@ -183,9 +183,9 @@ void compare_scene( std::string const & scene_dir )
     // Pixel movement is OK, but some sections have negative cost
     CHECK( cal.is_valid_results() == md.is_output_valid );
 
-    //CHECK( cal.calc_correction_in_pixels() == approx( md.correction_in_pixels ) );
+    CHECK( cal.calc_correction_in_pixels() == approx( md.correction_in_pixels ) );
 
-    //CHECK( compare_to_bin_file< double >( z_data.cost_diff_per_section, scene_dir, "costDiffPerSection", 4, 1, "double_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< double >( z_data.cost_diff_per_section, scene_dir, "costDiffPerSection", 4, 1, "double_00", compare_same_vectors ) );
 
     //svm
     CHECK(compare_to_bin_file< double >(svm_features, scene_dir, "featuresMat", 10, 1, "double_00", compare_same_vectors));
