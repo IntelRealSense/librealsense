@@ -200,7 +200,8 @@ void optimizer::collect_decision_params(z_frame_data& z_data, yuy2_frame_data& y
     _decision_params.dir_ratio_1 = z_data.dir_ratio1;// 2.072327044025157;
     //_decision_params.dir_ratio_2 = z_data.dir_ratio2;
     _decision_params.edge_weights_per_dir = z_data.sum_weights_per_direction;// { 636000, 898000, 1318000, 747000 };
-    _decision_params.new_cost = 1.677282421875000e+04; // TODO :: set new cost value after Avishag finishes her part
+    //get_texture_map(_z.vertices_all, _original_calibration, _original_calibration.calc_p_mat());
+    _decision_params.new_cost = 1.677282421875000e+04;// calc_cost(z_data, yuy_data, _final_calibration);// 1.677282421875000e+04; // TODO :: set new cost value after Avishag finishes her part
 
 }
 bool svm_rbf_predictor(std::vector< double >& features, svm_model_gaussian& svm_model)
