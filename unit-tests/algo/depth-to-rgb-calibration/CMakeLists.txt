@@ -376,6 +376,11 @@ dl_algo_file( "${F9440687}/2/binFiles/ac1x/Z_yim_2506x1_double_00.bin" "")
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/zValuesForSubEdges_2506x1_double_00.bin" "")
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/zGradInDirection_2506x1_double_00.bin" "")
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/directionIndexInside_2506x1_double_00.bin" "")
-
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/weights_2506x1_double_00.bin" "")
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/vertices_2506x3_double_00.bin" "")
+
+dl_algo_file( "${F9440687}/2/binFiles/ac1x/svm_edgeWeightDistributionPerSectionDepth_4x1_double_00.bin" "")
+dl_algo_file( "${F9440687}/2/binFiles/ac1x/svm_edgeWeightDistributionPerSectionRgb_4x1_double_00.bin" "")
+dl_algo_file( "${F9440687}/2/binFiles/ac1x/svm_edgeWeightsPerDir_1x4_double_00.bin" "")
+dl_algo_file( "${F9440687}/2/binFiles/ac1x/svm_featuresMat_1x10_double_00.bin" "")
+dl_algo_file( "${F9440687}/2/binFiles/ac1x/svm_improvementPerSection_1x4_double_00.bin" "")

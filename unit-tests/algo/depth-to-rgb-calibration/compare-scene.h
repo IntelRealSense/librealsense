@@ -21,7 +21,8 @@ void compare_scene( std::string const & scene_dir )
     auto& ir_data = cal.get_ir_data();
     auto& yuy_data = cal.get_yuy_data();
     auto& depth_data = cal.get_z_data();
-
+    auto& decision_params = cal.get_decision_params();
+    auto& svm_features = cal.get_extracted_features();
     //---
     auto rgb_h = ci.rgb.height;
     auto rgb_w = ci.rgb.width;
@@ -30,7 +31,7 @@ void compare_scene( std::string const & scene_dir )
     auto num_of_calib_elements = 17;
 	auto num_of_p_matrix_elements = sizeof(algo::p_matrix) / sizeof(double);
 
-#if 1
+#if 0
     // smearing
     CHECK(compare_to_bin_file< double >(depth_data.gradient_x, scene_dir, "ac1x\\Zx", z_w, z_h, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.gradient_y, scene_dir, "ac1x\\Zy", z_w, z_h, "double_00", compare_same_vectors));
@@ -107,7 +108,7 @@ void compare_scene( std::string const & scene_dir )
 
     // gradient balanced
     // TODO NOHA
-    //CHECK(compare_to_bin_file< double >(z_data.sum_weights_per_direction, scene_dir, "ac1x\\edgeWeightsPerDir", 1, 4, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(z_data.sum_weights_per_direction, scene_dir, "ac1x\\edgeWeightsPerDir", 4, 1, "double_00", compare_same_vectors));
 
     // movment check
     // 1. dilation
@@ -121,6 +122,7 @@ void compare_scene( std::string const & scene_dir )
     // 3. movement
     CHECK( compare_to_bin_file< double >( yuy_data.gaussian_diff_masked, scene_dir, "ac1x\\IDiffMasked", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
     CHECK( compare_to_bin_file< uint8_t >( yuy_data.move_suspect, scene_dir, "ac1x\\ixMoveSuspect", rgb_w, rgb_h, "uint8_00", compare_same_vectors ) );
+
 #endif
 #if 1
     //--
@@ -209,7 +211,7 @@ void compare_scene( std::string const & scene_dir )
 
     CHECK( compare_calib_to_bin_file( new_calibration, cost, scene_dir, "ac1x\\new_calib", num_of_calib_elements, 1, "double_00" ) );
 #endif
-#if 0
+#if 1
     //--
     TRACE( "\nChecking output validity:" );
     // Pixel movement is OK, but some sections have negative cost
@@ -218,5 +220,12 @@ void compare_scene( std::string const & scene_dir )
     CHECK( cal.calc_correction_in_pixels() == approx( md.correction_in_pixels ) );
 
     CHECK( compare_to_bin_file< double >( z_data.cost_diff_per_section, scene_dir, "costDiffPerSection", 4, 1, "double_00", compare_same_vectors ) );
+
+    //svm
+    CHECK(compare_to_bin_file< double >(svm_features, scene_dir, "svm_featuresMat", 10, 1, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(decision_params.distribution_per_section_depth, scene_dir, "svm_edgeWeightDistributionPerSectionDepth", 1, 4, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(decision_params.distribution_per_section_rgb, scene_dir, "svm_edgeWeightDistributionPerSectionRgb", 1, 4, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(decision_params.edge_weights_per_dir, scene_dir, "svm_edgeWeightsPerDir", 1, 4, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(decision_params.improvement_per_section, scene_dir, "svm_improvementPerSection", 4, 1, "double_00", compare_same_vectors));
 #endif
 }

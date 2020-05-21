@@ -10,9 +10,9 @@
 
 TEST_CASE("Scene 2", "[d2rgb]")
 {
-    std::string scene_dir( "..\\unit-tests\\algo\\depth-to-rgb-calibration\\19.2.20" );
+    std::string scene_dir("C:\\work\\git\\lrs\\build\\unit-tests\\algo\\depth-to-rgb-calibration\\19.2.20");// "..\\unit-tests\\algo\\depth-to-rgb-calibration\\19.2.20" );
 //    std::string scene_dir( "C:\\work\\autocal" );
     scene_dir += "\\F9440687\\LongRange_D_768x1024_RGB_1920x1080\\2\\";
 
-    compare_scene( scene_dir );
+    compare_scene(scene_dir);
 }
