@@ -225,7 +225,7 @@ void compare_scene( std::string const & scene_dir )
     CHECK(compare_to_bin_file< double >(svm_features, scene_dir, "ac1x\\svm_featuresMat", 10, 1, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(decision_params.distribution_per_section_depth, scene_dir, "ac1x\\svm_edgeWeightDistributionPerSectionDepth", 1, 4, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(decision_params.distribution_per_section_rgb, scene_dir, "ac1x\\svm_edgeWeightDistributionPerSectionRgb", 1, 4, "double_00", compare_same_vectors));
-    CHECK(compare_to_bin_file< double >(decision_params.edge_weights_per_dir, scene_dir, "ac1x\\svm_edgeWeightsPerDir", 1, 4, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(decision_params.edge_weights_per_dir, scene_dir, "ac1x\\svm_edgeWeightsPerDir", 4, 1, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(decision_params.improvement_per_section, scene_dir, "ac1x\\svm_improvementPerSection", 4, 1, "double_00", compare_same_vectors));
 #endif
 }
