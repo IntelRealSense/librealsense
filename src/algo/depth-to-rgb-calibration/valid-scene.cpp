@@ -742,43 +742,42 @@ std::vector< double > extract_features(decision_params &decision_params)
 
     return res;
 }
-void collect_decision_params(z_frame_data& z_data, yuy2_frame_data& yuy_data, decision_params& decision_params)
+void optimizer::collect_decision_params(z_frame_data& z_data, yuy2_frame_data& yuy_data)
 {
 
     // NOHA :: TODO :: collect decision_params from implemented functions
-    decision_params.initial_cost = 1.560848046875000e+04;// calc_cost(z_data, yuy_data, z_data.uvmap);
-    decision_params.is_valid = 0;
-    decision_params.xy_movement = 2.376f; // calc_correction_in_pixels();
-    decision_params.xy_movement_from_origin = 2.376f;
-    decision_params.improvement_per_section = { -4.4229550,828.93903,1424.0482,2536.4409 }; // z_data.cost_diff_per_section;
-    decision_params.min_improvement_per_section = -4.422955036163330;// *std::min_element(_z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end());
-    decision_params.max_improvement_per_section = 2.536440917968750e+03;// *std::max_element(_z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end());
-    decision_params.is_valid_1 = 1;
-    decision_params.moving_pixels = 0;
-    decision_params.min_max_ratio_depth = 0.762463343108504;
-    decision_params.distribution_per_section_depth = { 980000, 780000, 1023000, 816000 };// z_data.sum_weights_per_section;
-    decision_params.min_max_ratio_rgb = 0.618130692181835;
-    decision_params.distribution_per_section_rgb = {3025208, 2.899468500000000e+06, 4471484, 2.763961500000000e+06};// yuy_data.sum_weights_per_section;
-    decision_params.dir_ratio_1 = 2.072327044025157;
-    decision_params.edge_weights_per_dir = { 636000, 898000, 1318000, 747000 };
-    decision_params.new_cost = 1.677282421875000e+04;
+    _decision_params.initial_cost = 1.560848046875000e+04;// calc_cost(z_data, yuy_data, z_data.uvmap);
+    _decision_params.is_valid = 0;
+    _decision_params.xy_movement = 2.376f; // calc_correction_in_pixels();
+    _decision_params.xy_movement_from_origin = 2.376f;
+    _decision_params.improvement_per_section = { -4.4229550,828.93903,1424.0482,2536.4409 }; // z_data.cost_diff_per_section;
+    _decision_params.min_improvement_per_section = -4.422955036163330;// *std::min_element(_z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end());
+    _decision_params.max_improvement_per_section = 2.536440917968750e+03;// *std::max_element(_z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end());
+    _decision_params.is_valid_1 = 1;
+    _decision_params.moving_pixels = 0;
+    _decision_params.min_max_ratio_depth = 0.762463343108504;
+    _decision_params.distribution_per_section_depth = { 980000, 780000, 1023000, 816000 };// z_data.sum_weights_per_section;
+    _decision_params.min_max_ratio_rgb = 0.618130692181835;
+    _decision_params.distribution_per_section_rgb = {3025208, 2.899468500000000e+06, 4471484, 2.763961500000000e+06};// yuy_data.sum_weights_per_section;
+    _decision_params.dir_ratio_1 = 2.072327044025157;
+    _decision_params.edge_weights_per_dir = { 636000, 898000, 1318000, 747000 };
+    _decision_params.new_cost = 1.677282421875000e+04;
 
-    
 }
-decision_params& optimizer::get_decision_params()
-{
-    decision_params decision_params;
-    collect_decision_params(_z, _yuy, decision_params);
-    return decision_params;
-}
-std::vector< double >& optimizer::get_extracted_features()
-{
-    //decision_params& decision_params = get_decision_params();
-    decision_params decision_params;
-    collect_decision_params(_z, _yuy, decision_params);
-    auto features = extract_features(decision_params);
-    return features;
-}
+//decision_params& optimizer::get_decision_params()
+//{
+//    decision_params decision_params;
+//    collect_decision_params(_z, _yuy, decision_params);
+//    return decision_params;
+//}
+//std::vector< double >& optimizer::get_extracted_features()
+//{
+//    //decision_params& decision_params = get_decision_params();
+//    decision_params decision_params;
+//    collect_decision_params(_z, _yuy, decision_params);
+//    auto features = extract_features(decision_params);
+//    return features;
+//}
 bool svm_rbf_predictor(std::vector< double >& features, svm_model_gaussian& svm_model)
 {
     bool res = TRUE;
@@ -834,9 +833,11 @@ bool optimizer::valid_by_svm(svm_model model)
     //collect_decision_params(_z, _yuy, decision_params);
     //auto& decision_params = get_decision_params();
     //auto& features = get_extracted_features();
-    decision_params decision_params;
-    collect_decision_params(_z, _yuy, decision_params);
-    auto features = extract_features(decision_params);
+    //decision_params decision_params;
+    collect_decision_params(_z, _yuy);
+    //auto features = extract_features(decision_params);
+    _extracted_features = extract_features(_decision_params);
+
     double res = 0;
     switch (model)
     {
@@ -844,7 +845,7 @@ bool optimizer::valid_by_svm(svm_model model)
         for (auto i = 0; i < _svm_model_linear.mu.size(); i++)
         {
             // isValid = (featuresMat-SVMModel.Mu)./SVMModel.Sigma*SVMModel.Beta+SVMModel.Bias > 0;
-            auto res1 = (*(features.begin() + i) - *(_svm_model_linear.mu.begin() + i)) / (*(_svm_model_linear.sigma.begin() + i));// **(_svm_model_linear.beta.begin() + i) + _svm_model_linear.bias);
+            auto res1 = (*(_extracted_features.begin() + i) - *(_svm_model_linear.mu.begin() + i)) / (*(_svm_model_linear.sigma.begin() + i));// **(_svm_model_linear.beta.begin() + i) + _svm_model_linear.bias);
             res += res1 * *(_svm_model_linear.beta.begin() + i);
         }
         res += _svm_model_linear.bias;
@@ -855,7 +856,7 @@ bool optimizer::valid_by_svm(svm_model model)
         break;
 
     case gaussian:
-        is_valid = svm_rbf_predictor(features, _svm_model_gaussian);
+        is_valid = svm_rbf_predictor(_extracted_features, _svm_model_gaussian);
         break;
     default:
         AC_LOG(DEBUG, "ERROR : Unknown SVM kernel " << model);

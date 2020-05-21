@@ -193,8 +193,8 @@ namespace depth_to_rgb_calibration {
         z_frame_data    const & get_z_data() const   { return _z; }
         yuy2_frame_data const & get_yuy_data() const { return _yuy; }
         ir_frame_data   const & get_ir_data() const  { return _ir; }
-        decision_params & get_decision_params();
-        std::vector< double > & get_extracted_features();
+        decision_params const& get_decision_params() const { return _decision_params; };
+        std::vector< double >const& get_extracted_features() const { return _extracted_features; };
        
     private:
         void zero_invalid_edges( z_frame_data& z_data, ir_frame_data const & ir_data );
@@ -224,6 +224,7 @@ namespace depth_to_rgb_calibration {
 
         // svm
         bool valid_by_svm(svm_model model);
+        void collect_decision_params(z_frame_data& z_data, yuy2_frame_data& yuy_data);// , decision_params& decision_params);
 
         // output validation
         void clip_pixel_movement( size_t iteration_number = 0 );
@@ -231,6 +232,9 @@ namespace depth_to_rgb_calibration {
 
     private:
         params _params;
+        decision_params _decision_params;
+        svm_features _svm_features;
+        std::vector< double > _extracted_features;
         svm_model_linear _svm_model_linear;
         svm_model_gaussian _svm_model_gaussian;
         yuy2_frame_data _yuy;
