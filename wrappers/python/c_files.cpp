@@ -72,25 +72,22 @@ void init_c_files(py::module &m) {
         .def_readwrite( "h_offset", &rs2_dsm_params::h_offset, "horizontal DSM offset" )
         .def_readwrite( "v_offset", &rs2_dsm_params::v_offset, "vertical DSM offset" )
         .def_readwrite( "rtd_offset", &rs2_dsm_params::rtd_offset, "the Round-Trip-Distance delay" )
-        .def_readwrite( "temp_x2", &rs2_dsm_params::temp, "temperature*2 (LLD for depth; HUM for color)" )
+        .def_property_readonly( "temp", 
+            []( rs2_dsm_params const & self ) -> float {
+                           return float( self.temp_x2 ) / 2;
+                       },
+            "temperature (LDD for depth; HUM for color)" )
         .def_property( BIND_RAW_ARRAY_PROPERTY( rs2_dsm_params, reserved, uint8_t, sizeof( rs2_dsm_params::reserved )), "reserved" )
         .def( "__repr__",
             []( const rs2_dsm_params & self )
             {
                 std::ostringstream ss;
                 ss << "dsm[";
-#if 1
                 time_t t = self.timestamp;
                 auto ptm = localtime( &t );
                 char buf[256];
                 strftime( buf, sizeof(buf), "%F.%T ", ptm );
                 ss << buf;
-#else
-                std::chrono::system_clock::duration duration( self.timestamp );
-                std::chrono::system_clock::time_point tp( duration );
-                auto tt = std::chrono::system_clock::to_time_t( tp );
-                ss << std::put_time( std::localtime( &tt ), "%F.%T " );
-#endif
                 unsigned patch = self.version & 0xF;
                 unsigned minor = (self.version >> 4) & 0xFF;
                 unsigned major = (self.version >> 12);
@@ -106,8 +103,8 @@ void init_c_files(py::module &m) {
                 if( self.rtd_offset )
                     ss << " rtd " << self.rtd_offset;
                 ss << "]";
-                if( self.temp )
-                    ss << " @" << float(self.temp)/2 << "degC";
+                if( self.temp_x2 )
+                    ss << " @" << float(self.temp_x2)/2 << "degC";
                 ss << "]";
                 return ss.str();
             } );

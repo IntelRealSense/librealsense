@@ -81,7 +81,7 @@ typedef struct rs2_dsm_params
     float         h_offset;         /**< the offset to horizontal DSM offset thermal results */
     float         v_offset;         /**< the offset to vertical DSM offset thermal results */
     float         rtd_offset;       /**< the offset to the Round-Trip-Distance delay thermal results */
-    unsigned char temp;             /**< the temperature recorded (lld for depth; hum for rgb) */
+    unsigned char temp_x2;          /**< the temperature recorded times 2 (ldd for depth; hum for rgb) */
     unsigned char reserved[11];
 } rs2_dsm_params;
 

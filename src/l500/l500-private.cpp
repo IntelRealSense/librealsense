@@ -75,16 +75,6 @@ namespace librealsense
             if (!is_enabled())
                 throw wrong_api_call_sequence_exception("query option is allow only in streaming!");
 
-#pragma pack(push, 1)
-            struct temperatures
-            {
-                double LLD_temperature;
-                double MC_temperature;
-                double MA_temperature;
-                double APD_temperature;
-            };
-#pragma pack(pop)
-
             auto res = _hw_monitor->send(command{ TEMPERATURES_GET });
 
             if (res.size() < sizeof(temperatures))
@@ -97,7 +87,7 @@ namespace librealsense
             switch (_option)
             {
             case RS2_OPTION_LLD_TEMPERATURE:
-                return float(temperature_data.LLD_temperature);
+                return float(temperature_data.LDD_temperature);
             case RS2_OPTION_MC_TEMPERATURE:
                 return float(temperature_data.MC_temperature);
             case RS2_OPTION_MA_TEMPERATURE:

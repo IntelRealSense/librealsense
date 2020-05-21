@@ -228,13 +228,21 @@ namespace librealsense
             rgb_common common;
             resolutions_rgb resolution;
         };
-#pragma pack(pop)
+
+        struct temperatures {
+            double LDD_temperature;  // Laser Diode Driver
+            double MC_temperature;
+            double MA_temperature;
+            double APD_temperature;
+            double HUM_temperature;
+            double AlgoTermalLddAvg_temperature;
+        };
+#pragma pack( pop )
 
         rs2_extrinsics get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
 
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
                                          const platform::uvc_device_info& info, platform::usb_device_info& result);
-
 
         class l500_temperature_options : public readonly_option
         {
@@ -413,7 +421,7 @@ namespace librealsense
             std::shared_ptr< retrier > _retrier;
 
         public:
-            /* For RS2_OPTION_AUTO_CALIBRATION_ENABLED */
+            /* For RS2_OPTION_CAMERA_ACCURACY_HEALTH_ENABLED */
             class enabler_option : public bool_option
             {
                 std::shared_ptr< auto_calibration > _autocal;
