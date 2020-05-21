@@ -119,6 +119,9 @@ struct scene_metadata
     {
         std::ifstream( bin_dir( scene_dir ) + "yuy_prev_z_i.files" )
             >> rgb_file >> rgb_prev_file >> z_file >> ir_file;
+        if( rgb_file.empty() )
+            throw std::runtime_error( "failed to read file:\n" + bin_dir( scene_dir ) +
+                                      "yuy_prev_z_i.files" );
 
         std::string metadata = bin_dir( scene_dir ) + "metadata";
         std::fstream f = std::fstream( metadata, std::ios::in | std::ios::binary );
