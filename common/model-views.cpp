@@ -3242,7 +3242,7 @@ namespace rs2
         auto name = get_device_name(dev);
 
         try {
-            dev_updates_profile profile(dev, "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/rs-tests/sw-update/19_05_2020/rs_versions_db.json", false);
+            dev_updates_profile profile(dev, "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/rs-tests/sw-update/21_05_2020/rs_versions_db.json");
    
 
             if (profile.check_for_updates())

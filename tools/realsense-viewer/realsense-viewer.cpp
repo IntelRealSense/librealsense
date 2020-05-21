@@ -416,7 +416,7 @@ int main(int argc, const char** argv) try
     // Expect - SUCCESS                                      //
     ///////////////////////////////////////////////////////////
     {
-        versions_db_manager up_handler("http://realsense-hw-public.s3-eu-west-1.amazonaws.com/rs-tests/sw-update/19_05_2020/rs_versions_db.json");
+        versions_db_manager up_handler("http://realsense-hw-public.s3-eu-west-1.amazonaws.com/rs-tests/sw-update/21_05_2020/rs_versions_db.json");
         versions_db_manager::version ver;
         bool res(false), ver_link_res(false), rel_notes_res(false), description_res(false);
         std::string ver_link, rel_notes, description;
