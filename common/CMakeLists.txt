@@ -33,8 +33,10 @@ set(COMMON_SRC
     set(AUTO_UPDATE_FILES
         "${CMAKE_CURRENT_LIST_DIR}/auto-updater/http-downloader.h"
         "${CMAKE_CURRENT_LIST_DIR}/auto-updater/http-downloader.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/auto-updater/update-handler.h"
-        "${CMAKE_CURRENT_LIST_DIR}/auto-updater/update-handler.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/auto-updater/dev-updates-profile.h"
+        "${CMAKE_CURRENT_LIST_DIR}/auto-updater/dev-updates-profile.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/auto-updater/versions-db-manager.h"
+        "${CMAKE_CURRENT_LIST_DIR}/auto-updater/versions-db-manager.cpp"
         )
     set(COMMON_SRC
         ${COMMON_SRC}

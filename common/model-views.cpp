@@ -19,6 +19,7 @@
 #include <librealsense2/rs.hpp>
 
 #include "model-views.h"
+#include "updates-model.h"
 #include "notifications.h"
 #include "fw-update-helper.h"
 #include "on-chip-calib.h"
@@ -32,7 +33,7 @@
 
 #include "metadata-helper.h"
 
-#include "auto-updater/update-handler.h"
+#include "auto-updater/versions-db-manager.h"
 
 using namespace rs400;
 using namespace nlohmann;
@@ -3233,24 +3234,6 @@ namespace rs2
         for (auto&& n : related_notifications) n->dismiss(false);
     }
 
-    bool try_parse_update(update_handler& up_handler, 
-        const std::string& dev_name,
-        update_handler::update_policy_type policy, 
-        update_handler::component_part_type part, 
-        update_description& result)
-    {
-        long long required_version;
-        bool query_ok = up_handler.query_versions(dev_name, part, policy, required_version);
-        if (query_ok)
-        {
-            auto dl_link_ok = up_handler.get_version_download_link(part, required_version, result.download_link);
-            auto rel_ok = up_handler.get_version_release_notes(part, required_version, result.release_page);
-            auto desc_ok = up_handler.get_version_description(part, required_version, result.description);
-            result.ver = version(required_version);
-            result.name = to_string() << std::string(result.ver) << " (" << up_handler.to_string(policy) << ")";
-        }
-        return query_ok;
-    }
 
     void device_model::refresh_notifications(viewer_model& viewer)
     {
@@ -3259,74 +3242,14 @@ namespace rs2
         auto name = get_device_name(dev);
 
         try {
-            update_profile update;
+            dev_updates_profile profile(dev, "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/rs-tests/sw-update/19_05_2020/rs_versions_db.json", false);
+   
 
-            std::string dev_name = (dev.supports(RS2_CAMERA_INFO_NAME)) ? dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
-            std::string serial = (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER)) ? dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "Unknown";
-            std::string firmware_ver = (dev.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION)) ? dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) : "0.0.0";
-
-            update.software_version = version(RS2_API_FULL_VERSION_STR);
-            update.firmware_version = version(firmware_ver);
-
-            update.ctx = viewer.ctx;
-            update.dev = dev;
-            update.dev_model = this;
-
-            bool update_required = false;
-
-            update_handler up_handler("http://realsense-hw-public.s3-eu-west-1.amazonaws.com/rs-tests/sw-update/19_05_2020/rs_versions_db.json", false);
-
+            if (profile.check_for_updates())
             {
-                update_description experimental_software_update; 
-                if (try_parse_update(up_handler, dev_name, update_handler::EXPERIMENTAL, update_handler::LIBREALSENSE, experimental_software_update))
-                {
-                    update.software_versions[experimental_software_update.ver] = experimental_software_update;
-                }
-                update_description recommened_software_update; 
-                if (try_parse_update(up_handler, dev_name, update_handler::RECOMMENDED, update_handler::LIBREALSENSE, recommened_software_update))
-                {
-                    update.software_versions[recommened_software_update.ver] = recommened_software_update;
-                }
-                update_description required_software_update;  
-                if (try_parse_update(up_handler, dev_name, update_handler::ESSENTIAL, update_handler::LIBREALSENSE, required_software_update))
-                {
-                    update.software_versions[required_software_update.ver] = required_software_update;
-                    update_required = update_required || (update.software_version < required_software_update.ver);
-                }
+                updates_model::update_profile_model updates_model = { profile.get_update_profile() , viewer.ctx, this};
+                viewer.updates.add_profile(updates_model);
             }
-
-            {
-                update_description experimental_firmware_update; 
-                if (try_parse_update(up_handler, dev_name, update_handler::EXPERIMENTAL, update_handler::FIRMWARE, experimental_firmware_update))
-                {
-                    update.firmware_versions[experimental_firmware_update.ver] = experimental_firmware_update;
-                }
-                update_description recommened_firmware_update; 
-                if (try_parse_update(up_handler, dev_name, update_handler::RECOMMENDED, update_handler::FIRMWARE, recommened_firmware_update))
-                {
-                    update.firmware_versions[recommened_firmware_update.ver] = recommened_firmware_update;
-                }
-                update_description required_firmware_update;  
-                if (try_parse_update(up_handler, dev_name, update_handler::ESSENTIAL, update_handler::FIRMWARE, required_firmware_update))
-                {
-                    update.firmware_versions[required_firmware_update.ver] = required_firmware_update;
-                    update_required = update_required || (update.firmware_version < required_firmware_update.ver);
-                }
-            }
-
-            if (update_required)
-            {
-                if (!update.firmware_versions.size())
-                    update.firmware_versions[version(0)] = update_description { version(0), "N/A", "", "", "" };
-                    
-                if (!update.software_versions.size())
-                    update.software_versions[version(0)] = update_description { version(0), "N/A", "", "", "" };
-            }
-
-            update.device_name = dev_name;
-            update.serial_number = serial;
-
-            if (update_required) viewer.updates.add_profile(update);
         }
         catch (const std::exception& e)
         {

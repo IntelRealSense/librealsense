@@ -7,15 +7,14 @@
 #include <regex>
 
 #include "json.hpp"
-#include "update-handler.h"
-#include "http-downloader.h"
+#include "versions-db-manager.h"
 #include "types.h"
 
 namespace rs2
 {
     using json = nlohmann::json;
 
-    bool update_handler::query_versions(const std::string &dev_name, component_part_type cp, const update_policy_type up, long long &out_version)
+    bool versions_db_manager::query_versions(const std::string &dev_name, component_part_type cp, const update_policy_type up, version& out_version)
     {
         // Load server versions info on first access
         if (!init())
@@ -41,7 +40,7 @@ namespace rs2
         if (res != _server_versions_vec.end())
         {
             auto version_str = (*res)["version"];
-            out_version = std::stoll(version_str.c_str()); // No need for validation.
+            out_version = version(version_str);
             return true;
         }
 
@@ -49,7 +48,7 @@ namespace rs2
         return false; // Nothing found
     }
 
-    bool update_handler::get_ver_data(const component_part_type cp, const long long version, const std::string& req_field, std::string& out)
+    bool versions_db_manager::get_ver_data(const component_part_type cp, const version& version, const std::string& req_field, std::string& out)
     {
         // Load server versions info on first access
         if (!init()) return false;
@@ -64,8 +63,7 @@ namespace rs2
         auto res = std::find_if(_server_versions_vec.begin(), _server_versions_vec.end(),
             [this, version, comp_str, platform](std::unordered_map<std::string, std::string> ver)
         {
-            long long version_num = std::stoll(ver["version"]);
-            return (version_num == version && comp_str == ver["component"] && (platform == ver["platform"] || ver["platform"] == "*"));
+            return (versions_db_manager::version(ver["version"]) == version && comp_str == ver["component"] && (platform == ver["platform"] || ver["platform"] == "*"));
         });
 
         if (res != _server_versions_vec.end())
@@ -77,7 +75,7 @@ namespace rs2
         return false; // Nothing found
     }
 
-    std::string update_handler::convert_version_to_formatted_string(const long long ver_num) const
+    std::string versions_db_manager::convert_version_to_formatted_string(const long long ver_num) const
     {
         std::stringstream raw_ver_str, fixed_ver_str;
         raw_ver_str << std::setfill('0') << std::setw(10) << ver_num;
@@ -88,7 +86,7 @@ namespace rs2
         return fixed_ver_str.str();
     }
 
-    std::string update_handler::to_string(const component_part_type& comp) const
+    std::string versions_db_manager::to_string(const component_part_type& comp) const
     {
         switch (comp)
         {
@@ -103,7 +101,7 @@ namespace rs2
         return "";
     }
 
-    std::string update_handler::to_string(const update_policy_type& pol) const
+    std::string versions_db_manager::to_string(const update_policy_type& pol) const
     {
 
         switch (pol)
@@ -118,7 +116,7 @@ namespace rs2
         return "";
     }
 
-    bool update_handler::from_string(std::string name, component_part_type& res) const
+    bool versions_db_manager::from_string(std::string name, component_part_type& res) const
     {
         static std::unordered_map<std::string, component_part_type> map =
         { {"LIBREALSENSE",LIBREALSENSE},
@@ -134,7 +132,7 @@ namespace rs2
         }
         return false;
     }
-    bool update_handler::from_string(std::string name, update_policy_type& res) const
+    bool versions_db_manager::from_string(std::string name, update_policy_type& res) const
     {
         static std::unordered_map<std::string, update_policy_type> map =
         { {"EXPERIMENTAL",EXPERIMENTAL},
@@ -150,7 +148,7 @@ namespace rs2
         return false;
     }
 
-    bool update_handler::get_server_data(std::stringstream &ver_data)
+    bool versions_db_manager::get_server_data(std::stringstream &ver_data)
     {
         bool server_data_retrieved(false);
 
@@ -176,7 +174,7 @@ namespace rs2
         return server_data_retrieved;
     }
 
-    void update_handler::parse_versions_data(const std::stringstream &ver_data)
+    void versions_db_manager::parse_versions_data(const std::stringstream &ver_data)
     {
         // Parse the json file
         json j(json::parse(ver_data.str()));
@@ -207,12 +205,6 @@ namespace rs2
                             else
                             {
                                 std::string error_str("Server versions file parsing error - " + element_key + " Validation fail on value : " + it.value().get<std::string>() + " \n");
-                                if (element_key == "version") // Special case for version validation
-                                {
-                                    error_str += "Version should be represented as AABBCCDDDD format only";
-                                }
-                                LOG_WARNING(error_str);
-                                throw std::runtime_error(error_str);
                             }
                         }
                         else
@@ -251,7 +243,7 @@ namespace rs2
         }
     }
 
-    const std::string update_handler::get_platform() const
+    const std::string versions_db_manager::get_platform() const
     {
         std::string platform;
 
@@ -274,7 +266,7 @@ namespace rs2
         return platform;
     }
 
-    bool update_handler::init()
+    bool versions_db_manager::init()
     {
         // Load server versions info on first access
         if (!_server_versions_loaded)
@@ -297,13 +289,13 @@ namespace rs2
         return true;
     }
 
-    void update_handler::build_schema(std::unordered_map<std::string, std::function<bool(const std::string&)>>& verifier)
+    void versions_db_manager::build_schema(std::unordered_map<std::string, std::function<bool(const std::string&)>>& verifier)
     {
         // Builds a map of fields + validation function
         verifier.emplace("device_name", [](const std::string& val) -> bool {  return true;  });
         verifier.emplace("policy_type", [](const std::string& val) -> bool {  return (val == "EXPERIMENTAL") || (val == "RECOMMENDED") || (val == "ESSENTIAL"); });
         verifier.emplace("component", [](const std::string& val) -> bool {  return (val == "LIBREALSENSE") || (val == "VIEWER") || (val == "DEPTH_QUALITY_TOOL") || (val == "FIRMWARE"); });
-        verifier.emplace("version", [](const std::string& val) -> bool {  return (std::regex_match(val, std::regex("[0-9]{10}")));  });
+        verifier.emplace("version", [](const std::string& val) -> bool { return version(val) != version(); });
         verifier.emplace("platform", [&](const std::string& val) -> bool {  return (val == "*") || (val == "Windows amd64") || (val == "Windows x86") || (val == "Linux amd64") || (val == "Linux arm") || (val == "Mac OS"); });
         verifier.emplace("link", [](const std::string& val) -> bool {  return true;  });
         verifier.emplace("release_notes_link", [](const std::string& val) -> bool {  return true;  });

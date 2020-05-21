@@ -5,10 +5,12 @@
 
 #include <string>
 #include <functional>
+#include <vector>
 
 namespace rs2
 {
-    typedef std::function<bool(uint64_t dl_current_bytes, uint64_t dl_total_bytes, double dl_time)> user_callback_func_type;
+    enum class callback_result {CONTINUE_DOWNLOAD, STOP_DOWNLOAD};
+    typedef std::function<callback_result(uint64_t dl_current_bytes, uint64_t dl_total_bytes, double dl_time)> user_callback_func_type;
 
     struct progress_data; // Forward Declaration
 
@@ -21,6 +23,7 @@ namespace rs2
         //    - Current status about the download progress
         //    - Control the download process (stop/continue) using the return value of the callback function (true = stop download)
         bool download_to_stream(const std::string& url, std::stringstream &output, user_callback_func_type user_callback_func = user_callback_func_type());
+        bool download_to_bytes_vector(const std::string& url, std::vector<uint8_t> &output, user_callback_func_type user_callback_func = user_callback_func_type());
         bool download_to_file(const std::string& url, const std::string &file_name, user_callback_func_type user_callback_func = user_callback_func_type());
 
     private:
