@@ -7,6 +7,7 @@ void compare_scene( std::string const & scene_dir )
     TRACE( "Loading " << scene_dir << " ..." );
 
     camera_params ci = read_camera_params( scene_dir, "ac1x\\camera_params" );
+    //dsm_params dsm = read_dsm_params(scene_dir, "ac1x\\DSM_params");
     scene_metadata md( scene_dir );
 
     algo::optimizer cal;
@@ -209,6 +210,8 @@ void compare_scene( std::string const & scene_dir )
     // Our code doesn't count the first iteration; the Matlab code starts at 1 even if it doesn't do anything...
     REQUIRE( cal.optimize( cb ) + 1 == md.n_iterations );
 
+
+    //algo::apply_ac_res_on_dsm_model()
     auto new_calibration = cal.get_calibration();
     auto cost = cal.get_cost();
 

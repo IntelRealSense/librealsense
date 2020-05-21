@@ -7,7 +7,7 @@
 
 #include <fstream>
 #include <string>
-
+#include "../../../src/algo/depth-to-rgb-calibration/k-to-dsm.h"
 
 inline std::string bin_dir( std::string const & scene_dir )
 {
@@ -155,7 +155,6 @@ struct camera_params
     double z_units = 0.25f;
 };
 
-
 camera_params read_camera_params( std::string const &scene_dir, std::string const &filename )
 {
     struct params_bin
@@ -204,4 +203,18 @@ camera_params read_camera_params( std::string const &scene_dir, std::string cons
         }
     };
     return ci;
+}
+
+struct dsm_params
+{
+    rs2_dsm_params dsm_params;
+    librealsense::algo::depth_to_rgb_calibration::DSM_regs dsm_regs;
+};
+
+dsm_params read_dsm_params(std::string const &scene_dir, std::string const &filename)
+{
+    dsm_params params;
+    read_data_from(bin_dir(scene_dir) + filename, &params);
+
+    return params;
 }

@@ -20,7 +20,12 @@ namespace depth_to_rgb_calibration {
     };
 
 
-    rs2_dsm_params convert_new_k_to_DSM(rs2_intrinsics_double old_k, rs2_intrinsics_double new_k);
+    DSM_regs apply_ac_res_on_dsm_model(rs2_dsm_params dsm_params, DSM_regs, rs2_dsm_correction_model type);
+
+    rs2_dsm_params convert_new_k_to_DSM(rs2_intrinsics_double old_k, 
+        rs2_intrinsics_double new_k, 
+        rs2_dsm_params orig_dsm_params, 
+        DSM_regs dsm_regs);
 
 
 }

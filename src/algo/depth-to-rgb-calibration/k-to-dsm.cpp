@@ -15,10 +15,25 @@ rs2_intrinsics_double rotate_k_mat(rs2_intrinsics_double k_mat)
 
     return res;
 }
-rs2_dsm_params librealsense::algo::depth_to_rgb_calibration::convert_new_k_to_DSM(rs2_intrinsics_double old_k, rs2_intrinsics_double new_k)
+
+rs2_dsm_params librealsense::algo::depth_to_rgb_calibration::convert_new_k_to_DSM(
+    rs2_intrinsics_double old_k, 
+    rs2_intrinsics_double new_k, 
+    rs2_dsm_params orig_dsm_params, 
+    DSM_regs dsm_regs
+)
 {
     auto old_k_raw = rotate_k_mat(old_k);
     auto new_k_raw = rotate_k_mat(new_k);
 
     return rs2_dsm_params();
+}
+
+DSM_regs librealsense::algo::depth_to_rgb_calibration::apply_ac_res_on_dsm_model(rs2_dsm_params dsm_params,
+    DSM_regs dsm_regs,
+    rs2_dsm_correction_model type
+)
+{
+    DSM_regs res;
+    return res;
 }

@@ -399,6 +399,7 @@ void optimizer::set_z_data(
     _z.width = depth_intrinsics.width;
     _z.height = depth_intrinsics.height;
     _z.orig_intrinsics = depth_intrinsics;
+    _z.orig_dsm_params = params;
     _z.depth_units = depth_units;
 
     _z.frame = std::move(depth_data);
@@ -1619,7 +1620,7 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
     {
         iteration_data_collect data;
         data.iteration = n_iterations;
-		auto res = calc_cost_and_grad( _z, _yuy, _original_calibration/*decompose(_params_curr.curr_p_mat)*/, _params_curr.curr_p_mat, &data );
+        auto res = calc_cost_and_grad( _z, _yuy, _original_calibration/*decompose(_params_curr.curr_p_mat)*/, _params_curr.curr_p_mat, &data );
         _params_curr.cost = res.first;
         _params_curr.calib_gradients = res.second;
         AC_LOG( DEBUG, n_iterations << ": Cost = " << std::fixed << std::setprecision( 15 ) << _params_curr.cost );
@@ -1628,10 +1629,10 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
 
         auto prev_params = _params_curr;
         _params_curr = back_tracking_line_search( _z, _yuy, _params_curr, &data);
-		data.next_params = _params_curr;
+        data.next_params = _params_curr;
 
-		if (cb)
-			cb(data);
+        if (cb)
+            cb(data);
 
         auto norm = (_params_curr.curr_p_mat - prev_params.curr_p_mat).get_norma();
         if( norm < _params.min_rgb_mat_delta )
@@ -1664,8 +1665,8 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
         AC_LOG( INFO, "Calibration finished after " << n_iterations << " iterations; original cost= " << params_orig.cost << "  optimized cost= " << _params_curr.cost );
     }
 
-	decompose_p_mat();
-	convert_new_k_to_DSM(_z.orig_intrinsics, _z.new_intrinsics);
+    decompose_p_mat();
+    convert_new_k_to_DSM(_z.orig_intrinsics, _z.new_intrinsics, _z.orig_dsm_params, {});
 
     return n_iterations;
 }
