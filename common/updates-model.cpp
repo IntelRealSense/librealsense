@@ -394,7 +394,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
                         http_downloader client;
 
                         if (!client.download_to_bytes_vector(link, vec,
-                            [this](uint64_t dl_current_bytes, uint64_t dl_total_bytes, double dl_time) -> callback_result {
+                            [this](uint64_t dl_current_bytes, uint64_t dl_total_bytes) -> callback_result {
                             _fw_download_progress = static_cast<int>((dl_current_bytes * 100) / dl_total_bytes);
                             return callback_result::CONTINUE_DOWNLOAD;
                         }))

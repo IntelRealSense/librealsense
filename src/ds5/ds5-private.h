@@ -669,7 +669,7 @@ namespace librealsense
                 data_present.emplace(imu_calibration_id, false);
                 data_present.emplace(lens_shading_id, false);
                 data_present.emplace(projector_id, false);
-            };
+            }
         };
 
         static std::map< ds5_rect_resolutions, int2> resolutions_list = {

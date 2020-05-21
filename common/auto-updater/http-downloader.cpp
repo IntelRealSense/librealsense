@@ -72,8 +72,7 @@ namespace rs2
         {
             myp->last_run_time = curtime;
             return myp->user_callback_func(static_cast<uint64_t>(dlnow), 
-                static_cast<uint64_t>(dltotal),
-                static_cast<double>(curtime / 1000000.)) == callback_result::CONTINUE_DOWNLOAD ? 0 : 1;
+                static_cast<uint64_t>(dltotal)) == callback_result::CONTINUE_DOWNLOAD ? 0 : 1;
         }
         else
         {

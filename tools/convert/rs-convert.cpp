@@ -13,6 +13,8 @@
 #include "converters/converter-ply.hpp"
 #include "converters/converter-bin.hpp"
 
+#include <mutex>
+
 
 using namespace std;
 using namespace TCLAP;
@@ -44,6 +46,7 @@ int main(int argc, char** argv) try
     cmd.parse(argc, argv);
 
     vector<shared_ptr<rs2::tools::converter::converter_base>> converters;
+    shared_ptr<rs2::tools::converter::converter_ply> plyconverter;
 
     rs2_stream streamType = switchDepth.isSet() ? rs2_stream::RS2_STREAM_DEPTH
         : switchColor.isSet() ? rs2_stream::RS2_STREAM_COLOR
@@ -70,77 +73,145 @@ int main(int argc, char** argv) try
                 , streamType));
     }
 
-    if (outputFilenamePly.isSet()) {
-        converters.push_back(
-            make_shared<rs2::tools::converter::converter_ply>(
-                outputFilenamePly.getValue()));
-    }
-
     if (outputFilenameBin.isSet()) {
         converters.push_back(
             make_shared<rs2::tools::converter::converter_bin>(
                 outputFilenameBin.getValue()));
     }
 
-    if (converters.empty()) {
+    if (converters.empty() && !outputFilenamePly.isSet()) {
         throw runtime_error("output not defined");
     }
 
-    // Since we are running in blocking "non-real-time" mode,
-    // we don't want to prevent process termination if some of the frames
-    // did not find a match and hence were not serviced
-    auto pipe = std::shared_ptr<rs2::pipeline>(
-        new rs2::pipeline(), [](rs2::pipeline*) {});
 
-    rs2::config cfg;
-    cfg.enable_device_from_file(inputFilename.getValue());
-    pipe->start(cfg);
+    //in order to convert frames into ply we need synced depth and color frames, 
+    //therefore we use pipeline
+    if (outputFilenamePly.isSet()) {
 
-    auto device = pipe->get_active_profile().get_device();
-    rs2::playback playback = device.as<rs2::playback>();
-    playback.set_real_time(false);
+        // Since we are running in blocking "non-real-time" mode,
+        // we don't want to prevent process termination if some of the frames
+        // did not find a match and hence were not serviced
+        auto pipe = std::shared_ptr<rs2::pipeline>(
+            new rs2::pipeline(), [](rs2::pipeline*) {});
 
-    auto duration = playback.get_duration();
-    int progress = 0;
-    auto frameNumber = 0ULL;
-    
-    rs2::frameset frameset;
-    uint64_t posLast = playback.get_position();
-    while (pipe->try_wait_for_frames(&frameset, 1000)) 
-    {
-        int posP = static_cast<int>(posLast * 100. / duration.count());
+        plyconverter = make_shared<rs2::tools::converter::converter_ply>(
+            outputFilenamePly.getValue());
 
-        if (posP > progress) {
-            progress = posP;
-            cout << posP << "%" << "\r" << flush;
+        rs2::config cfg;
+        cfg.enable_device_from_file(inputFilename.getValue());
+        pipe->start(cfg);
+
+        auto device = pipe->get_active_profile().get_device();
+        rs2::playback playback = device.as<rs2::playback>();
+        playback.set_real_time(false);
+
+        auto duration = playback.get_duration();
+        int progress = 0;
+        auto frameNumber = 0ULL;
+
+        rs2::frameset frameset;
+        uint64_t posLast = playback.get_position();
+
+        while (pipe->try_wait_for_frames(&frameset, 1000))
+        {
+            int posP = static_cast<int>(posLast * 100. / duration.count());
+
+            if (posP > progress) {
+                progress = posP;
+                cout << posP << "%" << "\r" << flush;
+            }
+
+            frameNumber = frameset[0].get_frame_number();
+            plyconverter->convert(frameset);
+            plyconverter->wait();
+
+            const uint64_t posCurr = playback.get_position();
+            if (static_cast<int64_t>(posCurr - posLast) < 0) {
+                break;
+            }
+            posLast = posCurr;
         }
+    }
 
+    // for every converter other than ply,
+    // we get the frames from playback sensors 
+    // and convert them one by one
+    if (!converters.empty()) {
+        rs2::context ctx;
+        auto playback = ctx.load_device(inputFilename.getValue());
+        playback.set_real_time(false);
+        std::vector<rs2::sensor> sensors = playback.query_sensors();
+        std::mutex mutex;
 
+        auto duration = playback.get_duration();
+        int progress = 0;
+        uint64_t posLast = playback.get_position();
 
-        frameNumber = frameset[0].get_frame_number();
+        for (auto sensor : sensors) {
+            if (!sensor.get_stream_profiles().size())
+            {
+                continue;
+            }
 
-        for_each(converters.begin(), converters.end(),
-            [&frameset] (shared_ptr<rs2::tools::converter::converter_base>& converter) {
-                converter->convert(frameset);
+            sensor.open(sensor.get_stream_profiles());
+            sensor.start([&](rs2::frame frame)
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                for_each(converters.begin(), converters.end(),
+                    [&frame](shared_ptr<rs2::tools::converter::converter_base>& converter) {
+                    converter->convert(frame);
+                });
+
+                for_each(converters.begin(), converters.end(),
+                    [](shared_ptr<rs2::tools::converter::converter_base>& converter) {
+                    converter->wait();
+                });
             });
 
-        for_each(converters.begin(), converters.end(),
-            [] (shared_ptr<rs2::tools::converter::converter_base>& converter) {
-                converter->wait();
-            });
-        const uint64_t posCurr = playback.get_position();
-        if(static_cast<int64_t>(posCurr - posLast) < 0){
-            break;
         }
-        posLast = posCurr;
+
+        //we need to clear the output of ply progress ("100%") before writing
+        //the progress of the other converters in the same line
+        cout << "\r    \r";
+
+        while (true)
+        {
+            int posP = static_cast<int>(posLast * 100. / duration.count());
+
+            if (posP > progress) {
+                progress = posP;
+                cout << posP << "%" << "\r" << flush;
+            }
+
+            const uint64_t posCurr = playback.get_position();
+            if (static_cast<int64_t>(posCurr - posLast) < 0) {
+                break;
+            }
+            posLast = posCurr;
+        }
+
+        for (auto sensor : sensors) {
+            if (!sensor.get_stream_profiles().size())
+            {
+                continue;
+            }
+            sensor.stop();
+            sensor.close();
+        }
     }
 
     cout << endl;
 
+    //print statistics for ply converter. 
+    if (outputFilenamePly.isSet()) {
+        cout << plyconverter->get_statistics() << endl;
+    }
+
     for_each(converters.begin(), converters.end(),
-        [] (shared_ptr<rs2::tools::converter::converter_base>& converter) {
-            cout << converter->get_statistics() << endl;
-        });
+        [](shared_ptr<rs2::tools::converter::converter_base>& converter) {
+        cout << converter->get_statistics() << endl;
+    });
+
 
     return EXIT_SUCCESS;
 }

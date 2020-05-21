@@ -287,19 +287,19 @@ int main(int argc, const char** argv) try
     // Set 3 callback functions for testing - SHOULD BE REMOVED!!
 
     // Main Success Scenario callback
-    std::function<callback_result(uint64_t dl_current_bytes, uint64_t dl_total_bytes, double dl_time)> mss_process_cb =
-        [](uint64_t dl_current_bytes, uint64_t dl_total_bytes, double dl_time) -> callback_result {
-        std::cout << "DOWN:" << dl_current_bytes << " of " << dl_total_bytes << " - TOTAL TIME: " << dl_time << std::endl;
+    std::function<callback_result(uint64_t dl_current_bytes, uint64_t dl_total_bytes)> mss_process_cb =
+        [](uint64_t dl_current_bytes, uint64_t dl_total_bytes) -> callback_result {
+        std::cout << "DOWN:" << dl_current_bytes << " of " << dl_total_bytes << std::endl;
         return callback_result::CONTINUE_DOWNLOAD;
     };
 
-    std::function<callback_result(uint64_t dl_current_bytes, uint64_t dl_total_bytes, double dl_time)> stop_process_cb =
-        [](uint64_t dl_current_bytes, uint64_t dl_total_bytes, double dl_time) -> callback_result {
-        std::cout << "DOWN:" << dl_current_bytes << " of " << dl_total_bytes << " - TOTAL TIME: " << dl_time << std::endl;
+    std::function<callback_result(uint64_t dl_current_bytes, uint64_t dl_total_bytes)> stop_process_cb =
+        [](uint64_t dl_current_bytes, uint64_t dl_total_bytes) -> callback_result {
+        std::cout << "DOWN:" << dl_current_bytes << " of " << dl_total_bytes << std::endl;
         return callback_result::STOP_DOWNLOAD;
     };
 
-    std::function<callback_result(uint64_t dl_current_bytes, uint64_t dl_total_bytes, double dl_time)> empty_process_cb;
+    std::function<callback_result(uint64_t dl_current_bytes, uint64_t dl_total_bytes)> empty_process_cb;
 
 
     //////////////// TEST 1 START ////////////////

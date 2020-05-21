@@ -42,7 +42,7 @@ namespace rs2
         void draw_text(const char* msg, int x, int y, int h);
         virtual void set_color_scheme(float t) const;
         void unset_color_scheme() const;
-        virtual const int get_max_lifetime_ms() const;
+        virtual int get_max_lifetime_ms() const;
 
         virtual int calc_height();
         virtual void draw_pre_effect(int x, int y) {}
@@ -99,6 +99,8 @@ namespace rs2
     public:
         process_manager(std::string name)
             : _process_name(name) {}
+
+        virtual ~process_manager() = default;
 
         void start(invoker invoke);
         int get_progress() const { return _progress; }
@@ -161,7 +163,7 @@ namespace rs2
         void set_color_scheme(float t) const override;
         void draw_content(ux_window& win, int x, int y, float t, std::string& error_message) override;
         int calc_height() override;
-        const int get_max_lifetime_ms() const override { return 40000; }
+        int get_max_lifetime_ms() const override { return 40000; }
 
         int _version;
         bool _first = true;
@@ -174,7 +176,7 @@ namespace rs2
         void set_color_scheme(float t) const override;
         void draw_content(ux_window& win, int x, int y, float t, std::string& error_message) override;
         int calc_height() override { return 130; }
-        const int get_max_lifetime_ms() const override { return 40000; }
+        int get_max_lifetime_ms() const override { return 40000; }
     };
 
 
@@ -202,7 +204,8 @@ namespace rs2
         std::recursive_mutex m;
         bool new_log = false;
 
-        std::deque<std::string> log;
+        single_consumer_queue<std::string> incoming_log_queue;
+        std::deque<std::string> notification_logs;
         std::shared_ptr<notification_model> selected;
         std::chrono::system_clock::time_point last_snoozed;
     };

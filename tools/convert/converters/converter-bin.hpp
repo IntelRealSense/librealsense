@@ -71,49 +71,60 @@ namespace rs2 {
                     return "BIN converter";
                 }
 
-                void convert(rs2::frameset& frameset) override
+                void convert(rs2::frame& frame) override
                 {
-                    start_worker(
-                        [this, &frameset] {
-                            for (size_t i = 0; i < frameset.size(); i++) {
-                                rs2::depth_frame frame = frameset[i].as<rs2::depth_frame>();
+                    rs2::depth_frame depthframe = frame.as<rs2::depth_frame>();
 
-                                if (frame && (_streamType == rs2_stream::RS2_STREAM_ANY || frame.get_profile().stream_type() == _streamType)) {
-                                    if (frames_map_get_and_set(frame.get_profile().stream_type(), frame.get_frame_number())) {
-                                        continue;
+                    if (!depthframe || !(_streamType == rs2_stream::RS2_STREAM_ANY || depthframe.get_profile().stream_type() == _streamType)) {
+                        return;
+                    }
+
+                    if (frames_map_get_and_set(depthframe.get_profile().stream_type(), depthframe.get_frame_number())) {
+                        return;
+                    }
+
+                    start_worker(
+                        [this, &frame] {
+                            rs2::depth_frame depthframe = frame.as<rs2::depth_frame>();
+
+                            std::stringstream filename;
+                            filename << _filePath
+                                << "_" << depthframe.get_profile().stream_name()
+                                << "_" << std::setprecision(14) << std::fixed << depthframe.get_timestamp()
+                                << ".bin";
+
+                            std::stringstream metadata_file;
+                            metadata_file << _filePath
+                                << "_" << depthframe.get_profile().stream_name()
+                                << "_metadata_" << std::setprecision(14) << std::fixed << depthframe.get_timestamp()
+                                << ".txt";
+
+                            std::string filenameS = filename.str();
+                            std::string metadataS = metadata_file.str();
+
+                            add_sub_worker(
+                                [filenameS, metadataS, depthframe] {
+                                    std::ofstream fs(filenameS, std::ios::binary | std::ios::trunc);
+
+                                    if (fs) {
+                                        uint8_t buffer[4];
+
+                                        for (int y = 0; y < depthframe.get_height(); y++) {
+                                            for (int x = 0; x < depthframe.get_width(); x++) {
+                                                fs.write(
+                                                    static_cast<const char *>(to_ieee754_32(depthframe.get_distance(x, y), buffer))
+                                                    , sizeof buffer);
+                                            }
+                                        }
+
+                                        fs.flush();
                                     }
 
-                                    std::stringstream filename;
-                                    filename << _filePath
-                                        << "_" << frame.get_profile().stream_name()
-                                        << "_" << frame.get_frame_number()
-                                        << ".bin";
-
-                                    std::string filenameS = filename.str();
-
-                                    add_sub_worker(
-                                        [filenameS, frame] {
-                                            std::ofstream fs(filenameS, std::ios::binary | std::ios::trunc);
-
-                                            if (fs) {
-                                                uint8_t buffer[4];
-
-                                                for (int y = 0; y < frame.get_height(); y++) {
-                                                    for (int x = 0; x < frame.get_width(); x++) {
-                                                        fs.write(
-                                                            static_cast<const char *>(to_ieee754_32(frame.get_distance(x, y), buffer))
-                                                            , sizeof buffer);
-                                                    }
-                                                }
-
-                                                fs.flush();
-                                            }
-                                        });
-                                }
-                            }
+                                    metadata_to_txtfile(depthframe, metadataS);
+                            });
 
                             wait_sub_workers();
-                        });
+                    });
                 }
             };
 
