@@ -455,18 +455,19 @@ namespace depth_to_rgb_calibration {
         double3 const & v,
         double rc,
         double2 const & xy,
-        const calib & yuy_intrin_extrin
+		const calib & cal,
+        const p_matrix & p_mat
     )
     {
         p_matrix res;
-        auto r = yuy_intrin_extrin.rot.rot;
-        double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
-        auto d = yuy_intrin_extrin.coeffs;
-        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
-        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
-        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
-        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
-        auto p = yuy_intrin_extrin.p_mat.vals;
+        auto r = cal.rot.rot;
+        double t[3] = { cal.trans.t1, cal.trans.t2, cal.trans.t3 };
+        auto d = cal.coeffs;
+        auto ppx = (double)cal.k_mat.ppx;
+        auto ppy = (double)cal.k_mat.ppy;
+        auto fx = (double)cal.k_mat.fx;
+        auto fy = (double)cal.k_mat.fy;
+        auto p = p_mat.vals;
 
         auto x1 = (double)xy.x;
         auto y1 = (double)xy.y;
@@ -543,19 +544,19 @@ namespace depth_to_rgb_calibration {
         double3 const & v,
         double rc,
         double2 const & xy,
-        const calib & yuy_intrin_extrin
+		const calib & cal,
+		const p_matrix & p_mat
     )
     {
-        p_matrix res{0};
-
-        auto r = yuy_intrin_extrin.rot.rot;
-        double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
-        auto d = yuy_intrin_extrin.coeffs;
-        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
-        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
-        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
-        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
-        auto p = yuy_intrin_extrin.p_mat.vals;
+		p_matrix res;
+		auto r = cal.rot.rot;
+		double t[3] = { cal.trans.t1, cal.trans.t2, cal.trans.t3 };
+		auto d = cal.coeffs;
+		auto ppx = (double)cal.k_mat.ppx;
+		auto ppy = (double)cal.k_mat.ppy;
+		auto fx = (double)cal.k_mat.fx;
+		auto fy = (double)cal.k_mat.fy;
+		auto p = p_mat.vals;
 
         auto x1 = (double)xy.x;
         auto y1 = (double)xy.y;
@@ -691,62 +692,12 @@ namespace depth_to_rgb_calibration {
 
     }
 
-    translation calculate_translation_y_coeff( double3 v, double rc, double2 xy, const calib& yuy_intrin_extrin )
-    {
-        translation res;
-
-        auto x1 = (double)xy.x;
-        auto y1 = (double)xy.y;
-
-        auto x2 = x1 * x1;
-        auto y2 = y1 * y1;
-        auto xy2 = x2 + y2;
-        auto x2_y2 = xy2 * xy2;
-
-        auto r = yuy_intrin_extrin.rot.rot;
-        double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
-        auto d = yuy_intrin_extrin.coeffs;
-        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
-        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
-        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
-        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
-
-        auto x = (double)v.x;
-        auto y = (double)v.y;
-        auto z = (double)v.z;
-
-        auto exp1 = (double)r[2] * x + (double)r[5] * y + (double)r[8] * z + (double)t[2];
-        auto exp2 = fx * (double)r[2] * x + fx * (double)r[5] * y + fx * (double)r[8] * z + fx * (double)t[2];
-        auto exp3 = fx * exp1 * exp1;
-        auto exp4 = fy * (2 * (double)d[2] * x1 + 2 * (double)d[3] * y1 + y1 *
-            (2 * (double)d[0] * x1 + 4 * (double)d[1] * x1*xy2 + 6 * (double)d[4] * x1*x2_y2))*exp2;
-
-        res.t1 = exp4 / exp3;
-
-        exp1 = rc + 2 * (double)d[3] * x1 + 6 * (double)d[2] * y1 + y1 *
-            (2 * (double)d[0] * y1 + 4 * (double)d[1] * y1*xy2 + 6 * (double)d[4] * y1*x2_y2);
-        exp2 = -fy * (double)r[2] * x - fy * (double)r[5] * y - fy * (double)r[8] * z - fy * (double)t[2];
-        exp3 = (double)r[2] * x + (double)r[5] * y + (double)r[8] * z + (double)t[2];
-
-        res.t2 = -(exp1*exp2) / (exp3* exp3);
-
-        exp1 = rc + 2 * (double)d[3] * x1 + 6 * (double)d[2] * y1 + y1 * (2 * (double)d[0] * y1 + 4 * (double)d[1] * y1*xy2 + 6 * (double)d[4] * y1*x2_y2);
-        exp2 = fy * (double)r[1] * x + fy * (double)r[4] * y + fy * (double)r[7] * z + fy * (double)t[1];
-        exp3 = (double)r[2] * x + (double)r[5] * y + (double)r[8] * z + (double)t[2];
-        exp4 = 2 * (double)d[2] * x1 + 2 * (double)d[3] * y1 + y1 *
-            (2 * (double)d[0] * x1 + 4 * (double)d[1] * x1*xy2 + 6 * (double)d[4] * x1*x2_y2);
-
-        auto exp5 = fx * (double)r[0] * x + fx * (double)r[3] * y + fx * (double)r[6] * z + fx * (double)t[0];
-        auto exp6 = (double)r[2] * x + (double)r[5] * y + (double)r[8] * z + (double)t[2];
-        auto exp7 = fx * exp6 * exp6;
-
-        res.t3 = -(exp1 * exp2) / (exp3 * exp3) - (fy*(exp4)*(exp5)) / exp7;
-
-        return res;
-    }
-
-
-    coeffs< p_matrix > calc_p_coefs(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy)
+    coeffs< p_matrix > calc_p_coefs(const z_frame_data& z_data, 
+		const yuy2_frame_data& yuy_data,
+		const calib & cal,
+		const p_matrix & p_mat,
+		const std::vector<double>& rc, 
+		const std::vector<double2>& xy)
     {
         coeffs<p_matrix> res;
 
@@ -756,132 +707,10 @@ namespace depth_to_rgb_calibration {
 
         for (auto i = 0; i < rc.size(); i++)
         {
-            res.x_coeffs[i] = calculate_p_x_coeff(v[i], rc[i], xy[i], yuy_intrin_extrin);
-            res.y_coeffs[i] = calculate_p_y_coeff(v[i], rc[i], xy[i], yuy_intrin_extrin);
+            res.x_coeffs[i] = calculate_p_x_coeff(v[i], rc[i], xy[i], cal, p_mat);
+            res.y_coeffs[i] = calculate_p_y_coeff(v[i], rc[i], xy[i], cal, p_mat);
         }
 
-        return res;
-    }
-
-    coeffs< translation > calc_translation_coefs( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy )
-    {
-        coeffs<translation> res;
-
-        auto v = z_data.vertices;
-        res.y_coeffs.resize( v.size() );
-        res.x_coeffs.resize( v.size() );
-
-        for( auto i = 0; i < rc.size(); i++ )
-        {
-            res.y_coeffs[i] = calculate_translation_y_coeff( v[i], rc[i], xy[i], yuy_intrin_extrin );
-            res.x_coeffs[i] = calculate_translation_x_coeff( v[i], rc[i], xy[i], yuy_intrin_extrin );
-
-        }
-
-        return res;
-    }
-
-    k_matrix calculate_k_gradients_x_coeff( double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin )
-    {
-        k_matrix res;
-
-        auto r = yuy_intrin_extrin.rot.rot;
-        double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
-        auto d = yuy_intrin_extrin.coeffs;
-        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
-        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
-        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
-        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
-
-        auto x1 = (double)xy.x;
-        auto y1 = (double)xy.y;
-        auto x = (double)v.x;
-        auto y = (double)v.y;
-        auto z = (double)v.z;
-
-        auto x2 = x1 * x1;
-        auto y2 = y1 * y1;
-        auto xy2 = x2 + y2;
-        auto x2_y2 = xy2 * xy2;
-
-        res.fx = ((r[0] * x + r[3] * y + r[6] * z + t[0])
-            *(rc + 6 * d[3] * x1 + 2 * d[2] * y1 + x1 * (2 * d[0] * x1 + 4 * d[1] * x1*(xy2)+6 * d[4] * x1*x2_y2)))
-            / (x*r[2] + y * r[5] + z * r[8] + t[2]);
-
-
-        res.ppx = ((r[2] * x + r[5] * y + r[8] * z + t[2] * 1)
-            *(rc + 6 * d[3] * x1 + 2 * d[2] * y1 + x1 * (2 * d[0] * x1 + 4 * d[1] * x1*(xy2)+6 * d[4] * x1*x2_y2))
-            ) / (x*r[2] + y * (r[5]) + z * (r[8]) + (t[2]));
-
-
-        res.fy = (fx*(2 * d[2] * x1 + 2 * d[3] * y1 + x1 * (2 * d[0] * y1 + 4 * d[1] * y1*(xy2)+6 * d[4] * y1*x2_y2))*
-            (r[1] * x + r[4] * y + r[7] * z + t[1] * 1))
-            / (fy*(x*(r[2]) + y * (r[5]) + z * (r[8]) + (t[2])));
-
-        res.ppy = (fx*(2 * d[2] * x1 + 2 * d[3] * y1 + x1 * (2 * d[0] * y1 + 4 * d[1] * y1*(xy2)+6 * d[4] * y1*x2_y2))*(r[2] * x + r[5] * y + r[8] * z + t[2] * 1))
-            / (fy*(x*(r[2]) + y * (r[5]) + z * (r[8]) + (t[2])));
-
-        return res;
-    }
-
-    k_matrix calculate_k_gradients_y_coeff( double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin )
-    {
-        k_matrix res;
-
-        auto r = yuy_intrin_extrin.rot.rot;
-        double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
-        auto d = yuy_intrin_extrin.coeffs;
-        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
-        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
-        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
-        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
-
-        auto x1 = (double)xy.x;
-        auto y1 = (double)xy.y;
-        auto x = (double)v.x;
-        auto y = (double)v.y;
-        auto z = (double)v.z;
-
-        auto x2 = x1 * x1;
-        auto y2 = y1 * y1;
-        auto xy2 = x2 + y2;
-        auto x2_y2 = xy2 * xy2;
-
-        res.fx = (fy*(2 * d[2] * x1 + 2 * d[3] * y1 + y1 * (2 * d[0] * x1 + 4 * d[1] * x1*(xy2)+6 * d[4] * x1*x2_y2))
-            *(r[0] * x + r[3] * y + r[6] * z + t[0]))
-            / (fx*(x*r[2] + y * r[5] + z * r[8] + t[2]));
-
-        res.ppx = (fy*(2 * d[2] * x1 + 2 * d[3] * y1 + y1 * (2 * d[0] * x1 + 4 * d[1] * x1*(xy2)+6 * d[4] * x1*x2_y2))
-            *(r[2] * x + r[5] * y + r[8] * z + t[2]))
-            / (fx*(x*r[2] + y * r[5] + z * (r[8]) + (t[2])));
-
-        res.fy = ((r[1] * x + r[4] * y + r[7] * z + t[1])*
-            (rc + 2 * d[3] * x1 + 6 * d[2] * y1 + y1 * (2 * d[0] * y1 + 4 * d[1] * y1*xy2 + 6 * d[4] * y1*x2_y2)))
-            / (x*r[2] + y * r[5] + z * r[8] + t[2]);
-
-        res.ppy = ((r[2] * x + r[5] * y + r[8] * z + t[2])*
-            (rc + 2 * d[3] * x1 + 6 * d[2] * y1 + y1 * (2 * d[0] * y1 + 4 * d[1] * y1*xy2 + 6 * d[4] * y1*x2_y2)))
-            / (x*r[2] + y * r[5] + z * r[8] + t[2]);
-
-        return res;
-    }
-
-    coeffs< k_matrix > calc_k_gradients_coefs( const z_frame_data & z_data, const yuy2_frame_data & yuy_data, 
-        const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy,
-        iteration_data_collect * data)
-    {
-        coeffs<k_matrix> res;
-        auto v = z_data.vertices;
-        res.x_coeffs.resize( v.size() );
-        res.y_coeffs.resize( v.size() );
-
-        for( auto i = 0; i < v.size(); i++ )
-        {
-            res.x_coeffs[i] = calculate_k_gradients_x_coeff( v[i], rc[i], xy[i], yuy_intrin_extrin );
-            res.y_coeffs[i] = calculate_k_gradients_y_coeff( v[i], rc[i], xy[i], yuy_intrin_extrin );
-        }
-        if (data)
-            data->coeffs_k = res;
         return res;
     }
 

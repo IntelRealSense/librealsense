@@ -13,8 +13,8 @@ double optimizer::calc_correction_in_pixels( calib const & from_calibration ) co
 {
     //%    [uvMap,~,~] = OnlineCalibration.aux.projectVToRGB(frame.vertices,params.rgbPmat,params.Krgb,params.rgbDistort);
     //% [uvMapNew,~,~] = OnlineCalibration.aux.projectVToRGB(frame.vertices,newParams.rgbPmat,newParams.Krgb,newParams.rgbDistort);
-    auto old_uvmap = get_texture_map( _z.vertices, from_calibration );
-    auto new_uvmap = get_texture_map( _z.vertices, _params_curr.curr_calib );
+    auto old_uvmap = get_texture_map( _z.vertices, from_calibration, from_calibration.calc_p_mat());
+    auto new_uvmap = get_texture_map( _z.vertices, _final_calibration, _final_calibration.calc_p_mat());
     if( old_uvmap.size() != new_uvmap.size() )
         throw std::runtime_error( to_string() << "did not expect different uvmap sizes (" << old_uvmap.size() << " vs " << new_uvmap.size() << ")" );
     // uvmap is Nx[x,y]
@@ -68,14 +68,9 @@ void optimizer::clip_pixel_movement( size_t iteration_number )
         //%         newParams.(optParams{ fn }) = params.(optParams{ fn }) + diff * mulFactor;
         //%     end
         calib const & old_calib = _original_calibration;
-        calib & new_calib = _params_curr.curr_calib;
+        calib & new_calib = _final_calibration;
         new_calib = old_calib + (new_calib - old_calib) * mul_factor;
 
-        //%     newParams.Rrgb = OnlineCalibration.aux.calcRmatRromAngs( newParams.xAlpha, newParams.yBeta, newParams.zGamma );
-        new_calib.rot = extract_rotation_from_angles( new_calib.rot_angles );
-        new_calib.calc_p_mat();
-        //%     newParams.rgbPmat = newParams.Krgb*[newParams.Rrgb, newParams.Trgb];
-        // -> we don't use rgbPmat
     }
 }
 
@@ -85,8 +80,8 @@ std::vector< double > optimizer::cost_per_section_diff(calib const & old_calib, 
     if (_z.section_map.size() != _z.weights.size())
         throw std::runtime_error("section_map has not been initialized");
 
-    auto uvmap_old = get_texture_map(_z.vertices, old_calib);
-    auto uvmap_new = get_texture_map(_z.vertices, new_calib);
+    auto uvmap_old = get_texture_map(_z.vertices, old_calib, old_calib.calc_p_mat());
+    auto uvmap_new = get_texture_map(_z.vertices, new_calib, new_calib.calc_p_mat());
 
     size_t const n_sections_x = _params.num_of_sections_for_edge_distribution_x;
     size_t const n_sections_y = _params.num_of_sections_for_edge_distribution_y;
@@ -160,7 +155,7 @@ bool optimizer::is_valid_results()
     //%     scoreDiffPersection( i + 1 ) = nanmean( scoreDiffPerVertex( frame.sectionMapDepth == i ) );
     //% end
 
-    _z.cost_diff_per_section = cost_per_section_diff(_original_calibration, _params_curr.curr_calib);
+    _z.cost_diff_per_section = cost_per_section_diff(_original_calibration, _final_calibration);
     //% validOutputStruct.minImprovementPerSection = min( scoreDiffPersection );
     //% validOutputStruct.maxImprovementPerSection = max( scoreDiffPersection );
     double min_cost_diff = *std::min_element( _z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end() );

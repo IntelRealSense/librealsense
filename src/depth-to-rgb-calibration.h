@@ -43,7 +43,6 @@ namespace librealsense
 
     private:
         void debug_calibration( char const * prefix );
-        std::vector<byte> serialize_camera_params();
     };
 }  // librealsense
 

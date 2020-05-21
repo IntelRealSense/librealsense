@@ -63,12 +63,7 @@ rs2_extrinsics_double calib::get_extrinsics() const
     };
 }
 
-p_matrix const & calib::get_p_matrix() const
-{
-    return p_mat;
-}
-
-p_matrix const & calib::calc_p_mat()
+p_matrix const calib::calc_p_mat() const
 {
     auto r = rot.rot;
     auto t = trans;
@@ -76,9 +71,10 @@ p_matrix const & calib::calc_p_mat()
     auto fy = k_mat.fy;
     auto ppx = k_mat.ppx;
     auto ppy = k_mat.ppy;
-    p_mat = { fx* r[0] + ppx * r[2], fx* r[3] + ppx * r[5], fx* r[6] + ppx * r[8], fx* t.t1 + ppx * t.t3,
-              fy* r[1] + ppy * r[2], fy* r[4] + ppy * r[5], fy* r[7] + ppy * r[8], fy* t.t2 + ppy * t.t3,
-              r[2]                 , r[5]                 , r[8]                 , t.t3 };
+    p_matrix p_mat = { fx* r[0] + ppx * r[6], fx* r[1] + ppx * r[7], fx* r[2] + ppx * r[8], fx* t.t1 + ppx * t.t3,
+              fy* r[3] + ppy * r[6], fy* r[4] + ppy * r[7], fy* r[5] + ppy * r[8], fy* t.t2 + ppy * t.t3,
+              r[6]                 , r[7]                 , r[8]                 , t.t3 };
+
     return p_mat;
 }
 
@@ -104,9 +100,8 @@ calib calib::operator*( double step_size ) const
     res.k_mat.ppx = this->k_mat.ppx * step_size;
     res.k_mat.ppy = this->k_mat.ppy *step_size;
 
-    res.rot_angles.alpha = this->rot_angles.alpha *step_size;
-    res.rot_angles.beta = this->rot_angles.beta *step_size;
-    res.rot_angles.gamma = this->rot_angles.gamma *step_size;
+	for (auto i = 0; i < 9; i++)
+		res.rot.rot[i] = this->rot.rot[i] * step_size;
 
     res.trans.t1 = this->trans.t1 *step_size;
     res.trans.t2 = this->trans.t2 * step_size;
@@ -130,9 +125,8 @@ calib calib::operator+( const calib & c ) const
     res.k_mat.ppx = this->k_mat.ppx + c.k_mat.ppx;
     res.k_mat.ppy = this->k_mat.ppy + c.k_mat.ppy;
 
-    res.rot_angles.alpha = this->rot_angles.alpha + c.rot_angles.alpha;
-    res.rot_angles.beta = this->rot_angles.beta + c.rot_angles.beta;
-    res.rot_angles.gamma = this->rot_angles.gamma + c.rot_angles.gamma;
+	for (auto i = 0; i < 9; i++)
+		res.rot.rot[i] = this->rot.rot[i] + c.rot.rot[i];
 
     res.trans.t1 = this->trans.t1 + c.trans.t1;
     res.trans.t2 = this->trans.t2 + c.trans.t2;
@@ -151,9 +145,8 @@ calib calib::operator-( const calib & c ) const
     res.k_mat.ppx = this->k_mat.ppx - c.k_mat.ppx;
     res.k_mat.ppy = this->k_mat.ppy - c.k_mat.ppy;
 
-    res.rot_angles.alpha = this->rot_angles.alpha - c.rot_angles.alpha;
-    res.rot_angles.beta = this->rot_angles.beta - c.rot_angles.beta;
-    res.rot_angles.gamma = this->rot_angles.gamma - c.rot_angles.gamma;
+	for (auto i = 0; i < 9; i++)
+		res.rot.rot[i] = this->rot.rot[i] - c.rot.rot[i];
 
     res.trans.t1 = this->trans.t1 - c.trans.t1;
     res.trans.t2 = this->trans.t2 - c.trans.t2;
@@ -172,9 +165,9 @@ calib calib::operator/( const calib & c ) const
     res.k_mat.ppx = this->k_mat.ppx / c.k_mat.ppx;
     res.k_mat.ppy = this->k_mat.ppy / c.k_mat.ppy;
 
-    res.rot_angles.alpha = this->rot_angles.alpha / c.rot_angles.alpha;
-    res.rot_angles.beta = this->rot_angles.beta / c.rot_angles.beta;
-    res.rot_angles.gamma = this->rot_angles.gamma / c.rot_angles.gamma;
+	for (auto i = 0; i < 9; i++)
+		res.rot.rot[i] = this->rot.rot[i] / c.rot.rot[i];
+
 
     res.trans.t1 = this->trans.t1 / c.trans.t1;
     res.trans.t2 = this->trans.t2 / c.trans.t2;
@@ -185,59 +178,96 @@ calib calib::operator/( const calib & c ) const
     return res;
 }
 
-double calib::get_norma()
+
+p_matrix p_matrix::operator*(double step_size) const
 {
-    std::vector<double> grads = { rot_angles.alpha,rot_angles.beta, rot_angles.gamma,
-                        trans.t1, trans.t2, trans.t3,
-                        k_mat.fx, k_mat.fy, k_mat.ppx, k_mat.ppy };
+	p_matrix res;
 
-    double grads_norm = 0;  // TODO meant to have as float??
+	for (auto i = 0; i < 12; i++)
+		res.vals[i] = vals[i] * step_size;
 
-    for( auto i = 0; i < grads.size(); i++ )
-    {
-        grads_norm += grads[i] * grads[i];
-    }
-    grads_norm = sqrt( grads_norm );
-
-    return grads_norm;
+	return res;
 }
 
-double calib::sum()
+p_matrix p_matrix::operator/(double factor) const
 {
-    double res = 0;  // TODO meant to have float??
-    std::vector<double> grads = { rot_angles.alpha,rot_angles.beta, rot_angles.gamma,
-                        trans.t1, trans.t2, trans.t3,
-                         k_mat.fx, k_mat.fy, k_mat.ppx, k_mat.ppy };
-
-
-    for( auto i = 0; i < grads.size(); i++ )
-    {
-        res += grads[i];
-    }
-
-    return res;
+	return (*this)*(1.f / factor);
 }
 
-calib calib::normalize()
+p_matrix p_matrix::operator+(const p_matrix & c) const
 {
-    std::vector<double> grads = { rot_angles.alpha,rot_angles.beta, rot_angles.gamma,
-                        trans.t1, trans.t2, trans.t3,
-                        k_mat.fx, k_mat.fy, k_mat.ppx, k_mat.ppy };
+	p_matrix res;
+	for (auto i = 0; i < 12; i++)
+		res.vals[i] = vals[i] + c.vals[i];
 
-    auto norma = get_norma();
-
-    std::vector<double> res_grads( grads.size() );
-
-    for( auto i = 0; i < grads.size(); i++ )
-    {
-        res_grads[i] = grads[i] / norma;
-    }
-
-    calib res;
-    res.rot_angles = { res_grads[0], res_grads[1], res_grads[2] };
-    res.trans = { res_grads[3], res_grads[4], res_grads[5] };
-    res.k_mat = { res_grads[6], res_grads[7], res_grads[8], res_grads[9] };
-
-    return res;
+	return res;
 }
 
+p_matrix p_matrix::operator-(const p_matrix & c) const
+{
+	p_matrix res;
+	for (auto i = 0; i < 12; i++)
+		res.vals[i] = vals[i] - c.vals[i];
+
+	return res;
+}
+
+p_matrix p_matrix::operator*(const p_matrix & c) const
+{
+	p_matrix res;
+	for (auto i = 0; i < 12; i++)
+		res.vals[i] = vals[i] * c.vals[i];
+
+	return res;
+}
+
+p_matrix p_matrix::operator/(const p_matrix & c) const
+{
+	p_matrix res;
+	for (auto i = 0; i < 12; i++)
+		res.vals[i] = c.vals[i] == 0 ? 0 : vals[i] / c.vals[i];
+
+	return res;
+}
+
+double p_matrix::get_norma()
+{
+	double grads_norm = 0;  // TODO meant to have as float??
+
+	for (auto i = 0; i < 12; i++)
+		grads_norm += vals[i] * vals[i];
+
+	grads_norm = sqrt(grads_norm);
+
+	return grads_norm;
+}
+
+double p_matrix::sum()
+{
+	double res = 0;  // TODO meant to have float??
+	
+	for (auto i = 0; i <12; i++)
+	{
+		res += vals[i];
+	}
+
+	return res;
+}
+
+p_matrix p_matrix::normalize()
+{
+	p_matrix res;
+
+	auto norma = get_norma();
+
+	for (auto i = 0; i < 12; i++)
+	{
+		res.vals[i] = vals[i] / norma;
+	}
+	return res;
+}
+
+calib librealsense::algo::depth_to_rgb_calibration::decompose(p_matrix mat)
+{
+	return calib();
+}

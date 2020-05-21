@@ -225,14 +225,12 @@ bool get_calib_from_raw_data(
     auto data_size = sizeof( algo::rotation ) +
         sizeof( algo::translation ) +
         sizeof( algo::k_matrix ) +
-        sizeof( algo::p_matrix ) +
-        3 * sizeof( double ) + // alpha, bata, gamma
         sizeof( double ); // cost
 
     auto bin = read_vector_from< double >( bin_dir( scene_dir ) + filename );
     if( bin.size() * sizeof( double ) != data_size )
     {
-        TRACE( filename << ": {matlab size}" << bin.size() << " != " << data_size );
+        TRACE( filename << ": {matlab size}" << bin.size() * sizeof(double) << " != " << data_size );
         return false;
     }
 
@@ -240,26 +238,16 @@ bool get_calib_from_raw_data(
 
     auto k = *(algo::k_matrix*)(data);
     data += sizeof( algo::k_matrix ) / sizeof( double );
-    auto a = *(double*)(data);
-    data += 1;
-    auto b = *(double*)(data);
-    data += 1;
-    auto g = *(double*)(data);
-    data += 1;
     auto rotation = *(algo::rotation*)(data);
     data += sizeof( algo::rotation ) / sizeof( double );
     auto translation = *(algo::translation*)(data);
     data += sizeof( algo::translation ) / sizeof( double );
-    auto p_mat = *(algo::p_matrix*)(data);
-    data += sizeof( algo::p_matrix ) / sizeof( double );
     cost = *(double*)(data);
 
     calib.k_mat = k;
     calib.rot = rotation;
     calib.trans = translation;
-    calib.p_mat = p_mat;
-    calib.rot_angles = { a,b,g };
-
+    
     return true;
 }
 
@@ -289,12 +277,10 @@ bool compare_calib_to_bin_file(
 
     auto intr_matlab = calib_from_file.get_intrinsics();
     auto extr_matlab = calib_from_file.get_extrinsics();
-    auto pmat_matlab = calib_from_file.get_p_matrix();
-
+    
     auto intr_cpp = calib.get_intrinsics();
     auto extr_cpp = calib.get_extrinsics();
-    auto pmat_cpp = calib.get_p_matrix();
-
+    
     bool ok = true;
 
     ok &= compare_and_trace( cost_matlab, cost, "cost" );
@@ -304,23 +290,13 @@ bool compare_calib_to_bin_file(
     ok &= compare_and_trace( intr_matlab.ppx, intr_cpp.ppx, "ppx" );
     ok &= compare_and_trace( intr_matlab.ppy, intr_cpp.ppy, "ppy" );
 
-    if( gradient )
-    {
-        ok &= compare_and_trace( calib.rot_angles.alpha, calib_from_file.rot_angles.alpha, "alpha" );
-        ok &= compare_and_trace( calib.rot_angles.beta, calib_from_file.rot_angles.beta, "beta" );
-        ok &= compare_and_trace( calib.rot_angles.gamma, calib_from_file.rot_angles.gamma, "gamma" );
-    }
-    else
-    {
-        for( auto i = 0; i < 9; i++ )
-            ok &= compare_and_trace( extr_matlab.rotation[i], extr_cpp.rotation[i], "rotation[" + std::to_string( i ) + "]" );
-    }
+    
+	for( auto i = 0; i < 9; i++ )
+		ok &= compare_and_trace( extr_matlab.rotation[i], extr_cpp.rotation[i], "rotation[" + std::to_string( i ) + "]" );
+    
 
     for( auto i = 0; i < 3; i++ )
         ok &= compare_and_trace( extr_matlab.translation[i], extr_cpp.translation[i], "translation[" + std::to_string( i ) + "]" );
-
-    for( auto i = 0; i < 12; i++ )
-        ok &= compare_and_trace( pmat_matlab.vals[i], pmat_cpp.vals[i], "pmat[" + std::to_string( i ) + "]" );
 
     return ok;
 }
