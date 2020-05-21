@@ -252,8 +252,7 @@ namespace librealsense
         }
     }
 
-    void l500_depth_sensor::override_dsm_params( rs2_dsm_params const & dsm_params )
-    {
+    void l500_depth_sensor::override_dsm_params( rs2_dsm_params const & dsm_params ) {
         /*  Considerable values for DSM correction:
             - h/vFactor: 0.98-1.02, representing up to 2% change in FOV.
             - h/vOffset:
@@ -265,22 +264,33 @@ namespace librealsense
         */
         command cmd( ivcam2::fw_cmd::WRITE_TABLE, 0 );
         ac_depth_results table( dsm_params );
-        //table.params.timestamp = std::chrono::system_clock::now().time_since_epoch().count();
+        // table.params.timestamp = std::chrono::system_clock::now().time_since_epoch().count();
         time_t t;
-        time( &t );                            // local time
+        time( &t );                                       // local time
         table.params.timestamp = mktime( gmtime( &t ) );  // UTC time
-        table.params.version = (RS2_API_MAJOR_VERSION << 12) | (RS2_API_MINOR_VERSION << 4) | RS2_API_PATCH_VERSION;
-        
-        cmd.data.resize( sizeof( table_header ) + sizeof( table ));
+        table.params.version =
+            ( RS2_API_MAJOR_VERSION << 12 ) | ( RS2_API_MINOR_VERSION << 4 ) | RS2_API_PATCH_VERSION;
+
+        // The temperature may depend on streaming?
+        auto res = _owner->_hw_monitor->send( command{TEMPERATURES_GET} );
+        if( res.size() != sizeof( temperatures ) ) {
+            AC_LOG( ERROR, "Failed to get temperatures; result size= " << res.size() );
+        }
+        else {
+            auto const & ts = *( reinterpret_cast<temperatures *>( res.data() ) );
+            table.params.temp_x2 = byte( ts.LDD_temperature * 2 );
+        }
+
+        cmd.data.resize( sizeof( table_header ) + sizeof( table ) );
         table_header * h = (table_header *)cmd.data.data();
         h->major = 1;
         h->minor = 0;
         h->table_id = ac_depth_results::table_id;
         h->table_size = sizeof( ac_depth_results );
         h->reserved = 0xFFFFFFFF;
-        h->crc32 = calc_crc32( (byte *) &table, sizeof( table ));
+        h->crc32 = calc_crc32( (byte *)&table, sizeof( table ) );
 
-        memcpy( cmd.data.data() + sizeof( table_header ), &table, sizeof( table ));
+        memcpy( cmd.data.data() + sizeof( table_header ), &table, sizeof( table ) );
         _owner->_hw_monitor->send( cmd );
     }
 
@@ -499,4 +509,4 @@ namespace librealsense
         }
     }
 
-}
+}  // namespace librealsense

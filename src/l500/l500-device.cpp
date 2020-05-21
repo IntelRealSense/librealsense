@@ -164,7 +164,7 @@ namespace librealsense
             _autocal = std::make_shared< auto_calibration >( *_hw_monitor );
 
             depth_sensor.register_option(
-                RS2_OPTION_AUTO_CALIBRATION_ENABLED,
+                RS2_OPTION_CAMERA_ACCURACY_HEALTH_ENABLED,
                 std::make_shared< auto_calibration::enabler_option >( _autocal )
             );
         }
