@@ -203,9 +203,9 @@ void optimizer::collect_decision_params(z_frame_data& z_data, yuy2_frame_data& y
     _decision_params.min_max_ratio_rgb = yuy_data.min_max_ratio; // 0.618130692181835;
     _decision_params.distribution_per_section_rgb = yuy_data.sum_weights_per_section; //{3025208, 2.899468500000000e+06, 4471484, 2.763961500000000e+06};
     _decision_params.dir_ratio_1 = z_data.dir_ratio1;// 2.072327044025157;
-    _decision_params.dir_ratio_2 = z_data.dir_ratio2;
+    //_decision_params.dir_ratio_2 = z_data.dir_ratio2;
     _decision_params.edge_weights_per_dir = z_data.sum_weights_per_direction;// { 636000, 898000, 1318000, 747000 };
-    _decision_params.new_cost = 1.677282421875000e+04;
+    _decision_params.new_cost = 1.677282421875000e+04; // TODO :: set new cost value after Avishag finishes her part
 
 }
 bool svm_rbf_predictor(std::vector< double >& features, svm_model_gaussian& svm_model)
@@ -334,7 +334,7 @@ bool optimizer::is_valid_results()
         res = FALSE;
     }
 
-    bool res_svm = valid_by_svm(linear); //(gaussian);// (linear);
+    bool res_svm = valid_by_svm(gaussian); //(gaussian);// (linear);
     return (res && res_svm);
 }
 
