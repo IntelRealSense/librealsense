@@ -88,53 +88,69 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
 }
 
 
+rs2_calibration_status depth_to_rgb_calibration::optimize(
+    std::function<void( rs2_calibration_status )> call_back
+)
+{
 #define DISABLE_RS2_CALIBRATION_CHECKS "DISABLE_RS2_CALIBRATION_CHECKS"
 
-rs2_calibration_status depth_to_rgb_calibration::optimize() {
-    try {
+    try
+    {
         AC_LOG( DEBUG, "... checking scene validity" );
-        if( !_algo.is_scene_valid() ) {
-            if( !getenv( DISABLE_RS2_CALIBRATION_CHECKS ) ) {
-                AC_LOG( ERROR, "Calibration scene was found invalid! Set "
-                                   << DISABLE_RS2_CALIBRATION_CHECKS << " to continue anyway" );
-                return RS2_CALIBRATION_SCENE_INVALID;
+        if( !_algo.is_scene_valid() )
+        {
+            AC_LOG( ERROR, "Calibration scene was found invalid!" );
+            call_back( RS2_CALIBRATION_SCENE_INVALID );
+            if( !getenv( DISABLE_RS2_CALIBRATION_CHECKS ) )
+            {
+                // Default behavior is to stop AC and trigger a retry
+                return RS2_CALIBRATION_RETRY;
             }
-            else {
-                AC_LOG( ERROR, "Calibration scene was found invalid! "
-                                   << DISABLE_RS2_CALIBRATION_CHECKS << " is on; continuing" );
-            }
+            AC_LOG( DEBUG, DISABLE_RS2_CALIBRATION_CHECKS << " is on; continuing" );
         }
 
         AC_LOG( DEBUG, "... optimizing" );
         auto n_iterations = _algo.optimize();
-        if( !n_iterations ) {
+        if( !n_iterations )
+        {
             // AC_LOG( INFO, "Calibration not necessary; nothing done" );
             return RS2_CALIBRATION_NOT_NEEDED;
         }
 
         AC_LOG( DEBUG, "... checking result validity" );
-        if( !_algo.is_valid_results() ) {
+        if( !_algo.is_valid_results() )
+        {
             // Error would have printed inside
-            if( !getenv( DISABLE_RS2_CALIBRATION_CHECKS ) ) {
-                AC_LOG( DEBUG, DISABLE_RS2_CALIBRATION_CHECKS << " is off; stopping" );
-                return RS2_CALIBRATION_BAD_RESULT;
+            call_back( RS2_CALIBRATION_BAD_RESULT );
+            if( !getenv( DISABLE_RS2_CALIBRATION_CHECKS ) )
+            {
+                // Default behavior is to stop and trigger a retry
+                AC_LOG( DEBUG, DISABLE_RS2_CALIBRATION_CHECKS << " is off; will retry if possible" );
+                return RS2_CALIBRATION_RETRY;
             }
-            else {
-                AC_LOG( DEBUG, DISABLE_RS2_CALIBRATION_CHECKS << " is on; continuing" );
+            if( !getenv( "FORCE_RS2_CALIBRATION_RESULTS" ) )
+            {
+                // This is mostly for validation use, where we don't want the retries and instead want
+                // to fail on bad results (we don't want to write bad results to the camera!)
+                AC_LOG( DEBUG, DISABLE_RS2_CALIBRATION_CHECKS << " is on; no retries" );
+                return RS2_CALIBRATION_FAILED;
             }
+            // Allow forcing of results... be careful! This may damage the camera in AC2!
+            AC_LOG( DEBUG, DISABLE_RS2_CALIBRATION_CHECKS << " is on but so is FORCE_RS2_CALIBRATION_RESULTS: results will be used!" );
         }
 
         // AC_LOG( INFO, "Calibration finished; original cost= " << original_cost << "  optimized
         // cost= " << params_curr.cost );
 
+        AC_LOG( DEBUG, "... optimization successful!" );
         _intr = _algo.get_calibration().get_intrinsics();
         _extr = fix_extrinsics( _algo.get_calibration().get_extrinsics(), 0.001f );
         debug_calibration( "new" );
-
         return RS2_CALIBRATION_SUCCESSFUL;
     }
-    catch( std::exception const &e ) {
-        AC_LOG( ERROR, "Calibration failed: " << e.what() );
+    catch( std::exception const & e )
+    {
+        AC_LOG( ERROR, "Calibration threw error: " << e.what() );
         return RS2_CALIBRATION_FAILED;
     }
 }

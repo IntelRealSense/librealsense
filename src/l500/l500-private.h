@@ -410,7 +410,8 @@ namespace librealsense
 
             std::atomic_bool _is_processing;
             std::thread _worker;
-            unsigned _n_retries;
+            unsigned _n_retries;    // how many tries for a special frame we made
+            unsigned _n_cycles;     // how many times AC tried to run
 
             rs2_extrinsics _extr;
             rs2_intrinsics _intr;
@@ -419,6 +420,7 @@ namespace librealsense
 
             class retrier;
             std::shared_ptr< retrier > _retrier;
+            std::shared_ptr< retrier > _recycler;
 
         public:
             /* For RS2_OPTION_CAMERA_ACCURACY_HEALTH_ENABLED */

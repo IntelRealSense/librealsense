@@ -39,7 +39,7 @@ namespace librealsense
         stream_profile_interface * get_from_profile() const { return _from; }
         stream_profile_interface * get_to_profile() const { return _to; }
 
-        rs2_calibration_status optimize();
+        rs2_calibration_status optimize( std::function<void( rs2_calibration_status )> call_back = nullptr );
 
     private:
         void debug_calibration( char const * prefix );

@@ -149,6 +149,43 @@ namespace librealsense
     }
 
 
+    /** This processing block removes all frames that are not of the given stream types
+     *
+     * This is only a workaround!!!
+     * It seems that, when definining a processing block outputs, if any other frames exist there
+     * then an issue can be exhibited where duplicate frames are produced. This solved the issue.
+     */
+    class filtering_processing_block : public generic_processing_block {
+        std::vector< rs2_stream > _streams;
+
+    public:
+        filtering_processing_block( rs2_stream stream_to_pass )
+            : generic_processing_block( "filtering_processing_block" ), _streams( 1, stream_to_pass ) {}
+        filtering_processing_block( std::initializer_list< rs2_stream > const & streams )
+            : generic_processing_block( "filtering_processing_block" ), _streams( streams ) {}
+
+        rs2::frame process_frame( const rs2::frame_source & source,
+                                  const rs2::frame & f ) override {
+            return f;
+        }
+
+    private:
+        bool should_process( const rs2::frame & f ) override {
+            auto fs = f.as< rs2::frameset >();
+            if( fs )
+                return false;  // we'll get the ndividual frames back by themselves:
+            auto it = std::find( _streams.begin(), _streams.end(), f.get_profile().stream_type() );
+            return ( it != _streams.end() );  // keep the frame only if one of those we got
+        }
+        rs2::frame prepare_output( const rs2::frame_source & source, rs2::frame input,
+                                   std::vector< rs2::frame > results ) override {
+            if( results.empty() )
+                return rs2::frame{};
+            return results.front();
+        }
+    };
+
+
     void l500_device::configure_depth_options()
     {
         synthetic_sensor & depth_sensor = get_depth_sensor();
@@ -189,6 +226,7 @@ namespace librealsense
                     //sync->add_enabling_option( _autocal->get_enabler_opt() );
                     cpb->add( std::make_shared< autocal_depth_processing_block >( _autocal ) );
                 }
+                cpb->add( std::make_shared< filtering_processing_block >( RS2_STREAM_DEPTH ) );
                 return cpb;
             }
         );
@@ -213,6 +251,7 @@ namespace librealsense
                     //sync->add_enabling_option( _autocal->get_enabler_opt() );
                     cpb->add( std::make_shared< autocal_depth_processing_block >( _autocal ) );
                 }
+                cpb->add( std::make_shared< filtering_processing_block >( RS2_STREAM_DEPTH ) );
                 return cpb;
             }
         );
@@ -242,6 +281,8 @@ namespace librealsense
                     //sync->add_enabling_option( _autocal->get_enabler_opt() );
                     cpb->add( std::make_shared< autocal_depth_processing_block >( _autocal ) );
                 }
+                cpb->add( std::shared_ptr< filtering_processing_block >(
+                    new filtering_processing_block{RS2_STREAM_DEPTH, RS2_STREAM_CONFIDENCE} ) );
                 return cpb;
             }
         );
