@@ -374,7 +374,7 @@ weightsPerDir = [sum(weightIm(frame.dirI == 1));sum(weightIm(frame.dirI == 2));s
     auto weights_im = z_data.is_inside;// supressed_edges;
     auto weights_im_iter = weights_im.begin();
     auto supressed_edges_iter = z_data.is_inside.begin();
-    auto weights_iter = z_data.weights.begin();
+    auto weights_iter = z_data.valid_weights.begin();
     auto j = 0;
     for (auto i = 0; i < z_data.is_inside.size(); ++i)
     {
@@ -384,15 +384,15 @@ weightsPerDir = [sum(weightIm(frame.dirI == 1));sum(weightIm(frame.dirI == 2));s
             j++;
         }
     }
-    std::vector<double> weights_per_dir(deg_none); // deg_non is number of directions
+    std::vector<double> weights_per_dir(4); // 4 = deg_non is number of directions
     auto directions_iter = z_data.valid_directions.begin();
     auto weights_per_dir_iter = weights_per_dir.begin();
-    for (auto i = 0; i < deg_none; ++i)
+    for (auto i = 0; i < 4; ++i)
     {
         *(weights_per_dir_iter + i) = 0; // init sum per direction
         for (auto ii = 0; ii < z_data.valid_directions.size(); ++ii) // directions size = z_data size = weights_im size
         {
-            if (*(directions_iter + ii) == i)
+            if (*(directions_iter + ii) == i+1) // avoid 0
             {
                 *(weights_per_dir_iter + i) += *(weights_im_iter + ii);
             }
@@ -453,11 +453,11 @@ isBalanced = true;
 
     if (dir_ratio1 > _params.grad_dir_ratio)
     {
-        std::vector<double> ix_check(deg_none); // deg_non is number of directions
+        std::vector<double> ix_check(4); // 4=deg_non is number of directions
         auto ix_check_iter = ix_check.begin();
         double max_val_perp = *weights_per_dir.begin();
         double min_val_perp = *weights_per_dir.begin();
-        for (auto i = 0; i < deg_none; ++i)
+        for (auto i = 0; i < 4; ++i)
         {
             *(ix_check_iter + i) = true;
             if ((i != max_ix) && (i != ix_match))
@@ -756,9 +756,9 @@ void optimizer::collect_decision_params(z_frame_data& z_data, yuy2_frame_data& y
     _decision_params.is_valid_1 = 1;
     _decision_params.moving_pixels = 0;
     _decision_params.min_max_ratio_depth = 0.762463343108504;
-    _decision_params.distribution_per_section_depth = { 980000, 780000, 1023000, 816000 };// z_data.sum_weights_per_section;
+    _decision_params.distribution_per_section_depth = z_data.sum_weights_per_section; //{ 980000, 780000, 1023000, 816000 };// z_data.sum_weights_per_section;
     _decision_params.min_max_ratio_rgb = 0.618130692181835;
-    _decision_params.distribution_per_section_rgb = {3025208, 2.899468500000000e+06, 4471484, 2.763961500000000e+06};// yuy_data.sum_weights_per_section;
+    _decision_params.distribution_per_section_rgb = yuy_data.sum_weights_per_section; //{3025208, 2.899468500000000e+06, 4471484, 2.763961500000000e+06};// yuy_data.sum_weights_per_section;
     _decision_params.dir_ratio_1 = 2.072327044025157;
     _decision_params.edge_weights_per_dir = { 636000, 898000, 1318000, 747000 };
     _decision_params.new_cost = 1.677282421875000e+04;
@@ -828,14 +828,8 @@ bool svm_rbf_predictor(std::vector< double >& features, svm_model_gaussian& svm_
 bool optimizer::valid_by_svm(svm_model model)
 {
     bool is_valid = true;
-    
-    //decision_params decision_params;
-    //collect_decision_params(_z, _yuy, decision_params);
-    //auto& decision_params = get_decision_params();
-    //auto& features = get_extracted_features();
-    //decision_params decision_params;
+
     collect_decision_params(_z, _yuy);
-    //auto features = extract_features(decision_params);
     _extracted_features = extract_features(_decision_params);
 
     double res = 0;

@@ -107,7 +107,7 @@ void compare_scene( std::string const & scene_dir )
 
     // gradient balanced
     // TODO NOHA
-    //CHECK(compare_to_bin_file< double >(z_data.sum_weights_per_direction, scene_dir, "ac1x\\edgeWeightsPerDir", 1, 4, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(z_data.sum_weights_per_direction, scene_dir, "ac1x\\edgeWeightsPerDir", 4, 1, "double_00", compare_same_vectors));
 
     // movment check
     // 1. dilation

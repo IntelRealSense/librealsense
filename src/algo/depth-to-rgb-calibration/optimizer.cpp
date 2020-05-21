@@ -699,10 +699,10 @@ end*/
     weights = weights(isInside);
     vertices = vertices(isInside,:);
     sectionMapDepth = sectionMapDepth(isInside);*/
-    std::vector<double> weights;
+    //std::vector<double> weights;
     for (auto i = 0; i < _z.is_inside.size(); i++) {
 
-        weights.push_back(_params.constant_weights);
+        _z.valid_weights.push_back(_params.constant_weights);
     }
     depth_filter(_z.subpixels_x, _z.valid_edge_sub_pixel_x, _z.is_inside, 1, _z.is_inside.size());
     depth_filter(_z.subpixels_y, _z.valid_edge_sub_pixel_y, _z.is_inside, 1, _z.is_inside.size());
@@ -711,7 +711,7 @@ end*/
     depth_filter(_z.directions, _z.valid_directions, _z.is_inside, 1, _z.is_inside.size());
     depth_filter(_z.vertices, _z.vertices_all, _z.is_inside, 1, _z.is_inside.size());
     depth_filter(_z.section_map_depth_inside, _z.valid_section_map, _z.is_inside, 1, _z.is_inside.size());
-    depth_filter(_z.weights, weights, _z.is_inside, 1, _z.is_inside.size());
+    depth_filter(_z.weights, _z.valid_weights, _z.is_inside, 1, _z.is_inside.size());
 }
 
 
