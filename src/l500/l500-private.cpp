@@ -368,14 +368,14 @@ namespace librealsense
             if( ! irf )
             {
                 AC_LOG( ERROR, "no IR frame found; ignoring special frame!" );
-                call_back( RS2_CALIBRATION_FAILED );
+                //call_back( RS2_CALIBRATION_FAILED );
                 return;
             }
             auto df = fs.get_depth_frame();
             if( !df )
             {
                 AC_LOG( ERROR, "no depth frame found; ignoring special frame!" );
-                call_back( RS2_CALIBRATION_FAILED );
+                //call_back( RS2_CALIBRATION_FAILED );
                 return;
             }
 

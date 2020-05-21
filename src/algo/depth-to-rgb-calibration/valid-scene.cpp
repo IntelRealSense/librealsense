@@ -368,30 +368,27 @@ weightIm(iWeights) = frame.weights;
 weightsPerDir = [sum(weightIm(frame.dirI == 1));sum(weightIm(frame.dirI == 2));sum(weightIm(frame.dirI == 3));sum(weightIm(frame.dirI == 4))];
 */
 //bool is_balanced = false;
-    auto i_weights = z_data.supressed_edges; // vector of 0,1 - put 1 when supressed edges is > 0
-    auto weights_im = z_data.supressed_edges;
-
-    auto i_weights_iter = i_weights.begin();
+    //auto i_weights = z_data.supressed_edges; // vector of 0,1 - put 1 when supressed edges is > 0
+    auto weights_im = z_data.is_inside;// supressed_edges;
     auto weights_im_iter = weights_im.begin();
-    auto supressed_edges_iter = z_data.supressed_edges.begin();
+    auto supressed_edges_iter = z_data.is_inside.begin();
     auto weights_iter = z_data.weights.begin();
     auto j = 0;
-    for (auto i = 0; i < z_data.supressed_edges.size(); ++i)
+    for (auto i = 0; i < z_data.is_inside.size(); ++i)
     {
         if (*(supressed_edges_iter + i) > 0)
         {
-            *(i_weights_iter + i) = 1; // is it needed ??
             *(weights_im_iter + i) = *(weights_iter + j);
             j++;
         }
     }
     std::vector<double> weights_per_dir(deg_none); // deg_non is number of directions
-    auto directions_iter = z_data.directions.begin();
+    auto directions_iter = z_data.valid_directions.begin();
     auto weights_per_dir_iter = weights_per_dir.begin();
     for (auto i = 0; i < deg_none; ++i)
     {
         *(weights_per_dir_iter + i) = 0; // init sum per direction
-        for (auto ii = 0; ii < z_data.directions.size(); ++ii) // directions size = z_data size = weights_im size
+        for (auto ii = 0; ii < z_data.valid_directions.size(); ++ii) // directions size = z_data size = weights_im size
         {
             if (*(directions_iter + ii) == i)
             {
@@ -709,6 +706,7 @@ bool optimizer::is_scene_valid()
             _z.section_map.push_back(section_map_depth[i]);
         }
     }
+    _z.section_map = _z.section_map_depth_inside; // NOHA :: taken from preprocessDepth
     AC_LOG(DEBUG, "... " << _z.section_map.size() << " not suppressed");
 
     // remove pixels in section map where edges_IDT > 0

@@ -23,6 +23,7 @@ file(GLOB REALSENSE_NET_CPP
     "${LIVE}/liveMedia/*.c*"
     "${LIVE}/UsageEnvironment/*.c*"
 )
+list(REMOVE_ITEM REALSENSE_NET_CPP "${LIVE}/liveMedia/ADTSAudioStreamDiscreteFramer.cpp")
 
 if (${BUILD_SHARED_LIBS} AND ${BUILD_EASYLOGGINGPP})
     list(APPEND REALSENSE_NET_CPP ../../third-party/easyloggingpp/src/easylogging++.cc)

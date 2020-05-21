@@ -590,18 +590,6 @@ namespace librealsense
                 r.rotation[j * 3 + i] = (i == j) ? 1.f : 0.f;
         return r;
     }
-    inline bool operator==(const rs2_extrinsics& a, const rs2_extrinsics& b)
-    {
-        for (int i = 0; i < 3; i++)
-            if (a.translation[i] != b.translation[i])
-                return false;
-        for (int j = 0; j < 3; j++)
-            for (int i = 0; i < 3; i++)
-                if (std::fabs(a.rotation[j * 3 + i] - b.rotation[j * 3 + i])
-                     > std::numeric_limits<float>::epsilon())
-                    return false;
-        return true;
-    }
     inline rs2_extrinsics inverse(const rs2_extrinsics& a) { auto p = to_pose(a); return from_pose(inverse(p)); }
 
     inline std::ostream& operator <<(std::ostream& stream, const float3& elem)
@@ -1848,23 +1836,36 @@ std::vector<std::shared_ptr<T>> subtract_sets(const std::vector<std::shared_ptr<
     return results;
 }
 
-    enum res_type {
-        low_resolution,
-        medium_resolution,
-        high_resolution
-    };
+enum res_type {
+    low_resolution,
+    medium_resolution,
+    high_resolution
+};
 
-    inline res_type get_res_type(uint32_t width, uint32_t height)
-    {
-        if (width == 256) // Crop resolution
-            return res_type::high_resolution;
-
-        if (width == 640)
-            return res_type::medium_resolution;
-        else if (width < 640)
-            return res_type::low_resolution;
-
+inline res_type get_res_type(uint32_t width, uint32_t height)
+{
+    if (width == 256) // Crop resolution
         return res_type::high_resolution;
-    }
+
+    if (width == 640)
+        return res_type::medium_resolution;
+    else if (width < 640)
+        return res_type::low_resolution;
+
+    return res_type::high_resolution;
+}
+
+inline bool operator==( const rs2_extrinsics& a, const rs2_extrinsics& b )
+{
+    for( int i = 0; i < 3; i++ )
+        if( a.translation[i] != b.translation[i] )
+            return false;
+    for( int j = 0; j < 3; j++ )
+        for( int i = 0; i < 3; i++ )
+            if( std::fabs( a.rotation[j * 3 + i] - b.rotation[j * 3 + i] )
+        > std::numeric_limits<float>::epsilon() )
+                return false;
+    return true;
+}
 
 #endif
