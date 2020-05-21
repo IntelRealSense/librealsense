@@ -20,8 +20,8 @@ namespace depth_to_rgb_calibration {
 
     struct optimaization_params
     {
-        calib curr_calib;
-        calib calib_gradients;
+        p_matrix curr_p_mat;
+		p_matrix calib_gradients;
         double cost;
         double step_size = 0;
     };
@@ -52,7 +52,7 @@ namespace depth_to_rgb_calibration {
         double min_weighted_edge_per_section = 19.5313;
         size_t num_of_sections_for_edge_distribution_x = 2;
         size_t num_of_sections_for_edge_distribution_y = 2;
-        calib normelize_mat;
+		p_matrix normelize_mat;
 
         double edge_distribution_min_max_ratio = 0.005;
         double grad_dir_ratio = 10;
@@ -88,6 +88,14 @@ namespace depth_to_rgb_calibration {
         coeffs<k_matrix> coeffs_k;
         coeffs<rotation_in_angles> coeffs_r;
         coeffs < p_matrix> coeffs_p;
+		p_matrix unit_grad;
+		p_matrix normalized_grads;
+		p_matrix grads_norm;
+		double grads_norma;
+		double cost;
+		int back_tracking_line_search_iters;
+		double t;
+		optimaization_params next_params;
     };
 
     class optimizer
@@ -133,6 +141,7 @@ namespace depth_to_rgb_calibration {
         ir_frame_data   const & get_ir_data() const  { return _ir; }
        
     private:
+		void decompose_p_mat();
         void zero_invalid_edges( z_frame_data& z_data, ir_frame_data const & ir_data );
         std::vector<direction> get_direction( std::vector<double> gradient_x, std::vector<double> gradient_y );
         std::vector<direction> get_direction2(std::vector<double> gradient_x, std::vector<double> gradient_y);
@@ -143,11 +152,14 @@ namespace depth_to_rgb_calibration {
         std::vector<uint8_t> get_logic_edges( std::vector<double> edges );
         std::vector <double3> subedges2vertices(z_frame_data& z_data, const rs2_intrinsics_double& intrin, double depth_units);
         
-        optimaization_params back_tracking_line_search( const z_frame_data & z_data, const yuy2_frame_data& yuy_data, optimaization_params opt_params );
+        optimaization_params back_tracking_line_search( const z_frame_data & z_data, 
+			const yuy2_frame_data& yuy_data, 
+			optimaization_params opt_params,
+			iteration_data_collect * data = nullptr);
+
         double calc_step_size( optimaization_params opt_params );
         double calc_t( optimaization_params opt_params );
-        rotation_in_angles calc_rotation_gradients( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy );
-
+       
         // input validation
         bool is_movement_in_images(yuy2_frame_data& yuy);
         bool is_edge_distributed( z_frame_data & z_data, yuy2_frame_data & yuy_data );
@@ -168,6 +180,7 @@ namespace depth_to_rgb_calibration {
         ir_frame_data _ir;
         z_frame_data _z;
         calib _original_calibration;         // starting state of auto-calibration
+		calib _final_calibration;         // starting state of auto-calibration
         calib _factory_calibration;          // factory default calibration of the camera
         optimaization_params _params_curr;   // last-known setting
     };
