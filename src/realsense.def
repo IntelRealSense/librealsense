@@ -30,7 +30,7 @@ EXPORTS
     rs2_get_motion_intrinsics
     rs2_override_intrinsics
     rs2_get_dsm_params
-	rs2_override_dsm_params
+    rs2_override_dsm_params
 
     rs2_get_stream_profiles
     rs2_get_active_streams

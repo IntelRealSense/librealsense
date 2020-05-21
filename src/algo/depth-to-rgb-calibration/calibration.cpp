@@ -100,8 +100,8 @@ calib calib::operator*( double step_size ) const
     res.k_mat.ppx = this->k_mat.ppx * step_size;
     res.k_mat.ppy = this->k_mat.ppy *step_size;
 
-	for (auto i = 0; i < 9; i++)
-		res.rot.rot[i] = this->rot.rot[i] * step_size;
+    for (auto i = 0; i < 9; i++)
+        res.rot.rot[i] = this->rot.rot[i] * step_size;
 
     res.trans.t1 = this->trans.t1 *step_size;
     res.trans.t2 = this->trans.t2 * step_size;
@@ -125,8 +125,8 @@ calib calib::operator+( const calib & c ) const
     res.k_mat.ppx = this->k_mat.ppx + c.k_mat.ppx;
     res.k_mat.ppy = this->k_mat.ppy + c.k_mat.ppy;
 
-	for (auto i = 0; i < 9; i++)
-		res.rot.rot[i] = this->rot.rot[i] + c.rot.rot[i];
+    for (auto i = 0; i < 9; i++)
+        res.rot.rot[i] = this->rot.rot[i] + c.rot.rot[i];
 
     res.trans.t1 = this->trans.t1 + c.trans.t1;
     res.trans.t2 = this->trans.t2 + c.trans.t2;
@@ -145,8 +145,8 @@ calib calib::operator-( const calib & c ) const
     res.k_mat.ppx = this->k_mat.ppx - c.k_mat.ppx;
     res.k_mat.ppy = this->k_mat.ppy - c.k_mat.ppy;
 
-	for (auto i = 0; i < 9; i++)
-		res.rot.rot[i] = this->rot.rot[i] - c.rot.rot[i];
+    for (auto i = 0; i < 9; i++)
+        res.rot.rot[i] = this->rot.rot[i] - c.rot.rot[i];
 
     res.trans.t1 = this->trans.t1 - c.trans.t1;
     res.trans.t2 = this->trans.t2 - c.trans.t2;
@@ -165,8 +165,8 @@ calib calib::operator/( const calib & c ) const
     res.k_mat.ppx = this->k_mat.ppx / c.k_mat.ppx;
     res.k_mat.ppy = this->k_mat.ppy / c.k_mat.ppy;
 
-	for (auto i = 0; i < 9; i++)
-		res.rot.rot[i] = this->rot.rot[i] / c.rot.rot[i];
+    for (auto i = 0; i < 9; i++)
+        res.rot.rot[i] = this->rot.rot[i] / c.rot.rot[i];
 
 
     res.trans.t1 = this->trans.t1 / c.trans.t1;
@@ -181,93 +181,93 @@ calib calib::operator/( const calib & c ) const
 
 p_matrix p_matrix::operator*(double step_size) const
 {
-	p_matrix res;
+    p_matrix res;
 
-	for (auto i = 0; i < 12; i++)
-		res.vals[i] = vals[i] * step_size;
+    for (auto i = 0; i < 12; i++)
+        res.vals[i] = vals[i] * step_size;
 
-	return res;
+    return res;
 }
 
 p_matrix p_matrix::operator/(double factor) const
 {
-	return (*this)*(1.f / factor);
+    return (*this)*(1.f / factor);
 }
 
 p_matrix p_matrix::operator+(const p_matrix & c) const
 {
-	p_matrix res;
-	for (auto i = 0; i < 12; i++)
-		res.vals[i] = vals[i] + c.vals[i];
+    p_matrix res;
+    for (auto i = 0; i < 12; i++)
+        res.vals[i] = vals[i] + c.vals[i];
 
-	return res;
+    return res;
 }
 
 p_matrix p_matrix::operator-(const p_matrix & c) const
 {
-	p_matrix res;
-	for (auto i = 0; i < 12; i++)
-		res.vals[i] = vals[i] - c.vals[i];
+    p_matrix res;
+    for (auto i = 0; i < 12; i++)
+        res.vals[i] = vals[i] - c.vals[i];
 
-	return res;
+    return res;
 }
 
 p_matrix p_matrix::operator*(const p_matrix & c) const
 {
-	p_matrix res;
-	for (auto i = 0; i < 12; i++)
-		res.vals[i] = vals[i] * c.vals[i];
+    p_matrix res;
+    for (auto i = 0; i < 12; i++)
+        res.vals[i] = vals[i] * c.vals[i];
 
-	return res;
+    return res;
 }
 
 p_matrix p_matrix::operator/(const p_matrix & c) const
 {
-	p_matrix res;
-	for (auto i = 0; i < 12; i++)
-		res.vals[i] = c.vals[i] == 0 ? 0 : vals[i] / c.vals[i];
+    p_matrix res;
+    for (auto i = 0; i < 12; i++)
+        res.vals[i] = c.vals[i] == 0 ? 0 : vals[i] / c.vals[i];
 
-	return res;
+    return res;
 }
 
 double p_matrix::get_norma()
 {
-	double grads_norm = 0;  // TODO meant to have as float??
+    double grads_norm = 0;  // TODO meant to have as float??
 
-	for (auto i = 0; i < 12; i++)
-		grads_norm += vals[i] * vals[i];
+    for (auto i = 0; i < 12; i++)
+        grads_norm += vals[i] * vals[i];
 
-	grads_norm = sqrt(grads_norm);
+    grads_norm = sqrt(grads_norm);
 
-	return grads_norm;
+    return grads_norm;
 }
 
 double p_matrix::sum()
 {
-	double res = 0;  // TODO meant to have float??
-	
-	for (auto i = 0; i <12; i++)
-	{
-		res += vals[i];
-	}
+    double res = 0;  // TODO meant to have float??
 
-	return res;
+    for (auto i = 0; i <12; i++)
+    {
+        res += vals[i];
+    }
+
+    return res;
 }
 
 p_matrix p_matrix::normalize()
 {
-	p_matrix res;
+    p_matrix res;
 
-	auto norma = get_norma();
+    auto norma = get_norma();
 
-	for (auto i = 0; i < 12; i++)
-	{
-		res.vals[i] = vals[i] / norma;
-	}
-	return res;
+    for (auto i = 0; i < 12; i++)
+    {
+        res.vals[i] = vals[i] / norma;
+    }
+    return res;
 }
 
 calib librealsense::algo::depth_to_rgb_calibration::decompose(p_matrix mat)
 {
-	return calib();
+    return calib();
 }

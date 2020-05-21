@@ -23,7 +23,7 @@ void init_algo( algo::optimizer & cal,
     std::string const & ir,
     std::string const & z,
     camera_params const & camera,
-	rs2_dsm_params const &dsm_params
+    rs2_dsm_params const &dsm_params
 )
 {
     algo::calib calibration( camera.rgb, camera.extrinsics );

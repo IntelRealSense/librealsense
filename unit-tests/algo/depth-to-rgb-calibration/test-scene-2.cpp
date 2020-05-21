@@ -10,7 +10,7 @@
 
 TEST_CASE("Scene 2", "[d2rgb]")
 {
-    std::string scene_dir( "..\\unit-tests\\algo\\depth-to-rgb-calibration\\19.2.20" );
+    std::string scene_dir( "C:\\work\\librealsense\\build\\unit-tests\\algo\\depth-to-rgb-calibration\\19.2.20" );
 //    std::string scene_dir( "C:\\work\\autocal" );
     scene_dir += "\\F9440687\\LongRange_D_768x1024_RGB_1920x1080\\2\\";
 

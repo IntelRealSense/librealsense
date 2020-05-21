@@ -84,46 +84,46 @@ namespace depth_to_rgb_calibration {
         double translation[3]; /**< Three-element translation vector, in meters */
     };
 
-	struct p_matrix
-	{
-		double vals[12];
+    struct p_matrix
+    {
+        double vals[12];
 
-		bool operator==(const p_matrix& other)
-		{
-			for (auto i = 0; i < 12; i++)
-			{
-				if (vals[i] != other.vals[i])
-					return false;
-			}
-			return true;
-		}
-		bool operator!=(const p_matrix& other)
-		{
-			return !(*this == other);
-		}
+        bool operator==(const p_matrix& other)
+        {
+            for (auto i = 0; i < 12; i++)
+            {
+                if (vals[i] != other.vals[i])
+                    return false;
+            }
+            return true;
+        }
+        bool operator!=(const p_matrix& other)
+        {
+            return !(*this == other);
+        }
 
-		bool operator<(const p_matrix& other)
-		{
-			for (auto i = 0; i < 12; i++)
-			{
-				if (vals[i] < other.vals[i])
-					return false;
-				if (vals[i] > other.vals[i])
-					return true;
-			}
-			return true;
-		}
-		p_matrix operator*(double step_size) const;
-		p_matrix operator/(double factor) const;
-		p_matrix operator+(const p_matrix& c) const;
-		p_matrix operator-(const p_matrix& c) const;
-		p_matrix operator/(const p_matrix& c) const;
-		p_matrix operator*(const p_matrix& c) const;
-		double get_norma();
-		double sum();
-		p_matrix normalize();
+        bool operator<(const p_matrix& other)
+        {
+            for (auto i = 0; i < 12; i++)
+            {
+                if (vals[i] < other.vals[i])
+                    return false;
+                if (vals[i] > other.vals[i])
+                    return true;
+            }
+            return true;
+        }
+        p_matrix operator*(double step_size) const;
+        p_matrix operator/(double factor) const;
+        p_matrix operator+(const p_matrix& c) const;
+        p_matrix operator-(const p_matrix& c) const;
+        p_matrix operator/(const p_matrix& c) const;
+        p_matrix operator*(const p_matrix& c) const;
+        double get_norma();
+        double sum();
+        p_matrix normalize();
 
-	};
+    };
 
     struct calib
     {
@@ -153,7 +153,7 @@ namespace depth_to_rgb_calibration {
         calib operator/( const calib& c ) const;
     };
 
-	calib decompose(p_matrix mat);
+    calib decompose(p_matrix mat);
 
 }
 }
