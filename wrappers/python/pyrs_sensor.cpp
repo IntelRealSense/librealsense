@@ -108,6 +108,7 @@ void init_sensor(py::module &m) {
         .def( "override_extrinsics", &rs2::calibrated_sensor::override_extrinsics, "extrinsics"_a )
         .def( "get_dsm_params", &rs2::calibrated_sensor::get_dsm_params )
         .def( "override_dsm_params", &rs2::calibrated_sensor::override_dsm_params, "dsm_params"_a )
+        .def( "reset_calibration", &rs2::calibrated_sensor::reset_calibration )
         .def( "__nonzero__", &rs2::calibrated_sensor::operator bool );
 
     // rs2::depth_stereo_sensor

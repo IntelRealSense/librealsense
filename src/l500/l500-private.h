@@ -59,6 +59,7 @@ namespace librealsense
             HW_RESET                    = 0x20, //"HW Reset"
             AMCSET                      = 0x2B, // Set options (L515)
             AMCGET                      = 0x2C, // Get options (L515)
+            DELETE_TABLE                = 0x2E,
             PFD                         = 0x3B, // Disable power features <Parameter1 Name="0 - Disable, 1 - Enable" />
             READ_TABLE                  = 0x43,
             WRITE_TABLE                 = 0x44,
@@ -77,9 +78,9 @@ namespace librealsense
             static const int table_id = 0x240;
             static const uint16_t this_version = (RS2_API_MAJOR_VERSION << 12 | RS2_API_MINOR_VERSION << 4 | RS2_API_PATCH_VERSION);
 
-            rs2_dsm_params params = { 0 };
+            rs2_dsm_params params;
 
-            ac_depth_results() = default;
+            ac_depth_results() {}
             ac_depth_results( rs2_dsm_params const & dsm_params ) : params( dsm_params ) {}
         };
 #pragma pack(pop)
@@ -227,13 +228,21 @@ namespace librealsense
             rgb_common common;
             resolutions_rgb resolution;
         };
-#pragma pack(pop)
+
+        struct temperatures {
+            double LDD_temperature;  // Laser Diode Driver
+            double MC_temperature;
+            double MA_temperature;
+            double APD_temperature;
+            double HUM_temperature;
+            double AlgoTermalLddAvg_temperature;
+        };
+#pragma pack( pop )
 
         rs2_extrinsics get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
 
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
                                          const platform::uvc_device_info& info, platform::usb_device_info& result);
-
 
         class l500_temperature_options : public readonly_option
         {
@@ -401,7 +410,8 @@ namespace librealsense
 
             std::atomic_bool _is_processing;
             std::thread _worker;
-            unsigned _n_retries;
+            unsigned _n_retries;    // how many tries for a special frame we made
+            unsigned _n_cycles;     // how many times AC tried to run
 
             rs2_extrinsics _extr;
             rs2_intrinsics _intr;
@@ -410,9 +420,10 @@ namespace librealsense
 
             class retrier;
             std::shared_ptr< retrier > _retrier;
+            std::shared_ptr< retrier > _recycler;
 
         public:
-            /* For RS2_OPTION_AUTO_CALIBRATION_ENABLED */
+            /* For RS2_OPTION_CAMERA_ACCURACY_HEALTH_ENABLED */
             class enabler_option : public bool_option
             {
                 std::shared_ptr< auto_calibration > _autocal;

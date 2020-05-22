@@ -631,6 +631,14 @@ void rs2_get_dsm_params( rs2_sensor const * sensor, rs2_dsm_params * p_params_ou
 void rs2_override_dsm_params( rs2_sensor const * sensor, rs2_dsm_params const * p_params, rs2_error** error );
 
 /**
+ * Reset the sensor DSM parameters
+ * This should ideally be done when the stream is NOT running. May not take effect immediately.
+ * \param[in]  sensor        Sensor that supports the CALIBRATED_SENSOR extension
+ * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_reset_sensor_calibration( rs2_sensor const * sensor, rs2_error** error );
+
+/**
 * Set motion device intrinsics
 * \param[in]  sensor       Motion sensor 
 * \param[in]  profile      Motion stream profile

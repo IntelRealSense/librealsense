@@ -481,17 +481,6 @@ namespace librealsense
 
         if (auto set = frame.as<rs2::frameset>())
         {
-            // TODO: Ignoring all framesets for now, because this immitates having the syncer OFF
-            // Before AC, the syncer was off unless ZO was on, meaning we got no framesets.
-            // With AC, we always turn on the syncer and the mechanism in here screws things up
-            // by eating IR frames. It needs to be revisited before AC is released and after
-            // a bigger issue in the pb-factory is fixed: a factory that accepts [Z,IR] but
-            // gives only Z still returns the IR frame in there.
-            if (auto is_enabled = _is_enabled_opt.lock())
-                if (!is_enabled->is_true())
-                    // zero order is disabled, passthrough the frame
-                    return false;
-
             if (!set.get_depth_frame() || !set.get_infrared_frame())
             {
                 return false;

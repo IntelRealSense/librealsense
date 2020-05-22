@@ -317,6 +317,11 @@ namespace librealsense
         throw std::logic_error( "color sensor does not support DSM parameters" );
     }
 
+    void l500_color_sensor::reset_calibration()
+    {
+        throw std::logic_error( "color sensor does not support resetting calibration at this time" );
+    }
+
 
 
     std::vector<tagged_profile> l500_color::get_profiles_tags() const
