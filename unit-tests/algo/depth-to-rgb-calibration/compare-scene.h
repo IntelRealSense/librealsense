@@ -31,7 +31,7 @@ void compare_scene( std::string const & scene_dir )
     auto num_of_calib_elements = 17;
 	auto num_of_p_matrix_elements = sizeof(algo::p_matrix) / sizeof(double);
 
-#if 0
+#if 1
     // smearing
     CHECK(compare_to_bin_file< double >(depth_data.gradient_x, scene_dir, "ac1x\\Zx", z_w, z_h, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.gradient_y, scene_dir, "ac1x\\Zy", z_w, z_h, "double_00", compare_same_vectors));
@@ -211,7 +211,7 @@ void compare_scene( std::string const & scene_dir )
 
     CHECK( compare_calib_to_bin_file( new_calibration, cost, scene_dir, "ac1x\\new_calib", num_of_calib_elements, 1, "double_00" ) );
 #endif
-#if 1
+#if 0
     //--
     TRACE( "\nChecking output validity:" );
     // Pixel movement is OK, but some sections have negative cost
