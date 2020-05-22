@@ -1159,8 +1159,22 @@ namespace rs2
             get_default_selection_index(res_values, resolution_constrain, &selection_index);
             ui.selected_res_id = selection_index;
 
-            if (s->supports(RS2_OPTION_SENSOR_MODE))
-                s->set_option(RS2_OPTION_SENSOR_MODE, resolution_from_width_height(res_values[ui.selected_res_id].first, res_values[ui.selected_res_id].second));
+            // Have the various preset options automatically update based on the resolution of the
+            // (closed) stream...
+            // TODO we have no res_values when loading color rosbag, and color sensor isn't
+            // even supposed to support SENSOR_MODE... see RS5-7726
+            if( s->supports( RS2_OPTION_SENSOR_MODE ) && !res_values.empty() )
+            {
+                // Watch out for read-only options in the playback sensor!
+                try
+                {
+                    s->set_option( RS2_OPTION_SENSOR_MODE, resolution_from_width_height( res_values[ui.selected_res_id].first, res_values[ui.selected_res_id].second ) );
+                }
+                catch( not_implemented_error const & e )
+                {
+                    // Just ignore for now: need to figure out a way to write to playback sensors...
+                }
+            }
 
             while (ui.selected_res_id >= 0 && !is_selected_combination_supported()) ui.selected_res_id--;
             last_valid_ui = ui;
