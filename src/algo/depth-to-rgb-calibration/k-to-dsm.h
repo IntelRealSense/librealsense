@@ -13,14 +13,19 @@ namespace depth_to_rgb_calibration {
 
     struct DSM_regs
     {
-        double dsm_y_offset;
-        double dsm_x_offset;
-        double dsm_y_scale;
-        double dsm_x_scale;
+        float dsm_x_scale;
+        float dsm_y_scale;
+        float dsm_x_offset;
+        float dsm_y_offset;
+    }; 
+
+    enum ac_to_dsm_dir
+    {
+        direct,
+        inverse
     };
 
-
-    DSM_regs apply_ac_res_on_dsm_model(rs2_dsm_params dsm_params, DSM_regs, rs2_dsm_correction_model type);
+    DSM_regs apply_ac_res_on_dsm_model(rs2_dsm_params dsm_params, DSM_regs, ac_to_dsm_dir type);
 
     rs2_dsm_params convert_new_k_to_DSM(rs2_intrinsics_double old_k, 
         rs2_intrinsics_double new_k, 

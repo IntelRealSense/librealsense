@@ -45,6 +45,22 @@ void read_data_from( std::string const & filename, T * data )
     f.close();
 }
 
+template< typename T >
+ T read_from(std::string const & filename)
+{
+    std::fstream f = std::fstream(filename, std::ios::in | std::ios::binary);
+    if (!f)
+        throw std::runtime_error("failed to read file:\n" + filename);
+    f.seekg(0, f.end);
+    size_t cb = f.tellg();
+    f.seekg(0, f.beg);
+    if (cb % sizeof(T))
+        throw std::runtime_error("file size is not a multiple of data size");
+    T obj;
+    f.read((char *)&obj, cb);
+    f.close();
+    return obj;
+}
 
 template< typename T >
 std::vector< T > read_vector_from( std::string const & filename )

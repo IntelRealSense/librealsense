@@ -166,8 +166,7 @@ bool compare_to_bin_file(
     std::string const & scene_dir,
     std::string const & filename,
     size_t width, size_t height,
-    bool( *compare_vectors )(std::vector< F > const &, std::vector< D > const &) = nullptr,
-    std::pair<std::vector< F >, std::vector< D >>( *preproccess_vectors )(std::vector< F > const &, std::vector< D > const &) = nullptr
+    bool( *compare_vectors )(std::vector< F > const &, std::vector< D > const &) = nullptr
 )
 {
     TRACE( "Comparing " << filename << " ..." );
@@ -181,12 +180,7 @@ bool compare_to_bin_file(
     {
         auto v = vec;
         auto b = bin;
-        if( preproccess_vectors )
-        {
-            auto vecs = preproccess_vectors( bin, vec );
-            b = vecs.first;
-            v = vecs.second;
-        }
+
         if( compare_vectors && !(*compare_vectors)(b, v) )
             ok = false;
         if( !ok )
@@ -205,14 +199,14 @@ bool compare_to_bin_file(
     const char * prefix,
     size_t width, size_t height,
     const char * suffix,
-    bool( *compare_vectors )(std::vector< F > const &, std::vector< D > const &) = nullptr,
-    std::pair<std::vector< F >, std::vector< D >>( *preproccess_vectors )(std::vector< F > const &, std::vector< D > const &) = nullptr
+    bool( *compare_vectors )(std::vector< F > const &, std::vector< D > const &) = nullptr
+   
 )
 {
     return compare_to_bin_file< F, D >( vec,
         scene_dir, bin_file( prefix, width, height, suffix ) + ".bin",
         height, width,
-        compare_vectors, preproccess_vectors );
+        compare_vectors);
 }
 
 bool get_calib_from_raw_data(
@@ -291,8 +285,8 @@ bool compare_calib_to_bin_file(
     ok &= compare_and_trace( intr_matlab.ppy, intr_cpp.ppy, "ppy" );
 
     
-	for( auto i = 0; i < 9; i++ )
-		ok &= compare_and_trace( extr_matlab.rotation[i], extr_cpp.rotation[i], "rotation[" + std::to_string( i ) + "]" );
+    for( auto i = 0; i < 9; i++ )
+        ok &= compare_and_trace( extr_matlab.rotation[i], extr_cpp.rotation[i], "rotation[" + std::to_string( i ) + "]" );
     
 
     for( auto i = 0; i < 3; i++ )
@@ -314,4 +308,30 @@ bool compare_calib_to_bin_file(
 {
     auto filename = bin_file( prefix, w, h, suffix ) + ".bin";
     return compare_calib_to_bin_file( calib, cost, scene_dir, filename, gradient );
+}
+
+bool operator==(const algo::DSM_regs& first, const algo::DSM_regs& second)
+{
+    bool ok = true;
+
+    ok &= compare_and_trace(first.dsm_x_offset, second.dsm_x_offset, "second.dsm_x_offset");
+    ok &= compare_and_trace(first.dsm_y_offset, second.dsm_y_offset, "second.dsm_y_offset");
+    ok &= compare_and_trace(first.dsm_x_scale, second.dsm_x_scale, "second.dsm_x_scale");
+    ok &= compare_and_trace(first.dsm_y_scale, second.dsm_y_scale, "second.dsm_y_scale");
+
+    return ok;
+}
+
+template< typename D>  // F=in bin; D=in memory
+bool compare_to_bin_file(
+    D const & obj_cpp,
+    std::string const & scene_dir,
+    std::string const & filename
+)
+{
+    TRACE("Comparing " << filename << " ...");
+    bool ok = true;
+    auto obj_matlab = read_from< D >(bin_dir(scene_dir) + filename);
+
+    return obj_matlab == obj_cpp;
 }

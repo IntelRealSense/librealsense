@@ -7,13 +7,10 @@ void compare_scene( std::string const & scene_dir )
     TRACE( "Loading " << scene_dir << " ..." );
 
     camera_params ci = read_camera_params( scene_dir, "ac1x\\camera_params" );
-    //dsm_params dsm = read_dsm_params(scene_dir, "ac1x\\DSM_params");
+    dsm_params dsm = read_dsm_params(scene_dir, "ac1x\\DSM_params");
     scene_metadata md( scene_dir );
 
     algo::optimizer cal;
-
-    rs2_dsm_params dsm_params{ 1.844674407370955e+19,
-        (15 << 8) + 255, 1, 1, 1, 0, 0, 0, 1.275000000000000e+02 };
 
     init_algo( cal, scene_dir,
         md.rgb_file,
@@ -21,7 +18,7 @@ void compare_scene( std::string const & scene_dir )
         md.ir_file,
         md.z_file,
         ci,
-        dsm_params);
+        dsm.dsm_params);
 
     auto& z_data = cal.get_z_data();
     auto& ir_data = cal.get_ir_data();
@@ -210,8 +207,10 @@ void compare_scene( std::string const & scene_dir )
     // Our code doesn't count the first iteration; the Matlab code starts at 1 even if it doesn't do anything...
     REQUIRE( cal.optimize( cb ) + 1 == md.n_iterations );
 
+    auto dsm_orig = algo::apply_ac_res_on_dsm_model(dsm.dsm_params, dsm.dsm_regs, algo::ac_to_dsm_dir::inverse);
+    CHECK(compare_to_bin_file< algo::DSM_regs >(dsm_orig,
+        scene_dir, "ac1x\\dsmRegsOrig_1x4_single_00.bin"));
 
-    //algo::apply_ac_res_on_dsm_model()
     auto new_calibration = cal.get_calibration();
     auto cost = cal.get_cost();
 

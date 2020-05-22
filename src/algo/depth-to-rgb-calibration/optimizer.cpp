@@ -715,6 +715,15 @@ end*/
     depth_filter(_z.vertices, _z.vertices_all, _z.is_inside, 1, _z.is_inside.size());
     depth_filter(_z.section_map_depth_inside, _z.valid_section_map, _z.is_inside, 1, _z.is_inside.size());
     depth_filter(_z.weights, weights, _z.is_inside, 1, _z.is_inside.size());
+
+    _z.relevant_pixels_image.resize(_z.width * _z.height, 0);
+    std::vector<double> sub_pixel_x = _z.subpixels_x;
+    std::vector<double> sub_pixel_y= _z.subpixels_y;
+
+    transform(_z.subpixels_x.begin(), _z.subpixels_x.end(), sub_pixel_x.begin(), [](double x) {return std::ceil(x + 1); });
+    transform(_z.subpixels_y.begin(), _z.subpixels_y.end(), sub_pixel_y.begin(), [](double x) {return std::ceil(x + 1); });
+
+    //relevant_pixels_image
 }
 
 
@@ -1527,9 +1536,9 @@ void optimizer::write_data_to( std::string const & dir )
 }
 
 optimaization_params optimizer::back_tracking_line_search( const z_frame_data & z_data, 
-	const yuy2_frame_data& yuy_data, 
-	optimaization_params curr_params,
-	iteration_data_collect * data)
+    const yuy2_frame_data& yuy_data, 
+    optimaization_params curr_params,
+    iteration_data_collect * data)
 {
     optimaization_params new_params;
 
@@ -1545,12 +1554,12 @@ optimaization_params optimizer::back_tracking_line_search( const z_frame_data & 
     
     auto uvmap_old = get_texture_map( z_data.vertices, _original_calibration/*decompose(curr_params.curr_p_mat)*/, curr_params.curr_p_mat);
     curr_params.cost = calc_cost( z_data, yuy_data, uvmap_old);
-	
 
-	auto uvmap_new = get_texture_map( z_data.vertices, _original_calibration/*decompose(new_params.curr_p_mat)*/, new_params.curr_p_mat);
+
+    auto uvmap_new = get_texture_map( z_data.vertices, _original_calibration/*decompose(new_params.curr_p_mat)*/, new_params.curr_p_mat);
     new_params.cost = calc_cost( z_data, yuy_data, uvmap_new);
 
-	auto diff = calc_cost_per_vertex_diff(z_data, yuy_data, uvmap_old, uvmap_new);
+    auto diff = calc_cost_per_vertex_diff(z_data, yuy_data, uvmap_old, uvmap_new);
 
     auto iter_count = 0;
     while( diff >= step_size * t && abs( step_size ) > _params.min_step_size && iter_count++ < _params.max_back_track_iters )
@@ -1559,10 +1568,10 @@ optimaization_params optimizer::back_tracking_line_search( const z_frame_data & 
         step_size = _params.tau*step_size;
 
         new_params.curr_p_mat = curr_params.curr_p_mat + unit_grad * step_size;
-		
-		uvmap_new = get_texture_map( z_data.vertices, _original_calibration/*decompose(new_params.curr_p_mat)*/, new_params.curr_p_mat);
-		new_params.cost = calc_cost(z_data, yuy_data, uvmap_new);
-		diff = calc_cost_per_vertex_diff(z_data, yuy_data, uvmap_old, uvmap_new);
+        
+        uvmap_new = get_texture_map( z_data.vertices, _original_calibration/*decompose(new_params.curr_p_mat)*/, new_params.curr_p_mat);
+        new_params.cost = calc_cost(z_data, yuy_data, uvmap_new);
+        diff = calc_cost_per_vertex_diff(z_data, yuy_data, uvmap_old, uvmap_new);
     }
 
     if(diff >= step_size * t )
@@ -1570,15 +1579,15 @@ optimaization_params optimizer::back_tracking_line_search( const z_frame_data & 
         new_params = curr_params;
     }
 
-	if (data)
-	{
-		data->grads_norma = curr_params.calib_gradients.get_norma();
-		data->grads_norm = grads_norm;
-		data->normalized_grads = normalized_grads;
-		data->unit_grad = unit_grad;
-		data->back_tracking_line_search_iters = iter_count;
-		data->t = t;
-	}
+    if (data)
+    {
+        data->grads_norma = curr_params.calib_gradients.get_norma();
+        data->grads_norm = grads_norm;
+        data->normalized_grads = normalized_grads;
+        data->unit_grad = unit_grad;
+        data->back_tracking_line_search_iters = iter_count;
+        data->t = t;
+    }
     return new_params;
 }
 
@@ -1608,7 +1617,7 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
 {
     optimaization_params params_orig;
     params_orig.curr_p_mat = _original_calibration.calc_p_mat();
-	
+
     auto res = calc_cost_and_grad( _z, _yuy, _original_calibration, params_orig.curr_p_mat );
     params_orig.cost = res.first;
     params_orig.calib_gradients = res.second;

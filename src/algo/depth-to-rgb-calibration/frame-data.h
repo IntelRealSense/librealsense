@@ -66,10 +66,11 @@ namespace depth_to_rgb_calibration {
         std::vector<double> gradient_x;
         std::vector<double> gradient_y;
         std::vector<double> edges;
-        std::vector<double> supressed_edges;                
+        std::vector<double> supressed_edges;
         size_t n_strong_edges;
         std::vector<double> subpixels_x;
         std::vector<double> subpixels_y;
+        std::vector<double> relevant_pixels_image;
         std::vector<double> weights;
         std::vector<double> direction_deg;
         std::vector<double3> vertices_all; 
