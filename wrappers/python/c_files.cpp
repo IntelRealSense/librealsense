@@ -4,6 +4,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include "python.hpp"
 #include "../include/librealsense2/rs.h"
 #include <iomanip>
+#include "types.h"
 
 std::string make_pythonic_str(std::string str)
 {
@@ -82,30 +83,7 @@ void init_c_files(py::module &m) {
             []( const rs2_dsm_params & self )
             {
                 std::ostringstream ss;
-                ss << "dsm[";
-                time_t t = self.timestamp;
-                auto ptm = localtime( &t );
-                char buf[256];
-                strftime( buf, sizeof(buf), "%F.%T ", ptm );
-                ss << buf;
-                unsigned patch = self.version & 0xF;
-                unsigned minor = (self.version >> 4) & 0xFF;
-                unsigned major = (self.version >> 12);
-                ss << major << '.' << minor << '.' << patch << ' ';
-                switch( self.model )
-                {
-                case RS2_DSM_CORRECTION_NONE: break;
-                case RS2_DSM_CORRECTION_AOT: ss << "AoT "; break;
-                case RS2_DSM_CORRECTION_TOA: ss << "ToA "; break;
-                }
-                ss << "x[" << self.h_scale << " " << self.v_scale << "] ";
-                ss << "+[" << self.h_offset << " " << self.v_offset;
-                if( self.rtd_offset )
-                    ss << " rtd " << self.rtd_offset;
-                ss << "]";
-                if( self.temp_x2 )
-                    ss << " @" << float(self.temp_x2)/2 << "degC";
-                ss << "]";
+                ss << self;
                 return ss.str();
             } );
 
