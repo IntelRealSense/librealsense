@@ -4,12 +4,10 @@
 #include "depth-to-rgb-calibration.h"
 #include <librealsense2/rs.hpp>
 #include "core/streaming.h"
+#include "calibrated-sensor.h"
 #include "context.h"
-
-#define AC_LOG_PREFIX "AC1: "
-#define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
-//#define AC_LOG(TYPE,MSG) LOG_ERROR( AC_LOG_PREFIX << MSG )
-//#define AC_LOG(TYPE,MSG) std::cout << (std::string)( to_string() << "-" << #TYPE [0] << "- " << MSG ) << std::endl
+#include "api.h"  // VALIDATE_INTERFACE_NO_THROW
+#include "algo/depth-to-rgb-calibration/debug.h"
 
 
 using namespace librealsense;
@@ -67,12 +65,21 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
         ir_profile.width(), ir_profile.height()
     );
 
+    auto si = ((frame_interface *) depth.get() )->get_sensor();
+    auto cs = VALIDATE_INTERFACE_NO_THROW( si, librealsense::calibrated_sensor );
+    if( !cs )
+    {
+        // We can only calibrate depth sensors that supply this interface!
+        throw librealsense::not_implemented_exception( "the depth frame supplied is not from a calibrated_sensor" );
+    }
+    _dsm_params = cs->get_dsm_params();
+
     AC_LOG( DEBUG, "... setting z data" );
     auto z_profile = depth.get_profile().as< rs2::video_stream_profile >();
     auto z_data = (impl::z_t const *) depth.get_data();
     _algo.set_z_data(
         std::vector< impl::z_t >( z_data, z_data + depth.get_data_size() / sizeof( impl::z_t ) ),
-        z_profile.get_intrinsics(),
+        z_profile.get_intrinsics(), _dsm_params,
         depth.as< rs2::depth_frame >().get_units() * 1000.f   // same scaling as for extrinsics!
     );
 
@@ -158,23 +165,16 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
 
 void depth_to_rgb_calibration::debug_calibration( char const * prefix )
 {
-    AC_LOG( DEBUG, prefix << " intr"
-        << ": width: " << _intr.width
-        << ", height: " << _intr.height
-        << ", ppx: " << _intr.ppx
-        << ", ppy: " << _intr.ppy
-        << ", fx: " << _intr.fx
-        << ", fy: " << _intr.fy
-        << ", model: " << int( _intr.model)
-        << ", coeffs: ["
-        << _intr.coeffs[0] << ", " << _intr.coeffs[1] << ", " << _intr.coeffs[2] << ", " << _intr.coeffs[3] << ", " << _intr.coeffs[4]
-        << "]" );
-    AC_LOG( DEBUG, prefix << " extr:"
-        << " rotation: ["
-        << _extr.rotation[0] << ", " << _extr.rotation[1] << ", " << _extr.rotation[2] << ", " << _extr.rotation[3] << ", " << _extr.rotation[4] << ", "
-        << _extr.rotation[5] << ", " << _extr.rotation[6] << ", " << _extr.rotation[7] << ", " << _extr.rotation[8]
-        << "]  translation: ["
-        << _extr.translation[0] << ", " << _extr.translation[1] << ", " << _extr.translation[2]
-        << "]" );
+    AC_LOG( DEBUG, std::setprecision( std::numeric_limits< float >::max_digits10 )
+                       << prefix << " intr[ "
+                       << _intr.width << "x" << _intr.height
+                       << "  ppx: " << _intr.ppx << ", ppy: " << _intr.ppy << ", fx: " << _intr.fx
+                       << ", fy: " << _intr.fy << ", model: " << int( _intr.model ) << " coeffs["
+                       << _intr.coeffs[0] << ", " << _intr.coeffs[1] << ", " << _intr.coeffs[2]
+                       << ", " << _intr.coeffs[3] << ", " << _intr.coeffs[4] << "] ]" );
+    AC_LOG( DEBUG, std::setprecision( std::numeric_limits< float >::max_digits10 )
+                       << prefix << " extr" << _extr );
+    AC_LOG( DEBUG, std::setprecision( std::numeric_limits< float >::max_digits10 )
+                       << prefix << " dsm" << _dsm_params );
 }
 

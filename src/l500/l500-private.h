@@ -83,6 +83,86 @@ namespace librealsense
             ac_depth_results() {}
             ac_depth_results( rs2_dsm_params const & dsm_params ) : params( dsm_params ) {}
         };
+        struct algo_calibration_info
+        {
+            static const int table_id = 0x13;
+
+            uint16_t version = 0x0100;
+            uint16_t id = table_id;
+            uint32_t size = sizeof( algo_calibration_info );  // 0x1F0
+            uint32_t full_version = 0xFFFFFFFF;
+            uint32_t crc32;  // of the following data
+            uint32_t DIGGundistFx;
+            uint32_t DIGGundistFy;
+            int32_t  DIGGundistX0;
+            int32_t  DIGGundistY0;
+            uint8_t  DESThbaseline;
+            float    DESTbaseline;
+            float    FRMWxfov[5];
+            float    FRMWyfov[5];
+            float    FRMWprojectionYshear[5];
+            float    FRMWlaserangleH;
+            float    FRMWlaserangleV;
+            uint16_t FRMWcalMarginL;
+            uint16_t FRMWcalMarginR;
+            uint16_t FRMWcalMarginT;
+            uint16_t FRMWcalMarginB;
+            uint8_t  FRMWxR2L;
+            uint8_t  FRMWyflip;
+            float    EXTLdsmXscale;
+            float    EXTLdsmYscale;
+            float    EXTLdsmXoffset;
+            float    EXTLdsmYoffset;
+            uint32_t EXTLconLocDelaySlow;
+            uint32_t EXTLconLocDelayFastC;
+            uint32_t EXTLconLocDelayFastF;
+            uint16_t FRMWcalImgHsize;
+            uint16_t FRMWcalImgVsize;
+            float    FRMWpolyVars[3];
+            float    FRMWpitchFixFactor;
+            uint32_t FRMWzoRawCol[5];
+            uint32_t FRMWzoRawRow[5];
+            float    FRMWdfzCalTmp;
+            float    FRMWdfzVbias[3];
+            float    FRMWdfzIbias[3];
+            float    FRMWdfzApdCalTmp;
+            float    FRMWatlMinVbias1;
+            float    FRMWatlMaxVbias1;
+            float    FRMWatlMinVbias2;
+            float    FRMWatlMaxVbias2;
+            float    FRMWatlMinVbias3;
+            float    FRMWatlMaxVbias3;
+            float    FRMWundistAngHorz[4];
+            float    FRMWundistAngVert[4];
+            uint8_t  FRMWfovexExistenceFlag;
+            float    FRMWfovexNominal[4];
+            uint8_t  FRMWfovexLensDistFlag;
+            float    FRMWfovexRadialK[3];
+            float    FRMWfovexTangentP[2];
+            float    FRMWfovexCenter[2];
+            uint32_t FRMWcalibVersion;
+            uint32_t FRMWconfigVersion;
+            uint32_t FRMWeepromVersion;
+            float    FRMWconLocDelaySlowSlope;
+            float    FRMWconLocDelayFastSlope;
+            int16_t  FRMWatlMinAngXL;
+            int16_t  FRMWatlMinAngXR;
+            int16_t  FRMWatlMaxAngXL;
+            int16_t  FRMWatlMaxAngXR;
+            int16_t  FRMWatlMinAngYU;
+            int16_t  FRMWatlMinAngYB;
+            int16_t  FRMWatlMaxAngYU;
+            int16_t  FRMWatlMaxAngYB;
+            float    FRMWatlSlopeMA;
+            float    FRMWatlMaCalTmp;
+            uint16_t FRMWvddVoltValues[2];
+            int16_t  FRMWvdd2RtdDiff;
+            int16_t  FRMWvdd3RtdDiff;
+            int16_t  FRMWvdd4RtdDiff;
+            float    FRMWdfzCalibrationLddTemp;
+            float    FRMWdfzCalibrationVddVal;
+            float    FRMWhumidApdTempDiff;
+        };
 #pragma pack(pop)
 
         enum gvd_fields
@@ -415,6 +495,7 @@ namespace librealsense
 
             rs2_extrinsics _extr;
             rs2_intrinsics _intr;
+            rs2_dsm_params _dsm_params;
             stream_profile_interface* _from_profile;
             stream_profile_interface* _to_profile;
 
@@ -452,6 +533,7 @@ namespace librealsense
 
             rs2_extrinsics const & get_extrinsics() const { return _extr; }
             rs2_intrinsics const & get_intrinsics() const { return _intr; }
+            rs2_dsm_params const & get_dsm_params() const { return _dsm_params; }
             stream_profile_interface * get_from_profile() const { return _from_profile; }
             stream_profile_interface * get_to_profile() const { return _to_profile; }
 

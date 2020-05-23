@@ -203,12 +203,12 @@ namespace librealsense
 
     void l500_depth_sensor::override_intrinsics( rs2_intrinsics const & intr )
     {
-        throw std::logic_error( "depth sensor does not support intrinsics override" );
+        throw librealsense::not_implemented_exception( "depth sensor does not support intrinsics override" );
     }
 
     void l500_depth_sensor::override_extrinsics( rs2_extrinsics const & extr )
     {
-        throw std::logic_error( "depth sensor does not support extrinsics override" );
+        throw librealsense::not_implemented_exception( "depth sensor does not support extrinsics override" );
     }
 
 #pragma pack(push, 1)
@@ -245,14 +245,15 @@ namespace librealsense
             time_t t;
             time( &t );                           // local time
             p.timestamp = mktime( gmtime( &t ));  // UTC time
-            p.version = (RS2_API_MAJOR_VERSION << 12) | (RS2_API_MINOR_VERSION << 4) | RS2_API_PATCH_VERSION;
+            p.version = ac_depth_results::this_version;
             p.model = RS2_DSM_CORRECTION_AOT;
             p.h_scale = p.v_scale = 1.;
             return p;
         }
     }
 
-    void l500_depth_sensor::override_dsm_params( rs2_dsm_params const & dsm_params ) {
+    void l500_depth_sensor::override_dsm_params( rs2_dsm_params const & dsm_params )
+    {
         /*  Considerable values for DSM correction:
             - h/vFactor: 0.98-1.02, representing up to 2% change in FOV.
             - h/vOffset:
@@ -268,15 +269,16 @@ namespace librealsense
         time_t t;
         time( &t );                                       // local time
         table.params.timestamp = mktime( gmtime( &t ) );  // UTC time
-        table.params.version =
-            ( RS2_API_MAJOR_VERSION << 12 ) | ( RS2_API_MINOR_VERSION << 4 ) | RS2_API_PATCH_VERSION;
+        table.params.version = ac_depth_results::this_version;
 
         // The temperature may depend on streaming?
         auto res = _owner->_hw_monitor->send( command{TEMPERATURES_GET} );
-        if( res.size() < sizeof( temperatures ) ) {  // New temperatures may get added by FW...
+        if( res.size() < sizeof( temperatures ) )  // New temperatures may get added by FW...
+        {
             AC_LOG( ERROR, "Failed to get temperatures; result size= " << res.size() << "; expecting at least " << sizeof( temperatures ) );
         }
-        else {
+        else
+        {
             auto const & ts = *( reinterpret_cast<temperatures *>( res.data() ) );
             table.params.temp_x2 = byte( ts.LDD_temperature * 2 );
         }

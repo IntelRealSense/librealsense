@@ -166,17 +166,13 @@ namespace depth_to_rgb_calibration {
     public:
         optimizer();
 
-        void set_yuy_data(
-            std::vector< yuy_t > && yuy_data,
-            std::vector< yuy_t > && prev_yuy_data,
-            calib const & calibration );
-        void set_ir_data(
-            std::vector< ir_t > && ir_data,
-            size_t width, size_t height );
-        void set_z_data(
-            std::vector< z_t >&& z_data,
-            rs2_intrinsics_double const& depth_intrinsics,
-            float depth_units);
+        void set_yuy_data( std::vector< yuy_t > && yuy_data, std::vector< yuy_t > && prev_yuy_data,
+                           calib const & calibration );
+        void set_ir_data( std::vector< ir_t > && ir_data, size_t width, size_t height );
+        void set_z_data( std::vector< z_t > && z_data,
+                         rs2_intrinsics_double const & depth_intrinsics,
+                         rs2_dsm_params const & dms_params, float depth_units );
+
         // Write dumps of all the pertinent data from the above to a directory of choice, so that
         // a reproduction can be made
         void write_data_to( std::string const & directory );

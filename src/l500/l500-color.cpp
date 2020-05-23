@@ -166,36 +166,11 @@ namespace librealsense
 
 
         _color_device_idx = add_sensor(create_color_device(ctx, color_devs_info));
-
-        if( _autocal )
-        {
-            // Have the auto-calibration mechanism notify us when calibration has finished
-            _autocal->register_callback(
-                [&]( rs2_calibration_status status )
-                {
-                    if( status == RS2_CALIBRATION_SUCCESSFUL )
-                    {
-                        AC_LOG( DEBUG, "------> updating intrinsics..." );
-                        auto && intr = _autocal->get_intrinsics();
-                        auto profile = to_profile( _autocal->get_to_profile() );
-                        update_intrinsics( profile, intr );
-                        AC_LOG( DEBUG, "------> updating extrinsics..." );
-                        environment::get_instance().get_extrinsics_graph().override_extrinsics( *_depth_stream, *_color_stream, _autocal->get_extrinsics() );
-
-                        AC_LOG( DEBUG, "done" );
-                    }
-                    for( auto&& cb : _calibration_change_callbacks )
-                        cb->on_calibration_change( status );
-            } );
-        }
     }
 
-    void l500_color::trigger_device_calibration( rs2_calibration_type type )
+    l500_color_sensor * l500_color::get_color_sensor()
     {
-        if( type != RS2_CALIBRATION_DEPTH_TO_RGB )
-            throw std::runtime_error( to_string() << "unsupported calibration type (" << type << ")" );
-        if( _autocal )
-            _autocal->trigger_special_frame();
+        return &dynamic_cast< l500_color_sensor & >( get_sensor( _color_device_idx ));
     }
 
 
@@ -256,18 +231,6 @@ namespace librealsense
             auto & model = intrinsic.resolution.intrinsic_resolution[i];
             if( model.height != profile.height || model.width != profile.width )
                 continue;
-
-            AC_LOG( DEBUG, "new intr (" << i << ")"
-                << ": width: " << intr.width
-                << ", height: " << intr.height
-                << ", ppx: " << intr.ppx
-                << ", ppy: " << intr.ppy
-                << ", fx: " << intr.fx
-                << ", fy: " << intr.fy
-                << ", model: " << intr.model
-                << ", coeffs: ["
-                << intr.coeffs[0] << ", " << intr.coeffs[1] << ", " << intr.coeffs[2] << ", " << intr.coeffs[3] << ", " << intr.coeffs[4]
-                << "]" );
 
             model.ipm.focal_length.x = intr.fx;
             model.ipm.focal_length.y = intr.fy;

@@ -70,6 +70,8 @@ namespace librealsense
             l500_depth(ctx, group)
         {}
 
+        l500_color_sensor * get_color_sensor() override { return nullptr; }
+
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
     };
 

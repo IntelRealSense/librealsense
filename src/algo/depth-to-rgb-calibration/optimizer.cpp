@@ -274,15 +274,17 @@ void grid_xy(
     }
 }
 template<class T>
-std::vector<double> interpolation(std::vector<T> const &grid_points, std::vector<double> x[], std::vector<double> y[], int dim, int valid_size, int valid_width)
+std::vector< double > interpolation( std::vector< T > const & grid_points,
+                                     std::vector< double > const x[], std::vector< double > const y[],
+                                     size_t dim, size_t valid_size, size_t valid_width )
 {
     // interpolation 
 
     std::vector<double> local_interp;
     auto iedge_it = grid_points.begin();// iEdge   
-    std::vector<double>::iterator loc_reg_x[4];
-    std::vector<double>::iterator loc_reg_y[4];
-    for (auto i=0;i<dim;i++)
+    std::vector<double>::const_iterator loc_reg_x[4];
+    std::vector<double>::const_iterator loc_reg_y[4];
+    for( auto i = 0; i < dim; i++ )
     {
         loc_reg_x[i] = x[i].begin();
         loc_reg_y[i] = y[i].begin();
@@ -300,7 +302,7 @@ std::vector<double> interpolation(std::vector<T> const &grid_points, std::vector
     }
     return local_interp;
 }
-std::vector<uint8_t> is_suppressed(std::vector<double>& local_edges, int valid_size)
+std::vector<uint8_t> is_suppressed(std::vector<double> const & local_edges, size_t valid_size)
 {
     std::vector<uint8_t> is_supressed;
     auto loc_edg_it = local_edges.begin();
@@ -355,7 +357,7 @@ std::vector< double > find_valid_depth_edges(std::vector<double> grad_in_directi
     for (int i = 0; i < grad_in_direction.size(); i++)
     {
         bool cond1 = *(grad_in_direction.begin() + i) > threshold;
-        bool cond2 = *(is_supressed.begin() + i) == true;
+        bool cond2 = *(is_supressed.begin() + i);
         bool cond3 = *(values_for_subedges.begin() + i) > 0;
         if (cond1 && cond2 && cond3)
         {
@@ -388,6 +390,7 @@ std::vector<double> find_local_values_min(std::vector<double>& local_values)
 void optimizer::set_z_data(
     std::vector< z_t >&& depth_data,
     rs2_intrinsics_double const& depth_intrinsics,
+    rs2_dsm_params const & dsm_params,
     float depth_units)
 {
     /*[zEdge,Zx,Zy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.z),2); % Added the second input - margin to zero out

@@ -151,6 +151,7 @@ struct camera_params
 {
     librealsense::algo::depth_to_rgb_calibration::rs2_intrinsics_double rgb;
     librealsense::algo::depth_to_rgb_calibration::rs2_intrinsics_double z;
+    rs2_dsm_params dsm_params;
     librealsense::algo::depth_to_rgb_calibration::rs2_extrinsics_double extrinsics;
     double z_units = 0.25f;
 };
