@@ -123,7 +123,7 @@ void print<algo::p_matrix, algo::p_matrix>( size_t x, algo::p_matrix f, algo::p_
 
 template<
     typename F, typename D,
-    std::enable_if_t< !std::numeric_limits< D >::is_exact && !std::is_enum< D >::value, int > = 0
+    typename std::enable_if< !std::numeric_limits< D >::is_exact && !std::is_enum< D >::value, int >::type = 0
 >
 bool compare_t( F f, D d )
 {
@@ -131,7 +131,7 @@ bool compare_t( F f, D d )
 }
 
 template< typename F, typename D,
-    std::enable_if_t< std::numeric_limits< D >::is_exact || std::is_enum< D >::value, int > = 0
+    typename std::enable_if< std::numeric_limits< D >::is_exact || std::is_enum< D >::value, int >::type = 0
 >
 bool compare_t( F f, D d )
 {

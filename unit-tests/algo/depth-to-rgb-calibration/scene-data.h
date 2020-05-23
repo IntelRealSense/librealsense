@@ -38,7 +38,7 @@ void read_data_from( std::string const & filename, T * data )
     size_t cb = f.tellg();
     f.seekg( 0, f.beg );
     if( cb != sizeof( T ) )
-        throw std::runtime_error( to_string()
+        throw std::runtime_error( librealsense::to_string()
             << "file size (" << cb << ") does not match data size (" << sizeof( T ) << "): " << filename );
     std::vector< T > vec( cb / sizeof( T ) );
     f.read( (char *)data, cb );
@@ -75,7 +75,7 @@ std::vector< T > read_image_file( std::string const &file, size_t width, size_t 
     size_t cb = f.tellg();
     f.seekg( 0, f.beg );
     if( cb != sizeof( T ) * width * height )
-        throw std::runtime_error( to_string()
+        throw std::runtime_error( librealsense::to_string()
             << "file size (" << cb << ") does not match expected size (" << sizeof( T ) * width * height << "): " << file );
     std::vector< T > data( width * height );
     f.read( (char *)data.data(), width * height * sizeof( T ) );
@@ -201,7 +201,8 @@ camera_params read_camera_params( std::string const &scene_dir, std::string cons
               param.rotation[3], param.rotation[4], param.rotation[5],
               param.rotation[6], param.rotation[7], param.rotation[8] },
             { param.translation[0], param.translation[1], param.translation[2] }
-        }
+        },
+        0.25  // z_units
     };
     return ci;
 }
