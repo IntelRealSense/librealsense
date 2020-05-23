@@ -206,7 +206,7 @@ void optimizer::collect_decision_params(z_frame_data& z_data, yuy2_frame_data& y
 }
 bool svm_rbf_predictor(std::vector< double >& features, svm_model_gaussian& svm_model)
 {
-    bool res = TRUE;
+    bool res = true;
     std::vector< double > x_norm;
     // Applying the model
     for (auto i = 0; i < features.size(); i++)
@@ -247,7 +247,7 @@ bool svm_rbf_predictor(std::vector< double >& features, svm_model_gaussian& svm_
 
     if (score < 0)
     {
-        res = FALSE;
+        res = false;
     }
     return res;
 }
@@ -287,7 +287,7 @@ bool optimizer::valid_by_svm(svm_model model)
 }
 bool optimizer::is_valid_results()
 {
-    bool res = TRUE;
+    bool res = true;
      //Clip any (average) movement of pixels if it's too big
     clip_pixel_movement();
 
@@ -327,7 +327,7 @@ bool optimizer::is_valid_results()
         for( size_t x = 0; x < _z.cost_diff_per_section.size(); ++x )
             AC_LOG( DEBUG, "... cost diff in section " << x << "= " << _z.cost_diff_per_section[x] );
         //return false;
-        res = FALSE;
+        res = false;
     }
 
     bool res_svm = valid_by_svm(gaussian); //(gaussian);// (linear);
