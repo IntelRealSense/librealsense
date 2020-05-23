@@ -207,7 +207,7 @@ static bool isDir( const std::string& path, DIR* dir )
 
     return status && ((attributes & FILE_ATTRIBUTE_DIRECTORY) != 0);
 #else
-    CV_UNUSED( dir );
+    (void)dir;  // avoid warnings about unused params
     struct stat stat_buf;
     if( 0 != stat( path.c_str(), &stat_buf ) )
         return false;
