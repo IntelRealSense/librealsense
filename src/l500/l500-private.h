@@ -59,6 +59,7 @@ namespace librealsense
             HW_RESET                    = 0x20, //"HW Reset"
             AMCSET                      = 0x2B, // Set options (L515)
             AMCGET                      = 0x2C, // Get options (L515)
+            DELETE_TABLE                = 0x2E,
             PFD                         = 0x3B, // Disable power features <Parameter1 Name="0 - Disable, 1 - Enable" />
             READ_TABLE                  = 0x43,
             WRITE_TABLE                 = 0x44,
@@ -77,10 +78,90 @@ namespace librealsense
             static const int table_id = 0x240;
             static const uint16_t this_version = (RS2_API_MAJOR_VERSION << 12 | RS2_API_MINOR_VERSION << 4 | RS2_API_PATCH_VERSION);
 
-            rs2_dsm_params params = { 0 };
+            rs2_dsm_params params;
 
-            ac_depth_results() = default;
+            ac_depth_results() {}
             ac_depth_results( rs2_dsm_params const & dsm_params ) : params( dsm_params ) {}
+        };
+        struct algo_calibration_info
+        {
+            static const int table_id = 0x13;
+
+            uint16_t version = 0x0100;
+            uint16_t id = table_id;
+            uint32_t size = sizeof( algo_calibration_info );  // 0x1F0
+            uint32_t full_version = 0xFFFFFFFF;
+            uint32_t crc32;  // of the following data
+            uint32_t DIGGundistFx;
+            uint32_t DIGGundistFy;
+            int32_t  DIGGundistX0;
+            int32_t  DIGGundistY0;
+            uint8_t  DESThbaseline;
+            float    DESTbaseline;
+            float    FRMWxfov[5];
+            float    FRMWyfov[5];
+            float    FRMWprojectionYshear[5];
+            float    FRMWlaserangleH;
+            float    FRMWlaserangleV;
+            uint16_t FRMWcalMarginL;
+            uint16_t FRMWcalMarginR;
+            uint16_t FRMWcalMarginT;
+            uint16_t FRMWcalMarginB;
+            uint8_t  FRMWxR2L;
+            uint8_t  FRMWyflip;
+            float    EXTLdsmXscale;
+            float    EXTLdsmYscale;
+            float    EXTLdsmXoffset;
+            float    EXTLdsmYoffset;
+            uint32_t EXTLconLocDelaySlow;
+            uint32_t EXTLconLocDelayFastC;
+            uint32_t EXTLconLocDelayFastF;
+            uint16_t FRMWcalImgHsize;
+            uint16_t FRMWcalImgVsize;
+            float    FRMWpolyVars[3];
+            float    FRMWpitchFixFactor;
+            uint32_t FRMWzoRawCol[5];
+            uint32_t FRMWzoRawRow[5];
+            float    FRMWdfzCalTmp;
+            float    FRMWdfzVbias[3];
+            float    FRMWdfzIbias[3];
+            float    FRMWdfzApdCalTmp;
+            float    FRMWatlMinVbias1;
+            float    FRMWatlMaxVbias1;
+            float    FRMWatlMinVbias2;
+            float    FRMWatlMaxVbias2;
+            float    FRMWatlMinVbias3;
+            float    FRMWatlMaxVbias3;
+            float    FRMWundistAngHorz[4];
+            float    FRMWundistAngVert[4];
+            uint8_t  FRMWfovexExistenceFlag;
+            float    FRMWfovexNominal[4];
+            uint8_t  FRMWfovexLensDistFlag;
+            float    FRMWfovexRadialK[3];
+            float    FRMWfovexTangentP[2];
+            float    FRMWfovexCenter[2];
+            uint32_t FRMWcalibVersion;
+            uint32_t FRMWconfigVersion;
+            uint32_t FRMWeepromVersion;
+            float    FRMWconLocDelaySlowSlope;
+            float    FRMWconLocDelayFastSlope;
+            int16_t  FRMWatlMinAngXL;
+            int16_t  FRMWatlMinAngXR;
+            int16_t  FRMWatlMaxAngXL;
+            int16_t  FRMWatlMaxAngXR;
+            int16_t  FRMWatlMinAngYU;
+            int16_t  FRMWatlMinAngYB;
+            int16_t  FRMWatlMaxAngYU;
+            int16_t  FRMWatlMaxAngYB;
+            float    FRMWatlSlopeMA;
+            float    FRMWatlMaCalTmp;
+            uint16_t FRMWvddVoltValues[2];
+            int16_t  FRMWvdd2RtdDiff;
+            int16_t  FRMWvdd3RtdDiff;
+            int16_t  FRMWvdd4RtdDiff;
+            float    FRMWdfzCalibrationLddTemp;
+            float    FRMWdfzCalibrationVddVal;
+            float    FRMWhumidApdTempDiff;
         };
 #pragma pack(pop)
 
@@ -227,13 +308,21 @@ namespace librealsense
             rgb_common common;
             resolutions_rgb resolution;
         };
-#pragma pack(pop)
+
+        struct temperatures {
+            double LDD_temperature;  // Laser Diode Driver
+            double MC_temperature;
+            double MA_temperature;
+            double APD_temperature;
+            double HUM_temperature;
+            double AlgoTermalLddAvg_temperature;
+        };
+#pragma pack( pop )
 
         rs2_extrinsics get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
 
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
                                          const platform::uvc_device_info& info, platform::usb_device_info& result);
-
 
         class l500_temperature_options : public readonly_option
         {
@@ -401,18 +490,21 @@ namespace librealsense
 
             std::atomic_bool _is_processing;
             std::thread _worker;
-            unsigned _n_retries;
+            unsigned _n_retries;    // how many tries for a special frame we made
+            unsigned _n_cycles;     // how many times AC tried to run
 
             rs2_extrinsics _extr;
             rs2_intrinsics _intr;
+            rs2_dsm_params _dsm_params;
             stream_profile_interface* _from_profile;
             stream_profile_interface* _to_profile;
 
             class retrier;
             std::shared_ptr< retrier > _retrier;
+            std::shared_ptr< retrier > _recycler;
 
         public:
-            /* For RS2_OPTION_AUTO_CALIBRATION_ENABLED */
+            /* For RS2_OPTION_CAMERA_ACCURACY_HEALTH_ENABLED */
             class enabler_option : public bool_option
             {
                 std::shared_ptr< auto_calibration > _autocal;
@@ -441,6 +533,7 @@ namespace librealsense
 
             rs2_extrinsics const & get_extrinsics() const { return _extr; }
             rs2_intrinsics const & get_intrinsics() const { return _intr; }
+            rs2_dsm_params const & get_dsm_params() const { return _dsm_params; }
             stream_profile_interface * get_from_profile() const { return _from_profile; }
             stream_profile_interface * get_to_profile() const { return _to_profile; }
 

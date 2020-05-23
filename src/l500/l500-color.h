@@ -10,14 +10,12 @@
 #include "l500-device.h"
 #include "stream.h"
 #include "l500-depth.h"
-#include "device-calibration.h"
 #include "calibrated-sensor.h"
 
 namespace librealsense
 {
     class l500_color
         : public virtual l500_device
-        , public device_calibration
     {
     public:
         std::shared_ptr<synthetic_sensor> create_color_device(std::shared_ptr<context> ctx,
@@ -26,16 +24,11 @@ namespace librealsense
         l500_color(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
 
+        l500_color_sensor * get_color_sensor() override;
+
         std::vector<tagged_profile> get_profiles_tags() const override;
 
         void update_intrinsics( const stream_profile& profile, rs2_intrinsics const& intr );
-
-        void register_calibration_change_callback( calibration_change_callback_ptr callback ) override
-        {
-            _calibration_change_callbacks.push_back( callback );
-        }
-
-        void trigger_device_calibration( rs2_calibration_type ) override;
 
     protected:
         std::shared_ptr<stream_interface> _color_stream;
@@ -51,8 +44,6 @@ namespace librealsense
 
         std::vector<uint8_t> get_raw_intrinsics_table() const;
         std::vector<uint8_t> get_raw_extrinsics_table() const;
-    
-        std::vector< calibration_change_callback_ptr > _calibration_change_callbacks;
     };
 
     class l500_color_sensor
@@ -78,6 +69,7 @@ namespace librealsense
         void override_extrinsics( rs2_extrinsics const& extr ) override;
         rs2_dsm_params get_dsm_params() const override;
         void override_dsm_params( rs2_dsm_params const & dsm_params ) override;
+        void reset_calibration() override;
 
         stream_profiles init_stream_profiles() override
         {

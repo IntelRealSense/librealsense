@@ -275,15 +275,17 @@ void grid_xy(
     }
 }
 template<class T>
-std::vector<double> interpolation(std::vector<T> const &grid_points, std::vector<double> x[], std::vector<double> y[], int dim, int valid_size, int valid_width)
+std::vector< double > interpolation( std::vector< T > const & grid_points,
+                                     std::vector< double > const x[], std::vector< double > const y[],
+                                     size_t dim, size_t valid_size, size_t valid_width )
 {
     // interpolation 
 
     std::vector<double> local_interp;
     auto iedge_it = grid_points.begin();// iEdge   
-    std::vector<double>::iterator loc_reg_x[4];
-    std::vector<double>::iterator loc_reg_y[4];
-    for (auto i=0;i<dim;i++)
+    std::vector<double>::const_iterator loc_reg_x[4];
+    std::vector<double>::const_iterator loc_reg_y[4];
+    for( auto i = 0; i < dim; i++ )
     {
         loc_reg_x[i] = x[i].begin();
         loc_reg_y[i] = y[i].begin();
@@ -301,7 +303,7 @@ std::vector<double> interpolation(std::vector<T> const &grid_points, std::vector
     }
     return local_interp;
 }
-std::vector<uint8_t> is_suppressed(std::vector<double>& local_edges, int valid_size)
+std::vector<uint8_t> is_suppressed(std::vector<double> const & local_edges, size_t valid_size)
 {
     std::vector<uint8_t> is_supressed;
     auto loc_edg_it = local_edges.begin();
@@ -356,7 +358,7 @@ std::vector< double > find_valid_depth_edges(std::vector<double> grad_in_directi
     for (int i = 0; i < grad_in_direction.size(); i++)
     {
         bool cond1 = *(grad_in_direction.begin() + i) > threshold;
-        bool cond2 = *(is_supressed.begin() + i) == true;
+        bool cond2 = *(is_supressed.begin() + i);
         bool cond3 = *(values_for_subedges.begin() + i) > 0;
         if (cond1 && cond2 && cond3)
         {
@@ -389,8 +391,8 @@ std::vector<double> find_local_values_min(std::vector<double>& local_values)
 void optimizer::set_z_data(
     std::vector< z_t >&& depth_data,
     rs2_intrinsics_double const& depth_intrinsics,
-    float depth_units,
-    rs2_dsm_params params)
+    rs2_dsm_params const & dsm_params,
+    float depth_units)
 {
     /*[zEdge,Zx,Zy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.z),2); % Added the second input - margin to zero out
     [iEdge,Ix,Iy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.i),2); % Added the second input - margin to zero out
@@ -399,7 +401,7 @@ void optimizer::set_z_data(
     _z.width = depth_intrinsics.width;
     _z.height = depth_intrinsics.height;
     _z.orig_intrinsics = depth_intrinsics;
-    _z.orig_dsm_params = params;
+    _z.orig_dsm_params = dsm_params;
     _z.depth_units = depth_units;
 
     _z.frame = std::move(depth_data);
@@ -702,10 +704,10 @@ end*/
     weights = weights(isInside);
     vertices = vertices(isInside,:);
     sectionMapDepth = sectionMapDepth(isInside);*/
-    std::vector<double> weights;
+    //std::vector<double> weights;
     for (auto i = 0; i < _z.is_inside.size(); i++) {
 
-        weights.push_back(_params.constant_weights);
+        _z.valid_weights.push_back(_params.constant_weights);
     }
     depth_filter(_z.subpixels_x, _z.valid_edge_sub_pixel_x, _z.is_inside, 1, _z.is_inside.size());
     depth_filter(_z.subpixels_y, _z.valid_edge_sub_pixel_y, _z.is_inside, 1, _z.is_inside.size());
@@ -714,7 +716,7 @@ end*/
     depth_filter(_z.directions, _z.valid_directions, _z.is_inside, 1, _z.is_inside.size());
     depth_filter(_z.vertices, _z.vertices_all, _z.is_inside, 1, _z.is_inside.size());
     depth_filter(_z.section_map_depth_inside, _z.valid_section_map, _z.is_inside, 1, _z.is_inside.size());
-    depth_filter(_z.weights, weights, _z.is_inside, 1, _z.is_inside.size());
+    depth_filter(_z.weights, _z.valid_weights, _z.is_inside, 1, _z.is_inside.size());
 
     _z.relevant_pixels_image.resize(_z.width * _z.height, 0);
     std::vector<double> sub_pixel_x = _z.subpixels_x;
@@ -1382,7 +1384,12 @@ params::params()
     // NOTE: until we know the resolution, the current state is just the default!
     // We need to get the depth and rgb resolutions to make final decisions!
 }
-
+svm_model_linear::svm_model_linear()
+{
+}
+svm_model_gaussian::svm_model_gaussian()
+{
+}
 void params::set_depth_resolution( size_t width, size_t height )
 {
     AC_LOG( DEBUG, "... depth resolution= " << width << "x" << height );

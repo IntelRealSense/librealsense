@@ -3,6 +3,8 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
 #include "../include/librealsense2/rs.h"
+#include <iomanip>
+#include "types.h"
 
 std::string make_pythonic_str(std::string str)
 {
@@ -62,8 +64,8 @@ void init_c_files(py::module &m) {
 
     py::class_<rs2_dsm_params> dsm_params( m, "dsm_params", "Video stream DSM parameters" );
     dsm_params.def( py::init<>() )
-        .def_readwrite( "timestamp", &rs2_dsm_params::timestamp, "seconds since epoch" )
-        .def_readwrite( "version", &rs2_dsm_params::version, "major<<12 | minor<<4 | patch" )
+        .def_readonly( "timestamp", &rs2_dsm_params::timestamp, "seconds since epoch" )
+        .def_readonly( "version", &rs2_dsm_params::version, "major<<12 | minor<<4 | patch" )
         .def_readwrite( "model", &rs2_dsm_params::model, "correction model (0/1/2 none/AOT/TOA)" )
         .def_property( BIND_RAW_ARRAY_PROPERTY( rs2_dsm_params, flags, uint8_t, sizeof( rs2_dsm_params::flags )), "flags" )
         .def_readwrite( "h_scale", &rs2_dsm_params::h_scale, "horizontal DSM scale" )
@@ -71,19 +73,17 @@ void init_c_files(py::module &m) {
         .def_readwrite( "h_offset", &rs2_dsm_params::h_offset, "horizontal DSM offset" )
         .def_readwrite( "v_offset", &rs2_dsm_params::v_offset, "vertical DSM offset" )
         .def_readwrite( "rtd_offset", &rs2_dsm_params::rtd_offset, "the Round-Trip-Distance delay" )
+        .def_property_readonly( "temp", 
+            []( rs2_dsm_params const & self ) -> float {
+                           return float( self.temp_x2 ) / 2;
+                       },
+            "temperature (LDD for depth; HUM for color)" )
         .def_property( BIND_RAW_ARRAY_PROPERTY( rs2_dsm_params, reserved, uint8_t, sizeof( rs2_dsm_params::reserved )), "reserved" )
         .def( "__repr__",
             []( const rs2_dsm_params & self )
             {
                 std::ostringstream ss;
-                switch( self.model )
-                {
-                case RS2_DSM_CORRECTION_NONE: break;
-                case RS2_DSM_CORRECTION_AOT: ss << "AOT "; break;
-                case RS2_DSM_CORRECTION_TOA: ss << "TOA "; break;
-                }
-                ss << "x[ " << self.h_scale << " " << self.v_scale << "] ";
-                ss << "+[ " << self.h_offset << " " << self.v_offset << " rtd " << self.rtd_offset << "]";
+                ss << self;
                 return ss.str();
             } );
 

@@ -26,6 +26,7 @@
 #define _USE_MATH_DEFINES
 #endif
 #include <cmath>                            // For acos
+#include <ctime>
 #include <stdint.h>
 #include <cassert>                          // For assert
 #include <cstring>                          // For memcmp
@@ -1759,6 +1760,42 @@ inline std::ostream& operator<<( std::ostream& out, rs2_extrinsics const & e )
         << e.rotation[0] << "," << e.rotation[1] << "," << e.rotation[2] << "," << e.rotation[3] << "," << e.rotation[4] << ","
         << e.rotation[5] << "," << e.rotation[6] << "," << e.rotation[7] << "," << e.rotation[8]
         << "]  t[" << e.translation[0] << "," << e.translation[1] << "," << e.translation[2] << "] ]";
+}
+
+inline std::ostream& operator<<( std::ostream& s, rs2_dsm_params const & self )
+{
+    s << "[ ";
+    time_t t = self.timestamp;
+    auto ptm = localtime( &t );
+    char buf[256];
+    strftime( buf, sizeof( buf ), "%F.%T ", ptm );
+    s << buf;
+    if( self.version )
+    {
+        unsigned patch = self.version & 0xF;
+        unsigned minor = (self.version >> 4) & 0xFF;
+        unsigned major = (self.version >> 12);
+        s << major << '.' << minor << '.' << patch << ' ';
+    }
+    else
+    {
+        s << "new ";
+    }
+    switch( self.model )
+    {
+    case RS2_DSM_CORRECTION_NONE: break;
+    case RS2_DSM_CORRECTION_AOT: s << "AoT "; break;
+    case RS2_DSM_CORRECTION_TOA: s << "ToA "; break;
+    }
+    s << "x[" << self.h_scale << " " << self.v_scale << "] ";
+    s << "+[" << self.h_offset << " " << self.v_offset;
+    if( self.rtd_offset )
+        s << " rtd " << self.rtd_offset;
+    s << "]";
+    if( self.temp_x2 )
+        s << " @" << float( self.temp_x2 ) / 2 << "degC";
+    s << " ]";
+    return s;
 }
 
 template<typename T>

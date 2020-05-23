@@ -15,6 +15,7 @@ double optimizer::calc_correction_in_pixels( calib const & from_calibration ) co
     //% [uvMapNew,~,~] = OnlineCalibration.aux.projectVToRGB(frame.vertices,newParams.rgbPmat,newParams.Krgb,newParams.rgbDistort);
     auto old_uvmap = get_texture_map( _z.vertices, from_calibration, from_calibration.calc_p_mat());
     auto new_uvmap = get_texture_map( _z.vertices, _final_calibration, _final_calibration.calc_p_mat());
+
     if( old_uvmap.size() != new_uvmap.size() )
         throw std::runtime_error( to_string() << "did not expect different uvmap sizes (" << old_uvmap.size() << " vs " << new_uvmap.size() << ")" );
     // uvmap is Nx[x,y]
@@ -124,10 +125,170 @@ std::vector< double > optimizer::cost_per_section_diff(calib const & old_calib, 
 
     return cost_per_section_diff;
 }
+std::vector< double > extract_features(decision_params& decision_params)
+{
+    svm_features features;
+    std::vector< double > res;
+    auto max_elem = *std::max_element(decision_params.distribution_per_section_depth.begin(), decision_params.distribution_per_section_depth.end());
+    auto min_elem = *std::min_element(decision_params.distribution_per_section_depth.begin(), decision_params.distribution_per_section_depth.end());
+    features.max_over_min_depth = max_elem / (min_elem + 1e-3);
+    res.push_back(features.max_over_min_depth);
 
+    max_elem = *std::max_element(decision_params.distribution_per_section_rgb.begin(), decision_params.distribution_per_section_rgb.end());
+    min_elem = *std::min_element(decision_params.distribution_per_section_rgb.begin(), decision_params.distribution_per_section_rgb.end());
+    features.max_over_min_rgb = max_elem / (min_elem + 1e-3);
+    res.push_back(features.max_over_min_rgb);
+
+    std::vector<double>::iterator it = decision_params.edge_weights_per_dir.begin();
+    max_elem = std::max(*it, *(it + 2));
+    min_elem = std::min(*it, *(it + 2));
+    features.max_over_min_perp = max_elem / (min_elem + 1e-3);
+    res.push_back(features.max_over_min_perp);
+
+    max_elem = std::max(*(it + 1), *(it + 3));
+    min_elem = std::min(*(it + 1), *(it + 3));
+    features.max_over_min_diag = max_elem / (min_elem + 1e-3);
+    res.push_back(features.max_over_min_diag);
+
+    features.initial_cost = decision_params.initial_cost;
+    features.final_cost = decision_params.new_cost;
+    res.push_back(features.initial_cost);
+    res.push_back(features.final_cost);
+
+    features.xy_movement = decision_params.xy_movement;
+    if (features.xy_movement > 100) { features.xy_movement = 100; }
+    features.xy_movement_from_origin = decision_params.xy_movement_from_origin;
+    if (features.xy_movement_from_origin > 100) { features.xy_movement_from_origin = 100; }
+    res.push_back(features.xy_movement);
+    res.push_back(features.xy_movement_from_origin);
+
+    std::vector<double>::iterator  iter = decision_params.improvement_per_section.begin();
+    features.positive_improvement_sum = 0;
+    features.negative_improvement_sum = 0;
+    for (int i = 0; i < decision_params.improvement_per_section.size(); i++)
+    {
+        if (*(iter + i) > 0)
+        {
+            features.positive_improvement_sum += *(iter + i);
+        }
+        else
+        {
+            features.negative_improvement_sum += *(iter + i);
+        }
+    }
+    res.push_back(features.positive_improvement_sum);
+    res.push_back(features.negative_improvement_sum);
+
+    return res;
+}
+void optimizer::collect_decision_params(z_frame_data& z_data, yuy2_frame_data& yuy_data)
+{
+
+    _decision_params.initial_cost = calc_cost(z_data, yuy_data, z_data.uvmap); //1.560848046875000e+04;
+    //_decision_params.is_valid = 0;
+    _decision_params.xy_movement = calc_correction_in_pixels(); //2.376f; // 
+    _decision_params.xy_movement_from_origin = calc_correction_in_pixels(); //2.376f;
+    _decision_params.improvement_per_section = _z.cost_diff_per_section; // { -4.4229550, 828.93903, 1424.0482, 2536.4409 }; 
+    _decision_params.min_improvement_per_section = *std::min_element(_z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end());// -4.422955036163330;
+    _decision_params.max_improvement_per_section = *std::max_element(_z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end()); //2.536440917968750e+03;// 
+    //_decision_params.is_valid_1 = 1;
+    //_decision_params.moving_pixels = 0;
+    _decision_params.min_max_ratio_depth = z_data.min_max_ratio; // 0.762463343108504;
+    _decision_params.distribution_per_section_depth = z_data.sum_weights_per_section; //{ 980000, 780000, 1023000, 816000 };
+    _decision_params.min_max_ratio_rgb = yuy_data.min_max_ratio; // 0.618130692181835;
+    _decision_params.distribution_per_section_rgb = yuy_data.sum_weights_per_section; //{3025208, 2.899468500000000e+06, 4471484, 2.763961500000000e+06};
+    _decision_params.dir_ratio_1 = z_data.dir_ratio1;// 2.072327044025157;
+    //_decision_params.dir_ratio_2 = z_data.dir_ratio2;
+    _decision_params.edge_weights_per_dir = z_data.sum_weights_per_direction;// { 636000, 898000, 1318000, 747000 };
+    std::vector<double2> new_uvmap = get_texture_map(_z.vertices_all, _original_calibration, _original_calibration.calc_p_mat());
+    _decision_params.new_cost = calc_cost(z_data, yuy_data, new_uvmap);// 1.677282421875000e+04; 
+
+}
+bool svm_rbf_predictor(std::vector< double >& features, svm_model_gaussian& svm_model)
+{
+    bool res = true;
+    std::vector< double > x_norm;
+    // Applying the model
+    for (auto i = 0; i < features.size(); i++)
+    {
+        x_norm.push_back((*(features.begin() + i) - *(svm_model.mu.begin() + i)) / (*(svm_model.sigma.begin() + i)));
+    }
+
+    // Extracting model parameters
+    auto mu = svm_model.mu;
+    auto sigma = svm_model.sigma;
+    auto x_sv = svm_model.support_vectors;
+    auto y_sv = svm_model.support_vectors_labels;
+    auto alpha = svm_model.alpha;
+    auto bias = svm_model.bias;
+    auto gamma = 1 / (svm_model.kernel_param_scale * svm_model.kernel_param_scale);
+    int n_samples = 1;// size(featuresMat, 1);
+    //labels = zeros(nSamples, 1);
+   /* innerProduct = exp(-gamma * sum((xNorm(iSample, :) - xSV). ^ 2, 2));
+    score = sum(alpha.*ySV.*innerProduct, 1) + bias;
+    labels(iSample) = score > 0; % dealing with the theoretical possibility of score = 0*/
+    std::vector< double > inner_product;
+    double score = 0;
+
+    for (auto i = 0; i < y_sv.size(); i++)
+    {
+        double sum_raw = 0;
+        for (auto k = 0; k < x_norm.size(); k++)
+        {
+            double res1 = *(x_norm.begin() + k) - *(x_sv[k].begin() + i);
+            sum_raw += res1 * res1;
+        }
+        double final_sum = exp(-gamma * sum_raw);
+        inner_product.push_back(final_sum);
+        score += *(alpha.begin() + i) * *(y_sv.begin() + i) * final_sum;
+        //score = sum(alpha .* ySV .* innerProduct, 1) + bias;
+    }
+    score += bias;
+
+    if (score < 0)
+    {
+        res = false;
+    }
+    return res;
+}
+bool optimizer::valid_by_svm(svm_model model)
+{
+    bool is_valid = true;
+
+    collect_decision_params(_z, _yuy);
+    _extracted_features = extract_features(_decision_params);
+
+    double res = 0;
+    switch (model)
+    {
+    case linear:
+        for (auto i = 0; i < _svm_model_linear.mu.size(); i++)
+        {
+            // isValid = (featuresMat-SVMModel.Mu)./SVMModel.Sigma*SVMModel.Beta+SVMModel.Bias > 0;
+            auto res1 = (*(_extracted_features.begin() + i) - *(_svm_model_linear.mu.begin() + i)) / (*(_svm_model_linear.sigma.begin() + i));// **(_svm_model_linear.beta.begin() + i) + _svm_model_linear.bias);
+            res += res1 * *(_svm_model_linear.beta.begin() + i);
+        }
+        res += _svm_model_linear.bias;
+        if (res < 0)
+        {
+            is_valid = false;
+        }
+        break;
+
+    case gaussian:
+        is_valid = svm_rbf_predictor(_extracted_features, _svm_model_gaussian);
+        break;
+    default:
+        AC_LOG(DEBUG, "ERROR : Unknown SVM kernel " << model);
+        break;
+    }
+
+    return is_valid;
+}
 bool optimizer::is_valid_results()
 {
-    // Clip any (average) movement of pixels if it's too big
+    bool res = true;
+     //Clip any (average) movement of pixels if it's too big
     clip_pixel_movement();
 
     // Based on (possibly new, clipped) calibration values, see if we've strayed too
@@ -147,14 +308,13 @@ bool optimizer::is_valid_results()
         AC_LOG( DEBUG, "... no factory calibration available; skipping distance check" );
     }
 
-    //%% Check and see that the score didn't increased by a lot in one image section and decreased in the others
-    //% [c1, costVecOld] = OnlineCalibration.aux.calculateCost( frame.vertices, frame.weights, frame.rgbIDT, params );
-    //% [c2, costVecNew] = OnlineCalibration.aux.calculateCost( frame.vertices, frame.weights, frame.rgbIDT, newParams );
-    //% scoreDiffPerVertex = costVecNew - costVecOld;
-    //% for i = 0:(params.numSectionsH*params.numSectionsV) - 1
-    //%     scoreDiffPersection( i + 1 ) = nanmean( scoreDiffPerVertex( frame.sectionMapDepth == i ) );
-    //% end
-
+   /* %% Check and see that the score didn't increased by a lot in one image section and decreased in the others
+    % [c1, costVecOld] = OnlineCalibration.aux.calculateCost( frame.vertices, frame.weights, frame.rgbIDT, params );
+    % [c2, costVecNew] = OnlineCalibration.aux.calculateCost( frame.vertices, frame.weights, frame.rgbIDT, newParams );
+    % scoreDiffPerVertex = costVecNew - costVecOld;
+    % for i = 0:(params.numSectionsH*params.numSectionsV) - 1
+    %     scoreDiffPersection( i + 1 ) = nanmean( scoreDiffPerVertex( frame.sectionMapDepth == i ) );
+    % end*/
     _z.cost_diff_per_section = cost_per_section_diff(_original_calibration, _final_calibration);
     //% validOutputStruct.minImprovementPerSection = min( scoreDiffPersection );
     //% validOutputStruct.maxImprovementPerSection = max( scoreDiffPersection );
@@ -166,9 +326,11 @@ bool optimizer::is_valid_results()
         AC_LOG( ERROR, "Some image sections were hurt by the optimization; invalidating calibration!" );
         for( size_t x = 0; x < _z.cost_diff_per_section.size(); ++x )
             AC_LOG( DEBUG, "... cost diff in section " << x << "= " << _z.cost_diff_per_section[x] );
-        return false;
+        //return false;
+        res = false;
     }
 
-    return true;
+    bool res_svm = valid_by_svm(gaussian); //(gaussian);// (linear);
+    return (res && res_svm);
 }
 

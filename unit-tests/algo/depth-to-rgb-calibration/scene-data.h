@@ -38,7 +38,7 @@ void read_data_from( std::string const & filename, T * data )
     size_t cb = f.tellg();
     f.seekg( 0, f.beg );
     if( cb != sizeof( T ) )
-        throw std::runtime_error( to_string()
+        throw std::runtime_error( librealsense::to_string()
             << "file size (" << cb << ") does not match data size (" << sizeof( T ) << "): " << filename );
     std::vector< T > vec( cb / sizeof( T ) );
     f.read( (char *)data, cb );
@@ -91,7 +91,7 @@ std::vector< T > read_image_file( std::string const &file, size_t width, size_t 
     size_t cb = f.tellg();
     f.seekg( 0, f.beg );
     if( cb != sizeof( T ) * width * height )
-        throw std::runtime_error( to_string()
+        throw std::runtime_error( librealsense::to_string()
             << "file size (" << cb << ") does not match expected size (" << sizeof( T ) * width * height << "): " << file );
     std::vector< T > data( width * height );
     f.read( (char *)data.data(), width * height * sizeof( T ) );
@@ -167,6 +167,7 @@ struct camera_params
 {
     librealsense::algo::depth_to_rgb_calibration::rs2_intrinsics_double rgb;
     librealsense::algo::depth_to_rgb_calibration::rs2_intrinsics_double z;
+    rs2_dsm_params dsm_params;
     librealsense::algo::depth_to_rgb_calibration::rs2_extrinsics_double extrinsics;
     double z_units = 0.25f;
 };
@@ -193,30 +194,28 @@ camera_params read_camera_params( std::string const &scene_dir, std::string cons
     read_data_from( bin_dir( scene_dir ) + filename, &param );
 
     double coeffs[5] = { 0 };
-    const camera_params ci =
+    camera_params ci;
+    ci.rgb =
     {
-        // RGB
-        {
-            int( param.rgb_width ), int( param.rgb_height ),
-            librealsense::algo::depth_to_rgb_calibration::k_matrix{param.k_rgb[0], param.k_rgb[4]
-            ,param.k_rgb[2], param.k_rgb[5]},
-            RS2_DISTORTION_BROWN_CONRADY,
-            param.coeffs
-        },
-        // Z
-        {
-            int( param.depth_width ), int( param.depth_height ),
-            librealsense::algo::depth_to_rgb_calibration::k_matrix{param.k_depth[0], param.k_depth[4]
-            ,param.k_depth[2], param.k_depth[5]},
-            RS2_DISTORTION_NONE, coeffs
-        },
-        // EXTRINSICS
-        {
-            { param.rotation[0], param.rotation[1], param.rotation[2],
-              param.rotation[3], param.rotation[4], param.rotation[5],
-              param.rotation[6], param.rotation[7], param.rotation[8] },
-            { param.translation[0], param.translation[1], param.translation[2] }
-        }
+        int( param.rgb_width ), int( param.rgb_height ),
+        librealsense::algo::depth_to_rgb_calibration::k_matrix{param.k_rgb[0], param.k_rgb[4]
+        ,param.k_rgb[2], param.k_rgb[5]},
+        RS2_DISTORTION_BROWN_CONRADY,
+        param.coeffs
+    };
+    ci.z =
+    {
+        int( param.depth_width ), int( param.depth_height ),
+        librealsense::algo::depth_to_rgb_calibration::k_matrix{param.k_depth[0], param.k_depth[4]
+        ,param.k_depth[2], param.k_depth[5]},
+        RS2_DISTORTION_NONE, coeffs
+    };
+    ci.extrinsics =
+    {
+        { param.rotation[0], param.rotation[1], param.rotation[2],
+            param.rotation[3], param.rotation[4], param.rotation[5],
+            param.rotation[6], param.rotation[7], param.rotation[8] },
+        { param.translation[0], param.translation[1], param.translation[2] }
     };
     return ci;
 }

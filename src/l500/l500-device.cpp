@@ -10,6 +10,7 @@
 #include "image.h"
 
 #include "l500-depth.h"
+#include "l500-color.h"
 #include "l500-private.h"
 
 #include "proc/decimation-filter.h"
@@ -123,6 +124,12 @@ namespace librealsense
     }
 
 
+    l500_depth_sensor & l500_device::get_depth_sensor()
+    {
+        return dynamic_cast<l500_depth_sensor &>(get_sensor( _depth_device_idx ));
+    }
+
+
     std::shared_ptr<synthetic_sensor> l500_device::create_depth_device( std::shared_ptr<context> ctx,
         const std::vector<platform::uvc_device_info>& all_device_infos )
     {
@@ -149,6 +156,43 @@ namespace librealsense
     }
 
 
+    /** This processing block removes all frames that are not of the given stream types
+     *
+     * This is only a workaround!!!
+     * It seems that, when definining a processing block outputs, if any other frames exist there
+     * then an issue can be exhibited where duplicate frames are produced. This solved the issue.
+     */
+    class filtering_processing_block : public generic_processing_block {
+        std::vector< rs2_stream > _streams;
+
+    public:
+        filtering_processing_block( rs2_stream stream_to_pass )
+            : generic_processing_block( "filtering_processing_block" ), _streams( 1, stream_to_pass ) {}
+        filtering_processing_block( std::initializer_list< rs2_stream > const & streams )
+            : generic_processing_block( "filtering_processing_block" ), _streams( streams ) {}
+
+        rs2::frame process_frame( const rs2::frame_source & source,
+                                  const rs2::frame & f ) override {
+            return f;
+        }
+
+    private:
+        bool should_process( const rs2::frame & f ) override {
+            auto fs = f.as< rs2::frameset >();
+            if( fs )
+                return false;  // we'll get the ndividual frames back by themselves:
+            auto it = std::find( _streams.begin(), _streams.end(), f.get_profile().stream_type() );
+            return ( it != _streams.end() );  // keep the frame only if one of those we got
+        }
+        rs2::frame prepare_output( const rs2::frame_source & source, rs2::frame input,
+                                   std::vector< rs2::frame > results ) override {
+            if( results.empty() )
+                return rs2::frame{};
+            return results.front();
+        }
+    };
+
+
     void l500_device::configure_depth_options()
     {
         synthetic_sensor & depth_sensor = get_depth_sensor();
@@ -161,10 +205,28 @@ namespace librealsense
         //std::shared_ptr< autocal_option > autocal_enabled_opt;
         if( _fw_version >= firmware_version( "1.3.12.0" ) )
         {
+            // TODO may not need auto-cal if there's no color sensor, like on the rs500...
             _autocal = std::make_shared< auto_calibration >( *_hw_monitor );
 
+            // Have the auto-calibration mechanism notify us when calibration has finished
+            _autocal->register_callback(
+                [&]( rs2_calibration_status status )
+                {
+                    if( status == RS2_CALIBRATION_SUCCESSFUL )
+                    {
+                        auto & color_sensor = *get_color_sensor();
+                        color_sensor.override_intrinsics( _autocal->get_intrinsics() );
+                        color_sensor.override_extrinsics( _autocal->get_extrinsics() );
+
+                        // TODO
+                        //get_depth_sensor().override_dsm_params( _autocal->get_dsm_params() );
+                    }
+                    for( auto&& cb : _calibration_change_callbacks )
+                        cb->on_calibration_change( status );
+                } );
+
             depth_sensor.register_option(
-                RS2_OPTION_AUTO_CALIBRATION_ENABLED,
+                RS2_OPTION_CAMERA_ACCURACY_HEALTH_ENABLED,
                 std::make_shared< auto_calibration::enabler_option >( _autocal )
             );
         }
@@ -189,6 +251,7 @@ namespace librealsense
                     //sync->add_enabling_option( _autocal->get_enabler_opt() );
                     cpb->add( std::make_shared< autocal_depth_processing_block >( _autocal ) );
                 }
+                cpb->add( std::make_shared< filtering_processing_block >( RS2_STREAM_DEPTH ) );
                 return cpb;
             }
         );
@@ -213,6 +276,7 @@ namespace librealsense
                     //sync->add_enabling_option( _autocal->get_enabler_opt() );
                     cpb->add( std::make_shared< autocal_depth_processing_block >( _autocal ) );
                 }
+                cpb->add( std::make_shared< filtering_processing_block >( RS2_STREAM_DEPTH ) );
                 return cpb;
             }
         );
@@ -242,6 +306,8 @@ namespace librealsense
                     //sync->add_enabling_option( _autocal->get_enabler_opt() );
                     cpb->add( std::make_shared< autocal_depth_processing_block >( _autocal ) );
                 }
+                cpb->add( std::shared_ptr< filtering_processing_block >(
+                    new filtering_processing_block{RS2_STREAM_DEPTH, RS2_STREAM_CONFIDENCE} ) );
                 return cpb;
             }
         );
@@ -285,6 +351,20 @@ namespace librealsense
         {
             LOG_DEBUG( "Skipping HW Sync control: requires FW 1.3.12.9" );
         }
+    }
+
+    void l500_device::trigger_device_calibration( rs2_calibration_type type )
+    {
+        if( type != RS2_CALIBRATION_DEPTH_TO_RGB )
+            throw librealsense::not_implemented_exception(
+                to_string() << "unsupported calibration type (" << type << ")" );
+
+        if( !_autocal )
+            throw librealsense::not_implemented_exception(
+                to_string() << "your firmware version (" << _fw_version
+                            << ") does not support depth-to-rgb calibration" );
+
+        _autocal->trigger_special_frame();
     }
 
     void l500_device::force_hardware_reset() const
@@ -392,15 +472,15 @@ namespace librealsense
 
     void l500_device::update_flash_section(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, uint32_t offset, uint32_t size, update_progress_callback_ptr callback, float continue_from, float ratio)
     {
-        size_t sector_count = size / ivcam2::FLASH_SECTOR_SIZE;
-        size_t first_sector = offset / ivcam2::FLASH_SECTOR_SIZE;
+        int sector_count = int( size / ivcam2::FLASH_SECTOR_SIZE );
+        int first_sector = int( offset / ivcam2::FLASH_SECTOR_SIZE );
 
         if (sector_count * ivcam2::FLASH_SECTOR_SIZE != size)
             sector_count++;
 
         sector_count += first_sector;
 
-        for (size_t sector_index = first_sector; sector_index < sector_count; sector_index++)
+        for (int sector_index = first_sector; sector_index < sector_count; sector_index++)
         {
             command cmdFES(ivcam2::FES);
             cmdFES.require_response = false;
@@ -432,7 +512,7 @@ namespace librealsense
         update_progress_callback_ptr callback, float continue_from, float ratio)
     {
         auto first_table_offset = fs.tables.front().offset;
-        float total_size = fs.app_size + tables_size;
+        float total_size = float( fs.app_size + tables_size );
 
         float app_ratio = fs.app_size / total_size * ratio;
         float tables_ratio = tables_size / total_size * ratio;
@@ -450,7 +530,7 @@ namespace librealsense
         // update read-write section
         auto first_table_offset = flash_image_info.read_write_section.tables.front().offset;
         auto tables_size = flash_image_info.header.read_write_start_address + flash_image_info.header.read_write_size - first_table_offset;
-        update_section(hwm, merged_image, flash_image_info.read_write_section, tables_size, callback, 0, update_mode == RS2_UNSIGNED_UPDATE_MODE_READ_ONLY ? 0.5 : 1.0);
+        update_section(hwm, merged_image, flash_image_info.read_write_section, tables_size, callback, 0, update_mode == RS2_UNSIGNED_UPDATE_MODE_READ_ONLY ? 0.5f : 1.0f);
 
         if (update_mode == RS2_UNSIGNED_UPDATE_MODE_READ_ONLY)
         {

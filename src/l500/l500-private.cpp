@@ -75,16 +75,6 @@ namespace librealsense
             if (!is_enabled())
                 throw wrong_api_call_sequence_exception("query option is allow only in streaming!");
 
-#pragma pack(push, 1)
-            struct temperatures
-            {
-                double LLD_temperature;
-                double MC_temperature;
-                double MA_temperature;
-                double APD_temperature;
-            };
-#pragma pack(pop)
-
             auto res = _hw_monitor->send(command{ TEMPERATURES_GET });
 
             if (res.size() < sizeof(temperatures))
@@ -97,7 +87,7 @@ namespace librealsense
             switch (_option)
             {
             case RS2_OPTION_LLD_TEMPERATURE:
-                return float(temperature_data.LLD_temperature);
+                return float(temperature_data.LDD_temperature);
             case RS2_OPTION_MC_TEMPERATURE:
                 return float(temperature_data.MC_temperature);
             case RS2_OPTION_MA_TEMPERATURE:
@@ -235,7 +225,6 @@ namespace librealsense
             retrier( auto_calibration & ac )
                 : _ac( ac )
             {
-                AC_LOG( DEBUG, "retrier " << std::hex << this << std::dec );
             }
 
             void retry()
@@ -250,19 +239,22 @@ namespace librealsense
                 AC_LOG( DEBUG, "~retrier " << std::hex << this << std::dec );
             }
 
-            static std::shared_ptr< retrier > start( auto_calibration & autocal )
+            static std::shared_ptr< retrier > start( auto_calibration & autocal, std::chrono::seconds n_seconds )
             {
-                auto r = std::shared_ptr< retrier >( new retrier( autocal ) );
-                std::weak_ptr< retrier > weak { r };
-                std::thread( [weak]()
+                auto r = new retrier( autocal );
+                AC_LOG( DEBUG, "retrier " << std::hex << r << std::dec << " " << n_seconds.count() << " seconds starting" );
+                auto pr = std::shared_ptr< retrier >( r );
+                std::weak_ptr< retrier > weak { pr };
+                std::thread( [r, weak, n_seconds]()
                 {
-                    std::this_thread::sleep_for( std::chrono::seconds( 2 ) );
-                    if( auto r = weak.lock() )
-                        r->retry();
+                    std::this_thread::sleep_for( n_seconds );
+                    if( auto pr = weak.lock() )
+                        pr->retry();
                     else
-                        AC_LOG( DEBUG, "retry period over; no retry needed" );
+                        AC_LOG( DEBUG, "retrier " << std::hex << r << std::dec
+                                            << " " << n_seconds.count() << " seconds are up; no retry needed" );
                 } ).detach();
-                return r;
+                return pr;
             };
         };
 
@@ -325,6 +317,7 @@ namespace librealsense
 
         void auto_calibration::trigger_special_frame( bool is_retry )
         {
+            _retrier.reset();
             if( _is_processing )
             {
                 AC_LOG( ERROR, "Failed to trigger_special_frame: auto-calibration is already in-process" );
@@ -332,25 +325,32 @@ namespace librealsense
             }
             if( is_retry )
             {
-                if( _n_retries > 4 )
+                if( _recycler )
+                {
+                    // This is another cycle of AC, after we've woken up from some time after
+                    // the previous invalid-scene or bad-result...
+                    _n_retries = 0;
+                    _recycler.reset();
+                }
+                else if( ++_n_retries > 4 )
                 {
                     AC_LOG( ERROR, "too many retries; aborting" );
                     call_back( RS2_CALIBRATION_FAILED );
                     return;
                 }
-                ++_n_retries;
-                AC_LOG( DEBUG, "GET_SPECIAL_FRAME (retry " << _n_retries << ")" );
+                AC_LOG( DEBUG, "Sending GET_SPECIAL_FRAME (cycle " << (_n_cycles+1) << " retry " << _n_retries << ")" );
                 call_back( RS2_CALIBRATION_RETRY );
             }
             else
             {
                 _n_retries = 0;
-                AC_LOG( DEBUG, "GET_SPECIAL_FRAME" );
+                _n_cycles = 0;
+                AC_LOG( DEBUG, "Sending GET_SPECIAL_FRAME (cycle 1)" );
             }
             command cmd { GET_SPECIAL_FRAME, 0x5F, 1 };  // 5F = SF = Special Frame, for easy recognition
             auto res = _hwm.send( cmd );
             // Start a timer: enable retries if something's wrong with the special frame
-            _retrier = retrier::start( *this );
+            _retrier = retrier::start( *this, std::chrono::seconds( 2 ));
         }
 
         void auto_calibration::set_special_frame( rs2::frameset const& fs )
@@ -358,6 +358,7 @@ namespace librealsense
             AC_LOG( DEBUG, "special frame received :)" );
             // Notify of the special frame -- mostly for validation team so they know to expect a frame drop...
             call_back( RS2_CALIBRATION_SPECIAL_FRAME );
+            _retrier.reset();  // So we're not expecting another...
 
             if( _is_processing )
             {
@@ -380,7 +381,6 @@ namespace librealsense
             }
 
             _sf = fs;
-            _retrier.reset();
 
             if( check_color_depth_sync() )
                 start();
@@ -433,44 +433,45 @@ namespace librealsense
                     _from_profile = algo.get_from_profile();
                     _to_profile = algo.get_to_profile();
 
-                    bool retry = false;
-                    auto status = algo.optimize();
+                    auto status =
+                        algo.optimize( [this]( rs2_calibration_status status ) { call_back( status ); } );
+                    reset();  // Must happen before any retries
                     switch( status )
                     {
                     case RS2_CALIBRATION_SUCCESSFUL:
-                        AC_LOG( DEBUG, "optimization successful!" );
-                        /*  auto prof = _cf.get_profile().get()->profile;
-                        auto&& video = dynamic_cast<video_stream_profile_interface*>(prof);
-                        if (video)
-                            video->set_intrinsics([new_calib]() {return new_calib.intrinsics;});
-                        _df.get_profile().register_extrinsics_to(_cf.get_profile(), new_calib.extrinsics);*/
                         _extr = algo.get_extrinsics();
                         _intr = algo.get_intrinsics();
-                        break;
+                        // Fall-thru!
                     case RS2_CALIBRATION_NOT_NEEDED:
                         // This is the same as SUCCESSFUL, except there was no change because the
                         // existing calibration is good enough. We notify and exit.
+                        call_back( status );
                         break;
-                    case RS2_CALIBRATION_BAD_RESULT:
-                    case RS2_CALIBRATION_SCENE_INVALID:
-                        // These two require a retry
-                        retry = true;
+                    case RS2_CALIBRATION_RETRY:
+                        // We want to trigger a special frame after a certain longer delay
+                        if( ++_n_cycles > 4 )
+                        {
+                            // ... but we've tried too many times
+                            AC_LOG( ERROR, "Too many cycles of calibration; quitting" );
+                            call_back( RS2_CALIBRATION_FAILED );
+                        }
+                        else
+                        {
+                            AC_LOG( DEBUG, "Triggering another cycle for calibration..." );
+                            _recycler = retrier::start( *this, std::chrono::seconds( 10 ) );
+                        }
                         break;
                     case RS2_CALIBRATION_FAILED:
-                        // This is not expected; really only possible when the algorithm crashed or had
-                        // some unusual condition -- we just report it and quit (TODO maybe retry?)
+                        // Report it and quit: this is a final status
+                        call_back( status );
                         break;
                     default:
                         // All the rest of the codes are not end-states of the algo, so we don't expect
                         // to get here!
-                        AC_LOG( ERROR, "Unexpected status '" << status << "' received from AC algo; stopping!" );
+                        AC_LOG( ERROR,
+                            "Unexpected status '" << status << "' received from AC algo; stopping!" );
+                        call_back( RS2_CALIBRATION_FAILED );
                         break;
-                    }
-                    call_back( status );
-                    reset();
-                    if( retry )
-                    {
-                        trigger_special_frame( true );
                     }
                 }
                 catch( std::exception& ex )

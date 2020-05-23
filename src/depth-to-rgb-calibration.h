@@ -23,6 +23,7 @@ namespace librealsense
         // input/output
         rs2_extrinsics _extr;
         rs2_intrinsics _intr;
+        rs2_dsm_params _dsm_params;
 
         algo::depth_to_rgb_calibration::optimizer _algo;
 
@@ -38,8 +39,9 @@ namespace librealsense
         rs2_intrinsics const & get_intrinsics() const { return _intr; }
         stream_profile_interface * get_from_profile() const { return _from; }
         stream_profile_interface * get_to_profile() const { return _to; }
+        rs2_dsm_params const & get_dsm_params() const { return _dsm_params; }
 
-        rs2_calibration_status optimize();
+        rs2_calibration_status optimize( std::function<void( rs2_calibration_status )> call_back = nullptr );
 
     private:
         void debug_calibration( char const * prefix );

@@ -361,7 +361,7 @@ namespace librealsense
             CASE(AMBIENT_LIGHT)
             CASE(SENSOR_MODE)
             CASE(EMITTER_ALWAYS_ON)
-            CASE(AUTO_CALIBRATION_ENABLED)
+            CASE(CAMERA_ACCURACY_HEALTH_ENABLED)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
