@@ -51,7 +51,7 @@ dl_algo_file( "${F9440687}/2/binFiles/ac1x/cost_iteration_11_1x1_double_00.bin" 
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/cost_iteration_12_1x1_double_00.bin" "")
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/cost_iteration_13_1x1_double_00.bin" "")
 
-	   
+
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/uvmap_iteration_1_2506x2_double_00.bin" "" )
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/uvmap_iteration_2_2506x2_double_00.bin" "" )
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/uvmap_iteration_3_2506x2_double_00.bin" "" )
@@ -385,7 +385,7 @@ dl_algo_file( "${F9440687}/2/binFiles/ac1x/svm_featuresMat_1x10_double_00.bin" "
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/svm_improvementPerSection_1x4_double_00.bin" "")
 
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/dsmRegsOrig_1x4_single_00.bin" "" )
-dl_algo_file( "${F9440687}/2/binFiles/ac1x/relevantPixelsImage_768x1024_logical_00.bin" "" )
+dl_algo_file( "${F9440687}/2/binFiles/ac1x/relevantPixelsImage_768x1024_uint8_00.bin" "" )
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/round_xim_2506x1_double_00.bin" "" )
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/round_yim_2506x1_double_00.bin" "" )
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/DSM_params" "" )
