@@ -2158,7 +2158,7 @@ namespace rs2
             auto&& sensor = dev->s;
             // Case 1: Starting Dragging of the ROI rect
             // Pre-condition: not capturing already + mouse is down + we are inside stream rect
-            if (!capturing_roi && mouse.mouse_down && stream_rect.contains(mouse.cursor))
+            if (!capturing_roi && mouse.mouse_down[0] && stream_rect.contains(mouse.cursor))
             {
                 // Initialize roi_display_rect with drag-start position
                 roi_display_rect.x = mouse.cursor.x;
@@ -2175,7 +2175,7 @@ namespace rs2
                 roi_display_rect.h = mouse.cursor.y - roi_display_rect.y;
             }
             // Case 3: We are in middle of dragging (capturing) and mouse was released
-            if (!mouse.mouse_down && capturing_roi && stream_rect.contains(mouse.cursor))
+            if (!mouse.mouse_down[0] && capturing_roi && stream_rect.contains(mouse.cursor))
             {
                 // Update width,height one last time
                 roi_display_rect.w = mouse.cursor.x - roi_display_rect.x;

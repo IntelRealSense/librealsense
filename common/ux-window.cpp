@@ -324,8 +324,8 @@ namespace rs2
         glfwSetMouseButtonCallback(_win, [](GLFWwindow* w, int button, int action, int mods)
         {
             auto data = reinterpret_cast<ux_window*>(glfwGetWindowUserPointer(w));
-            data->_mouse.mouse_down = (button == GLFW_MOUSE_BUTTON_1) && (action != GLFW_RELEASE);
-            data->_mouse.rmouse_down = (button == GLFW_MOUSE_BUTTON_2) && (action != GLFW_RELEASE);
+            data->_mouse.mouse_down[0] = (button == GLFW_MOUSE_BUTTON_1) && (action != GLFW_RELEASE);
+            data->_mouse.mouse_down[1] = (button == GLFW_MOUSE_BUTTON_2) && (action != GLFW_RELEASE);
         });
         glfwSetScrollCallback(_win, [](GLFWwindow * w, double xoffset, double yoffset)
         {

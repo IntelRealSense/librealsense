@@ -59,7 +59,6 @@ namespace rs2
         // Draw info object button (is not synchronized with the info buttons in the 2D view)
         if (ImGui::Button(pose_info_object_button.get_icon().c_str(), { 24, buttons_heights }))
         {
-            show_pose_info_3d = !show_pose_info_3d;
             pose_info_object_button.toggle_button();
         }
         if (ImGui::IsItemHovered())
@@ -703,14 +702,12 @@ namespace rs2
 
         std::string measure_tooltip = "Measure distance between points";
         if (!glsl_available) measure_tooltip += "\nRequires GLSL acceleration!";
-        if (measurement_active)
+        if (_measurements.is_enabled())
         {
             bool active = true;
             if (big_button(&active, win, 5 + left, 0, textual_icons::measure, "Measure", false, glsl_available, measure_tooltip.c_str()))
             {
-                measurement_active = false;
-                selected_points.clear();
-                config_file::instance().set(configurations::viewer::is_measuring, false);
+                _measurements.disable();
             }
         }
         else
@@ -718,8 +715,7 @@ namespace rs2
             bool active = false;
             if (big_button(&active, win, 5 + left, 0, textual_icons::measure, "Measure", false, glsl_available, measure_tooltip.c_str()))
             {
-                measurement_active = true;
-                config_file::instance().set(configurations::viewer::is_measuring, true);
+                _measurements.enable();
             }
         }
         left += 60;
@@ -890,8 +886,12 @@ namespace rs2
         is_3d_view = config_file::instance().get_or_default(
             configurations::viewer::is_3d_view, true);
 
-        measurement_active = config_file::instance().get_or_default(
-            configurations::viewer::is_measuring, false);
+        if (bool measurement_enabled = config_file::instance().get_or_default(
+            configurations::viewer::is_measuring, false))
+            _measurements.enable();
+
+        _measurements.log_function = [this](std::string message) { not_model.add_log(message); };
+        _measurements.is_metric = [this]() { return metric_system; };
 
         glsl_available = config_file::instance().get(
             configurations::performance::glsl_for_rendering);
@@ -1652,34 +1652,6 @@ namespace rs2
         return std::ceil((mean + 1.5f * standard_deviation) / length_jump) * length_jump;
     }
 
-    void draw_sphere(const float3& pos, float r, int lats, int longs) 
-    {
-        for(int i = 0; i <= lats; i++) 
-        {
-            float lat0 = M_PI * (-0.5 + (float) (i - 1) / lats);
-            float z0  = sin(lat0);
-            float zr0 =  cos(lat0);
-
-            float lat1 = M_PI * (-0.5 + (float) i / lats);
-            float z1 = sin(lat1);
-            float zr1 = cos(lat1);
-
-            glBegin(GL_QUAD_STRIP);
-            for(int j = 0; j <= longs; j++) 
-            {
-                float lng = 2 * M_PI * (float) (j - 1) / longs;
-                float x = cos(lng);
-                float y = sin(lng);
-
-                glNormal3f(pos.x + x * zr0, pos.y + y * zr0, pos.z + z0);
-                glVertex3f(pos.x + r * x * zr0, pos.y + r * y * zr0, pos.z + r * z0);
-                glNormal3f(pos.x + x * zr1, pos.y + y * zr1, pos.z + z1);
-                glVertex3f(pos.x + r * x * zr1, pos.y + r * y * zr1, pos.z + r * z1);
-            }
-            glEnd();
-        }
-    }
-
     void viewer_model::render_2d_view(const rect& view_rect,
         ux_window& win, int output_height,
         ImFont *font1, ImFont *font2, size_t dev_model_num,
@@ -1964,10 +1936,9 @@ namespace rs2
         }
     }
 
-    bool viewer_model::render_3d_view(const rect& viewer_rect, ux_window& win, 
-        std::shared_ptr<texture_buffer> texture, rs2::points points, ImFont *font1, float3* picked_xyz)
+    void viewer_model::render_3d_view(const rect& viewer_rect, ux_window& win, 
+        std::shared_ptr<texture_buffer> texture, rs2::points points)
     {
-        bool picked = false;
         auto top_bar_height = 60.f;
 
         if (points)
@@ -2077,15 +2048,7 @@ namespace rs2
 
                 pose = f;
                 rs2_pose pose_data = pose.get_pose_data();
-                if (show_pose_info_3d)
-                {
-                    auto stream_type = stream.second.profile.stream_type();
-                    auto stream_rect = viewer_rect;
-                    stream_rect.x += 460 * stream_num;
-                    stream_rect.y += 2 * top_bar_height + 5;
-                    stream.second.show_stream_pose(font1, stream_rect, pose_data, stream_type, true, 0, *this);
-                }
-
+                
                 auto t = tm2_pose_to_world_transformation(pose_data);
                 float model[4][4];
                 t.to_column_major((float*)model);
@@ -2264,54 +2227,31 @@ namespace rs2
                     _pc_renderer.get_option(gl::pointcloud_renderer::OPTION_PICKED_Y),
                     _pc_renderer.get_option(gl::pointcloud_renderer::OPTION_PICKED_Z),
                 };
-                picked = true;
-                *picked_xyz = p;
-                _picked = p;
-
-                //target = _picked;
-
                 float3 normal {
                     _pc_renderer.get_option(gl::pointcloud_renderer::OPTION_NORMAL_X),
                     _pc_renderer.get_option(gl::pointcloud_renderer::OPTION_NORMAL_Y),
                     _pc_renderer.get_option(gl::pointcloud_renderer::OPTION_NORMAL_Z),
                 };
-                _normal = normal;
+                _measurements.mouse_pick(p, normal);
 
                 win.link_hovered();
-
-                if (input_ctrl.click) {
-                    if (measurement_active)
-                    {
-                        if (selected_points.size() == 2) selected_points.clear();
-
-                        selected_points.push_back({ _picked, _normal });
-
-                        if (selected_points.size() == 2)
-                        {
-                            auto dist = selected_points[1].pos - selected_points[0].pos;
-                            not_model.add_log(to_string() << "Measured distance of " << length_to_string(dist.length()));
-                        }
-                    }
-                }
-
-                if (!input_ctrl.mouse_down)
+                // Adjust track-ball controller based on picked position
+                // 1. Place target at the closest point to p, along (pos, target) interval
+                // 2. When zooming-in, move camera target and position toward p
+                if (!win.get_mouse().mouse_down[0])
                 {
                     auto x1x2 = target - pos;
-                    auto x1x0 = _picked - pos;
+                    auto x1x0 = p - pos;
                     auto t = (x1x2 * x1x0) / (x1x2 * x1x2);
                     auto p1 = pos + x1x2* t;
 
                     if (t > 0) { // Don't adjust if pointcloud is behind us
                         target = lerp(p1, target, 0.9f);
 
-                        if (input_ctrl.mouse_wheel != win.get_mouse().mouse_wheel)
+                        if (win.get_mouse().mouse_wheel > 0)
                         {
-                            input_ctrl.mouse_wheel = win.get_mouse().mouse_wheel;
-                            if (win.get_mouse().mouse_wheel > 0)
-                            {
-                                pos = lerp(_picked, pos, 0.9f);
-                                target = lerp(_picked, target, 0.9f);
-                            }
+                            pos = lerp(p, pos, 0.9f);
+                            target = lerp(p, target, 0.9f);
                         }
                     }
                 }
@@ -2361,218 +2301,7 @@ namespace rs2
 
         check_gl_error();
 
-        auto project_to_2d = [](float3 pos){
-            int32_t vp[4];
-            glGetIntegerv(GL_VIEWPORT, vp);
-            check_gl_error();
-
-            GLfloat model[16];
-            glGetFloatv(GL_MODELVIEW_MATRIX, model);
-            GLfloat proj[16];
-            glGetFloatv(GL_PROJECTION_MATRIX, proj);
-
-            rs2::matrix4 p(proj);
-            rs2::matrix4 v(model);
-
-            return translate_3d_to_2d(pos, p, v, rs2::matrix4::identity(), vp);
-        };
-
-        auto draw_label = [this, &project_to_2d](float3 pos, float distance, int vp_offset_y)
-        {
-            auto w_pos = project_to_2d(pos);
-            std::string label = length_to_string(distance);
-            auto size = ImGui::CalcTextSize(label.c_str());
-
-            auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
-
-            ImGui::PushStyleColor(ImGuiCol_Text, regular_blue);
-            ImGui::PushStyleColor(ImGuiCol_WindowBg, almost_white_bg);
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10);
-            ImGui::SetNextWindowPos(ImVec2(w_pos.x - size.x / 2, vp_offset_y - w_pos.y - size.y / 2 - 5));
-            ImGui::SetNextWindowSize(ImVec2(size.x + 10, size.y - 15));
-            ImGui::Begin("", nullptr, flags);
-            ImGui::Text("%s", label.c_str());
-            ImGui::End();
-            ImGui::PopStyleVar();
-            ImGui::PopStyleColor(2);
-        };
-
-        auto draw_ruler = [this, &draw_label, &win](float3 from, float3 to)
-        {
-            std::vector<float3> parts;
-            parts.push_back(from);
-            auto dir = to - from;
-            auto l = dir.length();
-            auto unit = metric_system ? 0.01f : 0.0254f;
-            if (l > 0.5f) unit = metric_system ? 0.1f : 0.03048f;
-            auto parts_num = l / unit;
-            for (int i = 0; i < parts_num; i++)
-            {
-                auto t = i / (float)parts_num;
-                parts.push_back(from + dir * t);
-            }
-            parts.push_back(to);
-
-            glLineWidth(3.f);
-            glBegin(GL_LINES);
-            for (int i = 1; i < parts.size(); i++)
-            {
-                if (i % 2 == 0) glColor4f(1.f, 1.f, 1.f, 0.9f);
-                else glColor4f(light_blue.x, light_blue.y, light_blue.z, 0.9f);
-                auto from = parts[i-1];
-                auto to = parts[i]; // intentional shadowing
-                glVertex3d(from.x, from.y, from.z);
-                glVertex3d(to.x, to.y, to.z);
-            }
-            glEnd();
-
-            // calculate center of the ruler line
-            float3 ctr = from + (to - from) / 2;
-            float distance = (to - from).length();
-            draw_label(ctr, distance, win.framebuf_height());
-        };
-
-        if (mouse_picked_event.eval() && measurement_active)
-        {
-            glDisable(GL_DEPTH_TEST);
-            glLineWidth(2.f);
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-            float size = _picked.z * 0.03f;
-
-            glBegin(GL_LINES);
-            glColor3f(1.f, 1.f, 1.f);
-            glVertex3d(_picked.x, _picked.y, _picked.z);
-            auto nend = _picked + _normal * size * 0.3f;
-            glVertex3d(nend.x, nend.y, nend.z);
-            glEnd();
-
-            glBegin(GL_TRIANGLES);
-
-            if (input_ctrl.mouse_down) size -= _picked.z * 0.01f;
-            size += _picked.z * 0.01f * single_wave(input_ctrl.click_period());
-
-            auto end = _picked + _normal * size;
-            auto axis1 = cross(vec3d{ _normal.x, _normal.y, _normal.z }, vec3d{ 0.f, 1.f, 0.f });
-            auto faxis1 = float3 { axis1.x, axis1.y, axis1.z };
-            faxis1.normalize();
-            auto axis2 = cross(vec3d{ _normal.x, _normal.y, _normal.z }, axis1);
-            auto faxis2 = float3 { axis2.x, axis2.y, axis2.z };
-            faxis2.normalize();
-
-            matrix4 basis = matrix4::identity();
-            basis(0, 0) = faxis1.x;
-            basis(0, 1) = faxis1.y;
-            basis(0, 2) = faxis1.z;
-
-            basis(1, 0) = faxis2.x;
-            basis(1, 1) = faxis2.y;
-            basis(1, 2) = faxis2.z;
-
-            basis(2, 0) = _normal.x;
-            basis(2, 1) = _normal.y;
-            basis(2, 2) = _normal.z;
-
-            const int segments = 50;
-            for (int i = 0; i < segments; i++)
-            {
-                auto t1 = 2 * M_PI * ((float)i / segments);
-                auto t2 = 2 * M_PI * ((float)(i+1) / segments);
-                float4 xy1 { cosf(t1) * size, sinf(t1) * size, 0.f, 1.f };
-                xy1 = basis * xy1;
-                xy1 = float4 { _picked.x + xy1.x, _picked.y + xy1.y, _picked.z  + xy1.z, 1.f };
-                float4 xy2 { cosf(t1) * size * 0.5f, sinf(t1) * size * 0.5f, 0.f, 1.f };
-                xy2 = basis * xy2;
-                xy2 = float4 { _picked.x + xy2.x, _picked.y + xy2.y, _picked.z  + xy2.z, 1.f };
-                float4 xy3 { cosf(t2) * size * 0.5f, sinf(t2) * size * 0.5f, 0.f, 1.f };
-                xy3 = basis * xy3;
-                xy3 = float4 { _picked.x + xy3.x, _picked.y + xy3.y, _picked.z  + xy3.z, 1.f };
-                float4 xy4 { cosf(t2) * size, sinf(t2) * size, 0.f, 1.f };
-                xy4 = basis * xy4;
-                xy4 = float4 { _picked.x + xy4.x, _picked.y + xy4.y, _picked.z  + xy4.z, 1.f };
-                //glVertex3fv(&_picked.x); 
-
-                glColor4f(white.x, white.y, white.z, 0.5f);
-                glVertex3fv(&xy1.x);
-                glColor4f(white.x, white.y, white.z, 0.8f);
-                glVertex3fv(&xy2.x);
-                glVertex3fv(&xy3.x);
-
-                glColor4f(white.x, white.y, white.z, 0.5f);
-                glVertex3fv(&xy1.x);
-                glVertex3fv(&xy4.x);
-                glColor4f(white.x, white.y, white.z, 0.8f);
-                glVertex3fv(&xy3.x);
-            }
-            //glVertex3fv(&_picked.x); glVertex3fv(&end.x);
-            glEnd();
-
-            if (selected_points.size() == 1)
-            {
-                auto p0 = selected_points.front();
-                draw_ruler(_picked, p0.pos);
-            }
-
-            glDisable(GL_BLEND);
-            glEnable(GL_DEPTH_TEST);
-        }
-
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        if (selected_points.size() == 2)
-        {
-            glDisable(GL_DEPTH_TEST);
-            draw_ruler(selected_points[1].pos, selected_points[0].pos);
-            glEnable(GL_DEPTH_TEST);
-        }
-
-        if (win.get_mouse().rmouse_down) selected_points.clear();
-
-        for (auto&& points: selected_points)
-        {
-            glColor4f(light_blue.x, light_blue.y, light_blue.z, 0.9f);
-            draw_sphere(points.pos, 0.011f, 20, 20);
-        }
-        glDisable(GL_DEPTH_TEST);
-        int i = 0;
-        measurement_point_hovered = false;
-        for (auto&& points: selected_points)
-        {
-            auto pos_2d = project_to_2d(points.pos);
-            pos_2d.y = win.framebuf_height() - pos_2d.y;
-
-            if ((pos_2d - win.get_mouse().cursor).length() < 20)
-            {
-                dragging_point_index = i;
-                measurement_point_hovered = true;
-                if (win.get_mouse().mouse_down && input_ctrl.click_period() > 0.5f)
-                    dragging_measurement_point = true;
-            }
-
-            glColor4f(white.x, white.y, white.z, dragging_point_index == i ? 0.8f : 0.4f);
-            draw_sphere(points.pos, dragging_point_index == i ? 0.012f : 0.008f, 20, 20);
-
-            i++;
-        }
-        glEnable(GL_DEPTH_TEST);
-        glDisable(GL_BLEND);
-
-        if (!win.get_mouse().mouse_down || input_ctrl.click_period() < 0.5f)
-        {
-            dragging_point_index = -1;
-            if (dragging_measurement_point && selected_points.size() == 2)
-            {
-                dragging_measurement_point = false;
-                auto dist = selected_points[1].pos - selected_points[0].pos;
-                not_model.add_log(to_string() << "Adjusted measurement to " << length_to_string(dist.length()));
-            }
-        }
-        if (dragging_measurement_point)
-        {
-            selected_points[dragging_point_index].pos = _picked;
-        }
+        _measurements.draw(win);
 
         glPopMatrix();
 
@@ -2586,37 +2315,6 @@ namespace rs2
         {
             reset_camera();
         }
-
-        return picked;
-    }
-
-    std::string viewer_model::length_to_string(float distance)
-    {
-        std::string label;
-        if (metric_system)
-        {
-            if (distance < 0.01f)
-            {
-                label = to_string() << std::fixed << std::setprecision(3) << distance * 1000.f << " mm";
-            } else if (distance < 1.f) {
-                label = to_string() << std::fixed << std::setprecision(3) << distance * 100.f << " cm";
-            } else {
-                label = to_string() << std::fixed << std::setprecision(3) << distance << " meters";
-            }
-        } else 
-        {
-            if (distance < 0.0254f)
-            {
-                label = to_string() << std::fixed << std::setprecision(3) << distance * 1000.f << " mm";
-            } else if (distance < 0.3048f) {
-                label = to_string() << std::fixed << std::setprecision(3) << distance / 0.0254 << " in";
-            } else if (distance < 0.9144) {
-                label = to_string() << std::fixed << std::setprecision(3) << distance / 0.3048f << " ft";
-            } else {
-                label = to_string() << std::fixed << std::setprecision(3) << distance / 0.9144 << " yd";
-            }
-        }
-        return label;
     }
 
     void viewer_model::show_top_bar(ux_window& window, const rect& viewer_rect, const device_models_list& devices)
@@ -3284,37 +2982,11 @@ namespace rs2
         ImGui::PopStyleVar();
     }
 
-    void viewer_model::update_input(ux_window& win, const rs2::rect& viewer_rect)
-    {
-        auto rect_copy = viewer_rect;
-        rect_copy.y += 60;
-        input_ctrl.click = false;
-        if (win.get_mouse().mouse_down && !input_ctrl.mouse_down) 
-        {
-            input_ctrl.mouse_down = true;
-            input_ctrl.down_pos = win.get_mouse().cursor;
-            input_ctrl.selection_started = win.time();
-        }
-        if (input_ctrl.mouse_down && !win.get_mouse().mouse_down)
-        {
-            input_ctrl.mouse_down = false;
-            if (win.time() - input_ctrl.selection_started < 0.5 && 
-                (win.get_mouse().cursor - input_ctrl.down_pos).length() < 100)
-            {
-                if (rect_copy.contains(win.get_mouse().cursor))
-                {
-                    input_ctrl.click = true;
-                    input_ctrl.click_time = glfwGetTime();
-                }
-            }
-        }
-    }
-
     void viewer_model::update_3d_camera(
         ux_window& win,
         const rect& viewer_rect, bool force)
     {
-        if (dragging_measurement_point) return;
+        if (_measurements.manipulating()) return;
 
         mouse_info& mouse = win.get_mouse();
         auto now = std::chrono::high_resolution_clock::now();
@@ -3569,29 +3241,20 @@ namespace rs2
 
             update_3d_camera(window, viewer_rect);
 
-            update_input(window, viewer_rect);
+            _measurements.update_input(window, viewer_rect);
 
             rect window_size{ 0, 0, (float)window.width(), (float)window.height() };
             rect fb_size{ 0, 0, (float)window.framebuf_width(), (float)window.framebuf_height() };
             rect new_rect = viewer_rect.normalize(window_size).unnormalize(fb_size);
 
-            float3 picked_xyz;
-            auto picked = render_3d_view(new_rect, window, texture, points, window.get_font(), &picked_xyz);
-            mouse_picked_event.add_value(picked && !input_ctrl.mouse_down);
-
+            render_3d_view(new_rect, window, texture, points);
+            
             auto rect_copy = viewer_rect;
             rect_copy.y += 60;
             rect_copy.h -= 60;
 
-            if (mouse_picked_event.eval() && rect_copy.contains(window.get_mouse().cursor))
-            {
-                if (!(measurement_active && selected_points.size() == 1) && !measurement_point_hovered)
-                {
-                    std::string tt = to_string() << std::fixed << std::setprecision(3) 
-                        << _picked.x << ", " << _picked.y << ", " << _picked.z << " meters";
-                    ImGui::SetTooltip("%s", tt.c_str());
-                }
-            }
+            if (rect_copy.contains(window.get_mouse().cursor))
+                _measurements.show_tooltip();
         }
 
         if (ImGui::IsKeyPressed(' '))

@@ -7,6 +7,7 @@
 #include "notifications.h"
 #include "viewer.h"
 #include "skybox.h"
+#include "measurement.h"
 #include <librealsense2/hpp/rs_export.hpp>
 
 namespace rs2
@@ -111,14 +112,11 @@ namespace rs2
         void show_3dviewer_header(ux_window& window, rs2::rect stream_rect, bool& paused, std::string& error_message);
 
         void update_3d_camera(ux_window& win, const rect& viewer_rect, bool force = false);
-        void update_input(ux_window& win, const rect& viewer_rect);
-
-        std::string length_to_string(float distance);
 
         void show_top_bar(ux_window& window, const rect& viewer_rect, const device_models_list& devices);
 
-        bool render_3d_view(const rect& view_rect, ux_window& win, 
-            std::shared_ptr<texture_buffer> texture, rs2::points points, ImFont *font1, float3* picked);
+        void render_3d_view(const rect& view_rect, ux_window& win, 
+            std::shared_ptr<texture_buffer> texture, rs2::points points);
 
         void render_2d_view(const rect& view_rect, ux_window& win, int output_height,
             ImFont *font1, ImFont *font2, size_t dev_model_num, const mouse_info &mouse, std::string& error_message);
@@ -183,19 +181,13 @@ namespace rs2
         bool select_3d_source = false;
         bool select_tex_source = false;
         bool select_shader_source = false;
-        bool measurement_active = false;
         bool show_help_screen = false;
         bool occlusion_invalidation = true;
         bool glsl_available = false;
-        bool dragging_measurement_point = false;
-        int  dragging_point_index = -1;
-        bool measurement_point_hovered = false;
 
         press_button_model trajectory_button{ u8"\uf1b0", u8"\uf1b0","Draw trajectory", "Stop drawing trajectory", true };
         press_button_model grid_object_button{ u8"\uf1cb", u8"\uf1cb",  "Configure Grid", "Configure Grid", false };
         press_button_model pose_info_object_button{ u8"\uf05a", u8"\uf05a",  "Show pose stream info overlay", "Hide pose stream info overlay", false };
-
-        bool show_pose_info_3d = false;
 
     private:
         void check_permissions();
@@ -236,8 +228,7 @@ namespace rs2
         bool fixed_up = true;
 
         float view[16];
-        bool texture_wrapping_on = true;
-        GLint texture_border_mode = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_BORDER
+        GLint texture_border_mode = GL_CLAMP_TO_EDGE;
 
         rs2::points last_points;
         std::shared_ptr<texture_buffer> last_texture;
@@ -249,35 +240,15 @@ namespace rs2
         rs2::gl::camera_renderer _cam_renderer;
         rs2::gl::pointcloud_renderer _pc_renderer;
 
-        struct mouse_control
-        {
-            bool mouse_down = false;
-            bool click = false;
-            double selection_started = 0.0;
-            float2 down_pos { 0.f, 0.f };
-            int mouse_wheel = 0;
-            double click_time = 0.0;
-            float click_period() { return clamp((glfwGetTime() - click_time) * 10, 0.f, 1.f); }
-        };
-        mouse_control input_ctrl;
-
 
         bool _pc_selected = false;
-        temporal_event mouse_picked_event { std::chrono::milliseconds(1000) };
+        
+
         temporal_event origin_occluded { std::chrono::milliseconds(3000) };
-
-        float3 _normal, _picked;
-
-        struct interest_point
-        {
-            float3 pos;
-            float3 normal;
-        };
 
         bool show_skybox = true;
         skybox _skybox;
 
-        interest_point selection_point;
-        std::vector<interest_point> selected_points;
+        measurement _measurements;
     };
 }
