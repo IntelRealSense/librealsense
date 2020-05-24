@@ -165,6 +165,8 @@ namespace rs2
 
         int selected_depth_source_uid = -1;
         int selected_tex_source_uid = -1;
+        std::vector<int> last_tex_sources;
+        double texture_update_time = 0.0;
 
         enum class shader_type
         {

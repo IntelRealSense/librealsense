@@ -303,7 +303,8 @@ namespace rs2
         const char* label, 
         bool dropdown,
         bool enabled,
-        const char* description
+        const char* description, 
+        ImVec4 text_color = light_grey
         )
     {
         auto disabled = !enabled;
@@ -322,8 +323,8 @@ namespace rs2
             }
             else
             {
-                ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
+                ImGui::PushStyleColor(ImGuiCol_Text, text_color);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, text_color);
             }
         }
         else
@@ -425,12 +426,14 @@ namespace rs2
         int selected_tex_source = 0;
         std::vector<std::string> tex_sources_str;
         std::vector<int> tex_sources;
+        std::vector<rs2::stream_profile> tex_profiles;
         i = 0;
         for (auto&& s : streams)
         {
             if (s.second.is_stream_visible() &&
                 (s.second.profile.stream_type() == RS2_STREAM_COLOR ||
                  s.second.profile.stream_type() == RS2_STREAM_INFRARED ||
+                 s.second.profile.stream_type() == RS2_STREAM_CONFIDENCE ||
                  s.second.profile.stream_type() == RS2_STREAM_DEPTH ||
                  s.second.profile.stream_type() == RS2_STREAM_FISHEYE))
             {
@@ -449,6 +452,7 @@ namespace rs2
 
                 // The texture source shall always refer to the raw (original) streams
                 tex_sources.push_back(streams_origin[s.second.profile.unique_id()]);
+                tex_profiles.push_back(s.second.profile);
 
                 auto dev_name = s.second.dev ? s.second.dev->dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
                 std::string stream_name = rs2_stream_to_string(s.second.profile.stream_type());
@@ -459,6 +463,20 @@ namespace rs2
                 i++;
             }
         }
+
+        for (int i = 0; i < tex_sources.size(); i++)
+        {
+            auto id = tex_sources[i];
+            auto it = std::find(begin(last_tex_sources), end(last_tex_sources), id);
+            if (it == last_tex_sources.end())
+            {
+                // Don't auto-switch to IR stream
+                if (tex_profiles[i].format() != RS2_FORMAT_Y8)
+                    selected_tex_source_uid = id;
+                texture_update_time = glfwGetTime();
+            }
+        }
+        last_tex_sources = tex_sources;
 
         const auto top_bar_height = 60.f;
 
@@ -594,11 +612,14 @@ namespace rs2
 
         // ------------ Texture Selection --------------
 
+        auto t = single_wave((glfwGetTime() - texture_update_time) * 2.f);
+        ImVec4 text_color = light_grey * (1.f - t) + light_blue * t;
+
         const auto tex_selection_popup = "Tex Selection";
         if (big_button(&select_tex_source, win, left, 0, u8"\uf576", 
                        "Texture", true, 
                        has_stream,
-                       "List of available texture sources"))
+                       "List of available texture sources", text_color))
         {
             ImGui::OpenPopup(tex_selection_popup);
         }
@@ -2429,11 +2450,6 @@ namespace rs2
 
             glBegin(GL_TRIANGLES);
 
-            auto single_wave = [](float x) -> float
-            {
-                auto c = clamp(x, 0.f, 1.f);
-                return 0.5f * (sinf(2.f * M_PI * c - M_PI_2) + 1.f);
-            };
             if (input_ctrl.mouse_down) size -= _picked.z * 0.01f;
             size += _picked.z * 0.01f * single_wave(input_ctrl.click_period());
 

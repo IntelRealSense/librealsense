@@ -58,6 +58,15 @@ static const ImVec4 dark_sensor_bg = from_rgba(0x1b, 0x21, 0x25, 170);
 static const ImVec4 red = from_rgba(233, 0, 0, 255, true);
 static const ImVec4 greenish = from_rgba(33, 104, 0, 255);
 
+inline ImVec4 operator*(const ImVec4& color, float t)
+{
+    return ImVec4(color.x * t, color.y * t, color.z * t, color.w * t);
+}
+inline ImVec4 operator+(const ImVec4& a, const ImVec4& b)
+{
+    return ImVec4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
+}
+
 // Helper class that lets smoothly animate between its values
 template<class T>
 class animated

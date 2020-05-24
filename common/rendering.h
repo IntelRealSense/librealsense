@@ -1641,6 +1641,15 @@ namespace rs2
         return data;
     }
 
+    // Single-Wave - helper function that smoothly goes from 0 to 1 between 0 and 0.5,
+    // and then smoothly returns from 1 to 0 between 0.5 and 1.0, and stays 0 anytime after
+    // Useful to animate variable on and off based on last time something happened
+    inline float single_wave(float x)
+    {
+        auto c = clamp(x, 0.f, 1.f);
+        return 0.5f * (sinf(2.f * M_PI * c - M_PI_2) + 1.f);
+    }
+
     // convert 3d points into 2d viewport coordinates
     inline	float2 translate_3d_to_2d(float3 point, matrix4 p, matrix4 v, matrix4 f, int32_t vp[4])
     {
