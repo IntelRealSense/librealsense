@@ -8,6 +8,7 @@ void compare_scene( std::string const & scene_dir )
 
     camera_params ci = read_camera_params( scene_dir, "ac1x\\camera_params" );
     dsm_params dsm = read_dsm_params(scene_dir, "ac1x\\DSM_params");
+    ci.dsm_params = dsm.dsm_params;
     scene_metadata md( scene_dir );
 
     algo::optimizer cal;
@@ -17,8 +18,7 @@ void compare_scene( std::string const & scene_dir )
         md.rgb_prev_file,
         md.ir_file,
         md.z_file,
-        ci,
-        dsm.dsm_params);
+        ci );
 
     auto& z_data = cal.get_z_data();
     auto& ir_data = cal.get_ir_data();
