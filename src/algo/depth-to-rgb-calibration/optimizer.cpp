@@ -722,10 +722,19 @@ end*/
     std::vector<double> sub_pixel_x = _z.subpixels_x;
     std::vector<double> sub_pixel_y= _z.subpixels_y;
 
-    transform(_z.subpixels_x.begin(), _z.subpixels_x.end(), sub_pixel_x.begin(), [](double x) {return std::ceil(x + 1); });
-    transform(_z.subpixels_y.begin(), _z.subpixels_y.end(), sub_pixel_y.begin(), [](double x) {return std::ceil(x + 1); });
+    transform(_z.subpixels_x.begin(), _z.subpixels_x.end(), sub_pixel_x.begin(), [](double x) {return std::round(x + 1); });
+    transform(_z.subpixels_y.begin(), _z.subpixels_y.end(), sub_pixel_y.begin(), [](double x) {return std::round(x + 1); });
 
-    //relevant_pixels_image
+    _z.subpixels_y_round = sub_pixel_y;
+    _z.subpixels_x_round = sub_pixel_x;
+
+    for (auto i = 0; i < sub_pixel_x.size(); i++)
+    {
+        auto x = _z.subpixels_x_round[i];
+        auto y = _z.subpixels_y_round[i];
+
+        _z.relevant_pixels_image[(y-1)*_z.width + x-1] = 1;
+    }
 }
 
 
