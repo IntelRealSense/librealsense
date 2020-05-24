@@ -5,6 +5,7 @@
 #include <librealsense2/rsutil.h>
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include "coeffs.h"
 #include "cost.h"
 #include "uvmap.h"
@@ -1235,8 +1236,8 @@ static p_matrix calc_p_gradients(const z_frame_data & z_data,
     const yuy2_frame_data & yuy_data, 
     std::vector<double> interp_IDT_x, 
     std::vector<double> interp_IDT_y,
-	const calib & cal,
-	const p_matrix & p_mat,
+    const calib & cal,
+    const p_matrix & p_mat,
     const std::vector<double>& rc, 
     const std::vector<double2>& xy,
     iteration_data_collect * data = nullptr)
@@ -1264,7 +1265,7 @@ static p_matrix calc_p_gradients(const z_frame_data & z_data,
         
     }
 
-	p_matrix averages = { 0 };
+    p_matrix averages = { 0 };
     for (auto i = 0; i < 8; i++) //zero the last line of P grad?
     {
         averages.vals[i] = (double)sums.vals[i] / (double)sum_of_valids;
@@ -1277,8 +1278,8 @@ static
 std::pair< std::vector<double2>, std::vector<double>> calc_rc(
     const z_frame_data & z_data,
     const yuy2_frame_data & yuy_data,
-	const calib & cal,
-	const p_matrix & p_mat
+    const calib & cal,
+    const p_matrix & p_mat
 )
 {
     auto v = z_data.vertices;
@@ -1303,7 +1304,7 @@ std::pair< std::vector<double2>, std::vector<double>> calc_rc(
         fy*(double)r[1] + ppy * (double)r[2], fy*(double)r[4] + ppy * (double)r[5], fy*(double)r[7] + ppy * (double)r[8], fy*(double)t[1] + ppy * (double)t[2],
         r[2], r[5], r[8], t[2] };
 */
-	auto mat = p_mat.vals;
+    auto mat = p_mat.vals;
     for( auto i = 0; i < z_data.vertices.size(); ++i )
     {
         double x = v[i].x;
@@ -1335,8 +1336,8 @@ static p_matrix calc_gradients(
     const z_frame_data& z_data,
     const yuy2_frame_data& yuy_data,
     const std::vector<double2>& uv,
-	const calib & cal,
-	const p_matrix & p_mat,
+    const calib & cal,
+    const p_matrix & p_mat,
     iteration_data_collect * data = nullptr
 )
 {
@@ -1348,7 +1349,7 @@ static p_matrix calc_gradients(
 
     if (data)
     {
-		data->d_vals_x = interp_IDT_x;
+        data->d_vals_x = interp_IDT_x;
         data->d_vals_y = interp_IDT_y;
         data->xy = rc.first;
         data->rc = rc.second;
@@ -1361,8 +1362,8 @@ static p_matrix calc_gradients(
 std::pair<double, p_matrix> calc_cost_and_grad(
     const z_frame_data & z_data,
     const yuy2_frame_data & yuy_data,
-	const calib & cal,
-	const p_matrix & p_mat,
+    const calib & cal,
+    const p_matrix & p_mat,
     iteration_data_collect * data = nullptr
 )
 {
@@ -1377,18 +1378,18 @@ std::pair<double, p_matrix> calc_cost_and_grad(
 
 params::params()
 {
-	normelize_mat.vals[0] = 0.353692440000000;
-	normelize_mat.vals[1] = 0.266197740000000;
-	normelize_mat.vals[2] = 1.00926010000000;
-	normelize_mat.vals[3] = 0.000673204490000000;
-	normelize_mat.vals[4] = 0.355085250000000;
-	normelize_mat.vals[5] = 0.266275050000000;
-	normelize_mat.vals[6] = 1.01145800000000;
-	normelize_mat.vals[7] = 0.000675013750000000;
-	normelize_mat.vals[8] = 414.205570000000;
-	normelize_mat.vals[9] = 313.341060000000;
-	normelize_mat.vals[10] = 1187.34590000000;
-	normelize_mat.vals[11] = 0.791570250000000;
+    normelize_mat.vals[0] = 0.353692440000000;
+    normelize_mat.vals[1] = 0.266197740000000;
+    normelize_mat.vals[2] = 1.00926010000000;
+    normelize_mat.vals[3] = 0.000673204490000000;
+    normelize_mat.vals[4] = 0.355085250000000;
+    normelize_mat.vals[5] = 0.266275050000000;
+    normelize_mat.vals[6] = 1.01145800000000;
+    normelize_mat.vals[7] = 0.000675013750000000;
+    normelize_mat.vals[8] = 414.205570000000;
+    normelize_mat.vals[9] = 313.341060000000;
+    normelize_mat.vals[10] = 1187.34590000000;
+    normelize_mat.vals[11] = 0.791570250000000;
 
     // NOTE: until we know the resolution, the current state is just the default!
     // We need to get the depth and rgb resolutions to make final decisions!

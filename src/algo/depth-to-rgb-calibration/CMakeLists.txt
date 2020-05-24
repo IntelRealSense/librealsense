@@ -15,7 +15,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/uvmap.h"
         "${CMAKE_CURRENT_LIST_DIR}/optimizer.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/optimizer.h"
-		"${CMAKE_CURRENT_LIST_DIR}/k-to-dsm.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/k-to-dsm.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/k-to-dsm.h"
         "${CMAKE_CURRENT_LIST_DIR}/rotation-in-angles.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/valid-scene.cpp"
