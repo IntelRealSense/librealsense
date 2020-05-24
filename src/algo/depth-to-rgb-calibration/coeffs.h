@@ -28,7 +28,7 @@ namespace depth_to_rgb_calibration {
         const z_frame_data& z_data,
         const yuy2_frame_data& yuy_data,
         const calib & cal,
-		const p_matrix & p_mat,
+        const p_matrix & p_mat,
         const std::vector<double>& rc,
         const std::vector<double2>& xy
     );

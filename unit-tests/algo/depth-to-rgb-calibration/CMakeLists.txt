@@ -22,7 +22,6 @@ dl_algo_file( "${F9440687}/2/binFiles/ac1x/diffIm_01_1080x1920_double_00.bin" ""
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/diffIm_1080x1920_double_00.bin" "" )
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/costDiffPerSection_1x4_double_00.bin" "" )
 
-	
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/p_matrix_iteration_1_1x12_double_00.bin" "" )
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/p_matrix_iteration_2_1x12_double_00.bin" "" )
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/p_matrix_iteration_3_1x12_double_00.bin" "" )
@@ -384,3 +383,9 @@ dl_algo_file( "${F9440687}/2/binFiles/ac1x/svm_edgeWeightDistributionPerSectionR
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/svm_edgeWeightsPerDir_1x4_double_00.bin" "")
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/svm_featuresMat_1x10_double_00.bin" "")
 dl_algo_file( "${F9440687}/2/binFiles/ac1x/svm_improvementPerSection_1x4_double_00.bin" "")
+
+dl_algo_file( "${F9440687}/2/binFiles/ac1x/dsmRegsOrig_1x4_single_00.bin" "" )
+dl_algo_file( "${F9440687}/2/binFiles/ac1x/relevantPixelsImage_768x1024_logical_00.bin" "" )
+dl_algo_file( "${F9440687}/2/binFiles/ac1x/round_xim_2506x1_double_00.bin" "" )
+dl_algo_file( "${F9440687}/2/binFiles/ac1x/round_yim_2506x1_double_00.bin" "" )
+dl_algo_file( "${F9440687}/2/binFiles/ac1x/DSM_params" "" )

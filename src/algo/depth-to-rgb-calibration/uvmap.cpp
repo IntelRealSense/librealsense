@@ -51,8 +51,8 @@ namespace depth_to_rgb_calibration {
 
     uvmap_t get_texture_map(
         std::vector< double3 > const & points,
-		const calib & cal,
-		const p_matrix & p_mat
+        const calib & cal,
+        const p_matrix & p_mat
     )
     {
         auto intrinsics = cal.get_intrinsics();

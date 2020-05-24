@@ -7,15 +7,18 @@ void compare_scene( std::string const & scene_dir )
     TRACE( "Loading " << scene_dir << " ..." );
 
     camera_params ci = read_camera_params( scene_dir, "ac1x\\camera_params" );
+    dsm_params dsm = read_dsm_params(scene_dir, "ac1x\\DSM_params");
     scene_metadata md( scene_dir );
 
     algo::optimizer cal;
+
     init_algo( cal, scene_dir,
         md.rgb_file,
         md.rgb_prev_file,
         md.ir_file,
         md.z_file,
-        ci );
+        ci,
+        dsm.dsm_params);
 
     auto& z_data = cal.get_z_data();
     auto& ir_data = cal.get_ir_data();
@@ -29,7 +32,7 @@ void compare_scene( std::string const & scene_dir )
     auto z_h = ci.z.height;
     auto z_w = ci.z.width;
     auto num_of_calib_elements = 17;
-	auto num_of_p_matrix_elements = sizeof(algo::p_matrix) / sizeof(double);
+    auto num_of_p_matrix_elements = sizeof(algo::p_matrix) / sizeof(double);
 
 #if 1
     // smearing
@@ -87,7 +90,11 @@ void compare_scene( std::string const & scene_dir )
     CHECK(compare_to_bin_file< double >(depth_data.closest, scene_dir, "ac1x\\zValuesForSubEdges", 1, md.n_edges, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.grad_in_direction_inside, scene_dir, "ac1x\\zGradInDirection", 1, md.n_edges, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.directions, scene_dir, "ac1x\\directionIndexInside", 1, md.n_edges, "double_00", compare_same_vectors));
+    
+    CHECK(compare_to_bin_file< double >(depth_data.subpixels_x_round, scene_dir, "ac1x\\round_xim", 1, md.n_edges, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(depth_data.subpixels_y_round, scene_dir, "ac1x\\round_yim", 1, md.n_edges, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.weights, scene_dir, "ac1x\\weights", 1, md.n_edges, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< uint8_t >(depth_data.relevant_pixels_image, scene_dir, "ac1x\\relevantPixelsImage", z_w, z_h, "uint8_00", compare_same_vectors));
     CHECK(compare_to_bin_file< algo::double3 >(depth_data.vertices, scene_dir, bin_file("ac1x\\vertices", 3, md.n_edges, "double_00") + ".bin", md.n_edges, 1, compare_same_vectors));
     CHECK(compare_to_bin_file< uint8_t >(depth_data.section_map_depth_inside, scene_dir, "ac1x\\sectionMapDepthInside", 1, md.n_edges, "uint8_00", compare_same_vectors));
 #endif
@@ -130,15 +137,15 @@ void compare_scene( std::string const & scene_dir )
     auto cb = [&]( algo::iteration_data_collect const & data )
     {
         // data.iteration is 0-based!
-       /* REQUIRE( data.iteration < md.n_iterations );*/
+        REQUIRE( data.iteration < md.n_iterations );
 
-		auto file = bin_file("ac1x\\p_matrix_iteration", data.iteration + 1, num_of_p_matrix_elements, 1, "double_00.bin");
-		CHECK(compare_to_bin_file< double >(std::vector< double >(std::begin(data.params.curr_p_mat.vals), std::end(data.params.curr_p_mat.vals)),
-			scene_dir, file, num_of_p_matrix_elements, 1, compare_same_vectors));
+        auto file = bin_file("ac1x\\p_matrix_iteration", data.iteration + 1, num_of_p_matrix_elements, 1, "double_00.bin");
+        CHECK(compare_to_bin_file< double >(std::vector< double >(std::begin(data.params.curr_p_mat.vals), std::end(data.params.curr_p_mat.vals)),
+            scene_dir, file, num_of_p_matrix_elements, 1, compare_same_vectors));
 
-		file = bin_file("ac1x\\cost_iteration", data.iteration + 1, 1, 1, "double_00.bin");
-		CHECK(compare_to_bin_file< double >(std::vector< double >(1, data.params.cost),
-			scene_dir, file, 1, 1, compare_same_vectors));
+        file = bin_file("ac1x\\cost_iteration", data.iteration + 1, 1, 1, "double_00.bin");
+        CHECK(compare_to_bin_file< double >(std::vector< double >(1, data.params.cost),
+            scene_dir, file, 1, 1, compare_same_vectors));
 
         file = bin_file( "ac1x\\uvmap_iteration", data.iteration + 1, 2, md.n_edges, "double_00.bin" );
         CHECK( compare_to_bin_file< algo::double2 >( data.uvmap, scene_dir, file, md.n_edges, 1, compare_same_vectors ) );
@@ -161,50 +168,54 @@ void compare_scene( std::string const & scene_dir )
         file = bin_file( "ac1x\\xCoeff_P_iteration", data.iteration + 1, num_of_p_matrix_elements, md.n_edges, "double_00.bin" );
         CHECK( compare_to_bin_file< algo::p_matrix>( data.coeffs_p.x_coeffs, scene_dir, file, md.n_edges, 1, compare_same_vectors ) );
 
-		file = bin_file("ac1x\\yCoeff_P_iteration", data.iteration + 1, num_of_p_matrix_elements, md.n_edges, "double_00.bin");
-		CHECK(compare_to_bin_file< algo::p_matrix>(data.coeffs_p.y_coeffs, scene_dir, file, md.n_edges, 1, compare_same_vectors));
-
-		file = bin_file("ac1x\\grad_iteration", data.iteration + 1, num_of_p_matrix_elements, 1, "double_00.bin");
-		CHECK(compare_to_bin_file< double >(std::vector< double >(std::begin(data.params.calib_gradients.vals), std::end(data.params.calib_gradients.vals)),
-			scene_dir, file, num_of_p_matrix_elements, 1, compare_same_vectors));
-
-		file = bin_file("ac1x\\grad_norma_iteration", data.iteration + 1, 1, 1, "double_00.bin");
-		CHECK(compare_to_bin_file< double >(std::vector< double >(1, data.grads_norma),
-			scene_dir, file, 1, 1, compare_same_vectors));
-
-		file = bin_file("ac1x\\grads_norm_iteration", data.iteration + 1, num_of_p_matrix_elements, 1, "double_00.bin");
-		CHECK(compare_to_bin_file< double >(std::vector< double >(std::begin(data.grads_norm.vals), std::end(data.grads_norm.vals)),
-			scene_dir, file, num_of_p_matrix_elements, 1, compare_same_vectors));
-
-
-		file = bin_file("ac1x\\normalized_grads_iteration", data.iteration + 1, num_of_p_matrix_elements, 1, "double_00.bin");
-		CHECK(compare_to_bin_file< double >(std::vector< double >(std::begin(data.normalized_grads.vals), std::end(data.normalized_grads.vals)),
-			scene_dir, file, num_of_p_matrix_elements, 1, compare_same_vectors));
-
-
-		file = bin_file("ac1x\\unit_grad_iteration", data.iteration + 1, num_of_p_matrix_elements, 1, "double_00.bin");
-		CHECK(compare_to_bin_file< double >(std::vector< double >(std::begin(data.unit_grad.vals), std::end(data.unit_grad.vals)),
-			scene_dir, file, num_of_p_matrix_elements, 1, compare_same_vectors));
-
-		file = bin_file("ac1x\\t_iteration", data.iteration + 1, 1, 1, "double_00.bin");
-		CHECK(compare_to_bin_file< double >(std::vector< double >(1, data.t),
-			scene_dir, file, 1, 1, compare_same_vectors));
-
-		file = bin_file("ac1x\\back_tracking_line_iter_count_iteration", data.iteration + 1, 1, 1, "double_00.bin");
-		CHECK(compare_to_bin_file< double >(std::vector< double >(1, data.back_tracking_line_search_iters),
-			scene_dir, file, 1, 1, compare_same_vectors));
-
-		file = bin_file("ac1x\\next_p_matrix_iteration", data.iteration + 1, num_of_p_matrix_elements, 1, "double_00.bin");
-		CHECK(compare_to_bin_file< double >(std::vector< double >(std::begin(data.next_params.curr_p_mat.vals), std::end(data.next_params.curr_p_mat.vals)),
-			scene_dir, file, num_of_p_matrix_elements, 1, compare_same_vectors));
-
-		file = bin_file("ac1x\\next_cost_iteration", data.iteration + 1, 1, 1, "double_00.bin");
-		CHECK(compare_to_bin_file< double >(std::vector< double >(1, data.next_params.cost),
-			scene_dir, file, 1, 1, compare_same_vectors));
+        file = bin_file("ac1x\\yCoeff_P_iteration", data.iteration + 1, num_of_p_matrix_elements, md.n_edges, "double_00.bin");
+        CHECK(compare_to_bin_file< algo::p_matrix>(data.coeffs_p.y_coeffs, scene_dir, file, md.n_edges, 1, compare_same_vectors));
+        
+        file = bin_file("ac1x\\grad_iteration", data.iteration + 1, num_of_p_matrix_elements, 1, "double_00.bin");
+        CHECK(compare_to_bin_file< double >(std::vector< double >(std::begin(data.params.calib_gradients.vals), std::end(data.params.calib_gradients.vals)),
+            scene_dir, file, num_of_p_matrix_elements, 1, compare_same_vectors));
+        
+        file = bin_file("ac1x\\grad_norma_iteration", data.iteration + 1, 1, 1, "double_00.bin");
+        CHECK(compare_to_bin_file< double >(std::vector< double >(1, data.grads_norma),
+            scene_dir, file, 1, 1, compare_same_vectors));
+        
+        file = bin_file("ac1x\\grads_norm_iteration", data.iteration + 1, num_of_p_matrix_elements, 1, "double_00.bin");
+        CHECK(compare_to_bin_file< double >(std::vector< double >(std::begin(data.grads_norm.vals), std::end(data.grads_norm.vals)),
+            scene_dir, file, num_of_p_matrix_elements, 1, compare_same_vectors));
+        
+        
+        file = bin_file("ac1x\\normalized_grads_iteration", data.iteration + 1, num_of_p_matrix_elements, 1, "double_00.bin");
+        CHECK(compare_to_bin_file< double >(std::vector< double >(std::begin(data.normalized_grads.vals), std::end(data.normalized_grads.vals)),
+            scene_dir, file, num_of_p_matrix_elements, 1, compare_same_vectors));
+        
+        
+        file = bin_file("ac1x\\unit_grad_iteration", data.iteration + 1, num_of_p_matrix_elements, 1, "double_00.bin");
+        CHECK(compare_to_bin_file< double >(std::vector< double >(std::begin(data.unit_grad.vals), std::end(data.unit_grad.vals)),
+            scene_dir, file, num_of_p_matrix_elements, 1, compare_same_vectors));
+        
+        file = bin_file("ac1x\\t_iteration", data.iteration + 1, 1, 1, "double_00.bin");
+        CHECK(compare_to_bin_file< double >(std::vector< double >(1, data.t),
+            scene_dir, file, 1, 1, compare_same_vectors));
+        
+        file = bin_file("ac1x\\back_tracking_line_iter_count_iteration", data.iteration + 1, 1, 1, "double_00.bin");
+        CHECK(compare_to_bin_file< double >(std::vector< double >(1, data.back_tracking_line_search_iters),
+            scene_dir, file, 1, 1, compare_same_vectors));
+        
+        file = bin_file("ac1x\\next_p_matrix_iteration", data.iteration + 1, num_of_p_matrix_elements, 1, "double_00.bin");
+        CHECK(compare_to_bin_file< double >(std::vector< double >(std::begin(data.next_params.curr_p_mat.vals), std::end(data.next_params.curr_p_mat.vals)),
+            scene_dir, file, num_of_p_matrix_elements, 1, compare_same_vectors));
+        
+        file = bin_file("ac1x\\next_cost_iteration", data.iteration + 1, 1, 1, "double_00.bin");
+        CHECK(compare_to_bin_file< double >(std::vector< double >(1, data.next_params.cost),
+            scene_dir, file, 1, 1, compare_same_vectors));
        };
 
     // Our code doesn't count the first iteration; the Matlab code starts at 1 even if it doesn't do anything...
     REQUIRE( cal.optimize( cb ) + 1 == md.n_iterations );
+
+    auto dsm_orig = algo::apply_ac_res_on_dsm_model(dsm.dsm_params, dsm.dsm_regs, algo::ac_to_dsm_dir::inverse);
+    CHECK(compare_to_bin_file< algo::DSM_regs >(dsm_orig,
+        scene_dir, "ac1x\\dsmRegsOrig_1x4_single_00.bin"));
 
     auto new_calibration = cal.get_calibration();
     auto cost = cal.get_cost();

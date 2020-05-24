@@ -455,7 +455,7 @@ namespace depth_to_rgb_calibration {
         double3 const & v,
         double rc,
         double2 const & xy,
-		const calib & cal,
+        const calib & cal,
         const p_matrix & p_mat
     )
     {
@@ -544,19 +544,19 @@ namespace depth_to_rgb_calibration {
         double3 const & v,
         double rc,
         double2 const & xy,
-		const calib & cal,
-		const p_matrix & p_mat
+        const calib & cal,
+        const p_matrix & p_mat
     )
     {
-		p_matrix res;
-		auto r = cal.rot.rot;
-		double t[3] = { cal.trans.t1, cal.trans.t2, cal.trans.t3 };
-		auto d = cal.coeffs;
-		auto ppx = (double)cal.k_mat.ppx;
-		auto ppy = (double)cal.k_mat.ppy;
-		auto fx = (double)cal.k_mat.fx;
-		auto fy = (double)cal.k_mat.fy;
-		auto p = p_mat.vals;
+        p_matrix res;
+        auto r = cal.rot.rot;
+        double t[3] = { cal.trans.t1, cal.trans.t2, cal.trans.t3 };
+        auto d = cal.coeffs;
+        auto ppx = (double)cal.k_mat.ppx;
+        auto ppy = (double)cal.k_mat.ppy;
+        auto fx = (double)cal.k_mat.fx;
+        auto fy = (double)cal.k_mat.fy;
+        auto p = p_mat.vals;
 
         auto x1 = (double)xy.x;
         auto y1 = (double)xy.y;
@@ -693,11 +693,11 @@ namespace depth_to_rgb_calibration {
     }
 
     coeffs< p_matrix > calc_p_coefs(const z_frame_data& z_data, 
-		const yuy2_frame_data& yuy_data,
-		const calib & cal,
-		const p_matrix & p_mat,
-		const std::vector<double>& rc, 
-		const std::vector<double2>& xy)
+        const yuy2_frame_data& yuy_data,
+        const calib & cal,
+        const p_matrix & p_mat,
+        const std::vector<double>& rc,
+        const std::vector<double2>& xy)
     {
         coeffs<p_matrix> res;
 

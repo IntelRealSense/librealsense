@@ -8,6 +8,7 @@
 #include "coeffs.h"
 #include "cost.h"
 #include "uvmap.h"
+#include "k-to-dsm.h"
 #include "debug.h"
 
 using namespace librealsense::algo::depth_to_rgb_calibration;
@@ -399,7 +400,8 @@ void optimizer::set_z_data(
     _params.set_depth_resolution(depth_intrinsics.width, depth_intrinsics.height);
     _z.width = depth_intrinsics.width;
     _z.height = depth_intrinsics.height;
-    _z.intrinsics = depth_intrinsics;
+    _z.orig_intrinsics = depth_intrinsics;
+    _z.orig_dsm_params = dsm_params;
     _z.depth_units = depth_units;
 
     _z.frame = std::move(depth_data);
@@ -715,6 +717,24 @@ end*/
     depth_filter(_z.vertices, _z.vertices_all, _z.is_inside, 1, _z.is_inside.size());
     depth_filter(_z.section_map_depth_inside, _z.valid_section_map, _z.is_inside, 1, _z.is_inside.size());
     depth_filter(_z.weights, _z.valid_weights, _z.is_inside, 1, _z.is_inside.size());
+
+    _z.relevant_pixels_image.resize(_z.width * _z.height, 0);
+    std::vector<double> sub_pixel_x = _z.subpixels_x;
+    std::vector<double> sub_pixel_y= _z.subpixels_y;
+
+    transform(_z.subpixels_x.begin(), _z.subpixels_x.end(), sub_pixel_x.begin(), [](double x) {return std::round(x + 1); });
+    transform(_z.subpixels_y.begin(), _z.subpixels_y.end(), sub_pixel_y.begin(), [](double x) {return std::round(x + 1); });
+
+    _z.subpixels_y_round = sub_pixel_y;
+    _z.subpixels_x_round = sub_pixel_x;
+
+    for (auto i = 0; i < sub_pixel_x.size(); i++)
+    {
+        auto x = _z.subpixels_x_round[i];
+        auto y = _z.subpixels_y_round[i];
+
+        _z.relevant_pixels_image[(y-1)*_z.width + x-1] = 1;
+    }
 }
 
 
@@ -762,156 +782,165 @@ void optimizer::set_ir_data(
 
 double3x3 cholesky3x3(double3x3 mat)
 {
-	double3x3 res = { 0 };
+    double3x3 res = { 0 };
 
-	for (auto i = 0; i < 3; i++)
-	{
-		for (auto j = 0; j <= i; j++)
-		{
-			double sum = 0;
-			
-			if(i==j)
-			{
-				for (auto l = 0; l < i; l++)
-				{
-					sum += res.mat[i][l] * res.mat[i][l];
-				}
-				res.mat[i][i] = sqrt(mat.mat[i][j] - sum);				
-			}
-			else
-			{
-				for (auto l = 0; l < j; l++)
-				{
-					sum += res.mat[i][l] * res.mat[j][l];
-				}
-				res.mat[i][j] = (mat.mat[i][j] - sum)/ res.mat[j][j];
-			}
-		}
-	}
-	return res;
+    for (auto i = 0; i < 3; i++)
+    {
+        for (auto j = 0; j <= i; j++)
+        {
+            double sum = 0;
+
+            if(i==j)
+            {
+                for (auto l = 0; l < i; l++)
+                {
+                    sum += res.mat[i][l] * res.mat[i][l];
+                }
+                res.mat[i][i] = sqrt(mat.mat[i][j] - sum);
+            }
+            else
+            {
+                for (auto l = 0; l < j; l++)
+                {
+                    sum += res.mat[i][l] * res.mat[j][l];
+                }
+                res.mat[i][j] = (mat.mat[i][j] - sum)/ res.mat[j][j];
+            }
+        }
+    }
+    return res;
 }
 
 void inv(const double x[9], double y[9])
 {
-	double b_x[9];
-	int p1;
-	int p2;
-	int p3;
-	double absx11;
-	double absx21;
-	double absx31;
-	int itmp;
-	memcpy(&b_x[0], &x[0], 9U * sizeof(double));
-	p1 = 0;
-	p2 = 3;
-	p3 = 6;
-	absx11 = std::abs(x[0]);
-	absx21 = std::abs(x[1]);
-	absx31 = std::abs(x[2]);
-	if ((absx21 > absx11) && (absx21 > absx31)) {
-		p1 = 3;
-		p2 = 0;
-		b_x[0] = x[1];
-		b_x[1] = x[0];
-		b_x[3] = x[4];
-		b_x[4] = x[3];
-		b_x[6] = x[7];
-		b_x[7] = x[6];
-	}
-	else {
-		if (absx31 > absx11) {
-			p1 = 6;
-			p3 = 0;
-			b_x[0] = x[2];
-			b_x[2] = x[0];
-			b_x[3] = x[5];
-			b_x[5] = x[3];
-			b_x[6] = x[8];
-			b_x[8] = x[6];
-		}
-	}
+    double b_x[9];
+    int p1;
+    int p2;
+    int p3;
+    double absx11;
+    double absx21;
+    double absx31;
+    int itmp;
+    memcpy(&b_x[0], &x[0], 9U * sizeof(double));
+    p1 = 0;
+    p2 = 3;
+    p3 = 6;
+    absx11 = std::abs(x[0]);
+    absx21 = std::abs(x[1]);
+    absx31 = std::abs(x[2]);
+    if ((absx21 > absx11) && (absx21 > absx31)) {
+        p1 = 3;
+        p2 = 0;
+        b_x[0] = x[1];
+        b_x[1] = x[0];
+        b_x[3] = x[4];
+        b_x[4] = x[3];
+        b_x[6] = x[7];
+        b_x[7] = x[6];
+    }
+    else {
+        if (absx31 > absx11) {
+            p1 = 6;
+            p3 = 0;
+            b_x[0] = x[2];
+            b_x[2] = x[0];
+            b_x[3] = x[5];
+            b_x[5] = x[3];
+            b_x[6] = x[8];
+            b_x[8] = x[6];
+        }
+    }
 
-	b_x[1] /= b_x[0];
-	b_x[2] /= b_x[0];
-	b_x[4] -= b_x[1] * b_x[3];
-	b_x[5] -= b_x[2] * b_x[3];
-	b_x[7] -= b_x[1] * b_x[6];
-	b_x[8] -= b_x[2] * b_x[6];
-	if (std::abs(b_x[5]) > std::abs(b_x[4])) {
-		itmp = p2;
-		p2 = p3;
-		p3 = itmp;
-		absx11 = b_x[1];
-		b_x[1] = b_x[2];
-		b_x[2] = absx11;
-		absx11 = b_x[4];
-		b_x[4] = b_x[5];
-		b_x[5] = absx11;
-		absx11 = b_x[7];
-		b_x[7] = b_x[8];
-		b_x[8] = absx11;
-	}
+    b_x[1] /= b_x[0];
+    b_x[2] /= b_x[0];
+    b_x[4] -= b_x[1] * b_x[3];
+    b_x[5] -= b_x[2] * b_x[3];
+    b_x[7] -= b_x[1] * b_x[6];
+    b_x[8] -= b_x[2] * b_x[6];
+    if (std::abs(b_x[5]) > std::abs(b_x[4])) {
+        itmp = p2;
+        p2 = p3;
+        p3 = itmp;
+        absx11 = b_x[1];
+        b_x[1] = b_x[2];
+        b_x[2] = absx11;
+        absx11 = b_x[4];
+        b_x[4] = b_x[5];
+        b_x[5] = absx11;
+        absx11 = b_x[7];
+        b_x[7] = b_x[8];
+        b_x[8] = absx11;
+    }
 
-	b_x[5] /= b_x[4];
-	b_x[8] -= b_x[5] * b_x[7];
-	absx11 = (b_x[5] * b_x[1] - b_x[2]) / b_x[8];
-	absx21 = -(b_x[1] + b_x[7] * absx11) / b_x[4];
-	y[p1] = ((1.0 - b_x[3] * absx21) - b_x[6] * absx11) / b_x[0];
-	y[p1 + 1] = absx21;
-	y[p1 + 2] = absx11;
-	absx11 = -b_x[5] / b_x[8];
-	absx21 = (1.0 - b_x[7] * absx11) / b_x[4];
-	y[p2] = -(b_x[3] * absx21 + b_x[6] * absx11) / b_x[0];
-	y[p2 + 1] = absx21;
-	y[p2 + 2] = absx11;
-	absx11 = 1.0 / b_x[8];
-	absx21 = -b_x[7] * absx11 / b_x[4];
-	y[p3] = -(b_x[3] * absx21 + b_x[6] * absx11) / b_x[0];
-	y[p3 + 1] = absx21;
-	y[p3 + 2] = absx11;
+    b_x[5] /= b_x[4];
+    b_x[8] -= b_x[5] * b_x[7];
+    absx11 = (b_x[5] * b_x[1] - b_x[2]) / b_x[8];
+    absx21 = -(b_x[1] + b_x[7] * absx11) / b_x[4];
+    y[p1] = ((1.0 - b_x[3] * absx21) - b_x[6] * absx11) / b_x[0];
+    y[p1 + 1] = absx21;
+    y[p1 + 2] = absx11;
+    absx11 = -b_x[5] / b_x[8];
+    absx21 = (1.0 - b_x[7] * absx11) / b_x[4];
+    y[p2] = -(b_x[3] * absx21 + b_x[6] * absx11) / b_x[0];
+    y[p2 + 1] = absx21;
+    y[p2 + 2] = absx11;
+    absx11 = 1.0 / b_x[8];
+    absx21 = -b_x[7] * absx11 / b_x[4];
+    y[p3] = -(b_x[3] * absx21 + b_x[6] * absx11) / b_x[0];
+    y[p3 + 1] = absx21;
+    y[p3 + 2] = absx11;
 }
 
 
 void librealsense::algo::depth_to_rgb_calibration::optimizer::decompose_p_mat()
 {
-	auto p_mat = _params_curr.curr_p_mat.vals;
-	double3x3 first_three_cols = { p_mat[0], p_mat[1], p_mat[2],
-									p_mat[4], p_mat[5], p_mat[6],
-									p_mat[8], p_mat[9], p_mat[10] };
+    auto p_mat = _params_curr.curr_p_mat.vals;
+    double3x3 first_three_cols = {  p_mat[0], p_mat[1], p_mat[2],
+                                    p_mat[4], p_mat[5], p_mat[6],
+                                    p_mat[8], p_mat[9], p_mat[10] };
 
-	auto k_square = first_three_cols* first_three_cols.transpose();
-	std::vector<double> inv_k_square_vac(9, 0);
-	inv(k_square.to_vector().data(), inv_k_square_vac.data());
+    auto k_square = first_three_cols* first_three_cols.transpose();
+    std::vector<double> inv_k_square_vac(9, 0);
+    inv(k_square.to_vector().data(), inv_k_square_vac.data());
 
-	double3x3 inv_k_square = {
-		inv_k_square_vac[0], inv_k_square_vac[1],inv_k_square_vac[2],
-		inv_k_square_vac[3], inv_k_square_vac[4],inv_k_square_vac[5],
-		inv_k_square_vac[6], inv_k_square_vac[7],inv_k_square_vac[8]
-	};
+    double3x3 inv_k_square = {
+        inv_k_square_vac[0], inv_k_square_vac[1],inv_k_square_vac[2],
+        inv_k_square_vac[3], inv_k_square_vac[4],inv_k_square_vac[5],
+        inv_k_square_vac[6], inv_k_square_vac[7],inv_k_square_vac[8]
+    };
 
-	auto k_inv = cholesky3x3(inv_k_square).transpose();
-	std::vector<double> k_vac(9, 0);
-	inv(k_inv.to_vector().data(), k_vac.data());
+    auto k_inv = cholesky3x3(inv_k_square).transpose();
+    std::vector<double> k_vac(9, 0);
+    inv(k_inv.to_vector().data(), k_vac.data());
 
-	for (auto i = 0; i < k_vac.size(); i++)
-		k_vac[i] /= k_vac[k_vac.size() - 1];
+    for (auto i = 0; i < k_vac.size(); i++)
+        k_vac[i] /= k_vac[k_vac.size() - 1];
 
-	auto t = k_inv * double3{ p_mat[3], p_mat[7], p_mat[11] };
+    auto t = k_inv * double3{ p_mat[3], p_mat[7], p_mat[11] };
 
-	auto r = (k_inv * first_three_cols).to_vector();
+    auto r = (k_inv * first_three_cols).to_vector();
 
-	for (auto i = 0; i < r.size(); i++)
-		_final_calibration.rot.rot[i] = r[i];
+    for (auto i = 0; i < r.size(); i++)
+        _final_calibration.rot.rot[i] = r[i];
 
-	_final_calibration.trans = { t.x, t.y, t.z };
-	_final_calibration.k_mat.fx = _original_calibration.k_mat.fx;
-	_final_calibration.k_mat.fy = _original_calibration.k_mat.fy;
-	_final_calibration.k_mat.ppx = k_vac[2];
-	_final_calibration.k_mat.ppy = k_vac[5];
+    _final_calibration.trans = { t.x, t.y, t.z };
+    
+    _final_calibration.k_mat.fx = k_vac[0];
+    _final_calibration.k_mat.fy = k_vac[4];
+    _final_calibration.k_mat.ppx = k_vac[2];
+    _final_calibration.k_mat.ppy = k_vac[5];
+    
+    _original_calibration.copy_coefs(_final_calibration);
+    
+    
+    _z.new_intrinsics = _z.orig_intrinsics;
+    _z.new_intrinsics.fx = _z.new_intrinsics.fx / _final_calibration.k_mat.fx*_original_calibration.k_mat.fx;
+    _z.new_intrinsics.fy = _z.new_intrinsics.fy / _final_calibration.k_mat.fy*_original_calibration.k_mat.fy;
 
-	_original_calibration.copy_coefs(_final_calibration);
-};
+    _final_calibration.k_mat.fx = _original_calibration.k_mat.fx;
+    _final_calibration.k_mat.fy = _original_calibration.k_mat.fy;
 
+}
 
 void optimizer::zero_invalid_edges( z_frame_data & z_data, ir_frame_data const & ir_data )
 {
@@ -1501,12 +1530,12 @@ void optimizer::write_data_to( std::string const & dir )
         write_vector_to_file( _z.frame, dir, "depth.raw" );
 
         write_to_file( &_original_calibration, sizeof( _original_calibration ), dir, "rgb.calib" );
-        write_to_file( &_z.intrinsics, sizeof( _z.intrinsics ), dir, "depth.intrinsics" );
+        write_to_file( &_z.orig_intrinsics, sizeof( _z.orig_intrinsics), dir, "depth.intrinsics" );
         write_to_file( &_z.depth_units, sizeof( _z.depth_units ), dir, "depth.units" );
 
         // This file is meant for matlab -- it packages all the information needed
         write_matlab_camera_params_file(
-            _z.intrinsics,
+            _z.orig_intrinsics,
             _original_calibration,
             _z.depth_units,
             dir, "camera_params"
@@ -1523,9 +1552,9 @@ void optimizer::write_data_to( std::string const & dir )
 }
 
 optimaization_params optimizer::back_tracking_line_search( const z_frame_data & z_data, 
-	const yuy2_frame_data& yuy_data, 
-	optimaization_params curr_params,
-	iteration_data_collect * data)
+    const yuy2_frame_data& yuy_data, 
+    optimaization_params curr_params,
+    iteration_data_collect * data)
 {
     optimaization_params new_params;
 
@@ -1541,12 +1570,12 @@ optimaization_params optimizer::back_tracking_line_search( const z_frame_data & 
     
     auto uvmap_old = get_texture_map( z_data.vertices, _original_calibration/*decompose(curr_params.curr_p_mat)*/, curr_params.curr_p_mat);
     curr_params.cost = calc_cost( z_data, yuy_data, uvmap_old);
-	
 
-	auto uvmap_new = get_texture_map( z_data.vertices, _original_calibration/*decompose(new_params.curr_p_mat)*/, new_params.curr_p_mat);
+
+    auto uvmap_new = get_texture_map( z_data.vertices, _original_calibration/*decompose(new_params.curr_p_mat)*/, new_params.curr_p_mat);
     new_params.cost = calc_cost( z_data, yuy_data, uvmap_new);
 
-	auto diff = calc_cost_per_vertex_diff(z_data, yuy_data, uvmap_old, uvmap_new);
+    auto diff = calc_cost_per_vertex_diff(z_data, yuy_data, uvmap_old, uvmap_new);
 
     auto iter_count = 0;
     while( diff >= step_size * t && abs( step_size ) > _params.min_step_size && iter_count++ < _params.max_back_track_iters )
@@ -1555,10 +1584,10 @@ optimaization_params optimizer::back_tracking_line_search( const z_frame_data & 
         step_size = _params.tau*step_size;
 
         new_params.curr_p_mat = curr_params.curr_p_mat + unit_grad * step_size;
-		
-		uvmap_new = get_texture_map( z_data.vertices, _original_calibration/*decompose(new_params.curr_p_mat)*/, new_params.curr_p_mat);
-		new_params.cost = calc_cost(z_data, yuy_data, uvmap_new);
-		diff = calc_cost_per_vertex_diff(z_data, yuy_data, uvmap_old, uvmap_new);
+        
+        uvmap_new = get_texture_map( z_data.vertices, _original_calibration/*decompose(new_params.curr_p_mat)*/, new_params.curr_p_mat);
+        new_params.cost = calc_cost(z_data, yuy_data, uvmap_new);
+        diff = calc_cost_per_vertex_diff(z_data, yuy_data, uvmap_old, uvmap_new);
     }
 
     if(diff >= step_size * t )
@@ -1566,15 +1595,15 @@ optimaization_params optimizer::back_tracking_line_search( const z_frame_data & 
         new_params = curr_params;
     }
 
-	if (data)
-	{
-		data->grads_norma = curr_params.calib_gradients.get_norma();
-		data->grads_norm = grads_norm;
-		data->normalized_grads = normalized_grads;
-		data->unit_grad = unit_grad;
-		data->back_tracking_line_search_iters = iter_count;
-		data->t = t;
-	}
+    if (data)
+    {
+        data->grads_norma = curr_params.calib_gradients.get_norma();
+        data->grads_norm = grads_norm;
+        data->normalized_grads = normalized_grads;
+        data->unit_grad = unit_grad;
+        data->back_tracking_line_search_iters = iter_count;
+        data->t = t;
+    }
     return new_params;
 }
 
@@ -1604,7 +1633,7 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
 {
     optimaization_params params_orig;
     params_orig.curr_p_mat = _original_calibration.calc_p_mat();
-	
+
     auto res = calc_cost_and_grad( _z, _yuy, _original_calibration, params_orig.curr_p_mat );
     params_orig.cost = res.first;
     params_orig.calib_gradients = res.second;
@@ -1616,7 +1645,7 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
     {
         iteration_data_collect data;
         data.iteration = n_iterations;
-		auto res = calc_cost_and_grad( _z, _yuy, _original_calibration/*decompose(_params_curr.curr_p_mat)*/, _params_curr.curr_p_mat, &data );
+        auto res = calc_cost_and_grad( _z, _yuy, _original_calibration/*decompose(_params_curr.curr_p_mat)*/, _params_curr.curr_p_mat, &data );
         _params_curr.cost = res.first;
         _params_curr.calib_gradients = res.second;
         AC_LOG( DEBUG, n_iterations << ": Cost = " << std::fixed << std::setprecision( 15 ) << _params_curr.cost );
@@ -1625,10 +1654,10 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
 
         auto prev_params = _params_curr;
         _params_curr = back_tracking_line_search( _z, _yuy, _params_curr, &data);
-		data.next_params = _params_curr;
+        data.next_params = _params_curr;
 
-		if (cb)
-			cb(data);
+        if (cb)
+            cb(data);
 
         auto norm = (_params_curr.curr_p_mat - prev_params.curr_p_mat).get_norma();
         if( norm < _params.min_rgb_mat_delta )
@@ -1661,7 +1690,8 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
         AC_LOG( INFO, "Calibration finished after " << n_iterations << " iterations; original cost= " << params_orig.cost << "  optimized cost= " << _params_curr.cost );
     }
 
-	decompose_p_mat();
+    decompose_p_mat();
+    convert_new_k_to_DSM(_z.orig_intrinsics, _z.new_intrinsics, _z.orig_dsm_params, {});
 
     return n_iterations;
 }

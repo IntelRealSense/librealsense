@@ -57,18 +57,24 @@ namespace depth_to_rgb_calibration {
 
     struct z_frame_data : frame_data
     {
-        rs2_intrinsics_double intrinsics;
+        rs2_intrinsics_double orig_intrinsics;
+        rs2_intrinsics_double new_intrinsics;
+        rs2_dsm_params orig_dsm_params;
         float depth_units;
 
         std::vector< z_t > frame;
         std::vector<double> gradient_x;
         std::vector<double> gradient_y;
         std::vector<double> edges;
-        std::vector<double> supressed_edges;                
+        std::vector<double> supressed_edges;
         size_t n_strong_edges;
         std::vector<double> subpixels_x;
         std::vector<double> subpixels_y;
+        std::vector<double> subpixels_y_round;
+        std::vector<double> subpixels_x_round;
         std::vector<double> valid_weights;
+        std::vector<uint8_t> relevant_pixels_image;
+
         std::vector<double> weights;
         std::vector<double> direction_deg;
         std::vector<double3> vertices_all; 

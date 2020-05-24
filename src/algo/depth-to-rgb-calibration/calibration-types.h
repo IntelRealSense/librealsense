@@ -28,65 +28,65 @@ namespace depth_to_rgb_calibration {
         bool operator != (const double2 d) { return !(*this == d); }
     };
 
-	struct double3x3
-	{
-		double mat[3][3];
-		double3x3 transpose()
-		{
-			double3x3 res = { 0 };
+        struct double3x3
+        {
+                double mat[3][3];
+                double3x3 transpose()
+                {
+                        double3x3 res = { 0 };
 
-			for (auto i = 0; i < 3; i++)
-			{
-				for (auto j = 0; j < 3; j++)
-				{
-					res.mat[i][j] = mat[j][i];
-				}
-			}
-			return res;
-		}
+                        for (auto i = 0; i < 3; i++)
+                        {
+                                for (auto j = 0; j < 3; j++)
+                                {
+                                        res.mat[i][j] = mat[j][i];
+                                }
+                        }
+                        return res;
+                }
 
-		double3x3 operator*(const double3x3& other)
-		{
-			double3x3 res = { 0 };
+                double3x3 operator*(const double3x3& other)
+                {
+                        double3x3 res = { 0 };
 
-			for (auto i = 0; i < 3; i++)
-			{
-				for (auto j = 0; j < 3; j++)
-				{					
-					double sum = 0;
-					for (auto l = 0; l < 3; l++)
-					{
-						sum += mat[i][l] * other.mat[l][j];
-					}
-					res.mat[i][j] = sum;
-				}
-			}
-			return res;
-		}
+                        for (auto i = 0; i < 3; i++)
+                        {
+                                for (auto j = 0; j < 3; j++)
+                                {                                        
+                                        double sum = 0;
+                                        for (auto l = 0; l < 3; l++)
+                                        {
+                                                sum += mat[i][l] * other.mat[l][j];
+                                        }
+                                        res.mat[i][j] = sum;
+                                }
+                        }
+                        return res;
+                }
 
-		double3 operator*(const double3& other)
-		{
-			double3 res = { 0 };
-	
-			res.x = mat[0][0] * other.x + mat[0][1] * other.y + mat[0][2] * other.z;
-			res.y = mat[1][0] * other.x + mat[1][1] * other.y + mat[1][2] * other.z;
-			res.z = mat[2][0] * other.x + mat[2][1] * other.y + mat[2][2] * other.z;
-			return res;
-		}
+                double3 operator*(const double3& other)
+                {
+                        double3 res = { 0 };
+        
+                        res.x = mat[0][0] * other.x + mat[0][1] * other.y + mat[0][2] * other.z;
+                        res.y = mat[1][0] * other.x + mat[1][1] * other.y + mat[1][2] * other.z;
+                        res.z = mat[2][0] * other.x + mat[2][1] * other.y + mat[2][2] * other.z;
+                        return res;
+                }
 
-		std::vector<double> to_vector()
-		{
-			std::vector<double> res;
-			for (auto i = 0; i < 3; i++)
-			{
-				for (auto j = 0; j < 3; j++)
-				{
-					res.push_back(mat[i][j]);
-				}
-			}
-			return res;
-		}
-	};
+                std::vector<double> to_vector()
+                {
+                        std::vector<double> res;
+                        for (auto i = 0; i < 3; i++)
+                        {
+                                for (auto j = 0; j < 3; j++)
+                                {
+                                        res.push_back(mat[i][j]);
+                                }
+                        }
+                        return res;
+                }
+        };
 
     enum direction :uint8_t
     {
