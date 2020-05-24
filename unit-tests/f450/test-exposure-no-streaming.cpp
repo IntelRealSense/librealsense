@@ -5,10 +5,10 @@
 
 #include "f450-common.h"
 
-void check_option_from_min_to_max_and_back(rs2::sensor sensor, rs2_option opt, int number_of_iterations, float tolerance);
-void check_both_sensors_option_from_min_to_max_and_back(rs2::sensor sensor, rs2_option opt, rs2_option opt_second, int number_of_iterations, float tolerance);
+void check_option_from_max_to_min_and_back(rs2::sensor sensor, rs2_option opt, int number_of_iterations, float tolerance);
+void check_both_sensors_option_from_max_to_min_and_back(rs2::sensor sensor, rs2_option opt, rs2_option opt_second, int number_of_iterations, float tolerance);
 
-TEST_CASE( "Gain - each sensor and both - no streaming", "[F450]" ) {
+TEST_CASE( "Exposure - each sensor and both - no streaming", "[F450]" ) {
     using namespace std;
 
     rs2::context ctx;
@@ -35,30 +35,31 @@ TEST_CASE( "Gain - each sensor and both - no streaming", "[F450]" ) {
     rs2::sensor sensor = devices[0].first<rs2::fa_infrared_sensor>();
 
     int number_of_iterations = 5;
-    float tolerance = 2;
+    float tolerance = 3; // for 5% - not absolute as done in gain
+    
     //set AUTO EXPOSURE to manual
     sensor.set_option(RS2_OPTION_AUTO_EXPOSURE_MODE, 0);
     REQUIRE(sensor.get_option(RS2_OPTION_AUTO_EXPOSURE_MODE) == 0);
 
     rs2_option opt = RS2_OPTION_GAIN;
 
-    check_option_from_min_to_max_and_back(sensor, RS2_OPTION_GAIN, number_of_iterations, tolerance);
+    check_option_from_max_to_min_and_back(sensor, RS2_OPTION_EXPOSURE, number_of_iterations, tolerance);
     //--------------------------------------------------------------------------
-    check_option_from_min_to_max_and_back(sensor, RS2_OPTION_GAIN_SECOND, number_of_iterations, tolerance);
+    check_option_from_max_to_min_and_back(sensor, RS2_OPTION_EXPOSURE_SECOND, number_of_iterations, tolerance);
     //--------------------------------------------------------------------------
-    check_both_sensors_option_from_min_to_max_and_back(sensor, RS2_OPTION_GAIN, RS2_OPTION_GAIN_SECOND, number_of_iterations, tolerance);
+    check_both_sensors_option_from_max_to_min_and_back(sensor, RS2_OPTION_EXPOSURE, RS2_OPTION_EXPOSURE_SECOND, number_of_iterations, tolerance);
     
 }
 
 
-void check_option_from_min_to_max_and_back(rs2::sensor sensor, rs2_option opt, int number_of_iterations, float tolerance)
+void check_option_from_max_to_min_and_back(rs2::sensor sensor, rs2_option opt, int number_of_iterations, float tolerance)
 {
     auto range = sensor.get_option_range(opt);
     std::cout << "-----------------------------------------------------------" << std::endl;
     std::cout << "Checking option = " << rs2_option_to_string(opt) << std::endl;
 
-    //setting exposure to min
-    float valueToSet = range.min;
+    //setting exposure to max
+    float valueToSet = range.max;
     sensor.set_option(opt, valueToSet);
     float valueAfterChange = sensor.get_option(opt);
     int iterations = 5;
@@ -68,45 +69,45 @@ void check_option_from_min_to_max_and_back(rs2::sensor sensor, rs2_option opt, i
     }
     REQUIRE(valueAfterChange == valueToSet);
     std::cout << std::endl;
-    std::cout << "Min Value Checked" << std::endl;
+    std::cout << "Max Value Checked" << std::endl;
 
-    //going up with step increment at each iteration until max
-    checkOption(sensor, opt, valueAfterChange, range.max, number_of_iterations, tolerance, [](float value, float limit) {
-        return value < limit;
+    //going down dividing by 2 at each iteration until min
+    checkOption(sensor, opt, valueAfterChange, 15.0f/*range.min*/, number_of_iterations, tolerance, [](float value, float limit) {
+        return value > limit;
         },
         [&](float& value) {
-            value += range.step;
+            value /= 2.f;
         },
             [tolerance](float valueAfterChange, float valueRequested) {
-            return (valueAfterChange >= (valueRequested - tolerance)) && (valueAfterChange <= (valueRequested + tolerance));
+            return (valueAfterChange >= (1.f - tolerance) * valueRequested) && (valueAfterChange <= (1.f + tolerance)* valueRequested);
         }
         );
 
     valueAfterChange = sensor.get_option(opt);
+    REQUIRE(valueAfterChange == 15.0f/*range.min*/);
+
+    std::cout << std::endl;
+    std::cout << "Option decremented and got to min value Checked" << std::endl;
+
+    //then back to max multiplying by 2 until max
+    checkOption(sensor, opt, valueAfterChange, range.max, number_of_iterations, tolerance, [](float value, float limit) {
+        return value < limit;
+        },
+        [&](float& value) {
+            value *= 2.f;
+        },
+            [tolerance](float valueAfterChange, float valueRequested) {
+            return (valueAfterChange >= (1.f - tolerance) * valueRequested) && (valueAfterChange <= (1.f + tolerance) * valueRequested);
+        });
+    valueAfterChange = sensor.get_option(opt);
     REQUIRE(valueAfterChange == range.max);
 
     std::cout << std::endl;
-    std::cout << "Option incremented and got to max value Checked" << std::endl;
-
-    //then back to min with step decrement
-    checkOption(sensor, opt, valueAfterChange, range.min, number_of_iterations, tolerance, [](float value, float limit) {
-        return value > limit;
-        },
-        [&](float& value) {
-            value -= range.step;
-        },
-            [tolerance](float valueAfterChange, float valueRequested) {
-            return (valueAfterChange >= (valueRequested - tolerance)) && (valueAfterChange <= (valueRequested + tolerance));
-        });
-    valueAfterChange = sensor.get_option(opt);
-    REQUIRE(valueAfterChange == range.min);
-
-    std::cout << std::endl;
-    std::cout << "Option decremented and got back to min value Checked" << std::endl;
+    std::cout << "Option incremented and got back to max value Checked" << std::endl;
 }
 
 
-void check_both_sensors_option_from_min_to_max_and_back(rs2::sensor sensor, rs2_option opt, rs2_option opt_second, int number_of_iterations, float tolerance)
+void check_both_sensors_option_from_max_to_min_and_back(rs2::sensor sensor, rs2_option opt, rs2_option opt_second, int number_of_iterations, float tolerance)
 {
     std::cout << "-----------------------------------------------------------" << std::endl;
     std::cout << "Checking option = " << rs2_option_to_string(opt) << " for both sensors" <<std::endl;
@@ -119,8 +120,8 @@ void check_both_sensors_option_from_min_to_max_and_back(rs2::sensor sensor, rs2_
     std::cout << "Min, Max, Step checked same for both sensors" << std::endl;
 
 
-    //setting exposure to min
-    float valueToSet = range.min;
+    //setting exposure to max
+    float valueToSet = range.max;
     sensor.set_option(opt, valueToSet);
     sensor.set_option(opt_second, valueToSet);
     float valueAfterChange = sensor.get_option(opt);
@@ -138,44 +139,44 @@ void check_both_sensors_option_from_min_to_max_and_back(rs2::sensor sensor, rs2_
     REQUIRE(valueAfterChange == valueToSet);
     REQUIRE(valueAfterChange_second == valueToSet);
     std::cout << std::endl;
-    std::cout << "Min Value Checked" << std::endl;
+    std::cout << "Max Value Checked" << std::endl;
 
-    //going up with step increment at each iteration until max
-    checkOptionForBothSensors(sensor, opt, opt_second, valueAfterChange, range.max, number_of_iterations, tolerance, [](float value, float limit) {
-        return value < limit;
+    //going down dividing by 2 at each iteration until min
+    checkOptionForBothSensors(sensor, opt, opt_second, valueAfterChange, 15.0f/*range.min*/, number_of_iterations, tolerance, [](float value, float limit) {
+        return value > limit;
         },
         [&](float& value) {
-            value += range.step;
+            value /= 2.f;
         },
             [tolerance](float valueAfterChange, float valueRequested) {
-            return (valueAfterChange >= (valueRequested - tolerance)) && (valueAfterChange <= (valueRequested + tolerance));
+            return (valueAfterChange >= (1.f - tolerance) * valueRequested) && (valueAfterChange <= (1.f + tolerance) * valueRequested);
         }
         );
 
+    valueAfterChange = sensor.get_option(opt);
+    valueAfterChange_second = sensor.get_option(opt_second);
+    REQUIRE(valueAfterChange == 15.0f/*range.min*/);
+    REQUIRE(valueAfterChange_second == 15.0f/*range.min*/);
+
+    std::cout << std::endl;
+    std::cout << "Option decremented and got to min value Checked" << std::endl;
+
+    //then back to max multiplying by 2 until max
+    checkOptionForBothSensors(sensor, opt, opt_second, valueAfterChange, range.max, 10/*number_of_iterations*/, tolerance, [](float value, float limit) {
+        return value < limit;
+        },
+        [&](float& value) {
+            value *= 2.f;
+        },
+            [tolerance](float valueAfterChange, float valueRequested) {
+            return (valueAfterChange >= (1.f - tolerance) * valueRequested) && (valueAfterChange <= (1.f + tolerance) * valueRequested);
+        }
+        );
     valueAfterChange = sensor.get_option(opt);
     valueAfterChange_second = sensor.get_option(opt_second);
     REQUIRE(valueAfterChange == range.max);
     REQUIRE(valueAfterChange_second == range.max);
 
     std::cout << std::endl;
-    std::cout << "Option incremented and got to max value Checked" << std::endl;
-
-    //then back to min with step decrement
-    checkOptionForBothSensors(sensor, opt, opt_second, valueAfterChange, range.min, number_of_iterations, tolerance, [](float value, float limit) {
-        return value > limit;
-        },
-        [&](float& value) {
-            value -= range.step;
-        },
-            [tolerance](float valueAfterChange, float valueRequested) {
-            return (valueAfterChange >= (valueRequested - tolerance)) && (valueAfterChange <= (valueRequested + tolerance));
-        }
-        );
-    valueAfterChange = sensor.get_option(opt);
-    valueAfterChange_second = sensor.get_option(opt_second);
-    REQUIRE(valueAfterChange == range.min);
-    REQUIRE(valueAfterChange_second == range.min);
-
-    std::cout << std::endl;
-    std::cout << "Option decremented and got back to min value Checked" << std::endl;
+    std::cout << "Option incremented and got back to max value Checked" << std::endl;
 }
