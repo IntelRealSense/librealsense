@@ -9,7 +9,7 @@ class skybox
 {
 public:
     skybox();
-    void render();
+    void render(rs2::float3 cam_position);
     void reset() { initialized = false; }
 
 private:

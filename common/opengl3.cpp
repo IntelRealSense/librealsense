@@ -1,3 +1,6 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+
 #include "opengl3.h"
 
 #include <glad/glad.h>
@@ -686,6 +689,7 @@ std::string fbo::get_status()
 
 void _check_gl_error(const char *file, int line) 
 {
+#ifdef _DEBUG
     GLenum err (glGetError());
     std::stringstream ss;
 
@@ -701,6 +705,7 @@ void _check_gl_error(const char *file, int line)
             case GL_INVALID_VALUE:          error="INVALID_VALUE";          break;
             case GL_OUT_OF_MEMORY:          error="OUT_OF_MEMORY";          break;
             case GL_INVALID_FRAMEBUFFER_OPERATION:  error="INVALID_FRAMEBUFFER_OPERATION";  break;
+            default:                        error="Unknown"; break;
         }
 
         ss << "GL_" << error.c_str() << " - " << file << ":" << line << "\n";
@@ -713,6 +718,7 @@ void _check_gl_error(const char *file, int line)
         auto error = ss.str();
         throw std::runtime_error(error);
     }
+#endif
 }
 
 void clear_gl_errors()

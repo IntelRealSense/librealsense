@@ -1,3 +1,6 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+
 #include "skybox.h"
 
 #include <stb_image.h>
@@ -20,7 +23,7 @@ skybox::skybox()
     minus_z = nullptr;
 }
 
-void skybox::render()
+void skybox::render(rs2::float3 cam_position)
 {
     auto init = [](const uint8_t* buff, int length, std::shared_ptr<rs2::texture_buffer>& tex){
         if (tex) tex.reset();
@@ -46,6 +49,8 @@ void skybox::render()
 
     const auto r = 50.f;
     const auto re = 49.999f;
+
+    glTranslatef(cam_position.x, cam_position.y, cam_position.z);
 
     glBindTexture(GL_TEXTURE_2D, plus_z->get_gl_handle());
     glBegin(GL_QUAD_STRIP);
@@ -111,4 +116,6 @@ void skybox::render()
     glBindTexture(GL_TEXTURE_2D, 0);
 
     glDisable(GL_TEXTURE_2D);
+
+    glTranslatef(-cam_position.x, -cam_position.y, -cam_position.z);
 }

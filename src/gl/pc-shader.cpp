@@ -453,7 +453,7 @@ namespace librealsense
 
                     const auto fps = _durations.size();
 
-                    scoped_timer t("pointcloud_renderer.gl");
+                    //scoped_timer t("pointcloud_renderer.gl");
 
                     GLint curr_tex;
                     glGetIntegerv(GL_TEXTURE_BINDING_2D, &curr_tex);
@@ -598,7 +598,7 @@ namespace librealsense
                                 rgba8 rgba { 0, 0, 0, 0 };
 
                                 {
-                                    scoped_timer t("rgba");
+                                    //scoped_timer t("rgba");
                                     pbo.query(&rgba, 1, 1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE);
                                 }
 
@@ -613,7 +613,7 @@ namespace librealsense
                                     glReadBuffer(GL_COLOR_ATTACHMENT1);
                                     check_gl_error();
 
-                                    scoped_timer t("xyz");
+                                    //scoped_timer t("xyz");
                                     _xyz_pbo.query(pos_halfs.data(), 0, 0, 
                                         NORMAL_WINDOW_SIZE, NORMAL_WINDOW_SIZE, 
                                         GL_RGBA, GL_HALF_FLOAT);

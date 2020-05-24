@@ -733,167 +733,7 @@ namespace rs2
         
         left += 60;
 
-        // ---------------------- Help --------------------
-
-        // active = show_help_screen;
-        // if (big_button(&active, win, stream_rect.w - 65, 0, u8"\uf059", "Help", false, true, "Show 3D Viewer Controls"))
-        // {
-        //     show_help_screen = !show_help_screen;
-        // }
         
-        // left += 60;
-
-
-        // ImGui::PopStyleColor(4);
-        // ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons - 5, 0 });
-
-        
-
-        // static config_file temp_cfg;
-        // set_export_popup(large_font, font, stream_rect, error_message, temp_cfg);
-
-        // ImGui::SameLine();
-        // if (ImGui::Button(textual_icons::floppy, { 24, buttons_heights }))
-        // {
-        //     temp_cfg = config_file::instance();
-        //     ImGui::OpenPopup("Export");
-        // }
-        // if (ImGui::IsItemHovered())
-        //     ImGui::SetTooltip("Export 3D model to PLY format");
-
-        // ImGui::SameLine();
-
-        // if (ImGui::Button(textual_icons::refresh, { 24, buttons_heights }))
-        // {
-        //     reset_camera();
-        // }
-        // if (ImGui::IsItemHovered())
-        //     ImGui::SetTooltip("Reset View");
-
-        // ImGui::SameLine();
-
-        // if (render_quads)
-        // {
-        //     ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-        //     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-        //     label = to_string() << textual_icons::cubes << "##Render Quads";
-        //     if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
-        //     {
-        //         render_quads = false;
-        //     }
-        //     if (ImGui::IsItemHovered())
-        //     {
-        //         ImGui::SetTooltip("Render Quads");
-        //     }
-        //     ImGui::PopStyleColor(2);
-        // }
-        // else
-        // {
-        //     label = to_string() << textual_icons::cubes << "##Render Points";
-        //     if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
-        //     {
-        //         render_quads = true;
-        //     }
-        //     if (ImGui::IsItemHovered())
-        //     {
-        //         ImGui::SetTooltip("Render Points");
-        //     }
-        // }
-        // ImGui::SameLine();
-
-
-        // if (render_shaded)
-        // {
-        //     ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-        //     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-        //     label = to_string() << textual_icons::cubes << "##Render Shaded";
-        //     if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
-        //     {
-        //         render_shaded = false;
-        //     }
-        //     if (ImGui::IsItemHovered())
-        //     {
-        //         ImGui::SetTooltip("Render Quads");
-        //     }
-        //     ImGui::PopStyleColor(2);
-        // }
-        // else
-        // {
-        //     label = to_string() << textual_icons::cubes << "##Render Shaded";
-        //     if (ImGui::Button(label.c_str(), { 24, buttons_heights }))
-        //     {
-        //         render_shaded = true;
-        //     }
-        //     if (ImGui::IsItemHovered())
-        //     {
-        //         ImGui::SetTooltip("Render Points");
-        //     }
-        // }
-        // ImGui::SameLine();
-
-        // if (support_non_syncronized_mode)
-        // {
-        //     if (synchronization_enable)
-        //     {
-        //         ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-        //         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-        //         if (ImGui::Button(textual_icons::lock, { 24, buttons_heights }))
-        //         {
-        //             synchronization_enable = false;
-        //         }
-        //         if (ImGui::IsItemHovered())
-        //             ImGui::SetTooltip("Disable syncronization between the pointcloud and the texture");
-        //         ImGui::PopStyleColor(2);
-        //     }
-        //     else
-        //     {
-        //         if (ImGui::Button(textual_icons::unlock, { 24, buttons_heights }))
-        //         {
-        //             synchronization_enable = true;
-        //         }
-        //         if (ImGui::IsItemHovered())
-        //             ImGui::SetTooltip("Keep the pointcloud and the texture sycronized");
-        //     }
-        // }
-
-
-        // //ImGui::End();
-
-        // if (pose_render)
-        // {
-        //     render_pose(stream_rect, buttons_heights);
-        // }
-
-        // auto total_top_bar_height = top_bar_height * (1 + pose_render); // may include single bar or additional bar for pose
-        // ImGui::PopStyleColor(5);
-
-        // ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-        // ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-
-        // ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
-        // ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
-        // ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
-
-        // auto old_pos = ImGui::GetCursorScreenPos();
-        // ImVec2 pos { stream_rect.x + stream_rect.w - 215, stream_rect.y + total_top_bar_height + 5 };
-        // ImGui::SetCursorScreenPos(pos);
-        // ImGui::GetWindowDrawList()->AddRectFilled(pos, { pos.x + 260, pos.y + 65 }, ImColor(dark_sensor_bg));
-
-        // ImGui::SetCursorScreenPos({ pos.x + 5, pos.y + 2 });
-        // ImGui::Text("Rotate:");
-        // ImGui::SetCursorScreenPos({ pos.x + 5, pos.y + 22 });
-        // ImGui::Text("Pan:");
-        // ImGui::SetCursorScreenPos({ pos.x + 5, pos.y + 42 });
-        // ImGui::Text("Zoom:");
-
-        // ImGui::SetCursorScreenPos({ pos.x + 65, pos.y + 2 });
-        // ImGui::Text("Left Mouse Button");
-        // ImGui::SetCursorScreenPos({ pos.x + 65, pos.y + 22 });
-        // ImGui::Text("Middle Mouse Button");
-        // ImGui::SetCursorScreenPos({ pos.x + 65, pos.y + 42 });
-        // ImGui::Text("Mouse Wheel");
-
-        // ImGui::SetCursorScreenPos(old_pos);
         ImGui::PopStyleColor(5);
 
 
@@ -2153,7 +1993,7 @@ namespace rs2
         glEnable(GL_DEPTH_TEST);
 
         glDepthMask(GL_FALSE);
-        if (show_skybox) _skybox.render();
+        if (show_skybox) _skybox.render(pos);
         glDepthMask(GL_TRUE);
 
         auto r1 = matrix4::identity();
@@ -2530,7 +2370,7 @@ namespace rs2
             ImGui::SetNextWindowPos(ImVec2(w_pos.x - size.x / 2, vp_offset_y - w_pos.y - size.y / 2 - 5));
             ImGui::SetNextWindowSize(ImVec2(size.x + 10, size.y - 15));
             ImGui::Begin("", nullptr, flags);
-            ImGui::Text(label.c_str());
+            ImGui::Text("%s", label.c_str());
             ImGui::End();
             ImGui::PopStyleVar();
             ImGui::PopStyleColor(2);
@@ -2706,7 +2546,7 @@ namespace rs2
         if (!win.get_mouse().mouse_down || input_ctrl.click_period() < 0.5f)
         {
             dragging_point_index = -1;
-            if (dragging_measurement_point)
+            if (dragging_measurement_point && selected_points.size() == 2)
             {
                 dragging_measurement_point = false;
                 auto dist = selected_points[1].pos - selected_points[0].pos;

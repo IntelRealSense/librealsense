@@ -1,3 +1,6 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+
 #pragma once
 
 #include "rendering.h"
@@ -10,9 +13,15 @@
 void _check_gl_error(const char *file, int line);
 void clear_gl_errors();
 
+#ifndef NDEBUG
 #define check_gl_error() _check_gl_error(__FILE__,__LINE__)
-
-#define MOUSE_PICK_USE_PBO     1                   // use pbo to improve performance, for debug only
+#else
+#ifndef _DEBUG
+#define check_gl_error() _check_gl_error(__FILE__,__LINE__)
+#else
+#define check_gl_error()
+#endif
+#endif
 
 namespace rs2
 {
