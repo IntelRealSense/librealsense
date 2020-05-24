@@ -5,7 +5,6 @@
 #include <librealsense2/rsutil.h>
 #include <algorithm>
 #include <array>
-#include <cmath>
 #include "coeffs.h"
 #include "cost.h"
 #include "uvmap.h"
@@ -298,7 +297,7 @@ std::vector< double > interpolation( std::vector< T > const & grid_points,
             auto idx = *(loc_reg_x[k] + i) - 1;
             auto idy = *(loc_reg_y[k] + i) - 1;
             //assert(_ir.width * idy + idx <= _ir.width * _ir.height);
-            auto val = *(iedge_it + valid_width * idy + idx);// find value in iEdge
+            auto val = *( iedge_it + size_t( valid_width * idy + idx ) );  // find value in iEdge
             local_interp.push_back(val);
         }
     }
@@ -723,8 +722,8 @@ end*/
     std::vector<double> sub_pixel_x = _z.subpixels_x;
     std::vector<double> sub_pixel_y= _z.subpixels_y;
 
-    transform(_z.subpixels_x.begin(), _z.subpixels_x.end(), sub_pixel_x.begin(), [](double x) {return std::round(x + 1); });
-    transform(_z.subpixels_y.begin(), _z.subpixels_y.end(), sub_pixel_y.begin(), [](double x) {return std::round(x + 1); });
+    transform(_z.subpixels_x.begin(), _z.subpixels_x.end(), sub_pixel_x.begin(), [](double x) {return round(x + 1); });
+    transform(_z.subpixels_y.begin(), _z.subpixels_y.end(), sub_pixel_y.begin(), [](double x) {return round(x + 1); });
 
     _z.subpixels_y_round = sub_pixel_y;
     _z.subpixels_x_round = sub_pixel_x;
@@ -734,7 +733,7 @@ end*/
         auto x = _z.subpixels_x_round[i];
         auto y = _z.subpixels_y_round[i];
 
-        _z.relevant_pixels_image[(y-1)*_z.width + x-1] = 1;
+        _z.relevant_pixels_image[size_t( ( y - 1 ) * _z.width + x - 1 )] = 1;
     }
 }
 
