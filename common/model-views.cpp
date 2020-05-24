@@ -3232,6 +3232,9 @@ namespace rs2
     device_model::~device_model()
     {
         for (auto&& n : related_notifications) n->dismiss(false);
+
+        if (nullptr != _updates_profile_model)
+            _updates.remove_profile(*_updates_profile_model);
     }
 
 
@@ -3244,11 +3247,14 @@ namespace rs2
         try {
             dev_updates_profile profile(dev, "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/rs-tests/sw-update/21_05_2020/rs_versions_db.json");
    
+            
+            bool sw_update_required = profile.retrieve_updates(versions_db_manager::LIBREALSENSE);
+            bool fw_update_required = profile.retrieve_updates(versions_db_manager::FIRMWARE);
 
-            if (profile.check_for_updates())
+            if (sw_update_required || fw_update_required)
             {
-                updates_model::update_profile_model updates_model = { profile.get_update_profile() , viewer.ctx, this};
-                viewer.updates.add_profile(updates_model);
+                _updates_profile_model = std::make_unique<updates_model::update_profile_model>( profile.get_update_profile() , viewer.ctx, this);
+                viewer.updates.add_profile(*_updates_profile_model);
             }
         }
         catch (const std::exception& e)
@@ -3349,7 +3355,9 @@ namespace rs2
         : dev(dev),
           syncer(viewer.syncer),
            _update_readonly_options_timer(std::chrono::seconds(6))
-        , _detected_objects( std::make_shared< atomic_objects_in_frame >() )
+        , _detected_objects( std::make_shared< atomic_objects_in_frame >() ),
+        _updates(viewer.updates),
+        _updates_profile_model(nullptr)
     {        
         auto name = get_device_name(dev);
         id = to_string() << name.first << ", " << name.second;

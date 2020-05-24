@@ -42,7 +42,7 @@ namespace rs2
 
         ~dev_updates_profile() {};
 
-        bool check_for_updates();
+        bool retrieve_updates(versions_db_manager::component_part_type comp);
         update_profile & get_update_profile() { return _update_profile; };
 
     private:

@@ -32,8 +32,8 @@ void updates_model::draw(ux_window& window, std::string& error_message)
     if (updates_copy.size() && !ignore)
         ImGui::OpenPopup(window_name);
 
-    float w  = window.width()  * 0.6f;
-    float h  = 600;
+    float w = window.width()  * 0.6f;
+    float h = 600;
     float x0 = window.width()  * 0.2f;
     float y0 = std::max(window.height() - h, 0.f) / 2;
     ImGui::SetNextWindowPos({ x0, y0 });
@@ -50,6 +50,18 @@ void updates_model::draw(ux_window& window, std::string& error_message)
 
     if (ImGui::BeginPopupModal(window_name, nullptr, flags))
     {
+        // End and close the pop up if no updates exists (Device removal)
+        if (updates_copy.size() == 0)
+        {
+            ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+            ImGui::PopStyleColor(3);
+            ImGui::PopStyleVar(2);
+            std::lock_guard<std::mutex> lock(_lock);
+            _updates.clear();
+            ignore = false;
+            return;
+        }
         std::string title_message = "ESSENTIAL UPDATE";
         auto title_size = ImGui::CalcTextSize(title_message.c_str());
         ImGui::SetCursorPosX(w / 2 - title_size.x / 2);
@@ -58,15 +70,15 @@ void updates_model::draw(ux_window& window, std::string& error_message)
         ImGui::Text(title_message.c_str());
         ImGui::PopStyleColor();
         ImGui::PopFont();
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY()+5);
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
         const auto orig_pos = ImGui::GetCursorScreenPos();
         const auto mid_y = (orig_pos.y + y0 + h - 30) / 2;
 
         ImGui::GetWindowDrawList()->AddRectFilled({ orig_pos.x + 140.f, orig_pos.y },
-                    { x0 + w - 5, y0 + h - 30 }, ImColor(header_color));
+            { x0 + w - 5, y0 + h - 30 }, ImColor(header_color));
         ImGui::GetWindowDrawList()->AddLine({ orig_pos.x + 145.f, mid_y },
-                    { x0 + w - 10, mid_y }, ImColor(sensor_bg));
+            { x0 + w - 10, mid_y }, ImColor(sensor_bg));
 
         for (int i = 0; i < updates_copy.size(); i++)
         {
@@ -79,21 +91,21 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             if (i == selected_index)
             {
                 ImGui::GetWindowDrawList()->AddRectFilled(pos,
-                        { pos.x + 140.f, pos.y + 165.f }, ImColor(header_color));
+                    { pos.x + 140.f, pos.y + 165.f }, ImColor(header_color));
             }
-                
-            ImGui::SetCursorPosY(ImGui::GetCursorPosY()+5);
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX()+4);
 
-            ImGui::Image( ImTextureID(_icon->get_gl_handle()), ImVec2{ 128.f, 114.f });
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 4);
+
+            ImGui::Image(ImTextureID(_icon->get_gl_handle()), ImVec2{ 128.f, 114.f });
 
             ImGui::PushStyleColor(ImGuiCol_Text, white);
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX()+4);
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 4);
             ImGui::Text("%s", update.profile.device_name.c_str());
             ImGui::PopStyleColor();
 
             auto sn_size = ImGui::CalcTextSize(update.profile.serial_number.c_str());
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX()+ 70 - sn_size.x / 2);
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 70 - sn_size.x / 2);
             ImGui::Text("%s", update.profile.serial_number.c_str());
         }
 
@@ -102,7 +114,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
         std::vector<dev_updates_profile::update_description> software_updates;
         for (auto&& swu : update.profile.software_versions)
             software_updates.push_back(swu.second);
-        std::sort(software_updates.begin(), software_updates.end(), [](dev_updates_profile::update_description& a, dev_updates_profile::update_description& b){
+        std::sort(software_updates.begin(), software_updates.end(), [](dev_updates_profile::update_description& a, dev_updates_profile::update_description& b) {
             return a.ver < b.ver;
         });
         if (software_updates.size() <= selected_software_update_index) selected_software_update_index = 0;
@@ -111,7 +123,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
         std::vector<dev_updates_profile::update_description> firmware_updates;
         for (auto&& swu : update.profile.firmware_versions)
             firmware_updates.push_back(swu.second);
-        std::sort(firmware_updates.begin(), firmware_updates.end(), [](dev_updates_profile::update_description& a, dev_updates_profile::update_description& b){
+        std::sort(firmware_updates.begin(), firmware_updates.end(), [](dev_updates_profile::update_description& a, dev_updates_profile::update_description& b) {
             return a.ver < b.ver;
         });
         if (firmware_updates.size() <= selected_firmware_update_index) selected_firmware_update_index = 0;
@@ -134,8 +146,13 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             ImGui::Text("%s", "Update:");
         }
 
-        auto& selected_software_update = software_updates[selected_software_update_index];
-        auto sw_updated = selected_software_update.ver <= update.profile.software_version;
+        bool sw_updated(false);
+        dev_updates_profile::update_description selected_software_update;
+        if (software_updates.size() != 0)
+        {
+            selected_software_update = software_updates[selected_software_update_index];
+            sw_updated = selected_software_update.ver <= update.profile.software_version;
+        }
 
         if (firmware_updates.size() >= 2 && _fw_update_state == fw_update_states::ready)
         {
@@ -155,8 +172,13 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             ImGui::Text("%s", "Update:");
         }
 
-        auto& selected_firmware_update = firmware_updates[selected_firmware_update_index];
-        auto fw_updated = selected_firmware_update.ver <= update.profile.firmware_version;
+        bool fw_updated(false);
+        dev_updates_profile::update_description selected_firmware_update;
+        if (firmware_updates.size() != 0)
+        {
+            selected_firmware_update = firmware_updates[selected_firmware_update_index];
+            fw_updated = selected_firmware_update.ver <= update.profile.firmware_version;
+        }
 
         ImGui::SetCursorPos({ 145, h - 25 });
         ImGui::Checkbox("I understand and would like to proceed anyway without updating", &ignore);
@@ -165,7 +187,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
         auto enabled = ignore || (sw_updated && fw_updated);
         if (enabled)
         {
-            if (ImGui::Button("OK", { 120, 20 })) 
+            if (ImGui::Button("OK", { 120, 20 }))
             {
                 ImGui::CloseCurrentPopup();
                 std::lock_guard<std::mutex> lock(_lock);
@@ -189,7 +211,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
 
             ImGui::PushFont(window.get_large_font());
             ImGui::PushStyleColor(ImGuiCol_Text, white);
-            ImGui::Text("SOFTWARE: "); 
+            ImGui::Text("SOFTWARE: ");
             ImGui::PopStyleColor();
 
             if (sw_updated)
@@ -245,7 +267,8 @@ void updates_model::draw(ux_window& window, std::string& error_message)
                     try
                     {
                         open_url(selected_software_update.release_page.c_str());
-                    } catch(...)
+                    }
+                    catch (...)
                     {
                         error_message = "Could not open link";
                         ImGui::CloseCurrentPopup();
@@ -272,7 +295,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
                 auto msg = selected_software_update.description.c_str();
                 ImGui::SetCursorScreenPos({ orig_pos.x + 146, orig_pos.y + 145 });
                 ImGui::InputTextMultiline("##Software Update Description", const_cast<char*>(msg),
-                    strlen(msg) + 1, ImVec2(0,0),
+                    strlen(msg) + 1, ImVec2(0, 0),
                     ImGuiInputTextFlags_ReadOnly);
                 ImGui::PopStyleColor(6);
                 ImGui::PopTextWrapPos();
@@ -292,7 +315,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
 
             ImGui::PushFont(window.get_large_font());
             ImGui::PushStyleColor(ImGuiCol_Text, white);
-            ImGui::Text("FIRMWARE: "); 
+            ImGui::Text("FIRMWARE: ");
             ImGui::PopStyleColor();
 
             if (fw_updated || _fw_update_state == fw_update_states::completed)
@@ -348,7 +371,8 @@ void updates_model::draw(ux_window& window, std::string& error_message)
                     try
                     {
                         open_url(selected_firmware_update.release_page.c_str());
-                    } catch(...)
+                    }
+                    catch (...)
                     {
                         error_message = "Could not open link";
                         ImGui::CloseCurrentPopup();
@@ -375,7 +399,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
                 auto msg = selected_firmware_update.description.c_str();
                 ImGui::SetCursorScreenPos({ orig_pos.x + 146, mid_y + 150 });
                 ImGui::InputTextMultiline("##Firmware Update Description", const_cast<char*>(msg),
-                    strlen(msg) + 1, ImVec2(w - 200,80),
+                    strlen(msg) + 1, ImVec2(w - 200, 80),
                     ImGuiInputTextFlags_ReadOnly);
                 ImGui::PopStyleColor(6);
                 ImGui::PopTextWrapPos();
@@ -386,10 +410,10 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             {
                 ImGui::SetCursorScreenPos({ orig_pos.x + 150, orig_pos.y + h - 95 });
                 ImGui::PushStyleColor(ImGuiCol_Text, white_color);
-                if (ImGui::Button("Download & Install", ImVec2(w - 170, 25)))
+                if (ImGui::Button("Download & Install Firmware", ImVec2(w - 170, 25)))
                 {
                     auto link = selected_firmware_update.download_link;
-                    std::thread download_thread([link, this](){
+                    std::thread download_thread([link, this]() {
                         std::vector<uint8_t> vec;
                         http_downloader client;
 
@@ -399,16 +423,16 @@ void updates_model::draw(ux_window& window, std::string& error_message)
                             return callback_result::CONTINUE_DOWNLOAD;
                         }))
                         {
-                            LOG_ERROR("Error in download firmware version from: " + link );
+                            LOG_ERROR("Error in download firmware version from: " + link);
                         }
 
                         _fw_image = vec;
-                            
+
                         _fw_download_progress = 100;
                     });
                     download_thread.detach();
-                    
-                    _fw_update_state = fw_update_states::downloading; 
+
+                    _fw_update_state = fw_update_states::downloading;
                 }
                 if (ImGui::IsItemHovered())
                 {
@@ -416,7 +440,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
                     window.link_hovered();
                 }
                 ImGui::PopStyleColor();
-            } 
+            }
             else if (_fw_update_state == fw_update_states::downloading)
             {
                 ImGui::SetCursorScreenPos({ orig_pos.x + 150, orig_pos.y + h - 95 });
@@ -427,13 +451,14 @@ void updates_model::draw(ux_window& window, std::string& error_message)
 
                     _update_manager = std::make_shared<firmware_update_manager>(
                         *update.dev_model, update.profile.dev, update.ctx, _fw_image, true
-                    ); 
+                        );
                     auto invoke = [](std::function<void()> action) { action(); };
                     _update_manager->start(invoke);
                     // update.dev = rs2::device{};
                     // update.dev_model->dev = rs2::device{};
                 }
-            } else if (_fw_update_state == fw_update_states::started)
+            }
+            else if (_fw_update_state == fw_update_states::started)
             {
                 ImGui::SetCursorScreenPos({ orig_pos.x + 150, orig_pos.y + h - 95 });
                 _progress.draw(window, static_cast<int>(w) - 170, static_cast<int>(_update_manager->get_progress() * 0.66 + 33));
@@ -448,7 +473,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
                     ImGui::CloseCurrentPopup();
                 }
 
-            } 
+            }
             else if (_fw_update_state == fw_update_states::completed)
             {
                 ImGui::SetCursorScreenPos({ orig_pos.x + 150, orig_pos.y + h - 95 });
@@ -460,7 +485,8 @@ void updates_model::draw(ux_window& window, std::string& error_message)
 
         ImGui::EndPopup();
     }
-
     ImGui::PopStyleColor(3);
     ImGui::PopStyleVar(2);
+
+
 }

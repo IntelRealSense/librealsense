@@ -24,56 +24,33 @@ namespace rs2
             _update_profile.serial_number = serial;
         };
 
-    bool dev_updates_profile::check_for_updates()
+    bool dev_updates_profile::retrieve_updates(versions_db_manager::component_part_type comp)
     {
         bool update_required(false);
 
+        std::map<versions_db_manager::version, update_description> &versions_vec((comp == versions_db_manager::FIRMWARE)?
+            _update_profile.firmware_versions : _update_profile.software_versions);
+
+        versions_db_manager::version &current_version((comp == versions_db_manager::FIRMWARE) ? _update_profile.firmware_version : _update_profile.software_version);
         {
-            update_description experimental_software_update;
-            if (try_parse_update(_versions_db, _update_profile.device_name, versions_db_manager::EXPERIMENTAL, versions_db_manager::LIBREALSENSE, experimental_software_update))
+            update_description experimental_update;
+            if (try_parse_update(_versions_db, _update_profile.device_name, versions_db_manager::EXPERIMENTAL, comp, experimental_update))
             {
-                _update_profile.software_versions[experimental_software_update.ver] = experimental_software_update;
+                versions_vec[experimental_update.ver] = experimental_update;
             }
-            update_description recommened_software_update;
-            if (try_parse_update(_versions_db, _update_profile.device_name, versions_db_manager::RECOMMENDED, versions_db_manager::LIBREALSENSE, recommened_software_update))
+            update_description recommened_update;
+            if (try_parse_update(_versions_db, _update_profile.device_name, versions_db_manager::RECOMMENDED, comp, recommened_update))
             {
-                _update_profile.software_versions[recommened_software_update.ver] = recommened_software_update;
+                versions_vec[recommened_update.ver] = recommened_update;
             }
-            update_description required_software_update;
-            if (try_parse_update(_versions_db, _update_profile.device_name, versions_db_manager::ESSENTIAL, versions_db_manager::LIBREALSENSE, required_software_update))
+            update_description required_update;
+            if (try_parse_update(_versions_db, _update_profile.device_name, versions_db_manager::ESSENTIAL, comp, required_update))
             {
-                _update_profile.software_versions[required_software_update.ver] = required_software_update;
-                update_required = update_required || (_update_profile.software_version < required_software_update.ver);
+                versions_vec[required_update.ver] = required_update;
+                update_required = update_required || (current_version < required_update.ver);
             }
         }
 
-        {
-            update_description experimental_firmware_update;
-            if (try_parse_update(_versions_db, _update_profile.device_name, versions_db_manager::EXPERIMENTAL, versions_db_manager::FIRMWARE, experimental_firmware_update))
-            {
-                _update_profile.firmware_versions[experimental_firmware_update.ver] = experimental_firmware_update;
-            }
-            update_description recommened_firmware_update;
-            if (try_parse_update(_versions_db, _update_profile.device_name, versions_db_manager::RECOMMENDED, versions_db_manager::FIRMWARE, recommened_firmware_update))
-            {
-                _update_profile.firmware_versions[recommened_firmware_update.ver] = recommened_firmware_update;
-            }
-            update_description required_firmware_update;
-            if (try_parse_update(_versions_db, _update_profile.device_name, versions_db_manager::ESSENTIAL, versions_db_manager::FIRMWARE, required_firmware_update))
-            {
-                _update_profile.firmware_versions[required_firmware_update.ver] = required_firmware_update;
-                update_required = update_required || (_update_profile.firmware_version < required_firmware_update.ver);
-            }
-        }
-
-        if (update_required)
-        {
-            if (!_update_profile.firmware_versions.size())
-                _update_profile.firmware_versions[versions_db_manager::version(0)] = update_description{ versions_db_manager::version(0), "N/A", "", "", "" };
-
-            if (!_update_profile.software_versions.size())
-                _update_profile.software_versions[versions_db_manager::version(0)] = update_description{ versions_db_manager::version(0), "N/A", "", "", "" };
-        }
         return update_required;
     }
 

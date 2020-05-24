@@ -36,6 +36,15 @@ namespace rs2
             if (it == _updates.end()) 
                 _updates.push_back(update);
         }
+        void remove_profile(const update_profile_model &update)
+        {
+            std::lock_guard<std::mutex> lock(_lock);
+            auto it = std::find_if(_updates.begin(), _updates.end(), [&](update_profile_model& p) {
+                return (p.profile.device_name == update.profile.device_name && p.profile.serial_number == update.profile.serial_number);
+            });
+            if (it != _updates.end())
+                _updates.erase(it);
+        }
 
         void draw(ux_window& window, std::string& error_message);
 
