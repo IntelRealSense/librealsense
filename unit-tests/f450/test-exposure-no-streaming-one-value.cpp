@@ -6,7 +6,7 @@
 #include "f450-common.h"
 
 
-TEST_CASE( "Gain - one value - primary sensor - no streaming", "[F450]" ) {
+TEST_CASE( "Exposure - one value - primary sensor - no streaming", "[F450]" ) {
     using namespace std;
 
     rs2::context ctx;
@@ -33,28 +33,31 @@ TEST_CASE( "Gain - one value - primary sensor - no streaming", "[F450]" ) {
     rs2::sensor sensor = devices[0].first<rs2::fa_infrared_sensor>();
 
     long long delay = 20;
-    float tolerance = 0;
+    float tolerance = 3; // 3%
     //set AUTO EXPOSURE to manual
     sensor.set_option(RS2_OPTION_AUTO_EXPOSURE_MODE, 0);
     //std::this_thread::sleep_for(std::chrono::milliseconds(delay));
     REQUIRE(sensor.get_option(RS2_OPTION_AUTO_EXPOSURE_MODE) == 0);
+    std::cout << "AE off Checked" << std::endl;
 
-    rs2_option opt = RS2_OPTION_GAIN;
+    rs2_option opt = RS2_OPTION_EXPOSURE_SECOND;
     auto range = sensor.get_option_range(opt);
 
     //setting exposure to one value
-    float valueToSet = 65;
+    float valueToSet = 125;
 
 
-    sensor.set_option(RS2_OPTION_GAIN, valueToSet);
-    float valueAfterChange = sensor.get_option(RS2_OPTION_GAIN);
+    sensor.set_option(opt, valueToSet);
+    float valueAfterChange = sensor.get_option(opt);
     int iterations = 50;
     while (iterations-- && valueAfterChange != valueToSet)
     {
         //std::this_thread::sleep_for(std::chrono::milliseconds(delay));
-        valueAfterChange = sensor.get_option(RS2_OPTION_GAIN);
+        valueAfterChange = sensor.get_option(opt);
     }
-    REQUIRE(valueAfterChange == valueToSet);
+    
+    bool result = (valueAfterChange >= (1.f - tolerance) * valueToSet) && (valueAfterChange <= (1.f + tolerance) * valueToSet);
+    REQUIRE(result);
     std::cout << std::endl;
     std::cout << "Min Value Checked" << std::endl;
 

@@ -19,6 +19,7 @@ INITIALIZE_EASYLOGGINGPP
 // Let Catch define its own main() function
 #define CATCH_CONFIG_MAIN
 #include "../catch/catch.hpp"
+#include "example.hpp"
 
 // Define our own logging macro for debugging to stdout
 // Can possibly turn it on automatically based on the Catch options supplied
@@ -41,14 +42,18 @@ typedef std::function<void(float&)> value_change_callback;
 typedef std::function<bool(float valueAfterChange, float valueRequested)> value_validation_callback;
 typedef std::function<bool(float value, float limit)> loop_condition_callback;
 
-//----------NOT STREAMING --------//
-void checkOption(const rs2::sensor& sensor, rs2_option option, float initialValue, float limitValue, int number_of_iterations, float tolerance,
+//----------- STREAMING ----------//
+void checkOption_streaming(window& app, rs2::rates_printer& printer, rs2::colorizer& color_map, 
+    const rs2::pipeline& pipe, const rs2::sensor& sensor, rs2_option option, 
+    float initialValue, float limitValue, int number_of_iterations, float tolerance,
     loop_condition_callback lc_cb, value_change_callback vc_cb, value_validation_callback vv_cb)
 {
     float valueAfterChange = initialValue;
     float valueToSet = initialValue;
-    while (lc_cb(valueAfterChange, limitValue))
+    while (app && lc_cb(valueAfterChange, limitValue))
     {
+        rs2::frameset data = pipe.wait_for_frames().apply_filter(printer).apply_filter(color_map);
+        app.show(data);
         vc_cb(valueToSet);
         if (!lc_cb(valueToSet, limitValue))
             valueToSet = limitValue;
@@ -68,19 +73,24 @@ void checkOption(const rs2::sensor& sensor, rs2_option option, float initialValu
     }
 }
 
-void checkOptionForBothSensors(const rs2::sensor& sensor, rs2_option option, rs2_option option_second, float initialValue, float limitValue, int number_of_iterations, float tolerance,
+void checkOptionForBothSensors_streaming(window& app, rs2::rates_printer& printer, rs2::colorizer& color_map, 
+    const rs2::pipeline& pipe, const rs2::sensor& sensor, rs2_option option, rs2_option option_second, float initialValue, float limitValue, int number_of_iterations, float tolerance,
     loop_condition_callback lc_cb, value_change_callback vc_cb, value_validation_callback vv_cb)
 {
     float valueAfterChange = initialValue;
     float valueAfterChange_second = initialValue;
     float valueToSet = initialValue;
-    while (lc_cb(valueAfterChange, limitValue) && lc_cb(valueAfterChange_second, limitValue))
+    while (app && lc_cb(valueAfterChange, limitValue) && lc_cb(valueAfterChange_second, limitValue))
     {
+        rs2::frameset data = pipe.wait_for_frames().apply_filter(printer).apply_filter(color_map);
+        app.show(data); 
         vc_cb(valueToSet);
         if (!lc_cb(valueToSet, limitValue))
             valueToSet = limitValue;
         REQUIRE(sensor.get_option(RS2_OPTION_AUTO_EXPOSURE_MODE) == 0);
 
+        data = pipe.wait_for_frames().apply_filter(printer).apply_filter(color_map);
+        app.show(data);
         //setting actions
         sensor.set_option(option, valueToSet);
         sensor.set_option(option_second, valueToSet);
@@ -89,12 +99,13 @@ void checkOptionForBothSensors(const rs2::sensor& sensor, rs2_option option, rs2
         int iterations = number_of_iterations;
         while (iterations-- > 0 && valueAfterChange != valueToSet)
         {
-            valueAfterChange = sensor.get_option(option);
-        }
-        iterations = number_of_iterations;
-        while (iterations-- > 0 && valueAfterChange_second != valueToSet)
-        {
-            valueAfterChange_second = sensor.get_option(option_second);
+            if (valueAfterChange != valueToSet)
+                valueAfterChange = sensor.get_option(option);
+            if (valueAfterChange_second != valueToSet)
+                valueAfterChange_second = sensor.get_option(option_second);
+            
+            rs2::frameset data = pipe.wait_for_frames().apply_filter(printer).apply_filter(color_map);
+            app.show(data);
         }
 
         //checkings actions
@@ -103,85 +114,19 @@ void checkOptionForBothSensors(const rs2::sensor& sensor, rs2_option option, rs2
         {
             std::cout << "option: " << rs2_option_to_string(option) << "valueToSet = " << valueToSet << ", valueAfterChange = " << valueAfterChange << std::endl;
         }
-        bool result_second = vv_cb(valueAfterChange_second, valueToSet);
-        if (!result_second)
-        {
-            std::cout << "option: " << rs2_option_to_string(option_second) << "valueToSet = " << valueToSet << ", valueAfterChange = " << valueAfterChange_second << std::endl;
-        }
-        REQUIRE(result);
-        REQUIRE(result_second);
-    }
-}
-
-
-//---- STREAMING - NO DISPLAY -----//
-void checkOption_streaming(const rs2::pipeline& pipe, const rs2::sensor& sensor, rs2_option option, float initialValue, float limitValue, int number_of_iterations, float tolerance,
-    loop_condition_callback lc_cb, value_change_callback vc_cb, value_validation_callback vv_cb)
-{
-    float valueAfterChange = initialValue;
-    float valueToSet = initialValue;
-    while (lc_cb(valueAfterChange, limitValue))
-    {
-        rs2::frameset data = pipe.wait_for_frames();
-        vc_cb(valueToSet);
-        if (!lc_cb(valueToSet, limitValue))
-            valueToSet = limitValue;
-        REQUIRE(sensor.get_option(RS2_OPTION_AUTO_EXPOSURE_MODE) == 0);
-        sensor.set_option(option, valueToSet);
-        int iterations = number_of_iterations;
-        while (iterations-- > 0 && valueAfterChange != valueToSet)
-        {
-            valueAfterChange = sensor.get_option(option);
-        }
-        bool result = vv_cb(valueAfterChange, valueToSet);
         if (!result)
         {
             std::cout << "valueToSet = " << valueToSet << ", valueAfterChange = " << valueAfterChange << std::endl;
         }
         REQUIRE(result);
-    }
-}
-
-void checkOptionForBothSensors_streaming(const rs2::pipeline& pipe, const rs2::sensor& sensor, rs2_option option, rs2_option option_second, float initialValue, float limitValue, int number_of_iterations, float tolerance,
-    loop_condition_callback lc_cb, value_change_callback vc_cb, value_validation_callback vv_cb)
-{
-    float valueAfterChange = initialValue;
-    float valueAfterChange_second = initialValue;
-    float valueToSet = initialValue;
-    while (lc_cb(valueAfterChange, limitValue) && lc_cb(valueAfterChange_second, limitValue))
-    {
-        rs2::frameset data = pipe.wait_for_frames();
-        vc_cb(valueToSet);
-        if (!lc_cb(valueToSet, limitValue))
-            valueToSet = limitValue;
-        REQUIRE(sensor.get_option(RS2_OPTION_AUTO_EXPOSURE_MODE) == 0);
-
-        //setting actions
-        sensor.set_option(option, valueToSet);
-        sensor.set_option(option_second, valueToSet);
-
-        //getting actions
-        int iterations = number_of_iterations;
-        while (iterations-- > 0 && valueAfterChange != valueToSet)
-        {
-            valueAfterChange = sensor.get_option(option);
-        }
-        iterations = number_of_iterations;
-        while (iterations-- > 0 && valueAfterChange_second != valueToSet)
-        {
-            valueAfterChange_second = sensor.get_option(option_second);
-        }
-
-        //checkings actions
-        bool result = vv_cb(valueAfterChange, valueToSet);
-        if (!result)
-        {
-            std::cout << "option: " << rs2_option_to_string(option) << "valueToSet = " << valueToSet << ", valueAfterChange = " << valueAfterChange << std::endl;
-        }
         bool result_second = vv_cb(valueAfterChange_second, valueToSet);
         if (!result_second)
         {
             std::cout << "option: " << rs2_option_to_string(option_second) << "valueToSet = " << valueToSet << ", valueAfterChange = " << valueAfterChange_second << std::endl;
+        }
+        if (!result)
+        {
+            std::cout << "valueToSet = " << valueToSet << ", valueAfterChange = " << valueAfterChange << std::endl;
         }
         REQUIRE(result);
         REQUIRE(result_second);
