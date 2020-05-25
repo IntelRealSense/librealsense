@@ -3013,6 +3013,12 @@ int rs2_firmware_log_message_size(rs2_firmware_log_message* msg, rs2_error** err
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, msg)
 
+rs2_log_severity rs2_get_fw_log_severity(const rs2_firmware_log_message* msg, rs2_error** error) BEGIN_API_CALL
+{
+    return msg->firmware_log_binary_data->get_severity();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(RS2_LOG_SEVERITY_NONE, msg)
+
 rs2_firmware_log_parser* rs2_create_firmware_log_parser(const char* xml_path, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(xml_path);

@@ -103,10 +103,13 @@ int main(int argc, char * argv[])
                     if (fw_log_message.size() > 0)
                     {
                         stringstream sstr;
-                        sstr << datetime_string() << "  FW_Log_Data:";
-                        for (int i = 0; i < fw_log_message.size(); ++i)
+                        sstr << datetime_string();
+                        sstr << " " << fw_log_message.get_severity_str();
+                        sstr << "  FW_Log_Data:";
+                        std::vector<uint8_t> msg_data = fw_log_message.data();
+                        for (int i = 0; i < msg_data.size(); ++i)
                         {
-                            sstr << hexify(fw_log_message[i]) << " ";
+                            sstr << hexify(msg_data[i]) << " ";
                         }
                         fw_log_lines.push_back(sstr.str());
                     }

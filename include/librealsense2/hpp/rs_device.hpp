@@ -358,30 +358,40 @@ namespace rs2
     class firmware_log_message
     {
     public:
-        explicit firmware_log_message(std::shared_ptr<rs2_firmware_log_message> msg)
-            {}
-        rs2_log_severity get_severity() const;
-        int size() const { return _fw_log_message.size(); }
-        uint8_t& operator[] (int i) {return _fw_log_message[i]; }
+        explicit firmware_log_message(std::shared_ptr<rs2_firmware_log_message> msg):
+        _fw_log_message(msg){}
+        
+        rs2_log_severity get_severity() const { 
+            rs2_error* e = nullptr;
+            rs2_log_severity severity = rs2_get_fw_log_severity(_fw_log_message.get(), &e);
+            error::handle(e);
+            return severity;
+        }
+        std::string get_severity_str() const {
+            return rs2_log_severity_to_string(get_severity());
+        }
 
-    private:
-        static firmware_log_message create_from_rs2_firmware_log_message(std::shared_ptr<rs2_firmware_log_message> msg)
+        int size() const 
+        { 
+            rs2_error* e = nullptr;
+            return rs2_firmware_log_message_size(_fw_log_message.get(), &e);
+        }
+        
+        std::vector<uint8_t> data() const 
         {
             rs2_error* e = nullptr;
-            auto size = rs2_firmware_log_message_size(msg.get(), &e);
+            auto size = rs2_firmware_log_message_size(_fw_log_message.get(), &e);
             std::vector<uint8_t> result;
             if (size > 0)
             {
-                auto start = rs2_firmware_log_message_data(msg.get(), &e);
+                auto start = rs2_firmware_log_message_data(_fw_log_message.get(), &e);
                 result.insert(result.begin(), start, start + size);
             }
-            return firmware_log_message(result);
+            return result;
         }
 
-        friend class firmware_logger;
-        explicit firmware_log_message(std::vector<uint8_t> msg) :
-            _fw_log_message(msg) {}
-        std::vector<uint8_t> _fw_log_message;
+    private:        
+        std::shared_ptr<rs2_firmware_log_message> _fw_log_message;
     };
 
     class firmware_logger : public device
@@ -406,7 +416,7 @@ namespace rs2
                 rs2_delete_firmware_log_message);
             error::handle(e);
 
-            return firmware_log_message::create_from_rs2_firmware_log_message(msg);
+            return firmware_log_message(msg);
         }
     };
 
