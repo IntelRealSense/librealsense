@@ -382,6 +382,15 @@ namespace librealsense
 
             _sf = fs;
 
+            // We have to read the FW registers at the time of the special frame:
+            ivcam2::read_fw_register( _hwm, &_dsm_x_scale, 0xfffe3844 );
+            ivcam2::read_fw_register( _hwm, &_dsm_y_scale, 0xfffe3830 );
+            ivcam2::read_fw_register( _hwm, &_dsm_x_offset, 0xfffe3840 );
+            ivcam2::read_fw_register( _hwm, &_dsm_y_offset, 0xfffe382c );
+            AC_LOG( DEBUG, "dsm registers=  x[" << AC_F_PREC << _dsm_x_scale << ' ' << _dsm_y_scale
+                << "]  +[" << _dsm_x_offset << ' ' << _dsm_y_offset
+                << "]" );
+
             if( check_color_depth_sync() )
                 start();
         }
@@ -427,9 +436,22 @@ namespace librealsense
                     AC_LOG( DEBUG, "auto calibration has started ...");
                     call_back( RS2_CALIBRATION_STARTED );
 
+                    static algo::depth_to_rgb_calibration::algo_calibration_info cal_info = { 0 };
+                    static bool cal_info_initialized = false;
+                    if( !cal_info_initialized )
+                    {
+                        cal_info_initialized = true;
+                        ivcam2::read_fw_table( _hwm, cal_info.table_id, &cal_info );  // throws!
+                    }
+                    algo::depth_to_rgb_calibration::algo_calibration_registers cal_regs;
+                    cal_regs.EXTLdsmXscale = _dsm_x_scale;
+                    cal_regs.EXTLdsmYscale = _dsm_y_scale;
+                    cal_regs.EXTLdsmXoffset = _dsm_x_offset;
+                    cal_regs.EXTLdsmYoffset = _dsm_y_offset;
+
                     auto df = _sf.get_depth_frame();
                     auto irf = _sf.get_infrared_frame();
-                    depth_to_rgb_calibration algo( df, irf, _cf, _pcf );
+                    depth_to_rgb_calibration algo( df, irf, _cf, _pcf, cal_info, cal_regs );
                     _from_profile = algo.get_from_profile();
                     _to_profile = algo.get_to_profile();
 

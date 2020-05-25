@@ -37,15 +37,15 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     rs2::frame depth,
     rs2::frame ir,
     rs2::frame yuy,
-    rs2::frame prev_yuy
+    rs2::frame prev_yuy,
+    algo::depth_to_rgb_calibration::algo_calibration_info const & cal_info,
+    algo::depth_to_rgb_calibration::algo_calibration_registers const & cal_regs
 )
     : _intr( yuy.get_profile().as< rs2::video_stream_profile >().get_intrinsics() )
     , _extr( fix_extrinsics( depth.get_profile().get_extrinsics_to( yuy.get_profile() ), 1000 ))
     , _from( depth.get_profile().get()->profile )
     , _to( yuy.get_profile().get()->profile )
 {
-    debug_calibration( "old" );
-
     AC_LOG( DEBUG, "... setting yuy data" );
     auto color_profile = yuy.get_profile().as< rs2::video_stream_profile >();
     auto yuy_data = (impl::yuy_t const *) yuy.get_data();
@@ -79,9 +79,11 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     auto z_data = (impl::z_t const *) depth.get_data();
     _algo.set_z_data(
         std::vector< impl::z_t >( z_data, z_data + depth.get_data_size() / sizeof( impl::z_t ) ),
-        z_profile.get_intrinsics(), _dsm_params,
+        z_profile.get_intrinsics(), _dsm_params, cal_info, cal_regs,
         depth.as< rs2::depth_frame >().get_units() * 1000.f   // same scaling as for extrinsics!
     );
+
+    debug_calibration( "old" );
 
     // TODO REMOVE
 #ifdef _WIN32
@@ -165,16 +167,14 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
 
 void depth_to_rgb_calibration::debug_calibration( char const * prefix )
 {
-    AC_LOG( DEBUG, std::setprecision( std::numeric_limits< float >::max_digits10 )
+    AC_LOG( DEBUG, AC_F_PREC
                        << prefix << " intr[ "
                        << _intr.width << "x" << _intr.height
                        << "  ppx: " << _intr.ppx << ", ppy: " << _intr.ppy << ", fx: " << _intr.fx
                        << ", fy: " << _intr.fy << ", model: " << int( _intr.model ) << " coeffs["
                        << _intr.coeffs[0] << ", " << _intr.coeffs[1] << ", " << _intr.coeffs[2]
                        << ", " << _intr.coeffs[3] << ", " << _intr.coeffs[4] << "] ]" );
-    AC_LOG( DEBUG, std::setprecision( std::numeric_limits< float >::max_digits10 )
-                       << prefix << " extr" << _extr );
-    AC_LOG( DEBUG, std::setprecision( std::numeric_limits< float >::max_digits10 )
-                       << prefix << " dsm" << _dsm_params );
+    AC_LOG( DEBUG, AC_F_PREC << prefix << " extr" << _extr );
+    AC_LOG( DEBUG, AC_F_PREC << prefix << " dsm" << _dsm_params );
 }
 

@@ -32,7 +32,9 @@ namespace librealsense
             rs2::frame depth,
             rs2::frame ir,
             rs2::frame yuy,
-            rs2::frame prev_yuy
+            rs2::frame prev_yuy,
+            algo::depth_to_rgb_calibration::algo_calibration_info const & cal_info,
+            algo::depth_to_rgb_calibration::algo_calibration_registers const & cal_regs
         );
 
         rs2_extrinsics const & get_extrinsics() const { return _extr; }

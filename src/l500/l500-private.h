@@ -8,14 +8,10 @@
 #include "option.h"
 #include "core/extension.h"
 #include "fw-update/fw-update-unsigned.h"
+#include "algo/depth-to-rgb-calibration/debug.h"
 
 static const int NUM_OF_RGB_RESOLUTIONS = 5;
 static const int NUM_OF_DEPTH_RESOLUTIONS = 2;
-
-#define AC_LOG_PREFIX "AC1: "
-#define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
-//#define AC_LOG(TYPE,MSG) LOG_ERROR( AC_LOG_PREFIX << MSG )
-//#define AC_LOG(TYPE,MSG) std::cout << "-D- " << MSG << std::endl
 
 namespace librealsense
 {
@@ -73,6 +69,66 @@ namespace librealsense
         };
 
 #pragma pack(push, 1)
+        struct table_header
+        {
+            uint8_t                 major;
+            uint8_t                 minor;
+            uint16_t                table_id;
+            uint32_t                table_size;     // full size including: TOC header + TOC + actual tables
+            uint32_t                reserved;       // 0xFFFFFFFF
+            uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
+        };
+#pragma pack(pop)
+
+        // Read a table from firmware and, if FW says the table is empty, optionally initialize it
+        // using your own code...
+        template< typename T >
+        void read_fw_table( hw_monitor & hwm,
+                            int table_id, T * ptable,
+                            table_header * pheader = nullptr,
+                            std::function< void() > init = nullptr )
+        {
+            try
+            {
+                command cmd( fw_cmd::READ_TABLE, table_id );
+                std::vector<byte> data = hwm.send( cmd );
+                size_t expected_size = sizeof( table_header ) + sizeof( T );
+                if( data.size() != expected_size )
+                    throw std::runtime_error( to_string()
+                                              << "READ_TABLE data size received= " << data.size()
+                                              << " (expected " << expected_size << ")" );
+                if( pheader )
+                    *pheader = *(table_header *)data.data();
+                if( ptable )
+                    *ptable = *(T *)(data.data() + sizeof( table_header ));
+            }
+            catch( std::exception const & e )
+            {
+                if( !init || !strstr( e.what(), "Error type: Table is empty" ) )
+                {
+                    LOG_DEBUG( "Failed to get read FW table 0x" << std::hex << table_id << std::dec
+                                                                << ": " << e.what() );
+                    throw;
+                }
+                // Initialize a new table
+                init();
+            }
+        }
+
+        template< typename T >
+        void read_fw_register( hw_monitor & hwm, T * preg, int const baseline_address )
+        {
+            command cmd( ivcam2::fw_cmd::MRD, baseline_address, baseline_address + sizeof( T ) );
+            auto res = hwm.send( cmd );
+            if( res.size() != sizeof( T ) )
+                throw std::runtime_error( to_string()
+                                          << "MRD data size received= " << res.size()
+                                          << " (expected " << sizeof( T ) << ")" );
+            if( preg )
+                *preg = *(T *)res.data();
+        }
+
+#pragma pack(push, 1)
         struct ac_depth_results  // aka "Algo_AutoCalibration" in FW
         {
             static const int table_id = 0x240;
@@ -82,86 +138,6 @@ namespace librealsense
 
             ac_depth_results() {}
             ac_depth_results( rs2_dsm_params const & dsm_params ) : params( dsm_params ) {}
-        };
-        struct algo_calibration_info
-        {
-            static const int table_id = 0x13;
-
-            uint16_t version = 0x0100;
-            uint16_t id = table_id;
-            uint32_t size = sizeof( algo_calibration_info );  // 0x1F0
-            uint32_t full_version = 0xFFFFFFFF;
-            uint32_t crc32;  // of the following data
-            uint32_t DIGGundistFx;
-            uint32_t DIGGundistFy;
-            int32_t  DIGGundistX0;
-            int32_t  DIGGundistY0;
-            uint8_t  DESThbaseline;
-            float    DESTbaseline;
-            float    FRMWxfov[5];
-            float    FRMWyfov[5];
-            float    FRMWprojectionYshear[5];
-            float    FRMWlaserangleH;
-            float    FRMWlaserangleV;
-            uint16_t FRMWcalMarginL;
-            uint16_t FRMWcalMarginR;
-            uint16_t FRMWcalMarginT;
-            uint16_t FRMWcalMarginB;
-            uint8_t  FRMWxR2L;
-            uint8_t  FRMWyflip;
-            float    EXTLdsmXscale;
-            float    EXTLdsmYscale;
-            float    EXTLdsmXoffset;
-            float    EXTLdsmYoffset;
-            uint32_t EXTLconLocDelaySlow;
-            uint32_t EXTLconLocDelayFastC;
-            uint32_t EXTLconLocDelayFastF;
-            uint16_t FRMWcalImgHsize;
-            uint16_t FRMWcalImgVsize;
-            float    FRMWpolyVars[3];
-            float    FRMWpitchFixFactor;
-            uint32_t FRMWzoRawCol[5];
-            uint32_t FRMWzoRawRow[5];
-            float    FRMWdfzCalTmp;
-            float    FRMWdfzVbias[3];
-            float    FRMWdfzIbias[3];
-            float    FRMWdfzApdCalTmp;
-            float    FRMWatlMinVbias1;
-            float    FRMWatlMaxVbias1;
-            float    FRMWatlMinVbias2;
-            float    FRMWatlMaxVbias2;
-            float    FRMWatlMinVbias3;
-            float    FRMWatlMaxVbias3;
-            float    FRMWundistAngHorz[4];
-            float    FRMWundistAngVert[4];
-            uint8_t  FRMWfovexExistenceFlag;
-            float    FRMWfovexNominal[4];
-            uint8_t  FRMWfovexLensDistFlag;
-            float    FRMWfovexRadialK[3];
-            float    FRMWfovexTangentP[2];
-            float    FRMWfovexCenter[2];
-            uint32_t FRMWcalibVersion;
-            uint32_t FRMWconfigVersion;
-            uint32_t FRMWeepromVersion;
-            float    FRMWconLocDelaySlowSlope;
-            float    FRMWconLocDelayFastSlope;
-            int16_t  FRMWatlMinAngXL;
-            int16_t  FRMWatlMinAngXR;
-            int16_t  FRMWatlMaxAngXL;
-            int16_t  FRMWatlMaxAngXR;
-            int16_t  FRMWatlMinAngYU;
-            int16_t  FRMWatlMinAngYB;
-            int16_t  FRMWatlMaxAngYU;
-            int16_t  FRMWatlMaxAngYB;
-            float    FRMWatlSlopeMA;
-            float    FRMWatlMaCalTmp;
-            uint16_t FRMWvddVoltValues[2];
-            int16_t  FRMWvdd2RtdDiff;
-            int16_t  FRMWvdd3RtdDiff;
-            int16_t  FRMWvdd4RtdDiff;
-            float    FRMWdfzCalibrationLddTemp;
-            float    FRMWdfzCalibrationVddVal;
-            float    FRMWhumidApdTempDiff;
         };
 #pragma pack(pop)
 
@@ -485,6 +461,11 @@ namespace librealsense
         {
             rs2::frameset _sf;
             rs2::frame _cf, _pcf;  // Keep the last and previous frame!
+
+            float _dsm_x_scale;  // registers read when we get a special frame
+            float _dsm_y_scale;
+            float _dsm_x_offset;
+            float _dsm_y_offset;
 
             hw_monitor & _hwm;
 

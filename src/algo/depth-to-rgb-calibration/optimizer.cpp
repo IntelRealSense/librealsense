@@ -388,11 +388,11 @@ std::vector<double> find_local_values_min(std::vector<double>& local_values)
     }
     return res;
 }
-void optimizer::set_z_data(
-    std::vector< z_t >&& depth_data,
-    rs2_intrinsics_double const& depth_intrinsics,
-    rs2_dsm_params const & dsm_params,
-    float depth_units)
+void optimizer::set_z_data( std::vector< z_t > && depth_data,
+                            rs2_intrinsics_double const & depth_intrinsics,
+                            rs2_dsm_params const & dsm_params,
+                            algo_calibration_info const & cal_info,
+                            algo_calibration_registers const & cal_regs, float depth_units )
 {
     /*[zEdge,Zx,Zy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.z),2); % Added the second input - margin to zero out
     [iEdge,Ix,Iy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.i),2); % Added the second input - margin to zero out

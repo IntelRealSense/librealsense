@@ -1765,13 +1765,14 @@ inline std::ostream& operator<<( std::ostream& out, rs2_extrinsics const & e )
 inline std::ostream& operator<<( std::ostream& s, rs2_dsm_params const & self )
 {
     s << "[ ";
-    time_t t = self.timestamp;
-    auto ptm = localtime( &t );
-    char buf[256];
-    strftime( buf, sizeof( buf ), "%F.%T ", ptm );
-    s << buf;
-    if( self.version )
+    if( self.timestamp )
     {
+        time_t t = self.timestamp;
+        auto ptm = localtime( &t );
+        char buf[256];
+        strftime( buf, sizeof( buf ), "%F.%T ", ptm );
+        s << buf;
+
         unsigned patch = self.version & 0xF;
         unsigned minor = (self.version >> 4) & 0xFF;
         unsigned major = (self.version >> 12);
@@ -1779,7 +1780,7 @@ inline std::ostream& operator<<( std::ostream& s, rs2_dsm_params const & self )
     }
     else
     {
-        s << "new ";
+        s << "new: ";
     }
     switch( self.model )
     {

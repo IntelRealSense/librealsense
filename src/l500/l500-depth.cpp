@@ -211,45 +211,22 @@ namespace librealsense
         throw librealsense::not_implemented_exception( "depth sensor does not support extrinsics override" );
     }
 
-#pragma pack(push, 1)
-    struct table_header
-    {
-        uint8_t                 major;
-        uint8_t                 minor;
-        uint16_t                table_id;
-        uint32_t                table_size;     // full size including: TOC header + TOC + actual tables
-        uint32_t                reserved;       // 0xFFFFFFFF
-        uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
-    };
-#pragma pack(pop)
-
     rs2_dsm_params l500_depth_sensor::get_dsm_params() const
     {
-        try
-        {
-            command cmd( ivcam2::fw_cmd::READ_TABLE, ac_depth_results::table_id );
-            std::vector<byte> data = _owner->_hw_monitor->send( cmd );
-            if( data.size() != sizeof( table_header ) + sizeof( ac_depth_results ) )
-                throw std::runtime_error( to_string() << "data size received= " << data.size() );
-            ac_depth_results const &table = *(ac_depth_results *)( data.data() + sizeof( table_header ));
-            return table.params;
-        }
-        catch (std::exception const & e)
-        {
-            AC_LOG( DEBUG, "Failed to get DSM params: " << e.what() );
-            if( !strstr( e.what(), "Error type: Table is empty" ) )
-                throw;
-            // Initialize a new table
-            rs2_dsm_params p = { 0 };
-            //p.timestamp = std::chrono::system_clock::now().time_since_epoch().count();
-            time_t t;
-            time( &t );                           // local time
-            p.timestamp = mktime( gmtime( &t ));  // UTC time
-            p.version = ac_depth_results::this_version;
-            p.model = RS2_DSM_CORRECTION_AOT;
-            p.h_scale = p.v_scale = 1.;
-            return p;
-        }
+        ac_depth_results table = { { 0 } };
+        read_fw_table( *_owner->_hw_monitor, table.table_id, &table, nullptr,
+            [&]()
+            {
+                //time_t t;
+                //time( &t );                                       // local time
+                //table.params.timestamp = mktime( gmtime( &t ) );  // UTC time
+                // Leave the timestamp & version at 0, so it's recognizable as "new"
+                //table.params.version = table.this_version;
+                table.params.model = RS2_DSM_CORRECTION_AOT;
+                table.params.h_scale = table.params.v_scale = 1.;
+                AC_LOG( DEBUG, "::: DSM " << table.params );
+            } );
+        return table.params;
     }
 
     void l500_depth_sensor::override_dsm_params( rs2_dsm_params const & dsm_params )
