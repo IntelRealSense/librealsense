@@ -7,7 +7,6 @@
 #include "../../../include/librealsense2/h/rs_types.h"
 #include <types.h>  // librealsense types (intr/extr)
 
-
 namespace librealsense {
 namespace algo {
 namespace depth_to_rgb_calibration {
@@ -83,6 +82,7 @@ namespace depth_to_rgb_calibration {
         los_shift_scaling last_los_error;
         std::vector<double3> vertices_orig;
         std::vector<uint8_t> relevant_pixels_image_rot;
+        std::vector<double2> los_orig;
 
     };
 
@@ -92,10 +92,6 @@ namespace depth_to_rgb_calibration {
         DSM_regs apply_ac_res_on_dsm_model(const rs2_dsm_params& ac_data, const DSM_regs& regs, const ac_to_dsm_dir& type);
 
         los_shift_scaling convert_ac_data_to_los_error(const DSM_regs& dsm_regs, const rs2_dsm_params& ac_data);
-
-        los_shift_scaling convert_norm_vertices_to_los(const regs& regs, 
-            const DSM_regs& dsm_regs, 
-            const std::vector<double3>& vertices);
 
         pre_process_data pre_processing(const regs& regs,
             const rs2_dsm_params& ac_data,
@@ -114,7 +110,7 @@ namespace depth_to_rgb_calibration {
 
     private:
         std::vector<double3> calc_relevant_vertices(const std::vector<uint8_t>& relevant_pixels_image, const rs2_intrinsics_double& k);
-        los_shift_scaling convert_norm_vertices_to_los(const regs& regs, const DSM_regs& dsm_regs, std::vector<double3> vertices);
+        std::vector<double2> convert_norm_vertices_to_los(const regs& regs, const DSM_regs& dsm_regs, std::vector<double3> vertices);
         std::vector<double3> transform_to_direction(std::vector<double3>);
         
         pre_process_data _pre_process_data;

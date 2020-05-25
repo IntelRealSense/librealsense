@@ -3,7 +3,6 @@
 
 #include "calibration.h"
 #include "debug.h"
-
 #include "utils.h"
 
 namespace librealsense {
@@ -109,6 +108,43 @@ namespace depth_to_rgb_calibration {
                 B[i + h * j] = A[(h * (w - 1 - j) - i) + h - 1];
             }
         }
+    }
+    const std::vector<double> interp1(const std::vector<double> ind, const std::vector<double> vals, const std::vector<double> intrp)
+    {
+        std::vector<double> res(intrp.size(), 0);
+
+        for (auto i = 0; i < intrp.size(); i++)
+        {
+            auto value = intrp[i];
+            auto it = std::lower_bound(ind.begin(), ind.end(), value);
+            if (it == ind.begin())
+            {
+                if (*it == ind.front())
+                    res[i] = ind.front();
+                else
+                    res[i] = std::numeric_limits<double>::max();
+            }
+            else if (it == ind.end())
+            {
+                if (*it == ind.back())
+                    res[i] = ind.back();
+                else
+                    res[i] = std::numeric_limits<double>::max();
+            }
+            else
+            {
+                auto val1 = *(--it);
+                auto ind1 = std::distance(ind.begin(), it);
+                auto val2= *(++it);
+                auto ind2 = std::distance(ind.begin(), it);
+
+                auto target_val1 = vals[ind1];
+                auto target_val2 = vals[ind2];
+
+                res[i] = ((val2 - value) / (val2 - val1))*target_val1 + ((value - val1) / (val2 - val1))*target_val2;
+            }
+        }
+        return res;
     }
 }
 }

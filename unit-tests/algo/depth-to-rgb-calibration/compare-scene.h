@@ -230,8 +230,8 @@ void compare_scene( std::string const & scene_dir )
     CHECK(compare_to_bin_file< algo::los_shift_scaling >(pre_process_data.last_los_error,
         scene_dir, "ac1x\\dsm_los_error_orig_4x1_single_00.bin"));
 
-     CHECK(compare_to_bin_file< algo::double3 >(pre_process_data.vertices_orig, scene_dir, bin_file("ac1x\\verticesOrig", 3, 2480, "double_00") + ".bin", 2480, 1, compare_same_vectors));
-
+     CHECK(compare_to_bin_file< algo::double3 >(pre_process_data.vertices_orig, scene_dir, bin_file("ac1x\\verticesOrig", 3, md.n_relevant_pixels, "double_00") + ".bin", md.n_relevant_pixels, 1, compare_same_vectors));
+     CHECK(compare_to_bin_file< algo::double2 >(pre_process_data.los_orig, scene_dir, bin_file("ac1x\\losOrig", 2, md.n_relevant_pixels, "double_00") + ".bin", md.n_relevant_pixels, 1, compare_same_vectors));
 
     auto new_calibration = cal.get_calibration();
     auto cost = cal.get_cost();

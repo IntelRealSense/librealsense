@@ -126,6 +126,7 @@ struct scene_metadata
     double correction_in_pixels;  // XY movement
     uint64_t n_edges;             // strong edges, i.e. after suppression
     uint64_t n_valid_pixels;
+    uint64_t n_relevant_pixels;
     uint64_t n_valid_ir_edges;
     bool is_scene_valid;
     bool is_output_valid;
@@ -149,6 +150,7 @@ struct scene_metadata
         f.read( (char *)&n_edges, sizeof( n_edges ) );
         f.read( (char *)&n_valid_ir_edges, sizeof( n_valid_ir_edges ) );
         f.read( (char *)&n_valid_pixels, sizeof( n_valid_pixels ) );
+        f.read((char *)&n_relevant_pixels, sizeof(n_relevant_pixels));
         f.read( (char *)&n_iterations, sizeof( n_iterations ) );
         byte b;
         f.read( (char *)&b, 1 );

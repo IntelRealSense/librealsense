@@ -111,17 +111,6 @@ los_shift_scaling librealsense::algo::depth_to_rgb_calibration::k_to_DSM::conver
     return res;
 }
 
-los_shift_scaling librealsense::algo::depth_to_rgb_calibration::k_to_DSM::convert_norm_vertices_to_los
-(
-    const regs & regs, 
-    const DSM_regs & dsm_regs, 
-    const std::vector<double3>& vertices
-)
-{
-
-    return los_shift_scaling();
-}
-
 pre_process_data librealsense::algo::depth_to_rgb_calibration::k_to_DSM::pre_processing
 (
     const regs & regs, 
@@ -137,7 +126,7 @@ pre_process_data librealsense::algo::depth_to_rgb_calibration::k_to_DSM::pre_pro
 
     res.vertices_orig = calc_relevant_vertices(relevant_pixels_image, k_raw);
     auto dsm_res_orig = apply_ac_res_on_dsm_model(ac_data, dsm_regs, inverse);
-
+    res.los_orig = convert_norm_vertices_to_los(regs, dsm_res_orig, res.vertices_orig);
     return res;
 }
 
@@ -210,7 +199,7 @@ std::vector<double3> librealsense::algo::depth_to_rgb_calibration::k_to_DSM::cal
     return res;
 }
 
-los_shift_scaling librealsense::algo::depth_to_rgb_calibration::k_to_DSM::convert_norm_vertices_to_los
+std::vector<double2> librealsense::algo::depth_to_rgb_calibration::k_to_DSM::convert_norm_vertices_to_los
 (
     const regs & regs, 
     const DSM_regs & dsm_regs, 
@@ -218,30 +207,114 @@ los_shift_scaling librealsense::algo::depth_to_rgb_calibration::k_to_DSM::conver
 )
 {
     const int angle = 45;
-    los_shift_scaling res;
     auto directions = transform_to_direction(vertices);
 
     auto fovex_indicent_direction = directions;
     if (regs.frmw.fovex_existence_flag)
     {
-        fovex_indicent_direction.resize(0);
+        std::fill(fovex_indicent_direction.begin(), fovex_indicent_direction.end(), double3{ 0,0,0 });
         std::vector<double> ang_post_exp(fovex_indicent_direction.size(), 0);
         for (auto i = 0; i < ang_post_exp.size(); i++)
         {
-            ang_post_exp[i] = std::acos(fovex_indicent_direction[i].z);
+            ang_post_exp[i] = std::acos(directions[i].z)* 180.0 / PI;
         }
 
+        std::vector<double> ang_grid(angle, 0);
         std::vector<double> ang_out_on_grid(angle, 0);
 
         for (auto i = 0; i < angle; i++)
         {
-            auto fovex_nominal = regs.frmw.fovex_nominal[0] +
-                2 * regs.frmw.fovex_nominal[1] +
-                3 * regs.frmw.fovex_nominal[2] +
-                4 * regs.frmw.fovex_nominal[3];
+            ang_grid[i] = i;
+            auto fovex_nominal = std::pow(i,1)* (double)regs.frmw.fovex_nominal[0] +
+                std::pow(i, 2)* (double)regs.frmw.fovex_nominal[1] +
+                std::pow(i, 3)* (double)regs.frmw.fovex_nominal[2] +
+                std::pow(i, 4)* (double)regs.frmw.fovex_nominal[3];
 
-            ang_out_on_grid[i] = i + std::pow(i, fovex_nominal);
+            ang_out_on_grid[i] = i + fovex_nominal;
         }
+        std::vector<double> ang_pre_exp;
+        ang_pre_exp = interp1(ang_out_on_grid, ang_grid, ang_post_exp);
+        //std::vector<double> xy_norm(directions.size(), 0);
+        for (auto i = 0; i < fovex_indicent_direction.size(); i++)
+        {
+            fovex_indicent_direction[i].z = std::cos(ang_pre_exp[i] * PI / 180.0);
+            auto xy_norm = directions[i].x*directions[i].x + directions[i].y*directions[i].y;
+            auto xy_factor = sqrt((1 - (fovex_indicent_direction[i].z* fovex_indicent_direction[i].z)) / xy_norm);
+            fovex_indicent_direction[i].x = directions[i].x*xy_factor;
+            fovex_indicent_direction[i].y = directions[i].y*xy_factor;
+        }
+    }
+
+    auto x = (double)regs.frmw.laserangleH* PI / 180.0;
+    auto y = (double)(regs.frmw.laserangleV + 180)* PI / 180.0;
+
+    double laser_incident_direction[3] = { std::cos(y)*std::sin(x),
+                                            std::sin(y),
+                                            std::cos(y)*std::cos(x) };
+
+    std::vector<double3> mirror_normal_direction(fovex_indicent_direction.size());
+    std::vector<double> dsm_x_corr(fovex_indicent_direction.size());
+    std::vector<double> dsm_y_corr(fovex_indicent_direction.size());
+    for (auto i = 0; i < fovex_indicent_direction.size(); i++)
+    {
+        mirror_normal_direction[i].x = fovex_indicent_direction[i].x - laser_incident_direction[0];
+        mirror_normal_direction[i].y = fovex_indicent_direction[i].y - laser_incident_direction[1];
+        mirror_normal_direction[i].z = fovex_indicent_direction[i].z - laser_incident_direction[2];
+
+        auto norm = sqrt(mirror_normal_direction[i].x*mirror_normal_direction[i].x +
+            mirror_normal_direction[i].y* mirror_normal_direction[i].y +
+            mirror_normal_direction[i].z* mirror_normal_direction[i].z);
+
+        mirror_normal_direction[i].x /= norm;
+        mirror_normal_direction[i].y /= norm;
+        mirror_normal_direction[i].z /= norm;
+
+        auto ang_x = std::atan(mirror_normal_direction[i].x / mirror_normal_direction[i].z)* 180.0 / PI;
+        auto ang_y = std::asin(mirror_normal_direction[i].y)* 180.0 / PI;
+        
+        int mirror_mode = regs.frmw.mirrorMovmentMode;
+
+        dsm_x_corr[i] = ang_x / (double)(regs.frmw.xfov[mirror_mode - 1] * 0.25 / 2047);
+        dsm_y_corr[i] = ang_y / (double)(regs.frmw.yfov[mirror_mode - 1] * 0.25 / 2047);
+
+    }
+
+    std::vector<double> dsm_grid(421);
+
+    auto ind = 0;
+    for (auto i = -2100; i <= 2100; i += 10)
+    {
+        dsm_grid[ind++] = i;
+    }
+
+    std::vector<double> dsm_x_coarse_on_grid(dsm_grid.size());
+    std::vector<double> dsm_x_corr_on_grid(dsm_grid.size());
+    for (auto i = 0; i < dsm_grid.size(); i ++)
+    {
+        double vals[3] = { std::pow((dsm_grid[i] / 2047), 1), std::pow((dsm_grid[i] / 2047), 2), std::pow((dsm_grid[i] / 2047), 3) };
+        dsm_x_coarse_on_grid[i] = dsm_grid[i] + vals[0] * (double)regs.frmw.polyVars[0] + vals[1] * (double)regs.frmw.polyVars[1] + vals[2] * (double)regs.frmw.polyVars[2];
+        auto val = dsm_x_coarse_on_grid[i] / 2047;
+        double vals2[4] = { std::pow(val , 1),std::pow(val , 2), std::pow(val , 3) , std::pow(val , 4) };
+        dsm_x_corr_on_grid[i] = dsm_x_coarse_on_grid[i] + vals2[0] * (double)regs.frmw.undistAngHorz[0] +
+            vals2[1] * (double)regs.frmw.undistAngHorz[1] +
+            vals2[2] * (double)regs.frmw.undistAngHorz[2] +
+            vals2[3] * (double)regs.frmw.undistAngHorz[3];
+    }
+
+    auto dsm_x = interp1(dsm_x_corr_on_grid, dsm_grid, dsm_x_corr);
+    std::vector<double> dsm_y(dsm_x.size());
+
+    for (auto i = 0; i < dsm_y.size(); i++)
+    {
+        dsm_y[i] = dsm_y_corr[i] - (dsm_x[i] / 2047)*(double)regs.frmw.pitchFixFactor;
+    }
+   
+    std::vector<double2> res(dsm_x.size());
+
+    for (auto i = 0; i < res.size(); i++)
+    {
+        res[i].x = (dsm_x[i] + 2047) / (double)dsm_regs.dsm_x_scale - (double)dsm_regs.dsm_x_offset;
+        res[i].y = (dsm_y[i] + 2047) / (double)dsm_regs.dsm_y_scale - (double)dsm_regs.dsm_y_offset;
     }
     return res;
 }
