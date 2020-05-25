@@ -1,4 +1,4 @@
-if(ENABLE_RS_AUTO_UPDATER)
+if(CHECK_FOR_UPDATES)
     include(ExternalProject)
     message(STATUS "Building libcurl enabled")
     
@@ -30,4 +30,4 @@ if(ENABLE_RS_AUTO_UPDATER)
     target_link_libraries(curl INTERFACE debug ${CMAKE_CURRENT_BINARY_DIR}/libcurl/libcurl_install/lib/${CURL_DEBUG_TARGET_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
     target_link_libraries(curl INTERFACE optimized ${CMAKE_CURRENT_BINARY_DIR}/libcurl/libcurl_install/lib/${CURL_RELEASE_TARGET_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
 
-endif() #ENABLE_RS_AUTO_UPDATER
+endif() #CHECK_FOR_UPDATES

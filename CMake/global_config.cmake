@@ -74,9 +74,9 @@ macro(global_set_flags)
         set(LRS_NET_TARGET realsense2-net)
     endif()
     
-    if(ENABLE_RS_AUTO_UPDATER)
+    if(CHECK_FOR_UPDATES)
         include(CMake/external_libcurl.cmake)
-        add_definitions(-DENABLE_RS_AUTO_UPDATER)
+        add_definitions(-DCHECK_FOR_UPDATES)
     endif()
     
     add_definitions(-D${BACKEND} -DUNICODE)

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "auto-updater/dev-updates-profile.h"
+#include "sw-update/dev-updates-profile.h"
 #include "ux-window.h"
 #include "notifications.h"
 #include "fw-update-helper.h"
@@ -21,10 +21,10 @@ namespace rs2
     public:
         struct update_profile_model
         {
-            auto_updates::dev_updates_profile::update_profile profile;
+            sw_update::dev_updates_profile::update_profile profile;
             context ctx;
             device_model* dev_model;
-            update_profile_model(auto_updates::dev_updates_profile::update_profile p,
+            update_profile_model(sw_update::dev_updates_profile::update_profile p,
                 context contex, device_model* device_model) : profile(p), ctx(contex), dev_model(device_model){};
         };
         void add_profile(update_profile_model update)

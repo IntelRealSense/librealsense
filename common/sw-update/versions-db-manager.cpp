@@ -12,10 +12,10 @@
 namespace rs2
 {
 
-    namespace auto_updates
+    namespace sw_update
     {
         using json = nlohmann::json;
-        using namespace downloader;
+        using namespace http::downloader;
 
         // Get current platform
         constexpr char* PLATFORM =

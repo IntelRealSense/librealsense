@@ -7,11 +7,11 @@
 #include "os.h"
 #include "res/l515-icon.h"
 #include <stb_image.h>
-#include "auto-updater/http-downloader.h"
+#include "sw-update/http-downloader.h"
 
 using namespace rs2;
-using namespace auto_updates;
-using namespace downloader;
+using namespace sw_update;
+using namespace http::downloader;
 
 void updates_model::draw(ux_window& window, std::string& error_message)
 {

@@ -32,4 +32,4 @@ option(FORCE_LIBUVC "Explicitly turn-on libuvc backend - deprecated, use FORCE_R
 option(FORCE_WINUSB_UVC "Explicitly turn-on winusb_uvc (for win7) backend - deprecated, use FORCE_RSUSB_BACKEND instead" OFF)
 option(ANDROID_USB_HOST_UVC "Build UVC backend for Android - deprecated, use FORCE_RSUSB_BACKEND instead" OFF)
 option(ENABLE_L500_DEPTH_INVALIDATION "Turn on the depth frame validator to automatically catch corrupted frames and restart the sensor" ON)
-option(ENABLE_RS_AUTO_UPDATER "Enables auto update notifications from server versions" OFF)
+option(CHECK_FOR_UPDATES "Checks for versions updates" OFF)

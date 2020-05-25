@@ -13,7 +13,7 @@
 namespace rs2
 {
 
-    namespace auto_updates
+    namespace sw_update
     {
         // The version_db_manager class download, parse and supply queries for the RS components versions information.
         // The version file can be stored locally on the file system or on a HTTP server.
@@ -86,7 +86,7 @@ namespace rs2
             enum component_part_type { LIBREALSENSE, VIEWER, DEPTH_QUALITY_TOOL, FIRMWARE };
             enum update_source_type { FROM_FILE, FROM_SERVER };
 
-            explicit versions_db_manager(const std::string &url, const bool use_url_as_local_path = false, file_downloader::user_callback_func_type download_callback = file_downloader::user_callback_func_type())
+            explicit versions_db_manager(const std::string &url, const bool use_url_as_local_path = false, http::downloader::user_callback_func_type download_callback = http::downloader::user_callback_func_type())
                 : _dev_info_url(url), _local_source_file(use_url_as_local_path), _server_versions_vec(), _server_versions_loaded(false), _download_cb_func(download_callback) {};
 
             ~versions_db_manager() {};
@@ -137,7 +137,7 @@ namespace rs2
             bool  _local_source_file;
             bool _server_versions_loaded;
             std::vector<std::unordered_map<std::string, std::string>> _server_versions_vec;
-            file_downloader::user_callback_func_type _download_cb_func;
+            http::downloader::user_callback_func_type _download_cb_func;
         };
     }
 }

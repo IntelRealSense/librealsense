@@ -6,9 +6,9 @@
 
 namespace rs2
 {
-    namespace auto_updates
+    namespace sw_update
     {
-        using namespace downloader;
+        using namespace http::downloader;
 
         dev_updates_profile::dev_updates_profile(const device& dev, const std::string &url, const bool use_url_as_local_path, user_callback_func_type download_callback)
             : _versions_db(url, use_url_as_local_path, download_callback)

@@ -30,15 +30,15 @@ set(COMMON_SRC
         "${CMAKE_CURRENT_LIST_DIR}/updates-model.cpp"
 )
 
-    set(AUTO_UPDATE_FILES
-        "${CMAKE_CURRENT_LIST_DIR}/auto-updater/http-downloader.h"
-        "${CMAKE_CURRENT_LIST_DIR}/auto-updater/http-downloader.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/auto-updater/dev-updates-profile.h"
-        "${CMAKE_CURRENT_LIST_DIR}/auto-updater/dev-updates-profile.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/auto-updater/versions-db-manager.h"
-        "${CMAKE_CURRENT_LIST_DIR}/auto-updater/versions-db-manager.cpp"
+    set(SW_UPDATE_FILES
+        "${CMAKE_CURRENT_LIST_DIR}/sw-update/http-downloader.h"
+        "${CMAKE_CURRENT_LIST_DIR}/sw-update/http-downloader.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/sw-update/dev-updates-profile.h"
+        "${CMAKE_CURRENT_LIST_DIR}/sw-update/dev-updates-profile.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/sw-update/versions-db-manager.h"
+        "${CMAKE_CURRENT_LIST_DIR}/sw-update/versions-db-manager.cpp"
         )
     set(COMMON_SRC
         ${COMMON_SRC}
-        ${AUTO_UPDATE_FILES})
+        ${SW_UPDATE_FILES})
 

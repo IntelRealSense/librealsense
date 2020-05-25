@@ -140,7 +140,7 @@ else()
 endif()
 
 source_group("EasyLogging++" FILES ${ELPP_FILES})
-source_group("Update Handler" FILES ${AUTO_UPDATE_FILES})
+source_group("SW-Update" FILES ${SW_UPDATE_FILES})
 
 include_directories(
     ../../common
@@ -156,8 +156,8 @@ set_property(TARGET realsense-viewer PROPERTY CXX_STANDARD 11)
 
 set(RS_VIEWER_LIBS ${GTK3_LIBRARIES} Threads::Threads realsense2-gl)
 
-if (ENABLE_RS_AUTO_UPDATER)
-    message( STATUS "Enabling RS auto updater for realsense-viewer ..." )
+if (CHECK_FOR_UPDATES)
+    message( STATUS "Check for updates is on for realsense-viewer" )
     add_dependencies(realsense-viewer libcurl)
     set(RS_VIEWER_LIBS ${RS_VIEWER_LIBS} curl)
     add_definitions(-DCURL_STATICLIB) # Mandatory for building libcurl as static lib
