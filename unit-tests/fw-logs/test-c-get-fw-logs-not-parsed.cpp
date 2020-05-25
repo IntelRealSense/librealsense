@@ -6,17 +6,6 @@
 
 /* Include the librealsense C header files */
 #include <librealsense2/rs.h>
-#include <librealsense2/h/rs_device.h>
-#include <librealsense2/h/rs_pipeline.h>
-#include <librealsense2/h/rs_option.h>
-#include <librealsense2/h/rs_frame.h>
-
-char* rs2_firmware_log_message_to_string(rs2_firmware_log_message msg)
-{
-    char* buffer = (char*)(malloc(50 * sizeof(char)));
-    sprintf(buffer, "sev = %d, file = %d, line = %d", msg._severity, msg._file_id, msg._line);
-    return buffer;
-}
 
 //get fw logs using c api
 TEST_CASE( "Getting FW logs in C", "[fw-logs]" ) {
@@ -51,20 +40,36 @@ TEST_CASE( "Getting FW logs in C", "[fw-logs]" ) {
     REQUIRE(device_extendable_to_fw_logger);
 
     bool were_fw_logs_received_once = false;
-    while (!were_fw_logs_received_once)
+    while (1)//!were_fw_logs_received_once)
     {
-        rs2_firmware_log_message_list* fw_logs_list = rs2_get_firmware_logs_list(dev, &e);
-        REQUIRE(fw_logs_list);
+        rs2_error* e = nullptr;
+        rs2_firmware_log_message* fw_log_msg = rs2_get_firmware_log(dev, &e);
+            
+        REQUIRE(fw_log_msg);
 
-        if (fw_logs_list->_number_of_messages > 0)
+        int size = rs2_firmware_log_message_size(fw_log_msg, &e);
+
+        auto start = rs2_firmware_log_message_data(fw_log_msg, &e);
+
+        if (size > 0)
         {
             were_fw_logs_received_once = true;
-            for (int i = 0; i < fw_logs_list->_number_of_messages; ++i)
+            //get time
+            time_t rawtime;
+            struct tm* timeinfo;
+
+            time_t mytime = time(NULL);
+            char* time_str = ctime(&mytime);
+            time_str[strlen(time_str) - 1] = '\0';
+            printf("message received %s - ", time_str);
+            for (int i = 0; i < size; ++i)
             {
-                printf("message received: %s\n", rs2_firmware_log_message_to_string(fw_logs_list->_messages[i]));
+                printf("%d ", *(start + i));
             }
+            printf("\n");
         }
-        rs2_delete_firmware_logs_list(fw_logs_list);
+
+        rs2_delete_firmware_log_message(fw_log_msg);
     }
     
 }

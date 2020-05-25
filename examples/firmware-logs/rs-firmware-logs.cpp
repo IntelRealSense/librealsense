@@ -68,20 +68,17 @@ int main(int argc, char * argv[])
 
             while (hub.is_connected(dev))
             {
-                this_thread::sleep_for(chrono::milliseconds(100));
+                //this_thread::sleep_for(chrono::milliseconds(100));
                 
                 auto fw_log = res.get_device().as<rs2::firmware_logger>();
-                std::vector<rs2::firmware_logger_message> fw_log_messages = fw_log.get_firmware_logs();
-                
-                if (fw_log_messages.size() == 0)
-                    continue;
+                auto fw_log_message = fw_log.get_firmware_log();
 
                 std::vector<string> fw_log_lines;
 
-                static bool usingParser = true;
+                static bool usingParser = false;
                 if (usingParser)
                 {
-                    std::string xml_path("HWLoggerEventsDS5.xml");
+                    /*std::string xml_path("HWLoggerEventsDS5.xml");
                     if (!xml_path.empty())
                     {
                         ifstream f(xml_path);
@@ -90,27 +87,30 @@ int main(int argc, char * argv[])
                             unique_ptr<rs2::firmware_logs_parser> parser = 
                                 unique_ptr<rs2::firmware_logs_parser>(new rs2::firmware_logs_parser(xml_path));
                             
-                            for each (rs2::firmware_logger_message msg in fw_log_messages)
+                            for (rs2::firmware_logger_message msg : fw_log_messages)
                             {
                                 parser->parse_firmware_log(msg);
                                 fw_log_lines.push_back(msg.to_string());
                             }
                             
-                            /*for (auto& elem : fw_log_lines)
-                                elem = datetime_string() + "  " + elem;*/
+                            //for (auto& elem : fw_log_lines)
+                             //   elem = datetime_string() + "  " + elem;
                         }
-                    }
+                    }*/
                 }
                 else
                 {
-                    stringstream sstr;
-                    /*sstr << datetime_string() << "  FW_Log_Data:";*/
-                    for (size_t i = 0; i < fw_log_messages.size(); ++i)
-                        sstr << fw_log_messages[i].to_string() << "\n";
-                
-                    fw_log_lines.push_back(sstr.str());
+                    if (fw_log_message.size() > 0)
+                    {
+                        stringstream sstr;
+                        sstr << datetime_string() << "  FW_Log_Data:";
+                        for (int i = 0; i < fw_log_message.size(); ++i)
+                        {
+                            sstr << hexify(fw_log_message[i]) << " ";
+                        }
+                        fw_log_lines.push_back(sstr.str());
+                    }
                 }
-                
                 for (auto& line : fw_log_lines)
                     cout << line << endl;
             }
