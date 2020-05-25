@@ -56,5 +56,34 @@ namespace librealsense
             auto str = fmt.str();
             return str;
         }
+
+        rs2_log_severity fw_logs_binary_data::get_severity() const
+        {
+            const fw_log_binary* log_binary = reinterpret_cast<const fw_log_binary*>(logs_buffer.data());
+            return fw_logs_severity_to_log_severity(static_cast<int32_t>(log_binary->dword1.bits.severity));
+        }
+
+        rs2_log_severity fw_logs_severity_to_log_severity(int32_t severity)
+        {
+            rs2_log_severity result = RS2_LOG_SEVERITY_NONE;
+            switch (severity)
+            {
+            case 1:
+                result = RS2_LOG_SEVERITY_DEBUG;
+                break;
+            case 2:
+                result = RS2_LOG_SEVERITY_WARN;
+                break;
+            case 3:
+                result = RS2_LOG_SEVERITY_ERROR;
+                break;
+            case 4:
+                result = RS2_LOG_SEVERITY_FATAL;
+                break;
+            default:
+                break;
+            }
+            return result;
+        }
     }
 }
