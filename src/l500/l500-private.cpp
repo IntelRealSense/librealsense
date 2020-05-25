@@ -436,7 +436,7 @@ namespace librealsense
                     AC_LOG( DEBUG, "auto calibration has started ...");
                     call_back( RS2_CALIBRATION_STARTED );
 
-                    static algo::depth_to_rgb_calibration::algo_calibration_info cal_info = { 0 };
+                    static algo::depth_to_rgb_calibration::algo_calibration_info cal_info;
                     static bool cal_info_initialized = false;
                     if( !cal_info_initialized )
                     {

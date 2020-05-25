@@ -167,11 +167,11 @@ namespace depth_to_rgb_calibration {
     {
         static const int table_id = 0x313;
 
-        uint16_t version = 0x0100;
-        uint16_t id = table_id;
-        uint32_t size = sizeof( algo_calibration_info );  // 0x1F0
-        uint32_t full_version = 0xFFFFFFFF;
-        uint32_t crc32;  // of the following data
+        uint16_t version;       // = 0x0100
+        uint16_t id;            // = table_id
+        uint32_t size;          // = 0x1F0
+        uint32_t full_version;  // = 0xFFFFFFFF
+        uint32_t crc32;         // of the following data:
         uint32_t DIGGundistFx;
         uint32_t DIGGundistFy;
         int32_t  DIGGundistX0;
@@ -243,6 +243,11 @@ namespace depth_to_rgb_calibration {
         float    FRMWdfzCalibrationVddVal;
         float    FRMWhumidApdTempDiff;
         uint8_t  reserved[94];
+
+        algo_calibration_info()
+        {
+            memset( this, 0, sizeof( algo_calibration_info ) );
+        }
     };
     struct algo_calibration_registers
     {
