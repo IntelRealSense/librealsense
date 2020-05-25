@@ -122,9 +122,14 @@ struct rs2_terminal_parser
     std::shared_ptr<librealsense::terminal_parser> terminal_parser;
 };
 
-struct rs2_firmware_logs_parser
+struct rs2_firmware_log_message
 {
-    std::shared_ptr<librealsense::fw_logs::fw_logs_parser> firmware_logs_parser;
+    std::shared_ptr<librealsense::fw_logs::fw_logs_binary_data> firmware_log_binary_data;
+};
+
+struct rs2_firmware_log_parser
+{
+    std::shared_ptr<librealsense::fw_logs::fw_logs_parser> firmware_log_parser;
 };
 
 struct rs2_error
@@ -2977,95 +2982,61 @@ void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_s
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, json_content, content_size)
 
-rs2_firmware_log_message* rs2_get_firmware_logs(rs2_device* dev, int* number_of_messages, rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(dev);
-    VALIDATE_NOT_NULL(number_of_messages);
-    auto fw_loggerable = VALIDATE_INTERFACE(dev->device, librealsense::firmware_logger_extensions);
-
-    std::vector<librealsense::fw_logs::fw_log_data> logs = fw_loggerable->get_fw_logs();
-    *number_of_messages = logs.size();
-    
-    rs2_firmware_log_message* list = new rs2_firmware_log_message[*number_of_messages];
-    for(int i = 0; i < *number_of_messages; ++i)
-    {
-        list[i] = logs[i].to_rs2_firmware_log_message();
-    }
-    
-    return list;
-}
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev, number_of_messages, error)
-
-rs2_firmware_log_message_list* rs2_get_firmware_logs_list(rs2_device* dev, rs2_error** error) BEGIN_API_CALL
+rs2_firmware_log_message* rs2_get_firmware_log(rs2_device* dev, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     auto fw_loggerable = VALIDATE_INTERFACE(dev->device, librealsense::firmware_logger_extensions);
 
-    std::vector<librealsense::fw_logs::fw_log_data> logs = fw_loggerable->get_fw_logs();
-    size_t numOfLogs = logs.size();
-
-    rs2_firmware_log_message* messages = new rs2_firmware_log_message[numOfLogs];
-    rs2_firmware_log_message_list* list = new rs2_firmware_log_message_list;
-    list->_messages = messages;
-    list->_number_of_messages = logs.size();
-    for (size_t i = 0; i < numOfLogs; ++i)
-    {
-        list->_messages[i] = logs[i].to_rs2_firmware_log_message();
-    }
-
-    return list;
+    fw_logs::fw_logs_binary_data binary_data = fw_loggerable->get_fw_log();
+    return new rs2_firmware_log_message{ std::make_shared<librealsense::fw_logs::fw_logs_binary_data>(binary_data) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev, error)
 
-void rs2_delete_firmware_logs(rs2_firmware_log_message* fw_logs_list) BEGIN_API_CALL
+void rs2_delete_firmware_log_message(rs2_firmware_log_message* msg) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(fw_logs_list);
-    
-    delete[] fw_logs_list[0]._message;
-    delete[] fw_logs_list[0]._file_name;
-    delete[] fw_logs_list[0]._thread_name;
-
-    delete[] fw_logs_list;
+    VALIDATE_NOT_NULL(msg);
+    delete msg;
 }
-NOEXCEPT_RETURN(, fw_logs_list)
+NOEXCEPT_RETURN(, msg)
 
-void rs2_delete_firmware_logs_list(rs2_firmware_log_message_list* fw_logs_list) BEGIN_API_CALL
+const unsigned char* rs2_firmware_log_message_data(rs2_firmware_log_message* msg, rs2_error** error)BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(fw_logs_list);
-
-    if (fw_logs_list->_messages)
-    {
-        /*for (int i = 0; i < fw_logs_list->_number_of_messages; ++i)
-        {
-            if (fw_logs_list->_messages[i]._message)
-                delete fw_logs_list->_messages[i]._message;
-            if (fw_logs_list->_messages[i]._file_name)
-                delete fw_logs_list->_messages[i]._file_name;
-            if (fw_logs_list->_messages[i]._thread_name)
-                delete fw_logs_list->_messages[i]._thread_name;
-        }*/
-        delete[] fw_logs_list->_messages;
-    }
-    delete[] fw_logs_list;
+    VALIDATE_NOT_NULL(msg);
+    return msg->firmware_log_binary_data->logs_buffer.data();
 }
-NOEXCEPT_RETURN(, fw_logs_list)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, msg)
 
-rs2_firmware_logs_parser* rs2_create_firmware_logs_parser(const char* xml_path, rs2_error** error) BEGIN_API_CALL
+int rs2_firmware_log_message_size(rs2_firmware_log_message* msg, rs2_error** error)BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(msg);
+    return msg->firmware_log_binary_data->logs_buffer.size();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, msg)
+
+rs2_firmware_log_parser* rs2_create_firmware_log_parser(const char* xml_path, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(xml_path);
 
-    return new rs2_firmware_logs_parser{ std::make_shared<librealsense::fw_logs::fw_logs_parser>(xml_path)};
+    return new rs2_firmware_log_parser{ std::make_shared<librealsense::fw_logs::fw_logs_parser>(xml_path)};
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, xml_path)
 
-void rs2_delete_firmware_logs_parser(rs2_firmware_logs_parser* parser) BEGIN_API_CALL
+void rs2_delete_firmware_log_parser(rs2_firmware_log_parser* parser) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(parser);
     delete parser;
 }
 NOEXCEPT_RETURN(, parser)
 
-rs2_raw_data_buffer* rs2_parse_firmware_log(rs2_firmware_logs_parser* fw_logs_parser,
+void rs2_parse_firmware_log(rs2_firmware_log_parser* fw_log_parser, rs2_firmware_log_message** fw_log_msg, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(fw_log_parser);
+    VALIDATE_NOT_NULL(fw_log_msg);
+
+    fw_log_parser->firmware_log_parser.get()->parse_fw_log(fw_log_msg);
+}
+NOEXCEPT_RETURN(, fw_log_msg)
+/*rs2_raw_data_buffer* rs2_parse_firmware_log(rs2_firmware_logs_parser* fw_logs_parser,
     int event_id, int p1, int p2, int p3, int file_id, int thread_id, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(fw_logs_parser);
@@ -3094,7 +3065,7 @@ rs2_raw_data_buffer* rs2_parse_firmware_log(rs2_firmware_logs_parser* fw_logs_pa
 
     return new rs2_raw_data_buffer { msg_file_thread_bytes };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, fw_logs_parser)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, fw_logs_parser)*/
 
 rs2_terminal_parser* rs2_create_terminal_parser(const char* xml_content, rs2_error** error) BEGIN_API_CALL
 {

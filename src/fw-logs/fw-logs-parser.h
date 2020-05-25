@@ -16,8 +16,9 @@ namespace librealsense
         public:
             explicit fw_logs_parser(std::string xml_full_file_path);
             ~fw_logs_parser(void);
-            fw_log_data parse_fw_log(uint32_t event_id, uint32_t p1, uint32_t p2, uint32_t p3, 
-                uint32_t file_id, uint32_t thread_id);
+            /*fw_log_data parse_fw_log(uint32_t event_id, uint32_t p1, uint32_t p2, uint32_t p3, 
+                uint32_t file_id, uint32_t thread_id);*/
+            void fw_logs_parser::parse_fw_log(rs2_firmware_log_message** fw_log_msg);
             
 
         private:

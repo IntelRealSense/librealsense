@@ -117,34 +117,6 @@ typedef struct rs2_pose
     unsigned int    mapper_confidence;    /**< Pose map confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High                                      */
 } rs2_pose;
 
-/** \brief Firmware log message. */
-typedef struct rs2_firmware_log_message
-{
-    unsigned int _magic_number;         /**< magic number at start of the fw log                                */
-    unsigned int _severity;             /**< severity of the fw log                                             */
-    unsigned int _file_id;              /**< id of the file from which the fw log has bee triggered             */
-    unsigned int _group_id;             /**< id of the group from which the fw log has bee triggered            */
-    unsigned int _event_id;             /**< id of the event that the fw log refers to                          */
-    unsigned int _line;                 /**< line from which the fw log has bee triggered                       */
-    unsigned int _sequence;             /**< sequence number from which the fw log has bee triggered            */
-    unsigned int _p1;                   /**< parameter for parsing lthe fw log                                  */
-    unsigned int _p2;                   /**< parameter for parsing lthe fw log                                  */
-    unsigned int _p3;                   /**< parameter for parsing lthe fw log                                  */
-    unsigned long long _timestamp;      /**< timestamp of the fw log                                            */
-    double _delta;                      /**< delta of the timestamp between current and previous fw logs        */
-    unsigned long long _thread_id;      /**< id of the thread from which the fw log has bee triggered           */
-                                        
-    char* _message;                     /**< fw log message                                                     */
-    char* _file_name;                   /**< name of the file from which the fw log has bee triggered           */
-    char* _thread_name;                 /**< name of the thread from which the fw log has bee triggered         */
-} rs2_firmware_log_message;
-
-typedef struct rs2_firmware_log_message_list
-{
-    rs2_firmware_log_message* _messages;/**< pointer to firmware log messages                                   */
-    size_t _number_of_messages;			/**< number of messages in the member _messages                         */
-} rs2_firmware_log_message_list;
-
 /** \brief Severity of the librealsense logger. */
 typedef enum rs2_log_severity {
     RS2_LOG_SEVERITY_DEBUG, /**< Detailed information about ordinary operations */
@@ -273,6 +245,8 @@ typedef struct rs2_options_list rs2_options_list;
 typedef struct rs2_devices_changed_callback rs2_devices_changed_callback;
 typedef struct rs2_notification rs2_notification;
 typedef struct rs2_notifications_callback rs2_notifications_callback;
+typedef struct rs2_firmware_log_message rs2_firmware_log_message;
+typedef struct rs2_firmware_log_parser rs2_firmware_log_parser;
 typedef struct rs2_terminal_parser rs2_terminal_parser;
 typedef void (*rs2_log_callback_ptr)(rs2_log_severity, rs2_log_message const *, void * arg);
 typedef void (*rs2_notification_callback_ptr)(rs2_notification*, void*);
@@ -281,7 +255,6 @@ typedef void (*rs2_devices_changed_callback_ptr)(rs2_device_list*, rs2_device_li
 typedef void (*rs2_frame_callback_ptr)(rs2_frame*, void*);
 typedef void (*rs2_frame_processor_callback_ptr)(rs2_frame*, rs2_source*, void*);
 typedef void(*rs2_update_progress_callback_ptr)(const float, void*);
-typedef struct rs2_firmware_logs_parser rs2_firmware_logs_parser;
 
 typedef double      rs2_time_t;     /**< Timestamp format. units are milliseconds */
 typedef long long   rs2_metadata_type; /**< Metadata attribute type is defined as 64 bit signed integer*/
