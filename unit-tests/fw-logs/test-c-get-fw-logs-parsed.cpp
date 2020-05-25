@@ -18,7 +18,7 @@
 char* rs2_firmware_log_message_to_string(rs2_firmware_log_message msg)
 {
     char* buffer = (char*)(malloc(50 * sizeof(char)));
-    sprintf(buffer, "sev = %d, file = %d, line = %d", msg._severity, msg._file_id, msg._line);
+    sprintf(buffer, "message = %s", msg._message);
     return buffer;
 }
 
@@ -95,23 +95,15 @@ TEST_CASE( "Getting FW logs in C", "[fw-logs]" ) {
             for (int i = 0; i < fw_logs_list->_number_of_messages; ++i)
             {
                 rs2_firmware_log_message* msg = &fw_logs_list->_messages[i];
-                rs2_raw_data_buffer* parsed_log = rs2_parse_firmware_log(parser, msg->_event_id, msg->_p1, msg->_p2, msg->_p3,
-                    msg->_file_id, msg->_thread_id, &e);
-                // call as it must be: rs2_parse_firmware_log(parser, &msg);
+                /*rs2_raw_data_buffer* parsed_log = rs2_parse_firmware_log(parser, msg->_event_id, msg->_p1, msg->_p2, msg->_p3,
+                    msg->_file_id, msg->_thread_id, &e);*/
+
+                rs2_parse_firmware_log(parser, &msg, &e);
                 rs2::error::handle(e);
 
-                int size = rs2_get_raw_data_size(parsed_log, &e);
-                rs2::error::handle(e);
+                printf("message received: %s\n", rs2_firmware_log_message_to_string(*msg));
 
-                if (size > 0)
-                {
-                    auto start = rs2_get_raw_data(parsed_log, &e);
-
-                    unsigned char message_size = *start;
-                    printf("size of message = %d", message_size);
-                }
-
-                printf("message received: %s\n", rs2_firmware_log_message_to_string(fw_logs_list->_messages[i]));
+                
             }
         }
         rs2_delete_firmware_logs_list(fw_logs_list);

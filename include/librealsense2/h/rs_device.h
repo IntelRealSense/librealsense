@@ -359,14 +359,12 @@ void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_s
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return            firmware logs
 */
-rs2_firmware_log_message_list* rs2_get_firmware_logs_list(rs2_device* dev, rs2_error** error);
+rs2_firmware_log_message* rs2_get_firmware_log(rs2_device* dev, rs2_error** error);
 
+void rs2_delete_firmware_log_message(rs2_firmware_log_message* msg);
 
-/**
-* \brief Frees the relevant firmware logs messages list object.
-* \param[in] firmware logs messages list object that is no longer needed
-*/
-void rs2_delete_firmware_logs_list(rs2_firmware_log_message_list* fw_logs_list);
+const unsigned char* rs2_firmware_log_message_data(rs2_firmware_log_message* msg, rs2_error** error);
+int rs2_firmware_log_message_size(rs2_firmware_log_message* msg, rs2_error** error);
 
 /**
 * \brief Creates RealSense firmware logs parser.
@@ -374,13 +372,13 @@ void rs2_delete_firmware_logs_list(rs2_firmware_log_message_list* fw_logs_list);
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return            firmware logs parser object
 */
-rs2_firmware_logs_parser* rs2_create_firmware_logs_parser(const char* xml_path, rs2_error** error);
+rs2_firmware_log_parser* rs2_create_firmware_log_parser(const char* xml_path, rs2_error** error);
 
 /**
 * \brief Frees the relevant firmware logs parser object.
 * \param[in] firmware logs parser object that is no longer needed
 */
-void rs2_delete_firmware_logs_parser(rs2_firmware_logs_parser* parser);
+void rs2_delete_firmware_log_parser(rs2_firmware_log_parser* parser);
 
 /**
 * \brief Parses firmware logs.
@@ -394,8 +392,7 @@ void rs2_delete_firmware_logs_parser(rs2_firmware_logs_parser* parser);
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return 	firmware logs parsed
 */
-rs2_raw_data_buffer* rs2_parse_firmware_log(rs2_firmware_logs_parser* fw_logs_parser,
-    int event_id, int p1, int p2, int p3, int file_id, int thread_id, rs2_error** error);
+//void rs2_parse_firmware_log(rs2_firmware_log_parser* fw_logs_parser, rs2_firmware_log_message** fw_log_msg, rs2_error** error);
 
 #ifdef __cplusplus
 }

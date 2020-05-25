@@ -10,7 +10,8 @@ namespace librealsense
 		std::string camera_op_code) :
 		_hw_monitor(hardware_monitor),
         _last_timestamp(0),
-        _timestamp_factor(0.00001)
+        _timestamp_factor(0.00001),
+        _message_queue()
 	{
 		auto op_code = static_cast<uint8_t>(std::stoi(camera_op_code.c_str()));
 		_input_code = { 0x14, 0x00, 0xab, 0xcd, op_code, 0x00, 0x00, 0x00,
@@ -19,48 +20,22 @@ namespace librealsense
 	}
 
 
-	std::vector<uint8_t> firmware_logger_device::get_fw_binary_logs() const
-	{
-		auto res = _hw_monitor->send(_input_code);
-		if (res.empty())
-		{
-			throw std::runtime_error("Getting Firmware logs failed!");
-		}
-		return res;
-	}
-
-	std::vector<fw_logs::fw_log_data> firmware_logger_device::get_fw_logs()
-	{
-		auto res = _hw_monitor->send(_input_code);
-		if (res.empty())
-		{
-			throw std::runtime_error("Getting Firmware logs failed!");
-		}
-
-        //TODO - REMI - check why this is required
-        res.erase(res.begin(), res.begin() + 4);
-
-        std::vector<fw_logs::fw_log_data> vec;
-        auto beginOfLogIterator = res.begin();
-        // convert bytes to fw_log_data
-        for (int i = 0; i < res.size() / fw_logs::BINARY_DATA_SIZE; ++i)
+    fw_logs::fw_logs_binary_data firmware_logger_device::get_fw_log()
+    {
+        if (_message_queue.empty())
         {
-            auto endOfLogIterator = beginOfLogIterator + fw_logs::BINARY_DATA_SIZE;
-            std::vector<uint8_t> resultsForOneLog;
-            resultsForOneLog.insert(resultsForOneLog.begin(), beginOfLogIterator, endOfLogIterator);
-            auto temp_pointer = reinterpret_cast<std::vector<uint8_t> const*>(resultsForOneLog.data());
-            auto log = const_cast<char*>(reinterpret_cast<char const*>(temp_pointer));
-
-            fw_logs::fw_log_data data = fill_log_data(log);
-            beginOfLogIterator = endOfLogIterator;
-
-            vec.push_back(data);
+            get_fw_logs_from_hw_monitor();
         }
+        fw_logs::fw_logs_binary_data result;
+        if (!_message_queue.empty())
+        {
+            result = _message_queue.front();
+            _message_queue.pop();
+        }
+        return result;
+    }
 
-		return vec;
-	}
-
-    std::vector<rs2_firmware_log_message> firmware_logger_device::get_fw_logs_msg()
+    void firmware_logger_device::get_fw_logs_from_hw_monitor()
     {
         auto res = _hw_monitor->send(_input_code);
         if (res.empty())
@@ -68,28 +43,22 @@ namespace librealsense
             throw std::runtime_error("Getting Firmware logs failed!");
         }
 
-        //TODO - REMI - check why this is required
+        //erasing header
         res.erase(res.begin(), res.begin() + 4);
 
-        std::vector<rs2_firmware_log_message> vec;
         auto beginOfLogIterator = res.begin();
-        // convert bytes to rs2_firmware_log_message
+        // convert bytes to fw_logs_binary_data
         for (int i = 0; i < res.size() / fw_logs::BINARY_DATA_SIZE; ++i)
         {
             auto endOfLogIterator = beginOfLogIterator + fw_logs::BINARY_DATA_SIZE;
             std::vector<uint8_t> resultsForOneLog;
             resultsForOneLog.insert(resultsForOneLog.begin(), beginOfLogIterator, endOfLogIterator);
-            auto temp_pointer = reinterpret_cast<std::vector<uint8_t> const*>(resultsForOneLog.data());
-            auto log = const_cast<char*>(reinterpret_cast<char const*>(temp_pointer));
-
-            fw_logs::fw_log_data data = fill_log_data(log);
-            rs2_firmware_log_message msg = data.to_rs2_firmware_log_message();
+            fw_logs::fw_logs_binary_data binary_data{ resultsForOneLog };
+            _message_queue.push(binary_data);
             beginOfLogIterator = endOfLogIterator;
-
-            vec.push_back(msg);
         }
-        return vec;
     }
+
 
     fw_logs::fw_log_data firmware_logger_device::fill_log_data(const char* fw_logs)
     {
