@@ -67,8 +67,6 @@ namespace rs2
 
         rs2::frame handle_ready_frames(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message);
 
-        viewer_model(context &ctx_);
-
         ~viewer_model()
         {
             // Stopping post processing filter rendering thread
@@ -132,7 +130,7 @@ namespace rs2
         post_processing_filters ppf;
 
         context &ctx;
-        notifications_model not_model;
+        std::shared_ptr<notifications_model> not_model = std::make_shared<notifications_model>();
         bool is_output_collapsed = false;
         bool is_3d_view = false;
         bool paused = false;
@@ -189,7 +187,10 @@ namespace rs2
         press_button_model grid_object_button{ u8"\uf1cb", u8"\uf1cb",  "Configure Grid", "Configure Grid", false };
         press_button_model pose_info_object_button{ u8"\uf05a", u8"\uf05a",  "Show pose stream info overlay", "Hide pose stream info overlay", false };
 
+        viewer_model(context &ctx_);
+
     private:
+
         void check_permissions();
 
         std::vector<popup> _active_popups;

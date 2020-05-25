@@ -76,6 +76,7 @@ namespace rs2
         void refresh();
 
         void link_hovered();
+        void cross_hovered();
 
         double time() const { return glfwGetTime(); }
     private:
@@ -88,11 +89,12 @@ namespace rs2
 
         GLFWwindow               *_win;
         int                      _width, _height, _output_height;
-        int                     _fb_width, _fb_height;
+        int                     _fb_width = 0;
+        int                     _fb_height = 0;
         rs2::rect                _viewer_rect;
 
         ImFont                   *_font_14, *_font_18;
-        rs2::mouse_info          _mouse;
+        rs2::mouse_info          _mouse{};
         std::string              _error_message;
         float                    _scale_factor;
 
@@ -122,6 +124,8 @@ namespace rs2
 
         bool                     _link_hovered = false;
         GLFWcursor*              _hand_cursor = nullptr;
+        bool                     _cross_hovered = false;
+        GLFWcursor*              _cross_cursor = nullptr;
 
         std::string              _title;
         std::shared_ptr<visualizer_2d> _2d_vis;

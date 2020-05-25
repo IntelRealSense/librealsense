@@ -269,7 +269,7 @@ namespace rs2
                             exporter->set_option(option.first, option.second);
                         }
 
-                        export_frame(fname, std::move(exporter), not_model, data);
+                        export_frame(fname, std::move(exporter), *not_model, data);
                     }
                 }
                 ImGui::CloseCurrentPopup();
@@ -780,7 +780,7 @@ namespace rs2
             if(!(f_man.good() || f_deb.good()))
             {
                 message = "RealSense UDEV-Rules are missing!\n" + message;
-                auto n = not_model.add_notification({ message,
+                auto n = not_model->add_notification({ message,
                      RS2_LOG_SEVERITY_WARN,
                      RS2_NOTIFICATION_CATEGORY_COUNT });
                 create_file = true;
@@ -799,7 +799,7 @@ namespace rs2
                     {
                         std::string duplicates = "Multiple realsense udev-rules were found! :\n1:" + udev_rules_man
                                     + "\n2: " + udev_rules_deb+ "\nMake sure to remove redundancies!";
-                        auto n = not_model.add_notification({ duplicates,
+                        auto n = not_model->add_notification({ duplicates,
                              RS2_LOG_SEVERITY_WARN,
                              RS2_NOTIFICATION_CATEGORY_COUNT });
                         n->enable_complex_dismiss = true;
@@ -838,7 +838,7 @@ namespace rs2
                 {
                     std::stringstream s;
                     s << "RealSense UDEV-Rules file:\n " << udev_fname <<"\n is not up-to date! Version " << built_in_file_ver << " can be applied\n";
-                    auto n = not_model.add_notification({ 
+                    auto n = not_model->add_notification({ 
                         s.str() + message,
                         RS2_LOG_SEVERITY_WARN,
                         RS2_NOTIFICATION_CATEGORY_COUNT });
@@ -875,7 +875,7 @@ namespace rs2
         if (version > saved_version)
         {
             auto n = std::make_shared<version_upgrade_model>(version);
-            not_model.add_notification(n);
+            not_model->add_notification(n);
 
             config_file::instance().set(configurations::viewer::sdk_version, version);
         }
@@ -890,7 +890,7 @@ namespace rs2
             configurations::viewer::is_measuring, false))
             _measurements.enable();
 
-        _measurements.log_function = [this](std::string message) { not_model.add_log(message); };
+        _measurements.log_function = [this](std::string message) { not_model->add_log(message); };
         _measurements.is_metric = [this]() { return metric_system; };
 
         glsl_available = config_file::instance().get(
@@ -959,7 +959,7 @@ namespace rs2
         syncer = std::make_shared<syncer_model>();
         reset_camera();
         rs2_error* e = nullptr;
-        not_model.add_log(to_string() << "librealsense version: " << api_version_to_string(rs2_get_api_version(&e)) << "\n");
+        not_model->add_log(to_string() << "librealsense version: " << api_version_to_string(rs2_get_api_version(&e)) << "\n");
     
         update_configuration();
         
@@ -1013,7 +1013,7 @@ namespace rs2
             ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_ShowBorders);
 
         int i = 0;
-        not_model.foreach_log([&](const std::string& line) {
+        not_model->foreach_log([&](const std::string& line) {
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
             ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
 
@@ -1100,7 +1100,7 @@ namespace rs2
         auto simplified_error_message = simplify_error_message(message);
         if (errors_not_to_show.count(simplified_error_message))
         {
-            not_model.add_notification({ message,
+            not_model->add_notification({ message,
                 RS2_LOG_SEVERITY_ERROR,
                 RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
             return;
@@ -1431,7 +1431,7 @@ namespace rs2
 
         draw_viewport(viewer_rect, window, devices, error_message, texture_frame, p);
 
-        not_model.draw(window, 
+        not_model->draw(window, 
             static_cast<int>(window.width()), static_cast<int>(window.height()),
             error_message);
 
@@ -2232,9 +2232,8 @@ namespace rs2
                     _pc_renderer.get_option(gl::pointcloud_renderer::OPTION_NORMAL_Y),
                     _pc_renderer.get_option(gl::pointcloud_renderer::OPTION_NORMAL_Z),
                 };
-                _measurements.mouse_pick(p, normal);
+                _measurements.mouse_pick(win, p, normal);
 
-                win.link_hovered();
                 // Adjust track-ball controller based on picked position
                 // 1. Place target at the closest point to p, along (pos, target) interval
                 // 2. When zooming-in, move camera target and position toward p
@@ -3254,7 +3253,7 @@ namespace rs2
             rect_copy.h -= 60;
 
             if (rect_copy.contains(window.get_mouse().cursor))
-                _measurements.show_tooltip();
+                _measurements.show_tooltip(window);
         }
 
         if (ImGui::IsKeyPressed(' '))

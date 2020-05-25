@@ -129,6 +129,11 @@ namespace rs2
         _link_hovered = true;
     }
 
+    void ux_window::cross_hovered()
+    {
+        _cross_hovered = true;
+    }
+
     void ux_window::setup_icon()
     {
         GLFWimage icon[4];
@@ -170,6 +175,7 @@ namespace rs2
             ImGui_ImplGlfw_Shutdown();
             glfwDestroyWindow(_win);
             glfwDestroyCursor(_hand_cursor);
+            glfwDestroyCursor(_cross_cursor);
             glfwTerminate();
         }
 
@@ -177,6 +183,7 @@ namespace rs2
             exit(1);
 
         _hand_cursor = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
+        _cross_cursor = glfwCreateStandardCursor(GLFW_CROSSHAIR_CURSOR);
 
         {
             glfwWindowHint(GLFW_VISIBLE, 0);
@@ -558,8 +565,11 @@ namespace rs2
 
         if (_link_hovered)
             glfwSetCursor(_win, _hand_cursor);
+        else if (_cross_hovered)
+            glfwSetCursor(_win, _cross_cursor);
         else
             glfwSetCursor(_win, nullptr);
+        _cross_hovered = false;
         _link_hovered = false;
 
         return res;
@@ -583,6 +593,7 @@ namespace rs2
         glfwDestroyWindow(_win);
 
         glfwDestroyCursor(_hand_cursor);
+        glfwDestroyCursor(_cross_cursor);
 
         glfwTerminate();
     }

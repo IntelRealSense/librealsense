@@ -187,6 +187,16 @@ namespace rs2
         }
     };
 
+    inline float dot(const rs2::float2& a, const rs2::float2& b)
+    {
+        return a.x * b.x + a.y * b.y;
+    }
+
+    inline rs2::float2 lerp(const rs2::float2& a, const rs2::float2& b, float t)
+    {
+        return rs2::float2{ lerp(a.x, b.x, t), lerp(a.y, b.y, t) };
+    }
+
     inline float3 lerp(const std::array<float3, 4>& rect, const float2& p)
     {
         auto v1 = lerp(rect[0], rect[1], p.x);

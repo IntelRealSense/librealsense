@@ -1048,7 +1048,7 @@ namespace rs2
             if (!has_metadata && !showed_metadata_prompt)
             {
                 auto n = std::make_shared<metadata_warning_model>();
-                viewer.not_model.add_notification(n);
+                viewer.not_model->add_notification(n);
                 showed_metadata_prompt = true;
             }
         }
@@ -1772,7 +1772,7 @@ namespace rs2
 
     void subdevice_model::stop(viewer_model& viewer)
     {
-        viewer.not_model.add_log("Stopping streaming");
+        viewer.not_model->add_log("Stopping streaming");
 
         for_each(stream_display_names.begin(), stream_display_names.end(), [this, &viewer](std::pair<int, std::string> kvp)
         {
@@ -1862,7 +1862,7 @@ namespace rs2
             if (i < profiles.size() - 1) ss << ", ";
         }
         ss << "...";
-        viewer.not_model.add_log(ss.str());
+        viewer.not_model->add_log(ss.str());
 
         // TODO  - refactor tm2 from viewer to subdevice
         for_each(stream_display_names.begin(), stream_display_names.end(), [this, &viewer](std::pair<int, std::string> kvp)
@@ -3133,7 +3133,7 @@ namespace rs2
             if (save_frame_raw_data(filename, original_frame))
                 ss << "Raw data is captured into " << filename << std::endl;
             else
-                viewer.not_model.add_notification({ to_string() << "Failed to save frame raw data  " << filename,
+                viewer.not_model->add_notification({ to_string() << "Failed to save frame raw data  " << filename,
                     RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
 
             // And the frame's attributes
@@ -3144,18 +3144,18 @@ namespace rs2
                 if (frame_metadata_to_csv(filename, original_frame))
                     ss << "The frame attributes are saved into " << filename;
                 else
-                    viewer.not_model.add_notification({ to_string() << "Failed to save frame metadata file " << filename,
+                    viewer.not_model->add_notification({ to_string() << "Failed to save frame metadata file " << filename,
                         RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
             }
             catch (std::exception& e)
             {
-                viewer.not_model.add_notification({ to_string() << e.what(),
+                viewer.not_model->add_notification({ to_string() << e.what(),
                     RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
             }
         }
 
         if (ss.str().size())
-            viewer.not_model.add_notification(notification_data{ 
+            viewer.not_model->add_notification(notification_data{ 
                 ss.str().c_str(), RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT });
 
     }
@@ -3334,7 +3334,7 @@ namespace rs2
                             n->enable_complex_dismiss = true;
                             if (!n->is_delayed())
                             {
-                                viewer.not_model.add_notification(n);
+                                viewer.not_model->add_notification(n);
 
                                 fw_update_required = true;
 
@@ -3372,7 +3372,7 @@ namespace rs2
 
                     // NOTE: For now do not pre-emptively suggest auto-calibration
                     // TODO: Revert in later release
-                    //viewer.not_model.add_notification(n);
+                    //viewer.not_model->add_notification(n);
                     //related_notifications.push_back(n);
                 }
             }
@@ -3774,7 +3774,7 @@ namespace rs2
         notification_data nd{ to_string() << "Saved recording to: " << saved_to_filename,
             RS2_LOG_SEVERITY_INFO,
             RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR };
-        viewer.not_model.add_notification(nd);
+        viewer.not_model->add_notification(nd);
     }
 
     void device_model::pause_record()
@@ -4181,7 +4181,7 @@ namespace rs2
             {
                 dev.as<advanced_mode>().toggle_advanced_mode(enable_advanced_mode);
                 restarting_device_info = get_device_info(dev, false);
-                view.not_model.add_log(enable_advanced_mode ? "Turning on advanced mode..." : "Turning off  advanced mode...");
+                view.not_model->add_log(enable_advanced_mode ? "Turning on advanced mode..." : "Turning off  advanced mode...");
             }
             keep_showing = false;
         }
@@ -4281,7 +4281,7 @@ namespace rs2
             auto n = std::make_shared<fw_update_notification_model>(
                 "Manual Update requested", manager, true);
             n->forced = true;
-            viewer.not_model.add_notification(n);
+            viewer.not_model->add_notification(n);
 
             for (auto&& n : related_notifications)
                 if (dynamic_cast<fw_update_notification_model*>(n.get()))
@@ -4327,7 +4327,7 @@ namespace rs2
 
             auto n = std::make_shared<fw_update_notification_model>(
                 "Manual Update requested", manager, true);
-            viewer.not_model.add_notification(n);
+            viewer.not_model->add_notification(n);
             n->forced = true;
 
             for (auto&& n : related_notifications)
@@ -4520,11 +4520,11 @@ namespace rs2
                                 {
                                     std::stringstream ss;
                                     ss << "Exporting localization map to " << target_path << " ... ";
-                                    viewer.not_model.add_log(ss.str());
+                                    viewer.not_model->add_log(ss.str());
                                     bin_file_from_bytes(target_path, tm_sensor.export_localization_map());
                                     ss.clear();
                                     ss << "completed";
-                                    viewer.not_model.add_log(ss.str());
+                                    viewer.not_model->add_log(ss.str());
                                 });
                             }
                         }
@@ -4544,7 +4544,7 @@ namespace rs2
                                     ss << "Importing localization map from " << source_path << " ... ";
                                     tm_sensor.import_localization_map(bytes_from_bin_file(source_path));
                                     ss << "completed";
-                                    viewer.not_model.add_log(ss.str());
+                                    viewer.not_model->add_log(ss.str());
                                 });
                             }
                         }
@@ -4661,7 +4661,7 @@ namespace rs2
                             auto n = std::make_shared<autocalib_notification_model>(
                                 "", manager, false);
 
-                            viewer.not_model.add_notification(n);
+                            viewer.not_model->add_notification(n);
                             n->forced = true;
                             n->update_state = autocalib_notification_model::RS2_CALIB_STATE_SELF_INPUT;
 
@@ -4694,7 +4694,7 @@ namespace rs2
                             auto n = std::make_shared<autocalib_notification_model>(
                                 "", manager, false);
 
-                            viewer.not_model.add_notification(n);
+                            viewer.not_model->add_notification(n);
                             n->forced = true;
                             n->update_state = autocalib_notification_model::RS2_CALIB_STATE_TARE_INPUT;
 
@@ -5053,7 +5053,7 @@ namespace rs2
             get_curr_advanced_controls = true;
             advanced_mode_settings_file_names.insert(f);
             selected_file_preset = f;
-            viewer.not_model.add_log(to_string() << "Loaded settings from \"" << f << "\"...");
+            viewer.not_model->add_log(to_string() << "Loaded settings from \"" << f << "\"...");
         };
 
         const auto save_to_json = [&, serializable](std::string full_filename)
@@ -5070,7 +5070,7 @@ namespace rs2
             outfile.close();
             advanced_mode_settings_file_names.insert(full_filename);
             selected_file_preset = full_filename;
-            viewer.not_model.add_log(to_string() << "Saved settings to \"" << full_filename << "\"...");
+            viewer.not_model->add_log(to_string() << "Saved settings to \"" << full_filename << "\"...");
 
         };
         static const std::string popup_message = "\t\tTo use this feature, the device must be in Advanced Mode.\t\t\n\n\t\tWould you like to turn Advanced Mode?\t\t";
@@ -5187,7 +5187,7 @@ namespace rs2
                     return is_clicked;
                 };
                 sub->options_metadata[RS2_OPTION_VISUAL_PRESET].custom_draw_method = draw_preset_combo_box;
-                if (sub->draw_option(RS2_OPTION_VISUAL_PRESET, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
+                if (sub->draw_option(RS2_OPTION_VISUAL_PRESET, dev.is<playback>() || update_read_only_options, error_message, *viewer.not_model))
                 {
                     get_curr_advanced_controls = true;
                     selected_file_preset.clear();
@@ -5757,7 +5757,7 @@ namespace rs2
 
                 for (auto& opt : drawing_order)
                 {
-                    if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
+                    if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, *viewer.not_model))
                     {
                         get_curr_advanced_controls = true;
                         selected_file_preset.clear();
@@ -5777,7 +5777,7 @@ namespace rs2
                             {
                                 if (serialize && opt == RS2_OPTION_VISUAL_PRESET)
                                     continue;
-                                if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
+                                if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, *viewer.not_model))
                                 {
                                     get_curr_advanced_controls = true;
                                     selected_file_preset.clear();
@@ -5811,7 +5811,7 @@ namespace rs2
                                 if (skip_option(opt)) continue;
                                 pb->get_option(opt).draw_option(
                                     dev.is<playback>() || update_read_only_options,
-                                    false, error_message, viewer.not_model);
+                                    false, error_message, *viewer.not_model);
                             }
 
                             ImGui::TreePop();
@@ -6006,7 +6006,7 @@ namespace rs2
                                     if (skip_option(opt)) continue;
                                     pb->get_option(opt).draw_option(
                                         dev.is<playback>() || update_read_only_options,
-                                        false, error_message, viewer.not_model);
+                                        false, error_message, *viewer.not_model);
                                 }
 
                                 ImGui::TreePop();
@@ -6028,7 +6028,7 @@ namespace rs2
 
         for (auto&& sub : subdevices)
         {
-            sub->update(error_message, viewer.not_model);
+            sub->update(error_message, *viewer.not_model);
         }
 
         ImGui::PopStyleColor(2);
