@@ -33,10 +33,10 @@
 
 #include "metadata-helper.h"
 
-#include "auto-updater/versions-db-manager.h"
 
 using namespace rs400;
 using namespace nlohmann;
+using namespace rs2::auto_updates;
 
 constexpr const char* server_versions_db_url = "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/rs-tests/sw-update/21_05_2020/rs_versions_db.json";
 
@@ -3246,7 +3246,7 @@ namespace rs2
         auto name = get_device_name(dev);
 
         try {
-            dev_updates_profile profile(dev, server_versions_db_url);
+            auto_updates::dev_updates_profile profile(dev, server_versions_db_url);
    
             
             bool sw_update_required = profile.retrieve_updates(versions_db_manager::LIBREALSENSE);

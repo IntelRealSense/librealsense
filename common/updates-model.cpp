@@ -10,6 +10,8 @@
 #include "auto-updater/http-downloader.h"
 
 using namespace rs2;
+using namespace auto_updates;
+using namespace file_downloader;
 
 void updates_model::draw(ux_window& window, std::string& error_message)
 {
@@ -100,7 +102,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 4);
 
-            ImGui::Image(ImTextureID(_icon->get_gl_handle()), ImVec2{ 128.f, 114.f });
+            ImGui::Image((void*)(intptr_t)(_icon->get_gl_handle()), ImVec2{ 128.f, 114.f });
 
             ImGui::PushStyleColor(ImGuiCol_Text, white);
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 4);
