@@ -13,7 +13,10 @@ namespace librealsense
         struct fw_logs_binary_data
         {
             std::vector<uint8_t> logs_buffer;
+            rs2_log_severity get_severity() const;
         };
+
+        rs2_log_severity fw_logs_severity_to_log_severity(int32_t severity);
 
         static const int BINARY_DATA_SIZE = 20;
 

@@ -366,6 +366,8 @@ void rs2_delete_firmware_log_message(rs2_firmware_log_message* msg);
 const unsigned char* rs2_firmware_log_message_data(rs2_firmware_log_message* msg, rs2_error** error);
 int rs2_firmware_log_message_size(rs2_firmware_log_message* msg, rs2_error** error);
 
+rs2_log_severity rs2_get_fw_log_severity(const rs2_firmware_log_message* msg, rs2_error** error);
+
 /**
 * \brief Creates RealSense firmware logs parser.
 * \param[in] xml_path	path to xml file needed for parsing
