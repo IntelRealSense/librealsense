@@ -314,14 +314,25 @@ bool operator==(const algo::DSM_regs& first, const algo::DSM_regs& second)
 {
     bool ok = true;
 
-    ok &= compare_and_trace(first.dsm_x_offset, second.dsm_x_offset, "second.dsm_x_offset");
-    ok &= compare_and_trace(first.dsm_y_offset, second.dsm_y_offset, "second.dsm_y_offset");
-    ok &= compare_and_trace(first.dsm_x_scale, second.dsm_x_scale, "second.dsm_x_scale");
-    ok &= compare_and_trace(first.dsm_y_scale, second.dsm_y_scale, "second.dsm_y_scale");
+    ok &= compare_and_trace(first.dsm_x_offset, second.dsm_x_offset, "dsm_x_offset");
+    ok &= compare_and_trace(first.dsm_y_offset, second.dsm_y_offset, "dsm_y_offset");
+    ok &= compare_and_trace(first.dsm_x_scale, second.dsm_x_scale, "dsm_x_scale");
+    ok &= compare_and_trace(first.dsm_y_scale, second.dsm_y_scale, "dsm_y_scale");
 
     return ok;
 }
 
+bool operator==(const algo::los_shift_scaling& first, const algo::los_shift_scaling& second)
+{
+    bool ok = true;
+
+    ok &= compare_and_trace(first.los_scaling_x, second.los_scaling_x, "los_scaling_x");
+    ok &= compare_and_trace(first.los_scaling_y, second.los_scaling_y, "los_scaling_y");
+    ok &= compare_and_trace(first.los_shift_x, second.los_shift_x, "los_shift_x");
+    ok &= compare_and_trace(first.los_shift_y, second.los_shift_y, "los_shift_x");
+
+    return ok;
+}
 template< typename D>  // F=in bin; D=in memory
 bool compare_to_bin_file(
     D const & obj_cpp,

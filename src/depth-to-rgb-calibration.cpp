@@ -74,6 +74,10 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     }
     _dsm_params = cs->get_dsm_params();
 
+    //TODO
+    algo::depth_to_rgb_calibration::DSM_regs dsm_regs; 
+    algo::depth_to_rgb_calibration::regs regs;
+
     AC_LOG( DEBUG, "... setting z data" );
     auto z_profile = depth.get_profile().as< rs2::video_stream_profile >();
     auto z_data = (impl::z_t const *) depth.get_data();

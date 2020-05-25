@@ -11,6 +11,7 @@
 #include "calibration.h"
 #include "coeffs.h"
 #include "frame-data.h"
+#include "k-to-dsm.h"
 
 
 namespace librealsense {
@@ -351,6 +352,7 @@ namespace depth_to_rgb_calibration {
         calib _final_calibration;         // starting state of auto-calibration
         calib _factory_calibration;          // factory default calibration of the camera
         optimaization_params _params_curr;   // last-known setting
+        k_to_DSM _k_to_DSM;
     };
 
 }  // librealsense::algo::depth_to_rgb_calibration

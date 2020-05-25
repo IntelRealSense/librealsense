@@ -8,7 +8,7 @@
 #include <types.h>
 
 #include "calibration-types.h"
-
+#include "k-to-dsm.h"
 
 namespace librealsense {
 namespace algo {
@@ -60,6 +60,8 @@ namespace depth_to_rgb_calibration {
         rs2_intrinsics_double orig_intrinsics;
         rs2_intrinsics_double new_intrinsics;
         rs2_dsm_params orig_dsm_params;
+        DSM_regs dsm_regs;
+        regs regs;
         float depth_units;
 
         std::vector< z_t > frame;
