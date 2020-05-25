@@ -9,7 +9,7 @@
 
 namespace rs2
 {
-    namespace file_downloader
+    namespace downloader
     {
         enum class callback_result { CONTINUE_DOWNLOAD, STOP_DOWNLOAD };
         typedef std::function<callback_result(uint64_t dl_current_bytes, uint64_t dl_total_bytes)> user_callback_func_type;

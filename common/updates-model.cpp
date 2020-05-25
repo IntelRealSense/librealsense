@@ -11,7 +11,7 @@
 
 using namespace rs2;
 using namespace auto_updates;
-using namespace file_downloader;
+using namespace downloader;
 
 void updates_model::draw(ux_window& window, std::string& error_message)
 {

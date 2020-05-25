@@ -19,7 +19,7 @@
 
 namespace rs2
 {
-    namespace file_downloader
+    namespace downloader
     {
 #ifndef ENABLE_RS_AUTO_UPDATER
         // Dummy functions
