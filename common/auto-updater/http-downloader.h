@@ -14,7 +14,10 @@ namespace rs2
 
     struct progress_data; // Forward Declaration
 
-    class http_downloader {
+    // This class is a service class for downloading a file from an HTTP URL.
+    // The class use libcurl as a client-side URL transfer library.
+    class http_downloader 
+    {
     public:
         http_downloader();
         ~http_downloader();

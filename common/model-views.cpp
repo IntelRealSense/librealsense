@@ -38,6 +38,7 @@
 using namespace rs400;
 using namespace nlohmann;
 
+constexpr char * SERVER_VERSIONS_DB_URL = "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/rs-tests/sw-update/21_05_2020/rs_versions_db.json";
 
 static rs2_sensor_mode resolution_from_width_height(int width, int height)
 {
@@ -3245,7 +3246,7 @@ namespace rs2
         auto name = get_device_name(dev);
 
         try {
-            dev_updates_profile profile(dev, "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/rs-tests/sw-update/21_05_2020/rs_versions_db.json");
+            dev_updates_profile profile(dev, SERVER_VERSIONS_DB_URL);
    
             
             bool sw_update_required = profile.retrieve_updates(versions_db_manager::LIBREALSENSE);

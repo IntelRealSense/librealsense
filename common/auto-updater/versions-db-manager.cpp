@@ -1,7 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 #include <fstream>
-#include <unordered_set>
 #include <unordered_map>
 #include <algorithm>
 #include <regex>
@@ -14,7 +13,28 @@ namespace rs2
 {
     using json = nlohmann::json;
 
-    bool versions_db_manager::query_versions(const std::string &dev_name, component_part_type cp, const update_policy_type up, version& out_version)
+    // Get current platform
+    constexpr char* PLATFORM = 
+        
+#ifdef _WIN64 
+        "Windows amd64";
+#elif _WIN32 
+        "Windows x86";
+#elif __linux__ 
+    #ifdef __arm__ 
+        "Linux arm" ;
+    #else 
+        "Linux amd64" ;
+    #endif
+#elif __APPLE__ 
+        "Mac OS";
+#elif __ANDROID__  
+        "Linux arm";
+#else 
+        "";
+#endif
+
+    bool versions_db_manager::query_versions(const std::string &device_name, component_part_type component, const update_policy_type policy, version& out_version)
     {
         // Load server versions info on first access
         if (!init())
@@ -23,18 +43,18 @@ namespace rs2
             return false;
         }
 
-        auto platform = get_platform();
+        std::string platform(PLATFORM);
 
-        std::string up_str(to_string(up));
-        std::string comp_str(to_string(cp));
+        std::string up_str(to_string(policy));
+        std::string comp_str(to_string(component));
 
         if (up_str.empty() || comp_str.empty()) return false;
 
         // Look for the required version
         auto res = std::find_if(_server_versions_vec.begin(), _server_versions_vec.end(),
-            [&, dev_name, up_str, comp_str, platform](std::unordered_map<std::string, std::string> ver)
+            [&, device_name, up_str, comp_str, platform](std::unordered_map<std::string, std::string> ver)
         {
-            return (dev_name == ver["device_name"] && up_str == ver["policy_type"] && comp_str == ver["component"] && (platform == ver["platform"] || ver["platform"] == "*"));
+            return (device_name == ver["device_name"] && up_str == ver["policy_type"] && comp_str == ver["component"] && (platform == ver["platform"] || ver["platform"] == "*"));
         });
 
         if (res != _server_versions_vec.end())
@@ -48,22 +68,22 @@ namespace rs2
         return false; // Nothing found
     }
 
-    bool versions_db_manager::get_ver_data(const component_part_type cp, const version& version, const std::string& req_field, std::string& out)
+    bool versions_db_manager::get_version_data_common(const component_part_type component, const version& version, const std::string& req_field, std::string& out)
     {
         // Load server versions info on first access
         if (!init()) return false;
 
-        std::string platform = get_platform();
+        std::string platform = PLATFORM;
 
-        std::string comp_str(to_string(cp));
+        std::string component_str(to_string(component));
 
-        if (comp_str.empty()) return false;
+        if (component_str.empty()) return false;
 
         // Look for the required version
         auto res = std::find_if(_server_versions_vec.begin(), _server_versions_vec.end(),
-            [this, version, comp_str, platform](std::unordered_map<std::string, std::string> ver)
+            [this, version, component_str, platform](std::unordered_map<std::string, std::string> version_map)
         {
-            return (versions_db_manager::version(ver["version"]) == version && comp_str == ver["component"] && (platform == ver["platform"] || ver["platform"] == "*"));
+            return (versions_db_manager::version(version_map["version"]) == version && component_str == version_map["component"] && (platform == version_map["platform"] || version_map["platform"] == "*"));
         });
 
         if (res != _server_versions_vec.end())
@@ -75,20 +95,10 @@ namespace rs2
         return false; // Nothing found
     }
 
-    std::string versions_db_manager::convert_version_to_formatted_string(const long long ver_num) const
-    {
-        std::stringstream raw_ver_str, fixed_ver_str;
-        raw_ver_str << std::setfill('0') << std::setw(10) << ver_num;
-        fixed_ver_str << raw_ver_str.str().substr(0, 2) << "."
-            << raw_ver_str.str().substr(2, 2) << "."
-            << raw_ver_str.str().substr(4, 2) << "."
-            << raw_ver_str.str().substr(6, 4);
-        return fixed_ver_str.str();
-    }
 
-    std::string versions_db_manager::to_string(const component_part_type& comp) const
+    std::string versions_db_manager::to_string(const component_part_type& component) const
     {
-        switch (comp)
+        switch (component)
         {
         case LIBREALSENSE: return "LIBREALSENSE";
         case VIEWER: return "VIEWER";
@@ -96,27 +106,29 @@ namespace rs2
         case FIRMWARE: return "FIRMWARE";
             break;
         default:
+            LOG_ERROR("Unknown component type: " + component);
             break;
         }
         return "";
     }
 
-    std::string versions_db_manager::to_string(const update_policy_type& pol) const
+    std::string versions_db_manager::to_string(const update_policy_type& policy) const
     {
 
-        switch (pol)
+        switch (policy)
         {
         case EXPERIMENTAL: return "EXPERIMENTAL";
         case RECOMMENDED: return "RECOMMENDED";
         case ESSENTIAL: return "ESSENTIAL";
             break;
         default:
+            LOG_ERROR("Unknown policy type: " + policy);
             break;
         }
         return "";
     }
 
-    bool versions_db_manager::from_string(std::string name, component_part_type& res) const
+    bool versions_db_manager::from_string(std::string component_str, component_part_type& component_val) const
     {
         static std::unordered_map<std::string, component_part_type> map =
         { {"LIBREALSENSE",LIBREALSENSE},
@@ -124,27 +136,31 @@ namespace rs2
         {"DEPTH_QUALITY_TOOL", DEPTH_QUALITY_TOOL},
         {"FIRMWARE", FIRMWARE} };
 
-        auto val = map.find(name);
+        auto val = map.find(component_str);
         if (val != map.end())
         {
-            res = val->second;
+            component_val = val->second;
             return true;
         }
+
+        LOG_ERROR("Unknown component type: " + component_str);
         return false;
     }
-    bool versions_db_manager::from_string(std::string name, update_policy_type& res) const
+    bool versions_db_manager::from_string(std::string policy_str, update_policy_type& policy_val) const
     {
         static std::unordered_map<std::string, update_policy_type> map =
         { {"EXPERIMENTAL",EXPERIMENTAL},
         {"RECOMMENDED", RECOMMENDED} ,
         {"ESSENTIAL", ESSENTIAL} };
 
-        auto val = map.find(name);
+        auto val = map.find(policy_str);
         if (val != map.end())
         {
-            res = val->second;
+            policy_val = val->second;
             return true;
         }
+
+        LOG_ERROR("Unknown policy type: " + policy_str);
         return false;
     }
 
@@ -170,6 +186,10 @@ namespace rs2
                 server_data_retrieved = true;
                 ver_data << file.rdbuf();
             }
+            else
+            {
+                LOG_ERROR("Cannot open file: " + _dev_info_url);
+            }
         }
         return server_data_retrieved;
     }
@@ -182,8 +202,8 @@ namespace rs2
         std::unordered_map<std::string, std::function<bool(const std::string&)>> schema;
         build_schema(schema);
 
-        // Validate json file title
-        if (j.find("versions") != j.end())
+        // Validate json file has a versions array 
+        if (j.begin().key() == "versions" && j.begin().value().is_array())
         {
             // Iterate through the versions
             for (auto &ver : j["versions"])
@@ -204,19 +224,23 @@ namespace rs2
                             }
                             else
                             {
-                                std::string error_str("Server versions file parsing error - " + element_key + " Validation fail on value : " + it.value().get<std::string>() + " \n");
+                                std::string error_str("Server versions file parsing error - validation fail on key: " + element_key + " value: " + it.value().get<std::string>() + " \n");
+                                LOG_ERROR(error_str);
+                                throw std::runtime_error(error_str);
                             }
                         }
                         else
                         {
-                            LOG_WARNING("Server versions file parsing error - " + element_key + " all values should be represented as a string \n");
-                            throw std::runtime_error("Server versions file parsing error - " + element_key + " - unknown field \n");
+                            std::string error_str("Server versions file parsing error - " + element_key + " should be represented as a string");
+                            LOG_ERROR(error_str);
+                            throw std::runtime_error(error_str);
                         }
                     }
                     else
                     {
-                        LOG_WARNING("Server versions file parsing error - " + element_key + " - unknown field \n");
-                        throw std::runtime_error("Server versions file parsing error - " + element_key + "- unknown field \n");
+                        std::string error_str("Server versions file parsing error - " + element_key + " - unknown field");
+                        LOG_ERROR(error_str);
+                        throw std::runtime_error(error_str);
                     }
                 }
 
@@ -231,40 +255,21 @@ namespace rs2
                 }
                 else
                 {
-                    LOG_WARNING("Server versions json file corrupted - not matching schema requirements \n");
-                    throw std::runtime_error("Server versions json file corrupted - not matching schema requirements \n");
+                    std::string error_str("Server versions json file corrupted - not matching schema requirements");
+                    LOG_ERROR(error_str);
+                    throw std::runtime_error(error_str);
                 }
             }
         }
         else
         {
-            LOG_WARNING("Server versions json file corrupted - Title not as expected\n");
-            throw std::runtime_error("Server versions json file corrupted - Title not as expected\n");
+            std::string error_str("Server versions json file corrupted - Expect versions field of type array \n)"
+                "Parsed key: " + j.begin().key() + ", value type array: " + (j.begin().value().is_array() ? "TRUE" : "FALSE"));
+            LOG_ERROR(error_str);
+            throw std::runtime_error(error_str);
         }
     }
 
-    const std::string versions_db_manager::get_platform() const
-    {
-        std::string platform;
-
-#ifdef _WIN64
-        platform = "Windows amd64";
-
-#elif _WIN32
-        platform = "Windows x86";
-#elif __linux__ 
-#ifdef __arm__
-        platform = "Linux arm";
-#else
-        platform = "Linux amd64";
-#endif
-#elif __APPLE__
-        platform = "Mac OS";
-#elif __ANDROID__
-        platform = "Linux arm";
-#endif
-        return platform;
-    }
 
     bool versions_db_manager::init()
     {
@@ -272,11 +277,9 @@ namespace rs2
         if (!_server_versions_loaded)
         {
             std::stringstream server_versions_data;
-            server_versions_data.clear();
             // Download / Open the json file
             if (!get_server_data(server_versions_data))
             {
-                LOG_WARNING("Can not download version file " + _dev_info_url + " \n");
                 return false; // Failed to get version from server/file
             }
             else

@@ -31,7 +31,7 @@ namespace rs2
 
     std::mutex initialize_mutex;
     static const curl_off_t HALF_SEC = 500000; // User call back function delay
-    static const int CONNECT_TIMEOUT = 5L; // Libcurl download timeout 5 [Sec]
+    static const int CONNECT_TIMEOUT = 5L; // Libcurl connection timeout 5 [Sec]
 
     struct progress_data {
         curl_off_t last_run_time;
@@ -40,24 +40,50 @@ namespace rs2
     };
 
 
-    size_t stream_write_callback(void *ptr, size_t size, size_t nmemb, void *stream) {
-        std::string data((const char*)ptr, (size_t)size * nmemb);
-        *((std::stringstream*)stream) << data;
-        return size * nmemb;
+    size_t stream_write_callback(void *input_stream, size_t size, size_t nmemb, void *output_stream) 
+    {
+        if (input_stream && output_stream)
+        {
+            std::string data((const char*)input_stream, (size_t)size * nmemb);
+            *((std::stringstream*)output_stream) << data;
+            return size * nmemb;
+        }
+        return 0; // Error
     }
 
-    size_t bytes_write_callback(void *ptr, size_t size, size_t nmemb, void *vec) {
-        uint8_t* source_bytes(static_cast<uint8_t*>(ptr));
+    size_t vector_write_callback(void *input_stream, size_t size, size_t nmemb, void *output_vec) 
+    {
+        uint8_t* source_bytes(static_cast<uint8_t*>(input_stream));
 
-        int total_size((int)(size * nmemb));
-        while (total_size > 0)
+        if (input_stream && output_vec)
         {
-            static_cast<std::vector<uint8_t> *>(vec)->push_back(*source_bytes);
-            source_bytes++;
-            --total_size;
+            int total_size((int)(size * nmemb));
+            while (total_size > 0)
+            {
+                static_cast<std::vector<uint8_t> *>(output_vec)->push_back(*source_bytes);
+                source_bytes++;
+                --total_size;
+            }
+
+            return size * nmemb;
         }
-        
-        return size * nmemb;
+        return 0; // Error
+    }
+
+    size_t file_write_callback(void *input_stream, size_t size, size_t nmemb, void *output) 
+    {
+
+        if (input_stream && output)
+        {
+            std::ofstream &out_stream(*static_cast<std::ofstream*> (output));
+            uint8_t* source_bytes(static_cast<uint8_t*>(input_stream));
+
+            size_t num_of_bytem(nmemb*size);
+            out_stream.write((char *)input_stream, num_of_bytem);
+            return size * nmemb;
+
+        }
+        return 0; // Error
     }
 
     // This function will be called if CURLOPT_NOPROGRESS is set to 0
@@ -71,7 +97,7 @@ namespace rs2
         if (dltotal != 0 && (curtime - myp->last_run_time > HALF_SEC))
         {
             myp->last_run_time = curtime;
-            return myp->user_callback_func(static_cast<uint64_t>(dlnow), 
+            return myp->user_callback_func(static_cast<uint64_t>(dlnow),
                 static_cast<uint64_t>(dltotal)) == callback_result::CONTINUE_DOWNLOAD ? 0 : 1;
         }
         else
@@ -80,42 +106,25 @@ namespace rs2
         }
     }
 
-    http_downloader::http_downloader() {
+    http_downloader::http_downloader()  : _curl(nullptr)
+    {
         // Protect curl_easy_init() it is not considers thread safe
         std::lock_guard<std::mutex> lock(initialize_mutex);
         _curl = curl_easy_init();
     }
 
-    http_downloader::~http_downloader() {
+    http_downloader::~http_downloader() 
+    {
         std::lock_guard<std::mutex> lock(initialize_mutex);
         curl_easy_cleanup(_curl);
     }
 
     bool http_downloader::download_to_stream(const std::string& url, std::stringstream &output, user_callback_func_type user_callback_func)
     {
+        if (!_curl) return false;
+
         set_common_options(url);
         curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, stream_write_callback);
-        curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &output);
-        
-        progress_data progress_record; // Should stay here - "curl_easy_perform" use it
-        if (user_callback_func)
-        {
-            register_progress_call_back(progress_record, user_callback_func);
-        }
-        auto res = curl_easy_perform(_curl);
-
-        if(CURLE_OK != res)
-        {
-            LOG_ERROR("Download error - " + std::string(curl_easy_strerror(res)));
-            return false;
-        }
-        return true;
-    }
-
-    bool http_downloader::download_to_bytes_vector(const std::string& url, std::vector<uint8_t> &output, user_callback_func_type user_callback_func)
-    {
-        set_common_options(url);
-        curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, bytes_write_callback);
         curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &output);
 
         progress_data progress_record; // Should stay here - "curl_easy_perform" use it
@@ -127,8 +136,30 @@ namespace rs2
 
         if (CURLE_OK != res)
         {
-            LOG_ERROR("Download error - " + std::string(curl_easy_strerror(res)));
+            LOG_ERROR("Download error from URL: " + url + "error info: " + std::string(curl_easy_strerror(res)));
             return false;
+        }
+        return true;
+    }
+
+    bool http_downloader::download_to_bytes_vector(const std::string& url, std::vector<uint8_t> &output, user_callback_func_type user_callback_func)
+    {
+        if (!_curl) return false;
+
+        set_common_options(url);
+        curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, vector_write_callback);
+        curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &output);
+
+        progress_data progress_record; // Should stay here - "curl_easy_perform" use it
+        if (user_callback_func)
+        {
+            register_progress_call_back(progress_record, user_callback_func);
+        }
+        auto res = curl_easy_perform(_curl);
+
+        if (CURLE_OK != res)
+        {
+            LOG_ERROR("Download error from URL: " + url + "error info: " + std::string(curl_easy_strerror(res)));            return false;
         }
         return true;
     }
@@ -136,30 +167,34 @@ namespace rs2
 
     bool http_downloader::download_to_file(const std::string& url, const std::string &file_name, user_callback_func_type user_callback_func)
     {
+        if (!_curl) return false;
+
         /* open the file */
-        FILE * out_file = fopen(file_name.c_str(), "wb");
-        if (out_file)
+        std::ofstream out_file(file_name, std::ios::out);
+
+        if (out_file.good())
         {
             set_common_options(url);
-            curl_easy_setopt(_curl, CURLOPT_WRITEDATA, out_file);
-           
+            curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, file_write_callback);
+            curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &out_file);
+
             progress_data progress_record; // Should stay here - "curl_easy_perform" use it
             if (user_callback_func)
             {
                 register_progress_call_back(progress_record, user_callback_func);
             }
             auto res = curl_easy_perform(_curl);
-
-            fclose(out_file);
+            out_file.close();
 
             if (CURLE_OK != res)
             {
-                LOG_ERROR("Download error - " + std::string(curl_easy_strerror(res)));
+                LOG_ERROR("Download error from URL: " + url + "error info: " + std::string(curl_easy_strerror(res)));            return false;
                 return false;
             }
         }
         else
         {
+            LOG_ERROR("Download error - Cannot open local file: " + file_name);
             return false;
         }
 

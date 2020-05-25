@@ -11,6 +11,9 @@
 
 namespace rs2
 {
+    // The dev_updates_profile class builds and holds a specific device versions profile.
+    // It queries the versions DB according to the desired components
+    // and supply a complete profile of the device software & firmware available update.
     class dev_updates_profile
     {
     public:

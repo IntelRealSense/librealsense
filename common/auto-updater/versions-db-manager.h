@@ -12,7 +12,8 @@
 
 namespace rs2
 {
-
+    // The version_db_manager class download, parse and supply queries for the RS components versions information.
+    // The version file can be stored locally on the file system or on a HTTP server.
     class versions_db_manager
     {
     public:
@@ -32,15 +33,17 @@ namespace rs2
 
             version(const std::string& str) : version()
             {
+                constexpr int MINIMAL_MATCH_SECTIONS = 4;
+                constexpr int MATCH_SECTIONS_INC_BUILD_NUM = 5;
                 std::regex rgx("^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,5})?$");
                 std::smatch match;
 
-                if (std::regex_search(str.begin(), str.end(), match, rgx) && match.size() >= 4)
+                if (std::regex_search(str.begin(), str.end(), match, rgx) && match.size() >= MINIMAL_MATCH_SECTIONS)
                 {
                     mjor = atoi(std::string(match[1]).c_str());
                     mnor = atoi(std::string(match[2]).c_str());
                     patch = atoi(std::string(match[3]).c_str());
-                    if (match.size() == 5)
+                    if (match.size() == MATCH_SECTIONS_INC_BUILD_NUM)
                         build = atoi(std::string(match[4]).c_str());
                 }
             }
@@ -58,10 +61,10 @@ namespace rs2
                 return (other.mjor == mjor && other.mnor == mnor && other.patch == patch && other.build == build);
             }
 
-            bool operator> (const version& other) const { return !(*this < other); }
+            bool operator> (const version& other) const { return !(*this <= other); }
             bool operator!=(const version& other) const { return !(*this == other); }
-            bool operator<(const version& other) const { return !(*this == other) && (*this <= other); }
             bool operator>=(const version& other) const { return (*this == other) || (*this > other); }
+            bool operator<(const version& other) const { return !(*this >= other); }
 
             bool is_between(const version& from, const version& until) const
             {
@@ -85,16 +88,15 @@ namespace rs2
 
         ~versions_db_manager() {};
 
-        bool query_versions(const std::string &dev_name, const component_part_type cp, const update_policy_type up, version&version);
-        bool get_version_download_link(const component_part_type cp, const version& version, std::string& dl_link) { return get_ver_data(cp, version, "link", dl_link); };
-        bool get_version_release_notes(const component_part_type cp, const version& version, std::string& ver_rel_notes_link) { return get_ver_data(cp, version, "release_notes_link", ver_rel_notes_link); };
-        bool get_version_description(const component_part_type cp, const version& version, std::string& ver_desc) { return get_ver_data(cp, version, "description", ver_desc); };
-        std::string convert_version_to_formatted_string(const long long ver_num) const;
+        bool query_versions(const std::string &device_name, component_part_type component, const update_policy_type policy, version& out_version);
+        bool get_version_download_link(const component_part_type component, const version& version, std::string& dl_link) { return get_version_data_common(component, version, "link", dl_link); };
+        bool get_version_release_notes(const component_part_type component, const version& version, std::string& version_release_notes_link) { return get_version_data_common(component, version, "release_notes_link", version_release_notes_link); };
+        bool get_version_description(const component_part_type component, const version& version, std::string& version_description) { return get_version_data_common(component, version, "description", version_description); };
 
-        std::string to_string(const component_part_type& comp) const;
-        std::string to_string(const update_policy_type& pol) const;
-        bool from_string(std::string name, component_part_type& res) const;
-        bool from_string(std::string name, update_policy_type& res) const;
+        std::string to_string(const component_part_type& component) const;
+        std::string to_string(const update_policy_type& policy) const;
+        bool from_string(std::string component_str, component_part_type& component_val) const;
+        bool from_string(std::string policy_str, update_policy_type& policy_val) const;
 
     private:
         struct server_version_type
@@ -122,9 +124,8 @@ namespace rs2
 
         bool get_server_data(std::stringstream &ver_data);
         void parse_versions_data(const std::stringstream &ver_data);
-        bool get_ver_data(const component_part_type cp, const version& version, const std::string& req_field, std::string& out);
+        bool get_version_data_common(const component_part_type component, const version& version, const std::string& req_field, std::string& out);
 
-        const std::string get_platform() const;
         bool init();
         void build_schema(std::unordered_map<std::string, std::function<bool(const std::string&)>>& verifier);
 
