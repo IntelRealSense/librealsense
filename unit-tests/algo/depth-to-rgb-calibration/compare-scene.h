@@ -9,6 +9,9 @@ void compare_scene( std::string const & scene_dir )
     camera_params ci = read_camera_params( scene_dir, "ac1x\\camera_params" );
     dsm_params dsm = read_dsm_params(scene_dir, "ac1x\\DSM_params");
     ci.dsm_params = dsm.dsm_params;
+    ci.cal_info = dsm.regs;
+    ci.cal_regs = dsm.algo_calibration_registers;
+
     scene_metadata md( scene_dir );
 
     algo::optimizer cal;
@@ -215,13 +218,13 @@ void compare_scene( std::string const & scene_dir )
 
     auto& z = cal.get_z_data();
 
-    algo::k_to_DSM k2dsm;
+    algo::k_to_DSM k2dsm(ci.dsm_params, ci.cal_info, ci.cal_regs);
 
-    auto dsm_orig = k2dsm.apply_ac_res_on_dsm_model(dsm.dsm_params, dsm.dsm_regs, algo::ac_to_dsm_dir::inverse);
-    CHECK(compare_to_bin_file< algo::DSM_regs >(dsm_orig,
+    auto dsm_orig = k2dsm.apply_ac_res_on_dsm_model(dsm.dsm_params, dsm.algo_calibration_registers, algo::ac_to_dsm_dir::inverse);
+    CHECK(compare_to_bin_file< algo::algo_calibration_registers >(dsm_orig,
         scene_dir, "ac1x\\dsmRegsOrig_1x4_single_00.bin"));
 
-    k2dsm.convert_new_k_to_DSM(z.orig_intrinsics, z.new_intrinsics, dsm.dsm_params, dsm.dsm_regs, regs, z.relevant_pixels_image);
+    k2dsm.convert_new_k_to_DSM(z.orig_intrinsics, z.new_intrinsics, z.relevant_pixels_image);
     
     auto pre_process_data = k2dsm.get_pre_process_data();
     CHECK(compare_to_bin_file< uint8_t >(pre_process_data.relevant_pixels_image_rot, scene_dir, "ac1x\\relevantPixelsImageRot", z_w, z_h, "uint8_00", compare_same_vectors));

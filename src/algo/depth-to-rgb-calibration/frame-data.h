@@ -60,8 +60,8 @@ namespace depth_to_rgb_calibration {
         rs2_intrinsics_double orig_intrinsics;
         rs2_intrinsics_double new_intrinsics;
         rs2_dsm_params orig_dsm_params;
-        DSM_regs dsm_regs;
-        regs regs;
+        /*algo_calibration_registers algo_calibration_registers;
+        regs regs;*/
         float depth_units;
 
         std::vector< z_t > frame;

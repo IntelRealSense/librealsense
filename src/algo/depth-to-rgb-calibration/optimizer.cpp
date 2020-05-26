@@ -395,6 +395,8 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
                             algo_calibration_info const & cal_info,
                             algo_calibration_registers const & cal_regs, float depth_units )
 {
+    _k_to_DSM = std::make_shared<k_to_DSM>(dsm_params, cal_info, cal_regs);
+
     /*[zEdge,Zx,Zy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.z),2); % Added the second input - margin to zero out
     [iEdge,Ix,Iy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.i),2); % Added the second input - margin to zero out
     validEdgePixelsByIR = iEdge>params.gradITh; */
@@ -1612,7 +1614,7 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
 
     decompose_p_mat();
 
-    //_k_to_DSM.convert_new_k_to_DSM(_z.orig_intrinsics, _z.new_intrinsics, _z.orig_dsm_params, _z.dsm_regs, _z.regs, _z.relevant_pixels_image);
+    //_k_to_DSM.convert_new_k_to_DSM(_z.orig_intrinsics, _z.new_intrinsics, _z.orig_dsm_params, _z.algo_calibration_registers, _z.regs, _z.relevant_pixels_image);
 
     return n_iterations;
 }

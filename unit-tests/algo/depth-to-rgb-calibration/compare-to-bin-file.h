@@ -310,14 +310,14 @@ bool compare_calib_to_bin_file(
     return compare_calib_to_bin_file( calib, cost, scene_dir, filename, gradient );
 }
 
-bool operator==(const algo::DSM_regs& first, const algo::DSM_regs& second)
+bool operator==(const algo::algo_calibration_registers& first, const algo::algo_calibration_registers& second)
 {
     bool ok = true;
 
-    ok &= compare_and_trace(first.dsm_x_offset, second.dsm_x_offset, "dsm_x_offset");
-    ok &= compare_and_trace(first.dsm_y_offset, second.dsm_y_offset, "dsm_y_offset");
-    ok &= compare_and_trace(first.dsm_x_scale, second.dsm_x_scale, "dsm_x_scale");
-    ok &= compare_and_trace(first.dsm_y_scale, second.dsm_y_scale, "dsm_y_scale");
+    ok &= compare_and_trace(first.EXTLdsmXoffset, second.EXTLdsmXoffset, "dsm_x_offset");
+    ok &= compare_and_trace(first.EXTLdsmYoffset, second.EXTLdsmYoffset, "dsm_y_offset");
+    ok &= compare_and_trace(first.EXTLdsmXscale, second.EXTLdsmXscale, "dsm_x_scale");
+    ok &= compare_and_trace(first.EXTLdsmYscale, second.EXTLdsmYscale, "dsm_y_scale");
 
     return ok;
 }

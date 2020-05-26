@@ -227,13 +227,71 @@ camera_params read_camera_params( std::string const &scene_dir, std::string cons
 struct dsm_params
 {
     rs2_dsm_params dsm_params;
-    librealsense::algo::depth_to_rgb_calibration::DSM_regs dsm_regs;
+    librealsense::algo::depth_to_rgb_calibration::algo_calibration_registers algo_calibration_registers;
+    librealsense::algo::depth_to_rgb_calibration::algo_calibration_info regs;
 };
 
 dsm_params read_dsm_params(std::string const &scene_dir, std::string const &filename)
 {
-    dsm_params params;
-    read_data_from(bin_dir(scene_dir) + filename, &params);
+    dsm_params res;
 
-    return params;
+#pragma pack(push, 1)
+    struct algo_calibration
+    {
+        uint8_t fovexExistenceFlag;
+        float fovexNominal[4];
+        float laserangleH;
+        float laserangleV;
+        float xfov[5];
+        float yfov[5];
+        float polyVars[3];
+        float undistAngHorz[4];
+        float pitchFixFactor;
+
+    };
+#pragma pack(pop)
+
+    rs2_dsm_params dsm_params;
+    librealsense::algo::depth_to_rgb_calibration::algo_calibration_registers algo_calibration_registers;
+    algo_calibration algo_calib;
+
+    std::string dsmparams = bin_dir( scene_dir ) + filename;
+    std::fstream f = std::fstream(dsmparams, std::ios::in | std::ios::binary );
+    if( !f )
+        throw std::runtime_error( "failed to read file:\n" + dsmparams);
+    f.read( (char *)&dsm_params, sizeof(rs2_dsm_params) );
+    f.read((char *)&algo_calibration_registers, sizeof(librealsense::algo::depth_to_rgb_calibration::algo_calibration_registers));
+    f.read((char *)&algo_calib, sizeof(algo_calibration));
+
+    f.close();
+
+    res.dsm_params = dsm_params;
+    res.algo_calibration_registers = algo_calibration_registers;
+
+
+    res.regs.FRMWfovexExistenceFlag = algo_calib.fovexExistenceFlag;
+
+    for (auto i = 0; i < 4; i++)
+    {
+        res.regs.FRMWfovexNominal[i] = algo_calib.fovexNominal[i];
+        res.regs.FRMWundistAngHorz[i] = algo_calib.undistAngHorz[i];
+    }
+    
+    res.regs.FRMWlaserangleH = algo_calib.laserangleH;
+    res.regs.FRMWlaserangleV = algo_calib.laserangleV;
+
+    for (auto i = 0; i < 5; i++)
+    {
+        res.regs.FRMWxfov[i] = algo_calib.xfov[i];
+        res.regs.FRMWyfov[i] = algo_calib.yfov[i];
+    }
+   
+    for (auto i = 0; i < 3; i++)
+    {
+        res.regs.FRMWpolyVars[i] = algo_calib.polyVars[i];
+    }
+   
+    res.regs.FRMWpitchFixFactor = algo_calib.pitchFixFactor;
+
+    return res;
 }
