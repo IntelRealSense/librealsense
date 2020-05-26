@@ -29,6 +29,7 @@
 #include "proc/y8i-to-y8y8.h"
 #include "proc/y12i-to-y16y16.h"
 #include "proc/color-formats-converter.h"
+#include "proc/depth-formats-converter.h"
 #include "proc/syncer-processing-block.h"
 #include "proc/hole-filling-filter.h"
 #include "proc/depth-formats-converter.h"
@@ -45,14 +46,18 @@ namespace librealsense
     std::map<uint32_t, rs2_format> fa_ir_fourcc_to_rs2_format = {
         {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
         {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
-        {rs_fourcc('Z','1','6',' '),  RS2_FORMAT_Z16},
-        {rs_fourcc('B','G','1','6'), RS2_FORMAT_RAW16}
+        {rs_fourcc('Z','1','6',' '), RS2_FORMAT_Z16},
+        {rs_fourcc('B','G','1','6'), RS2_FORMAT_RAW16},
+        {rs_fourcc('p','B','A','A'), RS2_FORMAT_SBGGR10P},
+        {rs_fourcc('B','G','1','0'), RS2_FORMAT_RAW10}
     }; 
     std::map<uint32_t, rs2_stream> fa_ir_fourcc_to_rs2_stream = {
         {rs_fourcc('Y','U','Y','2'), RS2_STREAM_INFRARED},
         {rs_fourcc('U','Y','V','Y'), RS2_STREAM_INFRARED},
-        {rs_fourcc('Z','1','6',' '),  RS2_STREAM_INFRARED},
-        {rs_fourcc('B','G','1','6'), RS2_STREAM_INFRARED}
+        {rs_fourcc('Z','1','6',' '), RS2_STREAM_INFRARED},
+        {rs_fourcc('B','G','1','6'), RS2_STREAM_INFRARED},
+        {rs_fourcc('p','B','A','A'), RS2_STREAM_INFRARED},
+        {rs_fourcc('B','G','1','0'), RS2_STREAM_INFRARED}
     };   
     std::vector<uint8_t> fa_device::send_receive_raw_data(const std::vector<uint8_t>& input)
     {
@@ -306,13 +311,17 @@ namespace librealsense
         std::vector<rs2_format> target = { RS2_FORMAT_Y16, RS2_FORMAT_RAW16 };
         ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<memcpy_converter>
             (RS2_FORMAT_RAW16, target, RS2_STREAM_INFRARED, 0));
-        /*ir_ep->register_processing_block(processing_block_factory::
-            create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_INFRARED, 1));*/
-        
         ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<memcpy_converter>
             (RS2_FORMAT_Z16, target, RS2_STREAM_INFRARED, 1));
-        /*ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<raw16_to_y16_converter>
-            (RS2_FORMAT_Z16, { RS2_FORMAT_Y16 }, RS2_STREAM_INFRARED, 1));*/
+
+        //Format W10
+        std::vector<rs2_format> target_other_raw = { RS2_FORMAT_RAW8, RS2_FORMAT_RAW10, RS2_FORMAT_RAW16 };
+        ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<srggb10p_converter>
+            (RS2_FORMAT_SBGGR10P, target_other_raw, RS2_STREAM_INFRARED, 0));
+        ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<srggb10p_converter>
+            (RS2_FORMAT_SBGGR10P, target_other_raw, RS2_STREAM_INFRARED, 1));
+        
+
         add_sensor(ir_ep);
         
         // CAMERA INFO
