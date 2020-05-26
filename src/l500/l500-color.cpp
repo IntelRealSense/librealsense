@@ -187,8 +187,6 @@ namespace librealsense
             auto model = intrinsic->resolution.intrinsic_resolution[i];
             if( model.height == profile.height && model.width == profile.width )
             {
-                 AC_LOG( DEBUG, "getting intrinsics from profile " << i << " res " << model.width << 'x' << model.height );
-
                 rs2_intrinsics intrinsics;
                 intrinsics.width = model.width;
                 intrinsics.height = model.height;

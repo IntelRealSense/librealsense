@@ -469,6 +469,7 @@ namespace librealsense
 
             hw_monitor & _hwm;
 
+            std::mutex _mutex;
             std::atomic_bool _is_processing;
             std::thread _worker;
             unsigned _n_retries;    // how many tries for a special frame we made

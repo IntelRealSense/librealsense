@@ -221,6 +221,7 @@ namespace librealsense
                         // TODO
                         //get_depth_sensor().override_dsm_params( _autocal->get_dsm_params() );
                     }
+                    AC_LOG( DEBUG, ".,_,.-'``'-.,_,.-'``'- status= " << status );
                     for( auto&& cb : _calibration_change_callbacks )
                         cb->on_calibration_change( status );
                 } );

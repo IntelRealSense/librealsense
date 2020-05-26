@@ -358,7 +358,6 @@ namespace librealsense
             AC_LOG( DEBUG, "special frame received :)" );
             // Notify of the special frame -- mostly for validation team so they know to expect a frame drop...
             call_back( RS2_CALIBRATION_SPECIAL_FRAME );
-            _retrier.reset();  // So we're not expecting another...
 
             if( _is_processing )
             {
@@ -380,17 +379,22 @@ namespace librealsense
                 return;
             }
 
-            _sf = fs;
+            _retrier.reset();  // No need to activate a retry if the following takes a bit of time!
 
-            // We have to read the FW registers at the time of the special frame:
+            // We have to read the FW registers at the time of the special frame.
+            // NOTE: the following is I/O to FW, meaning it takes time! In this time, another
+            // thread can receive a set_color_frame() and, since we've already received the SF,
+            // start working even before we finish! NOT GOOD!
             ivcam2::read_fw_register( _hwm, &_dsm_x_scale, 0xfffe3844 );
             ivcam2::read_fw_register( _hwm, &_dsm_y_scale, 0xfffe3830 );
             ivcam2::read_fw_register( _hwm, &_dsm_x_offset, 0xfffe3840 );
             ivcam2::read_fw_register( _hwm, &_dsm_y_offset, 0xfffe382c );
             AC_LOG( DEBUG, "dsm registers=  x[" << AC_F_PREC << _dsm_x_scale << ' ' << _dsm_y_scale
-                << "]  +[" << _dsm_x_offset << ' ' << _dsm_y_offset
-                << "]" );
+                                                << "]  +[" << _dsm_x_offset << ' ' << _dsm_y_offset
+                                                << "]" );
 
+            _sf = fs;  // Assign right before the sync otherwise we may start() prematurely
+            std::lock_guard< std::mutex > lock( _mutex );
             if( check_color_depth_sync() )
                 start();
         }
@@ -403,6 +407,7 @@ namespace librealsense
 
             _pcf = _cf;
             _cf = f;
+            std::lock_guard< std::mutex > lock( _mutex );
             if( check_color_depth_sync() )
                 start();
         }
@@ -410,6 +415,11 @@ namespace librealsense
 
         bool auto_calibration::check_color_depth_sync()
         {
+            // Only one thread is allowed to start(), and _is_processing is set within
+            // the mutex!
+            if( _is_processing )
+                return false;
+
             if( !_sf )
             {
                 //std::cout << "-D- no special frame yet" << std::endl;
@@ -417,7 +427,7 @@ namespace librealsense
             }
             if( !_cf )
             {
-                //std::cout << "-D- no color frame yet" << std::endl;
+                AC_LOG( DEBUG, "no color frame received yet" );
                 return false;
             }
             return true;
@@ -428,7 +438,10 @@ namespace librealsense
             AC_LOG( DEBUG, "starting processing ..." );
             _is_processing = true;
             if( _worker.joinable() )
+            {
+                AC_LOG( DEBUG, "waiting for worker to join ..." );
                 _worker.join();
+            }
             _worker = std::thread( [&]()
             {
                 try
@@ -457,7 +470,6 @@ namespace librealsense
 
                     auto status =
                         algo.optimize( [this]( rs2_calibration_status status ) { call_back( status ); } );
-                    reset();  // Must happen before any retries
                     switch( status )
                     {
                     case RS2_CALIBRATION_SUCCESSFUL:
@@ -500,14 +512,14 @@ namespace librealsense
                 {
                     AC_LOG( ERROR, "caught exception: " << ex.what() );
                     call_back( RS2_CALIBRATION_FAILED );
-                    reset();
                 }
                 catch (...)
                 {
                     AC_LOG( ERROR, "unknown exception in AC!!!" );
                     call_back( RS2_CALIBRATION_FAILED );
-                    reset();
-                }});
+                }
+                reset();  // Must happen before any retries
+            } );
         }
 
         void auto_calibration::reset()

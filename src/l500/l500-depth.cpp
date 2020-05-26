@@ -224,7 +224,6 @@ namespace librealsense
                 //table.params.version = table.this_version;
                 table.params.model = RS2_DSM_CORRECTION_AOT;
                 table.params.h_scale = table.params.v_scale = 1.;
-                AC_LOG( DEBUG, "::: DSM " << table.params );
             } );
         return table.params;
     }
