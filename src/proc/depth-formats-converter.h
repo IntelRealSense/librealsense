@@ -42,4 +42,16 @@ namespace librealsense
         w10_converter(const char* name, const rs2_format& target_format);
         void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size) override;
     };
+
+    class srggb10p_converter : public functional_processing_block
+    {
+    public:
+        srggb10p_converter(const rs2_format& target_format) :
+            srggb10p_converter("Y10BP Transform", target_format) {}
+
+    protected:
+        srggb10p_converter(const char* name, const rs2_format& target_format) :
+            functional_processing_block(name, target_format, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME) {}
+        void process_function(byte* const dest[], const byte* source, int width, int height, int actual_size, int input_size) override;
+    };
 }

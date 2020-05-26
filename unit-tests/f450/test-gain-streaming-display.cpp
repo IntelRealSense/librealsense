@@ -6,7 +6,7 @@
 //   add: C:\Users\rbettan\Documents\GitRepos\librealsense2\third-party\glfw\include
 // - Linker > Input > Additional Dependencies:
 // add: 
-//     ..\..\..\..\third - party\glfw\src\Debug\glfw3d.lib
+//     ..\..\..\..\third-party\glfw\src\Debug\glfw3d.lib
 //     opengl32.lib
 //     glu32.lib
 // Add Reference glfw

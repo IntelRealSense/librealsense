@@ -100,6 +100,42 @@ namespace librealsense
         }
     }
 
+    void unpack_y10bpack_to_raw8(byte* const dest[], const byte* source, int width, int height, int actual_size)
+    {
+        auto count = width * height / 4; // num of pixels
+        uint8_t* from = (uint8_t*)(source);
+        uint8_t* to = (uint8_t*)(dest[0]);
+
+        // Put the 10 bit into the msb of uint8_t
+        for (int i = 0; i < count; i++, from += 5) // traverse macro-pixels
+        {
+            *to++ = (from[0]);
+            *to++ = (from[1]);
+            *to++ = (from[2]);
+            *to++ = (from[3]);
+        }
+    }
+
+    
+    void unpack_srggb10p(rs2_format dst_format, byte* const d[], const byte* s, int width, int height, int actual_size)
+    {
+        switch (dst_format)
+        {
+        case RS2_FORMAT_RAW8:
+            unpack_y10bpack_to_raw8(d, s, width, height, actual_size);
+            break;
+        case RS2_FORMAT_RAW10:
+            copy_raw10(d, s, width, height, actual_size);
+            break;
+        case RS2_FORMAT_RAW16:
+            unpack_y10bpack(d, s, width, height, actual_size);
+            break;
+        default:
+            LOG_ERROR("Unsupported format for SRGGB10P unpacking.");
+            break;
+        }
+    }
+
     void unpack_w10(rs2_format dst_format, byte * const d[], const byte * s, int width, int height, int actual_size)
     {
         switch (dst_format)
@@ -140,5 +176,10 @@ namespace librealsense
     void w10_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
     {
         unpack_w10(_target_format, dest, source, width, height, actual_size);
+    }
+
+    void srggb10p_converter::process_function(byte* const dest[], const byte* source, int width, int height, int actual_size, int input_size)
+    {
+        unpack_srggb10p(_target_format, dest, source, width, height, actual_size);
     }
 }
