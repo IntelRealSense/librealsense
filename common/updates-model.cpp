@@ -11,7 +11,7 @@
 
 using namespace rs2;
 using namespace sw_update;
-using namespace http::downloader;
+using namespace http;
 
 void updates_model::draw(ux_window& window, std::string& error_message)
 {
@@ -19,6 +19,15 @@ void updates_model::draw(ux_window& window, std::string& error_message)
     {
         std::lock_guard<std::mutex> lock(_lock);
         updates_copy = _updates;
+    }
+
+    // When process is finished (Failure / Success) reset update status.
+    static size_t prv_profiles_size(updates_copy.size());
+    if (prv_profiles_size != updates_copy.size() && 
+        _fw_update_state != fw_update_states::started)
+    {
+        _fw_update_state = fw_update_states::ready;
+        prv_profiles_size = updates_copy.size();
     }
 
     if (!_icon)
@@ -133,6 +142,8 @@ void updates_model::draw(ux_window& window, std::string& error_message)
         });
         if (firmware_updates.size() <= selected_firmware_update_index) selected_firmware_update_index = 0;
 
+        
+
         if (software_updates.size() >= 2)
         {
             std::vector<const char*> swu_labels;
@@ -151,12 +162,21 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             ImGui::Text("%s", "Update:");
         }
 
-        bool sw_updated(false);
+        bool essential_sw_update_needed(false);
+        bool recommended_sw_update_needed(false);
         dev_updates_profile::update_description selected_software_update;
         if (software_updates.size() != 0)
         {
-            selected_software_update = software_updates[selected_software_update_index];
-            sw_updated = selected_software_update.ver <= update.profile.software_version;
+            bool essential_found = software_updates[0].name.find("ESSENTIAL") != std::string::npos;
+            essential_sw_update_needed = essential_found && (update.profile.software_version < software_updates[0].ver);
+
+            bool recommended_found = software_updates[0].name.find("RECOMMENDED") != std::string::npos;
+            recommended_sw_update_needed = recommended_found && (update.profile.software_version < software_updates[0].ver);
+
+            if (essential_sw_update_needed || recommended_sw_update_needed)
+            {
+                selected_software_update = software_updates[selected_software_update_index];
+            }
         }
 
         if (firmware_updates.size() >= 2 && _fw_update_state == fw_update_states::ready)
@@ -177,22 +197,33 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             ImGui::Text("%s", "Update:");
         }
 
-        bool fw_updated(false);
+        bool essential_fw_update_needed(false);
+        bool recommended_fw_update_needed(false);
         dev_updates_profile::update_description selected_firmware_update;
+
         if (firmware_updates.size() != 0)
         {
-            selected_firmware_update = firmware_updates[selected_firmware_update_index];
-            fw_updated = selected_firmware_update.ver <= update.profile.firmware_version;
+            bool essential_found = firmware_updates[0].name.find("ESSENTIAL") != std::string::npos;
+            essential_fw_update_needed = essential_found && (update.profile.firmware_version < firmware_updates[0].ver);
+
+            bool recommended_found = firmware_updates[0].name.find("RECOMMENDED") != std::string::npos;
+            recommended_fw_update_needed = recommended_found && (update.profile.firmware_version < firmware_updates[0].ver);
+
+            if (essential_fw_update_needed || recommended_fw_update_needed)
+            {
+                selected_firmware_update = firmware_updates[selected_firmware_update_index];
+            }
+
         }
 
         ImGui::SetCursorPos({ 145, h - 25 });
         ImGui::Checkbox("I understand and would like to proceed anyway without updating", &ignore);
 
         ImGui::SetCursorPos({ w - 125, h - 25 });
-        auto enabled = ignore || (sw_updated && fw_updated);
+        auto enabled = ignore || (!essential_sw_update_needed && !essential_fw_update_needed);
         if (enabled)
         {
-            if (ImGui::Button("OK", { 120, 20 }))
+            if (ImGui::Button("Close", { 120, 20 }))
             {
                 ImGui::CloseCurrentPopup();
                 std::lock_guard<std::mutex> lock(_lock);
@@ -207,7 +238,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
             ImGui::PushStyleColor(ImGuiCol_Text, grey);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, grey);
-            ImGui::Button("OK", { 120, 20 });
+            ImGui::Button("Close", { 120, 20 });
             ImGui::PopStyleColor(5);
         }
 
@@ -219,17 +250,29 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             ImGui::Text("SOFTWARE: ");
             ImGui::PopStyleColor();
 
-            if (sw_updated)
+            if (!essential_sw_update_needed || software_updates.size() == 0)
             {
                 ImGui::SameLine();
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                ImGui::Text(u8"\uF046 Up-to-Date!");
+                ImGui::Text(u8"\uF046 No essential updates.");
+                if (recommended_sw_update_needed)
+                {
+                    ImGui::SameLine();
+                    ImGui::Text(u8"Recommended update available!");
+                }
+                ImGui::PopStyleColor();
+            }
+            else if (essential_sw_update_needed)
+            {
+                ImGui::SameLine();
+                ImGui::PushStyleColor(ImGuiCol_Text, light_red);
+                ImGui::Text(u8"Essential update needed!");
                 ImGui::PopStyleColor();
             }
 
-            auto white_color = sw_updated ? grey : white;
-            auto gray_color = sw_updated ? grey : light_grey;
-            auto link_color = sw_updated ? grey : light_grey;
+            auto white_color = essential_sw_update_needed ? white : grey;
+            auto gray_color = essential_sw_update_needed ? light_grey : grey;
+            auto link_color = essential_sw_update_needed ? light_grey : grey;
 
             ImGui::PopFont();
 
@@ -275,10 +318,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
                     }
                     catch (...)
                     {
-                        error_message = "Could not open link";
-                        ImGui::CloseCurrentPopup();
-                        std::lock_guard<std::mutex> lock(_lock);
-                        _updates.clear();
+                        LOG_ERROR("Error opening URL: " + selected_software_update.release_page);
                     }
                 }
             }
@@ -306,9 +346,11 @@ void updates_model::draw(ux_window& window, std::string& error_message)
                 ImGui::PopTextWrapPos();
             }
 
-
-            ImGui::SetCursorScreenPos({ orig_pos.x + 150, mid_y - 25 });
-            ImGui::Text("%s", "Please follow instructions from the release page (link above) for your combination of platform and OS");
+            if (selected_software_update.ver != versions_db_manager::version(0))
+            {
+                ImGui::SetCursorScreenPos({ orig_pos.x + 150, mid_y - 25 });
+                ImGui::Text("%s", "Please follow instructions from the release page (link above) for your combination of platform and OS");
+            }
 
             ImGui::PopStyleColor();
         }
@@ -323,17 +365,29 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             ImGui::Text("FIRMWARE: ");
             ImGui::PopStyleColor();
 
-            if (fw_updated || _fw_update_state == fw_update_states::completed)
+            if (!essential_fw_update_needed || firmware_updates.size() == 0)
             {
                 ImGui::SameLine();
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                ImGui::Text(u8"\uF046 Up-to-Date!");
+                ImGui::Text(u8"\uF046 No essential updates.");
+                if (recommended_fw_update_needed)
+                {
+                    ImGui::SameLine();
+                    ImGui::Text(u8"Recommended update available!");
+                }
+                ImGui::PopStyleColor();
+            }
+            else if (essential_fw_update_needed)
+            {
+                ImGui::SameLine();
+                ImGui::PushStyleColor(ImGuiCol_Text, light_red);
+                ImGui::Text(u8"Essential update needed!");
                 ImGui::PopStyleColor();
             }
 
-            auto white_color = fw_updated ? grey : white;
-            auto gray_color = fw_updated ? grey : light_grey;
-            auto link_color = fw_updated ? grey : light_grey;
+            auto white_color = essential_fw_update_needed ? white : grey;
+            auto gray_color = essential_fw_update_needed ? light_grey : grey;
+            auto link_color = essential_fw_update_needed ? light_grey : grey;
 
             ImGui::PopFont();
 
@@ -379,10 +433,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
                     }
                     catch (...)
                     {
-                        error_message = "Could not open link";
-                        ImGui::CloseCurrentPopup();
-                        std::lock_guard<std::mutex> lock(_lock);
-                        _updates.clear();
+                        LOG_ERROR("Error opening URL: " + selected_software_update.release_page);
                     }
                 }
             }
@@ -411,12 +462,14 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             }
 
 
-            if (_fw_update_state == fw_update_states::ready)
+            if (_fw_update_state == fw_update_states::ready && 
+                (essential_fw_update_needed || essential_fw_update_needed))
             {
                 ImGui::SetCursorScreenPos({ orig_pos.x + 150, orig_pos.y + h - 95 });
                 ImGui::PushStyleColor(ImGuiCol_Text, white_color);
-                if (ImGui::Button("Download & Install Firmware", ImVec2(w - 170, 25)))
+                if (ImGui::Button("Download & Install Firmware", ImVec2(w - 170, 25)) || _retry)
                 {
+                    _retry = false;
                     auto link = selected_firmware_update.download_link;
                     std::thread download_thread([link, this]() {
                         std::vector<uint8_t> vec;
@@ -428,6 +481,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
                             return callback_result::CONTINUE_DOWNLOAD;
                         }))
                         {
+                            _fw_update_state = fw_update_states::failed_downloading;
                             LOG_ERROR("Error in download firmware version from: " + link);
                         }
 
@@ -474,15 +528,32 @@ void updates_model::draw(ux_window& window, std::string& error_message)
                 if (error_message != "") error_message = "";
 
                 if (_update_manager->failed()) {
-                    _fw_update_state = fw_update_states::failed;
+                    _fw_update_state = fw_update_states::failed_updating;
                     ImGui::CloseCurrentPopup();
                 }
 
             }
             else if (_fw_update_state == fw_update_states::completed)
             {
+                _fw_update_state = fw_update_states::ready;
                 ImGui::SetCursorScreenPos({ orig_pos.x + 150, orig_pos.y + h - 95 });
                 //_progress.draw(window, w - 170, 100);
+            }
+            else if (_fw_update_state == fw_update_states::failed_downloading)
+            {
+                ImGui::SetCursorScreenPos({ orig_pos.x + 150, orig_pos.y + h - 95 });
+                ImGui::PushStyleColor(ImGuiCol_Text, white_color);
+                if (ImGui::Button("Firmware download failed, check connection and press to retry", ImVec2(w - 170, 25)))
+                { 
+                    _fw_update_state = fw_update_states::ready;
+                    _retry = true;
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("This will download selected firmware and install it to the device");
+                    window.link_hovered();
+                }
+                ImGui::PopStyleColor();
             }
 
             ImGui::PopStyleColor();

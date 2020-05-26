@@ -65,13 +65,22 @@ namespace rs2
             downloading = 1,
             started = 2,
             completed = 3,
-            failed = 4
+            failed_downloading = 4,
+            failed_updating = 5
         };
+
+        enum class fw_update_fail_reason
+        {
+            none = 0,
+            downloading_error = 1,
+            updating_error = 2
+        };
+
         fw_update_states _fw_update_state = fw_update_states::ready;
 
         progress_bar _progress;
         std::atomic<int> _fw_download_progress { 0 };
-
+        bool _retry = false;
         std::shared_ptr<firmware_update_manager> _update_manager = nullptr;
         std::vector<uint8_t> _fw_image;
     };

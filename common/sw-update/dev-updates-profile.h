@@ -43,7 +43,7 @@ namespace rs2
                 device dev;
             };
 
-            explicit dev_updates_profile(const device& dev, const std::string &url, const bool use_url_as_local_path = false, http::downloader::user_callback_func_type download_callback = http::downloader::user_callback_func_type());
+            explicit dev_updates_profile(const device& dev, const std::string &url, const bool use_url_as_local_path = false, http::user_callback_func_type download_callback = http::user_callback_func_type());
 
             ~dev_updates_profile() {};
 

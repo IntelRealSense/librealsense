@@ -15,7 +15,7 @@ namespace rs2
     namespace sw_update
     {
         using json = nlohmann::json;
-        using namespace http::downloader;
+        using namespace http;
 
         // Get current platform
         constexpr char* PLATFORM =
