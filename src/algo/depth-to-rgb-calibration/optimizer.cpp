@@ -880,7 +880,6 @@ void optimizer::zero_invalid_edges( z_frame_data & z_data, ir_frame_data const &
 
 std::vector< direction > optimizer::get_direction( std::vector<double> gradient_x, std::vector<double> gradient_y )
 {
-#define PI 3.14159265
     std::vector<direction> res( gradient_x.size(), deg_none );
 
     std::map<int, direction> angle_dir_map = { {0, deg_0}, {45,deg_45} , {90,deg_90}, {135,deg_135} };
@@ -902,7 +901,6 @@ std::vector< direction > optimizer::get_direction( std::vector<double> gradient_
 }
 std::vector< direction > optimizer::get_direction2(std::vector<double> gradient_x, std::vector<double> gradient_y)
 {
-#define PI 3.14159265
     std::vector<direction> res(gradient_x.size(), deg_none);
     
     std::map<int, direction> angle_dir_map = { {0, deg_0}, {45,deg_45} , {90,deg_90}, {135,deg_135} , { 180,deg_180 }, { 225,deg_225 }, { 270,deg_270 }, { 315,deg_315 } };

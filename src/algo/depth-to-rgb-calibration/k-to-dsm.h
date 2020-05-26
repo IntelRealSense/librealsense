@@ -158,6 +158,8 @@ namespace depth_to_rgb_calibration {
         const pre_process_data& get_pre_process_data() const;
 
     private:
+        los_shift_scaling convert_k_to_los_error(pre_process_data const & pre_process_data, rs2_intrinsics_double const & k_raw);
+
         std::vector<double3> calc_relevant_vertices(const std::vector<uint8_t>& relevant_pixels_image, 
             const rs2_intrinsics_double& k);
 
@@ -169,9 +171,14 @@ namespace depth_to_rgb_calibration {
         
         pre_process_data _pre_process_data;
 
+        //debug data
+        los_shift_scaling _new_k_los;
+
+        //input camera params
         rs2_dsm_params _orig_dsm_params;
         algo::depth_to_rgb_calibration::algo_calibration_info _cal_info;
         algo::depth_to_rgb_calibration::algo_calibration_registers _cal_regs;
+
     };
    
 

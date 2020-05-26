@@ -159,12 +159,19 @@ rs2_dsm_params librealsense::algo::depth_to_rgb_calibration::k_to_DSM::convert_n
     std::vector<uint8_t> relevant_pixels_image_rot(relevant_pixels_image.size(), 0);
     rotate_180(relevant_pixels_image.data(), relevant_pixels_image_rot.data(), w, h);
     _pre_process_data = pre_processing(_cal_info, _orig_dsm_params, _cal_regs, old_k_raw, relevant_pixels_image_rot);
+
+    //convert_k_to_los_error
     return rs2_dsm_params();
 }
 
 const pre_process_data& librealsense::algo::depth_to_rgb_calibration::k_to_DSM::get_pre_process_data() const
 {
     return _pre_process_data;
+}
+
+los_shift_scaling librealsense::algo::depth_to_rgb_calibration::k_to_DSM::convert_k_to_los_error(pre_process_data const & pre_process_data, rs2_intrinsics_double const & k_raw)
+{
+    return los_shift_scaling();
 }
 
 std::vector<double3> librealsense::algo::depth_to_rgb_calibration::k_to_DSM::calc_relevant_vertices
@@ -194,7 +201,7 @@ std::vector<double3> librealsense::algo::depth_to_rgb_calibration::k_to_DSM::cal
             if (relevant_pixels_image[i*k.width + j])
             {
                 double3 ver;
-                double3 pix = { j, i, 1 };
+                double3 pix = { (double)j, (double)i, (double)1 };
 
                 ver.x = pix.x*k_t[0] + pix.y*k_t[1] + pix.z*k_t[2];
                 ver.y = pix.x*k_t[3] + pix.y*k_t[4] + pix.z*k_t[5];
