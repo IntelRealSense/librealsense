@@ -4,6 +4,7 @@
 #pragma once
 
 #include "calibration.h"
+#include "frame-data.h"
 #include "../../../include/librealsense2/h/rs_types.h"
 
 #include <types.h>  // librealsense types (intr/extr)
@@ -24,6 +25,7 @@ namespace depth_to_rgb_calibration {
         AOT = 1,
         TOA = 2
     };
+
 
     struct los_shift_scaling
     {
@@ -127,6 +129,7 @@ namespace depth_to_rgb_calibration {
 
     struct pre_process_data
     {
+        rs2_intrinsics_double orig_k;
         los_shift_scaling last_los_error;
         std::vector<double3> vertices_orig;
         std::vector<uint8_t> relevant_pixels_image_rot;
@@ -139,7 +142,8 @@ namespace depth_to_rgb_calibration {
     public:
         k_to_DSM(const rs2_dsm_params& orig_dsm_params,
             algo::depth_to_rgb_calibration::algo_calibration_info const & cal_info,
-            algo::depth_to_rgb_calibration::algo_calibration_registers const & cal_regs);
+            algo::depth_to_rgb_calibration::algo_calibration_registers const & cal_regs,
+            const double& max_scaling_step);
 
         algo_calibration_registers apply_ac_res_on_dsm_model(const rs2_dsm_params& ac_data, const algo_calibration_registers& regs, const ac_to_dsm_dir& type);
 
@@ -151,14 +155,41 @@ namespace depth_to_rgb_calibration {
             const rs2_intrinsics_double& k_raw,
             const std::vector<uint8_t>& relevant_pixels_image);
 
-        rs2_dsm_params convert_new_k_to_DSM(const rs2_intrinsics_double& old_k,
+        rs2_dsm_params convert_new_k_to_DSM(
+            const rs2_intrinsics_double& old_k,
             const rs2_intrinsics_double& new_k,
-            const std::vector<uint8_t>& relevant_pixels_image);
+            const z_frame_data& z);
 
         const pre_process_data& get_pre_process_data() const;
 
     private:
-        los_shift_scaling convert_k_to_los_error(pre_process_data const & pre_process_data, rs2_intrinsics_double const & k_raw);
+        double2 convert_k_to_los_error(
+            algo::depth_to_rgb_calibration::algo_calibration_info const & regs,
+            algo_calibration_registers const &dsm_regs,
+            rs2_intrinsics_double const & k_raw);
+
+        rs2_dsm_params convert_los_error_to_ac_data(
+            const rs2_dsm_params& ac_data,
+            const algo_calibration_registers& dsm_regs,
+            double2 los_shift, double2 los_scaling);
+
+        double2 run_scaling_optimization_step(
+            algo::depth_to_rgb_calibration::algo_calibration_info const & regs,
+            algo_calibration_registers const &dsm_regs,
+            double scaling_grid_x[25],
+            double scaling_grid_y[25],
+            double2 focal_scaling);
+
+        std::vector<double3x3> optimize_k_under_los_error(
+            algo::depth_to_rgb_calibration::algo_calibration_info const & regs,
+            algo_calibration_registers const &dsm_regs, 
+            double scaling_grid_x[25],
+            double scaling_grid_y[25] );
+
+        std::vector<double3> convert_los_to_norm_vertices(
+            algo::depth_to_rgb_calibration::algo_calibration_info const & regs,
+            algo_calibration_registers const &dsm_regs,
+            std::vector<double2> los);
 
         std::vector<double3> calc_relevant_vertices(const std::vector<uint8_t>& relevant_pixels_image, 
             const rs2_intrinsics_double& k);
@@ -167,18 +198,21 @@ namespace depth_to_rgb_calibration {
             const algo_calibration_registers& algo_calibration_registers, 
             std::vector<double3> vertices);
 
+        double3 laser_incident_direction(double2 angle_rad);
         std::vector<double3> transform_to_direction(std::vector<double3>);
         
         pre_process_data _pre_process_data;
 
         //debug data
-        los_shift_scaling _new_k_los;
+        double2 _new_los_scaling;
 
         //input camera params
-        rs2_dsm_params _orig_dsm_params;
-        algo::depth_to_rgb_calibration::algo_calibration_info _cal_info;
-        algo::depth_to_rgb_calibration::algo_calibration_registers _cal_regs;
+        rs2_dsm_params _ac_data;
+        algo::depth_to_rgb_calibration::algo_calibration_info _regs;
+        algo::depth_to_rgb_calibration::algo_calibration_registers _dsm_regs;
 
+        //algorithem params
+        double _max_scaling_step;
     };
    
 

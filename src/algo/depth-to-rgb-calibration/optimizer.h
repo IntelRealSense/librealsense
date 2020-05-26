@@ -73,6 +73,7 @@ namespace depth_to_rgb_calibration {
         // output validation
         double const max_xy_movement_per_calibration[3] = { 10, 2, 2 };
         double const max_xy_movement_from_origin = 20;
+        double const max_scaling_step = 0.020000000000000;
     };
     // svm
     struct decision_params
@@ -203,6 +204,7 @@ namespace depth_to_rgb_calibration {
         ir_frame_data   const & get_ir_data() const  { return _ir; }
         decision_params const& get_decision_params() const { return _decision_params; };
         std::vector< double >const& get_extracted_features() const { return _extracted_features; };
+        params const & get_params() const { return _params; }
        
     private:
         void decompose_p_mat();

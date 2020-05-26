@@ -7,6 +7,7 @@
 #include "../../../src/algo/depth-to-rgb-calibration/optimizer.h"
 #include "scene-data.h"
 #include "../../../src/algo/depth-to-rgb-calibration/k-to-dsm.h"
+#include "../../../src/algo/depth-to-rgb-calibration/utils.h"
 
 
 #include "ac-logger.h"

@@ -18,6 +18,22 @@ namespace depth_to_rgb_calibration {
         double & operator [] ( int i ) { return (&x)[i]; }
         bool operator == (const double3 d) { return x == d.x && y == d.y && z == d.z; }
         bool operator != (const double3 d) { return !(*this == d); }
+        double3 operator-(const double3& other) {
+            return { x - other.x, y - other.y , z - other.z };
+        }
+
+        double get_norm()
+        {
+            return x*x + y * y + z * z;
+        }
+
+        double3 operator*(const double& scalar) {
+            return { x * scalar , y * scalar , z * scalar };
+        }
+
+        double operator*(const double3& s) {
+            return x * s.x + y * s.y + z * s.z;
+        }
     };
 
     struct double2
@@ -30,8 +46,18 @@ namespace depth_to_rgb_calibration {
 
         struct double3x3
         {
-                double mat[3][3];
-                double3x3 transpose()
+           /* double3x3(double arr[9])
+            {
+                for (auto i = 0; i < 3; i++)
+                {
+                    for (auto j = 0; j < 3; j++)
+                    {
+                        mat[i][j] = arr[i * 3 + j];
+                    }
+                }
+            }*/
+            double mat[3][3];
+            double3x3 transpose()
                 {
                         double3x3 res = { 0 };
 
@@ -45,7 +71,7 @@ namespace depth_to_rgb_calibration {
                         return res;
                 }
 
-                double3x3 operator*(const double3x3& other)
+            double3x3 operator*(const double3x3& other)
                 {
                         double3x3 res = { 0 };
 
@@ -64,7 +90,7 @@ namespace depth_to_rgb_calibration {
                         return res;
                 }
 
-                double3 operator*(const double3& other)
+            double3 operator*(const double3& other)
                 {
                         double3 res = { 0 };
         
@@ -74,18 +100,18 @@ namespace depth_to_rgb_calibration {
                         return res;
                 }
 
-                std::vector<double> to_vector()
-                {
-                        std::vector<double> res;
-                        for (auto i = 0; i < 3; i++)
-                        {
-                                for (auto j = 0; j < 3; j++)
-                                {
-                                        res.push_back(mat[i][j]);
-                                }
-                        }
-                        return res;
-                }
+            std::vector<double> to_vector()
+            {
+                    std::vector<double> res;
+                    for (auto i = 0; i < 3; i++)
+                    {
+                            for (auto j = 0; j < 3; j++)
+                            {
+                                    res.push_back(mat[i][j]);
+                            }
+                    }
+                    return res;
+            }
         };
 
     enum direction :uint8_t
