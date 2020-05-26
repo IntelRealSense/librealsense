@@ -503,19 +503,32 @@ namespace librealsense
     // Enumerated type support //
     /////////////////////////////
 
-#define RS2_ENUM_HELPERS(TYPE, PREFIX) RS2_ENUM_HELPERS_CUSTOMIZED(TYPE, 0, RS2_##PREFIX##_COUNT)
+#define RS2_ENUM_HELPERS( TYPE, PREFIX )                                                           \
+    RS2_ENUM_HELPERS_CUSTOMIZED( TYPE, 0, RS2_##PREFIX##_COUNT - 1 )
 
-#define RS2_ENUM_HELPERS_CUSTOMIZED(TYPE, START, END) LRS_EXTENSION_API const char* get_string(TYPE value); \
-        inline bool is_valid(TYPE value) { return value >= START && value <END; } \
-        inline std::ostream & operator << (std::ostream & out, TYPE value) { if(is_valid(value)) return out << get_string(value); else return out << (int)value; } \
-        inline bool try_parse(const std::string& str, TYPE& res)       \
-        {                                                            \
-            for (int i = START; i < END; i++) {                      \
-                auto v = static_cast<TYPE>(i);                       \
-                if(str == get_string(v)) { res = v; return true; }   \
-            }                                                        \
-            return false;                                            \
-        }
+#define RS2_ENUM_HELPERS_CUSTOMIZED( TYPE, FIRST, LAST )                                           \
+    LRS_EXTENSION_API const char * get_string( TYPE value );                                       \
+    inline bool is_valid( TYPE value ) { return value >= FIRST && value <= LAST; }                 \
+    inline std::ostream & operator<<( std::ostream & out, TYPE value )                             \
+    {                                                                                              \
+        if( is_valid( value ) )                                                                    \
+            return out << get_string( value );                                                     \
+        else                                                                                       \
+            return out << (int)value;                                                              \
+    }                                                                                              \
+    inline bool try_parse( const std::string & str, TYPE & res )                                   \
+    {                                                                                              \
+        for( int i = FIRST; i < LAST; i++ )                                                        \
+        {                                                                                          \
+            auto v = static_cast< TYPE >( i );                                                     \
+            if( str == get_string( v ) )                                                           \
+            {                                                                                      \
+                res = v;                                                                           \
+                return true;                                                                       \
+            }                                                                                      \
+        }                                                                                          \
+        return false;                                                                              \
+    }
 
     RS2_ENUM_HELPERS(rs2_stream, STREAM)
     RS2_ENUM_HELPERS(rs2_format, FORMAT)
