@@ -937,8 +937,9 @@ void librealsense::algo::depth_to_rgb_calibration::optimizer::decompose_p_mat()
     _z.new_intrinsics.fx = _z.new_intrinsics.fx / _final_calibration.k_mat.fx*_original_calibration.k_mat.fx;
     _z.new_intrinsics.fy = _z.new_intrinsics.fy / _final_calibration.k_mat.fy*_original_calibration.k_mat.fy;
 
-    _final_calibration.k_mat.fx = _original_calibration.k_mat.fx;
-    _final_calibration.k_mat.fy = _original_calibration.k_mat.fy;
+    // TODO AVISHAG
+    //_final_calibration.k_mat.fx = _original_calibration.k_mat.fx;
+    //_final_calibration.k_mat.fy = _original_calibration.k_mat.fy;
 
 }
 
