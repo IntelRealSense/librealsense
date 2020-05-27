@@ -422,15 +422,27 @@ namespace rs2
             error::handle(e);
         }
 
-        rs2::firmware_log_message get_firmware_log() const
+        rs2::firmware_log_message create_message()
         {
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_firmware_log_message> msg(
-                rs2_get_firmware_log(_dev.get(), &e),
+                rs2_create_firmware_log_message(_dev.get(), &e),
                 rs2_delete_firmware_log_message);
             error::handle(e);
 
             return firmware_log_message(msg);
+        }
+
+        bool get_firmware_log(rs2::firmware_log_message& msg) const
+        {
+            rs2_error* e = nullptr;
+            rs2_firmware_log_message* m = msg.get_message().get();
+            bool fw_log_pulling_status =
+                rs2_get_firmware_log(_dev.get(), &(m), &e);
+
+            error::handle(e);
+
+            return fw_log_pulling_status;
         }
     };
 
@@ -506,10 +518,6 @@ namespace rs2
 
             auto size = rs2_firmware_log_message_size(msg.get_message().get(), &e);
             error::handle(e);
-            if (size == 0)
-            {
-                // TODO - handle this case, or let the user handle it...
-            }
 
             std::shared_ptr<rs2_firmware_log_parsed_message> parsed_msg(
                 rs2_parse_firmware_log(_firmware_log_parser.get(), msg.get_message().get(), &e),
