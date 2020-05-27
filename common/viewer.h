@@ -173,7 +173,7 @@ namespace rs2
 
         bool show_pose_info_3d = false;
 
-        updates_model updates;
+        std::shared_ptr<updates_model> updates;
 
     private:
         void check_permissions();

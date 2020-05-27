@@ -781,6 +781,8 @@ namespace rs2
         void begin_update(std::vector<uint8_t> data,
             viewer_model& viewer, std::string& error_message);
         void begin_update_unsigned(viewer_model& viewer, std::string& error_message);
+        void check_for_device_updates(rs2::context& ctx, std::shared_ptr<updates_model> updates);
+
 
         std::shared_ptr< atomic_objects_in_frame > get_detected_objects() const { return _detected_objects; }
 
@@ -839,8 +841,8 @@ namespace rs2
         periodic_timer      _update_readonly_options_timer;
         bool pause_required = false;
         std::shared_ptr< atomic_objects_in_frame > _detected_objects;
-        updates_model &_updates;
-        std::unique_ptr< updates_model::update_profile_model> _updates_profile_model;
+        std::shared_ptr<updates_model> _updates;
+        sw_update::dev_updates_profile::update_profile _updates_profile;
     };
 
     class viewer_model;

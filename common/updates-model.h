@@ -27,7 +27,7 @@ namespace rs2
             update_profile_model(sw_update::dev_updates_profile::update_profile p,
                 context contex, device_model* device_model) : profile(p), ctx(contex), dev_model(device_model){};
         };
-        void add_profile(update_profile_model update)
+        void add_profile(const update_profile_model& update)
         {
             std::lock_guard<std::mutex> lock(_lock);
             auto it = std::find_if(_updates.begin(), _updates.end(), [&](update_profile_model& p){
@@ -36,18 +36,17 @@ namespace rs2
             if (it == _updates.end()) 
                 _updates.push_back(update);
         }
-        void remove_profile(const update_profile_model &update)
+        void remove_profile(const sw_update::dev_updates_profile::update_profile &update)
         {
             std::lock_guard<std::mutex> lock(_lock);
             auto it = std::find_if(_updates.begin(), _updates.end(), [&](update_profile_model& p) {
-                return (p.profile.device_name == update.profile.device_name && p.profile.serial_number == update.profile.serial_number);
+                return (p.profile.device_name == update.device_name && p.profile.serial_number == update.serial_number);
             });
             if (it != _updates.end())
                 _updates.erase(it);
         }
 
         void draw(ux_window& window, std::string& error_message);
-
     private:
         int selected_index = 0;
         int selected_software_update_index = 0;

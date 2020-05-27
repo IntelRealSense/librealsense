@@ -91,7 +91,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
 
         ImGui::GetWindowDrawList()->AddRectFilled({ orig_pos.x + 140.f, orig_pos.y },
             { x0 + w - 5, y0 + h - 30 }, ImColor(header_color));
-        ImGui::GetWindowDrawList()->AddLine({ orig_pos.x + 145.f, mid_y },
+        ImGui::GetWindowDrawList()->AddLine({ orig_pos.x + 145.f, mid_y } ,
             { x0 + w - 10, mid_y }, ImColor(sensor_bg));
 
         for (int i = 0; i < updates_copy.size(); i++)
@@ -249,24 +249,26 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             ImGui::PushStyleColor(ImGuiCol_Text, white);
             ImGui::Text("SOFTWARE: ");
             ImGui::PopStyleColor();
+            ImGui::SameLine();
 
             if (!essential_sw_update_needed || software_updates.size() == 0)
             {
-                ImGui::SameLine();
-                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                ImGui::Text(u8"\uF046 No essential updates.");
                 if (recommended_sw_update_needed)
                 {
-                    ImGui::SameLine();
-                    ImGui::Text(u8"Recommended update available!");
+                    ImGui::PushStyleColor(ImGuiCol_Text, white);
+                    ImGui::Text("Recommended update available!");
+                }
+                else
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, white);
+                    ImGui::Text(u8"\uF046 Up to date.");
                 }
                 ImGui::PopStyleColor();
             }
             else if (essential_sw_update_needed)
             {
-                ImGui::SameLine();
                 ImGui::PushStyleColor(ImGuiCol_Text, light_red);
-                ImGui::Text(u8"Essential update needed!");
+                ImGui::Text("Essential update needed!");
                 ImGui::PopStyleColor();
             }
 
@@ -364,24 +366,25 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             ImGui::PushStyleColor(ImGuiCol_Text, white);
             ImGui::Text("FIRMWARE: ");
             ImGui::PopStyleColor();
-
+            ImGui::SameLine();
             if (!essential_fw_update_needed || firmware_updates.size() == 0)
             {
-                ImGui::SameLine();
-                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                ImGui::Text(u8"\uF046 No essential updates.");
                 if (recommended_fw_update_needed)
                 {
-                    ImGui::SameLine();
-                    ImGui::Text(u8"Recommended update available!");
+                    ImGui::PushStyleColor(ImGuiCol_Text, white);
+                    ImGui::Text("Recommended update available!");
+                }
+                else
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, white);
+                    ImGui::Text(u8"\uF046 Up to date.");
                 }
                 ImGui::PopStyleColor();
             }
             else if (essential_fw_update_needed)
             {
-                ImGui::SameLine();
                 ImGui::PushStyleColor(ImGuiCol_Text, light_red);
-                ImGui::Text(u8"Essential update needed!");
+                ImGui::Text("Essential update needed!");
                 ImGui::PopStyleColor();
             }
 

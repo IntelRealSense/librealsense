@@ -790,6 +790,7 @@ namespace rs2
               zo_sensors(0)
     {
         syncer = std::make_shared<syncer_model>();
+        updates = std::make_shared<updates_model>();
         reset_camera();
         rs2_error* e = nullptr;
         not_model.add_log(to_string() << "librealsense version: " << api_version_to_string(rs2_get_api_version(&e)) << "\n");
@@ -2954,7 +2955,7 @@ namespace rs2
         ux_window& window, int devices, std::string& error_message, 
         std::shared_ptr<texture_buffer> texture, points points)
     {
-        updates.draw(window, error_message);
+        updates->draw(window, error_message);
 
         static bool first = true;
         if (first)
