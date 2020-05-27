@@ -75,35 +75,34 @@ int main(int argc, char * argv[])
 
                 std::vector<string> fw_log_lines;
 
-                static bool usingParser = false;
+                static bool usingParser = true;
                 if (usingParser)
                 {
-                    /*std::string xml_path("HWLoggerEventsDS5.xml");
+                    std::string xml_path("HWLoggerEventsDS5.xml");
                     if (!xml_path.empty())
                     {
                         ifstream f(xml_path);
                         if (f.good())
                         {
-                            unique_ptr<rs2::firmware_logs_parser> parser = 
-                                unique_ptr<rs2::firmware_logs_parser>(new rs2::firmware_logs_parser(xml_path));
+                            unique_ptr<rs2::firmware_log_parser> parser = 
+                                unique_ptr<rs2::firmware_log_parser>(new rs2::firmware_log_parser(xml_path));
                             
-                            for (rs2::firmware_logger_message msg : fw_log_messages)
-                            {
-                                parser->parse_firmware_log(msg);
-                                fw_log_lines.push_back(msg.to_string());
-                            }
+                            rs2::firmware_log_parsed_message parsed_log = parser->parse_firmware_log(fw_log_message);
+                            stringstream sstr;
+                            sstr << parsed_log.timestamp() << " " << parsed_log.severity() << " " << parsed_log.message() 
+                                << " " << parsed_log.thread_name() << " " << parsed_log.file_name() 
+                                << " " << parsed_log.line();
                             
-                            //for (auto& elem : fw_log_lines)
-                             //   elem = datetime_string() + "  " + elem;
+                            fw_log_lines.push_back(sstr.str());
                         }
-                    }*/
+                    }
                 }
                 else
                 {
                     if (fw_log_message.size() > 0)
                     {
                         stringstream sstr;
-                        sstr << datetime_string();
+                        sstr << fw_log_message.get_timestamp();
                         sstr << " " << fw_log_message.get_severity_str();
                         sstr << "  FW_Log_Data:";
                         std::vector<uint8_t> msg_data = fw_log_message.data();
