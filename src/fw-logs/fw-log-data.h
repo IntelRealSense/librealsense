@@ -14,6 +14,7 @@ namespace librealsense
         {
             std::vector<uint8_t> logs_buffer;
             rs2_log_severity get_severity() const;
+            uint32_t get_timestamp() const;
         };
 
         rs2_log_severity fw_logs_severity_to_log_severity(int32_t severity);
@@ -76,27 +77,31 @@ namespace librealsense
             fw_log_data(void);
             ~fw_log_data(void);
 
-            uint32_t magic_number;
-            uint32_t severity;
-            uint32_t file_id;
-            uint32_t group_id;
-            uint32_t event_id;
-            uint32_t line;
-            uint32_t sequence;
-            uint32_t p1;
-            uint32_t p2;
-            uint32_t p3;
-            uint64_t timestamp;
-            double delta;
+            uint32_t _magic_number;
+            uint32_t _severity;
+            uint32_t _file_id;
+            uint32_t _group_id;
+            uint32_t _event_id;
+            uint32_t _line;
+            uint32_t _sequence;
+            uint32_t _p1;
+            uint32_t _p2;
+            uint32_t _p3;
+            uint64_t _timestamp;
+            double _delta;
 
-            uint32_t thread_id;
+            uint32_t _thread_id;
 
-            std::string message;
-            std::string file_name;
-            std::string thread_name;
+            std::string _message;
+            std::string _file_name;
+            std::string _thread_name;
 
-            std::string to_string();
-            rs2_firmware_log_message to_rs2_firmware_log_message();
+            rs2_log_severity get_severity() const;
+            const std::string& get_message() const;
+            const std::string& get_file_name() const;
+            const std::string& get_thread_name() const;
+            uint32_t get_line() const;
+            uint32_t get_timestamp() const;
         };
     }
 }

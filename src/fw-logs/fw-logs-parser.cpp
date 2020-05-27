@@ -13,7 +13,9 @@ namespace librealsense
     namespace fw_logs
     {
         fw_logs_parser::fw_logs_parser(string xml_full_file_path)
-            : _fw_logs_formating_options(xml_full_file_path)
+            : _fw_logs_formating_options(xml_full_file_path),
+            _last_timestamp(0),
+            _timestamp_factor(0.00001)
         {
             _fw_logs_formating_options.initialize_from_xml();
         }
@@ -23,47 +25,66 @@ namespace librealsense
         {
         }
 
-        void fw_logs_parser::parse_fw_log(rs2_firmware_log_message** fw_log_msg)
+        fw_log_data fw_logs_parser::parse_fw_log(const fw_logs_binary_data* fw_log_msg) 
         {
-            /*if (!fw_log_msg || !(*fw_log_msg))
-                return;
+            fw_log_data log_data;
+
+            if (!fw_log_msg || fw_log_msg->logs_buffer.size() == 0)
+                return log_data;
+
+            log_data = fill_log_data(fw_log_msg);
+
             //message
             fw_string_formatter reg_exp(_fw_logs_formating_options.get_enums());
             fw_log_event log_event_data;
-            _fw_logs_formating_options.get_event_data((*fw_log_msg)->_event_id, &log_event_data);
+            _fw_logs_formating_options.get_event_data(log_data._event_id, &log_event_data);
 
-            uint32_t params[3] = { (*fw_log_msg)->_p1, (*fw_log_msg)->_p2, (*fw_log_msg)->_p3 };
-            std::string parsed_message;
-            reg_exp.generate_message(log_event_data.line, log_event_data.num_of_params, params, &parsed_message);
-            //reallocate char pointer and copy string into it
-            /*if ((*fw_log_msg)->_message)
-            {
-                delete[] (*fw_log_msg)->_message;
-            }*/
-            /*(*fw_log_msg)->_message = new char[parsed_message.size() + 1];
-            strncpy_s((*fw_log_msg)->_message, parsed_message.size() + 1, parsed_message.c_str(), parsed_message.size());
+            uint32_t params[3] = { log_data._p1, log_data._p2, log_data._p3 };
+            reg_exp.generate_message(log_event_data.line, log_event_data.num_of_params, params, &log_data._message);
 
-            //file name
-            std::string parsed_file_name;
-            _fw_logs_formating_options.get_file_name((*fw_log_msg)->_file_id, &parsed_file_name);
-            //reallocate char pointer and copy string into it
-            /*if ((*fw_log_msg)->_file_name)
-            {
-                delete (*fw_log_msg)->_file_name;
-            }*/
-            /*(*fw_log_msg)->_file_name = new char[parsed_file_name.size() + 1];
-            strncpy_s((*fw_log_msg)->_file_name, parsed_file_name.size() + 1, parsed_file_name.c_str(), parsed_file_name.size());
+            //file_name
+            _fw_logs_formating_options.get_file_name(log_data._file_id, &log_data._file_name);
 
-            //thread name
-            std::string parsed_thread_name;
-            _fw_logs_formating_options.get_thread_name(static_cast<uint32_t>((*fw_log_msg)->_thread_id), &parsed_thread_name);
-            //reallocate char pointer and copy string into it
-            /*if ((*fw_log_msg)->_thread_name)
-            {
-                delete (*fw_log_msg)->_thread_name;
-            }*/
-            /*(*fw_log_msg)->_thread_name = new char[parsed_thread_name.size() + 1];
-            strncpy_s((*fw_log_msg)->_thread_name, parsed_thread_name.size() + 1, parsed_thread_name.c_str(), parsed_thread_name.size());*/
+            //thread_name
+            _fw_logs_formating_options.get_thread_name(log_data._thread_id, &log_data._thread_name);
+
+            return log_data;
+        }
+
+        fw_log_data fw_logs_parser::fill_log_data(const fw_logs_binary_data* fw_log_msg)
+        {
+            fw_log_data log_data;
+
+            auto* log_binary = reinterpret_cast<const fw_logs::fw_log_binary*>(fw_log_msg->logs_buffer.data());
+
+            //parse first DWORD
+            log_data._magic_number = static_cast<uint32_t>(log_binary->dword1.bits.magic_number);
+            log_data._severity = static_cast<uint32_t>(log_binary->dword1.bits.severity);
+            log_data._thread_id = static_cast<uint32_t>(log_binary->dword1.bits.thread_id);
+            log_data._file_id = static_cast<uint32_t>(log_binary->dword1.bits.file_id);
+            log_data._group_id = static_cast<uint32_t>(log_binary->dword1.bits.group_id);
+
+            //parse second DWORD
+            log_data._event_id = static_cast<uint32_t>(log_binary->dword2.bits.event_id);
+            log_data._line = static_cast<uint32_t>(log_binary->dword2.bits.line_id);
+            log_data._sequence = static_cast<uint32_t>(log_binary->dword2.bits.seq_id);
+
+            //parse third DWORD
+            log_data._p1 = static_cast<uint32_t>(log_binary->dword3.p1);
+            log_data._p2 = static_cast<uint32_t>(log_binary->dword3.p2);
+
+            //parse forth DWORD
+            log_data._p3 = static_cast<uint32_t>(log_binary->dword4.p3);
+
+            //parse fifth DWORD
+            log_data._timestamp = log_binary->dword5.timestamp;
+
+            log_data._delta = (_last_timestamp == 0) ? 
+                0 :(log_data._timestamp - _last_timestamp) * _timestamp_factor;
+            
+            _last_timestamp = log_data._timestamp;
+
+            return log_data;
         }
     }
 }

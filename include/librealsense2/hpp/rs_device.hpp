@@ -363,7 +363,7 @@ namespace rs2
         
         rs2_log_severity get_severity() const { 
             rs2_error* e = nullptr;
-            rs2_log_severity severity = rs2_get_fw_log_severity(_fw_log_message.get(), &e);
+            rs2_log_severity severity = rs2_firmware_log_message_severity(_fw_log_message.get(), &e);
             error::handle(e);
             return severity;
         }
@@ -371,24 +371,38 @@ namespace rs2
             return rs2_log_severity_to_string(get_severity());
         }
 
+        uint32_t get_timestamp() const
+        {
+            rs2_error* e = nullptr;
+            uint32_t timestamp = rs2_firmware_log_message_timestamp(_fw_log_message.get(), &e);
+            error::handle(e);
+            return timestamp;
+        }
+
         int size() const 
         { 
             rs2_error* e = nullptr;
-            return rs2_firmware_log_message_size(_fw_log_message.get(), &e);
+            int size = rs2_firmware_log_message_size(_fw_log_message.get(), &e);
+            error::handle(e);
+            return size;
         }
         
         std::vector<uint8_t> data() const 
         {
             rs2_error* e = nullptr;
             auto size = rs2_firmware_log_message_size(_fw_log_message.get(), &e);
+            error::handle(e);
             std::vector<uint8_t> result;
             if (size > 0)
             {
                 auto start = rs2_firmware_log_message_data(_fw_log_message.get(), &e);
+                error::handle(e);
                 result.insert(result.begin(), start, start + size);
             }
             return result;
         }
+
+        const std::shared_ptr<rs2_firmware_log_message> get_message() const { return _fw_log_message; }
 
     private:        
         std::shared_ptr<rs2_firmware_log_message> _fw_log_message;
@@ -420,6 +434,59 @@ namespace rs2
         }
     };
 
+    class firmware_log_parsed_message
+    {
+    public:
+        explicit firmware_log_parsed_message(std::shared_ptr<rs2_firmware_log_parsed_message> msg) :
+            _parsed_fw_log(msg) {}
+
+        std::string message() const 
+        { 
+            rs2_error* e = nullptr;
+            std::string msg(rs2_get_fw_log_parsed_message(_parsed_fw_log.get(), &e));
+            error::handle(e);
+            return msg;
+        }
+        std::string file_name() const
+        {
+            rs2_error* e = nullptr;
+            std::string file_name(rs2_get_fw_log_parsed_file_name(_parsed_fw_log.get(), &e));
+            error::handle(e);
+            return file_name;
+        }
+        std::string thread_name() const
+        {
+            rs2_error* e = nullptr;
+            std::string thread_name(rs2_get_fw_log_parsed_thread_name(_parsed_fw_log.get(), &e));
+            error::handle(e);
+            return thread_name;
+        }
+        std::string severity() const
+        {
+            rs2_error* e = nullptr;
+            rs2_log_severity sev = rs2_get_fw_log_parsed_severity(_parsed_fw_log.get(), &e);
+            error::handle(e);
+            return std::string(rs2_log_severity_to_string(sev));
+        }
+        uint32_t line() const
+        {
+            rs2_error* e = nullptr;
+            uint32_t line(rs2_get_fw_log_parsed_line(_parsed_fw_log.get(), &e));
+            error::handle(e);
+            return line;
+        }
+        uint32_t timestamp() const
+        {
+            rs2_error* e = nullptr;
+            uint32_t timestamp(rs2_get_fw_log_parsed_timestamp(_parsed_fw_log.get(), &e));
+            error::handle(e);
+            return timestamp;
+        }
+
+    private:
+        std::shared_ptr<rs2_firmware_log_parsed_message> _parsed_fw_log;
+    };
+
 
     class firmware_log_parser
     {
@@ -433,64 +500,23 @@ namespace rs2
             error::handle(e);
         }
 
-        void parse_firmware_log(rs2::firmware_log_message& msg)
+        rs2::firmware_log_parsed_message parse_firmware_log(const rs2::firmware_log_message& msg)
         {
-            /*rs2_error* e = nullptr;
+            rs2_error* e = nullptr;
 
-            rs2_firmware_log_message* fw_log_msg = new rs2_firmware_log_message{ msg.to_rs2_firmware_log_message() };
-
-            if (!fw_log_msg)
-                return;
-
-            rs2_parse_firmware_log(_firmware_logs_parser.get(), &fw_log_msg, &e);
-            rs2::error::handle(e);*/
-
-            /*msg._message = std::string(fw_log_msg->_message);
-            msg._file_name = std::string(fw_log_msg->_file_name);
-            msg._thread_name = std::string(fw_log_msg->_thread_name);
-
-            delete[] fw_log_msg->_message;
-            delete[] fw_log_msg->_file_name;
-            delete[] fw_log_msg->_thread_name;
-            delete fw_log_msg;*/
-            /*std::shared_ptr<rs2_raw_data_buffer> parsed_log(
-                rs2_parse_firmware_log(_firmware_logs_parser.get(), 
-                msg._event_id, msg._p1, msg._p2, msg._p3, msg._file_id, msg._thread_id, &e),
-                rs2_delete_raw_data);
-            rs2::error::handle(e);
-
-            auto size = rs2_get_raw_data_size(parsed_log.get(), &e);
-            rs2::error::handle(e);
-
-            
-            if (size > 0)
+            auto size = rs2_firmware_log_message_size(msg.get_message().get(), &e);
+            error::handle(e);
+            if (size == 0)
             {
-                auto start = rs2_get_raw_data(parsed_log.get(), &e);
+                // TODO - handle this case, or let the user handle it...
+            }
 
-                int i = 0;
-                //retreive message
-                uint8_t messageSize = *start;
-                i += 1;
-                std::string message(firmware_logs_helper::build_string_from_uint8_and_size(start + i, messageSize));
-                i += messageSize;
+            std::shared_ptr<rs2_firmware_log_parsed_message> parsed_msg(
+                rs2_parse_firmware_log(_firmware_log_parser.get(), msg.get_message().get(), &e),
+                rs2_delete_firmware_log_parsed_message);
+            error::handle(e);
 
-                //retreive file_name
-                uint8_t fileNameSize = *(start + i);
-                i += 1;
-                std::string file_name(firmware_logs_helper::build_string_from_uint8_and_size(start + i, fileNameSize));
-                i += fileNameSize;
-
-                //retreive thread_name
-                uint8_t threadNameSize = *(start + i);
-                i += 1;
-                std::string thread_name(firmware_logs_helper::build_string_from_uint8_and_size(start + i, threadNameSize));
-                i += threadNameSize;
-
-                //replace in input message
-                msg._message = message;
-                msg._file_name = file_name;
-                msg._thread_name = thread_name;
-            }*/
+            return firmware_log_parsed_message(parsed_msg);
         }
 
         firmware_log_parser(std::shared_ptr<rs2_firmware_log_parser> fw_log_parser)

@@ -62,6 +62,11 @@ TEST_CASE( "Getting FW logs in C", "[fw-logs]" ) {
             char* time_str = ctime(&mytime);
             time_str[strlen(time_str) - 1] = '\0';
             printf("message received %s - ", time_str);
+
+            rs2_error* e = nullptr;
+            rs2_log_severity severity = rs2_get_fw_log_severity(fw_log_msg, &e);
+            printf("%s ", rs2_log_severity_to_string(severity));
+
             for (int i = 0; i < size; ++i)
             {
                 printf("%d ", *(start + i));

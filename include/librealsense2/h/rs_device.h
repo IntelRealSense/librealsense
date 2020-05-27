@@ -354,19 +354,51 @@ rs2_raw_data_buffer* rs2_serialize_json(rs2_device* dev, rs2_error** error);
 void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_size, rs2_error** error);
 
 /**
-* \brief Gets RealSense firmware logs.
-* \param[in] dev	Device from which the FW logs should be taken
-* \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
-* \return            firmware logs
+* \brief Gets RealSense firmware log.
+* \param[in] dev	    Device from which the FW log should be taken
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return               firmware logs
 */
 rs2_firmware_log_message* rs2_get_firmware_log(rs2_device* dev, rs2_error** error);
 
+/**
+* Delete RealSense firmware log message
+* \param[in]  device    Realsense firmware log message to delete
+*/
 void rs2_delete_firmware_log_message(rs2_firmware_log_message* msg);
 
+/**
+* \brief Gets RealSense firmware log message data.
+* \param[in] msg	    firmware log message object
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return               pointer to start of the firmware log message data
+*/
 const unsigned char* rs2_firmware_log_message_data(rs2_firmware_log_message* msg, rs2_error** error);
+
+/**
+* \brief Gets RealSense firmware log message size.
+* \param[in] msg	    firmware log message object
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return               size of the firmware log message data
+*/
 int rs2_firmware_log_message_size(rs2_firmware_log_message* msg, rs2_error** error);
 
-rs2_log_severity rs2_get_fw_log_severity(const rs2_firmware_log_message* msg, rs2_error** error);
+
+/**
+* \brief Gets RealSense firmware log message timestamp.
+* \param[in] msg	    firmware log message object
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return               timestamp of the firmware log message
+*/
+unsigned int rs2_firmware_log_message_timestamp(rs2_firmware_log_message* msg, rs2_error** error);
+
+/**
+* \brief Gets RealSense firmware log message severity.
+* \param[in] msg	    firmware log message object
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return               severity of the firmware log message data
+*/
+rs2_log_severity rs2_firmware_log_message_severity(const rs2_firmware_log_message* msg, rs2_error** error);
 
 /**
 * \brief Creates RealSense firmware logs parser.
@@ -383,18 +415,68 @@ rs2_firmware_log_parser* rs2_create_firmware_log_parser(const char* xml_path, rs
 void rs2_delete_firmware_log_parser(rs2_firmware_log_parser* parser);
 
 /**
-* \brief Parses firmware logs.
-* \param[in] fw_logs_parser	firmware logs parser object 
-* \param[in] event_id	code for event 
-* \param[in] p1		parameter used to parse the message
-* \param[in] p2		parameter used to parse the message
-* \param[in] p3		parameter used to parse the message
-* \param[in] file_id		code for file
-* \param[in] thread_id		code for the thread
-* \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
-* \return 	firmware logs parsed
+* \brief Gets RealSense firmware log parser
+* \param[in] fw_logs_parser	    firmware log parser
+* \param[in] fw_log_msg	        firmware log message to be parsed
+* \param[out] error             If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return                       firmware log parsed message
 */
-//void rs2_parse_firmware_log(rs2_firmware_log_parser* fw_logs_parser, rs2_firmware_log_message** fw_log_msg, rs2_error** error);
+rs2_firmware_log_parsed_message* rs2_parse_firmware_log(rs2_firmware_log_parser* fw_logs_parser,
+    rs2_firmware_log_message* fw_log_msg, rs2_error** error);
+
+/**
+* Delete RealSense firmware log parsed message
+* \param[in]  device    Realsense firmware log parsed message to delete
+*/
+void rs2_delete_firmware_log_parsed_message(rs2_firmware_log_parsed_message* fw_log_parsed_msg);
+
+/**
+* \brief Gets RealSense firmware log parsed message message.
+* \param[in] fw_log_parsed_msg	    firmware log parsed message object
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return               message of the firmware log parsed message
+*/
+const char* rs2_get_fw_log_parsed_message(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error);
+
+/**
+* \brief Gets RealSense firmware log parsed message file name.
+* \param[in] fw_log_parsed_msg	    firmware log parsed message object
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return               file name of the firmware log parsed message
+*/
+const char* rs2_get_fw_log_parsed_file_name(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error);
+
+/**
+* \brief Gets RealSense firmware log parsed message thread name.
+* \param[in] fw_log_parsed_msg	    firmware log parsed message object
+* \param[out] error                 If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return                           thread name of the firmware log parsed message
+*/
+const char* rs2_get_fw_log_parsed_thread_name(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error);
+
+/**
+* \brief Gets RealSense firmware log parsed message severity.
+* \param[in] fw_log_parsed_msg	    firmware log parsed message object
+* \param[out] error                 If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return                           severity of the firmware log parsed message
+*/
+rs2_log_severity rs2_get_fw_log_parsed_severity(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error);
+
+/**
+* \brief Gets RealSense firmware log parsed message relevant line (in the file that is returned by rs2_get_fw_log_parsed_file_name).
+* \param[in] fw_log_parsed_msg	    firmware log parsed message object
+* \param[out] error                 If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return                           line number of the firmware log parsed message
+*/
+unsigned int rs2_get_fw_log_parsed_line(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error);
+
+/**
+* \brief Gets RealSense firmware log parsed message timestamp
+* \param[in] fw_log_parsed_msg	    firmware log parsed message object
+* \param[out] error                 If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return                           timestamp of the firmware log parsed message
+*/
+unsigned int rs2_get_fw_log_parsed_timestamp(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error);
 
 #ifdef __cplusplus
 }

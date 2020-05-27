@@ -17,20 +17,20 @@ namespace librealsense
     {
         fw_log_data::fw_log_data(void)
         {
-            magic_number = 0;
-            severity = 0;
-            file_id = 0;
-            group_id = 0;
-            event_id = 0;
-            line = 0;
-            sequence = 0;
-            p1 = 0;
-            p2 = 0;
-            p3 = 0;
-            timestamp = 0;
-            delta = 0;
-            message = "";
-            file_name = "";
+            _magic_number = 0;
+            _severity = 0;
+            _file_id = 0;
+            _group_id = 0;
+            _event_id = 0;
+            _line = 0;
+            _sequence = 0;
+            _p1 = 0;
+            _p2 = 0;
+            _p3 = 0;
+            _timestamp = 0;
+            _delta = 0;
+            _message = "";
+            _file_name = "";
         }
 
 
@@ -39,28 +39,46 @@ namespace librealsense
         }
 
 
-        string fw_log_data::to_string()
+        rs2_log_severity fw_log_data::get_severity() const
         {
-            stringstream fmt;
+            return fw_logs_severity_to_log_severity(_severity);
+        }
 
-            fmt << SET_WIDTH_AND_FILL(6, sequence)
-                << SET_WIDTH_AND_FILL(30, file_name)
-                << SET_WIDTH_AND_FILL(6, group_id)
-                << SET_WIDTH_AND_FILL(15, thread_name)
-                << SET_WIDTH_AND_FILL(6, severity)
-                << SET_WIDTH_AND_FILL(6, line)
-                << SET_WIDTH_AND_FILL(15, timestamp)
-                << SET_WIDTH_AND_FILL(15, delta)
-                << SET_WIDTH_AND_FILL(30, message);
+        const std::string& fw_log_data::get_message() const
+        {
+            return _message;
+        }
 
-            auto str = fmt.str();
-            return str;
+        const std::string& fw_log_data::get_file_name() const
+        {
+            return _file_name;
+        }
+
+        const std::string& fw_log_data::get_thread_name() const
+        {
+            return _thread_name;
+        }
+
+        uint32_t fw_log_data::get_line() const
+        {
+            return _line;
+        }
+
+        uint32_t fw_log_data::get_timestamp() const
+        {
+            return _timestamp;
         }
 
         rs2_log_severity fw_logs_binary_data::get_severity() const
         {
             const fw_log_binary* log_binary = reinterpret_cast<const fw_log_binary*>(logs_buffer.data());
             return fw_logs_severity_to_log_severity(static_cast<int32_t>(log_binary->dword1.bits.severity));
+        }
+
+        uint32_t fw_logs_binary_data::get_timestamp() const
+        {
+            const fw_log_binary* log_binary = reinterpret_cast<const fw_log_binary*>(logs_buffer.data());
+            return static_cast<uint32_t>(log_binary->dword5.timestamp);
         }
 
         rs2_log_severity fw_logs_severity_to_log_severity(int32_t severity)
