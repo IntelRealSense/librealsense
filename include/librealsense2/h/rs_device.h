@@ -354,13 +354,21 @@ rs2_raw_data_buffer* rs2_serialize_json(rs2_device* dev, rs2_error** error);
 void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_size, rs2_error** error);
 
 /**
-* \brief Gets RealSense firmware log.
-* \param[in] dev	    Device from which the FW log should be taken
-* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
-* \return               firmware logs
+* \brief Creates RealSense firmware log message.
+* \param[in] dev	        Device from which the FW log will be taken using the created message
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return                   pointer to created empty firmware log message
 */
-rs2_firmware_log_message* rs2_get_firmware_log(rs2_device* dev, rs2_error** error);
+rs2_firmware_log_message* rs2_create_firmware_log_message(rs2_device* dev, rs2_error** error);
 
+/**
+* \brief Gets RealSense firmware log.
+* \param[in] dev	        Device from which the FW log should be taken
+* \param[in] fw_log_msg	    Firmware log message object to be filled
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return                   true for success, false for failure - failure happens if no firmware log was sent by the hardware monitor
+*/
+int rs2_get_firmware_log(rs2_device* dev, rs2_firmware_log_message** fw_log_msg, rs2_error** error);
 /**
 * Delete RealSense firmware log message
 * \param[in]  device    Realsense firmware log message to delete

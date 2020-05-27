@@ -17,18 +17,21 @@ namespace librealsense
 				 0x00, 0x00, 0x00, 0x00, 0x00,    0x00, 0x00, 0x00 };
 	}
 
-
-    fw_logs::fw_logs_binary_data firmware_logger_device::get_fw_log()
+    bool firmware_logger_device::get_fw_log(fw_logs::fw_logs_binary_data& binary_data)
     {
+        bool result = false;
         if (_message_queue.empty())
         {
             get_fw_logs_from_hw_monitor();
         }
-        fw_logs::fw_logs_binary_data result;
+        
         if (!_message_queue.empty())
         {
-            result = _message_queue.front();
+            fw_logs::fw_logs_binary_data data;
+            data = _message_queue.front();
             _message_queue.pop();
+            binary_data = data;
+            result = true;
         }
         return result;
     }

@@ -13,7 +13,7 @@ namespace librealsense
 	class firmware_logger_extensions
 	{
 	public:
-		virtual fw_logs::fw_logs_binary_data get_fw_log() = 0;
+		virtual bool get_fw_log(fw_logs::fw_logs_binary_data& binary_data) = 0;
 		virtual ~firmware_logger_extensions() = default;
 	};
 	MAP_EXTENSION(RS2_EXTENSION_FW_LOGGER, librealsense::firmware_logger_extensions);
@@ -25,7 +25,7 @@ namespace librealsense
 		firmware_logger_device(std::shared_ptr<hw_monitor> hardware_monitor,
 			std::string camera_op_code);
 
-		fw_logs::fw_logs_binary_data get_fw_log() override;
+		bool get_fw_log(fw_logs::fw_logs_binary_data& binary_data) override;
 
 	private:
 		std::vector<uint8_t> _input_code;

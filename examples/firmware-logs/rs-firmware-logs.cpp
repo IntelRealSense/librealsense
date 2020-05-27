@@ -67,39 +67,37 @@ int main(int argc, char * argv[])
             setvbuf(stdout, NULL, _IONBF, 0); // unbuffering stdout
 
             while (hub.is_connected(dev))
-            {
-                //this_thread::sleep_for(chrono::milliseconds(100));
-                
+            {                
                 auto fw_log = res.get_device().as<rs2::firmware_logger>();
-                auto fw_log_message = fw_log.get_firmware_log();
-
-                std::vector<string> fw_log_lines;
-
-                static bool usingParser = true;
-                if (usingParser)
+                auto fw_log_message = fw_log.create_message();
+                bool result = fw_log.get_firmware_log(fw_log_message);
+                if (result)
                 {
-                    std::string xml_path("HWLoggerEventsDS5.xml");
-                    if (!xml_path.empty())
+                    std::vector<string> fw_log_lines;
+
+                    static bool usingParser = true;
+                    if (usingParser)
                     {
-                        ifstream f(xml_path);
-                        if (f.good())
+                        std::string xml_path("HWLoggerEventsDS5.xml");
+                        if (!xml_path.empty())
                         {
-                            unique_ptr<rs2::firmware_log_parser> parser = 
-                                unique_ptr<rs2::firmware_log_parser>(new rs2::firmware_log_parser(xml_path));
-                            
-                            rs2::firmware_log_parsed_message parsed_log = parser->parse_firmware_log(fw_log_message);
-                            stringstream sstr;
-                            sstr << parsed_log.timestamp() << " " << parsed_log.severity() << " " << parsed_log.message() 
-                                << " " << parsed_log.thread_name() << " " << parsed_log.file_name() 
-                                << " " << parsed_log.line();
-                            
-                            fw_log_lines.push_back(sstr.str());
+                            ifstream f(xml_path);
+                            if (f.good())
+                            {
+                                unique_ptr<rs2::firmware_log_parser> parser =
+                                    unique_ptr<rs2::firmware_log_parser>(new rs2::firmware_log_parser(xml_path));
+
+                                rs2::firmware_log_parsed_message parsed_log = parser->parse_firmware_log(fw_log_message);
+                                stringstream sstr;
+                                sstr << parsed_log.timestamp() << " " << parsed_log.severity() << " " << parsed_log.message()
+                                    << " " << parsed_log.thread_name() << " " << parsed_log.file_name()
+                                    << " " << parsed_log.line();
+
+                                fw_log_lines.push_back(sstr.str());
+                            }
                         }
                     }
-                }
-                else
-                {
-                    if (fw_log_message.size() > 0)
+                    else
                     {
                         stringstream sstr;
                         sstr << fw_log_message.get_timestamp();
@@ -112,9 +110,9 @@ int main(int argc, char * argv[])
                         }
                         fw_log_lines.push_back(sstr.str());
                     }
+                    for (auto& line : fw_log_lines)
+                        cout << line << endl;
                 }
-                for (auto& line : fw_log_lines)
-                    cout << line << endl;
             }
         }
         catch (const rs2::error & e)
