@@ -25,15 +25,15 @@ namespace rs2
             context ctx;
             device_model* dev_model;
             update_profile_model(sw_update::dev_updates_profile::update_profile p,
-                context contex, device_model* device_model) : profile(p), ctx(contex), dev_model(device_model){};
+                context contex, device_model* device_model) : profile(p), ctx(contex), dev_model(device_model) {};
         };
         void add_profile(const update_profile_model& update)
         {
             std::lock_guard<std::mutex> lock(_lock);
-            auto it = std::find_if(_updates.begin(), _updates.end(), [&](update_profile_model& p){
+            auto it = std::find_if(_updates.begin(), _updates.end(), [&](update_profile_model& p) {
                 return (p.profile.device_name == update.profile.device_name && p.profile.serial_number == update.profile.serial_number);
             });
-            if (it == _updates.end()) 
+            if (it == _updates.end())
                 _updates.push_back(update);
         }
         void remove_profile(const sw_update::dev_updates_profile::update_profile &update)
@@ -48,6 +48,21 @@ namespace rs2
 
         void draw(ux_window& window, std::string& error_message);
     private:
+        struct position_params
+        {
+            float w;
+            float h;
+            ImVec2 orig_pos;
+            float mid_y;
+            float x0;
+            float y0;
+            position_params() :w(0.0f), h(0.0f), orig_pos(), x0(0.0f), y0(0.0f) {}
+        };
+
+        bool draw_software_section(const char * window_name, update_profile_model& selected_profile, position_params& pos_params , ux_window& window);
+        bool draw_firmware_section(const char * window_name, update_profile_model& selected_profile, position_params& pos_params, ux_window& window);
+
+
         int selected_index = 0;
         int selected_software_update_index = 0;
         int selected_firmware_update_index = 0;
@@ -55,6 +70,7 @@ namespace rs2
         std::vector<update_profile_model> _updates;
         std::shared_ptr<texture_buffer> _icon = nullptr;
         std::mutex _lock;
+        bool emphasize_dismiss_text = false;
 
         std::shared_ptr<firmware_update_manager> _fw_update = nullptr;
 
@@ -78,7 +94,7 @@ namespace rs2
         fw_update_states _fw_update_state = fw_update_states::ready;
 
         progress_bar _progress;
-        std::atomic<int> _fw_download_progress { 0 };
+        std::atomic<int> _fw_download_progress{ 0 };
         bool _retry = false;
         std::shared_ptr<firmware_update_manager> _update_manager = nullptr;
         std::vector<uint8_t> _fw_image;
