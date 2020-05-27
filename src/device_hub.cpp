@@ -18,6 +18,15 @@ namespace librealsense
         {
             bool filtered = false;
             auto data = dev->get_device_data();
+            for (const auto& usb : data.usb_devices)
+            {
+                if (usb.vid == vid || vid == 0)
+                {
+                    result.push_back(dev);
+                    filtered = true;
+                    break;
+                }
+            }
             for (const auto& uvc : data.uvc_devices)
             {
                 if (uvc.vid == vid || vid == 0)
