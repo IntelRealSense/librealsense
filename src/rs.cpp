@@ -2981,15 +2981,30 @@ void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_s
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, json_content, content_size)
 
-rs2_firmware_log_message* rs2_get_firmware_log(rs2_device* dev, rs2_error** error) BEGIN_API_CALL
+rs2_firmware_log_message* rs2_create_firmware_log_message(rs2_device* dev, rs2_error** error)BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     auto fw_loggerable = VALIDATE_INTERFACE(dev->device, librealsense::firmware_logger_extensions);
-
-    fw_logs::fw_logs_binary_data binary_data = fw_loggerable->get_fw_log();
-    return new rs2_firmware_log_message{ std::make_shared<librealsense::fw_logs::fw_logs_binary_data>(binary_data) };
+    
+    return new rs2_firmware_log_message{ std::make_shared <librealsense::fw_logs::fw_logs_binary_data>() };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev, error)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev)
+
+int rs2_get_firmware_log(rs2_device* dev, rs2_firmware_log_message** fw_log_msg, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(dev);
+    VALIDATE_NOT_NULL(fw_log_msg);
+    auto fw_loggerable = VALIDATE_INTERFACE(dev->device, librealsense::firmware_logger_extensions);
+
+    fw_logs::fw_logs_binary_data binary_data;
+    bool result = fw_loggerable->get_fw_log(binary_data);
+    if (result)
+    {
+        (*(*fw_log_msg)->firmware_log_binary_data.get()) = binary_data;
+    }
+    return result? 1 : 0;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, dev, fw_log_msg)
 
 void rs2_delete_firmware_log_message(rs2_firmware_log_message* msg) BEGIN_API_CALL
 {
