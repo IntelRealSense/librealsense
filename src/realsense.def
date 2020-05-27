@@ -358,11 +358,19 @@ EXPORTS
 
     rs2_get_firmware_log
     rs2_delete_firmware_log_message
-    rs2_get_fw_log_severity
+    rs2_firmware_log_message_severity
+    rs2_firmware_log_message_timestamp
     rs2_firmware_log_message_data
     rs2_firmware_log_message_size
     rs2_create_firmware_log_parser
     rs2_delete_firmware_log_parser
     rs2_parse_firmware_log
+    rs2_delete_firmware_log_parsed_message
+    rs2_get_fw_log_parsed_message
+    rs2_get_fw_log_parsed_file_name
+    rs2_get_fw_log_parsed_thread_name
+    rs2_get_fw_log_parsed_severity
+    rs2_get_fw_log_parsed_line
+    rs2_get_fw_log_parsed_timestamp
 
 

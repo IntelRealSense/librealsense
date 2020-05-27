@@ -121,6 +121,11 @@ struct rs2_firmware_log_message
     std::shared_ptr<librealsense::fw_logs::fw_logs_binary_data> firmware_log_binary_data;
 };
 
+struct rs2_firmware_log_parsed_message
+{
+    std::shared_ptr<librealsense::fw_logs::fw_log_data> firmware_log_parsed;
+};
+
 struct rs2_firmware_log_parser
 {
     std::shared_ptr<librealsense::fw_logs::fw_logs_parser> firmware_log_parser;
@@ -3007,11 +3012,18 @@ int rs2_firmware_log_message_size(rs2_firmware_log_message* msg, rs2_error** err
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, msg)
 
-rs2_log_severity rs2_get_fw_log_severity(const rs2_firmware_log_message* msg, rs2_error** error) BEGIN_API_CALL
+rs2_log_severity rs2_firmware_log_message_severity(const rs2_firmware_log_message* msg, rs2_error** error) BEGIN_API_CALL
 {
     return msg->firmware_log_binary_data->get_severity();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS2_LOG_SEVERITY_NONE, msg)
+
+unsigned int rs2_firmware_log_message_timestamp(rs2_firmware_log_message* msg, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(msg);
+    return msg->firmware_log_binary_data->get_timestamp();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, msg)
 
 rs2_firmware_log_parser* rs2_create_firmware_log_parser(const char* xml_path, rs2_error** error) BEGIN_API_CALL
 {
@@ -3028,44 +3040,67 @@ void rs2_delete_firmware_log_parser(rs2_firmware_log_parser* parser) BEGIN_API_C
 }
 NOEXCEPT_RETURN(, parser)
 
-void rs2_parse_firmware_log(rs2_firmware_log_parser* fw_log_parser, rs2_firmware_log_message** fw_log_msg, rs2_error** error) BEGIN_API_CALL
+rs2_firmware_log_parsed_message* rs2_parse_firmware_log(rs2_firmware_log_parser* fw_log_parser, rs2_firmware_log_message* fw_log_msg, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(fw_log_parser);
     VALIDATE_NOT_NULL(fw_log_msg);
 
-    fw_log_parser->firmware_log_parser.get()->parse_fw_log(fw_log_msg);
+    librealsense::fw_logs::fw_log_data log_data = 
+        fw_log_parser->firmware_log_parser.get()->parse_fw_log(fw_log_msg->firmware_log_binary_data.get());
+
+    return new rs2_firmware_log_parsed_message{ std::make_shared<librealsense::fw_logs::fw_log_data>(log_data) };
 }
-NOEXCEPT_RETURN(, fw_log_msg)
-/*rs2_raw_data_buffer* rs2_parse_firmware_log(rs2_firmware_logs_parser* fw_logs_parser,
-    int event_id, int p1, int p2, int p3, int file_id, int thread_id, rs2_error** error) BEGIN_API_CALL
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, fw_log_msg)
+
+void rs2_delete_firmware_log_parsed_message(rs2_firmware_log_parsed_message* fw_log_parsed_msg) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(fw_logs_parser);
-
-    librealsense::fw_logs::fw_log_data fw_log = fw_logs_parser->firmware_logs_parser.get()->parse_fw_log(event_id, p1, p2, p3, file_id, thread_id);
-    
-    std::vector<char> message_bytes(fw_log.message.begin(), fw_log.message.end());
-    message_bytes.push_back('\0'); 
-    uint8_t msg_bytes_size = message_bytes.size();
-
-    std::vector<char> file_name_bytes(fw_log.file_name.begin(), fw_log.file_name.end());
-    file_name_bytes.push_back('\0');
-    uint8_t file_name_bytes_size = file_name_bytes.size();
-
-    std::vector<char> thread_name_bytes(fw_log.thread_name.begin(), fw_log.thread_name.end());
-    thread_name_bytes.push_back('\0');
-    uint8_t thread_name_bytes_size = thread_name_bytes.size();
-
-    std::vector<uint8_t> msg_file_thread_bytes;
-    msg_file_thread_bytes.push_back(msg_bytes_size);
-    msg_file_thread_bytes.insert(msg_file_thread_bytes.end(), message_bytes.begin(), message_bytes.end());
-    msg_file_thread_bytes.push_back(file_name_bytes_size);
-    msg_file_thread_bytes.insert(msg_file_thread_bytes.end(), file_name_bytes.begin(), file_name_bytes.end());
-    msg_file_thread_bytes.push_back(thread_name_bytes_size);
-    msg_file_thread_bytes.insert(msg_file_thread_bytes.end(), thread_name_bytes.begin(), thread_name_bytes.end());
-
-    return new rs2_raw_data_buffer { msg_file_thread_bytes };
+    VALIDATE_NOT_NULL(fw_log_parsed_msg);
+    delete fw_log_parsed_msg;
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, fw_logs_parser)*/
+NOEXCEPT_RETURN(, fw_log_parsed_msg)
+
+const char* rs2_get_fw_log_parsed_message(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(fw_log_parsed_msg);
+    return fw_log_parsed_msg->firmware_log_parsed->get_message().c_str();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, fw_log_parsed_msg)
+
+const char* rs2_get_fw_log_parsed_file_name(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(fw_log_parsed_msg);
+    return fw_log_parsed_msg->firmware_log_parsed->get_file_name().c_str();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, fw_log_parsed_msg)
+
+const char* rs2_get_fw_log_parsed_thread_name(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(fw_log_parsed_msg);
+    return fw_log_parsed_msg->firmware_log_parsed->get_thread_name().c_str();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, fw_log_parsed_msg)
+
+rs2_log_severity rs2_get_fw_log_parsed_severity(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(fw_log_parsed_msg);
+    return fw_log_parsed_msg->firmware_log_parsed->get_severity();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(RS2_LOG_SEVERITY_NONE, fw_log_parsed_msg)
+
+unsigned int rs2_get_fw_log_parsed_line(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(fw_log_parsed_msg);
+    return fw_log_parsed_msg->firmware_log_parsed->get_line();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, fw_log_parsed_msg)
+
+unsigned int rs2_get_fw_log_parsed_timestamp(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(fw_log_parsed_msg);
+    return fw_log_parsed_msg->firmware_log_parsed->get_timestamp();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, fw_log_parsed_msg)
+
 
 
 

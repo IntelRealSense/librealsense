@@ -27,14 +27,9 @@ namespace librealsense
 
 		fw_logs::fw_logs_binary_data get_fw_log() override;
 
-		fw_logs::fw_log_data fill_log_data(const char* fw_logs) ;
-
-
 	private:
 		std::vector<uint8_t> _input_code;
 		std::shared_ptr<hw_monitor> _hw_monitor;
-		uint64_t _last_timestamp;
-		const double _timestamp_factor;
 
 		std::queue<fw_logs::fw_logs_binary_data> _message_queue;
 		void get_fw_logs_from_hw_monitor();
