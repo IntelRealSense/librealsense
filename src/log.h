@@ -15,7 +15,6 @@ namespace librealsense
 
         log_message( el::LogMessage const& el_msg ) : el_msg( el_msg ) {}
 
-    public:
         unsigned get_log_message_line_number() const {
             return el_msg.line();
         }
@@ -248,10 +247,7 @@ namespace librealsense
 #else //BUILD_EASYLOGGINGPP
     struct log_message
     {
-        std::string error_msg;
-        log_message(): error_msg("") {}
 
-    public:
         unsigned get_log_message_line_number() const {
             throw std::runtime_error("rs2_get_log_message_line_number is not supported without BUILD_EASYLOGGINGPP");
         }
