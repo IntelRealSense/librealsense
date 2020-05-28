@@ -82,7 +82,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             _updates.clear();
             return;
         }
-        std::string title_message = "ESSENTIAL UPDATE";
+        std::string title_message = "SOFTWARE UPDATES";
         auto title_size = ImGui::CalcTextSize(title_message.c_str());
         ImGui::SetCursorPosX(positions.w / 2 - title_size.x / 2);
         ImGui::PushFont(window.get_large_font());
@@ -187,6 +187,12 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             {
                 emphasize_dismiss_text = true;
             }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("To close this window you must install all essential update\n"
+                    "or agree to the warning of closing without it");
+                window.link_hovered();
+            }
         }
         ImGui::EndPopup();
     }
@@ -231,7 +237,7 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
 
         ImGui::PushFont(window.get_large_font());
         ImGui::PushStyleColor(ImGuiCol_Text, white);
-        ImGui::Text("SOFTWARE: ");
+        ImGui::Text("Librealsense SDK: ");
         ImGui::PopStyleColor();
         ImGui::SameLine();
 
@@ -251,8 +257,8 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
         }
         else if (essential_sw_update_needed)
         {
-            ImGui::PushStyleColor(ImGuiCol_Text, light_red);
-            ImGui::Text("Essential update needed!");
+            ImGui::PushStyleColor(ImGuiCol_Text, yellowish);
+            ImGui::Text("Essential update is available. Please install/update!");
             ImGui::PopStyleColor();
         }
 
@@ -271,7 +277,7 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
         ImGui::PushStyleColor(ImGuiCol_Text, white);
         ImGui::Text("%s", "Purpose:"); ImGui::SameLine();
         ImGui::PopStyleColor();
-        ImGui::Text("%s", "Responsible for stream alignment, texture mapping and camera accuracy health algorithms");
+        ImGui::Text("%s", "Enhancements for stream alignment, texture mapping and camera accuracy health algorithms");
 
         ImGui::SetCursorScreenPos({ pos.orig_pos.x + 150, pos.orig_pos.y + 90 });
         ImGui::PushStyleColor(ImGuiCol_Text, white);
@@ -286,7 +292,7 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
 
 
         ImGui::Text("%s", (software_updates.size() >= 2) ?
-            "Choose which version to download: " :
+            "Versions available: " :
             "Version to download: ");
         ImGui::SameLine();
         ImGui::PopStyleColor();
@@ -303,12 +309,14 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
                 }
                 ImGui::PushStyleColor(ImGuiCol_BorderShadow, dark_grey);
                 ImGui::PushStyleColor(ImGuiCol_FrameBg, sensor_bg);
+                ImGui::SetWindowFontScale(0.9);
 
                 std::string combo_id = "##Software Update Version";
                 ImGui::PushItemWidth(200);
                 ImGui::Combo(combo_id.c_str(), &selected_software_update_index, swu_labels.data(), static_cast<int>(swu_labels.size()));
                 ImGui::PopItemWidth();
                 ImGui::PopStyleColor(2);
+                ImGui::SetWindowFontScale(1.);
             }
             else
             {   // Single version
@@ -324,6 +332,12 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
             ImGui::PopStyleColor();
             ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
             ImGui::Text("%s", selected_software_update.release_page.c_str());
+
+            ImGui::SameLine();
+            auto underline_start = ImVec2(ImGui::GetCursorScreenPos().x - (ImGui::CalcTextSize(selected_software_update.release_page.c_str()).x + 8), ImGui::GetCursorScreenPos().y + ImGui::GetFontSize());
+            auto underline_end = ImVec2(ImGui::GetCursorScreenPos().x - 8 , ImGui::GetCursorScreenPos().y + ImGui::GetFontSize());
+            ImGui::GetWindowDrawList()->AddLine(underline_start, underline_end, ImColor(light_grey));
+            
             ImGui::PopStyleColor();
             if (ImGui::IsItemHovered())
                 window.link_hovered();
@@ -457,8 +471,8 @@ bool updates_model::draw_firmware_section(const char * window_name, update_profi
     }
     else if (essential_fw_update_needed)
     {
-        ImGui::PushStyleColor(ImGuiCol_Text, light_red);
-        ImGui::Text("Essential update needed!");
+        ImGui::PushStyleColor(ImGuiCol_Text, yellowish);
+        ImGui::Text("Essential update is available. Please install/update!");
         ImGui::PopStyleColor();
     }
 
@@ -493,7 +507,7 @@ bool updates_model::draw_firmware_section(const char * window_name, update_profi
 
 
     ImGui::Text("%s", (firmware_updates.size() >= 2) ?
-        "Choose which version to download: " :
+        "Versions available: " :
         "Version to download: ");
     ImGui::SameLine();
     ImGui::PopStyleColor();
@@ -511,12 +525,14 @@ bool updates_model::draw_firmware_section(const char * window_name, update_profi
 
             ImGui::PushStyleColor(ImGuiCol_BorderShadow, dark_grey);
             ImGui::PushStyleColor(ImGuiCol_FrameBg, sensor_bg);
+            ImGui::SetWindowFontScale(0.9);
 
             std::string combo_id = "##Firmware Update Version";
             ImGui::PushItemWidth(200);
             ImGui::Combo(combo_id.c_str(), &selected_firmware_update_index, fwu_labels.data(), static_cast<int>(fwu_labels.size()));
             ImGui::PopItemWidth();
             ImGui::PopStyleColor(2);
+            ImGui::SetWindowFontScale(1.);
         }
         else
         {   // Single version
@@ -532,6 +548,13 @@ bool updates_model::draw_firmware_section(const char * window_name, update_profi
         ImGui::PopStyleColor();
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::Text("%s", selected_firmware_update.release_page.c_str());
+
+        ImGui::SameLine();
+        auto underline_start = ImVec2(ImGui::GetCursorScreenPos().x - (ImGui::CalcTextSize(selected_firmware_update.release_page.c_str()).x + 8), ImGui::GetCursorScreenPos().y + ImGui::GetFontSize());
+        auto underline_end = ImVec2(ImGui::GetCursorScreenPos().x - 8, ImGui::GetCursorScreenPos().y + ImGui::GetFontSize());
+        ImGui::GetWindowDrawList()->AddLine(underline_start, underline_end, ImColor(light_grey));
+
+
         ImGui::PopStyleColor();
         if (ImGui::IsItemHovered())
             window.link_hovered();
