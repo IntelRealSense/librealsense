@@ -4,6 +4,7 @@
 #include "calibration.h"
 #include "debug.h"
 #include "utils.h"
+#include <math.h>
 
 namespace librealsense {
 namespace algo {
@@ -12,18 +13,18 @@ namespace depth_to_rgb_calibration {
     double get_norma(const std::vector<double3>& vec)
     {
         double sum = 0;
-        std::for_each(vec.begin(), vec.end(), [&](double3 v) {sum += v.get_norm(); });
+        std::for_each( vec.begin(), vec.end(), [&]( double3 const & v ) { sum += v.get_norm(); } );
         return std::sqrt(sum);
     }
 
     double rad_to_deg(double rad)
     {
-        return rad * 180.0 / PI;
+        return rad * 180. / M_PI;
     }
 
     double deg_to_rad(double deg)
     {
-        return deg * PI / 180.0;
+        return deg * M_PI / 180.;
     }
 
     void direct_inv_6x6(const double A[36], const double B[6], double C[6])
@@ -277,19 +278,18 @@ namespace depth_to_rgb_calibration {
 
     void rotate_180(const uint8_t* A, uint8_t* B, uint32_t w, uint32_t h)
     {
-        int j;
-        int i;
-
         /* ROT Summary of this function goes here */
         /*    Detailed explanation goes here */
-        for (j = 0; j < w; j++) {
-            for (i = 0; i < h; i++) {
+        for (int j = 0; j < int(w); j++) {
+            for (int i = 0; i < int(h); i++) {
                 B[i + h * j] = A[(h * (w - 1 - j) - i) + h - 1];
             }
         }
     }
     
-    const std::vector<double> interp1(const std::vector<double> ind, const std::vector<double> vals, const std::vector<double> intrp)
+    std::vector< double > interp1( const std::vector< double > & ind,
+                                   const std::vector< double > & vals,
+                                   const std::vector< double > & intrp )
     {
         std::vector<double> res(intrp.size(), 0);
 

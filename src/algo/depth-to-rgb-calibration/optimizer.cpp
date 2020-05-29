@@ -128,13 +128,12 @@ static std::vector< double > get_direction_deg(
     std::vector<double> const & gradient_y
 )
 {
-#define PI 3.14159265
     std::vector<double> res( gradient_x.size(), deg_none );
 
     for( auto i = 0; i < gradient_x.size(); i++ )
     {
         int closest = -1;
-        auto angle = atan2( gradient_y[i], gradient_x[i] )* 180.f / PI;
+        auto angle = atan2( gradient_y[i], gradient_x[i] )* 180.f / M_PI;
         angle = angle < 0 ? 180 + angle : angle;
         auto dir = fmod( angle, 180 );
 
@@ -148,13 +147,12 @@ static std::vector< double > get_direction_deg2(
     std::vector<double> const& gradient_y
     )
 {
-#define PI 3.14159265
     std::vector<double> res(gradient_x.size(), deg_none);
 
     for (auto i = 0; i < gradient_x.size(); i++)
     {
         int closest = -1;
-        auto angle = atan2(gradient_y[i], gradient_x[i])*180.f  / PI;
+        auto angle = atan2(gradient_y[i], gradient_x[i])*180.f  / M_PI;
         angle = angle < 0 ?  360+angle : angle;
         auto dir = fmod(angle, 360);
 
@@ -239,27 +237,28 @@ void set_margin(
         *(it + i * width + (width-2)) = 0;
     }
 }
-template<class T>
-void depth_filter(
-    std::vector<T>& filtered,
-    std::vector<T>& origin,
-    std::vector<double>& valid_edge_by_ir,
-    size_t width,
-    size_t height)
+
+template < class T >
+void depth_filter( std::vector< T > & filtered,
+                   std::vector< T > const & origin,
+                   std::vector< double > const & valid_edge_by_ir,
+                   size_t const width,
+                   size_t const height )
 {
     // origin and valid_edge_by_ir are of same size
-    for (auto j = 0; j < width; j++)
+    for( auto j = 0; j < width; j++ )
     {
-        for (auto i = 0; i < height; i++)
+        for( auto i = 0; i < height; i++ )
         {
             auto idx = i * width + j;
-            if (valid_edge_by_ir[idx])
+            if( valid_edge_by_ir[idx] )
             {
-                filtered.push_back(origin[idx]);
+                filtered.push_back( origin[idx] );
             }
         }
     }
 }
+
 void grid_xy(
     std::vector<double>& gridx,
     std::vector<double>& gridy,
@@ -437,8 +436,8 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     /*sz = size(frame.i);
     [gridX,gridY] = meshgrid(1:sz(2),1:sz(1)); % gridX/Y contains the indices of the pixels
     sectionMapDepth = OnlineCalibration.aux.sectionPerPixel(params);
-*/
-// Get a map for each pixel to its corresponding section
+    */
+    // Get a map for each pixel to its corresponding section
     _z.section_map_depth.resize(_z.width * _z.height);
     size_t const section_w = _params.num_of_sections_for_edge_distribution_x;  //% params.numSectionsH
     size_t const section_h = _params.num_of_sections_for_edge_distribution_y;  //% params.numSectionsH
@@ -451,7 +450,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     directionInDeg = atan2d(IyValid,IxValid);
     directionInDeg(directionInDeg<0) = directionInDeg(directionInDeg<0) + 360;
     [~,directionIndex] = min(abs(directionInDeg - [0:45:315]),[],2); % Quantize the direction to 4 directions (don't care about the sign)
- */
+    */
 
     std::vector<double> grid_x;
     std::vector<double> grid_y;
@@ -638,27 +637,27 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     _z.values_for_subedges = valid_values_for_subedges;
 
     /* weights = min(max(zGradInDirection - params.gradZTh,0),params.gradZMax - params.gradZTh);
-   if params.constantWeights
-       weights(:) = params.constantWeightsValue;
-   end
-   xim = edgeSubPixel(:,1)-1;
-   yim = edgeSubPixel(:,2)-1;
+    if params.constantWeights
+        weights(:) = params.constantWeightsValue;
+    end
+    xim = edgeSubPixel(:,1)-1;
+    yim = edgeSubPixel(:,2)-1;
 
-   subPoints = [xim,yim,ones(size(yim))];
-   vertices = subPoints*(pinv(params.Kdepth)').*zValuesForSubEdges/single(params.zMaxSubMM);
+    subPoints = [xim,yim,ones(size(yim))];
+    vertices = subPoints*(pinv(params.Kdepth)').*zValuesForSubEdges/single(params.zMaxSubMM);
 
-   [uv,~,~] = OnlineCalibration.aux.projectVToRGB(vertices,params.rgbPmat,params.Krgb,params.rgbDistort);
-   isInside = OnlineCalibration.aux.isInsideImage(uv,params.rgbRes);
+    [uv,~,~] = OnlineCalibration.aux.projectVToRGB(vertices,params.rgbPmat,params.Krgb,params.rgbDistort);
+    isInside = OnlineCalibration.aux.isInsideImage(uv,params.rgbRes);
    
-   xim = xim(isInside);
-   yim = yim(isInside);
-   zValuesForSubEdges = zValuesForSubEdges(isInside);
-   zGradInDirection = zGradInDirection(isInside);
-   directionIndex = directionIndex(isInside);
-   weights = weights(isInside);
-   vertices = vertices(isInside,:);
-   sectionMapDepth = sectionMapDepth(isInside);*/
-   //_params.constant_weights;
+    xim = xim(isInside);
+    yim = yim(isInside);
+    zValuesForSubEdges = zValuesForSubEdges(isInside);
+    zGradInDirection = zGradInDirection(isInside);
+    directionIndex = directionIndex(isInside);
+    weights = weights(isInside);
+    vertices = vertices(isInside,:);
+    sectionMapDepth = sectionMapDepth(isInside);*/
+    //_params.constant_weights;
     transform(_z.valid_edge_sub_pixel_x.begin(), _z.valid_edge_sub_pixel_x.end(), _z.valid_edge_sub_pixel_x.begin(), bind2nd(std::plus<double>(), -1.0));
     transform(_z.valid_edge_sub_pixel_y.begin(), _z.valid_edge_sub_pixel_y.end(), _z.valid_edge_sub_pixel_y.begin(), bind2nd(std::plus<double>(), -1.0));
     for (auto i = 0; i < _z.sub_points.size(); i += 3)
@@ -825,11 +824,9 @@ void librealsense::algo::depth_to_rgb_calibration::optimizer::decompose_p_mat()
     std::vector<double> inv_k_square_vac(9, 0);
     inv(k_square.to_vector().data(), inv_k_square_vac.data());
 
-    double3x3 inv_k_square = {
-        inv_k_square_vac[0], inv_k_square_vac[1],inv_k_square_vac[2],
-        inv_k_square_vac[3], inv_k_square_vac[4],inv_k_square_vac[5],
-        inv_k_square_vac[6], inv_k_square_vac[7],inv_k_square_vac[8]
-    };
+    double3x3 inv_k_square = { inv_k_square_vac[0], inv_k_square_vac[1], inv_k_square_vac[2],
+                               inv_k_square_vac[3], inv_k_square_vac[4], inv_k_square_vac[5],
+                               inv_k_square_vac[6], inv_k_square_vac[7], inv_k_square_vac[8] };
 
     auto k_inv = cholesky3x3(inv_k_square).transpose();
     std::vector<double> k_vac(9, 0);
@@ -888,7 +885,7 @@ std::vector< direction > optimizer::get_direction( std::vector<double> gradient_
     for( auto i = 0; i < gradient_x.size(); i++ )
     {
         int closest = -1;
-        auto angle = atan2( gradient_y[i], gradient_x[i] )* 180.f / PI;
+        auto angle = atan2( gradient_y[i], gradient_x[i] )* 180.f / M_PI;
         angle = angle < 0 ? 180 + angle : angle;
         auto dir = fmod( angle, 180 );
 
@@ -911,7 +908,7 @@ std::vector< direction > optimizer::get_direction2(std::vector<double> gradient_
     for (auto i = 0; i < gradient_x.size(); i++)
     {
         int closest = -1;
-        auto angle = atan2(gradient_y[i], gradient_x[i]) * 180.f / PI;
+        auto angle = atan2(gradient_y[i], gradient_x[i]) * 180.f / M_PI;
         angle = angle < 0 ? 360 + angle : angle;
         auto dir = fmod(angle, 360);
 
@@ -1472,12 +1469,12 @@ void optimizer::write_data_to( std::string const & dir )
     }
 }
 
-optimaization_params optimizer::back_tracking_line_search( const z_frame_data & z_data, 
-    const yuy2_frame_data& yuy_data, 
-    optimaization_params curr_params,
-    iteration_data_collect * data)
+optimization_params optimizer::back_tracking_line_search( const z_frame_data & z_data,
+                                                          const yuy2_frame_data & yuy_data,
+                                                          optimization_params curr_params,
+                                                          iteration_data_collect * data )
 {
-    optimaization_params new_params;
+    optimization_params new_params;
 
     auto grads_norm = curr_params.calib_gradients.normalize();
     auto normalized_grads = grads_norm / _params.normelize_mat;
@@ -1499,9 +1496,11 @@ optimaization_params optimizer::back_tracking_line_search( const z_frame_data & 
     auto diff = calc_cost_per_vertex_diff(z_data, yuy_data, uvmap_old, uvmap_new);
 
     auto iter_count = 0;
-    while( diff >= step_size * t && abs( step_size ) > _params.min_step_size && iter_count++ < _params.max_back_track_iters )
+    while( diff >= step_size * t
+           && abs( step_size ) > _params.min_step_size
+           && iter_count++ < _params.max_back_track_iters )
     {
-        AC_LOG( DEBUG, "    back tracking line search cost= " << std::fixed << std::setprecision( 15 ) << new_params.cost );
+        AC_LOG( DEBUG, "    back tracking line search cost= " << std::fixed << AC_D_PREC << new_params.cost );
         step_size = _params.tau*step_size;
 
         new_params.curr_p_mat = curr_params.curr_p_mat + unit_grad * step_size;
@@ -1528,7 +1527,7 @@ optimaization_params optimizer::back_tracking_line_search( const z_frame_data & 
     return new_params;
 }
 
-double optimizer::calc_step_size( optimaization_params opt_params )
+double optimizer::calc_step_size( optimization_params opt_params )
 {
     auto grads_norm = opt_params.calib_gradients.normalize();
     auto normalized_grads = grads_norm / _params.normelize_mat;
@@ -1539,7 +1538,7 @@ double optimizer::calc_step_size( optimaization_params opt_params )
     return _params.max_step_size*normalized_grads_norm / unit_grad_norm;
 }
 
-double optimizer::calc_t( optimaization_params opt_params )
+double optimizer::calc_t( optimization_params opt_params )
 {
     auto grads_norm = opt_params.calib_gradients.normalize();
     auto normalized_grads = grads_norm / _params.normelize_mat;
@@ -1552,7 +1551,7 @@ double optimizer::calc_t( optimaization_params opt_params )
 
 size_t optimizer::optimize( std::function< void( iteration_data_collect const & data ) > cb )
 {
-    optimaization_params params_orig;
+    optimization_params params_orig;
     params_orig.curr_p_mat = _original_calibration.calc_p_mat();
 
     auto res = calc_cost_and_grad( _z, _yuy, _original_calibration, params_orig.curr_p_mat );

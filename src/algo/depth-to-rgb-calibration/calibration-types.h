@@ -22,16 +22,16 @@ namespace depth_to_rgb_calibration {
             return { x - other.x, y - other.y , z - other.z };
         }
 
-        double get_norm()
+        double get_norm() const
         {
             return x*x + y * y + z * z;
         }
 
-        double3 operator*(const double& scalar) {
+        double3 operator*(const double& scalar) const {
             return { x * scalar , y * scalar , z * scalar };
         }
 
-        double operator*(const double3& s) {
+        double operator*(const double3& s) const {
             return x * s.x + y * s.y + z * s.z;
         }
     };
@@ -40,8 +40,8 @@ namespace depth_to_rgb_calibration {
     {
         double x, y;
         double & operator [] ( int i ) { return (&x)[i]; };
-        bool operator == (const double2 d) { return x == d.x && y == d.y; }
-        bool operator != (const double2 d) { return !(*this == d); }
+        bool operator == (const double2 & d) const { return x == d.x && y == d.y; }
+        bool operator != (const double2 & d) const { return !(*this == d); }
     };
 
         struct double3x3

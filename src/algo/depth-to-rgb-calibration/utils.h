@@ -3,8 +3,6 @@
 
 #pragma once
 
-#define PI 3.14159265359
-
 namespace librealsense {
 namespace algo {
 namespace depth_to_rgb_calibration {
@@ -13,7 +11,9 @@ namespace depth_to_rgb_calibration {
     void inv(const double x[9], double y[9]); //auto generated code
     void transpose(const double x[9], double y[9]);
     void rotate_180(const uint8_t* A, uint8_t* B, uint32_t w, uint32_t h); //auto generated code
-    const std::vector<double> interp1(const std::vector<double> ind, const std::vector<double> vals, const std::vector<double> intrp);//todo const&
+    std::vector< double > interp1( const std::vector< double > & ind,
+                                   const std::vector< double > & vals,
+                                   const std::vector< double > & intrp );
     double get_norma(const std::vector<double3>& vec);
     double rad_to_deg(double rad); 
     double deg_to_rad(double deg);

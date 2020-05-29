@@ -4,6 +4,7 @@
 #include "k-to-dsm.h"
 #include "debug.h"
 #include "utils.h"
+#include <math.h>
 
 using namespace librealsense::algo::depth_to_rgb_calibration;
 
@@ -17,25 +18,21 @@ rs2_intrinsics_double rotate_k_mat(const rs2_intrinsics_double& k_mat)
     return res;
 }
 
-librealsense::algo::depth_to_rgb_calibration::k_to_DSM::k_to_DSM
-(
-    const rs2_dsm_params & orig_dsm_params, 
-    algo::depth_to_rgb_calibration::algo_calibration_info const & cal_info, 
-    algo::depth_to_rgb_calibration::algo_calibration_registers const & cal__regs,
-    const double& max_scaling_step)
-    :_ac_data(orig_dsm_params),
-    _regs(cal_info),
-    _dsm_regs(cal__regs),
-    _max_scaling_step(max_scaling_step)
+k_to_DSM::k_to_DSM( const rs2_dsm_params & orig_dsm_params,
+                    algo_calibration_info const & cal_info,
+                    algo_calibration_registers const & cal__regs,
+                    const double & max_scaling_step )
+    : _ac_data( orig_dsm_params )
+    , _regs( cal_info )
+    , _dsm_regs( cal__regs )
+    , _max_scaling_step( max_scaling_step )
 {
 }
 
-algo_calibration_registers librealsense::algo::depth_to_rgb_calibration::k_to_DSM::apply_ac_res_on_dsm_model
-(
-    const rs2_dsm_params& ac_data, 
-    const algo_calibration_registers& dsm_regs,
-    const ac_to_dsm_dir& type
-)
+algo_calibration_registers
+k_to_DSM::apply_ac_res_on_dsm_model( const rs2_dsm_params & ac_data,
+                                     const algo_calibration_registers & dsm_regs,
+                                     const ac_to_dsm_dir & type )
 {
     algo_calibration_registers res;
 
@@ -46,21 +43,28 @@ algo_calibration_registers librealsense::algo::depth_to_rgb_calibration::k_to_DS
         case dsm_model::none: // none
             res = dsm_regs;
             break;
-        case AOT: // AOT model
-            res.EXTLdsmXscale = (double)dsm_regs.EXTLdsmXscale*(double)ac_data.h_scale;
-            res.EXTLdsmYscale = (double)dsm_regs.EXTLdsmYscale*(double)ac_data.v_scale;
-            res.EXTLdsmXoffset = ((double)dsm_regs.EXTLdsmXoffset + (double)ac_data.h_offset) / (double)ac_data.h_scale;
-            res.EXTLdsmYoffset = ((double)dsm_regs.EXTLdsmYoffset + (double)ac_data.v_offset) / (double)ac_data.v_scale;
+        case AOT:  // AOT model
+            res.EXTLdsmXscale = float( (double)dsm_regs.EXTLdsmXscale * ac_data.h_scale );
+            res.EXTLdsmYscale = float( (double)dsm_regs.EXTLdsmYscale * ac_data.v_scale );
+            res.EXTLdsmXoffset
+                = float( ( (double)dsm_regs.EXTLdsmXoffset + (double)ac_data.h_offset )
+                         / (double)ac_data.h_scale );
+            res.EXTLdsmYoffset
+                = float( ( (double)dsm_regs.EXTLdsmYoffset + (double)ac_data.v_offset )
+                         / (double)ac_data.v_scale );
             break;
-        case  dsm_model::TOA: // TOA model
-            res.EXTLdsmXscale = (double)dsm_regs.EXTLdsmXscale*(double)ac_data.h_scale;
-            res.EXTLdsmYscale = (double)dsm_regs.EXTLdsmYscale*(double)ac_data.v_scale;
-            res.EXTLdsmXoffset = ((double)dsm_regs.EXTLdsmXoffset + (double)ac_data.h_offset) / (double)dsm_regs.EXTLdsmXscale;
-            res.EXTLdsmYoffset = ((double)dsm_regs.EXTLdsmYoffset + (double)ac_data.v_offset) / (double)dsm_regs.EXTLdsmYscale;
+        case dsm_model::TOA:  // TOA model
+            res.EXTLdsmXscale = float( (double)dsm_regs.EXTLdsmXscale * ac_data.h_scale );
+            res.EXTLdsmYscale = float( (double)dsm_regs.EXTLdsmYscale * ac_data.v_scale );
+            res.EXTLdsmXoffset
+                = float( ( (double)dsm_regs.EXTLdsmXoffset + (double)ac_data.h_offset )
+                         / (double)dsm_regs.EXTLdsmXscale );
+            res.EXTLdsmYoffset
+                = float( ( (double)dsm_regs.EXTLdsmYoffset + (double)ac_data.v_offset )
+                         / (double)dsm_regs.EXTLdsmYscale );
             break;
         default:
-            throw std::runtime_error(_ac_data.flags[0] + "is not valid model");
-            break;
+            throw std::runtime_error(_ac_data.flags[0] + " is not a valid model");
         }
     }
     else if (type == inverse) // revert from modified model to original model
@@ -90,11 +94,9 @@ algo_calibration_registers librealsense::algo::depth_to_rgb_calibration::k_to_DS
     return res;
 }
 
-los_shift_scaling librealsense::algo::depth_to_rgb_calibration::k_to_DSM::convert_ac_data_to_los_error
-(
-    const algo_calibration_registers& dsm_regs,
-    const rs2_dsm_params& ac_data
-)
+los_shift_scaling
+k_to_DSM::convert_ac_data_to_los_error( const algo_calibration_registers & dsm_regs,
+                                        const rs2_dsm_params & ac_data )
 {
     los_shift_scaling res;
     switch (_ac_data.flags[0])
@@ -124,7 +126,7 @@ los_shift_scaling librealsense::algo::depth_to_rgb_calibration::k_to_DSM::conver
     return res;
 }
 
-pre_process_data librealsense::algo::depth_to_rgb_calibration::k_to_DSM::pre_processing
+pre_process_data k_to_DSM::pre_processing
 (
     const algo_calibration_info& regs,
     const rs2_dsm_params& ac_data,
@@ -144,7 +146,7 @@ pre_process_data librealsense::algo::depth_to_rgb_calibration::k_to_DSM::pre_pro
     return res;
 }
 
-rs2_dsm_params librealsense::algo::depth_to_rgb_calibration::k_to_DSM::convert_new_k_to_DSM
+rs2_dsm_params k_to_DSM::convert_new_k_to_DSM
 (
     const rs2_intrinsics_double& old_k,
     const rs2_intrinsics_double& new_k,
@@ -205,14 +207,14 @@ rs2_dsm_params librealsense::algo::depth_to_rgb_calibration::k_to_DSM::convert_n
     return ac_data_cand;
 }
 
-const pre_process_data& librealsense::algo::depth_to_rgb_calibration::k_to_DSM::get_pre_process_data() const
+const pre_process_data& k_to_DSM::get_pre_process_data() const
 {
     return _pre_process_data;
 }
 
-double2 librealsense::algo::depth_to_rgb_calibration::k_to_DSM::convert_k_to_los_error
+double2 k_to_DSM::convert_k_to_los_error
 (
-    algo::depth_to_rgb_calibration::algo_calibration_info const & regs,
+    algo_calibration_info const & regs,
     algo_calibration_registers const &dsm_regs,
     rs2_intrinsics_double const & new_k_raw
 )
@@ -255,13 +257,19 @@ double2 librealsense::algo::depth_to_rgb_calibration::k_to_DSM::convert_k_to_los
 
     auto max_step_with_margin = 1.01*_max_scaling_step;
 
-    los_scaling.x = std::min(std::max(los_scaling.x, _pre_process_data.last_los_error.los_scaling_x - max_step_with_margin), _pre_process_data.last_los_error.los_scaling_x + max_step_with_margin);
-    los_scaling.y = std::min(std::max(los_scaling.y, _pre_process_data.last_los_error.los_scaling_y - max_step_with_margin), _pre_process_data.last_los_error.los_scaling_y + max_step_with_margin);
+    los_scaling.x
+        = std::min( std::max( los_scaling.x, _pre_process_data.last_los_error.los_scaling_x
+                                                 - max_step_with_margin ),
+                    _pre_process_data.last_los_error.los_scaling_x + max_step_with_margin );
+    los_scaling.y
+        = std::min( std::max( los_scaling.y, _pre_process_data.last_los_error.los_scaling_y
+                                                 - max_step_with_margin ),
+                    _pre_process_data.last_los_error.los_scaling_y + max_step_with_margin );
 
     return los_scaling;
 }
 
-rs2_dsm_params librealsense::algo::depth_to_rgb_calibration::k_to_DSM::convert_los_error_to_ac_data
+rs2_dsm_params k_to_DSM::convert_los_error_to_ac_data
 (
     const rs2_dsm_params& ac_data,
     const algo_calibration_registers& dsm_regs,
@@ -280,26 +288,30 @@ rs2_dsm_params librealsense::algo::depth_to_rgb_calibration::k_to_DSM::convert_l
         ac_data_out.v_offset = 0;
         break;
     case dsm_model::AOT:
-        ac_data_out.h_scale = 1 / los_scaling.x;
-        ac_data_out.v_scale = 1 / los_scaling.y;
-        ac_data_out.h_offset = -los_shift.x / los_scaling.x;
-        ac_data_out.v_offset = -los_shift.y / los_scaling.y;
+        ac_data_out.h_scale = float( 1 / los_scaling.x );
+        ac_data_out.v_scale = float( 1 / los_scaling.y );
+        ac_data_out.h_offset = float( -los_shift.x / los_scaling.x );
+        ac_data_out.v_offset = float( -los_shift.y / los_scaling.y );
         break;
     case dsm_model::TOA:
-        ac_data_out.h_scale = 1 / los_scaling.x;
-        ac_data_out.v_scale = 1 / los_scaling.y;
+        ac_data_out.h_scale = float( 1 / los_scaling.x );
+        ac_data_out.v_scale = float( 1 / los_scaling.y );
         _dsm_regs = apply_ac_res_on_dsm_model(ac_data, dsm_regs, inverse); // the one used for assessing LOS error
-        ac_data_out.h_offset = -(_dsm_regs.EXTLdsmXoffset*(1 - los_scaling.x) + los_shift.x)*_dsm_regs.EXTLdsmXscale;
-        ac_data_out.v_offset = -(_dsm_regs.EXTLdsmYoffset*(1 - los_scaling.y) + los_shift.y)*_dsm_regs.EXTLdsmYscale;
+        ac_data_out.h_offset
+            = float( -( _dsm_regs.EXTLdsmXoffset * ( 1 - los_scaling.x ) + los_shift.x )
+                     * _dsm_regs.EXTLdsmXscale );
+        ac_data_out.v_offset
+            = float( -( _dsm_regs.EXTLdsmYoffset * ( 1 - los_scaling.y ) + los_shift.y )
+                     * _dsm_regs.EXTLdsmYscale );
         break;
         
     }
     return ac_data_out;
 }
 
-double2 librealsense::algo::depth_to_rgb_calibration::k_to_DSM::run_scaling_optimization_step
+double2 k_to_DSM::run_scaling_optimization_step
 (
-    algo::depth_to_rgb_calibration::algo_calibration_info const & regs,
+    algo_calibration_info const & regs,
     algo_calibration_registers const &dsm_regs,
     double scaling_grid_x[25], 
     double scaling_grid_y[25], 
@@ -410,9 +422,9 @@ double2 librealsense::algo::depth_to_rgb_calibration::k_to_DSM::run_scaling_opti
     return { opt_scaling[0], opt_scaling[1] };
 }
 
-std::vector<double3x3> librealsense::algo::depth_to_rgb_calibration::k_to_DSM::optimize_k_under_los_error
+std::vector<double3x3> k_to_DSM::optimize_k_under_los_error
 (
-    algo::depth_to_rgb_calibration::algo_calibration_info const & regs,
+    algo_calibration_info const & regs,
     algo_calibration_registers const &dsm_regs,
     double scaling_grid_x[25],
     double scaling_grid_y[25]
@@ -487,9 +499,9 @@ std::vector<double3x3> librealsense::algo::depth_to_rgb_calibration::k_to_DSM::o
     return res;
 }
 
-std::vector<double3> librealsense::algo::depth_to_rgb_calibration::k_to_DSM::convert_los_to_norm_vertices
+std::vector<double3> k_to_DSM::convert_los_to_norm_vertices
 (
-    algo::depth_to_rgb_calibration::algo_calibration_info const & regs,
+    algo_calibration_info const & regs,
     algo_calibration_registers const &dsm_regs,
     std::vector<double2> los
 )
@@ -564,7 +576,7 @@ std::vector<double3> librealsense::algo::depth_to_rgb_calibration::k_to_DSM::con
     return outbound_direction;
 }
 
-std::vector<double3> librealsense::algo::depth_to_rgb_calibration::k_to_DSM::calc_relevant_vertices
+std::vector<double3> k_to_DSM::calc_relevant_vertices
 (
     const std::vector<uint8_t>& relevant_pixels_image, 
     const rs2_intrinsics_double & k
@@ -604,9 +616,9 @@ std::vector<double3> librealsense::algo::depth_to_rgb_calibration::k_to_DSM::cal
     return res;
 }
 
-std::vector<double2> librealsense::algo::depth_to_rgb_calibration::k_to_DSM::convert_norm_vertices_to_los
+std::vector<double2> k_to_DSM::convert_norm_vertices_to_los
 (
-    algo::depth_to_rgb_calibration::algo_calibration_info const & regs,
+    algo_calibration_info const & regs,
     algo_calibration_registers const &dsm_regs,
     std::vector<double3> vertices
 )
@@ -621,7 +633,7 @@ std::vector<double2> librealsense::algo::depth_to_rgb_calibration::k_to_DSM::con
         std::vector<double> ang_post_exp(fovex_indicent_direction.size(), 0);
         for (auto i = 0; i < ang_post_exp.size(); i++)
         {
-            ang_post_exp[i] = std::acos(directions[i].z)* 180.0 / PI;
+            ang_post_exp[i] = std::acos(directions[i].z)* 180. / M_PI;
         }
 
         std::vector<double> ang_grid(angle, 0);
@@ -637,12 +649,11 @@ std::vector<double2> librealsense::algo::depth_to_rgb_calibration::k_to_DSM::con
 
             ang_out_on_grid[i] = i + fovex_nominal;
         }
-        std::vector<double> ang_pre_exp;
-        ang_pre_exp = interp1(ang_out_on_grid, ang_grid, ang_post_exp);
+        std::vector<double> ang_pre_exp = interp1(ang_out_on_grid, ang_grid, ang_post_exp);
         //std::vector<double> xy_norm(directions.size(), 0);
         for (auto i = 0; i < fovex_indicent_direction.size(); i++)
         {
-            fovex_indicent_direction[i].z = std::cos(ang_pre_exp[i] * PI / 180.0);
+            fovex_indicent_direction[i].z = std::cos(ang_pre_exp[i] * M_PI / 180.);
             auto xy_norm = directions[i].x*directions[i].x + directions[i].y*directions[i].y;
             auto xy_factor = sqrt((1 - (fovex_indicent_direction[i].z* fovex_indicent_direction[i].z)) / xy_norm);
             fovex_indicent_direction[i].x = directions[i].x*xy_factor;
@@ -669,8 +680,8 @@ std::vector<double2> librealsense::algo::depth_to_rgb_calibration::k_to_DSM::con
         mirror_normal_direction[i].y /= norm;
         mirror_normal_direction[i].z /= norm;
 
-        auto ang_x = std::atan(mirror_normal_direction[i].x / mirror_normal_direction[i].z)* 180.0 / PI;
-        auto ang_y = std::asin(mirror_normal_direction[i].y)* 180.0 / PI;
+        auto ang_x = std::atan(mirror_normal_direction[i].x / mirror_normal_direction[i].z)* 180. / M_PI;
+        auto ang_y = std::asin(mirror_normal_direction[i].y)* 180. / M_PI;
         
         int mirror_mode = 1/*_regs.frmw.mirrorMovmentMode*/;
 
@@ -719,9 +730,9 @@ std::vector<double2> librealsense::algo::depth_to_rgb_calibration::k_to_DSM::con
     return res;
 }
 
-double3 librealsense::algo::depth_to_rgb_calibration::k_to_DSM::laser_incident_direction(double2 angle_rad)
+double3 k_to_DSM::laser_incident_direction(double2 angle_rad)
 {
-    double2 angle_deg = { angle_rad.x* PI / 180.0, (angle_rad.y)* PI / 180.0 };
+    double2 angle_deg = { angle_rad.x * M_PI / 180., (angle_rad.y)* M_PI / 180. };
     double3 laser_incident_direction = { std::cos(angle_deg.y)*std::sin(angle_deg.x),
                                         std::sin(angle_deg.y),
                                         std::cos(angle_deg.y)*std::cos(angle_deg.x) };
@@ -729,7 +740,7 @@ double3 librealsense::algo::depth_to_rgb_calibration::k_to_DSM::laser_incident_d
     return laser_incident_direction;
 }
 
-std::vector<double3> librealsense::algo::depth_to_rgb_calibration::k_to_DSM::transform_to_direction(std::vector<double3> vec)
+std::vector<double3> k_to_DSM::transform_to_direction(std::vector<double3> vec)
 {
    std::vector<double3> res(vec.size());
 

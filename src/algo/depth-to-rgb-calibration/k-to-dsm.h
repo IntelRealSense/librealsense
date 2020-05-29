@@ -5,7 +5,7 @@
 
 #include "calibration.h"
 #include "frame-data.h"
-#include "../../../include/librealsense2/h/rs_types.h"
+#include <librealsense2/h/rs_types.h>
 
 #include <types.h>  // librealsense types (intr/extr)
 

@@ -19,7 +19,7 @@ namespace algo {
 namespace depth_to_rgb_calibration {
 
 
-    struct optimaization_params
+    struct optimization_params
     {
         p_matrix curr_p_mat;
         p_matrix calib_gradients;
@@ -143,7 +143,7 @@ namespace depth_to_rgb_calibration {
     struct iteration_data_collect
     {
         size_t iteration;
-        optimaization_params params;
+        optimization_params params;
         std::vector< double2 > uvmap;
         std::vector< double > d_vals;
         std::vector< double > d_vals_x;
@@ -160,7 +160,7 @@ namespace depth_to_rgb_calibration {
         double cost;
         int back_tracking_line_search_iters;
         double t;
-        optimaization_params next_params;
+        optimization_params next_params;
     };
 
 
@@ -185,7 +185,8 @@ namespace depth_to_rgb_calibration {
         bool is_scene_valid();
 
         // Optimize the calibration, optionally calling the callback after each iteration
-        size_t optimize( std::function< void( iteration_data_collect const & data ) > iteration_callback = nullptr );
+        size_t optimize( std::function< void( iteration_data_collect const & data ) >
+                             iteration_callback = nullptr );
 
         // (optional) Return whether the results of calibration are valid:
         //      1. If pixel movement is acceptable
@@ -218,13 +219,13 @@ namespace depth_to_rgb_calibration {
         std::vector<uint8_t> get_logic_edges( std::vector<double> edges );
         std::vector <double3> subedges2vertices(z_frame_data& z_data, const rs2_intrinsics_double& intrin, double depth_units);
         
-        optimaization_params back_tracking_line_search( const z_frame_data & z_data, 
-            const yuy2_frame_data& yuy_data, 
-            optimaization_params opt_params,
-            iteration_data_collect * data = nullptr);
+        optimization_params back_tracking_line_search( const z_frame_data & z_data,
+                                                       const yuy2_frame_data & yuy_data,
+                                                       optimization_params opt_params,
+                                                       iteration_data_collect * data = nullptr );
 
-        double calc_step_size( optimaization_params opt_params );
-        double calc_t( optimaization_params opt_params );
+        double calc_step_size( optimization_params opt_params );
+        double calc_t( optimization_params opt_params );
        
         // input validation
         bool is_movement_in_images(yuy2_frame_data& yuy);
@@ -257,7 +258,7 @@ namespace depth_to_rgb_calibration {
         calib _original_calibration;         // starting state of auto-calibration
         calib _final_calibration;         // starting state of auto-calibration
         calib _factory_calibration;          // factory default calibration of the camera
-        optimaization_params _params_curr;   // last-known setting
+        optimization_params _params_curr;  // last-known setting
         std::shared_ptr<k_to_DSM> _k_to_DSM;
     };
 
