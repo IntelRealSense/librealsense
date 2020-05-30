@@ -310,18 +310,29 @@ bool compare_calib_to_bin_file(
     return compare_calib_to_bin_file( calib, cost, scene_dir, filename, gradient );
 }
 
-bool operator==(const algo::DSM_regs& first, const algo::DSM_regs& second)
+bool operator==(const algo::algo_calibration_registers& first, const algo::algo_calibration_registers& second)
 {
     bool ok = true;
 
-    ok &= compare_and_trace(first.dsm_x_offset, second.dsm_x_offset, "second.dsm_x_offset");
-    ok &= compare_and_trace(first.dsm_y_offset, second.dsm_y_offset, "second.dsm_y_offset");
-    ok &= compare_and_trace(first.dsm_x_scale, second.dsm_x_scale, "second.dsm_x_scale");
-    ok &= compare_and_trace(first.dsm_y_scale, second.dsm_y_scale, "second.dsm_y_scale");
+    ok &= compare_and_trace(first.EXTLdsmXoffset, second.EXTLdsmXoffset, "dsm_x_offset");
+    ok &= compare_and_trace(first.EXTLdsmYoffset, second.EXTLdsmYoffset, "dsm_y_offset");
+    ok &= compare_and_trace(first.EXTLdsmXscale, second.EXTLdsmXscale, "dsm_x_scale");
+    ok &= compare_and_trace(first.EXTLdsmYscale, second.EXTLdsmYscale, "dsm_y_scale");
 
     return ok;
 }
 
+bool operator==(const algo::los_shift_scaling& first, const algo::los_shift_scaling& second)
+{
+    bool ok = true;
+
+    ok &= compare_and_trace(first.los_scaling_x, second.los_scaling_x, "los_scaling_x");
+    ok &= compare_and_trace(first.los_scaling_y, second.los_scaling_y, "los_scaling_y");
+    ok &= compare_and_trace(first.los_shift_x, second.los_shift_x, "los_shift_x");
+    ok &= compare_and_trace(first.los_shift_y, second.los_shift_y, "los_shift_x");
+
+    return ok;
+}
 template< typename D>  // F=in bin; D=in memory
 bool compare_to_bin_file(
     D const & obj_cpp,

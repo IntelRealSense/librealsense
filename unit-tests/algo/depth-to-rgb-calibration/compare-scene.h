@@ -9,9 +9,17 @@ void compare_scene( std::string const & scene_dir )
     camera_params ci = read_camera_params( scene_dir, "ac1x\\camera_params" );
     dsm_params dsm = read_dsm_params(scene_dir, "ac1x\\DSM_params");
     ci.dsm_params = dsm.dsm_params;
+    ci.cal_info = dsm.regs;
+    ci.cal_regs = dsm.algo_calibration_registers;
+
     scene_metadata md( scene_dir );
 
     algo::optimizer cal;
+
+    /*std::vector<double> in = { 1,2,3,4 };
+    std::vector<double>out(4);
+
+    algo::direct_inv(in,out,2);*/
 
     init_algo( cal, scene_dir,
         md.rgb_file,
@@ -213,9 +221,25 @@ void compare_scene( std::string const & scene_dir )
     // Our code doesn't count the first iteration; the Matlab code starts at 1 even if it doesn't do anything...
     REQUIRE( cal.optimize( cb ) + 1 == md.n_iterations );
 
-    auto dsm_orig = algo::apply_ac_res_on_dsm_model(dsm.dsm_params, dsm.dsm_regs, algo::ac_to_dsm_dir::inverse);
-    CHECK(compare_to_bin_file< algo::DSM_regs >(dsm_orig,
+    auto& z = cal.get_z_data();
+    auto& p = cal.get_params();
+    algo::k_to_DSM k2dsm(ci.dsm_params, ci.cal_info, ci.cal_regs, p.max_scaling_step);
+
+    auto dsm_orig = k2dsm.apply_ac_res_on_dsm_model(ci.dsm_params, ci.cal_regs, algo::ac_to_dsm_dir::inverse);
+    CHECK(compare_to_bin_file< algo::algo_calibration_registers >(dsm_orig,
         scene_dir, "ac1x\\dsmRegsOrig_1x4_single_00.bin"));
+
+    k2dsm.convert_new_k_to_DSM(z.orig_intrinsics, z.new_intrinsics, z);
+    
+    auto pre_process_data = k2dsm.get_pre_process_data();
+    CHECK(compare_to_bin_file< uint8_t >(pre_process_data.relevant_pixels_image_rot, scene_dir, "ac1x\\relevantPixelsImageRot", z_w, z_h, "uint8_00", compare_same_vectors));
+
+
+    CHECK(compare_to_bin_file< algo::los_shift_scaling >(pre_process_data.last_los_error,
+        scene_dir, "ac1x\\dsm_los_error_orig_4x1_single_00.bin"));
+
+     CHECK(compare_to_bin_file< algo::double3 >(pre_process_data.vertices_orig, scene_dir, bin_file("ac1x\\verticesOrig", 3, md.n_relevant_pixels, "double_00") + ".bin", md.n_relevant_pixels, 1, compare_same_vectors));
+     CHECK(compare_to_bin_file< algo::double2 >(pre_process_data.los_orig, scene_dir, bin_file("ac1x\\losOrig", 2, md.n_relevant_pixels, "double_00") + ".bin", md.n_relevant_pixels, 1, compare_same_vectors));
 
     auto new_calibration = cal.get_calibration();
     auto cost = cal.get_cost();

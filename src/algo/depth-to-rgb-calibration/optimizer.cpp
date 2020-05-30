@@ -10,6 +10,7 @@
 #include "uvmap.h"
 #include "k-to-dsm.h"
 #include "debug.h"
+#include "utils.h"
 
 using namespace librealsense::algo::depth_to_rgb_calibration;
 
@@ -394,6 +395,8 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
                             algo_calibration_info const & cal_info,
                             algo_calibration_registers const & cal_regs, float depth_units )
 {
+    _k_to_DSM = std::make_shared<k_to_DSM>(dsm_params, cal_info, cal_regs, _params.max_scaling_step);
+
     /*[zEdge,Zx,Zy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.z),2); % Added the second input - margin to zero out
     [iEdge,Ix,Iy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.i),2); % Added the second input - margin to zero out
     validEdgePixelsByIR = iEdge>params.gradITh; */
@@ -811,87 +814,6 @@ double3x3 cholesky3x3(double3x3 mat)
     return res;
 }
 
-void inv(const double x[9], double y[9])
-{
-    double b_x[9];
-    int p1;
-    int p2;
-    int p3;
-    double absx11;
-    double absx21;
-    double absx31;
-    int itmp;
-    memcpy(&b_x[0], &x[0], 9U * sizeof(double));
-    p1 = 0;
-    p2 = 3;
-    p3 = 6;
-    absx11 = std::abs(x[0]);
-    absx21 = std::abs(x[1]);
-    absx31 = std::abs(x[2]);
-    if ((absx21 > absx11) && (absx21 > absx31)) {
-        p1 = 3;
-        p2 = 0;
-        b_x[0] = x[1];
-        b_x[1] = x[0];
-        b_x[3] = x[4];
-        b_x[4] = x[3];
-        b_x[6] = x[7];
-        b_x[7] = x[6];
-    }
-    else {
-        if (absx31 > absx11) {
-            p1 = 6;
-            p3 = 0;
-            b_x[0] = x[2];
-            b_x[2] = x[0];
-            b_x[3] = x[5];
-            b_x[5] = x[3];
-            b_x[6] = x[8];
-            b_x[8] = x[6];
-        }
-    }
-
-    b_x[1] /= b_x[0];
-    b_x[2] /= b_x[0];
-    b_x[4] -= b_x[1] * b_x[3];
-    b_x[5] -= b_x[2] * b_x[3];
-    b_x[7] -= b_x[1] * b_x[6];
-    b_x[8] -= b_x[2] * b_x[6];
-    if (std::abs(b_x[5]) > std::abs(b_x[4])) {
-        itmp = p2;
-        p2 = p3;
-        p3 = itmp;
-        absx11 = b_x[1];
-        b_x[1] = b_x[2];
-        b_x[2] = absx11;
-        absx11 = b_x[4];
-        b_x[4] = b_x[5];
-        b_x[5] = absx11;
-        absx11 = b_x[7];
-        b_x[7] = b_x[8];
-        b_x[8] = absx11;
-    }
-
-    b_x[5] /= b_x[4];
-    b_x[8] -= b_x[5] * b_x[7];
-    absx11 = (b_x[5] * b_x[1] - b_x[2]) / b_x[8];
-    absx21 = -(b_x[1] + b_x[7] * absx11) / b_x[4];
-    y[p1] = ((1.0 - b_x[3] * absx21) - b_x[6] * absx11) / b_x[0];
-    y[p1 + 1] = absx21;
-    y[p1 + 2] = absx11;
-    absx11 = -b_x[5] / b_x[8];
-    absx21 = (1.0 - b_x[7] * absx11) / b_x[4];
-    y[p2] = -(b_x[3] * absx21 + b_x[6] * absx11) / b_x[0];
-    y[p2 + 1] = absx21;
-    y[p2 + 2] = absx11;
-    absx11 = 1.0 / b_x[8];
-    absx21 = -b_x[7] * absx11 / b_x[4];
-    y[p3] = -(b_x[3] * absx21 + b_x[6] * absx11) / b_x[0];
-    y[p3 + 1] = absx21;
-    y[p3 + 2] = absx11;
-}
-
-
 void librealsense::algo::depth_to_rgb_calibration::optimizer::decompose_p_mat()
 {
     auto p_mat = _params_curr.curr_p_mat.vals;
@@ -959,7 +881,6 @@ void optimizer::zero_invalid_edges( z_frame_data & z_data, ir_frame_data const &
 
 std::vector< direction > optimizer::get_direction( std::vector<double> gradient_x, std::vector<double> gradient_y )
 {
-#define PI 3.14159265
     std::vector<direction> res( gradient_x.size(), deg_none );
 
     std::map<int, direction> angle_dir_map = { {0, deg_0}, {45,deg_45} , {90,deg_90}, {135,deg_135} };
@@ -981,7 +902,6 @@ std::vector< direction > optimizer::get_direction( std::vector<double> gradient_
 }
 std::vector< direction > optimizer::get_direction2(std::vector<double> gradient_x, std::vector<double> gradient_y)
 {
-#define PI 3.14159265
     std::vector<direction> res(gradient_x.size(), deg_none);
     
     std::map<int, direction> angle_dir_map = { {0, deg_0}, {45,deg_45} , {90,deg_90}, {135,deg_135} , { 180,deg_180 }, { 225,deg_225 }, { 270,deg_270 }, { 315,deg_315 } };
@@ -1692,7 +1612,8 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
     }
 
     decompose_p_mat();
-    convert_new_k_to_DSM(_z.orig_intrinsics, _z.new_intrinsics, _z.orig_dsm_params, {});
+
+    _k_to_DSM->convert_new_k_to_DSM(_z.orig_intrinsics, _z.new_intrinsics, _z);
 
     return n_iterations;
 }
