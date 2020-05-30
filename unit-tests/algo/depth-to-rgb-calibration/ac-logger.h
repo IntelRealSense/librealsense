@@ -4,14 +4,7 @@
 #include <string>
 #include <iostream>
 #include <easylogging++.h>
-
-
-#define AC_LOG_PREFIX "AC1: "
-#define AC_LOG_PREFIX_LEN 5
-#define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
-//#define AC_LOG(TYPE,MSG) do { std::string msg = librealsense::to_string() << AC_LOG_PREFIX << MSG; rs2_log( RS2_LOG_SEVERITY_##TYPE, msg.c_str(), nullptr ); } while( false )
-//#define AC_LOG(TYPE,MSG) LOG_ERROR( AC_LOG_PREFIX << MSG )
-//#define AC_LOG(TYPE,MSG) TRACE( "-" << #TYPE [0] << "- " << MSG )
+#include "../../../src/algo/depth-to-rgb-calibration/debug.h"
 
 
 // This logger will catch all the realsense logs and output them to the

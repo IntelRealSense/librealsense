@@ -11,7 +11,7 @@
 
 inline std::string bin_dir( std::string const & scene_dir )
 {
-    return scene_dir + "binFiles\\ac1x\\";
+    return scene_dir + "binFiles\\ac2\\";
 }
 
 

@@ -16,6 +16,7 @@
 #define GAUSS_CONV_CORNERS 16
 
 using namespace librealsense::algo::depth_to_rgb_calibration;
+using librealsense::to_string;
 
 template<class T>
 std::vector<double> gauss_convolution(std::vector<T> const& image,
@@ -356,49 +357,26 @@ bool optimizer::is_edge_distributed(z_frame_data& z, yuy2_frame_data& yuy)
     return  (z.is_edge_distributed && yuy.is_edge_distributed);
 }
 
-bool optimizer::is_grad_dir_balanced(
-    z_frame_data& z_data
-    )
+//%function[isBalanced, dirRatio1, perpRatio, dirRatio2, weightsPerDir] = isGradDirBalanced( frame, params )
+static bool is_grad_dir_balanced( std::vector< double > const & weights,
+                                  std::vector< double > const & directions,
+                                  params const & _params,
+                                  std::vector< double > * p_weights_per_dir,
+                                  double * p_dir_ratio1 )
 {
-    /*function [isBalanced,dirRatio1,perpRatio,dirRatio2,weightsPerDir] = isGradDirBalanced(frame,params)
-isBalanced = false;
-dirRatio2 = nan;
-perpRatio = nan;
-iWeights = frame.zEdgeSupressed>0;
-weightIm = frame.zEdgeSupressed;
-weightIm(iWeights) = frame.weights;
-weightsPerDir = [sum(weightIm(frame.dirI == 1));sum(weightIm(frame.dirI == 2));sum(weightIm(frame.dirI == 3));sum(weightIm(frame.dirI == 4))];
-*/
-//bool is_balanced = false;
-    //auto i_weights = z_data.supressed_edges; // vector of 0,1 - put 1 when supressed edges is > 0
-    auto weights_im = z_data.is_inside;// supressed_edges;
-    auto weights_im_iter = weights_im.begin();
-    auto supressed_edges_iter = z_data.is_inside.begin();
-    auto weights_iter = z_data.valid_weights.begin();
-    auto j = 0;
-    for (auto i = 0; i < z_data.is_inside.size(); ++i)
+    //%weightsPerDir = sum( frame.weights .* (frame.dirPerPixel == [1:4]) );
+    std::vector< double > weights_per_dir( 4, 0. );  // 4 = deg_non is number of directions
+    for (auto dir = 0; dir < 4; ++dir)
     {
-        if (*(supressed_edges_iter + i) > 0)
+        for( auto ii = 0; ii < directions.size(); ++ii )
         {
-            *(weights_im_iter + i) = *(weights_iter + j);
-            j++;
+            if( directions[ii] == dir + 1 )  // avoid direction 0
+                weights_per_dir[dir] += weights[ii];
         }
     }
-    std::vector<double> weights_per_dir(4); // 4 = deg_non is number of directions
-    auto directions_iter = z_data.valid_directions.begin();
-    auto weights_per_dir_iter = weights_per_dir.begin();
-    for (auto i = 0; i < 4; ++i)
-    {
-        *(weights_per_dir_iter + i) = 0; // init sum per direction
-        for (auto ii = 0; ii < z_data.valid_directions.size(); ++ii) // directions size = z_data size = weights_im size
-        {
-            if (*(directions_iter + ii) == i+1) // avoid direction 0
-            {
-                *(weights_per_dir_iter + i) += *(weights_im_iter + ii);
-            }
-        }
-    }
-    z_data.sum_weights_per_direction = weights_per_dir;
+    if( p_weights_per_dir )
+        *p_weights_per_dir = weights_per_dir;
+
     /*
     [maxVal,maxIx] = max(weightsPerDir);
     ixMatch = mod(maxIx+2,4);
@@ -411,100 +389,69 @@ weightsPerDir = [sum(weightIm(frame.dirI == 1));sum(weightIm(frame.dirI == 2));s
         dirRatio1 = maxVal/weightsPerDir(ixMatch);
     end
     */
-    auto max_val = max_element(weights_per_dir.begin(), weights_per_dir.end());
-    auto max_ix = distance(weights_per_dir.begin(), max_val);
+    //%[maxVal, maxIx] = max( weightsPerDir );
+    auto max_val = max_element( weights_per_dir.begin(), weights_per_dir.end() );
+    auto max_ix = distance( weights_per_dir.begin(), max_val );
+    //%ixMatch = mod( maxIx + 2, 4 );
+    //%if ixMatch == 0
+    //%    ixMatch = 4;
+    //%end
     auto ix_match = (max_ix + 1) % 3;
-    /* if (ix_match == 0) {
-         ix_match = 3;
-     }*/
-    //double dir_ratio1;
-    //double dir_ratio2;
-    if (weights_per_dir.at(ix_match) < 1e-3) //%Don't devide by zero...
-    {
-        z_data.dir_ratio1 = 1e6;
-    }
-    else
-    {
-        z_data.dir_ratio1 = *max_val / weights_per_dir.at(ix_match);
-    }
-    /*
-if dirRatio1 > params.gradDirRatio
-    ixCheck = true(size(weightsPerDir));
-    ixCheck([maxIx,ixMatch]) = false;
-    [maxValPerp,~] = max(weightsPerDir(ixCheck));
-    perpRatio = maxVal/maxValPerp;
-    if perpRatio > params.gradDirRatioPerp
-        fprintf('isGradDirBalanced: gradient direction is not balanced: %0.5f, threshold is %0.5f\n',dirRatio1, params.gradDirRatio );
-        return;
-    end
-    if min(weightsPerDir(ixCheck)) < 1e-3 %Don't devide by zero...
-        fprintf('isGradDirBalanced: gradient direction is not balanced: %0.5f, threshold is %0.5f\n',dirRatio1, params.gradDirRatio );
-        dirRatio2 = nan;
-        return;
-    end
-       dirRatio2 = maxValPerp/min(weightsPerDir(ixCheck));
-    if dirRatio2 > params.gradDirRatio
-        fprintf('isGradDirBalanced: gradient direction is not balanced: %0.5f, threshold is %0.5f\n',dirRatio1, params.gradDirRatio );
-        return;
-    end
-end
-isBalanced = true;
-    */
 
-    if (z_data.dir_ratio1 > _params.grad_dir_ratio)
+    double dir_ratio1;
+    //%if weightsPerDir( ixMatch ) < 1e-3 %Don't devide by zero...
+    if (weights_per_dir.at(ix_match) < 1e-3) //%Don't devide by zero...
+        dir_ratio1 = 1e6;
+    else
+        //%dirRatio1 = maxVal / weightsPerDir( ixMatch );
+        dir_ratio1 = *max_val / weights_per_dir.at( ix_match );
+    if( p_dir_ratio1 )
+        *p_dir_ratio1 = dir_ratio1;
+
+    //%if dirRatio1 > params.gradDirRatio
+    if( dir_ratio1 > _params.grad_dir_ratio )
     {
-        std::vector<double> ix_check(4); // 4=deg_non is number of directions
-        auto ix_check_iter = ix_check.begin();
-        double max_val_perp = *weights_per_dir.begin();
-        double min_val_perp = *weights_per_dir.begin();
+        //%ixCheck = true(size(weightsPerDir));
+        //%ixCheck([maxIx,ixMatch]) = false;
+        //%[maxValPerp,~] = max(weightsPerDir(ixCheck));
+        double max_val_perp = DBL_MIN;
+        double min_val_perp = DBL_MAX;
         for (auto i = 0; i < 4; ++i)
         {
-            *(ix_check_iter + i) = true;
             if ((i != max_ix) && (i != ix_match))
             {
-                if (max_val_perp < *(weights_per_dir_iter + i))
-                {
-                    max_val_perp = *(weights_per_dir_iter + i);
-                }
-                if (min_val_perp > * (weights_per_dir_iter + i))
-                {
-                    min_val_perp = *(weights_per_dir_iter + i);
-                }
+                if( max_val_perp < weights_per_dir[i] )
+                    max_val_perp = weights_per_dir[i];
+                if( min_val_perp > weights_per_dir[i] )
+                    min_val_perp = weights_per_dir[i];
             }
         }
-        ix_check.at(max_ix) = false;
-        ix_check.at(ix_match) = false;
 
+        //%perpRatio = maxVal/maxValPerp;
         auto perp_ratio = *max_val / max_val_perp;
-        if (perp_ratio > _params.grad_dir_ratio_prep)
+        if( perp_ratio > _params.grad_dir_ratio_prep )
         {
-            AC_LOG(DEBUG, "is_grad_dir_balanced: gradient direction is not balanced : " << z_data.dir_ratio1);
-            AC_LOG(DEBUG, "threshold is: " << _params.grad_dir_ratio);
+            AC_LOG( DEBUG,
+                    "... gradient direction is not balanced : " << dir_ratio1 << "; threshold is: "
+                                                                << _params.grad_dir_ratio );
             return false;
         }
-        if (min_val_perp < 1e-3)// % Don't devide by zero...
+        if( min_val_perp < 1e-3 )  // % Don't devide by zero...
         {
-            AC_LOG(DEBUG, "is_grad_dir_balanced: gradient direction is not balanced : " << z_data.dir_ratio1);
-            AC_LOG(DEBUG, "threshold is: " << _params.grad_dir_ratio);
-            z_data.dir_ratio2 = DBL_MAX; // = nan 
+            AC_LOG( DEBUG,
+                    "... gradient direction is not balanced : " << dir_ratio1 << "; threshold is: "
+                                                                << _params.grad_dir_ratio );
             return false;
         }
 
-        //double min_val = *weights_per_dir.begin() * *ix_check.begin();
-        auto ix_check_it = ix_check.begin();
-        std::vector<double> filtered_weights_per_dir;
-        for (auto it = weights_per_dir.begin(); it < weights_per_dir.end(); it++, ix_check_it++)
+        //%dirRatio2 = maxValPerp / min( weightsPerDir( ixCheck ));
+        double dir_ratio2 = max_val_perp / min_val_perp;
+        //%if dirRatio2 > params.gradDirRatio
+        if( dir_ratio2 > _params.grad_dir_ratio )
         {
-            auto mult_val = *it * (*ix_check_it);
-            if (mult_val > 0) {
-                filtered_weights_per_dir.push_back(*it);
-            }
-        }
-        z_data.dir_ratio2 = max_val_perp / *std::min_element(filtered_weights_per_dir.begin(), filtered_weights_per_dir.end());
-        if (z_data.dir_ratio2 > _params.grad_dir_ratio)
-        {
-            AC_LOG(DEBUG, "is_grad_dir_balanced: gradient direction is not balanced : " << z_data.dir_ratio1);
-            AC_LOG(DEBUG, "threshold is: " << _params.grad_dir_ratio);
+            AC_LOG( DEBUG,
+                    "... gradient direction is not balanced : " << dir_ratio1 << "; threshold is: "
+                                                                << _params.grad_dir_ratio );
             return false;
         }
     }
@@ -725,7 +672,11 @@ bool optimizer::is_scene_valid()
 
     bool res_movement = is_movement_in_images(_yuy);
     bool res_edges = is_edge_distributed(_z, _yuy);
-    bool res_gradient = is_grad_dir_balanced(_z);
+    bool res_gradient = is_grad_dir_balanced( _z.weights,
+                                              _z.directions,
+                                              _params,
+                                              &_z.sum_weights_per_direction,
+                                              &_z.dir_ratio1 );
 
     //return((!res_movement) && res_edges && res_gradient);
     return(!res_movement);

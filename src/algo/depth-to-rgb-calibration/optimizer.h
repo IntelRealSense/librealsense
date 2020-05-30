@@ -37,7 +37,7 @@ namespace depth_to_rgb_calibration {
         double gamma = 0.9;
         double alpha = (double)1 / (double)3;
         double grad_ir_threshold = 3.5; // Ignore pixels with IR gradient less than this (resolution-dependent!)
-        int grad_z_threshold = 25; //Ignore pixels with Z grad of less than this
+        int grad_z_threshold = 0; //Ignore pixels with Z grad of less than this
         double grad_z_min = 25; // Ignore pixels with Z grad of less than this
         double grad_z_max = 1000;
         double edge_thresh4_logic_lum = 0.1;
@@ -214,7 +214,7 @@ namespace depth_to_rgb_calibration {
         std::vector<direction> get_direction2(std::vector<double> gradient_x, std::vector<double> gradient_y);
         std::vector<uint16_t> get_closest_edges( const z_frame_data& z_data, ir_frame_data const & ir_data, size_t width, size_t height );
         std::vector<double> blur_edges( std::vector<double> const & edges, size_t image_width, size_t image_height );
-        std::vector<uint8_t> get_luminance_from_yuy2( std::vector<uint16_t> yuy2_imagh );
+        std::vector< byte > get_luminance_from_yuy2( std::vector< yuy_t > const & yuy2_imagh );
 
         std::vector<uint8_t> get_logic_edges( std::vector<double> edges );
         std::vector <double3> subedges2vertices(z_frame_data& z_data, const rs2_intrinsics_double& intrin, double depth_units);
@@ -231,7 +231,6 @@ namespace depth_to_rgb_calibration {
         bool is_movement_in_images(yuy2_frame_data& yuy);
         bool is_edge_distributed( z_frame_data & z_data, yuy2_frame_data & yuy_data );
         void section_per_pixel( frame_data const &, size_t section_w, size_t section_h, byte * section_map );
-        bool is_grad_dir_balanced(z_frame_data& z_data);
         void check_edge_distribution(std::vector<double>& sum_weights_per_section, double& min_max_ratio, bool& is_edge_distributed);
         void sum_per_section(std::vector< double >& sum_weights_per_section, std::vector< byte > const& section_map, std::vector< double > const& weights, size_t num_of_sections);
         void images_dilation(yuy2_frame_data& yuy);

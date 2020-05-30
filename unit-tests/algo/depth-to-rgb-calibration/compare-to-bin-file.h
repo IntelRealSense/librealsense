@@ -68,14 +68,14 @@ template< typename F, typename D >
 void print( size_t x, F f, D d, bool is_approx = false )
 {
     // bytes will be written to stdout as characters, which we never want... hence '+fx'
-    AC_LOG( DEBUG, "... " << std::setprecision( 15 ) << std::fixed << x << ": {matlab}" << +f << (is_approx ? " !~ " : " != ") << +d << "{c++}" );
+    AC_LOG( DEBUG, "... " << AC_D_PREC << x << ": {matlab}" << +f << (is_approx ? " !~ " : " != ") << +d << "{c++}" );
 }
 
 template<>
 void print<algo::k_matrix, algo::k_matrix>( size_t x, algo::k_matrix f, algo::k_matrix d, bool is_approx )
 {
     // bytes will be written to stdout as characters, which we never want... hence '+fx'
-    AC_LOG( DEBUG, "... " << std::setprecision( 15 ) << std::fixed << x << ": {matlab}" << f.fx << " " << f.fy << " " << f.ppx << " " << f.ppy << (is_approx ? " !~ " : " != ")
+    AC_LOG( DEBUG, "... " << AC_D_PREC << std::fixed << x << ": {matlab}" << f.fx << " " << f.fy << " " << f.ppx << " " << f.ppy << (is_approx ? " !~ " : " != ")
         << d.fx << " " << d.fy << " " << d.ppx << " " << d.ppy << "{c++}" );
 }
 
@@ -83,7 +83,7 @@ template<>
 void print<algo::double2, algo::double2>( size_t x, algo::double2 f, algo::double2 d, bool is_approx )
 {
     // bytes will be written to stdout as characters, which we never want... hence '+fx'
-    AC_LOG( DEBUG, "... " << std::setprecision( 15 ) << std::fixed << x << ": {matlab}" << f.x << " " << f.y << (is_approx ? " !~ " : " != ")
+    AC_LOG( DEBUG, "... " << AC_D_PREC << std::fixed << x << ": {matlab}" << f.x << " " << f.y << (is_approx ? " !~ " : " != ")
         << d.x << " " << d.y << "{c++}" );
 }
 
@@ -152,7 +152,7 @@ bool compare_same_vectors( std::vector< F > const & matlab, std::vector< D > con
         if( !compare_t( fx, dx ) )
         {
             if( ++n_mismatches <= 5 )
-                print( x, fx, dx, !std::is_floating_point< F >::value );
+                print( x, fx, dx, std::is_floating_point< F >::value );
         }
     }
     if( n_mismatches )

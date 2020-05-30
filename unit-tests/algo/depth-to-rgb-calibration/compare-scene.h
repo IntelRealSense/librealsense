@@ -42,6 +42,11 @@ void compare_scene( std::string const & scene_dir )
     auto num_of_calib_elements = 17;
     auto num_of_p_matrix_elements = sizeof(algo::p_matrix) / sizeof(double);
 
+    CHECK( compare_to_bin_file< double >( yuy_data.edges, scene_dir, "YUY2_edge", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< double >( yuy_data.edges_IDT, scene_dir, "YUY2_IDT", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< double >( yuy_data.edges_IDTx, scene_dir, "YUY2_IDTx", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< double >( yuy_data.edges_IDTy, scene_dir, "YUY2_IDTy", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
+
 #if 1
     // smearing
     CHECK(compare_to_bin_file< double >(depth_data.gradient_x, scene_dir, "Zx", z_w, z_h, "double_00", compare_same_vectors));
@@ -60,7 +65,6 @@ void compare_scene( std::string const & scene_dir )
     CHECK(compare_to_bin_file< double >(ir_data.valid_gradient_y, scene_dir, "IyValid", 1, md.n_valid_ir_edges, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(ir_data.direction_deg, scene_dir, "directionInDeg", 1, md.n_valid_ir_edges, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(ir_data.direction_per_pixel, scene_dir, "dirPerPixel", 2, md.n_valid_ir_edges, "double_00", compare_same_vectors));
-    CHECK(compare_to_bin_file< double >(depth_data.valid_direction_per_pixel, scene_dir, "validdirPerPixel", 1, md.n_valid_pixels, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(ir_data.local_region[0], scene_dir, "localRegion", 2, md.n_valid_ir_edges, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(ir_data.local_region[1], scene_dir, "localRegion", 2, md.n_valid_ir_edges, "double_01", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(ir_data.local_region[2], scene_dir, "localRegion", 2, md.n_valid_ir_edges, "double_02", compare_same_vectors));
@@ -80,23 +84,26 @@ void compare_scene( std::string const & scene_dir )
     CHECK(compare_to_bin_file< double >(depth_data.local_x, scene_dir, "localZx", 2, md.n_valid_ir_edges, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.local_y, scene_dir, "localZy", 2, md.n_valid_ir_edges, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.gradient, scene_dir, "zGrad", 2, md.n_valid_ir_edges, "double_00", compare_same_vectors));
-    CHECK(compare_to_bin_file< double >(depth_data.grad_in_direction, scene_dir, "validzGradInDirection", 1, md.n_valid_pixels, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(depth_data.grad_in_direction, scene_dir, "zGradInDirection", 1, md.n_valid_ir_edges, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.local_values, scene_dir, "localZvalues", 4, md.n_valid_ir_edges, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(depth_data.closest, scene_dir, "zValuesForSubEdges", 1, md.n_edges, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.edge_sub_pixel, scene_dir, "edgeSubPixel", 2, md.n_valid_ir_edges, "double_00", compare_same_vectors));
-    CHECK(compare_to_bin_file< double >(depth_data.values_for_subedges, scene_dir, "validzValuesForSubEdges", 1, md.n_valid_pixels, "double_00", compare_same_vectors));
-    CHECK(compare_to_bin_file< double >(depth_data.supressed_edges, scene_dir, "validEdgePixels", 1, md.n_valid_ir_edges, "double_00", compare_same_vectors));
+    
+    CHECK(compare_to_bin_file< byte >(depth_data.supressed_edges, scene_dir, "validEdgePixels", 1, md.n_valid_ir_edges, "uint8_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(depth_data.grad_in_direction_valid, scene_dir, "validzGradInDirection", 1, md.n_valid_pixels, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >( depth_data.valid_edge_sub_pixel, scene_dir, "validedgeSubPixel", 2, md.n_valid_pixels, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >( depth_data.values_for_subedges, scene_dir, "validzValuesForSubEdges", 1, md.n_valid_pixels, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< double >(depth_data.valid_direction_per_pixel, scene_dir, "validdirPerPixel", 1, md.n_valid_pixels, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< uint8_t >(depth_data.valid_section_map, scene_dir, "validsectionMapDepth", 1, md.n_valid_pixels, "uint8_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.valid_directions, scene_dir, "validdirectionIndex", 1, md.n_valid_pixels, "double_00", compare_same_vectors));
-    CHECK(compare_to_bin_file< double >(depth_data.valid_edge_sub_pixel, scene_dir, "validedgeSubPixel", 2, md.n_valid_pixels, "double_00", compare_same_vectors));
-    CHECK(compare_to_bin_file< double >(depth_data.valid_edge_sub_pixel_x, scene_dir, "xim", 1, md.n_valid_pixels, "double_00", compare_same_vectors));
-    CHECK(compare_to_bin_file< double >(depth_data.valid_edge_sub_pixel_y, scene_dir, "yim", 1, md.n_valid_pixels, "double_00", compare_same_vectors));
+    
+    //CHECK(compare_to_bin_file< double >(depth_data.valid_edge_sub_pixel_x, scene_dir, "xim", 1, md.n_valid_pixels, "double_00", compare_same_vectors));
+    //CHECK(compare_to_bin_file< double >(depth_data.valid_edge_sub_pixel_y, scene_dir, "yim", 1, md.n_valid_pixels, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double>(depth_data.sub_points, scene_dir, "subPoints", 3, md.n_valid_pixels, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< algo::double2 >(depth_data.uvmap, scene_dir, bin_file("uv", 2, md.n_valid_pixels, "double_00") + ".bin", md.n_valid_pixels, 1, compare_same_vectors));
-    CHECK(compare_to_bin_file< double >(depth_data.is_inside, scene_dir, "isInside", 1, md.n_valid_pixels, "double_00", compare_same_vectors));
+    CHECK(compare_to_bin_file< byte >(depth_data.is_inside, scene_dir, "isInside", 1, md.n_valid_pixels, "uint8_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.subpixels_x, scene_dir, "Z_xim", 1, md.n_edges, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.subpixels_y, scene_dir, "Z_yim", 1, md.n_edges, "double_00", compare_same_vectors));
-    CHECK(compare_to_bin_file< double >(depth_data.closest, scene_dir, "zValuesForSubEdges", 1, md.n_edges, "double_00", compare_same_vectors));
-    CHECK(compare_to_bin_file< double >(depth_data.grad_in_direction_inside, scene_dir, "zGradInDirection", 1, md.n_edges, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.directions, scene_dir, "directionIndexInside", 1, md.n_edges, "double_00", compare_same_vectors));
     
     CHECK(compare_to_bin_file< double >(depth_data.subpixels_x_round, scene_dir, "round_xim", 1, md.n_edges, "double_00", compare_same_vectors));

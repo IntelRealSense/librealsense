@@ -35,7 +35,7 @@ namespace depth_to_rgb_calibration {
         std::vector<double> gradient_x;
         std::vector<double> gradient_y;
         std::vector< byte > section_map_depth;
-        std::vector<double> valid_edge_pixels_by_ir;
+        std::vector< byte > valid_edge_pixels_by_ir;
         std::vector<byte> valid_section_map;
         std::vector<double>valid_gradient_x;
         std::vector<double>valid_gradient_y;
@@ -50,7 +50,7 @@ namespace depth_to_rgb_calibration {
         std::vector<double> local_region[4];
         std::vector<double> local_region_x[4];//for debug
         std::vector<double> local_region_y[4]; // for debug
-        std::vector<uint8_t> is_supressed;
+        std::vector< byte > is_supressed;
         std::vector<double> fraq_step;
 
     };
@@ -68,7 +68,7 @@ namespace depth_to_rgb_calibration {
         std::vector<double> gradient_x;
         std::vector<double> gradient_y;
         std::vector<double> edges;
-        std::vector<double> supressed_edges;
+        std::vector< byte > supressed_edges;
         size_t n_strong_edges;
         std::vector<double> subpixels_x;
         std::vector<double> subpixels_y;
@@ -89,6 +89,7 @@ namespace depth_to_rgb_calibration {
         std::vector<double> gradient;
         std::vector<double> local_values;
         std::vector<double> grad_in_direction;
+        std::vector<double> grad_in_direction_valid;
         std::vector<double> grad_in_direction_inside;
         std::vector<double> values_for_subedges;
         std::vector<double> closest;
@@ -106,7 +107,7 @@ namespace depth_to_rgb_calibration {
         std::vector<double3> vertices;
         std::vector<double> vertices3;
         std::vector<double2> uvmap;
-        std::vector<double> is_inside;
+        std::vector< byte > is_inside;
         // input validation
         std::vector<byte> section_map;
         bool is_edge_distributed;
@@ -119,7 +120,6 @@ namespace depth_to_rgb_calibration {
 
         //svm
         double dir_ratio1;
-        double dir_ratio2;
     };
 
     struct yuy2_frame_data : frame_data
