@@ -53,7 +53,7 @@ namespace depth_to_rgb_calibration {
         double min_weighted_edge_per_section = 19.5313;
         size_t num_of_sections_for_edge_distribution_x = 2;
         size_t num_of_sections_for_edge_distribution_y = 2;
-        p_matrix normelize_mat;
+        p_matrix normalize_mat;  //% rgbPmatNormalizationMat
 
         double edge_distribution_min_max_ratio = 0.005;
         double grad_dir_ratio = 10;
@@ -142,6 +142,7 @@ namespace depth_to_rgb_calibration {
     // Data that's passed to a callback at each optimization iteration
     struct iteration_data_collect
     {
+        size_t cycle;
         size_t iteration;
         optimization_params params;
         std::vector< double2 > uvmap;
@@ -223,9 +224,6 @@ namespace depth_to_rgb_calibration {
                                                        const yuy2_frame_data & yuy_data,
                                                        optimization_params opt_params,
                                                        iteration_data_collect * data = nullptr );
-
-        double calc_step_size( optimization_params opt_params );
-        double calc_t( optimization_params opt_params );
        
         // input validation
         bool is_movement_in_images(yuy2_frame_data& yuy);

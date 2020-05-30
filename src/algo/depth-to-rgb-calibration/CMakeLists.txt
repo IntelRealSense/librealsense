@@ -17,6 +17,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/optimizer.h"
         "${CMAKE_CURRENT_LIST_DIR}/k-to-dsm.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/k-to-dsm.h"
+        "${CMAKE_CURRENT_LIST_DIR}/svd.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/utils.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/utils.h"
         "${CMAKE_CURRENT_LIST_DIR}/rotation-in-angles.cpp"

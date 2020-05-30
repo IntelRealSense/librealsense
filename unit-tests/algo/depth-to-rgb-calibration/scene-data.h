@@ -15,10 +15,10 @@ inline std::string bin_dir( std::string const & scene_dir )
 }
 
 
-std::string bin_file( std::string const &prefix, size_t iteration, size_t w, size_t h, std::string const &suffix )
+std::string bin_file( std::string const &prefix, size_t cycle, size_t iteration, size_t w, size_t h, std::string const &suffix )
 {
-    return prefix + "_" + std::to_string( iteration ) + "_" + std::to_string( h ) + "x" +
-           std::to_string( w ) + "_" + suffix;
+    return prefix + '_' + std::to_string( cycle ) + '_' + std::to_string( iteration ) + '_'
+         + std::to_string( h ) + "x" + std::to_string( w ) + "_" + suffix;
 }
 
 
@@ -122,7 +122,8 @@ void dump_vec( std::vector< double > const & cpp, std::vector< T > const & matla
 // iteration data/results that we need for comparison
 struct scene_metadata
 {
-    uint64_t n_iterations;  // how many steps through optimization, and how many iteration file sets
+    //uint64_t n_iterations;  // how many steps through optimization, and how many iteration file sets
+    uint64_t n_cycles;            // how many cycles of optimization
     double correction_in_pixels;  // XY movement
     uint64_t n_edges;             // strong edges, i.e. after suppression
     uint64_t n_valid_pixels;
@@ -151,7 +152,7 @@ struct scene_metadata
         f.read( (char *)&n_valid_ir_edges, sizeof( n_valid_ir_edges ) );
         f.read( (char *)&n_valid_pixels, sizeof( n_valid_pixels ) );
         f.read((char *)&n_relevant_pixels, sizeof(n_relevant_pixels));
-        f.read( (char *)&n_iterations, sizeof( n_iterations ) );
+        f.read( (char *)&n_cycles, sizeof( n_cycles ) );
         byte b;
         f.read( (char *)&b, 1 );
         is_scene_valid = b;

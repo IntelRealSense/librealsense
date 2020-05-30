@@ -88,7 +88,8 @@ namespace depth_to_rgb_calibration {
     {
         double vals[12];
 
-        bool operator==(const p_matrix& other)
+#if 0
+        bool operator==( const p_matrix & other ) const
         {
             for (auto i = 0; i < 12; i++)
             {
@@ -97,12 +98,13 @@ namespace depth_to_rgb_calibration {
             }
             return true;
         }
-        bool operator!=(const p_matrix& other)
+        bool operator!=( const p_matrix & other ) const
         {
             return !(*this == other);
         }
+#endif
 
-        bool operator<(const p_matrix& other)
+        bool operator<( const p_matrix & other ) const
         {
             for (auto i = 0; i < 12; i++)
             {
@@ -119,10 +121,10 @@ namespace depth_to_rgb_calibration {
         p_matrix operator-(const p_matrix& c) const;
         p_matrix operator/(const p_matrix& c) const;
         p_matrix operator*(const p_matrix& c) const;
-        double get_norma();
-        double sum();
-        p_matrix normalize();
-
+        double get_norma() const;
+        double sum() const;
+        p_matrix normalize( double norm ) const;
+        double matrix_norm() const;
     };
 
     struct calib
@@ -153,7 +155,7 @@ namespace depth_to_rgb_calibration {
         calib operator/( const calib& c ) const;
     };
 
-    calib decompose(p_matrix mat);
+    calib decompose( p_matrix const & mat, calib const & );
 
 }
 }

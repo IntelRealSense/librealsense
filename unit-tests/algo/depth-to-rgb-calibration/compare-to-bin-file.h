@@ -224,7 +224,7 @@ bool get_calib_from_raw_data(
     auto bin = read_vector_from< double >( bin_dir( scene_dir ) + filename );
     if( bin.size() * sizeof( double ) != data_size )
     {
-        TRACE( filename << ": {matlab size}" << bin.size() * sizeof(double) << " != " << data_size );
+        AC_LOG( DEBUG, "... " << filename << ": {matlab size}" << bin.size() * sizeof(double) << " != " << data_size );
         return false;
     }
 
@@ -248,9 +248,9 @@ bool get_calib_from_raw_data(
 template< typename D>
 bool compare_and_trace( D val_matlab, D val_cpp, std::string const & compared )
 {
-    if( val_matlab != approx( val_cpp ) )
+    if( val_cpp != approx( val_matlab ) )
     {
-        TRACE( compared << " " << val_matlab << " -matlab != " << val_cpp << " -cpp" );
+        AC_LOG( DEBUG, "... " << compared << ":  {matlab} " << val_matlab << " !~ " << val_cpp << " {cpp}" );
         return false;
     }
     return true;

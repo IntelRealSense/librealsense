@@ -822,44 +822,52 @@ double3x3 cholesky3x3(double3x3 mat)
     return res;
 }
 
-void librealsense::algo::depth_to_rgb_calibration::optimizer::decompose_p_mat()
+// TODO move to calibration.cpp
+calib librealsense::algo::depth_to_rgb_calibration::decompose( p_matrix const & in_mat, calib const & in_calibration )
 {
-    auto p_mat = _params_curr.curr_p_mat.vals;
-    double3x3 first_three_cols = {  p_mat[0], p_mat[1], p_mat[2],
-                                    p_mat[4], p_mat[5], p_mat[6],
-                                    p_mat[8], p_mat[9], p_mat[10] };
+    auto p_mat = in_mat.vals;
+    double3x3 first_three_cols = { p_mat[0], p_mat[1], p_mat[2],
+                                   p_mat[4], p_mat[5], p_mat[6],
+                                   p_mat[8], p_mat[9], p_mat[10] };
 
-    auto k_square = first_three_cols* first_three_cols.transpose();
-    std::vector<double> inv_k_square_vac(9, 0);
-    inv(k_square.to_vector().data(), inv_k_square_vac.data());
+    auto k_square = first_three_cols * first_three_cols.transpose();
+    std::vector<double> inv_k_square_vac( 9, 0 );
+    inv( k_square.to_vector().data(), inv_k_square_vac.data() );
 
     double3x3 inv_k_square = { inv_k_square_vac[0], inv_k_square_vac[1], inv_k_square_vac[2],
                                inv_k_square_vac[3], inv_k_square_vac[4], inv_k_square_vac[5],
                                inv_k_square_vac[6], inv_k_square_vac[7], inv_k_square_vac[8] };
 
-    auto k_inv = cholesky3x3(inv_k_square).transpose();
-    std::vector<double> k_vac(9, 0);
-    inv(k_inv.to_vector().data(), k_vac.data());
+    auto k_inv = cholesky3x3( inv_k_square ).transpose();
+    std::vector<double> k_vac( 9, 0 );
+    inv( k_inv.to_vector().data(), k_vac.data() );
 
-    for (auto i = 0; i < k_vac.size(); i++)
+    for( auto i = 0; i < k_vac.size(); i++ )
         k_vac[i] /= k_vac[k_vac.size() - 1];
 
     auto t = k_inv * double3{ p_mat[3], p_mat[7], p_mat[11] };
 
     auto r = (k_inv * first_three_cols).to_vector();
 
-    for (auto i = 0; i < r.size(); i++)
-        _final_calibration.rot.rot[i] = r[i];
+    calib calibration;
+    for( auto i = 0; i < r.size(); i++ )
+        calibration.rot.rot[i] = r[i];
 
-    _final_calibration.trans = { t.x, t.y, t.z };
-    
-    _final_calibration.k_mat.fx = k_vac[0];
-    _final_calibration.k_mat.fy = k_vac[4];
-    _final_calibration.k_mat.ppx = k_vac[2];
-    _final_calibration.k_mat.ppy = k_vac[5];
-    
-    _original_calibration.copy_coefs(_final_calibration);
-    
+    calibration.trans = { t.x, t.y, t.z };
+
+    calibration.k_mat.fx = k_vac[0];
+    calibration.k_mat.fy = k_vac[4];
+    calibration.k_mat.ppx = k_vac[2];
+    calibration.k_mat.ppy = k_vac[5];
+
+    in_calibration.copy_coefs( calibration );
+
+    return calibration;
+}
+
+void optimizer::decompose_p_mat()
+{
+    _final_calibration = decompose( _params_curr.curr_p_mat, _original_calibration );
     
     _z.new_intrinsics = _z.orig_intrinsics;
     _z.new_intrinsics.fx = _z.new_intrinsics.fx / _final_calibration.k_mat.fx*_original_calibration.k_mat.fx;
@@ -1304,18 +1312,18 @@ std::pair<double, p_matrix> calc_cost_and_grad(
 
 params::params()
 {
-    normelize_mat.vals[0] = 0.353692440000000;
-    normelize_mat.vals[1] = 0.266197740000000;
-    normelize_mat.vals[2] = 1.00926010000000;
-    normelize_mat.vals[3] = 0.000673204490000000;
-    normelize_mat.vals[4] = 0.355085250000000;
-    normelize_mat.vals[5] = 0.266275050000000;
-    normelize_mat.vals[6] = 1.01145800000000;
-    normelize_mat.vals[7] = 0.000675013750000000;
-    normelize_mat.vals[8] = 414.205570000000;
-    normelize_mat.vals[9] = 313.341060000000;
-    normelize_mat.vals[10] = 1187.34590000000;
-    normelize_mat.vals[11] = 0.791570250000000;
+    normalize_mat.vals[0] = 0.353692440000000;
+    normalize_mat.vals[1] = 0.266197740000000;
+    normalize_mat.vals[2] = 1.00926010000000;
+    normalize_mat.vals[3] = 0.000673204490000000;
+    normalize_mat.vals[4] = 0.355085250000000;
+    normalize_mat.vals[5] = 0.266275050000000;
+    normalize_mat.vals[6] = 1.01145800000000;
+    normalize_mat.vals[7] = 0.000675013750000000;
+    normalize_mat.vals[8] = 414.205570000000;
+    normalize_mat.vals[9] = 313.341060000000;
+    normalize_mat.vals[10] = 1187.34590000000;
+    normalize_mat.vals[11] = 0.791570250000000;
 
     // NOTE: until we know the resolution, the current state is just the default!
     // We need to get the depth and rgb resolutions to make final decisions!
@@ -1485,21 +1493,35 @@ optimization_params optimizer::back_tracking_line_search( const z_frame_data & z
 {
     optimization_params new_params;
 
-    auto grads_norm = curr_params.calib_gradients.normalize();
-    auto normalized_grads = grads_norm / _params.normelize_mat;
-    auto unit_grad = normalized_grads.normalize();
+    // was gradStruct.P ./ norm( gradStruct.P(:) )   -> vector norm
+    // now gradStruct.P ./ norm( gradStruct.P )      -> matrix 2-norm
+    auto grads_over_norm
+        = curr_params.calib_gradients.normalize( curr_params.calib_gradients.matrix_norm() );
+    //%grad = gradStruct.P ./ norm(gradStruct.P) ./ params.rgbPmatNormalizationMat;
+    auto grad = grads_over_norm / _params.normalize_mat;
 
-    auto t = calc_t( curr_params );
-    auto step_size = calc_step_size( curr_params );
+    //%unitGrad = grad ./ norm(grad);     <-   was ./ norm(grad(:)')
+    auto grad_norm = grad.matrix_norm();
+    auto unit_grad = grad.normalize( grad_norm );
+
+    //%t = -params.controlParam * grad(:)' * unitGrad(:);
+    // -> dot product of grad and unitGrad
+    auto t_vals = ( grad * -_params.control_param ) * unit_grad;
+    auto t = t_vals.sum();
+
+    //%stepSize = params.maxStepSize * norm(grad) / norm(unitGrad);
+    auto step_size = _params.max_step_size * grad_norm / unit_grad.matrix_norm();
+
 
     auto movement = unit_grad * step_size;
     new_params.curr_p_mat = curr_params.curr_p_mat + movement;
     
-    auto uvmap_old = get_texture_map( z_data.vertices, _original_calibration/*decompose(curr_params.curr_p_mat)*/, curr_params.curr_p_mat);
+    calib old_calib = decompose( curr_params.curr_p_mat, _original_calibration );
+    auto uvmap_old = get_texture_map( z_data.vertices, old_calib, curr_params.curr_p_mat );
     curr_params.cost = calc_cost( z_data, yuy_data, uvmap_old);
 
-
-    auto uvmap_new = get_texture_map( z_data.vertices, _original_calibration/*decompose(new_params.curr_p_mat)*/, new_params.curr_p_mat);
+    calib new_calib = decompose( new_params.curr_p_mat, _original_calibration );
+    auto uvmap_new = get_texture_map( z_data.vertices, new_calib, new_params.curr_p_mat );
     new_params.cost = calc_cost( z_data, yuy_data, uvmap_new);
 
     auto diff = calc_cost_per_vertex_diff(z_data, yuy_data, uvmap_old, uvmap_new);
@@ -1514,7 +1536,8 @@ optimization_params optimizer::back_tracking_line_search( const z_frame_data & z
 
         new_params.curr_p_mat = curr_params.curr_p_mat + unit_grad * step_size;
         
-        uvmap_new = get_texture_map( z_data.vertices, _original_calibration/*decompose(new_params.curr_p_mat)*/, new_params.curr_p_mat);
+        new_calib = decompose( new_params.curr_p_mat, _original_calibration );
+        uvmap_new = get_texture_map( z_data.vertices, new_calib, new_params.curr_p_mat);
         new_params.cost = calc_cost(z_data, yuy_data, uvmap_new);
         diff = calc_cost_per_vertex_diff(z_data, yuy_data, uvmap_old, uvmap_new);
     }
@@ -1527,35 +1550,13 @@ optimization_params optimizer::back_tracking_line_search( const z_frame_data & z
     if (data)
     {
         data->grads_norma = curr_params.calib_gradients.get_norma();
-        data->grads_norm = grads_norm;
-        data->normalized_grads = normalized_grads;
+        data->grads_norm = grads_over_norm;
+        data->normalized_grads = grad;
         data->unit_grad = unit_grad;
         data->back_tracking_line_search_iters = iter_count;
         data->t = t;
     }
     return new_params;
-}
-
-double optimizer::calc_step_size( optimization_params opt_params )
-{
-    auto grads_norm = opt_params.calib_gradients.normalize();
-    auto normalized_grads = grads_norm / _params.normelize_mat;
-    auto normalized_grads_norm = normalized_grads.get_norma();
-    auto unit_grad = normalized_grads.normalize();
-    auto unit_grad_norm = unit_grad.get_norma();
-
-    return _params.max_step_size*normalized_grads_norm / unit_grad_norm;
-}
-
-double optimizer::calc_t( optimization_params opt_params )
-{
-    auto grads_norm = opt_params.calib_gradients.normalize();
-    auto normalized_grads = grads_norm / _params.normelize_mat;
-    auto normalized_grads_norm = normalized_grads.get_norma();
-    auto unit_grad = normalized_grads.normalize();
-
-    auto t_vals = (normalized_grads * -_params.control_param) * unit_grad;
-    return t_vals.sum();
 }
 
 size_t optimizer::optimize( std::function< void( iteration_data_collect const & data ) > cb )
@@ -1573,6 +1574,7 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
     while( 1 )
     {
         iteration_data_collect data;
+        data.cycle = 1;
         data.iteration = n_iterations;
         auto res = calc_cost_and_grad( _z, _yuy, _original_calibration/*decompose(_params_curr.curr_p_mat)*/, _params_curr.curr_p_mat, &data );
         _params_curr.cost = res.first;
