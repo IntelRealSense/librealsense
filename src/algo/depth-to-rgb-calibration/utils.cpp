@@ -326,6 +326,39 @@ namespace depth_to_rgb_calibration {
         }
         return res;
     }
+
+
+    double3x3 cholesky3x3( double3x3 const & mat )
+    {
+        double3x3 res = { 0 };
+
+        for( auto i = 0; i < 3; i++ )
+        {
+            for( auto j = 0; j <= i; j++ )
+            {
+                double sum = 0;
+
+                if( i == j )
+                {
+                    for( auto l = 0; l < i; l++ )
+                    {
+                        sum += res.mat[i][l] * res.mat[i][l];
+                    }
+                    res.mat[i][i] = sqrt( mat.mat[i][j] - sum );
+                }
+                else
+                {
+                    for( auto l = 0; l < j; l++ )
+                    {
+                        sum += res.mat[i][l] * res.mat[j][l];
+                    }
+                    res.mat[i][j] = ( mat.mat[i][j] - sum ) / res.mat[j][j];
+                }
+            }
+        }
+        return res;
+    }
+
 }
 }
 }

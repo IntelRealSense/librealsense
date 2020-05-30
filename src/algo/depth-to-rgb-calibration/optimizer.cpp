@@ -790,81 +790,6 @@ void optimizer::set_ir_data(
     _ir.edges = calc_edges( _ir.ir_frame, width, height );
 }
 
-
-double3x3 cholesky3x3(double3x3 mat)
-{
-    double3x3 res = { 0 };
-
-    for (auto i = 0; i < 3; i++)
-    {
-        for (auto j = 0; j <= i; j++)
-        {
-            double sum = 0;
-
-            if(i==j)
-            {
-                for (auto l = 0; l < i; l++)
-                {
-                    sum += res.mat[i][l] * res.mat[i][l];
-                }
-                res.mat[i][i] = sqrt(mat.mat[i][j] - sum);
-            }
-            else
-            {
-                for (auto l = 0; l < j; l++)
-                {
-                    sum += res.mat[i][l] * res.mat[j][l];
-                }
-                res.mat[i][j] = (mat.mat[i][j] - sum)/ res.mat[j][j];
-            }
-        }
-    }
-    return res;
-}
-
-// TODO move to calibration.cpp
-calib librealsense::algo::depth_to_rgb_calibration::decompose( p_matrix const & in_mat, calib const & in_calibration )
-{
-    auto p_mat = in_mat.vals;
-    double3x3 first_three_cols = { p_mat[0], p_mat[1], p_mat[2],
-                                   p_mat[4], p_mat[5], p_mat[6],
-                                   p_mat[8], p_mat[9], p_mat[10] };
-
-    auto k_square = first_three_cols * first_three_cols.transpose();
-    std::vector<double> inv_k_square_vac( 9, 0 );
-    inv( k_square.to_vector().data(), inv_k_square_vac.data() );
-
-    double3x3 inv_k_square = { inv_k_square_vac[0], inv_k_square_vac[1], inv_k_square_vac[2],
-                               inv_k_square_vac[3], inv_k_square_vac[4], inv_k_square_vac[5],
-                               inv_k_square_vac[6], inv_k_square_vac[7], inv_k_square_vac[8] };
-
-    auto k_inv = cholesky3x3( inv_k_square ).transpose();
-    std::vector<double> k_vac( 9, 0 );
-    inv( k_inv.to_vector().data(), k_vac.data() );
-
-    for( auto i = 0; i < k_vac.size(); i++ )
-        k_vac[i] /= k_vac[k_vac.size() - 1];
-
-    auto t = k_inv * double3{ p_mat[3], p_mat[7], p_mat[11] };
-
-    auto r = (k_inv * first_three_cols).to_vector();
-
-    calib calibration;
-    for( auto i = 0; i < r.size(); i++ )
-        calibration.rot.rot[i] = r[i];
-
-    calibration.trans = { t.x, t.y, t.z };
-
-    calibration.k_mat.fx = k_vac[0];
-    calibration.k_mat.fy = k_vac[4];
-    calibration.k_mat.ppx = k_vac[2];
-    calibration.k_mat.ppy = k_vac[5];
-
-    in_calibration.copy_coefs( calibration );
-
-    return calibration;
-}
-
 void optimizer::decompose_p_mat()
 {
     _final_calibration = decompose( _params_curr.curr_p_mat, _original_calibration );
@@ -876,7 +801,6 @@ void optimizer::decompose_p_mat()
     // TODO AVISHAG
     //_final_calibration.k_mat.fx = _original_calibration.k_mat.fx;
     //_final_calibration.k_mat.fy = _original_calibration.k_mat.fy;
-
 }
 
 void optimizer::zero_invalid_edges( z_frame_data & z_data, ir_frame_data const & ir_data )
@@ -1486,10 +1410,8 @@ void optimizer::write_data_to( std::string const & dir )
     }
 }
 
-optimization_params optimizer::back_tracking_line_search( const z_frame_data & z_data,
-                                                          const yuy2_frame_data & yuy_data,
-                                                          optimization_params curr_params,
-                                                          iteration_data_collect * data )
+optimization_params optimizer::back_tracking_line_search( optimization_params const & curr_params,
+                                                          iteration_data_collect * data ) const
 {
     optimization_params new_params;
 
@@ -1517,29 +1439,29 @@ optimization_params optimizer::back_tracking_line_search( const z_frame_data & z
     new_params.curr_p_mat = curr_params.curr_p_mat + movement;
     
     calib old_calib = decompose( curr_params.curr_p_mat, _original_calibration );
-    auto uvmap_old = get_texture_map( z_data.vertices, old_calib, curr_params.curr_p_mat );
-    curr_params.cost = calc_cost( z_data, yuy_data, uvmap_old);
+    auto uvmap_old = get_texture_map( _z.vertices, old_calib, curr_params.curr_p_mat );
+    //curr_params.cost = calc_cost( z_data, yuy_data, uvmap_old );
 
     calib new_calib = decompose( new_params.curr_p_mat, _original_calibration );
-    auto uvmap_new = get_texture_map( z_data.vertices, new_calib, new_params.curr_p_mat );
-    new_params.cost = calc_cost( z_data, yuy_data, uvmap_new);
+    auto uvmap_new = get_texture_map( _z.vertices, new_calib, new_params.curr_p_mat );
+    new_params.cost = calc_cost( _z, _yuy, uvmap_new );
 
-    auto diff = calc_cost_per_vertex_diff(z_data, yuy_data, uvmap_old, uvmap_new);
+    auto diff = calc_cost_per_vertex_diff( _z, _yuy, uvmap_old, uvmap_new );
 
     auto iter_count = 0;
     while( diff >= step_size * t
            && abs( step_size ) > _params.min_step_size
            && iter_count++ < _params.max_back_track_iters )
     {
-        AC_LOG( DEBUG, "    back tracking line search cost= " << std::fixed << AC_D_PREC << new_params.cost );
-        step_size = _params.tau*step_size;
+        AC_LOG( DEBUG, "    back tracking line search cost= " << AC_D_PREC << new_params.cost );
+        step_size = _params.tau * step_size;
 
         new_params.curr_p_mat = curr_params.curr_p_mat + unit_grad * step_size;
         
         new_calib = decompose( new_params.curr_p_mat, _original_calibration );
-        uvmap_new = get_texture_map( z_data.vertices, new_calib, new_params.curr_p_mat);
-        new_params.cost = calc_cost(z_data, yuy_data, uvmap_new);
-        diff = calc_cost_per_vertex_diff(z_data, yuy_data, uvmap_old, uvmap_new);
+        uvmap_new = get_texture_map( _z.vertices, new_calib, new_params.curr_p_mat);
+        new_params.cost = calc_cost( _z, _yuy, uvmap_new);
+        diff = calc_cost_per_vertex_diff( _z, _yuy, uvmap_old, uvmap_new );
     }
 
     if(diff >= step_size * t )
@@ -1576,15 +1498,17 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
         iteration_data_collect data;
         data.cycle = 1;
         data.iteration = n_iterations;
-        auto res = calc_cost_and_grad( _z, _yuy, _original_calibration/*decompose(_params_curr.curr_p_mat)*/, _params_curr.curr_p_mat, &data );
+
+        calib curr_calib = decompose( _params_curr.curr_p_mat, _original_calibration );
+        auto res = calc_cost_and_grad( _z, _yuy, curr_calib, _params_curr.curr_p_mat, &data );
         _params_curr.cost = res.first;
         _params_curr.calib_gradients = res.second;
-        AC_LOG( DEBUG, n_iterations << ": Cost = " << std::fixed << std::setprecision( 15 ) << _params_curr.cost );
+        AC_LOG( DEBUG, n_iterations << ": Cost = " << AC_D_PREC << _params_curr.cost );
 
         data.params = _params_curr;
 
         auto prev_params = _params_curr;
-        _params_curr = back_tracking_line_search( _z, _yuy, _params_curr, &data);
+        _params_curr = back_tracking_line_search( _params_curr, &data);
         data.next_params = _params_curr;
 
         if (cb)
@@ -1598,7 +1522,7 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
         }
 
         auto delta = _params_curr.cost - prev_params.cost;
-        AC_LOG( DEBUG, "    delta= " << delta );
+        AC_LOG( DEBUG, "    delta= " << AC_D_PREC << delta );
         delta = abs( delta );
         if( delta < _params.min_cost_delta )
         {

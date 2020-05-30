@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include "calibration-types.h"
+
+
 namespace librealsense {
 namespace algo {
 namespace depth_to_rgb_calibration {
@@ -19,6 +22,8 @@ namespace depth_to_rgb_calibration {
     double deg_to_rad(double deg);
     void direct_inv_2x2(const double A[4], const double B[2], double C[2]);
     void direct_inv_6x6(const double A[36], const double B[6], double C[6]);
+
+    double3x3 cholesky3x3( double3x3 const & mat );
 
 }
 }

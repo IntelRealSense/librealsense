@@ -84,6 +84,13 @@ namespace depth_to_rgb_calibration {
         double translation[3]; /**< Three-element translation vector, in meters */
     };
 
+    struct krt
+    {
+        rotation rot = { { 0 } };
+        translation trans = { 0 };
+        k_matrix k_mat = { 0 };
+    };
+
     struct p_matrix
     {
         double vals[12];
@@ -121,10 +128,13 @@ namespace depth_to_rgb_calibration {
         p_matrix operator-(const p_matrix& c) const;
         p_matrix operator/(const p_matrix& c) const;
         p_matrix operator*(const p_matrix& c) const;
+
         double get_norma() const;
         double sum() const;
         p_matrix normalize( double norm ) const;
         double matrix_norm() const;
+
+        krt decompose() const;
     };
 
     struct calib

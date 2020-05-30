@@ -220,10 +220,8 @@ namespace depth_to_rgb_calibration {
         std::vector<uint8_t> get_logic_edges( std::vector<double> edges );
         std::vector <double3> subedges2vertices(z_frame_data& z_data, const rs2_intrinsics_double& intrin, double depth_units);
         
-        optimization_params back_tracking_line_search( const z_frame_data & z_data,
-                                                       const yuy2_frame_data & yuy_data,
-                                                       optimization_params opt_params,
-                                                       iteration_data_collect * data = nullptr );
+        optimization_params back_tracking_line_search( optimization_params const & opt_params,
+                                                       iteration_data_collect * data = nullptr ) const;
        
         // input validation
         bool is_movement_in_images(yuy2_frame_data& yuy);

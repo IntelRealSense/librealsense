@@ -56,15 +56,13 @@ namespace depth_to_rgb_calibration {
     )
     {
         auto intrinsics = cal.get_intrinsics();
-        auto extr = cal.get_extrinsics();
-        auto p = p_mat;
 
         std::vector< double2 > uv_map( points.size() );
 
         for( auto i = 0; i < points.size(); ++i )
         {
             double2 uv;
-            transform_point_to_uv( &uv.x, p, &points[i].x );
+            transform_point_to_uv( &uv.x, p_mat, &points[i].x );
 
             double2 uvmap;
             distort_pixel( &uvmap.x, &intrinsics, &uv.x );

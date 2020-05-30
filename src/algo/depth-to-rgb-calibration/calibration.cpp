@@ -3,6 +3,8 @@
 
 #include "calibration.h"
 #include "debug.h"
+#include "utils.h"
+
 
 using namespace librealsense::algo::depth_to_rgb_calibration;
 
@@ -305,4 +307,64 @@ p_matrix p_matrix::normalize( double const norma ) const
     for( auto i = 0; i < 12; i++ )
         res.vals[i] = vals[i] / norma;
     return res;
+}
+
+krt p_matrix::decompose() const
+{
+    //%firstThreeCols = P(:,1:3);% This is Krgb*R
+    double3x3 first_three_cols = { vals[0], vals[1], vals[2],
+                                   vals[4], vals[5], vals[6],
+                                   vals[8], vals[9], vals[10] };
+
+    //%KSquare = firstThreeCols*firstThreeCols';% This is Krgb*R*R'*Krgb' = Krgb*Krgb'
+    auto k_square = first_three_cols * first_three_cols.transpose();
+    //%KSquareInv = inv(KSquare); % Returns a matrix that is equal to: inv(Krgb')*inv(Krgb)
+    std::vector<double> inv_k_square_vac( 9, 0 );
+    inv( k_square.to_vector().data(), inv_k_square_vac.data() );
+
+    double3x3 inv_k_square = { inv_k_square_vac[0], inv_k_square_vac[1], inv_k_square_vac[2],
+                               inv_k_square_vac[3], inv_k_square_vac[4], inv_k_square_vac[5],
+                               inv_k_square_vac[6], inv_k_square_vac[7], inv_k_square_vac[8] };
+
+    //%KInv = cholesky3x3(KSquareInv)';% Cholsky decomposition 3 by 3. returns a lower triangular matrix 3x3. Equal to inv(Krgb')
+    auto k_inv = cholesky3x3( inv_k_square ).transpose();
+    //%K = inv(KInv);
+    std::vector<double> k_vac( 9, 0 );
+    inv( k_inv.to_vector().data(), k_vac.data() );
+    //%K = K/K(end);
+    for( auto i = 0; i < k_vac.size(); i++ )
+        k_vac[i] /= k_vac[k_vac.size() - 1];
+
+    //%t = KInv*P(:,4);
+    auto t = k_inv * double3{ vals[3], vals[7], vals[11] };
+
+    //%R = KInv*firstThreeCols;
+    auto r = (k_inv * first_three_cols).to_vector();
+
+    krt calibration;
+    for( auto i = 0; i < r.size(); i++ )
+        calibration.rot.rot[i] = r[i];
+
+    calibration.trans = { t.x, t.y, t.z };
+
+    calibration.k_mat.fx = k_vac[0];
+    calibration.k_mat.fy = k_vac[4];
+    calibration.k_mat.ppx = k_vac[2];
+    calibration.k_mat.ppy = k_vac[5];
+
+    return calibration;
+}
+
+calib librealsense::algo::depth_to_rgb_calibration::decompose( p_matrix const & in_mat,
+                                                               calib const & in_calibration )
+{
+    auto krt = in_mat.decompose();
+
+    calib calibration;
+    calibration.rot = krt.rot;
+    calibration.trans = krt.trans;
+    calibration.k_mat = krt.k_mat;
+    in_calibration.copy_coefs( calibration );
+
+    return calibration;
 }
