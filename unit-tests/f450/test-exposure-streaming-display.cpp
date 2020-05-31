@@ -6,7 +6,7 @@
 //   add: C:\Users\rbettan\Documents\GitRepos\librealsense2\third-party\glfw\include
 // - Linker > Input > Additional Dependencies:
 // add: 
-//     ..\..\..\..\third - party\glfw\src\Release\glfw3.lib
+//     ..\..\..\..\third-party\glfw\src\Release\glfw3.lib
 //     opengl32.lib
 //     glu32.lib
 // Add Reference glfw
@@ -21,7 +21,7 @@ void check_option_from_max_to_min_and_back_streaming(window& app, rs2::rates_pri
 void check_both_sensors_option_from_max_to_min_and_back_streaming(window& app, rs2::rates_printer& printer, rs2::colorizer& color_map,
     const rs2::pipeline& pipe, const rs2::sensor& sensor, rs2_option opt, rs2_option opt_second, int number_of_iterations, float tolerance);
 
-TEST_CASE("Exposure - each sensor and both - no streaming", "[F450]") {
+TEST_CASE("Exposure - each sensor and both - streaming and display", "[F450]") {
     using namespace std;
 
     //------------------

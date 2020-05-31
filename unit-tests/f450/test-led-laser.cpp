@@ -43,9 +43,6 @@ TEST_CASE( "LED - LASER - no streaming", "[F450]" ) {
         int number_of_iterations = 5;
         float tolerance = 3; // for 5% - not absolute as done in gain
 
-        //set AUTO EXPOSURE to auto
-        sensor.set_option(RS2_OPTION_AUTO_EXPOSURE_MODE, 1);
-        REQUIRE(sensor.get_option(RS2_OPTION_AUTO_EXPOSURE_MODE) == 1);
 
         rs2_option opt_led = RS2_OPTION_LED_POWER;
         rs2_option opt_laser = RS2_OPTION_LASER_POWER;
@@ -134,27 +131,46 @@ TEST_CASE("LED - LASER - streaming", "[F450]") {
 
         //set AUTO EXPOSURE to auto
         sensor.set_option(RS2_OPTION_AUTO_EXPOSURE_MODE, 1);
-        REQUIRE(sensor.get_option(RS2_OPTION_AUTO_EXPOSURE_MODE) == 1);
+        bool isAE_ON = false;
+        while (!isAE_ON && number_of_iterations--)
+        {
+            isAE_ON = (sensor.get_option(RS2_OPTION_AUTO_EXPOSURE_MODE) == 1);
+        }
+        REQUIRE(isAE_ON);
 
         rs2_option opt_led = RS2_OPTION_LED_POWER;
         rs2_option opt_laser = RS2_OPTION_LASER_POWER;
-
+        number_of_iterations = 5;
         //setting led and laser OFF
         sensor.set_option(opt_led, 0);
         REQUIRE(sensor.get_option(opt_led) == 0);
         sensor.set_option(opt_laser, 0);
         REQUIRE(sensor.get_option(opt_laser) == 0);
+
         rs2::frameset data = pipe.wait_for_frames();
         rs2::video_frame frame_0(data.get_infrared_frame(0));
         long long laser_in_md_0 = frame_0.get_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE);
         long long led_in_md_0 = frame_0.get_frame_metadata(RS2_FRAME_METADATA_LED_POWER_MODE);
         rs2::video_frame frame_1(data.get_infrared_frame(1));
-        long long laser_in_md_1 = frame_0.get_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE);
-        long long led_in_md_1 = frame_0.get_frame_metadata(RS2_FRAME_METADATA_LED_POWER_MODE);
+        long long laser_in_md_1 = frame_1.get_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE);
+        long long led_in_md_1 = frame_1.get_frame_metadata(RS2_FRAME_METADATA_LED_POWER_MODE);
+        bool result = (laser_in_md_0 == 0) && (led_in_md_0 == 0) && (laser_in_md_1 == 0) && (led_in_md_1 == 0);
+        while (!result && number_of_iterations--)
+        {
+            data = pipe.wait_for_frames();
+            rs2::video_frame frame_0(data.get_infrared_frame(0));
+            laser_in_md_0 = frame_0.get_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE);
+            led_in_md_0 = frame_0.get_frame_metadata(RS2_FRAME_METADATA_LED_POWER_MODE);
+            rs2::video_frame frame_1(data.get_infrared_frame(1));
+            laser_in_md_1 = frame_1.get_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE);
+            led_in_md_1 = frame_1.get_frame_metadata(RS2_FRAME_METADATA_LED_POWER_MODE);
+            result = (laser_in_md_0 == 0) && (led_in_md_0 == 0) && (laser_in_md_1 == 0) && (led_in_md_1 == 0);
+        }
         REQUIRE(laser_in_md_0 == 0);
         REQUIRE(led_in_md_0 == 0);
         REQUIRE(laser_in_md_1 == 0);
         REQUIRE(led_in_md_1 == 0);
+        
 
 
         bool is_led_on = false;
@@ -184,8 +200,8 @@ TEST_CASE("LED - LASER - streaming", "[F450]") {
                 long long laser_in_md_0 = frame_0.get_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE);
                 long long led_in_md_0 = frame_0.get_frame_metadata(RS2_FRAME_METADATA_LED_POWER_MODE);
                 rs2::video_frame frame_1(data.get_infrared_frame(1));
-                long long laser_in_md_1 = frame_0.get_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE);
-                long long led_in_md_1 = frame_0.get_frame_metadata(RS2_FRAME_METADATA_LED_POWER_MODE);
+                long long laser_in_md_1 = frame_1.get_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE);
+                long long led_in_md_1 = frame_1.get_frame_metadata(RS2_FRAME_METADATA_LED_POWER_MODE);
 
                 REQUIRE(led_in_md_0 == 1);
                 REQUIRE(led_in_md_1 == 1);
@@ -210,8 +226,8 @@ TEST_CASE("LED - LASER - streaming", "[F450]") {
                 long long laser_in_md_0 = frame_0.get_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE);
                 long long led_in_md_0 = frame_0.get_frame_metadata(RS2_FRAME_METADATA_LED_POWER_MODE);
                 rs2::video_frame frame_1(data.get_infrared_frame(1));
-                long long laser_in_md_1 = frame_0.get_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE);
-                long long led_in_md_1 = frame_0.get_frame_metadata(RS2_FRAME_METADATA_LED_POWER_MODE);
+                long long laser_in_md_1 = frame_1.get_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE);
+                long long led_in_md_1 = frame_1.get_frame_metadata(RS2_FRAME_METADATA_LED_POWER_MODE);
                 
                 REQUIRE(led_in_md_0 == 0);
                 REQUIRE(led_in_md_1 == 0);

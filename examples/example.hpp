@@ -412,9 +412,11 @@ public:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, frame.get_data());
             break;
         case RS2_FORMAT_Y8:
+        case RS2_FORMAT_RAW8:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, frame.get_data());
             break;
         case RS2_FORMAT_Y10BPACK:
+        case RS2_FORMAT_RAW16:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, frame.get_data());
             break;
         default:
@@ -666,6 +668,8 @@ private:
         case RS2_FORMAT_Y8:
         case RS2_FORMAT_MOTION_XYZ32F:
         case RS2_FORMAT_Y10BPACK:
+        case RS2_FORMAT_RAW16:
+        case RS2_FORMAT_RAW8:
             return true;
         default:
             return false;

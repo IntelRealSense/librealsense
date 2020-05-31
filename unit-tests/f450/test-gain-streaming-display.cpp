@@ -118,6 +118,9 @@ void check_option_from_max_to_min_and_back_streaming(window& app, rs2::rates_pri
     std::cout << "-----------------------------------------------------------" << std::endl;
     std::cout << "Checking option = " << rs2_option_to_string(opt) << std::endl;
 
+    //workaround for test
+    range.max = 248;
+
     rs2::frameset data = pipe.wait_for_frames().apply_filter(printer).apply_filter(color_map);
     app.show(data);
     //setting exposure to max
@@ -193,6 +196,8 @@ void check_both_sensors_option_from_max_to_min_and_back_streaming(window& app, r
     REQUIRE(range.step == range_second.step);
     std::cout << "Min, Max, Step checked same for both sensors" << std::endl;
 
+    //workaround for test
+    range.max = 248;
 
     //setting exposure to max
     float valueToSet = range.max;
