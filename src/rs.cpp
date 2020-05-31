@@ -3013,7 +3013,7 @@ int rs2_get_number_of_flash_logs(rs2_device* dev, rs2_error** error) BEGIN_API_C
     auto fw_loggerable = VALIDATE_INTERFACE(dev->device, librealsense::firmware_logger_extensions);
 
     fw_logs::fw_logs_binary_data binary_data;
-    int number_of_flash_logs = fw_loggerable->get_number_of_flash_logs(binary_data);
+    int number_of_flash_logs = fw_loggerable->get_number_of_flash_logs();
     
     return number_of_flash_logs;
 }
