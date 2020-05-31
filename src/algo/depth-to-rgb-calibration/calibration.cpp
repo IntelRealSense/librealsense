@@ -321,9 +321,9 @@ krt p_matrix::decompose() const
     std::vector<double> inv_k_square_vac( 9, 0 );
     inv( k_square.to_vector().data(), inv_k_square_vac.data() );
 
-    double3x3 inv_k_square = { inv_k_square_vac[0], inv_k_square_vac[1], inv_k_square_vac[2],
-                               inv_k_square_vac[3], inv_k_square_vac[4], inv_k_square_vac[5],
-                               inv_k_square_vac[6], inv_k_square_vac[7], inv_k_square_vac[8] };
+    double3x3 inv_k_square = { inv_k_square_vac[0], inv_k_square_vac[3], inv_k_square_vac[6],
+                               inv_k_square_vac[1], inv_k_square_vac[4], inv_k_square_vac[7],
+                               inv_k_square_vac[2], inv_k_square_vac[5], inv_k_square_vac[8] };
 
     //%KInv = cholesky3x3(KSquareInv)';% Cholsky decomposition 3 by 3. returns a lower triangular matrix 3x3. Equal to inv(Krgb')
     auto k_inv = cholesky3x3( inv_k_square ).transpose();
