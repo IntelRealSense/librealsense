@@ -281,6 +281,9 @@ namespace librealsense
                     _f.open( filename );
                     if( _f )
                         std::cout << "-D- AC log is being written to: " << filename << std::endl;
+
+                    librealsense::log_to_callback( RS2_LOG_SEVERITY_ALL,
+                                                   { this, []( rs2_log_callback * p ) {} } );
                 }
 
                 void on_log( rs2_log_severity severity, rs2_log_message const & msg ) noexcept override
@@ -300,9 +303,7 @@ namespace librealsense
 
                 void release() override { delete this; }
             };
-            librealsense::log_to_callback( RS2_LOG_SEVERITY_ALL,
-                { new ac_logger, []( rs2_log_callback * p ) { p->release(); } }
-            );
+            static ac_logger one_logger;
 #endif
         }
 
