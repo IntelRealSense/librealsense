@@ -292,7 +292,7 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
         if (essential_sw_update_needed)
         {
             ImGui::SameLine();
-            ImGui::PushStyleColor(ImGuiCol_Text, light_red);
+            ImGui::PushStyleColor(ImGuiCol_Text, yellowish);
             ImGui::Text("%s", " (Your version is older than the minimum version required for the proper functioning of your device)");
             ImGui::PopStyleColor();
         }
@@ -422,7 +422,7 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
 
             ImGui::PopStyleColor(3);
             ImGui::SetCursorScreenPos({ pos.orig_pos.x + 150, pos.mid_y - 25 });
-            ImGui::Text("%s", "Visiting the release page prior to the download step can help you find the suitable package for you.");
+            ImGui::Text("%s", "Visit the release page before download to identify the most suitable package.");
         }
 
         ImGui::PopStyleColor();
@@ -513,7 +513,7 @@ bool updates_model::draw_firmware_section(const char * window_name, update_profi
     if (essential_fw_update_needed)
     {
         ImGui::SameLine();
-        ImGui::PushStyleColor(ImGuiCol_Text, light_red);
+        ImGui::PushStyleColor(ImGuiCol_Text, yellowish);
         ImGui::Text("%s", " (Your version is older than the minimum version required for the proper functioning of your device)");
         ImGui::PopStyleColor();
     }
