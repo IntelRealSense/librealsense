@@ -22,6 +22,8 @@ namespace depth_to_rgb_calibration {
     double deg_to_rad(double deg);
     void direct_inv_2x2(const double A[4], const double B[2], double C[2]);
     void direct_inv_6x6(const double A[36], const double B[6], double C[6]);
+    void pinv_3x3( const double in[9], double out[9] );  // in pinv_3x3.cpp
+    void svd_3x4( const double in[12], double out[3] );  // in svd_3x4.cpp
 
     double3x3 cholesky3x3( double3x3 const & mat );
 

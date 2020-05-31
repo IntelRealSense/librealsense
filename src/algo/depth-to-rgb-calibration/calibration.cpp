@@ -244,7 +244,6 @@ double p_matrix::get_norma() const
     return grads_norm;
 }
 
-void svd( const double in[12], double out[3] );  // in svp.cpp
 static inline bool rtIsNaN( double value ) { return (value != value); }
 static inline bool rtIsInf( double value )
 {
@@ -287,7 +286,7 @@ double p_matrix::matrix_norm() const
     if( ( ! rtIsInf( n ) ) && ( ! rtIsNaN( n ) ) )
     {
         double dv0[3];
-        svd( m, dv0 );
+        svd_3x4( m, dv0 );
         n = dv0[0];
     }
     return n;

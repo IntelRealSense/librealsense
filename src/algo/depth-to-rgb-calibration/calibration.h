@@ -34,7 +34,7 @@ namespace depth_to_rgb_calibration {
             coeffs{ obj.coeffs[0], obj.coeffs[1], obj.coeffs[2], obj.coeffs[3], obj.coeffs[4] }
         {}
 
-        operator rs2_intrinsics()
+        operator rs2_intrinsics() const
         {
             return
             { width, height,
@@ -42,6 +42,11 @@ namespace depth_to_rgb_calibration {
                 float( fx ), float( fy ),
                 model,
             {float( coeffs[0] ), float( coeffs[1] ), float( coeffs[2] ), float( coeffs[3] ), float( coeffs[4] )} };
+        }
+
+        operator k_matrix() const
+        {
+            return { fx, fy, ppx, ppy };
         }
 
         int           width;     /**< Width of the image in pixels */

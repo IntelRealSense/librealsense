@@ -142,6 +142,11 @@ namespace depth_to_rgb_calibration {
     struct rotation
     {
         double rot[9];
+
+        rotation transposed() const
+        {
+            return { rot[0], rot[3], rot[6], rot[1], rot[4], rot[7], rot[2], rot[5], rot[8] };
+        }
     };
 
     struct rotation_in_angles
@@ -176,6 +181,17 @@ namespace depth_to_rgb_calibration {
         double fy;
         double ppx;
         double ppy;
+
+        rotation as_3x3()
+        {
+            rotation r = { 0 };
+            r.rot[0] = fx;
+            r.rot[4] = fy;
+            r.rot[2] = ppx;
+            r.rot[5] = ppy;
+            r.rot[8] = 1;
+            return r;
+        }
     };
 
 }  // librealsense::algo::depth_to_rgb_calibration

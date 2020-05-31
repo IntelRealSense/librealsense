@@ -668,7 +668,9 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     weights = weights(isInside);
     vertices = vertices(isInside,:);
     sectionMapDepth = sectionMapDepth(isInside);*/
-    //_params.constant_weights;
+    k_matrix k = depth_intrinsics;
+    rotation k_depth_pinv = { 0 };
+    pinv_3x3( k.as_3x3().rot, k_depth_pinv.rot );
     transform(_z.valid_edge_sub_pixel_x.begin(), _z.valid_edge_sub_pixel_x.end(), _z.valid_edge_sub_pixel_x.begin(), bind2nd(std::plus<double>(), -1.0));
     transform(_z.valid_edge_sub_pixel_y.begin(), _z.valid_edge_sub_pixel_y.end(), _z.valid_edge_sub_pixel_y.begin(), bind2nd(std::plus<double>(), -1.0));
     for (auto i = 0; i < _z.sub_points.size(); i += 3)
@@ -680,10 +682,9 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
         double z = _z.sub_points[i + 2];
         for (auto jj = 0; jj < 3; jj++)
         {
-            // TODO pinv(params.Kdepth)' is a constant right now!
-            sub_points_mult[jj] = x * _params.k_depth_pinv_trans[0][jj]
-                                + y * _params.k_depth_pinv_trans[1][jj]
-                                + z * _params.k_depth_pinv_trans[2][jj];
+            sub_points_mult[jj] = x * k_depth_pinv.rot[3 * jj + 0]
+                                + y * k_depth_pinv.rot[3 * jj + 1]
+                                + z * k_depth_pinv.rot[3 * jj + 2];
         }
         auto z_value_for_subedge = _z.values_for_subedges[i / 3];
         auto val1 = sub_points_mult[0] * z_value_for_subedge / _params.max_sub_mm_z;
