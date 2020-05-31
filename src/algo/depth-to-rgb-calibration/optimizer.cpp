@@ -1266,8 +1266,8 @@ void params::set_depth_resolution( size_t width, size_t height )
     bool const XGA = (width == 1024 && height == 768);
     if( XGA )
     {
-        AC_LOG( DEBUG, "... changing IR threshold: " << grad_ir_threshold << " -> " << 1.5 << "  (because of resolution)" );
-        grad_ir_threshold = 1.5;
+        AC_LOG( DEBUG, "... changing IR threshold: " << grad_ir_threshold << " -> " << 2.5 << "  (because of resolution)" );
+        grad_ir_threshold = 2.5;
     }
 }
 
