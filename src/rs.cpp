@@ -3006,6 +3006,34 @@ int rs2_get_firmware_log(rs2_device* dev, rs2_firmware_log_message** fw_log_msg,
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, dev, fw_log_msg)
 
+
+int rs2_get_number_of_flash_logs(rs2_device* dev, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(dev);
+    auto fw_loggerable = VALIDATE_INTERFACE(dev->device, librealsense::firmware_logger_extensions);
+
+    fw_logs::fw_logs_binary_data binary_data;
+    int number_of_flash_logs = fw_loggerable->get_number_of_flash_logs(binary_data);
+    
+    return number_of_flash_logs;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, dev)
+
+int rs2_get_flash_log(rs2_device* dev, rs2_firmware_log_message** fw_log_msg, rs2_error** error)BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(dev);
+    VALIDATE_NOT_NULL(fw_log_msg);
+    auto fw_loggerable = VALIDATE_INTERFACE(dev->device, librealsense::firmware_logger_extensions);
+
+    fw_logs::fw_logs_binary_data binary_data;
+    bool result = fw_loggerable->get_flash_log(binary_data);
+    if (result)
+    {
+        (*(*fw_log_msg)->firmware_log_binary_data.get()) = binary_data;
+    }
+    return result ? 1 : 0;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, dev, fw_log_msg)
 void rs2_delete_firmware_log_message(rs2_firmware_log_message* msg) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(msg);
