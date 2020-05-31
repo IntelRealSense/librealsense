@@ -58,7 +58,7 @@ namespace rs2
             auto res = std::find_if(_server_versions_vec.begin(), _server_versions_vec.end(),
                 [&, device_name, up_str, comp_str, platform](std::unordered_map<std::string, std::string> ver)
             {
-                return (device_name == ver["device_name"] && up_str == ver["policy_type"] && comp_str == ver["component"] && (platform == ver["platform"] || ver["platform"] == "*"));
+                return (is_device_name_equal(ver["device_name"],device_name,true) && up_str == ver["policy_type"] && comp_str == ver["component"] && (platform == ver["platform"] || ver["platform"] == "*"));
             });
 
             if (res != _server_versions_vec.end())
@@ -310,5 +310,14 @@ namespace rs2
 
         }
 
+        bool versions_db_manager::is_device_name_equal(const std::string &str_from_db, const std::string &str_compared, bool allow_wildcard)
+        {
+            if (allow_wildcard)
+                return (0 == str_from_db.compare(0, str_from_db.find('*'), str_compared, 0, str_from_db.find('*')));
+            else
+                return (str_from_db == str_compared);
+        }
     }
+
+
 }
