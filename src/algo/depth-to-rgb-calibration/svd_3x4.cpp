@@ -5,7 +5,7 @@
 
 #include <limits>
 #include "utils.h"
-
+#include <cmath>
 
 namespace
 {
