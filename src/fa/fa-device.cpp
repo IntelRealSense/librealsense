@@ -319,7 +319,7 @@ namespace librealsense
         ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<srggb10p_converter>
             (RS2_FORMAT_SBGGR10P, target_other_raw, RS2_STREAM_INFRARED, 0));
         ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<srggb10p_converter>
-            (RS2_FORMAT_SBGGR10P, target_other_raw, RS2_STREAM_INFRARED, 1));
+            (RS2_FORMAT_RAW10, target_other_raw, RS2_STREAM_INFRARED, 1));
         
 
         add_sensor(ir_ep);

@@ -97,7 +97,7 @@ void checkOptionForBothSensors_streaming(window& app, rs2::rates_printer& printe
 
         //getting actions
         int iterations = number_of_iterations;
-        while (iterations-- > 0 && valueAfterChange != valueToSet)
+        while (iterations-- > 0 && (valueAfterChange != valueToSet || valueAfterChange_second != valueToSet))
         {
             if (valueAfterChange != valueToSet)
                 valueAfterChange = sensor.get_option(option);

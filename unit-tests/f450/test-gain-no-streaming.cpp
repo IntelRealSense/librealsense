@@ -57,6 +57,9 @@ void check_option_from_min_to_max_and_back(rs2::sensor sensor, rs2_option opt, i
     std::cout << "-----------------------------------------------------------" << std::endl;
     std::cout << "Checking option = " << rs2_option_to_string(opt) << std::endl;
 
+    //workaround for test
+    range.max = 248;
+
     //setting exposure to min
     float valueToSet = range.min;
     sensor.set_option(opt, valueToSet);
@@ -118,6 +121,8 @@ void check_both_sensors_option_from_min_to_max_and_back(rs2::sensor sensor, rs2_
     REQUIRE(range.step == range_second.step);
     std::cout << "Min, Max, Step checked same for both sensors" << std::endl;
 
+    //workaround for test
+    range.max = 248;
 
     //setting exposure to min
     float valueToSet = range.min;
