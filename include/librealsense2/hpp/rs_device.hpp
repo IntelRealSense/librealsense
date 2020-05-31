@@ -444,6 +444,29 @@ namespace rs2
 
             return fw_log_pulling_status;
         }
+
+        bool get_flash_log(rs2::firmware_log_message& msg) const
+        {
+            rs2_error* e = nullptr;
+            rs2_firmware_log_message* m = msg.get_message().get();
+            bool flash_log_pulling_status =
+                rs2_get_flash_log(_dev.get(), &(m), &e);
+
+            error::handle(e);
+
+            return flash_log_pulling_status;
+        }
+
+        int get_number_of_flash_logs() const
+        {
+            rs2_error* e = nullptr;
+            int number_of_flash_logs =
+                rs2_get_number_of_flash_logs(_dev.get(), &e);
+
+            error::handle(e);
+
+            return number_of_flash_logs;
+        }
     };
 
     class firmware_log_parsed_message

@@ -17,7 +17,7 @@ namespace librealsense
             explicit fw_logs_parser(std::string xml_full_file_path);
             ~fw_logs_parser(void);
 
-            fw_log_data fw_logs_parser::parse_fw_log(const fw_logs_binary_data* fw_log_msg);
+            fw_log_data parse_fw_log(const fw_logs_binary_data* fw_log_msg);
             
 
         private:

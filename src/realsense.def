@@ -359,6 +359,7 @@ EXPORTS
     rs2_create_firmware_log_message
     rs2_delete_firmware_log_message
     rs2_get_firmware_log
+    rs2_get_flash_log
     rs2_firmware_log_message_severity
     rs2_firmware_log_message_timestamp
     rs2_firmware_log_message_data
