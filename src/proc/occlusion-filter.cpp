@@ -85,38 +85,37 @@ namespace librealsense
 
        if (_occlusion_scanning == horizontal)
        {
+           for( size_t y = 0; y < points_height; ++y )
            {
-               for (size_t y = 0; y < points_height; ++y)
-               {
-                   maxInLine = -1;
-                   maxZ = 0;
-                   int occDilationLeft = 0;
+               maxInLine = -1;
+               maxZ = 0;
+               int occDilationLeft = 0;
 
-                   for (size_t x = 0; x < points_width; ++x)
+               for( size_t x = 0; x < points_width; ++x )
+               {
+                   if( points_ptr->z )
                    {
-                       if (points_ptr->z)
+                       // Occlusion detection
+                       if( pixels_ptr->x < maxInLine
+                           || ( pixels_ptr->x == maxInLine && ( points_ptr->z - maxZ ) > occZTh ) )
                        {
-                           //Occlusion detection
-                           if (pixels_ptr->x < maxInLine || (pixels_ptr->x == maxInLine && (points_ptr->z - maxZ) > occZTh))
+                           *points_ptr = { 0, 0, 0 };
+                           occDilationLeft = occDilationSz;
+                       }
+                       else
+                       {
+                           maxInLine = pixels_ptr->x;
+                           maxZ = points_ptr->z;
+                           if( occDilationLeft > 0 )
                            {
                                *points_ptr = { 0, 0, 0 };
-                               occDilationLeft = occDilationSz;
-                           }
-                           else
-                           {
-                               maxInLine = pixels_ptr->x;
-                               maxZ = points_ptr->z;
-                               if (occDilationLeft > 0)
-                               {
-                                   *points_ptr = { 0, 0, 0 };
-                                   occDilationLeft--;
-                               }
+                               occDilationLeft--;
                            }
                        }
-                       ++points_ptr;
-                       ++uv_map_ptr;
-                       ++pixels_ptr;
                    }
+                   ++points_ptr;
+                   ++uv_map_ptr;
+                   ++pixels_ptr;
                }
            }
        }
@@ -125,9 +124,9 @@ namespace librealsense
            auto rotated_depth_width = _depth_intrinsics->height;
            auto rotated_depth_height = _depth_intrinsics->width;
            auto depth_ptr = (byte*)(depth.get_data());
-           std::allocator<byte> alloc;
+           std::vector< byte > alloc( depth.get_bytes_per_pixel() * points_width * points_height );
            byte* depth_planes[1];
-           depth_planes[0] = (byte*)alloc.allocate(depth.get_bytes_per_pixel() * points_width * points_height);
+           depth_planes[0] = alloc.data();
 
            rotate_image_optimized<2>(depth_planes, (const byte*)(depth.get_data()), points_width, points_height);
 
