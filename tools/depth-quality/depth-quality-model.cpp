@@ -1213,14 +1213,14 @@ namespace rs2
                     //Capture raw frame
                     auto filename = filename_base + "_" + stream_desc + "_" + fn.str() + ".raw";
                     if (!save_frame_raw_data(filename, original_frame))
-                        _viewer_model.not_model.add_notification(notification_data{ to_string() << "Failed to save frame raw data  " << filename,
+                        _viewer_model.not_model->add_notification(notification_data{ to_string() << "Failed to save frame raw data  " << filename,
                             RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
 
 
                     // And the frame's attributes
                     filename = filename_base + "_" + stream_desc + "_" + fn.str() + "_metadata.csv";
                     if (!frame_metadata_to_csv(filename, original_frame))
-                        _viewer_model.not_model.add_notification(notification_data{ to_string() << "Failed to save frame metadata file " << filename,
+                        _viewer_model.not_model->add_notification(notification_data{ to_string() << "Failed to save frame metadata file " << filename,
                             RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
 
                 }
@@ -1245,7 +1245,7 @@ namespace rs2
                     auto fname = filename_base + "_" + fn.str() + "_3d_mesh.ply";
                     std::unique_ptr<rs2::filter> exporter;
                     exporter = std::unique_ptr<rs2::filter>(new rs2::save_to_ply(fname));
-                    export_frame(fname, std::move(exporter), _viewer_model.not_model, frames, false);
+                    export_frame(fname, std::move(exporter), *_viewer_model.not_model, frames, false);
                 }
             }
         }

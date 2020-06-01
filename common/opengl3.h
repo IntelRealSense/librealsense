@@ -1,3 +1,6 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+
 #pragma once
 
 #include "rendering.h"
@@ -6,6 +9,19 @@
 #include <unordered_map>
 #include <vector>
 #include <memory>
+
+void _check_gl_error(const char *file, int line);
+void clear_gl_errors();
+
+#ifndef NDEBUG
+#define check_gl_error() _check_gl_error(__FILE__,__LINE__)
+#else
+#ifndef _DEBUG
+#define check_gl_error() _check_gl_error(__FILE__,__LINE__)
+#else
+#define check_gl_error()
+#endif
+#endif
 
 namespace rs2
 {
@@ -305,6 +321,8 @@ namespace rs2
 
         std::string get_status();
 
+        void set_dims(int w, int h) { _w = w; _h = h; }
+
         int get_width() const { return _w; }
         int get_height() const { return _h; }
         uint32_t get() const { return _id; }
@@ -312,5 +330,6 @@ namespace rs2
         uint32_t _id;
         uint32_t _db = 0;
         int _w, _h;
+        int32_t _viewport[4];
     };
 }
