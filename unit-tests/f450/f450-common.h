@@ -55,7 +55,7 @@ void checkOption(const rs2::sensor& sensor, rs2_option option, float initialValu
         REQUIRE(sensor.get_option(RS2_OPTION_AUTO_EXPOSURE_MODE) == 0);
         sensor.set_option(option, valueToSet);
         int iterations = number_of_iterations;
-        while (iterations-- > 0 && valueAfterChange != valueToSet)
+        while (iterations-- > 0 && !vv_cb(valueAfterChange, valueToSet))
         {
             valueAfterChange = sensor.get_option(option);
         }
@@ -87,12 +87,12 @@ void checkOptionForBothSensors(const rs2::sensor& sensor, rs2_option option, rs2
 
         //getting actions
         int iterations = number_of_iterations;
-        while (iterations-- > 0 && valueAfterChange != valueToSet)
+        while (iterations-- > 0 && !vv_cb(valueAfterChange, valueToSet))
         {
             valueAfterChange = sensor.get_option(option);
         }
         iterations = number_of_iterations;
-        while (iterations-- > 0 && valueAfterChange_second != valueToSet)
+        while (iterations-- > 0 && !vv_cb(valueAfterChange_second, valueToSet))
         {
             valueAfterChange_second = sensor.get_option(option_second);
         }

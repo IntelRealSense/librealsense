@@ -68,8 +68,8 @@ TEST_CASE("Exposure - each sensor and both - streaming and display", "[F450]") {
     {
         rs2::sensor sensor = devices[0].first<rs2::fa_infrared_sensor>();
 
-        int number_of_iterations = 5;
-        float tolerance = 3; // for 5% - not absolute as done in gain
+        int number_of_iterations = 50;
+        float tolerance = 0.3; // for 30% - not absolute as done in gain
 
         //set AUTO EXPOSURE to manual
         sensor.set_option(RS2_OPTION_AUTO_EXPOSURE_MODE, 0);
