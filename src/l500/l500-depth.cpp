@@ -274,6 +274,19 @@ namespace librealsense
             throw std::runtime_error(to_string() << "Invalid resolution " << width << "x" << height);
     }
 
+    bool stream_profiles_correspond(stream_profile_interface* l, stream_profile_interface* r)
+    {
+        auto vl = dynamic_cast<video_stream_profile_interface*>(l);
+        auto vr = dynamic_cast<video_stream_profile_interface*>(r);
+
+        if (!vl || !vr)
+            return false;
+
+        return  l->get_framerate() == r->get_framerate() &&
+            vl->get_width() == vr->get_width() &&
+            vl->get_height() == vr->get_height();
+    }
+
     void l500_depth_sensor::open(const stream_profiles& requests)
     {
         try
@@ -303,7 +316,7 @@ namespace librealsense
                     auto corresponding_ir = std::find_if(sp.begin(), sp.end(), [&](std::shared_ptr<stream_profile_interface> sp)
                     {
                         auto vs = dynamic_cast<video_stream_profile*>(sp.get());
-                        return sp->get_stream_type() == RS2_STREAM_INFRARED && frame_validator::stream_profiles_correspond(sp.get(), user_request_profile);
+                        return sp->get_stream_type() == RS2_STREAM_INFRARED && stream_profiles_correspond(sp.get(), user_request_profile);
                     });
 
                     if (corresponding_ir == sp.end())
