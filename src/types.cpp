@@ -320,7 +320,7 @@ namespace librealsense
             CASE(ZERO_ORDER_ENABLED)
             CASE(ENABLE_MAP_PRESERVATION)
             CASE(FREEFALL_DETECTION_ENABLED)
-            CASE(AVALANCHE_PHOTO_DIODE)
+            case RS2_OPTION_AVALANCHE_PHOTO_DIODE: return "Receiver Gain";
             CASE(POST_PROCESSING_SHARPENING)
             CASE(PRE_PROCESSING_SHARPENING)
             CASE(NOISE_FILTERING)
@@ -507,8 +507,10 @@ namespace librealsense
         {
             CASE(CUSTOM)
             CASE(DEFAULT)
-            CASE(NO_AMBIENT)
-            CASE(LOW_AMBIENT)
+            //CASE(NO_AMBIENT)
+            case RS2_L500_VISUAL_PRESET_NO_AMBIENT: return "No Ambient Light";
+            //CASE(LOW_AMBIENT)
+            case RS2_L500_VISUAL_PRESET_LOW_AMBIENT: return "Low Ambient Light";
             CASE(MAX_RANGE)
             CASE(SHORT_RANGE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
