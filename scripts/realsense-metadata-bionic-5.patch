@@ -13,7 +13,7 @@ diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driv
 index a7b76c987..26c1b0cf5 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -2906,6 +2906,231 @@ static const struct usb_device_id uvc_ids[] = {
+@@ -2906,6 +2906,240 @@ static const struct usb_device_id uvc_ids[] = {
  	  .bInterfaceSubClass	= 1,
  	  .bInterfaceProtocol	= 0,
  	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
@@ -179,7 +179,7 @@ index a7b76c987..26c1b0cf5 100644
 +	  .bInterfaceSubClass	= 1,
 +	  .bInterfaceProtocol	= 0,
 +	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
-+	  /* Intel L515 */
++	  /* Intel L515 Pre-PRQ */
 +	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
 +				| USB_DEVICE_ID_MATCH_INT_INFO,
 +	  .idVendor			= 0x8086,
@@ -238,6 +238,15 @@ index a7b76c987..26c1b0cf5 100644
 +				| USB_DEVICE_ID_MATCH_INT_INFO,
 +	  .idVendor			= 0x8086,
 +	  .idProduct		= 0x0b5c,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
++	  /* Intel L515 */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0b64,
 +	  .bInterfaceClass	= USB_CLASS_VIDEO,
 +	  .bInterfaceSubClass	= 1,
 +	  .bInterfaceProtocol	= 0,

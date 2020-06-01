@@ -15,7 +15,8 @@ namespace librealsense
 {
     const uint16_t L500_RECOVERY_PID    = 0x0b55;
     const uint16_t L500_PID             = 0x0b0d;
-    const uint16_t L515_PID             = 0x0b3d;
+    const uint16_t L515_PID_PRE_PRQ     = 0x0b3d;
+    const uint16_t L515_PID             = 0x0b64;
 
     namespace ivcam2
     {
@@ -78,6 +79,7 @@ namespace librealsense
         static const std::map<std::uint16_t, std::string> rs500_sku_names = {
             { L500_RECOVERY_PID,    "Intel RealSense L5xx Recovery"},
             { L500_PID,             "Intel RealSense L500"},
+            { L515_PID_PRE_PRQ,     "Intel RealSense L515 (pre-PRQ)"},
             { L515_PID,             "Intel RealSense L515"},
         };
 
