@@ -13,6 +13,10 @@ import time
 import enum
 import threading
 
+# L515
+READ_TABLE  = 0x43     # READ_TABLE 0x243 0
+WRITE_TABLE = 0x44     # WRITE_TABLE 0 <table>
+
 is_data = None
 get_key = None
 if os.name == 'posix':
@@ -47,6 +51,27 @@ COLOR_GREEN = "\033[0;32m"
 COLOR_RESET = "\033[0;0m"
 COLOR_BOLD    = "\033[;1m"
 COLOR_REVERSE = "\033[;7m"
+
+def int_to_bytes(num, length=4, order='big'):
+    res = bytearray(length)
+    for i in range(length):
+        res[i] = num & 0xff
+        num >>= 8
+    if num:
+        raise OverflowError("Number {} doesn't fit into {} bytes.".format(num, length))
+    if order == 'little':
+        res.reverse()
+    return res
+
+
+def bytes_to_uint(bytes_array, order='little'):
+    bytes_array = list(bytes_array)
+    bytes_array.reverse()
+    if order == 'little':
+        return struct.unpack('>i', struct.pack('BBBB', *([0] * (4 - len(bytes_array))) + bytes_array))[0] & 0xffffffff
+    else:
+        return struct.unpack('>i', struct.pack('BBBB', *([0] * (4 - len(bytes_array))) + bytes_array))[0] & 0xffffffff
+
 
 class imu_wrapper:
     class Status(enum.Enum):
@@ -298,9 +323,14 @@ def parse_buffer(buffer):
     tab4 = tab3[header_size:header_size+tab4_size]  # calibration data
     return tab1, tab2, tab3, tab4
 
-def get_D435_IMU_Calib_Table(X):
+def get_IMU_Calib_Table(X, product_line):
     version = ['0x02', '0x01']
     table_type = '0x20'
+
+    if product_line == 'L500':
+        version = ['0x05', '0x01']
+        table_type = '0x243'
+
     header = CHeader(version, table_type)
     
     header_size = header.size()
@@ -431,11 +461,6 @@ def get_debug_device(serial_no):
         print('No RealSense device found' + str('.' if len(serial_no) == 0 else ' with serial number: '+serial_no))
         return 0
 
-    # set to advance mode:
-    advanced = rs.rs400_advanced_mode(dev)
-    if not advanced.is_enabled():
-        advanced.toggle_advanced_mode(True)
-
     # print(a few basic information about the device)
     print('  Device PID: ',  dev.get_info(rs.camera_info.product_id))
     print('  Device name: ',  dev.get_info(rs.camera_info.name))
@@ -457,6 +482,63 @@ def check_X(X, accel, show_graph):
     print ('norm (raw data  ): %f' % np.mean(norm_data))
     print ('norm (fixed data): %f' % np.mean(norm_fdata), "A good calibration will be near %f" % g)
 
+def l500_send_command(dev, op_code, param1=0, param2=0, param3=0, param4=0, data=[], retries=1):
+
+    for i in range(retries):
+        try:
+            debug_device = rs.debug_protocol(dev)
+            gvd_command_length = 0x14 + len(data)
+            magic_number1 = 0xab
+            magic_number2 = 0xcd
+
+            buf = bytearray()
+            buf += bytes(int_to_bytes(gvd_command_length, 2))
+            #buf += bytes(int_to_bytes(0, 1))
+            buf += bytes(int_to_bytes(magic_number1, 1))
+            buf += bytes(int_to_bytes(magic_number2, 1))
+            buf += bytes(int_to_bytes(op_code))
+            buf += bytes(int_to_bytes(param1))
+            buf += bytes(int_to_bytes(param2))
+            buf += bytes(int_to_bytes(param3))
+            buf += bytes(int_to_bytes(param4))
+            buf += bytearray(data)
+            l = list(buf)
+            res = debug_device.send_and_receive_raw_data(buf)
+
+            if res[0] == op_code:
+                res1 = res[4:]
+                return res1
+            else:
+                raise Exception("send_command return error", res[0])
+        except:
+            if i < retries - 1:
+                time.sleep(0.1)
+            else:
+                raise
+
+def wait_for_rs_device(serial_no):
+    ctx = rs.context()
+
+    start = int(round(time.time() * 1000))
+    now = int(round(time.time() * 1000))
+
+    while now - start < 5000:
+        devices = ctx.query_devices()
+        for dev in devices:
+            pid = str(dev.get_info(rs.camera_info.product_id))
+            if len(serial_no) == 0 or serial_no == dev.get_info(rs.camera_info.serial_number):
+
+                # print(a few basic information about the device)
+                print('  Device PID: ',  dev.get_info(rs.camera_info.product_id))
+                print('  Device name: ',  dev.get_info(rs.camera_info.name))
+                print('  Serial number: ',  dev.get_info(rs.camera_info.serial_number))
+                print('  Product Line: ',  dev.get_info(rs.camera_info.product_line))
+                print('  Firmware version: ',  dev.get_info(rs.camera_info.firmware_version))
+
+                return dev
+        time.sleep(5)
+        now = int(round(time.time() * 1000))
+    raise Exception('No RealSense device' + str('.' if len(serial_no) == 0 else ' with serial number: '+serial_no))
 
 def main():
     if any([help_str in sys.argv for help_str in ['-h', '--help', '/?']]):
@@ -484,11 +566,20 @@ def main():
             if sys.argv[idx] == '-s':
                 serial_no = sys.argv[idx+1]
 
+        print('waiting for realsense device...')
+
+        dev = wait_for_rs_device(serial_no)
+
+        product_line = dev.get_info(rs.camera_info.product_line)
+
         buckets = [[0, -g,  0], [ g,  0, 0],
                 [0,  g,  0], [-g,  0, 0],
                 [0,  0, -g], [ 0,  0, g]]
 
         buckets_labels = ["Upright facing out", "USB cable up facing out", "Upside down facing out", "USB cable pointed down", "Viewing direction facing down", "Viewing direction facing up"]
+
+        if product_line == 'L500':
+            buckets_labels = ["Mounting Screw Down facing out", "Mounting Screw Right facing out", "Mounting Screw Up facing out", "Mounting Screw Left facing out", "Viewing direction facing up", "Viewing direction facing down"]
 
         gyro_bais = np.zeros(3, np.float32)
         old_settings = None
@@ -580,7 +671,12 @@ def main():
         check_X(X, w[:,:3], show_graph)
 
         calibration = {}
-        calibration["device_type"] = "D435i"
+
+        if product_line == 'L500':
+            calibration["device_type"] = "L515"
+        else:
+            calibration["device_type"] = "D435i"
+
         calibration["imus"] = list()
         calibration["imus"].append({})
         calibration["imus"][0]["accelerometer"] = {}
@@ -605,21 +701,27 @@ def main():
 
         # intrinsic_buffer = ((np.array(range(24),np.float32)+1)/10).reshape([6,4])
 
-        d435_imu_calib_table = get_D435_IMU_Calib_Table(intrinsic_buffer)
-        calibration_table = get_calibration_table(d435_imu_calib_table)
-        eeprom = get_eeprom(calibration_table)
+        imu_calib_table = get_IMU_Calib_Table(intrinsic_buffer, product_line)
 
         with open(os.path.join(directory,"calibration.bin"), 'wb') as outfile:
-            outfile.write(eeprom.astype('f').tostring())
+            outfile.write(imu_calib_table.astype('f').tostring())
 
-        is_write = input('Would you like to write the results to the camera\'s eeprom? (Y/N)')
+        is_write = input('Would you like to write the results to the camera? (Y/N)')
         is_write = 'Y' in is_write.upper()
         if is_write:
             print('Writing calibration to device.')
-            write_eeprom_to_camera(eeprom, serial_no)
+
+            if product_line == 'L500':
+                l500_send_command(dev, WRITE_TABLE, 0, 0, 0, 0, imu_calib_table)
+            else:
+                calibration_table = get_calibration_table(imu_calib_table)
+                eeprom = get_eeprom(calibration_table)
+                write_eeprom_to_camera(eeprom, serial_no)
+
             print('Done.')
         else:
             print('Abort writing to device')
+
     except Exception as e:
         print ('\nDone. %s' % e)
     finally:
