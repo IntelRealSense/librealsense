@@ -648,7 +648,7 @@ void measurement::draw(ux_window& win)
         }
         dragging_point_index = -1;
     }
-    if (dragging_measurement_point)
+    if (dragging_measurement_point && dragging_point_index >= 0)
     {
         state.points[dragging_point_index].pos = _picked;
     }
