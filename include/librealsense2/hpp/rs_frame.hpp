@@ -457,7 +457,7 @@ namespace rs2
         * In case the frame metadata is not configured:
         *   -   The function call provides the TIME_OF_ARRIVAL stamp.
         * In case the metadata is available the function returns:
-        *   -   `HW Timestamp` (SENSOR_TIMESTAMP), or
+        *   -   `HW Timestamp` (FRAME_TIMESTAMP), or
         *   -   `Global Timestamp`  Host-corrected derivative of `HW Timestamp` required for multi-sensor/device synchronization
         *   -   The user can select between the unmodified and the host-calculated Hardware Timestamp by toggling
         *       the `RS2_OPTION_GLOBAL_TIME_ENABLED` option.
