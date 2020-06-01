@@ -30,6 +30,7 @@ DerivedData
 librealsense.xc/build
 
 *~
+*.TMP
 *.a
 *.o
 *.so
