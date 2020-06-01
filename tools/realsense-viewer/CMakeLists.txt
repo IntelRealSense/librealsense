@@ -157,10 +157,9 @@ set_property(TARGET realsense-viewer PROPERTY CXX_STANDARD 11)
 set(RS_VIEWER_LIBS ${GTK3_LIBRARIES} Threads::Threads realsense2-gl)
 
 if (CHECK_FOR_UPDATES)
-    message( STATUS "Check for updates is on for realsense-viewer" )
+    message( STATUS "Check for updates capability added to realsense-viewer" )
     add_dependencies(realsense-viewer libcurl)
     set(RS_VIEWER_LIBS ${RS_VIEWER_LIBS} curl)
-    add_definitions(-DCURL_STATICLIB) # Mandatory for building libcurl as static lib
     if (WIN32)
        target_link_libraries(realsense-viewer ws2_32.lib)
     endif()
