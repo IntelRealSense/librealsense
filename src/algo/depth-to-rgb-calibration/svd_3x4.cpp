@@ -6,6 +6,7 @@
 #include "utils.h"
 #include <limits>
 #include <cmath>
+#include <cstring>
 
 
 namespace
