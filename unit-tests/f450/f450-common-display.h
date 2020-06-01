@@ -60,7 +60,7 @@ void checkOption_streaming(window& app, rs2::rates_printer& printer, rs2::colori
         REQUIRE(sensor.get_option(RS2_OPTION_AUTO_EXPOSURE_MODE) == 0);
         sensor.set_option(option, valueToSet);
         int iterations = number_of_iterations;
-        while (iterations-- > 0 && valueAfterChange != valueToSet)
+        while (iterations-- > 0 && !vv_cb(valueAfterChange, valueToSet))
         {
             valueAfterChange = sensor.get_option(option);
         }
@@ -97,7 +97,7 @@ void checkOptionForBothSensors_streaming(window& app, rs2::rates_printer& printe
 
         //getting actions
         int iterations = number_of_iterations;
-        while (iterations-- > 0 && (valueAfterChange != valueToSet || valueAfterChange_second != valueToSet))
+        while (iterations-- > 0 && (!vv_cb(valueAfterChange, valueToSet) || !vv_cb(valueAfterChange_second, valueToSet)))
         {
             if (valueAfterChange != valueToSet)
                 valueAfterChange = sensor.get_option(option);

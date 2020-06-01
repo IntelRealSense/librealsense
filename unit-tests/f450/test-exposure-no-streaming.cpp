@@ -34,8 +34,8 @@ TEST_CASE( "Exposure - each sensor and both - no streaming", "[F450]" ) {
 
     rs2::sensor sensor = devices[0].first<rs2::fa_infrared_sensor>();
 
-    int number_of_iterations = 5;
-    float tolerance = 3; // for 5% - not absolute as done in gain
+    int number_of_iterations = 20;
+    float tolerance = 0.3; // for 30% - not absolute as done in gain
     
     //set AUTO EXPOSURE to manual
     sensor.set_option(RS2_OPTION_AUTO_EXPOSURE_MODE, 0);
@@ -62,12 +62,13 @@ void check_option_from_max_to_min_and_back(rs2::sensor sensor, rs2_option opt, i
     float valueToSet = range.max;
     sensor.set_option(opt, valueToSet);
     float valueAfterChange = sensor.get_option(opt);
-    int iterations = 5;
+    int iterations = number_of_iterations;
     while (iterations-- && valueAfterChange != valueToSet)
     {
         valueAfterChange = sensor.get_option(opt);
     }
-    REQUIRE(valueAfterChange == valueToSet);
+    bool result = (valueAfterChange >= (1.f - tolerance) * valueToSet) && (valueAfterChange <= (1.f + tolerance) * valueToSet);
+    REQUIRE(result);
     std::cout << std::endl;
     std::cout << "Max Value Checked" << std::endl;
 
@@ -136,8 +137,10 @@ void check_both_sensors_option_from_max_to_min_and_back(rs2::sensor sensor, rs2_
     {
         valueAfterChange_second = sensor.get_option(opt_second);
     }
-    REQUIRE(valueAfterChange == valueToSet);
-    REQUIRE(valueAfterChange_second == valueToSet);
+    bool result = (valueAfterChange >= (1.f - tolerance) * valueToSet) && (valueAfterChange <= (1.f + tolerance) * valueToSet);
+    REQUIRE(result);
+    bool result_second = (valueAfterChange_second >= (1.f - tolerance) * valueToSet) && (valueAfterChange_second <= (1.f + tolerance) * valueToSet);
+    REQUIRE(result_second);
     std::cout << std::endl;
     std::cout << "Max Value Checked" << std::endl;
 
@@ -162,7 +165,7 @@ void check_both_sensors_option_from_max_to_min_and_back(rs2::sensor sensor, rs2_
     std::cout << "Option decremented and got to min value Checked" << std::endl;
 
     //then back to max multiplying by 2 until max
-    checkOptionForBothSensors(sensor, opt, opt_second, valueAfterChange, range.max, 10/*number_of_iterations*/, tolerance, [](float value, float limit) {
+    checkOptionForBothSensors(sensor, opt, opt_second, valueAfterChange, range.max, number_of_iterations, tolerance, [](float value, float limit) {
         return value < limit;
         },
         [&](float& value) {
