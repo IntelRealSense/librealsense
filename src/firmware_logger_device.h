@@ -7,6 +7,7 @@
 #include "device.h"
 #include <vector>
 #include "fw-logs/fw-log-data.h"
+#include "fw-logs/fw-logs-parser.h"
 
 namespace librealsense
 {
@@ -15,6 +16,8 @@ namespace librealsense
 	public:
 		virtual bool get_fw_log(fw_logs::fw_logs_binary_data& binary_data) = 0;
 		virtual bool get_flash_log(fw_logs::fw_logs_binary_data& binary_data) = 0;
+		virtual bool init_parser(std::string xml_full_file_path) = 0;
+		virtual fw_logs::fw_log_data parse_log(const fw_logs::fw_logs_binary_data* fw_log_msg) = 0;
 		virtual size_t get_number_of_flash_logs() = 0;
 		virtual ~firmware_logger_extensions() = default;
 	};
@@ -29,6 +32,9 @@ namespace librealsense
 
 		bool get_fw_log(fw_logs::fw_logs_binary_data& binary_data) override;
 		bool get_flash_log(fw_logs::fw_logs_binary_data& binary_data) override;
+
+		bool init_parser(std::string xml_full_file_path) override;
+		fw_logs::fw_log_data parse_log(const fw_logs::fw_logs_binary_data* fw_log_msg) override;
 
 		size_t get_number_of_flash_logs() override;
 
@@ -46,6 +52,8 @@ namespace librealsense
 
 		std::vector<uint8_t> _input_code_for_fw_logs;
 		std::vector<uint8_t> _input_code_for_flash_logs;
+
+		fw_logs::fw_logs_parser* _parser;
 	};
 
 }

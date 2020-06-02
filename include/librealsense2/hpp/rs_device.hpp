@@ -408,6 +408,59 @@ namespace rs2
         std::shared_ptr<rs2_firmware_log_message> _fw_log_message;
     };
 
+    class firmware_log_parsed_message
+    {
+    public:
+        explicit firmware_log_parsed_message(std::shared_ptr<rs2_firmware_log_parsed_message> msg) :
+            _parsed_fw_log(msg) {}
+
+        std::string message() const
+        {
+            rs2_error* e = nullptr;
+            std::string msg(rs2_get_fw_log_parsed_message(_parsed_fw_log.get(), &e));
+            error::handle(e);
+            return msg;
+        }
+        std::string file_name() const
+        {
+            rs2_error* e = nullptr;
+            std::string file_name(rs2_get_fw_log_parsed_file_name(_parsed_fw_log.get(), &e));
+            error::handle(e);
+            return file_name;
+        }
+        std::string thread_name() const
+        {
+            rs2_error* e = nullptr;
+            std::string thread_name(rs2_get_fw_log_parsed_thread_name(_parsed_fw_log.get(), &e));
+            error::handle(e);
+            return thread_name;
+        }
+        std::string severity() const
+        {
+            rs2_error* e = nullptr;
+            rs2_log_severity sev = rs2_get_fw_log_parsed_severity(_parsed_fw_log.get(), &e);
+            error::handle(e);
+            return std::string(rs2_log_severity_to_string(sev));
+        }
+        uint32_t line() const
+        {
+            rs2_error* e = nullptr;
+            uint32_t line(rs2_get_fw_log_parsed_line(_parsed_fw_log.get(), &e));
+            error::handle(e);
+            return line;
+        }
+        uint32_t timestamp() const
+        {
+            rs2_error* e = nullptr;
+            uint32_t timestamp(rs2_get_fw_log_parsed_timestamp(_parsed_fw_log.get(), &e));
+            error::handle(e);
+            return timestamp;
+        }
+
+    private:
+        std::shared_ptr<rs2_firmware_log_parsed_message> _parsed_fw_log;
+    };
+
     class firmware_logger : public device
     {
     public:
@@ -467,97 +520,30 @@ namespace rs2
 
             return number_of_flash_logs;
         }
-    };
 
-    class firmware_log_parsed_message
-    {
-    public:
-        explicit firmware_log_parsed_message(std::shared_ptr<rs2_firmware_log_parsed_message> msg) :
-            _parsed_fw_log(msg) {}
-
-        std::string message() const 
-        { 
-            rs2_error* e = nullptr;
-            std::string msg(rs2_get_fw_log_parsed_message(_parsed_fw_log.get(), &e));
-            error::handle(e);
-            return msg;
-        }
-        std::string file_name() const
-        {
-            rs2_error* e = nullptr;
-            std::string file_name(rs2_get_fw_log_parsed_file_name(_parsed_fw_log.get(), &e));
-            error::handle(e);
-            return file_name;
-        }
-        std::string thread_name() const
-        {
-            rs2_error* e = nullptr;
-            std::string thread_name(rs2_get_fw_log_parsed_thread_name(_parsed_fw_log.get(), &e));
-            error::handle(e);
-            return thread_name;
-        }
-        std::string severity() const
-        {
-            rs2_error* e = nullptr;
-            rs2_log_severity sev = rs2_get_fw_log_parsed_severity(_parsed_fw_log.get(), &e);
-            error::handle(e);
-            return std::string(rs2_log_severity_to_string(sev));
-        }
-        uint32_t line() const
-        {
-            rs2_error* e = nullptr;
-            uint32_t line(rs2_get_fw_log_parsed_line(_parsed_fw_log.get(), &e));
-            error::handle(e);
-            return line;
-        }
-        uint32_t timestamp() const
-        {
-            rs2_error* e = nullptr;
-            uint32_t timestamp(rs2_get_fw_log_parsed_timestamp(_parsed_fw_log.get(), &e));
-            error::handle(e);
-            return timestamp;
-        }
-
-    private:
-        std::shared_ptr<rs2_firmware_log_parsed_message> _parsed_fw_log;
-    };
-
-
-    class firmware_log_parser
-    {
-    public:
-        firmware_log_parser(std::string xml_path)
-        {
-            rs2_error* e = nullptr;
-            _firmware_log_parser = std::shared_ptr<rs2_firmware_log_parser>(
-                rs2_create_firmware_log_parser(xml_path.data(), &e),
-                rs2_delete_firmware_log_parser);
-            error::handle(e);
-        }
-
-        rs2::firmware_log_parsed_message parse_firmware_log(const rs2::firmware_log_message& msg)
+        bool init_parser(const std::string& xml_path)
         {
             rs2_error* e = nullptr;
 
-            auto size = rs2_firmware_log_message_size(msg.get_message().get(), &e);
+            bool parser_initialized = rs2_init_parser(_dev.get(), xml_path.c_str(), &e);
             error::handle(e);
+
+            return parser_initialized;
+        }
+
+        rs2::firmware_log_parsed_message parse_log(const rs2::firmware_log_message& msg)
+        {
+            rs2_error* e = nullptr;
 
             std::shared_ptr<rs2_firmware_log_parsed_message> parsed_msg(
-                rs2_parse_firmware_log(_firmware_log_parser.get(), msg.get_message().get(), &e),
+                rs2_parse_firmware_log(_dev.get(), msg.get_message().get(), &e),
                 rs2_delete_firmware_log_parsed_message);
             error::handle(e);
 
             return firmware_log_parsed_message(parsed_msg);
         }
-
-        firmware_log_parser(std::shared_ptr<rs2_firmware_log_parser> fw_log_parser)
-            : _firmware_log_parser(fw_log_parser) {}
-
-        explicit operator std::shared_ptr<rs2_firmware_log_parser>() { return _firmware_log_parser; };
-
-    protected:
-        std::shared_ptr<rs2_firmware_log_parser> _firmware_log_parser;
     };
+
 
     class auto_calibrated_device : public calibrated_device
     {
