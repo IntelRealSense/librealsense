@@ -91,9 +91,6 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         message( STATUS "Check for updates capability added to realsense-depth-quality" )
         add_dependencies(rs-depth-quality libcurl)
         target_link_libraries(rs-depth-quality curl)
-        if (WIN32)
-            target_link_libraries(rs-depth-quality ws2_32.lib)
-        endif()
     endif()
     
     target_link_libraries(rs-depth-quality ${DEPENDENCIES}

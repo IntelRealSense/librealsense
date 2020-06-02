@@ -28,6 +28,12 @@ if(CHECK_FOR_UPDATES)
     add_definitions(-DCURL_STATICLIB) # Mandatory for building libcurl as static lib
 
     target_include_directories(curl INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/libcurl/libcurl_install/include>)
+    
+    # libcurl require ws2_32.lib for windows only
+    if (WIN32)
+        target_link_libraries(curl INTERFACE ws2_32.lib)
+    endif()
+    
     target_link_libraries(curl INTERFACE debug ${CMAKE_CURRENT_BINARY_DIR}/libcurl/libcurl_install/lib/${CURL_DEBUG_TARGET_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
     target_link_libraries(curl INTERFACE optimized ${CMAKE_CURRENT_BINARY_DIR}/libcurl/libcurl_install/lib/${CURL_RELEASE_TARGET_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
 

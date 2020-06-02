@@ -115,7 +115,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             if (i == selected_index)
             {
                 ImGui::GetWindowDrawList()->AddRectFilled(pos,
-                    { pos.x + 140.f, pos.y + 165.f }, ImColor(header_color));
+                    { pos.x + 140.f, pos.y + 185.f }, ImColor(header_color));
             }
 
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
@@ -123,10 +123,20 @@ void updates_model::draw(ux_window& window, std::string& error_message)
 
             ImGui::Image((void*)(intptr_t)(_icon->get_gl_handle()), ImVec2{ 128.f, 114.f });
 
-            ImGui::PushStyleColor(ImGuiCol_Text, white);
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 4);
-            ImGui::Text("%s", update.profile.device_name.c_str());
-            ImGui::PopStyleColor();
+            ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 140);
+            ImGui::PushStyleColor(ImGuiCol_Border, transparent);
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
+            ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
+            ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
+            ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
+            ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
+
+            std::string limited_name = update.profile.device_name.substr(0, 40);
+            ImGui::Text("%s", limited_name.c_str());
+            ImGui::PopStyleColor(7);
+            ImGui::PopTextWrapPos();
 
             auto sn_size = ImGui::CalcTextSize(update.profile.serial_number.c_str());
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 70 - sn_size.x / 2);
