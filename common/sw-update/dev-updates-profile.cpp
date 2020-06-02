@@ -25,7 +25,7 @@ namespace rs2
 
             _update_profile.device_name = dev_name;
             _update_profile.serial_number = serial;
-        };
+        }
 
         bool dev_updates_profile::retrieve_updates(versions_db_manager::component_part_type comp)
         {
