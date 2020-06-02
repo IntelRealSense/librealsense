@@ -31,7 +31,7 @@ namespace librealsense
         }
         else
         {
-            // Resource handling
+            // No RAII - explicit release is required
             ((frame_interface*)f)->release();
         }
     }
@@ -40,12 +40,12 @@ namespace librealsense
     {}
 
     frame_validator::frame_validator(std::shared_ptr<sensor_base> sensor, frame_callback_ptr user_callback, stream_profiles current_requests, stream_profiles validator_requests) :
-        _sensor(sensor), 
-        _user_callback(user_callback), 
+        _stopped(false),
+        _validated(false),
+        _user_callback(user_callback),
         _user_requests(current_requests),
         _validator_requests(validator_requests),
-        _stopped(false),
-        _validated(false)
+        _sensor(sensor)
     {}
 
     frame_validator::~frame_validator()

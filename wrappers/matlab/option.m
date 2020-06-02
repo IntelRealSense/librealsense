@@ -72,6 +72,7 @@ classdef option < int64
         ambient_light_env_level         (69)
         sensor_mode                     (70)
         emitter_always_on               (71)
-        count                           (72)
+        thermal_compensation            (72)
+        count                           (73)
     end
 end

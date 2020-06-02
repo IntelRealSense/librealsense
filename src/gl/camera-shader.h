@@ -22,6 +22,8 @@ namespace librealsense
             void set_mvp(const rs2::matrix4& model,
                         const rs2::matrix4& view,
                         const rs2::matrix4& projection);
+
+            void set_opacity(float opacity);
         protected:
             std::unique_ptr<rs2::shader_program> _shader;
 
@@ -31,6 +33,7 @@ namespace librealsense
             uint32_t _transformation_matrix_location;
             uint32_t _projection_matrix_location;
             uint32_t _camera_matrix_location;
+            uint32_t _opacity_location;
         };
 
         class camera_renderer : public stream_filter_processing_block, 
@@ -50,6 +53,8 @@ namespace librealsense
             std::vector<rs2::obj_mesh> camera_mesh;
             std::shared_ptr<camera_shader> _shader;
             std::vector<std::unique_ptr<rs2::vao>> _camera_model;
+
+            option *_opacity_opt;
         };
 
     }

@@ -138,6 +138,7 @@ namespace librealsense
         std::vector<uint8_t> flash;
         flash.reserve(flash_size);
 
+        LOG_DEBUG("Flash backup started...");
         uvc_sensor& raw_depth_sensor = get_raw_depth_sensor();
         raw_depth_sensor.invoke_powered([&](platform::uvc_device& dev)
         {
@@ -164,6 +165,7 @@ namespace librealsense
 
                         flash.insert(flash.end(), res.begin(), res.end());
                         appended = true;
+                        LOG_DEBUG("Flash backup - " << flash.size() << "/" << flash_size << " bytes downloaded");
                     }
                     catch (...)
                     {
@@ -691,6 +693,13 @@ namespace librealsense
                     "Set the power level of the LED, with 0 meaning LED off"));
         }
 
+        //if ((pid == RS405_PID || pid == RS455_PID) && _fw_version >= firmware_version("5.12.4.0"))
+        //{
+        //    depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
+        //        std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_THERMAL_COMPENSATION,
+        //            "Toggle Depth Sensor Thermal Compensation"));
+        //}
+
         if (_fw_version >= firmware_version("5.6.3.0"))
         {
             _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
@@ -708,7 +717,6 @@ namespace librealsense
             }
 #endif
 
-            depth_sensor.register_pu(RS2_OPTION_GAIN);
             auto exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(raw_depth_sensor,
                 depth_xu,
                 DS5_EXPOSURE,
@@ -721,9 +729,17 @@ namespace librealsense
                 "Enable Auto Exposure");
             depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
 
+            auto gain_option = std::make_shared<uvc_pu_option>(raw_depth_sensor, RS2_OPTION_GAIN);
+            depth_sensor.register_option(RS2_OPTION_GAIN, gain_option);
+
             depth_sensor.register_option(RS2_OPTION_EXPOSURE,
                 std::make_shared<auto_disabling_control>(
                     exposure_option,
+                    enable_auto_exposure));
+
+            depth_sensor.register_option(RS2_OPTION_GAIN,
+                std::make_shared<auto_disabling_control>(
+                    gain_option,
                     enable_auto_exposure));
         }
 

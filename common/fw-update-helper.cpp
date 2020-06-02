@@ -15,14 +15,11 @@
 
 #ifdef INTERNAL_FW
 #include "common/fw/D4XX_FW_Image.h"
-#include "common/fw/D4XX_RC_Image.h"
 #include "common/fw/SR3XX_FW_Image.h"
 #else
 #define FW_D4XX_FW_IMAGE_VERSION ""
-#define FW_D4XX_RC_IMAGE_VERSION ""
 #define FW_SR3XX_FW_IMAGE_VERSION ""
 const char* fw_get_D4XX_FW_Image(int) { return NULL; }
-const char* fw_get_D4XX_RC_Image(int) { return NULL; }
 const char* fw_get_SR3XX_FW_Image(int) { return NULL; }
 #endif // INTERNAL_FW
 
@@ -56,8 +53,7 @@ namespace rs2
     {
         bool allow_rc_firmware = config_file::instance().get_or_default(configurations::update::allow_rc_firmware, false);
 
-        if (product_line == RS2_PRODUCT_LINE_D400 && allow_rc_firmware) return FW_D4XX_RC_IMAGE_VERSION;
-        else if (product_line == RS2_PRODUCT_LINE_D400) return FW_D4XX_FW_IMAGE_VERSION;
+        if (product_line == RS2_PRODUCT_LINE_D400) return FW_D4XX_FW_IMAGE_VERSION;
         //else if (product_line == RS2_PRODUCT_LINE_SR300) return FW_SR3XX_FW_IMAGE_VERSION;
         else return "";
     }
@@ -72,14 +68,6 @@ namespace rs2
         {
             int size = 0;
             auto hex = fw_get_D4XX_FW_Image(size);
-            auto vec = std::vector<uint8_t>(hex, hex + size);
-            rv[RS2_PRODUCT_LINE_D400] = vec;
-        }
-
-        if (strlen(FW_D4XX_RC_IMAGE_VERSION) && allow_rc_firmware)
-        {
-            int size = 0;
-            auto hex = fw_get_D4XX_RC_Image(size);
             auto vec = std::vector<uint8_t>(hex, hex + size);
             rv[RS2_PRODUCT_LINE_D400] = vec;
         }
