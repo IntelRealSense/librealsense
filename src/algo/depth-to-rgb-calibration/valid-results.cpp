@@ -350,7 +350,7 @@ bool optimizer::is_valid_results()
         res = false;
     }
 
-    bool res_svm = valid_by_svm(gaussian); //(gaussian);// (linear);
+    bool res_svm = valid_by_svm(linear); //(gaussian);
     return (res && res_svm);
 }
 
