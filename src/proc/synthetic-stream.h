@@ -126,6 +126,9 @@ namespace librealsense
         }
     };
 
+    template<class T>
+    class LRS_EXTENSION_API ptr_option;
+
     class LRS_EXTENSION_API stream_filter_processing_block : public generic_processing_block
     {
     public:
@@ -134,6 +137,9 @@ namespace librealsense
 
     protected:
         stream_filter _stream_filter;
+        std::shared_ptr<ptr_option<int>> _stream_selector;
+        std::shared_ptr<ptr_option<int>> _format_selector;
+        std::shared_ptr<ptr_option<int>> _index_selector;
 
         bool should_process(const rs2::frame& frame) override;
     };

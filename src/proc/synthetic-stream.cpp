@@ -161,53 +161,53 @@ namespace librealsense
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
         _source.init(std::shared_ptr<metadata_parser_map>());
 
-        auto stream_selector = std::make_shared<ptr_option<int>>(RS2_STREAM_ANY, RS2_STREAM_COUNT, 1, RS2_STREAM_ANY, (int*)&_stream_filter.stream, "Stream type");
+        _stream_selector = std::make_shared<ptr_option<int>>(RS2_STREAM_ANY, RS2_STREAM_COUNT, 1, RS2_STREAM_ANY, (int*)&_stream_filter.stream, "Stream type");
         for (int s = RS2_STREAM_ANY; s < RS2_STREAM_COUNT; s++)
         {
-            stream_selector->set_description(s, "Process - " + std::string (rs2_stream_to_string((rs2_stream)s)));
+            _stream_selector->set_description(s, "Process - " + std::string (rs2_stream_to_string((rs2_stream)s)));
         }
-        stream_selector->on_set([this, stream_selector](float val)
+        _stream_selector->on_set([this](float val)
         {
             std::lock_guard<std::mutex> lock(_mutex);
 
-            if (!stream_selector->is_valid(val))
+            if (!_stream_selector->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported stream filter, " << val << " is out of range.");
 
             _stream_filter.stream = static_cast<rs2_stream>((int)val);
         });
 
-        auto format_selector = std::make_shared<ptr_option<int>>(RS2_FORMAT_ANY, RS2_FORMAT_COUNT, 1, RS2_FORMAT_ANY, (int*)&_stream_filter.format, "Stream format");
+        _format_selector = std::make_shared<ptr_option<int>>(RS2_FORMAT_ANY, RS2_FORMAT_COUNT, 1, RS2_FORMAT_ANY, (int*)&_stream_filter.format, "Stream format");
         for (int f = RS2_FORMAT_ANY; f < RS2_FORMAT_COUNT; f++)
         {
-            format_selector->set_description(f, "Process - " + std::string(rs2_format_to_string((rs2_format)f)));
+            _format_selector->set_description(f, "Process - " + std::string(rs2_format_to_string((rs2_format)f)));
         }
-        format_selector->on_set([this, format_selector](float val)
+        _format_selector->on_set([this](float val)
         {
             std::lock_guard<std::mutex> lock(_mutex);
 
-            if (!format_selector->is_valid(val))
+            if (!_format_selector->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported stream format filter, " << val << " is out of range.");
 
             _stream_filter.format = static_cast<rs2_format>((int)val);
         });
 
-        auto index_selector = std::make_shared<ptr_option<int>>(-1, std::numeric_limits<int>::max(), 1, -1, &_stream_filter.index, "Stream index");
-        index_selector->on_set([this, index_selector](float val)
+        _index_selector = std::make_shared<ptr_option<int>>(-1, std::numeric_limits<int>::max(), 1, -1, &_stream_filter.index, "Stream index");
+        _index_selector->on_set([this](float val)
         {
             std::lock_guard<std::mutex> lock(_mutex);
 
-            if (!index_selector->is_valid(val))
+            if (!_index_selector->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported stream index filter, " << val << " is out of range.");
 
             _stream_filter.index = (int)val;
         });
 
-        register_option(RS2_OPTION_STREAM_FILTER, stream_selector);
-        register_option(RS2_OPTION_STREAM_FORMAT_FILTER, format_selector);
-        register_option(RS2_OPTION_STREAM_INDEX_FILTER, index_selector);
+        register_option(RS2_OPTION_STREAM_FILTER, _stream_selector);
+        register_option(RS2_OPTION_STREAM_FORMAT_FILTER, _format_selector);
+        register_option(RS2_OPTION_STREAM_INDEX_FILTER, _index_selector);
     }
 
     functional_processing_block::functional_processing_block(const char * name, rs2_format target_format, rs2_stream target_stream, rs2_extension extension_type) :
