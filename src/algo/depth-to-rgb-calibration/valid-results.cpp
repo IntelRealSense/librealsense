@@ -81,7 +81,7 @@ std::vector< double > optimizer::cost_per_section_diff(calib const & old_calib, 
     if (_z.section_map.size() != _z.weights.size())
         throw std::runtime_error("section_map has not been initialized");
 
-    auto uvmap_old = get_texture_map(_z.vertices, old_calib, old_calib.calc_p_mat());
+    auto uvmap_old = get_texture_map(_z.orig_vertices, old_calib, old_calib.calc_p_mat());
     auto uvmap_new = get_texture_map(_z.vertices, new_calib, new_calib.calc_p_mat());
 
     size_t const n_sections_x = _params.num_of_sections_for_edge_distribution_x;
@@ -125,6 +125,26 @@ std::vector< double > optimizer::cost_per_section_diff(calib const & old_calib, 
 
     return cost_per_section_diff;
 }
+
+
+rs2_dsm_params optimizer::clip_ac_scaling(rs2_dsm_params_double ac_data_in, rs2_dsm_params_double ac_data_new)
+{
+    if (abs(ac_data_in.h_scale - ac_data_new.h_scale) > _params.max_global_los_scaling_step)
+    {
+        ac_data_new.h_scale = ac_data_in.h_scale + (ac_data_new.h_scale - ac_data_in.h_scale) /
+            abs(ac_data_new.h_scale - ac_data_in.h_scale)*_params.max_global_los_scaling_step;
+
+    }
+    if (abs(ac_data_in.v_scale - ac_data_new.v_scale) > _params.max_global_los_scaling_step)
+    {
+        ac_data_new.v_scale = ac_data_in.v_scale + (ac_data_new.v_scale - ac_data_in.v_scale) /
+            abs(ac_data_new.v_scale - ac_data_in.v_scale)*_params.max_global_los_scaling_step;
+
+    }
+
+    return ac_data_new;
+}
+
 std::vector< double > extract_features(decision_params& decision_params)
 {
     svm_features features;

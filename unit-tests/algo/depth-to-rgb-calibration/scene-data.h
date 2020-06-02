@@ -21,7 +21,11 @@ std::string bin_file( std::string const &prefix, size_t cycle, size_t iteration,
          + std::to_string( h ) + "x" + std::to_string( w ) + "_" + suffix;
 }
 
-
+std::string bin_file(std::string const &prefix, size_t cycle, size_t w, size_t h, std::string const &suffix)
+{
+    return prefix + '_' + std::to_string(cycle) + '_'
+        + std::to_string(h) + "x" + std::to_string(w) + "_" + suffix;
+}
 std::string bin_file( std::string const &prefix, size_t w, size_t h, std::string const &suffix )
 {
     return prefix + "_" + std::to_string( h ) + "x" + std::to_string( w ) + "_" + suffix;

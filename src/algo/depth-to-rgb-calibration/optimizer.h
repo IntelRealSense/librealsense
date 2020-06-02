@@ -72,6 +72,8 @@ namespace depth_to_rgb_calibration {
         double const max_xy_movement_per_calibration[3] = { 10, 2, 2 };
         double const max_xy_movement_from_origin = 20;
         double const max_scaling_step = 0.020000000000000;
+        double const max_K2DSM_iters = 10;
+        double const max_global_los_scaling_step = 0.005;
     };
     // svm
     struct decision_params
@@ -138,11 +140,33 @@ namespace depth_to_rgb_calibration {
         };
     };
     // Data that's passed to a callback at each optimization iteration
+    enum data_type
+    {
+        cycle_data,
+        iteration_data
+    };
+
+    struct cycle_data_params
+    {
+        algo_calibration_registers dsm_regs_orig;
+        std::vector < uint8_t> relevant_pixels_image_rot;
+        pre_process_data dsm_pre_process_data;
+        rs2_dsm_params_double dsm_params_cand;
+        algo_calibration_registers dsm_regs_cand;
+        std::vector<double2> los;
+        std::vector<double2> dsm;
+        std::vector < double3> vertices;
+    };
+
     struct iteration_data_collect
     {
+        data_type type;
         size_t cycle;
         size_t iteration;
+        cycle_data_params cycle_data_p;
+
         optimization_params params;
+        calib c;
         std::vector< double2 > uvmap;
         std::vector< double > d_vals;
         std::vector< double > d_vals_x;
@@ -160,6 +184,7 @@ namespace depth_to_rgb_calibration {
         int back_tracking_line_search_iters;
         double t;
         optimization_params next_params;
+        calib next_c;
     };
 
 
@@ -194,6 +219,8 @@ namespace depth_to_rgb_calibration {
         bool is_valid_results();
 
         calib const & get_calibration() const;
+        rs2_dsm_params const & get_dsm_params() const;
+
         double get_cost() const;
         double calc_correction_in_pixels( calib const & from_calibration ) const;
         double calc_correction_in_pixels() const { return calc_correction_in_pixels( _original_calibration ); }
@@ -207,7 +234,18 @@ namespace depth_to_rgb_calibration {
         params const & get_params() const { return _params; }
        
     private:
-        void decompose_p_mat();
+
+        // 1 cycle of optimization
+        size_t optimize_p(const optimization_params& params_curr, 
+            optimization_params& params_new, 
+            calib& new_rgb_calib, 
+            rs2_intrinsics_double& new_z_k,
+            std::function< void(iteration_data_collect const & data) >
+            iteration_callback = nullptr,
+            iteration_data_collect* data = nullptr);
+
+        calib decompose_p_mat(p_matrix p);
+        rs2_intrinsics_double get_new_z_intrinsics_from_new_calib(const rs2_intrinsics_double& orig, const calib & new_c, const calib & orig_c);
         void zero_invalid_edges( z_frame_data& z_data, ir_frame_data const & ir_data );
         std::vector<direction> get_direction( std::vector<double> gradient_x, std::vector<double> gradient_y );
         std::vector<direction> get_direction2(std::vector<double> gradient_x, std::vector<double> gradient_y);
@@ -237,6 +275,7 @@ namespace depth_to_rgb_calibration {
         // output validation
         void clip_pixel_movement( size_t iteration_number = 0 );
         std::vector< double > cost_per_section_diff( calib const & old_calib, calib const & new_calib );
+        rs2_dsm_params clip_ac_scaling(rs2_dsm_params_double ac_data_orig, rs2_dsm_params_double ac_data_new);
 
     private:
         params _params;
@@ -250,6 +289,7 @@ namespace depth_to_rgb_calibration {
         z_frame_data _z;
         calib _original_calibration;         // starting state of auto-calibration
         calib _final_calibration;         // starting state of auto-calibration
+        rs2_dsm_params _final_dsm_params;
         calib _factory_calibration;          // factory default calibration of the camera
         optimization_params _params_curr;  // last-known setting
         std::shared_ptr<k_to_DSM> _k_to_DSM;
