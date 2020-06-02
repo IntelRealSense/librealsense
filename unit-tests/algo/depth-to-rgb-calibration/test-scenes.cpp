@@ -40,20 +40,23 @@ int main( int argc, char * argv[] )
             TRACE( "\n\nProcessing: " << dir << " ..." );
             Catch::CustomRunContext ctx( config );
             ctx.set_redirection( !verbose );
+            size_t n_failed = 0;
 
             glob( dir, "*.rsc",
                 [&]( std::string const & match )
                 {
                     if( !get_parent( match ).empty() )
                         TRACE( get_parent( match ));
-                    ctx.run_test( match,
+                    auto total = ctx.run_test( match,
                         [&]()
                         {
                             REQUIRE_NOTHROW( compare_scene( get_parent( join( dir, match ) ) + native_separator ) );
                         } );
+                    n_failed += total.testCases.failed;
                 } );
 
             TRACE( "done!\n\n" );
+            ok &= ! n_failed;
         }
         catch( std::exception const & e )
         {
