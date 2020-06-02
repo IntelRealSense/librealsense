@@ -161,20 +161,20 @@ namespace librealsense
           _accel_stream(new stream(RS2_STREAM_ACCEL)),
          _gyro_stream(new stream(RS2_STREAM_GYRO))
     {
-		_imu_eeprom_raw = [this]() { return get_imu_eeprom_raw(); };
+        _imu_eeprom_raw = [this]() { return get_imu_eeprom_raw(); };
 
-		_mm_calib = std::make_shared<mm_calib_handler>(*_imu_eeprom_raw);
+        _mm_calib = std::make_shared<mm_calib_handler>(*_imu_eeprom_raw);
 
-		_accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
-		_gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
-		// use predefined values extrinsics
-		_depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
+        _accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
+        _gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
+        // use predefined values extrinsics
+        _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
 
-		// Make sure all MM streams are positioned with the same extrinsics
-		environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_accel_stream, _depth_to_imu);
-		environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gyro_stream);
-		register_stream_to_extrinsic_group(*_gyro_stream, 0);
-		register_stream_to_extrinsic_group(*_accel_stream, 0);
+        // Make sure all MM streams are positioned with the same extrinsics
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_accel_stream, _depth_to_imu);
+        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gyro_stream);
+        register_stream_to_extrinsic_group(*_gyro_stream, 0);
+        register_stream_to_extrinsic_group(*_accel_stream, 0);
 
         auto hid_ep = create_hid_device(ctx, group.hid_devices);
         if (hid_ep)
