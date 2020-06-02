@@ -421,28 +421,22 @@ unsigned int rs2_firmware_log_message_timestamp(rs2_firmware_log_message* msg, r
 rs2_log_severity rs2_firmware_log_message_severity(const rs2_firmware_log_message* msg, rs2_error** error);
 
 /**
-* \brief Creates RealSense firmware logs parser.
+* \brief Initializes RealSense firmware logs parser in device.
+* \param[in] dev	    Device from which the FW log will be taken
 * \param[in] xml_path	path to xml file needed for parsing
-* \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
-* \return            firmware logs parser object
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return               true for success, false for failure - failure happens if opening the xml from the xml_path input fails
 */
-rs2_firmware_log_parser* rs2_create_firmware_log_parser(const char* xml_path, rs2_error** error);
-
-/**
-* \brief Frees the relevant firmware logs parser object.
-* \param[in] firmware logs parser object that is no longer needed
-*/
-void rs2_delete_firmware_log_parser(rs2_firmware_log_parser* parser);
+int rs2_init_parser(rs2_device* dev, const char* xml_path, rs2_error** error);
 
 /**
 * \brief Gets RealSense firmware log parser
-* \param[in] fw_logs_parser	    firmware log parser
+* \param[in] dev	            Device from which the FW log will be taken
 * \param[in] fw_log_msg	        firmware log message to be parsed
 * \param[out] error             If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return                       firmware log parsed message
 */
-rs2_firmware_log_parsed_message* rs2_parse_firmware_log(rs2_firmware_log_parser* fw_logs_parser,
-    rs2_firmware_log_message* fw_log_msg, rs2_error** error);
+rs2_firmware_log_parsed_message* rs2_parse_firmware_log(rs2_device* dev, rs2_firmware_log_message* fw_log_msg, rs2_error** error);
 
 /**
 * Delete RealSense firmware log parsed message

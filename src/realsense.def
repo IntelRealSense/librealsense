@@ -365,8 +365,7 @@ EXPORTS
     rs2_firmware_log_message_timestamp
     rs2_firmware_log_message_data
     rs2_firmware_log_message_size
-    rs2_create_firmware_log_parser
-    rs2_delete_firmware_log_parser
+    rs2_init_parser
     rs2_parse_firmware_log
     rs2_delete_firmware_log_parsed_message
     rs2_get_fw_log_parsed_message
