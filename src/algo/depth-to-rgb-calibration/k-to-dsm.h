@@ -60,11 +60,11 @@ namespace depth_to_rgb_calibration {
             for (auto i = 0; i < 5; i++)
                 res.flags[i] = flags[i];
 
-            res.h_scale = h_scale;
-            res.v_scale = v_scale;
-            res.h_offset = h_offset;
-            res.v_offset = v_offset;
-            res.rtd_offset = rtd_offset;
+            res.h_scale = float(h_scale);
+            res.v_scale = float(v_scale);
+            res.h_offset = float(h_offset);
+            res.v_offset = float(v_offset);
+            res.rtd_offset = float(rtd_offset);
             res.temp_x2 = temp_x2;
             return res;
         }
