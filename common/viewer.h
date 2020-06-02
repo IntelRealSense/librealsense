@@ -8,6 +8,7 @@
 #include "viewer.h"
 #include "skybox.h"
 #include "measurement.h"
+#include "updates-model.h"
 #include <librealsense2/hpp/rs_export.hpp>
 
 namespace rs2
@@ -188,6 +189,8 @@ namespace rs2
         press_button_model pose_info_object_button{ u8"\uf05a", u8"\uf05a",  "Show pose stream info overlay", "Hide pose stream info overlay", false };
 
         viewer_model(context &ctx_);
+
+        std::shared_ptr<updates_model> updates;
 
     private:
 

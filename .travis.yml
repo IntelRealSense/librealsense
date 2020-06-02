@@ -9,7 +9,7 @@ matrix:
       language: cpp
       env: VS15=false RS_CPP_TEST=true
       script:
-        - cmake .. -G "Visual Studio 15 2017 Win64" -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_GRAPHICAL_EXAMPLES=false -DBUILD_WITH_TM2=false -DFORCE_RSUSB_BACKEND=true
+        - cmake .. -G "Visual Studio 15 2017 Win64" -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_GRAPHICAL_EXAMPLES=false -DBUILD_WITH_TM2=false -DFORCE_RSUSB_BACKEND=true -DCHECK_FOR_UPDATES=true
         - cmake --build . --config $LRS_RUN_CONFIG -- -m
         - cd $LRS_RUN_CONFIG
         - ls
@@ -22,7 +22,7 @@ matrix:
       language: cpp
       env: VS15=true
       script:
-        - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true
+        - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DCHECK_FOR_UPDATES=true
         - cmake --build . --config $LRS_BUILD_CONFIG -- -m
         - ls $LRS_BUILD_CONFIG
 
@@ -31,7 +31,7 @@ matrix:
       language: cpp
       env: VS15=true
       script:
-        - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_EXAMPLES=false -DBUILD_CSHARP_BINDINGS=true -DDOTNET_VERSION_LIBRARY="4.5" -DDOTNET_VERSION_EXAMPLES="4.5"
+        - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_EXAMPLES=false -DBUILD_CSHARP_BINDINGS=true -DDOTNET_VERSION_LIBRARY="4.5" -DDOTNET_VERSION_EXAMPLES="4.5" -DCHECK_FOR_UPDATES=true
         - cmake --build . --config $LRS_BUILD_CONFIG -- -m
         - ls $LRS_BUILD_CONFIG
 
@@ -42,7 +42,7 @@ matrix:
       dist: xenial
       env: RS_CPP_TEST=true
       script:
-        - cmake .. -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false
+        - cmake .. -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false -DCHECK_FOR_UPDATES=true
         - cmake --build . --config $LRS_RUN_CONFIG -- -j4
         - ./unit-tests/live-test -d yes -i [software-device]
         - for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam] from "$i"; done
@@ -55,7 +55,7 @@ matrix:
       dist: xenial
       script:
         - cd ../scripts && ./pr_check.sh && cd ../build
-        - cmake .. -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false
+        - cmake .. -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
         - python3 ../unit-tests/run-unit-tests.py --verbose .
 
@@ -68,7 +68,7 @@ matrix:
       node_js: "6"
       env: LRS_BUILD_NODEJS=true
       script:
-        - cmake .. -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS=true -DPYBIND11_PYTHON_VERSION=2.7
+        - cmake .. -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS=true -DPYBIND11_PYTHON_VERSION=2.7 -DCHECK_FOR_UPDATES=true
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
         - cd ../wrappers/nodejs/
         - npm install
@@ -82,7 +82,7 @@ matrix:
       sudo: required
       osx_image: xcode7
       script:
-        - cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false
+        - cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DCHECK_FOR_UPDATES=true
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
         - ls
 
@@ -93,7 +93,7 @@ matrix:
       dist: xenial
       env: LRS_BUILD_ANDROID=true
       script:
-        - cmake .. -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r16b/build/cmake/android.toolchain.cmake
+        - cmake .. -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r16b/build/cmake/android.toolchain.cmake  -DCHECK_FOR_UPDATES=true
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
         - ls
 

@@ -20,7 +20,7 @@ set( ELPP_FILES
 include(../../common/CMakeLists.txt)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
-set(RS_VIEWER_CPP
+    set(RS_VIEWER_CPP
     ${COMMON_SRC}
     realsense-viewer.cpp
     ../../third-party/imgui/imgui.cpp
@@ -107,7 +107,6 @@ if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
 
 endif()
 
-
 # config-ui
 if(WIN32)
     add_executable(realsense-viewer WIN32
@@ -141,6 +140,7 @@ else()
 endif()
 
 source_group("EasyLogging++" FILES ${ELPP_FILES})
+source_group("SW-Update" FILES ${SW_UPDATE_FILES})
 
 include_directories(
     ../../common
@@ -155,6 +155,12 @@ include_directories(
 set_property(TARGET realsense-viewer PROPERTY CXX_STANDARD 11)
 
 set(RS_VIEWER_LIBS ${GTK3_LIBRARIES} Threads::Threads realsense2-gl)
+
+if (CHECK_FOR_UPDATES)
+    message( STATUS "Check for updates capability added to realsense-viewer" )
+    add_dependencies(realsense-viewer libcurl)
+    set(RS_VIEWER_LIBS ${RS_VIEWER_LIBS} curl)
+endif()
 
 if (IMPORT_DEPTH_CAM_FW)
     add_definitions(-DINTERNAL_FW)
@@ -171,6 +177,7 @@ target_link_libraries(realsense-viewer ${DEPENDENCIES} ${RS_VIEWER_LIBS})
 set_target_properties (realsense-viewer PROPERTIES
     FOLDER Tools
 )
+
 
 install(
     TARGETS

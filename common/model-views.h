@@ -25,6 +25,7 @@
 
 #include "realsense-ui-advanced-mode.h"
 #include "fw-update-helper.h"
+#include "updates-model.h"
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);
@@ -793,6 +794,8 @@ namespace rs2
         void begin_update(std::vector<uint8_t> data,
             viewer_model& viewer, std::string& error_message);
         void begin_update_unsigned(viewer_model& viewer, std::string& error_message);
+        void check_for_device_updates(rs2::context& ctx, std::shared_ptr<updates_model> updates);
+
 
         std::shared_ptr< atomic_objects_in_frame > get_detected_objects() const { return _detected_objects; }
 
@@ -845,11 +848,14 @@ namespace rs2
         void load_viewer_configurations(const std::string& json_str);
         void save_viewer_configurations(std::ofstream& outfile, nlohmann::json& j);
 
+
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
         periodic_timer      _update_readonly_options_timer;
         bool pause_required = false;
         std::shared_ptr< atomic_objects_in_frame > _detected_objects;
+        std::shared_ptr<updates_model> _updates;
+        sw_update::dev_updates_profile::update_profile _updates_profile;
     };
 
     class viewer_model;
