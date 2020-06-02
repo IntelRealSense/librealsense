@@ -200,11 +200,10 @@ namespace librealsense
         {
             imu_calib_table = *(ds::check_calib<ds::dm_v2_calibration_table>(raw_data));
 
-            // TODO - need to check mechanical drawing for extrinsic and orientation
             // Bosch BMI055
-            // L515 specific - BMI055 assembly transformation based on mechanical drawing (mm)
-            _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.01245f, 0.01642f, 0.02093f } };
-            _imu_2_depth_rot = { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } };
+            // L515 specific - BMI055 assembly transformation based on mechanical drawing (meters)
+            _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ 0.01245f, -0.01642f, -0.0045f } };
+            _imu_2_depth_rot = { { 1,0,0 },{ 0,1,0 },{ 0,0,-1 } };
         }
 
         virtual ~l500_imu_calib_parser() {}
