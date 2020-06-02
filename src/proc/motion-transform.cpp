@@ -62,7 +62,6 @@ namespace librealsense
         }
         else
         {
-            // TODO Define L500 base transformation alignment
             _imu2depth_cs_alignment_matrix = { {1,0,0},{0,1,0}, {0,0,1} };
         }
     }
