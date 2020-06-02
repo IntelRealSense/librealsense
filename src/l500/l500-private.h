@@ -54,6 +54,7 @@ namespace librealsense
             AMCSET                      = 0x2B, // Set options (L515)
             AMCGET                      = 0x2C, // Get options (L515)
             PFD                         = 0x3B, // Disable power features <Parameter1 Name="0 - Disable, 1 - Enable" />
+            READ_TABLE                  = 0x43, // read table from flash, for example, read imu calibration table, read_table 0x243 0
             DPT_INTRINSICS_GET          = 0x5A,
             TEMPERATURES_GET            = 0x6A,
             DPT_INTRINSICS_FULL_GET     = 0x7F,

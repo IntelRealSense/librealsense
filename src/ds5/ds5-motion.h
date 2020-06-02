@@ -193,10 +193,63 @@ namespace librealsense
         float3x3            _imu_2_depth_rot;
     };
 
+    class l500_imu_calib_parser : public mm_calib_parser
+    {
+    public:
+        l500_imu_calib_parser(const std::vector<uint8_t>& raw_data)
+        {
+            imu_calib_table = *(ds::check_calib<ds::dm_v2_calibration_table>(raw_data));
+
+            // TODO - parameters will need to check with mechanical drawing
+            // Bosch BMI055
+            // L515 specific - BMI055 assembly transformation based on mechanical drawing (mm)
+            _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.00552f, 0.0051f, 0.01174f } };
+            _imu_2_depth_rot = { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } };
+        }
+        l500_imu_calib_parser(const l500_imu_calib_parser&);
+        virtual ~l500_imu_calib_parser() {}
+
+        float3x3 imu_to_depth_alignment() { return _imu_2_depth_rot; }
+
+        ds::imu_intrinsic get_intrinsic(rs2_stream stream)
+        {
+            ds::dm_v2_imu_intrinsic in_intr;
+            switch (stream)
+            {
+            case RS2_STREAM_ACCEL:
+                in_intr = imu_calib_table.accel_intrinsic; break;
+            case RS2_STREAM_GYRO:
+                in_intr = imu_calib_table.gyro_intrinsic;
+                in_intr.bias = in_intr.bias * static_cast<float>(d2r);        // The gyro bias is calculated in Deg/sec
+                break;
+            default:
+                throw std::runtime_error(to_string() << "L515 does not provide intrinsic for stream type : " << rs2_stream_to_string(stream) << " !");
+            }
+
+            return{ in_intr.sensitivity, in_intr.bias,{ 0,0,0 },{ 0,0,0 } };
+        }
+
+        rs2_extrinsics get_extrinsic_to(rs2_stream stream)
+        {
+            if (!(RS2_STREAM_ACCEL == stream) && !(RS2_STREAM_GYRO == stream))
+                throw std::runtime_error(to_string() << "L515 does not support extrinsic for : " << rs2_stream_to_string(stream) << " !");
+
+            rs2_extrinsics extr;
+            LOG_INFO("IMU extrinsic using CAD values");
+            extr = _def_extr;
+            return extr;
+        }
+
+    private:
+        ds::dm_v2_calibration_table  imu_calib_table;
+        rs2_extrinsics      _def_extr;
+        float3x3            _imu_2_depth_rot;
+    };
+
     class mm_calib_handler
     {
     public:
-        mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor, ds::d400_caps dev_cap);
+        mm_calib_handler(std::vector<uint8_t> imu_raw, ds::d400_caps dev_cap = ds::d400_caps::CAP_UNDEFINED);
         ~mm_calib_handler() {}
 
         ds::imu_intrinsic get_intrinsic(rs2_stream);
@@ -205,11 +258,9 @@ namespace librealsense
         float3x3 imu_to_depth_alignment() { return (*_calib_parser)->imu_to_depth_alignment(); }
 
     private:
-        std::shared_ptr<hw_monitor> _hw_monitor;
         ds::d400_caps                   _dev_cap;
         lazy< std::shared_ptr<mm_calib_parser>> _calib_parser;
-        lazy<std::vector<uint8_t>>      _imu_eeprom_raw;
-        std::vector<uint8_t>            get_imu_eeprom_raw() const;
+        std::vector<uint8_t>      _imu_eeprom_raw;
         lazy<std::vector<uint8_t>>      _fisheye_calibration_table_raw;
     };
 
@@ -237,6 +288,9 @@ namespace librealsense
 
         optional_value<uint8_t> _fisheye_device_idx;
         optional_value<uint8_t> _motion_module_device_idx;
+
+        std::vector<uint8_t> get_imu_eeprom_raw() const;
+        lazy<std::vector<uint8_t>> _imu_eeprom_raw;
 
         std::shared_ptr<mm_calib_handler>        _mm_calib;
         std::shared_ptr<lazy<ds::imu_intrinsic>> _accel_intrinsic;

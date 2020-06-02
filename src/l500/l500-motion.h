@@ -8,6 +8,7 @@
 #include "device.h"
 #include "stream.h"
 #include "l500/l500-device.h"
+#include "../ds5/ds5-motion.h"
 
 namespace librealsense
 {
@@ -29,6 +30,14 @@ namespace librealsense
         friend class l500_hid_sensor;
 
         optional_value<uint8_t> _motion_module_device_idx;
+
+        std::vector<uint8_t> get_imu_eeprom_raw() const;
+        lazy<std::vector<uint8_t>> _imu_eeprom_raw;
+
+        std::shared_ptr<mm_calib_handler>        _mm_calib;
+        std::shared_ptr<lazy<ds::imu_intrinsic>> _accel_intrinsic;
+        std::shared_ptr<lazy<ds::imu_intrinsic>> _gyro_intrinsic;
+        std::shared_ptr<lazy<rs2_extrinsics>>   _depth_to_imu;                  // Mechanical installation pose
 
     protected:
         std::shared_ptr<stream_interface> _accel_stream;

@@ -312,6 +312,14 @@ namespace librealsense
         return auto_exposure;
     }
 
+    std::vector<uint8_t> ds5_motion::get_imu_eeprom_raw() const
+    {
+        const int offset = 0;
+        const int size = ds::eeprom_imu_table_size;
+        command cmd(ds::MMER, offset, size);
+        return _hw_monitor->send(cmd);
+    }
+
     ds5_motion::ds5_motion(std::shared_ptr<context> ctx,
                            const platform::backend_device_group& group)
         : device(ctx, group), ds5_device(ctx, group),
@@ -321,7 +329,9 @@ namespace librealsense
     {
         using namespace ds;
 
-        _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor,_device_capabilities);
+        _imu_eeprom_raw = [this]() { return get_imu_eeprom_raw(); };
+
+        _mm_calib = std::make_shared<mm_calib_handler>(*_imu_eeprom_raw,_device_capabilities);
 
         _accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
         _gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
@@ -442,10 +452,10 @@ namespace librealsense
         _fisheye_device_idx = add_sensor(fisheye_ep);
     }
 
-    mm_calib_handler::mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor, ds::d400_caps dev_cap) :
-        _hw_monitor(hw_monitor), _dev_cap(dev_cap)
+    mm_calib_handler::mm_calib_handler(std::vector<uint8_t> imu_raw, ds::d400_caps dev_cap) :
+        _dev_cap(dev_cap)
     {
-        _imu_eeprom_raw = [this]() { return get_imu_eeprom_raw(); };
+        _imu_eeprom_raw = imu_raw;
 
         _calib_parser = [this]() {
 
@@ -455,7 +465,7 @@ namespace librealsense
 
             try
             {
-                raw = *_imu_eeprom_raw;
+                raw = _imu_eeprom_raw;
                 calib_id = *reinterpret_cast<uint16_t*>(raw.data());
                 valid = true;
             }
@@ -471,6 +481,8 @@ namespace librealsense
                     prs = std::make_shared<dm_v2_imu_calib_parser>(raw, _dev_cap, valid); break;
                 case ds::tm1_eeprom_id: // TM1 id
                     prs = std::make_shared<tm1_imu_calib_parser>(raw); break;
+                case ds::l500_eeprom_id: // L515
+                    prs = std::make_shared<l500_imu_calib_parser>(raw); break;
                 default:
                     throw recoverable_exception(to_string() << "Motion Intrinsics unresolved - "
                                 << ((valid)? "device is not calibrated" : "invalid calib type "),
@@ -478,14 +490,6 @@ namespace librealsense
             }
             return prs;
         };
-    }
-
-    std::vector<uint8_t> mm_calib_handler::get_imu_eeprom_raw() const
-    {
-        const int offset = 0;
-        const int size = ds::eeprom_imu_table_size;
-        command cmd(ds::MMER, offset, size);
-        return _hw_monitor->send(cmd);
     }
 
     ds::imu_intrinsic mm_calib_handler::get_intrinsic(rs2_stream stream)
@@ -500,7 +504,7 @@ namespace librealsense
 
     const std::vector<uint8_t> mm_calib_handler::get_fisheye_calib_raw()
     {
-        auto fe_calib_table = (*(ds::check_calib<ds::tm1_eeprom>(*_imu_eeprom_raw))).calibration_table.calib_model.fe_calibration;
+        auto fe_calib_table = (*(ds::check_calib<ds::tm1_eeprom>(_imu_eeprom_raw))).calibration_table.calib_model.fe_calibration;
         uint8_t* fe_calib_ptr = reinterpret_cast<uint8_t*>(&fe_calib_table);
         return std::vector<uint8_t>(fe_calib_ptr, fe_calib_ptr+ ds::fisheye_calibration_table_size);
     }
