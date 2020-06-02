@@ -68,9 +68,9 @@ int main(int argc, char * argv[])
 
             while (hub.is_connected(dev))
             {                
-                auto fw_log = res.get_device().as<rs2::firmware_logger>();
-                auto fw_log_message = fw_log.create_message();
-                bool result = fw_log.get_firmware_log(fw_log_message);
+                auto fw_log_device = res.get_device().as<rs2::firmware_logger>();
+                auto fw_log_message = fw_log_device.create_message();
+                bool result = fw_log_device.get_firmware_log(fw_log_message);
                 if (result)
                 {
                     std::vector<string> fw_log_lines;
@@ -84,10 +84,8 @@ int main(int argc, char * argv[])
                             ifstream f(xml_path);
                             if (f.good())
                             {
-                                unique_ptr<rs2::firmware_log_parser> parser =
-                                    unique_ptr<rs2::firmware_log_parser>(new rs2::firmware_log_parser(xml_path));
-
-                                rs2::firmware_log_parsed_message parsed_log = parser->parse_firmware_log(fw_log_message);
+                                bool parser_initialized = fw_log_device.init_parser(xml_path);
+                                rs2::firmware_log_parsed_message parsed_log = fw_log_device.parse_log(fw_log_message);
                                 stringstream sstr;
                                 sstr << parsed_log.timestamp() << " " << parsed_log.severity() << " " << parsed_log.message()
                                     << " " << parsed_log.thread_name() << " " << parsed_log.file_name()
