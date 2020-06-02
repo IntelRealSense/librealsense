@@ -3,6 +3,9 @@
 
 #pragma once
 
+#define __APPROX_MARGIN std::numeric_limits<double>::epsilon()*1e4
+
+
 #include "../algo-common.h"
 #include "../../../src/algo/depth-to-rgb-calibration/optimizer.h"
 #include "scene-data.h"

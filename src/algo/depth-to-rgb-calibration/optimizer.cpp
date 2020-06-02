@@ -28,6 +28,42 @@ namespace
         return res;
     }
 
+    struct hexdump
+    {
+
+        void const * ptr;
+        size_t cb;
+
+        template < class T >
+        hexdump( T const & t )
+            : ptr( &t )
+            , cb( sizeof( t ) )
+        {
+        }
+
+        hexdump( void * p, size_t cb )
+            : ptr( p )
+            , cb( cb )
+        {
+        }
+    };
+
+    inline std::ostream & operator<<( std::ostream & os, hexdump const & h )
+    {
+        unsigned char const * buf = (unsigned char const *)h.ptr;
+        //  os << h.cb << '@' << *(void**)&buf << ' ';
+        //  os.flush();
+        for( int j = int( h.cb ) - 1; j >= 0; --j )
+        {
+            auto b = buf[j];
+            auto v = ( buf[j] & 0xF0 ) >> 4;
+            os << (char)( v > 9 ? 'a' + v - 10 : '0' + v );
+            v = buf[j] & 0x0F;
+            os << (char)( v > 9 ? 'a' + v - 10 : '0' + v );
+        }
+        return os;
+    }
+
     template<class T>
     double dot_product( std::vector<T> const & sub_image, std::vector<double> const & mask )
     {
@@ -35,40 +71,48 @@ namespace
 
         for( auto i = 0; i < sub_image.size(); i++ )
         {
-            res += sub_image[i] * mask[i];
+            res += sub_image[i] * mask[i] / 8;
         }
 
         return res;
     }
 
-    template<class T>
-    std::vector<double> convolution(std::vector<T> const& image,
+    template < class T >
+    std::vector< double > convolution(
+        std::vector< T > const & image,
         size_t image_width, size_t image_height,
         size_t mask_width, size_t mask_height,
-        std::function< double(std::vector<T> const& sub_image) > convolution_operation
-        )
+        std::function< double( std::vector< T > const & sub_image ) > convolution_operation )
     {
         std::vector<double> res(image.size(), 0);
 
-        for (auto i = 0; i < image_height - mask_height + 1; i++)
+        std::vector<T> sub_image( mask_width * mask_height );
+        for (auto i = 0; i <= image_height - mask_height; i++)
         {
-            for (size_t j = 0; j < image_width - mask_width + 1; j++)
+            for (size_t j = 0; j <= image_width - mask_width; j++)
             {
-                std::vector<T> sub_image(mask_width * mask_height, 0);
                 auto ind = 0;
                 for (size_t l = 0; l < mask_height; l++)
                 {
                     for (size_t k = 0; k < mask_width; k++)
                     {
                         size_t p = (i + l) * image_width + j + k;
-                        sub_image[ind++] = (image[p]);
+                        sub_image[ind++] = image[p];
                     }
-
                 }
+
                 auto mid = (i + mask_height / 2) * image_width + j + mask_width / 2;
-
-                res[mid] = convolution_operation(sub_image);
-
+                auto rv = convolution_operation( sub_image );
+                if( mid == 1281 )
+                {
+                    std::cout << mid << ": ";
+                    for( auto i = 0; i < sub_image.size(); i++ )
+                    {
+                        std::cout << hexdump( sub_image[i] ) << "  ";
+                    }
+                    std::cout << "res = " << hexdump( rv ) << " =" << rv << std::endl;
+                }
+                res[mid] = rv;
             }
         }
         return res;
@@ -77,23 +121,31 @@ namespace
     template<class T>
     std::vector<double> calc_horizontal_gradient( std::vector<T> const & image, size_t image_width, size_t image_height )
     {
+        //%     h = -fspecial( 'sobel' ); % Align mask correctly along the x - and y - axes
+        //%     Gx = imfilter( I, h', 'replicate');
+        // and note that:
+        //%     if( ~convMode )
+        //%         h = rot90( h, 2 );
+        //%     end
+
         std::vector<double> horizontal_gradients = { -1, -2, -1,
                                                       0,  0,  0,
                                                       1,  2,  1 };
 
         return convolution<T>( image, image_width, image_height, 3, 3, [&]( std::vector<T> const & sub_image )
-            {return dot_product( sub_image, horizontal_gradients ) / (double)8; } );
+            {return dot_product( sub_image, horizontal_gradients ) /*/ (double)8*/; } );
     }
 
     template<class T>
     std::vector<double> calc_vertical_gradient( std::vector<T> const & image, size_t image_width, size_t image_height )
     {
-        std::vector<double> vertical_gradients = { -1, 0, 1,
-                                                   -2, 0, 2,
-                                                   -1, 0, 1 };
+        //%Gy = imfilter( I, h, 'replicate' );
+        std::vector<double> vertical_gradients = {  -1,  0,  1,
+                                                    -2,  0,  2,
+                                                    -1,  0,  1 };
 
         return convolution<T>( image, image_width, image_height, 3, 3, [&]( std::vector<T> const & sub_image )
-            {return dot_product( sub_image, vertical_gradients ) / (double)8; } );;
+            {return dot_product( sub_image, vertical_gradients ) /** 0.125*/; } );;
     }
 
     template<class T>

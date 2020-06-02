@@ -64,11 +64,102 @@ bool is_equal_approximetly<algo::double3, algo::double3>( algo::double3 f, algo:
         d.z == approx( f.z );
 }
 
+struct hexdump {
+
+    void const * ptr;
+    size_t cb;
+
+    template< class T >
+    hexdump( T const & t )
+        : ptr( &t )
+        , cb( sizeof( t ) ) {
+    }
+
+    hexdump( void * p, size_t cb )
+        : ptr( p )
+        , cb( cb ) {
+    }
+};
+
+
+inline
+std::ostream & operator<<( std::ostream & os, hexdump const & h ) {
+    unsigned char const * buf = (unsigned char const *)h.ptr;
+    //  os << h.cb << '@' << *(void**)&buf << ' ';
+    //  os.flush();
+    for( int j = int(h.cb) - 1; j >= 0; --j )
+    {
+        auto b = buf[j];
+        auto v = (buf[j] & 0xF0) >> 4;
+        os << (char)(v > 9
+            ? 'a' + v - 10
+            : '0' + v);
+        v = buf[j] & 0x0F;
+        os << (char)(v > 9
+            ? 'a' + v - 10
+            : '0' + v);
+    }
+    return os;
+}
+
+struct report_fixed
+{
+    int integer_width, precision;
+    double n;
+    report_fixed( double number, int integer_cch = 1, int fraction_cch = std::numeric_limits< double >::max_digits10 )
+        : integer_width( integer_cch )
+        , precision( fraction_cch )
+        , n( number )
+    {
+    }
+};
+
+
 template< typename F, typename D >
 void print( size_t x, F f, D d, bool is_approx = false )
 {
     // bytes will be written to stdout as characters, which we never want... hence '+fx'
-    AC_LOG( DEBUG, "... " << AC_D_PREC << x << ": {matlab}" << +f << (is_approx ? " !~ " : " != ") << +d << "{c++}" );
+    AC_LOG( DEBUG,
+            "... " << AC_D_PREC << x << ": {matlab} " << hexdump( f ) << ' ' << +f
+                   << ( is_approx ? " !~ " : " != " ) << +d << ' ' << hexdump( d ) << " {c++}" );
+}
+
+inline
+std::ostream &
+operator<<( std::ostream & os,
+    const report_fixed & f )
+{
+    // Report output
+    if( !f.integer_width )
+    {
+        os << f.n;
+    }
+    else
+    {
+        // todo this could probably be optimized if needed
+        std::ostringstream ss;
+        ss << std::fixed;
+        ss << std::setw( f.integer_width + 1 + f.precision );  // with leading spaces
+        ss << std::setprecision( f.precision );                // will have trailing 0s
+        ss << f.n;
+        std::string s = ss.str();
+        // Replace trailing 0s by blanks... following cast should be safe:
+        char * lpsz = const_cast<char *>(s.c_str() + s.length());
+        while( *--lpsz == '0' )
+            *lpsz = ' ';
+        os << s;
+    }
+    return os;
+}
+
+
+template<>
+void print< double, double >( size_t x, double f, double d, bool is_approx )
+{
+    // bytes will be written to stdout as characters, which we never want... hence '+fx'
+    AC_LOG( DEBUG,
+        "... " << AC_D_PREC << x << ": {matlab} " << hexdump( f ) << ' ' << report_fixed( f, 5 )
+        << (is_approx ? "     !~ " : "     != ") << report_fixed( d, 5 ) << "     " << hexdump( d ) << " {c++}" );
 }
 
 template<>
@@ -153,6 +244,28 @@ bool compare_same_vectors( std::vector< F > const & matlab, std::vector< D > con
         {
             if( ++n_mismatches <= 5 )
                 print( x, fx, dx, std::is_floating_point< F >::value );
+        }
+    }
+    if( n_mismatches )
+        AC_LOG( DEBUG, "... " << n_mismatches << " mismatched values of " << size );
+    return (n_mismatches == 0);
+}
+
+
+template< typename F, typename D >
+bool compare_exact_vectors( std::vector< F > const & matlab, std::vector< D > const & cpp )
+{
+    assert( matlab.size() == cpp.size() );
+    size_t n_mismatches = 0;
+    size_t size = matlab.size();
+    for( size_t x = 0; x < size; ++x )
+    {
+        F fx = matlab[x];
+        D dx = cpp[x];
+        if( !(fx == dx ) )
+        {
+            if( ++n_mismatches <= 5 )
+                print( x, fx, dx, false );
         }
     }
     if( n_mismatches )
@@ -250,7 +363,7 @@ bool compare_and_trace( D val_matlab, D val_cpp, std::string const & compared )
 {
     if( val_cpp != approx( val_matlab ) )
     {
-        AC_LOG( DEBUG, "... " << compared << ":  {matlab} " << val_matlab << " !~ " << val_cpp << " {cpp}" );
+        AC_LOG( DEBUG, "... " << compared << ":  {matlab} " << val_matlab << " !~ " << val_cpp << " {c++}" );
         return false;
     }
     return true;
