@@ -280,7 +280,9 @@ namespace librealsense
 
     void l500_color_sensor::reset_calibration()
     {
-        throw std::logic_error( "color sensor does not support resetting calibration at this time" );
+        _owner->_color_intrinsics_table_raw = [&]() { return _owner->get_raw_intrinsics_table(); };
+        override_extrinsics( get_color_stream_extrinsic( *_owner->_color_extrinsics_table_raw ) );
+        AC_LOG( INFO, "Color sensor calibration has been reset" );
     }
 
 

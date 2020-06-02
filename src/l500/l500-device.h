@@ -56,6 +56,8 @@ namespace librealsense
 
         void trigger_device_calibration( rs2_calibration_type ) override;
 
+        void notify_of_calibration_change( rs2_calibration_status status );
+
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override
         {
             return _hw_monitor->send(input);

@@ -2,6 +2,9 @@
 //// Copyright(c) 2018 Intel Corporation. All Rights Reserved.
 
 #include "l500-private.h"
+#include "l500-device.h"
+#include "l500-color.h"
+#include "l500-depth.h"
 #include "fw-update/fw-update-unsigned.h"
 #include "context.h"
 #include "core/video.h"
@@ -211,6 +214,38 @@ namespace librealsense
                 // We've turned it on -- try to immediately get a special frame
                 _autocal->trigger_special_frame();
             }
+            else if( _autocal->_to_profile )
+            {
+                // TODO remove before release
+                // Reset the calibration so we can do it all over again
+                if( auto color_sensor = _autocal->_dev.get_color_sensor() )
+                    color_sensor->reset_calibration();
+                _autocal->_dev.get_depth_sensor().reset_calibration();
+#if 1
+                _autocal->_dev.notify_of_calibration_change( RS2_CALIBRATION_SUCCESSFUL );
+#else
+                // Make sure we have the new setting before calling the callback
+                //auto&& active_streams = get_active_streams();
+                //if( !active_streams.empty() )
+                {
+                    //std::shared_ptr< stream_profile_interface > spi = active_streams.front();
+                    auto vspi
+                        = dynamic_cast< video_stream_profile_interface * >( _autocal->_to_profile );
+                    rs2_intrinsics const _intr = vspi->get_intrinsics();
+                    AC_LOG( DEBUG, "reset intrinsics to: [ " << AC_F_PREC
+                        << _intr.width << "x" << _intr.height
+                        << "  ppx: " << _intr.ppx << ", ppy: " << _intr.ppy << ", fx: " << _intr.fx
+                        << ", fy: " << _intr.fy << ", model: " << int( _intr.model ) << " coeffs["
+                        << _intr.coeffs[0] << ", " << _intr.coeffs[1] << ", " << _intr.coeffs[2]
+                        << ", " << _intr.coeffs[3] << ", " << _intr.coeffs[4] << "] ]" );
+                    environment::get_instance().get_extrinsics_graph().
+                        try_fetch_extrinsics( *_autocal->_from_profile, *_autocal->_to_profile, &_autocal->_extr );
+                    AC_LOG( DEBUG, "reset extrinsics to: " << _autocal->_extr );
+                    _autocal->_dsm_params = _autocal->_dev.get_depth_sensor().get_dsm_params();
+                    _autocal->_dev.notify_of_calibration_change( RS2_CALIBRATION_SUCCESSFUL );
+                }
+#endif
+            }
             _record_action( *this );
         }
 
@@ -259,9 +294,12 @@ namespace librealsense
         };
 
 
-        auto_calibration::auto_calibration( hw_monitor & hwm )
+        auto_calibration::auto_calibration( l500_device & dev, hw_monitor & hwm )
             : _is_processing{ false }
             , _hwm( hwm )
+            , _dev( dev )
+            , _from_profile( nullptr )
+            , _to_profile( nullptr )
         {
 #if 1
             // TODO remove this -- but for now, it's an easy way of seeing the AC stuff
@@ -476,6 +514,7 @@ namespace librealsense
                     case RS2_CALIBRATION_SUCCESSFUL:
                         _extr = algo.get_extrinsics();
                         _intr = algo.get_intrinsics();
+                        _dsm_params = algo.get_dsm_params();
                         // Fall-thru!
                     case RS2_CALIBRATION_NOT_NEEDED:
                         // This is the same as SUCCESSFUL, except there was no change because the

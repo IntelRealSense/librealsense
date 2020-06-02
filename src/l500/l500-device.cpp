@@ -206,7 +206,7 @@ namespace librealsense
         if( _fw_version >= firmware_version( "1.3.12.0" ) )
         {
             // TODO may not need auto-cal if there's no color sensor, like on the rs500...
-            _autocal = std::make_shared< auto_calibration >( *_hw_monitor );
+            _autocal = std::make_shared< auto_calibration >( *this, *_hw_monitor );
 
             // Have the auto-calibration mechanism notify us when calibration has finished
             _autocal->register_callback(
@@ -219,11 +219,9 @@ namespace librealsense
                         color_sensor.override_extrinsics( _autocal->get_extrinsics() );
 
                         // TODO
-                        //get_depth_sensor().override_dsm_params( _autocal->get_dsm_params() );
+                        get_depth_sensor().override_dsm_params( _autocal->get_dsm_params() );
                     }
-                    AC_LOG( DEBUG, ".,_,.-'``'-.,_,.-'``'- status= " << status );
-                    for( auto&& cb : _calibration_change_callbacks )
-                        cb->on_calibration_change( status );
+                    notify_of_calibration_change( status );
                 } );
 
             depth_sensor.register_option(
@@ -352,6 +350,13 @@ namespace librealsense
         {
             LOG_DEBUG( "Skipping HW Sync control: requires FW 1.3.12.9" );
         }
+    }
+
+    void l500_device::notify_of_calibration_change( rs2_calibration_status status )
+    {
+        AC_LOG( DEBUG, ".,_,.-'``'-.,_,.-'``'- status= " << status );
+        for( auto&& cb : _calibration_change_callbacks )
+            cb->on_calibration_change( status );
     }
 
     void l500_device::trigger_device_calibration( rs2_calibration_type type )

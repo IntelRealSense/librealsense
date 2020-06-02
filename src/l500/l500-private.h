@@ -20,6 +20,8 @@ namespace librealsense
     const uint16_t L515_PID_PRE_PRQ     = 0x0b3d;
     const uint16_t L515_PID             = 0x0b64;
 
+    class l500_device;
+
     namespace ivcam2
     {
         // L500 depth XU identifiers
@@ -468,6 +470,7 @@ namespace librealsense
             float _dsm_y_offset;
 
             hw_monitor & _hwm;
+            l500_device & _dev;
 
             std::mutex _mutex;
             std::atomic_bool _is_processing;
@@ -506,7 +509,7 @@ namespace librealsense
             };
 
         public:
-            auto_calibration( hw_monitor & hwm );
+            auto_calibration( l500_device & dev, hw_monitor & hwm );
             ~auto_calibration();
 
             void trigger_special_frame( bool is_retry = false );

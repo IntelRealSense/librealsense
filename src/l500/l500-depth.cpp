@@ -276,6 +276,7 @@ namespace librealsense
     {
         command cmd( ivcam2::fw_cmd::DELETE_TABLE, ac_depth_results::table_id );
         _owner->_hw_monitor->send( cmd );
+        AC_LOG( INFO, "Depth sensor DSM parameters calibration has been reset" );
     }
 
 

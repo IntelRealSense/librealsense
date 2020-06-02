@@ -154,6 +154,7 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
         AC_LOG( DEBUG, "... optimization successful!" );
         _intr = _algo.get_calibration().get_intrinsics();
         _extr = fix_extrinsics( _algo.get_calibration().get_extrinsics(), 0.001f );
+        _dsm_params = _algo.get_dsm_params();
         debug_calibration( "new" );
         return RS2_CALIBRATION_SUCCESSFUL;
     }
