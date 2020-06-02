@@ -44,10 +44,10 @@ void compare_scene( std::string const & scene_dir )
 
 
     //---
-    CHECK( compare_to_bin_file< double >( yuy_data.edges, scene_dir, "YUY2_edge", rgb_w, rgb_h, "double_00", compare_exact_vectors ) );
-    CHECK( compare_to_bin_file< double >( yuy_data.edges_IDT, scene_dir, "YUY2_IDT", rgb_w, rgb_h, "double_00", compare_exact_vectors ) );
-    CHECK( compare_to_bin_file< double >( yuy_data.edges_IDTx, scene_dir, "YUY2_IDTx", rgb_w, rgb_h, "double_00", compare_exact_vectors ) );
-    CHECK( compare_to_bin_file< double >( yuy_data.edges_IDTy, scene_dir, "YUY2_IDTy", rgb_w, rgb_h, "double_00", compare_exact_vectors ) );
+    CHECK( compare_to_bin_file< double >( yuy_data.edges, scene_dir, "YUY2_edge", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< double >( yuy_data.edges_IDT, scene_dir, "YUY2_IDT", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< double >( yuy_data.edges_IDTx, scene_dir, "YUY2_IDTx", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< double >( yuy_data.edges_IDTy, scene_dir, "YUY2_IDTy", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
 
     // smearing
     CHECK(compare_to_bin_file< double >(depth_data.gradient_x, scene_dir, "Zx", z_w, z_h, "double_00", compare_same_vectors));
