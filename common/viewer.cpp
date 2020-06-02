@@ -926,21 +926,7 @@ namespace rs2
             configurations::performance::show_skybox, true);
     }
 
-    void GLAPIENTRY MessageCallback( GLenum source,
-                    GLenum type,
-                    GLuint id,
-                    GLenum severity,
-                    GLsizei length,
-                    const GLchar* message,
-                    const void* userParam )
-    {
-        if (type == GL_DEBUG_TYPE_ERROR)
-        {
-            fprintf( stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
-                ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
-                    type, severity, message );
-        }
-    }
+  
 
     viewer_model::viewer_model(context &ctx_)
             : ppf(*this),
@@ -949,12 +935,6 @@ namespace rs2
               synchronization_enable(true),
               zo_sensors(0)
     {
-        if (glDebugMessageCallback)
-        {
-            // During init, enable debug output
-            glEnable              ( GL_DEBUG_OUTPUT );
-            glDebugMessageCallback( MessageCallback, 0 );
-        }
 
         syncer = std::make_shared<syncer_model>();
         updates = std::make_shared<updates_model>();
