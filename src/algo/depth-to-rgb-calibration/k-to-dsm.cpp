@@ -2,6 +2,7 @@
 //// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "k-to-dsm.h"
+#include "optimizer.h"
 #include "debug.h"
 #include "utils.h"
 #include <math.h>
@@ -18,7 +19,7 @@ rs2_intrinsics_double rotate_k_mat(const rs2_intrinsics_double& k_mat)
     return res;
 }
 
-k_to_DSM::k_to_DSM( const rs2_dsm_params & orig_dsm_params,
+k_to_DSM::k_to_DSM( const rs2_dsm_params_double & orig_dsm_params,
                     algo_calibration_info const & cal_info,
                     algo_calibration_registers const & cal__regs,
                     const double & max_scaling_step )
@@ -30,7 +31,7 @@ k_to_DSM::k_to_DSM( const rs2_dsm_params & orig_dsm_params,
 }
 
 algo_calibration_registers
-k_to_DSM::apply_ac_res_on_dsm_model( const rs2_dsm_params & ac_data,
+k_to_DSM::apply_ac_res_on_dsm_model( const rs2_dsm_params_double & ac_data,
                                      const algo_calibration_registers & dsm_regs,
                                      const ac_to_dsm_dir & type )
 {
@@ -44,24 +45,24 @@ k_to_DSM::apply_ac_res_on_dsm_model( const rs2_dsm_params & ac_data,
             res = dsm_regs;
             break;
         case AOT:  // AOT model
-            res.EXTLdsmXscale = float( (double)dsm_regs.EXTLdsmXscale * ac_data.h_scale );
-            res.EXTLdsmYscale = float( (double)dsm_regs.EXTLdsmYscale * ac_data.v_scale );
+            res.EXTLdsmXscale =  (double)dsm_regs.EXTLdsmXscale * ac_data.h_scale ;
+            res.EXTLdsmYscale = (double)dsm_regs.EXTLdsmYscale * ac_data.v_scale ;
             res.EXTLdsmXoffset
-                = float( ( (double)dsm_regs.EXTLdsmXoffset + (double)ac_data.h_offset )
-                         / (double)ac_data.h_scale );
+                =  ( (double)dsm_regs.EXTLdsmXoffset + (double)ac_data.h_offset )
+                         / (double)ac_data.h_scale ;
             res.EXTLdsmYoffset
-                = float( ( (double)dsm_regs.EXTLdsmYoffset + (double)ac_data.v_offset )
-                         / (double)ac_data.v_scale );
+                =  ( (double)dsm_regs.EXTLdsmYoffset + (double)ac_data.v_offset )
+                         / (double)ac_data.v_scale ;
             break;
         case dsm_model::TOA:  // TOA model
-            res.EXTLdsmXscale = float( (double)dsm_regs.EXTLdsmXscale * ac_data.h_scale );
-            res.EXTLdsmYscale = float( (double)dsm_regs.EXTLdsmYscale * ac_data.v_scale );
+            res.EXTLdsmXscale =  (double)dsm_regs.EXTLdsmXscale * ac_data.h_scale ;
+            res.EXTLdsmYscale =  (double)dsm_regs.EXTLdsmYscale * ac_data.v_scale ;
             res.EXTLdsmXoffset
-                = float( ( (double)dsm_regs.EXTLdsmXoffset + (double)ac_data.h_offset )
-                         / (double)dsm_regs.EXTLdsmXscale );
+                =  ( (double)dsm_regs.EXTLdsmXoffset + (double)ac_data.h_offset )
+                         / (double)dsm_regs.EXTLdsmXscale ;
             res.EXTLdsmYoffset
-                = float( ( (double)dsm_regs.EXTLdsmYoffset + (double)ac_data.v_offset )
-                         / (double)dsm_regs.EXTLdsmYscale );
+                =  ( (double)dsm_regs.EXTLdsmYoffset + (double)ac_data.v_offset )
+                         / (double)dsm_regs.EXTLdsmYscale ;
             break;
         default:
             throw std::runtime_error(_ac_data.flags[0] + " is not a valid model");
@@ -75,16 +76,16 @@ k_to_DSM::apply_ac_res_on_dsm_model( const rs2_dsm_params & ac_data,
             res = dsm_regs;
             break;
                 case dsm_model::AOT: // AOT model
-                res.EXTLdsmXscale = dsm_regs.EXTLdsmXscale / ac_data.h_scale;
-                res.EXTLdsmYscale = dsm_regs.EXTLdsmYscale / ac_data.v_scale;
-                res.EXTLdsmXoffset = dsm_regs.EXTLdsmXoffset* ac_data.h_scale - ac_data.h_offset;
-                res.EXTLdsmYoffset = dsm_regs.EXTLdsmYoffset* ac_data.v_scale - ac_data.v_offset;
+                res.EXTLdsmXscale = (double)dsm_regs.EXTLdsmXscale / (double)ac_data.h_scale;
+                res.EXTLdsmYscale = (double)dsm_regs.EXTLdsmYscale / (double)ac_data.v_scale;
+                res.EXTLdsmXoffset = (double)dsm_regs.EXTLdsmXoffset* (double)ac_data.h_scale - (double)ac_data.h_offset;
+                res.EXTLdsmYoffset = (double)dsm_regs.EXTLdsmYoffset* (double)ac_data.v_scale - (double)ac_data.v_offset;
                 break;
             case dsm_model::TOA: // TOA model
-                res.EXTLdsmXscale = dsm_regs.EXTLdsmXscale / ac_data.h_scale;
-                res.EXTLdsmYscale = dsm_regs.EXTLdsmYscale / ac_data.v_scale;
-                res.EXTLdsmXoffset = dsm_regs.EXTLdsmXoffset - ac_data.h_offset / res.EXTLdsmXscale;
-                res.EXTLdsmYoffset = dsm_regs.EXTLdsmYoffset - ac_data.v_offset / res.EXTLdsmYscale;
+                res.EXTLdsmXscale = (double)dsm_regs.EXTLdsmXscale / (double)ac_data.h_scale;
+                res.EXTLdsmYscale = (double)dsm_regs.EXTLdsmYscale / (double)ac_data.v_scale;
+                res.EXTLdsmXoffset = (double)dsm_regs.EXTLdsmXoffset - (double)ac_data.h_offset / (double)res.EXTLdsmXscale;
+                res.EXTLdsmYoffset = (double)dsm_regs.EXTLdsmYoffset - (double)ac_data.v_offset / (double)res.EXTLdsmYscale;
                 break;
         default:
             throw std::runtime_error(ac_data.flags[0] + "is not valid model");
@@ -96,10 +97,10 @@ k_to_DSM::apply_ac_res_on_dsm_model( const rs2_dsm_params & ac_data,
 
 los_shift_scaling
 k_to_DSM::convert_ac_data_to_los_error( const algo_calibration_registers & dsm_regs,
-                                        const rs2_dsm_params & ac_data )
+                                        const rs2_dsm_params_double & ac_data )
 {
     los_shift_scaling res;
-    switch (_ac_data.flags[0])
+    switch (ac_data.model)
     {
     case dsm_model::none: // none
             res.los_scaling_x = 1;
@@ -108,19 +109,19 @@ k_to_DSM::convert_ac_data_to_los_error( const algo_calibration_registers & dsm_r
             res.los_shift_y = 0;
             break;
         case dsm_model::AOT:
-            res.los_scaling_x = 1/ _ac_data.h_scale;
-            res.los_scaling_y = 1/_ac_data.v_scale;
-            res.los_shift_x = -_ac_data.h_offset*res.los_scaling_x;
-            res.los_shift_y = -_ac_data.v_offset*res.los_scaling_y;
+            res.los_scaling_x = 1/ (double)ac_data.h_scale;
+            res.los_scaling_y = 1/ (double)ac_data.v_scale;
+            res.los_shift_x = -(double)ac_data.h_offset*res.los_scaling_x;
+            res.los_shift_y = -(double)ac_data.v_offset*res.los_scaling_y;
             break;
         case dsm_model::TOA:
-            res.los_scaling_x = 1 / _ac_data.h_scale;
-            res.los_scaling_y = 1 / _ac_data.v_scale;
+            res.los_scaling_x = 1 / (double)ac_data.h_scale;
+            res.los_scaling_y = 1 / (double)ac_data.v_scale;
 
             auto dsm_orig = apply_ac_res_on_dsm_model(ac_data, dsm_regs, inverse);
 
-            res.los_shift_x = -_ac_data.h_offset / dsm_orig.EXTLdsmXscale - dsm_orig.EXTLdsmXoffset*(1 - res.los_scaling_x);
-            res.los_shift_y = -_ac_data.v_offset / dsm_orig.EXTLdsmYscale - dsm_orig.EXTLdsmYoffset*(1 - res.los_scaling_y);
+            res.los_shift_x = -(double)ac_data.h_offset / (double)dsm_orig.EXTLdsmXscale - (double)dsm_orig.EXTLdsmXoffset*(1 - res.los_scaling_x);
+            res.los_shift_y = -(double)ac_data.v_offset / (double)dsm_orig.EXTLdsmYscale - (double)dsm_orig.EXTLdsmYoffset*(1 - res.los_scaling_y);
             break;
     }
     return res;
@@ -129,7 +130,7 @@ k_to_DSM::convert_ac_data_to_los_error( const algo_calibration_registers & dsm_r
 pre_process_data k_to_DSM::pre_processing
 (
     const algo_calibration_info& regs,
-    const rs2_dsm_params& ac_data,
+    const rs2_dsm_params_double& ac_data,
     const algo_calibration_registers& algo_calibration_registers,
     const rs2_intrinsics_double& orig_k_raw,
     const std::vector<uint8_t>& relevant_pixels_image
@@ -146,11 +147,13 @@ pre_process_data k_to_DSM::pre_processing
     return res;
 }
 
-rs2_dsm_params k_to_DSM::convert_new_k_to_DSM
+rs2_dsm_params_double k_to_DSM::convert_new_k_to_DSM
 (
     const rs2_intrinsics_double& old_k,
     const rs2_intrinsics_double& new_k,
-    const z_frame_data& z
+    const z_frame_data& z, //
+    std::vector<double3>& new_vertices,
+    iteration_data_collect* data
 )
 {
     auto w = old_k.width;
@@ -163,6 +166,7 @@ rs2_dsm_params k_to_DSM::convert_new_k_to_DSM
 
     std::vector<uint8_t> relevant_pixels_image_rot(z.relevant_pixels_image.size(), 0);
     rotate_180(z.relevant_pixels_image.data(), relevant_pixels_image_rot.data(), w, h);
+
     _pre_process_data = pre_processing(_regs, _ac_data, _dsm_regs, old_k_raw, relevant_pixels_image_rot);
 
     _new_los_scaling = convert_k_to_los_error(_regs, _dsm_regs, new_k_raw);
@@ -170,7 +174,7 @@ rs2_dsm_params k_to_DSM::convert_new_k_to_DSM
     auto ac_data_cand = convert_los_error_to_ac_data(_ac_data,_dsm_regs, los_shift, _new_los_scaling);
     auto dsm_regs_cand = apply_ac_res_on_dsm_model(ac_data_cand, dsm_orig, direct);
 
-    auto sc_vertices = z.vertices;
+    auto sc_vertices = z.orig_vertices;
 
     for (auto i = 0; i < sc_vertices.size(); i++)
     {
@@ -178,7 +182,15 @@ rs2_dsm_params k_to_DSM::convert_new_k_to_DSM
         sc_vertices[i].y *= -1;
     }
     auto los = convert_norm_vertices_to_los(_regs, _dsm_regs, sc_vertices);
-    auto new_vertices = convert_los_to_norm_vertices(_regs, dsm_regs_cand, los);
+    new_vertices = convert_los_to_norm_vertices(_regs, dsm_regs_cand, los, data);
+
+    if (data)
+    {
+        data->cycle_data_p.dsm_regs_orig = dsm_orig;
+        data->cycle_data_p.relevant_pixels_image_rot = relevant_pixels_image_rot;
+        data->cycle_data_p.dsm_regs_cand = dsm_regs_cand;
+        data->cycle_data_p.los = los;
+    }
 
     for (auto i = 0; i < new_vertices.size(); i++)
     {
@@ -269,16 +281,16 @@ double2 k_to_DSM::convert_k_to_los_error
     return los_scaling;
 }
 
-rs2_dsm_params k_to_DSM::convert_los_error_to_ac_data
+rs2_dsm_params_double k_to_DSM::convert_los_error_to_ac_data
 (
-    const rs2_dsm_params& ac_data,
+    const rs2_dsm_params_double& ac_data,
     const algo_calibration_registers& dsm_regs,
     double2 los_shift, 
     double2 los_scaling
 )
 {
-    rs2_dsm_params ac_data_out = _ac_data;
-    ac_data_out.model = _ac_data.model;
+    rs2_dsm_params_double ac_data_out = ac_data;
+    ac_data_out.model = ac_data.model;
     switch (ac_data_out.model)
     {
     case dsm_model::none:
@@ -288,21 +300,21 @@ rs2_dsm_params k_to_DSM::convert_los_error_to_ac_data
         ac_data_out.v_offset = 0;
         break;
     case dsm_model::AOT:
-        ac_data_out.h_scale = float( 1 / los_scaling.x );
-        ac_data_out.v_scale = float( 1 / los_scaling.y );
-        ac_data_out.h_offset = float( -los_shift.x / los_scaling.x );
-        ac_data_out.v_offset = float( -los_shift.y / los_scaling.y );
+        ac_data_out.h_scale =  1 / los_scaling.x ;
+        ac_data_out.v_scale = 1 / los_scaling.y ;
+        ac_data_out.h_offset =  -los_shift.x / los_scaling.x;
+        ac_data_out.v_offset =  -los_shift.y / los_scaling.y;
         break;
     case dsm_model::TOA:
-        ac_data_out.h_scale = float( 1 / los_scaling.x );
-        ac_data_out.v_scale = float( 1 / los_scaling.y );
+        ac_data_out.h_scale =  1 / los_scaling.x;
+        ac_data_out.v_scale =  1 / los_scaling.y;
         _dsm_regs = apply_ac_res_on_dsm_model(ac_data, dsm_regs, inverse); // the one used for assessing LOS error
         ac_data_out.h_offset
-            = float( -( _dsm_regs.EXTLdsmXoffset * ( 1 - los_scaling.x ) + los_shift.x )
-                     * _dsm_regs.EXTLdsmXscale );
+            =  -( _dsm_regs.EXTLdsmXoffset * ( 1 - los_scaling.x ) + los_shift.x )
+                     * _dsm_regs.EXTLdsmXscale ;
         ac_data_out.v_offset
-            = float( -( _dsm_regs.EXTLdsmYoffset * ( 1 - los_scaling.y ) + los_shift.y )
-                     * _dsm_regs.EXTLdsmYscale );
+            =  -( _dsm_regs.EXTLdsmYoffset * ( 1 - los_scaling.y ) + los_shift.y )
+                     * _dsm_regs.EXTLdsmYscale ;
         break;
         
     }
@@ -503,40 +515,49 @@ std::vector<double3> k_to_DSM::convert_los_to_norm_vertices
 (
     algo_calibration_info const & regs,
     algo_calibration_registers const &dsm_regs,
-    std::vector<double2> los
+    std::vector<double2> los,
+    iteration_data_collect* data
 )
 {
     std::vector<double3> fove_x_indicent_direction(los.size());
     std::vector<double3> fove_y_indicent_direction(los.size());
 
-    auto laser_incident = laser_incident_direction({ regs.FRMWlaserangleH , regs.FRMWlaserangleV + 180 });
+    auto laser_incident = laser_incident_direction({ (double)regs.FRMWlaserangleH , (double)regs.FRMWlaserangleV + 180 });
+
+    std::vector<double2> dsm(los.size());
 
     for (auto i = 0; i < los.size(); i++)
     {
-        auto dsm_x = (los[i].x + dsm_regs.EXTLdsmXoffset)*dsm_regs.EXTLdsmXscale - 2047;
-        auto dsm_y = (los[i].y + dsm_regs.EXTLdsmYoffset)*dsm_regs.EXTLdsmYscale - 2047;
+        dsm[i].x = (los[i].x + (double)dsm_regs.EXTLdsmXoffset)*(double)dsm_regs.EXTLdsmXscale - (double)2047;
+        dsm[i].y = (los[i].y + (double)dsm_regs.EXTLdsmYoffset)*(double)dsm_regs.EXTLdsmYscale - (double)2047;
 
-        auto dsm_x_corr_coarse = dsm_x + (dsm_x / 2047)*regs.FRMWpolyVars[0] + 
-            std::pow(dsm_x / 2047, 2)*_regs.FRMWpolyVars[1] + 
-            std::pow(dsm_x / 2047, 3)*_regs.FRMWpolyVars[2];
+        auto dsm_x = dsm[i].x;
+        auto dsm_y = dsm[i].y;
 
-        auto dsm_y_corr_coarse = dsm_y + (dsm_x / 2047)*regs.FRMWpitchFixFactor;
+        auto dsm_x_corr_coarse = dsm_x + (dsm_x / 2047)*(double)regs.FRMWpolyVars[0] +
+            std::pow(dsm_x / 2047, 2)*(double)regs.FRMWpolyVars[1] +
+            std::pow(dsm_x / 2047, 3)*(double)regs.FRMWpolyVars[2];
 
-        auto dsm_x_corr = dsm_x_corr_coarse + (dsm_x_corr_coarse / 2047)*regs.FRMWundistAngHorz[0] +
-            std::pow(dsm_x_corr_coarse / 2047, 2)*regs.FRMWundistAngHorz[1] +
-            std::pow(dsm_x_corr_coarse / 2047, 3)*regs.FRMWundistAngHorz[2] +
-            std::pow(dsm_x_corr_coarse / 2047, 4)*regs.FRMWundistAngHorz[3];
+        auto dsm_y_corr_coarse = dsm_y + (dsm_x / 2047)*(double)regs.FRMWpitchFixFactor;
+
+        auto dsm_x_corr = dsm_x_corr_coarse + (dsm_x_corr_coarse / 2047)*(double)regs.FRMWundistAngHorz[0] +
+            std::pow(dsm_x_corr_coarse / 2047, 2)*(double)regs.FRMWundistAngHorz[1] +
+            std::pow(dsm_x_corr_coarse / 2047, 3)*(double)regs.FRMWundistAngHorz[2] +
+            std::pow(dsm_x_corr_coarse / 2047, 4)*(double)regs.FRMWundistAngHorz[3];
 
         auto dsm_y_corr = dsm_y_corr_coarse;
 
         auto mode = 1;
-        auto ang_x = dsm_x_corr * (regs.FRMWxfov[mode] * 0.25 / 2047);
-        auto ang_y = dsm_y_corr * (regs.FRMWyfov[mode] * 0.25 / 2047);
+        auto ang_x = dsm_x_corr * ((double)regs.FRMWxfov[mode] * 0.25 / 2047);
+        auto ang_y = dsm_y_corr * ((double)regs.FRMWyfov[mode] * 0.25 / 2047);
         
         auto mirror_normal_direction = laser_incident_direction({ ang_x ,ang_y });
         
         fove_x_indicent_direction[i] = laser_incident - mirror_normal_direction*(2 * (mirror_normal_direction*laser_incident));
     }
+
+    if (data)
+        data->cycle_data_p.dsm = dsm;
 
     for (auto i = 0; i < fove_x_indicent_direction.size(); i++)
     {
@@ -546,16 +567,16 @@ std::vector<double3> k_to_DSM::convert_los_to_norm_vertices
     }
 
     auto outbound_direction = fove_x_indicent_direction;
-    if (_regs.FRMWfovexExistenceFlag)
+    if (regs.FRMWfovexExistenceFlag)
     {
         std::fill(outbound_direction.begin(), outbound_direction.end(), double3{ 0,0,0 });
         for (auto i = 0; i < fove_x_indicent_direction.size(); i++)
         {
             auto ang_pre_exp = rad_to_deg(std::acos(fove_x_indicent_direction[i].z));
-            auto ang_post_exp = ang_pre_exp + ang_pre_exp * _regs.FRMWfovexNominal[0] +
-                std::pow(ang_pre_exp, 2) * _regs.FRMWfovexNominal[1] +
-                std::pow(ang_pre_exp, 3) * _regs.FRMWfovexNominal[2] +
-                std::pow(ang_pre_exp, 4) * _regs.FRMWfovexNominal[3];
+            auto ang_post_exp = ang_pre_exp + ang_pre_exp * (double)regs.FRMWfovexNominal[0] +
+                std::pow(ang_pre_exp, 2) * (double)regs.FRMWfovexNominal[1] +
+                std::pow(ang_pre_exp, 3) * (double)regs.FRMWfovexNominal[2] +
+                std::pow(ang_pre_exp, 4) * (double)regs.FRMWfovexNominal[3];
 
             outbound_direction[i].z = std::cos(deg_to_rad(ang_post_exp));
             auto xy_norm = fove_x_indicent_direction[i].x*fove_x_indicent_direction[i].x + 
@@ -642,10 +663,10 @@ std::vector<double2> k_to_DSM::convert_norm_vertices_to_los
         for (auto i = 0; i < angle; i++)
         {
             ang_grid[i] = i;
-            auto fovex_nominal = std::pow(i,1)* (double)_regs.FRMWfovexNominal[0] +
-                std::pow(i, 2)* (double)_regs.FRMWfovexNominal[1] +
-                std::pow(i, 3)* (double)_regs.FRMWfovexNominal[2] +
-                std::pow(i, 4)* (double)_regs.FRMWfovexNominal[3];
+            auto fovex_nominal = std::pow(i,1)* (double)regs.FRMWfovexNominal[0] +
+                std::pow(i, 2)* (double)regs.FRMWfovexNominal[1] +
+                std::pow(i, 3)* (double)regs.FRMWfovexNominal[2] +
+                std::pow(i, 4)* (double)regs.FRMWfovexNominal[3];
 
             ang_out_on_grid[i] = i + fovex_nominal;
         }
@@ -685,8 +706,8 @@ std::vector<double2> k_to_DSM::convert_norm_vertices_to_los
         
         int mirror_mode = 1/*_regs.frmw.mirrorMovmentMode*/;
 
-        dsm_x_corr[i] = ang_x / (double)(_regs.FRMWxfov[mirror_mode - 1] * 0.25 / 2047);
-        dsm_y_corr[i] = ang_y / (double)(_regs.FRMWyfov[mirror_mode - 1] * 0.25 / 2047);
+        dsm_x_corr[i] = ang_x / (double)(regs.FRMWxfov[mirror_mode - 1] * 0.25 / 2047);
+        dsm_y_corr[i] = ang_y / (double)(regs.FRMWyfov[mirror_mode - 1] * 0.25 / 2047);
 
     }
 

@@ -791,17 +791,21 @@ void optimizer::set_ir_data(
     _ir.edges = calc_edges( _ir.ir_frame, width, height );
 }
 
-void optimizer::decompose_p_mat()
+calib optimizer::decompose_p_mat(p_matrix p)
 {
-    _final_calibration = decompose( _params_curr.curr_p_mat, _original_calibration );
-    
-    _z.new_intrinsics = _z.orig_intrinsics;
-    _z.new_intrinsics.fx = _z.new_intrinsics.fx / _final_calibration.k_mat.fx*_original_calibration.k_mat.fx;
-    _z.new_intrinsics.fy = _z.new_intrinsics.fy / _final_calibration.k_mat.fy*_original_calibration.k_mat.fy;
+    auto calib = decompose(p, _original_calibration);
+    return calib;
+}
 
-    // TODO AVISHAG
-    //_final_calibration.k_mat.fx = _original_calibration.k_mat.fx;
-    //_final_calibration.k_mat.fy = _original_calibration.k_mat.fy;
+
+rs2_intrinsics_double optimizer::get_new_z_intrinsics_from_new_calib(const rs2_intrinsics_double& orig, const calib & new_c, const calib & orig_c)
+{
+    rs2_intrinsics_double res;
+    res = orig;
+    res.fx = res.fx / new_c.k_mat.fx*orig_c.k_mat.fx;
+    res.fy = res.fy / new_c.k_mat.fy*orig_c.k_mat.fy;
+
+    return res;
 }
 
 void optimizer::zero_invalid_edges( z_frame_data & z_data, ir_frame_data const & ir_data )
@@ -1281,6 +1285,11 @@ calib const & optimizer::get_calibration() const
     return _final_calibration;
 }
 
+rs2_dsm_params const & optimizer::get_dsm_params() const
+{
+    return _final_dsm_params;
+}
+
 double optimizer::get_cost() const
 {
     return _params_curr.cost;
@@ -1482,73 +1491,148 @@ optimization_params optimizer::back_tracking_line_search( optimization_params co
     return new_params;
 }
 
+size_t optimizer::optimize_p
+(
+    const optimization_params& params_curr,
+    optimization_params& params_new, 
+    calib& new_rgb_calib,
+    rs2_intrinsics_double& new_z_k,
+    std::function<void(iteration_data_collect const&data)> cb,
+    iteration_data_collect* data 
+)
+{
+    size_t n_iterations = 0;
+    auto curr = params_curr;
+    while (1)
+    {
+
+        auto res = calc_cost_and_grad(_z, _yuy, new_rgb_calib, curr.curr_p_mat, data);
+        curr.cost = res.first;
+        curr.calib_gradients = res.second;
+        AC_LOG( DEBUG, "    ------>     " << n_iterations << ": cost= " << AC_D_PREC << curr.cost );
+
+        if (data)
+        {
+            data->type = iteration_data;
+            data->params = curr;
+            data->c = new_rgb_calib;
+            data->iteration = n_iterations;
+        }
+
+        params_new = back_tracking_line_search(curr, data);
+        
+        if (data)
+            data->next_params = params_new;
+
+        if (cb)
+            cb(*data);
+
+        auto norm = (params_new.curr_p_mat - curr.curr_p_mat).get_norma();
+        if (norm < _params.min_rgb_mat_delta)
+        {
+            AC_LOG(DEBUG, "... {normal(new-curr)} " << norm << " < " << _params.min_rgb_mat_delta << " {min_rgb_mat_delta}  -->  stopping");
+            break;
+        }
+
+        auto delta = params_new.cost - curr.cost;
+        AC_LOG( DEBUG, "    delta= " << AC_D_PREC << delta );
+        delta = abs(delta);
+        if (delta < _params.min_cost_delta)
+        {
+            AC_LOG(DEBUG, "... delta < " << _params.min_cost_delta << "  -->  stopping");
+            break;
+        }
+
+        if (++n_iterations >= _params.max_optimization_iters)
+        {
+            AC_LOG(DEBUG, "... exceeding max iterations  -->  stopping");
+            break;
+        }
+
+        curr = params_new;
+        new_rgb_calib = decompose_p_mat(params_new.curr_p_mat);
+    }
+
+    if (!n_iterations)
+    {
+        AC_LOG(INFO, "Calibration not necessary; nothing done");
+    }
+    else
+    {
+        AC_LOG(INFO, "Calibration finished after " << n_iterations << " iterations; original cost= " << params_curr.cost << "  optimized cost= " << params_new.cost);
+    }
+    new_rgb_calib = decompose_p_mat(params_new.curr_p_mat);
+    auto orig_rgb_calib = decompose_p_mat(params_curr.curr_p_mat);
+    new_z_k = get_new_z_intrinsics_from_new_calib(_z.orig_intrinsics, new_rgb_calib, orig_rgb_calib);
+    new_rgb_calib.k_mat.fx = _original_calibration.k_mat.fx;
+    new_rgb_calib.k_mat.fy = _original_calibration.k_mat.fy;
+
+    params_new.curr_p_mat = new_rgb_calib.calc_p_mat();
+    return n_iterations;
+}
+
 size_t optimizer::optimize( std::function< void( iteration_data_collect const & data ) > cb )
 {
     optimization_params params_orig;
     params_orig.curr_p_mat = _original_calibration.calc_p_mat();
-
-    auto res = calc_cost_and_grad( _z, _yuy, _original_calibration, params_orig.curr_p_mat );
-    params_orig.cost = res.first;
-    params_orig.calib_gradients = res.second;
-
+    _original_calibration = decompose(params_orig.curr_p_mat, _original_calibration);
     _params_curr = params_orig;
 
-    size_t n_iterations = 0;
-    while( 1 )
+    iteration_data_collect data;
+
+    auto cycle = 1;
+    data.cycle = cycle;
+
+    auto res = calc_cost_and_grad(_z, _yuy, decompose(_params_curr.curr_p_mat, _original_calibration), _params_curr.curr_p_mat, &data);
+    _params_curr.cost = res.first;
+    _params_curr.calib_gradients = res.second;
+
+    optimization_params new_params;
+    calib new_calib = _original_calibration;
+    rs2_intrinsics_double new_k_depth;
+    double last_cost = _params_curr.cost;
+
+    auto n_iterations = optimize_p(_params_curr, new_params, new_calib, new_k_depth, cb, &data);
+    AC_LOG(DEBUG, n_iterations << ": Cost = " << AC_D_PREC << new_params.cost);
+
+    _z.orig_vertices = _z.vertices;
+    rs2_dsm_params_double new_dsm_params = _z.orig_dsm_params;
+    while (cycle < _params.max_K2DSM_iters)
     {
-        iteration_data_collect data;
-        data.cycle = 1;
-        data.iteration = n_iterations;
+        data.cycle = ++cycle;
 
-        calib curr_calib = decompose( _params_curr.curr_p_mat, _original_calibration );
-        auto res = calc_cost_and_grad( _z, _yuy, curr_calib, _params_curr.curr_p_mat, &data );
-        _params_curr.cost = res.first;
-        _params_curr.calib_gradients = res.second;
-        AC_LOG( DEBUG, n_iterations << ": Cost = " << AC_D_PREC << _params_curr.cost );
+        std::vector<double3> new_vertices;
+        auto dsm_candidate = _k_to_DSM->convert_new_k_to_DSM(_z.orig_intrinsics, new_k_depth, _z, new_vertices, &data);
+        data.type = cycle_data;
 
-        data.params = _params_curr;
-
-        auto prev_params = _params_curr;
-        _params_curr = back_tracking_line_search( _params_curr, &data);
-        data.next_params = _params_curr;
+        data.cycle_data_p.dsm_params_cand = dsm_candidate;
+        data.cycle_data_p.vertices = new_vertices;
+        data.cycle_data_p.dsm_pre_process_data = _k_to_DSM->get_pre_process_data();
 
         if (cb)
             cb(data);
 
-        auto norm = (_params_curr.curr_p_mat - prev_params.curr_p_mat).get_norma();
-        if( norm < _params.min_rgb_mat_delta )
-        {
-            AC_LOG( DEBUG, "... {normal(new-curr)} " << norm << " < " << _params.min_rgb_mat_delta << " {min_rgb_mat_delta}  -->  stopping" );
+        _z.vertices = new_vertices;
+
+        optimization_params params_candidate;
+        calib calib_candidate = new_calib;
+        rs2_intrinsics_double k_depth_candidate;
+        optimize_p(new_params, params_candidate, calib_candidate, k_depth_candidate, cb, &data);
+
+        if (params_candidate.cost < last_cost)
             break;
-        }
 
-        auto delta = _params_curr.cost - prev_params.cost;
-        AC_LOG( DEBUG, "    delta= " << AC_D_PREC << delta );
-        delta = abs( delta );
-        if( delta < _params.min_cost_delta )
-        {
-            AC_LOG( DEBUG, "... delta < " << _params.min_cost_delta << "  -->  stopping" );
-            break;
-        }
-
-        if( ++n_iterations >= _params.max_optimization_iters )
-        {
-            AC_LOG( DEBUG, "... exceeding max iterations  -->  stopping" );
-            break;
-        }
+        new_params = params_candidate;
+        new_calib = calib_candidate;
+        new_k_depth = k_depth_candidate;
+        new_dsm_params = dsm_candidate;
+        last_cost = new_params.cost;
     }
-    if( !n_iterations )
-    {
-        AC_LOG( INFO, "Calibration not necessary; nothing done" );
-    }
-    else
-    {
-        AC_LOG( INFO, "Calibration finished after " << n_iterations << " iterations; original cost= " << params_orig.cost << "  optimized cost= " << _params_curr.cost );
-    }
+   
+    AC_LOG(INFO, "Calibration converged; cost= " << new_params.cost);
 
-    decompose_p_mat();
-
-    _k_to_DSM->convert_new_k_to_DSM(_z.orig_intrinsics, _z.new_intrinsics, _z);
+    _final_dsm_params = clip_ac_scaling(_z.orig_dsm_params, new_dsm_params);
+    _final_calibration = new_calib;
 
     return n_iterations;
 }
