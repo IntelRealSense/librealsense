@@ -33,6 +33,7 @@ namespace rs2
         config_file::instance().set_default(configurations::window::saved_pos, false);
         config_file::instance().set_default(configurations::window::saved_size, false);
 
+        config_file::instance().set_default(configurations::viewer::is_measuring, false);
         config_file::instance().set_default(configurations::viewer::log_filename, get_folder_path(special_folder::user_documents) + "librealsense.log");
         config_file::instance().set_default(configurations::viewer::log_to_console, true);
         config_file::instance().set_default(configurations::viewer::log_to_file, false);
@@ -46,6 +47,7 @@ namespace rs2
 
         config_file::instance().set_default(configurations::performance::show_fps, false);
         config_file::instance().set_default(configurations::performance::vsync, true);
+        config_file::instance().set_default(configurations::performance::occlusion_invalidation, true);
 
         config_file::instance().set_default(configurations::ply::mesh, true);
         config_file::instance().set_default(configurations::ply::use_normals, false);
@@ -84,19 +86,23 @@ namespace rs2
 
         if (use_glsl)
         {
+            config_file::instance().set_default(configurations::performance::show_skybox, true);
             config_file::instance().set_default(configurations::performance::font_oversample, 2);
             config_file::instance().set_default(configurations::performance::enable_msaa, false);
             config_file::instance().set_default(configurations::performance::msaa_samples, 2);
             config_file::instance().set_default(configurations::performance::glsl_for_processing, true);
             config_file::instance().set_default(configurations::performance::glsl_for_rendering, true);
+            config_file::instance().set_default(configurations::viewer::shading_mode, 2);
         }
         else
         {
+            config_file::instance().set_default(configurations::performance::show_skybox, false);
             config_file::instance().set_default(configurations::performance::font_oversample, 1);
             config_file::instance().set_default(configurations::performance::enable_msaa, false);
             config_file::instance().set_default(configurations::performance::msaa_samples, 2);
             config_file::instance().set_default(configurations::performance::glsl_for_processing, false);
             config_file::instance().set_default(configurations::performance::glsl_for_rendering, false);
+            config_file::instance().set_default(configurations::viewer::shading_mode, 0);
         }
 #endif
     }
@@ -121,6 +127,11 @@ namespace rs2
     void ux_window::link_hovered()
     {
         _link_hovered = true;
+    }
+
+    void ux_window::cross_hovered()
+    {
+        _cross_hovered = true;
     }
 
     void ux_window::setup_icon()
@@ -164,6 +175,7 @@ namespace rs2
             ImGui_ImplGlfw_Shutdown();
             glfwDestroyWindow(_win);
             glfwDestroyCursor(_hand_cursor);
+            glfwDestroyCursor(_cross_cursor);
             glfwTerminate();
         }
 
@@ -171,6 +183,7 @@ namespace rs2
             exit(1);
 
         _hand_cursor = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
+        _cross_cursor = glfwCreateStandardCursor(GLFW_CROSSHAIR_CURSOR);
 
         {
             glfwWindowHint(GLFW_VISIBLE, 0);
@@ -318,7 +331,8 @@ namespace rs2
         glfwSetMouseButtonCallback(_win, [](GLFWwindow* w, int button, int action, int mods)
         {
             auto data = reinterpret_cast<ux_window*>(glfwGetWindowUserPointer(w));
-            data->_mouse.mouse_down = (button == GLFW_MOUSE_BUTTON_1) && (action != GLFW_RELEASE);
+            data->_mouse.mouse_down[0] = (button == GLFW_MOUSE_BUTTON_1) && (action != GLFW_RELEASE);
+            data->_mouse.mouse_down[1] = (button == GLFW_MOUSE_BUTTON_2) && (action != GLFW_RELEASE);
         });
         glfwSetScrollCallback(_win, [](GLFWwindow * w, double xoffset, double yoffset)
         {
@@ -415,7 +429,7 @@ namespace rs2
             _splash_tex.show({ 0.f,0.f,float(_width),float(_height) }, opacity);
         }
 
-        std::string hourglass = u8"\uf250";
+        std::string hourglass = u8"\uf251";
         static periodic_timer every_200ms(std::chrono::milliseconds(200));
         bool do_200ms = every_200ms;
         if (_query_devices && do_200ms)
@@ -551,8 +565,11 @@ namespace rs2
 
         if (_link_hovered)
             glfwSetCursor(_win, _hand_cursor);
+        else if (_cross_hovered)
+            glfwSetCursor(_win, _cross_cursor);
         else
             glfwSetCursor(_win, nullptr);
+        _cross_hovered = false;
         _link_hovered = false;
 
         return res;
@@ -576,6 +593,7 @@ namespace rs2
         glfwDestroyWindow(_win);
 
         glfwDestroyCursor(_hand_cursor);
+        glfwDestroyCursor(_cross_cursor);
 
         glfwTerminate();
     }
@@ -604,6 +622,7 @@ namespace rs2
         {
             open_window();
             _reload = false;
+            on_reload_complete();
         }
 
         int w = _width; int h = _height;

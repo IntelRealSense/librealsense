@@ -19,8 +19,6 @@
 #include <array>
 #include <unordered_map>
 
-#include "imgui-fonts-karla.hpp"
-#include "imgui-fonts-fontawesome.hpp"
 #include "../third-party/json.hpp"
 #include "objects-in-frame.h"
 #include "processing-block-model.h"
@@ -60,6 +58,15 @@ static const ImVec4 green = from_rgba(0x20, 0xe0, 0x20, 0xff, true);
 static const ImVec4 dark_sensor_bg = from_rgba(0x1b, 0x21, 0x25, 170);
 static const ImVec4 red = from_rgba(233, 0, 0, 255, true);
 static const ImVec4 greenish = from_rgba(33, 104, 0, 255);
+
+inline ImVec4 operator*(const ImVec4& color, float t)
+{
+    return ImVec4(color.x * t, color.y * t, color.z * t, color.w * t);
+}
+inline ImVec4 operator+(const ImVec4& a, const ImVec4& b)
+{
+    return ImVec4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
+}
 
 // Helper class that lets smoothly animate between its values
 template<class T>
@@ -164,6 +171,7 @@ namespace rs2
             static const char* settings_tab        { "viewer_model.settings_tab" };
             static const char* sdk_version         { "viewer_model.sdk_version" };
             static const char* last_calib_notice   { "viewer_model.last_calib_notice" };
+            static const char* is_measuring        { "viewer_model.is_measuring" };
 
             static const char* log_to_console      { "viewer_model.log_to_console" };
             static const char* log_to_file         { "viewer_model.log_to_file" };
@@ -173,6 +181,7 @@ namespace rs2
             static const char* show_map_ruler      { "viewer_model.show_map_ruler" };
             static const char* show_stream_details { "viewer_model.show_stream_details" };
             static const char* metric_system       { "viewer_model.metric_system" };
+            static const char* shading_mode        { "viewer_model.shading_mode" };
 
             static const char* last_ip             { "viewer_model.last_ip" };
         }
@@ -196,6 +205,8 @@ namespace rs2
             static const char* show_fps            { "performance.show_fps" };
             static const char* vsync               { "performance.vsync" };
             static const char* font_oversample     { "performance.font_oversample.v2" };
+            static const char* show_skybox         { "performance.show_skybox" };
+            static const char* occlusion_invalidation { "performance.occlusion_invalidation" };
         }
         namespace ply
         {
@@ -262,6 +273,8 @@ namespace rs2
         static const textual_icon metadata                 { u8"\uF0AE" };
         static const textual_icon check                    { u8"\uF00C" };
         static const textual_icon mail                     { u8"\uF01C" };
+        static const textual_icon cube                     { u8"\uf1b2" };
+        static const textual_icon measure                  { u8"\uf545" };
     }
 
     class subdevice_model;

@@ -162,7 +162,7 @@ bool refresh_devices(std::mutex& m,
             if (info.was_removed(dev))
             {
                 //Notify change
-                viewer_model.not_model.add_notification({ get_device_name(dev).first + " Disconnected\n",
+                viewer_model.not_model->add_notification({ get_device_name(dev).first + " Disconnected\n",
                     RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
 
                 //Remove from devices
@@ -207,20 +207,20 @@ bool refresh_devices(std::mutex& m,
                 dev.supports(RS2_CAMERA_INFO_NAME) && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)) != "Platform Camera" && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)).find("IP Device") == std::string::npos)
             {
                 device_models.emplace_back(new device_model(dev, error_message, viewer_model));
-                viewer_model.not_model.add_log(to_string() << (*device_models.rbegin())->dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
+                viewer_model.not_model->add_log(to_string() << (*device_models.rbegin())->dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
                 added = true;
             }
 
             if (!initial_refresh)
             {
                 if (added || dev.is<playback>())
-                    viewer_model.not_model.add_notification({ dev_descriptor.first + " Connected\n",
+                    viewer_model.not_model->add_notification({ dev_descriptor.first + " Connected\n",
                         RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
                 else if (added || dev.supports(RS2_CAMERA_INFO_IP_ADDRESS))
-                    viewer_model.not_model.add_notification({ dev_descriptor.first + " Connected\n",
+                    viewer_model.not_model->add_notification({ dev_descriptor.first + " Connected\n",
                         RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
                 else
-                    viewer_model.not_model.add_notification({ dev_descriptor.first + " Connected\n",
+                    viewer_model.not_model->add_notification({ dev_descriptor.first + " Connected\n",
                         RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR },
                         [&device_models, &viewer_model, &error_message, dev] {
                     auto device = dev;
@@ -249,7 +249,7 @@ bool refresh_devices(std::mutex& m,
                             (*dev_model_itr)->handle_hardware_events(data);
                         }
                     }
-                    viewer_model.not_model.add_notification({ n.get_description(), n.get_severity(), n.get_category() });
+                    viewer_model.not_model->add_notification({ n.get_description(), n.get_severity(), n.get_category() });
                 });
             }
 
@@ -309,15 +309,16 @@ int main(int argc, const char** argv) try
     class viewer_model_dispatcher : public el::LogDispatchCallback
     {
     public:
-        rs2::viewer_model * vm = nullptr;  // only the default ctor is available to us...!
+        std::weak_ptr<notifications_model> notifications;  // only the default ctor is available to us...!
     protected:
         void handle(const el::LogDispatchData* data) noexcept override
         {
             // TODO align LRS and Easyloging severity levels. W/A for easylogging on Linux
             if (data->logMessage()->level() > el::Level::Debug)
             {
-                vm->not_model.add_log(
-                    data->logMessage()->logger()->logBuilder()->build(
+                if (auto not_model = notifications.lock())
+                    not_model->add_log(
+                        data->logMessage()->logger()->logBuilder()->build(
                         data->logMessage(),
                         data->dispatchAction() == el::base::DispatchAction::NormalLog));
             }
@@ -325,14 +326,16 @@ int main(int argc, const char** argv) try
     };
     el::Helpers::installLogDispatchCallback< viewer_model_dispatcher >("viewer_model_dispatcher");
     auto dispatcher = el::Helpers::logDispatchCallback< viewer_model_dispatcher >("viewer_model_dispatcher");
-    dispatcher->vm = &viewer_model;
+    dispatcher->notifications = viewer_model.not_model;
     el::Helpers::uninstallLogDispatchCallback< el::base::DefaultLogDispatchCallback >("DefaultLogDispatchCallback");
 #else
-    rs2::log_to_callback(RS2_LOG_SEVERITY_INFO,
-        [&](rs2_log_severity severity, rs2::log_message const& msg)
-    {
-        viewer_model.not_model.add_log(msg.raw());
-    });
+    std::weak_ptr<notifications_model> notifications = viewer_model.not_model;
+     rs2::log_to_callback( RS2_LOG_SEVERITY_INFO,
+        [notifications]( rs2_log_severity severity, rs2::log_message const& msg )
+         {
+            if (auto not_model = notifications.lock())
+                not_model->add_log( msg.raw() );
+         } );
 #endif
     window.on_file_drop = [&](std::string filename)
     {
@@ -340,7 +343,7 @@ int main(int argc, const char** argv) try
         add_playback_device(ctx, *device_models, error_message, viewer_model, filename);
         if (!error_message.empty())
         {
-            viewer_model.not_model.add_notification({ error_message,
+            viewer_model.not_model->add_notification({ error_message,
                 RS2_LOG_SEVERITY_ERROR, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
         }
     };

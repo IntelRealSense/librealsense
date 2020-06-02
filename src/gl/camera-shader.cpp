@@ -3,6 +3,7 @@
 
 #include "camera-shader.h"
 #include <glad/glad.h>
+#include "option.h"
 
 using namespace rs2;
 
@@ -32,9 +33,10 @@ static const char* vertex_shader_text =
 
 static const char* fragment_shader_text =
 "#version 110\n"
+"uniform float opacity;"
 "\n"
 "void main(void) {\n"
-"    gl_FragColor = vec4(36.0 / 1000.0, 44.0 / 1000.0, 51.0 / 1000.0, 0.3);\n"
+"    gl_FragColor = vec4(opacity * (36.0 / 1000.0), opacity * (44.0 / 1000.0), opacity * (51.0 / 1000.0), opacity);\n"
 "}\n";
 
 using namespace rs2;
@@ -59,6 +61,7 @@ namespace librealsense
             _transformation_matrix_location = _shader->get_uniform_location("transformationMatrix");
             _projection_matrix_location = _shader->get_uniform_location("projectionMatrix");
             _camera_matrix_location = _shader->get_uniform_location("cameraMatrix");
+            _opacity_location = _shader->get_uniform_location("opacity");
         }
 
         void camera_shader::begin() { _shader->begin(); }
@@ -71,6 +74,11 @@ namespace librealsense
             _shader->load_uniform(_transformation_matrix_location, model);
             _shader->load_uniform(_camera_matrix_location, view);
             _shader->load_uniform(_projection_matrix_location, projection);
+        }
+
+        void camera_shader::set_opacity(float opacity)
+        {
+            _shader->load_uniform(_opacity_location, opacity);
         }
 
         void camera_renderer::cleanup_gpu_resources()
@@ -121,6 +129,9 @@ namespace librealsense
             camera_mesh.push_back(load_model(uncompress_t265_obj));
             camera_mesh.push_back(load_model(uncompress_L515_obj));
 
+            register_option(RS2_OPTION_FILTER_MAGNITUDE, std::make_shared<librealsense::float_option>(option_range{ 0, 1, 0, 1 }));
+            _opacity_opt = &get_option(RS2_OPTION_FILTER_MAGNITUDE);
+
             for (auto&& mesh : camera_mesh)
             {
                 for (auto& xyz : mesh.positions)
@@ -161,6 +172,8 @@ namespace librealsense
                 if (starts_with(dev_name, "Intel RealSense L5")) index = 4;
             };
 
+            auto opacity = clamp(_opacity_opt->query(), 0.0, 1.0);
+
             if (index >= 0)
             {
                 perform_gl_action([&]()
@@ -174,6 +187,7 @@ namespace librealsense
                             get_matrix(RS2_GL_MATRIX_CAMERA), 
                             get_matrix(RS2_GL_MATRIX_PROJECTION)
                         );
+                        _shader->set_opacity(opacity);
                         _camera_model[index]->draw();
                         _shader->end();
                     }
@@ -197,7 +211,7 @@ namespace librealsense
                             glVertex3fv(&v0.x);
                             glVertex3fv(&v1.x);
                             glVertex3fv(&v2.x);
-                            glColor4f(0.036f, 0.044f, 0.051f, 0.3f);
+                            glColor4f(opacity * 0.036f, opacity * 0.044f, opacity * 0.051f, opacity);
                         }
                         glEnd();
 
