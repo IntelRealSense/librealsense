@@ -24,8 +24,8 @@ namespace rs2
 
 #ifndef CHECK_FOR_UPDATES
         // Dummy functions
-        http_downloader::http_downloader() {};
-        http_downloader::~http_downloader() {};
+        http_downloader::http_downloader() {}
+        http_downloader::~http_downloader() {}
         bool http_downloader::download_to_stream(const std::string& url, std::stringstream &output, user_callback_func_type user_callback_func) { return false; }
         bool http_downloader::download_to_file(const std::string& url, const std::string &file_name, user_callback_func_type user_callback_func) { return false; }
         bool http_downloader::download_to_bytes_vector(const std::string& url, std::vector<uint8_t> &output, user_callback_func_type user_callback_func) { return false; }

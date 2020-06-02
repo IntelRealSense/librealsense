@@ -87,7 +87,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
         ImGui::SetCursorPosX(positions.w / 2 - title_size.x / 2);
         ImGui::PushFont(window.get_large_font());
         ImGui::PushStyleColor(ImGuiCol_Text, white);
-        ImGui::Text(title_message.c_str());
+        ImGui::Text("%s", title_message.c_str());
         ImGui::PopStyleColor();
         ImGui::PopFont();
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
@@ -396,7 +396,6 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
             sw_text_pos.x -= 4;
             sw_text_pos.y += 15;
             ImGui::SetCursorScreenPos(sw_text_pos);
-            auto availeable_x = ImGui::GetContentRegionAvailWidth();
             ImGui::InputTextMultiline("##Software Update Description", const_cast<char*>(msg),
                 strlen(msg) + 1, ImVec2(ImGui::GetContentRegionAvailWidth() - 150, pos.mid_y - (pos.orig_pos.y + 160) - 40),
                 ImGuiInputTextFlags_ReadOnly);
@@ -426,7 +425,7 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
             if (ImGui::IsItemHovered())
             {
                 std::string tooltip = "This will redirect you to download the selected software from:\n" + selected_software_update.download_link;
-                ImGui::SetTooltip(tooltip.c_str());
+                ImGui::SetTooltip("%s", tooltip.c_str());
                 window.link_hovered();
             }
 
