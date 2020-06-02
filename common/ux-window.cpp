@@ -23,6 +23,22 @@
 
 namespace rs2
 {
+    void GLAPIENTRY MessageCallback(GLenum source,
+        GLenum type,
+        GLuint id,
+        GLenum severity,
+        GLsizei length,
+        const GLchar* message,
+        const void* userParam)
+    {
+        if (type == GL_DEBUG_TYPE_ERROR)
+        {
+            fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+                (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
+                type, severity, message);
+        }
+    }
+
     void prepare_config_file()
     {
         config_file::instance().set_default(configurations::update::allow_rc_firmware, false);
@@ -164,6 +180,7 @@ namespace rs2
         stbi_image_free(icon_256);
     }
 
+   
     void ux_window::open_window()
     {
         if (_win)
@@ -292,6 +309,13 @@ namespace rs2
 
         glfwMakeContextCurrent(_win);
         gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+
+        if (glDebugMessageCallback)
+        {
+            // During init, enable debug output
+            glEnable(GL_DEBUG_OUTPUT);
+            glDebugMessageCallback(MessageCallback, 0);
+        }
 
         glfwSetWindowPosCallback(_win, [](GLFWwindow* w, int x, int y)
         {
@@ -629,10 +653,18 @@ namespace rs2
 
         glfwGetWindowSize(_win, &_width, &_height);
 
+        // Set minimum size 1
+        if (_width <= 0) _width = 1;
+        if (_height <= 0) _height = 1;
+
         int fw = _fb_width;
         int fh = _fb_height;
 
         glfwGetFramebufferSize(_win, &_fb_width, &_fb_height);
+
+        // Set minimum size 1
+        if (_fb_width <= 0) _fb_width = 1;
+        if (_fb_height <= 0) _fb_height = 1;
 
         if (fw != _fb_width || fh != _fb_height)
         {
@@ -718,4 +750,5 @@ namespace rs2
             _on_load_message.clear();
         }
     }
+
 }
