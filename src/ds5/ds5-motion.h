@@ -203,7 +203,7 @@ namespace librealsense
             // TODO - need to check mechanical drawing for extrinsic and orientation
             // Bosch BMI055
             // L515 specific - BMI055 assembly transformation based on mechanical drawing (mm)
-            _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.00552f, 0.0051f, 0.01174f } };
+            _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.01245f, 0.01642f, 0.02093f } };
             _imu_2_depth_rot = { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } };
         }
 
