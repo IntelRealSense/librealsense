@@ -87,11 +87,11 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     source_group("EasyLogging++" FILES ${ELPP_FILES})
     source_group("SW-Update" FILES ${SW_UPDATE_FILES})
 
-    if (CHECK_FOR_UPDATES)
-        message( STATUS "Check for updates capability added to realsense-depth-quality" )
-        add_dependencies(rs-depth-quality libcurl)
-        target_link_libraries(rs-depth-quality curl)
-    endif()
+#    if (CHECK_FOR_UPDATES)
+#        message( STATUS "Check for updates capability added to realsense-depth-quality" )
+#        add_dependencies(rs-depth-quality libcurl)
+#        target_link_libraries(rs-depth-quality curl)
+#    endif()
     
     target_link_libraries(rs-depth-quality ${DEPENDENCIES}
                                            ${GTK3_LIBRARIES}
