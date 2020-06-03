@@ -42,7 +42,6 @@
 #include "global_timestamp_reader.h"
 #include "auto-calibrated-device.h"
 #include "firmware_logger_device.h"
-#include "fw-logs/fw-logs-parser.h"
 ////////////////////////
 // API implementation //
 ////////////////////////
