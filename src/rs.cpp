@@ -43,7 +43,6 @@
 #include "auto-calibrated-device.h"
 #include "terminal-parser.h"
 #include "firmware_logger_device.h"
-#include "fw-logs/fw-logs-parser.h"
 ////////////////////////
 // API implementation //
 ////////////////////////
