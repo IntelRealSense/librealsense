@@ -17,7 +17,7 @@ namespace librealsense
 		virtual bool get_fw_log(fw_logs::fw_logs_binary_data& binary_data) = 0;
 		virtual bool get_flash_log(fw_logs::fw_logs_binary_data& binary_data) = 0;
 		virtual bool init_parser(std::string xml_full_file_path) = 0;
-		virtual fw_logs::fw_log_data parse_log(const fw_logs::fw_logs_binary_data* fw_log_msg) = 0;
+		virtual bool parse_log(const fw_logs::fw_logs_binary_data* fw_log_msg, fw_logs::fw_log_data* parsed_msg) = 0;
 		virtual size_t get_number_of_flash_logs() = 0;
 		virtual ~firmware_logger_extensions() = default;
 	};
@@ -34,7 +34,7 @@ namespace librealsense
 		bool get_flash_log(fw_logs::fw_logs_binary_data& binary_data) override;
 
 		bool init_parser(std::string xml_full_file_path) override;
-		fw_logs::fw_log_data parse_log(const fw_logs::fw_logs_binary_data* fw_log_msg) override;
+		bool parse_log(const fw_logs::fw_logs_binary_data* fw_log_msg, fw_logs::fw_log_data* parsed_msg) override;
 
 		size_t get_number_of_flash_logs() override;
 
