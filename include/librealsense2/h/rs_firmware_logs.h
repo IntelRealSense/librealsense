@@ -91,14 +91,31 @@ rs2_log_severity rs2_firmware_log_message_severity(const rs2_firmware_log_messag
 */
 int rs2_init_parser(rs2_device* dev, const char* xml_path, rs2_error** error);
 
+
+/**
+* \brief Creates RealSense firmware log parsed message.
+* \param[in] dev	        Device from which the FW log will be taken using the created message
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return                   pointer to created empty firmware log message
+*/
+rs2_firmware_log_parsed_message* rs2_create_firmware_log_parsed_message(rs2_device* dev, rs2_error** error);
+
+/**
+* \brief Deletes RealSense firmware log parsed message.
+* \param[in] msg	        message to be deleted
+*/
+void rs2_delete_firmware_log_parsed_message(rs2_firmware_log_parsed_message* fw_log_parsed_msg);
+
+
 /**
 * \brief Gets RealSense firmware log parser
 * \param[in] dev	            Device from which the FW log will be taken
 * \param[in] fw_log_msg	        firmware log message to be parsed
+* \param[in] parsed_msg	        firmware log parsed message - place holder for the resulting parsed message
 * \param[out] error             If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
-* \return                       firmware log parsed message
+* \return                       true for success, false for failure - failure happens if message could not be parsed
 */
-rs2_firmware_log_parsed_message* rs2_parse_firmware_log(rs2_device* dev, rs2_firmware_log_message* fw_log_msg, rs2_error** error);
+int rs2_parse_firmware_log(rs2_device* dev, rs2_firmware_log_message* fw_log_msg, rs2_firmware_log_parsed_message* parsed_msg, rs2_error** error);
 
 /**
 * Delete RealSense firmware log parsed message

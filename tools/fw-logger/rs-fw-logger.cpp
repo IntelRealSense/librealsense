@@ -90,7 +90,9 @@ int main(int argc, char* argv[])
                     std::vector<string> fw_log_lines;
                     if (using_parser)
                     {
-                        rs2::firmware_log_parsed_message parsed_log = fw_log_device.parse_log(fw_log_message);
+                        auto parsed_log = fw_log_device.create_parsed_message();
+                        bool parsing_result = fw_log_device.parse_log(fw_log_message, parsed_log);
+                        
                         stringstream sstr;
                         sstr << parsed_log.timestamp() << " " << parsed_log.severity() << " " << parsed_log.message()
                             << " " << parsed_log.thread_name() << " " << parsed_log.file_name()

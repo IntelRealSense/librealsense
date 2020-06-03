@@ -142,11 +142,16 @@ namespace librealsense
         return (_parser != nullptr);
     }
 
-    fw_logs::fw_log_data firmware_logger_device::parse_log(const fw_logs::fw_logs_binary_data* fw_log_msg)
+    bool firmware_logger_device::parse_log(const fw_logs::fw_logs_binary_data* fw_log_msg, 
+        fw_logs::fw_log_data* parsed_msg)
 	{
-        fw_logs::fw_log_data log_data;
-        if(_parser)
-            log_data = _parser->parse_fw_log(fw_log_msg);
-        return log_data;
+        bool result = false;
+        if (_parser && parsed_msg && fw_log_msg)
+        {
+            *parsed_msg = _parser->parse_fw_log(fw_log_msg);
+            result = true;
+        }
+            
+        return result;
 	}
 }
