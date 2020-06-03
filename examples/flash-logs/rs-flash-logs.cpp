@@ -66,13 +66,26 @@ int main(int argc, char * argv[])
         setvbuf(stdout, NULL, _IONBF, 0); // unbuffering stdout
 
 
-        auto fw_log = res.get_device().as<rs2::firmware_logger>();
-        auto number_of_flash_logs_in_device = fw_log.get_number_of_flash_logs();
+        auto fw_log_device = res.get_device().as<rs2::firmware_logger>();
+        auto number_of_flash_logs_in_device = fw_log_device.get_number_of_flash_logs();
+
+        bool using_parser = false;
+        std::string xml_full_file_path("HWLoggerEventsDS5.xml");
+        if (!xml_full_file_path.empty())
+        {
+            ifstream f(xml_full_file_path);
+            if (f.good())
+            {
+                bool parser_initialized = fw_log_device.init_parser(xml_full_file_path);
+                if (parser_initialized)
+                    using_parser = true;
+            }
+        }
 
         for (int i = 0; i < number_of_flash_logs_in_device; ++i)
         {
-            auto flash_log_message = fw_log.create_message();
-            bool result = fw_log.get_flash_log(flash_log_message);
+            auto flash_log_message = fw_log_device.create_message();
+            bool result = fw_log_device.get_flash_log(flash_log_message);
             if (result)
             {
                 std::vector<string> fw_log_lines;
@@ -80,24 +93,17 @@ int main(int argc, char * argv[])
                 static bool usingParser = true;
                 if (usingParser)
                 {
-                    std::string xml_path("HWLoggerEventsDS5.xml");
-                    if (!xml_path.empty())
-                    {
-                        ifstream f(xml_path);
-                        if (f.good())
-                        {
-                            unique_ptr<rs2::firmware_log_parser> parser =
-                                unique_ptr<rs2::firmware_log_parser>(new rs2::firmware_log_parser(xml_path));
+                    
+                    auto parsed_log = fw_log_device.create_parsed_message();
+                    bool parsing_result = fw_log_device.parse_log(flash_log_message, parsed_log);
+                            
+                    stringstream sstr;
+                    sstr << parsed_log.timestamp() << " " << parsed_log.severity() << " " << parsed_log.message()
+                        << " " << parsed_log.thread_name() << " " << parsed_log.file_name()
+                        << " " << parsed_log.line();
 
-                            rs2::firmware_log_parsed_message parsed_log = parser->parse_firmware_log(flash_log_message);
-                            stringstream sstr;
-                            sstr << parsed_log.timestamp() << " " << parsed_log.severity() << " " << parsed_log.message()
-                                << " " << parsed_log.thread_name() << " " << parsed_log.file_name()
-                                << " " << parsed_log.line();
+                    fw_log_lines.push_back(sstr.str());
 
-                            fw_log_lines.push_back(sstr.str());
-                        }
-                    }
                 }
                 else
                 {
