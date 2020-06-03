@@ -202,8 +202,14 @@ namespace librealsense
 
             // Bosch BMI055
             // L515 specific - BMI055 assembly transformation based on mechanical drawing (meters)
-            _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ 0.01245f, -0.01642f, -0.0045f } };
-            _imu_2_depth_rot = { { 1,0,0 },{ 0,1,0 },{ 0,0,-1 } };
+            // device thickness 26 mm from front glass to back surface
+            // depth ground zero is 4.5mm from front glass into the device
+            // IMU reference in z direction is at 20.93mm from back surface
+            //
+            // IMU offset in Z direction = 4.5 mm - (26 mm - 20.93 mm) = 4.5 mm - 5.07mm = - 0.57mm
+            // IMU offset in x and Y direction (12.45mm, -16.42mm) from center
+            _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ 0.01245f, -0.01642f, -0.00057f } };
+            _imu_2_depth_rot = { { -1.0, 0, 0 },{ 0, 1.0, 0 },{ 0, 0, -1.0 } };
         }
 
         virtual ~l500_imu_calib_parser() {}
