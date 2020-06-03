@@ -217,6 +217,9 @@ namespace depth_to_rgb_calibration {
 
         const pre_process_data& get_pre_process_data() const;
 
+        algo_calibration_info const & get_calibration_info() const { return _regs; }
+        algo_calibration_registers const & get_calibration_registers() const { return _dsm_regs; }
+
     private:
         double2 convert_k_to_los_error(
             algo::depth_to_rgb_calibration::algo_calibration_info const & regs,

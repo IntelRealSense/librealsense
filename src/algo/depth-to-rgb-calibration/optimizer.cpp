@@ -412,6 +412,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
                             algo_calibration_info const & cal_info,
                             algo_calibration_registers const & cal_regs, float depth_units )
 {
+    _original_dsm_params = dsm_params;
     _k_to_DSM = std::make_shared<k_to_DSM>(dsm_params, cal_info, cal_regs, _params.max_scaling_step);
 
     /*[zEdge,Zx,Zy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.z),2); % Added the second input - margin to zero out
@@ -1398,16 +1399,21 @@ void optimizer::write_data_to( std::string const & dir )
         write_vector_to_file( _ir.ir_frame, dir, "ir.raw" );
         write_vector_to_file( _z.frame, dir, "depth.raw" );
 
+        write_to_file( &_original_dsm_params, sizeof( _original_dsm_params ), dir, "dsm.params" );
         write_to_file( &_original_calibration, sizeof( _original_calibration ), dir, "rgb.calib" );
+        auto & cal_info = _k_to_DSM->get_calibration_info();
+        auto & cal_regs = _k_to_DSM->get_calibration_registers();
+        write_to_file( &cal_info, sizeof( cal_info ), dir, "cal.info" );
+        write_to_file( &cal_regs, sizeof( cal_regs ), dir, "cal.registers" );
         write_to_file( &_z.orig_intrinsics, sizeof( _z.orig_intrinsics), dir, "depth.intrinsics" );
         write_to_file( &_z.depth_units, sizeof( _z.depth_units ), dir, "depth.units" );
 
         // This file is meant for matlab -- it packages all the information needed
-        write_matlab_camera_params_file(
-            _z.orig_intrinsics,
-            _original_calibration,
-            _z.depth_units,
-            dir, "camera_params"
+        write_matlab_camera_params_file( _z.orig_intrinsics,
+                                         _original_calibration,
+                                         _z.depth_units,
+                                         dir,
+                                         "camera_params"
         );
     }
     catch( std::exception const & err )

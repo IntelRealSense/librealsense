@@ -288,6 +288,7 @@ namespace depth_to_rgb_calibration {
         ir_frame_data _ir;
         z_frame_data _z;
         calib _original_calibration;         // starting state of auto-calibration
+        rs2_dsm_params _original_dsm_params;
         calib _final_calibration;         // starting state of auto-calibration
         rs2_dsm_params _final_dsm_params;
         calib _factory_calibration;          // factory default calibration of the camera

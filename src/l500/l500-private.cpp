@@ -311,14 +311,18 @@ namespace librealsense
                 explicit ac_logger()
                 {
                     using namespace std::chrono;
-                    std::string filename = to_string()
-                        << "C:\\work\\autocal\\data\\"
-                        << system_clock::now().time_since_epoch().count() * system_clock::period::num / system_clock::period::den
-                        << ".ac_log";
-                   
-                    _f.open( filename );
-                    if( _f )
-                        std::cout << "-D- AC log is being written to: " << filename << std::endl;
+                    auto dir = getenv( "RS2_DEBUG_DIR" );
+                    if( dir )
+                    {
+                        std::string filename = to_string()
+                            << dir
+                            << system_clock::now().time_since_epoch().count() * system_clock::period::num / system_clock::period::den
+                            << ".ac_log";
+
+                        _f.open( filename );
+                        if( _f )
+                            std::cout << "-D- AC log is being written to: " << filename << std::endl;
+                    }
 
                     librealsense::log_to_callback( RS2_LOG_SEVERITY_ALL,
                                                    { this, []( rs2_log_callback * p ) {} } );

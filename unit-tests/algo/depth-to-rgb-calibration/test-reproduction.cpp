@@ -53,37 +53,52 @@ int main( int argc, char * argv[] )
             read_binary_file( dir, "depth.intrinsics", &d_intr );
             camera.z = d_intr;
             read_binary_file( dir, "depth.units", &camera.z_units );
+            read_binary_file( dir, "cal.info", &camera.cal_info );
+            read_binary_file( dir, "cal.registers", &camera.cal_regs );
+            read_binary_file( dir, "dsm.params", &camera.dsm_params );
 
             algo::optimizer cal;
             init_algo( cal, dir, "\\rgb.raw", "\\rgb_prev.raw", "\\ir.raw", "\\depth.raw", camera );
 
-            TRACE( "is_scene_valid" );
+            TRACE( "\n___\nis_scene_valid" );
             if( !cal.is_scene_valid() )
             {
 
             }
 
-            TRACE( "optimize" );
+            TRACE( "\n___\noptimize" );
             size_t n_iteration = cal.optimize(
                 []( algo::iteration_data_collect const & data )
                 {
                 } );
 
-            TRACE( "is_valid_results" );
+            TRACE( "\n___\nis_valid_results" );
             if( !cal.is_valid_results() )
             {
 
             }
-            TRACE( "done!" );
+            TRACE( "\n___\nRESULTS:" );
+
+            auto & intr = cal.get_calibration().get_intrinsics();
+            auto & extr = cal.get_calibration().get_extrinsics();
+            AC_LOG( DEBUG, AC_D_PREC
+                << "intr[ "
+                << intr.width << "x" << intr.height
+                << "  ppx: " << intr.ppx << ", ppy: " << intr.ppy << ", fx: " << intr.fx
+                << ", fy: " << intr.fy << ", model: " << int( intr.model ) << " coeffs["
+                << intr.coeffs[0] << ", " << intr.coeffs[1] << ", " << intr.coeffs[2]
+                << ", " << intr.coeffs[3] << ", " << intr.coeffs[4] << "] ]" );
+            AC_LOG( DEBUG, AC_D_PREC << "extr" << (rs2_extrinsics) extr );
+            AC_LOG( DEBUG, AC_D_PREC << "dsm" << cal.get_dsm_params() );
         }
         catch( std::exception const & e )
         {
-            std::cerr << "caught exception: " << e.what() << std::endl;
+            std::cerr << "\n___\ncaught exception: " << e.what() << std::endl;
             ok = false;
         }
         catch( ... )
         {
-            std::cerr << "caught unknown exception!" << std::endl;
+            std::cerr << "\n___\ncaught unknown exception!" << std::endl;
             ok = false;
         }
     }

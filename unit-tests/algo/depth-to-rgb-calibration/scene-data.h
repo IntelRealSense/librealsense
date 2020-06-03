@@ -178,7 +178,7 @@ struct camera_params
     librealsense::algo::depth_to_rgb_calibration::algo_calibration_info cal_info;
     librealsense::algo::depth_to_rgb_calibration::algo_calibration_registers cal_regs;
     librealsense::algo::depth_to_rgb_calibration::rs2_extrinsics_double extrinsics;
-    double z_units = 0.25f;
+    float z_units = 0.25;
 };
 
 camera_params read_camera_params( std::string const &scene_dir, std::string const &filename )

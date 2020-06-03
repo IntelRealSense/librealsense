@@ -9,6 +9,10 @@
 #include "api.h"  // VALIDATE_INTERFACE_NO_THROW
 #include "algo/depth-to-rgb-calibration/debug.h"
 
+#ifndef _WIN32
+#include <sys/stat.h>  // mkdir
+#endif
+
 
 using namespace librealsense;
 namespace impl = librealsense::algo::depth_to_rgb_calibration;
@@ -85,15 +89,23 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
 
     debug_calibration( "old" );
 
-    // TODO REMOVE
+    // If the user has this env var defined, then we write out logs and frames to it
+    // NOTE: The var should end with a directory separator \ or /
+    auto dir_ = getenv( "RS2_DEBUG_DIR" );
+    if( dir_ )
+    {
+        std::string dir( dir_ );
+        dir += std::to_string( depth.get_frame_number() );
 #ifdef _WIN32
-    std::string dir = "C:\\work\\autocal\\data\\";
-    dir += to_string() << depth.get_frame_number();
-    if( _mkdir( dir.c_str() ) == 0 )
-        _algo.write_data_to( dir );
-    else
-        AC_LOG( WARNING, "Failed to write AC frame data to: " << dir );
+        auto status = _mkdir( dir.c_str() );
+#else
+        auto status = mkdir( dir.c_str(), 0700 );
 #endif
+        if( status == 0 )
+            _algo.write_data_to( dir );
+        else
+            AC_LOG( WARNING, "Failed (" << status << ") to write AC frame data to: " << dir );
+    }
 }
 
 
