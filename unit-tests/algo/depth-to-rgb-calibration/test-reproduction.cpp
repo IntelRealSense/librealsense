@@ -79,8 +79,8 @@ int main( int argc, char * argv[] )
             }
             TRACE( "\n___\nRESULTS:" );
 
-            auto & intr = cal.get_calibration().get_intrinsics();
-            auto & extr = cal.get_calibration().get_extrinsics();
+            auto intr = cal.get_calibration().get_intrinsics();
+            auto extr = cal.get_calibration().get_extrinsics();
             AC_LOG( DEBUG, AC_D_PREC
                 << "intr[ "
                 << intr.width << "x" << intr.height
