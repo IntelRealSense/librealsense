@@ -326,7 +326,8 @@ int main(int argc, const char** argv) try
     auto dispatcher = el::Helpers::logDispatchCallback< viewer_model_dispatcher >( "viewer_model_dispatcher" );
     dispatcher->notifications = viewer_model.not_model;
     el::Helpers::uninstallLogDispatchCallback< el::base::DefaultLogDispatchCallback >( "DefaultLogDispatchCallback" );
-#else
+#endif
+
     std::weak_ptr<notifications_model> notifications = viewer_model.not_model;
     rs2::log_to_callback( RS2_LOG_SEVERITY_INFO,
         [notifications]( rs2_log_severity severity, rs2::log_message const& msg )
@@ -334,7 +335,7 @@ int main(int argc, const char** argv) try
             if (auto not_model = notifications.lock())
                 not_model->add_log( msg.raw() );
         } );
-#endif
+
     window.on_file_drop = [&](std::string filename)
     {
         
@@ -385,16 +386,6 @@ int main(int argc, const char** argv) try
             error_message = e.what();
         }
     }
-
-    bool alive = true;
-    rs2::log_to_callback( RS2_LOG_SEVERITY_INFO,
-        [&]( rs2_log_severity severity, rs2::log_message const& msg )
-        {
-            if( alive )
-                viewer_model.not_model.add_log( msg.raw() );
-        }
-    );
-
 
     // Closing the window
     while (window)
@@ -757,7 +748,6 @@ int main(int argc, const char** argv) try
                 sub->stop(viewer_model);
         }
 
-    alive = false;
     return EXIT_SUCCESS;
 }
 catch (const error & e)
