@@ -97,7 +97,7 @@ namespace librealsense
         std::shared_ptr<stream_interface> _ir_stream;
         std::shared_ptr<stream_interface> _confidence_stream;
         
-        std::shared_ptr< ivcam2::auto_calibration > _autocal;
+        std::shared_ptr< ivcam2::ac_trigger > _autocal;
 
         void force_hardware_reset() const;
         bool _is_locked = true;

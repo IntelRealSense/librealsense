@@ -16,6 +16,9 @@
 #include <cstddef>
 #include "metadata-parser.h"
 #include "l500-options.h"
+#include "ac-trigger.h"
+#include "algo/depth-to-rgb-calibration/debug.h"
+
 
 #define MM_TO_METER 1/1000
 #define MIN_ALGO_VERSION 115

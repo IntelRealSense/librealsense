@@ -7,6 +7,8 @@
 
 #include "l500-private.h"
 #include "proc/color-formats-converter.h"
+#include "ac-trigger.h"
+#include "algo/depth-to-rgb-calibration/debug.h"
 
 
 namespace librealsense
@@ -48,7 +50,7 @@ namespace librealsense
                     [=]( std::shared_ptr< generic_processing_block > pb )
                     {
                         auto cpb = std::make_shared< composite_processing_block >();
-                        cpb->add(std::make_shared< autocal_color_processing_block >(_autocal));
+                        cpb->add(std::make_shared< ac_trigger::color_processing_block >(_autocal));
                         cpb->add( pb );
                         return cpb;
                     } ) );

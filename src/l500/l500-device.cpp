@@ -22,6 +22,9 @@
 #include "proc/syncer-processing-block.h"
 #include "proc/rotation-transform.h"
 #include "fw-update/fw-update-unsigned.h"
+#include "ac-trigger.h"
+#include "algo/depth-to-rgb-calibration/debug.h"
+
 
 namespace librealsense
 {
@@ -202,11 +205,10 @@ namespace librealsense
         is_zo_enabled_opt->set(false);
         depth_sensor.register_option(RS2_OPTION_ZERO_ORDER_ENABLED, is_zo_enabled_opt);
 
-        //std::shared_ptr< autocal_option > autocal_enabled_opt;
         if( _fw_version >= firmware_version( "1.3.12.0" ) )
         {
             // TODO may not need auto-cal if there's no color sensor, like on the rs500...
-            _autocal = std::make_shared< auto_calibration >( *this, *_hw_monitor );
+            _autocal = std::make_shared< ac_trigger >( *this, *_hw_monitor );
 
             // Have the auto-calibration mechanism notify us when calibration has finished
             _autocal->register_callback(
@@ -226,7 +228,7 @@ namespace librealsense
 
             depth_sensor.register_option(
                 RS2_OPTION_CAMERA_ACCURACY_HEALTH_ENABLED,
-                std::make_shared< auto_calibration::enabler_option >( _autocal )
+                std::make_shared< ac_trigger::enabler_option >( _autocal )
             );
         }
 
@@ -248,7 +250,7 @@ namespace librealsense
                 if( _autocal )
                 {
                     //sync->add_enabling_option( _autocal->get_enabler_opt() );
-                    cpb->add( std::make_shared< autocal_depth_processing_block >( _autocal ) );
+                    cpb->add( std::make_shared< ac_trigger::depth_processing_block >( _autocal ) );
                 }
                 cpb->add( std::make_shared< filtering_processing_block >( RS2_STREAM_DEPTH ) );
                 return cpb;
@@ -273,7 +275,7 @@ namespace librealsense
                 if( _autocal )
                 {
                     //sync->add_enabling_option( _autocal->get_enabler_opt() );
-                    cpb->add( std::make_shared< autocal_depth_processing_block >( _autocal ) );
+                    cpb->add( std::make_shared< ac_trigger::depth_processing_block >( _autocal ) );
                 }
                 cpb->add( std::make_shared< filtering_processing_block >( RS2_STREAM_DEPTH ) );
                 return cpb;
@@ -303,7 +305,7 @@ namespace librealsense
                 if( _autocal )
                 {
                     //sync->add_enabling_option( _autocal->get_enabler_opt() );
-                    cpb->add( std::make_shared< autocal_depth_processing_block >( _autocal ) );
+                    cpb->add( std::make_shared< ac_trigger::depth_processing_block >( _autocal ) );
                 }
                 cpb->add( std::shared_ptr< filtering_processing_block >(
                     new filtering_processing_block{RS2_STREAM_DEPTH, RS2_STREAM_CONFIDENCE} ) );
