@@ -117,7 +117,7 @@ namespace librealsense
         return _locked_transfer->send_receive(data);
     }
 
-    std::vector<uint8_t> hw_monitor::send(command cmd) const
+    std::vector<uint8_t> hw_monitor::send( command cmd, hwmon_response * p_response ) const
     {
         hwmon_cmd newCommand(cmd);
         auto opCodeXmit = static_cast<uint32_t>(newCommand.cmd);
@@ -139,7 +139,9 @@ namespace librealsense
         send_hw_monitor_command(details);
 
         // Error/exit conditions
-        if (newCommand.oneDirection)
+        if( p_response )
+            *p_response = hwm_Success;
+        if( newCommand.oneDirection )
             return std::vector<uint8_t>();
 
         librealsense::copy(newCommand.receivedOpcode, details.receivedOpcode.data(), 4);
@@ -152,13 +154,37 @@ namespace librealsense
         if (opCodeAsUint32 != opCodeXmit)
         {
             auto err_type = static_cast<hwmon_response>(opCodeAsUint32);
-            throw invalid_value_exception(to_string() << "hwmon command 0x" << std::hex << opCodeXmit << " failed.\nError type: "
-                << hwmon_error2str(err_type) << " (" << std::dec <<(int)err_type  << ").");
+            std::string err = hwmon_error_string( cmd, err_type );
+            LOG_DEBUG( err );
+            if( p_response )
+            {
+                *p_response = err_type;
+                return std::vector<uint8_t>();
+            }
+            throw invalid_value_exception( err );
         }
 
         return std::vector<uint8_t>(newCommand.receivedCommandData,
             newCommand.receivedCommandData + newCommand.receivedCommandDataLength);
     }
+
+    std::string hwmon_error_string( command const & cmd, hwmon_response e )
+    {
+        auto str = hwmon_error2str( e );
+        to_string err;
+        err << "hwmon command 0x" << std::hex << cmd.cmd << std::dec << '(';
+        if( cmd.param1 )
+            err << ' ' << cmd.param1;
+        if( cmd.param2 )
+            err << ' ' << cmd.param2;
+        if( cmd.param3 )
+            err << ' ' << cmd.param3;
+        if( cmd.param4 )
+            err << ' ' << cmd.param4;
+        err << ") failed (response " << e << "= " << ( str.empty() ? "unknown" : str ) << ")";
+        return err;
+    }
+
 
     void hw_monitor::get_gvd(size_t sz, unsigned char* gvd, uint8_t gvd_cmd) const
     {

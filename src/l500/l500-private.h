@@ -70,6 +70,7 @@ namespace librealsense
         };
 
 #pragma pack(push, 1)
+        // Table header returned by READ_TABLE before the actual table data
         struct table_header
         {
             uint8_t                 major;
@@ -89,30 +90,35 @@ namespace librealsense
                             table_header * pheader = nullptr,
                             std::function< void() > init = nullptr )
         {
-            try
+            command cmd( fw_cmd::READ_TABLE, table_id );
+            hwmon_response response;
+            std::vector<byte> data = hwm.send( cmd, &response );
+            size_t expected_size = sizeof( table_header ) + sizeof( T );
+            switch( response )
             {
-                command cmd( fw_cmd::READ_TABLE, table_id );
-                std::vector<byte> data = hwm.send( cmd );
-                size_t expected_size = sizeof( table_header ) + sizeof( T );
+            case hwm_Success:
                 if( data.size() != expected_size )
                     throw std::runtime_error( to_string()
-                                              << "READ_TABLE data size received= " << data.size()
-                                              << " (expected " << expected_size << ")" );
+                        << "READ_TABLE data size received= " << data.size()
+                        << " (expected " << expected_size << ")" );
                 if( pheader )
                     *pheader = *(table_header *)data.data();
                 if( ptable )
                     *ptable = *(T *)(data.data() + sizeof( table_header ));
-            }
-            catch( std::exception const & e )
-            {
-                if( !init || !strstr( e.what(), "Error type: Table is empty" ) )
+                break;
+
+            case hwm_TableIsEmpty:
+                if( init )
                 {
-                    LOG_DEBUG( "Failed to get read FW table 0x" << std::hex << table_id << std::dec
-                                                                << ": " << e.what() );
-                    throw;
+                    // Initialize a new table
+                    init();
+                    break;
                 }
-                // Initialize a new table
-                init();
+                // fall-thru!
+                
+            default:
+                LOG_DEBUG( "Failed to get read FW table 0x" << std::hex << table_id );
+                throw invalid_value_exception( hwmon_error_string( cmd, response ) );
             }
         }
 
