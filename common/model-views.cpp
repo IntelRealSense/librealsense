@@ -35,7 +35,7 @@
 #include "os.h"
 
 #include "metadata-helper.h"
-
+#include "calibration-model.h"
 
 using namespace rs400;
 using namespace nlohmann;
@@ -3359,6 +3359,7 @@ namespace rs2
 
     device_model::device_model(device& dev, std::string& error_message, viewer_model& viewer)
         : dev(dev),
+        _calib_model(dev),
         syncer(viewer.syncer),
         _update_readonly_options_timer(std::chrono::seconds(6))
         , _detected_objects(std::make_shared< atomic_objects_in_frame >()),
@@ -4498,6 +4499,7 @@ namespace rs2
         ImGui::PopFont();
         ImGui::PushFont(window.get_font());
         static bool keep_showing_advanced_mode_modal = false;
+        bool open_calibration_ui = false;
         if (ImGui::BeginPopup(label.c_str()))
         {
             bool something_to_show = false;
@@ -4731,6 +4733,17 @@ namespace rs2
                         ImGui::SetTooltip("Tare calibration is used to adjust camera absolute distance to flat target.\n"
                             "User needs to enter the known ground truth");
 
+                    
+                    if (_calib_model.supports())
+                    {
+                        if (ImGui::Selectable("Calibration Data"))
+                        {
+                            _calib_model.open();
+                        }
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Access low level camera calibration parameters");
+                    }
+
                     has_autocalib = true;
                 }
             }
@@ -4757,6 +4770,10 @@ namespace rs2
             std::string msg = to_string() << "\t\tAre you sure you want to " << (is_advanced_mode_enabled ? "turn off Advanced mode" : "turn on Advanced mode") << "\t\t";
             keep_showing_advanced_mode_modal = prompt_toggle_advanced_mode(!is_advanced_mode_enabled, msg, restarting_device_info, viewer, window);
         }
+
+        _calib_model.update(window, error_message);
+
+            
         ////////////////////////////////////////
         // Draw icons names
         ////////////////////////////////////////

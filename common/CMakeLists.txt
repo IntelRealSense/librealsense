@@ -7,6 +7,8 @@ set(COMMON_SRC
         "${CMAKE_CURRENT_LIST_DIR}/model-views.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/notifications.h"
         "${CMAKE_CURRENT_LIST_DIR}/notifications.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/calibration-model.h"
+        "${CMAKE_CURRENT_LIST_DIR}/calibration-model.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/viewer.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewer.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/ux-window.h"

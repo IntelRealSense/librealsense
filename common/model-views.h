@@ -26,6 +26,7 @@
 #include "realsense-ui-advanced-mode.h"
 #include "fw-update-helper.h"
 #include "updates-model.h"
+#include "calibration-model.h"
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);
@@ -161,6 +162,10 @@ namespace rs2
             static const char* allow_rc_firmware   { "update.allow_rc_firmware" };
             static const char* recommend_updates   { "update.recommend_updates" };
             static const char* recommend_calibration { "update.recommend_calibration" };
+        }
+        namespace calibration
+        {
+            static const char* enable_writing      { "calibration.enable_writing" };
         }
         namespace viewer
         {
@@ -856,6 +861,7 @@ namespace rs2
         std::shared_ptr< atomic_objects_in_frame > _detected_objects;
         std::shared_ptr<updates_model> _updates;
         sw_update::dev_updates_profile::update_profile _updates_profile;
+        calibration_model _calib_model;
     };
 
     class viewer_model;
