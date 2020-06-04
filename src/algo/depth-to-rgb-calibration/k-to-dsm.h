@@ -13,6 +13,9 @@ namespace librealsense {
 namespace algo {
 namespace depth_to_rgb_calibration {
 
+    static const int SIZE_OF_GRID_X = 25;
+    static const int SIZE_OF_GRID_Y = 6;
+
     enum ac_to_dsm_dir
     {
         direct,
@@ -224,7 +227,8 @@ namespace depth_to_rgb_calibration {
         double2 convert_k_to_los_error(
             algo::depth_to_rgb_calibration::algo_calibration_info const & regs,
             algo_calibration_registers const &dsm_regs,
-            rs2_intrinsics_double const & k_raw);
+            rs2_intrinsics_double const & k_raw,
+            iteration_data_collect* data = nullptr);
 
         rs2_dsm_params_double convert_los_error_to_ac_data(
             const rs2_dsm_params_double& ac_data,
@@ -234,9 +238,10 @@ namespace depth_to_rgb_calibration {
         double2 run_scaling_optimization_step(
             algo::depth_to_rgb_calibration::algo_calibration_info const & regs,
             algo_calibration_registers const &dsm_regs,
-            double scaling_grid_x[25],
-            double scaling_grid_y[25],
-            double2 focal_scaling);
+            double scaling_grid_x[SIZE_OF_GRID_X],
+            double scaling_grid_y[SIZE_OF_GRID_X],
+            double2 focal_scaling,
+            iteration_data_collect* data = nullptr);
 
         std::vector<double3x3> optimize_k_under_los_error(
             algo::depth_to_rgb_calibration::algo_calibration_info const & regs,
@@ -261,9 +266,6 @@ namespace depth_to_rgb_calibration {
         std::vector<double3> transform_to_direction(std::vector<double3>);
         
         pre_process_data _pre_process_data;
-
-        //debug data
-        double2 _new_los_scaling;
 
         //input camera params
         rs2_dsm_params_double _ac_data;

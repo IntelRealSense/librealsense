@@ -67,7 +67,7 @@ template< typename T >
 }
 
 template< typename T >
-std::vector< T > read_vector_from( std::string const & filename )
+std::vector< T > read_vector_from( std::string const & filename, uint32_t size_x = 0, uint32_t size_y = 0)
 {
     std::fstream f = std::fstream( filename, std::ios::in | std::ios::binary );
     if( !f )
@@ -83,7 +83,44 @@ std::vector< T > read_vector_from( std::string const & filename )
     return vec;
 }
 
+template<>
+std::vector< std::vector<double> > read_vector_from(std::string const & filename, uint32_t size_x, uint32_t size_y)
+{
+    std::vector< std::vector<double> > res;
+    
+    std::fstream f = std::fstream(filename, std::ios::in | std::ios::binary);
+    if (!f)
+        throw std::runtime_error("failed to read file:\n" + filename);
+    f.seekg(0, f.end);
+    size_t cb = f.tellg();
+    f.seekg(0, f.beg);
+    if (cb % sizeof(double))
+        throw std::runtime_error("file size is not a multiple of data size");
 
+    res.resize(size_x);
+
+    for (auto i = 0; i < size_x; i++)
+    {
+        res[i].resize(size_y);
+        f.read((char *)res[i].data(), size_y * sizeof(double));
+    }
+    f.close();
+    //for(auto i=0;i<)
+    return res;
+
+    /*std::fstream f = std::fstream(filename, std::ios::in | std::ios::binary);
+    if (!f)
+        throw std::runtime_error("failed to read file:\n" + filename);
+    f.seekg(0, f.end);
+    size_t cb = f.tellg();
+    f.seekg(0, f.beg);
+    if (cb % sizeof(T))
+        throw std::runtime_error("file size is not a multiple of data size");
+    std::vector< T > vec(cb / sizeof(T));
+    f.read((char *)vec.data(), cb);
+    f.close();
+    return vec;*/
+}
 template < class T >
 std::vector< T > read_image_file( std::string const &file, size_t width, size_t height )
 {

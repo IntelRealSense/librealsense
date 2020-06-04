@@ -169,9 +169,9 @@ rs2_dsm_params_double k_to_DSM::convert_new_k_to_DSM
 
     _pre_process_data = pre_processing(_regs, _ac_data, _dsm_regs, old_k_raw, relevant_pixels_image_rot);
 
-    _new_los_scaling = convert_k_to_los_error(_regs, _dsm_regs, new_k_raw);
+    auto new_los_scaling = convert_k_to_los_error(_regs, _dsm_regs, new_k_raw, data);
     double2 los_shift = { 0 };
-    auto ac_data_cand = convert_los_error_to_ac_data(_ac_data,_dsm_regs, los_shift, _new_los_scaling);
+    auto ac_data_cand = convert_los_error_to_ac_data(_ac_data,_dsm_regs, los_shift, new_los_scaling);
     auto dsm_regs_cand = apply_ac_res_on_dsm_model(ac_data_cand, dsm_orig, direct);
 
     auto sc_vertices = z.orig_vertices;
@@ -181,15 +181,16 @@ rs2_dsm_params_double k_to_DSM::convert_new_k_to_DSM
         sc_vertices[i].x *= -1;
         sc_vertices[i].y *= -1;
     }
-    auto los = convert_norm_vertices_to_los(_regs, _dsm_regs, sc_vertices);
-    new_vertices = convert_los_to_norm_vertices(_regs, dsm_regs_cand, los, data);
+    auto los_orig = convert_norm_vertices_to_los(_regs, _dsm_regs, sc_vertices);
+    new_vertices = convert_los_to_norm_vertices(_regs, dsm_regs_cand, los_orig, data);
 
     if (data)
     {
         data->cycle_data_p.dsm_regs_orig = dsm_orig;
         data->cycle_data_p.relevant_pixels_image_rot = relevant_pixels_image_rot;
+        data->cycle_data_p.new_los_scaling = new_los_scaling;
         data->cycle_data_p.dsm_regs_cand = dsm_regs_cand;
-        data->cycle_data_p.los = los;
+        data->cycle_data_p.los_orig = los_orig;
     }
 
     for (auto i = 0; i < new_vertices.size(); i++)
@@ -215,7 +216,7 @@ rs2_dsm_params_double k_to_DSM::convert_new_k_to_DSM
         xim_new[i] = projed[i].x / projed[i].z;
         yim_new[i] = projed[i].y / projed[i].z;
     }
-
+    AC_LOG(INFO, "New ac data " << ac_data_cand.h_scale<<" "<< ac_data_cand.v_scale);
     return ac_data_cand;
 }
 
@@ -228,7 +229,8 @@ double2 k_to_DSM::convert_k_to_los_error
 (
     algo_calibration_info const & regs,
     algo_calibration_registers const &dsm_regs,
-    rs2_intrinsics_double const & new_k_raw
+    rs2_intrinsics_double const & new_k_raw,
+    iteration_data_collect* data
 )
 {
     double2 focal_scaling;
@@ -249,14 +251,21 @@ double2 k_to_DSM::convert_k_to_los_error
         fine_grid[i] = fine_grid[i] * 0.6* _max_scaling_step;
     }
 
-    double grid_y[25];
-    double grid_x[25];
+    double grid_y[SIZE_OF_GRID_X];
+    double grid_x[SIZE_OF_GRID_X];
     ndgrid_my(coarse_grid_y, coarse_grid_x, grid_y, grid_x);
 
-    auto opt_scaling = run_scaling_optimization_step(regs, dsm_regs, grid_x, grid_y, focal_scaling);
+    auto opt_scaling = run_scaling_optimization_step(regs, dsm_regs, grid_x, grid_y, focal_scaling, data);
 
-    double fine_grid_x[5] = { 0 };
-    double fine_grid_y[5] = { 0 };
+    if (data)
+    {
+        data->cycle_data_p.focal_scaling = focal_scaling;
+        data->cycle_data_p.opt_scaling = opt_scaling;
+    }
+        
+
+    double fine_grid_x[SIZE_OF_GRID_X] = { 0 };
+    double fine_grid_y[SIZE_OF_GRID_X] = { 0 };
 
     for (auto i = 0; i < 5; i++)
     {
@@ -325,29 +334,30 @@ double2 k_to_DSM::run_scaling_optimization_step
 (
     algo_calibration_info const & regs,
     algo_calibration_registers const &dsm_regs,
-    double scaling_grid_x[25], 
-    double scaling_grid_y[25], 
-    double2 focal_scaling)
+    double scaling_grid_x[SIZE_OF_GRID_X],
+    double scaling_grid_y[SIZE_OF_GRID_X],
+    double2 focal_scaling,
+    iteration_data_collect* data)
 {
     auto opt_k = optimize_k_under_los_error(regs, dsm_regs, scaling_grid_x, scaling_grid_y);
 
-    double fx_scaling_on_grid[25];
-    double fy_scaling_on_grid[25];
+    double fx_scaling_on_grid[SIZE_OF_GRID_X];
+    double fy_scaling_on_grid[SIZE_OF_GRID_X];
 
-    for (auto i = 0; i < 25; i++)
+    for (auto i = 0; i < SIZE_OF_GRID_X; i++)
     {
         fx_scaling_on_grid[i] = opt_k[i].mat[0][0] / _pre_process_data.orig_k.fx;
         fy_scaling_on_grid[i] = opt_k[i].mat[1][1] / _pre_process_data.orig_k.fy;
     }
-    double err_l2[25];
-    for (auto i = 0; i < 25; i++)
+    double err_l2[SIZE_OF_GRID_X];
+    for (auto i = 0; i < SIZE_OF_GRID_X; i++)
     {
         err_l2[i] = std::sqrt(std::pow(fx_scaling_on_grid[i] - focal_scaling.x, 2) + std::pow(fy_scaling_on_grid[i] - focal_scaling.y, 2));
     }
     
-    double sg_mat[25][6];
+    double sg_mat[SIZE_OF_GRID_X][SIZE_OF_GRID_Y];
     
-    for (auto i = 0; i < 25; i++)
+    for (auto i = 0; i < SIZE_OF_GRID_X; i++)
     {
         sg_mat[i][0] = scaling_grid_x[i] * scaling_grid_x[i];
         sg_mat[i][1] = scaling_grid_y[i] * scaling_grid_y[i];
@@ -383,6 +393,25 @@ double2 k_to_DSM::run_scaling_optimization_step
     double quad_coef[6];
     direct_inv_6x6(sg_mat_tag_x_sg_mat, sg_mat_tag_x_err_l2, quad_coef);
 
+    if (data)
+    {
+        data->cycle_data_p.errL2 = std::vector<double>(std::begin(err_l2), std::end(err_l2));
+
+        data->cycle_data_p.sg_mat.resize(SIZE_OF_GRID_X);
+        for (auto i = 0; i < SIZE_OF_GRID_X; i++)
+        {
+            data->cycle_data_p.sg_mat[i].resize(SIZE_OF_GRID_Y);
+            for (auto j = 0; j < SIZE_OF_GRID_Y; j++)
+            {
+                data->cycle_data_p.sg_mat[i][j] = sg_mat[i][j];
+            }
+        }
+
+        data->cycle_data_p.sg_mat_tag_x_sg_mat = std::vector<double>(std::begin(sg_mat_tag_x_sg_mat), std::end(sg_mat_tag_x_sg_mat));
+        data->cycle_data_p.sg_mat_tag_x_err_l2 = std::vector<double>(std::begin(sg_mat_tag_x_err_l2), std::end(sg_mat_tag_x_err_l2));
+        data->cycle_data_p.quad_coef = std::vector<double>(std::begin(quad_coef), std::end(quad_coef));
+    }
+
     double A[4] = { quad_coef[0], quad_coef[2] / 2, quad_coef[2] / 2, quad_coef[1] };
     double B[2] = { quad_coef[3] / 2, quad_coef[4] / 2 };
     double opt_scaling[2];
@@ -397,7 +426,7 @@ double2 k_to_DSM::run_scaling_optimization_step
     min_x = max_x = scaling_grid_x[0];
     min_y = max_y = scaling_grid_y[0];
 
-    for (auto i = 0; i < 25; i++)
+    for (auto i = 0; i < SIZE_OF_GRID_X; i++)
     {
         if (min_x > scaling_grid_x[i])
             min_x = scaling_grid_x[i];
@@ -419,14 +448,13 @@ double2 k_to_DSM::run_scaling_optimization_step
     {
         double min_err = err_l2[0];
         int ind_min = 0;
-        for (auto i = 0; i < 25; i++)
+        for (auto i = 0; i < SIZE_OF_GRID_X; i++)
         {
             if (min_err > err_l2[i])
             {
                 min_err = err_l2[i];
                 ind_min = i;
             }
-
         }
         opt_scaling[0] = scaling_grid_x[ind_min];
         opt_scaling[1] = scaling_grid_y[ind_min];
@@ -438,15 +466,15 @@ std::vector<double3x3> k_to_DSM::optimize_k_under_los_error
 (
     algo_calibration_info const & regs,
     algo_calibration_registers const &dsm_regs,
-    double scaling_grid_x[25],
-    double scaling_grid_y[25]
+    double scaling_grid_x[SIZE_OF_GRID_X],
+    double scaling_grid_y[SIZE_OF_GRID_X]
 )
 {
     auto orig_k = _pre_process_data.orig_k;
 
-    std::vector<double3x3> res(25, { 0 });
+    std::vector<double3x3> res(SIZE_OF_GRID_X, { 0 });
 
-    for (auto i = 0; i < 25; i++)
+    for (auto i = 0; i < SIZE_OF_GRID_X; i++)
     {
         std::vector<double2> los(_pre_process_data.los_orig.size());
         std::vector<double3> updated_pixels(_pre_process_data.los_orig.size());

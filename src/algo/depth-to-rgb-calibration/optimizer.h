@@ -151,10 +151,18 @@ namespace depth_to_rgb_calibration {
         algo_calibration_registers dsm_regs_orig;
         std::vector < uint8_t> relevant_pixels_image_rot;
         pre_process_data dsm_pre_process_data;
+        std::vector < double> errL2;
+        std::vector < std::vector < double>> sg_mat;
+        std::vector < double> sg_mat_tag_x_sg_mat;
+        std::vector <double> sg_mat_tag_x_err_l2;
+        std::vector <double> quad_coef;
+        double2 focal_scaling;
+        double2 opt_scaling;
+        double2 new_los_scaling;
         rs2_dsm_params_double dsm_params_cand;
         algo_calibration_registers dsm_regs_cand;
-        std::vector<double2> los;
-        std::vector<double2> dsm;
+        std::vector< double2> los_orig;
+        std::vector< double2> dsm;
         std::vector < double3> vertices;
     };
 

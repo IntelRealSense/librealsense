@@ -27,6 +27,99 @@ namespace depth_to_rgb_calibration {
         return deg * M_PI / 180.;
     }
 
+    std::vector<double> direct_inv(std::vector<double> A, uint32_t s)
+    {
+        std::vector<double> res;
+        std::vector<double> eye(s*s, 0);
+        
+        std::vector<double> in = A;
+
+        for (auto i = 0; i < s; i++)
+        {
+            eye[i*s + i] = 1;
+        }
+
+        auto out = eye;
+
+        for (auto i = 0; i < s; i++)
+        {
+            auto in_i = in[i*s + i];
+            for (auto j = 0; j < s; j++)
+            {
+                out[i*s + j] = out[i*s + j] / in_i;
+                in[i*s + j] = in[i*s + j] / in_i;
+            }
+            std::vector<double> factors(s - 1 - i, 0);
+            for (auto k = i; k < s - 1; k++)
+            {
+                factors[k - i] = in[(k + 1)*s + i];
+            }
+
+            std::vector<double> factors2((s - i)*s, 0);
+            for (auto ii = 0; ii < factors.size(); ii++)
+            {
+                for (auto jj = 0; jj < s; jj++)
+                {
+                    factors2[ii*s + jj] = factors[ii] * out[i*s + jj];
+                }
+            }
+
+            for (auto ii = i + 1; ii < s; ii++)
+            {
+                for (auto jj = 0; jj < s; jj++)
+                {
+                    out[ii*s + jj] = out[ii*s + jj] - factors2[(ii - i - 1)*s + jj];
+                }
+            }
+
+            std::vector<double> factors3((s - i)*s, 0);
+            for (auto ii = 0; ii < factors.size(); ii++)
+            {
+                for (auto jj = 0; jj < s; jj++)
+                {
+                    factors3[ii*s + jj] = factors[ii] * in[i*s + jj];
+                }
+            }
+            for (auto ii = i + 1; ii < s; ii++)
+            {
+                for (auto jj = 0; jj < s; jj++)
+                {
+                    in[ii*s + jj] = in[ii*s + jj] - factors3[(ii - i - 1)*s + jj];
+                }
+            }
+        }
+
+        for (int i = s - 2; i >= 0; i--)
+        {
+            std::vector<double> in1(s - i - 1);
+            for (auto j = i + 1; j < s; j++)
+            {
+                in1[j - i - 1] = in[i*s + j];
+            }
+
+            std::vector<double> out1((s - i - 1)*s);
+            for (int ii = i; ii < s-1; ii++)
+            {
+                for (int jj = 0; jj < s; jj++)
+                {
+                    out1[(ii - i)*s + jj] = out[ii*s + jj];
+                }
+            }
+            std::vector<double> in1xout1(out1.size());
+            for (auto ii = 0; ii < in1.size(); ii++)
+            {
+                for (auto jj = 0; jj < s; jj++)
+                {
+                    in1xout1[ii*s + jj] = in1[ii] * out1[ii*s + jj];
+                }
+            }
+        }
+
+        
+
+        return res;
+    }
+
     void direct_inv_6x6(const double A[36], const double B[6], double C[6])
     {
         double b_A[36];

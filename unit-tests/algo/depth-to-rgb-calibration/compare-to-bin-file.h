@@ -16,13 +16,13 @@
 
 
 template< typename F, typename D >
-bool is_equal_approximetly( F fx, D dx )
+bool is_equal_approximetly( F fx, D dx, bool print = true)
 {
     return dx == approx( fx );
 }
 
 template<>
-bool is_equal_approximetly<algo::k_matrix, algo::k_matrix>( algo::k_matrix fx, algo::k_matrix dx )
+bool is_equal_approximetly<algo::k_matrix, algo::k_matrix>( algo::k_matrix fx, algo::k_matrix dx, bool print)
 {
     return dx.fx == approx( fx.fx ) &&
         dx.fy == approx( fx.fy ) &&
@@ -31,7 +31,7 @@ bool is_equal_approximetly<algo::k_matrix, algo::k_matrix>( algo::k_matrix fx, a
 }
 
 template<>
-bool is_equal_approximetly<algo::rotation_in_angles, algo::rotation_in_angles>( algo::rotation_in_angles fx, algo::rotation_in_angles dx )
+bool is_equal_approximetly<algo::rotation_in_angles, algo::rotation_in_angles>( algo::rotation_in_angles fx, algo::rotation_in_angles dx, bool print)
 {
     return dx.alpha == approx( fx.alpha ) &&
         dx.beta == approx( fx.beta ) &&
@@ -39,7 +39,7 @@ bool is_equal_approximetly<algo::rotation_in_angles, algo::rotation_in_angles>( 
 }
 
 template<>
-bool is_equal_approximetly<algo::p_matrix, algo::p_matrix>( algo::p_matrix fx, algo::p_matrix dx )
+bool is_equal_approximetly<algo::p_matrix, algo::p_matrix>( algo::p_matrix fx, algo::p_matrix dx, bool print)
 {
     for( auto i = 0; i < 12; i++ )
     {
@@ -50,20 +50,86 @@ bool is_equal_approximetly<algo::p_matrix, algo::p_matrix>( algo::p_matrix fx, a
 }
 
 template<>
-bool is_equal_approximetly<algo::double2, algo::double2>( algo::double2 f, algo::double2 d )
+bool is_equal_approximetly<std::vector<double>, std::vector<double>>(std::vector<double> fx, std::vector<double> dx, bool print)
 {
-    return d.x == approx( f.x ) &&
-        d.y == approx( f.y );
+    if(fx.size() != dx.size())
+        return false;
+
+    for (auto i = 0; i < fx.size(); i++)
+    {
+        if (dx[i] != approx(fx[i]))
+            return false;
+    }
+    return true;
+}
+
+template< typename D>
+bool compare_and_trace(D val_matlab, D val_cpp, std::string const & compared)
+{
+    if (val_cpp != approx(val_matlab))
+    {
+        AC_LOG(DEBUG, "... " <<std::setprecision(16)<< compared << ":  {matlab} " << val_matlab << " !~ " << val_cpp << " {cpp}");
+        return false;
+    }
+    return true;
 }
 
 template<>
-bool is_equal_approximetly<algo::double3, algo::double3>( algo::double3 f, algo::double3 d )
+bool is_equal_approximetly<algo::double2, algo::double2>(algo::double2 f, algo::double2 d, bool print)
 {
-    return d.x == approx( f.x ) &&
-        d.y == approx( f.y ) &&
-        d.z == approx( f.z );
+    if (print)
+    {
+        bool ok = true;
+        ok &= compare_and_trace(d.x, f.x, "x");
+        ok &= compare_and_trace(d.y, f.y, "y");
+
+        return ok;
+    }
+
+    return d.x == approx(f.x) && d.y == approx(f.y);
 }
 
+template<>
+bool is_equal_approximetly<algo::double3, algo::double3>(algo::double3 f, algo::double3 d, bool print)
+{
+    if (print)
+    {
+        bool ok = true;
+        ok &= compare_and_trace(d.x, f.x, "x");
+        ok &= compare_and_trace(d.y, f.y, "y");
+        ok &= compare_and_trace(d.z, f.y, "z");
+
+        return ok;
+    }
+
+    return d.x == approx(f.x) && d.y == approx(f.y) && d.z == approx(f.z);
+}
+
+template<>
+bool is_equal_approximetly<algo::algo_calibration_registers, algo::algo_calibration_registers>(algo::algo_calibration_registers f, algo::algo_calibration_registers d, bool print)
+{
+    bool ok = true;
+
+    ok &= compare_and_trace(d.EXTLdsmXoffset, f.EXTLdsmXoffset, "Xoffset");
+    ok &= compare_and_trace(d.EXTLdsmXscale, f.EXTLdsmXscale, "Xscale");
+    ok &= compare_and_trace(d.EXTLdsmYoffset, f.EXTLdsmYoffset, "Yoffset");
+    ok &= compare_and_trace(d.EXTLdsmYscale, f.EXTLdsmYscale, "Yscale");
+
+    return ok;
+}
+
+template<>
+bool is_equal_approximetly<algo::los_shift_scaling, algo::los_shift_scaling>(algo::los_shift_scaling f, algo::los_shift_scaling d, bool print)
+{
+    bool ok = true;
+
+    ok &= compare_and_trace(d.los_scaling_x, f.los_scaling_x, "los_scaling_x");
+    ok &= compare_and_trace(d.los_scaling_y, f.los_scaling_y, "los_scaling_y");
+    ok &= compare_and_trace(d.los_shift_x, f.los_shift_x, "los_shift_x");
+    ok &= compare_and_trace(d.los_shift_y, f.los_shift_y, "los_shift_y");
+
+    return ok;
+}
 template< typename F, typename D >
 void print( size_t x, F f, D d, bool is_approx = false )
 {
@@ -121,19 +187,37 @@ void print<algo::p_matrix, algo::p_matrix>( size_t x, algo::p_matrix f, algo::p_
     AC_LOG( DEBUG, "... " << std::setprecision( 15 ) << std::fixed << x << " " << s.str() );
 }
 
+template<>
+void print<std::vector<double>, std::vector<double>>(size_t x, std::vector<double> f, std::vector<double> d, bool is_approx)
+{
+    std::ostringstream s;
+
+    for (auto i = 0; i < f.size(); i++)
+    {
+        if (!is_equal_approximetly(f[i], d[i]))
+        {
+            s << i << ": " << std::setprecision(15) << std::fixed << ": {matlab}" << f[i] << (is_approx ? " !~ " : " != ");
+            s << std::setprecision(15) << "{c++}" << d[i] << "\n";
+        }
+
+    }
+
+    AC_LOG(DEBUG, "... " << std::setprecision(15) << std::fixed << x << " " << s.str());
+}
+
 template<
     typename F, typename D,
     typename std::enable_if< !std::numeric_limits< D >::is_exact && !std::is_enum< D >::value, int >::type = 0
 >
-bool compare_t( F f, D d )
+bool compare_t( F f, D d , bool print = true)
 {
-    return is_equal_approximetly( f, d );
+    return is_equal_approximetly( f, d, print);
 }
 
 template< typename F, typename D,
     typename std::enable_if< std::numeric_limits< D >::is_exact || std::is_enum< D >::value, int >::type = 0
 >
-bool compare_t( F f, D d )
+bool compare_t( F f, D d, bool print = false)
 {
     return f == d;
 }
@@ -149,7 +233,7 @@ bool compare_same_vectors( std::vector< F > const & matlab, std::vector< D > con
     {
         F fx = matlab[x];
         D dx = cpp[x];
-        if( !compare_t( fx, dx ) )
+        if( !compare_t( fx, dx, false ) )
         {
             if( ++n_mismatches <= 5 )
                 print( x, fx, dx, std::is_floating_point< F >::value );
@@ -166,13 +250,14 @@ bool compare_to_bin_file(
     std::string const & scene_dir,
     std::string const & filename,
     size_t width, size_t height,
+    size_t size,
     bool( *compare_vectors )(std::vector< F > const &, std::vector< D > const &) = nullptr
 )
 {
     TRACE( "Comparing " << filename << " ..." );
     bool ok = true;
-    auto bin = read_vector_from< F >( bin_dir( scene_dir ) + filename );
-    if( bin.size() != width * height )
+    auto bin = read_vector_from< F >(bin_dir(scene_dir) + filename, width, height);
+    if( bin.size() != size)
         TRACE( filename << ": {matlab size}" << bin.size() << " != {width}" << width << "x" << height << "{height}" ), ok = false;
     if( vec.size() != bin.size() )
         TRACE( filename << ": {c++ size}" << vec.size() << " != " << bin.size() << "{matlab size}" ), ok = false;
@@ -196,6 +281,18 @@ template< typename F, typename D >  // F=in bin; D=in memory
 bool compare_to_bin_file(
     std::vector< D > const & vec,
     std::string const & scene_dir,
+    std::string const & filename,
+    size_t width, size_t height,
+    bool(*compare_vectors)(std::vector< F > const &, std::vector< D > const &) = nullptr
+)
+{
+    return compare_to_bin_file(vec, scene_dir, filename, width, height, width*height, compare_vectors);
+}
+
+template< typename F, typename D >  // F=in bin; D=in memory
+bool compare_to_bin_file(
+    std::vector< D > const & vec,
+    std::string const & scene_dir,
     const char * prefix,
     size_t width, size_t height,
     const char * suffix,
@@ -208,6 +305,7 @@ bool compare_to_bin_file(
         height, width,
         compare_vectors);
 }
+
 
 bool get_calib_from_raw_data(
     algo::calib& calib,
@@ -242,17 +340,6 @@ bool get_calib_from_raw_data(
     calib.rot = rotation;
     calib.trans = translation;
     
-    return true;
-}
-
-template< typename D>
-bool compare_and_trace( D val_matlab, D val_cpp, std::string const & compared )
-{
-    if( val_cpp != approx( val_matlab ) )
-    {
-        AC_LOG( DEBUG, "... " << compared << ":  {matlab} " << val_matlab << " !~ " << val_cpp << " {cpp}" );
-        return false;
-    }
     return true;
 }
 
@@ -344,5 +431,5 @@ bool compare_to_bin_file(
     bool ok = true;
     auto obj_matlab = read_from< D >(bin_dir(scene_dir) + filename);
 
-    return obj_matlab == obj_cpp;
+    return compare_t(obj_matlab, obj_cpp);
 }

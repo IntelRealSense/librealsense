@@ -20,6 +20,7 @@ namespace depth_to_rgb_calibration {
     double get_norma(const std::vector<double3>& vec);
     double rad_to_deg(double rad); 
     double deg_to_rad(double deg);
+    std::vector<double> direct_inv(std::vector<double> A, uint32_t s);
     void direct_inv_2x2(const double A[4], const double B[2], double C[2]);
     void direct_inv_6x6(const double A[36], const double B[6], double C[6]);
     void pinv_3x3( const double in[9], double out[9] );  // in pinv_3x3.cpp

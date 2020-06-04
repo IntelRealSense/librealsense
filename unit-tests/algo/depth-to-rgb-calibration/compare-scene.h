@@ -165,7 +165,8 @@ void compare_scene( std::string const & scene_dir )
                 data.cycle_data_p.relevant_pixels_image_rot,
                 scene_dir,
                 bin_file("relevantPixelnImage_rot", data.cycle, z_w, z_h, "uint8_00") + ".bin",
-                z_w, z_h, compare_same_vectors));
+                z_w, z_h, 
+                compare_same_vectors));
 
             CHECK(compare_to_bin_file< algo::los_shift_scaling >(
                 data.cycle_data_p.dsm_pre_process_data.last_los_error,
@@ -174,13 +175,63 @@ void compare_scene( std::string const & scene_dir )
 
             CHECK(compare_to_bin_file< algo::double3 >(
                 data.cycle_data_p.dsm_pre_process_data.vertices_orig,
-                scene_dir, bin_file("verticesOrig", data.cycle, 3, md.n_relevant_pixels, "double_00") + ".bin",
+                scene_dir, 
+                bin_file("verticesOrig", data.cycle, 3, md.n_relevant_pixels, "double_00") + ".bin",
                 md.n_relevant_pixels, 1, compare_same_vectors));
 
             CHECK(compare_to_bin_file< algo::double2 >(
-                data.cycle_data_p.dsm_pre_process_data.los_orig, scene_dir,
+                data.cycle_data_p.dsm_pre_process_data.los_orig, 
+                scene_dir,
                 bin_file("losOrig", data.cycle, 2, md.n_relevant_pixels, "double_00") + ".bin",
-                md.n_relevant_pixels, 1, compare_same_vectors));
+                md.n_relevant_pixels, 1, 
+                compare_same_vectors));
+
+            CHECK(compare_to_bin_file< double >(
+                data.cycle_data_p.errL2,
+                scene_dir,
+                bin_file("errL2", data.cycle, 1, data.cycle_data_p.errL2.size(), "double_00") + ".bin",
+                data.cycle_data_p.errL2.size(), 1, compare_same_vectors));
+
+            CHECK(compare_to_bin_file< algo::double2 >(
+                data.cycle_data_p.focal_scaling,
+                scene_dir,
+                bin_file("focalScaling", data.cycle, 2, 1, "double_00.bin")));
+
+            CHECK(compare_to_bin_file< std::vector<double>>(
+                data.cycle_data_p.sg_mat,
+                scene_dir,
+                bin_file("sgMat", data.cycle, data.cycle_data_p.sg_mat[0].size(), data.cycle_data_p.sg_mat.size(), "double_00") + ".bin",
+                data.cycle_data_p.sg_mat.size(), data.cycle_data_p.sg_mat[0].size(),
+                data.cycle_data_p.sg_mat.size(),
+                compare_same_vectors));
+
+            CHECK(compare_to_bin_file< double >(
+                    data.cycle_data_p.sg_mat_tag_x_sg_mat,
+                    scene_dir,
+                    bin_file("sg_mat_tag_x_sg_mat", data.cycle, 1, data.cycle_data_p.sg_mat_tag_x_sg_mat.size(), "double_00") + ".bin",
+                    data.cycle_data_p.sg_mat_tag_x_sg_mat.size(), 1, compare_same_vectors));
+
+            CHECK(compare_to_bin_file< double >(
+                data.cycle_data_p.sg_mat_tag_x_err_l2,
+                scene_dir,
+                bin_file("sg_mat_tag_x_err_l2", data.cycle, 1, data.cycle_data_p.sg_mat_tag_x_err_l2.size(), "double_00") + ".bin",
+                data.cycle_data_p.sg_mat_tag_x_err_l2.size(), 1, compare_same_vectors));
+
+            CHECK(compare_to_bin_file< double >(
+                data.cycle_data_p.quad_coef,
+                scene_dir,
+                bin_file("quadCoef", data.cycle, 1, data.cycle_data_p.quad_coef.size(), "double_00") + ".bin",
+                data.cycle_data_p.quad_coef.size(), 1, compare_same_vectors));
+
+            CHECK(compare_to_bin_file< algo::double2 >(
+                data.cycle_data_p.opt_scaling,
+                scene_dir,
+                bin_file("optScaling", data.cycle, 1, 2, "double_00.bin")));
+
+            CHECK(compare_to_bin_file< algo::double2 >(
+                data.cycle_data_p.new_los_scaling,
+                scene_dir,
+                bin_file("newlosScaling", data.cycle, 1, 2, "double_00.bin")));
 
             CHECK(compare_to_bin_file< algo::double2 >(
                 std::vector< algo::double2 >(1, { data.cycle_data_p.dsm_params_cand.h_scale, data.cycle_data_p.dsm_params_cand.v_scale }),
@@ -189,20 +240,24 @@ void compare_scene( std::string const & scene_dir )
                 1, 1,
                 compare_same_vectors));
 
-            CHECK(compare_to_bin_file< algo::algo_calibration_registers >(
+           /* CHECK(compare_to_bin_file< algo::algo_calibration_registers >(
                 data.cycle_data_p.dsm_regs_cand,
                 scene_dir,
-                bin_file("dsmRegsCand", data.cycle, 4, 1, "double_00.bin")));
+                bin_file("dsmRegsCand", data.cycle, 4, 1, "double_00.bin")));*/
 
             CHECK(compare_to_bin_file< algo::double2 >(
-                data.cycle_data_p.los, scene_dir,
-                bin_file("new_los", data.cycle, 2, md.n_edges, "double_00") + ".bin",
-                md.n_edges, 1, compare_same_vectors));
+                data.cycle_data_p.los_orig, 
+                scene_dir,
+                bin_file("orig_los", data.cycle, 2, md.n_edges, "double_00") + ".bin",
+                md.n_edges, 1, 
+                compare_same_vectors));
 
             CHECK(compare_to_bin_file< algo::double2 >(
-                data.cycle_data_p.dsm, scene_dir,
+                data.cycle_data_p.dsm, 
+                scene_dir,
                 bin_file("dsm", data.cycle, 2, md.n_edges, "double_00") + ".bin",
-                md.n_edges, 1, compare_same_vectors));
+                md.n_edges, 1, 
+                compare_same_vectors));
 
             CHECK(compare_to_bin_file< algo::double3 >(
                 data.cycle_data_p.vertices,
