@@ -10,6 +10,77 @@
 #include "log.h"
 
 
+namespace {
+    template< class T >
+    class env_var
+    {
+        bool _is_set;
+        T _value;
+
+    public:
+        template< class X >
+        struct string_to
+        {
+        };
+
+        template<>
+        struct string_to< std::string >
+        {
+            static std::string convert( std::string const & s )
+            {
+                return s;
+            }
+        };
+
+        template<>
+        struct string_to< int >
+        {
+            static int convert( std::string const & s )
+            {
+                char * p_end;
+                auto v = std::strtol( s.data(), &p_end, 10 );
+                if( errno == ERANGE )
+                    throw std::out_of_range( "out of range" );
+                if( p_end != s.data() + s.length() )
+                    throw std::invalid_argument( "extra characters" );
+                return v;
+            }
+        };
+
+        env_var( char const * name, T default_value, std::function< bool( T ) > checker = nullptr )
+        {
+            auto lpsz = getenv( name );
+            _is_set = (lpsz != nullptr);
+            if( _is_set )
+            {
+                try
+                {
+                    _value = string_to< T >::convert( lpsz );
+                    if( checker && ! checker( _value ) )
+                        throw std::invalid_argument( "does not check" );
+                }
+                catch( std::exception const & e )
+                {
+                    AC_LOG( ERROR,
+                            "Environment variable \"" << name << "\" is set, but its value (\""
+                                                      << lpsz << "\") is invalid (" << e.what()
+                                                      << "); using default of \"" << default_value
+                                                      << "\"" );
+                    _is_set = false;
+                }
+            }
+            if( !_is_set )
+                _value = default_value;
+        }
+
+        bool is_set() const { return _is_set; }
+        T value() const { return _value; }
+
+        operator T() const { return _value; }
+    };
+}
+
+
 namespace librealsense {
 namespace ivcam2 {
 
@@ -221,7 +292,9 @@ namespace ivcam2 {
         command cmd{ GET_SPECIAL_FRAME, 0x5F, 1 };  // 5F = SF = Special Frame, for easy recognition
         auto res = _hwm.send( cmd );
         // Start a timer: enable retries if something's wrong with the special frame
-        _retrier = retrier::start( *this, std::chrono::seconds( 2 ) );
+        int n_seconds
+            = env_var< int >( "RS2_AC_SF_RETRY_SECONDS", 2, []( int n ) { return n > 0; } );
+        _retrier = retrier::start( *this, std::chrono::seconds( n_seconds ) );
     }
 
 
@@ -367,7 +440,10 @@ namespace ivcam2 {
                         else
                         {
                             AC_LOG( DEBUG, "Triggering another cycle for calibration..." );
-                            _recycler = retrier::start( *this, std::chrono::seconds( 10 ) );
+                            int n_seconds = env_var< int >( "RS2_AC_INVALID_RETRY_SECONDS",
+                                                            60,
+                                                            []( int n ) { return n > 0; } );
+                            _recycler = retrier::start( *this, std::chrono::seconds( n_seconds ) );
                         }
                         break;
                     case RS2_CALIBRATION_FAILED:
