@@ -19,7 +19,7 @@ namespace ivcam2 {
     /*
         This is the triggering code for depth-to-RGB-calibration
     */
-    class ac_trigger
+    class ac_trigger : public std::enable_shared_from_this< ac_trigger >
     {
         rs2::frameset _sf;
         rs2::frame _cf, _pcf;  // Keep the last and previous frame!
@@ -47,6 +47,8 @@ namespace ivcam2 {
         class retrier;
         std::shared_ptr< retrier > _retrier;
         std::shared_ptr< retrier > _recycler;
+        std::shared_ptr< retrier > _next_trigger;
+        rs2_calibration_status _last_status_sent;
 
     public:
         /* Depth frame processing: detect special frames
@@ -103,9 +105,19 @@ namespace ivcam2 {
         ac_trigger( l500_device & dev, hw_monitor & hwm );
         ~ac_trigger();
 
+        // Wait a certain amount of time before the next AC happens. Can only happen if not already
+        // active!
+        void trigger_next_ac( unsigned n_seconds );
+
+        // Once triggered, we may want to cancel it... like when stopping the stream
+        void cancel_next_ac();
+
+        // If we're active, no new triggers will be accepted until we reach a final state
+        // (successful or failed)
+        bool is_active() const { return _n_cycles > 0; }
+
+        // Start AC activity -- after this, is_active() returns true
         void trigger_special_frame( bool is_retry = false );
-        bool is_processing() const { return _is_processing; }
-        bool is_expecting_special_frame() const { return !!_retrier; }
 
         rs2_extrinsics const & get_extrinsics() const { return _extr; }
         rs2_intrinsics const & get_intrinsics() const { return _intr; }
@@ -121,11 +133,16 @@ namespace ivcam2 {
         {
             _callbacks.push_back( cb );
         }
+
     private:
+        bool is_processing() const { return _is_processing; }
+        bool is_expecting_special_frame() const { return !!_retrier; }
+
         std::vector< callback > _callbacks;
 
-        void call_back( rs2_calibration_status status ) const
+        void call_back( rs2_calibration_status status )
         {
+            _last_status_sent = status;
             for( auto && cb : _callbacks )
                 cb( status );
         }

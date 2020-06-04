@@ -364,13 +364,16 @@ namespace librealsense
     void l500_device::trigger_device_calibration( rs2_calibration_type type )
     {
         if( type != RS2_CALIBRATION_DEPTH_TO_RGB )
-            throw librealsense::not_implemented_exception(
+            throw not_implemented_exception(
                 to_string() << "unsupported calibration type (" << type << ")" );
 
         if( !_autocal )
-            throw librealsense::not_implemented_exception(
+            throw not_implemented_exception(
                 to_string() << "your firmware version (" << _fw_version
                             << ") does not support depth-to-rgb calibration" );
+
+        if( _autocal->is_active() )
+            throw wrong_api_call_sequence_exception( "calibration is already active" );
 
         _autocal->trigger_special_frame();
     }

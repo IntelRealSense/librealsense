@@ -237,6 +237,7 @@ namespace ivcam2 {
         , _dev( dev )
         , _from_profile( nullptr )
         , _to_profile( nullptr )
+        , _n_cycles( 0 )
     {
         bool to_stdout = true;
         static ac_logger one_logger(
@@ -260,13 +261,13 @@ namespace ivcam2 {
     void ac_trigger::trigger_special_frame( bool is_retry )
     {
         _retrier.reset();
-        if( _is_processing )
-        {
-            AC_LOG( ERROR, "Failed to trigger_special_frame: auto-calibration is already in-process" );
-            return;
-        }
         if( is_retry )
         {
+            if( ! is_active() )
+            {
+                AC_LOG( ERROR, "Failed to trigger_special_frame( retry): AC is not active" );
+                return;
+            }
             if( _recycler )
             {
                 // This is another cycle of AC, after we've woken up from some time after
@@ -280,14 +281,20 @@ namespace ivcam2 {
                 call_back( RS2_CALIBRATION_FAILED );
                 return;
             }
-            AC_LOG( DEBUG, "Sending GET_SPECIAL_FRAME (cycle " << (_n_cycles + 1) << " retry " << _n_retries << ")" );
+            AC_LOG( DEBUG, "Sending GET_SPECIAL_FRAME (cycle " << _n_cycles << " retry " << _n_retries << ")" );
             call_back( RS2_CALIBRATION_RETRY );
         }
         else
         {
+            if( is_active() )
+            {
+                AC_LOG( ERROR, "Failed to trigger_special_frame: AC is already active" );
+                return;
+            }
             _n_retries = 0;
-            _n_cycles = 0;
-            AC_LOG( DEBUG, "Sending GET_SPECIAL_FRAME (cycle 1)" );
+            _n_cycles = 1;          // now active
+            _next_trigger.reset();  // don't need to trigger any more
+            AC_LOG( DEBUG, "Sending GET_SPECIAL_FRAME (cycle 1); now active..." );
         }
         command cmd{ GET_SPECIAL_FRAME, 0x5F, 1 };  // 5F = SF = Special Frame, for easy recognition
         auto res = _hwm.send( cmd );
@@ -298,7 +305,7 @@ namespace ivcam2 {
     }
 
 
-    void ac_trigger::set_special_frame( rs2::frameset const& fs )
+    void ac_trigger::set_special_frame( rs2::frameset const & fs )
     {
         AC_LOG( DEBUG, "special frame received :)" );
         // Notify of the special frame -- mostly for validation team so they know to expect a frame drop...
@@ -415,8 +422,8 @@ namespace ivcam2 {
                     _from_profile = algo.get_from_profile();
                     _to_profile = algo.get_to_profile();
 
-                    auto status =
-                        algo.optimize( [this]( rs2_calibration_status status ) { call_back( status ); } );
+                    auto status = algo.optimize(
+                        [this]( rs2_calibration_status status ) { call_back( status ); } );
                     switch( status )
                     {
                     case RS2_CALIBRATION_SUCCESSFUL:
@@ -431,7 +438,7 @@ namespace ivcam2 {
                         break;
                     case RS2_CALIBRATION_RETRY:
                         // We want to trigger a special frame after a certain longer delay
-                        if( ++_n_cycles > 4 )
+                        if( ++_n_cycles > 5 )
                         {
                             // ... but we've tried too many times
                             AC_LOG( ERROR, "Too many cycles of calibration; quitting" );
@@ -441,8 +448,8 @@ namespace ivcam2 {
                         {
                             AC_LOG( DEBUG, "Triggering another cycle for calibration..." );
                             int n_seconds = env_var< int >( "RS2_AC_INVALID_RETRY_SECONDS",
-                                                            60,
-                                                            []( int n ) { return n > 0; } );
+                                60,
+                                []( int n ) { return n > 0; } );
                             _recycler = retrier::start( *this, std::chrono::seconds( n_seconds ) );
                         }
                         break;
@@ -469,8 +476,46 @@ namespace ivcam2 {
                     AC_LOG( ERROR, "unknown exception in AC!!!" );
                     call_back( RS2_CALIBRATION_FAILED );
                 }
-                reset();  // Must happen before any retries
+                reset();
+                switch( _last_status_sent )
+                {
+                case RS2_CALIBRATION_FAILED:
+                case RS2_CALIBRATION_SUCCESSFUL:
+                case RS2_CALIBRATION_NOT_NEEDED:
+                    // final state -- trigger the next AC
+                    _n_cycles = 0;  // now inactive
+                    AC_LOG( DEBUG, "Now inactive" );
+                    if( auto n_seconds = env_var< int >( "RS2_AC_TRIGGER_SECONDS",
+                                                         600,  // 10 minutes since last
+                                                         []( int n ) { return n >= 0; } ) )
+                    {
+                        trigger_next_ac( n_seconds );
+                    }
+                    else
+                    {
+                        AC_LOG( DEBUG, "RS2_AC_TRIGGER_SECONDS is 0; no next AC trigger" );
+                    }
+                    break;
+                }
             } );
+    }
+
+    void ac_trigger::trigger_next_ac( unsigned n_seconds )
+    {
+        if( is_active() )
+            throw wrong_api_call_sequence_exception( "AC is already active" );
+        _next_trigger = retrier::start( *this, std::chrono::seconds( n_seconds ));
+
+        AC_LOG( DEBUG, "AC will be triggered in " << n_seconds << " seconds..." );
+    }
+
+    void ac_trigger::cancel_next_ac()
+    {
+        if( _next_trigger )
+        {
+            AC_LOG( DEBUG, "Cancelling next AC trigger" );
+            _next_trigger.reset();
+        }
     }
 
     void ac_trigger::reset()
