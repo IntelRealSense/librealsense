@@ -34,7 +34,7 @@ namespace librealsense
         std::vector<uint8_t> get_imu_eeprom_raw() const;
         lazy<std::vector<uint8_t>> _imu_eeprom_raw;
 
-        std::shared_ptr<mm_calib_handler>        _mm_calib;
+        std::shared_ptr<mm_calib_handler>        _mm_calib = nullptr;
         std::shared_ptr<lazy<ds::imu_intrinsic>> _accel_intrinsic;
         std::shared_ptr<lazy<ds::imu_intrinsic>> _gyro_intrinsic;
         std::shared_ptr<lazy<rs2_extrinsics>>   _depth_to_imu;                  // Mechanical installation pose

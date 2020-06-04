@@ -98,7 +98,19 @@ namespace librealsense
         // read imu calibration table on L515
         // READ_TABLE 0x243 0
         command cmd(ivcam2::READ_TABLE, 0x243, 0);
-        return _hw_monitor->send(cmd);
+
+        std::vector<uint8_t> res;
+
+        try
+        {
+            res = _hw_monitor->send(cmd);
+        }
+        catch (std::exception &e) {
+            LOG_WARNING(e.what());
+        }
+        catch (...) {}
+
+        return res;
     }
 
     std::shared_ptr<synthetic_sensor> l500_motion::create_hid_device(std::shared_ptr<context> ctx, const std::vector<platform::hid_device_info>& all_hid_infos)
@@ -132,12 +144,11 @@ namespace librealsense
         //  Motion intrinsic calibration presents is a prerequisite for motion correction.
         try
         {
-            // Writing to log to dereference underlying structure
-            LOG_INFO("Accel Sensitivity:" << (**_accel_intrinsic).sensitivity);
-            LOG_INFO("Gyro Sensitivity:" << (**_gyro_intrinsic).sensitivity);
-
-            mm_correct_opt = std::make_shared<enable_motion_correction>(hid_ep.get(), option_range{ 0, 1, 1, 1 });
-            hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION, mm_correct_opt);
+            if (_mm_calib)
+            {
+                mm_correct_opt = std::make_shared<enable_motion_correction>(hid_ep.get(), option_range{ 0, 1, 1, 1 });
+                hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION, mm_correct_opt);
+            }
         }
         catch (...) {}
 
@@ -163,12 +174,15 @@ namespace librealsense
     {
         _imu_eeprom_raw = [this]() { return get_imu_eeprom_raw(); };
 
-        _mm_calib = std::make_shared<mm_calib_handler>(*_imu_eeprom_raw);
+        if (!_imu_eeprom_raw->empty())
+        {
+            _mm_calib = std::make_shared<mm_calib_handler>(*_imu_eeprom_raw);
 
-        _accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
-        _gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
-        // use predefined values extrinsics
-        _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
+            _accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
+            _gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
+            // use predefined values extrinsics
+            _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
+        }
 
         // Make sure all MM streams are positioned with the same extrinsics
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_accel_stream, _depth_to_imu);
