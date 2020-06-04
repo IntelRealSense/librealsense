@@ -1,6 +1,7 @@
 #include <glad/glad.h>
 #include "calibration-model.h"
 #include "model-views.h"
+#include "os.h"
 
 #include "../src/ds5/ds5-private.h"
 
@@ -21,7 +22,7 @@ calibration_model::calibration_model(rs2::device dev) : dev(dev)
 
 void calibration_model::draw_float(std::string name, float& x, const float& orig, bool& changed)
 {
-    if (x != orig) ImGui::PushStyleColor(ImGuiCol_FrameBg, regular_blue);
+    if (abs(x - orig) > 0.00001) ImGui::PushStyleColor(ImGuiCol_FrameBg, regular_blue);
     else ImGui::PushStyleColor(ImGuiCol_FrameBg, black);
     if (ImGui::DragFloat(std::string(to_string() << "##" << name).c_str(), &x, 0.001f))
     {
@@ -119,14 +120,111 @@ void calibration_model::update(ux_window& window, std::string& error_message)
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
         ImGui::SetCursorPosX(w / 2 - 260 / 2);
-        ImGui::Button(u8"\uF07C Load...", ImVec2(70, 30)); 
+        if (ImGui::Button(u8"\uF07C Load...", ImVec2(70, 30)))
+        {
+            try
+            {
+                if (auto fn = file_dialog_open(file_dialog_mode::open_file, "Calibration JSON\0*.json\0", nullptr, nullptr))
+                {
+                    config_file cf(fn);
+                    table->baseline = cf.get("baseline");
+
+                    auto load_float3x4 = [&](std::string name, librealsense::float3x3& m){
+                        m.x.x = cf.get(std::string(to_string() << name << ".x.x").c_str());
+                        m.x.y = cf.get(std::string(to_string() << name << ".x.y").c_str());
+                        m.x.z = cf.get(std::string(to_string() << name << ".x.z").c_str());
+
+                        m.y.x = cf.get(std::string(to_string() << name << ".y.x").c_str());
+                        m.y.y = cf.get(std::string(to_string() << name << ".y.y").c_str());
+                        m.y.z = cf.get(std::string(to_string() << name << ".y.z").c_str());
+
+                        m.z.x = cf.get(std::string(to_string() << name << ".z.x").c_str());
+                        m.z.y = cf.get(std::string(to_string() << name << ".z.y").c_str());
+                        m.z.z = cf.get(std::string(to_string() << name << ".z.z").c_str());
+                    };
+
+                    load_float3x4("intrinsic_left", table->intrinsic_left);
+                    load_float3x4("intrinsic_right", table->intrinsic_right);
+                    load_float3x4("world2left_rot", table->world2left_rot);
+                    load_float3x4("world2right_rot", table->world2right_rot);
+                    
+                    for (int i = 0; i < librealsense::ds::max_ds5_rect_resolutions; i++)
+                    {
+                        auto xy = librealsense::ds::resolutions_list[(librealsense::ds::ds5_rect_resolutions)i];
+                        int w = xy.x; int h = xy.y;
+
+                        table->rect_params[i].x = cf.get(std::string(to_string() << "rectified." << i << ".fx").c_str());
+                        table->rect_params[i].y = cf.get(std::string(to_string() << "rectified." << i << ".fy").c_str());
+                        
+                        table->rect_params[i].z = cf.get(std::string(to_string() << "rectified." << i << ".ppx").c_str());
+                        table->rect_params[i].w = cf.get(std::string(to_string() << "rectified." << i << ".ppy").c_str());
+                    }
+                }
+
+                changed = true;
+            }
+            catch (const std::exception& ex)
+            {
+                error_message = ex.what();
+                ImGui::CloseCurrentPopup();
+            }
+        }
         if (ImGui::IsItemHovered())
         {
             window.link_hovered();
             ImGui::SetTooltip("%s", "Load calibration from file");
         }
         ImGui::SameLine();
-        ImGui::Button(u8"\uF0C7 Save As...", ImVec2(100, 30)); 
+        if (ImGui::Button(u8"\uF0C7 Save As...", ImVec2(100, 30)))
+        {
+            try 
+            {
+                if (auto fn = file_dialog_open(file_dialog_mode::save_file, "Calibration JSON\0*.json\0", nullptr, nullptr))
+                {
+                    config_file cf(fn);
+                    cf.set("baseline", table->baseline);
+
+                    auto save_float3x4 = [&](std::string name, librealsense::float3x3& m){
+                        cf.set(std::string(to_string() << name << ".x.x").c_str(), m.x.x);
+                        cf.set(std::string(to_string() << name << ".x.y").c_str(), m.x.y);
+                        cf.set(std::string(to_string() << name << ".x.z").c_str(), m.x.z);
+
+                        cf.set(std::string(to_string() << name << ".y.x").c_str(), m.y.x);
+                        cf.set(std::string(to_string() << name << ".y.y").c_str(), m.y.y);
+                        cf.set(std::string(to_string() << name << ".y.z").c_str(), m.y.z);
+
+                        cf.set(std::string(to_string() << name << ".z.x").c_str(), m.z.x);
+                        cf.set(std::string(to_string() << name << ".z.y").c_str(), m.z.y);
+                        cf.set(std::string(to_string() << name << ".z.z").c_str(), m.z.z);
+                    };
+
+                    save_float3x4("intrinsic_left", table->intrinsic_left);
+                    save_float3x4("intrinsic_right", table->intrinsic_right);
+                    save_float3x4("world2left_rot", table->world2left_rot);
+                    save_float3x4("world2right_rot", table->world2right_rot);
+                    
+                    for (int i = 0; i < librealsense::ds::max_ds5_rect_resolutions; i++)
+                    {
+                        auto xy = librealsense::ds::resolutions_list[(librealsense::ds::ds5_rect_resolutions)i];
+                        int w = xy.x; int h = xy.y;
+
+                        cf.set(std::string(to_string() << "rectified." << i << ".width").c_str(), w);
+                        cf.set(std::string(to_string() << "rectified." << i << ".height").c_str(), h);
+
+                        cf.set(std::string(to_string() << "rectified." << i << ".fx").c_str(), table->rect_params[i].x);
+                        cf.set(std::string(to_string() << "rectified." << i << ".fy").c_str(), table->rect_params[i].y);
+
+                        cf.set(std::string(to_string() << "rectified." << i << ".ppx").c_str(), table->rect_params[i].z);
+                        cf.set(std::string(to_string() << "rectified." << i << ".ppy").c_str(), table->rect_params[i].w);
+                    }
+                }
+            }
+            catch (const std::exception& ex)
+            {
+                error_message = ex.what();
+                ImGui::CloseCurrentPopup();
+            }
+        }
         if (ImGui::IsItemHovered())
         {
             window.link_hovered();
@@ -135,7 +233,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
         ImGui::SameLine();
         if (_accept)
         {
-            if (ImGui::Button(u8"\uF275 Restore Factory", ImVec2(110, 30)))
+            if (ImGui::Button(u8"\uF275 Restore Factory", ImVec2(115, 30)))
             {
                 try
                 {
@@ -161,7 +259,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
             ImGui::PushStyleColor(ImGuiCol_Text, grey);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, grey);
 
-            ImGui::Button(u8"\uF275 Restore Factory", ImVec2(110, 30));
+            ImGui::Button(u8"\uF275 Restore Factory", ImVec2(115, 30));
             if (ImGui::IsItemHovered())
             {
                 ImGui::SetTooltip("%s", "Write selected calibration table to the device. For advanced users");
@@ -265,23 +363,27 @@ void calibration_model::update(ux_window& window, std::string& error_message)
         }
         ImGui::SameLine();
 
-        if (_accept)
+        auto streams = dev.query_sensors()[0].get_active_streams();
+        if (_accept && streams.size())
         {
             if (ImGui::Button(u8"\uF2DB  Write Table", ImVec2(120, 25)))
             {
                 try
                 {
+                    auto actual_data = _calibration.data() + sizeof(librealsense::ds::table_header);
+                    auto actual_data_size = _calibration.size() - sizeof(librealsense::ds::table_header);
+                    auto crc = librealsense::calc_crc32(actual_data, actual_data_size);
+                    table->header.crc32 = crc;
                     dev.as<rs2::auto_calibrated_device>().set_calibration_table(_calibration);
                     dev.as<rs2::auto_calibrated_device>().write_calibration();
                     _original = _calibration;
+                    ImGui::CloseCurrentPopup();
                 }
                 catch (const std::exception& ex)
                 {
                     error_message = ex.what();
                     ImGui::CloseCurrentPopup();
                 }
-                
-                ImGui::CloseCurrentPopup();
             }
             if (ImGui::IsItemHovered())
             {
@@ -303,7 +405,6 @@ void calibration_model::update(ux_window& window, std::string& error_message)
             ImGui::PopStyleColor(2);
         }
 
-        auto streams = dev.query_sensors()[0].get_active_streams();
         if (changed && streams.size())
         {
             try
