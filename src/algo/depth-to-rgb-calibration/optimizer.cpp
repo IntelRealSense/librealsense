@@ -1515,7 +1515,8 @@ size_t optimizer::optimize_p
         auto res = calc_cost_and_grad(_z, _yuy, new_rgb_calib, curr.curr_p_mat, data);
         curr.cost = res.first;
         curr.calib_gradients = res.second;
-        AC_LOG( DEBUG, "    ------>     " << n_iterations << ": cost= " << AC_D_PREC << curr.cost );
+        AC_LOG( DEBUG, std::setw( 3 ) << std::right << n_iterations << std::left
+                           << " cost= " << AC_D_PREC << curr.cost );
 
         if (data)
         {
@@ -1536,7 +1537,7 @@ size_t optimizer::optimize_p
         auto norm = (params_new.curr_p_mat - curr.curr_p_mat).get_norma();
         if (norm < _params.min_rgb_mat_delta)
         {
-            AC_LOG(DEBUG, "... {normal(new-curr)} " << norm << " < " << _params.min_rgb_mat_delta << " {min_rgb_mat_delta}  -->  stopping");
+            AC_LOG(DEBUG, "    {normal(new-curr)} " << norm << " < " << _params.min_rgb_mat_delta << " {min_rgb_mat_delta}  -->  stopping");
             break;
         }
 
@@ -1545,13 +1546,13 @@ size_t optimizer::optimize_p
         delta = abs(delta);
         if (delta < _params.min_cost_delta)
         {
-            AC_LOG(DEBUG, "... delta < " << _params.min_cost_delta << "  -->  stopping");
+            AC_LOG(DEBUG, "    delta < " << _params.min_cost_delta << "  -->  stopping");
             break;
         }
 
         if (++n_iterations >= _params.max_optimization_iters)
         {
-            AC_LOG(DEBUG, "... exceeding max iterations  -->  stopping");
+            AC_LOG(DEBUG, "    exceeding max iterations  -->  stopping");
             break;
         }
 
@@ -1559,14 +1560,9 @@ size_t optimizer::optimize_p
         new_rgb_calib = decompose_p_mat(params_new.curr_p_mat);
     }
 
-    if (!n_iterations)
-    {
-        AC_LOG(INFO, "Calibration not necessary; nothing done");
-    }
-    else
-    {
-        AC_LOG(INFO, "Calibration finished after " << n_iterations << " iterations; original cost= " << params_curr.cost << "  optimized cost= " << params_new.cost);
-    }
+    AC_LOG( INFO,
+            "    cycle " << data->cycle << " finished after " << n_iterations << " iterations; cost "
+                         << AC_D_PREC << params_curr.cost << "  -->  " << params_new.cost );
     new_rgb_calib = decompose_p_mat(params_new.curr_p_mat);
     auto orig_rgb_calib = decompose_p_mat(params_curr.curr_p_mat);
     new_z_k = get_new_z_intrinsics_from_new_calib(_z.orig_intrinsics, new_rgb_calib, orig_rgb_calib);
@@ -1599,13 +1595,13 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
     double last_cost = _params_curr.cost;
 
     auto n_iterations = optimize_p(_params_curr, new_params, new_calib, new_k_depth, cb, &data);
-    AC_LOG(DEBUG, n_iterations << ": Cost = " << AC_D_PREC << new_params.cost);
 
     _z.orig_vertices = _z.vertices;
     rs2_dsm_params_double new_dsm_params = _z.orig_dsm_params;
     while (cycle < _params.max_K2DSM_iters)
     {
         data.cycle = ++cycle;
+        AC_LOG( DEBUG, "cycle " << cycle );
 
         std::vector<double3> new_vertices;
         auto dsm_candidate = _k_to_DSM->convert_new_k_to_DSM(_z.orig_intrinsics, new_k_depth, _z, new_vertices, &data);
@@ -1635,7 +1631,9 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
         last_cost = new_params.cost;
     }
    
-    AC_LOG(INFO, "Calibration converged; cost= " << new_params.cost);
+    AC_LOG( INFO,
+            "Calibration converged; cost " << AC_D_PREC << _params_curr.cost << "  -->  "
+                                           << new_params.cost );
 
     _final_dsm_params = clip_ac_scaling(_z.orig_dsm_params, new_dsm_params);
     _final_calibration = new_calib;
