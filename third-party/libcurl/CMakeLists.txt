@@ -20,14 +20,3 @@ if(WIN32)
         endif(${flag_var} MATCHES "/MD")
     endforeach(flag_var)
 endif()
-
-if((NOT APPLE) AND (NOT ANDROID) AND (NOT WIN32))
-  TARGET_LINK_LIBRARIES(curl)
-endif()
-
-install(TARGETS ${PROJECT_NAME}
-    EXPORT realsense2Targets
-    ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin
-    )
