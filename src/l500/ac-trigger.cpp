@@ -10,75 +10,70 @@
 #include "log.h"
 
 
-namespace {
-    template< class T >
-    class env_var
+template< class T >
+class env_var
+{
+    bool _is_set;
+    T _value;
+
+public:
+    template < class X > struct string_to {};
+
+    template<>
+    struct string_to< std::string >
     {
-        bool _is_set;
-        T _value;
-
-    public:
-        template< class X >
-        struct string_to
+        static std::string convert( std::string const & s )
         {
-        };
-
-        template<>
-        struct string_to< std::string >
-        {
-            static std::string convert( std::string const & s )
-            {
-                return s;
-            }
-        };
-
-        template<>
-        struct string_to< int >
-        {
-            static int convert( std::string const & s )
-            {
-                char * p_end;
-                auto v = std::strtol( s.data(), &p_end, 10 );
-                if( errno == ERANGE )
-                    throw std::out_of_range( "out of range" );
-                if( p_end != s.data() + s.length() )
-                    throw std::invalid_argument( "extra characters" );
-                return v;
-            }
-        };
-
-        env_var( char const * name, T default_value, std::function< bool( T ) > checker = nullptr )
-        {
-            auto lpsz = getenv( name );
-            _is_set = (lpsz != nullptr);
-            if( _is_set )
-            {
-                try
-                {
-                    _value = string_to< T >::convert( lpsz );
-                    if( checker && ! checker( _value ) )
-                        throw std::invalid_argument( "does not check" );
-                }
-                catch( std::exception const & e )
-                {
-                    AC_LOG( ERROR,
-                            "Environment variable \"" << name << "\" is set, but its value (\""
-                                                      << lpsz << "\") is invalid (" << e.what()
-                                                      << "); using default of \"" << default_value
-                                                      << "\"" );
-                    _is_set = false;
-                }
-            }
-            if( !_is_set )
-                _value = default_value;
+            return s;
         }
-
-        bool is_set() const { return _is_set; }
-        T value() const { return _value; }
-
-        operator T() const { return _value; }
     };
-}
+
+    template<>
+    struct string_to< int >
+    {
+        static int convert( std::string const & s )
+        {
+            char * p_end;
+            auto v = std::strtol( s.data(), &p_end, 10 );
+            if( errno == ERANGE )
+                throw std::out_of_range( "out of range" );
+            if( p_end != s.data() + s.length() )
+                throw std::invalid_argument( "extra characters" );
+            return v;
+        }
+    };
+
+    env_var( char const * name, T default_value, std::function< bool( T ) > checker = nullptr )
+    {
+        auto lpsz = getenv( name );
+        _is_set = (lpsz != nullptr);
+        if( _is_set )
+        {
+            try
+            {
+                _value = string_to< T >::convert( lpsz );
+                if( checker && ! checker( _value ) )
+                    throw std::invalid_argument( "does not check" );
+            }
+            catch( std::exception const & e )
+            {
+                AC_LOG( ERROR,
+                        "Environment variable \"" << name << "\" is set, but its value (\""
+                                                    << lpsz << "\") is invalid (" << e.what()
+                                                    << "); using default of \"" << default_value
+                                                    << "\"" );
+                _is_set = false;
+            }
+        }
+        if( !_is_set )
+            _value = default_value;
+    }
+
+    bool is_set() const { return _is_set; }
+    T value() const { return _value; }
+
+    operator T() const { return _value; }
+};
 
 
 namespace librealsense {
@@ -141,40 +136,54 @@ namespace ivcam2 {
     class ac_trigger::retrier
     {
         ac_trigger & _ac;
+        unsigned _id;
 
         retrier( ac_trigger & ac )
             : _ac( ac )
         {
+            static unsigned id = 0;
+            _id = ++id;
+        }
+
+        unsigned get_id() const
+        {
+            //return to_string() << std::hex << this;
+            return _id;
         }
 
         void retry()
         {
-            AC_LOG( DEBUG, "retrying " << std::hex << this << std::dec );
+            AC_LOG( DEBUG, "retrying " << get_id() );
             _ac.trigger_special_frame( true );
         }
 
     public:
         ~retrier()
         {
-            AC_LOG( DEBUG, "~retrier " << std::hex << this << std::dec );
+            AC_LOG( DEBUG, "~retrier " << get_id() );
         }
 
         static std::shared_ptr< retrier > start( ac_trigger & autocal, std::chrono::seconds n_seconds )
         {
             auto r = new retrier( autocal );
-            AC_LOG( DEBUG, "retrier " << std::hex << r << std::dec << " " << n_seconds.count() << " seconds starting" );
+            auto id = r->get_id();
+            AC_LOG( DEBUG, "retrier " << id << ": " << n_seconds.count() << " seconds starting" );
             auto pr = std::shared_ptr< retrier >( r );
             std::weak_ptr< retrier > weak{ pr };
-            std::thread( [r, weak, n_seconds]()
+            std::thread(
+                [id, weak, n_seconds]()
                 {
                     std::this_thread::sleep_for( n_seconds );
-                    if( auto pr = weak.lock() )
+                    auto pr = weak.lock();
+                    if( pr  &&  pr->get_id() == id )
                         pr->retry();
                     else
-                        AC_LOG( DEBUG, "retrier " << std::hex << r << std::dec
-                            << " " << n_seconds.count() << " seconds are up; no retry needed" );
-                } ).detach();
-                return pr;
+                        AC_LOG( DEBUG,
+                                "retrier " << id << ": " << n_seconds.count()
+                                           << " seconds are up; no retry needed" );
+                } )
+                .detach();
+            return pr;
         };
     };
 
@@ -258,6 +267,14 @@ namespace ivcam2 {
     }
 
 
+    static int get_retry_sf_seconds()
+    {
+        static int n_seconds
+            = env_var< int >( "RS2_AC_SF_RETRY_SECONDS", 2, []( int n ) { return n > 0; } );
+        return n_seconds;
+    }
+
+
     void ac_trigger::trigger_special_frame( bool is_retry )
     {
         _retrier.reset();
@@ -299,9 +316,7 @@ namespace ivcam2 {
         command cmd{ GET_SPECIAL_FRAME, 0x5F, 1 };  // 5F = SF = Special Frame, for easy recognition
         auto res = _hwm.send( cmd );
         // Start a timer: enable retries if something's wrong with the special frame
-        int n_seconds
-            = env_var< int >( "RS2_AC_SF_RETRY_SECONDS", 2, []( int n ) { return n > 0; } );
-        _retrier = retrier::start( *this, std::chrono::seconds( n_seconds ) );
+        _retrier = retrier::start( *this, std::chrono::seconds( get_retry_sf_seconds() ) );
     }
 
 
@@ -349,6 +364,8 @@ namespace ivcam2 {
         std::lock_guard< std::mutex > lock( _mutex );
         if( check_color_depth_sync() )
             start();
+        else
+            _retrier = retrier::start( *this, std::chrono::seconds( get_retry_sf_seconds() ) );
     }
 
 
@@ -380,7 +397,7 @@ namespace ivcam2 {
         }
         if( !_cf )
         {
-            AC_LOG( DEBUG, "no color frame received yet" );
+            AC_LOG( DEBUG, "no color frame received; maybe color stream isn't on?" );
             return false;
         }
         return true;
@@ -391,6 +408,7 @@ namespace ivcam2 {
     {
         AC_LOG( DEBUG, "starting processing ..." );
         _is_processing = true;
+        _retrier.reset();
         if( _worker.joinable() )
         {
             AC_LOG( DEBUG, "waiting for worker to join ..." );
@@ -547,12 +565,7 @@ namespace ivcam2 {
         {
             // We specified 0x5F (SF = Special Frame) when we asked for the SPECIAL_FRAME
             auto mode = f.get_frame_metadata( RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE );
-            if( 0x5F == mode )
-            {
-                AC_LOG( DEBUG, "frame " << f.get_frame_number() << " is our special frame" );
-                return true;
-            }
-            return false;
+            return 0x5F == mode;
         }
 
         // When the frame doesn't support metadata, we have to look at its
@@ -578,7 +591,10 @@ namespace ivcam2 {
         {
             auto df = fs.get_depth_frame();
             if( _autocal->is_expecting_special_frame() && is_special_frame( df ) )
+            {
+                AC_LOG( DEBUG, "frame " << f.get_frame_number() << " is our special frame" );
                 _autocal->set_special_frame( f );
+            }
             // Disregard framesets: we'll get those broken down into individual frames by generic_processing_block's on_frame
             return rs2::frame{};
         }
