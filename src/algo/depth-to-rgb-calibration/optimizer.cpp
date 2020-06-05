@@ -1497,6 +1497,12 @@ optimization_params optimizer::back_tracking_line_search( optimization_params co
     return new_params;
 }
 
+void optimizer::set_cycle_data(const std::vector<double3>& vertices, p_matrix p_mat)
+{
+    _vertices_from_bin = vertices;
+    _p_mat_from_bin = p_mat;
+}
+
 size_t optimizer::optimize_p
 (
     const optimization_params& params_curr,
@@ -1570,6 +1576,8 @@ size_t optimizer::optimize_p
     new_rgb_calib.k_mat.fy = _original_calibration.k_mat.fy;
 
     params_new.curr_p_mat = new_rgb_calib.calc_p_mat();
+    new_rgb_calib = decompose_p_mat(params_new.curr_p_mat);
+
     return n_iterations;
 }
 
@@ -1601,20 +1609,15 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
     while (cycle < _params.max_K2DSM_iters)
     {
         data.cycle = ++cycle;
-        AC_LOG( DEBUG, "cycle " << cycle );
+        AC_LOG(INFO, "CYCLE: " << data.cycle);
 
-        std::vector<double3> new_vertices;
-        auto dsm_candidate = _k_to_DSM->convert_new_k_to_DSM(_z.orig_intrinsics, new_k_depth, _z, new_vertices, &data);
+        std::vector<double3> cand_vertices;
+        auto dsm_candidate = _k_to_DSM->convert_new_k_to_DSM(_z.orig_intrinsics, new_k_depth, _z, cand_vertices, &data);
         data.type = cycle_data;
 
         data.cycle_data_p.dsm_params_cand = dsm_candidate;
-        data.cycle_data_p.vertices = new_vertices;
+        data.cycle_data_p.vertices = cand_vertices;
         data.cycle_data_p.dsm_pre_process_data = _k_to_DSM->get_pre_process_data();
-
-        if (cb)
-            cb(data);
-
-        _z.vertices = new_vertices;
 
         optimization_params params_candidate;
         calib calib_candidate = new_calib;
@@ -1629,6 +1632,19 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
         new_k_depth = k_depth_candidate;
         new_dsm_params = dsm_candidate;
         last_cost = new_params.cost;
+        _z.vertices = cand_vertices;
+
+        if (cb)
+        {
+            data.type = cycle_data;
+            cb(data);
+        }
+
+        if (get_cycle_data_from_bin)
+        {
+            new_params.curr_p_mat = _p_mat_from_bin;
+            _z.vertices = _vertices_from_bin;
+        }
     }
    
     AC_LOG( INFO,

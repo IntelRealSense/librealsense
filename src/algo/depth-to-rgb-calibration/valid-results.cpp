@@ -13,7 +13,7 @@ double optimizer::calc_correction_in_pixels( calib const & from_calibration ) co
 {
     //%    [uvMap,~,~] = OnlineCalibration.aux.projectVToRGB(frame.vertices,params.rgbPmat,params.Krgb,params.rgbDistort);
     //% [uvMapNew,~,~] = OnlineCalibration.aux.projectVToRGB(frame.vertices,newParams.rgbPmat,newParams.Krgb,newParams.rgbDistort);
-    auto old_uvmap = get_texture_map( _z.vertices, from_calibration, from_calibration.calc_p_mat());
+    auto old_uvmap = get_texture_map( _z.orig_vertices, from_calibration, from_calibration.calc_p_mat());
     auto new_uvmap = get_texture_map( _z.vertices, _final_calibration, _final_calibration.calc_p_mat());
 
     if( old_uvmap.size() != new_uvmap.size() )
@@ -307,6 +307,13 @@ bool optimizer::valid_by_svm(svm_model model)
 }
 bool optimizer::is_valid_results()
 {
+    if (get_cycle_data_from_bin)
+    {
+        _z.vertices = _vertices_from_bin;
+        _final_calibration = decompose_p_mat(_p_mat_from_bin);
+    }
+       
+
     bool res = true;
      //Clip any (average) movement of pixels if it's too big
     clip_pixel_movement();

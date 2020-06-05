@@ -147,12 +147,13 @@ void compare_scene( std::string const & scene_dir )
 
     //--
     TRACE( "\nOptimizing:" );
+
     auto cb = [&]( algo::iteration_data_collect const & data )
     {
         // data.iteration is 0-based!
         //REQUIRE( data.iteration < md.n_iterations );
 
-        REQUIRE( data.cycle <= md.n_cycles );
+        //REQUIRE( data.cycle <= md.n_cycles );
 
         if (data.type == algo::cycle_data)
         {
@@ -265,6 +266,27 @@ void compare_scene( std::string const & scene_dir )
                 bin_file("new_vertices_cycle", data.cycle, 3, md.n_edges, "double_00.bin"),
                 md.n_edges, 1,
                 compare_same_vectors));
+
+            TRACE("\nSet next cycle data from Matlab:");
+
+            try
+            {
+                auto vertices = read_vector_from<algo::double3>(bin_file(bin_dir(scene_dir) + "end_cycle_vertices", data.cycle, 3, md.n_edges, "double_00.bin"));
+                algo::p_matrix p_mat;
+               
+                auto p_vec = read_vector_from<double>(bin_file(bin_dir(scene_dir) + "end_cycle_p_matrix",
+                    data.cycle,
+                    num_of_p_matrix_elements, 1,
+                    "double_00.bin"));
+                std::copy(p_vec.begin(), p_vec.end(), p_mat.vals);
+                cal.set_cycle_data(vertices, p_mat);
+            }
+            catch (std::runtime_error &e) {
+                // if device isn't calibrated, get_extrinsics must error out (according to old comment. Might not be true under new API)
+                WARN(e.what());
+            }
+
+           
         }
 
         else

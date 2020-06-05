@@ -240,7 +240,7 @@ namespace depth_to_rgb_calibration {
         decision_params const& get_decision_params() const { return _decision_params; };
         std::vector< double >const& get_extracted_features() const { return _extracted_features; };
         params const & get_params() const { return _params; }
-       
+        void set_cycle_data(const std::vector<double3>& vertices, p_matrix p_mat);
     private:
 
         // 1 cycle of optimization
@@ -301,6 +301,12 @@ namespace depth_to_rgb_calibration {
         rs2_dsm_params _final_dsm_params;
         calib _factory_calibration;          // factory default calibration of the camera
         optimization_params _params_curr;  // last-known setting
+
+        //cycle data from bin files
+        bool get_cycle_data_from_bin = true;
+        std::vector<double3> _vertices_from_bin;
+        p_matrix _p_mat_from_bin;
+
         std::shared_ptr<k_to_DSM> _k_to_DSM;
     };
 
