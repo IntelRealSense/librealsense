@@ -114,13 +114,22 @@ namespace librealsense
     class dm_v2_imu_calib_parser : public mm_calib_parser
     {
     public:
-        dm_v2_imu_calib_parser(const std::vector<uint8_t>& raw_data, ds::d400_caps capabilities, bool valid = true)
+        dm_v2_imu_calib_parser(const std::vector<uint8_t>& raw_data, ds::d400_caps capabilities)
         {
             _calib_table.module_info.dm_v2_calib_table.extrinsic_valid = 0;
             _calib_table.module_info.dm_v2_calib_table.intrinsic_valid = 0;
             // default parser to be applied when no FW calibration is available
-            if (valid)
+
+            try
+            {
                 _calib_table = *(ds::check_calib<ds::dm_v2_eeprom>(raw_data));
+            }
+            catch (...)
+            {
+                // in case IMU table is empty or invalid format, use a default table, mark it invalid so motion correction
+                // will be skipped but rotation matrix and extrinsic still available
+                _calib_table = ds::dm_v2_eeprom();
+            }
 
             _valid_intrinsic = (_calib_table.module_info.dm_v2_calib_table.intrinsic_valid == 1) ? true : false;
 

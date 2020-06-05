@@ -451,14 +451,12 @@ namespace librealsense
 
             std::vector<uint8_t> raw(ds::tm1_eeprom_size);
             uint16_t calib_id = ds::dm_v2_eeprom_id; //assume DM V2 IMU as default platform
-            bool valid = false;
             std::shared_ptr<mm_calib_parser> prs = nullptr;
 
             try
             {
                 raw = *_imu_eeprom_raw;
                 calib_id = *reinterpret_cast<uint16_t*>(raw.data());
-                valid = true;
             }
             catch(const std::exception&)
             {
@@ -468,23 +466,29 @@ namespace librealsense
             switch (calib_id)
             {
                 case ds::dm_v2_eeprom_id: // DM V2 id
-                    prs = std::make_shared<dm_v2_imu_calib_parser>(raw, _dev_cap, valid); break;
+                    prs = std::make_shared<dm_v2_imu_calib_parser>(raw, _dev_cap); break;
                 case ds::tm1_eeprom_id: // TM1 id
                     prs = std::make_shared<tm1_imu_calib_parser>(raw); break;
                 case ds::l500_eeprom_id: // L515
                     prs = std::make_shared<l500_imu_calib_parser>(raw); break;
                 default:
                 {
+                    // no valid calibration data at all, check other information to recover
                     if (_l515_table_on_flash)
                     {
                         prs = std::make_shared<l500_imu_calib_parser>(raw);
                     }
+                    else if ((bool)(_dev_cap & (ds::d400_caps::CAP_BMI_055) | ds::d400_caps::CAP_BMI_085))
+                    {
+                        prs = std::make_shared<dm_v2_imu_calib_parser>(raw, _dev_cap);
+                    }
                     else
                     {
+                        // should not come to this point as calibration table related issues should have handled
                         throw recoverable_exception(to_string() << "Motion Intrinsics unresolved - "
-                            << ((valid) ? "device is not calibrated" : "invalid calib type "),
+                            << "device is not calibrated - calibration data id: " << calib_id,
                             RS2_EXCEPTION_TYPE_BACKEND);
-                     }
+                    }
                 }
             }
             return prs;
