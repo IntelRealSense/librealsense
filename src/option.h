@@ -559,7 +559,7 @@ namespace librealsense
 
        float query() const override;
 
-       bool is_enabled() const override { return true; }
+       bool is_enabled() const override { return _is_enabled; }
 
        const char* get_description() const override
        {
@@ -568,7 +568,10 @@ namespace librealsense
 
        enable_motion_correction(sensor_base* mm_ep, const option_range& opt_range);
 
+       void update_state(bool state) { _is_enabled = state; }
+
    private:
-       std::atomic<bool>   _is_active;
+       std::atomic<bool>   _is_active = true;
+       std::atomic<bool>   _is_enabled = true;
    };
 }

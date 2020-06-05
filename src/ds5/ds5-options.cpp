@@ -174,13 +174,15 @@ namespace librealsense
 
     float enable_motion_correction::query() const
     {
+        if (!is_enabled()) return _opt_range.min;
+
         auto is_active = _is_active.load();
         return is_active ? _opt_range.max : _opt_range.min;
     }
 
     enable_motion_correction::enable_motion_correction(sensor_base* mm_ep,
                                                        const option_range& opt_range)
-        : option_base(opt_range), _is_active(true)
+        : option_base(opt_range), _is_active(true), _is_enabled(true)
     {}
 
     void enable_auto_exposure_option::set(float value)

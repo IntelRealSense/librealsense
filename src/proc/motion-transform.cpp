@@ -50,14 +50,23 @@ namespace librealsense
         if (mm_calib)
         {
             _imu2depth_cs_alignment_matrix = (*mm_calib).imu_to_depth_alignment();
+
             if (_mm_correct_opt)
             {
-                auto accel_intr = (*mm_calib).get_intrinsic(RS2_STREAM_ACCEL);
-                auto gyro_intr = (*mm_calib).get_intrinsic(RS2_STREAM_GYRO);
-                _accel_sensitivity  = accel_intr.sensitivity;
-                _accel_bias         = accel_intr.bias;
-                _gyro_sensitivity   = gyro_intr.sensitivity;
-                _gyro_bias          = gyro_intr.bias;
+                if (mm_calib->is_intrinsic_valid())
+                {
+                    auto accel_intr = (*mm_calib).get_intrinsic(RS2_STREAM_ACCEL);
+                    auto gyro_intr = (*mm_calib).get_intrinsic(RS2_STREAM_GYRO);
+                    _accel_sensitivity = accel_intr.sensitivity;
+                    _accel_bias = accel_intr.bias;
+                    _gyro_sensitivity = gyro_intr.sensitivity;
+                    _gyro_bias = gyro_intr.bias;
+                }
+                else
+                {
+                    // in case no valid calibration data is available, disable motion correction
+                    _mm_correct_opt->update_state(false);
+                }
             }
         }
         else
@@ -85,7 +94,8 @@ namespace librealsense
         // in the same coordinate system
         if (_mm_correct_opt)
         {
-            if ((_mm_correct_opt->query() > 0.f)) // TBD resolve duality of is_enabled/is_active
+            // motion correction is_enabled and is_active
+            if ((_mm_correct_opt->query() > 0.f))
             {
                 auto&& s = f->get_profile().stream_type();
                 if (s == RS2_STREAM_ACCEL)
