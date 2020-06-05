@@ -363,6 +363,7 @@ namespace ivcam2 {
             << "]" );
 
         _sf = fs;  // Assign right before the sync otherwise we may start() prematurely
+        _sf.keep();
         std::lock_guard< std::mutex > lock( _mutex );
         if( check_color_depth_sync() )
             start();
@@ -379,6 +380,7 @@ namespace ivcam2 {
 
         _pcf = _cf;
         _cf = f;
+        _cf.keep();
         std::lock_guard< std::mutex > lock( _mutex );
         if( check_color_depth_sync() )
             start();
