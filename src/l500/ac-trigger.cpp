@@ -10,6 +10,34 @@
 #include "log.h"
 
 
+
+template < class X > struct string_to {};
+
+template<>
+struct string_to< std::string >
+{
+    static std::string convert( std::string const & s )
+    {
+        return s;
+    }
+};
+
+template<>
+struct string_to< int >
+{
+    static int convert( std::string const & s )
+    {
+        char * p_end;
+        auto v = std::strtol( s.data(), &p_end, 10 );
+        if( errno == ERANGE )
+            throw std::out_of_range( "out of range" );
+        if( p_end != s.data() + s.length() )
+            throw std::invalid_argument( "extra characters" );
+        return v;
+    }
+};
+
+
 template< class T >
 class env_var
 {
@@ -17,32 +45,6 @@ class env_var
     T _value;
 
 public:
-    template < class X > struct string_to {};
-
-    template<>
-    struct string_to< std::string >
-    {
-        static std::string convert( std::string const & s )
-        {
-            return s;
-        }
-    };
-
-    template<>
-    struct string_to< int >
-    {
-        static int convert( std::string const & s )
-        {
-            char * p_end;
-            auto v = std::strtol( s.data(), &p_end, 10 );
-            if( errno == ERANGE )
-                throw std::out_of_range( "out of range" );
-            if( p_end != s.data() + s.length() )
-                throw std::invalid_argument( "extra characters" );
-            return v;
-        }
-    };
-
     env_var( char const * name, T default_value, std::function< bool( T ) > checker = nullptr )
     {
         auto lpsz = getenv( name );
