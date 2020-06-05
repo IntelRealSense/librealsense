@@ -1467,7 +1467,7 @@ namespace librealsense
         }
 
         // Invoke processing blocks callback
-        const auto&& process_cb = make_callback([&, callback, this](frame_holder f) {
+        const auto&& process_cb = make_callback([&, this](frame_holder f) {
             if (!f)
                 return;
 
