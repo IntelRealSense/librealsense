@@ -243,6 +243,8 @@ namespace librealsense
             return get_l500_recommended_proccesing_blocks();
         };
 
+        std::shared_ptr< stream_profile_interface > is_color_sensor_needed() const;
+
         int read_algo_version();
         float read_baseline() const override;
         float read_znorm();
@@ -253,7 +255,7 @@ namespace librealsense
         float get_depth_offset() const;
     private:
         action_delayer _action_delayer;
-        const l500_device* _owner;
+        l500_device * const _owner;
         float _depth_units;
         stream_profiles _user_requests;
         stream_profiles _validator_requests;

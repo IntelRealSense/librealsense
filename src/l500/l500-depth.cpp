@@ -6,6 +6,7 @@
 #include "context.h"
 #include "stream.h"
 #include "l500-depth.h"
+#include "l500-color.h"
 #include "l500-private.h"
 #include "proc/decimation-filter.h"
 #include "proc/threshold.h" 
@@ -379,18 +380,28 @@ namespace librealsense
 
     void l500_depth_sensor::start(frame_callback_ptr callback)
     {
-        _action_delayer.do_after_delay([&]() {
-            if (_depth_invalidation_enabled)
-                synthetic_sensor::start(std::make_shared<frame_validator>(shared_from_this(), callback, _user_requests, _validator_requests));
+        _action_delayer.do_after_delay( [&]() {
+            if( _depth_invalidation_enabled )
+                synthetic_sensor::start(
+                    std::make_shared< frame_validator >( shared_from_this(),
+                                                         callback,
+                                                         _user_requests,
+                                                         _validator_requests ) );
             else
-                synthetic_sensor::start(callback);
+                synthetic_sensor::start( callback );
             if( _owner->_autocal )
                 _owner->_autocal->start();
-        });
+        } );
     }
 
     void l500_depth_sensor::stop()
     {
+        if( is_color_sensor_needed() )
+        {
+            auto & color_sensor = *_owner->get_color_sensor();
+            AC_LOG( INFO, "Stopping COLOR stream" );
+            color_sensor.stop();
+        }
         _action_delayer.do_after_delay([&]() {
             synthetic_sensor::stop();
             _depth_invalidation_option->set_streaming(false);
@@ -422,16 +433,89 @@ namespace librealsense
             vl->get_height() == vr->get_height();
     }
 
+
+    template<class T>
+    frame_callback_ptr make_frame_callback( T callback )
+    {
+        return {
+            new internal_frame_callback<T>( callback ),
+            []( rs2_frame_callback* p ) { p->release(); }
+        };
+    }
+
+
+    std::shared_ptr< stream_profile_interface > l500_depth_sensor::is_color_sensor_needed() const
+    {
+        // If AC is off, we don't need the color stream on
+        if( !_owner->_autocal )
+            return {};
+
+        auto is_rgb_requested
+            = std::find_if( _user_requests.begin(),
+                            _user_requests.end(),
+                            []( std::shared_ptr< stream_profile_interface > const & sp )
+                            { return sp->get_stream_type() == RS2_STREAM_COLOR; } )
+           != _user_requests.end();
+        if( is_rgb_requested )
+            return {};
+
+        // Find a profile that's acceptable for RGB:
+        //     1. has the same framerate
+        //     2. format is RGB8
+        //     2. has the right resolution (1280x720 should be good enough)
+        auto user_request
+            = std::find_if( _user_requests.begin(),
+                            _user_requests.end(),
+                            []( std::shared_ptr< stream_profile_interface > const & sp ) {
+                                return sp->get_stream_type() == RS2_STREAM_DEPTH;
+                            } );
+        if( user_request == _user_requests.end() )
+        {
+            AC_LOG( ERROR, "Depth input stream profiles do not contain depth!" );
+            return {};
+        }
+        auto requested_depth_profile
+            = dynamic_cast< video_stream_profile * >( user_request->get() );
+
+        auto & color_sensor = *_owner->get_color_sensor();
+        auto color_profiles = color_sensor.get_stream_profiles();
+        auto rgb_profile = std::find_if(
+            color_profiles.begin(),
+            color_profiles.end(),
+            [&]( std::shared_ptr< stream_profile_interface > const & sp )
+            {
+                auto vsp = dynamic_cast< video_stream_profile * >( sp.get() );
+                return vsp->get_stream_type() == RS2_STREAM_COLOR
+                    && vsp->get_framerate() == requested_depth_profile->get_framerate()
+                    && vsp->get_format() == RS2_FORMAT_RGB8
+                    && vsp->get_width() == 1280  // flipped
+                    && vsp->get_height() == 720;
+            } );
+        if( rgb_profile == color_profiles.end() )
+        {
+            AC_LOG( ERROR,
+                "Can't find color stream corresponding to depth; AC will not work" );
+            return {};
+        }
+        return *rgb_profile;
+    }
+
     void l500_depth_sensor::open(const stream_profiles& requests)
     {
         try
         {
+            _user_requests = requests;
             _depth_invalidation_option->set_streaming(true);
 
             if (_depth_invalidation_enabled)
             {
-                auto is_ir_requested = std::find_if(requests.begin(), requests.end(), [](std::shared_ptr<stream_profile_interface> sp)
-                {return sp->get_stream_type() == RS2_STREAM_INFRARED;}) != requests.end();
+                auto is_ir_requested
+                    = std::find_if( requests.begin(),
+                                    requests.end(),
+                                    []( std::shared_ptr< stream_profile_interface > const & sp ) {
+                                        return sp->get_stream_type() == RS2_STREAM_INFRARED;
+                                    } )
+                   != requests.end();
 
                 _validator_requests = requests;
 
@@ -459,15 +543,24 @@ namespace librealsense
 
                     _validator_requests.push_back(*corresponding_ir);
                 }
-                _user_requests = requests;
             }
             else
             {
                 _validator_requests = requests;
             }
 
-            auto dp = std::find_if(requests.begin(), requests.end(), [](std::shared_ptr<stream_profile_interface> sp)
-            {return sp->get_stream_type() == RS2_STREAM_DEPTH;});
+            // With AC, we need a color sensor even when the user has not asked for one --
+            // otherwise we risk misalignment over time. We turn it on automatically!
+            auto rgb_profile = is_color_sensor_needed();
+            if( rgb_profile )
+            {
+                auto & color_sensor = *_owner->get_color_sensor();
+                AC_LOG( INFO, "Starting COLOR stream in addition to requested profiles" );
+                color_sensor.open( { rgb_profile } );
+                color_sensor.start( make_frame_callback( []( frame_interface * f ) {} ) );
+                // Note that we don't do anything with the frames -- they shouldn't end up
+                // at the user. But AC will still get them.
+            }
 
             if( supports_option( RS2_OPTION_VISUAL_PRESET ) )
             {
@@ -495,7 +588,12 @@ namespace librealsense
                 }
             }
 
-            if (dp != requests.end() && supports_option(RS2_OPTION_SENSOR_MODE))
+            auto dp = std::find_if( requests.begin(),
+                                    requests.end(),
+                                    []( std::shared_ptr< stream_profile_interface > sp ) {
+                                        return sp->get_stream_type() == RS2_STREAM_DEPTH;
+                                    } );
+            if( dp != requests.end() && supports_option( RS2_OPTION_SENSOR_MODE ) )
             {
                 auto&& sensor_mode_option = get_option(RS2_OPTION_SENSOR_MODE);
                 auto vs = dynamic_cast<video_stream_profile*>((*dp).get());
@@ -514,11 +612,11 @@ namespace librealsense
                     (float) get_resolution_from_width_height( vs->get_width(), vs->get_height() ));
             }
 
-
             synthetic_sensor::open(_validator_requests);
         }
-        catch (...)
+        catch( ... )
         {
+            LOG_ERROR( "Exception caught in l500_depth_sensor::open" );
             _depth_invalidation_option->set_streaming(false);
             throw;
         }
