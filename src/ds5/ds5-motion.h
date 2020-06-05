@@ -122,6 +122,8 @@ namespace librealsense
             if (valid)
                 _calib_table = *(ds::check_calib<ds::dm_v2_eeprom>(raw_data));
 
+            _valid_intrinsic = (_calib_table.module_info.dm_v2_calib_table.intrinsic_valid == 1) ? true : false;
+
             if (capabilities && ds::d400_caps::CAP_BMI_055)
             {
                 // D435i specific - BMI055 assembly transformation based on mechanical drawing (mm)
@@ -190,12 +192,13 @@ namespace librealsense
             return { in_intr.sensitivity, in_intr.bias, {0,0,0}, {0,0,0} };
         }
 
-        bool is_intrinsic_valid() { return true; }
+        bool is_intrinsic_valid() { return _valid_intrinsic; }
 
     private:
         ds::dm_v2_eeprom    _calib_table;
         rs2_extrinsics      _def_extr;
         float3x3            _imu_2_depth_rot;
+        bool                _valid_intrinsic;
     };
 
     class l500_imu_calib_parser : public mm_calib_parser

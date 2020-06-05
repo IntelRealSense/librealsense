@@ -496,7 +496,20 @@ namespace librealsense
         const int offset = 0;
         const int size = ds::eeprom_imu_table_size;
         command cmd(ds::MMER, offset, size);
-        return _hw_monitor->send(cmd);
+
+        std::vector<uint8_t> res;
+
+        // IMU table on D435i is in eeprom, less likely read issue, but in case return empty table
+        try
+        {
+            res = _hw_monitor->send(cmd);
+        }
+        catch (std::exception &e) {
+            LOG_WARNING(e.what());
+        }
+        catch (...) {}
+
+        return res;
     }
 
     std::vector<uint8_t> mm_calib_handler::get_imu_eeprom_raw_l515() const
