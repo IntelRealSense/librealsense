@@ -1225,13 +1225,14 @@ static p_matrix calc_gradients(
 
 std::pair<double, p_matrix> calc_cost_and_grad(
     const z_frame_data & z_data,
+    const std::vector<double3>& new_vertices,
     const yuy2_frame_data & yuy_data,
     const calib & cal,
     const p_matrix & p_mat,
     iteration_data_collect * data = nullptr
 )
 {
-    auto uvmap = get_texture_map(z_data.vertices, cal, p_mat);
+    auto uvmap = get_texture_map(new_vertices, cal, p_mat);
     if( data )
         data->uvmap = uvmap;
 
@@ -1506,6 +1507,7 @@ void optimizer::set_cycle_data(const std::vector<double3>& vertices, p_matrix p_
 size_t optimizer::optimize_p
 (
     const optimization_params& params_curr,
+    const std::vector<double3>& new_vertices,
     optimization_params& params_new, 
     calib& new_rgb_calib,
     rs2_intrinsics_double& new_z_k,
@@ -1518,7 +1520,7 @@ size_t optimizer::optimize_p
     while (1)
     {
 
-        auto res = calc_cost_and_grad(_z, _yuy, new_rgb_calib, curr.curr_p_mat, data);
+        auto res = calc_cost_and_grad(_z, new_vertices, _yuy, new_rgb_calib, curr.curr_p_mat, data);
         curr.cost = res.first;
         curr.calib_gradients = res.second;
         AC_LOG( DEBUG, std::setw( 3 ) << std::right << n_iterations << std::left
@@ -1593,16 +1595,19 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
     auto cycle = 1;
     data.cycle = cycle;
 
-    auto res = calc_cost_and_grad(_z, _yuy, decompose(_params_curr.curr_p_mat, _original_calibration), _params_curr.curr_p_mat, &data);
+    auto res = calc_cost_and_grad(_z, _z.vertices, _yuy, decompose(_params_curr.curr_p_mat, _original_calibration), _params_curr.curr_p_mat, &data);
     _params_curr.cost = res.first;
     _params_curr.calib_gradients = res.second;
 
     optimization_params new_params;
     calib new_calib = _original_calibration;
     rs2_intrinsics_double new_k_depth;
-    double last_cost = _params_curr.cost;
+    auto new_vertices = _z.vertices;
 
-    auto n_iterations = optimize_p(_params_curr, new_params, new_calib, new_k_depth, cb, &data);
+    double last_cost = _params_curr.cost;
+    
+    auto n_iterations = optimize_p(_params_curr, new_vertices, new_params, new_calib, new_k_depth, cb, &data);
+    AC_LOG(DEBUG, n_iterations << ": Cost = " << AC_D_PREC << new_params.cost);
 
     _z.orig_vertices = _z.vertices;
     rs2_dsm_params_double new_dsm_params = _z.orig_dsm_params;
@@ -1622,7 +1627,7 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
         optimization_params params_candidate;
         calib calib_candidate = new_calib;
         rs2_intrinsics_double k_depth_candidate;
-        optimize_p(new_params, params_candidate, calib_candidate, k_depth_candidate, cb, &data);
+        optimize_p(new_params, cand_vertices, params_candidate, calib_candidate, k_depth_candidate, cb, &data);
 
         if (params_candidate.cost < last_cost)
             break;
@@ -1632,7 +1637,7 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
         new_k_depth = k_depth_candidate;
         new_dsm_params = dsm_candidate;
         last_cost = new_params.cost;
-        _z.vertices = cand_vertices;
+        new_vertices = cand_vertices;
 
         if (cb)
         {
@@ -1643,7 +1648,7 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
         if (get_cycle_data_from_bin)
         {
             new_params.curr_p_mat = _p_mat_from_bin;
-            _z.vertices = _vertices_from_bin;
+            new_vertices = _vertices_from_bin;
         }
     }
    

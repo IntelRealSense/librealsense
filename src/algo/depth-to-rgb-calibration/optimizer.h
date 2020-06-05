@@ -244,7 +244,8 @@ namespace depth_to_rgb_calibration {
     private:
 
         // 1 cycle of optimization
-        size_t optimize_p(const optimization_params& params_curr, 
+        size_t optimize_p(const optimization_params& params_curr,
+            const std::vector<double3>& new_vertices,
             optimization_params& params_new, 
             calib& new_rgb_calib, 
             rs2_intrinsics_double& new_z_k,
