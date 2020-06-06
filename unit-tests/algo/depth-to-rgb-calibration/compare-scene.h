@@ -155,36 +155,36 @@ void compare_scene( std::string const & scene_dir )
 
         //REQUIRE( data.cycle <= md.n_cycles );
 
-        if (data.type == algo::cycle_data)
+        if (data.type == algo::k_to_dsm_data)
         {
             CHECK(compare_to_bin_file< algo::algo_calibration_registers >(
                 data.cycle_data_p.dsm_regs_orig,
-                scene_dir, 
+                scene_dir,
                 bin_file("dsmRegsOrig", data.cycle, 4, 1, "double_00.bin")));
 
             CHECK(compare_to_bin_file< uint8_t >(
                 data.cycle_data_p.relevant_pixels_image_rot,
                 scene_dir,
                 bin_file("relevantPixelnImage_rot", data.cycle, z_w, z_h, "uint8_00") + ".bin",
-                z_w, z_h, 
+                z_w, z_h,
                 compare_same_vectors));
 
             CHECK(compare_to_bin_file< algo::los_shift_scaling >(
                 data.cycle_data_p.dsm_pre_process_data.last_los_error,
-                scene_dir, 
+                scene_dir,
                 bin_file("dsm_los_error_orig", data.cycle, 1, 4, "double_00.bin")));
 
             CHECK(compare_to_bin_file< algo::double3 >(
                 data.cycle_data_p.dsm_pre_process_data.vertices_orig,
-                scene_dir, 
+                scene_dir,
                 bin_file("verticesOrig", data.cycle, 3, md.n_relevant_pixels, "double_00") + ".bin",
                 md.n_relevant_pixels, 1, compare_same_vectors));
 
             CHECK(compare_to_bin_file< algo::double2 >(
-                data.cycle_data_p.dsm_pre_process_data.los_orig, 
+                data.cycle_data_p.dsm_pre_process_data.los_orig,
                 scene_dir,
                 bin_file("losOrig", data.cycle, 2, md.n_relevant_pixels, "double_00") + ".bin",
-                md.n_relevant_pixels, 1, 
+                md.n_relevant_pixels, 1,
                 compare_same_vectors));
 
             CHECK(compare_to_bin_file< double >(
@@ -207,10 +207,10 @@ void compare_scene( std::string const & scene_dir )
                 compare_same_vectors));
 
             CHECK(compare_to_bin_file< double >(
-                    data.cycle_data_p.sg_mat_tag_x_sg_mat,
-                    scene_dir,
-                    bin_file("sg_mat_tag_x_sg_mat", data.cycle, 1, data.cycle_data_p.sg_mat_tag_x_sg_mat.size(), "double_00") + ".bin",
-                    data.cycle_data_p.sg_mat_tag_x_sg_mat.size(), 1, compare_same_vectors));
+                data.cycle_data_p.sg_mat_tag_x_sg_mat,
+                scene_dir,
+                bin_file("sg_mat_tag_x_sg_mat", data.cycle, 1, data.cycle_data_p.sg_mat_tag_x_sg_mat.size(), "double_00") + ".bin",
+                data.cycle_data_p.sg_mat_tag_x_sg_mat.size(), 1, compare_same_vectors));
 
             CHECK(compare_to_bin_file< double >(
                 data.cycle_data_p.sg_mat_tag_x_err_l2,
@@ -241,39 +241,41 @@ void compare_scene( std::string const & scene_dir )
                 1, 1,
                 compare_same_vectors));
 
-           /* CHECK(compare_to_bin_file< algo::algo_calibration_registers >(
-                data.cycle_data_p.dsm_regs_cand,
-                scene_dir,
-                bin_file("dsmRegsCand", data.cycle, 4, 1, "double_00.bin")));*/
+            /* CHECK(compare_to_bin_file< algo::algo_calibration_registers >(
+                 data.cycle_data_p.dsm_regs_cand,
+                 scene_dir,
+                 bin_file("dsmRegsCand", data.cycle, 4, 1, "double_00.bin")));*/
 
             CHECK(compare_to_bin_file< algo::double2 >(
-                data.cycle_data_p.los_orig, 
+                data.cycle_data_p.los_orig,
                 scene_dir,
                 bin_file("orig_los", data.cycle, 2, md.n_edges, "double_00") + ".bin",
-                md.n_edges, 1, 
+                md.n_edges, 1,
                 compare_same_vectors));
 
             CHECK(compare_to_bin_file< algo::double2 >(
-                data.cycle_data_p.dsm, 
+                data.cycle_data_p.dsm,
                 scene_dir,
                 bin_file("dsm", data.cycle, 2, md.n_edges, "double_00") + ".bin",
-                md.n_edges, 1, 
+                md.n_edges, 1,
                 compare_same_vectors));
 
             CHECK(compare_to_bin_file< algo::double3 >(
                 data.cycle_data_p.vertices,
                 scene_dir,
-                bin_file("new_vertices_cycle", data.cycle, 3, md.n_edges, "double_00.bin"),
+                bin_file("new_vertices", data.cycle, 3, md.n_edges, "double_00.bin"),
                 md.n_edges, 1,
                 compare_same_vectors));
 
             TRACE("\nSet next cycle data from Matlab:");
-
+        }
+        if (data.type == algo::cycle_data)
+        {
             try
             {
                 auto vertices = read_vector_from<algo::double3>(bin_file(bin_dir(scene_dir) + "end_cycle_vertices", data.cycle, 3, md.n_edges, "double_00.bin"));
                 algo::p_matrix p_mat;
-               
+
                 auto p_vec = read_vector_from<double>(bin_file(bin_dir(scene_dir) + "end_cycle_p_matrix",
                     data.cycle,
                     num_of_p_matrix_elements, 1,
@@ -285,11 +287,8 @@ void compare_scene( std::string const & scene_dir )
                 // if device isn't calibrated, get_extrinsics must error out (according to old comment. Might not be true under new API)
                 WARN(e.what());
             }
-
-           
         }
-
-        else
+        else if(data.type == algo::iteration_data)
         {
             CHECK(compare_to_bin_file< double >(
                 std::vector< double >(std::begin(data.params.curr_p_mat.vals),

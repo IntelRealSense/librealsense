@@ -142,6 +142,7 @@ namespace depth_to_rgb_calibration {
     // Data that's passed to a callback at each optimization iteration
     enum data_type
     {
+        k_to_dsm_data,
         cycle_data,
         iteration_data
     };

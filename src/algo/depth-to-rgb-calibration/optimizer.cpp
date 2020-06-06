@@ -1624,6 +1624,12 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
         data.cycle_data_p.vertices = cand_vertices;
         data.cycle_data_p.dsm_pre_process_data = _k_to_DSM->get_pre_process_data();
 
+        if (cb)
+        {
+            data.type = k_to_dsm_data;
+            cb(data);
+        }
+
         optimization_params params_candidate;
         calib calib_candidate = new_calib;
         rs2_intrinsics_double k_depth_candidate;
@@ -1642,6 +1648,7 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
         if (cb)
         {
             data.type = cycle_data;
+            data.cycle_data_p.vertices = new_vertices;
             cb(data);
         }
 
