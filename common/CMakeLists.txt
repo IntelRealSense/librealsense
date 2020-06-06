@@ -25,6 +25,8 @@ set(COMMON_SRC
         "${CMAKE_CURRENT_LIST_DIR}/fw-update-helper.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/metadata-helper.h"
         "${CMAKE_CURRENT_LIST_DIR}/metadata-helper.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/output-model.h"
+        "${CMAKE_CURRENT_LIST_DIR}/output-model.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/skybox.h"
         "${CMAKE_CURRENT_LIST_DIR}/skybox.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/measurement.h"

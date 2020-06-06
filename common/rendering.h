@@ -1581,6 +1581,43 @@ namespace rs2
         }
     };
 
+    // Helper class that lets smoothly animate between its values
+    template<class T>
+    class animated
+    {
+    private:
+        T _old, _new;
+        std::chrono::system_clock::time_point _last_update;
+        std::chrono::system_clock::duration _duration;
+    public:
+        animated(T def, std::chrono::system_clock::duration duration = std::chrono::milliseconds(200))
+            : _duration(duration), _old(def), _new(def)
+        {
+            _last_update = std::chrono::system_clock::now();
+        }
+        animated& operator=(const T& other)
+        {
+            if (other != _new)
+            {
+                _old = get();
+                _new = other;
+                _last_update = std::chrono::system_clock::now();
+            }
+            return *this;
+        }
+        T get() const
+        {
+            auto now = std::chrono::system_clock::now();
+            auto ms = std::chrono::duration_cast<std::chrono::microseconds>(now - _last_update).count();
+            auto duration_ms = std::chrono::duration_cast<std::chrono::microseconds>(_duration).count();
+            auto t = (float)ms / duration_ms;
+            t = std::max(0.f, std::min(rs2::smoothstep(t, 0.f, 1.f), 1.f));
+            return _old * (1.f - t) + _new * t;
+        }
+        operator T() const { return get(); }
+        T value() const { return _new; }
+    };
+
     inline bool is_integer(float f)
     {
         return (fabs(fmod(f, 1)) < std::numeric_limits<float>::min());

@@ -58,7 +58,8 @@ static const ImVec4 yellowish = from_rgba(255, 253, 191, 255, true);
 static const ImVec4 green = from_rgba(0x20, 0xe0, 0x20, 0xff, true);
 static const ImVec4 dark_sensor_bg = from_rgba(0x1b, 0x21, 0x25, 170);
 static const ImVec4 red = from_rgba(233, 0, 0, 255, true);
-static const ImVec4 greenish = from_rgba(33, 104, 0, 255);
+static const ImVec4 greenish = from_rgba(67, 163, 97, 255);
+static const ImVec4 orange = from_rgba(255, 157, 0, 255, true);
 
 inline ImVec4 operator*(const ImVec4& color, float t)
 {
@@ -68,44 +69,6 @@ inline ImVec4 operator+(const ImVec4& a, const ImVec4& b)
 {
     return ImVec4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
 }
-
-// Helper class that lets smoothly animate between its values
-template<class T>
-class animated
-{
-private:
-    T _old, _new;
-    std::chrono::system_clock::time_point _last_update;
-    std::chrono::system_clock::duration _duration;
-public:
-    animated(T def, std::chrono::system_clock::duration duration = std::chrono::milliseconds(200))
-        : _duration(duration)
-    {
-        _last_update = std::chrono::system_clock::now();
-    }
-    animated& operator=(const T& other)
-    {
-        if (other != _new)
-        {
-            _old = get();
-            _new = other;
-            _last_update = std::chrono::system_clock::now();
-        }
-        return *this;
-    }
-    T get() const
-    {
-        auto now = std::chrono::system_clock::now();
-        auto ms = std::chrono::duration_cast<std::chrono::microseconds>(now - _last_update).count();
-        auto duration_ms = std::chrono::duration_cast<std::chrono::microseconds>(_duration).count();
-        auto t = (float)ms / duration_ms;
-        t = std::max(0.f, std::min(rs2::smoothstep(t, 0.f, 1.f), 1.f));
-        return _old * (1.f - t) + _new * t;
-    }
-    operator T() const { return get(); }
-    T value() const { return _new; }
-};
-
 
 inline ImVec4 blend(const ImVec4& c, float a)
 {
@@ -177,6 +140,8 @@ namespace rs2
             static const char* sdk_version         { "viewer_model.sdk_version" };
             static const char* last_calib_notice   { "viewer_model.last_calib_notice" };
             static const char* is_measuring        { "viewer_model.is_measuring" };
+            static const char* output_collapsed    { "viewer_model.output_collapsed" };
+            static const char* search_term         { "viewer_model.search_term" };
 
             static const char* log_to_console      { "viewer_model.log_to_console" };
             static const char* log_to_file         { "viewer_model.log_to_file" };
@@ -285,7 +250,7 @@ namespace rs2
     class subdevice_model;
     struct notifications_model;
 
-    void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18);
+    void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18, ImFont*& monofont);
 
     // avoid display the following options
     bool static skip_option(rs2_option opt)

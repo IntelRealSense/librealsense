@@ -31,6 +31,7 @@
 
 #include "imgui-fonts-karla.hpp"
 #include "imgui-fonts-fontawesome.hpp"
+#include "imgui-fonts-monofont.hpp"
 
 #include "os.h"
 
@@ -140,7 +141,7 @@ namespace rs2
         file.write((char*)bytes.data(), bytes.size());
     }
 
-    void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
+    void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18, ImFont*& monofont)
     {
         ImGuiStyle& style = ImGui::GetStyle();
 
@@ -179,6 +180,21 @@ namespace rs2
             font_18 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
                 font_awesome_compressed_size, 20.f, &config_glyphs, icons_ranges);
 
+        }
+
+        // Load monofont
+        {
+            ImFontConfig config_words;
+            config_words.OversampleV = OVERSAMPLE;
+            config_words.OversampleH = OVERSAMPLE;
+            monofont = io.Fonts->AddFontFromMemoryCompressedTTF(monospace_compressed_data, monospace_compressed_size, 15.f);
+
+            ImFontConfig config_glyphs;
+            config_glyphs.MergeMode = true;
+            config_glyphs.OversampleV = OVERSAMPLE;
+            config_glyphs.OversampleH = OVERSAMPLE;
+            monofont = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
+                font_awesome_compressed_size, 14.f, &config_glyphs, icons_ranges);
         }
 
         style.WindowRounding = 0.0f;

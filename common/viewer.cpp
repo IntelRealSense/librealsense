@@ -328,8 +328,8 @@ namespace rs2
         }
         else
         {
-            ImGui::PushStyleColor(ImGuiCol_Text, grey);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, grey);
+            ImGui::PushStyleColor(ImGuiCol_Text, header_color);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, header_color);
         }
         
         ImGui::SetCursorPos({float(x), float(y)});
@@ -977,52 +977,6 @@ namespace rs2
                 ppf.frames_queue.erase(i);
             }
         }
-    }
-
-    void viewer_model::show_event_log(ImFont* font_14, float x, float y, float w, float h)
-    {
-        auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
-            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar;
-
-        ImGui::PushFont(font_14);
-        ImGui::SetNextWindowPos({ x, y });
-        ImGui::SetNextWindowSize({ w, h });
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-
-        is_output_collapsed = ImGui::Begin("Output", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_ShowBorders);
-
-        int i = 0;
-        not_model->foreach_log([&](const std::string& line) {
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-
-            auto rc = ImGui::GetCursorPos();
-            ImGui::SetCursorPos({ rc.x + 10, rc.y + 4 });
-
-            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-            ImGui::Icon(textual_icons::minus); ImGui::SameLine();
-            ImGui::PopStyleColor();
-
-            rc = ImGui::GetCursorPos();
-            ImGui::SetCursorPos({ rc.x, rc.y - 4 });
-
-            std::string label = to_string() << "##log_entry" << i++;
-            ImGui::InputTextEx(label.c_str(),
-                        (char*)line.data(),
-                        static_cast<int>(line.size() + 1),
-                        ImVec2(-1, ImGui::GetTextLineHeight() * 1.5f * float(std::max(1,(int)std::count(line.begin(),line.end(), '\n')))),
-                        ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
-            ImGui::PopStyleColor(2);
-
-            rc = ImGui::GetCursorPos();
-            ImGui::SetCursorPos({ rc.x, rc.y - 6 });
-        });
-
-        ImGui::End();
-        ImGui::PopStyleVar();
-        ImGui::PopFont();
     }
 
     void rs2::viewer_model::show_popup(const ux_window& window, const popup& p)
@@ -2464,6 +2418,8 @@ namespace rs2
 
             if (ImGui::BeginPopupModal(settings, nullptr, flags))
             {
+                if (ImGui::IsWindowHovered()) window.set_hovered_over_input();
+
                 ImGui::SetCursorScreenPos({ (float)(x0 + w / 2 - 280), (float)(y0 + 27) });
                 ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
@@ -2967,6 +2923,7 @@ namespace rs2
         const rect& viewer_rect, bool force)
     {
         if (_measurements.manipulating()) return;
+        if (win.get_hovered_over_input()) return;
 
         mouse_info& mouse = win.get_mouse();
         auto now = std::chrono::high_resolution_clock::now();

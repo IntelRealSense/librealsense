@@ -337,6 +337,8 @@ void calibration_model::update(ux_window& window, std::string& error_message)
 
         ImGui::PopItemWidth();
 
+        if (ImGui::IsWindowHovered()) window.set_hovered_over_input();
+
         ImGui::EndChild();
         ImGui::PopStyleColor();
 
@@ -426,6 +428,8 @@ void calibration_model::update(ux_window& window, std::string& error_message)
                 }
             }
         }
+
+        if (ImGui::IsWindowHovered()) window.set_hovered_over_input();
 
         ImGui::EndPopup();
     }
