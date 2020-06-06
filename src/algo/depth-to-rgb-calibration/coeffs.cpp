@@ -692,7 +692,8 @@ namespace depth_to_rgb_calibration {
 
     }
 
-    coeffs< p_matrix > calc_p_coefs(const z_frame_data& z_data, 
+    coeffs< p_matrix > calc_p_coefs(const z_frame_data& z_data,
+        const std::vector<double3>& new_vertices,
         const yuy2_frame_data& yuy_data,
         const calib & cal,
         const p_matrix & p_mat,
@@ -701,7 +702,7 @@ namespace depth_to_rgb_calibration {
     {
         coeffs<p_matrix> res;
 
-        auto v = z_data.vertices;
+        auto v = new_vertices;
         res.y_coeffs.resize(v.size());
         res.x_coeffs.resize(v.size());
 

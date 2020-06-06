@@ -274,6 +274,15 @@ void compare_scene( std::string const & scene_dir )
             try
             {
                 auto vertices = read_vector_from<algo::double3>(bin_file(bin_dir(scene_dir) + "end_cycle_vertices", data.cycle, 3, md.n_edges, "double_00.bin"));
+                
+                auto Kdepth = read_vector_from<double>(bin_file(bin_dir(scene_dir) + "end_cycle_Kdepth", data.cycle, 3, 3, "double_00.bin"));
+                
+                algo::rs2_intrinsics_double k_depth;
+                k_depth.fx = Kdepth[0];
+                k_depth.fy = Kdepth[2];
+                k_depth.ppx = Kdepth[4];
+                k_depth.ppy = Kdepth[5];
+
                 algo::p_matrix p_mat;
 
                 auto p_vec = read_vector_from<double>(bin_file(bin_dir(scene_dir) + "end_cycle_p_matrix",
@@ -281,7 +290,8 @@ void compare_scene( std::string const & scene_dir )
                     num_of_p_matrix_elements, 1,
                     "double_00.bin"));
                 std::copy(p_vec.begin(), p_vec.end(), p_mat.vals);
-                cal.set_cycle_data(vertices, p_mat);
+
+                cal.set_cycle_data(vertices, k_depth, p_mat);
             }
             catch (std::runtime_error &e) {
                 // if device isn't calibrated, get_extrinsics must error out (according to old comment. Might not be true under new API)
@@ -481,6 +491,25 @@ void compare_scene( std::string const & scene_dir )
 
 
 #if 1
+    auto vertices = read_vector_from<algo::double3>(bin_file(bin_dir(scene_dir) + "end_vertices", 3, md.n_edges, "double_00.bin"));
+
+    auto Kdepth = read_vector_from<double>(bin_file(bin_dir(scene_dir) + "end_Kdepth", 3, 3, "double_00.bin"));
+
+    algo::rs2_intrinsics_double k_depth;
+    k_depth.fx = Kdepth[0];
+    k_depth.fy = Kdepth[2];
+    k_depth.ppx = Kdepth[4];
+    k_depth.ppy = Kdepth[5];
+
+    algo::p_matrix p_mat;
+
+    auto p_vec = read_vector_from<double>(bin_file(bin_dir(scene_dir) + "end_p_matrix",
+        num_of_p_matrix_elements, 1,
+        "double_00.bin"));
+
+    std::copy(p_vec.begin(), p_vec.end(), p_mat.vals);
+
+    cal.set_cycle_data(vertices, k_depth, p_mat);
     //--
     TRACE( "\nChecking output validity:" );
     // Pixel movement is OK, but some sections have negative cost

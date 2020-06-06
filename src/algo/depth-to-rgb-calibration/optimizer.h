@@ -165,6 +165,7 @@ namespace depth_to_rgb_calibration {
         std::vector< double2> los_orig;
         std::vector< double2> dsm;
         std::vector < double3> vertices;
+        rs2_intrinsics_double k_depth;
     };
 
     struct iteration_data_collect
@@ -241,7 +242,7 @@ namespace depth_to_rgb_calibration {
         decision_params const& get_decision_params() const { return _decision_params; };
         std::vector< double >const& get_extracted_features() const { return _extracted_features; };
         params const & get_params() const { return _params; }
-        void set_cycle_data(const std::vector<double3>& vertices, p_matrix p_mat);
+        void set_cycle_data(const std::vector<double3>& vertices,const rs2_intrinsics_double& k_depth, const p_matrix& p_mat);
     private:
 
         // 1 cycle of optimization
@@ -267,6 +268,7 @@ namespace depth_to_rgb_calibration {
         std::vector <double3> subedges2vertices(z_frame_data& z_data, const rs2_intrinsics_double& intrin, double depth_units);
         
         optimization_params back_tracking_line_search( optimization_params const & opt_params,
+                                                       const std::vector<double3>& new_vertices,
                                                        iteration_data_collect * data = nullptr ) const;
        
         // input validation
@@ -306,8 +308,9 @@ namespace depth_to_rgb_calibration {
 
         //cycle data from bin files
         bool get_cycle_data_from_bin = true;
-        std::vector<double3> _vertices_from_bin;
+        rs2_intrinsics_double _k_dapth_from_bin;
         p_matrix _p_mat_from_bin;
+        std::vector<double3> _vertices_from_bin;
 
         std::shared_ptr<k_to_DSM> _k_to_DSM;
     };

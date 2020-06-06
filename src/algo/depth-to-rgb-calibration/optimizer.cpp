@@ -1097,6 +1097,7 @@ std::vector<double3> optimizer::subedges2vertices(z_frame_data& z_data, const rs
 }
 
 static p_matrix calc_p_gradients(const z_frame_data & z_data, 
+    const std::vector<double3>& new_vertices,
     const yuy2_frame_data & yuy_data, 
     std::vector<double> interp_IDT_x, 
     std::vector<double> interp_IDT_y,
@@ -1106,7 +1107,7 @@ static p_matrix calc_p_gradients(const z_frame_data & z_data,
     const std::vector<double2>& xy,
     iteration_data_collect * data = nullptr)
 {
-    auto coefs = calc_p_coefs(z_data, yuy_data, cal, p_mat, rc, xy);
+    auto coefs = calc_p_coefs(z_data, new_vertices, yuy_data, cal, p_mat, rc, xy);
     auto w = z_data.weights;
 
     if (data)
@@ -1141,12 +1142,13 @@ static p_matrix calc_p_gradients(const z_frame_data & z_data,
 static
 std::pair< std::vector<double2>, std::vector<double>> calc_rc(
     const z_frame_data & z_data,
+    const std::vector<double3>& new_vertices,
     const yuy2_frame_data & yuy_data,
     const calib & cal,
     const p_matrix & p_mat
 )
 {
-    auto v = z_data.vertices;
+    auto v = new_vertices;
 
     std::vector<double2> f1( z_data.vertices.size() );
     std::vector<double> r2( z_data.vertices.size() );
@@ -1198,6 +1200,7 @@ std::pair< std::vector<double2>, std::vector<double>> calc_rc(
 
 static p_matrix calc_gradients(
     const z_frame_data& z_data,
+    const std::vector<double3>& new_vertices,
     const yuy2_frame_data& yuy_data,
     const std::vector<double2>& uv,
     const calib & cal,
@@ -1209,7 +1212,7 @@ static p_matrix calc_gradients(
     auto interp_IDT_x = biliniar_interp( yuy_data.edges_IDTx, yuy_data.width, yuy_data.height, uv );      
     auto interp_IDT_y = biliniar_interp( yuy_data.edges_IDTy, yuy_data.width, yuy_data.height, uv );
 
-    auto rc = calc_rc( z_data, yuy_data, cal, p_mat);
+    auto rc = calc_rc( z_data, new_vertices, yuy_data, cal, p_mat);
 
     if (data)
     {
@@ -1219,7 +1222,7 @@ static p_matrix calc_gradients(
         data->rc = rc.second;
     }
         
-    res = calc_p_gradients( z_data, yuy_data, interp_IDT_x, interp_IDT_y, cal, p_mat, rc.second, rc.first, data );
+    res = calc_p_gradients( z_data, new_vertices, yuy_data, interp_IDT_x, interp_IDT_y, cal, p_mat, rc.second, rc.first, data );
     return res;
 }
 
@@ -1237,7 +1240,7 @@ std::pair<double, p_matrix> calc_cost_and_grad(
         data->uvmap = uvmap;
 
     auto cost = calc_cost(z_data, yuy_data, uvmap, data ? &data->d_vals : nullptr );
-    auto grad = calc_gradients(z_data, yuy_data, uvmap, cal, p_mat, data);
+    auto grad = calc_gradients(z_data, new_vertices, yuy_data, uvmap, cal, p_mat, data);
     return { cost, grad };
 }
 
@@ -1428,6 +1431,7 @@ void optimizer::write_data_to( std::string const & dir )
 }
 
 optimization_params optimizer::back_tracking_line_search( optimization_params const & curr_params,
+                                                          const std::vector<double3>& new_vertices,
                                                           iteration_data_collect * data ) const
 {
     optimization_params new_params;
@@ -1456,11 +1460,11 @@ optimization_params optimizer::back_tracking_line_search( optimization_params co
     new_params.curr_p_mat = curr_params.curr_p_mat + movement;
     
     calib old_calib = decompose( curr_params.curr_p_mat, _original_calibration );
-    auto uvmap_old = get_texture_map( _z.vertices, old_calib, curr_params.curr_p_mat );
+    auto uvmap_old = get_texture_map(new_vertices, old_calib, curr_params.curr_p_mat );
     //curr_params.cost = calc_cost( z_data, yuy_data, uvmap_old );
 
     calib new_calib = decompose( new_params.curr_p_mat, _original_calibration );
-    auto uvmap_new = get_texture_map( _z.vertices, new_calib, new_params.curr_p_mat );
+    auto uvmap_new = get_texture_map(new_vertices, new_calib, new_params.curr_p_mat );
     new_params.cost = calc_cost( _z, _yuy, uvmap_new );
 
     auto diff = calc_cost_per_vertex_diff( _z, _yuy, uvmap_old, uvmap_new );
@@ -1476,7 +1480,7 @@ optimization_params optimizer::back_tracking_line_search( optimization_params co
         new_params.curr_p_mat = curr_params.curr_p_mat + unit_grad * step_size;
         
         new_calib = decompose( new_params.curr_p_mat, _original_calibration );
-        uvmap_new = get_texture_map( _z.vertices, new_calib, new_params.curr_p_mat);
+        uvmap_new = get_texture_map(new_vertices, new_calib, new_params.curr_p_mat);
         new_params.cost = calc_cost( _z, _yuy, uvmap_new);
         diff = calc_cost_per_vertex_diff( _z, _yuy, uvmap_old, uvmap_new );
     }
@@ -1498,9 +1502,10 @@ optimization_params optimizer::back_tracking_line_search( optimization_params co
     return new_params;
 }
 
-void optimizer::set_cycle_data(const std::vector<double3>& vertices, p_matrix p_mat)
+void optimizer::set_cycle_data(const std::vector<double3>& vertices, const rs2_intrinsics_double& k_depth, const p_matrix& p_mat)
 {
     _vertices_from_bin = vertices;
+    _k_dapth_from_bin = k_depth;
     _p_mat_from_bin = p_mat;
 }
 
@@ -1515,6 +1520,7 @@ size_t optimizer::optimize_p
     iteration_data_collect* data 
 )
 {
+
     size_t n_iterations = 0;
     auto curr = params_curr;
     while (1)
@@ -1534,7 +1540,7 @@ size_t optimizer::optimize_p
             data->iteration = n_iterations;
         }
 
-        params_new = back_tracking_line_search(curr, data);
+        params_new = back_tracking_line_search(curr, new_vertices, data);
         
         if (data)
             data->next_params = params_new;
@@ -1638,25 +1644,29 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
         if (params_candidate.cost < last_cost)
             break;
 
-        new_params = params_candidate;
-        new_calib = calib_candidate;
-        new_k_depth = k_depth_candidate;
-        new_dsm_params = dsm_candidate;
-        last_cost = new_params.cost;
-        new_vertices = cand_vertices;
-
         if (cb)
         {
             data.type = cycle_data;
-            data.cycle_data_p.vertices = new_vertices;
+            data.cycle_data_p.k_depth = k_depth_candidate;
             cb(data);
         }
 
         if (get_cycle_data_from_bin)
         {
             new_params.curr_p_mat = _p_mat_from_bin;
-            new_vertices = _vertices_from_bin;
+            new_calib = decompose(_p_mat_from_bin, _original_calibration);
+            new_k_depth = _k_dapth_from_bin;
         }
+
+        new_params = params_candidate;
+        new_calib = calib_candidate;
+        new_k_depth = k_depth_candidate;
+        new_dsm_params = dsm_candidate;
+        last_cost = new_params.cost;
+        new_vertices = cand_vertices;
+        _z.vertices = new_vertices;
+
+       
     }
    
     AC_LOG( INFO,
