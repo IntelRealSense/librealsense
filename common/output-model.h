@@ -13,6 +13,82 @@
 
 namespace rs2
 {
+    class stream_dashboard
+    {
+    public:
+        stream_dashboard(std::string name, int size) : q(size), name(name), t([this](){ thread_function(); }) {}
+        virtual ~stream_dashboard()
+        {
+            stop = true;
+            t.join();
+        }
+
+        void add_frame(rs2::frame f) { q.enqueue(f); }
+
+        virtual void draw(ux_window& win, rect r) = 0;
+
+        virtual int get_height() const { return 150.f; }
+
+    protected:
+        virtual void process_frame(rs2::frame f) = 0;
+
+        void write_shared_data(std::function<void()> action)
+        {
+            std::lock_guard<std::mutex> lock(m);
+            action();
+        }
+
+        template<class T>
+        T read_shared_data(std::function<T()> action)
+        {
+            std::lock_guard<std::mutex> lock(m);
+            T res = action();
+            return res;
+        }
+
+        void add_point(float x, float y) { xy.push_back(std::make_pair(x, y)); }
+        
+        void draw_dashboard(ux_window& win, rect& r);
+
+    private:
+        void thread_function()
+        {
+            while(!stop)
+            {
+                rs2::frame f;
+                if (q.try_wait_for_frame(&f, 100))
+                    process_frame(f);
+            }
+        }
+        std::string name;
+        rs2::frame_queue q;
+        std::mutex m;
+        std::atomic<int> stop { false };
+        std::thread t;
+        std::vector<std::pair<float, float>> xy;
+    };
+
+    class frame_drops_dashboard : public stream_dashboard
+    {
+    public:
+        frame_drops_dashboard(int* frame_drop_count, int* total) 
+            : stream_dashboard("Viewer Frame Drops per Second", 30), 
+              last_time(glfwGetTime()), frame_drop_count(frame_drop_count), total(total) {}
+
+        void process_frame(rs2::frame f) override;
+        void draw(ux_window& win, rect r) override;
+        int get_height() const override;
+
+    private:
+        std::map<int, double> stream_to_time;
+        int drops = 0;
+        double last_time;
+        std::deque<int> drops_history;
+        int *frame_drop_count, *total;
+        int counter = 0;
+        int method = 0;
+    };
+
     class output_model
     {
     public:
@@ -26,6 +102,8 @@ namespace rs2
             std::string timestamp = "";
             bool selected = false;
         };
+
+        void update_dashboards(rs2::frame f);
 
         output_model();
 
@@ -42,7 +120,7 @@ namespace rs2
 
         void foreach_log(std::function<void(log_entry& line)> action);
         bool round_indicator(ux_window& win, std::string icon, int count, 
-            ImVec4 color, std::string tooltip, bool& highlighted);
+            ImVec4 color, std::string tooltip, bool& highlighted, std::string suffix = "");
 
         bool new_log = false;
         std::recursive_mutex m;
@@ -70,7 +148,8 @@ namespace rs2
         int number_of_errors = 0;
         int number_of_warnings = 0;
         int number_of_info = 0;
-        int number_of_leaks = 0;
+        int number_of_drops = 0;
+        int total_frames = 0;
 
         animated<int> search_width { 0, std::chrono::milliseconds(400) };
         bool search_open = false;
@@ -79,5 +158,7 @@ namespace rs2
         std::string command_line { "" };
         std::deque<std::string> commands_histroy;
         int history_offset = 0;
+
+        std::vector<std::shared_ptr<stream_dashboard>> dashboards;
     };
 }

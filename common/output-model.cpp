@@ -18,14 +18,16 @@ output_model::output_model()
     search_line = config_file::instance().get_or_default(
             configurations::viewer::search_term, std::string(""));
     if (search_line != "") search_open = true;
+
+    dashboards.push_back(std::make_shared<frame_drops_dashboard>(&number_of_drops, &total_frames));
 }
 
 bool output_model::round_indicator(ux_window& win, std::string icon,
-    int count, ImVec4 color, std::string tooltip, bool& highlighted)
+    int count, ImVec4 color, std::string tooltip, bool& highlighted, std::string suffix)
 {
     std::stringstream ss;
     ss << icon;
-    if (count > 0) ss << " " << count;
+    if (count > 0) ss << " " << count << suffix;
     auto size = ImGui::CalcTextSize(ss.str().c_str());
 
     if (count == 0 || (!is_output_open && !highlighted)) {
@@ -185,8 +187,12 @@ void output_model::draw(ux_window& win, rect view_rect)
     auto curr_x = ImGui::GetCursorPosX();
     ImGui::SetCursorPosX(curr_x - 5);
 
+
+    int percent = total_frames ? 100 * ((double)number_of_drops / (total_frames)) : 0;
+
     std::stringstream ss;
-    ss << u8"\uF043 " << number_of_leaks;
+    ss << u8"\uF043";
+    if (percent) ss << " " << percent << "%";
     auto size = ImGui::CalcTextSize(ss.str().c_str());
 
     char buff[1024];
@@ -252,7 +258,8 @@ void output_model::draw(ux_window& win, rect view_rect)
     }
     ImGui::SameLine();
 
-    if (round_indicator(win, u8"\uF043", number_of_leaks, regular_blue, "Frame drops", drops_highlighted))
+
+    if (round_indicator(win, u8"\uF043", percent, regular_blue, "Frame drops", drops_highlighted, "%"))
     {
         open(win);
     }
@@ -457,6 +464,15 @@ void output_model::draw(ux_window& win, rect view_rect)
         ImGui::SetCursorPos(ImVec2(0.7f * w - 2, 35));
         ImGui::BeginChild("##StatsArea",ImVec2(0.3f * w - 2, h - 38), true);
 
+        auto top = 0;
+        for(auto&& dash : dashboards)
+        {   
+            auto h = dash->get_height();
+            auto r = rect { 0.f, top, 0.3f * w - 2, h };
+            dash->draw(win, r);
+            top += h;
+        }
+
         ImGui::EndChild();
 
 
@@ -546,9 +562,213 @@ void output_model::run_command(std::string command)
             else if (le.severity >= RS2_LOG_SEVERITY_WARN) number_of_warnings--;
             else number_of_info--;
             notification_logs.pop_front();
+            total_frames = 0;
+            number_of_drops = 0;
         }
         return;
     }
 
     add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__, to_string() << "Unrecognized command '" << command << "'");
+}
+
+void output_model::update_dashboards(rs2::frame f)
+{
+    for (auto&& d : dashboards)
+        d->add_frame(f);
+}
+
+void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
+{
+    auto min_x = 0.f;
+    auto max_x = 1.f;
+    auto min_y = 0.f;
+    auto max_y = 1.f;
+
+    if (xy.size())
+    {
+        min_x = xy[0].first;
+        max_x = xy[0].first;
+        min_y = xy[0].second;
+        max_y = xy[0].second;
+        for (auto&& p : xy)
+        {
+            min_x = std::min(min_x, p.first);
+            min_y = std::min(min_y, p.second);
+            max_x = std::max(max_x, p.first);
+            max_y = std::max(max_y, p.second);
+        }
+    }
+
+    auto gap_y = max_y - min_y;
+    auto gap_x = max_x - min_x;
+    auto height_y = r.h - 2 * ImGui::GetTextLineHeight() - 10;
+    auto ticks_y = ceil(height_y / ImGui::GetTextLineHeight());
+
+    auto max_y_label_width = 0.f;
+    for (int i = 0; i <= ticks_y; i++)
+    {
+        auto y = max_y - i * (gap_y / ticks_y);
+        std::string y_label = to_string() << std::fixed << std::setprecision(2) << y;
+        auto size = ImGui::CalcTextSize(y_label.c_str());
+        max_y_label_width = std::max(max_y_label_width, 
+            size.x);
+    }
+
+    auto pos = ImGui::GetCursorScreenPos();
+
+    ImGui::PushStyleColor(ImGuiCol_Text, white);
+
+    ImGui::GetWindowDrawList()->AddRectFilled({ pos.x, pos.y },
+                { pos.x + r.w - 1, pos.y + get_height() - 1 }, ImColor(header_color));
+
+    auto size = ImGui::CalcTextSize(name.c_str());
+    ImGui::SetCursorPos(ImVec2( r.w / 2 - size.x / 2, 5 ));
+    ImGui::Text("%s", name.c_str());
+
+    ImGui::GetWindowDrawList()->AddRectFilled({ pos.x + max_y_label_width + 15, pos.y + ImGui::GetTextLineHeight() + 5 },
+                 { pos.x + r.w - 10, pos.y + r.h - ImGui::GetTextLineHeight() - 5 }, ImColor(almost_white_bg));
+
+    //ImGui::PushFont(win.get_monofont());
+    for (int i = 0; i <= ticks_y; i++)
+    {
+        auto y = max_y - i * (gap_y / ticks_y);
+        std::string y_label = to_string() << std::fixed << std::setprecision(2) << y;
+        auto y_pixel = ImGui::GetTextLineHeight() + i * (height_y / ticks_y);
+        ImGui::SetCursorPos(ImVec2( 10, y_pixel ));
+        ImGui::Text("%s", y_label.c_str());
+
+        ImGui::GetWindowDrawList()->AddLine({ pos.x + max_y_label_width + 15, pos.y + y_pixel + 5 },
+                 { pos.x + r.w - 10, pos.y + y_pixel + 5 }, ImColor(light_grey));
+    }
+
+    auto graph_width = r.w - max_y_label_width - 25;
+
+    int ticks_x = 2;
+    bool has_room = true;
+    while (has_room)
+    {
+        auto total = 0;
+        for (int i = 0; i <= ticks_x; i++)
+        {
+            auto x = min_x + i * (gap_x / ticks_x);
+            std::string x_label = to_string() << std::fixed << std::setprecision(2) << x;
+            auto size = ImGui::CalcTextSize(x_label.c_str());
+            total += size.x;
+        }
+        if (total < graph_width) ticks_x++;
+        else has_room = false;
+    }
+    ticks_x -= 3;
+    
+    auto total = 0;
+    for (int i = 0; i < ticks_x; i++)
+    {
+        auto x = min_x + i * (gap_x / ticks_x);
+        std::string x_label = to_string() << std::fixed << std::setprecision(2) << x;
+        auto y_pixel = ImGui::GetTextLineHeight() + i * (height_y / ticks_y);
+        ImGui::SetCursorPos(ImVec2( 15 + max_y_label_width+ i * (graph_width / ticks_x), r.h - ImGui::GetTextLineHeight() ));
+        ImGui::Text("%s", x_label.c_str());
+
+        ImGui::GetWindowDrawList()->AddLine({ pos.x + 15 + max_y_label_width + i * (graph_width / ticks_x), pos.y + ImGui::GetTextLineHeight() + 5 },
+                 { pos.x + max_y_label_width + 15 + i * (graph_width / ticks_x), pos.y + ImGui::GetTextLineHeight() + 5 + height_y }, ImColor(light_grey));
+    }
+
+    std::sort(xy.begin(), xy.end(), [](const std::pair<float, float>& a, const std::pair<float, float>& b) { return a.first < b.first; });
+
+    for (int i = 0; i + 1 < xy.size(); i++)
+    {
+        auto x0 = xy[i].first;
+        auto y0 = xy[i].second;
+
+        auto x1 = xy[i+1].first;
+        auto y1 = xy[i+1].second;
+
+        x0 = (x0 - min_x) / (max_x - min_x);
+        x1 = (x1 - min_x) / (max_x - min_x);
+
+        y0 = (y0 - min_y) / (max_y - min_y);
+        y1 = (y1 - min_y) / (max_y - min_y);
+
+        ImGui::GetWindowDrawList()->AddLine({ pos.x + 15 + max_y_label_width + x0 * graph_width, pos.y + ImGui::GetTextLineHeight() + 5 + height_y * (1.f - y0) },
+                 { pos.x + 15 + max_y_label_width + x1 * graph_width, pos.y + ImGui::GetTextLineHeight() + 5 + height_y * (1.f - y1) }, ImColor(black));
+    }
+
+    //ImGui::PopFont();
+    ImGui::PopStyleColor();
+
+    xy.clear();
+}
+
+void frame_drops_dashboard::process_frame(rs2::frame f)
+{
+    write_shared_data([&](){
+        double ts = glfwGetTime();
+        if (method == 1) ts = f.get_timestamp() / 1000.f;
+        auto it = stream_to_time.find(f.get_profile().unique_id());
+        if (it != stream_to_time.end())
+        {
+            auto last = stream_to_time[f.get_profile().unique_id()];
+
+            auto fps = f.get_profile().fps();
+
+            if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
+                fps = f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
+
+            if (1000.f * (ts - last) > 1.5f * (1000.f / fps)) {
+                drops++;
+            }
+        }
+
+        counter++;
+
+        if (ts - last_time > 1.f)
+        {
+            if (drops_history.size() > 100) drops_history.pop_front();
+            drops_history.push_back(drops);
+            *total = counter;
+            *frame_drop_count = drops;
+            drops = 0;
+            last_time = ts;
+            counter = 0;
+        }
+
+        stream_to_time[f.get_profile().unique_id()] = ts;
+    });
+}
+
+void frame_drops_dashboard::draw(ux_window& win, rect r)
+{
+    auto hist = read_shared_data<std::deque<int>>([&](){ return drops_history; });
+    for (int i = 0; i < hist.size(); i++)
+    {
+        add_point(i, hist[i]);
+    }
+    r.h -= ImGui::GetTextLineHeightWithSpacing() + 10;
+    draw_dashboard(win, r);
+
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 40);
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 3);
+    ImGui::Text("%s", "Measurement Metric:"); ImGui::SameLine();
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 3);
+
+    ImGui::SetCursorPosX(200);
+
+    std::vector<const char*> methods;
+    methods.push_back("Viewer Processing Rate");
+    methods.push_back("Camera Timestamp Rate");
+
+    ImGui::PushItemWidth(r.w - 207);
+    if (ImGui::Combo("##fps_method", &method, methods.data(), methods.size()))
+    {
+        write_shared_data([&](){
+            stream_to_time.clear();
+            last_time = 0;
+        });
+    }
+    ImGui::PopItemWidth();
+}
+
+int frame_drops_dashboard::get_height() const 
+{ 
+    return 160.f + ImGui::GetTextLineHeightWithSpacing(); 
 }

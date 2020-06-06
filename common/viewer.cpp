@@ -1299,6 +1299,9 @@ namespace rs2
                 last_frames[f.get_profile().unique_id()] = f;
             }
 
+            for(auto&& f : last_frames)
+                not_model->output.update_dashboards(f.second);
+
             for(auto&& frame : last_frames)
             {
                 auto f = frame.second;
