@@ -34,7 +34,7 @@ namespace ivcam2 {
 
         bool _is_on = false;
         std::mutex _mutex;
-        std::atomic_bool _is_processing = false;  // Whether algo is currently running
+        bool _is_processing = false;  // Whether algo is currently running
         std::thread _worker;
         unsigned _n_retries;     // how many special frame requests we've made
         unsigned _n_cycles = 0;  // how many times we've run algo

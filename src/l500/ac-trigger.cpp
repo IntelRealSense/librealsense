@@ -573,7 +573,7 @@ namespace ivcam2 {
                     if( n_seconds.count() )
                         start( n_seconds );
                     else
-                        AC_LOG( DEBUG, "RS2_AC_TRIGGER_SECONDS is 0; no next AC trigger" );
+                        AC_LOG( DEBUG, "RS2_AC_TRIGGER_SECONDS is 0; no time trigger" );
                     // Or after a certain temperature change
                     if( get_temp_diff_trigger() )
                     {
