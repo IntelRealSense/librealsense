@@ -343,19 +343,11 @@ bool get_calib_from_raw_data(
     return true;
 }
 
-bool compare_calib_to_bin_file(
-    algo::calib const & calib,
-    double cost,
-    std::string const & scene_dir,
-    std::string const & filename,
-    bool gradient = false
-)
+bool compare_calib( algo::calib const & calib,
+                    double cost,
+                    algo::calib calib_from_file,
+                    double cost_matlab )
 {
-    TRACE( "Comparing " << filename << " ..." );
-    algo::calib calib_from_file;
-    double cost_matlab;
-    auto res = get_calib_from_raw_data( calib_from_file, cost_matlab, scene_dir, filename );
-
     auto intr_matlab = calib_from_file.get_intrinsics();
     auto extr_matlab = calib_from_file.get_extrinsics();
     
@@ -371,10 +363,8 @@ bool compare_calib_to_bin_file(
     ok &= compare_and_trace( intr_matlab.ppx, intr_cpp.ppx, "ppx" );
     ok &= compare_and_trace( intr_matlab.ppy, intr_cpp.ppy, "ppy" );
 
-    
     for( auto i = 0; i < 9; i++ )
         ok &= compare_and_trace( extr_matlab.rotation[i], extr_cpp.rotation[i], "rotation[" + std::to_string( i ) + "]" );
-    
 
     for( auto i = 0; i < 3; i++ )
         ok &= compare_and_trace( extr_matlab.translation[i], extr_cpp.translation[i], "translation[" + std::to_string( i ) + "]" );
@@ -382,20 +372,6 @@ bool compare_calib_to_bin_file(
     return ok;
 }
 
-
-bool compare_calib_to_bin_file(
-    algo::calib const & calib,
-    double cost,
-    std::string const & scene_dir,
-    char const * prefix,
-    size_t w, size_t h,
-    char const * suffix,
-    bool gradient = false
-)
-{
-    auto filename = bin_file( prefix, w, h, suffix ) + ".bin";
-    return compare_calib_to_bin_file( calib, cost, scene_dir, filename, gradient );
-}
 
 bool operator==(const algo::algo_calibration_registers& first, const algo::algo_calibration_registers& second)
 {

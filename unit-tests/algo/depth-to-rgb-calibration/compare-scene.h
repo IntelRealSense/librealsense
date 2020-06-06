@@ -2,7 +2,16 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 
-void compare_scene( std::string const & scene_dir )
+struct scene_stats
+{
+    bool is_valid_scene_diff;
+    bool is_valid_result_diff;
+    double cost, d_cost;
+    double movement, d_movement;
+};
+
+
+void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr )
 {
     TRACE( "Loading " << scene_dir << " ..." );
 
@@ -118,7 +127,11 @@ void compare_scene( std::string const & scene_dir )
     // ---
     TRACE( "\nChecking scene validity:" );
 
-    CHECK( cal.is_scene_valid() == md.is_scene_valid );
+    bool const is_scene_valid = cal.is_scene_valid();
+    bool const matlab_scene_valid = md.is_scene_valid;
+    CHECK( is_scene_valid == matlab_scene_valid );
+    if( stats )
+        stats->is_valid_scene_diff = is_scene_valid != matlab_scene_valid;
 
     // edge distribution
     CHECK( compare_to_bin_file< double >( z_data.sum_weights_per_section, scene_dir, "depthEdgeWeightDistributionPerSectionDepth", 1, 4, "double_00", compare_same_vectors ) );
@@ -498,8 +511,18 @@ void compare_scene( std::string const & scene_dir )
     
     auto new_calibration = cal.get_calibration();
     auto cost = cal.get_cost();
-
-    CHECK( compare_calib_to_bin_file( new_calibration, cost, scene_dir, "new_calib", num_of_calib_elements, 1, "double_00" ) );
+    
+    auto filename = bin_file( "new_calib", num_of_calib_elements, 1, "double_00" ) + ".bin";
+    TRACE( "Comparing " << filename << " ..." );
+    algo::calib matlab_calib;
+    double matlab_cost = 0;
+    CHECK( get_calib_from_raw_data( matlab_calib, matlab_cost, scene_dir, filename ) );
+    CHECK( compare_calib( new_calibration, cost, matlab_calib, matlab_cost ));
+    if( stats )
+    {
+        stats->cost = cost;
+        stats->d_cost = cost - matlab_cost;
+    }
 
 
 #if 1
@@ -525,9 +548,20 @@ void compare_scene( std::string const & scene_dir )
     //--
     TRACE( "\nChecking output validity:" );
     // Pixel movement is OK, but some sections have negative cost
-    CHECK( cal.is_valid_results() == md.is_output_valid );
+    bool const is_valid_results = cal.is_valid_results();
+    bool const matlab_valid_results = md.is_output_valid;
+    CHECK( is_valid_results == matlab_valid_results );
+    if( stats )
+        stats->is_valid_result_diff = is_valid_results != matlab_valid_results;
 
-    CHECK( cal.calc_correction_in_pixels() == approx( md.correction_in_pixels ) );
+    double const movement_in_pixels = cal.calc_correction_in_pixels();
+    double const matlab_movement_in_pixels = md.correction_in_pixels;
+    CHECK( movement_in_pixels == approx( matlab_movement_in_pixels ) );
+    if( stats )
+    {
+        stats->movement = movement_in_pixels;
+        stats->d_movement = movement_in_pixels - matlab_movement_in_pixels;
+    }
 
     CHECK( compare_to_bin_file< double >( z_data.cost_diff_per_section, scene_dir, "costDiffPerSection", 4, 1, "double_00", compare_same_vectors ) );
 
