@@ -181,6 +181,8 @@ struct command
     std::vector<parameter> parameters;
 };
 
+typedef struct command command_from_xml;
+
 // units of nibbles
 enum FormatSize {
     Byte = 2,

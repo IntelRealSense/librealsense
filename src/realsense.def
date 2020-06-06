@@ -376,4 +376,9 @@ EXPORTS
     rs2_get_fw_log_parsed_line
     rs2_get_fw_log_parsed_timestamp
 
+    rs2_create_terminal_parser
+    rs2_delete_terminal_parser
+    rs2_terminal_parse_command
+
+
 

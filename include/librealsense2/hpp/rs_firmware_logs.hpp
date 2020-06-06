@@ -7,7 +7,7 @@
 #include "rs_types.hpp"
 #include "rs_sensor.hpp"
 #include "../h/rs_firmware_logs.h"
-#include <array>
+#include <array>        //REMI - check if needed!
 
 namespace rs2
 {

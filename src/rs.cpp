@@ -42,6 +42,7 @@
 #include "global_timestamp_reader.h"
 #include "auto-calibrated-device.h"
 #include "firmware_logger_device.h"
+#include "terminal-parser.h"
 ////////////////////////
 // API implementation //
 ////////////////////////
@@ -123,6 +124,11 @@ struct rs2_firmware_log_message
 struct rs2_firmware_log_parsed_message
 {
     std::shared_ptr<librealsense::fw_logs::fw_log_data> firmware_log_parsed;
+};
+
+struct rs2_terminal_parser
+{
+    std::shared_ptr<librealsense::terminal_parser> terminal_parser;
 };
 
 
@@ -3147,6 +3153,32 @@ unsigned int rs2_get_fw_log_parsed_timestamp(rs2_firmware_log_parsed_message* fw
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, fw_log_parsed_msg)
 
+rs2_terminal_parser* rs2_create_terminal_parser(const char* xml_path, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(xml_path);
+    return new rs2_terminal_parser{ std::make_shared<librealsense::terminal_parser>(std::string(xml_path)) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, xml_path)
 
+void rs2_delete_terminal_parser(rs2_terminal_parser* terminal_parser) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(terminal_parser);
+    delete terminal_parser;
+}
+NOEXCEPT_RETURN(, terminal_parser)
 
+rs2_raw_data_buffer* rs2_terminal_parse_command(rs2_terminal_parser* terminal_parser, rs2_device* device, const char* command, unsigned int size_of_command_str, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(terminal_parser);
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(command);
 
+    auto debug_interface = VALIDATE_INTERFACE(device->device, librealsense::debug_interface);
+
+    std::string command_string;
+    command_string.insert(command_string.begin(), command, command + size_of_command_str);
+
+    auto result = terminal_parser->terminal_parser->parse_command(debug_interface, command_string);
+    return new rs2_raw_data_buffer{ result };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, terminal_parser, device, command)
