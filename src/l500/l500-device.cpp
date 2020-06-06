@@ -375,7 +375,7 @@ namespace librealsense
         if( _autocal->is_active() )
             throw wrong_api_call_sequence_exception( "calibration is already active" );
 
-        _autocal->trigger_special_frame();
+        _autocal->trigger_calibration();
     }
 
     void l500_device::force_hardware_reset() const

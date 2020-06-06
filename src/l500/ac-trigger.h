@@ -32,23 +32,28 @@ namespace ivcam2 {
         hw_monitor & _hwm;
         l500_device & _dev;
 
+        bool _is_on = false;
         std::mutex _mutex;
-        std::atomic_bool _is_processing;
+        std::atomic_bool _is_processing = false;  // Whether algo is currently running
         std::thread _worker;
-        unsigned _n_retries;    // how many tries for a special frame we made
-        unsigned _n_cycles;     // how many times AC tried to run
+        unsigned _n_retries;     // how many special frame requests we've made
+        unsigned _n_cycles = 0;  // how many times we've run algo
 
         rs2_extrinsics _extr;
         rs2_intrinsics _intr;
         rs2_dsm_params _dsm_params;
-        stream_profile_interface* _from_profile;
-        stream_profile_interface* _to_profile;
+        stream_profile_interface* _from_profile = nullptr;
+        stream_profile_interface* _to_profile = nullptr;
 
         class retrier;
         std::shared_ptr< retrier > _retrier;
         std::shared_ptr< retrier > _recycler;
         std::shared_ptr< retrier > _next_trigger;
         rs2_calibration_status _last_status_sent;
+
+        class temp_check;
+        double _last_temp = 0;
+        std::shared_ptr< temp_check > _temp_check;
 
     public:
         /* Depth frame processing: detect special frames
@@ -105,28 +110,34 @@ namespace ivcam2 {
         ac_trigger( l500_device & dev, hw_monitor & hwm );
         ~ac_trigger();
 
-        // Wait a certain amount of time before the next AC happens. Can only happen if not already
-        // active!
-        void trigger_next_ac( unsigned n_seconds );
+        // Wait a certain amount of time before the next calibration happens. Can only happen if not
+        // already active!
+        void start( std::chrono::seconds n_seconds = std::chrono::seconds(0) );
 
         // Once triggered, we may want to cancel it... like when stopping the stream
-        void cancel_next_ac();
+        void stop();
 
-        // If we're active, no new triggers will be accepted until we reach a final state
-        // (successful or failed)
+        // If we're active, calibration is currently in progress (anywhere between asking for a
+        // special frame and finishing with success/failure). No new triggers will be accepted!
         bool is_active() const { return _n_cycles > 0; }
 
-        // Start AC activity -- after this, is_active() returns true
-        void trigger_special_frame( bool is_retry = false );
+        // Returns whether the mechanism is on: anywhere between start() and stop(). When on,
+        // the end of one calibration triggers a temperature check and the next calibration.
+        //
+        // Note that is_active() can be true even when we're off -- trigger_calibration()
+        // can manually trigger a calibration, meaning that the calibration will run its
+        // course and then stop...
+        //
+        bool is_on() const { return _is_on; }
+
+        // Start calibration -- after this, is_active() returns true. See the note for is_on().
+        void trigger_calibration( bool is_retry = false );
 
         rs2_extrinsics const & get_extrinsics() const { return _extr; }
         rs2_intrinsics const & get_intrinsics() const { return _intr; }
         rs2_dsm_params const & get_dsm_params() const { return _dsm_params; }
         stream_profile_interface * get_from_profile() const { return _from_profile; }
         stream_profile_interface * get_to_profile() const { return _to_profile; }
-
-        void set_special_frame( rs2::frameset const& );
-        void set_color_frame( rs2::frame const& );
 
         using callback = std::function< void( rs2_calibration_status ) >;
         void register_callback( callback cb )
@@ -135,8 +146,12 @@ namespace ivcam2 {
         }
 
     private:
+        void set_special_frame( rs2::frameset const & );
+        void set_color_frame( rs2::frame const & );
+
         bool is_processing() const { return _is_processing; }
         bool is_expecting_special_frame() const { return !!_retrier; }
+        double read_temperature();
 
         std::vector< callback > _callbacks;
 
@@ -148,7 +163,7 @@ namespace ivcam2 {
         }
 
         bool check_color_depth_sync();
-        void start();
+        void run_algo();
         void reset();
     };
 

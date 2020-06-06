@@ -16,6 +16,7 @@
 #include <cstddef>
 #include "metadata-parser.h"
 #include "l500-options.h"
+#include "ac-trigger.h"
 #include "algo/depth-to-rgb-calibration/debug.h"
 
 
@@ -241,6 +242,9 @@ namespace librealsense
             These values are extreme. For more reasonable values take 0.99-1.01
             for h/vFactor and divide the suggested h/vOffset range by 10.
         */
+        if( dsm_params.model != RS2_DSM_CORRECTION_AOT )
+            throw invalid_value_exception( "DSM non-AoT (1) mode is currently unsupported" );
+
         command cmd( ivcam2::fw_cmd::WRITE_TABLE, 0 );
         ac_depth_results table( dsm_params );
         // table.params.timestamp = std::chrono::system_clock::now().time_since_epoch().count();
@@ -380,6 +384,8 @@ namespace librealsense
                 synthetic_sensor::start(std::make_shared<frame_validator>(shared_from_this(), callback, _user_requests, _validator_requests));
             else
                 synthetic_sensor::start(callback);
+            if( _owner->_autocal )
+                _owner->_autocal->start();
         });
     }
 
@@ -389,6 +395,8 @@ namespace librealsense
             synthetic_sensor::stop();
             _depth_invalidation_option->set_streaming(false);
         });
+        if( _owner->_autocal )
+            _owner->_autocal->stop();
     }
 
     rs2_sensor_mode get_resolution_from_width_height(int width, int height)

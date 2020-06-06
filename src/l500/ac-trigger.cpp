@@ -78,6 +78,28 @@ public:
 };
 
 
+static int get_retry_sf_seconds()
+{
+    static int n_seconds
+        = env_var< int >( "RS2_AC_SF_RETRY_SECONDS", 2, []( int n ) { return n > 0; } );
+    return n_seconds;
+}
+static double get_temp_diff_trigger()
+{
+    static double d_temp
+        = env_var< int >( "RS2_AC_TEMP_DIFF", 5, []( int n ) { return n >= 0; } ).value();
+    return d_temp;
+}
+static std::chrono::seconds get_trigger_seconds()
+{
+    auto n_seconds = env_var< int >( "RS2_AC_TRIGGER_SECONDS",
+        600,  // 10 minutes since last
+        []( int n ) { return n >= 0; } );
+    // 0 means turn off auto-trigger
+    return std::chrono::seconds( n_seconds );
+}
+
+
 namespace librealsense {
 namespace ivcam2 {
 
@@ -94,7 +116,7 @@ namespace ivcam2 {
         if( is_true() )
         {
             // We've turned it on -- try to immediately get a special frame
-            _autocal->trigger_special_frame();
+            _autocal->trigger_calibration();
         }
         else if( _autocal->_to_profile )
         {
@@ -139,54 +161,88 @@ namespace ivcam2 {
     {
         ac_trigger & _ac;
         unsigned _id;
+        char const * const _name;
 
-        retrier( ac_trigger & ac )
+    protected:
+        retrier( ac_trigger & ac, char const * name )
             : _ac( ac )
+            , _name( name ? name : "retrier" )
         {
             static unsigned id = 0;
             _id = ++id;
         }
 
-        unsigned get_id() const
-        {
-            //return to_string() << std::hex << this;
-            return _id;
-        }
+        unsigned get_id() const { return _id; }
+        ac_trigger & get_ac() const { return _ac; }
+        char const * get_name() const { return _name; }
 
-        void retry()
+        virtual void retry()
         {
             AC_LOG( DEBUG, "retrying " << get_id() );
-            _ac.trigger_special_frame( true );
+            _ac.trigger_calibration( true );
         }
 
     public:
-        ~retrier()
+        virtual ~retrier()
         {
-            AC_LOG( DEBUG, "~retrier " << get_id() );
+            AC_LOG( DEBUG, "~" << get_name() << " " << get_id() );
         }
 
-        static std::shared_ptr< retrier > start( ac_trigger & autocal, std::chrono::seconds n_seconds )
+        template < class T = retrier >
+        static std::shared_ptr< T > start( ac_trigger & trigger,
+                                           std::chrono::seconds n_seconds,
+                                           const char * name = nullptr )
         {
-            auto r = new retrier( autocal );
+            T * r = new T( trigger, name );
             auto id = r->get_id();
-            AC_LOG( DEBUG, "retrier " << id << ": " << n_seconds.count() << " seconds starting" );
-            auto pr = std::shared_ptr< retrier >( r );
-            std::weak_ptr< retrier > weak{ pr };
-            std::thread(
-                [id, weak, n_seconds]()
-                {
-                    std::this_thread::sleep_for( n_seconds );
-                    auto pr = weak.lock();
-                    if( pr  &&  pr->get_id() == id )
-                        pr->retry();
-                    else
-                        AC_LOG( DEBUG,
-                                "retrier " << id << ": " << n_seconds.count()
-                                           << " seconds are up; no retry needed" );
-                } )
-                .detach();
+            name = r->get_name();
+            AC_LOG( DEBUG, name << ' ' << id << ": " << n_seconds.count() << " seconds starting" );
+            auto pr = std::shared_ptr< T >( r );
+            std::weak_ptr< T > weak{ pr };
+            std::thread( [=]() {
+                std::this_thread::sleep_for( n_seconds );
+                auto pr = weak.lock();
+                if( pr && pr->get_id() == id )
+                    ( (retrier *)pr.get() )->retry();
+                else
+                    AC_LOG( DEBUG,
+                            name << ' ' << id << ": " << n_seconds.count()
+                                 << " seconds are up; nothing needed" );
+            } ).detach();
             return pr;
         };
+    };
+    class ac_trigger::temp_check : public ac_trigger::retrier
+    {
+    public:
+        temp_check( ac_trigger & ac, const char * name )
+            : retrier( ac, name ? name : "temp check" )
+        {
+        }
+
+    private:
+        void retry() override
+        {
+            auto & trigger = get_ac();
+            if( trigger.is_active() )
+            {
+                AC_LOG( DEBUG, "temp check " << get_id() << ": AC already active" );
+                return;
+            }
+            auto current_temp = trigger.read_temperature();
+            auto d_temp = current_temp - trigger._last_temp;
+            if( d_temp >= get_temp_diff_trigger() )
+            {
+                AC_LOG( DEBUG, "Delta since last calibration is " << d_temp << " degrees Celsius; triggering..." );
+                trigger.trigger_calibration();
+            }
+            else
+            {
+                // We do not update the trigger temperature: that is only updated after calibration
+                AC_LOG( DEBUG, "Delta since last calibration is " << d_temp << " degrees Celsius" );
+                trigger._temp_check = retrier::start< temp_check >( trigger, std::chrono::seconds( 60 ) );
+            }
+        }
     };
 
 
@@ -243,12 +299,8 @@ namespace ivcam2 {
 
 
     ac_trigger::ac_trigger( l500_device & dev, hw_monitor & hwm )
-        : _is_processing{ false }
-        , _hwm( hwm )
+        : _hwm( hwm )
         , _dev( dev )
-        , _from_profile( nullptr )
-        , _to_profile( nullptr )
-        , _n_cycles( 0 )
     {
         bool to_stdout = true;
         static ac_logger one_logger(
@@ -269,24 +321,11 @@ namespace ivcam2 {
     }
 
 
-    static int get_retry_sf_seconds()
-    {
-        static int n_seconds
-            = env_var< int >( "RS2_AC_SF_RETRY_SECONDS", 2, []( int n ) { return n > 0; } );
-        return n_seconds;
-    }
-
-
-    void ac_trigger::trigger_special_frame( bool is_retry )
+    void ac_trigger::trigger_calibration( bool is_retry )
     {
         _retrier.reset();
-        if( is_retry )
+        if( is_retry  &&  is_active() )
         {
-            if( ! is_active() )
-            {
-                AC_LOG( ERROR, "Failed to trigger_special_frame( retry): AC is not active" );
-                return;
-            }
             if( _recycler )
             {
                 // This is another cycle of AC, after we've woken up from some time after
@@ -307,12 +346,13 @@ namespace ivcam2 {
         {
             if( is_active() )
             {
-                AC_LOG( ERROR, "Failed to trigger_special_frame: AC is already active" );
+                AC_LOG( ERROR, "Failed to trigger calibration: AC is already active" );
                 return;
             }
             _n_retries = 0;
             _n_cycles = 1;          // now active
-            _next_trigger.reset();  // don't need to trigger any more
+            _next_trigger.reset();  // don't need a trigger any more
+            _temp_check.reset();    // nor a temperature check
             AC_LOG( DEBUG, "Sending GET_SPECIAL_FRAME (cycle 1); now active..." );
         }
         command cmd{ GET_SPECIAL_FRAME, 0x5F, 1 };  // 5F = SF = Special Frame, for easy recognition
@@ -324,8 +364,15 @@ namespace ivcam2 {
 
     void ac_trigger::set_special_frame( rs2::frameset const & fs )
     {
+        if( !is_active() )
+        {
+            AC_LOG( ERROR, "Special frame received while is_active() is false" );
+            return;
+        }
+
         AC_LOG( DEBUG, "special frame received :)" );
-        // Notify of the special frame -- mostly for validation team so they know to expect a frame drop...
+        // Notify of the special frame -- mostly for validation team so they know to expect a frame
+        // drop...
         call_back( RS2_CALIBRATION_SPECIAL_FRAME );
 
         if( _is_processing )
@@ -366,7 +413,7 @@ namespace ivcam2 {
         _sf.keep();
         std::lock_guard< std::mutex > lock( _mutex );
         if( check_color_depth_sync() )
-            start();
+            run_algo();
         else
             _retrier = retrier::start( *this, std::chrono::seconds( get_retry_sf_seconds() ) );
     }
@@ -374,7 +421,7 @@ namespace ivcam2 {
 
     void ac_trigger::set_color_frame( rs2::frame const& f )
     {
-        if( _is_processing )
+        if( ! is_active() )
             // No error message -- we expect to get new color frames while processing...
             return;
 
@@ -383,7 +430,7 @@ namespace ivcam2 {
         _cf.keep();
         std::lock_guard< std::mutex > lock( _mutex );
         if( check_color_depth_sync() )
-            start();
+            run_algo();
     }
 
 
@@ -408,21 +455,21 @@ namespace ivcam2 {
     }
 
 
-    void ac_trigger::start()
+    void ac_trigger::run_algo()
     {
-        AC_LOG( DEBUG, "starting processing ..." );
+        AC_LOG( DEBUG, "Starting processing ..." );
         _is_processing = true;
         _retrier.reset();
         if( _worker.joinable() )
         {
-            AC_LOG( DEBUG, "waiting for worker to join ..." );
+            AC_LOG( DEBUG, "Waiting for worker to join ..." );
             _worker.join();
         }
-        _worker = std::thread( [&]()
-            {
+        _worker = std::thread(
+            [&]() {
                 try
                 {
-                    AC_LOG( DEBUG, "auto calibration has started ..." );
+                    AC_LOG( DEBUG, "Calibration algo has started ..." );
                     call_back( RS2_CALIBRATION_STARTED );
 
                     static algo::depth_to_rgb_calibration::algo_calibration_info cal_info;
@@ -446,6 +493,15 @@ namespace ivcam2 {
 
                     auto status = algo.optimize(
                         [this]( rs2_calibration_status status ) { call_back( status ); } );
+
+                    // It's possible that, while algo was working, stop() was called. In this case,
+                    // we have to make sure that we notify of failure:
+                    if( !is_active() )
+                    {
+                        AC_LOG( DEBUG, "Algo finished (with " << status << "), but stop() was detected; notifying of failure..." );
+                        status = RS2_CALIBRATION_FAILED;
+                    }
+
                     switch( status )
                     {
                     case RS2_CALIBRATION_SUCCESSFUL:
@@ -490,12 +546,12 @@ namespace ivcam2 {
                 }
                 catch( std::exception& ex )
                 {
-                    AC_LOG( ERROR, "caught exception: " << ex.what() );
+                    AC_LOG( ERROR, "caught exception in calibration algo: " << ex.what() );
                     call_back( RS2_CALIBRATION_FAILED );
                 }
                 catch( ... )
                 {
-                    AC_LOG( ERROR, "unknown exception in AC!!!" );
+                    AC_LOG( ERROR, "unknown exception in calibration algo!!!" );
                     call_back( RS2_CALIBRATION_FAILED );
                 }
                 reset();
@@ -506,38 +562,89 @@ namespace ivcam2 {
                 case RS2_CALIBRATION_NOT_NEEDED:
                     // final state -- trigger the next AC
                     _n_cycles = 0;  // now inactive
-                    AC_LOG( DEBUG, "Now inactive" );
-                    if( auto n_seconds = env_var< int >( "RS2_AC_TRIGGER_SECONDS",
-                                                         600,  // 10 minutes since last
-                                                         []( int n ) { return n >= 0; } ) )
+                    if( !is_on() )
                     {
-                        trigger_next_ac( n_seconds );
+                        AC_LOG( DEBUG, "Calibration mechanism is not on; not scheduling next calibration" );
+                        break;
+                    }
+                    AC_LOG( DEBUG, "Now inactive" );
+                    // Trigger after a set amount of time
+                    auto n_seconds = get_trigger_seconds();
+                    if( n_seconds.count() )
+                        start( n_seconds );
+                    else
+                        AC_LOG( DEBUG, "RS2_AC_TRIGGER_SECONDS is 0; no next AC trigger" );
+                    // Or after a certain temperature change
+                    if( get_temp_diff_trigger() )
+                    {
+                        if( _last_temp = read_temperature() )
+                            _temp_check = retrier::start< temp_check >( *this, std::chrono::seconds( 60 ));
                     }
                     else
                     {
-                        AC_LOG( DEBUG, "RS2_AC_TRIGGER_SECONDS is 0; no next AC trigger" );
+                        AC_LOG( DEBUG, "RS2_AC_TEMP_DIFF is 0; no temperature change trigger" );
                     }
                     break;
                 }
             } );
     }
 
-    void ac_trigger::trigger_next_ac( unsigned n_seconds )
+    double ac_trigger::read_temperature()
+    {
+        // The temperature may depend on streaming?
+        auto res = _hwm.send( command{ TEMPERATURES_GET } );
+        if( res.size() < sizeof( temperatures ) )  // New temperatures may get added by FW...
+        {
+            AC_LOG( ERROR,
+                    "Failed to get temperatures; result size= "
+                        << res.size() << "; expecting at least " << sizeof( temperatures ) );
+            return 0;
+        }
+        auto const & ts = *( reinterpret_cast< temperatures * >( res.data() ) );
+        AC_LOG( DEBUG, "LDD temperture is currently " << ts.LDD_temperature << " degrees Celsius" );
+        return ts.LDD_temperature;
+    }
+
+    void ac_trigger::start( std::chrono::seconds n_seconds )
     {
         if( is_active() )
             throw wrong_api_call_sequence_exception( "AC is already active" );
-        _next_trigger = retrier::start( *this, std::chrono::seconds( n_seconds ));
 
-        AC_LOG( DEBUG, "AC will be triggered in " << n_seconds << " seconds..." );
+        if( !n_seconds.count() )
+        {
+            // Check if we want auto trigger
+            if( get_trigger_seconds().count() )
+                n_seconds = std::chrono::seconds( 3 );
+            else if( get_temp_diff_trigger() &&  ( _last_temp = read_temperature() ))
+                _temp_check = retrier::start< temp_check >( *this, std::chrono::seconds( 60 ) );
+            else
+                return;  // no auto trigger
+        }
+        _is_on = true;
+        if( n_seconds.count() )
+        {
+            AC_LOG( DEBUG, "Calibration will be triggered in " << n_seconds.count() << " seconds..." );
+            // If there's already a trigger, this will simply override it
+            _next_trigger = retrier::start( *this, n_seconds, "next calibration" );
+        }
     }
 
-    void ac_trigger::cancel_next_ac()
+    void ac_trigger::stop()
     {
         if( _next_trigger )
         {
-            AC_LOG( DEBUG, "Cancelling next AC trigger" );
+            AC_LOG( DEBUG, "Cancelling next calibration" );
             _next_trigger.reset();
         }
+        if( is_active() )
+        {
+            AC_LOG( DEBUG, "Cancelling current calibration" );
+            _n_cycles = 0;  // now inactive!
+        }
+        _temp_check.reset();
+        _retrier.reset();
+        _recycler.reset();
+        _is_on = false;
     }
 
     void ac_trigger::reset()
