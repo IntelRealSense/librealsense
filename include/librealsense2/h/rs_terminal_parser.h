@@ -30,15 +30,30 @@ rs2_terminal_parser* rs2_create_terminal_parser(const char* xml_path, rs2_error*
 void rs2_delete_terminal_parser(rs2_terminal_parser* terminal_parser);
 
 /**
-* \brief Parsed answer from RealSense terminal parser
+* \brief Parses terminal command via RealSense terminal parser
 * \param[in] terminal_parser	    Terminal parser object
-* \param[in] device	                device from which command should be sent
 * \param[in] command	            command to be sent to the hw monitor of the device
-* \param[in] size_of_command_str	size of command to be sent to the hw monitor of the device
+* \param[in] size_of_command    	size of command to be sent to the hw monitor of the device
 * \param[out] error                 If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
-* \return                           answeer from hw monitor, parsed
+* \return                           command to hw monitor, in hex
 */
-rs2_raw_data_buffer* rs2_terminal_parse_command(rs2_terminal_parser* terminal_parser, rs2_device* device, const char* command, unsigned int size_of_command_str, rs2_error** error);
+rs2_raw_data_buffer* rs2_terminal_parse_command(rs2_terminal_parser* terminal_parser, 
+    const char* command, unsigned int size_of_command, rs2_error** error);
+
+/**
+* \brief Parses terminal response via RealSense terminal parser
+* \param[in] terminal_parser	    Terminal parser object
+* \param[in] command	            command sent to the hw monitor of the device
+* \param[in] size_of_command	    size of the command to sent to the hw monitor of the device
+* \param[in] response	            response received by the hw monitor of the device
+* \param[in] size_of_response	    size of the response received by the hw monitor of the device
+* \param[out] error                 If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return                           answer parsed
+*/
+rs2_raw_data_buffer* rs2_terminal_parse_response(rs2_terminal_parser* terminal_parser,
+    const char* command, unsigned int size_of_command,
+    const void* response, unsigned int size_of_response, rs2_error** error);
+
 
 
 

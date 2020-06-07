@@ -57,11 +57,13 @@ int main(int argc, char* argv[])
     auto terminal_parser = rs2::terminal_parser(xml_full_path);
 
     std::string gvd_str("gvd");
-    std::vector<uint8_t> xml_res = terminal_parser.parse_command(all_device_list, gvd_str);
+    std::vector<uint8_t> hex_command = terminal_parser.parse_command(gvd_str);
+
+    std::vector<uint8_t> terminal_res = debug_device.send_and_receive_raw_data(raw_cmd);
+
+    std::string xml_res = terminal_parser.parse_response(gvd_str, res);
 
     for (auto& elem : xml_res)
         cout << elem;
     cout << endl;
-
-
 }

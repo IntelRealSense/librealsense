@@ -379,6 +379,7 @@ EXPORTS
     rs2_create_terminal_parser
     rs2_delete_terminal_parser
     rs2_terminal_parse_command
+    rs2_terminal_parse_response
 
 
 

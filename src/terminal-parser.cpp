@@ -15,15 +15,67 @@ namespace librealsense
 			auto sts = parse_xml_from_file(xml_full_file_path, _cmd_xml);
 			if (!sts)
 			{
-				cout << "Provided XML not found!\n";
+				//cout << "Provided XML not found!\n";
 				return;
 				//TODO - Remi check this case - providing xml content instead of path sould solve this
 			}
 
 			update_format_type_to_lambda(_format_type_to_lambda);
-			cout << "Commands XML file - " << xml_full_file_path << " was loaded successfully. Type commands by name (e.g.'gvd'`).\n";
+			//cout << "Commands XML file - " << xml_full_file_path << " was loaded successfully. Type commands by name (e.g.'gvd'`).\n";
 		}
 	}
+
+
+    std::vector<uint8_t> terminal_parser::parse_command(const std::string& line)
+    {
+        command_from_xml command;
+        vector<string> params;
+
+        get_command_and_params_from_input(line, command, params);
+
+        auto raw_data = build_raw_command_data(command, params);
+
+        for (auto b : raw_data)
+        {
+            cout << hex << fixed << setfill('0') << setw(2) << (int)b << " ";
+        }
+        cout << endl;
+
+        return raw_data;
+    }
+
+    std::vector<uint8_t> terminal_parser::parse_response(const std::string& line,
+        const std::vector<uint8_t>& response)
+    {
+        command_from_xml command;
+        vector<string> params;
+
+        get_command_and_params_from_input(line, command, params);
+
+        unsigned returned_opcode = *response.data();
+        // check returned opcode
+        if (command.op_code != returned_opcode)
+        {
+            stringstream msg;
+            msg << "OpCodes do not match! Sent 0x" << hex << command.op_code << " but received 0x" << hex << (returned_opcode) << "!";
+            throw runtime_error(msg.str());
+        }
+
+        if (command.is_read_command)
+        {
+            string data;
+            decode_string_from_raw_data(command, _cmd_xml.custom_formatters, response.data(), response.size(), data, _format_type_to_lambda);
+            //cout << endl << data << endl;
+            vector<uint8_t> data_vec;
+            data_vec.insert(data_vec.begin(), data.begin(), data.end());
+            return data_vec;
+        }
+        else
+        {
+            //cout << endl << "Done!" << endl;
+            return response;
+        }
+    }
 
     vector<uint8_t> terminal_parser::build_raw_command_data(const command_from_xml& command, const vector<string>& params)
     {
@@ -46,10 +98,9 @@ namespace librealsense
         return raw_data;
     }
 
-
-	std::vector<uint8_t> terminal_parser::parse_command(debug_interface* device, const std::string& line)
-	{
-        using namespace std;
+    void terminal_parser::get_command_and_params_from_input(const std::string& line, command_from_xml& command,
+        vector<string>& params)
+    {
         vector<string> tokens;
         stringstream ss(line);
         string word;
@@ -68,45 +119,9 @@ namespace librealsense
         if (it == _cmd_xml.commands.end())
             throw runtime_error("Command not found!");
 
-        auto command = it->second;
-        vector<string> params;
+        command = it->second;
         for (auto i = 1; i < tokens.size(); ++i)
             params.push_back(tokens[i]);
-
-        auto raw_data = build_raw_command_data(command, params);
-
-        for (auto b : raw_data)
-        {
-            cout << hex << fixed << setfill('0') << setw(2) << (int)b << " ";
-        }
-        cout << endl;
-
-        auto result = device->send_receive_raw_data(raw_data);
-
-        unsigned returned_opcode = *result.data();
-        // check returned opcode
-        if (command.op_code != returned_opcode)
-        {
-            stringstream msg;
-            msg << "OpCodes do not match! Sent 0x" << hex << command.op_code << " but received 0x" << hex << (returned_opcode) << "!";
-            throw runtime_error(msg.str());
-        }
-
-        if (command.is_read_command)
-        {
-            string data;
-            decode_string_from_raw_data(command, _cmd_xml.custom_formatters, result.data(), result.size(), data, _format_type_to_lambda);
-            //cout << endl << data << endl;
-            vector<uint8_t> data_vec;
-            data_vec.insert(data_vec.begin(), data.begin(), data.end());
-            return data_vec;
-        }
-        else
-        {
-            cout << endl << "Done!" << endl;
-            return result;
-        }
-		
-	}
+    }
 
 }
