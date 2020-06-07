@@ -87,86 +87,86 @@ namespace depth_to_rgb_calibration {
     
 #pragma pack(push, 1)
     // This table is read from FW and is used in the optimizer
+    // Best way to see this table and its formatting is in the Algo source code, under:
+    //     eepromStructure/eepromStructure.mat
     struct algo_calibration_info
     {
         static const int table_id = 0x313;
 
-        uint16_t version;       // = 0x0100
-        uint16_t id;            // = table_id
-        uint32_t size;          // = 0x1F0
-        uint32_t full_version;  // = 0xFFFFFFFF
-        uint32_t crc32;         // of the following data:
-        uint32_t DIGGundistFx;
-        uint32_t DIGGundistFy;
-        int32_t  DIGGundistX0;
-        int32_t  DIGGundistY0;
-        uint8_t  DESThbaseline;
-        float    DESTbaseline;
-        float    FRMWxfov[5];
-        float    FRMWyfov[5];
-        float    FRMWprojectionYshear[5];
-        float    FRMWlaserangleH;
+        uint32_t DIGGundistFx;  // x frequency of undist lut (1/distance between to neighbors in lut)
+        uint32_t DIGGundistFy;  // y frequency of undist lut (1/distance between to neighbors in lut)
+        int32_t  DIGGundistX0;  // x input added offset- luts start from 0-0 but we can have negative x/y input
+        int32_t  DIGGundistY0;  // y input added offset- luts start from 0-0 but we can have negative x/y input
+        uint8_t  DESThbaseline;  // 0:/5;1:/95
+        float    DESTbaseline;  // [-35.0:35.0]:/50;[-160.0:160.0]:/45;[100.0:1000.0]:/5
+        float    DESTtxFRQpd[3];     //!!
+        float    FRMWxfov[5];  // output projection x fov [7.0:100.0]:/50;72.0:/50
+        float    FRMWyfov[5];  // output projection y fov [7.0:90.0]:/50;56.0:/50
+        float    FRMWprojectionYshear[5];  // output projection y shearing [-0.03:0.03]
+        float    FRMWlaserangleH;  // laser-mems angle [-3.0:3.0]
         float    FRMWlaserangleV;
-        uint16_t FRMWcalMarginL;
-        uint16_t FRMWcalMarginR;
-        uint16_t FRMWcalMarginT;
-        uint16_t FRMWcalMarginB;
-        uint8_t  FRMWxR2L;
-        uint8_t  FRMWyflip;
-        float    EXTLdsmXscale;
+        int16_t  FRMWcalMarginL;  // image margin [-256:1280]
+        int16_t  FRMWcalMarginR;
+        int16_t  FRMWcalMarginT;
+        int16_t  FRMWcalMarginB;
+        uint8_t  FRMWxR2L;  // case the input angle arrives from high to low
+        uint8_t  FRMWyflip;  // flip the sign of the fast scan
+        float    EXTLdsmXscale;  // DSM conversion parameter [0.0:100000.0]
         float    EXTLdsmYscale;
         float    EXTLdsmXoffset;
         float    EXTLdsmYoffset;
-        uint32_t EXTLconLocDelaySlow;
-        uint32_t EXTLconLocDelayFastC;
-        uint32_t EXTLconLocDelayFastF;
-        uint16_t FRMWcalImgHsize;
-        uint16_t FRMWcalImgVsize;
-        float    FRMWpolyVars[3];
-        float    FRMWpitchFixFactor;
-        uint32_t FRMWzoRawCol[5];
-        uint32_t FRMWzoRawRow[5];
-        float    FRMWdfzCalTmp;
-        float    FRMWdfzVbias[3];
-        float    FRMWdfzIbias[3];
-        float    FRMWdfzApdCalTmp;
-        float    FRMWatlMinVbias1;
-        float    FRMWatlMaxVbias1;
-        float    FRMWatlMinVbias2;
-        float    FRMWatlMaxVbias2;
-        float    FRMWatlMinVbias3;
-        float    FRMWatlMaxVbias3;
-        float    FRMWundistAngHorz[4];
-        float    FRMWundistAngVert[4];
-        uint8_t  FRMWfovexExistenceFlag;
-        float    FRMWfovexNominal[4];
-        uint8_t  FRMWfovexLensDistFlag;
-        float    FRMWfovexRadialK[3];
-        float    FRMWfovexTangentP[2];
-        float    FRMWfovexCenter[2];
+        uint32_t EXTLconLocDelaySlow;  // RegsAnsyncAsLateLatencyFixEn
+        uint32_t EXTLconLocDelayFastC;  // RegsProjConLocDelay
+        uint32_t EXTLconLocDelayFastF;  // RegsProjConLocDelayHfclkRes
+        uint16_t FRMWcalImgHsize;  // horizontal image size in pixels
+        uint16_t FRMWcalImgVsize;  // vertical image size in pixels
+        float    FRMWpolyVars[3];  // horizontal angle stage 1 undist x^1 coefficient
+        float    FRMWpitchFixFactor;  // vertical angle stage 1 undist x^1 coefficient
+        uint32_t FRMWzoRawCol[5];  // Cal resolution zero order raw -x location
+        uint32_t FRMWzoRawRow[5];  // Cal resolution zero order raw -y location
+        float    FRMWdfzCalTmp;  // DFZ Calibration temperature [-1.0:90.0]
+        float    FRMWdfzVbias[3];  // DFZ Calibration vBias1 [0.0:90.0]
+        float    FRMWdfzIbias[3];  // DFZ Calibration iBias1 [0.0:90.0]
+        float    FRMWdfzApdCalTmp;  // DFZ Apd Calibration temperature [-1.0:90.0]
+        float    FRMWatlMinVbias1;  // Algo Thermal Loop Calibration min vBias1 [0.0:90.0]
+        float    FRMWatlMaxVbias1;  // Algo Thermal Loop Calibration max vBias1 [0.0:90.0]
+        float    FRMWatlMinVbias2;  // Algo Thermal Loop Calibration min vBias2 [0.0:90.0]
+        float    FRMWatlMaxVbias2;  // Algo Thermal Loop Calibration max vBias2 [0.0:90.0]
+        float    FRMWatlMinVbias3;  // Algo Thermal Loop Calibration min vBias3 [0.0:90.0]
+        float    FRMWatlMaxVbias3;  // Algo Thermal Loop Calibration max vBias3 [0.0:90.0]
+        float    FRMWundistAngHorz[4];  // horz angle stage 2 undist: x^# coefficient
+        float    FRMWundistAngVert[4];  // vert angle stage 2 undist: y^# coefficient
+        uint8_t  FRMWfovexExistenceFlag;  // fovex existence flag (0 = no FOVex)
+        float    FRMWfovexNominal[4];  // fovex nominal opening model: r^# coefficient
+        uint8_t  FRMWfovexLensDistFlag;  // fovex lens distortion flag (1 = apply lens distortion model)
+        float    FRMWfovexRadialK[3];  // fovex radial distortion: r^# coefficient 
+        float    FRMWfovexTangentP[2];  // fovex tangential distortion: r^2+2x^2 coefficient
+        float    FRMWfovexCenter[2];  // fovex distortion center (horz & vert)
         uint32_t FRMWcalibVersion;
         uint32_t FRMWconfigVersion;
-        uint32_t FRMWeepromVersion;
-        float    FRMWconLocDelaySlowSlope;
-        float    FRMWconLocDelayFastSlope;
-        int16_t  FRMWatlMinAngXL;
-        int16_t  FRMWatlMinAngXR;
-        int16_t  FRMWatlMaxAngXL;
-        int16_t  FRMWatlMaxAngXR;
-        int16_t  FRMWatlMinAngYU;
-        int16_t  FRMWatlMinAngYB;
-        int16_t  FRMWatlMaxAngYU;
-        int16_t  FRMWatlMaxAngYB;
-        float    FRMWatlSlopeMA;
-        float    FRMWatlMaCalTmp;
-        uint8_t  FRMWvddVoltValues[3];  // this one is really 2 uint12 values, or 24 bits total; not in use!
-        int16_t  FRMWvdd2RtdDiff;
+        uint32_t FRMWeepromVersion;  // EEPROM structure version
+        float    FRMWconLocDelaySlowSlope;  // slope of Z-IR delay correction vs. LDD temperature [nsec/deg]
+        float    FRMWconLocDelayFastSlope;  // slope of Z delay correction vs. LDD temperature [nsec/deg]
+        int16_t  FRMWatlMinAngXL;  // min DSM X angle on the lower side
+        int16_t  FRMWatlMinAngXR;  // min DSM X angle on the higher side
+        int16_t  FRMWatlMaxAngXL;  // max DSM X angle on the lower side
+        int16_t  FRMWatlMaxAngXR;  // max DSM X angle on the higher side
+        int16_t  FRMWatlMinAngYU;  // min DSM Y angle on the lower side
+        int16_t  FRMWatlMinAngYB;  // min DSM Y angle on the higher side
+        int16_t  FRMWatlMaxAngYU;  // max DSM Y angle on the lower side
+        int16_t  FRMWatlMaxAngYB;  // max DSM Y angle on the higher side
+        float    FRMWatlSlopeMA;  // Thermal rtd fix slope - deltaRtd = ma*slope + offset
+        float    FRMWatlMaCalTmp;  // Final ATC MA Calibration temperature
+        uint8_t  FRMWvddVoltValues[3];  // sampled vdd voltage as measured during ACC calibration (2 uint12 values, or 24 bits total)
+        int16_t  FRMWvdd2RtdDiff;  // Range difference between 2nd vdd voltage and the 1st vdd voltage
         int16_t  FRMWvdd3RtdDiff;
         int16_t  FRMWvdd4RtdDiff;
-        float    FRMWdfzCalibrationLddTemp;
-        float    FRMWdfzCalibrationVddVal;
-        float    FRMWhumidApdTempDiff;
-        uint8_t  reserved[94];
+        float    FRMWdfzCalibrationLddTemp;  // ldd temperature during DFZ calibration at the ACC
+        float    FRMWdfzCalibrationVddVal;  // vdd value as measured during DFZ calibration at the ACC
+        float    FRMWhumidApdTempDiff;  // difference between SHTW2 and TSense readings at first TSense temperature above 20deg
+        float    FRMWlosAtMirrorRestHorz;  // horizontal LOS report at mirror rest during DSM calibration
+        float    FRMWlosAtMirrorRestVert;  // vertical LOS report at mirror rest during DSM calibration
+        uint8_t  reserved[90];
     };
 
     struct algo_calibration_registers
