@@ -27,6 +27,7 @@ namespace depth_to_rgb_calibration {
         return deg * M_PI / 180.;
     }
 
+#if 0
     std::vector<double> direct_inv(std::vector<double> A, uint32_t s)
     {
         std::vector<double> res;
@@ -119,6 +120,7 @@ namespace depth_to_rgb_calibration {
 
         return res;
     }
+#endif
 
     void direct_inv_6x6(const double A[36], const double B[6], double C[6])
     {
