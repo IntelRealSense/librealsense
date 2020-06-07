@@ -1502,11 +1502,17 @@ optimization_params optimizer::back_tracking_line_search( optimization_params co
     return new_params;
 }
 
-void optimizer::set_cycle_data(const std::vector<double3>& vertices, const rs2_intrinsics_double& k_depth, const p_matrix& p_mat)
+void optimizer::set_cycle_data(const std::vector<double3>& vertices, 
+    const rs2_intrinsics_double& k_depth, 
+    const p_matrix& p_mat, 
+    const algo_calibration_registers& dsm_regs_cand,
+    const rs2_dsm_params_double& dsm_params_cand)
 {
     _vertices_from_bin = vertices;
     _k_dapth_from_bin = k_depth;
     _p_mat_from_bin = p_mat;
+    _dsm_regs_cand_from_bin = dsm_regs_cand;
+    _dsm_params_cand_from_bin = dsm_params_cand;
 }
 
 size_t optimizer::optimize_p
@@ -1608,6 +1614,7 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
     optimization_params new_params;
     calib new_calib = _original_calibration;
     rs2_intrinsics_double new_k_depth;
+    algo_calibration_registers new_dsm_regs = _k_to_DSM->get_calibration_registers();
     auto new_vertices = _z.vertices;
 
     double last_cost = _params_curr.cost;
@@ -1617,13 +1624,16 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
 
     _z.orig_vertices = _z.vertices;
     rs2_dsm_params_double new_dsm_params = _z.orig_dsm_params;
+
     while (cycle < _params.max_K2DSM_iters)
     {
         data.cycle = ++cycle;
         AC_LOG(INFO, "CYCLE: " << data.cycle);
 
         std::vector<double3> cand_vertices;
-        auto dsm_candidate = _k_to_DSM->convert_new_k_to_DSM(_z.orig_intrinsics, new_k_depth, _z, cand_vertices, &data);
+        auto dsm_regs_cand = new_dsm_regs;
+
+        auto dsm_candidate = _k_to_DSM->convert_new_k_to_DSM(_z.orig_intrinsics, new_k_depth, _z, cand_vertices, dsm_regs_cand, &data);
         data.type = cycle_data;
 
         data.cycle_data_p.dsm_params_cand = dsm_candidate;
@@ -1651,22 +1661,23 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
             cb(data);
         }
 
+        new_params = params_candidate;
+        new_calib = calib_candidate;
+        new_k_depth = k_depth_candidate;
+        _z.orig_dsm_params = new_dsm_params = dsm_candidate;
+        new_dsm_regs = dsm_regs_cand;
+        last_cost = new_params.cost;
+        new_vertices = cand_vertices;
+        _z.vertices = new_vertices;
+
         if (get_cycle_data_from_bin)
         {
             new_params.curr_p_mat = _p_mat_from_bin;
             new_calib = decompose(_p_mat_from_bin, _original_calibration);
             new_k_depth = _k_dapth_from_bin;
+            new_dsm_regs = _dsm_regs_cand_from_bin;
+            _z.orig_dsm_params = new_dsm_params = _dsm_params_cand_from_bin;
         }
-
-        new_params = params_candidate;
-        new_calib = calib_candidate;
-        new_k_depth = k_depth_candidate;
-        new_dsm_params = dsm_candidate;
-        last_cost = new_params.cost;
-        new_vertices = cand_vertices;
-        _z.vertices = new_vertices;
-
-       
     }
    
     AC_LOG( INFO,

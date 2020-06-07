@@ -193,8 +193,8 @@ namespace depth_to_rgb_calibration {
     {
     public:
         k_to_DSM(const rs2_dsm_params_double& orig_dsm_params,
-            algo::depth_to_rgb_calibration::algo_calibration_info const & cal_info,
-            algo::depth_to_rgb_calibration::algo_calibration_registers const & cal_regs,
+            algo_calibration_info const & cal_info,
+            algo_calibration_registers const & cal_regs,
             const double& max_scaling_step);
 
         algo_calibration_registers apply_ac_res_on_dsm_model(const rs2_dsm_params_double& ac_data,
@@ -216,6 +216,7 @@ namespace depth_to_rgb_calibration {
             const rs2_intrinsics_double& new_k,
             const z_frame_data& z,
             std::vector<double3>& new_vertices,
+            algo_calibration_registers& new_dsm_regs,
             iteration_data_collect* data = nullptr);
 
         const pre_process_data& get_pre_process_data() const;

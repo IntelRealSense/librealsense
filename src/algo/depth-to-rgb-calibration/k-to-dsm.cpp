@@ -153,6 +153,7 @@ rs2_dsm_params_double k_to_DSM::convert_new_k_to_DSM
     const rs2_intrinsics_double& new_k,
     const z_frame_data& z, //
     std::vector<double3>& new_vertices,
+    algo_calibration_registers& new_dsm_regs,
     iteration_data_collect* data
 )
 {
@@ -162,16 +163,16 @@ rs2_dsm_params_double k_to_DSM::convert_new_k_to_DSM
     auto old_k_raw = rotate_k_mat(old_k);
     auto new_k_raw = rotate_k_mat(new_k);
 
-    auto dsm_orig = apply_ac_res_on_dsm_model(_ac_data, _dsm_regs, inverse);
+    auto dsm_orig = apply_ac_res_on_dsm_model(_ac_data, new_dsm_regs, inverse);
 
     std::vector<uint8_t> relevant_pixels_image_rot(z.relevant_pixels_image.size(), 0);
     rotate_180(z.relevant_pixels_image.data(), relevant_pixels_image_rot.data(), w, h);
 
-    _pre_process_data = pre_processing(_regs, _ac_data, _dsm_regs, old_k_raw, relevant_pixels_image_rot);
+    _pre_process_data = pre_processing(_regs, _ac_data, new_dsm_regs, old_k_raw, relevant_pixels_image_rot);
 
-    auto new_los_scaling = convert_k_to_los_error(_regs, _dsm_regs, new_k_raw, data);
+    auto new_los_scaling = convert_k_to_los_error(_regs, new_dsm_regs, new_k_raw, data);
     double2 los_shift = { 0 };
-    auto ac_data_cand = convert_los_error_to_ac_data(_ac_data,_dsm_regs, los_shift, new_los_scaling);
+    auto ac_data_cand = convert_los_error_to_ac_data(_ac_data, new_dsm_regs, los_shift, new_los_scaling);
     auto dsm_regs_cand = apply_ac_res_on_dsm_model(ac_data_cand, dsm_orig, direct);
 
     auto sc_vertices = z.orig_vertices;
@@ -181,7 +182,7 @@ rs2_dsm_params_double k_to_DSM::convert_new_k_to_DSM
         sc_vertices[i].x *= -1;
         sc_vertices[i].y *= -1;
     }
-    auto los_orig = convert_norm_vertices_to_los(_regs, _dsm_regs, sc_vertices);
+    auto los_orig = convert_norm_vertices_to_los(_regs, new_dsm_regs, sc_vertices);
     new_vertices = convert_los_to_norm_vertices(_regs, dsm_regs_cand, los_orig, data);
 
     if (data)

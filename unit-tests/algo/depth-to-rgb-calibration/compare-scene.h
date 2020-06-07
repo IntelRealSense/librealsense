@@ -291,7 +291,19 @@ void compare_scene( std::string const & scene_dir )
                     "double_00.bin"));
                 std::copy(p_vec.begin(), p_vec.end(), p_mat.vals);
 
-                cal.set_cycle_data(vertices, k_depth, p_mat);
+                auto dsm_regs_vec = read_vector_from< algo::algo_calibration_registers >(
+                    bin_file(bin_dir(scene_dir) + "end_cycle_dsmRegsCand", data.cycle, 4, 1, "double_00.bin"));
+
+                algo::algo_calibration_registers dsm_regs = *(algo::algo_calibration_registers*)(dsm_regs_vec.data());
+                auto ac_data_vec = read_vector_from< algo::double2 >(bin_file(bin_dir(scene_dir) + "end_cycle_acData", data.cycle, 2, 1, "double_00.bin"));
+                
+                algo::rs2_dsm_params_double dsm_params;
+                dsm_params.h_scale = ac_data_vec[0].x;
+                dsm_params.v_scale = ac_data_vec[0].y;
+                dsm_params.model = algo::AOT;
+
+
+                cal.set_cycle_data(vertices, k_depth, p_mat, dsm_regs, dsm_params);
             }
             catch (std::runtime_error &e) {
                 // if device isn't calibrated, get_extrinsics must error out (according to old comment. Might not be true under new API)
