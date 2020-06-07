@@ -18,6 +18,8 @@
 #include "l500-color.h"
 #include "l500-serializable.h"
 
+#include "../firmware_logger_device.h"
+
 namespace librealsense
 {
     using namespace ivcam2;
@@ -27,7 +29,8 @@ namespace librealsense
         public l500_options,
         public l500_color,
         public l500_motion,
-        public l500_serializable
+        public l500_serializable,
+        public firmware_logger_device
     {
     public:
         rs515_device(std::shared_ptr<context> ctx,
@@ -39,7 +42,8 @@ namespace librealsense
             l500_options(ctx, group),
             l500_color(ctx, group),
             l500_motion(ctx, group),
-            l500_serializable(_hw_monitor, get_depth_sensor())
+            l500_serializable(l500_device::_hw_monitor, get_depth_sensor()),
+            firmware_logger_device(l500_device::_hw_monitor, get_depth_sensor().get_info(RS2_CAMERA_INFO_DEBUG_OP_CODE))
         {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
