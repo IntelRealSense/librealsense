@@ -317,7 +317,7 @@ namespace depth_to_rgb_calibration {
 
         //cycle data from bin files
         bool get_cycle_data_from_bin = false;
-        bool get_final_data_from_bin = true;
+        bool get_final_data_from_bin = false;
         rs2_intrinsics_double _k_dapth_from_bin;
         p_matrix _p_mat_from_bin;
         p_matrix _p_mat_from_bin_opt;
