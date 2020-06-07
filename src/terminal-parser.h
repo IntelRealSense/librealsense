@@ -10,30 +10,25 @@
 
 namespace librealsense
 {
-	class terminal_parser_interface
-	{
-	public:
-		//virtual bool get_fw_log(fw_logs::fw_logs_binary_data& binary_data) = 0;
-
-		virtual ~terminal_parser_interface() = default;
-	};
-
-
-	class terminal_parser : public terminal_parser_interface
+	class terminal_parser
 	{
 	public:
 		terminal_parser(const std::string& xml_full_file_path);
 
-		std::vector<uint8_t> parse_command(debug_interface* device, const std::string& command);
+
+		std::vector<uint8_t> parse_command(const std::string& command);
+
+		std::vector<uint8_t> parse_response(const std::string& command, 
+			const std::vector<uint8_t>& response);
 
 	private:
-		debug_interface* _device;
-		std::map<std::string, xml_parser_function> _format_type_to_lambda;
-		commands_xml _cmd_xml;
-
+		void get_command_and_params_from_input(const std::string& line, command_from_xml& command,
+			std::vector<std::string>& params);
 		std::vector<uint8_t> build_raw_command_data(const command_from_xml& command,
 			const std::vector<std::string>& params);	
 
+		std::map<std::string, xml_parser_function> _format_type_to_lambda;
+		commands_xml _cmd_xml;
 	};
 
 }

@@ -17,7 +17,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/h/rs_pipeline.h"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/h/rs_config.h"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/h/rs_firmware_logs.h"
-        "${CMAKE_CURRENT_LIST_DIR}/librealsense2/h/rs_terminal.h"
+        "${CMAKE_CURRENT_LIST_DIR}/librealsense2/h/rs_terminal_parser.h"
 
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_types.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_context.hpp"
@@ -32,7 +32,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_internal.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_pipeline.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_firmware_logs.hpp"
-        "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_terminal.hpp"
+        "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_terminal_parser.hpp"
 
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/rsutil.h"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/rs_advanced_mode.h"

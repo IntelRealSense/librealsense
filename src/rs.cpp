@@ -3167,18 +3167,35 @@ void rs2_delete_terminal_parser(rs2_terminal_parser* terminal_parser) BEGIN_API_
 }
 NOEXCEPT_RETURN(, terminal_parser)
 
-rs2_raw_data_buffer* rs2_terminal_parse_command(rs2_terminal_parser* terminal_parser, rs2_device* device, const char* command, unsigned int size_of_command_str, rs2_error** error) BEGIN_API_CALL
+rs2_raw_data_buffer* rs2_terminal_parse_command(rs2_terminal_parser* terminal_parser, 
+    const char* command, unsigned int size_of_command, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(terminal_parser);
-    VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(command);
 
-    auto debug_interface = VALIDATE_INTERFACE(device->device, librealsense::debug_interface);
-
     std::string command_string;
-    command_string.insert(command_string.begin(), command, command + size_of_command_str);
+    command_string.insert(command_string.begin(), command, command + size_of_command);
 
-    auto result = terminal_parser->terminal_parser->parse_command(debug_interface, command_string);
+    auto result = terminal_parser->terminal_parser->parse_command(command_string);
     return new rs2_raw_data_buffer{ result };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, terminal_parser, device, command)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, terminal_parser, command)
+
+rs2_raw_data_buffer* rs2_terminal_parse_response(rs2_terminal_parser* terminal_parser, 
+    const char* command, unsigned int size_of_command,
+    const void* response, unsigned int size_of_response, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(terminal_parser);
+    VALIDATE_NOT_NULL(command);
+    VALIDATE_NOT_NULL(response);
+
+    std::string command_string;
+    command_string.insert(command_string.begin(), command, command + size_of_command);
+
+    std::vector<uint8_t> response_vec;
+    response_vec.insert(response_vec.begin(), (uint8_t*)response, (uint8_t*)response + size_of_response);
+
+    auto result = terminal_parser->terminal_parser->parse_response(command_string, response_vec);
+    return new rs2_raw_data_buffer{ result };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, terminal_parser, command, response)
