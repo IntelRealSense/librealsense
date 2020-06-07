@@ -152,6 +152,7 @@ namespace rs2
             static const char* show_stream_details { "viewer_model.show_stream_details" };
             static const char* metric_system       { "viewer_model.metric_system" };
             static const char* shading_mode        { "viewer_model.shading_mode" };
+            static const char* commands_xml        { "viewer_model.commands_xml" };
 
             static const char* last_ip             { "viewer_model.last_ip" };
         }

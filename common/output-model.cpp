@@ -19,7 +19,12 @@ output_model::output_model()
             configurations::viewer::search_term, std::string(""));
     if (search_line != "") search_open = true;
 
-    dashboards.push_back(std::make_shared<frame_drops_dashboard>(&number_of_drops, &total_frames));
+    available_dashboards["Frame Drops per Second"] = [&](std::string name){
+        return std::make_shared<frame_drops_dashboard>(name, &number_of_drops, &total_frames);
+    };
+
+    auto front = available_dashboards.begin();
+    dashboards.push_back(front->second(front->first));
 }
 
 bool output_model::round_indicator(ux_window& win, std::string icon,
@@ -73,7 +78,7 @@ void output_model::open(ux_window& win)
     new_log = true;
 }
 
-void output_model::draw(ux_window& win, rect view_rect)
+void output_model::draw(ux_window& win, rect view_rect, std::vector<rs2::device> devices)
 {
     ImGui::PushStyleColor(ImGuiCol_FrameBg, scrollbar_bg);
 
@@ -423,7 +428,8 @@ void output_model::draw(ux_window& win, rect view_rect)
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
         ImGui::PushItemWidth(0.7f * w - 32);
 
-        bool command_focus = false;
+        bool force_refresh = false;
+
         if (ImGui::IsKeyPressed(GLFW_KEY_UP) || ImGui::IsKeyPressed(GLFW_KEY_DOWN))
         {
             if (commands_histroy.size())
@@ -431,19 +437,65 @@ void output_model::draw(ux_window& win, rect view_rect)
                 if (ImGui::IsKeyPressed(GLFW_KEY_UP)) history_offset = (history_offset + 1) % commands_histroy.size();
                 if (ImGui::IsKeyPressed(GLFW_KEY_DOWN)) history_offset = (history_offset - 1 + commands_histroy.size()) % commands_histroy.size();
                 command_line = commands_histroy[history_offset];
+
+                force_refresh = true;
+            }
+        }
+
+        if (ImGui::IsKeyPressed(GLFW_KEY_TAB))
+        {
+            if (!autocomplete.size() || !starts_with(to_lower(autocomplete.front()), to_lower(command_line)))
+            {
+                std::string commands_xml = config_file::instance().get(configurations::viewer::commands_xml);
+                std::ifstream f(commands_xml.c_str());
+                if (f.good())
+                {
+                    std::string str((std::istreambuf_iterator<char>(f)),
+                        std::istreambuf_iterator<char>());
+
+                    autocomplete.clear();
+                    std::regex exp("Command Name=\"(\\w+)\"");
+                    std::smatch res;
+                    std::string::const_iterator searchStart(str.cbegin());
+                    while (regex_search(searchStart, str.cend(), res, exp))
+                    {
+                        if (starts_with(to_lower(res[1]), to_lower(command_line)))
+                            autocomplete.push_back(res[1]);
+                        searchStart = res.suffix().first;
+                    }
+                }
+            }
+            if (autocomplete.size())
+            {
+                auto temp = autocomplete.front();
+                autocomplete.pop_front();
+                autocomplete.push_back(temp);
+
+                if (starts_with(to_lower(temp), command_line))
+                    command_line = to_lower(autocomplete.front());
+                else
+                    command_line = autocomplete.front();
+                force_refresh = true;
             }
         }
 
         memcpy(buff, command_line.c_str(), command_line.size());
         buff[command_line.size()] = 0;
 
-        ImGui::PushStyleColor(ImGuiCol_FrameBg, scrollbar_bg);
-        if (ImGui::InputText("##TerminalCommand", buff, 1023, ImGuiInputTextFlags_EnterReturnsTrue))
+        int flags = ImGuiInputTextFlags_EnterReturnsTrue;
+        if (force_refresh) 
         {
-            if (!command_focus) command_line = buff;
+            flags = ImGuiInputTextFlags_ReadOnly;
         }
+
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, scrollbar_bg);
+        if (ImGui::InputText("##TerminalCommand", buff, 1023, flags))
+        {
+            
+        }
+        if (!command_focus && !new_log) command_line = buff;
         ImGui::PopStyleColor();
-        if (command_focus) ImGui::SetKeyboardFocusHere();
+        if (command_focus || new_log) ImGui::SetKeyboardFocusHere();
         ImGui::PopFont();
         ImGui::PopStyleColor();
 
@@ -451,10 +503,11 @@ void output_model::draw(ux_window& win, rect view_rect)
         {
             if (commands_histroy.size() > 100) commands_histroy.pop_back();
             commands_histroy.push_front(command_line);
-            run_command(command_line);
+            run_command(command_line, devices);
             command_line = "";
             command_focus = true;
         }
+        else command_focus = false;
 
         if (ImGui::IsKeyPressed(GLFW_KEY_ESCAPE))
         {
@@ -472,6 +525,70 @@ void output_model::draw(ux_window& win, rect view_rect)
             dash->draw(win, r);
             top += h;
         }
+
+        dashboards.erase(std::remove_if(dashboards.begin(), dashboards.end(), 
+        [](std::shared_ptr<stream_dashboard> p){
+            return p->closing();
+        }), dashboards.end());
+
+        bool can_add = false;
+        for (auto&& kvp : available_dashboards)
+        {
+            auto name = kvp.first;
+            auto it = std::find_if(dashboards.begin(), dashboards.end(),
+            [name](std::shared_ptr<stream_dashboard> p){
+                return p->get_name() == name;
+            });
+            if (it == dashboards.end()) can_add = true;
+        }
+
+        if (can_add)
+        {
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+            const auto new_dashboard_name = "new_dashaborad";
+            if (ImGui::Button(u8"\uF0D0 Add Dashboard", ImVec2(-1, 25)))
+            {
+                ImGui::OpenPopup(new_dashboard_name);
+            }
+
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Add one of the available stream dashboards to view");
+                win.link_hovered();
+            }
+
+            ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
+            ImGui::PushStyleColor(ImGuiCol_Text, black);
+            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, light_blue);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5,5));
+            if (ImGui::BeginPopup(new_dashboard_name))
+            {
+                for (auto&& kvp : available_dashboards)
+                {
+                    auto name = kvp.first;
+                    auto it = std::find_if(dashboards.begin(), dashboards.end(),
+                    [name](std::shared_ptr<stream_dashboard> p){
+                        return p->get_name() == name;
+                    });
+                    if (it == dashboards.end())
+                    {
+                        name = name + "##New";
+                        bool selected = false;
+                        if (ImGui::Selectable(name.c_str(), &selected))
+                        {
+                            dashboards.push_back(kvp.second(kvp.first));
+                        }
+                    }
+                }
+
+                ImGui::EndPopup();
+            }
+
+            ImGui::PopStyleColor(4);
+            ImGui::PopStyleVar();
+        }
+        
 
         ImGui::EndChild();
 
@@ -518,7 +635,7 @@ void output_model::foreach_log(std::function<void(log_entry& line)> action)
     for (auto&& l : notification_logs)
         action(l);
 
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+    ImGui::Text("%s", " ");
 
     if (new_log)
     {
@@ -551,24 +668,118 @@ void output_model::add_log(rs2_log_severity severity, std::string filename, int 
     new_log = true;
 }
 
-void output_model::run_command(std::string command)
+void output_model::run_command(std::string command, std::vector<rs2::device> devices)
 {
-    if (to_lower(command) == "clear")
+    try
     {
-        while (notification_logs.size() > 0)
+        if (to_lower(command) == "clear")
         {
-            auto&& le = notification_logs.front();
-            if (le.severity >= RS2_LOG_SEVERITY_ERROR) number_of_errors--;
-            else if (le.severity >= RS2_LOG_SEVERITY_WARN) number_of_warnings--;
-            else number_of_info--;
-            notification_logs.pop_front();
-            total_frames = 0;
-            number_of_drops = 0;
-        }
-        return;
-    }
+            while (notification_logs.size() > 0)
+            {
+                auto&& le = notification_logs.front();
+                if (le.severity >= RS2_LOG_SEVERITY_ERROR) number_of_errors--;
+                else if (le.severity >= RS2_LOG_SEVERITY_WARN) number_of_warnings--;
+                else number_of_info--;
+                notification_logs.pop_front();
+                for (auto& d : dashboards)
+                    d->clear(true);
+            }
 
-    add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__, to_string() << "Unrecognized command '" << command << "'");
+            return;
+        }
+
+        std::regex e("([0-9A-Fa-f]{2}\\s)+");
+
+        if (std::regex_match(command, e))
+        {
+            add_log(RS2_LOG_SEVERITY_INFO, __FILE__, __LINE__, to_string() << "Trying to send " << command << "...");
+
+            std::vector<uint8_t> raw_data;
+            std::stringstream ss(command);
+            std::string word;
+            while (ss >> word)
+            {
+                std::stringstream converter;
+                int temp;
+                converter << std::hex << word;
+                converter >> temp;
+                raw_data.push_back(temp);
+            }
+            if (raw_data.empty())
+                throw std::runtime_error("Invalid input!");
+
+            bool found = false;
+            for (auto&& dev : devices)
+            {
+                if (auto dbg = dev.as<rs2::debug_protocol>())
+                {
+                    found = true;
+                    auto res = dbg.send_and_receive_raw_data(raw_data);
+
+                    std::stringstream ss; ss << "\n";
+                    int i = 0;
+                    for (auto& elem : res)
+                    {
+                        ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem) << " ";
+                        i++;
+                        if (i > 80) 
+                        {
+                            ss << "\n";
+                            i = 0;
+                        }
+                    }
+                    add_log(RS2_LOG_SEVERITY_INFO, __FILE__, __LINE__, ss.str());
+
+                    return;
+                }
+            }
+
+            if (!found)
+            {
+                add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__, "No device is available to receive the command");
+                return;
+            }
+        }
+
+        std::string commands_xml = config_file::instance().get(configurations::viewer::commands_xml);
+        std::ifstream f(commands_xml.c_str());
+        if (f.good())
+        {
+            auto terminal_parser = rs2::terminal_parser(commands_xml);
+
+            auto buffer = terminal_parser.parse_command(to_lower(command));
+
+            std::stringstream ss; ss << command << " = ";
+            for (auto& elem : buffer)
+                 ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem) << " ";
+
+            add_log(RS2_LOG_SEVERITY_INFO, __FILE__, __LINE__, ss.str());
+
+            bool found = false;
+            for (auto&& dev : devices)
+            {
+                if (auto dbg = dev.as<rs2::debug_protocol>())
+                {
+                    found = true;
+                    auto res = dbg.send_and_receive_raw_data(buffer);
+
+                    std::string response = to_string() << "\n" << terminal_parser.parse_response(to_lower(command), res);
+                    add_log(RS2_LOG_SEVERITY_INFO, __FILE__, __LINE__, response);
+                }
+            }
+
+            if (!found)
+                add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__, "No device is available to receive the command");
+
+            return;
+        }
+
+        add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__, to_string() << "Unrecognized command '" << command << "'");
+    } 
+    catch(const std::exception& ex)
+    {
+        add_log(RS2_LOG_SEVERITY_ERROR, __FILE__, __LINE__, ex.what());
+    }
 }
 
 void output_model::update_dashboards(rs2::frame f)
@@ -620,10 +831,28 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
 
     ImGui::GetWindowDrawList()->AddRectFilled({ pos.x, pos.y },
                 { pos.x + r.w - 1, pos.y + get_height() - 1 }, ImColor(header_color));
+    ImGui::GetWindowDrawList()->AddRect({ pos.x, pos.y },
+                { pos.x + r.w, pos.y + get_height() }, ImColor(dark_sensor_bg));
 
     auto size = ImGui::CalcTextSize(name.c_str());
     ImGui::SetCursorPos(ImVec2( r.w / 2 - size.x / 2, 5 ));
     ImGui::Text("%s", name.c_str());
+    ImGui::SameLine();
+
+    ImGui::PushStyleColor(ImGuiCol_Text, grey);
+    ImGui::SetCursorPosX(r.w - 25);
+    ImGui::SetCursorPosY(3);
+    std::string id = to_string() << u8"\uF00D##Close_" << name;
+    if (ImGui::Button(id.c_str(),ImVec2(22,22)))
+    {
+        close();
+    }
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("Remove Dashboard from View");
+        win.link_hovered();
+    }
+    ImGui::PopStyleColor();
 
     ImGui::GetWindowDrawList()->AddRectFilled({ pos.x + max_y_label_width + 15, pos.y + ImGui::GetTextLineHeight() + 5 },
                  { pos.x + r.w - 10, pos.y + r.h - ImGui::GetTextLineHeight() - 5 }, ImColor(almost_white_bg));
@@ -760,10 +989,7 @@ void frame_drops_dashboard::draw(ux_window& win, rect r)
     ImGui::PushItemWidth(r.w - 207);
     if (ImGui::Combo("##fps_method", &method, methods.data(), methods.size()))
     {
-        write_shared_data([&](){
-            stream_to_time.clear();
-            last_time = 0;
-        });
+        clear(false);
     }
     ImGui::PopItemWidth();
 }
@@ -771,4 +997,20 @@ void frame_drops_dashboard::draw(ux_window& win, rect r)
 int frame_drops_dashboard::get_height() const 
 { 
     return 160.f + ImGui::GetTextLineHeightWithSpacing(); 
+}
+
+void frame_drops_dashboard::clear(bool full) 
+{ 
+    write_shared_data([&](){
+        stream_to_time.clear();
+        last_time = 0;
+        *total = 0;
+        *frame_drop_count = 0;
+        if (full)
+        {
+            drops_history.clear();
+            for (int i = 0; i < 100; i++)
+                drops_history.push_back(0);
+        }
+    });
 }

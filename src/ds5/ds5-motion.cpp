@@ -217,18 +217,18 @@ namespace librealsense
         // register pre-processing
         std::shared_ptr<enable_motion_correction> mm_correct_opt = nullptr;
 
-        //  Motion intrinsic calibration presents is a prerequisite for motion correction.
-        try
-        {
-            // Writing to log to dereference underlying structure
-            LOG_INFO("Accel Sensitivity:" << (**_accel_intrinsic).sensitivity);
-            LOG_INFO("Gyro Sensitivity:" << (**_gyro_intrinsic).sensitivity);
+        // //  Motion intrinsic calibration presents is a prerequisite for motion correction.
+        // try
+        // {
+        //     // Writing to log to dereference underlying structure
+        //     LOG_INFO("Accel Sensitivity:" << (**_accel_intrinsic).sensitivity);
+        //     LOG_INFO("Gyro Sensitivity:" << (**_gyro_intrinsic).sensitivity);
 
-            mm_correct_opt = std::make_shared<enable_motion_correction>(hid_ep.get(),
-                option_range{ 0, 1, 1, 1 });
-            hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION, mm_correct_opt);
-        }
-        catch (...) {}
+        //     mm_correct_opt = std::make_shared<enable_motion_correction>(hid_ep.get(),
+        //         option_range{ 0, 1, 1, 1 });
+        //     hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION, mm_correct_opt);
+        // }
+        // catch (...) {}
 
         hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
@@ -330,20 +330,20 @@ namespace librealsense
 
         _imu_eeprom_raw = [this]() { return get_imu_eeprom_raw(); };
 
-        _mm_calib = std::make_shared<mm_calib_handler>(*_imu_eeprom_raw,_device_capabilities);
+        //_mm_calib = std::make_shared<mm_calib_handler>(*_imu_eeprom_raw,_device_capabilities);
 
-        _accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
-        _gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
+        //_accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
+        //_gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
         // D435i to use predefined values extrinsics
-        _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
+        //_depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
 
         initialize_fisheye_sensor(ctx,group);
 
         // Make sure all MM streams are positioned with the same extrinsics
-        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_accel_stream, _depth_to_imu);
-        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gyro_stream);
-        register_stream_to_extrinsic_group(*_gyro_stream, 0);
-        register_stream_to_extrinsic_group(*_accel_stream, 0);
+        // environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_accel_stream, _depth_to_imu);
+        // environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gyro_stream);
+        // register_stream_to_extrinsic_group(*_gyro_stream, 0);
+        // register_stream_to_extrinsic_group(*_accel_stream, 0);
 
         // Try to add HID endpoint
         auto hid_ep = create_hid_device(ctx, group.hid_devices, _fw_version);

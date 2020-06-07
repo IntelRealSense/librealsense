@@ -609,7 +609,12 @@ int main(int argc, const char** argv) try
             window.height() - viewer_model.get_output_height(),
             window.width() - viewer_model.panel_width, viewer_model.get_output_height() };
 
-        viewer_model.not_model->output.draw(window, output_rect);
+        std::vector<rs2::device> devices;
+        for (auto&& dev_model : *device_models)
+        {
+            devices.push_back(dev_model->dev);
+        }
+        viewer_model.not_model->output.draw(window, output_rect, devices);
 
         // Set window position and size
         ImGui::SetNextWindowPos({ 0, viewer_model.panel_y });

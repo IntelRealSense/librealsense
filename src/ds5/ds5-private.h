@@ -333,7 +333,6 @@ namespace librealsense
             uint32_t                param;          // This field content is defined ny table type
             uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
         };
-#pragma pack(pop)
 
         enum ds5_rect_resolutions : unsigned short
         {
@@ -380,6 +379,7 @@ namespace librealsense
             float  ppx;
             float  ppy;
         };
+#pragma pack(pop)
 
         template<class T>
         const T* check_calib(const std::vector<uint8_t>& raw_data)

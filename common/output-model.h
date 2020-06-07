@@ -23,11 +23,18 @@ namespace rs2
             t.join();
         }
 
+        std::string get_name() const { return name; }
+
         void add_frame(rs2::frame f) { q.enqueue(f); }
 
         virtual void draw(ux_window& win, rect r) = 0;
 
         virtual int get_height() const { return 150.f; }
+
+        virtual void clear(bool full = false) {}
+
+        void close() { to_close = true; }
+        bool closing() const { return to_close; }
 
     protected:
         virtual void process_frame(rs2::frame f) = 0;
@@ -66,18 +73,24 @@ namespace rs2
         std::atomic<int> stop { false };
         std::thread t;
         std::vector<std::pair<float, float>> xy;
+        bool to_close = false;
     };
 
     class frame_drops_dashboard : public stream_dashboard
     {
     public:
-        frame_drops_dashboard(int* frame_drop_count, int* total) 
-            : stream_dashboard("Viewer Frame Drops per Second", 30), 
-              last_time(glfwGetTime()), frame_drop_count(frame_drop_count), total(total) {}
+        frame_drops_dashboard(std::string name, int* frame_drop_count, int* total) 
+            : stream_dashboard(name, 30), 
+              last_time(glfwGetTime()), frame_drop_count(frame_drop_count), total(total) 
+        {
+            clear(true);
+        }
 
         void process_frame(rs2::frame f) override;
         void draw(ux_window& win, rect r) override;
         int get_height() const override;
+
+        void clear(bool full) override;
 
     private:
         std::map<int, double> stream_to_time;
@@ -109,11 +122,11 @@ namespace rs2
 
         void add_log(rs2_log_severity severity, std::string filename, int line_number, std::string line);
 
-        void draw(ux_window& win, rect view_rect);
+        void draw(ux_window& win, rect view_rect, std::vector<rs2::device> devices);
 
         int get_output_height() const { return default_log_h; }
 
-        void run_command(std::string command);
+        void run_command(std::string command, std::vector<rs2::device> devices);
 
     private:
         void open(ux_window& win);
@@ -154,11 +167,15 @@ namespace rs2
         animated<int> search_width { 0, std::chrono::milliseconds(400) };
         bool search_open = false;
 
+        std::deque<std::string> autocomplete;
+
         std::string search_line { "" };
         std::string command_line { "" };
         std::deque<std::string> commands_histroy;
         int history_offset = 0;
+        bool command_focus = true;
 
         std::vector<std::shared_ptr<stream_dashboard>> dashboards;
+        std::map<std::string, std::function<std::shared_ptr<stream_dashboard>(std::string)>> available_dashboards;
     };
 }

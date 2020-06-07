@@ -69,6 +69,8 @@ namespace rs2
         config_file::instance().set_default(configurations::ply::use_normals, false);
         config_file::instance().set_default(configurations::ply::encoding, configurations::ply::binary);
 
+        config_file::instance().set_default(configurations::viewer::commands_xml, "./Commands.xml");
+
 #ifdef __APPLE__
         config_file::instance().set_default(configurations::performance::font_oversample, 8);
         config_file::instance().set_default(configurations::performance::enable_msaa, true);
