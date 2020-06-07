@@ -13,7 +13,11 @@
 #include "compare-scene.h"
 #include "../../filesystem.h"
 
+#ifdef _WIN32
 #include <io.h>
+#else
+#include <unistd.h>
+#endif
 
 
 class redirect_file
