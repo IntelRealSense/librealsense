@@ -2714,6 +2714,21 @@ namespace rs2
                             temp_cfg.set(configurations::viewer::commands_xml, path_str);
                         }
                     }
+
+                    {
+                        ImGui::Text("HWLoggerEvents.xml Path:");
+                        ImGui::SameLine();
+                        static char logpath[256];
+                        memset(logpath, 0, 256);
+                        std::string path_str = temp_cfg.get(configurations::viewer::hwlogger_xml);
+                        memcpy(logpath, path_str.c_str(), std::min(255, (int)path_str.size()));
+
+                        if (ImGui::InputText("##fw_log_xml_path", logpath, 255))
+                        {
+                            path_str = logpath;
+                            temp_cfg.set(configurations::viewer::hwlogger_xml, path_str);
+                        }
+                    }
                     
                     ImGui::Separator();
 

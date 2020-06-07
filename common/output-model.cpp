@@ -11,7 +11,84 @@
 
 using namespace rs2;
 
-output_model::output_model()
+void output_model::thread_loop()
+{
+    while (!to_stop)
+    {
+        std::vector<rs2::device> dev_copy;
+        {
+            std::lock_guard<std::mutex> lock(devices_mutex);
+            dev_copy = devices;
+        }
+        if (enable_firmware_logs)
+            for (auto&& dev : devices)
+            {
+                try
+                {
+                    if (auto fwlogger = dev.as<rs2::firmware_logger>())
+                    {
+                        bool has_parser = false;
+                        std::string hwlogger_xml = config_file::instance().get(configurations::viewer::hwlogger_xml);
+                        std::ifstream f(hwlogger_xml.c_str());
+                        if (f.good())
+                        {
+                            try
+                            {
+                                fwlogger.init_parser(hwlogger_xml);
+                                has_parser = true;
+                            }
+                            catch (const std::exception& ex)
+                            {
+                                add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__, 
+                                    to_string() << "Invalid Hardware Logger XML at '" << hwlogger_xml << "': " << ex.what() << "\nEither configure valid XML or remove it");
+                            }
+                        }
+
+                        auto message = fwlogger.create_message();
+                        while (fwlogger.get_firmware_log(message))
+                        {
+                            auto parsed = fwlogger.create_parsed_message();
+                            auto parsed_ok = false;
+                            
+                            if (has_parser)
+                            {
+                                if (fwlogger.parse_log(message, parsed))
+                                {
+                                    parsed_ok = true;
+
+                                    add_log(message.get_severity(), 
+                                        parsed.file_name(), parsed.line(), to_string() 
+                                            << "[" << parsed.thread_name() << "] " << parsed.message());
+                                }
+                            }
+
+                            if (!parsed_ok)
+                            {
+                                std::stringstream ss; 
+                                for (auto& elem : message.data())
+                                    ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem) << " ";
+                                add_log(message.get_severity(), __FILE__, 0, ss.str());
+                            }                            
+                        }
+                    }
+                }
+                catch(const std::exception& ex)
+                {
+                    add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__, 
+                        to_string() << "Failed to fetch firmware logs: " << ex.what());
+                }
+            }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+}
+
+output_model::~output_model()
+{
+    to_stop = 1;
+    fw_logger.join();
+}
+
+output_model::output_model() : fw_logger([this](){ thread_loop(); })
 {
     is_output_open = config_file::instance().get_or_default(
             configurations::viewer::output_collapsed, true);
@@ -602,6 +679,11 @@ void output_model::draw(ux_window& win, rect view_rect, std::vector<rs2::device>
     ImGui::PopStyleColor(7);
     ImGui::PopStyleVar();
     ImGui::PopFont();
+
+    {
+        std::lock_guard<std::mutex> lock(devices_mutex);
+        this->devices = devices;
+    }
 }
 
 void output_model::foreach_log(std::function<void(log_entry& line)> action)
@@ -692,7 +774,7 @@ void output_model::run_command(std::string command, std::vector<rs2::device> dev
 
         if (std::regex_match(command, e))
         {
-            add_log(RS2_LOG_SEVERITY_INFO, __FILE__, __LINE__, to_string() << "Trying to send " << command << "...");
+            add_log(RS2_LOG_SEVERITY_INFO, __FILE__, 0, to_string() << "Trying to send " << command << "...");
 
             std::vector<uint8_t> raw_data;
             std::stringstream ss(command);
@@ -716,7 +798,7 @@ void output_model::run_command(std::string command, std::vector<rs2::device> dev
                     found = true;
                     auto res = dbg.send_and_receive_raw_data(raw_data);
 
-                    std::stringstream ss; ss << "\n";
+                    std::stringstream ss; 
                     int i = 0;
                     for (auto& elem : res)
                     {
@@ -728,7 +810,7 @@ void output_model::run_command(std::string command, std::vector<rs2::device> dev
                             i = 0;
                         }
                     }
-                    add_log(RS2_LOG_SEVERITY_INFO, __FILE__, __LINE__, ss.str());
+                    add_log(RS2_LOG_SEVERITY_INFO, __FILE__, 0, ss.str());
 
                     return;
                 }
@@ -753,7 +835,7 @@ void output_model::run_command(std::string command, std::vector<rs2::device> dev
             for (auto& elem : buffer)
                  ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem) << " ";
 
-            add_log(RS2_LOG_SEVERITY_INFO, __FILE__, __LINE__, ss.str());
+            add_log(RS2_LOG_SEVERITY_INFO, __FILE__, 0, ss.str());
 
             bool found = false;
             for (auto&& dev : devices)
@@ -764,7 +846,7 @@ void output_model::run_command(std::string command, std::vector<rs2::device> dev
                     auto res = dbg.send_and_receive_raw_data(buffer);
 
                     std::string response = to_string() << "\n" << terminal_parser.parse_response(to_lower(command), res);
-                    add_log(RS2_LOG_SEVERITY_INFO, __FILE__, __LINE__, response);
+                    add_log(RS2_LOG_SEVERITY_INFO, __FILE__, 0, response);
                 }
             }
 

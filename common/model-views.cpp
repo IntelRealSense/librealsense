@@ -4760,6 +4760,69 @@ namespace rs2
                             ImGui::SetTooltip("Access low level camera calibration parameters");
                     }
 
+                    if (auto fwlogger = dev.as<rs2::firmware_logger>())
+                    {
+                        if (ImGui::Selectable("Recover Logs from Flash"))
+                        {
+                            try
+                            {
+                                bool has_parser = false;
+                                std::string hwlogger_xml = config_file::instance().get(configurations::viewer::hwlogger_xml);
+                                std::ifstream f(hwlogger_xml.c_str());
+                                if (f.good())
+                                {
+                                    try
+                                    {
+                                        fwlogger.init_parser(hwlogger_xml);
+                                        has_parser = true;
+                                    }
+                                    catch (const std::exception& ex)
+                                    {
+                                        viewer.not_model->output.add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__, 
+                                            to_string() << "Invalid Hardware Logger XML at '" << hwlogger_xml << "': " << ex.what() << "\nEither configure valid XML or remove it");
+                                    }
+                                }
+
+                                auto message = fwlogger.create_message();
+                                for (int i = 0; i < fwlogger.get_number_of_flash_logs(); ++i)
+                                {
+                                    if (fwlogger.get_flash_log(message))
+                                    {
+                                        auto parsed = fwlogger.create_parsed_message();
+                                        auto parsed_ok = false;
+                                        
+                                        if (has_parser)
+                                        {
+                                            if (fwlogger.parse_log(message, parsed))
+                                            {
+                                                parsed_ok = true;
+
+                                                viewer.not_model->output.add_log(message.get_severity(), 
+                                                    parsed.file_name(), parsed.line(), to_string() 
+                                                        << "[" << parsed.thread_name() << "] " << parsed.message());
+                                            }
+                                        }
+
+                                        if (!parsed_ok)
+                                        {
+                                            std::stringstream ss; 
+                                            for (auto& elem : message.data())
+                                                ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem) << " ";
+                                            viewer.not_model->output.add_log(message.get_severity(), __FILE__, 0, ss.str());
+                                        }                            
+                                    }
+                                }
+                            }
+                            catch(const std::exception& ex)
+                            {
+                                viewer.not_model->output.add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__, 
+                                    to_string() << "Failed to fetch firmware logs: " << ex.what());
+                            }
+                        }
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Recovers last set of firmware logs prior to camera shutdown / disconnect");
+                    }
+
                     has_autocalib = true;
                 }
             }

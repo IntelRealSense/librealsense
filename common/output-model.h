@@ -119,6 +119,7 @@ namespace rs2
         void update_dashboards(rs2::frame f);
 
         output_model();
+        ~output_model();
 
         void add_log(rs2_log_severity severity, std::string filename, int line_number, std::string line);
 
@@ -169,6 +170,9 @@ namespace rs2
 
         std::deque<std::string> autocomplete;
 
+        std::mutex devices_mutex;
+        std::vector<rs2::device> devices;
+
         std::string search_line { "" };
         std::string command_line { "" };
         std::deque<std::string> commands_histroy;
@@ -177,5 +181,10 @@ namespace rs2
 
         std::vector<std::shared_ptr<stream_dashboard>> dashboards;
         std::map<std::string, std::function<std::shared_ptr<stream_dashboard>(std::string)>> available_dashboards;
+
+        std::atomic<int> to_stop { 0 };
+        std::thread fw_logger;
+
+        void thread_loop();
     };
 }

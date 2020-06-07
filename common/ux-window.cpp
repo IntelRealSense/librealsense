@@ -70,6 +70,7 @@ namespace rs2
         config_file::instance().set_default(configurations::ply::encoding, configurations::ply::binary);
 
         config_file::instance().set_default(configurations::viewer::commands_xml, "./Commands.xml");
+        config_file::instance().set_default(configurations::viewer::hwlogger_xml, "./HWLoggerEvents.xml");
 
 #ifdef __APPLE__
         config_file::instance().set_default(configurations::performance::font_oversample, 8);
