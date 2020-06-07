@@ -13,6 +13,8 @@
 #include "hpp/rs_record_playback.hpp"
 #include "hpp/rs_sensor.hpp"
 #include "hpp/rs_pipeline.hpp"
+#include "hpp/rs_firmware_logs.hpp"
+#include "hpp/rs_terminal_parser.hpp"
 
 namespace rs2
 {

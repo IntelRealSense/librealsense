@@ -226,7 +226,7 @@ namespace rs2
 
             results.insert(results.begin(), start, start + size);
 
-return results;
+            return results;
         }
 
         // Update an updatable device to the provided unsigned firmware. This call is executed on the caller's thread.

@@ -180,10 +180,17 @@ typedef enum rs2_extension
     RS2_EXTENSION_FISHEYE_SENSOR,
     RS2_EXTENSION_DEPTH_HUFFMAN_DECODER,
     RS2_EXTENSION_SERIALIZABLE,
+    RS2_EXTENSION_FW_LOGGER,
+    RS2_EXTENSION_TERMINAL_PARSER,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);
 const char* rs2_extension_to_string(rs2_extension type);
+
+typedef enum rs2_terminal_command_name
+{
+    RS2_TERMINAL_COMMAND_GVD = 0
+} rs2_terminal_command_name;
 
 /** \brief Specifies types of different matchers */
 typedef enum rs2_matchers
@@ -244,6 +251,9 @@ typedef struct rs2_options_list rs2_options_list;
 typedef struct rs2_devices_changed_callback rs2_devices_changed_callback;
 typedef struct rs2_notification rs2_notification;
 typedef struct rs2_notifications_callback rs2_notifications_callback;
+typedef struct rs2_firmware_log_message rs2_firmware_log_message;
+typedef struct rs2_firmware_log_parsed_message rs2_firmware_log_parsed_message;
+typedef struct rs2_terminal_parser rs2_terminal_parser;
 typedef void (*rs2_log_callback_ptr)(rs2_log_severity, rs2_log_message const *, void * arg);
 typedef void (*rs2_notification_callback_ptr)(rs2_notification*, void*);
 typedef void(*rs2_software_device_destruction_callback_ptr)(void*);
