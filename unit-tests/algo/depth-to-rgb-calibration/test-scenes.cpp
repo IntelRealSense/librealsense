@@ -132,7 +132,8 @@ int main( int argc, char * argv[] )
             double total_movement = 0;
             double total_movement_diff = 0;
 
-            print_headers();
+            if( stats )
+                print_headers();
 
             glob( dir, "*.rsc",
                 [&]( std::string const & match_ )
@@ -143,7 +144,7 @@ int main( int argc, char * argv[] )
                     
                     Catch::Totals total;
                     {
-                        redirect_file no( stdout );
+                        redirect_file no( stats ? stdout : stderr );
                         total = ctx.run_test( match, [&]() {
                             REQUIRE_NOTHROW( compare_scene( scene_dir, &scene ) );
                         } );
@@ -156,16 +157,20 @@ int main( int argc, char * argv[] )
                     total_movement += scene.movement;
                     total_movement_diff += abs(scene.d_movement);
 
-                    print_scene_stats( match, total.assertions.failed, scene );
+                    if( stats )
+                        print_scene_stats( match, total.assertions.failed, scene );
                 } );
 
-            scene_stats total;
-            total.cost = total_cost;
-            total.d_cost = total_cost_diff;
-            total.movement = total_movement;
-            total.d_movement = total_movement_diff;
-            print_dividers();
-            print_scene_stats( "                     total:", n_scenes, total );
+            if( stats )
+            {
+                scene_stats total;
+                total.cost = total_cost;
+                total.d_cost = total_cost_diff;
+                total.movement = total_movement;
+                total.d_movement = total_movement_diff;
+                print_dividers();
+                print_scene_stats( "                     total:", n_scenes, total );
+            }
 
             TRACE( "done!\n\n" );
             ok &= ! n_failed;
