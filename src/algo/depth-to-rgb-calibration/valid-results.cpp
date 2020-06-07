@@ -203,8 +203,11 @@ std::vector< double > extract_features(decision_params& decision_params)
 }
 void optimizer::collect_decision_params(z_frame_data& z_data, yuy2_frame_data& yuy_data)
 {
+     auto uvmap = get_texture_map(_z.orig_vertices,
+        _original_calibration,
+        _original_calibration.calc_p_mat());
 
-    _decision_params.initial_cost = calc_cost(z_data, yuy_data, z_data.uvmap); //1.560848046875000e+04;
+    _decision_params.initial_cost = calc_cost(z_data, yuy_data, uvmap); //1.560848046875000e+04;
     //_decision_params.is_valid = 0;
     _decision_params.xy_movement = calc_correction_in_pixels(); //2.376f; // 
     _decision_params.xy_movement_from_origin = calc_correction_in_pixels(); //2.376f;
@@ -220,7 +223,7 @@ void optimizer::collect_decision_params(z_frame_data& z_data, yuy2_frame_data& y
     _decision_params.dir_ratio_1 = z_data.dir_ratio1;// 2.072327044025157;
     //_decision_params.dir_ratio_2 = z_data.dir_ratio2;
     _decision_params.edge_weights_per_dir = z_data.sum_weights_per_direction;// { 636000, 898000, 1318000, 747000 };
-    std::vector<double2> new_uvmap = get_texture_map(_z.vertices_all, _original_calibration, _original_calibration.calc_p_mat());
+    std::vector<double2> new_uvmap = get_texture_map(_z.vertices, _optimaized_calibration, _optimaized_calibration.calc_p_mat());
     _decision_params.new_cost = calc_cost(z_data, yuy_data, new_uvmap);// 1.677282421875000e+04; 
 
 }
@@ -307,10 +310,11 @@ bool optimizer::valid_by_svm(svm_model model)
 }
 bool optimizer::is_valid_results()
 {
-    if (get_cycle_data_from_bin)
+    if (get_final_data_from_bin)
     {
         _z.vertices = _vertices_from_bin;
         _final_calibration = decompose_p_mat(_p_mat_from_bin);
+        _optimaized_calibration = decompose_p_mat(_p_mat_from_bin_opt);
     }
        
 
@@ -342,7 +346,7 @@ bool optimizer::is_valid_results()
     % for i = 0:(params.numSectionsH*params.numSectionsV) - 1
     %     scoreDiffPersection( i + 1 ) = nanmean( scoreDiffPerVertex( frame.sectionMapDepth == i ) );
     % end*/
-    _z.cost_diff_per_section = cost_per_section_diff(_original_calibration, _final_calibration);
+    _z.cost_diff_per_section = cost_per_section_diff(_original_calibration, _optimaized_calibration);
     //% validOutputStruct.minImprovementPerSection = min( scoreDiffPersection );
     //% validOutputStruct.maxImprovementPerSection = max( scoreDiffPersection );
     double min_cost_diff = *std::min_element( _z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end() );

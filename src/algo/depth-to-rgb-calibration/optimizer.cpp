@@ -670,7 +670,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     vertices = vertices(isInside,:);
     sectionMapDepth = sectionMapDepth(isInside);*/
     k_matrix k = depth_intrinsics;
-    rotation k_depth_pinv = { 0 };
+    matrix_3x3 k_depth_pinv = { 0 };
     pinv_3x3( k.as_3x3().rot, k_depth_pinv.rot );
     transform(_z.valid_edge_sub_pixel_x.begin(), _z.valid_edge_sub_pixel_x.end(), _z.valid_edge_sub_pixel_x.begin(), bind2nd(std::plus<double>(), -1.0));
     transform(_z.valid_edge_sub_pixel_y.begin(), _z.valid_edge_sub_pixel_y.end(), _z.valid_edge_sub_pixel_y.begin(), bind2nd(std::plus<double>(), -1.0));
@@ -1386,7 +1386,7 @@ void write_matlab_camera_params_file(
     //extrinsics
     for( auto i = 0; i < 3; i++ )
     {
-        write_obj( f, (double)_extr.translation[i] );
+        write_obj( f, (double)_extr.rotation[i] );
     }
 
     f.close();
@@ -1502,8 +1502,17 @@ optimization_params optimizer::back_tracking_line_search( optimization_params co
     return new_params;
 }
 
+void optimizer::set_final_data(const std::vector<double3>& vertices,
+    const p_matrix& p_mat,
+    const p_matrix& p_mat_opt)
+{
+    _vertices_from_bin = vertices;
+    _p_mat_from_bin = p_mat;
+    _p_mat_from_bin_opt = p_mat_opt;
+}
+
 void optimizer::set_cycle_data(const std::vector<double3>& vertices, 
-    const rs2_intrinsics_double& k_depth, 
+    const rs2_intrinsics_double& k_depth,
     const p_matrix& p_mat, 
     const algo_calibration_registers& dsm_regs_cand,
     const rs2_dsm_params_double& dsm_params_cand)
@@ -1519,8 +1528,9 @@ size_t optimizer::optimize_p
 (
     const optimization_params& params_curr,
     const std::vector<double3>& new_vertices,
-    optimization_params& params_new, 
-    calib& new_rgb_calib,
+    optimization_params& params_new,
+    calib& optimaized_calibration,
+    calib& new_rgb_calib_for_k_to_dsm,
     rs2_intrinsics_double& new_z_k,
     std::function<void(iteration_data_collect const&data)> cb,
     iteration_data_collect* data 
@@ -1532,7 +1542,7 @@ size_t optimizer::optimize_p
     while (1)
     {
 
-        auto res = calc_cost_and_grad(_z, new_vertices, _yuy, new_rgb_calib, curr.curr_p_mat, data);
+        auto res = calc_cost_and_grad(_z, new_vertices, _yuy, new_rgb_calib_for_k_to_dsm, curr.curr_p_mat, data);
         curr.cost = res.first;
         curr.calib_gradients = res.second;
         AC_LOG( DEBUG, std::setw( 3 ) << std::right << n_iterations << std::left
@@ -1542,7 +1552,7 @@ size_t optimizer::optimize_p
         {
             data->type = iteration_data;
             data->params = curr;
-            data->c = new_rgb_calib;
+            data->c = new_rgb_calib_for_k_to_dsm;
             data->iteration = n_iterations;
         }
 
@@ -1577,20 +1587,22 @@ size_t optimizer::optimize_p
         }
 
         curr = params_new;
-        new_rgb_calib = decompose_p_mat(params_new.curr_p_mat);
+        new_rgb_calib_for_k_to_dsm = decompose_p_mat(params_new.curr_p_mat);
     }
 
     AC_LOG( INFO,
             "    cycle " << data->cycle << " finished after " << n_iterations << " iterations; cost "
                          << AC_D_PREC << params_curr.cost << "  -->  " << params_new.cost );
-    new_rgb_calib = decompose_p_mat(params_new.curr_p_mat);
-    auto orig_rgb_calib = decompose_p_mat(params_curr.curr_p_mat);
-    new_z_k = get_new_z_intrinsics_from_new_calib(_z.orig_intrinsics, new_rgb_calib, orig_rgb_calib);
-    new_rgb_calib.k_mat.fx = _original_calibration.k_mat.fx;
-    new_rgb_calib.k_mat.fy = _original_calibration.k_mat.fy;
+    new_rgb_calib_for_k_to_dsm = optimaized_calibration = decompose_p_mat(params_new.curr_p_mat);
 
-    params_new.curr_p_mat = new_rgb_calib.calc_p_mat();
-    new_rgb_calib = decompose_p_mat(params_new.curr_p_mat);
+    auto orig_rgb_calib = decompose_p_mat(params_curr.curr_p_mat);
+    new_rgb_calib_for_k_to_dsm.k_mat.k_mat.rot[1] = 0;
+
+    new_z_k = get_new_z_intrinsics_from_new_calib(_z.orig_intrinsics, new_rgb_calib_for_k_to_dsm, orig_rgb_calib);
+    new_rgb_calib_for_k_to_dsm.k_mat.k_mat.rot[0] = _original_calibration.k_mat.fx;
+    new_rgb_calib_for_k_to_dsm.k_mat.k_mat.rot[4] = _original_calibration.k_mat.fy;
+    params_new.curr_p_mat = new_rgb_calib_for_k_to_dsm.calc_p_mat();
+    new_rgb_calib_for_k_to_dsm = decompose_p_mat(params_new.curr_p_mat);
 
     return n_iterations;
 }
@@ -1619,7 +1631,7 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
 
     double last_cost = _params_curr.cost;
     
-    auto n_iterations = optimize_p(_params_curr, new_vertices, new_params, new_calib, new_k_depth, cb, &data);
+    auto n_iterations = optimize_p(_params_curr, new_vertices, new_params, _optimaized_calibration, new_calib, new_k_depth, cb, &data);
     AC_LOG(DEBUG, n_iterations << ": Cost = " << AC_D_PREC << new_params.cost);
 
     _z.orig_vertices = _z.vertices;
@@ -1628,10 +1640,33 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
     while (cycle < _params.max_K2DSM_iters)
     {
         data.cycle = ++cycle;
+
+       
         AC_LOG(INFO, "CYCLE: " << data.cycle);
 
         std::vector<double3> cand_vertices;
         auto dsm_regs_cand = new_dsm_regs;
+
+        optimization_params params_candidate;
+        calib calib_candidate = new_calib;
+        calib optimaized_calib_candidate = _optimaized_calibration;
+        rs2_intrinsics_double k_depth_candidate = new_k_depth;
+
+        if (cb)
+        {
+            data.type = cycle_data;
+            data.cycle_data_p.k_depth = k_depth_candidate;
+            cb(data);
+        }
+
+        if (get_cycle_data_from_bin)
+        {
+            new_params.curr_p_mat = _p_mat_from_bin;
+            new_calib = decompose(_p_mat_from_bin, _original_calibration);
+            new_k_depth = _k_dapth_from_bin;
+            new_dsm_regs = _dsm_regs_cand_from_bin;
+            _z.orig_dsm_params = new_dsm_params = _dsm_params_cand_from_bin;
+        }
 
         auto dsm_candidate = _k_to_DSM->convert_new_k_to_DSM(_z.orig_intrinsics, new_k_depth, _z, cand_vertices, dsm_regs_cand, &data);
         data.type = cycle_data;
@@ -1646,20 +1681,11 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
             cb(data);
         }
 
-        optimization_params params_candidate;
-        calib calib_candidate = new_calib;
-        rs2_intrinsics_double k_depth_candidate;
-        optimize_p(new_params, cand_vertices, params_candidate, calib_candidate, k_depth_candidate, cb, &data);
+        
+        optimize_p(new_params, cand_vertices, params_candidate, optimaized_calib_candidate, calib_candidate, k_depth_candidate, cb, &data);
 
         if (params_candidate.cost < last_cost)
             break;
-
-        if (cb)
-        {
-            data.type = cycle_data;
-            data.cycle_data_p.k_depth = k_depth_candidate;
-            cb(data);
-        }
 
         new_params = params_candidate;
         new_calib = calib_candidate;
@@ -1669,15 +1695,7 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
         last_cost = new_params.cost;
         new_vertices = cand_vertices;
         _z.vertices = new_vertices;
-
-        if (get_cycle_data_from_bin)
-        {
-            new_params.curr_p_mat = _p_mat_from_bin;
-            new_calib = decompose(_p_mat_from_bin, _original_calibration);
-            new_k_depth = _k_dapth_from_bin;
-            new_dsm_regs = _dsm_regs_cand_from_bin;
-            _z.orig_dsm_params = new_dsm_params = _dsm_params_cand_from_bin;
-        }
+        _optimaized_calibration = optimaized_calib_candidate;
     }
    
     AC_LOG( INFO,

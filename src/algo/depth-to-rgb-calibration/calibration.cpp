@@ -19,7 +19,10 @@ calib::calib( rs2_intrinsics_double const & intrin, rs2_extrinsics_double const 
     width = intrin.width;
     rot = { r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8] };
     trans = { t[0], t[1], t[2] };
-    k_mat = { intrin.fx, intrin.fy, intrin.ppx, intrin.ppy };
+    k_mat = matrix_3x3{ intrin.fx, 0,intrin.ppx,
+        0,intrin.fy, intrin.ppy,
+        0,0,1 };
+
     coeffs[0] = c[0];
     coeffs[1] = c[1];
     coeffs[2] = c[2];
@@ -38,7 +41,9 @@ calib::calib( rs2_intrinsics const & intrin, rs2_extrinsics const & extrin )
     width = intrin.width;
     rot = { r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8] };
     trans = { t[0], t[1], t[2] };
-    k_mat = { intrin.fx, intrin.fy, intrin.ppx, intrin.ppy };
+    k_mat = matrix_3x3{ intrin.fx, 0,intrin.ppx,
+        0,intrin.fy, intrin.ppy,
+        0,0,1 };
     coeffs[0] = c[0];
     coeffs[1] = c[1];
     coeffs[2] = c[2];
@@ -69,13 +74,27 @@ p_matrix const calib::calc_p_mat() const
 {
     auto r = rot.rot;
     auto t = trans;
-    auto fx = k_mat.fx;
+    auto k = k_mat.k_mat.rot;
+   /* auto fx = k_mat.fx;
     auto fy = k_mat.fy;
     auto ppx = k_mat.ppx;
-    auto ppy = k_mat.ppy;
-    p_matrix p_mat = { fx* r[0] + ppx * r[6], fx* r[1] + ppx * r[7], fx* r[2] + ppx * r[8], fx* t.t1 + ppx * t.t3,
-              fy* r[3] + ppy * r[6], fy* r[4] + ppy * r[7], fy* r[5] + ppy * r[8], fy* t.t2 + ppy * t.t3,
-              r[6]                 , r[7]                 , r[8]                 , t.t3 };
+    auto ppy = k_mat.ppy;*/
+    p_matrix p_mat = {
+        k[0] * r[0] + k[1] * r[3] + k[2] * r[6], 
+        k[0] * r[1] + k[1] * r[4] + k[2] * r[7], 
+        k[0] * r[2] + k[1] * r[5] + k[2] * r[8], 
+        k[0] * t.t1 + k[1] * t.t2 + k[2] * t.t3,
+
+        k[3] * r[0] + k[4] * r[3] + k[5] * r[6], 
+        k[3] * r[1] + k[4] * r[4] + k[5] * r[7], 
+        k[3] * r[2] + k[4] * r[5] + k[5] * r[8], 
+        k[3] * t.t1 + k[4] * t.t2 + k[5] * t.t3,
+
+        r[6], 
+        r[7], 
+        r[8], 
+        t.t3 
+    };
 
     return p_mat;
 }
@@ -328,11 +347,11 @@ krt p_matrix::decompose() const
     //%KInv = cholesky3x3(KSquareInv)';% Cholsky decomposition 3 by 3. returns a lower triangular matrix 3x3. Equal to inv(Krgb')
     auto k_inv = cholesky3x3( inv_k_square ).transpose();
     //%K = inv(KInv);
-    std::vector<double> k_vac( 9, 0 );
-    inv( k_inv.to_vector().data(), k_vac.data() );
+    matrix_3x3 k_vac = { 0 };
+    inv( k_inv.to_vector().data(), k_vac.rot );
     //%K = K/K(end);
-    for( auto i = 0; i < k_vac.size(); i++ )
-        k_vac[i] /= k_vac[k_vac.size() - 1];
+    for( auto i = 0; i < 9; i++ )
+        k_vac.rot[i] /= k_vac.rot[9 - 1];
 
     //%t = KInv*P(:,4);
     auto t = k_inv * double3{ vals[3], vals[7], vals[11] };
@@ -346,10 +365,7 @@ krt p_matrix::decompose() const
 
     calibration.trans = { t.x, t.y, t.z };
 
-    calibration.k_mat.fx = k_vac[0];
-    calibration.k_mat.fy = k_vac[4];
-    calibration.k_mat.ppx = k_vac[2];
-    calibration.k_mat.ppy = k_vac[5];
+    calibration.k_mat = matrix_3x3(k_vac);
 
     return calibration;
 }

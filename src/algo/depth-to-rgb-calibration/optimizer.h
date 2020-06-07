@@ -245,19 +245,23 @@ namespace depth_to_rgb_calibration {
         void set_cycle_data(const std::vector<double3>& vertices,
             const rs2_intrinsics_double& k_depth,
             const p_matrix& p_mat,
-            const algo_calibration_registers& dsm_regs_cand = algo_calibration_registers(),
-            const rs2_dsm_params_double& dsm_params_cand = rs2_dsm_params_double());
+            const algo_calibration_registers& dsm_regs_cand,
+            const rs2_dsm_params_double& dsm_params_cand);
+
+        void set_final_data(const std::vector<double3>& vertices,
+            const p_matrix& p_mat,
+            const p_matrix& p_mat_opt = p_matrix());
     private:
 
         // 1 cycle of optimization
         size_t optimize_p(const optimization_params& params_curr,
             const std::vector<double3>& new_vertices,
-            optimization_params& params_new, 
-            calib& new_rgb_calib, 
+            optimization_params& params_new,
+            calib& optimaized_calibration,
+            calib& new_rgb_calib_for_k_to_dsm,
             rs2_intrinsics_double& new_z_k,
-            std::function< void(iteration_data_collect const & data) >
-            iteration_callback = nullptr,
-            iteration_data_collect* data = nullptr);
+            std::function<void(iteration_data_collect const&data)> cb,
+            iteration_data_collect* data);
 
         calib decompose_p_mat(p_matrix p);
         rs2_intrinsics_double get_new_z_intrinsics_from_new_calib(const rs2_intrinsics_double& orig, const calib & new_c, const calib & orig_c);
@@ -306,14 +310,17 @@ namespace depth_to_rgb_calibration {
         calib _original_calibration;         // starting state of auto-calibration
         rs2_dsm_params _original_dsm_params;
         calib _final_calibration;         // starting state of auto-calibration
+        calib _optimaized_calibration;         // the last result of optimize_p that gives the optimal cost but not used for calibration
         rs2_dsm_params _final_dsm_params;
         calib _factory_calibration;          // factory default calibration of the camera
         optimization_params _params_curr;  // last-known setting
 
         //cycle data from bin files
         bool get_cycle_data_from_bin = false;
+        bool get_final_data_from_bin = true;
         rs2_intrinsics_double _k_dapth_from_bin;
         p_matrix _p_mat_from_bin;
+        p_matrix _p_mat_from_bin_opt;
         std::vector<double3> _vertices_from_bin;
         algo_calibration_registers _dsm_regs_cand_from_bin;
         rs2_dsm_params_double _dsm_params_cand_from_bin;

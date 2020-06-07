@@ -528,14 +528,6 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
 #if 1
     auto vertices = read_vector_from<algo::double3>(bin_file(bin_dir(scene_dir) + "end_vertices", 3, md.n_edges, "double_00.bin"));
 
-    auto Kdepth = read_vector_from<double>(bin_file(bin_dir(scene_dir) + "end_Kdepth", 3, 3, "double_00.bin"));
-
-    algo::rs2_intrinsics_double k_depth;
-    k_depth.fx = Kdepth[0];
-    k_depth.fy = Kdepth[2];
-    k_depth.ppx = Kdepth[4];
-    k_depth.ppy = Kdepth[5];
-
     algo::p_matrix p_mat;
 
     auto p_vec = read_vector_from<double>(bin_file(bin_dir(scene_dir) + "end_p_matrix",
@@ -544,7 +536,15 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
 
     std::copy(p_vec.begin(), p_vec.end(), p_mat.vals);
 
-    cal.set_cycle_data(vertices, k_depth, p_mat);
+    algo::p_matrix p_mat_opt;
+
+    auto p_vec_opt = read_vector_from<double>(bin_file(bin_dir(scene_dir) + "end_p_matrix_opt",
+        num_of_p_matrix_elements, 1,
+        "double_00.bin"));
+
+    std::copy(p_vec_opt.begin(), p_vec_opt.end(), p_mat_opt.vals);
+
+    cal.set_final_data(vertices, p_mat, p_mat_opt);
     //--
     TRACE( "\nChecking output validity:" );
     // Pixel movement is OK, but some sections have negative cost
@@ -565,8 +565,18 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
 
     CHECK( compare_to_bin_file< double >( z_data.cost_diff_per_section, scene_dir, "costDiffPerSection", 4, 1, "double_00", compare_same_vectors ) );
 
-    //svm
-    CHECK(compare_to_bin_file< double >(svm_features, scene_dir, "svm_featuresMat", 10, 1, "double_00", compare_same_vectors));
+    //svm - remove xyMovementFromOrigin because its still not implemented
+    auto svm_features_mat = read_vector_from<double>(bin_file(bin_dir(scene_dir) + "svm_featuresMat",
+        10, 1,
+        "double_00.bin"));
+
+    svm_features_mat.erase(svm_features_mat.begin() + 7);
+    auto svm_mat = svm_features;
+    svm_mat.erase(svm_mat.begin()+7);
+   
+    CHECK(compare_same_vectors(svm_features_mat, svm_mat));
+
+    //CHECK(compare_to_bin_file< double >(svm_features, scene_dir, "svm_featuresMat", 10, 1, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(decision_params.distribution_per_section_depth, scene_dir, "svm_edgeWeightDistributionPerSectionDepth", 1, 4, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(decision_params.distribution_per_section_rgb, scene_dir, "svm_edgeWeightDistributionPerSectionRgb", 1, 4, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(decision_params.edge_weights_per_dir, scene_dir, "svm_edgeWeightsPerDir", 4, 1, "double_00", compare_same_vectors));

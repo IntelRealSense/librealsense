@@ -14,9 +14,9 @@ namespace algo {
 namespace depth_to_rgb_calibration {
 
 
-    rotation extract_rotation_from_angles( const rotation_in_angles & rot_angles )
+    matrix_3x3 extract_rotation_from_angles( const rotation_in_angles & rot_angles )
     {
-        rotation res;
+        matrix_3x3 res;
 
         auto sin_a = sin( rot_angles.alpha );
         auto sin_b = sin( rot_angles.beta );

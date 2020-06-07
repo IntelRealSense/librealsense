@@ -139,13 +139,15 @@ namespace depth_to_rgb_calibration {
         double t3;
     };
 
-    struct rotation
+    struct matrix_3x3
     {
         double rot[9];
 
-        rotation transposed() const
+        matrix_3x3 transposed() const
         {
-            return { rot[0], rot[3], rot[6], rot[1], rot[4], rot[7], rot[2], rot[5], rot[8] };
+            return { rot[0], rot[3], rot[6], 
+                rot[1], rot[4], rot[7],
+                rot[2], rot[5], rot[8] };
         }
     };
 
@@ -172,25 +174,30 @@ namespace depth_to_rgb_calibration {
         }
     };
 
-    rotation extract_rotation_from_angles( const rotation_in_angles & rot_angles );
+    matrix_3x3 extract_rotation_from_angles( const rotation_in_angles & rot_angles );
     rotation_in_angles extract_angles_from_rotation( const double r[9] );
 
     struct k_matrix
     {
+        k_matrix(matrix_3x3 mat)
+            :k_mat(mat)
+        {
+            fx = k_mat.rot[0];
+            ppx = k_mat.rot[2];
+            fy = k_mat.rot[4];
+            ppy = k_mat.rot[5];
+
+        }
         double fx;
         double fy;
         double ppx;
         double ppy;
 
-        rotation as_3x3()
+        matrix_3x3 k_mat;
+
+        matrix_3x3 as_3x3()
         {
-            rotation r = { 0 };
-            r.rot[0] = fx;
-            r.rot[4] = fy;
-            r.rot[2] = ppx;
-            r.rot[5] = ppy;
-            r.rot[8] = 1;
-            return r;
+            return k_mat;
         }
     };
 

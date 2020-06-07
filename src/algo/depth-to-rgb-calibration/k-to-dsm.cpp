@@ -752,8 +752,8 @@ std::vector<double2> k_to_DSM::convert_norm_vertices_to_los
     std::vector<double> dsm_x_corr_on_grid(dsm_grid.size());
     for (auto i = 0; i < dsm_grid.size(); i ++)
     {
-        double vals[3] = { std::pow((dsm_grid[i] / 2047), 1), std::pow((dsm_grid[i] / 2047), 2), std::pow((dsm_grid[i] / 2047), 3) };
-        dsm_x_coarse_on_grid[i] = dsm_grid[i] + vals[0] * (double)_regs.FRMWpolyVars[0] + vals[1] * (double)_regs.FRMWpolyVars[1] + vals[2] * (double)_regs.FRMWpolyVars[2];
+        double rot[3] = { std::pow((dsm_grid[i] / 2047), 1), std::pow((dsm_grid[i] / 2047), 2), std::pow((dsm_grid[i] / 2047), 3) };
+        dsm_x_coarse_on_grid[i] = dsm_grid[i] + rot[0] * (double)_regs.FRMWpolyVars[0] + rot[1] * (double)_regs.FRMWpolyVars[1] + rot[2] * (double)_regs.FRMWpolyVars[2];
         auto val = dsm_x_coarse_on_grid[i] / 2047;
         double vals2[4] = { std::pow(val , 1),std::pow(val , 2), std::pow(val , 3) , std::pow(val , 4) };
         dsm_x_corr_on_grid[i] = dsm_x_coarse_on_grid[i] + vals2[0] * (double)_regs.FRMWundistAngHorz[0] +

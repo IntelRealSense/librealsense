@@ -46,7 +46,11 @@ namespace depth_to_rgb_calibration {
 
         operator k_matrix() const
         {
-            return { fx, fy, ppx, ppy };
+            matrix_3x3 res =
+                        { fx, 0, ppx,
+                        0, fy, ppy,
+                        0,0,1 };
+            return res;
         }
 
         int           width;     /**< Width of the image in pixels */
@@ -63,7 +67,7 @@ namespace depth_to_rgb_calibration {
     struct rs2_extrinsics_double
     {
         rs2_extrinsics_double() {}
-        rs2_extrinsics_double( const rotation& rot, const translation& trans )
+        rs2_extrinsics_double( const matrix_3x3& rot, const translation& trans )
             :rotation{ rot.rot[0], rot.rot[1],rot.rot[2],
                   rot.rot[3], rot.rot[4], rot.rot[5],
                   rot.rot[6], rot.rot[7], rot.rot[8] },
@@ -91,9 +95,9 @@ namespace depth_to_rgb_calibration {
 
     struct krt
     {
-        rotation rot = { { 0 } };
+        matrix_3x3 rot = { { 0 } };
         translation trans = { 0 };
-        k_matrix k_mat = { 0 };
+        k_matrix k_mat = matrix_3x3{ 0 };
     };
 
     struct p_matrix
@@ -144,9 +148,9 @@ namespace depth_to_rgb_calibration {
 
     struct calib
     {
-        rotation rot = { { 0 } };
+        matrix_3x3 rot = { { 0 } };
         translation trans = { 0 };
-        k_matrix k_mat = { 0 }; 
+        k_matrix k_mat = matrix_3x3{ 0};
         int           width = 0;
         int           height = 0;
         rs2_distortion model;
@@ -154,8 +158,8 @@ namespace depth_to_rgb_calibration {
 
         calib() = default;
         calib( calib const & ) = default;
-        explicit calib( rs2_intrinsics_double const & rgb_intrinsics, rs2_extrinsics_double const & depth_to_rgb_extrinsics );
-        explicit calib( rs2_intrinsics const & rgb_intrinsics, rs2_extrinsics const & depth_to_rgb_extrinsics );
+        explicit calib( rs2_intrinsics_double const & rgb_intrinsics, rs2_extrinsics_double const & depth_to_rgb_extrinsics);
+        explicit calib( rs2_intrinsics const & rgb_intrinsics, rs2_extrinsics const & depth_to_rgb_extrinsics);
 
         rs2_intrinsics_double get_intrinsics() const;
         rs2_extrinsics_double get_extrinsics() const;

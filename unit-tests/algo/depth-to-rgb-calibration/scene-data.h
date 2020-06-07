@@ -226,12 +226,12 @@ camera_params read_camera_params( std::string const &scene_dir, std::string cons
         double depth_width;
         double depth_height;
         double depth_units;
-        double k_depth[9];
+        librealsense::algo::depth_to_rgb_calibration::matrix_3x3 k_depth;
         double rgb_width;
         double rgb_height;
-        double k_rgb[9];
+        librealsense::algo::depth_to_rgb_calibration::matrix_3x3 k_rgb;
         double coeffs[5];
-        double rotation[9];
+        double matrix_3x3[9];
         double translation[3];
         double p_mat[12];
     };
@@ -244,23 +244,21 @@ camera_params read_camera_params( std::string const &scene_dir, std::string cons
     ci.rgb =
     {
         int( param.rgb_width ), int( param.rgb_height ),
-        librealsense::algo::depth_to_rgb_calibration::k_matrix{param.k_rgb[0], param.k_rgb[4]
-        ,param.k_rgb[2], param.k_rgb[5]},
+        param.k_rgb,
         RS2_DISTORTION_BROWN_CONRADY,
         param.coeffs
     };
     ci.z =
     {
         int( param.depth_width ), int( param.depth_height ),
-        librealsense::algo::depth_to_rgb_calibration::k_matrix{param.k_depth[0], param.k_depth[4]
-        ,param.k_depth[2], param.k_depth[5]},
+        param.k_depth,
         RS2_DISTORTION_NONE, coeffs
     };
     ci.extrinsics =
     {
-        { param.rotation[0], param.rotation[1], param.rotation[2],
-            param.rotation[3], param.rotation[4], param.rotation[5],
-            param.rotation[6], param.rotation[7], param.rotation[8] },
+        { param.matrix_3x3[0], param.matrix_3x3[1], param.matrix_3x3[2],
+            param.matrix_3x3[3], param.matrix_3x3[4], param.matrix_3x3[5],
+            param.matrix_3x3[6], param.matrix_3x3[7], param.matrix_3x3[8] },
         { param.translation[0], param.translation[1], param.translation[2] }
     };
     return ci;

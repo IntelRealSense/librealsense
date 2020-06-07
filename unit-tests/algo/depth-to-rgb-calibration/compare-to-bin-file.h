@@ -314,7 +314,7 @@ bool get_calib_from_raw_data(
     std::string const & filename
 )
 {
-    auto data_size = sizeof( algo::rotation ) +
+    auto data_size = sizeof( algo::matrix_3x3 ) +
         sizeof( algo::translation ) +
         sizeof( algo::k_matrix ) +
         sizeof( double ); // cost
@@ -330,14 +330,14 @@ bool get_calib_from_raw_data(
 
     auto k = *(algo::k_matrix*)(data);
     data += sizeof( algo::k_matrix ) / sizeof( double );
-    auto rotation = *(algo::rotation*)(data);
-    data += sizeof( algo::rotation ) / sizeof( double );
+    auto matrix_3x3 = *(algo::matrix_3x3*)(data);
+    data += sizeof( algo::matrix_3x3 ) / sizeof( double );
     auto translation = *(algo::translation*)(data);
     data += sizeof( algo::translation ) / sizeof( double );
     cost = *(double*)(data);
 
     calib.k_mat = k;
-    calib.rot = rotation;
+    calib.rot = matrix_3x3;
     calib.trans = translation;
     
     return true;
