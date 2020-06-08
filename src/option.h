@@ -552,26 +552,23 @@ namespace librealsense
        std::function<void(const option&)> _recording_function = [](const option&) {};
    };
 
-   class enable_motion_correction : public option_base
-   {
-   public:
-       void set(float value) override;
+    class enable_motion_correction : public option_base
+    {
+    public:
+        void set(float value) override;
 
-       float query() const override;
+        float query() const override;
 
-       bool is_enabled() const override { return _is_enabled; }
+        bool is_enabled() const override { return true; }
 
-       const char* get_description() const override
-       {
-           return "Enable/Disable Automatic Motion Data Correction";
-       }
+        const char* get_description() const override
+        {
+            return "Enable/Disable Automatic Motion Data Correction";
+        }
 
-       enable_motion_correction(sensor_base* mm_ep, const option_range& opt_range);
+        enable_motion_correction(sensor_base* mm_ep, const option_range& opt_range);
 
-       void update_state(bool state) { _is_enabled = state; }
-
-   private:
-       std::atomic<bool>   _is_active = true;
-       std::atomic<bool>   _is_enabled = true;
-   };
+    private:
+        std::atomic<bool>   _is_active;
+    };
 }
