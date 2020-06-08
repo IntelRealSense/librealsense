@@ -362,7 +362,8 @@ namespace librealsense
             CASE(SENSOR_MODE)
             CASE(EMITTER_ALWAYS_ON)
             CASE(THERMAL_COMPENSATION)
-            CASE(CAMERA_ACCURACY_HEALTH_ENABLED)
+            CASE(TRIGGER_CAMERA_ACCURACY_HEALTH)
+            CASE(RESET_CAMERA_ACCURACY_HEALTH)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

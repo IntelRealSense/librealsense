@@ -229,8 +229,12 @@ namespace librealsense
                 } );
 
             depth_sensor.register_option(
-                RS2_OPTION_CAMERA_ACCURACY_HEALTH_ENABLED,
+                RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH,
                 std::make_shared< ac_trigger::enabler_option >( _autocal )
+            );
+            depth_sensor.register_option(
+                RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH,
+                std::make_shared< ac_trigger::reset_option >( _autocal )
             );
         }
 

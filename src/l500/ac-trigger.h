@@ -88,7 +88,7 @@ namespace ivcam2 {
             bool should_process( const rs2::frame& frame ) override;
         };
 
-        /* For RS2_OPTION_CAMERA_ACCURACY_HEALTH_ENABLED */
+        /* For RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH */
         class enabler_option : public bool_option
         {
             std::shared_ptr< ac_trigger > _autocal;
@@ -99,7 +99,26 @@ namespace ivcam2 {
             virtual void set( float value ) override;
             virtual const char* get_description() const override
             {
-                return "Enable to ask FW for a special frame for auto calibration";
+                return "Trigger Camera Accuracy Health";
+            }
+            virtual void enable_recording( std::function<void( const option& )> record_action ) override { _record_action = record_action; }
+
+        private:
+            std::function<void( const option& )> _record_action = []( const option& ) {};
+        };
+
+        /* For RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH */
+        class reset_option : public bool_option
+        {
+            std::shared_ptr< ac_trigger > _autocal;
+
+        public:
+            reset_option( std::shared_ptr< ac_trigger > const & autocal );
+
+            virtual void set( float value ) override;
+            virtual const char* get_description() const override
+            {
+                return "Reset the FW table for Camera Accuracy Health";
             }
             virtual void enable_recording( std::function<void( const option& )> record_action ) override { _record_action = record_action; }
 
