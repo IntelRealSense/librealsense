@@ -601,8 +601,8 @@ namespace ivcam2 {
             return 0;
         }
         auto const & ts = *( reinterpret_cast< temperatures * >( res.data() ) );
-        AC_LOG( DEBUG, "LDD temperture is currently " << ts.LDD_temperature << " degrees Celsius" );
-        return ts.LDD_temperature;
+        AC_LOG( DEBUG, "HUM temperture is currently " << ts.HUM_temperature << " degrees Celsius" );
+        return ts.HUM_temperature;
     }
 
     void ac_trigger::start( std::chrono::seconds n_seconds )
