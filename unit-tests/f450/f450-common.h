@@ -47,7 +47,7 @@ void checkOption(const rs2::sensor& sensor, rs2_option option, float initialValu
 {
     float valueAfterChange = initialValue;
     float valueToSet = initialValue;
-    while (lc_cb(valueAfterChange, limitValue))
+    while (lc_cb(valueToSet, limitValue))
     {
         vc_cb(valueToSet);
         if (!lc_cb(valueToSet, limitValue))
@@ -74,7 +74,7 @@ void checkOptionForBothSensors(const rs2::sensor& sensor, rs2_option option, rs2
     float valueAfterChange = initialValue;
     float valueAfterChange_second = initialValue;
     float valueToSet = initialValue;
-    while (lc_cb(valueAfterChange, limitValue) && lc_cb(valueAfterChange_second, limitValue))
+    while (lc_cb(valueToSet, limitValue))
     {
         vc_cb(valueToSet);
         if (!lc_cb(valueToSet, limitValue))
@@ -120,7 +120,7 @@ void checkOption_streaming(const rs2::pipeline& pipe, const rs2::sensor& sensor,
 {
     float valueAfterChange = initialValue;
     float valueToSet = initialValue;
-    while (lc_cb(valueAfterChange, limitValue))
+    while (lc_cb(valueToSet, limitValue))
     {
         rs2::frameset data = pipe.wait_for_frames();
         vc_cb(valueToSet);
@@ -148,7 +148,7 @@ void checkOptionForBothSensors_streaming(const rs2::pipeline& pipe, const rs2::s
     float valueAfterChange = initialValue;
     float valueAfterChange_second = initialValue;
     float valueToSet = initialValue;
-    while (lc_cb(valueAfterChange, limitValue) && lc_cb(valueAfterChange_second, limitValue))
+    while (lc_cb(valueToSet, limitValue))
     {
         rs2::frameset data = pipe.wait_for_frames();
         vc_cb(valueToSet);

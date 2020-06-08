@@ -83,7 +83,8 @@ void check_option_from_min_to_max_and_back(rs2::sensor sensor, rs2_option opt, i
         );
 
     valueAfterChange = sensor.get_option(opt);
-    REQUIRE(valueAfterChange == range.max);
+    bool result = (valueAfterChange >= (range.max - tolerance)) && (valueAfterChange <= (range.max + tolerance));
+    REQUIRE(result);
 
     std::cout << std::endl;
     std::cout << "Option incremented and got to max value Checked" << std::endl;
@@ -99,7 +100,8 @@ void check_option_from_min_to_max_and_back(rs2::sensor sensor, rs2_option opt, i
             return (valueAfterChange >= (valueRequested - tolerance)) && (valueAfterChange <= (valueRequested + tolerance));
         });
     valueAfterChange = sensor.get_option(opt);
-    REQUIRE(valueAfterChange == range.min);
+    result = (valueAfterChange >= (range.min - tolerance)) && (valueAfterChange <= (range.min + tolerance));
+    REQUIRE(result);
 
     std::cout << std::endl;
     std::cout << "Option decremented and got back to min value Checked" << std::endl;
@@ -153,8 +155,10 @@ void check_both_sensors_option_from_min_to_max_and_back(rs2::sensor sensor, rs2_
 
     valueAfterChange = sensor.get_option(opt);
     valueAfterChange_second = sensor.get_option(opt_second);
-    REQUIRE(valueAfterChange == range.max);
-    REQUIRE(valueAfterChange_second == range.max);
+    bool result = (valueAfterChange >= (range.max - tolerance)) && (valueAfterChange <= (range.max + tolerance));
+    REQUIRE(result);
+    bool result_second = (valueAfterChange_second >= (range.max - tolerance)) && (valueAfterChange_second <= (range.max + tolerance));
+    REQUIRE(result_second);
 
     std::cout << std::endl;
     std::cout << "Option incremented and got to max value Checked" << std::endl;
@@ -172,8 +176,10 @@ void check_both_sensors_option_from_min_to_max_and_back(rs2::sensor sensor, rs2_
         );
     valueAfterChange = sensor.get_option(opt);
     valueAfterChange_second = sensor.get_option(opt_second);
-    REQUIRE(valueAfterChange == range.min);
-    REQUIRE(valueAfterChange_second == range.min);
+    result = (valueAfterChange >= (range.min - tolerance)) && (valueAfterChange <= (range.min + tolerance));
+    REQUIRE(result);
+    result_second = (valueAfterChange_second >= (range.min - tolerance)) && (valueAfterChange_second <= (range.min + tolerance));
+    REQUIRE(result_second);
 
     std::cout << std::endl;
     std::cout << "Option decremented and got back to min value Checked" << std::endl;
