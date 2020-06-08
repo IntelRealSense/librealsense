@@ -16,9 +16,18 @@ double optimizer::calc_correction_in_pixels( calib const & from_calibration ) co
     auto old_uvmap = get_texture_map( _z.orig_vertices, from_calibration, from_calibration.calc_p_mat());
     auto new_uvmap = get_texture_map( _z.vertices, _final_calibration, _final_calibration.calc_p_mat());
 
-    if( old_uvmap.size() != new_uvmap.size() )
-        throw std::runtime_error( to_string() << "did not expect different uvmap sizes (" << old_uvmap.size() << " vs " << new_uvmap.size() << ")" );
+    return calc_correction_in_pixels( old_uvmap, new_uvmap );
+}
+
+
+double optimizer::calc_correction_in_pixels( uvmap_t const & old_uvmap, uvmap_t const & new_uvmap ) const
+{
     // uvmap is Nx[x,y]
+
+    if( old_uvmap.size() != new_uvmap.size() )
+        throw std::runtime_error( to_string()
+                                  << "did not expect different uvmap sizes (" << old_uvmap.size()
+                                  << " vs " << new_uvmap.size() << ")" );
 
     //% xyMovement = mean(sqrt(sum((uvMap-uvMapNew).^2,2)));
     // note: "the mean of a vector containing NaN values is also NaN"

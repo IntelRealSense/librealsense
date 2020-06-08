@@ -232,6 +232,8 @@ namespace depth_to_rgb_calibration {
         rs2_dsm_params const & get_dsm_params() const;
 
         double get_cost() const;
+        double calc_correction_in_pixels( std::vector< double2 > const & old_uvmap,
+                                          std::vector< double2 > const & new_uvmap ) const;
         double calc_correction_in_pixels( calib const & from_calibration ) const;
         double calc_correction_in_pixels() const { return calc_correction_in_pixels( _original_calibration ); }
 

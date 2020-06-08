@@ -316,7 +316,7 @@ bool get_calib_from_raw_data(
 {
     auto data_size = sizeof( algo::matrix_3x3 ) +
         sizeof( algo::translation ) +
-        sizeof( algo::k_matrix ) +
+        sizeof( algo::matrix_3x3 ) +
         sizeof( double ); // cost
 
     auto bin = read_vector_from< double >( bin_dir( scene_dir ) + filename );
@@ -328,17 +328,17 @@ bool get_calib_from_raw_data(
 
     auto data = bin.data();
 
-    auto k = *(algo::k_matrix*)(data);
+    algo::matrix_3x3 k = *(algo::matrix_3x3*)(data);
     data += sizeof( algo::k_matrix ) / sizeof( double );
-    auto matrix_3x3 = *(algo::matrix_3x3*)(data);
+    auto r = *(algo::matrix_3x3*)(data);
     data += sizeof( algo::matrix_3x3 ) / sizeof( double );
-    auto translation = *(algo::translation*)(data);
+    auto t = *(algo::translation*)(data);
     data += sizeof( algo::translation ) / sizeof( double );
     cost = *(double*)(data);
 
-    calib.k_mat = k;
-    calib.rot = matrix_3x3;
-    calib.trans = translation;
+    calib.k_mat = algo::k_matrix( k );
+    calib.rot = r;
+    calib.trans = t;
     
     return true;
 }

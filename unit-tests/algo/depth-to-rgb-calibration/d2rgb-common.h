@@ -8,6 +8,7 @@
 #include "scene-data.h"
 #include "../../../src/algo/depth-to-rgb-calibration/k-to-dsm.h"
 #include "../../../src/algo/depth-to-rgb-calibration/utils.h"
+#include "../../../src/algo/depth-to-rgb-calibration/uvmap.h"
 
 
 #include "ac-logger.h"

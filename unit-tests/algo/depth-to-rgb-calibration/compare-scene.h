@@ -48,7 +48,7 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
     auto rgb_w = ci.rgb.width;
     auto z_h = ci.z.height;
     auto z_w = ci.z.width;
-    auto num_of_calib_elements = 17;
+    auto num_of_calib_elements = 22;
     auto num_of_p_matrix_elements = sizeof(algo::p_matrix) / sizeof(double);
 
 
@@ -528,6 +528,16 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
 #if 1
     auto vertices = read_vector_from<algo::double3>(bin_file(bin_dir(scene_dir) + "end_vertices", 3, md.n_edges, "double_00.bin"));
 
+
+    if( stats )
+    {
+        auto our_uvmap = algo::get_texture_map( depth_data.vertices, new_calibration, new_calibration.calc_p_mat() );
+        auto matlab_uvmap = algo::get_texture_map( vertices, matlab_calib, matlab_calib.calc_p_mat() );
+
+        stats->d_movement = cal.calc_correction_in_pixels( our_uvmap, matlab_uvmap );
+    }
+
+
     algo::p_matrix p_mat;
 
     auto p_vec = read_vector_from<double>(bin_file(bin_dir(scene_dir) + "end_p_matrix",
@@ -560,7 +570,7 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
     if( stats )
     {
         stats->movement = movement_in_pixels;
-        stats->d_movement = movement_in_pixels - matlab_movement_in_pixels;
+        //stats->d_movement = movement_in_pixels - matlab_movement_in_pixels;
     }
 
     CHECK( compare_to_bin_file< double >( z_data.cost_diff_per_section, scene_dir, "costDiffPerSection", 4, 1, "double_00", compare_same_vectors ) );

@@ -67,7 +67,7 @@ template< typename T >
 }
 
 template< typename T >
-std::vector< T > read_vector_from( std::string const & filename, uint32_t size_x = 0, uint32_t size_y = 0)
+std::vector< T > read_vector_from( std::string const & filename, size_t size_x = 0, size_t size_y = 0)
 {
     std::fstream f = std::fstream( filename, std::ios::in | std::ios::binary );
     if( !f )
@@ -84,7 +84,7 @@ std::vector< T > read_vector_from( std::string const & filename, uint32_t size_x
 }
 
 template<>
-std::vector< std::vector<double> > read_vector_from(std::string const & filename, uint32_t size_x, uint32_t size_y)
+std::vector< std::vector<double> > read_vector_from(std::string const & filename, size_t size_x, size_t size_y)
 {
     std::vector< std::vector<double> > res;
     
@@ -99,7 +99,7 @@ std::vector< std::vector<double> > read_vector_from(std::string const & filename
 
     res.resize(size_x);
 
-    for (auto i = 0; i < size_x; i++)
+    for (size_t i = 0; i < size_x; i++)
     {
         res[i].resize(size_y);
         f.read((char *)res[i].data(), size_y * sizeof(double));
