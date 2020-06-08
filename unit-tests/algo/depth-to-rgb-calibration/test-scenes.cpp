@@ -17,6 +17,10 @@
 #include <io.h>
 #else
 #include <unistd.h>
+#define _log log
+#define _close close
+#define _fileno fileno
+#define _dup2 dup2
 #endif
 
 
@@ -58,7 +62,7 @@ void print_headers()
     std::cout << std::left << std::setw( 10 ) << "Cost";
     std::cout << std::right << std::setw( 10 ) << "%diff";
     std::cout << std::right << std::setw( 10 ) << "Pixels";
-    std::cout << std::right << std::setw( 10 ) << "%diff";
+    std::cout << std::right << std::setw( 10 ) << "delta";
     std::cout << std::endl;
 
     print_dividers();
@@ -82,15 +86,13 @@ void print_scene_stats( std::string const & name, size_t n_failed, scene_stats c
         std::cout << std::right << std::setw( 10 ) << d_cost_pct;
 
     std::cout << std::right << std::setw( 10 ) << scene.movement;
-    double matlab_movement = scene.movement - scene.d_movement;
-    double d_movement_pct = abs( scene.d_movement ) * 100. / matlab_movement;
-    if( d_movement_pct > 5. )
+    if( scene.d_movement > 1 )
     {
         Catch::Colour guard( Catch::Colour::Red );
-        std::cout << std::right << std::setw( 10 ) << d_movement_pct;
+        std::cout << std::right << std::setw( 10 ) << scene.d_movement;
     }
     else
-        std::cout << std::right << std::setw( 10 ) << d_movement_pct;
+        std::cout << std::right << std::setw( 10 ) << scene.d_movement;
 
     std::cout << std::endl;
 }
