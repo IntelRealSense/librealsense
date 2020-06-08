@@ -717,8 +717,6 @@ void output_model::foreach_log(std::function<void(log_entry& line)> action)
     for (auto&& l : notification_logs)
         action(l);
 
-    ImGui::Text("%s", " ");
-
     if (new_log)
     {
         ImGui::SetScrollPosHere();
