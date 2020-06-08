@@ -53,20 +53,12 @@ namespace librealsense
 
             if (_mm_correct_opt)
             {
-                if (mm_calib->is_intrinsic_valid())
-                {
-                    auto accel_intr = (*mm_calib).get_intrinsic(RS2_STREAM_ACCEL);
-                    auto gyro_intr = (*mm_calib).get_intrinsic(RS2_STREAM_GYRO);
-                    _accel_sensitivity = accel_intr.sensitivity;
-                    _accel_bias = accel_intr.bias;
-                    _gyro_sensitivity = gyro_intr.sensitivity;
-                    _gyro_bias = gyro_intr.bias;
-                }
-                else
-                {
-                    // in case no valid calibration data is available, disable motion correction
-                    _mm_correct_opt->update_state(false);
-                }
+                auto accel_intr = (*mm_calib).get_intrinsic(RS2_STREAM_ACCEL);
+                auto gyro_intr = (*mm_calib).get_intrinsic(RS2_STREAM_GYRO);
+                _accel_sensitivity = accel_intr.sensitivity;
+                _accel_bias = accel_intr.bias;
+                _gyro_sensitivity = gyro_intr.sensitivity;
+                _gyro_bias = gyro_intr.bias;
             }
         }
         else

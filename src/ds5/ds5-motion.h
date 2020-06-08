@@ -153,6 +153,10 @@ namespace librealsense
                     LOG_ERROR("Undefined IMU sensor type, use default intrinsic/extrinsic data");
                 }
             }
+
+            // default intrinsic in case no valid calibration data is available
+            // scale = 1 and offset = 0
+            _def_intr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ 0.0, 0.0, 0.0 } };
         }
         dm_v2_imu_calib_parser(const dm_v2_imu_calib_parser&);
         virtual ~dm_v2_imu_calib_parser() {}
@@ -181,18 +185,32 @@ namespace librealsense
 
         ds::imu_intrinsic get_intrinsic(rs2_stream stream)
         {
-            if (1!=_calib_table.module_info.dm_v2_calib_table.intrinsic_valid)
-                throw std::runtime_error(to_string() << "Depth Module V2 intrinsic invalidated : " << rs2_stream_to_string(stream) << " !");
-
             ds::dm_v2_imu_intrinsic in_intr;
             switch (stream)
             {
                 case RS2_STREAM_ACCEL:
-                    in_intr = _calib_table.module_info.dm_v2_calib_table.accel_intrinsic;
+                    if (_valid_intrinsic)
+                    {
+                        in_intr = _calib_table.module_info.dm_v2_calib_table.accel_intrinsic;
+                    }
+                    else
+                    {
+                        LOG_INFO("Depth Module V2 IMU " << rs2_stream_to_string(stream) << "intrinsic not valid, use default values.");
+                        in_intr = _def_intr;
+                    }
                     break;
                 case RS2_STREAM_GYRO:
-                    in_intr = _calib_table.module_info.dm_v2_calib_table.gyro_intrinsic;
-                    in_intr.bias = in_intr.bias * static_cast<float>(d2r);        // The gyro bias is calculated in Deg/sec
+                    if (_valid_intrinsic)
+                    {
+                        in_intr = _calib_table.module_info.dm_v2_calib_table.gyro_intrinsic;
+                        in_intr.bias = in_intr.bias * static_cast<float>(d2r);        // The gyro bias is calculated in Deg/sec
+                    }
+                    else
+                    {
+                        LOG_INFO("Depth Module V2 IMU " << rs2_stream_to_string(stream) << "intrinsic not valid, use default values.");
+                        in_intr = _def_intr;
+                    }
+
                     break;
                 default:
                     throw std::runtime_error(to_string() << "Depth Module V2 does not provide intrinsic for stream type : " << rs2_stream_to_string(stream) << " !");
@@ -205,6 +223,7 @@ namespace librealsense
 
     private:
         ds::dm_v2_eeprom    _calib_table;
+        ds::dm_v2_imu_intrinsic      _def_intr;
         rs2_extrinsics      _def_extr;
         float3x3            _imu_2_depth_rot;
         bool                _valid_intrinsic;
@@ -249,6 +268,10 @@ namespace librealsense
             // z-axis accleration would be around -1g
             _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ 0.01245f, -0.01642f, -0.00057f } };
             _imu_2_depth_rot = { { -1.0, 0, 0 },{ 0, 1.0, 0 },{ 0, 0, -1.0 } };
+
+            // default intrinsic in case no valid calibration data is available
+            // scale = 1 and offset = 0
+            _def_intr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ 0.0, 0.0, 0.0 } };
         }
 
         virtual ~l500_imu_calib_parser() {}
@@ -261,10 +284,25 @@ namespace librealsense
             switch (stream)
             {
             case RS2_STREAM_ACCEL:
-                in_intr = imu_calib_table.accel_intrinsic; break;
+                if (_valid_intrinsic)
+                {
+                    in_intr = imu_calib_table.accel_intrinsic;
+                }
+                else
+                {
+                    in_intr = _def_intr;
+                }
+                break;
             case RS2_STREAM_GYRO:
-                in_intr = imu_calib_table.gyro_intrinsic;
-                in_intr.bias = in_intr.bias * static_cast<float>(d2r);        // The gyro bias is calculated in Deg/sec
+                if (_valid_intrinsic)
+                {
+                    in_intr = imu_calib_table.gyro_intrinsic;
+                    in_intr.bias = in_intr.bias * static_cast<float>(d2r);        // The gyro bias is calculated in Deg/sec
+                }
+                else
+                {
+                    in_intr = _def_intr;
+                }
                 break;
             default:
                 throw std::runtime_error(to_string() << "L515 does not provide intrinsic for stream type : " << rs2_stream_to_string(stream) << " !");
@@ -288,6 +326,7 @@ namespace librealsense
 
     private:
         ds::dm_v2_calibration_table  imu_calib_table;
+        ds::dm_v2_imu_intrinsic      _def_intr;
         rs2_extrinsics      _def_extr;
         float3x3            _imu_2_depth_rot;
         bool                _valid_intrinsic;
@@ -296,7 +335,7 @@ namespace librealsense
     class mm_calib_handler
     {
     public:
-        mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor, bool flash_table, ds::d400_caps dev_cap = ds::d400_caps::CAP_UNDEFINED);
+        mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor, bool l515_imu_cal, ds::d400_caps dev_cap = ds::d400_caps::CAP_UNDEFINED);
         ~mm_calib_handler() {}
 
         ds::imu_intrinsic get_intrinsic(rs2_stream);

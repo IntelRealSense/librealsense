@@ -124,7 +124,7 @@ namespace librealsense
         try
         {
             // L515 motion correction with IMU supported from FW version 1.4.0.10
-            if (_fw_version >= firmware_version("1.4.0.10"))
+            if (_fw_version >= firmware_version("1.4.1.0"))
             {
                 mm_correct_opt = std::make_shared<enable_motion_correction>(hid_ep.get(), option_range{ 0, 1, 1, 1 });
                 hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION, mm_correct_opt);
@@ -183,8 +183,15 @@ namespace librealsense
         return tags;
     }
 
-    rs2_motion_device_intrinsic l500_motion::get_motion_intrinsics(rs2_stream) const
+    rs2_motion_device_intrinsic l500_motion::get_motion_intrinsics(rs2_stream stream) const
     {
-        return rs2_motion_device_intrinsic();
+        if (stream == RS2_STREAM_ACCEL)
+            return create_motion_intrinsics(**_accel_intrinsic);
+
+        if (stream == RS2_STREAM_GYRO)
+            return create_motion_intrinsics(**_gyro_intrinsic);
+
+        throw std::runtime_error(to_string() << "Motion Intrinsics unknown for stream " << rs2_stream_to_string(stream) << "!");
+
     }
 }

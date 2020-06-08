@@ -23,7 +23,7 @@ namespace librealsense
 
         std::vector<tagged_profile> get_profiles_tags() const override;
 
-        rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const;
+        rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream stream) const;
 
     private:
 

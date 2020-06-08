@@ -437,8 +437,8 @@ namespace librealsense
         _fisheye_device_idx = add_sensor(fisheye_ep);
     }
 
-    mm_calib_handler::mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor, bool flash_table, ds::d400_caps dev_cap) :
-        _hw_monitor(hw_monitor), _l515_table_on_flash(flash_table), _dev_cap(dev_cap)
+    mm_calib_handler::mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor, bool l515_imu_cal, ds::d400_caps dev_cap) :
+        _hw_monitor(hw_monitor), _l515_table_on_flash(l515_imu_cal), _dev_cap(dev_cap)
     {
         _imu_eeprom_raw = [this]() {
             if (_l515_table_on_flash)
@@ -485,6 +485,7 @@ namespace librealsense
                     else
                     {
                         // should not come to this point as calibration table related issues should have handled
+                        LOG_WARNING("IMU calibration data id: " << calib_id);
                         throw recoverable_exception(to_string() << "Motion Intrinsics unresolved - "
                             << "device is not calibrated - calibration data id: " << calib_id,
                             RS2_EXCEPTION_TYPE_BACKEND);
@@ -520,7 +521,7 @@ namespace librealsense
     {
         // read imu calibration table on L515
         // READ_TABLE 0x243 0
-        command cmd(0x43, 0x243, 0);
+        command cmd(ds::READ_TABLE, 0x243, 0);
 
         std::vector<uint8_t> res;
 
