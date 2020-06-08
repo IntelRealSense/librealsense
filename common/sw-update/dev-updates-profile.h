@@ -41,6 +41,10 @@ namespace rs2
                 std::map<versions_db_manager::version, update_description> firmware_versions;
 
                 device dev;
+                bool dev_active;
+
+                update_profile() :dev_active(true){};
+
             };
 
             explicit dev_updates_profile(const device& dev, const std::string &url, const bool use_url_as_local_path = false, http::user_callback_func_type download_callback = http::user_callback_func_type());
