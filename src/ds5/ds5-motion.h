@@ -196,15 +196,33 @@ namespace librealsense
     class l500_imu_calib_parser : public mm_calib_parser
     {
     public:
-        l500_imu_calib_parser(const std::vector<uint8_t>& raw_data)
+        l500_imu_calib_parser(const std::vector<uint8_t>& raw_data, bool valid = true)
         {
-            imu_calib_table = *(ds::check_calib<ds::dm_v2_calibration_table>(raw_data));
+            // default parser to be applied when no FW calibration is available
+            if (valid)
+                imu_calib_table = *(ds::check_calib<ds::dm_v2_calibration_table>(raw_data));
 
-            // TODO - need to check mechanical drawing for extrinsic and orientation
-            // Bosch BMI055
-            // L515 specific - BMI055 assembly transformation based on mechanical drawing (mm)
-            _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.01245f, 0.01642f, 0.02093f } };
-            _imu_2_depth_rot = { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } };
+            // L515 specific
+            // Bosch BMI085 assembly transformation based on mechanical drawing (meters)
+            // device thickness 26 mm from front glass to back surface
+            // depth ground zero is 4.5mm from front glass into the device
+            // IMU reference in z direction is at 20.93mm from back surface
+            //
+            // IMU offset in Z direction = 4.5 mm - (26 mm - 20.93 mm) = 4.5 mm - 5.07mm = - 0.57mm
+            // IMU offset in x and Y direction (12.45mm, -16.42mm) from center
+            //
+            // coordinate system as reference, looking from back of the camera towards front,
+            // the positive x-axis points to the right, the positive y-axis points down, and the
+            // positive z-axis points forward.
+            // origin in the center but z-direction 4.5mm from front glass into the device
+            // the matrix below is such that output of motion data is consistent with convention
+            // that positive direction aligned with gravity leads to -1g and opposite direction
+            // leads to +1g, for example, positive z_aixs points forward away from front glass of
+            // the device, 1) if place the device flat on a table, facing up, positive z-axis points
+            // up, z-axis acceleration is around +1g; 2) facing down, positive z-axis points down,
+            // z-axis accleration would be around -1g
+            _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ 0.01245f, -0.01642f, -0.00057f } };
+            _imu_2_depth_rot = { { -1.0, 0, 0 },{ 0, 1.0, 0 },{ 0, 0, -1.0 } };
         }
 
         virtual ~l500_imu_calib_parser() {}
@@ -213,6 +231,9 @@ namespace librealsense
 
         ds::imu_intrinsic get_intrinsic(rs2_stream stream)
         {
+            if (1 != imu_calib_table.intrinsic_valid)
+                throw std::runtime_error(to_string() << "Depth Module V2 intrinsic invalidated : " << rs2_stream_to_string(stream) << " !");
+
             ds::dm_v2_imu_intrinsic in_intr;
             switch (stream)
             {
@@ -249,7 +270,7 @@ namespace librealsense
     class mm_calib_handler
     {
     public:
-        mm_calib_handler(std::vector<uint8_t> imu_raw, ds::d400_caps dev_cap = ds::d400_caps::CAP_UNDEFINED);
+        mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor, bool l515_imu_cal, ds::d400_caps dev_cap = ds::d400_caps::CAP_UNDEFINED);
         ~mm_calib_handler() {}
 
         ds::imu_intrinsic get_intrinsic(rs2_stream);
@@ -258,10 +279,14 @@ namespace librealsense
         float3x3 imu_to_depth_alignment() { return (*_calib_parser)->imu_to_depth_alignment(); }
 
     private:
+        std::shared_ptr<hw_monitor> _hw_monitor;
         ds::d400_caps                   _dev_cap;
         lazy< std::shared_ptr<mm_calib_parser>> _calib_parser;
-        std::vector<uint8_t>      _imu_eeprom_raw;
+        lazy<std::vector<uint8_t>>      _imu_eeprom_raw;
+        std::vector<uint8_t>            get_imu_eeprom_raw() const;
+        std::vector<uint8_t>            get_imu_eeprom_raw_l515() const;
         lazy<std::vector<uint8_t>>      _fisheye_calibration_table_raw;
+        bool _l515_table_on_flash = false;
     };
 
     class ds5_motion : public virtual ds5_device
@@ -288,9 +313,6 @@ namespace librealsense
 
         optional_value<uint8_t> _fisheye_device_idx;
         optional_value<uint8_t> _motion_module_device_idx;
-
-        std::vector<uint8_t> get_imu_eeprom_raw() const;
-        lazy<std::vector<uint8_t>> _imu_eeprom_raw;
 
         std::shared_ptr<mm_calib_handler>        _mm_calib;
         std::shared_ptr<lazy<ds::imu_intrinsic>> _accel_intrinsic;

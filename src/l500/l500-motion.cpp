@@ -93,26 +93,6 @@ namespace librealsense
         const l500_motion* _owner;
     };
 
-    std::vector<uint8_t> l500_motion::get_imu_eeprom_raw() const
-    {
-        // read imu calibration table on L515
-        // READ_TABLE 0x243 0
-        command cmd(ivcam2::READ_TABLE, 0x243, 0);
-
-        std::vector<uint8_t> res;
-
-        try
-        {
-            res = _hw_monitor->send(cmd);
-        }
-        catch (std::exception &e) {
-            LOG_WARNING(e.what());
-        }
-        catch (...) {}
-
-        return res;
-    }
-
     std::shared_ptr<synthetic_sensor> l500_motion::create_hid_device(std::shared_ptr<context> ctx, const std::vector<platform::hid_device_info>& all_hid_infos)
     {
         if (all_hid_infos.empty())
@@ -138,14 +118,18 @@ namespace librealsense
         hid_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
 
         // register pre-processing
-        bool enable_imu_correction = false;
         std::shared_ptr<enable_motion_correction> mm_correct_opt = nullptr;
 
         //  Motion intrinsic calibration presents is a prerequisite for motion correction.
         try
         {
-            if (_mm_calib)
+            // L515 motion correction with IMU supported from FW version 1.4.0.10
+            if (_fw_version >= firmware_version("1.4.1.0"))
             {
+                // Writing to log to dereference underlying structure
+                LOG_INFO("Accel Sensitivity:" << (**_accel_intrinsic).sensitivity);
+                LOG_INFO("Gyro Sensitivity:" << (**_gyro_intrinsic).sensitivity);
+
                 mm_correct_opt = std::make_shared<enable_motion_correction>(hid_ep.get(), option_range{ 0, 1, 1, 1 });
                 hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION, mm_correct_opt);
             }
@@ -172,17 +156,12 @@ namespace librealsense
           _accel_stream(new stream(RS2_STREAM_ACCEL)),
          _gyro_stream(new stream(RS2_STREAM_GYRO))
     {
-        _imu_eeprom_raw = [this]() { return get_imu_eeprom_raw(); };
+        _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, true);
+        _accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
+        _gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
 
-        if (!_imu_eeprom_raw->empty())
-        {
-            _mm_calib = std::make_shared<mm_calib_handler>(*_imu_eeprom_raw);
-
-            _accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
-            _gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
-            // use predefined values extrinsics
-            _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
-        }
+        // use predefined extrinsics
+        _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
 
         // Make sure all MM streams are positioned with the same extrinsics
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_accel_stream, _depth_to_imu);
@@ -208,8 +187,15 @@ namespace librealsense
         return tags;
     }
 
-    rs2_motion_device_intrinsic l500_motion::get_motion_intrinsics(rs2_stream) const
+    rs2_motion_device_intrinsic l500_motion::get_motion_intrinsics(rs2_stream stream) const
     {
-        return rs2_motion_device_intrinsic();
+        if (stream == RS2_STREAM_ACCEL)
+            return create_motion_intrinsics(**_accel_intrinsic);
+
+        if (stream == RS2_STREAM_GYRO)
+            return create_motion_intrinsics(**_gyro_intrinsic);
+
+        throw std::runtime_error(to_string() << "Motion Intrinsics unknown for stream " << rs2_stream_to_string(stream) << "!");
+
     }
 }
