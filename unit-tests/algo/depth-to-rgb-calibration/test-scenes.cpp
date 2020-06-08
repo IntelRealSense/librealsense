@@ -20,6 +20,7 @@
 #define _log log
 #define _close close
 #define _fileno fileno
+#define _dup dup
 #define _dup2 dup2
 #endif
 
