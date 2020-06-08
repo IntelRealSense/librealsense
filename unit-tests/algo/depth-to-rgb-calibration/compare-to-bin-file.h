@@ -329,7 +329,7 @@ bool get_calib_from_raw_data(
     auto data = bin.data();
 
     algo::matrix_3x3 k = *(algo::matrix_3x3*)(data);
-    data += sizeof( algo::k_matrix ) / sizeof( double );
+    data += sizeof( algo::matrix_3x3) / sizeof( double );
     auto r = *(algo::matrix_3x3*)(data);
     data += sizeof( algo::matrix_3x3 ) / sizeof( double );
     auto t = *(algo::translation*)(data);
