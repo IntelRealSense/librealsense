@@ -220,9 +220,12 @@ namespace librealsense
         //  Motion intrinsic calibration presents is a prerequisite for motion correction.
         try
         {
-            mm_correct_opt = std::make_shared<enable_motion_correction>(hid_ep.get(),
-                option_range{ 0, 1, 1, 1 });
-            hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION, mm_correct_opt);
+            if (_mm_calib && _mm_calib->is_intrinsic_valid())
+            {
+                mm_correct_opt = std::make_shared<enable_motion_correction>(hid_ep.get(),
+                    option_range{ 0, 1, 1, 1 });
+                hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION, mm_correct_opt);
+            }
         }
         catch (...) {}
 
