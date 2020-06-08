@@ -518,6 +518,7 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
     double matlab_cost = 0;
     CHECK( get_calib_from_raw_data( matlab_calib, matlab_cost, scene_dir, filename ) );
     CHECK( compare_calib( new_calibration, cost, matlab_calib, matlab_cost ));
+    new_calibration.copy_coefs(matlab_calib);
     if( stats )
     {
         stats->cost = cost;
