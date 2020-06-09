@@ -67,7 +67,6 @@ int main(int argc, char * argv[])
 
 
         auto fw_log_device = res.get_device().as<rs2::firmware_logger>();
-        auto number_of_flash_logs_in_device = fw_log_device.get_number_of_flash_logs();
 
         bool using_parser = false;
         std::string xml_full_file_path("HWLoggerEventsDS5.xml");
@@ -82,7 +81,8 @@ int main(int argc, char * argv[])
             }
         }
 
-        for (int i = 0; i < number_of_flash_logs_in_device; ++i)
+        bool flash_logs_to_pull = true;
+        while (hub.is_connected(dev) && flash_logs_to_pull)
         {
             auto flash_log_message = fw_log_device.create_message();
             bool result = fw_log_device.get_flash_log(flash_log_message);
@@ -120,6 +120,10 @@ int main(int argc, char * argv[])
                 }
                 for (auto& line : fw_log_lines)
                     cout << line << endl;
+            }
+            else
+            {
+                flash_logs_to_pull = false;
             }
         }
     }
