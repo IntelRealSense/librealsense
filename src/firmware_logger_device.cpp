@@ -12,7 +12,6 @@ namespace librealsense
         _fw_logs(),
         _flash_logs(),
         _flash_logs_initialized(false),
-        _flash_logs_index(0),
         _parser(nullptr)
     {
         auto op_code = static_cast<uint8_t>(std::stoi(camera_op_code.c_str()));
@@ -100,7 +99,7 @@ namespace librealsense
             std::vector<uint8_t> resultsForOneLog;
             resultsForOneLog.insert(resultsForOneLog.begin(), beginOfLogIterator, endOfLogIterator);
             fw_logs::fw_logs_binary_data binary_data{ resultsForOneLog };
-            _flash_logs.push_back(binary_data);
+            _flash_logs.push(binary_data);
             beginOfLogIterator = endOfLogIterator;
         }
 
@@ -118,21 +117,12 @@ namespace librealsense
         if (!_flash_logs.empty())
         {
             fw_logs::fw_logs_binary_data data;
-            data = _flash_logs[_flash_logs_index];
-            _flash_logs_index = (_flash_logs_index + 1) % (_flash_logs.size());
+            data = _flash_logs.front();
+            _flash_logs.pop();
             binary_data = data;
             result = true;
         }
         return result;
-    }
-
-    size_t firmware_logger_device::get_number_of_flash_logs()
-    {
-        if (!_flash_logs_initialized)
-        {
-            get_flash_logs_from_hw_monitor();
-        }
-        return _flash_logs.size();
     }
 
     bool firmware_logger_device::init_parser(std::string xml_full_file_path)

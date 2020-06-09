@@ -179,17 +179,6 @@ namespace rs2
             return flash_log_pulling_status;
         }
 
-        int get_number_of_flash_logs() const
-        {
-            rs2_error* e = nullptr;
-            int number_of_flash_logs =
-                rs2_get_number_of_flash_logs(_dev.get(), &e);
-
-            error::handle(e);
-
-            return number_of_flash_logs;
-        }
-
         bool init_parser(const std::string& xml_path)
         {
             rs2_error* e = nullptr;

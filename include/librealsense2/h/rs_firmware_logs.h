@@ -32,8 +32,6 @@ rs2_firmware_log_message* rs2_create_firmware_log_message(rs2_device* dev, rs2_e
 */
 int rs2_get_firmware_log(rs2_device* dev, rs2_firmware_log_message** fw_log_msg, rs2_error** error);
 
-int rs2_get_number_of_flash_logs(rs2_device* dev, rs2_error** error);
-
 /**
 * \brief Gets RealSense flash log - this is a fw log that has been written in the device during the previous shutdown of the device
 * \param[in] dev	        Device from which the FW log should be taken
