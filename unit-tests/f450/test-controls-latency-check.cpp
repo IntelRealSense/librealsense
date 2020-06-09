@@ -16,6 +16,7 @@
 #include "f450-common-display.h"
 #include <types.h>
 
+
 bool check_with_tolerance(float current_value, float required_value, float tolerance = 5)
 {
     return (current_value >= (required_value - tolerance)) && (current_value <= (required_value + tolerance));
@@ -88,7 +89,13 @@ TEST_CASE( "Gain latency check while streaming", "[F450]" ) {
         ++framesCounter;
         if (framesCounter == 10)
         {
+            auto timeBeforeSet = std::chrono::system_clock::now();
             sensor.set_option(opt, gain_first);
+            auto timeAfterSet = std::chrono::system_clock::now();
+            std::chrono::duration<double> dur = timeAfterSet - timeBeforeSet;
+
+            std::cout << "start of set action = " << std::chrono::system_clock::to_time_t(timeBeforeSet) 
+                << "time of set action = " << dur.count() * 1000.0 << "ms" << std::endl;
             std::stringstream s;
             s << "test sending set_option for gain, with value: " << gain_first << "\n";
             LOG_DEBUG(s.str());
@@ -99,7 +106,13 @@ TEST_CASE( "Gain latency check while streaming", "[F450]" ) {
 
         if (framesCounter == 20)
         {
+            auto timeBeforeSet = std::chrono::system_clock::now();
             sensor.set_option(opt, gain_second);
+            auto timeAfterSet = std::chrono::system_clock::now();
+            std::chrono::duration<double> dur = timeAfterSet - timeBeforeSet;
+
+            std::cout << "start of set action = " << std::chrono::system_clock::to_time_t(timeBeforeSet)
+                << ", time of set action = " << dur.count() * 1000.0 << "ms" << std::endl;
             std::stringstream s;
             s << "test sending set_option for gain, with value: " << gain_second << "\n";
             LOG_DEBUG(s.str());
@@ -111,10 +124,20 @@ TEST_CASE( "Gain latency check while streaming", "[F450]" ) {
         rs2::video_frame frame_0(data.get_infrared_frame(0));
         long long current_gain_0 = frame_0.get_frame_metadata(RS2_FRAME_METADATA_GAIN_LEVEL);
         long long current_frame_counter_0 = frame_0.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
-        cout << "*******frameCounter = " << framesCounter << " in md: " << current_frame_counter_0 << " - ";
-        cout << "current_value = " << current_gain_0
-            << ",  required_value = " << required_value << endl;
+        
+        auto frameArrivingTime = std::chrono::system_clock::now();
+        auto frameArrivingTime_ns = std::chrono::time_point_cast<std::chrono::nanoseconds>(frameArrivingTime);
+        auto value = frameArrivingTime_ns.time_since_epoch();
+        long duration = value.count();
 
+        std::chrono::nanoseconds dur(duration);
+        cout << "*******frameCounter = " << framesCounter 
+            <<  ", libRS frameCounter = " << frame_0.get_frame_number()
+            << ", in md: " << current_frame_counter_0 << " - ";
+        cout << "current_value = " << current_gain_0
+            << ",  required_value = " << required_value<< " - ";
+        cout << "frame arriving to test time = " << duration << endl;
+        
         if (has_requested_changed)
         {
             if (check_with_tolerance(current_gain_0, required_value))
