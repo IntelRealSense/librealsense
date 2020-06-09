@@ -297,7 +297,8 @@ namespace depth_to_rgb_calibration {
         // output validation
         void clip_pixel_movement( size_t iteration_number = 0 );
         std::vector< double > cost_per_section_diff( calib const & old_calib, calib const & new_calib );
-        rs2_dsm_params clip_ac_scaling(rs2_dsm_params_double ac_data_orig, rs2_dsm_params_double ac_data_new);
+        void clip_ac_scaling( rs2_dsm_params_double const & ac_data_orig,
+                              rs2_dsm_params_double & ac_data_new ) const;
 
     private:
         params _params;

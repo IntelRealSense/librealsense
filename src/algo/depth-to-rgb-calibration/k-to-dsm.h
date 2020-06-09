@@ -22,13 +22,6 @@ namespace depth_to_rgb_calibration {
         inverse
     };
 
-    enum dsm_model
-    {
-        none = 0,
-        AOT = 1,
-        TOA = 2
-    };
-
 
     struct los_shift_scaling
     {
@@ -40,51 +33,38 @@ namespace depth_to_rgb_calibration {
 
     struct rs2_dsm_params_double
     {
-        rs2_dsm_params_double(rs2_dsm_params obj)
-            :timestamp(obj.timestamp),
-            version(obj.version),
-            model(obj.model),
-            h_scale(obj.h_scale),
-            v_scale(obj.v_scale),
-            h_offset(obj.h_offset),
-            v_offset(obj.v_offset),
-            rtd_offset(obj.rtd_offset),
-            temp_x2(obj.temp_x2){} //todo: flags
+        rs2_dsm_correction_model model;
+        double h_scale;    /**< the scale factor to horizontal DSM scale thermal results */
+        double v_scale;    /**< the scale factor to vertical DSM scale thermal results */
+        double h_offset;   /**< the offset to horizontal DSM offset thermal results */
+        double v_offset;   /**< the offset to vertical DSM offset thermal results */
+        double rtd_offset; /**< the offset to the Round-Trip-Distance delay thermal results */
 
         rs2_dsm_params_double() = default;
-
-        operator rs2_dsm_params()
+        rs2_dsm_params_double( rs2_dsm_params const & obj )
+            : h_scale( obj.h_scale )
+            , v_scale( obj.v_scale )
+            , h_offset( obj.h_offset )
+            , v_offset( obj.v_offset )
+            , rtd_offset( obj.rtd_offset )
+            , model( rs2_dsm_correction_model( obj.model ) )
         {
-            rs2_dsm_params res;
-
-            res.timestamp = timestamp;
-            res.version = version;
-            res.model = model;
-            for (auto i = 0; i < 5; i++)
-                res.flags[i] = flags[i];
-
-            res.h_scale = float(h_scale);
-            res.v_scale = float(v_scale);
-            res.h_offset = float(h_offset);
-            res.v_offset = float(v_offset);
-            res.rtd_offset = float(rtd_offset);
-            res.temp_x2 = temp_x2;
-            return res;
+            //todo: flags
         }
 
-        unsigned long long timestamp;   /**< system_clock::time_point::time_since_epoch().count() */
-        unsigned short version;         /**< MAJOR<<12 | MINOR<<4 | PATCH */
-        unsigned char model;            /**< rs2_dsm_correction_model */
-        unsigned char flags[5];         /**< TBD, now 0s */
-        double        h_scale;          /**< the scale factor to horizontal DSM scale thermal results */
-        double        v_scale;          /**< the scale factor to vertical DSM scale thermal results */
-        double        h_offset;         /**< the offset to horizontal DSM offset thermal results */
-        double        v_offset;         /**< the offset to vertical DSM offset thermal results */
-        double        rtd_offset;       /**< the offset to the Round-Trip-Distance delay thermal results */
-        unsigned char temp_x2;          /**< the temperature recorded times 2 (ldd for depth; hum for rgb) */
-        unsigned char reserved[11];
+        void copy_to( rs2_dsm_params & o )
+        {
+            o.h_scale = float( h_scale );
+            o.v_scale = float( v_scale );
+            o.h_offset = float( h_offset );
+            o.v_offset = float( v_offset );
+            o.rtd_offset = float( rtd_offset );
+            o.model = model;
+        }
     };
     
+    std::ostream & operator<<( std::ostream &, rs2_dsm_params_double const & );
+
 #pragma pack(push, 1)
     // This table is read from FW and is used in the optimizer
     // Best way to see this table and its formatting is in the Algo source code, under:
@@ -216,6 +196,7 @@ namespace depth_to_rgb_calibration {
             const rs2_intrinsics_double& new_k,
             const z_frame_data& z,
             std::vector<double3>& new_vertices,
+            rs2_dsm_params_double const & previous_dsm_params,
             algo_calibration_registers& new_dsm_regs,
             iteration_data_collect* data = nullptr);
 
@@ -269,7 +250,6 @@ namespace depth_to_rgb_calibration {
         pre_process_data _pre_process_data;
 
         //input camera params
-        rs2_dsm_params_double _ac_data;
         algo::depth_to_rgb_calibration::algo_calibration_info _regs;
         algo::depth_to_rgb_calibration::algo_calibration_registers _dsm_regs;
 
@@ -282,4 +262,5 @@ namespace depth_to_rgb_calibration {
 }
 }
 }
+
 

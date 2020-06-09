@@ -57,7 +57,7 @@ void optimizer::clip_pixel_movement( size_t iteration_number )
     double xy_movement = calc_correction_in_pixels();
 
     // Clip any (average) movement of pixels if it's too big
-    AC_LOG( DEBUG, "... average pixel movement= " << xy_movement );
+    AC_LOG( INFO, "    average pixel movement= " << xy_movement );
 
     size_t n_max_movements = sizeof( _params.max_xy_movement_per_calibration ) / sizeof( _params.max_xy_movement_per_calibration[0] );
     double const max_movement = _params.max_xy_movement_per_calibration[std::min( n_max_movements - 1, iteration_number )];
@@ -136,22 +136,35 @@ std::vector< double > optimizer::cost_per_section_diff(calib const & old_calib, 
 }
 
 
-rs2_dsm_params optimizer::clip_ac_scaling(rs2_dsm_params_double ac_data_in, rs2_dsm_params_double ac_data_new)
+void optimizer::clip_ac_scaling( rs2_dsm_params_double const & ac_data_in,
+                                 rs2_dsm_params_double & ac_data_new ) const
 {
-    if (abs(ac_data_in.h_scale - ac_data_new.h_scale) > _params.max_global_los_scaling_step)
+    if( abs( ac_data_in.h_scale - ac_data_new.h_scale ) > _params.max_global_los_scaling_step )
     {
-        ac_data_new.h_scale = ac_data_in.h_scale + (ac_data_new.h_scale - ac_data_in.h_scale) /
-            abs(ac_data_new.h_scale - ac_data_in.h_scale)*_params.max_global_los_scaling_step;
-
+        double const new_h_scale = ac_data_in.h_scale
+                                 + ( ac_data_new.h_scale - ac_data_in.h_scale )
+                                       / abs( ac_data_new.h_scale - ac_data_in.h_scale )
+                                       * _params.max_global_los_scaling_step;
+        AC_LOG( DEBUG,
+                "    H scale delta ("
+                    << AC_D_PREC << abs( ac_data_in.h_scale - ac_data_new.h_scale )
+                    << " > max global LoS scaling per step (" << _params.max_global_los_scaling_step
+                    << "); clipping to " << new_h_scale );
+        ac_data_new.h_scale = new_h_scale;
     }
-    if (abs(ac_data_in.v_scale - ac_data_new.v_scale) > _params.max_global_los_scaling_step)
+    if( abs( ac_data_in.v_scale - ac_data_new.v_scale ) > _params.max_global_los_scaling_step )
     {
-        ac_data_new.v_scale = ac_data_in.v_scale + (ac_data_new.v_scale - ac_data_in.v_scale) /
-            abs(ac_data_new.v_scale - ac_data_in.v_scale)*_params.max_global_los_scaling_step;
-
+        double const new_v_scale = ac_data_in.v_scale
+                                 + ( ac_data_new.v_scale - ac_data_in.v_scale )
+                                       / abs( ac_data_new.v_scale - ac_data_in.v_scale )
+                                       * _params.max_global_los_scaling_step;
+        AC_LOG( DEBUG,
+                "    V scale delta ("
+                    << AC_D_PREC << abs( ac_data_in.v_scale - ac_data_new.v_scale )
+                    << " > max global LoS scaling per step (" << _params.max_global_los_scaling_step
+                    << "); clipping to " << new_v_scale );
+        ac_data_new.v_scale = new_v_scale;
     }
-
-    return ac_data_new;
 }
 
 std::vector< double > extract_features(decision_params& decision_params)

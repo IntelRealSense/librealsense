@@ -10,6 +10,27 @@
 using namespace librealsense::algo::depth_to_rgb_calibration;
 
 
+std::ostream &
+librealsense::algo::depth_to_rgb_calibration::operator<<( std::ostream & s,
+                                                          rs2_dsm_params_double const & self )
+{
+    s << "[ ";
+    switch( self.model )
+    {
+    case RS2_DSM_CORRECTION_NONE: break;
+    case RS2_DSM_CORRECTION_AOT: s << "AoT "; break;
+    case RS2_DSM_CORRECTION_TOA: s << "ToA "; break;
+    }
+    s << "x[" << self.h_scale << " " << self.v_scale << "] ";
+    if( self.h_offset  ||  self.v_offset )
+        s << "+[" << self.h_offset << " " << self.v_offset;
+    if( self.rtd_offset )
+        s << " rtd " << self.rtd_offset;
+    s << " ]";
+    return s;
+}
+
+
 rs2_intrinsics_double rotate_k_mat(const rs2_intrinsics_double& k_mat)
 {
     rs2_intrinsics_double res = k_mat;
@@ -23,8 +44,7 @@ k_to_DSM::k_to_DSM( const rs2_dsm_params_double & orig_dsm_params,
                     algo_calibration_info const & cal_info,
                     algo_calibration_registers const & cal__regs,
                     const double & max_scaling_step )
-    : _ac_data( orig_dsm_params )
-    , _regs( cal_info )
+    : _regs( cal_info )
     , _dsm_regs( cal__regs )
     , _max_scaling_step( max_scaling_step )
 {
@@ -41,10 +61,10 @@ k_to_DSM::apply_ac_res_on_dsm_model( const rs2_dsm_params_double & ac_data,
     {
         switch (ac_data.model)
         {
-        case dsm_model::none: // none
+        case RS2_DSM_CORRECTION_NONE:
             res = dsm_regs;
             break;
-        case AOT:  // AOT model
+        case RS2_DSM_CORRECTION_AOT:
             res.EXTLdsmXscale =  (double)dsm_regs.EXTLdsmXscale * ac_data.h_scale ;
             res.EXTLdsmYscale = (double)dsm_regs.EXTLdsmYscale * ac_data.v_scale ;
             res.EXTLdsmXoffset
@@ -54,7 +74,7 @@ k_to_DSM::apply_ac_res_on_dsm_model( const rs2_dsm_params_double & ac_data,
                 =  ( (double)dsm_regs.EXTLdsmYoffset + (double)ac_data.v_offset )
                          / (double)ac_data.v_scale ;
             break;
-        case dsm_model::TOA:  // TOA model
+        case RS2_DSM_CORRECTION_TOA:
             res.EXTLdsmXscale =  (double)dsm_regs.EXTLdsmXscale * ac_data.h_scale ;
             res.EXTLdsmYscale =  (double)dsm_regs.EXTLdsmYscale * ac_data.v_scale ;
             res.EXTLdsmXoffset
@@ -65,30 +85,30 @@ k_to_DSM::apply_ac_res_on_dsm_model( const rs2_dsm_params_double & ac_data,
                          / (double)dsm_regs.EXTLdsmYscale ;
             break;
         default:
-            throw std::runtime_error(_ac_data.flags[0] + " is not a valid model");
+            throw std::runtime_error( "invalid model " + std::to_string( ac_data.model ) );
         }
     }
     else if (type == inverse) // revert from modified model to original model
     {
         switch (ac_data.model)
         {
-            case dsm_model::none: // none
+        case RS2_DSM_CORRECTION_NONE:
             res = dsm_regs;
             break;
-                case dsm_model::AOT: // AOT model
-                res.EXTLdsmXscale = (double)dsm_regs.EXTLdsmXscale / (double)ac_data.h_scale;
-                res.EXTLdsmYscale = (double)dsm_regs.EXTLdsmYscale / (double)ac_data.v_scale;
-                res.EXTLdsmXoffset = (double)dsm_regs.EXTLdsmXoffset* (double)ac_data.h_scale - (double)ac_data.h_offset;
-                res.EXTLdsmYoffset = (double)dsm_regs.EXTLdsmYoffset* (double)ac_data.v_scale - (double)ac_data.v_offset;
-                break;
-            case dsm_model::TOA: // TOA model
-                res.EXTLdsmXscale = (double)dsm_regs.EXTLdsmXscale / (double)ac_data.h_scale;
-                res.EXTLdsmYscale = (double)dsm_regs.EXTLdsmYscale / (double)ac_data.v_scale;
-                res.EXTLdsmXoffset = (double)dsm_regs.EXTLdsmXoffset - (double)ac_data.h_offset / (double)res.EXTLdsmXscale;
-                res.EXTLdsmYoffset = (double)dsm_regs.EXTLdsmYoffset - (double)ac_data.v_offset / (double)res.EXTLdsmYscale;
-                break;
+        case RS2_DSM_CORRECTION_AOT:
+            res.EXTLdsmXscale = (double)dsm_regs.EXTLdsmXscale / (double)ac_data.h_scale;
+            res.EXTLdsmYscale = (double)dsm_regs.EXTLdsmYscale / (double)ac_data.v_scale;
+            res.EXTLdsmXoffset = (double)dsm_regs.EXTLdsmXoffset* (double)ac_data.h_scale - (double)ac_data.h_offset;
+            res.EXTLdsmYoffset = (double)dsm_regs.EXTLdsmYoffset* (double)ac_data.v_scale - (double)ac_data.v_offset;
+            break;
+        case RS2_DSM_CORRECTION_TOA:
+            res.EXTLdsmXscale = (double)dsm_regs.EXTLdsmXscale / (double)ac_data.h_scale;
+            res.EXTLdsmYscale = (double)dsm_regs.EXTLdsmYscale / (double)ac_data.v_scale;
+            res.EXTLdsmXoffset = (double)dsm_regs.EXTLdsmXoffset - (double)ac_data.h_offset / (double)res.EXTLdsmXscale;
+            res.EXTLdsmYoffset = (double)dsm_regs.EXTLdsmYoffset - (double)ac_data.v_offset / (double)res.EXTLdsmYscale;
+            break;
         default:
-            throw std::runtime_error(ac_data.flags[0] + "is not valid model");
+            throw std::runtime_error( "invalid valid model " + std::to_string( ac_data.model ) );
             break;
         }
     }
@@ -102,27 +122,27 @@ k_to_DSM::convert_ac_data_to_los_error( const algo_calibration_registers & dsm_r
     los_shift_scaling res;
     switch (ac_data.model)
     {
-    case dsm_model::none: // none
-            res.los_scaling_x = 1;
-            res.los_scaling_y = 1;
-            res.los_shift_x = 0;
-            res.los_shift_y = 0;
-            break;
-        case dsm_model::AOT:
-            res.los_scaling_x = 1/ (double)ac_data.h_scale;
-            res.los_scaling_y = 1/ (double)ac_data.v_scale;
-            res.los_shift_x = -(double)ac_data.h_offset*res.los_scaling_x;
-            res.los_shift_y = -(double)ac_data.v_offset*res.los_scaling_y;
-            break;
-        case dsm_model::TOA:
-            res.los_scaling_x = 1 / (double)ac_data.h_scale;
-            res.los_scaling_y = 1 / (double)ac_data.v_scale;
+    case RS2_DSM_CORRECTION_NONE:
+        res.los_scaling_x = 1;
+        res.los_scaling_y = 1;
+        res.los_shift_x = 0;
+        res.los_shift_y = 0;
+        break;
+    case RS2_DSM_CORRECTION_AOT:
+        res.los_scaling_x = 1/ (double)ac_data.h_scale;
+        res.los_scaling_y = 1/ (double)ac_data.v_scale;
+        res.los_shift_x = -(double)ac_data.h_offset*res.los_scaling_x;
+        res.los_shift_y = -(double)ac_data.v_offset*res.los_scaling_y;
+        break;
+    case RS2_DSM_CORRECTION_TOA:
+        res.los_scaling_x = 1 / (double)ac_data.h_scale;
+        res.los_scaling_y = 1 / (double)ac_data.v_scale;
 
-            auto dsm_orig = apply_ac_res_on_dsm_model(ac_data, dsm_regs, inverse);
+        auto dsm_orig = apply_ac_res_on_dsm_model(ac_data, dsm_regs, inverse);
 
-            res.los_shift_x = -(double)ac_data.h_offset / (double)dsm_orig.EXTLdsmXscale - (double)dsm_orig.EXTLdsmXoffset*(1 - res.los_scaling_x);
-            res.los_shift_y = -(double)ac_data.v_offset / (double)dsm_orig.EXTLdsmYscale - (double)dsm_orig.EXTLdsmYoffset*(1 - res.los_scaling_y);
-            break;
+        res.los_shift_x = -(double)ac_data.h_offset / (double)dsm_orig.EXTLdsmXscale - (double)dsm_orig.EXTLdsmXoffset*(1 - res.los_scaling_x);
+        res.los_shift_y = -(double)ac_data.v_offset / (double)dsm_orig.EXTLdsmYscale - (double)dsm_orig.EXTLdsmYoffset*(1 - res.los_scaling_y);
+        break;
     }
     return res;
 }
@@ -151,8 +171,9 @@ rs2_dsm_params_double k_to_DSM::convert_new_k_to_DSM
 (
     const rs2_intrinsics_double& old_k,
     const rs2_intrinsics_double& new_k,
-    const z_frame_data& z, //
-    std::vector<double3>& new_vertices,
+    const z_frame_data& z,
+    std::vector<double3> & new_vertices,
+    rs2_dsm_params_double const & previous_dsm_params,
     algo_calibration_registers& new_dsm_regs,
     iteration_data_collect* data
 )
@@ -163,16 +184,16 @@ rs2_dsm_params_double k_to_DSM::convert_new_k_to_DSM
     auto old_k_raw = rotate_k_mat(old_k);
     auto new_k_raw = rotate_k_mat(new_k);
 
-    auto dsm_orig = apply_ac_res_on_dsm_model(_ac_data, new_dsm_regs, inverse);
+    auto dsm_orig = apply_ac_res_on_dsm_model( previous_dsm_params, new_dsm_regs, inverse);
 
     std::vector<uint8_t> relevant_pixels_image_rot(z.relevant_pixels_image.size(), 0);
     rotate_180(z.relevant_pixels_image.data(), relevant_pixels_image_rot.data(), w, h);
 
-    _pre_process_data = pre_processing(_regs, _ac_data, new_dsm_regs, old_k_raw, relevant_pixels_image_rot);
+    _pre_process_data = pre_processing(_regs, previous_dsm_params, new_dsm_regs, old_k_raw, relevant_pixels_image_rot);
 
     auto new_los_scaling = convert_k_to_los_error(_regs, new_dsm_regs, new_k_raw, data);
     double2 los_shift = { 0 };
-    auto ac_data_cand = convert_los_error_to_ac_data(_ac_data, new_dsm_regs, los_shift, new_los_scaling);
+    auto ac_data_cand = convert_los_error_to_ac_data( previous_dsm_params, new_dsm_regs, los_shift, new_los_scaling);
     auto dsm_regs_cand = apply_ac_res_on_dsm_model(ac_data_cand, dsm_orig, direct);
 
     auto sc_vertices = z.orig_vertices;
@@ -217,7 +238,7 @@ rs2_dsm_params_double k_to_DSM::convert_new_k_to_DSM
         xim_new[i] = projed[i].x / projed[i].z;
         yim_new[i] = projed[i].y / projed[i].z;
     }
-    AC_LOG(INFO, "New ac data " << ac_data_cand.h_scale<<" "<< ac_data_cand.v_scale);
+    AC_LOG( DEBUG, "    new DSM params: " << ac_data_cand );
     return ac_data_cand;
 }
 
@@ -303,19 +324,19 @@ rs2_dsm_params_double k_to_DSM::convert_los_error_to_ac_data
     ac_data_out.model = ac_data.model;
     switch (ac_data_out.model)
     {
-    case dsm_model::none:
+    case RS2_DSM_CORRECTION_NONE:
         ac_data_out.h_scale = 1;
         ac_data_out.v_scale = 1;
         ac_data_out.h_offset = 0;
         ac_data_out.v_offset = 0;
         break;
-    case dsm_model::AOT:
+    case RS2_DSM_CORRECTION_AOT:
         ac_data_out.h_scale =  1 / los_scaling.x ;
         ac_data_out.v_scale = 1 / los_scaling.y ;
         ac_data_out.h_offset =  -los_shift.x / los_scaling.x;
         ac_data_out.v_offset =  -los_shift.y / los_scaling.y;
         break;
-    case dsm_model::TOA:
+    case RS2_DSM_CORRECTION_TOA:
         ac_data_out.h_scale =  1 / los_scaling.x;
         ac_data_out.v_scale =  1 / los_scaling.y;
         _dsm_regs = apply_ac_res_on_dsm_model(ac_data, dsm_regs, inverse); // the one used for assessing LOS error

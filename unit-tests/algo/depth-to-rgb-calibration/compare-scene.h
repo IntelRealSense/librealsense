@@ -313,7 +313,7 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
                 algo::rs2_dsm_params_double dsm_params;
                 dsm_params.h_scale = ac_data_vec[0].x;
                 dsm_params.v_scale = ac_data_vec[0].y;
-                dsm_params.model = algo::AOT;
+                dsm_params.model = RS2_DSM_CORRECTION_AOT;
 
 
                 cal.set_cycle_data(vertices, k_depth, p_mat, dsm_regs, dsm_params);
