@@ -233,7 +233,6 @@ namespace rs2
         static const textual_icon camera                   { u8"\uf030" };
         static const textual_icon video_camera             { u8"\uf03d" };
         static const textual_icon edit                     { u8"\uf044" };
-        static const textual_icon check_square_o           { u8"\uf046" };
         static const textual_icon step_backward            { u8"\uf048" };
         static const textual_icon play                     { u8"\uf04b" };
         static const textual_icon pause                    { u8"\uf04c" };
@@ -256,6 +255,7 @@ namespace rs2
         static const textual_icon caret_down               { u8"\uf0d7" };
         static const textual_icon repeat                   { u8"\uf0e2" };
         static const textual_icon circle                   { u8"\uf111" };
+        static const textual_icon check_square_o           { u8"\uf14a" };
         static const textual_icon cubes                    { u8"\uf1b3" };
         static const textual_icon toggle_off               { u8"\uf204" };
         static const textual_icon toggle_on                { u8"\uf205" };

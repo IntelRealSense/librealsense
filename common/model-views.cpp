@@ -3252,7 +3252,7 @@ namespace rs2
     {
         for (auto&& n : related_notifications) n->dismiss(false);
 
-        _updates->remove_profile(_updates_profile);
+        _updates->set_device_status(_updates_profile, false);
     }
 
 
@@ -4342,13 +4342,21 @@ namespace rs2
                 bool sw_update_required = updates_profile.retrieve_updates(versions_db_manager::LIBREALSENSE);
                 bool fw_update_required = updates_profile.retrieve_updates(versions_db_manager::FIRMWARE);
 
+                _updates_profile = updates_profile.get_update_profile();
+                updates_model::update_profile_model updates_profile_model(_updates_profile, ctx, this);
+
                 if (sw_update_required || fw_update_required)
                 {
-                    _updates_profile = updates_profile.get_update_profile();
-                    updates_model::update_profile_model updates_profile_model(updates_profile.get_update_profile(), ctx, this);
                     if (auto viewer_updates = updates_model_protected.lock())
                     {
                         viewer_updates->add_profile(updates_profile_model);
+                    }
+                }
+                else
+                {   // For updating current device profile if exists (Could update firmware version)
+                    if (auto viewer_updates = updates_model_protected.lock())
+                    {
+                        viewer_updates->update_profile(updates_profile_model);
                     }
                 }
             }
