@@ -77,6 +77,19 @@ macro(global_set_flags)
     if(CHECK_FOR_UPDATES)
         include(CMake/external_libcurl.cmake)
         add_definitions(-DCHECK_FOR_UPDATES)
+        
+        set(SW_UPDATES_DB_URL "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/rs_versions_db.json" CACHE STRING
+            "URL to download RealSense SW/FW versions database")
+        
+        #For validation testing.
+        set(SW_UPDATES_DB_URL_IS_LOCAL false CACHE BOOL
+            "Use SW_UPDATES_DB_URL parameter as path to a local DB file.")
+        
+        if (SW_UPDATES_DB_URL_IS_LOCAL)
+            add_definitions(-DSW_UPDATES_DB_URL_IS_LOCAL)
+        endif()
+        
+        add_definitions(-DSW_UPDATES_DB_URL="${SW_UPDATES_DB_URL}")
     endif()
     
     add_definitions(-D${BACKEND} -DUNICODE)
