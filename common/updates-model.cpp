@@ -155,7 +155,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             ImGui::PopFont();
             ImGui::SetCursorPos({ positions.orig_pos.x + 230, positions.y0 });
             ImGui::SetWindowFontScale(3.);
-            ImGui::Text(textual_icons::lock);
+            ImGui::Text("%s", static_cast<const char *>(textual_icons::lock));
             ImGui::SetWindowFontScale(1.);
             ImGui::PopStyleColor();
             
@@ -317,7 +317,7 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
             else
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                ImGui::Text(textual_icons::check_square_o);
+                ImGui::Text("%s", static_cast<const char *>(textual_icons::check_square_o));
                 ImGui::SameLine();
                 ImGui::Text("%s", "Up to date.");
             }
@@ -577,7 +577,7 @@ bool updates_model::draw_firmware_section(const char * window_name, update_profi
         else
         {
             ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-            ImGui::Text(textual_icons::check_square_o);
+            ImGui::Text("%s", static_cast<const char *>(textual_icons::check_square_o));
             ImGui::SameLine();
             ImGui::Text("%s", "Up to date.");
         }
