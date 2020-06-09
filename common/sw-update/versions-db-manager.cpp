@@ -18,7 +18,7 @@ namespace rs2
         using namespace http;
 
         // Get current platform
-        constexpr char* PLATFORM =
+        constexpr const char* PLATFORM =
 
 #ifdef _WIN64 
             "Windows amd64";
