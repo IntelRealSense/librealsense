@@ -73,7 +73,7 @@ namespace depth_to_rgb_calibration {
         double const max_xy_movement_from_origin = 20;
         double const max_scaling_step = 0.020000000000000;
         double const max_K2DSM_iters = 10;
-        double const max_global_los_scaling_step = 0.005;
+        double const max_global_los_scaling_step = 0.002;  // the difference (.2%) between starting and final scale
     };
     // svm
     struct decision_params
