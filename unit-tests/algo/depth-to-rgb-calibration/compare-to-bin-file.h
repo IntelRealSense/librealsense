@@ -24,10 +24,10 @@ bool is_equal_approximetly( F fx, D dx, bool print = true)
 template<>
 bool is_equal_approximetly<algo::k_matrix, algo::k_matrix>( algo::k_matrix fx, algo::k_matrix dx, bool print)
 {
-    return dx.fx == approx( fx.fx ) &&
-        dx.fy == approx( fx.fy ) &&
-        dx.ppx == approx( fx.ppx ) &&
-        dx.ppy == approx( fx.ppy );
+    return dx.get_fx() == approx( fx.get_fx() ) &&
+        dx.get_fy() == approx( fx.get_fy()) &&
+        dx.get_ppx() == approx( fx.get_ppx()) &&
+        dx.get_ppy() == approx( fx.get_ppy());
 }
 
 template<>
@@ -141,8 +141,8 @@ template<>
 void print<algo::k_matrix, algo::k_matrix>( size_t x, algo::k_matrix f, algo::k_matrix d, bool is_approx )
 {
     // bytes will be written to stdout as characters, which we never want... hence '+fx'
-    AC_LOG( DEBUG, "... " << AC_D_PREC << std::fixed << x << ": {matlab}" << f.fx << " " << f.fy << " " << f.ppx << " " << f.ppy << (is_approx ? " !~ " : " != ")
-        << d.fx << " " << d.fy << " " << d.ppx << " " << d.ppy << "{c++}" );
+    AC_LOG( DEBUG, "... " << AC_D_PREC << std::fixed << x << ": {matlab}" << f.get_fx() << " " << f.get_fy() << " " << f.get_ppx() << " " << f.get_ppy() << (is_approx ? " !~ " : " != ")
+        << d.get_fx() << " " << d.get_fy() << " " << d.get_ppx() << " " << d.get_ppy() << "{c++}" );
 }
 
 template<>

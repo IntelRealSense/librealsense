@@ -142,7 +142,7 @@ int main( int argc, char * argv[] )
             if( stats )
                 print_headers();
 
-            glob( dir, "*.rsc",
+            glob( dir, /*"*.rsc"*/ "InputData.mat",
                 [&]( std::string const & match_ )
                 {
                     std::string match = get_parent( match_ ).empty() ? match_ : get_parent( match_ );

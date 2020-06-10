@@ -20,8 +20,8 @@ namespace depth_to_rgb_calibration {
         rs2_intrinsics_double( const int width, const int height,
             const k_matrix& k_mat, const rs2_distortion model, const double coeffs[5] )
             :width( width ), height( height ),
-            ppx( k_mat.ppx ), ppy( k_mat.ppy ),
-            fx( k_mat.fx ), fy( k_mat.fy ),
+            ppx( k_mat.get_ppx() ), ppy( k_mat.get_ppy()),
+            fx( k_mat.get_fx()), fy( k_mat.get_fy()),
             model( model ),
             coeffs{ coeffs[0], coeffs[1], coeffs[2], coeffs[3], coeffs[4] }
         {}

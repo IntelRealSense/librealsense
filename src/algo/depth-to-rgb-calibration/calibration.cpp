@@ -116,10 +116,10 @@ void calib::copy_coefs( calib & obj ) const
 calib calib::operator*( double step_size ) const
 {
     calib res;
-    res.k_mat.fx = this->k_mat.fx * step_size;
-    res.k_mat.fy = this->k_mat.fy * step_size;
-    res.k_mat.ppx = this->k_mat.ppx * step_size;
-    res.k_mat.ppy = this->k_mat.ppy *step_size;
+    for (auto i = 0; i < 9; i++)
+    {
+        res.k_mat.k_mat.rot[i] = k_mat.k_mat.rot[i] * step_size;;
+    }
 
     for (auto i = 0; i < 9; i++)
         res.rot.rot[i] = this->rot.rot[i] * step_size;
@@ -141,10 +141,11 @@ calib calib::operator/( double factor ) const
 calib calib::operator+( const calib & c ) const
 {
     calib res;
-    res.k_mat.fx = this->k_mat.fx + c.k_mat.fx;
-    res.k_mat.fy = this->k_mat.fy + c.k_mat.fy;
-    res.k_mat.ppx = this->k_mat.ppx + c.k_mat.ppx;
-    res.k_mat.ppy = this->k_mat.ppy + c.k_mat.ppy;
+
+    for (auto i = 0; i < 9; i++)
+    {
+        res.k_mat.k_mat.rot[i] = k_mat.k_mat.rot[i] + c.k_mat.k_mat.rot[i];
+    }
 
     for (auto i = 0; i < 9; i++)
         res.rot.rot[i] = this->rot.rot[i] + c.rot.rot[i];
@@ -161,10 +162,10 @@ calib calib::operator+( const calib & c ) const
 calib calib::operator-( const calib & c ) const
 {
     calib res;
-    res.k_mat.fx = this->k_mat.fx - c.k_mat.fx;
-    res.k_mat.fy = this->k_mat.fy - c.k_mat.fy;
-    res.k_mat.ppx = this->k_mat.ppx - c.k_mat.ppx;
-    res.k_mat.ppy = this->k_mat.ppy - c.k_mat.ppy;
+    for (auto i = 0; i < 9; i++)
+    {
+        res.k_mat.k_mat.rot[i] = k_mat.k_mat.rot[i] - c.k_mat.k_mat.rot[i];
+    }
 
     for (auto i = 0; i < 9; i++)
         res.rot.rot[i] = this->rot.rot[i] - c.rot.rot[i];
@@ -181,10 +182,11 @@ calib calib::operator-( const calib & c ) const
 calib calib::operator/( const calib & c ) const
 {
     calib res;
-    res.k_mat.fx = this->k_mat.fx / c.k_mat.fx;
-    res.k_mat.fy = this->k_mat.fy / c.k_mat.fy;
-    res.k_mat.ppx = this->k_mat.ppx / c.k_mat.ppx;
-    res.k_mat.ppy = this->k_mat.ppy / c.k_mat.ppy;
+
+    for (auto i = 0; i < 9; i++)
+    {
+        res.k_mat.k_mat.rot[i] = k_mat.k_mat.rot[i] / c.k_mat.k_mat.rot[i];
+    }
 
     for (auto i = 0; i < 9; i++)
         res.rot.rot[i] = this->rot.rot[i] / c.rot.rot[i];

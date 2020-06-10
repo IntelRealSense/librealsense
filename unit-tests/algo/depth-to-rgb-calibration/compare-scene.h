@@ -53,6 +53,7 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
 
 
     //---
+    CHECK(compare_to_bin_file< uint8_t >(yuy_data.lum_frame, scene_dir, "YUY2_lum", rgb_w, rgb_h, "uint8_00", compare_same_vectors));
     CHECK( compare_to_bin_file< double >( yuy_data.edges, scene_dir, "YUY2_edge", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
     CHECK( compare_to_bin_file< double >( yuy_data.edges_IDT, scene_dir, "YUY2_IDT", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
     CHECK( compare_to_bin_file< double >( yuy_data.edges_IDTx, scene_dir, "YUY2_IDTx", rgb_w, rgb_h, "double_00", compare_same_vectors ) );

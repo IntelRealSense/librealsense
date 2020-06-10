@@ -803,8 +803,8 @@ rs2_intrinsics_double optimizer::get_new_z_intrinsics_from_new_calib(const rs2_i
 {
     rs2_intrinsics_double res;
     res = orig;
-    res.fx = res.fx / new_c.k_mat.fx*orig_c.k_mat.fx;
-    res.fy = res.fy / new_c.k_mat.fy*orig_c.k_mat.fy;
+    res.fx = res.fx / new_c.k_mat.get_fx()*orig_c.k_mat.get_fx();
+    res.fy = res.fy / new_c.k_mat.get_fy()*orig_c.k_mat.get_fy();
 
     return res;
 }
@@ -1599,8 +1599,8 @@ size_t optimizer::optimize_p
     new_rgb_calib_for_k_to_dsm.k_mat.k_mat.rot[1] = 0;
 
     new_z_k = get_new_z_intrinsics_from_new_calib(_z.orig_intrinsics, new_rgb_calib_for_k_to_dsm, orig_rgb_calib);
-    new_rgb_calib_for_k_to_dsm.k_mat.k_mat.rot[0] = _original_calibration.k_mat.fx;
-    new_rgb_calib_for_k_to_dsm.k_mat.k_mat.rot[4] = _original_calibration.k_mat.fy;
+    new_rgb_calib_for_k_to_dsm.k_mat.k_mat.rot[0] = _original_calibration.k_mat.get_fx();
+    new_rgb_calib_for_k_to_dsm.k_mat.k_mat.rot[4] = _original_calibration.k_mat.get_fy();
     params_new.curr_p_mat = new_rgb_calib_for_k_to_dsm.calc_p_mat();
     new_rgb_calib_for_k_to_dsm = decompose_p_mat(params_new.curr_p_mat);
 

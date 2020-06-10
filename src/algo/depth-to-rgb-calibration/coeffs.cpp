@@ -22,10 +22,10 @@ namespace depth_to_rgb_calibration {
         auto r = yuy_intrin_extrin.rot.rot;
         double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
         auto d = yuy_intrin_extrin.coeffs;
-        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
-        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
-        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
-        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
+        auto ppx = (double)yuy_intrin_extrin.k_mat.get_ppx();
+        auto ppy = (double)yuy_intrin_extrin.k_mat.get_ppy();
+        auto fx = (double)yuy_intrin_extrin.k_mat.get_fx();
+        auto fy = (double)yuy_intrin_extrin.k_mat.get_fy();
 
         auto sin_a = (double)sin( rot_angles.alpha );
         auto sin_b = (double)sin( rot_angles.beta );
@@ -127,10 +127,10 @@ namespace depth_to_rgb_calibration {
         auto r = yuy_intrin_extrin.rot.rot;
         double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
         auto d = yuy_intrin_extrin.coeffs;
-        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
-        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
-        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
-        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
+        auto ppx = (double)yuy_intrin_extrin.k_mat.get_ppx();
+        auto ppy = (double)yuy_intrin_extrin.k_mat.get_ppy();
+        auto fx = (double)yuy_intrin_extrin.k_mat.get_fx();
+        auto fy = (double)yuy_intrin_extrin.k_mat.get_fy();
 
         auto sin_a = sin( rot_angles.alpha );
         auto sin_b = sin( rot_angles.beta );
@@ -218,10 +218,10 @@ namespace depth_to_rgb_calibration {
         auto r = yuy_intrin_extrin.rot.rot;
         double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
         auto d = yuy_intrin_extrin.coeffs;
-        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
-        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
-        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
-        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
+        auto ppx = (double)yuy_intrin_extrin.k_mat.get_ppx();
+        auto ppy = (double)yuy_intrin_extrin.k_mat.get_ppy();
+        auto fx = (double)yuy_intrin_extrin.k_mat.get_fx();
+        auto fy = (double)yuy_intrin_extrin.k_mat.get_fy();
 
         auto sin_a = (double)sin( rot_angles.alpha );
         auto sin_b = (double)sin( rot_angles.beta );
@@ -288,10 +288,10 @@ namespace depth_to_rgb_calibration {
         auto r = yuy_intrin_extrin.rot.rot;
         double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
         auto d = yuy_intrin_extrin.coeffs;
-        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
-        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
-        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
-        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
+        auto ppx = (double)yuy_intrin_extrin.k_mat.get_ppx();
+        auto ppy = (double)yuy_intrin_extrin.k_mat.get_ppy();
+        auto fx = (double)yuy_intrin_extrin.k_mat.get_fx();
+        auto fy = (double)yuy_intrin_extrin.k_mat.get_fy();
 
         auto sin_a = (double)sin( rot_angles.alpha );
         auto sin_b = (double)sin( rot_angles.beta );
@@ -347,10 +347,10 @@ namespace depth_to_rgb_calibration {
         auto r = yuy_intrin_extrin.rot.rot;
         double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
         auto d = yuy_intrin_extrin.coeffs;
-        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
-        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
-        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
-        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
+        auto ppx = (double)yuy_intrin_extrin.k_mat.get_ppx();
+        auto ppy = (double)yuy_intrin_extrin.k_mat.get_ppy();
+        auto fx = (double)yuy_intrin_extrin.k_mat.get_fx();
+        auto fy = (double)yuy_intrin_extrin.k_mat.get_fy();
 
         auto sin_a = (double)sin( rot_angles.alpha );
         auto sin_b = (double)sin( rot_angles.beta );
@@ -404,10 +404,10 @@ namespace depth_to_rgb_calibration {
         auto r = yuy_intrin_extrin.rot.rot;
         double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
         auto d = yuy_intrin_extrin.coeffs;
-        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
-        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
-        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
-        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
+        auto ppx = (double)yuy_intrin_extrin.k_mat.get_ppx();
+        auto ppy = (double)yuy_intrin_extrin.k_mat.get_ppy();
+        auto fx = (double)yuy_intrin_extrin.k_mat.get_fx();
+        auto fy = (double)yuy_intrin_extrin.k_mat.get_fy();
 
         auto sin_a = (double)sin( rot_angles.alpha );
         auto sin_b = (double)sin( rot_angles.beta );
@@ -463,10 +463,10 @@ namespace depth_to_rgb_calibration {
         auto r = cal.rot.rot;
         double t[3] = { cal.trans.t1, cal.trans.t2, cal.trans.t3 };
         auto d = cal.coeffs;
-        auto ppx = (double)cal.k_mat.ppx;
-        auto ppy = (double)cal.k_mat.ppy;
-        auto fx = (double)cal.k_mat.fx;
-        auto fy = (double)cal.k_mat.fy;
+        auto ppx = (double)cal.k_mat.get_ppx();
+        auto ppy = (double)cal.k_mat.get_ppy();
+        auto fx = (double)cal.k_mat.get_fx();
+        auto fy = (double)cal.k_mat.get_fy();
         auto p = p_mat.vals;
 
         auto x1 = (double)xy.x;
@@ -552,10 +552,10 @@ namespace depth_to_rgb_calibration {
         auto r = cal.rot.rot;
         double t[3] = { cal.trans.t1, cal.trans.t2, cal.trans.t3 };
         auto d = cal.coeffs;
-        auto ppx = (double)cal.k_mat.ppx;
-        auto ppy = (double)cal.k_mat.ppy;
-        auto fx = (double)cal.k_mat.fx;
-        auto fy = (double)cal.k_mat.fy;
+        auto ppx = (double)cal.k_mat.get_ppx();
+        auto ppy = (double)cal.k_mat.get_ppy();
+        auto fx = (double)cal.k_mat.get_fx();
+        auto fy = (double)cal.k_mat.get_fy();
         auto p = p_mat.vals;
 
         auto x1 = (double)xy.x;
@@ -654,10 +654,10 @@ namespace depth_to_rgb_calibration {
         auto r = yuy_intrin_extrin.rot.rot;
         double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
         auto d = yuy_intrin_extrin.coeffs;
-        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
-        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
-        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
-        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
+        auto ppx = (double)yuy_intrin_extrin.k_mat.get_ppx();
+        auto ppy = (double)yuy_intrin_extrin.k_mat.get_ppy();
+        auto fx = (double)yuy_intrin_extrin.k_mat.get_fx();
+        auto fy = (double)yuy_intrin_extrin.k_mat.get_fy();
 
         auto x = (double)v.x;
         auto y = (double)v.y;
