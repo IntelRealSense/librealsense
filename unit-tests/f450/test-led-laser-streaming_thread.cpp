@@ -102,6 +102,7 @@ TEST_CASE( "LED - LASER - streaming - not checking metadata", "[F450]" ) {
                 REQUIRE(!is_laser_on);
 
                 //turn both LED and LASER OFF
+                tries = 5;
                 sensor.set_option(opt_led, 0);
                 sensor.set_option(opt_laser, 0);
                 while ((is_led_on || is_laser_on)  && tries--)
@@ -124,6 +125,7 @@ TEST_CASE( "LED - LASER - streaming - not checking metadata", "[F450]" ) {
                 REQUIRE(!is_led_on);
 
                 //turn both LED and LASER OFF
+                tries = 5;
                 sensor.set_option(opt_led, 0);
                 sensor.set_option(opt_laser, 0);
                 while ((is_led_on || is_laser_on) && tries--)
