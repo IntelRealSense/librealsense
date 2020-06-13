@@ -172,16 +172,12 @@ namespace librealsense
     {
         auto str = hwmon_error2str( e );
         to_string err;
-        err << "hwmon command 0x" << std::hex << unsigned(cmd.cmd) << std::dec << '(';
-        if( cmd.param1 )
-            err << ' ' << cmd.param1;
-        if( cmd.param2 )
-            err << ' ' << cmd.param2;
-        if( cmd.param3 )
-            err << ' ' << cmd.param3;
-        if( cmd.param4 )
-            err << ' ' << cmd.param4;
-        err << ") failed (response " << e << "= " << ( str.empty() ? "unknown" : str ) << ")";
+        err << "hwmon command 0x" << std::hex << unsigned(cmd.cmd) << '(';
+        err << ' ' << cmd.param1;
+        err << ' ' << cmd.param2;
+        err << ' ' << cmd.param3;
+        err << ' ' << cmd.param4 << std::dec;
+        err << " ) failed (response " << e << "= " << ( str.empty() ? "unknown" : str ) << ")";
         return err;
     }
 
