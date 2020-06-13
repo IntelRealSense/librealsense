@@ -469,6 +469,32 @@ namespace librealsense
             auto dp = std::find_if(requests.begin(), requests.end(), [](std::shared_ptr<stream_profile_interface> sp)
             {return sp->get_stream_type() == RS2_STREAM_DEPTH;});
 
+            if( supports_option( RS2_OPTION_VISUAL_PRESET ) )
+            {
+                // We want to set the default preset to Max Range (make sure laser power is 100%)
+                // NOTE: This becomes the "default", meaning that in the viewer the user will see "default"
+                // (with power at 88, set by FW!) and, when the sensor is turned on, it will change to Max
+                // Power (with power at 100, again by FW). It's weird but acceptable.
+                // (see RS5-7780)
+                try
+                {
+                    auto&& preset_option = get_option( RS2_OPTION_VISUAL_PRESET );
+                    if( preset_option.query() == RS2_L500_VISUAL_PRESET_DEFAULT )
+                    {
+                        LOG_INFO( "Switching visual preset to MAX_RANGE by default" );
+                        preset_option.set( RS2_L500_VISUAL_PRESET_MAX_RANGE );
+                    }
+                }
+                catch( std::exception const & e )
+                {
+                    LOG_ERROR( "Caught exception while trying to set Max Range preset: " << e.what() );
+                }
+                catch( ... )
+                {
+                    LOG_ERROR( "Caught unknown exception while trying to set Max Range preset!" );
+                }
+            }
+
             if (dp != requests.end() && supports_option(RS2_OPTION_SENSOR_MODE))
             {
                 auto&& sensor_mode_option = get_option(RS2_OPTION_SENSOR_MODE);

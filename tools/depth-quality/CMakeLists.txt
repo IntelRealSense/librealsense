@@ -10,6 +10,13 @@ find_package(Threads REQUIRED)
 
 include_directories(${CMAKE_BINARY_DIR})
 
+set( ELPP_DIR ../../third-party/easyloggingpp/src )
+
+include_directories( ${ELPP_DIR} )
+set( ELPP_FILES
+    ${ELPP_DIR}/easylogging++.cc
+    ${ELPP_DIR}/easylogging++.h)
+    
 include(../../common/CMakeLists.txt)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
@@ -32,6 +39,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
 
     if(WIN32)
         add_executable(rs-depth-quality WIN32 ${RS_QUALITY_TOOL_CPP}
+                ${ELPP_FILES}
                 ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
                 ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
                 ../../common/windows-app-bootstrap.cpp)
@@ -64,7 +72,10 @@ if(BUILD_GRAPHICAL_EXAMPLES)
                                              ${CMAKE_CURRENT_SOURCE_DIR}/res/)
 
     else()
-        add_executable(rs-depth-quality ${RS_QUALITY_TOOL_CPP})
+        add_executable(rs-depth-quality 
+        ${RS_QUALITY_TOOL_CPP}
+        ${ELPP_FILES}
+        )
 
         include_directories(rs-depth-quality ../../common  ../../third-party
                                              ../../third-party/imgui
@@ -73,6 +84,15 @@ if(BUILD_GRAPHICAL_EXAMPLES)
                                              ../../third-party/tclap/include)
     endif()
 
+    source_group("EasyLogging++" FILES ${ELPP_FILES})
+    source_group("SW-Update" FILES ${SW_UPDATE_FILES})
+
+    if (CHECK_FOR_UPDATES)
+        message( STATUS "Check for updates capability added to realsense-depth-quality" )
+        add_dependencies(rs-depth-quality libcurl)
+        target_link_libraries(rs-depth-quality curl)
+    endif()
+    
     target_link_libraries(rs-depth-quality ${DEPENDENCIES}
                                            ${GTK3_LIBRARIES}
                                            Threads::Threads
@@ -82,6 +102,9 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         add_definitions(-DINTERNAL_FW)
         target_link_libraries(rs-depth-quality fw)
     endif()
+    
+    
+
 
     set_target_properties (rs-depth-quality PROPERTIES
         FOLDER Tools

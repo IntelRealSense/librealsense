@@ -30,4 +30,19 @@ set(COMMON_SRC
         "${CMAKE_CURRENT_LIST_DIR}/on-chip-calib.h"
         "${CMAKE_CURRENT_LIST_DIR}/on-chip-calib.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/decompress-huffman.h"
+        "${CMAKE_CURRENT_LIST_DIR}/updates-model.h"
+        "${CMAKE_CURRENT_LIST_DIR}/updates-model.cpp"
 )
+
+    set(SW_UPDATE_FILES
+        "${CMAKE_CURRENT_LIST_DIR}/sw-update/http-downloader.h"
+        "${CMAKE_CURRENT_LIST_DIR}/sw-update/http-downloader.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/sw-update/dev-updates-profile.h"
+        "${CMAKE_CURRENT_LIST_DIR}/sw-update/dev-updates-profile.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/sw-update/versions-db-manager.h"
+        "${CMAKE_CURRENT_LIST_DIR}/sw-update/versions-db-manager.cpp"
+        )
+    set(COMMON_SRC
+        ${COMMON_SRC}
+        ${SW_UPDATE_FILES})
+

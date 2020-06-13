@@ -101,10 +101,8 @@ namespace rs2
         ImGui::PopStyleColor(6);
     }
 
-    void process_notification_model::draw_progress_bar(ux_window & win, int bar_width)
+    void progress_bar::draw(ux_window & win, int bar_width, int progress)
     {
-        auto progress = update_manager->get_progress();
-
         auto now = system_clock::now();
         auto ellapsed = duration_cast<milliseconds>(now - last_progress_time).count() / 1000.f;
 
@@ -158,6 +156,12 @@ namespace rs2
         }
 
         ImGui::SetCursorScreenPos({ float(pos.x), float(pos.y + 25) });
+    }
+
+    void process_notification_model::draw_progress_bar(ux_window & win, int bar_width)
+    {
+        auto progress = update_manager->get_progress();
+        _progress_bar.draw(win, bar_width, progress);
     }
 
     /* Sets color scheme for notifications, must be used with unset_color_scheme to pop all colors in the end
@@ -236,7 +240,7 @@ namespace rs2
         // TODO: Make polymorphic
         if (update_state == 2)
         {
-            auto k = duration_cast<milliseconds>(system_clock::now() - last_progress_time).count() / 500.f;
+            auto k = duration_cast<milliseconds>(system_clock::now() - _progress_bar.last_progress_time).count() / 500.f;
             if (k <= 1.f)
             {
                 auto size = 100;
@@ -769,7 +773,7 @@ namespace rs2
         enable_dismiss = true;
         update_state = 2;
         //pinned = true;
-        last_progress_time = system_clock::now();
+        _progress_bar.last_progress_time = system_clock::now();
     } 
 
     void version_upgrade_model::set_color_scheme(float t) const
@@ -784,7 +788,7 @@ namespace rs2
     {
         if (_first)
         {
-            last_progress_time = system_clock::now();
+            _progress_bar.last_progress_time = system_clock::now();
             _first = false;
         }
 
@@ -868,14 +872,9 @@ namespace rs2
             throw std::runtime_error("Invoke operation failed!");
     }
 
-    void process_manager::start(std::shared_ptr<notification_model> n)
+    void process_manager::start(invoker invoke)
     {
-        auto cleanup = [n]() {
-            //n->dismiss(false);
-        };
-
-        auto invoke = [n](std::function<void()> action) {
-            n->invoke(action);
+        auto cleanup = [invoke]() {
         };
 
         log(to_string() << "Started " << _process_name << " process");
@@ -975,7 +974,7 @@ namespace rs2
             {
                 update_state = STATE_COMPLETE;
                 pinned = false;
-                last_progress_time = last_interacted = system_clock::now();
+                _progress_bar.last_progress_time = last_interacted = system_clock::now();
             }
 
             if (!expanded)

@@ -926,21 +926,7 @@ namespace rs2
             configurations::performance::show_skybox, true);
     }
 
-    void GLAPIENTRY MessageCallback( GLenum source,
-                    GLenum type,
-                    GLuint id,
-                    GLenum severity,
-                    GLsizei length,
-                    const GLchar* message,
-                    const void* userParam )
-    {
-        if (type == GL_DEBUG_TYPE_ERROR)
-        {
-            fprintf( stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
-                ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
-                    type, severity, message );
-        }
-    }
+  
 
     viewer_model::viewer_model(context &ctx_)
             : ppf(*this),
@@ -949,14 +935,9 @@ namespace rs2
               synchronization_enable(true),
               zo_sensors(0)
     {
-        if (glDebugMessageCallback)
-        {
-            // During init, enable debug output
-            glEnable              ( GL_DEBUG_OUTPUT );
-            glDebugMessageCallback( MessageCallback, 0 );
-        }
 
         syncer = std::make_shared<syncer_model>();
+        updates = std::make_shared<updates_model>();
         reset_camera();
         rs2_error* e = nullptr;
         not_model->add_log(to_string() << "librealsense version: " << api_version_to_string(rs2_get_api_version(&e)) << "\n");
@@ -3218,6 +3199,8 @@ namespace rs2
         ux_window& window, int devices, std::string& error_message, 
         std::shared_ptr<texture_buffer> texture, points points)
     {
+        updates->draw(window, error_message);
+
         static bool first = true;
         if (first)
         {
