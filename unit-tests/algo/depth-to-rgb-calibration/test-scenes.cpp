@@ -48,7 +48,7 @@ public:
 void print_dividers()
 {
     std::cout << std::right << std::setw( 7 ) << "------ ";
-    std::cout << std::left << std::setw( 50 ) << "-----";
+    std::cout << std::left << std::setw( 70 ) << "-----";
     std::cout << std::left << std::setw( 10 ) << "----------";
     std::cout << std::right << std::setw( 10 ) << "-----";
     std::cout << std::right << std::setw( 10 ) << "-------";
@@ -59,7 +59,7 @@ void print_dividers()
 void print_headers()
 {
     std::cout << std::right << std::setw( 7 ) << "Failed ";
-    std::cout << std::left << std::setw( 50 ) << "Name";
+    std::cout << std::left << std::setw( 70 ) << "Name";
     std::cout << std::left << std::setw( 10 ) << "Cost";
     std::cout << std::right << std::setw( 10 ) << "%diff";
     std::cout << std::right << std::setw( 10 ) << "Pixels";
@@ -73,27 +73,15 @@ void print_scene_stats( std::string const & name, size_t n_failed, scene_stats c
 {
     std::cout << std::right << std::setw( 6 ) << n_failed << ' ';
 
-    std::cout << std::left << std::setw( 50 ) << name;
+    std::cout << std::left << std::setw( 70 ) << name;
 
     std::cout << std::right << std::setw( 10 ) << std::fixed << std::setprecision( 2 ) << scene.cost;
     double matlab_cost = scene.cost - scene.d_cost;
     double d_cost_pct = abs( scene.d_cost ) * 100. / matlab_cost;
-    if( d_cost_pct > 1. )
-    {
-        Catch::Colour guard( Catch::Colour::Red );
-        std::cout << std::right << std::setw( 10 ) << d_cost_pct;
-    }
-    else
-        std::cout << std::right << std::setw( 10 ) << d_cost_pct;
+    std::cout << std::right << std::setw( 10 ) << d_cost_pct;
 
     std::cout << std::right << std::setw( 10 ) << scene.movement;
-    if( scene.d_movement > 1 )
-    {
-        Catch::Colour guard( Catch::Colour::Red );
-        std::cout << std::right << std::setw( 10 ) << scene.d_movement;
-    }
-    else
-        std::cout << std::right << std::setw( 10 ) << scene.d_movement;
+    std::cout << std::right << std::setw( 10 ) << scene.d_movement;
 
     std::cout << std::endl;
 }
@@ -142,17 +130,28 @@ int main( int argc, char * argv[] )
             if( stats )
                 print_headers();
 
-            glob( dir, /*"*.rsc"*/ "InputData.mat",
-                [&]( std::string const & match_ )
+            glob( dir, "yuy_prev_z_i.files",
+                [&]( std::string const & match )
                 {
-                    std::string match = get_parent( match_ ).empty() ? match_ : get_parent( match_ );
-                    std::string scene_dir = get_parent( join( dir, match_ ) ) + native_separator;
+                    // <scene_dir>/binFiles/ac2/<match>
+                    std::string scene_dir = get_parent( join( dir, match ) );  // .../ac2
+                    std::string ac2;
+                    scene_dir = get_parent( scene_dir, &ac2 );  // .../binFiles
+                    if( ac2 != "ac2" )
+                        return;
+                    std::string binFiles;
+                    scene_dir = get_parent( scene_dir, &binFiles );
+                    if( binFiles != "binFiles" )
+                        return;
+                    std::string test_name = scene_dir.substr( strlen( dir ) + 1 );
+                    scene_dir += native_separator;
+
                     scene_stats scene;
                     
                     Catch::Totals total;
                     {
                         redirect_file no( stats ? stdout : stderr );
-                        total = ctx.run_test( match, [&]() {
+                        total = ctx.run_test( test_name, [&]() {
                             REQUIRE_NOTHROW( compare_scene( scene_dir, &scene ) );
                         } );
                     }
@@ -165,7 +164,7 @@ int main( int argc, char * argv[] )
                     total_movement_diff += abs(scene.d_movement);
 
                     if( stats )
-                        print_scene_stats( match, total.assertions.failed, scene );
+                        print_scene_stats( test_name, total.assertions.failed, scene );
                 } );
 
             if( stats )

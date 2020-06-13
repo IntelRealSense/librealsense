@@ -281,10 +281,15 @@ static void glob(
 }
 
 static
-std::string get_parent( std::string const & path )
+std::string get_parent( std::string const & path, std::string * basename = nullptr )
 {
+    // Returns the parent and leaf for the given path:
+    //     /foo/bar/  ->  '/foo/bar' and '' (empty)
+    //     blah/..    ->  'blah'     and '..'
     auto x = path.find_last_of( dir_separators );
     if( x == std::string::npos )
         return std::string();
+    if( basename )
+        *basename = path.substr( x + 1 );
     return std::string( path, 0, x );
 }
