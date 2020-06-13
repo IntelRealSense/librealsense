@@ -178,7 +178,7 @@ namespace ivcam2 {
 
         virtual void retry()
         {
-            AC_LOG( DEBUG, "retrying " << get_id() );
+            AC_LOG( DEBUG, "triggering " << _name << ' ' << get_id() );
             _ac.trigger_calibration( true );
         }
 
@@ -421,7 +421,7 @@ namespace ivcam2 {
 
     void ac_trigger::set_color_frame( rs2::frame const& f )
     {
-        if( ! is_active() )
+        if( ! is_active()  ||  _is_processing )
             // No error message -- we expect to get new color frames while processing...
             return;
 
@@ -449,6 +449,11 @@ namespace ivcam2 {
         if( !_cf )
         {
             AC_LOG( DEBUG, "no color frame received; maybe color stream isn't on?" );
+            return false;
+        }
+        if( ! _pcf )
+        {
+            AC_LOG( DEBUG, "no prev color frame received" );
             return false;
         }
         return true;
