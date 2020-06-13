@@ -179,22 +179,15 @@ namespace depth_to_rgb_calibration {
 
     struct k_matrix
     {
-        k_matrix(matrix_3x3 mat)
+        k_matrix() = default;
+        k_matrix(matrix_3x3 const & mat)
             :k_mat(mat)
         {}
 
-        double get_fx() const {
-            return k_mat.rot[0];
-        }
-        double get_fy() const {
-            return k_mat.rot[4];
-        }
-        double get_ppx() const {
-            return k_mat.rot[2];
-        }
-        double get_ppy() const {
-            return k_mat.rot[5];
-        }
+        double get_fx() const { return k_mat.rot[0]; }
+        double get_fy() const { return k_mat.rot[4]; }
+        double get_ppx() const { return k_mat.rot[2]; }
+        double get_ppy() const { return k_mat.rot[5]; }
 
         matrix_3x3 k_mat;
 
