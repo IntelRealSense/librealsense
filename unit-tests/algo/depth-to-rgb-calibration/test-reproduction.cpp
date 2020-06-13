@@ -90,6 +90,9 @@ int main( int argc, char * argv[] )
                 << ", " << intr.coeffs[3] << ", " << intr.coeffs[4] << "] ]" );
             AC_LOG( DEBUG, AC_D_PREC << "extr" << (rs2_extrinsics) extr );
             AC_LOG( DEBUG, AC_D_PREC << "dsm" << cal.get_dsm_params() );
+
+            TRACE( "\n___\nVS:" );
+            AC_LOG( DEBUG, AC_D_PREC << "dsm" << camera.dsm_params );
         }
         catch( std::exception const & e )
         {
