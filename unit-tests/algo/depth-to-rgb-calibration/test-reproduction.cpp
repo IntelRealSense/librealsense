@@ -30,6 +30,33 @@ void read_binary_file( char const * dir, char const * bin, T * data )
     f.close();
 }
 
+
+struct old_algo_calib
+{
+    algo::matrix_3x3 rot;
+    algo::translation trans;
+    double __fx, __fy, __ppx, __ppy;  // not in new calib!
+    algo::k_matrix k_mat;
+    int           width, height;
+    rs2_distortion model;
+    double         coeffs[5];
+
+    operator algo::calib() const
+    {
+        algo::calib c;
+        c.rot = rot;
+        c.trans = trans;
+        c.k_mat = k_mat;
+        c.width = width;
+        c.height = height;
+        c.model = model;
+        for( auto x = 0; x < 5; ++x )
+            c.coeffs[x] = coeffs[x];
+        return c;
+    }
+};
+
+
 int main( int argc, char * argv[] )
 {
     bool ok = true;
@@ -44,7 +71,17 @@ int main( int argc, char * argv[] )
             std::cout << "Processing: " << dir << " ..." << std::endl;
 
             algo::calib calibration;
-            read_binary_file( dir, "rgb.calib", &calibration );
+            try
+            {
+                read_binary_file( dir, "rgb.calib", &calibration );
+            }
+            catch( std::exception const & e )
+            {
+                std::cout << "!! failed: " << e.what() << std::endl;
+                old_algo_calib old_calibration;
+                read_binary_file( dir, "rgb.calib", &old_calibration );
+                calibration = old_calibration;
+            }
 
             camera_params camera;
             camera.rgb = calibration.get_intrinsics();
