@@ -123,7 +123,7 @@ namespace librealsense
         //  Motion intrinsic calibration presents is a prerequisite for motion correction.
         try
         {
-            // L515 motion correction with IMU supported from FW version 1.4.0.10
+            // L515 motion correction with IMU supported from FW version 01.04.01.00
             if (_fw_version >= firmware_version("1.4.1.0"))
             {
                 mm_correct_opt = std::make_shared<enable_motion_correction>(hid_ep.get(), option_range{ 0, 1, 1, 1 });
