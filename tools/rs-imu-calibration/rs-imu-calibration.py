@@ -588,10 +588,16 @@ def main():
                 [0,  g,  0], [-g,  0, 0],
                 [0,  0, -g], [ 0,  0, g]]
 
-        buckets_labels = ["Upright facing out", "USB cable up facing out", "Upside down facing out", "USB cable pointed down", "Viewing direction facing down", "Viewing direction facing up"]
-
-        if product_line == 'L500':
-            buckets_labels = ["Mounting screw pointing down, device facing out", "Mounting screw pointing left, device facing out", "Mounting screw pointing up, device facing out", "Mounting screw pointing right, device facing out", "Viewing direction facing down", "Viewing direction facing up"]
+        # all D400 and L500 cameras with IMU equipped with a mounting screw at the bottom of the device
+        # when device is in normal use position upright facing out, mount screw is pointing down, aligned with positive Y direction in depth coordinate system
+        # IMU output on each of these devices is transformed into the depth coordinate system, i.e.,
+        # looking from back of the camera towards front, the positive x-axis points to the right, the positive y-axis points down, and the positive z-axis points forward.
+        # output of motion data is consistent with convention that positive direction aligned with gravity leads to -1g and opposite direction leads to +1g, for example,
+        # positive z_aixs points forward away from front glass of the device,
+        #  1) if place the device flat on a table, facing up, positive z-axis points up, z-axis acceleration is around +1g
+        #  2) facing down, positive z-axis points down, z-axis accleration would be around -1g
+        #
+        buckets_labels = ["Mounting screw pointing down, device facing out", "Mounting screw pointing left, device facing out", "Mounting screw pointing up, device facing out", "Mounting screw pointing right, device facing out", "Viewing direction facing down", "Viewing direction facing up"]
 
         gyro_bais = np.zeros(3, np.float32)
         old_settings = None
