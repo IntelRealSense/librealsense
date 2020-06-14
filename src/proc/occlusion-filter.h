@@ -30,7 +30,7 @@ namespace librealsense
     public:
         occlusion_filter();
 
-        bool active(void) const { return (occlusion_none != _occlusion_filter); };
+        bool active(void) const { return (occlusion_none != _occlusion_filter); }
 
         void process(float3* points, float2* uv_map, const std::vector<float2> & pix_coord, const rs2::depth_frame& depth) const;
 
@@ -57,7 +57,7 @@ namespace librealsense
 
         friend class pointcloud;
 
-        void monotonic_heuristic_invalidation(float3* points, float2* uv_map, const std::vector<float2> & pix_coord, const rs2::depth_frame& depth) const;;
+        void monotonic_heuristic_invalidation(float3* points, float2* uv_map, const std::vector<float2> & pix_coord, const rs2::depth_frame& depth) const;
         void comprehensive_invalidation(float3* points, float2* uv_map, const std::vector<float2> & pix_coord) const;
 
         optional_value<rs2_intrinsics>              _depth_intrinsics;
