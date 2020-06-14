@@ -579,7 +579,7 @@ def main():
         buckets_labels = ["Upright facing out", "USB cable up facing out", "Upside down facing out", "USB cable pointed down", "Viewing direction facing down", "Viewing direction facing up"]
 
         if product_line == 'L500':
-            buckets_labels = ["Mounting Screw Down facing out", "Mounting Screw Right facing out", "Mounting Screw Up facing out", "Mounting Screw Left facing out", "Viewing direction facing up", "Viewing direction facing down"]
+            buckets_labels = ["Mounting screw pointing down, device facing out", "Mounting screw pointing left, device facing out", "Mounting screw pointing up, device facing out", "Mounting screw pointing right, device facing out", "Viewing direction facing down", "Viewing direction facing up"]
 
         gyro_bais = np.zeros(3, np.float32)
         old_settings = None

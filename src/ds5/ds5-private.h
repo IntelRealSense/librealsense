@@ -190,6 +190,7 @@ namespace librealsense
             EN_ADV          = 0x2D,     // enable advanced mode
             UAMG            = 0X30,     // get advanced mode status
             PFD             = 0x3b,     // Disable power features <Parameter1 Name="0 - Disable, 1 - Enable" />
+            READ_TABLE      = 0x43,     // read table from flash, for example, read imu calibration table, read_table 0x243 0
             SETAEROI        = 0x44,     // set auto-exposure region of interest
             GETAEROI        = 0x45,     // get auto-exposure region of interest
             MMER            = 0x4F,     // MM EEPROM read ( from DS5 cache )
@@ -561,7 +562,8 @@ namespace librealsense
         enum imu_eeprom_id : uint16_t
         {
             dm_v2_eeprom_id     = 0x0101,   // The pack alignment is Big-endian
-            tm1_eeprom_id       = 0x0002
+            tm1_eeprom_id       = 0x0002,
+            l500_eeprom_id      = 0x0105
         };
 
         struct depth_table_control

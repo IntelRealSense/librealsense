@@ -220,10 +220,6 @@ namespace librealsense
         //  Motion intrinsic calibration presents is a prerequisite for motion correction.
         try
         {
-            // Writing to log to dereference underlying structure
-            LOG_INFO("Accel Sensitivity:" << (**_accel_intrinsic).sensitivity);
-            LOG_INFO("Gyro Sensitivity:" << (**_gyro_intrinsic).sensitivity);
-
             mm_correct_opt = std::make_shared<enable_motion_correction>(hid_ep.get(),
                 option_range{ 0, 1, 1, 1 });
             hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION, mm_correct_opt);
@@ -320,7 +316,7 @@ namespace librealsense
     {
         using namespace ds;
 
-        _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor,_device_capabilities);
+        _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, false, _device_capabilities);
 
         _accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
         _gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
@@ -441,16 +437,23 @@ namespace librealsense
         _fisheye_device_idx = add_sensor(fisheye_ep);
     }
 
-    mm_calib_handler::mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor, ds::d400_caps dev_cap) :
-        _hw_monitor(hw_monitor), _dev_cap(dev_cap)
+    mm_calib_handler::mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor, bool l515_imu_cal, ds::d400_caps dev_cap) :
+        _hw_monitor(hw_monitor), _l515_table_on_flash(l515_imu_cal), _dev_cap(dev_cap)
     {
-        _imu_eeprom_raw = [this]() { return get_imu_eeprom_raw(); };
+        _imu_eeprom_raw = [this]() {
+            if (_l515_table_on_flash)
+                return get_imu_eeprom_raw_l515();
+            else
+                return get_imu_eeprom_raw();
+        };
 
         _calib_parser = [this]() {
 
             std::vector<uint8_t> raw(ds::tm1_eeprom_size);
             uint16_t calib_id = ds::dm_v2_eeprom_id; //assume DM V2 IMU as default platform
             bool valid = false;
+
+            if (_l515_table_on_flash) calib_id = ds::l500_eeprom_id;
 
             try
             {
@@ -470,6 +473,8 @@ namespace librealsense
                     prs = std::make_shared<dm_v2_imu_calib_parser>(raw, _dev_cap, valid); break;
                 case ds::tm1_eeprom_id: // TM1 id
                     prs = std::make_shared<tm1_imu_calib_parser>(raw); break;
+                case ds::l500_eeprom_id: // L515
+                    prs = std::make_shared<l500_imu_calib_parser>(raw, valid); break;
                 default:
                     throw recoverable_exception(to_string() << "Motion Intrinsics unresolved - "
                                 << ((valid)? "device is not calibrated" : "invalid calib type "),
@@ -485,6 +490,14 @@ namespace librealsense
         const int size = ds::eeprom_imu_table_size;
         command cmd(ds::MMER, offset, size);
         return _hw_monitor->send(cmd);
+    }
+
+    std::vector<uint8_t> mm_calib_handler::get_imu_eeprom_raw_l515() const
+    {
+       // read imu calibration table on L515
+       // READ_TABLE 0x243 0
+       command cmd(ds::READ_TABLE, 0x243, 0);
+       return _hw_monitor->send(cmd);
     }
 
     ds::imu_intrinsic mm_calib_handler::get_intrinsic(rs2_stream stream)
