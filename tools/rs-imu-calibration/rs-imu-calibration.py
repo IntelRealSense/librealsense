@@ -17,6 +17,9 @@ import threading
 READ_TABLE  = 0x43     # READ_TABLE 0x243 0
 WRITE_TABLE = 0x44     # WRITE_TABLE 0 <table>
 
+# L515 minimum firmware version required to support IMU calibration
+L515_FW_VER_REQUIRED = '01.04.01.00'
+
 is_data = None
 get_key = None
 if os.name == 'posix':
@@ -540,6 +543,7 @@ def wait_for_rs_device(serial_no):
         now = int(round(time.time() * 1000))
     raise Exception('No RealSense device' + str('.' if len(serial_no) == 0 else ' with serial number: '+serial_no))
 
+
 def main():
     if any([help_str in sys.argv for help_str in ['-h', '--help', '/?']]):
         print("Usage:", sys.argv[0], "[Options]")
@@ -571,6 +575,14 @@ def main():
         dev = wait_for_rs_device(serial_no)
 
         product_line = dev.get_info(rs.camera_info.product_line)
+
+        if product_line == 'L500':
+            print('checking minimum firmware requirement ...')
+            fw_version = dev.get_info(rs.camera_info.firmware_version)
+            if fw_version < L515_FW_VER_REQUIRED:
+                raise Exception('L515 requires firmware ' + L515_FW_VER_REQUIRED + " or later to support IMU calibration. Please upgrade firmware and try again.")
+            else:
+                print('  firmware ' + fw_version + ' passed check.')
 
         buckets = [[0, -g,  0], [ g,  0, 0],
                 [0,  g,  0], [-g,  0, 0],
@@ -723,7 +735,7 @@ def main():
             print('Abort writing to device')
 
     except Exception as e:
-        print ('\nDone. %s' % e)
+        print ('\nError: %s' % e)
     finally:
         if os.name == 'posix' and old_settings is not None:
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)

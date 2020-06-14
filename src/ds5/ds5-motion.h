@@ -48,7 +48,6 @@ namespace librealsense
         virtual rs2_extrinsics get_extrinsic_to(rs2_stream) = 0;    // Extrinsics are referenced to the Depth stream, except for TM1
         virtual ds::imu_intrinsic get_intrinsic(rs2_stream) = 0;    // With extrinsic from FE<->IMU only
         virtual float3x3 imu_to_depth_alignment() = 0;
-        virtual bool is_intrinsic_valid() = 0;                      // validate intrinsic calibration data
     };
 
     class tm1_imu_calib_parser : public mm_calib_parser
@@ -104,8 +103,6 @@ namespace librealsense
             }
             return out_intr;
         }
-
-        bool is_intrinsic_valid() { return true; }
 
     private:
         ds::tm1_eeprom  calib_table;
@@ -215,8 +212,6 @@ namespace librealsense
             return { in_intr.sensitivity, in_intr.bias, {0,0,0}, {0,0,0} };
         }
 
-        bool is_intrinsic_valid() { return _valid_intrinsic; }
-
     private:
         ds::dm_v2_eeprom    _calib_table;
         rs2_extrinsics      _def_extr;
@@ -231,10 +226,15 @@ namespace librealsense
     public:
         l500_imu_calib_parser(const std::vector<uint8_t>& raw_data, bool valid = true)
         {
+            // default parser to be applied when no FW calibration is available
             _valid_intrinsic = false;
             _valid_extrinsic = false;
 
-            // default parser to be applied when no FW calibration is available
+            // in case calibration table is provided but with incorrect header and CRC, both intrinsic and extrinsic will use default values
+            // calibration table has flags to indicate if it contains valid intrinsic and extrinsic, use this as further indication if the data is valid
+            // currently, the imu calibration script only calibrates intrinsic so only the intrinsic_valid field is set during calibration, extrinsic
+            // will use default values derived from mechanical CAD drawing, however, if the calibration script in the future or user calibration provide
+            // valid extrinsic, the extrinsic_valid field should be set in the table and detected here so the values from the table can be used.
             if (valid)
             {
                 imu_calib_table = *(ds::check_calib<ds::dm_v2_calibration_table>(raw_data));
@@ -262,7 +262,7 @@ namespace librealsense
             // up, z-axis acceleration is around +1g; 2) facing down, positive z-axis points down,
             // z-axis accleration would be around -1g
             _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ 0.01245f, -0.01642f, -0.00057f } };
-            _imu_2_depth_rot = { { -1.0, 0, 0 },{ 0, 1.0, 0 },{ 0, 0, -1.0 } };
+            _imu_2_depth_rot = { { -1, 0, 0 },{ 0, 1, 0 },{ 0, 0, -1 } };
 
             // default intrinsic in case no valid calibration data is available
             // scale = 1 and offset = 0
@@ -314,12 +314,20 @@ namespace librealsense
                 throw std::runtime_error(to_string() << "L515 does not support extrinsic for : " << rs2_stream_to_string(stream) << " !");
 
             rs2_extrinsics extr;
-            LOG_INFO("IMU extrinsic using CAD values");
-            extr = _def_extr;
+
+            if (_valid_extrinsic)
+            {
+                // only in case valid extrinsic is available in calibration data by calibration script in future or user custom calibration
+                librealsense::copy(&extr, &imu_calib_table.depth_to_imu, sizeof(rs2_extrinsics));
+            }
+            else
+            {
+                // L515 - BMI085 assembly transformation based on mechanical drawing
+                LOG_INFO("IMU extrinsic using CAD values");
+                extr = _def_extr;
+            }
             return extr;
         }
-
-        bool is_intrinsic_valid() { return _valid_intrinsic; }
 
     private:
         ds::dm_v2_calibration_table  imu_calib_table;

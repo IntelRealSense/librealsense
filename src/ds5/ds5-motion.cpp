@@ -463,7 +463,8 @@ namespace librealsense
             }
             catch(const std::exception&)
             {
-                LOG_WARNING("IMU Calibration is not available, see the previous message");
+                // in case calibration table errors (invalid table, empty table, or corrupted table), data is invalid and default intrinsic and extrinsic will be used
+                LOG_WARNING("IMU Calibration is not available, default intrinsic and extrinsic will be used.");
             }
 
             std::shared_ptr<mm_calib_parser> prs = nullptr;
