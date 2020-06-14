@@ -70,3 +70,43 @@ Java_com_intel_realsense_librealsense_StreamProfile_nIsProfileExtendableTo(JNIEn
     handle_error(env, e);
     return rv;
 }
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_StreamProfile_nGetIntrinsics(JNIEnv *env, jclass type,
+                                                                   jlong handle, jobject intrinsics) {
+    rs2_error* e = nullptr;
+    rs2_intrinsics intr;
+    rs2_get_video_stream_intrinsics(reinterpret_cast<const rs2_stream_profile *>(handle), &intr, &e);
+    handle_error(env, e);
+
+    jclass clazz = env->GetObjectClass(intrinsics);
+
+    //retrieving all the built-in types members
+    jfieldID width_field = env->GetFieldID(clazz, "width", "I");
+    jfieldID height_field = env->GetFieldID(clazz, "height", "I");
+    jfieldID ppx_field = env->GetFieldID(clazz, "ppx", "F");
+    jfieldID ppy_field = env->GetFieldID(clazz, "ppy", "F");
+    jfieldID fx_field = env->GetFieldID(clazz, "fx", "F");
+    jfieldID fy_field = env->GetFieldID(clazz, "fy", "F");
+    jfieldID model_field = env->GetFieldID(clazz, "model", "I");
+
+
+    env->SetIntField(intrinsics, width_field, intr.width);
+    env->SetIntField(intrinsics, height_field, intr.height);
+    env->SetFloatField(intrinsics, ppx_field, intr.ppx);
+    env->SetFloatField(intrinsics, ppy_field, intr.ppy);
+    env->SetFloatField(intrinsics, fx_field, intr.fx);
+    env->SetFloatField(intrinsics, fy_field, intr.fy);
+    env->SetIntField(intrinsics, model_field, intr.model);
+
+    //retrieving the array member
+    jfieldID coeff_field = env->GetFieldID(clazz, "coeffs", "[F");
+    jfloatArray coeffsArray = env->NewFloatArray(5);
+    if (coeffsArray != NULL)
+    {
+        env->SetFloatArrayRegion(coeffsArray, 0, 5, reinterpret_cast<jfloat*>(&intr.coeffs));
+    }
+    jobject coeffData = env->GetObjectField(intrinsics, coeff_field);
+    env->SetObjectField(intrinsics, coeff_field, coeffData);
+}
