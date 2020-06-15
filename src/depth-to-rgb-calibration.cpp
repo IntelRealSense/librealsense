@@ -113,7 +113,7 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
     std::function<void( rs2_calibration_status )> call_back
 )
 {
-#define DISABLE_RS2_CALIBRATION_CHECKS "DISABLE_RS2_CALIBRATION_CHECKS"
+#define DISABLE_RS2_CALIBRATION_CHECKS "RS2_AC_DISABLE_RETRIES"
 
     try
     {
@@ -127,16 +127,18 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
                 // Default behavior is to stop AC and trigger a retry
                 return RS2_CALIBRATION_RETRY;
             }
+            if( getenv( "RS2_AC_INVALID_SCENE_FAIL" ) )
+            {
+                // Here we don't want a retry, but we also do not want the calibration
+                // to possibly be successful -- fail it
+                AC_LOG( DEBUG, DISABLE_RS2_CALIBRATION_CHECKS << " is on but so is RS2_AC_INVALID_SCENE_FAIL: fail!" );
+                return RS2_CALIBRATION_FAILED;
+            }
             AC_LOG( DEBUG, DISABLE_RS2_CALIBRATION_CHECKS << " is on; continuing" );
         }
 
         AC_LOG( DEBUG, "... optimizing" );
-        auto n_iterations = _algo.optimize();
-        if( !n_iterations )
-        {
-            // AC_LOG( INFO, "Calibration not necessary; nothing done" );
-            return RS2_CALIBRATION_NOT_NEEDED;
-        }
+        _algo.optimize();
 
         AC_LOG( DEBUG, "... checking result validity" );
         if( !_algo.is_valid_results() )
@@ -149,7 +151,7 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
                 AC_LOG( DEBUG, DISABLE_RS2_CALIBRATION_CHECKS << " is off; will retry if possible" );
                 return RS2_CALIBRATION_RETRY;
             }
-            if( !getenv( "FORCE_RS2_CALIBRATION_RESULTS" ) )
+            if( !getenv( "RS2_AC_FORCE_BAD_RESULT" ) )
             {
                 // This is mostly for validation use, where we don't want the retries and instead want
                 // to fail on bad results (we don't want to write bad results to the camera!)
@@ -157,7 +159,7 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
                 return RS2_CALIBRATION_FAILED;
             }
             // Allow forcing of results... be careful! This may damage the camera in AC2!
-            AC_LOG( DEBUG, DISABLE_RS2_CALIBRATION_CHECKS << " is on but so is FORCE_RS2_CALIBRATION_RESULTS: results will be used!" );
+            AC_LOG( DEBUG, DISABLE_RS2_CALIBRATION_CHECKS << " is on but so is RS2_AC_FORCE_BAD_RESULT: results will be used!" );
         }
 
         // AC_LOG( INFO, "Calibration finished; original cost= " << original_cost << "  optimized
