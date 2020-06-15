@@ -230,7 +230,7 @@ int main(int argc, char* argv[]) try {
     // Self calibration.
     const self_calibration_result calib_results = self_calibrate(dev);
 
-    // Calibration is all right, we will temporarily apply it.
+    // We temporarily apply the new calibration values.
     apply_calibration_table(calib_results.new_calibration_table, dev);
 
     // Show calibration to the user.
@@ -247,6 +247,7 @@ int main(int argc, char* argv[]) try {
 
   if(user_decision == self_calibration_action::RESET_FACTORY) {
     restore_factory_calibration(dev);
+    std::cout << "Factory calibration restored." << std::endl;
   }
 
   if(user_decision == self_calibration_action::WRITE)
