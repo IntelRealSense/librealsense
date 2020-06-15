@@ -1,6 +1,6 @@
 package com.intel.realsense.librealsense;
 
-public class Intrinsics {
+public class Intrinsic {
     private int mWidth;
     private int mHeight;
     private float mPpx;
@@ -12,15 +12,15 @@ public class Intrinsics {
     private float[] mCoeffs;
 
 
-    public Intrinsics(){
+    public Intrinsic(){
         mCoeffs = new float[5];
     }
 
-    public Intrinsics(int width,int height,
-                      float ppx, float ppy,
-                      float fx, float fy,
-                      int model,
-                      float[] coeffs){
+    public Intrinsic(int width, int height,
+                     float ppx, float ppy,
+                     float fx, float fy,
+                     int model,
+                     float[] coeffs){
         this.mWidth = width;
         this.mHeight = height;
         this.mPpx = ppx;
