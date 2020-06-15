@@ -6,24 +6,18 @@
 
 namespace librealsense
 {
-    firmware_logger_device::firmware_logger_device(std::shared_ptr<hw_monitor> hardware_monitor,
-        std::string camera_op_code) :
+    firmware_logger_device::firmware_logger_device(std::shared_ptr<hw_monitor> hardware_monitor) :
         _hw_monitor(hardware_monitor),
         _fw_logs(),
         _flash_logs(),
         _flash_logs_initialized(false),
         _parser(nullptr)
     {
-        auto op_code = static_cast<uint8_t>(std::stoi(camera_op_code.c_str()));
-        _input_code_for_fw_logs = { 0x14, 0x00, 0xab, 0xcd, op_code, 0x00, 0x00, 0x00,
+        _input_code_for_fw_logs = { 0x14, 0x00, 0xab, 0xcd, 0x0f, 0x00, 0x00, 0x00,
                  0xf4, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
-        //TODO - get the right code for flash logs
-        auto flash_logs_op_code = static_cast<uint8_t>(0x09);// static_cast<uint8_t>(std::stoi(camera_op_code.c_str()));
-        //auto flash_logs_offset = { 0x7a, 0x01, 0x00, 0x00 };
-        //auto flash_logs_length = { 0xf8, 0x03, 0x00, 0x00 };
-        _input_code_for_flash_logs = { 0x14, 0x00, 0xab, 0xcd, flash_logs_op_code, 0x00, 0x00, 0x00,
+        _input_code_for_flash_logs = { 0x14, 0x00, 0xab, 0xcd, 0x09, 0x00, 0x00, 0x00,
                  0x00, 0xa0, 0x17, 0x00, 0xf8, 0x03, 0x00, 0x00,
                  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
     }
