@@ -434,16 +434,6 @@ namespace librealsense
     }
 
 
-    template<class T>
-    frame_callback_ptr make_frame_callback( T callback )
-    {
-        return {
-            new internal_frame_callback<T>( callback ),
-            []( rs2_frame_callback* p ) { p->release(); }
-        };
-    }
-
-
     std::shared_ptr< stream_profile_interface > l500_depth_sensor::is_color_sensor_needed() const
     {
         // If AC is off, we don't need the color stream on
@@ -547,19 +537,6 @@ namespace librealsense
             else
             {
                 _validator_requests = requests;
-            }
-
-            // With AC, we need a color sensor even when the user has not asked for one --
-            // otherwise we risk misalignment over time. We turn it on automatically!
-            auto rgb_profile = is_color_sensor_needed();
-            if( rgb_profile )
-            {
-                auto & color_sensor = *_owner->get_color_sensor();
-                AC_LOG( INFO, "Starting COLOR stream in addition to requested profiles" );
-                color_sensor.open( { rgb_profile } );
-                color_sensor.start( make_frame_callback( []( frame_interface * f ) {} ) );
-                // Note that we don't do anything with the frames -- they shouldn't end up
-                // at the user. But AC will still get them.
             }
 
             if( supports_option( RS2_OPTION_VISUAL_PRESET ) )

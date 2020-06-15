@@ -10,7 +10,6 @@
 #include "log.h"
 
 
-
 template < class X > struct string_to {};
 
 template<>
@@ -337,7 +336,9 @@ namespace ivcam2 {
             else if( ++_n_retries > 4 )
             {
                 AC_LOG( ERROR, "too many retries; aborting" );
+                stop_color_sensor_if_started();
                 call_back( RS2_CALIBRATION_FAILED );
+                calibration_is_done();
                 return;
             }
             AC_LOG( DEBUG, "Sending GET_SPECIAL_FRAME (cycle " << _n_cycles << " retry " << _n_retries << ")" );
@@ -352,15 +353,82 @@ namespace ivcam2 {
             }
             _n_retries = 0;
             _n_cycles = 1;          // now active
+            AC_LOG( INFO, "Camera Accuracy Health check has started in the background" );
             _next_trigger.reset();  // don't need a trigger any more
             _temp_check.reset();    // nor a temperature check
             _recycler.reset();      // just in case
+            start_color_sensor_if_needed();
             AC_LOG( DEBUG, "Sending GET_SPECIAL_FRAME (cycle 1); now active..." );
         }
         command cmd{ GET_SPECIAL_FRAME, 0x5F, 1 };  // 5F = SF = Special Frame, for easy recognition
         auto res = _hwm.send( cmd );
         // Start a timer: enable retries if something's wrong with the special frame
         _retrier = retrier::start( *this, std::chrono::seconds( get_retry_sf_seconds() ) );
+    }
+
+
+    template<class T>
+    frame_callback_ptr make_frame_callback( T callback )
+    {
+        return {
+            new internal_frame_callback<T>( callback ),
+            []( rs2_frame_callback* p ) { p->release(); }
+        };
+    }
+
+
+    void ac_trigger::start_color_sensor_if_needed()
+    {
+        // With AC, we need a color sensor even when the user has not asked for one --
+        // otherwise we risk misalignment over time. We turn it on automatically!
+
+        auto color_sensor = _dev.get_color_sensor();
+        if( !color_sensor )
+        {
+            AC_LOG( ERROR, "No color sensor in device; cannot run AC?!" );
+            return;
+        }
+
+        if( color_sensor->is_streaming() )
+        {
+            AC_LOG( DEBUG, "Color sensor is already streaming" );
+            return;
+        }
+
+        AC_LOG( INFO, "Color sensor was NOT streaming; turning on..." );
+
+        try
+        {
+            auto & depth_sensor = _dev.get_depth_sensor();
+            auto rgb_profile = depth_sensor.is_color_sensor_needed();
+            if( !rgb_profile )
+                return;  // error should have already been printed
+            //AC_LOG( DEBUG, "Picked profile: " << *rgb_profile );
+
+            if( ! color_sensor->is_opened() )
+                color_sensor->open( { rgb_profile } );
+            color_sensor->start( make_frame_callback( []( frame_interface * f ) {} ) );
+            // Note that we don't do anything with the frames -- they shouldn't end up
+            // at the user. But AC will still get them.
+
+            _own_color_stream = true;
+        }
+        catch( std::exception const & e )
+        {
+            AC_LOG( ERROR, "EXCEPTION caught: " << e.what() );
+        }
+    }
+
+
+    void ac_trigger::stop_color_sensor_if_started()
+    {
+        if( !_own_color_stream )
+            return;
+
+        AC_LOG( INFO, "STOPPING color sensor..." );
+        auto & color_sensor = *_dev.get_color_sensor();
+        color_sensor.stop();
+        _own_color_stream = false;
     }
 
 
@@ -464,9 +532,12 @@ namespace ivcam2 {
 
     void ac_trigger::run_algo()
     {
-        AC_LOG( DEBUG, "Starting processing ..." );
+        AC_LOG( DEBUG,
+                "Starting processing: color(" << _cf.get_frame_number() << ") depth("
+                                              << _sf.get_frame_number() << ")" );
         _is_processing = true;
         _retrier.reset();
+        stop_color_sensor_if_started();
         if( _worker.joinable() )
         {
             AC_LOG( DEBUG, "Waiting for worker to join ..." );
@@ -567,34 +638,45 @@ namespace ivcam2 {
                 case RS2_CALIBRATION_FAILED:
                 case RS2_CALIBRATION_SUCCESSFUL:
                 case RS2_CALIBRATION_NOT_NEEDED:
-                    // final state -- trigger the next AC
-                    _n_cycles = 0;  // now inactive
-                    if( !is_on() )
-                    {
-                        AC_LOG( DEBUG, "Calibration mechanism is not on; not scheduling next calibration" );
-                        break;
-                    }
-                    AC_LOG( DEBUG, "Now inactive" );
-                    // Trigger after a set amount of time
-                    auto n_seconds = get_trigger_seconds();
-                    if( n_seconds.count() )
-                        start( n_seconds );
-                    else
-                        AC_LOG( DEBUG, "RS2_AC_TRIGGER_SECONDS is 0; no time trigger" );
-                    // Or after a certain temperature change
-                    if( get_temp_diff_trigger() )
-                    {
-                        if( _last_temp = read_temperature() )
-                            _temp_check = retrier::start< temp_check >( *this, std::chrono::seconds( 60 ));
-                    }
-                    else
-                    {
-                        AC_LOG( DEBUG, "RS2_AC_TEMP_DIFF is 0; no temperature change trigger" );
-                    }
+                    calibration_is_done();
                     break;
                 }
             } );
     }
+
+
+    void ac_trigger::calibration_is_done()
+    {
+        // We get here when we've reached some final state (failed/successful)
+        _n_cycles = 0;  // now inactive
+        AC_LOG( INFO, "Camera Accuracy Health has finished" );
+
+        // Trigger the next AC -- but only if we're "on", meaning this wasn't a manual calibration
+        if( !is_on() )
+        {
+            AC_LOG( DEBUG, "Calibration mechanism is not on; not scheduling next calibration" );
+            return;
+        }
+
+        // Trigger after a set amount of time
+        auto n_seconds = get_trigger_seconds();
+        if( n_seconds.count() )
+            start( n_seconds );
+        else
+            AC_LOG( DEBUG, "RS2_AC_TRIGGER_SECONDS is 0; no time trigger" );
+        
+        // Or after a certain temperature change
+        if( get_temp_diff_trigger() )
+        {
+            if( _last_temp = read_temperature() )
+                _temp_check = retrier::start< temp_check >( *this, std::chrono::seconds( 60 ) );
+        }
+        else
+        {
+            AC_LOG( DEBUG, "RS2_AC_TEMP_DIFF is 0; no temperature change trigger" );
+        }
+    }
+
 
     double ac_trigger::read_temperature()
     {
@@ -620,8 +702,11 @@ namespace ivcam2 {
         if( !n_seconds.count() )
         {
             // Check if we want auto trigger
+            // Note: we arbitrarly choose the time before AC starts at 10 second -- enough time to
+            // make sure the user isn't going to fiddle with color sensor activity too much, because
+            // if color is off then AC will automatically turn it on!
             if( get_trigger_seconds().count() )
-                n_seconds = std::chrono::seconds( 3 );
+                n_seconds = std::chrono::seconds( 10 );
             else if( get_temp_diff_trigger() &&  ( _last_temp = read_temperature() ))
                 _temp_check = retrier::start< temp_check >( *this, std::chrono::seconds( 60 ) );
             else

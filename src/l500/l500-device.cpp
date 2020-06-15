@@ -223,7 +223,6 @@ namespace librealsense
                         color_sensor.override_intrinsics( _autocal->get_intrinsics() );
                         color_sensor.override_extrinsics( _autocal->get_extrinsics() );
 
-                        // TODO
                         get_depth_sensor().override_dsm_params( _autocal->get_dsm_params() );
                     }
                     notify_of_calibration_change( status );

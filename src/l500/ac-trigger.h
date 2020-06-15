@@ -50,6 +50,7 @@ namespace ivcam2 {
         std::shared_ptr< retrier > _recycler;
         std::shared_ptr< retrier > _next_trigger;
         rs2_calibration_status _last_status_sent;
+        bool _own_color_stream = false;
 
         class temp_check;
         double _last_temp = 0;
@@ -149,9 +150,13 @@ namespace ivcam2 {
         void set_special_frame( rs2::frameset const & );
         void set_color_frame( rs2::frame const & );
 
+        void start_color_sensor_if_needed();
+        void stop_color_sensor_if_started();
+
         bool is_processing() const { return _is_processing; }
         bool is_expecting_special_frame() const { return !!_retrier; }
         double read_temperature();
+        void calibration_is_done();
 
         std::vector< callback > _callbacks;
 
