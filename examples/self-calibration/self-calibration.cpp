@@ -11,7 +11,6 @@
 
 struct self_calibration_result
 {
-  rs2::calibration_table prev_calibration_table;
   rs2::calibration_table new_calibration_table;
   float health_score;
   bool success;
@@ -34,15 +33,21 @@ enum class self_calibration_action
   EXIT = 4
 };
 
+rs2::calibration_table get_current_calibration_table(rs2::device& dev)
+{
+  // Create auto calibration handler.
+  rs2::auto_calibrated_device calib_dev = dev.as<rs2::auto_calibrated_device>();
+
+  // Get current calibration table.
+  return calib_dev.get_calibration_table();
+}
+
 self_calibration_result self_calibration_step(const std::string& json_config, rs2::device& dev)
 {
   self_calibration_result result;
 
   // Create auto calibration handler.
   rs2::auto_calibrated_device calib_dev = dev.as<rs2::auto_calibrated_device>();
-
-  // Get current calibration table.
-  result.prev_calibration_table = calib_dev.get_calibration_table();
 
   // Run actual self-calibration.
   try {
@@ -98,7 +103,8 @@ self_calibration_result self_calibrate(rs2::device& dev)
 
   // Self calibration parameters;
   std::stringstream ss;
-        ss << "{\n \"speed\":" << 3 << "}";
+        ss << "{\n \"speed\":" << 3 
+           << ",\n \"scan parameter\":" << 1 << "}";
   const std::string json = ss.str();
 
   // Loop and prompt the user.
@@ -113,8 +119,6 @@ self_calibration_result self_calibrate(rs2::device& dev)
 
     num_calib_attempts++;
   }
-
-
 
   return calib_results;
 }
@@ -176,15 +180,16 @@ self_calibration_action user_action_prompt()
   std::cout << "  3 - Reset calibration to factory values." << std::endl;
   std::cout << "  4 - Exit and discard results." << std::endl;
   
-  char ans;
+  char user_input;
   do
   {
       std::cout << "Action [1/2/3/4]: ";
-      std::cin >> ans;
+      std::cin >> user_input;
       std::cout << std::endl;
-  } while (!std::cin.fail() && ans != '1' && ans != '2' && ans != '3' && ans != '4');
+  } while (!std::cin.fail() && 
+            user_input != '1' && user_input != '2' && user_input != '3' && user_input != '4');
 
-  switch(ans) {
+  switch(user_input) {
     case '1':
       action = self_calibration_action::WRITE;
       break;
@@ -214,6 +219,10 @@ int main(int argc, char* argv[]) try {
   cfg.enable_stream(RS2_STREAM_DEPTH, 256, 144, RS2_FORMAT_Z16, 90);
   rs2::device dev = pipe.start(cfg).get_device();
 
+  // Get current calibration table.
+  std::cout << "Fetching current calibration table from device..." << std::endl;
+  const rs2::calibration_table prev_calibration_table = get_current_calibration_table(dev);
+
   // Self calibration prompt.
   self_calibration_action user_decision = self_calibration_action::UNKNOWN;
   while ((user_decision != self_calibration_action::WRITE) && (user_decision != self_calibration_action::EXIT))
@@ -232,7 +241,7 @@ int main(int argc, char* argv[]) try {
 
     if (user_decision == self_calibration_action::REPEAT)
     {
-      apply_calibration_table(calib_results.prev_calibration_table, dev);
+      apply_calibration_table(prev_calibration_table, dev);
     }
   }
 
