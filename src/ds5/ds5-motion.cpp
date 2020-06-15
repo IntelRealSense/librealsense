@@ -24,6 +24,8 @@
 #include "proc/motion-transform.h"
 #include "proc/auto-exposure-processor.h"
 
+#include "../l500/l500-private.h"
+
 namespace librealsense
 {
     const std::map<uint32_t, rs2_format> fisheye_fourcc_to_rs2_format = {
@@ -220,9 +222,12 @@ namespace librealsense
         //  Motion intrinsic calibration presents is a prerequisite for motion correction.
         try
         {
-            mm_correct_opt = std::make_shared<enable_motion_correction>(hid_ep.get(),
-                option_range{ 0, 1, 1, 1 });
-            hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION, mm_correct_opt);
+            if (_mm_calib)
+            {
+                mm_correct_opt = std::make_shared<enable_motion_correction>(hid_ep.get(),
+                    option_range{ 0, 1, 1, 1 });
+                hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION, mm_correct_opt);
+            }
         }
         catch (...) {}
 
@@ -238,10 +243,8 @@ namespace librealsense
             [&, mm_correct_opt]() { return std::make_shared<gyroscope_transform>(_mm_calib, mm_correct_opt);
         });
 
-        uint16_t pid = static_cast<uint16_t>(strtoul(all_hid_infos.front().pid.data(), nullptr, 16));
-
         if ((camera_fw_version >= firmware_version(custom_sensor_fw_ver)) &&
-                (!val_in_range(pid, { ds::RS400_IMU_PID, ds::RS435I_PID, ds::RS430I_PID, ds::RS465_PID, ds::RS405_PID, ds::RS455_PID })))
+                (!val_in_range(_pid, { ds::RS400_IMU_PID, ds::RS435I_PID, ds::RS430I_PID, ds::RS465_PID, ds::RS405_PID, ds::RS455_PID })))
         {
             hid_ep->register_option(RS2_OPTION_MOTION_MODULE_TEMPERATURE,
                                     std::make_shared<motion_module_temperature_option>(*raw_hid_ep));
@@ -316,12 +319,22 @@ namespace librealsense
     {
         using namespace ds;
 
-        _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, false, _device_capabilities);
+        std::vector<platform::hid_device_info> hid_infos = group.hid_devices;
 
-        _accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
-        _gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
-        // D435i to use predefined values extrinsics
-        _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
+        if (!hid_infos.empty())
+        {
+            // product id
+            _pid = static_cast<uint16_t>(strtoul(hid_infos.front().pid.data(), nullptr, 16));
+
+            // motion correction
+            _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _pid);
+
+            _accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
+            _gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
+
+            // use predefined extrinsics
+            _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
+        }
 
         initialize_fisheye_sensor(ctx,group);
 
@@ -437,11 +450,11 @@ namespace librealsense
         _fisheye_device_idx = add_sensor(fisheye_ep);
     }
 
-    mm_calib_handler::mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor, bool l515_imu_cal, ds::d400_caps dev_cap) :
-        _hw_monitor(hw_monitor), _l515_table_on_flash(l515_imu_cal), _dev_cap(dev_cap)
+    mm_calib_handler::mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor, uint16_t pid) :
+        _hw_monitor(hw_monitor), _pid(pid)
     {
         _imu_eeprom_raw = [this]() {
-            if (_l515_table_on_flash)
+            if (_pid == L515_PID)
                 return get_imu_eeprom_raw_l515();
             else
                 return get_imu_eeprom_raw();
@@ -453,7 +466,7 @@ namespace librealsense
             uint16_t calib_id = ds::dm_v2_eeprom_id; //assume DM V2 IMU as default platform
             bool valid = false;
 
-            if (_l515_table_on_flash) calib_id = ds::l500_eeprom_id;
+            if (_pid == L515_PID) calib_id = ds::l500_eeprom_id;
 
             try
             {
@@ -471,7 +484,7 @@ namespace librealsense
             switch (calib_id)
             {
                 case ds::dm_v2_eeprom_id: // DM V2 id
-                    prs = std::make_shared<dm_v2_imu_calib_parser>(raw, _dev_cap, valid); break;
+                    prs = std::make_shared<dm_v2_imu_calib_parser>(raw, _pid, valid); break;
                 case ds::tm1_eeprom_id: // TM1 id
                     prs = std::make_shared<tm1_imu_calib_parser>(raw); break;
                 case ds::l500_eeprom_id: // L515
@@ -497,7 +510,7 @@ namespace librealsense
     {
        // read imu calibration table on L515
        // READ_TABLE 0x243 0
-       command cmd(ds::READ_TABLE, 0x243, 0);
+       command cmd(ivcam2::READ_TABLE, ivcam2::L515_IMU_TABLE, 0);
        return _hw_monitor->send(cmd);
     }
 

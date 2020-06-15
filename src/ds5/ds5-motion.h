@@ -111,8 +111,11 @@ namespace librealsense
     class dm_v2_imu_calib_parser : public mm_calib_parser
     {
     public:
-        dm_v2_imu_calib_parser(const std::vector<uint8_t>& raw_data, ds::d400_caps capabilities, bool valid = true)
+        dm_v2_imu_calib_parser(const std::vector<uint8_t>& raw_data, uint16_t pid, bool valid = true)
         {
+            // product id to identify platform specific parameters, imu models and physical location
+            _pid = pid;
+
             _calib_table.module_info.dm_v2_calib_table.extrinsic_valid = 0;
             _calib_table.module_info.dm_v2_calib_table.intrinsic_valid = 0;
 
@@ -122,30 +125,51 @@ namespace librealsense
             // default parser to be applied when no FW calibration is available
             if (valid)
             {
-                _calib_table = *(ds::check_calib<ds::dm_v2_eeprom>(raw_data));
-                _valid_intrinsic = _calib_table.module_info.dm_v2_calib_table.intrinsic_valid;
-                _valid_extrinsic = _calib_table.module_info.dm_v2_calib_table.extrinsic_valid;
+                try
+                {
+                    _calib_table = *(ds::check_calib<ds::dm_v2_eeprom>(raw_data));
+                    _valid_intrinsic = (_calib_table.module_info.dm_v2_calib_table.intrinsic_valid == 1) ? true : false;
+                    _valid_extrinsic = (_calib_table.module_info.dm_v2_calib_table.extrinsic_valid == 1) ? true : false;
+                }
+                catch (...)
+                {
+                    _valid_intrinsic = false;
+                    _valid_extrinsic = false;
+                }
             }
 
-            if (capabilities && ds::d400_caps::CAP_BMI_055)
+            // predefined platform specific extrinsic, IMU assembly transformation based on mechanical drawing (meters)
+            if (_pid == ds::RS435I_PID)
             {
-                // D435i specific - BMI055 assembly transformation based on mechanical drawing (mm)
+                // D435i specific - Bosch BMI055
                 _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 }, { -0.00552f, 0.0051f, 0.01174f} };
-                _imu_2_depth_rot = { {-1,0,0},{0,1,0},{0,0,-1} };        //Reference spec : Bosch BMI055
+                _imu_2_depth_rot = { {-1,0,0},{0,1,0},{0,0,-1} };
             }
-            else // BMI_055 and unmapped configurations
+            else if (_pid == ds::RS455_PID)
             {
-                if (capabilities && ds::d400_caps::CAP_BMI_085)
-                {    // BMI085 assembly transformation for designated SKUs, based on mechanical drawing (mm)
-                    _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 }, { -0.10125f, -0.00375f, -0.0013f} };
-                    _imu_2_depth_rot = { {1,0,0},{0,1,0},{0,0,1} };       //Reference spec : Bosch BMI085
-                }
-                else
-                {
-                    _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 }, { 0.f, 0.f, 0.f} };
-                    _imu_2_depth_rot = { {1,0,0},{0,1,0},{0,0,1} };
-                    LOG_ERROR("Undefined IMU sensor type, use default intrinsic/extrinsic data");
-                }
+                // D455 specific - Bosch BMI055
+                _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.03022f, -0.0074f, -0.01602f } };
+                _imu_2_depth_rot = { { -1,0,0 },{ 0,1,0 },{ 0,0,-1 } };
+            }
+            else if (_pid == ds::RS405_PID)
+            {
+                // D405 specific - Bosch BMI055
+                // TODO - verify with mechanical drawing
+                _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.00552f, 0.0051f, 0.01174f } };
+                _imu_2_depth_rot = { { -1,0,0 },{ 0,1,0 },{ 0,0,-1 } };
+            }
+            else if (_pid == ds::RS465_PID)
+            {
+                // D465 specific - Bosch BMI085
+                // TODO - verify with mechanical drawing
+                _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.10125f, -0.00375f, -0.0013f } };
+                _imu_2_depth_rot = { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } };
+            }
+            else // unmapped configurations
+            {
+                _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ 0.f, 0.f, 0.f } };
+                _imu_2_depth_rot = { { -1,0,0 },{ 0,1,0 },{ 0,0,-1 } };
+                LOG_ERROR("Undefined platform with IMU, use default intrinsic/extrinsic data");
             }
 
             // default intrinsic in case no valid calibration data is available
@@ -219,6 +243,7 @@ namespace librealsense
         ds::dm_v2_imu_intrinsic _def_intr;
         bool                _valid_intrinsic;
         bool                _valid_extrinsic;
+        uint16_t            _pid;
     };
 
     class l500_imu_calib_parser : public mm_calib_parser
@@ -237,9 +262,17 @@ namespace librealsense
             // valid extrinsic, the extrinsic_valid field should be set in the table and detected here so the values from the table can be used.
             if (valid)
             {
-                imu_calib_table = *(ds::check_calib<ds::dm_v2_calibration_table>(raw_data));
-                _valid_intrinsic = imu_calib_table.intrinsic_valid;
-                _valid_extrinsic = imu_calib_table.extrinsic_valid;
+                try
+                {
+                    imu_calib_table = *(ds::check_calib<ds::dm_v2_calibration_table>(raw_data));
+                    _valid_intrinsic = (imu_calib_table.intrinsic_valid == 1) ? true : false;
+                    _valid_extrinsic = (imu_calib_table.extrinsic_valid == 1) ? true : false;
+                }
+                catch (...)
+                {
+                    _valid_intrinsic = false;
+                    _valid_extrinsic = false;
+                }
             }
 
             // L515 specific
@@ -341,23 +374,21 @@ namespace librealsense
     class mm_calib_handler
     {
     public:
-        mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor, bool l515_imu_cal, ds::d400_caps dev_cap = ds::d400_caps::CAP_UNDEFINED);
+        mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor, uint16_t pid);
         ~mm_calib_handler() {}
 
         ds::imu_intrinsic get_intrinsic(rs2_stream);
         rs2_extrinsics get_extrinsic(rs2_stream);       // The extrinsic defined as Depth->Stream rigid-body transfom.
         const std::vector<uint8_t> get_fisheye_calib_raw();
         float3x3 imu_to_depth_alignment() { return (*_calib_parser)->imu_to_depth_alignment(); }
-
     private:
         std::shared_ptr<hw_monitor> _hw_monitor;
-        ds::d400_caps                   _dev_cap;
         lazy< std::shared_ptr<mm_calib_parser>> _calib_parser;
         lazy<std::vector<uint8_t>>      _imu_eeprom_raw;
         std::vector<uint8_t>            get_imu_eeprom_raw() const;
         std::vector<uint8_t>            get_imu_eeprom_raw_l515() const;
         lazy<std::vector<uint8_t>>      _fisheye_calibration_table_raw;
-        bool _l515_table_on_flash = false;
+        uint16_t _pid;
     };
 
     class ds5_motion : public virtual ds5_device
@@ -390,6 +421,8 @@ namespace librealsense
         std::shared_ptr<lazy<ds::imu_intrinsic>> _gyro_intrinsic;
         lazy<std::vector<uint8_t>>              _fisheye_calibration_table_raw;
         std::shared_ptr<lazy<rs2_extrinsics>>   _depth_to_imu;                  // Mechanical installation pose
+
+        uint16_t _pid;    // product PID
 
         // Bandwidth parameters required for HID sensors
         // The Acceleration configuration will be resolved according to the IMU sensor type at run-time

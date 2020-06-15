@@ -124,7 +124,7 @@ namespace librealsense
         try
         {
             // L515 motion correction with IMU supported from FW version 01.04.01.00
-            if (_fw_version >= firmware_version("1.4.1.0"))
+            if (_fw_version >= firmware_version("1.4.1.0") && _mm_calib)
             {
                 mm_correct_opt = std::make_shared<enable_motion_correction>(hid_ep.get(), option_range{ 0, 1, 1, 1 });
                 hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION, mm_correct_opt);
@@ -152,12 +152,21 @@ namespace librealsense
           _accel_stream(new stream(RS2_STREAM_ACCEL)),
          _gyro_stream(new stream(RS2_STREAM_GYRO))
     {
-        _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, true);
-        _accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
-        _gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
+        std::vector<platform::hid_device_info> hid_infos = group.hid_devices;
 
-        // use predefined extrinsics
-        _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
+        if (!hid_infos.empty())
+        {
+            // product id
+            _pid = static_cast<uint16_t>(strtoul(hid_infos.front().pid.data(), nullptr, 16));
+
+            // motion correction
+            _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _pid);
+            _accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
+            _gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
+
+            // use predefined extrinsics
+            _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
+        }
 
         // Make sure all MM streams are positioned with the same extrinsics
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_accel_stream, _depth_to_imu);

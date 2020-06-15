@@ -36,6 +36,8 @@ namespace librealsense
         std::shared_ptr<lazy<ds::imu_intrinsic>> _gyro_intrinsic;
         std::shared_ptr<lazy<rs2_extrinsics>>   _depth_to_imu;                  // Mechanical installation pose
 
+        uint16_t _pid;    // product PID
+
     protected:
         std::shared_ptr<stream_interface> _accel_stream;
         std::shared_ptr<stream_interface> _gyro_stream;
