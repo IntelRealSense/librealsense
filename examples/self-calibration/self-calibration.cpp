@@ -51,7 +51,7 @@ self_calibration_result self_calibration_step(const std::string& json_config, rs
 
   // Run actual self-calibration.
   try {
-    result.new_calibration_table = calib_dev.run_on_chip_calibration(json_config, &result.health_score, [&](const float progress) { /* On Progress */ });
+    result.new_calibration_table = calib_dev.run_on_chip_calibration(json_config, &result.health_score);
     result.success = true;
   } catch (const rs2::error& e) {
     std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl; 
