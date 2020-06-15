@@ -9,20 +9,32 @@
 
 #include "example.hpp"              // Include short list of convenience functions for rendering
 
-struct self_calibration_result {
-  rs2::calibration_table current_calibration_table;
+struct self_calibration_result
+{
+  rs2::calibration_table prev_calibration_table;
   rs2::calibration_table new_calibration_table;
   float health_score;
   bool success;
 };
 
-struct self_calibration_health_threshold {
+struct self_calibration_health_thresholds
+{
   constexpr static float OPTIMAL = 0.25;
   constexpr static float USABLE = 0.75;
   constexpr static float UNUSABLE = 1.0;
+  constexpr static std::size_t MAX_NUM_UNSUCCESSFUL_ITERATIONS = 10;
 };
 
-self_calibration_result self_calibrate(const std::string& json_config, rs2::device& dev)
+enum class self_calibration_action
+{
+  UNKNOWN = 0,
+  WRITE = 1,
+  REPEAT = 2,
+  RESET_FACTORY = 3,
+  EXIT = 4
+};
+
+self_calibration_result self_calibration_step(const std::string& json_config, rs2::device& dev)
 {
   self_calibration_result result;
 
@@ -30,7 +42,7 @@ self_calibration_result self_calibrate(const std::string& json_config, rs2::devi
   rs2::auto_calibrated_device calib_dev = dev.as<rs2::auto_calibrated_device>();
 
   // Get current calibration table.
-  result.current_calibration_table = calib_dev.get_calibration_table();
+  result.prev_calibration_table = calib_dev.get_calibration_table();
 
   // Run actual self-calibration.
   try {
@@ -46,14 +58,20 @@ self_calibration_result self_calibrate(const std::string& json_config, rs2::devi
 
 bool validate_self_calibration(const self_calibration_result& result)
 {
+  if(!result.success) {
+    std::cout << "Self Calibration procedure was unsuccessful. Please point your sensor to an area with visible texture." << std::endl;
+    return false;
+  }
+
   std::cout << "Self Calibration finished. Health = " << result.health_score << std::endl;
-  if (result.health_score < self_calibration_health_threshold::USABLE)
+  const auto abs_score = std::abs(result.health_score);
+  if (abs_score < self_calibration_health_thresholds::USABLE)
   {
     // Usable results.
-    if (result.health_score < self_calibration_health_threshold::OPTIMAL)
+    if (abs_score < self_calibration_health_thresholds::OPTIMAL)
     {
       std::cout << "Optimal calibration results. You can proceed to write them to the device ROM." << std::endl;
-    } else if (result.health_score < self_calibration_health_threshold::USABLE)
+    } else if (abs_score < self_calibration_health_thresholds::USABLE)
     {
       std::cout << "Calibration results are usable but not ideal. It is recommended to repeat the procedure." << std::endl;
     }
@@ -65,7 +83,44 @@ bool validate_self_calibration(const self_calibration_result& result)
   }
 }
 
-void apply_calibration_table(const rs2::calibration_table& table, rs2::device& dev) {
+void restore_factory_calibration(rs2::device& dev)
+{
+  // Create auto calibration handler.
+  rs2::auto_calibrated_device calib_dev = dev.as<rs2::auto_calibrated_device>();
+
+  // Restore factory calibration.
+  calib_dev.reset_to_factory_calibration();
+}
+
+self_calibration_result self_calibrate(rs2::device& dev)
+{
+  self_calibration_result calib_results;
+
+  // Self calibration parameters;
+  std::stringstream ss;
+        ss << "{\n \"speed\":" << 3 << "}";
+  const std::string json = ss.str();
+
+  // Loop and prompt the user.
+  bool valid_calibration = false;
+  std::size_t num_calib_attempts = 0;
+  while(!valid_calibration && 
+         num_calib_attempts < self_calibration_health_thresholds::MAX_NUM_UNSUCCESSFUL_ITERATIONS)
+  {
+    std::cout << "Self calibration, iteration " << num_calib_attempts << "..." << std::endl;
+    calib_results = self_calibration_step(json, dev);
+    valid_calibration = validate_self_calibration(calib_results);
+
+    num_calib_attempts++;
+  }
+
+
+
+  return calib_results;
+}
+
+void apply_calibration_table(const rs2::calibration_table& table, rs2::device& dev)
+{
   // Create auto calibration handler.
   rs2::auto_calibrated_device calib_dev = dev.as<rs2::auto_calibrated_device>();
 
@@ -73,43 +128,11 @@ void apply_calibration_table(const rs2::calibration_table& table, rs2::device& d
   calib_dev.set_calibration_table(table);
 }
 
-void write_calibration_permanently(rs2::device& dev) {
-  // Create auto calibration handler.
-  rs2::auto_calibrated_device calib_dev = dev.as<rs2::auto_calibrated_device>();
-
-  // Write results to device's ROM.
-  calib_dev.write_calibration();
-}
-
-// Self Calibration example demonstrates the basics of connecting to a RealSense device
-// and running self calibration through the C++ API.
-int main(int argc, char* argv[]) try {
+void display_calibration_results(rs2::pipeline& pipe)
+{
+  std::cout << "Showing calibration results. Close display window to continue..." << std::endl;
   window app(640, 480, "CPP Self-Calibration Example");
   rs2::colorizer colorizer; // Utility class to convert depth data to RGB colorspace.
-
-  // Create a Pipeline - this serves as a top-level API for streaming and processing frames
-  rs2::pipeline pipe;
-
-  // Configure and start the pipeline
-  rs2::config cfg;
-  cfg.enable_stream(RS2_STREAM_INFRARED, 256, 144, RS2_FORMAT_Y8, 90);
-  cfg.enable_stream(RS2_STREAM_DEPTH, 256, 144, RS2_FORMAT_Z16, 90);
-  rs2::device dev = pipe.start(cfg).get_device();
-
-  // Self calibration parameters;
-  std::stringstream ss;
-        ss << "{\n \"speed\":" << 0 <<
-               ",\n \"average step count\":20" <<
-               ",\n \"step count\":20" <<
-               ",\n \"accuracy\":2}";
-
-  const std::string json = ss.str();
-  const auto calib_results = self_calibrate(json,dev);
-  if (validate_self_calibration(calib_results)) {
-    apply_calibration_table(calib_results.new_calibration_table, dev);
-  }
-
-  // Show calibration to the user.
   std::map<int, rs2::frame> render_frames;
    while (app)
    {
@@ -131,6 +154,96 @@ int main(int argc, char* argv[]) try {
 
     // Present all the collected frames with openGl mosaic
     app.show(render_frames);
+  }
+}
+
+void write_calibration_permanently(rs2::device& dev)
+{
+  // Create auto calibration handler.
+  rs2::auto_calibrated_device calib_dev = dev.as<rs2::auto_calibrated_device>();
+
+  // Write results to device's ROM.
+  calib_dev.write_calibration();
+}
+
+self_calibration_action user_action_prompt()
+{
+  self_calibration_action action = self_calibration_action::UNKNOWN;
+
+  std::cout << "From the following options please introduce the number corresponding to your desired action:" << std::endl;
+  std::cout << "  1 - Write it to the device." << std::endl;
+  std::cout << "  2 - Repeat it." << std::endl;
+  std::cout << "  3 - Reset calibration to factory values." << std::endl;
+  std::cout << "  4 - Exit and discard results." << std::endl;
+  
+  char ans;
+  do
+  {
+      std::cout << "Action [1/2/3/4]: ";
+      std::cin >> ans;
+      std::cout << std::endl;
+  } while (!std::cin.fail() && ans != '1' && ans != '2' && ans != '3' && ans != '4');
+
+  switch(ans) {
+    case '1':
+      action = self_calibration_action::WRITE;
+      break;
+    case '2':
+      action = self_calibration_action::REPEAT;
+      break;
+    case '3':
+      action = self_calibration_action::RESET_FACTORY;
+      break;
+    case '4':
+      action = self_calibration_action::EXIT;
+      break;
+  }
+
+  return action;
+}
+
+// Self Calibration example demonstrates the basics of connecting to a RealSense device
+// and running self calibration through the C++ API.
+int main(int argc, char* argv[]) try {
+  // Create a Pipeline - this serves as a top-level API for streaming and processing frames
+  rs2::pipeline pipe;
+
+  // Configure device and start streaming.
+  rs2::config cfg;
+  cfg.enable_stream(RS2_STREAM_INFRARED, 256, 144, RS2_FORMAT_Y8, 90);
+  cfg.enable_stream(RS2_STREAM_DEPTH, 256, 144, RS2_FORMAT_Z16, 90);
+  rs2::device dev = pipe.start(cfg).get_device();
+
+  // Self calibration prompt.
+  self_calibration_action user_decision = self_calibration_action::UNKNOWN;
+  while ((user_decision != self_calibration_action::WRITE) && (user_decision != self_calibration_action::EXIT))
+  {
+    // Self calibration.
+    const self_calibration_result calib_results = self_calibrate(dev);
+
+    // Calibration is all right, we will temporarily apply it.
+    apply_calibration_table(calib_results.new_calibration_table, dev);
+
+    // Show calibration to the user.
+    display_calibration_results(pipe);
+
+    // Ask the user for input.
+    user_decision = user_action_prompt();
+
+    if (user_decision == self_calibration_action::REPEAT)
+    {
+      apply_calibration_table(calib_results.prev_calibration_table, dev);
+    }
+  }
+
+  if(user_decision == self_calibration_action::RESET_FACTORY) {
+    restore_factory_calibration(dev);
+  }
+
+  if(user_decision == self_calibration_action::WRITE)
+  {
+    write_calibration_permanently(dev);
+    std::cout << "Self calibration written to device." << std::endl;
   }
 
   return EXIT_SUCCESS;
