@@ -12,7 +12,6 @@ public class MotionIntrinsics {
 
 
     public MotionIntrinsics(){
-
         mData = new float[3][4];
         mNoiseVariances = new float[3];
         mBiasVariances = new float[3];

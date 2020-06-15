@@ -73,6 +73,43 @@ Java_com_intel_realsense_librealsense_StreamProfile_nIsProfileExtendableTo(JNIEn
 
 extern "C"
 JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_StreamProfile_nGetExtrinsicsTo(JNIEnv *env, jclass type,
+                                                                         jlong handle, jlong otherHandle, jobject extrinsics) {
+    rs2_error* e = nullptr;
+    rs2_extrinsics extr;
+    rs2_get_extrinsics(reinterpret_cast<const rs2_stream_profile *>(handle),
+            reinterpret_cast<const rs2_stream_profile *>(otherHandle),&extr, &e);
+    handle_error(env, e);
+
+    if (e != nullptr)
+    {
+        return;
+    }
+
+    jclass clazz = env->GetObjectClass(extrinsics);
+
+    //retrieving the array members
+    //mRotation
+    jfieldID rotation_field = env->GetFieldID(clazz, "mRotation", "[F");
+    jfloatArray rotationArray = env->NewFloatArray(9);
+    if (rotationArray != NULL)
+    {
+        env->SetFloatArrayRegion(rotationArray, 0, 9, reinterpret_cast<jfloat*>(&extr.rotation));
+    }
+    env->SetObjectField(extrinsics, rotation_field, rotationArray);
+
+    //mTranslation
+    jfieldID translation_field = env->GetFieldID(clazz, "mTranslation", "[F");
+    jfloatArray translationArray = env->NewFloatArray(3);
+    if (translationArray != NULL)
+    {
+        env->SetFloatArrayRegion(translationArray, 0, 3, reinterpret_cast<jfloat*>(&extr.translation));
+    }
+    env->SetObjectField(extrinsics, translation_field, translationArray);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_VideoStreamProfile_nGetIntrinsics(JNIEnv *env, jclass type,
                                                                    jlong handle, jobject intrinsics) {
     rs2_error* e = nullptr;
@@ -112,8 +149,7 @@ Java_com_intel_realsense_librealsense_VideoStreamProfile_nGetIntrinsics(JNIEnv *
     {
         env->SetFloatArrayRegion(coeffsArray, 0, 5, reinterpret_cast<jfloat*>(&intr.coeffs));
     }
-    jobject coeffData = env->GetObjectField(intrinsics, coeff_field);
-    env->SetObjectField(intrinsics, coeff_field, coeffData);
+    env->SetObjectField(intrinsics, coeff_field, coeffsArray);
 }
 
 extern "C"
@@ -138,28 +174,25 @@ Java_com_intel_realsense_librealsense_MotionStreamProfile_nGetIntrinsics(JNIEnv 
     jfloatArray dataArray = env->NewFloatArray(12);
     if (dataArray != NULL)
     {
-        env->SetFloatArrayRegion(dataArray, 0, 5, reinterpret_cast<jfloat*>(&intr.data));
+        env->SetFloatArrayRegion(dataArray, 0, 12, reinterpret_cast<jfloat*>(&intr.data));
     }
-    jobject dataData = env->GetObjectField(intrinsics, data_field);
-    env->SetObjectField(intrinsics, data_field, dataData);
+    env->SetObjectField(intrinsics, data_field, dataArray);
 
     //mNoiseVariances
     jfieldID noise_field = env->GetFieldID(clazz, "mNoiseVariances", "[F");
     jfloatArray noiseArray = env->NewFloatArray(3);
     if (noiseArray != NULL)
     {
-        env->SetFloatArrayRegion(noiseArray, 0, 5, reinterpret_cast<jfloat*>(&intr.noise_variances));
+        env->SetFloatArrayRegion(noiseArray, 0, 3, reinterpret_cast<jfloat*>(&intr.noise_variances));
     }
-    jobject noiseData = env->GetObjectField(intrinsics, noise_field);
-    env->SetObjectField(intrinsics, noise_field, noiseData);
+    env->SetObjectField(intrinsics, noise_field, noiseArray);
 
     //mBiasVariances
     jfieldID bias_field = env->GetFieldID(clazz, "mBiasVariances", "[F");
     jfloatArray biasArray = env->NewFloatArray(3);
     if (biasArray != NULL)
     {
-        env->SetFloatArrayRegion(biasArray, 0, 5, reinterpret_cast<jfloat*>(&intr.bias_variances));
+        env->SetFloatArrayRegion(biasArray, 0, 3, reinterpret_cast<jfloat*>(&intr.bias_variances));
     }
-    jobject biasData = env->GetObjectField(intrinsics, bias_field);
-    env->SetObjectField(intrinsics, bias_field, noiseData);
+    env->SetObjectField(intrinsics, bias_field, biasArray);
 }
