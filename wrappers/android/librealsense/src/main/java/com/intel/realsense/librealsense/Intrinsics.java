@@ -1,19 +1,18 @@
 package com.intel.realsense.librealsense;
 
 public class Intrinsics {
-    public int mWidth;
-    public int mHeight;
-    public float mPpx;
-    public float mPpy;
-    public float mFx;
-    public float mFy;
-    public DistortionType mModel;
-    public int mModelValue;
-    public float[] mCoeffs;
+    private int mWidth;
+    private int mHeight;
+    private float mPpx;
+    private float mPpy;
+    private float mFx;
+    private float mFy;
+    private DistortionType mModel;
+    private int mModelValue;
+    private float[] mCoeffs;
 
 
     public Intrinsics(){
-        //mModelValue = new DistortionType(0);
         mCoeffs = new float[5];
     }
 

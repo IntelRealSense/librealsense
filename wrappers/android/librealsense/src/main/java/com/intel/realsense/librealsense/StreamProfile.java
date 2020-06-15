@@ -43,13 +43,6 @@ public class StreamProfile extends LrsClass {
         return mPp.frameRate;
     }
 
-    public Intrinsics getIntrinsics() throws Exception {
-        Intrinsics intrinsics = new Intrinsics();
-        nGetIntrinsics(mHandle, intrinsics);
-        intrinsics.SetModel();
-        return intrinsics;
-    }
-
     public boolean is(Extension extension) {
         return nIsProfileExtendableTo(mHandle, extension.value());
     }
@@ -71,5 +64,4 @@ public class StreamProfile extends LrsClass {
     private static native boolean nIsProfileExtendableTo(long handle, int extension);
     private static native void nGetProfile(long handle, ProfileParams params);
     private static native void nDelete(long handle);
-    private static native void nGetIntrinsics(long handle, Intrinsics intrinsics);
 }

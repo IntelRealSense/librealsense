@@ -73,12 +73,17 @@ Java_com_intel_realsense_librealsense_StreamProfile_nIsProfileExtendableTo(JNIEn
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_intel_realsense_librealsense_StreamProfile_nGetIntrinsics(JNIEnv *env, jclass type,
+Java_com_intel_realsense_librealsense_VideoStreamProfile_nGetIntrinsics(JNIEnv *env, jclass type,
                                                                    jlong handle, jobject intrinsics) {
     rs2_error* e = nullptr;
     rs2_intrinsics intr;
     rs2_get_video_stream_intrinsics(reinterpret_cast<const rs2_stream_profile *>(handle), &intr, &e);
     handle_error(env, e);
+
+    if (e != nullptr)
+    {
+        return;
+    }
 
     jclass clazz = env->GetObjectClass(intrinsics);
 
@@ -109,4 +114,52 @@ Java_com_intel_realsense_librealsense_StreamProfile_nGetIntrinsics(JNIEnv *env, 
     }
     jobject coeffData = env->GetObjectField(intrinsics, coeff_field);
     env->SetObjectField(intrinsics, coeff_field, coeffData);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_MotionStreamProfile_nGetIntrinsics(JNIEnv *env, jclass type,
+                                                                        jlong handle, jobject intrinsics) {
+    rs2_error* e = nullptr;
+    rs2_motion_device_intrinsic intr;
+    rs2_get_motion_intrinsics(reinterpret_cast<const rs2_stream_profile *>(handle), &intr, &e);
+    handle_error(env, e);
+
+    if (e != nullptr)
+    {
+        return;
+    }
+
+    jclass clazz = env->GetObjectClass(intrinsics);
+
+    //retrieving the array members
+    //mData
+    jfieldID data_field = env->GetFieldID(clazz, "mData", "[F");
+    jfloatArray dataArray = env->NewFloatArray(12);
+    if (dataArray != NULL)
+    {
+        env->SetFloatArrayRegion(dataArray, 0, 5, reinterpret_cast<jfloat*>(&intr.data));
+    }
+    jobject dataData = env->GetObjectField(intrinsics, data_field);
+    env->SetObjectField(intrinsics, data_field, dataData);
+
+    //mNoiseVariances
+    jfieldID noise_field = env->GetFieldID(clazz, "mNoiseVariances", "[F");
+    jfloatArray noiseArray = env->NewFloatArray(3);
+    if (noiseArray != NULL)
+    {
+        env->SetFloatArrayRegion(noiseArray, 0, 5, reinterpret_cast<jfloat*>(&intr.noise_variances));
+    }
+    jobject noiseData = env->GetObjectField(intrinsics, noise_field);
+    env->SetObjectField(intrinsics, noise_field, noiseData);
+
+    //mBiasVariances
+    jfieldID bias_field = env->GetFieldID(clazz, "mBiasVariances", "[F");
+    jfloatArray biasArray = env->NewFloatArray(3);
+    if (biasArray != NULL)
+    {
+        env->SetFloatArrayRegion(biasArray, 0, 5, reinterpret_cast<jfloat*>(&intr.bias_variances));
+    }
+    jobject biasData = env->GetObjectField(intrinsics, bias_field);
+    env->SetObjectField(intrinsics, bias_field, noiseData);
 }
