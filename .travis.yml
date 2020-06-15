@@ -65,7 +65,7 @@ matrix:
       sudo: required
       dist: xenial
       python: "2.7"
-      node_js: "6"
+      node_js: "10"
       env: LRS_BUILD_NODEJS=true
       script:
         - cmake .. -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS=true -DPYBIND11_PYTHON_VERSION=2.7 -DCHECK_FOR_UPDATES=true
