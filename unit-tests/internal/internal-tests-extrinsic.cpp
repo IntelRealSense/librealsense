@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "catch/catch.hpp"
+#include "approx.h"
 #include <cmath>
 #include <iostream>
 #include <chrono>
@@ -25,7 +25,7 @@ inline void require_zero_vector(const float(&vector)[3])
 inline void require_identity_matrix(const float(&matrix)[9])
 {
     static const float identity_matrix_3x3[] = { 1,0,0, 0,1,0, 0,0,1 };
-    for (int i = 0; i < 9; ++i) REQUIRE(matrix[i] == Approx(identity_matrix_3x3[i]));
+    for (int i = 0; i < 9; ++i) REQUIRE(matrix[i] == approx(identity_matrix_3x3[i]));
 }
 
 TEST_CASE("Extrinsic graph management", "[live][multicam]")

@@ -1,5 +1,4 @@
 #define CATCH_CONFIG_RUNNER
-#include "catch/catch.hpp"
 #include "unit-tests-common.h"
 #include <iostream>
 
