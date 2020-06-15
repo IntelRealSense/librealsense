@@ -83,13 +83,13 @@ Java_com_intel_realsense_librealsense_StreamProfile_nGetIntrinsics(JNIEnv *env, 
     jclass clazz = env->GetObjectClass(intrinsics);
 
     //retrieving all the built-in types members
-    jfieldID width_field = env->GetFieldID(clazz, "width", "I");
-    jfieldID height_field = env->GetFieldID(clazz, "height", "I");
-    jfieldID ppx_field = env->GetFieldID(clazz, "ppx", "F");
-    jfieldID ppy_field = env->GetFieldID(clazz, "ppy", "F");
-    jfieldID fx_field = env->GetFieldID(clazz, "fx", "F");
-    jfieldID fy_field = env->GetFieldID(clazz, "fy", "F");
-    jfieldID model_field = env->GetFieldID(clazz, "model", "I");
+    jfieldID width_field = env->GetFieldID(clazz, "mWidth", "I");
+    jfieldID height_field = env->GetFieldID(clazz, "mHeight", "I");
+    jfieldID ppx_field = env->GetFieldID(clazz, "mPpx", "F");
+    jfieldID ppy_field = env->GetFieldID(clazz, "mPpy", "F");
+    jfieldID fx_field = env->GetFieldID(clazz, "mFx", "F");
+    jfieldID fy_field = env->GetFieldID(clazz, "mFy", "F");
+    jfieldID model_field = env->GetFieldID(clazz, "mModelValue", "I");
 
 
     env->SetIntField(intrinsics, width_field, intr.width);
@@ -101,7 +101,7 @@ Java_com_intel_realsense_librealsense_StreamProfile_nGetIntrinsics(JNIEnv *env, 
     env->SetIntField(intrinsics, model_field, intr.model);
 
     //retrieving the array member
-    jfieldID coeff_field = env->GetFieldID(clazz, "coeffs", "[F");
+    jfieldID coeff_field = env->GetFieldID(clazz, "mCoeffs", "[F");
     jfloatArray coeffsArray = env->NewFloatArray(5);
     if (coeffsArray != NULL)
     {

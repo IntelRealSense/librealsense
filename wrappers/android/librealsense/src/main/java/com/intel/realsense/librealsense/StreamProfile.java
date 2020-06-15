@@ -46,6 +46,7 @@ public class StreamProfile extends LrsClass {
     public Intrinsics getIntrinsics() throws Exception {
         Intrinsics intrinsics = new Intrinsics();
         nGetIntrinsics(mHandle, intrinsics);
+        intrinsics.SetModel();
         return intrinsics;
     }
 
