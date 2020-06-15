@@ -359,7 +359,11 @@ namespace librealsense
 
     void l500_device::notify_of_calibration_change( rs2_calibration_status status )
     {
-        AC_LOG( DEBUG, ".,_,.-'``'-.,_,.-'``'- status= " << status );
+        std::time_t now = std::time( nullptr );
+        auto ptm = localtime( &now );
+        char buf[256];
+        strftime( buf, sizeof( buf ), "%T", ptm );
+        AC_LOG( DEBUG, ".,_,.-'``'-.,_,.-'``'-   " << buf << "   status= " << status );
         for( auto&& cb : _calibration_change_callbacks )
             cb->on_calibration_change( status );
     }
@@ -378,6 +382,7 @@ namespace librealsense
         if( _autocal->is_active() )
             throw wrong_api_call_sequence_exception( "calibration is already active" );
 
+        AC_LOG( INFO, "Depth-to-RGB calibration has been manually triggered" );
         _autocal->trigger_calibration();
     }
 

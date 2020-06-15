@@ -271,7 +271,7 @@ namespace ivcam2 {
                     << ".ac_log";
 
                 _f.open( filename );
-                if( _f )
+                if( _f  &&  _to_stdout )
                     std::cout << "-D- AC log is being written to: " << filename << std::endl;
             }
 
@@ -289,7 +289,8 @@ namespace ivcam2 {
             ss << "-" << "DIWE"[severity] << "- ";
             ss << (raw + 5);
             std::string text = ss.str();
-            std::cout << text << std::endl;
+            if( _to_stdout )
+                std::cout << text << std::endl;
             if( _f )
                 _f << text << std::endl;
         }
@@ -353,6 +354,7 @@ namespace ivcam2 {
             _n_cycles = 1;          // now active
             _next_trigger.reset();  // don't need a trigger any more
             _temp_check.reset();    // nor a temperature check
+            _recycler.reset();      // just in case
             AC_LOG( DEBUG, "Sending GET_SPECIAL_FRAME (cycle 1); now active..." );
         }
         command cmd{ GET_SPECIAL_FRAME, 0x5F, 1 };  // 5F = SF = Special Frame, for easy recognition
