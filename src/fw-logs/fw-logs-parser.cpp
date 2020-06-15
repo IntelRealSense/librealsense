@@ -12,8 +12,8 @@ namespace librealsense
 {
     namespace fw_logs
     {
-        fw_logs_parser::fw_logs_parser(string xml_full_file_path)
-            : _fw_logs_formating_options(xml_full_file_path),
+        fw_logs_parser::fw_logs_parser(string xml_content)
+            : _fw_logs_formating_options(xml_content),
             _last_timestamp(0),
             _timestamp_factor(0.00001)
         {

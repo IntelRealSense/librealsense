@@ -31,7 +31,7 @@ namespace librealsense
         class fw_logs_formating_options
         {
         public:
-            fw_logs_formating_options(const std::string& xml_full_file_path);
+            fw_logs_formating_options(const std::string& xml_content);
             ~fw_logs_formating_options(void);
 
 
@@ -48,7 +48,7 @@ namespace librealsense
             std::unordered_map<int, std::string> _fw_logs_thread_names_list;
             std::unordered_map<std::string, std::vector<std::pair<int, std::string>>> _fw_logs_enum_names_list;
 
-            std::string _xml_full_file_path;
+            std::string _xml_content;
         };
     }
 }

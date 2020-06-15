@@ -21,8 +21,8 @@ namespace librealsense
         {}
 
 
-        fw_logs_formating_options::fw_logs_formating_options(const string& xml_full_file_path)
-            : _xml_full_file_path(xml_full_file_path)
+        fw_logs_formating_options::fw_logs_formating_options(const string& xml_content)
+            : _xml_content(xml_content)
         {}
 
 
@@ -87,7 +87,7 @@ namespace librealsense
 
         bool fw_logs_formating_options::initialize_from_xml()
         {
-            fw_logs_xml_helper fw_logs_xml(_xml_full_file_path);
+            fw_logs_xml_helper fw_logs_xml(_xml_content);
             return fw_logs_xml.build_log_meta_data(this);
         }
     }

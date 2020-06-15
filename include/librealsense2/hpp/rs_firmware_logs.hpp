@@ -179,11 +179,11 @@ namespace rs2
             return flash_log_pulling_status;
         }
 
-        bool init_parser(const std::string& xml_path)
+        bool init_parser(const std::string& xml_content)
         {
             rs2_error* e = nullptr;
 
-            bool parser_initialized = rs2_init_parser(_dev.get(), xml_path.c_str(), &e);
+            bool parser_initialized = rs2_init_parser(_dev.get(), xml_content.c_str(), &e);
             error::handle(e);
 
             return parser_initialized;

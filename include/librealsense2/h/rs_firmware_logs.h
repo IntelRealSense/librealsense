@@ -82,12 +82,12 @@ rs2_log_severity rs2_firmware_log_message_severity(const rs2_firmware_log_messag
 
 /**
 * \brief Initializes RealSense firmware logs parser in device.
-* \param[in] dev	    Device from which the FW log will be taken
-* \param[in] xml_path	path to xml file needed for parsing
-* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
-* \return               true for success, false for failure - failure happens if opening the xml from the xml_path input fails
+* \param[in] dev	        Device from which the FW log will be taken
+* \param[in] xml_content	content of the xml file needed for parsing
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return                   true for success, false for failure - failure happens if opening the xml from the xml_path input fails
 */
-int rs2_init_parser(rs2_device* dev, const char* xml_path, rs2_error** error);
+int rs2_init_parser(rs2_device* dev, const char* xml_content, rs2_error** error);
 
 
 /**

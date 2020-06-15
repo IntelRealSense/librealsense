@@ -75,7 +75,8 @@ int main(int argc, char * argv[])
             ifstream f(xml_full_file_path);
             if (f.good())
             {
-                bool parser_initialized = fw_log_device.init_parser(xml_full_file_path);
+                std::string xml_content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+                bool parser_initialized = fw_log_device.init_parser(xml_content);
                 if (parser_initialized)
                     using_parser = true;
             }

@@ -119,9 +119,9 @@ namespace librealsense
         return result;
     }
 
-    bool firmware_logger_device::init_parser(std::string xml_full_file_path)
+    bool firmware_logger_device::init_parser(std::string xml_content)
     {
-        _parser = new fw_logs::fw_logs_parser(xml_full_file_path);
+        _parser = new fw_logs::fw_logs_parser(xml_content);
 
         return (_parser != nullptr);
     }

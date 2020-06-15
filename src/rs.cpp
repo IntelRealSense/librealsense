@@ -3056,15 +3056,15 @@ unsigned int rs2_firmware_log_message_timestamp(rs2_firmware_log_message* msg, r
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, msg)
 
-int rs2_init_parser(rs2_device* dev, const char* xml_path ,rs2_error** error) BEGIN_API_CALL
+int rs2_init_parser(rs2_device* dev, const char* xml_content,rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(xml_path);
+    VALIDATE_NOT_NULL(xml_content);
     
     auto fw_loggerable = VALIDATE_INTERFACE(dev->device, librealsense::firmware_logger_extensions);
 
-    return (fw_loggerable->init_parser(xml_path)) ? 1 : 0;
+    return (fw_loggerable->init_parser(xml_content)) ? 1 : 0;
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, xml_path)
+HANDLE_EXCEPTIONS_AND_RETURN(0, xml_content)
 
 rs2_firmware_log_parsed_message* rs2_create_firmware_log_parsed_message(rs2_device* dev, rs2_error** error)BEGIN_API_CALL
 {

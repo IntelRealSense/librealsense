@@ -12,9 +12,9 @@ namespace librealsense
 {
     namespace fw_logs
     {
-        fw_logs_xml_helper::fw_logs_xml_helper(string xml_full_file_path)
+        fw_logs_xml_helper::fw_logs_xml_helper(string xml_content)
             : _init_done(false),
-            _xml_full_file_path(xml_full_file_path)
+            _xml_content(xml_content)
         {}
 
 
@@ -38,15 +38,13 @@ namespace librealsense
         {
             try
             {
-                if (_xml_full_file_path.empty())
+                if (_xml_content.empty())
                     return false;
 
-                rapidxml::file<> xml_file(_xml_full_file_path.c_str());
-
-                _document_buffer.resize(xml_file.size() + 2);
-                memcpy(_document_buffer.data(), xml_file.data(), xml_file.size());
-                _document_buffer[xml_file.size()] = '\0';
-                _document_buffer[xml_file.size() + 1] = '\0';
+                _document_buffer.resize(_xml_content.size() + 2);
+                memcpy(_document_buffer.data(), _xml_content.data(), _xml_content.size());
+                _document_buffer[_xml_content.size()] = '\0';
+                _document_buffer[_xml_content.size() + 1] = '\0';
                 _xml_doc.parse<0>(_document_buffer.data());
 
                 return true;
