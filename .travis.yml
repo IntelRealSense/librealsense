@@ -100,7 +100,7 @@ matrix:
 before_install:
   - cd scripts && ./api_check.sh && cd ..
   - if [[ "$LRS_BUILD_NODEJS" == "true" ]]; then
-      nvm use 6;
+      nvm use 10;
       npm install -g node-gyp;
       npm install -g mocha;
       git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git;
