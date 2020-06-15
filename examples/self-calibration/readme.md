@@ -1,4 +1,4 @@
-# rs-hello-realsense Sample
+# rs-self-calibration Sample
 
 ## Overview
 
