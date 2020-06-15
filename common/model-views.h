@@ -113,6 +113,8 @@ inline ImVec4 blend(const ImVec4& c, float a)
 
 namespace rs2
 {
+    constexpr const char* server_versions_db_url = "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/rs_versions_db.json";
+    
     void prepare_config_file();
 
     bool frame_metadata_to_csv(const std::string& filename, rs2::frame frame);
@@ -158,9 +160,11 @@ namespace rs2
         }
         namespace update
         {
-            static const char* allow_rc_firmware   { "update.allow_rc_firmware" };
-            static const char* recommend_updates   { "update.recommend_updates" };
-            static const char* recommend_calibration { "update.recommend_calibration" };
+            static const char* allow_rc_firmware            { "update.allow_rc_firmware" };
+            static const char* recommend_updates            { "update.recommend_updates" };
+            static const char* recommend_calibration        { "update.recommend_calibration" };
+            static const char* sw_updates_url               { "update.sw_update_url" };
+            static const char* sw_updates_official_server   { "update.sw_update_official_server" };
         }
         namespace viewer
         {
