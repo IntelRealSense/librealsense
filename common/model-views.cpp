@@ -41,9 +41,6 @@ using namespace rs400;
 using namespace nlohmann;
 using namespace rs2::sw_update;
 
-constexpr const char* server_versions_db_url = "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/rs_versions_db.json";
-
-
 static rs2_sensor_mode resolution_from_width_height(int width, int height)
 {
     if ((width == 640 && height == 480) || (height == 640 && width == 480))
@@ -4337,7 +4334,9 @@ namespace rs2
         {
             try
             {
-                sw_update::dev_updates_profile updates_profile(dev, server_versions_db_url);
+
+                auto server_url = config_file::instance().get(configurations::update::sw_updates_url);
+                sw_update::dev_updates_profile updates_profile(dev, server_url);
 
                 bool sw_update_required = updates_profile.retrieve_updates(versions_db_manager::LIBREALSENSE);
                 bool fw_update_required = updates_profile.retrieve_updates(versions_db_manager::FIRMWARE);
