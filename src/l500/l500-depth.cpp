@@ -396,12 +396,6 @@ namespace librealsense
 
     void l500_depth_sensor::stop()
     {
-        if( is_color_sensor_needed() )
-        {
-            auto & color_sensor = *_owner->get_color_sensor();
-            AC_LOG( INFO, "Stopping COLOR stream" );
-            color_sensor.stop();
-        }
         _action_delayer.do_after_delay([&]() {
             synthetic_sensor::stop();
             _depth_invalidation_option->set_streaming(false);
