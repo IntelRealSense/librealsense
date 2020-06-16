@@ -150,7 +150,7 @@ namespace librealsense
             else if (_pid == ds::RS455_PID)
             {
                 // D455 specific - Bosch BMI055
-                _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.03022f, -0.0074f, -0.01602f } };
+                _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.03022f, 0.0074f, 0.01602f } };
                 _imu_2_depth_rot = { { -1,0,0 },{ 0,1,0 },{ 0,0,-1 } };
             }
             else if (_pid == ds::RS405_PID)
@@ -299,7 +299,7 @@ namespace librealsense
             // up, z-axis acceleration is around +1g; 2) facing down, positive z-axis points down,
             // z-axis accleration would be around -1g
             rs2_extrinsics _def_extr;
-            _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ 0.01245f, -0.01642f, -0.00057f } };
+            _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.01245f, 0.01642f, 0.00057f } };
             _imu_2_depth_rot = { { -1, 0, 0 },{ 0, 1, 0 },{ 0, 0, -1 } };
 
             // default intrinsic in case no valid calibration data is available
