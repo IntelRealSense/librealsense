@@ -139,6 +139,8 @@ namespace librealsense
             }
 
             // predefined platform specific extrinsic, IMU assembly transformation based on mechanical drawing (meters)
+            rs2_extrinsics _def_extr;
+
             if (_pid == ds::RS435I_PID)
             {
                 // D435i specific - Bosch BMI055
@@ -175,7 +177,21 @@ namespace librealsense
             // default intrinsic in case no valid calibration data is available
             // scale = 1 and offset = 0
             _def_intr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ 0.0, 0.0, 0.0 } };
+
+            // handling extrinsic
+            if (_valid_extrinsic)
+            {
+                // extrinsic from calibration table, by user custom calibration, The extrinsic is stored as array of floats / little-endian
+                librealsense::copy(&_extr, &_calib_table.module_info.dm_v2_calib_table.depth_to_imu, sizeof(rs2_extrinsics));
+            }
+            else
+            {
+                LOG_INFO("IMU extrinsic table not found; using CAD values");
+                // default extrinsic based on mechanical drawing
+                _extr = _def_extr;
+            }
         }
+
         dm_v2_imu_calib_parser(const dm_v2_imu_calib_parser&);
         virtual ~dm_v2_imu_calib_parser() {}
 
@@ -186,19 +202,7 @@ namespace librealsense
             if (!(RS2_STREAM_ACCEL == stream) && !(RS2_STREAM_GYRO == stream))
                 throw std::runtime_error(to_string() << "Depth Module V2 does not support extrinsic for : " << rs2_stream_to_string(stream) << " !");
 
-            rs2_extrinsics extr;
-            if (_valid_extrinsic)
-            {
-                // The extrinsic is stored as array of floats / little-endian
-                librealsense::copy(&extr, &_calib_table.module_info.dm_v2_calib_table.depth_to_imu, sizeof(rs2_extrinsics));
-            }
-            else
-            {
-                LOG_INFO("IMU extrinsic table not found; using CAD values");
-                // D435i specific - BMI055 assembly transformation based on mechanical drawing (mm)
-                extr = _def_extr;
-            }
-            return extr;
+            return _extr;
         }
 
         ds::imu_intrinsic get_intrinsic(rs2_stream stream)
@@ -238,7 +242,7 @@ namespace librealsense
 
     private:
         ds::dm_v2_eeprom    _calib_table;
-        rs2_extrinsics      _def_extr;
+        rs2_extrinsics      _extr;
         float3x3            _imu_2_depth_rot;
         ds::dm_v2_imu_intrinsic _def_intr;
         bool                _valid_intrinsic;
@@ -294,12 +298,27 @@ namespace librealsense
             // the device, 1) if place the device flat on a table, facing up, positive z-axis points
             // up, z-axis acceleration is around +1g; 2) facing down, positive z-axis points down,
             // z-axis accleration would be around -1g
+            rs2_extrinsics _def_extr;
             _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ 0.01245f, -0.01642f, -0.00057f } };
             _imu_2_depth_rot = { { -1, 0, 0 },{ 0, 1, 0 },{ 0, 0, -1 } };
 
             // default intrinsic in case no valid calibration data is available
             // scale = 1 and offset = 0
             _def_intr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ 0.0, 0.0, 0.0 } };
+
+
+            // handling extrinsic
+            if (_valid_extrinsic)
+            {
+                // only in case valid extrinsic is available in calibration data by calibration script in future or user custom calibration
+                librealsense::copy(&_extr, &imu_calib_table.depth_to_imu, sizeof(rs2_extrinsics));
+            }
+            else
+            {
+                // L515 - BMI085 assembly transformation based on mechanical drawing
+                LOG_INFO("IMU extrinsic using CAD values");
+                _extr = _def_extr;
+            }
         }
 
         virtual ~l500_imu_calib_parser() {}
@@ -346,25 +365,12 @@ namespace librealsense
             if (!(RS2_STREAM_ACCEL == stream) && !(RS2_STREAM_GYRO == stream))
                 throw std::runtime_error(to_string() << "L515 does not support extrinsic for : " << rs2_stream_to_string(stream) << " !");
 
-            rs2_extrinsics extr;
-
-            if (_valid_extrinsic)
-            {
-                // only in case valid extrinsic is available in calibration data by calibration script in future or user custom calibration
-                librealsense::copy(&extr, &imu_calib_table.depth_to_imu, sizeof(rs2_extrinsics));
-            }
-            else
-            {
-                // L515 - BMI085 assembly transformation based on mechanical drawing
-                LOG_INFO("IMU extrinsic using CAD values");
-                extr = _def_extr;
-            }
-            return extr;
+            return _extr;
         }
 
     private:
         ds::dm_v2_calibration_table  imu_calib_table;
-        rs2_extrinsics      _def_extr;
+        rs2_extrinsics      _extr;
         float3x3            _imu_2_depth_rot;
         ds::dm_v2_imu_intrinsic _def_intr;
         bool                _valid_intrinsic;
