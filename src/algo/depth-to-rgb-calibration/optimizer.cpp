@@ -1632,7 +1632,6 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
     double last_cost = _params_curr.cost;
     
     auto n_iterations = optimize_p(_params_curr, new_vertices, new_params, _optimaized_calibration, new_calib, new_k_depth, cb, &data);
-    AC_LOG(DEBUG, n_iterations);
 
     _z.orig_vertices = _z.vertices;
     rs2_dsm_params_double new_dsm_params = _z.orig_dsm_params;

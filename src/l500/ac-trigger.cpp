@@ -361,7 +361,14 @@ namespace ivcam2 {
             AC_LOG( DEBUG, "Sending GET_SPECIAL_FRAME (cycle 1); now active..." );
         }
         command cmd{ GET_SPECIAL_FRAME, 0x5F, 1 };  // 5F = SF = Special Frame, for easy recognition
-        auto res = _hwm.send( cmd );
+        try
+        {
+            _hwm.send( cmd );
+        }
+        catch( std::exception const & e )
+        {
+            AC_LOG( ERROR, "EXCEPTION caught: " << e.what() );
+        }
         // Start a timer: enable retries if something's wrong with the special frame
         _retrier = retrier::start( *this, std::chrono::seconds( get_retry_sf_seconds() ) );
     }
