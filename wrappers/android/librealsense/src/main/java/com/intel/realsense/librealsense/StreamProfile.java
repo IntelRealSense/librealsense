@@ -49,6 +49,11 @@ public class StreamProfile extends LrsClass {
         return extrinsic;
     }
 
+    public void registerExtrinsicTo(StreamProfile other, Extrinsic extrinsic)
+    {
+        nRegisterExtrinsicTo(mHandle, other.mHandle, extrinsic);
+    }
+
     public boolean is(Extension extension) {
         return nIsProfileExtendableTo(mHandle, extension.value());
     }
@@ -71,4 +76,5 @@ public class StreamProfile extends LrsClass {
     private static native void nGetProfile(long handle, ProfileParams params);
     private static native void nDelete(long handle);
     private static native void nGetExtrinsicTo(long handle, long otherHandle, Extrinsic extrinsic);
+    private static native void nRegisterExtrinsicTo(long handle, long otherHandle, Extrinsic extrinsic);
 }

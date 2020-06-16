@@ -2,6 +2,7 @@
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
 #include <jni.h>
+#include <cstring>      //for memcpy
 #include "error.h"
 #include "../../../include/librealsense2/rs.h"
 
@@ -107,6 +108,38 @@ Java_com_intel_realsense_librealsense_StreamProfile_nGetExtrinsicTo(JNIEnv *env,
         env->SetFloatArrayRegion(translationArray, 0, 3, reinterpret_cast<jfloat*>(&extr.translation));
     }
     env->SetObjectField(extrinsic, translation_field, translationArray);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_StreamProfile_nRegisterExtrinsicTo(JNIEnv *env, jclass type,
+                                                                       jlong handle, jlong otherHandle,
+                                                                       jobject extrinsic)
+{
+    rs2_error* e = nullptr;
+    rs2_extrinsics extr;
+
+    //fill c++ extrinsic from java extrinsic data
+    jclass clazz = env->GetObjectClass(extrinsic);
+    //fill rotation
+    jfieldID rotation_field = env->GetFieldID(clazz, "mRotation", "[F");
+    jobject rotationObject = env->GetObjectField(extrinsic, rotation_field);
+    jfloatArray* rotationArray = reinterpret_cast<jfloatArray *>(&rotationObject);
+    jfloat * rotation = env->GetFloatArrayElements(*rotationArray, NULL);
+    memcpy(extr.rotation, rotation, 9 * sizeof(float));
+    env->ReleaseFloatArrayElements(*rotationArray, rotation, 0);
+    //fill translation
+    jfieldID translation_field = env->GetFieldID(clazz, "mTranslation", "[F");
+    jobject translationObject = env->GetObjectField(extrinsic, translation_field);
+    jfloatArray* translationArray = reinterpret_cast<jfloatArray *>(&translationObject);
+    jfloat * translation = env->GetFloatArrayElements(*translationArray, NULL);
+    memcpy(extr.translation, translation, 9 * sizeof(float));
+    env->ReleaseFloatArrayElements(*translationArray, translation, 0);
+
+    //calling the api method
+    rs2_register_extrinsics(reinterpret_cast<const rs2_stream_profile *>(handle),
+                       reinterpret_cast<const rs2_stream_profile *>(otherHandle), extr, &e);
+    handle_error(env, e);
 }
 
 extern "C"
