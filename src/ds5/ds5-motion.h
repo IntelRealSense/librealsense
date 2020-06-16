@@ -138,6 +138,8 @@ namespace librealsense
                 }
             }
 
+            // TODO - review possibly refactor into a map if necessary
+            //
             // predefined platform specific extrinsic, IMU assembly transformation based on mechanical drawing (meters)
             rs2_extrinsics _def_extr;
 
@@ -169,9 +171,12 @@ namespace librealsense
             }
             else // unmapped configurations
             {
+                // IMU on new devices is oriented such that FW output is consistent with D435i
+                // use same rotation matrix as D435i so that librealsense output from unsupported
+                // devices will still be correctly aligned with depth coordinate system.
                 _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ 0.f, 0.f, 0.f } };
                 _imu_2_depth_rot = { { -1,0,0 },{ 0,1,0 },{ 0,0,-1 } };
-                LOG_ERROR("Undefined platform with IMU, use default intrinsic/extrinsic data");
+                LOG_ERROR("Undefined platform with IMU, use default intrinsic/extrinsic data, PID: " << _pid);
             }
 
             // default intrinsic in case no valid calibration data is available
