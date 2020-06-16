@@ -112,8 +112,8 @@ Java_com_intel_realsense_librealsense_StreamProfile_nGetExtrinsicTo(JNIEnv *env,
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_intel_realsense_librealsense_StreamProfile_nRegisterExtrinsicTo(JNIEnv *env, jclass type,
-                                                                       jlong handle, jlong otherHandle,
+Java_com_intel_realsense_librealsense_StreamProfile_nRegisterExtrinsic(JNIEnv *env, jclass type,
+                                                                       jlong fromHandle, jlong toHandle,
                                                                        jobject extrinsic)
 {
     rs2_error* e = nullptr;
@@ -137,8 +137,8 @@ Java_com_intel_realsense_librealsense_StreamProfile_nRegisterExtrinsicTo(JNIEnv 
     env->ReleaseFloatArrayElements(*translationArray, translation, 0);
 
     //calling the api method
-    rs2_register_extrinsics(reinterpret_cast<const rs2_stream_profile *>(handle),
-                       reinterpret_cast<const rs2_stream_profile *>(otherHandle), extr, &e);
+    rs2_register_extrinsics(reinterpret_cast<const rs2_stream_profile *>(fromHandle),
+                       reinterpret_cast<const rs2_stream_profile *>(toHandle), extr, &e);
     handle_error(env, e);
 }
 
