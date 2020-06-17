@@ -142,7 +142,8 @@ namespace librealsense
 
     void l500_options::change_preset(rs2_l500_visual_preset preset)
     {
-        if (preset != RS2_L500_VISUAL_PRESET_CUSTOM)
+        if ((preset != RS2_L500_VISUAL_PRESET_CUSTOM) &&
+            (preset != RS2_L500_VISUAL_PRESET_DEFAULT))
             reset_hw_controls();
 
         switch (preset)
@@ -163,6 +164,11 @@ namespace librealsense
             break;
         case RS2_L500_VISUAL_PRESET_CUSTOM:
             move_to_custom();
+            break;
+        case RS2_L500_VISUAL_PRESET_DEFAULT:
+            throw  invalid_value_exception(to_string() << "the Default preset signifies that the controls have not been changed \n"
+                                                           "since initialization, the API does not support changing back to this state.\n"
+                                                           "Please choose one of the other presets");
             break;
         default: break;
         };
