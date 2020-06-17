@@ -48,7 +48,8 @@ namespace librealsense
         auto res = _hw_monitor->send(_input_code_for_fw_logs);
         if (res.empty())
         {
-            throw std::runtime_error("Getting Firmware logs failed!");
+            LOG_INFO("Getting Firmware logs failed!");
+            return;
         }
 
         //erasing header
@@ -71,24 +72,21 @@ namespace librealsense
 
     void firmware_logger_device::get_flash_logs_from_hw_monitor()
     {
-        int size_of_flash_logs_header = 31;
+        int size_of_flash_logs_header = 27;
         auto res = _hw_monitor->send(_input_code_for_flash_logs);
         if (res.empty())
         {
-            throw std::runtime_error("Getting Flash logs failed!");
+            LOG_INFO("Getting Flash logs failed!");
+            return;
         }
-
-        int limit = static_cast<uint32_t>(res[0] + (res[1] << 8) + (res[2] << 16) + (res[3] << 24));
 
         //erasing header
         res.erase(res.begin(), res.begin() + size_of_flash_logs_header);
 
         auto beginOfLogIterator = res.begin();
-        // convert bytes to fw_logs_binary_data
-        for (int i = 0; i < limit; ++i)
+        // convert bytes to flash_logs_binary_data
+        for (int i = 0; i < res.size() / fw_logs::BINARY_DATA_SIZE && *beginOfLogIterator == 160; ++i)
         {
-            if (*beginOfLogIterator == 0)
-                break;
             auto endOfLogIterator = beginOfLogIterator + fw_logs::BINARY_DATA_SIZE;
             std::vector<uint8_t> resultsForOneLog;
             resultsForOneLog.insert(resultsForOneLog.begin(), beginOfLogIterator, endOfLogIterator);
