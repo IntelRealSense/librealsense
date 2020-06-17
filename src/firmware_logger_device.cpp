@@ -73,10 +73,10 @@ namespace librealsense
         {L500_RECOVERY_PID       , command{ ivcam2::FRB, 0x0011E000, 0x3f8  }},
         {L500_PID                , command{ ivcam2::FRB, 0x0011E000, 0x3f8  }},
         {L515_PID_PRE_PRQ        , command{ ivcam2::FRB, 0x0011E000, 0x3f8  }},
-        {L515_PID                , command{ ivcam2::FRB, 0x0011E000, 0x3f8  }}/*,
-        {SR300_PID               , command{ ivcam2::FRB, 0x0011E000, 0x3f8  }},
-        {SR300v2_PID             , command{ ivcam2::FRB, 0x0011E000, 0x3f8  }},
-        {SR300_RECOVERY          , command{ ivcam2::FRB, 0x0011E000, 0x3f8  }}*/
+        {L515_PID                , command{ ivcam2::FRB, 0x0011E000, 0x3f8  }},
+        {SR300_PID               , command{ ivcam::FlashRead, 0x000B6000, 0x3f8  }},
+        {SR300v2_PID             , command{ ivcam::FlashRead, 0x000B6000, 0x3f8  }},
+        {SR300_RECOVERY          , command{ ivcam::FlashRead, 0x000B6000, 0x3f8  }}
     };
 
 
