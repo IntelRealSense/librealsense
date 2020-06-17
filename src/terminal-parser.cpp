@@ -18,7 +18,7 @@ namespace librealsense
 	}
 
 
-    std::vector<uint8_t> terminal_parser::parse_command(const std::string& line)
+    std::vector<uint8_t> terminal_parser::parse_command(const std::string& line) const
     {
         command_from_xml command;
         vector<string> params;
@@ -37,7 +37,7 @@ namespace librealsense
     }
 
     std::vector<uint8_t> terminal_parser::parse_response(const std::string& line,
-        const std::vector<uint8_t>& response)
+        const std::vector<uint8_t>& response) const
     {
         command_from_xml command;
         vector<string> params;
@@ -57,19 +57,17 @@ namespace librealsense
         {
             string data;
             decode_string_from_raw_data(command, _cmd_xml.custom_formatters, response.data(), response.size(), data, _format_type_to_lambda);
-            //cout << endl << data << endl;
             vector<uint8_t> data_vec;
             data_vec.insert(data_vec.begin(), data.begin(), data.end());
             return data_vec;
         }
         else
         {
-            //cout << endl << "Done!" << endl;
             return response;
         }
     }
 
-    vector<uint8_t> terminal_parser::build_raw_command_data(const command_from_xml& command, const vector<string>& params)
+    vector<uint8_t> terminal_parser::build_raw_command_data(const command_from_xml& command, const vector<string>& params) const
     {
         if (params.size() > command.parameters.size() && !command.is_cmd_write_data)
             throw runtime_error("Input string was not in a correct format!");
@@ -91,7 +89,7 @@ namespace librealsense
     }
 
     void terminal_parser::get_command_and_params_from_input(const std::string& line, command_from_xml& command,
-        vector<string>& params)
+        vector<string>& params) const
     {
         vector<string> tokens;
         stringstream ss(line);
@@ -117,3 +115,4 @@ namespace librealsense
     }
 
 }
+
