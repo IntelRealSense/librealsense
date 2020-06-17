@@ -13,7 +13,7 @@ namespace librealsense
 	class terminal_parser
 	{
 	public:
-		terminal_parser(const std::string& xml_full_file_path);
+		terminal_parser(const std::string& xml_content);
 
 
 		std::vector<uint8_t> parse_command(const std::string& command);

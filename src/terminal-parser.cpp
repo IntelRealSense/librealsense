@@ -8,20 +8,12 @@ namespace librealsense
 
     using namespace std;
 
-	terminal_parser::terminal_parser(const std::string& xml_full_file_path)
+	terminal_parser::terminal_parser(const std::string& xml_content)
 	{
-		if (!xml_full_file_path.empty())
+		if (!xml_content.empty())
 		{
-			auto sts = parse_xml_from_file(xml_full_file_path, _cmd_xml);
-			if (!sts)
-			{
-				//cout << "Provided XML not found!\n";
-				return;
-				//TODO - Remi check this case - providing xml content instead of path sould solve this
-			}
-
+            parse_xml_from_memory(xml_content.c_str(), _cmd_xml);
 			update_format_type_to_lambda(_format_type_to_lambda);
-			//cout << "Commands XML file - " << xml_full_file_path << " was loaded successfully. Type commands by name (e.g.'gvd'`).\n";
 		}
 	}
 

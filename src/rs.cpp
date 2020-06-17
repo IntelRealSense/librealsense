@@ -2969,12 +2969,12 @@ void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_s
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, json_content, content_size)
 
-rs2_terminal_parser* rs2_create_terminal_parser(const char* xml_path, rs2_error** error) BEGIN_API_CALL
+rs2_terminal_parser* rs2_create_terminal_parser(const char* xml_content, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(xml_path);
-    return new rs2_terminal_parser{ std::make_shared<librealsense::terminal_parser>(std::string(xml_path)) };
+    VALIDATE_NOT_NULL(xml_content);
+    return new rs2_terminal_parser{ std::make_shared<librealsense::terminal_parser>(std::string(xml_content)) };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, xml_path)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, xml_content)
 
 void rs2_delete_terminal_parser(rs2_terminal_parser* terminal_parser) BEGIN_API_CALL
 {
