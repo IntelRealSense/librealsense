@@ -178,6 +178,12 @@ namespace librealsense
             intrinsics.fy = intrinsic_params.pinhole_cam_model.ipm.focal_length.y;
             intrinsics.ppx = intrinsic_params.pinhole_cam_model.ipm.principal_point.x;
             intrinsics.ppy = intrinsic_params.pinhole_cam_model.ipm.principal_point.y;
+            intrinsics.coeffs[0] = 0;
+            intrinsics.coeffs[1] = 0;
+            intrinsics.coeffs[2] = 0;
+            intrinsics.coeffs[3] = 0;
+            intrinsics.coeffs[4] = 0;
+            intrinsics.model = RS2_DISTORTION_NONE;
             return intrinsics;
         }
 
