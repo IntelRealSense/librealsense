@@ -117,16 +117,31 @@ namespace librealsense
         hid_ep->get_option(RS2_OPTION_GLOBAL_TIME_ENABLED).set(0);
         hid_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
 
+        // register pre-processing
+        std::shared_ptr<enable_motion_correction> mm_correct_opt = nullptr;
+
+        //  Motion intrinsic calibration presents is a prerequisite for motion correction.
+        try
+        {
+            // L515 motion correction with IMU supported from FW version 01.04.01.00
+            if (_fw_version >= firmware_version("1.4.1.0") && _mm_calib)
+            {
+                mm_correct_opt = std::make_shared<enable_motion_correction>(hid_ep.get(), option_range{ 0, 1, 1, 1 });
+                hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION, mm_correct_opt);
+            }
+        }
+        catch (...) {}
+
         hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
-            []() { return std::make_shared<acceleration_transform>(); }
+            [&, mm_correct_opt]() { return std::make_shared<acceleration_transform>(_mm_calib, mm_correct_opt); }
         );
 
         hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
-            []() { return std::make_shared<gyroscope_transform>(); }
+            [&, mm_correct_opt]() { return std::make_shared<gyroscope_transform>(_mm_calib, mm_correct_opt); }
         );
 
         return hid_ep;
@@ -137,6 +152,28 @@ namespace librealsense
           _accel_stream(new stream(RS2_STREAM_ACCEL)),
          _gyro_stream(new stream(RS2_STREAM_GYRO))
     {
+        std::vector<platform::hid_device_info> hid_infos = group.hid_devices;
+
+        if (!hid_infos.empty())
+        {
+            // product id
+            _pid = static_cast<uint16_t>(strtoul(hid_infos.front().pid.data(), nullptr, 16));
+
+            // motion correction
+            _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _pid);
+            _accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
+            _gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
+
+            // use predefined extrinsics
+            _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
+        }
+
+        // Make sure all MM streams are positioned with the same extrinsics
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_accel_stream, _depth_to_imu);
+        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gyro_stream);
+        register_stream_to_extrinsic_group(*_gyro_stream, 0);
+        register_stream_to_extrinsic_group(*_accel_stream, 0);
+
         auto hid_ep = create_hid_device(ctx, group.hid_devices);
         if (hid_ep)
         {
@@ -155,8 +192,15 @@ namespace librealsense
         return tags;
     }
 
-    rs2_motion_device_intrinsic l500_motion::get_motion_intrinsics(rs2_stream) const
+    rs2_motion_device_intrinsic l500_motion::get_motion_intrinsics(rs2_stream stream) const
     {
-        return rs2_motion_device_intrinsic();
+        if (stream == RS2_STREAM_ACCEL)
+            return create_motion_intrinsics(**_accel_intrinsic);
+
+        if (stream == RS2_STREAM_GYRO)
+            return create_motion_intrinsics(**_gyro_intrinsic);
+
+        throw std::runtime_error(to_string() << "Motion Intrinsics unknown for stream " << rs2_stream_to_string(stream) << "!");
+
     }
 }

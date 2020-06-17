@@ -54,26 +54,6 @@ namespace librealsense
         hid_sensor& _ep;
     };
 
-    class enable_motion_correction : public option_base
-    {
-    public:
-        void set(float value) override;
-
-        float query() const override;
-
-        bool is_enabled() const override { return true; }
-
-        const char* get_description() const override
-        {
-            return "Enable/Disable Automatic Motion Data Correction";
-        }
-
-        enable_motion_correction(sensor_base* mm_ep, const option_range& opt_range);
-
-    private:
-        std::atomic<bool>   _is_active;
-    };
-
     class enable_auto_exposure_option : public option_base
     {
     public:
