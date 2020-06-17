@@ -244,6 +244,7 @@ typedef struct rs2_options_list rs2_options_list;
 typedef struct rs2_devices_changed_callback rs2_devices_changed_callback;
 typedef struct rs2_notification rs2_notification;
 typedef struct rs2_notifications_callback rs2_notifications_callback;
+typedef struct rs2_terminal_parser rs2_terminal_parser;
 typedef void (*rs2_log_callback_ptr)(rs2_log_severity, rs2_log_message const *, void * arg);
 typedef void (*rs2_notification_callback_ptr)(rs2_notification*, void*);
 typedef void(*rs2_software_device_destruction_callback_ptr)(void*);

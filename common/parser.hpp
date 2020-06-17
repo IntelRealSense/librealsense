@@ -160,7 +160,7 @@ struct custom_formatter {
     std::vector<kvp> kv;
 };
 
-struct command
+typedef struct command
 {
     std::string name;
     unsigned int op_code;
@@ -179,7 +179,7 @@ struct command
 
     data read_data;
     std::vector<parameter> parameters;
-};
+} command_from_xml;
 
 // units of nibbles
 enum FormatSize {
@@ -190,7 +190,7 @@ enum FormatSize {
 
 struct commands_xml
 {
-    std::map<std::string, command> commands;
+    std::map<std::string, command_from_xml> commands;
     std::map<std::string, custom_formatter> custom_formatters;
 };
 
@@ -253,7 +253,7 @@ inline void parse_xml_from_memory(const char * content, commands_xml& cmd_xml)
     {
         if (!strcmp(NodeI->name(), "Command"))
         {
-            command cmd;
+            command_from_xml cmd;
             for (auto AttI = NodeI->first_attribute(); AttI; AttI = AttI->next_attribute())
             {
                 std::string value = AttI->value();
@@ -323,7 +323,7 @@ inline void parse_xml_from_memory(const char * content, commands_xml& cmd_xml)
                     }
                 }
             }
-            cmd_xml.commands.insert(std::pair<std::string, command>(to_lower(cmd.name), cmd));
+            cmd_xml.commands.insert(std::pair<std::string, command_from_xml>(to_lower(cmd.name), cmd));
         }
         else if (!strcmp(NodeI->name(), "CustomFormatter"))
         {
@@ -538,7 +538,7 @@ inline void update_sections_data(const uint8_t* data_offset, std::vector<section
     }
 }
 
-inline void decode_string_from_raw_data(const command& command, const std::map<std::string, custom_formatter>& custom_formatters, const uint8_t* raw_data_offset, size_t data_size, std::string& output, const std::map<std::string, xml_parser_function>& format_type_to_lambda)
+inline void decode_string_from_raw_data(const command_from_xml& command, const std::map<std::string, custom_formatter>& custom_formatters, const uint8_t* raw_data_offset, size_t data_size, std::string& output, const std::map<std::string, xml_parser_function>& format_type_to_lambda)
 {
     auto data_offset = raw_data_offset + 4;
     data_size -= 4;
@@ -675,7 +675,7 @@ inline void decode_string_from_raw_data(const command& command, const std::map<s
     output = ss_output.str();
 }
 
-inline void encode_raw_data_command(const command& xml_cmd_info, const std::vector<parameter>& params, std::vector<uint8_t>& raw_data)
+inline void encode_raw_data_command(const command_from_xml& xml_cmd_info, const std::vector<parameter>& params, std::vector<uint8_t>& raw_data)
 {
     auto cmd_op_code = xml_cmd_info.op_code;
     auto is_cmd_writes_data = xml_cmd_info.is_cmd_write_data;
