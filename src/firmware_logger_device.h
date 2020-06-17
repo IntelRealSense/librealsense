@@ -26,7 +26,8 @@ namespace librealsense
 	class firmware_logger_device : public virtual device, public firmware_logger_extensions
 	{
 	public:
-		firmware_logger_device(std::shared_ptr<hw_monitor> hardware_monitor);
+		firmware_logger_device(std::shared_ptr<hw_monitor> hardware_monitor,
+			const synthetic_sensor& depth_sensor);
 
 		bool get_fw_log(fw_logs::fw_logs_binary_data& binary_data) override;
 		bool get_flash_log(fw_logs::fw_logs_binary_data& binary_data) override;
@@ -35,6 +36,9 @@ namespace librealsense
 		bool parse_log(const fw_logs::fw_logs_binary_data* fw_log_msg, fw_logs::fw_log_data* parsed_msg) override;
 
 	private:
+		static std::map<uint16_t, command> fw_logs_commands;
+		static std::map<uint16_t, command> flash_logs_commands;
+
 		void get_fw_logs_from_hw_monitor();
 		void get_flash_logs_from_hw_monitor();
 
@@ -45,10 +49,9 @@ namespace librealsense
 
 		bool _flash_logs_initialized;
 
-		std::vector<uint8_t> _input_code_for_fw_logs;
-		std::vector<uint8_t> _input_code_for_flash_logs;
-
 		fw_logs::fw_logs_parser* _parser;
+		uint16_t _device_pid;
+
 	};
 
 }

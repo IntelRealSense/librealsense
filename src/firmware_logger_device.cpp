@@ -2,24 +2,96 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "firmware_logger_device.h"
+#include "ds5/ds5-private.h"
+#include "l500/l500-private.h"
+#include "ivcam/sr300.h"
 #include <string>
 
 namespace librealsense
 {
-    firmware_logger_device::firmware_logger_device(std::shared_ptr<hw_monitor> hardware_monitor) :
+    std::map<uint16_t, command> firmware_logger_device::fw_logs_commands =
+    {
+        {ds::RS400_PID           , command{ ds::GLD, 0x1f4 }},
+        {ds::RS410_PID           , command{ ds::GLD, 0x1f4 }},
+        {ds::RS415_PID           , command{ ds::GLD, 0x1f4 }},
+        {ds::RS430_PID           , command{ ds::GLD, 0x1f4 }},
+        {ds::RS430_MM_PID        , command{ ds::GLD, 0x1f4 }},
+        {ds::RS_USB2_PID         , command{ ds::GLD, 0x1f4 }},
+        {ds::RS_RECOVERY_PID     , command{ ds::GLD, 0x1f4 }},
+        {ds::RS_USB2_RECOVERY_PID, command{ ds::GLD, 0x1f4 }},
+        {ds::RS400_IMU_PID       , command{ ds::GLD, 0x1f4 }},
+        {ds::RS420_PID           , command{ ds::GLD, 0x1f4 }},
+        {ds::RS420_MM_PID        , command{ ds::GLD, 0x1f4 }},
+        {ds::RS410_MM_PID        , command{ ds::GLD, 0x1f4 }},
+        {ds::RS400_MM_PID        , command{ ds::GLD, 0x1f4 }},
+        {ds::RS430_MM_RGB_PID    , command{ ds::GLD, 0x1f4 }},
+        {ds::RS460_PID           , command{ ds::GLD, 0x1f4 }},
+        {ds::RS435_RGB_PID       , command{ ds::GLD, 0x1f4 }},
+        {ds::RS405U_PID          , command{ ds::GLD, 0x1f4 }},
+        {ds::RS435I_PID          , command{ ds::GLD, 0x1f4 }},
+        {ds::RS416_PID           , command{ ds::GLD, 0x1f4 }},
+        {ds::RS430I_PID          , command{ ds::GLD, 0x1f4 }},
+        {ds::RS465_PID           , command{ ds::GLD, 0x1f4 }},
+        {ds::RS416_RGB_PID       , command{ ds::GLD, 0x1f4 }},
+        {ds::RS405_PID           , command{ ds::GLD, 0x1f4 }},
+        {ds::RS455_PID           , command{ ds::GLD, 0x1f4 }},
+        {L500_RECOVERY_PID       , command{ ivcam2::GLD, 0x1f4 }},
+        {L500_PID                , command{ ivcam2::GLD, 0x1f4 }},
+        {L515_PID_PRE_PRQ        , command{ ivcam2::GLD, 0x1f4 }},
+        {L515_PID                , command{ ivcam2::GLD, 0x1f4 }},
+        {SR300_PID               , command{ ivcam2::GLD, 0x1f4 }},
+        {SR300v2_PID             , command{ ivcam2::GLD, 0x1f4 }},
+        {SR300_RECOVERY          , command{ ivcam2::GLD, 0x1f4 }}
+    };
+
+    std::map<uint16_t, command> firmware_logger_device::flash_logs_commands =
+    {
+        {ds::RS400_PID           , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS410_PID           , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS415_PID           , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS430_PID           , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS430_MM_PID        , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS_USB2_PID         , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS_RECOVERY_PID     , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS_USB2_RECOVERY_PID, command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS400_IMU_PID       , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS420_PID           , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS420_MM_PID        , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS410_MM_PID        , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS400_MM_PID        , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS430_MM_RGB_PID    , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS460_PID           , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS435_RGB_PID       , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS405U_PID          , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS435I_PID          , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS416_PID           , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS430I_PID          , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS465_PID           , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS416_RGB_PID       , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS405_PID           , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {ds::RS455_PID           , command{ ds::FRB, 0x17a000, 0x3f8  }},
+        {L500_RECOVERY_PID       , command{ ivcam2::FRB, 0x0011E000, 0x3f8  }},
+        {L500_PID                , command{ ivcam2::FRB, 0x0011E000, 0x3f8  }},
+        {L515_PID_PRE_PRQ        , command{ ivcam2::FRB, 0x0011E000, 0x3f8  }},
+        {L515_PID                , command{ ivcam2::FRB, 0x0011E000, 0x3f8  }}/*,
+        {SR300_PID               , command{ ivcam2::FRB, 0x0011E000, 0x3f8  }},
+        {SR300v2_PID             , command{ ivcam2::FRB, 0x0011E000, 0x3f8  }},
+        {SR300_RECOVERY          , command{ ivcam2::FRB, 0x0011E000, 0x3f8  }}*/
+    };
+
+
+    firmware_logger_device::firmware_logger_device(std::shared_ptr<hw_monitor> hardware_monitor,
+        const synthetic_sensor& depth_sensor) :
         _hw_monitor(hardware_monitor),
         _fw_logs(),
         _flash_logs(),
         _flash_logs_initialized(false),
         _parser(nullptr)
     {
-        _input_code_for_fw_logs = { 0x14, 0x00, 0xab, 0xcd, 0x0f, 0x00, 0x00, 0x00,
-                 0xf4, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-
-        _input_code_for_flash_logs = { 0x14, 0x00, 0xab, 0xcd, 0x09, 0x00, 0x00, 0x00,
-                 0x00, 0xa0, 0x17, 0x00, 0xf8, 0x03, 0x00, 0x00,
-                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+        std::string pid_str (depth_sensor.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
+        std::stringstream ss;
+        ss << std::hex << pid_str;
+        ss >> _device_pid;
     }
 
     bool firmware_logger_device::get_fw_log(fw_logs::fw_logs_binary_data& binary_data)
@@ -44,16 +116,18 @@ namespace librealsense
 
     void firmware_logger_device::get_fw_logs_from_hw_monitor()
     {
-        int size_of_fw_logs_header = 4;
-        auto res = _hw_monitor->send(_input_code_for_fw_logs);
+        auto it = fw_logs_commands.find(_device_pid);
+        if (it == fw_logs_commands.end())
+        {
+            LOG_INFO("Firmware logs not set for this device!");
+            return;
+        }
+        auto res = _hw_monitor->send(it->second);
         if (res.empty())
         {
             LOG_INFO("Getting Firmware logs failed!");
             return;
         }
-
-        //erasing header
-        res.erase(res.begin(), res.begin() + size_of_fw_logs_header);
 
         auto beginOfLogIterator = res.begin();
         // convert bytes to fw_logs_binary_data
@@ -73,7 +147,13 @@ namespace librealsense
     void firmware_logger_device::get_flash_logs_from_hw_monitor()
     {
         int size_of_flash_logs_header = 27;
-        auto res = _hw_monitor->send(_input_code_for_flash_logs);
+        auto it = flash_logs_commands.find(_device_pid);
+        if (it == flash_logs_commands.end())
+        {
+            LOG_INFO("Flash logs not set for this device!");
+            return;
+        }
+        auto res = _hw_monitor->send(it->second);
         if (res.empty())
         {
             LOG_INFO("Getting Flash logs failed!");
