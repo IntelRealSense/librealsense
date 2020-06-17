@@ -1897,7 +1897,7 @@ namespace rs2
                 auto& opt_md = options_metadata[static_cast<rs2_option>(next)];
                 opt_md.update_all_fields(error_message, notifications);
 
-                if (next_option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+                if (next == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
                 {
                     auto old_ae_enabled = auto_exposure_enabled;
                     auto_exposure_enabled = opt_md.value > 0;
