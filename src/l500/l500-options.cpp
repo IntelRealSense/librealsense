@@ -166,7 +166,7 @@ namespace librealsense
             move_to_custom();
             break;
         case RS2_L500_VISUAL_PRESET_DEFAULT:
-            LOG_ERROR("the API does not allow changing visual preset back to default");
+            LOG_ERROR("changing back to default is disabled by design");
             throw  invalid_value_exception(to_string() << "the Default preset signifies that the controls have not been changed \n"
                                                            "since initialization, the API does not support changing back to this state.\n"
                                                            "Please choose one of the other presets");
