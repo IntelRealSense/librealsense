@@ -103,51 +103,53 @@ namespace librealsense {
 namespace ivcam2 {
 
 
+    static bool is_auto_trigger_default()
+    {
+        if( get_trigger_seconds().count() )
+            return true;
+        if( get_temp_diff_trigger() )
+            return true;
+        return false;
+    }
+
     ac_trigger::enabler_option::enabler_option( std::shared_ptr< ac_trigger > const & autocal )
-        : bool_option( false )
+        : bool_option( is_auto_trigger_default() )
         , _autocal( autocal )
     {
     }
 
     void ac_trigger::enabler_option::set( float value )
     {
-        bool_option::set( value );
-        if( is_true() )
+        if( is_auto_trigger_default() )
         {
-            // We've turned it on -- try to immediately get a special frame
-            _autocal->trigger_calibration();
-        }
-        else if( _autocal->_to_profile )
-        {
-            // TODO remove before release
-            // Reset the calibration so we can do it all over again
-            //if( auto color_sensor = _autocal->_dev.get_color_sensor() )
-            //    color_sensor->reset_calibration();
-            //_autocal->_dev.get_depth_sensor().reset_calibration();
-#if 1
-            //_autocal->_dev.notify_of_calibration_change( RS2_CALIBRATION_SUCCESSFUL );
-#else
-            // Make sure we have the new setting before calling the callback
-            //auto&& active_streams = get_active_streams();
-            //if( !active_streams.empty() )
+            // When auto trigger is on in the environment, we control the timed activation
+            // of AC, and do NOT trigger manual calibration
+            bool_option::set( value );
+            if( is_true() )
             {
-                //std::shared_ptr< stream_profile_interface > spi = active_streams.front();
-                auto vspi
-                    = dynamic_cast<video_stream_profile_interface *>(_autocal->_to_profile);
-                rs2_intrinsics const _intr = vspi->get_intrinsics();
-                AC_LOG( DEBUG, "reset intrinsics to: [ " << AC_F_PREC
-                    << _intr.width << "x" << _intr.height
-                    << "  ppx: " << _intr.ppx << ", ppy: " << _intr.ppy << ", fx: " << _intr.fx
-                    << ", fy: " << _intr.fy << ", model: " << int( _intr.model ) << " coeffs["
-                    << _intr.coeffs[0] << ", " << _intr.coeffs[1] << ", " << _intr.coeffs[2]
-                    << ", " << _intr.coeffs[3] << ", " << _intr.coeffs[4] << "] ]" );
-                environment::get_instance().get_extrinsics_graph().
-                    try_fetch_extrinsics( *_autocal->_from_profile, *_autocal->_to_profile, &_autocal->_extr );
-                AC_LOG( DEBUG, "reset extrinsics to: " << _autocal->_extr );
-                _autocal->_dsm_params = _autocal->_dev.get_depth_sensor().get_dsm_params();
-                _autocal->_dev.notify_of_calibration_change( RS2_CALIBRATION_SUCCESSFUL );
+                if( _autocal->_dev.get_depth_sensor().is_streaming() )
+                    _autocal->start();
+                // else start() will get called on stream start
             }
-#endif
+            else
+            {
+                _autocal->stop();
+            }
+        }
+        else
+        {
+            // Without the auto-trigger, turning us on never actually toggles us so we stay
+            // "off" and just trigger a new calibration
+            auto & depth_sensor = _autocal->_dev.get_depth_sensor();
+            if( depth_sensor.is_streaming() )
+            {
+                AC_LOG( DEBUG, "Triggering manual calibration..." );
+                _autocal->trigger_calibration();
+            }
+            else
+            {
+                AC_LOG( ERROR, "Cannot trigger calibration: depth sensor is not on!" );
+            }
         }
         _record_action( *this );
     }
@@ -412,8 +414,7 @@ namespace ivcam2 {
                 return;  // error should have already been printed
             //AC_LOG( DEBUG, "Picked profile: " << *rgb_profile );
 
-            if( ! color_sensor->is_opened() )
-                color_sensor->open( { rgb_profile } );
+            color_sensor->open( { rgb_profile } );
             color_sensor->start( make_frame_callback( []( frame_interface * f ) {} ) );
             // Note that we don't do anything with the frames -- they shouldn't end up
             // at the user. But AC will still get them.
@@ -435,6 +436,7 @@ namespace ivcam2 {
         AC_LOG( INFO, "STOPPING color sensor..." );
         auto & color_sensor = *_dev.get_color_sensor();
         color_sensor.stop();
+        color_sensor.close();
         _own_color_stream = false;
     }
 
@@ -708,16 +710,27 @@ namespace ivcam2 {
 
         if( !n_seconds.count() )
         {
+            option & o = _dev.get_depth_sensor().get_option( RS2_OPTION_CAMERA_ACCURACY_HEALTH_ENABLED );
+            if( !o.query() )
+            {
+                // auto trigger is turned off
+                AC_LOG( DEBUG, "Camera Accuracy Health is turned off -- no trigger set" );
+                return;
+            }
+
             // Check if we want auto trigger
             // Note: we arbitrarly choose the time before AC starts at 10 second -- enough time to
             // make sure the user isn't going to fiddle with color sensor activity too much, because
             // if color is off then AC will automatically turn it on!
             if( get_trigger_seconds().count() )
                 n_seconds = std::chrono::seconds( 10 );
-            else if( get_temp_diff_trigger() &&  ( _last_temp = read_temperature() ))
+            else if( get_temp_diff_trigger() && (_last_temp = read_temperature()) )
                 _temp_check = retrier::start< temp_check >( *this, std::chrono::seconds( 60 ) );
             else
+            {
+                AC_LOG( DEBUG, "Camera Accuracy Health auto trigger is disabled in environment" );
                 return;  // no auto trigger
+            }
         }
         _is_on = true;
         if( n_seconds.count() )
