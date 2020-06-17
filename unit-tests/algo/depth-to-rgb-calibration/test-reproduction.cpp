@@ -30,7 +30,6 @@ void read_binary_file( char const * dir, char const * bin, T * data )
     f.close();
 }
 
-
 struct old_algo_calib
 {
     algo::matrix_3x3 rot;
@@ -55,7 +54,6 @@ struct old_algo_calib
         return c;
     }
 };
-
 
 int main( int argc, char * argv[] )
 {
@@ -100,7 +98,7 @@ int main( int argc, char * argv[] )
             TRACE( "\n___\nis_scene_valid" );
             if( !cal.is_scene_valid() )
             {
-
+                TRACE("NOT VALID\n");
             }
 
             TRACE( "\n___\noptimize" );
@@ -112,7 +110,7 @@ int main( int argc, char * argv[] )
             TRACE( "\n___\nis_valid_results" );
             if( !cal.is_valid_results() )
             {
-
+                TRACE("NOT VALID\n");
             }
             TRACE( "\n___\nRESULTS:" );
 

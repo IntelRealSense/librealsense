@@ -758,7 +758,7 @@ void optimizer::set_yuy_data(
 )
 {
     _original_calibration = calibration;
-
+    _original_calibration.model = RS2_DISTORTION_BROWN_CONRADY; //change to ac model
     _yuy.width = calibration.width;
     _yuy.height = calibration.height;
     _params.set_rgb_resolution( _yuy.width, _yuy.height );

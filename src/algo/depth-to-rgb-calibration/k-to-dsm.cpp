@@ -795,8 +795,8 @@ std::vector<double2> k_to_DSM::convert_norm_vertices_to_los
 
     for (auto i = 0; i < res.size(); i++)
     {
-        res[i].x = (dsm_x[i] + (double)2047) / (double)_dsm_regs.EXTLdsmXscale - (double)_dsm_regs.EXTLdsmXoffset;
-        res[i].y = (dsm_y[i] + (double)2047) / (double)_dsm_regs.EXTLdsmYscale - (double)_dsm_regs.EXTLdsmYoffset;
+        res[i].x = (dsm_x[i] + (double)2047) / (double)dsm_regs.EXTLdsmXscale - (double)dsm_regs.EXTLdsmXoffset;
+        res[i].y = (dsm_y[i] + (double)2047) / (double)dsm_regs.EXTLdsmYscale - (double)dsm_regs.EXTLdsmYoffset;
     }
     return res;
 }
