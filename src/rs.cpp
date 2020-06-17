@@ -41,6 +41,7 @@
 #include "software-device.h"
 #include "global_timestamp_reader.h"
 #include "auto-calibrated-device.h"
+#include "terminal-parser.h"
 ////////////////////////
 // API implementation //
 ////////////////////////
@@ -112,6 +113,11 @@ struct rs2_frame_queue
 struct rs2_sensor_list
 {
     rs2_device dev;
+};
+
+struct rs2_terminal_parser
+{
+    std::shared_ptr<librealsense::terminal_parser> terminal_parser;
 };
 
 struct rs2_error
@@ -2962,3 +2968,51 @@ void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_s
     serializable->load_json(std::string(static_cast<const char*>(json_content), content_size));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, json_content, content_size)
+
+rs2_terminal_parser* rs2_create_terminal_parser(const char* xml_path, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(xml_path);
+    return new rs2_terminal_parser{ std::make_shared<librealsense::terminal_parser>(std::string(xml_path)) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, xml_path)
+
+void rs2_delete_terminal_parser(rs2_terminal_parser* terminal_parser) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(terminal_parser);
+    delete terminal_parser;
+}
+NOEXCEPT_RETURN(, terminal_parser)
+
+rs2_raw_data_buffer* rs2_terminal_parse_command(rs2_terminal_parser* terminal_parser,
+    const char* command, unsigned int size_of_command, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(terminal_parser);
+    VALIDATE_NOT_NULL(command);
+
+    std::string command_string;
+    command_string.insert(command_string.begin(), command, command + size_of_command);
+
+    auto result = terminal_parser->terminal_parser->parse_command(command_string);
+    return new rs2_raw_data_buffer{ result };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, terminal_parser, command)
+
+rs2_raw_data_buffer* rs2_terminal_parse_response(rs2_terminal_parser* terminal_parser,
+    const char* command, unsigned int size_of_command,
+    const void* response, unsigned int size_of_response, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(terminal_parser);
+    VALIDATE_NOT_NULL(command);
+    VALIDATE_NOT_NULL(response);
+
+    std::string command_string;
+    command_string.insert(command_string.begin(), command, command + size_of_command);
+
+    std::vector<uint8_t> response_vec;
+    response_vec.insert(response_vec.begin(), (uint8_t*)response, (uint8_t*)response + size_of_response);
+
+    auto result = terminal_parser->terminal_parser->parse_response(command_string, response_vec);
+    return new rs2_raw_data_buffer{ result };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, terminal_parser, command, response)
+
