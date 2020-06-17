@@ -2988,7 +2988,7 @@ rs2_raw_data_buffer* rs2_terminal_parse_command(rs2_terminal_parser* terminal_pa
 {
     VALIDATE_NOT_NULL(terminal_parser);
     VALIDATE_NOT_NULL(command);
-    VALIDATE_LE(size_of_command, 1000);//bufer shall be less than 1000 kbytes or similar
+    VALIDATE_LE(size_of_command, 1000);//bufer shall be less than 1000 bytes or similar
 
     std::string command_string;
     command_string.insert(command_string.begin(), command, command + size_of_command);
@@ -3005,8 +3005,8 @@ rs2_raw_data_buffer* rs2_terminal_parse_response(rs2_terminal_parser* terminal_p
     VALIDATE_NOT_NULL(terminal_parser);
     VALIDATE_NOT_NULL(command);
     VALIDATE_NOT_NULL(response);
-    VALIDATE_LE(size_of_command, 1000); //bufer shall be less than 1000 kbytes or similar
-    VALIDATE_LE(size_of_response, 5000);//bufer shall be less than 5000 kbytes or similar
+    VALIDATE_LE(size_of_command, 1000); //bufer shall be less than 1000 bytes or similar
+    VALIDATE_LE(size_of_response, 5000);//bufer shall be less than 5000 bytes or similar
 
 
     std::string command_string;
