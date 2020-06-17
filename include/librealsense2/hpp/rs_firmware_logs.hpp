@@ -18,7 +18,7 @@ namespace rs2
         
         rs2_log_severity get_severity() const { 
             rs2_error* e = nullptr;
-            rs2_log_severity severity = rs2_fw_log_message_timestamp(_fw_log_message.get(), &e);
+            rs2_log_severity severity = rs2_fw_log_message_severity(_fw_log_message.get(), &e);
             error::handle(e);
             return severity;
         }
@@ -29,7 +29,7 @@ namespace rs2
         uint32_t get_timestamp() const
         {
             rs2_error* e = nullptr;
-            uint32_t timestamp = rs2_firmware_log_message_timestamp(_fw_log_message.get(), &e);
+            uint32_t timestamp = rs2_fw_log_message_timestamp(_fw_log_message.get(), &e);
             error::handle(e);
             return timestamp;
         }

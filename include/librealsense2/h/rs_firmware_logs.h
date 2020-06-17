@@ -70,7 +70,7 @@ int rs2_fw_log_message_size(rs2_firmware_log_message* msg, rs2_error** error);
 * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return               timestamp of the firmware log message
 */
-unsigned int rs2_firmware_log_message_timestamp(rs2_firmware_log_message* msg, rs2_error** error);
+unsigned int rs2_fw_log_message_timestamp(rs2_firmware_log_message* msg, rs2_error** error);
 
 /**
 * \brief Gets RealSense firmware log message severity.
@@ -78,7 +78,7 @@ unsigned int rs2_firmware_log_message_timestamp(rs2_firmware_log_message* msg, r
 * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return               severity of the firmware log message data
 */
-rs2_log_severity rs2_fw_log_message_timestamp(const rs2_firmware_log_message* msg, rs2_error** error);
+rs2_log_severity rs2_fw_log_message_severity(const rs2_firmware_log_message* msg, rs2_error** error);
 
 /**
 * \brief Initializes RealSense firmware logs parser in device.
