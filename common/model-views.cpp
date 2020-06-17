@@ -1131,7 +1131,7 @@ namespace rs2
                 {
                     s->set_option( RS2_OPTION_SENSOR_MODE, resolution_from_width_height( res_values[ui.selected_res_id].first, res_values[ui.selected_res_id].second ) );
                 }
-                catch( not_implemented_error const & e )
+                catch( not_implemented_error const &)
                 {
                     // Just ignore for now: need to figure out a way to write to playback sensors...
                 }
@@ -1240,7 +1240,7 @@ namespace rs2
                         auto height = res_values[ui.selected_res_id].second;
                         auto res = resolution_from_width_height(width, height);
                         if (res >= RS2_SENSOR_MODE_VGA && res < RS2_SENSOR_MODE_COUNT)
-                            s->set_option(RS2_OPTION_SENSOR_MODE, res);
+                            s->set_option(RS2_OPTION_SENSOR_MODE, float(res));
                     }
                 }
                 ImGui::PopStyleColor();

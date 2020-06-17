@@ -611,7 +611,7 @@ namespace rs2
 
         // ------------ Texture Selection --------------
 
-        auto t = single_wave((glfwGetTime() - texture_update_time) * 2.f);
+        auto t = single_wave(float(glfwGetTime() - texture_update_time) * 2);
         ImVec4 text_color = light_grey * (1.f - t) + light_blue * t;
 
         const auto tex_selection_popup = "Tex Selection";

@@ -6,91 +6,91 @@
 
 namespace librealsense
 {
-    typedef struct
+    typedef struct laser_power_control
     {
         float laser_power;
         bool was_set = false;
     }laser_power_control;
 
-    typedef struct
+    typedef struct laser_state_control
     {
         int laser_state;
         bool was_set = false;
     }laser_state_control;
 
-    typedef struct
+    typedef struct exposure_control
     {
         float exposure;
         bool was_set = false;
     }exposure_control;
 
-    typedef struct
+    typedef struct auto_exposure_control
     {
         int auto_exposure;
         bool was_set = false;
     }auto_exposure_control;
-
-    typedef struct
+ 
+    typedef struct gain_control
     {
         float gain;
         bool was_set = false;
     }gain_control;
 
-    typedef struct
+    typedef struct backlight_compensation_control
     {
         int backlight_compensation;
         bool was_set = false;
     }backlight_compensation_control;
 
-    typedef struct
+    typedef struct brightness_control
     {
         float brightness;
         bool was_set = false;
     }brightness_control;
 
-    typedef struct
+    typedef struct contrast_control
     {
         float contrast;
         bool was_set = false;
     }contrast_control;
 
-    typedef struct
+    typedef struct gamma_control
     {
         float gamma;
         bool was_set = false;
     }gamma_control;
 
-    typedef struct
+    typedef struct hue_control
     {
         float hue;
         bool was_set = false;
     }hue_control;
 
-    typedef struct
+    typedef struct saturation_control
     {
         float saturation;
         bool was_set = false;
     }saturation_control;
 
-    typedef struct
+    typedef struct sharpness_control
     {
         float sharpness;
         bool was_set = false;
     }sharpness_control;
 
-    typedef struct
+    typedef struct white_balance_control
     {
         float white_balance;
         bool was_set = false;
     }white_balance_control;
 
-    typedef struct
+    typedef struct auto_white_balance_control
     {
         int auto_white_balance;
         bool was_set = false;
     }auto_white_balance_control;
 
-    typedef struct
+    typedef struct power_line_frequency_control
     {
         int power_line_frequency;
         bool was_set = false;

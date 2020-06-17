@@ -1656,7 +1656,7 @@ namespace rs2
     inline float single_wave(float x)
     {
         auto c = clamp(x, 0.f, 1.f);
-        return 0.5f * (sinf(2.f * M_PI * c - M_PI_2) + 1.f);
+        return 0.5f * (sinf(2.f * float(M_PI) * c - float(M_PI_2)) + 1.f);
     }
 
     // convert 3d points into 2d viewport coordinates
@@ -1737,8 +1737,8 @@ namespace rs2
         p2d.z = clamp(p2d.z, -1.0, 1.0);
 
         // viewport coordinates
-        float x_vp = round((p2d.x + 1.0) / 2.0 * vp[2]) + vp[0];
-        float y_vp = round((p2d.y + 1.0) / 2.0 * vp[3]) + vp[1];
+        float x_vp = round((p2d.x + 1.f) / 2.f * vp[2]) + vp[0];
+        float y_vp = round((p2d.y + 1.f) / 2.f * vp[3]) + vp[1];
 
         float2 p_w;
         p_w.x = x_vp;

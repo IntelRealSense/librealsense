@@ -320,9 +320,9 @@ namespace rs2
 
         auto calib_dev = _dev.as<auto_calibrated_device>();
         if (tare)
-            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = progress;}, 5000);
+            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = int(progress);}, 5000);
         else
-            _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = progress;}, 5000);
+            _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = int(progress);}, 5000);
     }
 
     void on_chip_calib_manager::process_flow(std::function<void()> cleanup, 
@@ -393,7 +393,7 @@ namespace rs2
 
             _viewer.is_3d_view = _in_3d_view;
 
-            _viewer.ground_truth_r = ground_truth;
+            _viewer.ground_truth_r = uint32_t(ground_truth);
             config_file::instance().set(configurations::viewer::ground_truth_r, ground_truth);
 
             _viewer.synchronization_enable = _synchronized;
@@ -516,7 +516,7 @@ namespace rs2
             else
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + 27) });
 
-            ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1. - t));
+            ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1.f - t));
 
             if (update_state == RS2_CALIB_STATE_INITIAL_PROMPT)
             {
@@ -570,7 +570,7 @@ namespace rs2
                     ImGui::SetCursorScreenPos({ float(x + 135), float(y + 30) });
 
                     std::string id = to_string() << "##avg_step_count_" << index;
-                    ImGui::PushItemWidth(width - 145);
+                    ImGui::PushItemWidth(width - 145.f);
                     ImGui::SliderInt(id.c_str(), &get_manager().average_step_count, 1, 30);
                     ImGui::PopItemWidth();
 
@@ -586,7 +586,7 @@ namespace rs2
 
                     id = to_string() << "##step_count_" << index;
 
-                    ImGui::PushItemWidth(width - 145);
+                    ImGui::PushItemWidth(width - 145.f);
                     ImGui::SliderInt(id.c_str(), &get_manager().step_count, 1, 30);
                     ImGui::PopItemWidth();
 
@@ -607,14 +607,14 @@ namespace rs2
                     std::vector<const char*> vals_cstr;
                     for (auto&& s : vals) vals_cstr.push_back(s.c_str());
 
-                    ImGui::PushItemWidth(width - 145);
-                    ImGui::Combo(id.c_str(), &get_manager().accuracy, vals_cstr.data(), vals.size());
-                   
+                    ImGui::PushItemWidth(width - 145.f);
+                    ImGui::Combo(id.c_str(), &get_manager().accuracy, vals_cstr.data(), int(vals.size()));
+
                     ImGui::SetCursorScreenPos({ float(x + 135), float(y + 35 + ImGui::GetTextLineHeightWithSpacing()) });
 
                     ImGui::PopItemWidth();
 
-                    draw_intrinsic_extrinsic(x, y + 3 * ImGui::GetTextLineHeightWithSpacing() - 10);
+                    draw_intrinsic_extrinsic(x, y + 3 * int(ImGui::GetTextLineHeightWithSpacing()) - 10);
 
                     ImGui::SetCursorScreenPos({ float(x + 9), float(y + 52 + 4 * ImGui::GetTextLineHeightWithSpacing()) });
                     id = to_string() << "Apply High-Accuracy Preset##apply_preset_" << index;
@@ -651,7 +651,7 @@ namespace rs2
                 char buff[MAX_SIZE];
                 memcpy(buff, gt.c_str(), gt.size() + 1);
 
-                ImGui::PushItemWidth(width - 145);
+                ImGui::PushItemWidth(width - 145.f);
                 if (ImGui::InputText(id.c_str(), buff, std::max((int)gt.size() + 1, 10)))
                 {
                     std::stringstream ss;
@@ -704,9 +704,9 @@ namespace rs2
                 std::vector<const char*> vals_cstr;
                 for (auto&& s : vals) vals_cstr.push_back(s.c_str());
 
-                ImGui::PushItemWidth(width - 145);
+                ImGui::PushItemWidth(width - 145.f);
 
-                ImGui::Combo(id.c_str(), &get_manager().speed, vals_cstr.data(), vals.size());
+                ImGui::Combo(id.c_str(), &get_manager().speed, vals_cstr.data(), int(vals.size()));
                 ImGui::PopItemWidth();
 
                 draw_intrinsic_extrinsic(x, y);

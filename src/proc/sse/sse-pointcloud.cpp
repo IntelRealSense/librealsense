@@ -175,8 +175,8 @@ namespace librealsense
         auto fy = _mm_set_ps1(other_intrinsics.fy);
         auto ppx = _mm_set_ps1(other_intrinsics.ppx);
         auto ppy = _mm_set_ps1(other_intrinsics.ppy);
-        auto w = _mm_set_ps1(other_intrinsics.width);
-        auto h = _mm_set_ps1(other_intrinsics.height);
+        auto w = _mm_set_ps1(float(other_intrinsics.width));
+        auto h = _mm_set_ps1(float(other_intrinsics.height));
         auto mask_inv_brown_conrady = _mm_set_ps1(RS2_DISTORTION_INVERSE_BROWN_CONRADY);
         auto zero = _mm_set_ps1(0);
         auto one = _mm_set_ps1(1);

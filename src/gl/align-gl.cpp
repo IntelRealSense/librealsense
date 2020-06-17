@@ -9,7 +9,9 @@
 #include "align-gl.h"
 #include "option.h"
 
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif // NOMINMAX
 
 #include <glad/glad.h>
 
@@ -96,10 +98,10 @@ void build_opengl_projection_for_intrinsics(matrix4& frustum,
     
     // These parameters define the final viewport that is rendered into by
     // the camera.
-    double L = 0;
-    double R = img_width;
-    double B = 0;
-    double T = img_height;
+    int L = 0;
+    int R = img_width;
+    int B = 0;
+    int T = img_height;
     
     // near and far clipping planes, these only matter for the mapping from
     // world-space z-coordinate into the depth coordinate for OpenGL
@@ -117,21 +119,21 @@ void build_opengl_projection_for_intrinsics(matrix4& frustum,
     // [-1, 1].  OpenGL then maps coordinates in NDC to the current
     // viewport
     matrix4 ortho;
-    ortho(0,0) =  2.0/(R-L); ortho(0,3) = -(R+L)/(R-L);
-    ortho(1,1) =  2.0/(T-B); ortho(1,3) = -(T+B)/(T-B);
-    ortho(2,2) = -2.0/(F-N); ortho(2,3) = -(F+N)/(F-N);
-    ortho(3,3) =  1.0;
-    
+    ortho(0,0) =  2.f/(R-L);        ortho(0,3) = float(-(R+L)/(R-L));
+    ortho(1,1) =  2.f/(T-B);        ortho(1,3) = float(-(T+B)/(T-B));
+    ortho(2,2) = -2.f/float(F-N);   ortho(2,3) = float(-(F+N)/(F-N));
+    ortho(3,3) =  1.f;
+
     // construct a projection matrix, this is identical to the 
     // projection matrix computed for the intrinsicx, except an
     // additional row is inserted to map the z-coordinate to
-    // OpenGL. 
+    // OpenGL.
     matrix4 tproj;
-    tproj(0,0) = alpha; tproj(0,1) = skew; tproj(0,2) = u0;
-                        tproj(1,1) = beta; tproj(1,2) = v0;
-                                           tproj(2,2) = -(N+F); tproj(2,3) = -N*F;
-                                           tproj(3,2) = 1.0;
-    
+    tproj(0,0) = float(alpha);  tproj(0,1) = float(skew);  tproj(0,2) = 0.f;
+    tproj(1,1) = float(beta);   tproj(1,2) = float(v0);
+    tproj(2,2) = float(-(N+F)); tproj(2,3) = float(-N*F);
+    tproj(3,2) = 1.f;
+
     // resulting OpenGL frustum is the product of the orthographic
     // mapping to normalized device coordinates and the augmented
     // camera intrinsic matrix

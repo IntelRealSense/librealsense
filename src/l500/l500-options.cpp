@@ -13,7 +13,7 @@ namespace librealsense
 
     float l500_hw_options::query() const
     {
-        return query(_resolution->query());
+        return query(int(_resolution->query()));
     }
 
     void l500_hw_options::set(float value)
@@ -35,7 +35,7 @@ namespace librealsense
         auto max = _hw_monitor->send(command{ AMCGET, _type, get_max });
         auto step = _hw_monitor->send(command{ AMCGET, _type, get_step });
 
-        auto def = query(_resolution->query());
+        auto def = query(int(_resolution->query()));
 
         if (min.size() < sizeof(int32_t) || max.size() < sizeof(int32_t) || step.size() < sizeof(int32_t))
         {
@@ -74,7 +74,7 @@ namespace librealsense
         }
 
         auto val = *(reinterpret_cast<int32_t*>((void*)res.data()));
-        return val;
+        return float(val);
     }
 
     l500_options::l500_options(std::shared_ptr<context> ctx, const platform::backend_device_group & group) :
@@ -89,8 +89,8 @@ namespace librealsense
             depth_sensor.register_option
             (RS2_OPTION_VISUAL_PRESET, std::make_shared<uvc_xu_option<int >>(raw_depth_sensor, ivcam2::depth_xu, ivcam2::L500_AMBIENT,
                 "Change the depth ambient light to ambient: 1 for no ambient and 2 for low ambient",
-                std::map<float, std::string>{ { RS2_AMBIENT_LIGHT_NO_AMBIENT, "No Ambient"},
-                { RS2_AMBIENT_LIGHT_LOW_AMBIENT, "Low Ambient" }}));
+                std::map<float, std::string>{ { float(RS2_AMBIENT_LIGHT_NO_AMBIENT), "No Ambient"},
+                { float(RS2_AMBIENT_LIGHT_LOW_AMBIENT), "Low Ambient" }}));
         }
         else
         {

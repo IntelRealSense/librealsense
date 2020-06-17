@@ -196,7 +196,7 @@ namespace rs2
 
             auto flash = upd.create_flash_backup([&](const float progress)
             {
-                _progress = ((ceil(progress * 5) / 5) * (30 - next_progress)) + next_progress;
+                _progress = int((ceil(progress * 5) / 5) * (30 - next_progress)) + next_progress;
             });
 
             auto temp = get_folder_path(special_folder::app_data);
@@ -221,7 +221,7 @@ namespace rs2
                 if (!check_for([this, serial, &dfu]() {
                     auto devs = _ctx.query_devices();
 
-                    for (int j = 0; j < devs.size(); j++)
+                    for (uint32_t j = 0; j < devs.size(); j++)
                     {
                         try
                         {
@@ -267,7 +267,7 @@ namespace rs2
 
             dfu.update(_fw, [&](const float progress)
             {
-                _progress = (ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress;
+                _progress = int((ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress);
             });
 
             log("Firmware Download completed, await DFU transition event");
@@ -279,7 +279,7 @@ namespace rs2
             auto upd = _dev.as<updatable>();
             upd.update_unsigned(_fw, [&](const float progress)
             {
-                _progress = (ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress;
+                _progress = int((ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress);
             });
             log("Firmware Update completed, waiting for device to reconnect");
         }
@@ -287,7 +287,7 @@ namespace rs2
         if (!check_for([this, serial, &dfu]() {
             auto devs = _ctx.query_devices();
 
-            for (int j = 0; j < devs.size(); j++)
+            for (uint32_t j = 0; j < devs.size(); j++)
             {
                 try
                 {
@@ -341,7 +341,7 @@ namespace rs2
 
             ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - 67) });
 
-            ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1. - t));
+            ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1.f - t));
 
             if (update_state == RS2_FWU_STATE_INITIAL_PROMPT)
                 ImGui::Text("Firmware updates offer critical bug fixes and\nunlock new camera capabilities.");
