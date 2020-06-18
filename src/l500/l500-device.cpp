@@ -467,6 +467,16 @@ namespace librealsense
         });
     }
 
+    command l500_device::get_firmware_logs_command() const
+    {
+        return command{ ivcam2::GLD, 0x1f4 };
+    }
+
+    command l500_device::get_flash_logs_command() const
+    {
+        return command{ ivcam2::FRB, 0x0011E000, 0x3f8 };
+    }
+
     notification l500_notification_decoder::decode(int value)
     {
         if (l500_fw_error_report.find(static_cast<uint8_t>(value)) != l500_fw_error_report.end())
