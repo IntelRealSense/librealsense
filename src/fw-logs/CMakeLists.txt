@@ -10,6 +10,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/fw-logs-parser.h"
         "${CMAKE_CURRENT_LIST_DIR}/fw-logs-xml-helper.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/fw-logs-xml-helper.h"
-		"${CMAKE_CURRENT_LIST_DIR}/fw-string-formatter.cpp"
-		"${CMAKE_CURRENT_LIST_DIR}/fw-string-formatter.h"
+        "${CMAKE_CURRENT_LIST_DIR}/fw-string-formatter.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/fw-string-formatter.h"
 )

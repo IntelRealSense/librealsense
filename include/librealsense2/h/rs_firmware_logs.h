@@ -122,7 +122,7 @@ int rs2_parse_firmware_log(rs2_device* dev, rs2_firmware_log_message* fw_log_msg
 void rs2_delete_fw_log_parsed_message(rs2_firmware_log_parsed_message* fw_log_parsed_msg);
 
 /**
-* \brief Gets RealSense firmware log parsed message message.
+* \brief Gets RealSense firmware log parsed message.
 * \param[in] fw_log_parsed_msg	    firmware log parsed message object
 * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return               message of the firmware log parsed message
