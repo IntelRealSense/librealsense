@@ -8,14 +8,14 @@ namespace librealsense
 
     using namespace std;
 
-	terminal_parser::terminal_parser(const std::string& xml_content)
-	{
-		if (!xml_content.empty())
-		{
+    terminal_parser::terminal_parser(const std::string& xml_content)
+    {
+        if (!xml_content.empty())
+        {
             parse_xml_from_memory(xml_content.c_str(), _cmd_xml);
-			update_format_type_to_lambda(_format_type_to_lambda);
-		}
-	}
+            update_format_type_to_lambda(_format_type_to_lambda);
+        }
+    }
 
 
     std::vector<uint8_t> terminal_parser::parse_command(const std::string& line) const
@@ -115,4 +115,3 @@ namespace librealsense
     }
 
 }
-
