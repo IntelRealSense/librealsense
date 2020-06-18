@@ -75,6 +75,7 @@ namespace librealsense
 
         ds::d400_caps  parse_device_capabilities(const uint16_t pid) const;
 
+        //TODO - add these to device class as pure virtual methods
         command get_firmware_logs_command() const;
         command get_flash_logs_command() const;
 

@@ -534,6 +534,8 @@ namespace librealsense
         lazy<ivcam::camera_calib_params> _camer_calib_params;
 
     protected:
+
+        //TODO - add these to device class as pure virtual methods
         command get_firmware_logs_command() const;
         command get_flash_logs_command() const;
 
