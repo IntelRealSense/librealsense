@@ -26,7 +26,7 @@ namespace librealsense
 	{
 	public:
 		firmware_logger_device(std::shared_ptr<hw_monitor> hardware_monitor,
-			const synthetic_sensor& depth_sensor);
+			const command& _fw_logs_command, const command& _flash_logs_command);
 
 		bool get_fw_log(fw_logs::fw_logs_binary_data& binary_data) override;
 		bool get_flash_log(fw_logs::fw_logs_binary_data& binary_data) override;
@@ -35,25 +35,12 @@ namespace librealsense
 		bool parse_log(const fw_logs::fw_logs_binary_data* fw_log_msg, fw_logs::fw_log_data* parsed_msg) override;
 
 	private:
-		enum logs_commands_group
-		{
-			LOGS_COMMANDS_GROUP_NONE,
-			LOGS_COMMANDS_GROUP_DS,
-			LOGS_COMMANDS_GROUP_L5,
-			LOGS_COMMANDS_GROUP_SR,
-			LOGS_COMMANDS_GROUP_COUNT
-		};
-		struct logs_commands
-		{
-			command fw_logs_command;
-			command flash_logs_command;
-		};
-		static std::map<logs_commands_group, logs_commands> _logs_commands_per_group;
-
-		logs_commands_group get_logs_commands_group(uint16_t device_pid);
 
 		void get_fw_logs_from_hw_monitor();
 		void get_flash_logs_from_hw_monitor();
+
+		command _fw_logs_command;
+		command _flash_logs_command;
 
 		std::shared_ptr<hw_monitor> _hw_monitor;
 

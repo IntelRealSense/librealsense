@@ -75,6 +75,9 @@ namespace librealsense
 
         ds::d400_caps  parse_device_capabilities(const uint16_t pid) const;
 
+        command get_firmware_logs_command() const;
+        command get_flash_logs_command() const;
+
         void init(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
 

@@ -39,7 +39,9 @@ namespace librealsense
               ds5_device(ctx, group),
               ds5_nonmonochrome(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ds5_device::_hw_monitor, get_depth_sensor()) {}
+              firmware_logger_device(ds5_device::_hw_monitor,
+                  get_firmware_logs_command(),
+                  get_flash_logs_command()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -75,7 +77,9 @@ namespace librealsense
             : device(ctx, group, register_device_notifications),
             ds5u_device(ctx, group),
             ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(ds5_device::_hw_monitor, get_depth_sensor()) {}
+            firmware_logger_device(ds5_device::_hw_monitor,
+                get_firmware_logs_command(),
+                get_flash_logs_command()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -127,7 +131,9 @@ namespace librealsense
               ds5_nonmonochrome(ctx, group),
               ds5_active(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ds5_device::_hw_monitor, get_depth_sensor()) {}
+            firmware_logger_device(ds5_device::_hw_monitor,
+                get_firmware_logs_command(),
+                get_flash_logs_command()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -165,7 +171,9 @@ namespace librealsense
               ds5_active(ctx, group),
               ds5_color(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ds5_device::_hw_monitor, get_depth_sensor()) {}
+            firmware_logger_device(ds5_device::_hw_monitor,
+                get_firmware_logs_command(),
+                get_flash_logs_command()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -203,7 +211,9 @@ namespace librealsense
             ds5_nonmonochrome(ctx, group),
             ds5_active(ctx, group),
             ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(ds5_device::_hw_monitor, get_depth_sensor()) {}
+            firmware_logger_device(ds5_device::_hw_monitor,
+                get_firmware_logs_command(),
+                get_flash_logs_command()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -256,7 +266,9 @@ namespace librealsense
             ds5_active(ctx, group),
             ds5_color(ctx, group),
             ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(ds5_device::_hw_monitor, get_depth_sensor()) {}
+            firmware_logger_device(ds5_device::_hw_monitor,
+                get_firmware_logs_command(),
+                get_flash_logs_command()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -306,7 +318,9 @@ namespace librealsense
               ds5_device(ctx, group),
               ds5_motion(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ds5_device::_hw_monitor, get_depth_sensor()) {}
+              firmware_logger_device(ds5_device::_hw_monitor,
+                get_firmware_logs_command(),
+                get_flash_logs_command()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -350,7 +364,9 @@ namespace librealsense
             : device(ctx, group, register_device_notifications),
               ds5_device(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ds5_device::_hw_monitor, get_depth_sensor()) {}
+              firmware_logger_device(ds5_device::_hw_monitor,
+                get_firmware_logs_command(),
+                get_flash_logs_command()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -387,7 +403,9 @@ namespace librealsense
               ds5_device(ctx, group),
               ds5_active(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ds5_device::_hw_monitor, get_depth_sensor()) {}
+              firmware_logger_device(ds5_device::_hw_monitor,
+                get_firmware_logs_command(),
+                get_flash_logs_command()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -425,7 +443,9 @@ namespace librealsense
               ds5_active(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
               ds5_motion(ctx, group),
-              firmware_logger_device(ds5_device::_hw_monitor, get_depth_sensor())
+              firmware_logger_device(ds5_device::_hw_monitor,
+                get_firmware_logs_command(),
+                get_flash_logs_command()) 
         {}
 
         std::vector<tagged_profile> get_profiles_tags() const override
@@ -467,7 +487,9 @@ namespace librealsense
               ds5_active(ctx, group),
               ds5_motion(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ds5_device::_hw_monitor, get_depth_sensor()) {}
+              firmware_logger_device(ds5_device::_hw_monitor,
+                get_firmware_logs_command(),
+                get_flash_logs_command()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -515,7 +537,9 @@ namespace librealsense
               ds5_active(ctx, group),
               ds5_color(ctx,  group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()), 
-              firmware_logger_device(ds5_device::_hw_monitor, get_depth_sensor()) {}
+              firmware_logger_device(ds5_device::_hw_monitor,
+                get_firmware_logs_command(),
+                get_flash_logs_command()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -556,7 +580,9 @@ namespace librealsense
               ds5_color(ctx,  group),
               ds5_motion(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ds5_device::_hw_monitor, get_depth_sensor()) {}
+              firmware_logger_device(ds5_device::_hw_monitor,
+                get_firmware_logs_command(),
+                get_flash_logs_command()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -597,7 +623,9 @@ namespace librealsense
               ds5_color(ctx,  group),
               ds5_motion(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ds5_device::_hw_monitor, get_depth_sensor())
+              firmware_logger_device(ds5_device::_hw_monitor,
+                get_firmware_logs_command(),
+                get_flash_logs_command()) 
         {
             check_and_restore_rgb_stream_extrinsic();
         }
@@ -815,7 +843,9 @@ namespace librealsense
             ds5_motion(ctx, group),
             ds5_nonmonochrome(ctx, group),
             ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(ds5_device::_hw_monitor, get_depth_sensor()) {}
+            firmware_logger_device(ds5_device::_hw_monitor,
+                get_firmware_logs_command(),
+                get_flash_logs_command()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -851,7 +881,9 @@ namespace librealsense
               ds5_device(ctx, group),
               ds5_motion(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ds5_device::_hw_monitor, get_depth_sensor()) {}
+              firmware_logger_device(ds5_device::_hw_monitor,
+                get_firmware_logs_command(),
+                get_flash_logs_command()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -881,8 +913,9 @@ namespace librealsense
               ds5_color(ctx,  group),
               ds5_motion(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ds5_device::_hw_monitor, get_depth_sensor())
-        {}
+              firmware_logger_device(ds5_device::_hw_monitor,
+                get_firmware_logs_command(),
+                get_flash_logs_command()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -926,7 +959,9 @@ namespace librealsense
               ds5_color(ctx,  group),
               ds5_motion(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ds5_device::_hw_monitor, get_depth_sensor())
+              firmware_logger_device(ds5_device::_hw_monitor,
+                get_firmware_logs_command(),
+                get_flash_logs_command()) 
         {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;

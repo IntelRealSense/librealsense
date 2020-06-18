@@ -534,6 +534,9 @@ namespace librealsense
         lazy<ivcam::camera_calib_params> _camer_calib_params;
 
     protected:
+        command get_firmware_logs_command() const;
+        command get_flash_logs_command() const;
+
         const uint8_t _color_device_idx;
         std::shared_ptr<hw_monitor> _hw_monitor;
     };
