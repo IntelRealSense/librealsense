@@ -17,11 +17,11 @@ extern "C" {
 
 /**
 * \brief Creates RealSense terminal parser.
-* \param[in] xml_path	    path to xml file needed for parsing
+* \param[in] xml_content	content of the xml file needed for parsing
 * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return                   pointer to created terminal parser object
 */
-rs2_terminal_parser* rs2_create_terminal_parser(const char* xml_path, rs2_error** error);
+rs2_terminal_parser* rs2_create_terminal_parser(const char* xml_content, rs2_error** error);
 
 /**
 * \brief Deletes RealSense terminal parser.

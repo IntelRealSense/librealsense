@@ -24,6 +24,8 @@
 #include "proc/motion-transform.h"
 #include "proc/auto-exposure-processor.h"
 
+#include "../l500/l500-private.h"
+
 namespace librealsense
 {
     const std::map<uint32_t, rs2_format> fisheye_fourcc_to_rs2_format = {
@@ -217,18 +219,17 @@ namespace librealsense
         // register pre-processing
         std::shared_ptr<enable_motion_correction> mm_correct_opt = nullptr;
 
-        // //  Motion intrinsic calibration presents is a prerequisite for motion correction.
-        // try
-        // {
-        //     // Writing to log to dereference underlying structure
-        //     LOG_INFO("Accel Sensitivity:" << (**_accel_intrinsic).sensitivity);
-        //     LOG_INFO("Gyro Sensitivity:" << (**_gyro_intrinsic).sensitivity);
-
-        //     mm_correct_opt = std::make_shared<enable_motion_correction>(hid_ep.get(),
-        //         option_range{ 0, 1, 1, 1 });
-        //     hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION, mm_correct_opt);
-        // }
-        // catch (...) {}
+        //  Motion intrinsic calibration presents is a prerequisite for motion correction.
+        try
+        {
+            if (_mm_calib)
+            {
+                mm_correct_opt = std::make_shared<enable_motion_correction>(hid_ep.get(),
+                    option_range{ 0, 1, 1, 1 });
+                hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION, mm_correct_opt);
+            }
+        }
+        catch (...) {}
 
         hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
@@ -242,10 +243,8 @@ namespace librealsense
             [&, mm_correct_opt]() { return std::make_shared<gyroscope_transform>(_mm_calib, mm_correct_opt);
         });
 
-        uint16_t pid = static_cast<uint16_t>(strtoul(all_hid_infos.front().pid.data(), nullptr, 16));
-
         if ((camera_fw_version >= firmware_version(custom_sensor_fw_ver)) &&
-                (!val_in_range(pid, { ds::RS400_IMU_PID, ds::RS435I_PID, ds::RS430I_PID, ds::RS465_PID, ds::RS405_PID, ds::RS455_PID })))
+                (!val_in_range(_pid, { ds::RS400_IMU_PID, ds::RS435I_PID, ds::RS430I_PID, ds::RS465_PID, ds::RS405_PID, ds::RS455_PID })))
         {
             hid_ep->register_option(RS2_OPTION_MOTION_MODULE_TEMPERATURE,
                                     std::make_shared<motion_module_temperature_option>(*raw_hid_ep));
@@ -311,14 +310,6 @@ namespace librealsense
         return auto_exposure;
     }
 
-    std::vector<uint8_t> ds5_motion::get_imu_eeprom_raw() const
-    {
-        const int offset = 0;
-        const int size = ds::eeprom_imu_table_size;
-        command cmd(ds::MMER, offset, size);
-        return _hw_monitor->send(cmd);
-    }
-
     ds5_motion::ds5_motion(std::shared_ptr<context> ctx,
                            const platform::backend_device_group& group)
         : device(ctx, group), ds5_device(ctx, group),
@@ -328,14 +319,22 @@ namespace librealsense
     {
         using namespace ds;
 
-        _imu_eeprom_raw = [this]() { return get_imu_eeprom_raw(); };
+        std::vector<platform::hid_device_info> hid_infos = group.hid_devices;
 
-        //_mm_calib = std::make_shared<mm_calib_handler>(*_imu_eeprom_raw,_device_capabilities);
+        if (!hid_infos.empty())
+        {
+            // product id
+            _pid = static_cast<uint16_t>(strtoul(hid_infos.front().pid.data(), nullptr, 16));
 
-        //_accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
-        //_gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
-        // D435i to use predefined values extrinsics
-        //_depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
+            // motion correction
+            _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _pid);
+
+            _accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
+            _gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
+
+            // use predefined extrinsics
+            _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
+        }
 
         initialize_fisheye_sensor(ctx,group);
 
@@ -451,10 +450,15 @@ namespace librealsense
         _fisheye_device_idx = add_sensor(fisheye_ep);
     }
 
-    mm_calib_handler::mm_calib_handler(std::vector<uint8_t> imu_raw, ds::d400_caps dev_cap) :
-        _dev_cap(dev_cap)
+    mm_calib_handler::mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor, uint16_t pid) :
+        _hw_monitor(hw_monitor), _pid(pid)
     {
-        _imu_eeprom_raw = imu_raw;
+        _imu_eeprom_raw = [this]() {
+            if (_pid == L515_PID)
+                return get_imu_eeprom_raw_l515();
+            else
+                return get_imu_eeprom_raw();
+        };
 
         _calib_parser = [this]() {
 
@@ -462,26 +466,29 @@ namespace librealsense
             uint16_t calib_id = ds::dm_v2_eeprom_id; //assume DM V2 IMU as default platform
             bool valid = false;
 
+            if (_pid == L515_PID) calib_id = ds::l500_eeprom_id;
+
             try
             {
-                raw = _imu_eeprom_raw;
+                raw = *_imu_eeprom_raw;
                 calib_id = *reinterpret_cast<uint16_t*>(raw.data());
                 valid = true;
             }
             catch(const std::exception&)
             {
-                LOG_WARNING("IMU Calibration is not available, see the previous message");
+                // in case calibration table errors (invalid table, empty table, or corrupted table), data is invalid and default intrinsic and extrinsic will be used
+                LOG_WARNING("IMU Calibration is not available, default intrinsic and extrinsic will be used.");
             }
 
             std::shared_ptr<mm_calib_parser> prs = nullptr;
             switch (calib_id)
             {
                 case ds::dm_v2_eeprom_id: // DM V2 id
-                    prs = std::make_shared<dm_v2_imu_calib_parser>(raw, _dev_cap, valid); break;
+                    prs = std::make_shared<dm_v2_imu_calib_parser>(raw, _pid, valid); break;
                 case ds::tm1_eeprom_id: // TM1 id
                     prs = std::make_shared<tm1_imu_calib_parser>(raw); break;
                 case ds::l500_eeprom_id: // L515
-                    prs = std::make_shared<l500_imu_calib_parser>(raw); break;
+                    prs = std::make_shared<l500_imu_calib_parser>(raw, valid); break;
                 default:
                     throw recoverable_exception(to_string() << "Motion Intrinsics unresolved - "
                                 << ((valid)? "device is not calibrated" : "invalid calib type "),
@@ -489,6 +496,22 @@ namespace librealsense
             }
             return prs;
         };
+    }
+
+    std::vector<uint8_t> mm_calib_handler::get_imu_eeprom_raw() const
+    {
+        const int offset = 0;
+        const int size = ds::eeprom_imu_table_size;
+        command cmd(ds::MMER, offset, size);
+        return _hw_monitor->send(cmd);
+    }
+
+    std::vector<uint8_t> mm_calib_handler::get_imu_eeprom_raw_l515() const
+    {
+       // read imu calibration table on L515
+       // READ_TABLE 0x243 0
+       command cmd(ivcam2::READ_TABLE, ivcam2::L515_IMU_TABLE, 0);
+       return _hw_monitor->send(cmd);
     }
 
     ds::imu_intrinsic mm_calib_handler::get_intrinsic(rs2_stream stream)
@@ -503,7 +526,7 @@ namespace librealsense
 
     const std::vector<uint8_t> mm_calib_handler::get_fisheye_calib_raw()
     {
-        auto fe_calib_table = (*(ds::check_calib<ds::tm1_eeprom>(_imu_eeprom_raw))).calibration_table.calib_model.fe_calibration;
+        auto fe_calib_table = (*(ds::check_calib<ds::tm1_eeprom>(*_imu_eeprom_raw))).calibration_table.calib_model.fe_calibration;
         uint8_t* fe_calib_ptr = reinterpret_cast<uint8_t*>(&fe_calib_table);
         return std::vector<uint8_t>(fe_calib_ptr, fe_calib_ptr+ ds::fisheye_calibration_table_size);
     }

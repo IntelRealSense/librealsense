@@ -39,6 +39,8 @@ namespace librealsense
 
         const int REGISTER_CLOCK_0 = 0x9003021c;
 
+        const uint16_t L515_IMU_TABLE   = 0x0243;  // IMU calibration table on L515
+
         enum fw_cmd : uint8_t
         {
             MRD                         = 0x01, //"Read Tensilica memory ( 32bit ). Output : 32bit dump"

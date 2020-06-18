@@ -22,7 +22,7 @@ namespace librealsense
                 none
             };
 
-            fw_logs_xml_helper(std::string xml_full_file_path);
+            fw_logs_xml_helper(std::string xml_content);
             ~fw_logs_xml_helper(void);
 
             bool build_log_meta_data(fw_logs_formating_options* logs_formating_options);
@@ -40,7 +40,7 @@ namespace librealsense
             bool try_load_external_xml();
 
             bool _init_done;
-            std::string _xml_full_file_path;
+            std::string _xml_content;
             xml_document<> _xml_doc;
             std::vector<char> _document_buffer;
         };

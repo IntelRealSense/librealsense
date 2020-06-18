@@ -30,6 +30,12 @@ message(STATUS "T26X_FW_VERSION: ${T26X_FW_VERSION}")
 set(T26X_FW_SHA1 c3940ccbb0e3045603e4aceaa2d73427f96e24bc)
 set(T26X_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/TM2/FW/target/${T26X_FW_VERSION}")
 
+string(REGEX MATCH "L5XX_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
+set(L5XX_FW_VERSION ${CMAKE_MATCH_1})
+message(STATUS "L5XX_FW_VERSION: ${L5XX_FW_VERSION}")
+set(L5XX_FW_SHA1 5bb7d4e68994328f324559db66a0c586c3037afa)
+set(L5XX_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/L5xx/FW")
+
 add_library(${PROJECT_NAME} STATIC empty.c)
 
 if (MSVC)
@@ -74,6 +80,8 @@ endfunction()
 target_binary( "${D4XX_FW_URL}"  "${D4XX_FW_VERSION}"  "${D4XX_FW_SHA1}" D4XX_FW_Image .bin)
 target_binary( "${SR3XX_FW_URL}"  "${SR3XX_FW_VERSION}"  "${SR3XX_FW_SHA1}" SR3XX_FW_Image .bin)
 target_binary( "${T26X_FW_URL}"  "${T26X_FW_VERSION}"  "${T26X_FW_SHA1}" target .mvcmd)
+target_binary( "${L5XX_FW_URL}"  "${L5XX_FW_VERSION}"  "${L5XX_FW_SHA1}" L5XX_FW_Image .bin)
+
 
 install(TARGETS ${PROJECT_NAME} EXPORT realsense2Targets
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

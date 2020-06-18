@@ -181,7 +181,6 @@ typedef enum rs2_extension
     RS2_EXTENSION_DEPTH_HUFFMAN_DECODER,
     RS2_EXTENSION_SERIALIZABLE,
     RS2_EXTENSION_FW_LOGGER,
-    RS2_EXTENSION_TERMINAL_PARSER,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);
@@ -253,6 +252,7 @@ typedef struct rs2_notification rs2_notification;
 typedef struct rs2_notifications_callback rs2_notifications_callback;
 typedef struct rs2_firmware_log_message rs2_firmware_log_message;
 typedef struct rs2_firmware_log_parsed_message rs2_firmware_log_parsed_message;
+typedef struct rs2_firmware_log_parser rs2_firmware_log_parser;
 typedef struct rs2_terminal_parser rs2_terminal_parser;
 typedef void (*rs2_log_callback_ptr)(rs2_log_severity, rs2_log_message const *, void * arg);
 typedef void (*rs2_notification_callback_ptr)(rs2_notification*, void*);

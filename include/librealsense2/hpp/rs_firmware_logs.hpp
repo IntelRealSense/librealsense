@@ -7,7 +7,6 @@
 #include "rs_types.hpp"
 #include "rs_sensor.hpp"
 #include "../h/rs_firmware_logs.h"
-#include <array>        //REMI - check if needed!
 
 namespace rs2
 {
@@ -19,7 +18,7 @@ namespace rs2
         
         rs2_log_severity get_severity() const { 
             rs2_error* e = nullptr;
-            rs2_log_severity severity = rs2_firmware_log_message_severity(_fw_log_message.get(), &e);
+            rs2_log_severity severity = rs2_fw_log_message_severity(_fw_log_message.get(), &e);
             error::handle(e);
             return severity;
         }
@@ -30,7 +29,7 @@ namespace rs2
         uint32_t get_timestamp() const
         {
             rs2_error* e = nullptr;
-            uint32_t timestamp = rs2_firmware_log_message_timestamp(_fw_log_message.get(), &e);
+            uint32_t timestamp = rs2_fw_log_message_timestamp(_fw_log_message.get(), &e);
             error::handle(e);
             return timestamp;
         }
@@ -38,7 +37,7 @@ namespace rs2
         int size() const 
         { 
             rs2_error* e = nullptr;
-            int size = rs2_firmware_log_message_size(_fw_log_message.get(), &e);
+            int size = rs2_fw_log_message_size(_fw_log_message.get(), &e);
             error::handle(e);
             return size;
         }
@@ -46,12 +45,12 @@ namespace rs2
         std::vector<uint8_t> data() const 
         {
             rs2_error* e = nullptr;
-            auto size = rs2_firmware_log_message_size(_fw_log_message.get(), &e);
+            auto size = rs2_fw_log_message_size(_fw_log_message.get(), &e);
             error::handle(e);
             std::vector<uint8_t> result;
             if (size > 0)
             {
-                auto start = rs2_firmware_log_message_data(_fw_log_message.get(), &e);
+                auto start = rs2_fw_log_message_data(_fw_log_message.get(), &e);
                 error::handle(e);
                 result.insert(result.begin(), start, start + size);
             }
@@ -137,8 +136,8 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_firmware_log_message> msg(
-                rs2_create_firmware_log_message(_dev.get(), &e),
-                rs2_delete_firmware_log_message);
+                rs2_create_fw_log_message(_dev.get(), &e),
+                rs2_delete_fw_log_message);
             error::handle(e);
 
             return firmware_log_message(msg);
@@ -148,8 +147,8 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_firmware_log_parsed_message> msg(
-                rs2_create_firmware_log_parsed_message(_dev.get(), &e),
-                rs2_delete_firmware_log_parsed_message);
+                rs2_create_fw_log_parsed_message(_dev.get(), &e),
+                rs2_delete_fw_log_parsed_message);
             error::handle(e);
 
             return firmware_log_parsed_message(msg);
@@ -160,7 +159,7 @@ namespace rs2
             rs2_error* e = nullptr;
             rs2_firmware_log_message* m = msg.get_message().get();
             bool fw_log_pulling_status =
-                rs2_get_firmware_log(_dev.get(), &(m), &e);
+                rs2_get_fw_log(_dev.get(), &(m), &e);
 
             error::handle(e);
 
@@ -179,22 +178,11 @@ namespace rs2
             return flash_log_pulling_status;
         }
 
-        int get_number_of_flash_logs() const
-        {
-            rs2_error* e = nullptr;
-            int number_of_flash_logs =
-                rs2_get_number_of_flash_logs(_dev.get(), &e);
-
-            error::handle(e);
-
-            return number_of_flash_logs;
-        }
-
-        bool init_parser(const std::string& xml_path)
+        bool init_parser(const std::string& xml_content)
         {
             rs2_error* e = nullptr;
 
-            bool parser_initialized = rs2_init_parser(_dev.get(), xml_path.c_str(), &e);
+            bool parser_initialized = rs2_init_fw_log_parser(_dev.get(), xml_content.c_str(), &e);
             error::handle(e);
 
             return parser_initialized;

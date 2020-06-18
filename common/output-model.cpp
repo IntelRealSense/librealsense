@@ -34,7 +34,9 @@ void output_model::thread_loop()
                         {
                             try
                             {
-                                fwlogger.init_parser(hwlogger_xml);
+                                std::string str((std::istreambuf_iterator<char>(f)),
+                                    std::istreambuf_iterator<char>());
+                                fwlogger.init_parser(str);
                                 has_parser = true;
                             }
                             catch (const std::exception& ex)
@@ -58,7 +60,7 @@ void output_model::thread_loop()
 
                                     add_log(message.get_severity(), 
                                         parsed.file_name(), parsed.line(), to_string() 
-                                            << "[" << parsed.thread_name() << "] " << parsed.message());
+                                            << "FW-LOG [" << parsed.thread_name() << "] " << parsed.message());
                                 }
                             }
 
@@ -386,7 +388,7 @@ void output_model::draw(ux_window& win, rect view_rect, std::vector<rs2::device>
             }
             else ok = true;
 
-            if (search_line != "" && line.find(search_line) == std::string::npos) ok = false;
+            if (search_line != "" && to_lower(line).find(to_lower(search_line)) == std::string::npos) ok = false;
 
             if (!ok) return;
 
@@ -825,7 +827,9 @@ void output_model::run_command(std::string command, std::vector<rs2::device> dev
         std::ifstream f(commands_xml.c_str());
         if (f.good())
         {
-            auto terminal_parser = rs2::terminal_parser(commands_xml);
+            std::string str((std::istreambuf_iterator<char>(f)),
+                             std::istreambuf_iterator<char>());
+            auto terminal_parser = rs2::terminal_parser(str);
 
             auto buffer = terminal_parser.parse_command(to_lower(command));
 

@@ -29,6 +29,8 @@ set (unit_tests_sources
     unit-tests-main.cpp
     unit-tests-common.h
     unit-tests-post-processing-from-bag.cpp
+    catch.h
+    approx.h
 )
 
 add_executable(live-test ${unit_tests_sources})

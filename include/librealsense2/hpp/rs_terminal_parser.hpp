@@ -16,12 +16,12 @@ namespace rs2
     class terminal_parser
     {
     public:
-        terminal_parser(const std::string& xml_path)
+        terminal_parser(const std::string& xml_content)
         {
             rs2_error* e = nullptr;
             
             _terminal_parser = std::shared_ptr<rs2_terminal_parser>(
-                rs2_create_terminal_parser(xml_path.c_str(),  &e),
+                rs2_create_terminal_parser(xml_content.c_str(),  &e),
                 rs2_delete_terminal_parser);
             error::handle(e);            
         }

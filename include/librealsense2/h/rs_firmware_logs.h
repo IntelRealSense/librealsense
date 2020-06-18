@@ -21,7 +21,7 @@ extern "C" {
 * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return                   pointer to created empty firmware log message
 */
-rs2_firmware_log_message* rs2_create_firmware_log_message(rs2_device* dev, rs2_error** error);
+rs2_firmware_log_message* rs2_create_fw_log_message(rs2_device* dev, rs2_error** error);
 
 /**
 * \brief Gets RealSense firmware log.
@@ -30,9 +30,7 @@ rs2_firmware_log_message* rs2_create_firmware_log_message(rs2_device* dev, rs2_e
 * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return                   true for success, false for failure - failure happens if no firmware log was sent by the hardware monitor
 */
-int rs2_get_firmware_log(rs2_device* dev, rs2_firmware_log_message** fw_log_msg, rs2_error** error);
-
-int rs2_get_number_of_flash_logs(rs2_device* dev, rs2_error** error);
+int rs2_get_fw_log(rs2_device* dev, rs2_firmware_log_message** fw_log_msg, rs2_error** error);
 
 /**
 * \brief Gets RealSense flash log - this is a fw log that has been written in the device during the previous shutdown of the device
@@ -47,7 +45,7 @@ int rs2_get_flash_log(rs2_device* dev, rs2_firmware_log_message** fw_log_msg, rs
 * Delete RealSense firmware log message
 * \param[in]  device    Realsense firmware log message to delete
 */
-void rs2_delete_firmware_log_message(rs2_firmware_log_message* msg);
+void rs2_delete_fw_log_message(rs2_firmware_log_message* msg);
 
 /**
 * \brief Gets RealSense firmware log message data.
@@ -55,7 +53,7 @@ void rs2_delete_firmware_log_message(rs2_firmware_log_message* msg);
 * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return               pointer to start of the firmware log message data
 */
-const unsigned char* rs2_firmware_log_message_data(rs2_firmware_log_message* msg, rs2_error** error);
+const unsigned char* rs2_fw_log_message_data(rs2_firmware_log_message* msg, rs2_error** error);
 
 /**
 * \brief Gets RealSense firmware log message size.
@@ -63,7 +61,7 @@ const unsigned char* rs2_firmware_log_message_data(rs2_firmware_log_message* msg
 * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return               size of the firmware log message data
 */
-int rs2_firmware_log_message_size(rs2_firmware_log_message* msg, rs2_error** error);
+int rs2_fw_log_message_size(rs2_firmware_log_message* msg, rs2_error** error);
 
 
 /**
@@ -72,7 +70,7 @@ int rs2_firmware_log_message_size(rs2_firmware_log_message* msg, rs2_error** err
 * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return               timestamp of the firmware log message
 */
-unsigned int rs2_firmware_log_message_timestamp(rs2_firmware_log_message* msg, rs2_error** error);
+unsigned int rs2_fw_log_message_timestamp(rs2_firmware_log_message* msg, rs2_error** error);
 
 /**
 * \brief Gets RealSense firmware log message severity.
@@ -80,16 +78,16 @@ unsigned int rs2_firmware_log_message_timestamp(rs2_firmware_log_message* msg, r
 * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return               severity of the firmware log message data
 */
-rs2_log_severity rs2_firmware_log_message_severity(const rs2_firmware_log_message* msg, rs2_error** error);
+rs2_log_severity rs2_fw_log_message_severity(const rs2_firmware_log_message* msg, rs2_error** error);
 
 /**
 * \brief Initializes RealSense firmware logs parser in device.
-* \param[in] dev	    Device from which the FW log will be taken
-* \param[in] xml_path	path to xml file needed for parsing
-* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
-* \return               true for success, false for failure - failure happens if opening the xml from the xml_path input fails
+* \param[in] dev	        Device from which the FW log will be taken
+* \param[in] xml_content	content of the xml file needed for parsing
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return                   true for success, false for failure - failure happens if opening the xml from the xml_path input fails
 */
-int rs2_init_parser(rs2_device* dev, const char* xml_path, rs2_error** error);
+int rs2_init_fw_log_parser(rs2_device* dev, const char* xml_content, rs2_error** error);
 
 
 /**
@@ -98,13 +96,13 @@ int rs2_init_parser(rs2_device* dev, const char* xml_path, rs2_error** error);
 * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return                   pointer to created empty firmware log message
 */
-rs2_firmware_log_parsed_message* rs2_create_firmware_log_parsed_message(rs2_device* dev, rs2_error** error);
+rs2_firmware_log_parsed_message* rs2_create_fw_log_parsed_message(rs2_device* dev, rs2_error** error);
 
 /**
 * \brief Deletes RealSense firmware log parsed message.
 * \param[in] msg	        message to be deleted
 */
-void rs2_delete_firmware_log_parsed_message(rs2_firmware_log_parsed_message* fw_log_parsed_msg);
+void rs2_delete_fw_log_parsed_message(rs2_firmware_log_parsed_message* fw_log_parsed_msg);
 
 
 /**
@@ -121,10 +119,10 @@ int rs2_parse_firmware_log(rs2_device* dev, rs2_firmware_log_message* fw_log_msg
 * Delete RealSense firmware log parsed message
 * \param[in]  device    Realsense firmware log parsed message to delete
 */
-void rs2_delete_firmware_log_parsed_message(rs2_firmware_log_parsed_message* fw_log_parsed_msg);
+void rs2_delete_fw_log_parsed_message(rs2_firmware_log_parsed_message* fw_log_parsed_msg);
 
 /**
-* \brief Gets RealSense firmware log parsed message message.
+* \brief Gets RealSense firmware log parsed message.
 * \param[in] fw_log_parsed_msg	    firmware log parsed message object
 * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return               message of the firmware log parsed message

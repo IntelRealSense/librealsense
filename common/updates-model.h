@@ -35,6 +35,22 @@ namespace rs2
             });
             if (it == _updates.end())
                 _updates.push_back(update);
+            else
+            {
+                *it = update;
+            }
+        }
+
+        void update_profile(const update_profile_model& update)
+        {
+            std::lock_guard<std::mutex> lock(_lock);
+            auto it = std::find_if(_updates.begin(), _updates.end(), [&](update_profile_model& p) {
+                return (p.profile.device_name == update.profile.device_name && p.profile.serial_number == update.profile.serial_number);
+            });
+            if (it != _updates.end())
+            {
+                *it = update;
+            }
         }
         void remove_profile(const sw_update::dev_updates_profile::update_profile &update)
         {
@@ -44,6 +60,19 @@ namespace rs2
             });
             if (it != _updates.end())
                 _updates.erase(it);
+        }
+
+        // This is a helper function to indicate if a device is connected or not.
+        // It change its value on device connect/disconnect
+        // cause calling ctx.query_devices() is too slow for the UI
+        void set_device_status(const sw_update::dev_updates_profile::update_profile &update, bool active)
+        {
+            std::lock_guard<std::mutex> lock(_lock);
+            auto it = std::find_if(_updates.begin(), _updates.end(), [&](update_profile_model& p) {
+                return (p.profile.device_name == update.device_name && p.profile.serial_number == update.serial_number);
+            });
+            if (it != _updates.end())
+                it->profile.dev_active = active;
         }
 
         void draw(ux_window& window, std::string& error_message);
@@ -71,6 +100,7 @@ namespace rs2
         std::shared_ptr<texture_buffer> _icon = nullptr;
         std::mutex _lock;
         bool emphasize_dismiss_text = false;
+        bool popup_opened = false;
 
         std::shared_ptr<firmware_update_manager> _fw_update = nullptr;
 

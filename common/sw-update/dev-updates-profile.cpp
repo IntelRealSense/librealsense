@@ -31,26 +31,30 @@ namespace rs2
         {
             bool update_required(false);
 
-            std::map<versions_db_manager::version, update_description> &versions_vec((comp == versions_db_manager::FIRMWARE)?
-                _update_profile.firmware_versions : _update_profile.software_versions);
-
-            versions_db_manager::version &current_version((comp == versions_db_manager::FIRMWARE) ? _update_profile.firmware_version : _update_profile.software_version);
+            if (_update_profile.device_name.find("Recovery") == std::string::npos)
             {
-                update_description experimental_update;
-                if (try_parse_update(_versions_db, _update_profile.device_name, versions_db_manager::EXPERIMENTAL, comp, experimental_update))
+                std::map<versions_db_manager::version, update_description> &versions_vec((comp == versions_db_manager::FIRMWARE) ?
+                    _update_profile.firmware_versions : _update_profile.software_versions);
+
+                versions_db_manager::version &current_version((comp == versions_db_manager::FIRMWARE) ? _update_profile.firmware_version : _update_profile.software_version);
                 {
-                    versions_vec[experimental_update.ver] = experimental_update;
-                }
-                update_description recommened_update;
-                if (try_parse_update(_versions_db, _update_profile.device_name, versions_db_manager::RECOMMENDED, comp, recommened_update))
-                {
-                    versions_vec[recommened_update.ver] = recommened_update;
-                }
-                update_description required_update;
-                if (try_parse_update(_versions_db, _update_profile.device_name, versions_db_manager::ESSENTIAL, comp, required_update))
-                {
-                    versions_vec[required_update.ver] = required_update;
-                    update_required = update_required || (current_version < required_update.ver);
+                    update_description experimental_update;
+                    if (try_parse_update(_versions_db, _update_profile.device_name, versions_db_manager::EXPERIMENTAL, comp, experimental_update))
+                    {
+                        versions_vec[experimental_update.ver] = experimental_update;
+                    }
+                    update_description recommened_update;
+                    if (try_parse_update(_versions_db, _update_profile.device_name, versions_db_manager::RECOMMENDED, comp, recommened_update))
+                    {
+                        versions_vec[recommened_update.ver] = recommened_update;
+                    }
+                    update_description required_update;
+                    if (try_parse_update(_versions_db, _update_profile.device_name, versions_db_manager::ESSENTIAL, comp, required_update))
+                    {
+                        versions_vec[required_update.ver] = required_update;
+                        // Ignore version zero as an indication of Recovery mode.
+                        update_required = update_required || (current_version < required_update.ver);
+                    }
                 }
             }
 

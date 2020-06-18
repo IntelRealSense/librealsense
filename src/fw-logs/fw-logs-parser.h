@@ -14,7 +14,7 @@ namespace librealsense
         class fw_logs_parser : public std::enable_shared_from_this<fw_logs_parser>
         {
         public:
-            explicit fw_logs_parser(std::string xml_full_file_path);
+            explicit fw_logs_parser(std::string xml_content);
             ~fw_logs_parser(void);
 
             fw_log_data parse_fw_log(const fw_logs_binary_data* fw_log_msg);

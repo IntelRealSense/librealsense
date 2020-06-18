@@ -42,9 +42,6 @@ using namespace rs400;
 using namespace nlohmann;
 using namespace rs2::sw_update;
 
-constexpr const char* server_versions_db_url = "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/rs_versions_db.json";
-
-
 static rs2_sensor_mode resolution_from_width_height(int width, int height)
 {
     if ((width == 640 && height == 480) || (height == 640 && width == 480))
@@ -1916,7 +1913,7 @@ namespace rs2
                 auto& opt_md = options_metadata[static_cast<rs2_option>(next)];
                 opt_md.update_all_fields(error_message, notifications);
 
-                if (next_option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+                if (next == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
                 {
                     auto old_ae_enabled = auto_exposure_enabled;
                     auto_exposure_enabled = opt_md.value > 0;
@@ -3268,7 +3265,7 @@ namespace rs2
     {
         for (auto&& n : related_notifications) n->dismiss(false);
 
-        _updates->remove_profile(_updates_profile);
+        _updates->set_device_status(_updates_profile, false);
     }
 
 
@@ -4354,18 +4351,28 @@ namespace rs2
         {
             try
             {
-                sw_update::dev_updates_profile updates_profile(dev, server_versions_db_url);
+
+                auto server_url = config_file::instance().get(configurations::update::sw_updates_url);
+                sw_update::dev_updates_profile updates_profile(dev, server_url);
 
                 bool sw_update_required = updates_profile.retrieve_updates(versions_db_manager::LIBREALSENSE);
                 bool fw_update_required = updates_profile.retrieve_updates(versions_db_manager::FIRMWARE);
 
+                _updates_profile = updates_profile.get_update_profile();
+                updates_model::update_profile_model updates_profile_model(_updates_profile, ctx, this);
+
                 if (sw_update_required || fw_update_required)
                 {
-                    _updates_profile = updates_profile.get_update_profile();
-                    updates_model::update_profile_model updates_profile_model(updates_profile.get_update_profile(), ctx, this);
                     if (auto viewer_updates = updates_model_protected.lock())
                     {
                         viewer_updates->add_profile(updates_profile_model);
+                    }
+                }
+                else
+                {   // For updating current device profile if exists (Could update firmware version)
+                    if (auto viewer_updates = updates_model_protected.lock())
+                    {
+                        viewer_updates->update_profile(updates_profile_model);
                     }
                 }
             }
@@ -4773,7 +4780,9 @@ namespace rs2
                                 {
                                     try
                                     {
-                                        fwlogger.init_parser(hwlogger_xml);
+                                        std::string str((std::istreambuf_iterator<char>(f)),
+                                            std::istreambuf_iterator<char>());
+                                        fwlogger.init_parser(str);
                                         has_parser = true;
                                     }
                                     catch (const std::exception& ex)
@@ -4784,33 +4793,31 @@ namespace rs2
                                 }
 
                                 auto message = fwlogger.create_message();
-                                for (int i = 0; i < fwlogger.get_number_of_flash_logs(); ++i)
+                                
+                                while (fwlogger.get_flash_log(message))
                                 {
-                                    if (fwlogger.get_flash_log(message))
+                                    auto parsed = fwlogger.create_parsed_message();
+                                    auto parsed_ok = false;
+                                    
+                                    if (has_parser)
                                     {
-                                        auto parsed = fwlogger.create_parsed_message();
-                                        auto parsed_ok = false;
-                                        
-                                        if (has_parser)
+                                        if (fwlogger.parse_log(message, parsed))
                                         {
-                                            if (fwlogger.parse_log(message, parsed))
-                                            {
-                                                parsed_ok = true;
+                                            parsed_ok = true;
 
-                                                viewer.not_model->output.add_log(message.get_severity(), 
-                                                    parsed.file_name(), parsed.line(), to_string() 
-                                                        << "[" << parsed.thread_name() << "] " << parsed.message());
-                                            }
+                                            viewer.not_model->output.add_log(message.get_severity(), 
+                                                parsed.file_name(), parsed.line(), to_string() 
+                                                    << "FW-LOG [" << parsed.thread_name() << "] " << parsed.message());
                                         }
-
-                                        if (!parsed_ok)
-                                        {
-                                            std::stringstream ss; 
-                                            for (auto& elem : message.data())
-                                                ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem) << " ";
-                                            viewer.not_model->output.add_log(message.get_severity(), __FILE__, 0, ss.str());
-                                        }                            
                                     }
+
+                                    if (!parsed_ok)
+                                    {
+                                        std::stringstream ss; 
+                                        for (auto& elem : message.data())
+                                            ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem) << " ";
+                                        viewer.not_model->output.add_log(message.get_severity(), __FILE__, 0, ss.str());
+                                    }                            
                                 }
                             }
                             catch(const std::exception& ex)

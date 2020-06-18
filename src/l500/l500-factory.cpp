@@ -11,6 +11,7 @@
 #include "context.h"
 #include "image.h"
 #include "metadata-parser.h"
+#include "../firmware_logger_device.h"
 
 #include "l500-factory.h"
 #include "l500-depth.h"
@@ -43,7 +44,7 @@ namespace librealsense
             l500_color(ctx, group),
             l500_motion(ctx, group),
             l500_serializable(l500_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(l500_device::_hw_monitor, get_depth_sensor().get_info(RS2_CAMERA_INFO_DEBUG_OP_CODE))
+            firmware_logger_device(l500_device::_hw_monitor, get_depth_sensor())
         {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
@@ -63,7 +64,8 @@ namespace librealsense
     };
 
     // l500
-    class rs500_device : public l500_depth
+    class rs500_device : public l500_depth,
+        public firmware_logger_device
     {
     public:
         rs500_device(std::shared_ptr<context> ctx,
@@ -71,7 +73,8 @@ namespace librealsense
             bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
             l500_device(ctx, group),
-            l500_depth(ctx, group)
+            l500_depth(ctx, group),
+            firmware_logger_device(l500_device::_hw_monitor, get_depth_sensor())
         {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;

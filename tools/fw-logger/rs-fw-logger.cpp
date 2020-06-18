@@ -11,7 +11,7 @@ using namespace std;
 using namespace TCLAP;
 using namespace rs2;
 
-string hexify(unsigned char n)
+string char2hex(unsigned char n)
 {
     string res;
 
@@ -46,7 +46,9 @@ int main(int argc, char* argv[])
 {
     CmdLine cmd("librealsense rs-fw-logger example tool", ' ', RS2_API_VERSION_STR);
     ValueArg<string> xml_arg("l", "load", "Full file path of HW Logger Events XML file", false, "", "Load HW Logger Events XML file");
-    cmd.add(xml_arg);
+    SwitchArg flash_logs_arg("f", "flash", "Flash Logs Request", false);
+    cmd.add(xml_arg); 
+    cmd.add(flash_logs_arg);
     cmd.parse(argc, argv);
 
     log_to_file(RS2_LOG_SEVERITY_WARN, "librealsense.log");
@@ -54,10 +56,14 @@ int main(int argc, char* argv[])
     auto use_xml_file = false;
     auto xml_full_file_path = xml_arg.getValue();
 
+    bool are_flash_logs_requested = flash_logs_arg.isSet();
+
     context ctx;
     device_hub hub(ctx);
 
-    while (true)
+    bool should_loop_end = false;
+
+    while (!should_loop_end)
     {
         try
         {
@@ -75,23 +81,39 @@ int main(int argc, char* argv[])
                 ifstream f(xml_full_file_path);
                 if (f.good())
                 {
-                    bool parser_initialized = fw_log_device.init_parser(xml_full_file_path);
+                    std::string xml_content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+                    bool parser_initialized = fw_log_device.init_parser(xml_content);
                     if (parser_initialized)
                         using_parser = true;
                 }
             }
 
+            bool are_there_remaining_flash_logs_to_pull = true;
+
             while (hub.is_connected(dev))
             {
-                auto fw_log_message = fw_log_device.create_message();
-                bool result = fw_log_device.get_firmware_log(fw_log_message);
+                if (are_flash_logs_requested && !are_there_remaining_flash_logs_to_pull)
+                {
+                    should_loop_end = true;
+                    break;
+                }
+                auto log_message = fw_log_device.create_message();
+                bool result = false;
+                if (are_flash_logs_requested)
+                {
+                    result = fw_log_device.get_flash_log(log_message);
+                }
+                else
+                {
+                    result = fw_log_device.get_firmware_log(log_message);
+                }
                 if (result)
                 {
                     std::vector<string> fw_log_lines;
                     if (using_parser)
                     {
                         auto parsed_log = fw_log_device.create_parsed_message();
-                        bool parsing_result = fw_log_device.parse_log(fw_log_message, parsed_log);
+                        bool parsing_result = fw_log_device.parse_log(log_message, parsed_log);
                         
                         stringstream sstr;
                         sstr << parsed_log.timestamp() << " " << parsed_log.severity() << " " << parsed_log.message()
@@ -103,18 +125,25 @@ int main(int argc, char* argv[])
                     else
                     {
                         stringstream sstr;
-                        sstr << fw_log_message.get_timestamp();
-                        sstr << " " << fw_log_message.get_severity_str();
+                        sstr << log_message.get_timestamp();
+                        sstr << " " << log_message.get_severity_str();
                         sstr << "  FW_Log_Data:";
-                        std::vector<uint8_t> msg_data = fw_log_message.data();
+                        std::vector<uint8_t> msg_data = log_message.data();
                         for (int i = 0; i < msg_data.size(); ++i)
                         {
-                            sstr << hexify(msg_data[i]) << " ";
+                            sstr << char2hex(msg_data[i]) << " ";
                         }
                         fw_log_lines.push_back(sstr.str());
                     }
                     for (auto& line : fw_log_lines)
                         cout << line << endl;
+                }
+                else
+                {
+                    if (are_flash_logs_requested)
+                    {
+                        are_there_remaining_flash_logs_to_pull = false;
+                    }
                 }
             }
         }
