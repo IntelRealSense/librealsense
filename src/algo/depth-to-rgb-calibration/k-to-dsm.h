@@ -188,7 +188,8 @@ namespace depth_to_rgb_calibration {
             const rs2_dsm_params_double& ac_data,
             const algo_calibration_registers& algo_calibration_registers,
             const rs2_intrinsics_double& k_raw,
-            const std::vector<uint8_t>& relevant_pixels_image);
+            const std::vector<uint8_t>& relevant_pixels_image,
+            iteration_data_collect* data = nullptr);
 
         //return rs2_dsm_params and new vertices
         rs2_dsm_params_double convert_new_k_to_DSM(
@@ -242,7 +243,8 @@ namespace depth_to_rgb_calibration {
 
         std::vector<double2> convert_norm_vertices_to_los(const algo_calibration_info& regs, 
             const algo_calibration_registers& algo_calibration_registers, 
-            std::vector<double3> vertices);
+            std::vector<double3> vertices,
+            iteration_data_collect* data = nullptr);
 
         double3 laser_incident_direction(double2 angle_rad);
         std::vector<double3> transform_to_direction(std::vector<double3>);

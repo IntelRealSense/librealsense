@@ -153,7 +153,8 @@ pre_process_data k_to_DSM::pre_processing
     const rs2_dsm_params_double& ac_data,
     const algo_calibration_registers& algo_calibration_registers,
     const rs2_intrinsics_double& orig_k_raw,
-    const std::vector<uint8_t>& relevant_pixels_image
+    const std::vector<uint8_t>& relevant_pixels_image,
+    iteration_data_collect* data
 )
 {
     pre_process_data res;
@@ -163,7 +164,7 @@ pre_process_data k_to_DSM::pre_processing
 
     res.vertices_orig = calc_relevant_vertices(relevant_pixels_image, orig_k_raw);
     auto dsm_res_orig = apply_ac_res_on_dsm_model(ac_data, algo_calibration_registers, inverse);
-    res.los_orig = convert_norm_vertices_to_los(regs, dsm_res_orig, res.vertices_orig);
+    res.los_orig = convert_norm_vertices_to_los(regs, dsm_res_orig, res.vertices_orig, data);
     return res;
 }
 
@@ -189,7 +190,7 @@ rs2_dsm_params_double k_to_DSM::convert_new_k_to_DSM
     std::vector<uint8_t> relevant_pixels_image_rot(z.relevant_pixels_image.size(), 0);
     rotate_180(z.relevant_pixels_image.data(), relevant_pixels_image_rot.data(), w, h);
 
-    _pre_process_data = pre_processing(_regs, previous_dsm_params, new_dsm_regs, old_k_raw, relevant_pixels_image_rot);
+    _pre_process_data = pre_processing(_regs, previous_dsm_params, new_dsm_regs, old_k_raw, relevant_pixels_image_rot, data);
 
     auto new_los_scaling = convert_k_to_los_error(_regs, new_dsm_regs, new_k_raw, data);
     double2 los_shift = { 0 };
@@ -689,9 +690,10 @@ std::vector<double3> k_to_DSM::calc_relevant_vertices
 
 std::vector<double2> k_to_DSM::convert_norm_vertices_to_los
 (
-    algo_calibration_info const & regs,
+    algo_calibration_info const &regs,
     algo_calibration_registers const &dsm_regs,
-    std::vector<double3> vertices
+    std::vector<double3> vertices,
+    iteration_data_collect* data
 )
 {
     const double angle = 45;
@@ -737,6 +739,9 @@ std::vector<double2> k_to_DSM::convert_norm_vertices_to_los
     std::vector<double3> mirror_normal_direction(fovex_indicent_direction.size());
     std::vector<double> dsm_x_corr(fovex_indicent_direction.size());
     std::vector<double> dsm_y_corr(fovex_indicent_direction.size());
+    std::vector<double> ang_x(fovex_indicent_direction.size());
+    std::vector<double> ang_y(fovex_indicent_direction.size());
+
     for (auto i = 0; i < fovex_indicent_direction.size(); i++)
     {
         mirror_normal_direction[i].x = fovex_indicent_direction[i].x - laser_incident[0];
@@ -751,14 +756,13 @@ std::vector<double2> k_to_DSM::convert_norm_vertices_to_los
         mirror_normal_direction[i].y /= norm;
         mirror_normal_direction[i].z /= norm;
 
-        auto ang_x = std::atan(mirror_normal_direction[i].x / mirror_normal_direction[i].z)* (double)180. / (double)M_PI;
-        auto ang_y = std::asin(mirror_normal_direction[i].y)* (double)180. / (double)M_PI;
+        ang_x[i] = std::atan(mirror_normal_direction[i].x / mirror_normal_direction[i].z)* (double)180. / (double)M_PI;
+        ang_y[i] = std::asin(mirror_normal_direction[i].y)* (double)180. / (double)M_PI;
         
         int mirror_mode = 1/*_regs.frmw.mirrorMovmentMode*/;
 
-        dsm_x_corr[i] = ang_x / (double)(regs.FRMWxfov[mirror_mode - 1] * (double)0.25 / (double)2047);
-        dsm_y_corr[i] = ang_y / (double)(regs.FRMWyfov[mirror_mode - 1] * (double)0.25 / (double)2047);
-
+        dsm_x_corr[i] = ang_x[i] / (double)(regs.FRMWxfov[mirror_mode - 1] * (double)0.25 / (double)2047);
+        dsm_y_corr[i] = ang_y[i] / (double)(regs.FRMWyfov[mirror_mode - 1] * (double)0.25 / (double)2047);
     }
 
     std::vector<double> dsm_grid(421);
@@ -788,11 +792,24 @@ std::vector<double2> k_to_DSM::convert_norm_vertices_to_los
 
     for (auto i = 0; i < dsm_y.size(); i++)
     {
-        dsm_y[i] = dsm_y_corr[i] - (dsm_x[i] / 2047)*(double)_regs.FRMWpitchFixFactor;
+        dsm_y[i] = dsm_y_corr[i] - (dsm_x[i] / (double)2047)*(double)_regs.FRMWpitchFixFactor;
     }
    
     std::vector<double2> res(dsm_x.size());
 
+    if (data)
+    {
+        data->cycle_data_p.laser_incident = laser_incident;
+        data->cycle_data_p.fovex_indicent_direction = fovex_indicent_direction;
+        data->cycle_data_p.mirror_normal_direction = mirror_normal_direction;
+        data->cycle_data_p.ang_x = ang_x;
+        data->cycle_data_p.ang_y = ang_y;
+        data->cycle_data_p.dsm_x_corr = dsm_x_corr;
+        data->cycle_data_p.dsm_y_corr = dsm_y_corr;
+        data->cycle_data_p.dsm_y = dsm_y;
+        data->cycle_data_p.dsm_x = dsm_x;
+        data->cycle_data_p.dsm_y = dsm_y;
+    }
     for (auto i = 0; i < res.size(); i++)
     {
         res[i].x = (dsm_x[i] + (double)2047) / (double)dsm_regs.EXTLdsmXscale - (double)dsm_regs.EXTLdsmXoffset;

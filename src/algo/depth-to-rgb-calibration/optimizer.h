@@ -151,6 +151,15 @@ namespace depth_to_rgb_calibration {
     {
         algo_calibration_registers dsm_regs_orig;
         std::vector < uint8_t> relevant_pixels_image_rot;
+        double3 laser_incident;
+        std::vector<double3> fovex_indicent_direction;
+        std::vector<double3> mirror_normal_direction;
+        std::vector<double> ang_x;
+        std::vector<double> ang_y;
+        std::vector<double> dsm_x_corr;
+        std::vector<double> dsm_y_corr;
+        std::vector<double> dsm_x;
+        std::vector<double> dsm_y;
         pre_process_data dsm_pre_process_data;
         std::vector < double> errL2;
         std::vector < std::vector < double>> sg_mat;

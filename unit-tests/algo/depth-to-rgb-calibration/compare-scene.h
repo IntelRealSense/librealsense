@@ -198,7 +198,69 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
                 bin_file("verticesOrig", data.cycle, 3, md.n_relevant_pixels, "double_00") + ".bin",
                 md.n_relevant_pixels, 1, compare_same_vectors));
 
-            CHECK(compare_to_bin_file< algo::double2 >(
+
+            CHECK(compare_to_bin_file< algo::double3 >(
+                data.cycle_data_p.laser_incident,
+                scene_dir,
+                bin_file("laserIncidentDirection", data.cycle, 3, 1, "double_00.bin")));
+
+            REQUIRE(compare_to_bin_file< algo::double3 >(
+                    data.cycle_data_p.fovex_indicent_direction,
+                    scene_dir,
+                    bin_file("fovexIndicentDirection", data.cycle, 3, md.n_relevant_pixels, "double_00") + ".bin",
+                    md.n_relevant_pixels, 1,
+                    compare_same_vectors));
+
+            REQUIRE(compare_to_bin_file< algo::double3 >(
+                data.cycle_data_p.mirror_normal_direction,
+                scene_dir,
+                bin_file("mirrorNormalDirection", data.cycle, 3, md.n_relevant_pixels, "double_00") + ".bin",
+                md.n_relevant_pixels, 1,
+                compare_same_vectors));
+
+            REQUIRE(compare_to_bin_file< double >(
+                data.cycle_data_p.ang_x,
+                scene_dir,
+                bin_file("angX", data.cycle, 1, md.n_relevant_pixels, "double_00") + ".bin",
+                md.n_relevant_pixels, 1,
+                compare_same_vectors));
+
+            REQUIRE(compare_to_bin_file< double >(
+                data.cycle_data_p.ang_y,
+                scene_dir,
+                bin_file("angY", data.cycle, 1, md.n_relevant_pixels, "double_00") + ".bin",
+                md.n_relevant_pixels, 1,
+                compare_same_vectors));
+
+            REQUIRE(compare_to_bin_file< double >(
+                data.cycle_data_p.dsm_x_corr,
+                scene_dir,
+                bin_file("dsmXcorr", data.cycle, 1, md.n_relevant_pixels, "double_00") + ".bin",
+                md.n_relevant_pixels, 1,
+                compare_same_vectors));
+
+            REQUIRE(compare_to_bin_file< double >(
+                data.cycle_data_p.dsm_y_corr,
+                scene_dir,
+                bin_file("dsmYcorr", data.cycle, 1, md.n_relevant_pixels, "double_00") + ".bin",
+                md.n_relevant_pixels, 1,
+                compare_same_vectors));
+
+            REQUIRE(compare_to_bin_file< double >(
+                data.cycle_data_p.dsm_x,
+                scene_dir,
+                bin_file("dsmX", data.cycle, 1, md.n_relevant_pixels, "double_00") + ".bin",
+                md.n_relevant_pixels, 1,
+                compare_same_vectors));
+
+            REQUIRE(compare_to_bin_file< double >(
+                data.cycle_data_p.dsm_y,
+                scene_dir,
+                bin_file("dsmY", data.cycle, 1, md.n_relevant_pixels, "double_00") + ".bin",
+                md.n_relevant_pixels, 1,
+                compare_same_vectors));
+
+            REQUIRE(compare_to_bin_file< algo::double2 >(
                 data.cycle_data_p.dsm_pre_process_data.los_orig,
                 scene_dir,
                 bin_file("losOrig", data.cycle, 2, md.n_relevant_pixels, "double_00") + ".bin",
