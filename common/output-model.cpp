@@ -8,6 +8,7 @@
 #include "os.h"
 
 #include <imgui_internal.h>
+#include <librealsense2/hpp/rs_internal.hpp>
 
 using namespace rs2;
 
