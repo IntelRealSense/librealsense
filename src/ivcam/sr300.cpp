@@ -422,6 +422,7 @@ namespace librealsense
         const platform::backend_device_group& group,
         bool register_device_notifications)
         : device(ctx, group, register_device_notifications),
+        firmware_logger_device(_hw_monitor, get_depth_sensor()),
         _depth_device_idx(add_sensor(create_depth_device(ctx, depth))),
         _depth_stream(new stream(RS2_STREAM_DEPTH)),
         _ir_stream(new stream(RS2_STREAM_INFRARED)),
@@ -492,7 +493,8 @@ namespace librealsense
         const platform::usb_device_info &hwm_device,
         const platform::backend_device_group& group,
         bool register_device_notifications)
-        : sr300_camera(ctx, color, depth, hwm_device, group, register_device_notifications) {
+        : sr300_camera(ctx, color, depth, hwm_device, group, register_device_notifications), 
+        device(ctx, group, register_device_notifications) {
 
         static auto device_name = "Intel RealSense SR305";
         update_info(RS2_CAMERA_INFO_NAME, device_name);

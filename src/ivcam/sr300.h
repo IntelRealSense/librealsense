@@ -21,6 +21,7 @@
 #include "stream.h"
 #include "fw-update/fw-update-device-interface.h"
 #include "proc/color-formats-converter.h"
+#include "firmware_logger_device.h"
 
 namespace librealsense
 {
@@ -185,9 +186,10 @@ namespace librealsense
         platform::usb_device_info _hwm;
     };
 
-    class sr300_camera : public device, 
-        public debug_interface, 
-        public updatable
+    class sr300_camera : public virtual device,
+        public debug_interface,
+        public updatable,
+        public firmware_logger_device
     {
     public:
         std::vector<tagged_profile> get_profiles_tags() const override
