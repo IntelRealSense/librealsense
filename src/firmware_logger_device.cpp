@@ -2,9 +2,6 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "firmware_logger_device.h"
-#include "ds5/ds5-private.h"
-#include "l500/l500-private.h"
-#include "ivcam/sr300.h"
 #include <string>
 
 namespace librealsense
