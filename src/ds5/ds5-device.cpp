@@ -945,6 +945,16 @@ namespace librealsense
 #endif
     }
 
+    command ds5_device::get_firmware_logs_command() const
+    {
+        return command{ ds::GLD, 0x1f4 };
+    }
+
+    command ds5_device::get_flash_logs_command() const
+    {
+        return command{ ds::FRB, 0x17a000, 0x3f8 };
+    }
+
     std::shared_ptr<synthetic_sensor> ds5u_device::create_ds5u_depth_device(std::shared_ptr<context> ctx,
         const std::vector<platform::uvc_device_info>& all_device_infos)
     {

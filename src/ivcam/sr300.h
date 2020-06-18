@@ -21,6 +21,7 @@
 #include "stream.h"
 #include "fw-update/fw-update-device-interface.h"
 #include "proc/color-formats-converter.h"
+#include "firmware_logger_device.h"
 
 namespace librealsense
 {
@@ -185,7 +186,10 @@ namespace librealsense
         platform::usb_device_info _hwm;
     };
 
-    class sr300_camera : public  device, public debug_interface, public updatable
+    class sr300_camera : public virtual device,
+        public debug_interface,
+        public updatable,
+        public firmware_logger_device
     {
     public:
         std::vector<tagged_profile> get_profiles_tags() const override
@@ -386,7 +390,7 @@ namespace librealsense
             force_hardware_reset();
         }
 
-        synthetic_sensor& get_depth_sensor() { return dynamic_cast<synthetic_sensor&>(get_sensor(_depth_device_idx)); }
+        synthetic_sensor& get_depth_sensor() { return dynamic_cast<synthetic_sensor&>(device::get_sensor(_depth_device_idx)); }
 
         uvc_sensor& get_raw_depth_sensor()
         {
@@ -530,6 +534,11 @@ namespace librealsense
         lazy<ivcam::camera_calib_params> _camer_calib_params;
 
     protected:
+
+        //TODO - add these to device class as pure virtual methods
+        command get_firmware_logs_command() const;
+        command get_flash_logs_command() const;
+
         const uint8_t _color_device_idx;
         std::shared_ptr<hw_monitor> _hw_monitor;
     };

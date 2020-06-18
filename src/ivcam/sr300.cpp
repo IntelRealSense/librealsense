@@ -422,6 +422,7 @@ namespace librealsense
         const platform::backend_device_group& group,
         bool register_device_notifications)
         : device(ctx, group, register_device_notifications),
+        firmware_logger_device(_hw_monitor, get_firmware_logs_command(), get_flash_logs_command()),
         _depth_device_idx(add_sensor(create_depth_device(ctx, depth))),
         _depth_stream(new stream(RS2_STREAM_DEPTH)),
         _ir_stream(new stream(RS2_STREAM_INFRARED)),
@@ -492,7 +493,8 @@ namespace librealsense
         const platform::usb_device_info &hwm_device,
         const platform::backend_device_group& group,
         bool register_device_notifications)
-        : sr300_camera(ctx, color, depth, hwm_device, group, register_device_notifications) {
+        : sr300_camera(ctx, color, depth, hwm_device, group, register_device_notifications), 
+        device(ctx, group, register_device_notifications) {
 
         static auto device_name = "Intel RealSense SR305";
         update_info(RS2_CAMERA_INFO_NAME, device_name);
@@ -504,6 +506,16 @@ namespace librealsense
 
     }
 
+
+    command sr300_camera::get_firmware_logs_command() const
+    {
+        return command{ ivcam::GLD, 0x1f4 };
+    }
+
+    command sr300_camera::get_flash_logs_command() const
+    {
+        return command{ ivcam::FlashRead, 0x000B6000, 0x3f8 };
+    }
 
     void sr300_camera::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const
     {
