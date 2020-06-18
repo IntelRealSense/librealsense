@@ -3,10 +3,20 @@
 
 //#cmake:add-file ../../../src/algo/depth-to-rgb-calibration/*.cpp
 
+
+#ifndef BUILD_SHARED_LIBS
+#include <easylogging++.h>
+INITIALIZE_EASYLOGGINGPP
+#endif
+
+
 // We have our own main
 #define NO_CATCH_CONFIG_MAIN
+//#define CATCH_CONFIG_RUNNER
 
 #include "d2rgb-common.h"
+
+//INITIALIZE_EASYLOGGINGPP
 
 
 template< typename T >
@@ -95,10 +105,13 @@ int main( int argc, char * argv[] )
             algo::optimizer cal;
             init_algo( cal, dir, "\\rgb.raw", "\\rgb_prev.raw", "\\ir.raw", "\\depth.raw", camera );
 
+            std::string status;
+
             TRACE( "\n___\nis_scene_valid" );
             if( !cal.is_scene_valid() )
             {
                 TRACE("NOT VALID\n");
+                status += "SCENE_INVALID ";
             }
 
             TRACE( "\n___\noptimize" );
@@ -111,6 +124,11 @@ int main( int argc, char * argv[] )
             if( !cal.is_valid_results() )
             {
                 TRACE("NOT VALID\n");
+                status += "BAD_RESULT";
+            }
+            else
+            {
+                status += "SUCCESSFUL";
             }
             TRACE( "\n___\nRESULTS:" );
 
@@ -128,6 +146,8 @@ int main( int argc, char * argv[] )
 
             TRACE( "\n___\nVS:" );
             AC_LOG( DEBUG, AC_D_PREC << "dsm" << camera.dsm_params );
+         
+            TRACE( "\n___\nSTATUS: " + status );
         }
         catch( std::exception const & e )
         {
