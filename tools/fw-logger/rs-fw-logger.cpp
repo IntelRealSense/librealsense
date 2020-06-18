@@ -8,12 +8,13 @@
 #include "fw-logs-parser.h"
 
 
+
 using namespace std;
 using namespace TCLAP;
 using namespace fw_logger;
 using namespace rs2;
 
-string hexify(unsigned char n)
+string char2hex(unsigned char n)
 {
     string res;
 
@@ -112,7 +113,7 @@ int main(int argc, char* argv[])
                     stringstream sstr;
                     sstr << datetime_string() << "  FW_Log_Data:";
                     for (size_t i = 0; i < raw_data.size(); ++i)
-                        sstr << hexify(raw_data[i]) << " ";
+                        sstr << char2hex(raw_data[i]) << " ";
 
                     fw_log_lines.push_back(sstr.str());
                 }
