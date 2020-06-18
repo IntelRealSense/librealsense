@@ -117,7 +117,6 @@ namespace librealsense
         auto res = _hw_monitor->send(it->second.fw_logs_command);
         if (res.empty())
         {
-            LOG_INFO("Getting Firmware logs failed!");
             return;
         }
 
