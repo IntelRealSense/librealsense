@@ -94,7 +94,7 @@ output_model::~output_model()
 output_model::output_model() : fw_logger([this](){ thread_loop(); })
 {
     is_output_open = config_file::instance().get_or_default(
-            configurations::viewer::output_collapsed, true);
+            configurations::viewer::output_open, false);
     search_line = config_file::instance().get_or_default(
             configurations::viewer::search_term, std::string(""));
     if (search_line != "") search_open = true;
@@ -153,7 +153,7 @@ bool output_model::round_indicator(ux_window& win, std::string icon,
 void output_model::open(ux_window& win)
 {
     is_output_open = true;
-    config_file::instance().set(configurations::viewer::output_collapsed, true);
+    config_file::instance().set(configurations::viewer::output_open, true);
     default_log_h = (win.height() - 100) / 2;
     new_log = true;
 }
@@ -205,7 +205,7 @@ void output_model::draw(ux_window& win, rect view_rect, std::vector<rs2::device>
         if (ImGui::Button(u8"\uF13A", ImVec2(28, 28)))
         {
             is_output_open = false;
-            config_file::instance().set(configurations::viewer::output_collapsed, false);
+            config_file::instance().set(configurations::viewer::output_open, false);
             default_log_h = 36;
             search_open = false;
         }
