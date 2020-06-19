@@ -2784,7 +2784,7 @@ namespace rs2
                 if (tab == 3)
                 {
                     bool recommend_fw_updates = temp_cfg.get(configurations::update::recommend_updates);
-                    if (ImGui::Checkbox("Recommend Firmware Updates", &recommend_fw_updates))
+                    if (ImGui::Checkbox("Recommend Bundled Firmware", &recommend_fw_updates))
                     {
                         temp_cfg.set(configurations::update::recommend_updates, recommend_fw_updates);
                         refresh_updates = true;
@@ -2792,6 +2792,42 @@ namespace rs2
                     if (ImGui::IsItemHovered())
                     {
                         ImGui::SetTooltip("%s", "When firmware of the device is below the version bundled with this software release\nsuggest firmware update");
+                    }
+                    ImGui::Separator();
+                    ImGui::Text("%s", "SW/FW Updates From Server:");
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("%s", "Select the server URL of the SW/FW updates information");
+                    }
+                    ImGui::SameLine(); 
+
+                    static bool official_url(temp_cfg.get(configurations::update::sw_updates_official_server));
+                    static char custom_url[256] = { 0 };
+                    static std::string url_str = (temp_cfg.get(configurations::update::sw_updates_url));
+                    memcpy(custom_url, url_str.c_str(), std::min(255, (int)url_str.size()));
+                    if (ImGui::RadioButton("Official Server", official_url))
+                    {
+                        official_url = true;
+                        temp_cfg.set(configurations::update::sw_updates_url, server_versions_db_url);
+                        temp_cfg.set(configurations::update::sw_updates_official_server, true);
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::RadioButton("Custom Server", !official_url))
+                    {
+                        official_url = false;
+                    }
+                    if (!official_url)
+                    {
+                        if (ImGui::InputText("##custom_server_url", custom_url, 255))
+                        {
+                            url_str = custom_url;
+                        }
+                        ImGui::SameLine();
+                        if (ImGui::Button("Update URL", ImVec2(80, 20)))
+                        {
+                            temp_cfg.set(configurations::update::sw_updates_url, url_str);
+                            temp_cfg.set(configurations::update::sw_updates_official_server, false);
+                        }
                     }
                 }
 

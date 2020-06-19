@@ -42,6 +42,8 @@ namespace librealsense
 
         const int REGISTER_CLOCK_0 = 0x9003021c;
 
+        const uint16_t L515_IMU_TABLE   = 0x0243;  // IMU calibration table on L515
+
         enum fw_cmd : uint8_t
         {
             MRD                         = 0x01, //"Read Tensilica memory ( 32bit ). Output : 32bit dump"
@@ -58,7 +60,7 @@ namespace librealsense
             AMCGET                      = 0x2C, // Get options (L515)
             DELETE_TABLE                = 0x2E,
             PFD                         = 0x3B, // Disable power features <Parameter1 Name="0 - Disable, 1 - Enable" />
-            READ_TABLE                  = 0x43,
+            READ_TABLE                  = 0x43, // read table from flash, for example, read imu calibration table, read_table 0x243 0
             WRITE_TABLE                 = 0x44,
             DPT_INTRINSICS_GET          = 0x5A,
             TEMPERATURES_GET            = 0x6A,
