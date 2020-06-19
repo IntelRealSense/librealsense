@@ -820,7 +820,8 @@ std::vector<double2> k_to_DSM::convert_norm_vertices_to_los
 
 double3 k_to_DSM::laser_incident_direction(double2 angle_rad)
 {
-    double2 angle_deg = { angle_rad.x * M_PI / 180., (angle_rad.y)* M_PI / 180. };
+    double2 angle_deg = { angle_rad.x * (double)M_PI / (double)180., (angle_rad.y)* (double)M_PI / (double)180. };
+
     double3 laser_incident_direction = { std::cos(angle_deg.y)*std::sin(angle_deg.x),
                                         std::sin(angle_deg.y),
                                         std::cos(angle_deg.y)*std::cos(angle_deg.x) };

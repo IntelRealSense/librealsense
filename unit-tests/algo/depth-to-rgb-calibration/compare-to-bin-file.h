@@ -97,7 +97,7 @@ bool is_equal_approximetly<algo::double3, algo::double3>(algo::double3 f, algo::
         bool ok = true;
         ok &= compare_and_trace(d.x, f.x, "x");
         ok &= compare_and_trace(d.y, f.y, "y");
-        ok &= compare_and_trace(d.z, f.y, "z");
+        ok &= compare_and_trace(d.z, f.z, "z");
 
         return ok;
     }

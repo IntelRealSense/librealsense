@@ -14,7 +14,7 @@ double optimizer::calc_correction_in_pixels( calib const & from_calibration ) co
     //%    [uvMap,~,~] = OnlineCalibration.aux.projectVToRGB(frame.vertices,params.rgbPmat,params.Krgb,params.rgbDistort);
     //% [uvMapNew,~,~] = OnlineCalibration.aux.projectVToRGB(frame.vertices,newParams.rgbPmat,newParams.Krgb,newParams.rgbDistort);
     auto old_uvmap = get_texture_map( _z.orig_vertices, from_calibration, from_calibration.calc_p_mat());
-    auto new_uvmap = get_texture_map( _z.vertices, _final_calibration, _final_calibration.calc_p_mat());
+    auto new_uvmap = get_texture_map( _z.vertices, _optimaized_calibration, _optimaized_calibration.calc_p_mat());
 
     return calc_correction_in_pixels( old_uvmap, new_uvmap );
 }
