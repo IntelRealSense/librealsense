@@ -52,7 +52,13 @@ void print_dividers()
     std::cout << std::left << std::setw( 10 ) << "----------";
     std::cout << std::right << std::setw( 10 ) << "-----";
     std::cout << std::right << std::setw( 10 ) << "-------";
-    std::cout << std::right << std::setw( 10 ) << "-----";
+    std::cout << std::right << std::setw( 6 ) << "---";
+    std::cout << std::right << std::setw( 2 ) << " ";
+    std::cout << std::right << std::setw( 4 ) << "---";
+    std::cout << std::right << std::setw( 2 ) << " ";
+    std::cout << std::right << std::setw( 4 ) << "---";
+    std::cout << std::right << std::setw( 2 ) << " ";
+    std::cout << std::right << std::setw( 7 ) << "-----";
     std::cout << std::endl;
 }
 
@@ -63,7 +69,13 @@ void print_headers()
     std::cout << std::left << std::setw( 10 ) << "Cost";
     std::cout << std::right << std::setw( 10 ) << "%diff";
     std::cout << std::right << std::setw( 10 ) << "Pixels";
-    std::cout << std::right << std::setw( 10 ) << "delta";
+    std::cout << std::right << std::setw( 6 ) << "SV";
+    std::cout << std::right << std::setw( 2 ) << " ";
+    std::cout << std::right << std::setw( 4 ) << "OV";
+    std::cout << std::right << std::setw( 2 ) << " ";
+    std::cout << std::right << std::setw( 4 ) << "Con";
+    std::cout << std::right << std::setw( 2 ) << " ";
+    std::cout << std::right << std::setw( 7 ) << "dPix";
     std::cout << std::endl;
 
     print_dividers();
@@ -81,7 +93,15 @@ void print_scene_stats( std::string const & name, size_t n_failed, scene_stats c
     std::cout << std::right << std::setw( 10 ) << d_cost_pct;
 
     std::cout << std::right << std::setw( 10 ) << scene.movement;
-    std::cout << std::right << std::setw( 10 ) << scene.d_movement;
+
+    std::cout << std::right << std::setw( 6 ) << scene.n_valid_scene;
+    std::cout << std::left << std::setw( 2 ) << ( scene.n_valid_scene_diff ? "!" : "" );
+    std::cout << std::right << std::setw( 4 ) << scene.n_valid_result;
+    std::cout << std::left << std::setw( 2 ) << (scene.n_valid_result_diff ? "!" : "");
+    std::cout << std::right << std::setw( 4 ) << scene.n_converged;
+    std::cout << std::left << std::setw( 2 ) << (scene.n_converged_diff ? "!" : "");
+
+    std::cout << std::right << std::setw( 7 ) << scene.d_movement;
 
     std::cout << std::endl;
 }
@@ -120,12 +140,9 @@ int main( int argc, char * argv[] )
             TRACE( "\n\nProcessing: " << dir << " ..." );
             Catch::CustomRunContext ctx( config );
             ctx.set_redirection( !verbose );
+            scene_stats total = { 0 };
             size_t n_failed = 0;
             size_t n_scenes = 0;
-            double total_cost = 0;
-            double total_cost_diff = 0;
-            double total_movement = 0;
-            double total_movement_diff = 0;
 
             if( stats )
                 print_headers();
@@ -148,34 +165,38 @@ int main( int argc, char * argv[] )
 
                     scene_stats scene;
                     
-                    Catch::Totals total;
+                    Catch::Totals catch_total;
                     {
                         redirect_file no( stats ? stdout : stderr );
-                        total = ctx.run_test( test_name, [&]() {
+                        catch_total = ctx.run_test( test_name, [&]() {
                             REQUIRE_NOTHROW( compare_scene( scene_dir, &scene ) );
                         } );
                     }
                     
-                    n_failed += total.testCases.failed;
+                    n_failed += catch_total.testCases.failed;
                     ++n_scenes;
-                    total_cost += scene.cost;
-                    total_cost_diff += abs(scene.d_cost);
-                    total_movement += scene.movement;
-                    total_movement_diff += abs(scene.d_movement);
+                    total.cost += scene.cost;
+                    total.d_cost += abs(scene.d_cost);
+                    total.movement += scene.movement;
+                    total.d_movement += abs(scene.d_movement);
+                    total.n_valid_scene += scene.n_valid_scene;
+                    total.n_valid_scene_diff += scene.n_valid_scene_diff;
+                    total.n_valid_result += scene.n_valid_result;
+                    total.n_valid_result_diff += scene.n_valid_result_diff;
+                    total.n_converged += scene.n_converged;
+                    total.n_converged_diff += scene.n_converged_diff;
 
                     if( stats )
-                        print_scene_stats( test_name, total.assertions.failed, scene );
+                        print_scene_stats( test_name, catch_total.assertions.failed, scene );
                 } );
 
             if( stats )
             {
-                scene_stats total;
-                total.cost = total_cost;
-                total.d_cost = total_cost_diff;
-                total.movement = total_movement;
-                total.d_movement = total_movement_diff;
                 print_dividers();
-                print_scene_stats( "                     total:", n_scenes, total );
+                print_scene_stats( to_string()
+                                       << "                                             " << n_scenes << " scene totals:",
+                                   n_failed,
+                                   total );
             }
 
             TRACE( "done!\n\n" );

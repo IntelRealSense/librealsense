@@ -4,8 +4,9 @@
 
 struct scene_stats
 {
-    bool is_valid_scene_diff;
-    bool is_valid_result_diff;
+    size_t n_valid_scene, n_valid_scene_diff;
+    size_t n_valid_result, n_valid_result_diff;
+    size_t n_converged, n_converged_diff;
     double cost, d_cost;
     double movement, d_movement;
 };
@@ -132,7 +133,10 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
     bool const matlab_scene_valid = md.is_scene_valid;
     CHECK( is_scene_valid == matlab_scene_valid );
     if( stats )
-        stats->is_valid_scene_diff = is_scene_valid != matlab_scene_valid;
+    {
+        stats->n_valid_scene = is_scene_valid;
+        stats->n_valid_scene_diff = is_scene_valid != matlab_scene_valid;
+    }
 
     // edge distribution
     CHECK( compare_to_bin_file< double >( z_data.sum_weights_per_section, scene_dir, "depthEdgeWeightDistributionPerSectionDepth", 1, 4, "double_00", compare_same_vectors ) );
@@ -564,7 +568,14 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
     bool const matlab_valid_results = md.is_output_valid;
     CHECK( is_valid_results == matlab_valid_results );
     if( stats )
-        stats->is_valid_result_diff = is_valid_results != matlab_valid_results;
+    {
+        stats->n_valid_result = is_valid_results;
+        stats->n_valid_result_diff = is_valid_results != matlab_valid_results;
+
+        stats->n_converged = is_valid_results && is_scene_valid;
+        bool const matlab_converged = matlab_valid_results && matlab_scene_valid;
+        stats->n_converged_diff = bool(stats->n_converged) != matlab_converged;
+    }
 
     double const movement_in_pixels = cal.calc_correction_in_pixels();
     double const matlab_movement_in_pixels = md.correction_in_pixels;
