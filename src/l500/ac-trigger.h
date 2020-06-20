@@ -50,7 +50,7 @@ namespace ivcam2 {
         std::shared_ptr< retrier > _recycler;
         std::shared_ptr< retrier > _next_trigger;
         rs2_calibration_status _last_status_sent;
-        bool _own_color_stream = false;
+        std::atomic_bool _own_color_stream{ false };
 
         class temp_check;
         double _last_temp = 0;

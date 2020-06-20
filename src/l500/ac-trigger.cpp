@@ -99,6 +99,28 @@ static std::chrono::seconds get_trigger_seconds()
 }
 
 
+namespace rs2
+{
+    static std::ostream & operator<<( std::ostream & os, stream_profile const & sp )
+    {
+        auto spi = sp.get()->profile;
+        os << '[';
+        if( spi )
+        {
+            //os << spi->get_unique_id();
+            os << ' ' << rs2_format_to_string( spi->get_format() );
+            //os << ' ' << rs2_stream_to_string( spi->get_stream_type() );
+            //os << ' ' << spi->get_stream_index();
+            if( auto vsp = dynamic_cast< const video_stream_profile * >( spi ) )
+                os << ' ' << vsp->width() << 'x' << vsp->height();
+            os << " " << spi->get_framerate() << "fps";
+        }
+        os << ']';
+        return os;
+    }
+}
+
+
 namespace librealsense {
 namespace ivcam2 {
 
@@ -414,8 +436,11 @@ namespace ivcam2 {
                 return;  // error should have already been printed
             //AC_LOG( DEBUG, "Picked profile: " << *rgb_profile );
 
+            AC_LOG( DEBUG, "Open..." );
             color_sensor->open( { rgb_profile } );
+            AC_LOG( DEBUG, "Start..." );
             color_sensor->start( make_frame_callback( []( frame_interface * f ) {} ) );
+            AC_LOG( DEBUG, "Started!" );
             // Note that we don't do anything with the frames -- they shouldn't end up
             // at the user. But AC will still get them.
 
@@ -430,14 +455,15 @@ namespace ivcam2 {
 
     void ac_trigger::stop_color_sensor_if_started()
     {
-        if( !_own_color_stream )
+        if( !_own_color_stream.exchange( false ) )
             return;
 
         AC_LOG( INFO, "STOPPING color sensor..." );
         auto & color_sensor = *_dev.get_color_sensor();
         color_sensor.stop();
+        AC_LOG( INFO, "CLOSING color sensor..." );
         color_sensor.close();
-        _own_color_stream = false;
+        AC_LOG( INFO, "Closed!" );
     }
 
 
@@ -542,8 +568,9 @@ namespace ivcam2 {
     void ac_trigger::run_algo()
     {
         AC_LOG( DEBUG,
-                "Starting processing: color(" << _cf.get_frame_number() << ") depth("
-                                              << _sf.get_frame_number() << ")" );
+                "Starting processing:"
+                    << "  color #" << _cf.get_frame_number() << " " << _cf.get_profile()
+                    << "  depth #" << _sf.get_frame_number() << ' ' << _sf.get_profile() );
         _is_processing = true;
         _retrier.reset();
         stop_color_sensor_if_started();
@@ -753,6 +780,7 @@ namespace ivcam2 {
             AC_LOG( DEBUG, "Cancelling current calibration" );
             _n_cycles = 0;  // now inactive!
         }
+        stop_color_sensor_if_started();
         _temp_check.reset();
         _retrier.reset();
         _recycler.reset();
