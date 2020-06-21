@@ -422,7 +422,7 @@ namespace librealsense
         const platform::backend_device_group& group,
         bool register_device_notifications)
         : device(ctx, group, register_device_notifications),
-        firmware_logger_device(_hw_monitor, get_firmware_logs_command(), get_flash_logs_command()),
+        firmware_logger_device(ctx, group, _hw_monitor, get_firmware_logs_command(), get_flash_logs_command()),
         _depth_device_idx(add_sensor(create_depth_device(ctx, depth))),
         _depth_stream(new stream(RS2_STREAM_DEPTH)),
         _ir_stream(new stream(RS2_STREAM_INFRARED)),
