@@ -222,11 +222,13 @@ namespace ivcam2 {
             AC_LOG( DEBUG, name << ' ' << id << ": " << n_seconds.count() << " seconds starting" );
             auto pr = std::shared_ptr< T >( r );
             std::weak_ptr< T > weak{ pr };
-            std::thread( [=]() {
-                std::this_thread::sleep_for( n_seconds );
+            std::thread([=]() {
+                std::this_thread::sleep_for(n_seconds);
                 auto pr = weak.lock();
-                if( pr && pr->get_id() == id )
-                    ( (retrier *)pr.get() )->retry();
+                if (pr && pr->get_id() == id)
+                {
+                    ((retrier *)pr.get())->retry();
+                }
                 else
                     AC_LOG( DEBUG,
                             name << ' ' << id << ": " << n_seconds.count()
@@ -335,8 +337,8 @@ namespace ivcam2 {
     }
 
 
-    ac_trigger::~ac_trigger()
-    {
+    ac_trigger::~ac_trigger() 
+    { 
         if( _worker.joinable() )
         {
             _is_processing = false;  // Signal the thread that we want to stop!
@@ -347,8 +349,15 @@ namespace ivcam2 {
 
     void ac_trigger::trigger_calibration( bool is_retry )
     {
+        if (false == _dev.get_depth_sensor().is_streaming())
+        {
+            AC_LOG(ERROR, "Depth streaming not found, canceling calibration");
+            stop();
+            return;
+        }
+
         _retrier.reset();
-        if( is_retry  &&  is_active() )
+        if(is_retry  &&  is_active() )
         {
             if( _recycler )
             {
@@ -365,6 +374,7 @@ namespace ivcam2 {
                 calibration_is_done();
                 return;
             }
+
             AC_LOG( DEBUG, "Sending GET_SPECIAL_FRAME (cycle " << _n_cycles << " retry " << _n_retries << ")" );
             call_back( RS2_CALIBRATION_RETRY );
         }
@@ -394,7 +404,10 @@ namespace ivcam2 {
             AC_LOG( ERROR, "EXCEPTION caught: " << e.what() );
         }
         // Start a timer: enable retries if something's wrong with the special frame
-        _retrier = retrier::start( *this, std::chrono::seconds( get_retry_sf_seconds() ) );
+        if (is_active())
+        {
+            _retrier = retrier::start(*this, std::chrono::seconds(get_retry_sf_seconds()));
+        }
     }
 
 
@@ -688,7 +701,7 @@ namespace ivcam2 {
         AC_LOG( INFO, "Camera Accuracy Health has finished" );
 
         // Trigger the next AC -- but only if we're "on", meaning this wasn't a manual calibration
-        if( !is_on() )
+        if( !auto_calibration_is_on() )
         {
             AC_LOG( DEBUG, "Calibration mechanism is not on; not scheduling next calibration" );
             return;
@@ -770,6 +783,7 @@ namespace ivcam2 {
 
     void ac_trigger::stop()
     {
+        _is_on = false;
         if( _next_trigger )
         {
             AC_LOG( DEBUG, "Cancelling next calibration" );
@@ -784,7 +798,6 @@ namespace ivcam2 {
         _temp_check.reset();
         _retrier.reset();
         _recycler.reset();
-        _is_on = false;
     }
 
     void ac_trigger::reset()
