@@ -1643,7 +1643,7 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
        
         AC_LOG( INFO, "CYCLE " << data.cycle << ": cost = " << AC_D_PREC << new_params.cost );
 
-        std::vector<double3> cand_vertices;
+        std::vector<double3> cand_vertices = _z.vertices;
         auto dsm_regs_cand = new_dsm_regs;
 
         optimization_params params_candidate;

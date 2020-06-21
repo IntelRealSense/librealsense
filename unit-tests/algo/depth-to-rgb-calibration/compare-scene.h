@@ -11,6 +11,70 @@ struct scene_stats
     double movement, d_movement;
 };
 
+void compare_vertices_to_los_data(std::string scene_dir, int num_of_vertices, int cycle, std::string time, algo::convert_norm_vertices_to_los_data const& data)
+{
+
+    CHECK(compare_to_bin_file< algo::double3 >(
+        data.laser_incident,
+        scene_dir,
+        bin_file(time + "laserIncidentDirection", cycle, 3, 1, "double_00.bin")));
+
+    CHECK(compare_to_bin_file< algo::double3 >(
+        data.fovex_indicent_direction,
+        scene_dir,
+        bin_file(time + "fovexIndicentDirection", cycle, 3, num_of_vertices, "double_00") + ".bin",
+        num_of_vertices, 1,
+        compare_same_vectors));
+
+    CHECK(compare_to_bin_file< algo::double3 >(
+        data.mirror_normal_direction,
+        scene_dir,
+        bin_file(time + "mirrorNormalDirection", cycle, 3, num_of_vertices, "double_00") + ".bin",
+        num_of_vertices, 1,
+        compare_same_vectors));
+
+    CHECK(compare_to_bin_file< double >(
+        data.ang_x,
+        scene_dir,
+        bin_file(time + "angX", cycle, 1, num_of_vertices, "double_00") + ".bin",
+        num_of_vertices, 1,
+        compare_same_vectors));
+
+    CHECK(compare_to_bin_file< double >(
+        data.ang_y,
+        scene_dir,
+        bin_file(time + "angY", cycle, 1, num_of_vertices, "double_00") + ".bin",
+        num_of_vertices, 1,
+        compare_same_vectors));
+
+    CHECK(compare_to_bin_file< double >(
+        data.dsm_x_corr,
+        scene_dir,
+        bin_file(time + "dsmXcorr", cycle, 1, num_of_vertices, "double_00") + ".bin",
+        num_of_vertices, 1,
+        compare_same_vectors));
+
+    CHECK(compare_to_bin_file< double >(
+        data.dsm_y_corr,
+        scene_dir,
+        bin_file(time + "dsmYcorr", cycle, 1, num_of_vertices, "double_00") + ".bin",
+        num_of_vertices, 1,
+        compare_same_vectors));
+
+    CHECK(compare_to_bin_file< double >(
+        data.dsm_x,
+        scene_dir,
+        bin_file(time + "dsmX", cycle, 1, num_of_vertices, "double_00") + ".bin",
+        num_of_vertices, 1,
+        compare_same_vectors));
+
+    CHECK(compare_to_bin_file< double >(
+        data.dsm_y,
+        scene_dir,
+        bin_file(time + "dsmY", cycle, 1, num_of_vertices, "double_00") + ".bin",
+        num_of_vertices, 1,
+        compare_same_vectors));
+}
 
 void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr )
 {
@@ -51,7 +115,7 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
     auto z_w = ci.z.width;
     auto num_of_calib_elements = 22;
     auto num_of_p_matrix_elements = sizeof(algo::p_matrix) / sizeof(double);
-
+    auto num_of_k_matrix_elements = sizeof(algo::k_matrix) / sizeof(double);
 
     //---
     CHECK(compare_to_bin_file< uint8_t >(yuy_data.lum_frame, scene_dir, "YUY2_lum", rgb_w, rgb_h, "uint8_00", compare_same_vectors));
@@ -175,6 +239,55 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
 
         if (data.type == algo::k_to_dsm_data)
         {
+
+            algo::k_matrix old_k = data.cycle_data_p.inputs.old_k;
+            algo::k_matrix new_k = data.cycle_data_p.inputs.new_k;
+
+            CHECK(compare_to_bin_file< double >(
+                std::vector< double >(std::begin(old_k.k_mat.rot),
+                    std::end(old_k.k_mat.rot)),
+                scene_dir,
+                bin_file("k2dsm_inpus_oldKdepth",
+                    data.cycle,
+                    num_of_k_matrix_elements,
+                    1,
+                    "double_00.bin"),
+                num_of_k_matrix_elements, 1,
+                compare_same_vectors));
+
+            CHECK(compare_to_bin_file< double >(
+                std::vector< double >(std::begin(new_k.k_mat.rot),
+                    std::end(new_k.k_mat.rot)),
+                scene_dir,
+                bin_file("k2dsm_inpus_newKdepth",
+                    data.cycle,
+                    num_of_k_matrix_elements,
+                    1,
+                    "double_00.bin"),
+                num_of_k_matrix_elements, 1,
+                compare_same_vectors));
+
+            CHECK(compare_to_bin_file< algo::double3 >(
+                data.cycle_data_p.inputs.z.vertices,
+                scene_dir,
+                bin_file("k2dsm_inpus_vertices", data.cycle, 3, md.n_edges, "double_00.bin"),
+                md.n_edges, 1,
+                compare_same_vectors));
+
+            CHECK(compare_to_bin_file< algo::double2 >(
+                std::vector< algo::double2 >(1, { data.cycle_data_p.inputs.previous_dsm_params.h_scale, data.cycle_data_p.inputs.previous_dsm_params.v_scale }),
+                scene_dir,
+                bin_file("k2dsm_inpus_acData", data.cycle, 2, 1, "double_00.bin"),
+                1, 1,
+                compare_same_vectors));
+
+
+            CHECK(compare_to_bin_file< algo::algo_calibration_registers >(
+                data.cycle_data_p.inputs.new_dsm_regs,
+                scene_dir,
+                bin_file("k2dsm_inpus_dsmRegs", data.cycle, 4, 1, "double_00.bin")));
+
+
             CHECK(compare_to_bin_file< algo::algo_calibration_registers >(
                 data.cycle_data_p.dsm_regs_orig,
                 scene_dir,
@@ -199,66 +312,7 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
                 md.n_relevant_pixels, 1, compare_same_vectors));
 
 
-            CHECK(compare_to_bin_file< algo::double3 >(
-                data.cycle_data_p.laser_incident,
-                scene_dir,
-                bin_file("laserIncidentDirection", data.cycle, 3, 1, "double_00.bin")));
-
-            CHECK(compare_to_bin_file< algo::double3 >(
-                    data.cycle_data_p.fovex_indicent_direction,
-                    scene_dir,
-                    bin_file("fovexIndicentDirection", data.cycle, 3, md.n_relevant_pixels, "double_00") + ".bin",
-                    md.n_relevant_pixels, 1,
-                    compare_same_vectors));
-
-            CHECK(compare_to_bin_file< algo::double3 >(
-                data.cycle_data_p.mirror_normal_direction,
-                scene_dir,
-                bin_file("mirrorNormalDirection", data.cycle, 3, md.n_relevant_pixels, "double_00") + ".bin",
-                md.n_relevant_pixels, 1,
-                compare_same_vectors));
-
-            CHECK(compare_to_bin_file< double >(
-                data.cycle_data_p.ang_x,
-                scene_dir,
-                bin_file("angX", data.cycle, 1, md.n_relevant_pixels, "double_00") + ".bin",
-                md.n_relevant_pixels, 1,
-                compare_same_vectors));
-
-            CHECK(compare_to_bin_file< double >(
-                data.cycle_data_p.ang_y,
-                scene_dir,
-                bin_file("angY", data.cycle, 1, md.n_relevant_pixels, "double_00") + ".bin",
-                md.n_relevant_pixels, 1,
-                compare_same_vectors));
-
-            CHECK(compare_to_bin_file< double >(
-                data.cycle_data_p.dsm_x_corr,
-                scene_dir,
-                bin_file("dsmXcorr", data.cycle, 1, md.n_relevant_pixels, "double_00") + ".bin",
-                md.n_relevant_pixels, 1,
-                compare_same_vectors));
-
-            CHECK(compare_to_bin_file< double >(
-                data.cycle_data_p.dsm_y_corr,
-                scene_dir,
-                bin_file("dsmYcorr", data.cycle, 1, md.n_relevant_pixels, "double_00") + ".bin",
-                md.n_relevant_pixels, 1,
-                compare_same_vectors));
-
-            CHECK(compare_to_bin_file< double >(
-                data.cycle_data_p.dsm_x,
-                scene_dir,
-                bin_file("dsmX", data.cycle, 1, md.n_relevant_pixels, "double_00") + ".bin",
-                md.n_relevant_pixels, 1,
-                compare_same_vectors));
-
-            CHECK(compare_to_bin_file< double >(
-                data.cycle_data_p.dsm_y,
-                scene_dir,
-                bin_file("dsmY", data.cycle, 1, md.n_relevant_pixels, "double_00") + ".bin",
-                md.n_relevant_pixels, 1,
-                compare_same_vectors));
+            compare_vertices_to_los_data(scene_dir, md.n_relevant_pixels, data.cycle, "first_", data.cycle_data_p.first_norm_vertices_to_los_data);
 
             CHECK(compare_to_bin_file< algo::double2 >(
                 data.cycle_data_p.dsm_pre_process_data.los_orig,
@@ -321,10 +375,12 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
                 1, 1,
                 compare_same_vectors));
 
-            /* CHECK(compare_to_bin_file< algo::algo_calibration_registers >(
+            CHECK(compare_to_bin_file< algo::algo_calibration_registers >(
                  data.cycle_data_p.dsm_regs_cand,
                  scene_dir,
-                 bin_file("dsmRegsCand", data.cycle, 4, 1, "double_00.bin")));*/
+                 bin_file("dsmRegsCand", data.cycle, 4, 1, "double_00.bin")));
+
+            compare_vertices_to_los_data(scene_dir, md.n_edges, data.cycle, "second_", data.cycle_data_p.second_norm_vertices_to_los_data);
 
             CHECK(compare_to_bin_file< algo::double2 >(
                 data.cycle_data_p.los_orig,

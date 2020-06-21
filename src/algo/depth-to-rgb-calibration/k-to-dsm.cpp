@@ -164,7 +164,12 @@ pre_process_data k_to_DSM::pre_processing
 
     res.vertices_orig = calc_relevant_vertices(relevant_pixels_image, orig_k_raw);
     auto dsm_res_orig = apply_ac_res_on_dsm_model(ac_data, algo_calibration_registers, inverse);
-    res.los_orig = convert_norm_vertices_to_los(regs, dsm_res_orig, res.vertices_orig, data);
+
+    convert_norm_vertices_to_los_data* vertices_to_los_data = nullptr;
+    if (data)
+        vertices_to_los_data = &data->cycle_data_p.first_norm_vertices_to_los_data;
+
+    res.los_orig = convert_norm_vertices_to_los(regs, dsm_res_orig, res.vertices_orig, vertices_to_los_data);
     return res;
 }
 
@@ -179,6 +184,17 @@ rs2_dsm_params_double k_to_DSM::convert_new_k_to_DSM
     iteration_data_collect* data
 )
 {
+    if (data)
+    {
+        data->cycle_data_p.inputs.old_k = old_k;
+        data->cycle_data_p.inputs.new_k = new_k;
+        data->cycle_data_p.inputs.z = z;
+        data->cycle_data_p.inputs.new_vertices = new_vertices;
+        data->cycle_data_p.inputs.previous_dsm_params = previous_dsm_params;
+        data->cycle_data_p.inputs.new_dsm_regs = new_dsm_regs;
+    }
+
+
     auto w = old_k.width;
     auto h = old_k.height;
 
@@ -197,14 +213,18 @@ rs2_dsm_params_double k_to_DSM::convert_new_k_to_DSM
     auto ac_data_cand = convert_los_error_to_ac_data( previous_dsm_params, new_dsm_regs, los_shift, new_los_scaling);
     auto dsm_regs_cand = apply_ac_res_on_dsm_model(ac_data_cand, dsm_orig, direct);
 
-    auto sc_vertices = z.orig_vertices;
+    auto sc_vertices = new_vertices;
 
     for (auto i = 0; i < sc_vertices.size(); i++)
     {
         sc_vertices[i].x *= -1;
         sc_vertices[i].y *= -1;
     }
-    auto los_orig = convert_norm_vertices_to_los(_regs, new_dsm_regs, sc_vertices);
+
+    convert_norm_vertices_to_los_data* vertices_to_los_data = nullptr;
+    if (data)
+        vertices_to_los_data = &data->cycle_data_p.second_norm_vertices_to_los_data;
+    auto los_orig = convert_norm_vertices_to_los(_regs, new_dsm_regs, sc_vertices, vertices_to_los_data);
     new_vertices = convert_los_to_norm_vertices(_regs, dsm_regs_cand, los_orig, data);
 
     if (data)
@@ -240,6 +260,7 @@ rs2_dsm_params_double k_to_DSM::convert_new_k_to_DSM
         yim_new[i] = projed[i].y / projed[i].z;
     }
     AC_LOG( DEBUG, "    new DSM params: " << AC_D_PREC << ac_data_cand );
+    new_dsm_regs = dsm_regs_cand;
     return ac_data_cand;
 }
 
@@ -693,7 +714,7 @@ std::vector<double2> k_to_DSM::convert_norm_vertices_to_los
     algo_calibration_info const &regs,
     algo_calibration_registers const &dsm_regs,
     std::vector<double3> vertices,
-    iteration_data_collect* data
+    convert_norm_vertices_to_los_data* data
 )
 {
     const double angle = 45;
@@ -799,16 +820,16 @@ std::vector<double2> k_to_DSM::convert_norm_vertices_to_los
 
     if (data)
     {
-        data->cycle_data_p.laser_incident = laser_incident;
-        data->cycle_data_p.fovex_indicent_direction = fovex_indicent_direction;
-        data->cycle_data_p.mirror_normal_direction = mirror_normal_direction;
-        data->cycle_data_p.ang_x = ang_x;
-        data->cycle_data_p.ang_y = ang_y;
-        data->cycle_data_p.dsm_x_corr = dsm_x_corr;
-        data->cycle_data_p.dsm_y_corr = dsm_y_corr;
-        data->cycle_data_p.dsm_y = dsm_y;
-        data->cycle_data_p.dsm_x = dsm_x;
-        data->cycle_data_p.dsm_y = dsm_y;
+        data->laser_incident = laser_incident;
+        data->fovex_indicent_direction = fovex_indicent_direction;
+        data->mirror_normal_direction = mirror_normal_direction;
+        data->ang_x = ang_x;
+        data->ang_y = ang_y;
+        data->dsm_x_corr = dsm_x_corr;
+        data->dsm_y_corr = dsm_y_corr;
+        data->dsm_y = dsm_y;
+        data->dsm_x = dsm_x;
+        data->dsm_y = dsm_y;
     }
     for (auto i = 0; i < res.size(); i++)
     {

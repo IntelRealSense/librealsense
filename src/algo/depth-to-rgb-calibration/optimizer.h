@@ -147,10 +147,18 @@ namespace depth_to_rgb_calibration {
         iteration_data
     };
 
-    struct cycle_data_params
+    struct k_to_dsm_inputs
     {
-        algo_calibration_registers dsm_regs_orig;
-        std::vector < uint8_t> relevant_pixels_image_rot;
+        rs2_intrinsics_double old_k;
+        rs2_intrinsics_double new_k;
+        z_frame_data z;
+        std::vector<double3> new_vertices;
+        rs2_dsm_params_double previous_dsm_params;
+        algo_calibration_registers new_dsm_regs;
+    };
+
+    struct convert_norm_vertices_to_los_data
+    {
         double3 laser_incident;
         std::vector<double3> fovex_indicent_direction;
         std::vector<double3> mirror_normal_direction;
@@ -160,7 +168,16 @@ namespace depth_to_rgb_calibration {
         std::vector<double> dsm_y_corr;
         std::vector<double> dsm_x;
         std::vector<double> dsm_y;
+    };
+
+    struct cycle_data_params
+    {
+        k_to_dsm_inputs inputs;
+        algo_calibration_registers dsm_regs_orig;
+        std::vector < uint8_t> relevant_pixels_image_rot;
+        convert_norm_vertices_to_los_data first_norm_vertices_to_los_data;
         pre_process_data dsm_pre_process_data;
+
         std::vector < double> errL2;
         std::vector < std::vector < double>> sg_mat;
         std::vector < double> sg_mat_tag_x_sg_mat;
@@ -171,11 +188,13 @@ namespace depth_to_rgb_calibration {
         double2 new_los_scaling;
         rs2_dsm_params_double dsm_params_cand;
         algo_calibration_registers dsm_regs_cand;
+        convert_norm_vertices_to_los_data second_norm_vertices_to_los_data;
         std::vector< double2> los_orig;
         std::vector< double2> dsm;
         std::vector < double3> vertices;
         rs2_intrinsics_double k_depth;
     };
+    
 
     struct iteration_data_collect
     {

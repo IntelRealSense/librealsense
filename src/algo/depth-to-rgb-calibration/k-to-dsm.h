@@ -168,6 +168,7 @@ namespace depth_to_rgb_calibration {
 
     };
     struct iteration_data_collect;
+    struct convert_norm_vertices_to_los_data;
 
     class k_to_DSM
     {
@@ -243,8 +244,8 @@ namespace depth_to_rgb_calibration {
 
         std::vector<double2> convert_norm_vertices_to_los(const algo_calibration_info& regs, 
             const algo_calibration_registers& algo_calibration_registers, 
-            std::vector<double3> vertices,
-            iteration_data_collect* data = nullptr);
+            std::vector<double3> vertices, 
+            convert_norm_vertices_to_los_data* data = nullptr);
 
         double3 laser_incident_direction(double2 angle_rad);
         std::vector<double3> transform_to_direction(std::vector<double3>);
