@@ -129,7 +129,7 @@ namespace ivcam2 {
         // can manually trigger a calibration, meaning that the calibration will run its
         // course and then stop...
         //
-        bool is_on() const { return _is_on; }
+        bool auto_calibration_is_on() const { return _is_on; }
 
         // Start calibration -- after this, is_active() returns true. See the note for is_on().
         void trigger_calibration( bool is_retry = false );
