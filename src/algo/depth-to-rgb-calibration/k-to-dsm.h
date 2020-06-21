@@ -167,7 +167,7 @@ namespace depth_to_rgb_calibration {
         std::vector<double2> los_orig;
 
     };
-    struct iteration_data_collect;
+    struct data_collect;
     struct convert_norm_vertices_to_los_data;
 
     class k_to_DSM
@@ -190,7 +190,7 @@ namespace depth_to_rgb_calibration {
             const algo_calibration_registers& algo_calibration_registers,
             const rs2_intrinsics_double& k_raw,
             const std::vector<uint8_t>& relevant_pixels_image,
-            iteration_data_collect* data = nullptr);
+            data_collect* data = nullptr);
 
         //return rs2_dsm_params and new vertices
         rs2_dsm_params_double convert_new_k_to_DSM(
@@ -200,7 +200,7 @@ namespace depth_to_rgb_calibration {
             std::vector<double3>& new_vertices,
             rs2_dsm_params_double const & previous_dsm_params,
             algo_calibration_registers& new_dsm_regs,
-            iteration_data_collect* data = nullptr);
+            data_collect* data = nullptr);
 
         const pre_process_data& get_pre_process_data() const;
 
@@ -212,7 +212,7 @@ namespace depth_to_rgb_calibration {
             algo::depth_to_rgb_calibration::algo_calibration_info const & regs,
             algo_calibration_registers const &dsm_regs,
             rs2_intrinsics_double const & k_raw,
-            iteration_data_collect* data = nullptr);
+            data_collect* data = nullptr);
 
         rs2_dsm_params_double convert_los_error_to_ac_data(
             const rs2_dsm_params_double& ac_data,
@@ -225,7 +225,7 @@ namespace depth_to_rgb_calibration {
             double scaling_grid_x[SIZE_OF_GRID_X],
             double scaling_grid_y[SIZE_OF_GRID_X],
             double2 focal_scaling,
-            iteration_data_collect* data = nullptr);
+            data_collect* data = nullptr);
 
         std::vector<double3x3> optimize_k_under_los_error(
             algo::depth_to_rgb_calibration::algo_calibration_info const & regs,
@@ -237,7 +237,7 @@ namespace depth_to_rgb_calibration {
             algo::depth_to_rgb_calibration::algo_calibration_info const & regs,
             algo_calibration_registers const &dsm_regs,
             std::vector<double2> los,
-            iteration_data_collect* data = nullptr);
+            data_collect* data = nullptr);
 
         std::vector<double3> calc_relevant_vertices(const std::vector<uint8_t>& relevant_pixels_image, 
             const rs2_intrinsics_double& k);

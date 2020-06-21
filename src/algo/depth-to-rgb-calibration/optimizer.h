@@ -170,7 +170,7 @@ namespace depth_to_rgb_calibration {
         std::vector<double> dsm_y;
     };
 
-    struct cycle_data_params
+    struct k2dsm_data_params
     {
         k_to_dsm_inputs inputs;
         algo_calibration_registers dsm_regs_orig;
@@ -195,14 +195,9 @@ namespace depth_to_rgb_calibration {
         rs2_intrinsics_double k_depth;
     };
     
-
-    struct iteration_data_collect
+    struct iteration_data_params
     {
-        data_type type;
-        size_t cycle;
         size_t iteration;
-        cycle_data_params cycle_data_p;
-
         optimization_params params;
         calib c;
         std::vector< double2 > uvmap;
@@ -222,7 +217,15 @@ namespace depth_to_rgb_calibration {
         int back_tracking_line_search_iters;
         double t;
         optimization_params next_params;
-        calib next_c;
+    };
+
+    struct data_collect
+    {
+        data_type type;
+        size_t cycle;
+        
+        k2dsm_data_params cycle_data_p;
+        iteration_data_params iteration_data_p;
     };
 
 
@@ -247,7 +250,7 @@ namespace depth_to_rgb_calibration {
         bool is_scene_valid();
 
         // Optimize the calibration, optionally calling the callback after each iteration
-        size_t optimize( std::function< void( iteration_data_collect const & data ) >
+        size_t optimize( std::function< void( data_collect const & data ) >
                              iteration_callback = nullptr );
 
         // (optional) Return whether the results of calibration are valid:
@@ -290,8 +293,8 @@ namespace depth_to_rgb_calibration {
             calib& optimaized_calibration,
             calib& new_rgb_calib_for_k_to_dsm,
             rs2_intrinsics_double& new_z_k,
-            std::function<void(iteration_data_collect const&data)> cb,
-            iteration_data_collect* data);
+            std::function<void(data_collect const&data)> cb,
+            data_collect* data);
 
         calib decompose_p_mat(p_matrix p);
         rs2_intrinsics_double get_new_z_intrinsics_from_new_calib(const rs2_intrinsics_double& orig, const calib & new_c, const calib & orig_c);
@@ -307,7 +310,7 @@ namespace depth_to_rgb_calibration {
         
         optimization_params back_tracking_line_search( optimization_params const & opt_params,
                                                        const std::vector<double3>& new_vertices,
-                                                       iteration_data_collect * data = nullptr ) const;
+                                                       data_collect * data = nullptr ) const;
        
         // input validation
         bool is_movement_in_images(yuy2_frame_data& yuy);

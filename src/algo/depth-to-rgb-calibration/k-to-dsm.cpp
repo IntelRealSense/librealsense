@@ -154,7 +154,7 @@ pre_process_data k_to_DSM::pre_processing
     const algo_calibration_registers& algo_calibration_registers,
     const rs2_intrinsics_double& orig_k_raw,
     const std::vector<uint8_t>& relevant_pixels_image,
-    iteration_data_collect* data
+    data_collect* data
 )
 {
     pre_process_data res;
@@ -181,7 +181,7 @@ rs2_dsm_params_double k_to_DSM::convert_new_k_to_DSM
     std::vector<double3> & new_vertices,
     rs2_dsm_params_double const & previous_dsm_params,
     algo_calibration_registers& new_dsm_regs,
-    iteration_data_collect* data
+    data_collect* data
 )
 {
     if (data)
@@ -274,7 +274,7 @@ double2 k_to_DSM::convert_k_to_los_error
     algo_calibration_info const & regs,
     algo_calibration_registers const &dsm_regs,
     rs2_intrinsics_double const & new_k_raw,
-    iteration_data_collect* data
+    data_collect* data
 )
 {
     double2 focal_scaling;
@@ -381,7 +381,7 @@ double2 k_to_DSM::run_scaling_optimization_step
     double scaling_grid_x[SIZE_OF_GRID_X],
     double scaling_grid_y[SIZE_OF_GRID_X],
     double2 focal_scaling,
-    iteration_data_collect* data)
+    data_collect* data)
 {
     auto opt_k = optimize_k_under_los_error(regs, dsm_regs, scaling_grid_x, scaling_grid_y);
 
@@ -588,7 +588,7 @@ std::vector<double3> k_to_DSM::convert_los_to_norm_vertices
     algo_calibration_info const & regs,
     algo_calibration_registers const &dsm_regs,
     std::vector<double2> los,
-    iteration_data_collect* data
+    data_collect* data
 )
 {
     std::vector<double3> fove_x_indicent_direction(los.size());

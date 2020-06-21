@@ -116,7 +116,7 @@ int main( int argc, char * argv[] )
 
             TRACE( "\n___\noptimize" );
             size_t n_iteration = cal.optimize(
-                []( algo::iteration_data_collect const & data )
+                []( algo::data_collect const & data )
                 {
                 } );
 

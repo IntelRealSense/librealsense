@@ -1105,13 +1105,13 @@ static p_matrix calc_p_gradients(const z_frame_data & z_data,
     const p_matrix & p_mat,
     const std::vector<double>& rc, 
     const std::vector<double2>& xy,
-    iteration_data_collect * data = nullptr)
+    data_collect * data = nullptr)
 {
     auto coefs = calc_p_coefs(z_data, new_vertices, yuy_data, cal, p_mat, rc, xy);
     auto w = z_data.weights;
 
     if (data)
-        data->coeffs_p = coefs;
+        data->iteration_data_p.coeffs_p = coefs;
 
     p_matrix sums = { 0 };
     auto sum_of_valids = 0;
@@ -1205,7 +1205,7 @@ static p_matrix calc_gradients(
     const std::vector<double2>& uv,
     const calib & cal,
     const p_matrix & p_mat,
-    iteration_data_collect * data = nullptr
+    data_collect * data = nullptr
 )
 {
     p_matrix res;
@@ -1216,10 +1216,10 @@ static p_matrix calc_gradients(
 
     if (data)
     {
-        data->d_vals_x = interp_IDT_x;
-        data->d_vals_y = interp_IDT_y;
-        data->xy = rc.first;
-        data->rc = rc.second;
+        data->iteration_data_p.d_vals_x = interp_IDT_x;
+        data->iteration_data_p.d_vals_y = interp_IDT_y;
+        data->iteration_data_p.xy = rc.first;
+        data->iteration_data_p.rc = rc.second;
     }
         
     res = calc_p_gradients( z_data, new_vertices, yuy_data, interp_IDT_x, interp_IDT_y, cal, p_mat, rc.second, rc.first, data );
@@ -1232,14 +1232,14 @@ std::pair<double, p_matrix> calc_cost_and_grad(
     const yuy2_frame_data & yuy_data,
     const calib & cal,
     const p_matrix & p_mat,
-    iteration_data_collect * data = nullptr
+    data_collect * data = nullptr
 )
 {
     auto uvmap = get_texture_map(new_vertices, cal, p_mat);
     if( data )
-        data->uvmap = uvmap;
+        data->iteration_data_p.uvmap = uvmap;
 
-    auto cost = calc_cost(z_data, yuy_data, uvmap, data ? &data->d_vals : nullptr );
+    auto cost = calc_cost(z_data, yuy_data, uvmap, data ? &data->iteration_data_p.d_vals : nullptr );
     auto grad = calc_gradients(z_data, new_vertices, yuy_data, uvmap, cal, p_mat, data);
     return { cost, grad };
 }
@@ -1432,7 +1432,7 @@ void optimizer::write_data_to( std::string const & dir )
 
 optimization_params optimizer::back_tracking_line_search( optimization_params const & curr_params,
                                                           const std::vector<double3>& new_vertices,
-                                                          iteration_data_collect * data ) const
+                                                          data_collect * data ) const
 {
     optimization_params new_params;
 
@@ -1492,12 +1492,12 @@ optimization_params optimizer::back_tracking_line_search( optimization_params co
 
     if (data)
     {
-        data->grads_norma = curr_params.calib_gradients.get_norma();
-        data->grads_norm = grads_over_norm;
-        data->normalized_grads = grad;
-        data->unit_grad = unit_grad;
-        data->back_tracking_line_search_iters = iter_count;
-        data->t = t;
+        data->iteration_data_p.grads_norma = curr_params.calib_gradients.get_norma();
+        data->iteration_data_p.grads_norm = grads_over_norm;
+        data->iteration_data_p.normalized_grads = grad;
+        data->iteration_data_p.unit_grad = unit_grad;
+        data->iteration_data_p.back_tracking_line_search_iters = iter_count;
+        data->iteration_data_p.t = t;
     }
     return new_params;
 }
@@ -1532,8 +1532,8 @@ size_t optimizer::optimize_p
     calib& optimaized_calibration,
     calib& new_rgb_calib_for_k_to_dsm,
     rs2_intrinsics_double& new_z_k,
-    std::function<void(iteration_data_collect const&data)> cb,
-    iteration_data_collect* data 
+    std::function<void(data_collect const&data)> cb,
+    data_collect* data 
 )
 {
 
@@ -1551,15 +1551,15 @@ size_t optimizer::optimize_p
         if (data)
         {
             data->type = iteration_data;
-            data->params = curr;
-            data->c = new_rgb_calib_for_k_to_dsm;
-            data->iteration = n_iterations;
+            data->iteration_data_p.params = curr;
+            data->iteration_data_p.c = new_rgb_calib_for_k_to_dsm;
+            data->iteration_data_p.iteration = n_iterations;
         }
 
         params_new = back_tracking_line_search(curr, new_vertices, data);
         
         if (data)
-            data->next_params = params_new;
+            data->iteration_data_p.next_params = params_new;
 
         if (cb)
             cb(*data);
@@ -1607,14 +1607,14 @@ size_t optimizer::optimize_p
     return n_iterations;
 }
 
-size_t optimizer::optimize( std::function< void( iteration_data_collect const & data ) > cb )
+size_t optimizer::optimize( std::function< void( data_collect const & data ) > cb )
 {
     optimization_params params_orig;
     params_orig.curr_p_mat = _original_calibration.calc_p_mat();
     _original_calibration = decompose(params_orig.curr_p_mat, _original_calibration);
     _params_curr = params_orig;
 
-    iteration_data_collect data;
+    data_collect data;
 
     auto cycle = 1;
     data.cycle = cycle;

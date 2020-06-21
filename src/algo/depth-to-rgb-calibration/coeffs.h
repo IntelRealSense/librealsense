@@ -34,7 +34,7 @@ namespace depth_to_rgb_calibration {
         const std::vector<double2>& xy
     );
 
-    struct iteration_data_collect;
+    struct data_collect;
 
 }  // librealsense::algo::depth_to_rgb_calibration
 }  // librealsense::algo
