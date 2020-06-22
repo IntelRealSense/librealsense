@@ -453,7 +453,7 @@ namespace ivcam2 {
             color_sensor->open( { rgb_profile } );
             AC_LOG( DEBUG, "Start..." );
 
-            color_sensor->start(make_frame_callback([](frame_interface * f) {f->release(); })); 
+            color_sensor->start(make_frame_callback([&](frame_holder fref) {}));
 
             AC_LOG( DEBUG, "Started!" );
             // Note that we don't do anything with the frames -- they shouldn't end up
