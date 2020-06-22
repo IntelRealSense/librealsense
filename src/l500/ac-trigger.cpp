@@ -36,6 +36,30 @@ struct string_to< int >
     }
 };
 
+template<>
+struct string_to< bool >
+{
+    static bool convert( std::string const & s )
+    {
+        if( s.length() == 1 )
+        {
+            char ch = s.front();
+            if( ch == '1' || ch == 'T' )
+                return true;
+            if( ch == '0' || ch == 'F' )
+                return false;
+        }
+        else
+        {
+            if( s == "true" || s == "TRUE" || s == "on" || s == "ON" )
+                return true;
+            if( s == "false" || s == "FALSE" || s == "off" || s == "OFF" )
+                return false;
+        }
+        throw std::invalid_argument( "invalid boolean value '" + s + '\'' );
+    }
+};
+
 
 template< class T >
 class env_var
@@ -302,6 +326,7 @@ namespace ivcam2 {
 
             librealsense::log_to_callback( RS2_LOG_SEVERITY_ALL,
                 { this, []( rs2_log_callback * p ) {} } );
+            AC_LOG( DEBUG, "LRS version: " << RS2_API_FULL_VERSION_STR );
         }
 
         void on_log( rs2_log_severity severity, rs2_log_message const & msg ) noexcept override
@@ -330,9 +355,7 @@ namespace ivcam2 {
     {
         bool to_stdout = true;
         static ac_logger one_logger(
-#if 1  // TODO remove this -- but for now, it's an easy way of seeing the AC stuff
-            true  // log to stdout
-#endif
+            env_var< bool >( "RS2_AC_LOG_TO_STDOUT", false )  // log to stdout
             );
     }
 
