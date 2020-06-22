@@ -11,7 +11,11 @@ struct scene_stats
     double movement, d_movement;
 };
 
-void compare_vertices_to_los_data(std::string scene_dir, int num_of_vertices, int cycle, std::string time, algo::convert_norm_vertices_to_los_data const& data)
+void compare_vertices_to_los_data( std::string const & scene_dir,
+                                   size_t num_of_vertices,
+                                   size_t cycle,
+                                   std::string const & time,
+                                   algo::convert_norm_vertices_to_los_data const & data )
 {
 
     CHECK(compare_to_bin_file< algo::double3 >(
