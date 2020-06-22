@@ -2980,7 +2980,7 @@ static const std::map< dev_type, device_profiles> pipeline_default_configuration
 /* SR300*/              { { "0AA5", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
 };
 
-TEST_CASE("Pipeline wait_for_frames", "[live][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline wait_for_frames", "[live][pipeline][using_pipeline][!mayfail]") {
 
     rs2::context ctx;
 
@@ -3046,7 +3046,7 @@ TEST_CASE("Pipeline wait_for_frames", "[live][pipeline][using_pipeline]") {
     }
 }
 
-TEST_CASE("Pipeline poll_for_frames", "[live][pipeline][using_pipeline]")
+TEST_CASE("Pipeline poll_for_frames", "[live][pipeline][using_pipeline][!mayfail]")
 {
     rs2::context ctx;
 
@@ -3311,7 +3311,7 @@ TEST_CASE("Pipeline enable stream auto complete", "[live][pipeline][using_pipeli
     }
 }
 
-TEST_CASE("Pipeline disable_all", "[live][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline disable_all", "[live][pipeline][using_pipeline][!mayfail]") {
 
     auto not_default_configurations = pipeline_custom_configurations;
     auto default_configurations = pipeline_default_configurations;
@@ -4730,7 +4730,7 @@ TEST_CASE("Pipeline stream enable hierarchy", "[pipeline]")
     }
 }
 
-TEST_CASE("Pipeline stream with callback", "[live][pipeline][using_pipeline]")
+TEST_CASE("Pipeline stream with callback", "[live][pipeline][using_pipeline][!mayfail]")
 {
     rs2::context ctx;
 
@@ -5830,7 +5830,7 @@ TEST_CASE("Wheel_Odometry_API", "[live]")
 }
 
 
-TEST_CASE("get_sensor_from_frame", "[live][using_pipeline]")
+TEST_CASE("get_sensor_from_frame", "[live][using_pipeline][!mayfail]")
 {
     // Require at least one device to be plugged in
     rs2::context ctx;
