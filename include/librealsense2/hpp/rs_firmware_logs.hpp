@@ -6,6 +6,7 @@
 
 #include "rs_types.hpp"
 #include "rs_sensor.hpp"
+#include "rs_device.hpp"
 #include "../h/rs_firmware_logs.h"
 #include <array>
 
