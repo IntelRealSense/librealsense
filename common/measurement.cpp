@@ -13,6 +13,7 @@ void measurement::enable() {
 }
 void measurement::disable() { 
     state.points.clear(); 
+    state.edges.clear();
     measurement_active = false;
     config_file::instance().set(configurations::viewer::is_measuring, false);
 }
