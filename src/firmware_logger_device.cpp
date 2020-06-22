@@ -119,7 +119,7 @@ namespace librealsense
 
     bool firmware_logger_device::parse_log(const fw_logs::fw_logs_binary_data* fw_log_msg, 
         fw_logs::fw_log_data* parsed_msg)
-	{
+    {
         bool result = false;
         if (_parser && parsed_msg && fw_log_msg)
         {
@@ -128,6 +128,6 @@ namespace librealsense
         }
             
         return result;
-	}
+    }
 
 }
