@@ -213,6 +213,5 @@ if(NOT ${BUILD_SHARED_LIBS} AND ${BUILD_INTERNAL_UNIT_TESTS})
     add_subdirectory(internal)
 endif()
 
-include(algo/dl_algo_file.cmake)
-include(algo/depth-to-rgb-calibration/CMakeLists.txt)
+include(algo/CMakeLists.txt)
 
