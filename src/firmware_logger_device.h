@@ -26,7 +26,9 @@ namespace librealsense
 	class firmware_logger_device : public virtual device, public firmware_logger_extensions
 	{
 	public:
-		firmware_logger_device(std::shared_ptr<hw_monitor> hardware_monitor,
+		firmware_logger_device(std::shared_ptr<context> ctx,
+			const platform::backend_device_group& group,
+			std::shared_ptr<hw_monitor> hardware_monitor,
 			std::string camera_op_code);
 
 		bool get_fw_log(fw_logs::fw_logs_binary_data& binary_data) override;

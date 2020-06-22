@@ -485,7 +485,7 @@ namespace librealsense
               ds5_active(ctx, group),
               ds5_color(ctx,  group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()), 
-              firmware_logger_device(ds5_device::_hw_monitor, get_depth_sensor().get_info(RS2_CAMERA_INFO_DEBUG_OP_CODE)) {}
+              firmware_logger_device(ctx, group, ds5_device::_hw_monitor, get_depth_sensor().get_info(RS2_CAMERA_INFO_DEBUG_OP_CODE)) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 

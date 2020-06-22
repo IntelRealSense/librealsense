@@ -6,8 +6,11 @@
 
 namespace librealsense
 {
-    firmware_logger_device::firmware_logger_device(std::shared_ptr<hw_monitor> hardware_monitor,
+    firmware_logger_device::firmware_logger_device(std::shared_ptr<context> ctx,
+        const platform::backend_device_group& group,
+        std::shared_ptr<hw_monitor> hardware_monitor,
         std::string camera_op_code) :
+        device(ctx, group),
         _hw_monitor(hardware_monitor),
         _fw_logs(),
         _flash_logs(),
