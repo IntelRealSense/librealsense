@@ -452,7 +452,9 @@ namespace ivcam2 {
             AC_LOG( DEBUG, "Open..." );
             color_sensor->open( { rgb_profile } );
             AC_LOG( DEBUG, "Start..." );
-            color_sensor->start( make_frame_callback( []( frame_interface * f ) {} ) );
+
+            color_sensor->start(make_frame_callback([](frame_interface * f) {f->release(); })); 
+
             AC_LOG( DEBUG, "Started!" );
             // Note that we don't do anything with the frames -- they shouldn't end up
             // at the user. But AC will still get them.
