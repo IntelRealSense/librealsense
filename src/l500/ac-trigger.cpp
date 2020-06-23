@@ -110,13 +110,13 @@ static int get_retry_sf_seconds()
 static double get_temp_diff_trigger()
 {
     static double d_temp
-        = env_var< int >( "RS2_AC_TEMP_DIFF", 5, []( int n ) { return n >= 0; } ).value();
+        = env_var< int >( "RS2_AC_TEMP_DIFF", 0, []( int n ) { return n >= 0; } ).value();
     return d_temp;
 }
 static std::chrono::seconds get_trigger_seconds()
 {
     auto n_seconds = env_var< int >( "RS2_AC_TRIGGER_SECONDS",
-        600,  // 10 minutes since last
+        0,  // off by default (600 = 10 minutes since last is the normal default)
         []( int n ) { return n >= 0; } );
     // 0 means turn off auto-trigger
     return std::chrono::seconds( n_seconds );
