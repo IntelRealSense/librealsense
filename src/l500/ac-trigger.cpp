@@ -131,12 +131,9 @@ namespace rs2
         os << '[';
         if( spi )
         {
-            //os << spi->get_unique_id();
-            os << ' ' << rs2_format_to_string( spi->get_format() );
-            //os << ' ' << rs2_stream_to_string( spi->get_stream_type() );
-            //os << ' ' << spi->get_stream_index();
-            if( auto vsp = dynamic_cast< const video_stream_profile * >( spi ) )
-                os << ' ' << vsp->width() << 'x' << vsp->height();
+            os << rs2_format_to_string( spi->get_format() );
+            if( auto vsp = dynamic_cast< const librealsense::video_stream_profile * >( spi ) )
+                os << ' ' << vsp->get_width() << 'x' << vsp->get_height();
             os << " " << spi->get_framerate() << "fps";
         }
         os << ']';
