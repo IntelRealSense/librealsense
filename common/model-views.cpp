@@ -1239,7 +1239,7 @@ namespace rs2
                         auto width = res_values[ui.selected_res_id].first;
                         auto height = res_values[ui.selected_res_id].second;
                         auto res = resolution_from_width_height(width, height);
-                        if (res >= RS2_SENSOR_MODE_QVGA && res < RS2_SENSOR_MODE_COUNT)
+                        if (res >= RS2_SENSOR_MODE_VGA && res < RS2_SENSOR_MODE_COUNT)
                             s->set_option(RS2_OPTION_SENSOR_MODE, res);
                     }
                 }
