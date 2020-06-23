@@ -793,6 +793,7 @@ namespace ivcam2 {
 
         if( !n_seconds.count() )
         {
+#if 0 // TODO on auto trigger, we want this back
             option & o = _dev.get_depth_sensor().get_option( RS2_OPTION_CAMERA_ACCURACY_HEALTH_ENABLED );
             if( !o.query() )
             {
@@ -800,6 +801,7 @@ namespace ivcam2 {
                 AC_LOG( DEBUG, "Camera Accuracy Health is turned off -- no trigger set" );
                 return;
             }
+#endif
 
             // Check if we want auto trigger
             // Note: we arbitrarly choose the time before AC starts at 10 second -- enough time to
