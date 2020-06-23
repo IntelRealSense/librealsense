@@ -19,6 +19,8 @@
 #include "l500-color.h"
 #include "l500-serializable.h"
 
+#include "../firmware_logger_device.h"
+
 namespace librealsense
 {
     using namespace ivcam2;
