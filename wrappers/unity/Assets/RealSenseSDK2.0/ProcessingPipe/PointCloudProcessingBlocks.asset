@@ -138,7 +138,7 @@ MonoBehaviour:
   enabled: 1
   TextureStream: 1
   TextureFormat: 5
-  _occlusionRemoval: 0
+  _occlusionRemoval: 1
 --- !u!114 &114947088938950326
 MonoBehaviour:
   m_ObjectHideFlags: 0
