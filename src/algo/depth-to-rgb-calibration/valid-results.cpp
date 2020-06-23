@@ -316,6 +316,7 @@ bool optimizer::valid_by_svm(svm_model model)
         res += _svm_model_linear.bias;
         if (res < 0)
         {
+            AC_LOG( INFO, "Calibration invalid according to SVM linear model" );
             is_valid = false;
         }
         break;
@@ -330,18 +331,20 @@ bool optimizer::valid_by_svm(svm_model model)
 
     return is_valid;
 }
+
+
 bool optimizer::is_valid_results()
 {
-    if (get_final_data_from_bin)
+    if( get_final_data_from_bin )
     {
         _z.vertices = _vertices_from_bin;
-        _final_calibration = decompose_p_mat(_p_mat_from_bin);
-        _optimaized_calibration = decompose_p_mat(_p_mat_from_bin_opt);
+        _final_calibration = decompose_p_mat( _p_mat_from_bin );
+        _optimaized_calibration = decompose_p_mat( _p_mat_from_bin_opt );
     }
-       
+
 
     bool res = true;
-     //Clip any (average) movement of pixels if it's too big
+    // Clip any (average) movement of pixels if it's too big
     clip_pixel_movement();
 
     // Based on (possibly new, clipped) calibration values, see if we've strayed too
@@ -361,29 +364,34 @@ bool optimizer::is_valid_results()
         AC_LOG( DEBUG, "... no factory calibration available; skipping distance check" );
     }
 
-   /* %% Check and see that the score didn't increased by a lot in one image section and decreased in the others
-    % [c1, costVecOld] = OnlineCalibration.aux.calculateCost( frame.vertices, frame.weights, frame.rgbIDT, params );
-    % [c2, costVecNew] = OnlineCalibration.aux.calculateCost( frame.vertices, frame.weights, frame.rgbIDT, newParams );
-    % scoreDiffPerVertex = costVecNew - costVecOld;
-    % for i = 0:(params.numSectionsH*params.numSectionsV) - 1
-    %     scoreDiffPersection( i + 1 ) = nanmean( scoreDiffPerVertex( frame.sectionMapDepth == i ) );
-    % end*/
-    _z.cost_diff_per_section = cost_per_section_diff(_original_calibration, _optimaized_calibration);
+    /* %% Check and see that the score didn't increased by a lot in one image section and decreased in the others
+     % [c1, costVecOld] = OnlineCalibration.aux.calculateCost( frame.vertices, frame.weights, frame.rgbIDT, params );
+     % [c2, costVecNew] = OnlineCalibration.aux.calculateCost( frame.vertices, frame.weights, frame.rgbIDT, newParams );
+     % scoreDiffPerVertex = costVecNew - costVecOld;
+     % for i = 0:(params.numSectionsH*params.numSectionsV) - 1
+     %     scoreDiffPersection( i + 1 ) = nanmean( scoreDiffPerVertex( frame.sectionMapDepth == i ) );
+     % end*/
+    _z.cost_diff_per_section
+        = cost_per_section_diff( _original_calibration, _optimaized_calibration );
     //% validOutputStruct.minImprovementPerSection = min( scoreDiffPersection );
     //% validOutputStruct.maxImprovementPerSection = max( scoreDiffPersection );
-    double min_cost_diff = *std::min_element( _z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end() );
-    double max_cost_diff = *std::max_element( _z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end() );
+    double min_cost_diff
+        = *std::min_element( _z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end() );
+    double max_cost_diff
+        = *std::max_element( _z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end() );
     AC_LOG( DEBUG, "... min cost diff= " << min_cost_diff << "  max= " << max_cost_diff );
     if( min_cost_diff < 0. )
     {
-        AC_LOG( ERROR, "Some image sections were hurt by the optimization; invalidating calibration!" );
+        AC_LOG( ERROR,
+                "Some image sections were hurt by the optimization; invalidating calibration!" );
         for( size_t x = 0; x < _z.cost_diff_per_section.size(); ++x )
-            AC_LOG( DEBUG, "... cost diff in section " << x << "= " << _z.cost_diff_per_section[x] );
-        //return false;
+            AC_LOG( DEBUG,
+                    "... cost diff in section " << x << "= " << _z.cost_diff_per_section[x] );
+        // return false;
         res = false;
     }
 
-    bool res_svm = valid_by_svm(linear); //(gaussian);
-    return (res && res_svm);
+    bool res_svm = valid_by_svm( linear );  //(gaussian);
+    return ( res && res_svm );
 }
 
