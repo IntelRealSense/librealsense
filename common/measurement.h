@@ -96,8 +96,8 @@ namespace rs2
             double selection_started = 0.0;
             float2 down_pos { 0.f, 0.f };
             int mouse_wheel = 0;
-            double click_time = 0.0;
-            float click_period() { return clamp((glfwGetTime() - click_time) * 10, 0.f, 1.f); }
+            float click_time = 0.f;
+            float click_period() { return clamp(float(glfwGetTime() - click_time) * 10, 0.f, 1.f); }
         };
         mouse_control input_ctrl;
         int id = 0;

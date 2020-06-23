@@ -31,11 +31,12 @@
 
 #include "imgui-fonts-karla.hpp"
 #include "imgui-fonts-fontawesome.hpp"
+#include "imgui-fonts-monofont.hpp"
 
 #include "os.h"
 
 #include "metadata-helper.h"
-
+#include "calibration-model.h"
 
 using namespace rs400;
 using namespace nlohmann;
@@ -43,7 +44,9 @@ using namespace rs2::sw_update;
 
 static rs2_sensor_mode resolution_from_width_height(int width, int height)
 {
-    if ((width == 640 && height == 480) || (height == 640 && width == 480))
+    if ((width == 240 && height == 320) || (width == 320 && height == 240))
+        return RS2_SENSOR_MODE_QVGA;
+    else if ((width == 640 && height == 480) || (height == 640 && width == 480))
         return RS2_SENSOR_MODE_VGA;
     else if ((width == 1024 && height == 768) || (height == 768 && width == 1024))
         return RS2_SENSOR_MODE_XGA;
@@ -137,7 +140,7 @@ namespace rs2
         file.write((char*)bytes.data(), bytes.size());
     }
 
-    void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
+    void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18, ImFont*& monofont)
     {
         ImGuiStyle& style = ImGui::GetStyle();
 
@@ -176,6 +179,21 @@ namespace rs2
             font_18 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
                 font_awesome_compressed_size, 20.f, &config_glyphs, icons_ranges);
 
+        }
+
+        // Load monofont
+        {
+            ImFontConfig config_words;
+            config_words.OversampleV = OVERSAMPLE;
+            config_words.OversampleH = OVERSAMPLE;
+            monofont = io.Fonts->AddFontFromMemoryCompressedTTF(monospace_compressed_data, monospace_compressed_size, 15.f);
+
+            ImFontConfig config_glyphs;
+            config_glyphs.MergeMode = true;
+            config_glyphs.OversampleV = OVERSAMPLE;
+            config_glyphs.OversampleH = OVERSAMPLE;
+            monofont = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
+                font_awesome_compressed_size, 14.f, &config_glyphs, icons_ranges);
         }
 
         style.WindowRounding = 0.0f;
@@ -1129,7 +1147,7 @@ namespace rs2
                 {
                     s->set_option( RS2_OPTION_SENSOR_MODE, resolution_from_width_height( res_values[ui.selected_res_id].first, res_values[ui.selected_res_id].second ) );
                 }
-                catch( not_implemented_error const & e )
+                catch( not_implemented_error const &)
                 {
                     // Just ignore for now: need to figure out a way to write to playback sensors...
                 }
@@ -1237,8 +1255,8 @@ namespace rs2
                         auto width = res_values[ui.selected_res_id].first;
                         auto height = res_values[ui.selected_res_id].second;
                         auto res = resolution_from_width_height(width, height);
-                        if (res >= RS2_SENSOR_MODE_XGA && res < RS2_SENSOR_MODE_COUNT)
-                            s->set_option(RS2_OPTION_SENSOR_MODE, res);
+                        if (res >= RS2_SENSOR_MODE_VGA && res < RS2_SENSOR_MODE_COUNT)
+                            s->set_option(RS2_OPTION_SENSOR_MODE, float(res));
                     }
                 }
                 ImGui::PopStyleColor();
@@ -3356,6 +3374,7 @@ namespace rs2
 
     device_model::device_model(device& dev, std::string& error_message, viewer_model& viewer)
         : dev(dev),
+        _calib_model(dev),
         syncer(viewer.syncer),
         _update_readonly_options_timer(std::chrono::seconds(6))
         , _detected_objects(std::make_shared< atomic_objects_in_frame >()),
@@ -4505,6 +4524,7 @@ namespace rs2
         ImGui::PopFont();
         ImGui::PushFont(window.get_font());
         static bool keep_showing_advanced_mode_modal = false;
+        bool open_calibration_ui = false;
         if (ImGui::BeginPopup(label.c_str()))
         {
             bool something_to_show = false;
@@ -4738,6 +4758,80 @@ namespace rs2
                         ImGui::SetTooltip("Tare calibration is used to adjust camera absolute distance to flat target.\n"
                             "User needs to enter the known ground truth");
 
+                    
+                    if (_calib_model.supports())
+                    {
+                        if (ImGui::Selectable("Calibration Data"))
+                        {
+                            _calib_model.open();
+                        }
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Access low level camera calibration parameters");
+                    }
+
+                    if (auto fwlogger = dev.as<rs2::firmware_logger>())
+                    {
+                        if (ImGui::Selectable("Recover Logs from Flash"))
+                        {
+                            try
+                            {
+                                bool has_parser = false;
+                                std::string hwlogger_xml = config_file::instance().get(configurations::viewer::hwlogger_xml);
+                                std::ifstream f(hwlogger_xml.c_str());
+                                if (f.good())
+                                {
+                                    try
+                                    {
+                                        std::string str((std::istreambuf_iterator<char>(f)),
+                                            std::istreambuf_iterator<char>());
+                                        fwlogger.init_parser(str);
+                                        has_parser = true;
+                                    }
+                                    catch (const std::exception& ex)
+                                    {
+                                        viewer.not_model->output.add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__, 
+                                            to_string() << "Invalid Hardware Logger XML at '" << hwlogger_xml << "': " << ex.what() << "\nEither configure valid XML or remove it");
+                                    }
+                                }
+
+                                auto message = fwlogger.create_message();
+                                
+                                while (fwlogger.get_flash_log(message))
+                                {
+                                    auto parsed = fwlogger.create_parsed_message();
+                                    auto parsed_ok = false;
+                                    
+                                    if (has_parser)
+                                    {
+                                        if (fwlogger.parse_log(message, parsed))
+                                        {
+                                            parsed_ok = true;
+
+                                            viewer.not_model->output.add_log(message.get_severity(), 
+                                                parsed.file_name(), parsed.line(), to_string() 
+                                                    << "FW-LOG [" << parsed.thread_name() << "] " << parsed.message());
+                                        }
+                                    }
+
+                                    if (!parsed_ok)
+                                    {
+                                        std::stringstream ss; 
+                                        for (auto& elem : message.data())
+                                            ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem) << " ";
+                                        viewer.not_model->output.add_log(message.get_severity(), __FILE__, 0, ss.str());
+                                    }                            
+                                }
+                            }
+                            catch(const std::exception& ex)
+                            {
+                                viewer.not_model->output.add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__, 
+                                    to_string() << "Failed to fetch firmware logs: " << ex.what());
+                            }
+                        }
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Recovers last set of firmware logs prior to camera shutdown / disconnect");
+                    }
+
                     has_autocalib = true;
                 }
             }
@@ -4764,6 +4858,10 @@ namespace rs2
             std::string msg = to_string() << "\t\tAre you sure you want to " << (is_advanced_mode_enabled ? "turn off Advanced mode" : "turn on Advanced mode") << "\t\t";
             keep_showing_advanced_mode_modal = prompt_toggle_advanced_mode(!is_advanced_mode_enabled, msg, restarting_device_info, viewer, window);
         }
+
+        _calib_model.update(window, error_message);
+
+            
         ////////////////////////////////////////
         // Draw icons names
         ////////////////////////////////////////

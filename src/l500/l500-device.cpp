@@ -33,12 +33,14 @@ namespace librealsense
         { rs_fourcc('G','R','E','Y'), RS2_FORMAT_Y8 },
         { rs_fourcc('Z','1','6',' '), RS2_FORMAT_Z16 },
         { rs_fourcc('C',' ',' ',' '), RS2_FORMAT_RAW8 },
+        { rs_fourcc('C','N','F','4'), RS2_FORMAT_RAW8 },
     };
 
     std::map<uint32_t, rs2_stream> l500_depth_fourcc_to_rs2_stream = {
         { rs_fourcc('G','R','E','Y'), RS2_STREAM_INFRARED },
         { rs_fourcc('Z','1','6',' '), RS2_STREAM_DEPTH },
-        { rs_fourcc('C',' ',' ',' '), RS2_STREAM_CONFIDENCE }
+        { rs_fourcc('C',' ',' ',' '), RS2_STREAM_CONFIDENCE },
+        { rs_fourcc('C','N','F','4'), RS2_STREAM_CONFIDENCE },
     };
 
     using namespace ivcam2;
@@ -506,7 +508,7 @@ namespace librealsense
         {
             command cmdFES(ivcam2::FES);
             cmdFES.require_response = false;
-            cmdFES.param1 = sector_index;
+            cmdFES.param1 = int(sector_index);
             cmdFES.param2 = 1;
             auto res = hwm->send(cmdFES);
 
@@ -518,7 +520,7 @@ namespace librealsense
                 int packet_size = std::min((int)(HW_MONITOR_COMMAND_SIZE - (i % HW_MONITOR_COMMAND_SIZE)), (int)(ivcam2::FLASH_SECTOR_SIZE - i));
                 command cmdFWB(ivcam2::FWB);
                 cmdFWB.require_response = false;
-                cmdFWB.param1 = index;
+                cmdFWB.param1 = int(index);
                 cmdFWB.param2 = packet_size;
                 cmdFWB.data.assign(image.data() + index, image.data() + index + packet_size);
                 res = hwm->send(cmdFWB);
@@ -534,7 +536,7 @@ namespace librealsense
         update_progress_callback_ptr callback, float continue_from, float ratio)
     {
         auto first_table_offset = fs.tables.front().offset;
-        float total_size = float( fs.app_size + tables_size );
+        float total_size = float(fs.app_size + tables_size);
 
         float app_ratio = fs.app_size / total_size * ratio;
         float tables_ratio = tables_size / total_size * ratio;
@@ -552,7 +554,7 @@ namespace librealsense
         // update read-write section
         auto first_table_offset = flash_image_info.read_write_section.tables.front().offset;
         auto tables_size = flash_image_info.header.read_write_start_address + flash_image_info.header.read_write_size - first_table_offset;
-        update_section(hwm, merged_image, flash_image_info.read_write_section, tables_size, callback, 0, update_mode == RS2_UNSIGNED_UPDATE_MODE_READ_ONLY ? 0.5f : 1.0f);
+        update_section(hwm, merged_image, flash_image_info.read_write_section, tables_size, callback, 0, update_mode == RS2_UNSIGNED_UPDATE_MODE_READ_ONLY ? 0.5f : 1.f);
 
         if (update_mode == RS2_UNSIGNED_UPDATE_MODE_READ_ONLY)
         {
@@ -595,6 +597,16 @@ namespace librealsense
             command cmdHWRST(ivcam2::HW_RESET);
             res = _hw_monitor->send(cmdHWRST);
         });
+    }
+
+    command l500_device::get_firmware_logs_command() const
+    {
+        return command{ ivcam2::GLD, 0x1f4 };
+    }
+
+    command l500_device::get_flash_logs_command() const
+    {
+        return command{ ivcam2::FRB, 0x0011E000, 0x3f8 };
     }
 
     notification l500_notification_decoder::decode(int value)

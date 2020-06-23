@@ -99,7 +99,7 @@ namespace rs2
                 if (fabs(verts[i].x) >= min_distance || fabs(verts[i].y) >= min_distance ||
                     fabs(verts[i].z) >= min_distance)
                 {
-                    idx_map[i] = new_verts.size();
+                    idx_map[int(i)] = int(new_verts.size());
                     new_verts.push_back({ verts[i].x, -1 * verts[i].y, -1 * verts[i].z });
                     if (use_texcoords)
                     {

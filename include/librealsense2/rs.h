@@ -21,7 +21,6 @@ extern "C" {
 #include "h/rs_processing.h"
 #include "h/rs_record_playback.h"
 #include "h/rs_sensor.h"
-#include "h/rs_terminal_parser.h"
 
 #define RS2_API_MAJOR_VERSION    2
 #define RS2_API_MINOR_VERSION    36

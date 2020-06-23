@@ -12,7 +12,9 @@
 #include "option.h"
 #include "context.h"
 
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif // NOMINMAX
 
 #include <glad/glad.h>
 

@@ -101,6 +101,10 @@ namespace librealsense
         void force_hardware_reset() const;
         bool _is_locked = true;
 
+        //TODO - add these to device class as pure virtual methods
+        command get_firmware_logs_command() const;
+        command get_flash_logs_command() const;
+
         std::vector<rs2_option> _advanced_options;
 
         std::vector< calibration_change_callback_ptr > _calibration_change_callbacks;

@@ -205,6 +205,7 @@ typedef enum rs2_extension
     RS2_EXTENSION_FISHEYE_SENSOR,
     RS2_EXTENSION_DEPTH_HUFFMAN_DECODER,
     RS2_EXTENSION_SERIALIZABLE,
+    RS2_EXTENSION_FW_LOGGER,
     RS2_EXTENSION_AUTO_CALIBRATION_FILTER,
     RS2_EXTENSION_DEVICE_CALIBRATION,
     RS2_EXTENSION_CALIBRATED_SENSOR,
@@ -272,6 +273,9 @@ typedef struct rs2_options_list rs2_options_list;
 typedef struct rs2_devices_changed_callback rs2_devices_changed_callback;
 typedef struct rs2_notification rs2_notification;
 typedef struct rs2_notifications_callback rs2_notifications_callback;
+typedef struct rs2_firmware_log_message rs2_firmware_log_message;
+typedef struct rs2_firmware_log_parsed_message rs2_firmware_log_parsed_message;
+typedef struct rs2_firmware_log_parser rs2_firmware_log_parser;
 typedef struct rs2_terminal_parser rs2_terminal_parser;
 typedef void (*rs2_log_callback_ptr)(rs2_log_severity, rs2_log_message const *, void * arg);
 typedef void (*rs2_notification_callback_ptr)(rs2_notification*, void*);

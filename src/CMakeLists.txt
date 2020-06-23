@@ -12,6 +12,7 @@ include(${_rel_path}/proc/CMakeLists.txt)
 include(${_rel_path}/res/CMakeLists.txt)
 include(${_rel_path}/pipeline/CMakeLists.txt)
 include(${_rel_path}/usb/CMakeLists.txt)
+include(${_rel_path}/fw-logs/CMakeLists.txt)
 include(${_rel_path}/fw-update/CMakeLists.txt)
 
 message(STATUS "using ${BACKEND}")
@@ -78,6 +79,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/device_hub.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/environment.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/error-handling.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/firmware_logger_device.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/global_timestamp_reader.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/hw-monitor.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/image.cpp"
@@ -107,6 +109,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/environment.h"
         "${CMAKE_CURRENT_LIST_DIR}/log.h"
         "${CMAKE_CURRENT_LIST_DIR}/error-handling.h"
+        "${CMAKE_CURRENT_LIST_DIR}/firmware_logger_device.h"
         "${CMAKE_CURRENT_LIST_DIR}/frame-archive.h"
         "${CMAKE_CURRENT_LIST_DIR}/global_timestamp_reader.h"
         "${CMAKE_CURRENT_LIST_DIR}/hw-monitor.h"

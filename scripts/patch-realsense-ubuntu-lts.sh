@@ -83,7 +83,7 @@ cd ${kernel_name}
 #then
 #Search the repository for the tag that matches the mmaj.min.patch-build of Ubuntu kernel
 kernel_full_num=$(echo $LINUX_BRANCH | cut -d '-' -f 1,2)
-kernel_git_tag=$(git ls-remote --tags origin | grep ${kernel_full_num} | grep '[^^{}]$' | tail -n 1 | awk -F/ '{print $NF}')
+kernel_git_tag=$(git ls-remote --tags origin | grep "${kernel_full_num}\." | grep '[^^{}]$' | tail -n 1 | awk -F/ '{print $NF}')
 echo -e "\e[32mFetching Ubuntu LTS tag \e[47m${kernel_git_tag}\e[0m \e[32m to the local kernel sources folder\e[0m"
 git fetch origin tag ${kernel_git_tag} --no-tags
 

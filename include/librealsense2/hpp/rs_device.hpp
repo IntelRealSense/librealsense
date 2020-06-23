@@ -226,7 +226,7 @@ namespace rs2
 
             results.insert(results.begin(), start, start + size);
 
-return results;
+            return results;
         }
 
         // Update an updatable device to the provided unsigned firmware. This call is executed on the caller's thread.
@@ -242,7 +242,7 @@ return results;
         void update_unsigned(const std::vector<uint8_t>& image, T callback, int update_mode = RS2_UNSIGNED_UPDATE_MODE_UPDATE) const
         {
             rs2_error* e = nullptr;
-            rs2_update_firmware_unsigned_cpp(_dev.get(), image.data(), image.size(), new update_progress_callback<T>(std::move(callback)), update_mode, &e);
+            rs2_update_firmware_unsigned_cpp(_dev.get(), image.data(), int(image.size()), new update_progress_callback<T>(std::move(callback)), update_mode, &e);
             error::handle(e);
         }
     };
@@ -277,7 +277,7 @@ return results;
         void update(const std::vector<uint8_t>& fw_image, T callback) const
         {
             rs2_error* e = nullptr;
-            rs2_update_firmware_cpp(_dev.get(), fw_image.data(), fw_image.size(), new update_progress_callback<T>(std::move(callback)), &e);
+            rs2_update_firmware_cpp(_dev.get(), fw_image.data(), int(fw_image.size()), new update_progress_callback<T>(std::move(callback)), &e);
             error::handle(e);
         }
     };
@@ -353,7 +353,7 @@ return results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_on_chip_calibration_cpp(_dev.get(), json_content.data(), json_content.size(), health, new update_progress_callback<T>(std::move(callback)), timeout_ms, &e),
+                rs2_run_on_chip_calibration_cpp(_dev.get(), json_content.data(), int(json_content.size()), health, new update_progress_callback<T>(std::move(callback)), timeout_ms, &e),
                 rs2_delete_raw_data);
             error::handle(e);
 
@@ -434,7 +434,7 @@ return results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, json_content.data(), json_content.size(), new update_progress_callback<T>(std::move(callback)), timeout_ms, &e),
+                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, json_content.data(), int(json_content.size()), new update_progress_callback<T>(std::move(callback)), timeout_ms, &e),
                 rs2_delete_raw_data);
             error::handle(e);
 
