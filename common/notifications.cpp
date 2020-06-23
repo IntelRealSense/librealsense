@@ -135,7 +135,7 @@ namespace rs2
                 auto a = curr_progress_value / 100.f;
                 ImGui::GetWindowDrawList()->AddRectFilled({ float(pos.x + 3 - i), float(pos.y + 3 - i) },
                 { float(pos.x + filled_w + i), float(pos.y + 17 + i) },
-                    ImColor(alpha(light_blue, sqrt(a) * 0.02f)), i);
+                    ImColor(alpha(light_blue, sqrt(a) * 0.02f)), float(i));
             }
 
             ImGui::GetWindowDrawList()->AddRectFilled({ float(pos.x + 3), float(pos.y + 3) },
@@ -170,9 +170,9 @@ namespace rs2
     {
         ImVec4 c;
 
-        ImGui::PushStyleColor(ImGuiCol_Button, saturate(c, 1.3));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, saturate(c, 0.9));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(c, 1.5));
+        ImGui::PushStyleColor(ImGuiCol_Button, saturate(c, 1.3f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, saturate(c, 0.9f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(c, 1.5f));
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
         c = alpha(white, 1 - t);
         ImGui::PushStyleColor(ImGuiCol_Text, c);
@@ -198,7 +198,7 @@ namespace rs2
     void notification_model::draw_text(const char* msg, int x, int y, int h)
     {
         std::string text_name = to_string() << "##notification_text_" << index;
-        ImGui::PushTextWrapPos(x + width - 100);
+        ImGui::PushTextWrapPos(x + width - 100.f);
         ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
         ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
         ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
@@ -232,7 +232,7 @@ namespace rs2
     {
         auto title = get_title();
         auto lines = static_cast<int>(std::count(title.begin(), title.end(), '\n') + 1);
-        return (lines + 1) * ImGui::GetTextLineHeight() + 5;
+        return int((lines + 1) * ImGui::GetTextLineHeight() + 5);
     }
 
     void process_notification_model::draw_pre_effect(int x, int y)
@@ -333,8 +333,8 @@ namespace rs2
             {
                 if (last_x > 100000)
                 {
-                    last_x = x + 500;
-                    last_y = y;
+                    last_x = x + 500.f;
+                    last_y = float(y);
                 }
                 last_moved = system_clock::now();
                 animating = true;
@@ -345,12 +345,12 @@ namespace rs2
 
             if (s < 1.f)
             {
-                x = s * x + (1 - s) * last_x;
-                y = s * y + (1 - s) * last_y;
+                x = int(s * x + (1 - s) * last_x);
+                y = int(s * y + (1 - s) * last_y);
             }
             else
             {
-                last_x = x; last_y = y;
+                last_x = float(x); last_y = float(y);
                 animating = false;
                 if (dismissed && !expanded) to_close = true;
             }
@@ -843,7 +843,7 @@ namespace rs2
 
             ImGui::SetCursorScreenPos({ float(x + 10), float(y + 35) });
 
-            ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1. - t));
+            ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1.f - t));
 
             std::string s = to_string() << "Saving 3D view to " <<
                 get_file_name(get_manager().get_filename());

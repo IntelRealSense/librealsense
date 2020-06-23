@@ -164,7 +164,7 @@ namespace librealsense
         auto stream_selector = std::make_shared<ptr_option<int>>(RS2_STREAM_ANY, RS2_STREAM_COUNT, 1, RS2_STREAM_ANY, (int*)&_stream_filter.stream, "Stream type");
         for (int s = RS2_STREAM_ANY; s < RS2_STREAM_COUNT; s++)
         {
-            stream_selector->set_description(s, "Process - " + std::string (rs2_stream_to_string((rs2_stream)s)));
+            stream_selector->set_description(float(s), "Process - " + std::string (rs2_stream_to_string((rs2_stream)s)));
         }
         stream_selector->on_set([this, stream_selector](float val)
         {
@@ -180,7 +180,7 @@ namespace librealsense
         auto format_selector = std::make_shared<ptr_option<int>>(RS2_FORMAT_ANY, RS2_FORMAT_COUNT, 1, RS2_FORMAT_ANY, (int*)&_stream_filter.format, "Stream format");
         for (int f = RS2_FORMAT_ANY; f < RS2_FORMAT_COUNT; f++)
         {
-            format_selector->set_description(f, "Process - " + std::string(rs2_format_to_string((rs2_format)f)));
+            format_selector->set_description(float(f), "Process - " + std::string(rs2_format_to_string((rs2_format)f)));
         }
         format_selector->on_set([this, format_selector](float val)
         {

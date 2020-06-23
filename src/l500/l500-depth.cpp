@@ -351,7 +351,7 @@ namespace librealsense
                     }
                 }
                 
-                sensor_mode_option.set(get_resolution_from_width_height(vs->get_width(), vs->get_height()));
+                sensor_mode_option.set(float(get_resolution_from_width_height(vs->get_width(), vs->get_height())));
             }
 
 

@@ -213,7 +213,7 @@ namespace librealsense
                 LOG_WARNING(ex.what());
             }
             if (progress_callback)
-                progress_callback->on_update_progress(count++ * (2 * speed)); //curently this number does not reflect the actual progress
+                progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
 
             now = std::chrono::high_resolution_clock::now();
 
@@ -310,7 +310,7 @@ namespace librealsense
             }
 
             if (progress_callback)
-                progress_callback->on_update_progress(count++ * (2 * speed)); //curently this number does not reflect the actual progress
+                progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
 
             now = std::chrono::high_resolution_clock::now();
 
@@ -356,7 +356,7 @@ namespace librealsense
                 adv->set_all(old_preset_values);
             }
             else
-                advanced_mode->_preset_opt->set(old_preset);
+                advanced_mode->_preset_opt->set(static_cast<float>(old_preset));
         });
 
         return recover_preset;
