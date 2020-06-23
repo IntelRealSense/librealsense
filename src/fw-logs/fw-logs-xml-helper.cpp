@@ -145,7 +145,7 @@ namespace librealsense
                                             try
                                             {
                                                 auto key_str = std::string(attribute->value());
-                                                key = std::stoi(key_str, nullptr);
+                                                key = std::stoi(key_str);
                                             }
                                             catch (...) {}
                                         }

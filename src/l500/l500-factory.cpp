@@ -44,7 +44,7 @@ namespace librealsense
             l500_color(ctx, group),
             l500_motion(ctx, group),
             l500_serializable(l500_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(l500_device::_hw_monitor,
+            firmware_logger_device(ctx, group, l500_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command())
         {}
@@ -76,7 +76,7 @@ namespace librealsense
             : device(ctx, group, register_device_notifications),
             l500_device(ctx, group),
             l500_depth(ctx, group),
-            firmware_logger_device(l500_device::_hw_monitor,
+            firmware_logger_device(ctx, group,l500_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command())
         {}

@@ -381,7 +381,7 @@ namespace librealsense
         return flash;
     }
 
-    void sr300_camera::update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode)
+    void sr300_camera::update_flash(const std::vector<uint8_t>&, update_progress_callback_ptr, int)
     {
         throw std::runtime_error("update_flash is not supported by SR300");
     }
@@ -422,7 +422,7 @@ namespace librealsense
         const platform::backend_device_group& group,
         bool register_device_notifications)
         : device(ctx, group, register_device_notifications),
-        firmware_logger_device(_hw_monitor, get_firmware_logs_command(), get_flash_logs_command()),
+        firmware_logger_device(ctx, group, nullptr, get_firmware_logs_command(), get_flash_logs_command()),
         _depth_device_idx(add_sensor(create_depth_device(ctx, depth))),
         _depth_stream(new stream(RS2_STREAM_DEPTH)),
         _ir_stream(new stream(RS2_STREAM_INFRARED)),
@@ -433,6 +433,8 @@ namespace librealsense
         using namespace ivcam;
         static auto device_name = "Intel RealSense SR300";
 
+        // Temporal solution for HW Monitor injection - to be refactored
+        this->assign_hw_monitor(_hw_monitor);
         std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
         _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
         // fooling tests recordings - don't remove
