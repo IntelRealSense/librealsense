@@ -381,7 +381,7 @@ namespace librealsense
         if( _autocal->is_active() )
             throw wrong_api_call_sequence_exception( "calibration is already active" );
 
-        AC_LOG( INFO, "Depth-to-RGB calibration has been manually triggered" );
+        AC_LOG( INFO, "Camera Accuracy Health has been manually triggered" );
         _autocal->trigger_calibration();
     }
 
