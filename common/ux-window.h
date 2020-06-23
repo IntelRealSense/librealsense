@@ -60,6 +60,7 @@ namespace rs2
         void reset();
 
         ImFont* get_large_font() const { return _font_18; }
+        ImFont* get_monofont() const { return _monofont; }
         ImFont* get_font() const { return _font_14; }
 
         rs2::mouse_info& get_mouse() { return _mouse; }
@@ -78,6 +79,9 @@ namespace rs2
         void link_hovered();
         void cross_hovered();
 
+        void set_hovered_over_input() { _hovers_any_input_window = true; }
+        bool get_hovered_over_input() const { return _hovers_any_input_window; }
+
         double time() const { return glfwGetTime(); }
     private:
         void open_window();
@@ -93,7 +97,7 @@ namespace rs2
         int                     _fb_height = 0;
         rs2::rect                _viewer_rect;
 
-        ImFont                   *_font_14, *_font_18;
+        ImFont                   *_font_14, *_font_18, *_monofont;
         rs2::mouse_info          _mouse{};
         std::string              _error_message;
         float                    _scale_factor;
@@ -108,6 +112,7 @@ namespace rs2
         std::vector<std::string> _on_load_message;
         std::mutex               _on_load_message_mtx;
 
+        bool                     _hovers_any_input_window = false;
         bool                     _query_devices = true;
         bool                     _missing_device = false;
         int                      _hourglass_index = 0;

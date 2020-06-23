@@ -139,6 +139,9 @@ void ImGui_ImplGlFw_KeyCallback(GLFWwindow*, int key, int, int action, int mods)
     if (action == GLFW_RELEASE)
         io.KeysDown[key] = false;
 
+    if (mods && GLFW_MOD_CONTROL) io.KeysDown[GLFW_KEY_LEFT_CONTROL] = true;
+    else io.KeysDown[GLFW_KEY_LEFT_CONTROL] = false;
+
     (void)mods; // Modifiers are not reliable across systems
     io.KeyCtrl = io.KeysDown[GLFW_KEY_LEFT_CONTROL] || io.KeysDown[GLFW_KEY_RIGHT_CONTROL];
     io.KeyShift = io.KeysDown[GLFW_KEY_LEFT_SHIFT] || io.KeysDown[GLFW_KEY_RIGHT_SHIFT];

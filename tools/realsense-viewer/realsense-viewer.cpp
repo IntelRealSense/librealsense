@@ -299,49 +299,18 @@ int main(int argc, const char** argv) try
     std::vector<device> connected_devs;
     std::mutex m;
 
-#ifdef BUILD_SHARED_LIBS
-    // Configure the logger
-    el::Configurations conf;
-    conf.set(el::Level::Global, el::ConfigurationType::Format, "[%level] %msg");
-    conf.set(el::Level::Info, el::ConfigurationType::Format, "%msg");
-    conf.set(el::Level::Debug, el::ConfigurationType::Enabled, "false");
-    el::Loggers::reconfigureLogger("default", conf);
-    // Create a dispatch sink which will get any messages logged to EasyLogging, which will then
-    // post the messages on the viewer's notification window.
-    class viewer_model_dispatcher : public el::LogDispatchCallback
-    {
-    public:
-        std::weak_ptr<notifications_model> notifications;  // only the default ctor is available to us...!
-    protected:
-        void handle(const el::LogDispatchData* data) noexcept override
-        {
-            // TODO align LRS and Easyloging severity levels. W/A for easylogging on Linux
-            if (data->logMessage()->level() > el::Level::Debug)
-            {
-                if (auto not_model = notifications.lock())
-                    not_model->add_log(
-                        data->logMessage()->logger()->logBuilder()->build(
-                        data->logMessage(),
-                        data->dispatchAction() == el::base::DispatchAction::NormalLog));
-            }
-        }
-    };
-    el::Helpers::installLogDispatchCallback< viewer_model_dispatcher >("viewer_model_dispatcher");
-    auto dispatcher = el::Helpers::logDispatchCallback< viewer_model_dispatcher >("viewer_model_dispatcher");
-    dispatcher->notifications = viewer_model.not_model;
-    el::Helpers::uninstallLogDispatchCallback< el::base::DefaultLogDispatchCallback >("DefaultLogDispatchCallback");
-#else
     std::weak_ptr<notifications_model> notifications = viewer_model.not_model;
      rs2::log_to_callback( RS2_LOG_SEVERITY_INFO,
         [notifications]( rs2_log_severity severity, rs2::log_message const& msg )
-         {
+        {
             if (auto not_model = notifications.lock())
-                not_model->add_log( msg.raw() );
-         } );
-#endif
+            {
+                not_model->output.add_log(severity, msg.filename(), msg.line_number(), msg.raw());
+            }
+        });
+
     window.on_file_drop = [&](std::string filename)
     {
-
         add_playback_device(ctx, *device_models, error_message, viewer_model, filename);
         if (!error_message.empty())
         {
@@ -638,9 +607,16 @@ int main(int argc, const char** argv) try
 
         viewer_model.show_top_bar(window, viewer_rect, *device_models);
 
-        viewer_model.show_event_log(window.get_font(), viewer_model.panel_width,
-            window.height() - (viewer_model.is_output_collapsed ? viewer_model.default_log_h : 20),
-            window.width() - viewer_model.panel_width, viewer_model.default_log_h);
+        auto output_rect = rect{ viewer_model.panel_width,
+            window.height() - viewer_model.get_output_height(),
+            window.width() - viewer_model.panel_width, viewer_model.get_output_height() };
+
+        std::vector<rs2::device> devices;
+        for (auto&& dev_model : *device_models)
+        {
+            devices.push_back(dev_model->dev);
+        }
+        viewer_model.not_model->output.draw(window, output_rect, devices);
 
         // Set window position and size
         ImGui::SetNextWindowPos({ 0, viewer_model.panel_y });
