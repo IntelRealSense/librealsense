@@ -35,6 +35,10 @@ namespace librealsense
         bool init_parser(std::string xml_content) override;
         bool parse_log(const fw_logs::fw_logs_binary_data* fw_log_msg, fw_logs::fw_log_data* parsed_msg) override;
 
+        // Temporal solution for HW_Monitor injection
+        void assign_hw_monitor(std::shared_ptr<hw_monitor> hardware_monitor)
+            { _hw_monitor = hardware_monitor; }
+
     private:
 
         void get_fw_logs_from_hw_monitor();
