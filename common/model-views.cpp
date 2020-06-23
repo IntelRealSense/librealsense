@@ -43,7 +43,9 @@ using namespace rs2::sw_update;
 
 static rs2_sensor_mode resolution_from_width_height(int width, int height)
 {
-    if ((width == 640 && height == 480) || (height == 640 && width == 480))
+    if ((width == 240 && height == 320) || (width == 320 && height == 240))
+        return RS2_SENSOR_MODE_QVGA;
+    else if ((width == 640 && height == 480) || (height == 640 && width == 480))
         return RS2_SENSOR_MODE_VGA;
     else if ((width == 1024 && height == 768) || (height == 768 && width == 1024))
         return RS2_SENSOR_MODE_XGA;
@@ -1237,7 +1239,7 @@ namespace rs2
                         auto width = res_values[ui.selected_res_id].first;
                         auto height = res_values[ui.selected_res_id].second;
                         auto res = resolution_from_width_height(width, height);
-                        if (res >= RS2_SENSOR_MODE_XGA && res < RS2_SENSOR_MODE_COUNT)
+                        if (res >= RS2_SENSOR_MODE_VGA && res < RS2_SENSOR_MODE_COUNT)
                             s->set_option(RS2_OPTION_SENSOR_MODE, res);
                     }
                 }
