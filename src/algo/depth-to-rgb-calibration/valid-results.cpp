@@ -9,12 +9,12 @@ using namespace librealsense::algo::depth_to_rgb_calibration;
 
 
 // Return the average pixel movement from the calibration
-double optimizer::calc_correction_in_pixels( calib const & from_calibration ) const
+double optimizer::calc_correction_in_pixels( calib const & from_calibration, calib const & to_calibration) const
 {
     //%    [uvMap,~,~] = OnlineCalibration.aux.projectVToRGB(frame.vertices,params.rgbPmat,params.Krgb,params.rgbDistort);
     //% [uvMapNew,~,~] = OnlineCalibration.aux.projectVToRGB(frame.vertices,newParams.rgbPmat,newParams.Krgb,newParams.rgbDistort);
     auto old_uvmap = get_texture_map( _z.orig_vertices, from_calibration, from_calibration.calc_p_mat());
-    auto new_uvmap = get_texture_map( _z.vertices, _optimaized_calibration, _optimaized_calibration.calc_p_mat());
+    auto new_uvmap = get_texture_map( _z.vertices, to_calibration, to_calibration.calc_p_mat());
 
     return calc_correction_in_pixels( old_uvmap, new_uvmap );
 }
@@ -54,7 +54,7 @@ double optimizer::calc_correction_in_pixels( uvmap_t const & old_uvmap, uvmap_t 
 // This function actually changes the calibration if it exceeds this number of pixels!
 void optimizer::clip_pixel_movement( size_t iteration_number )
 {
-    double xy_movement = calc_correction_in_pixels();
+    double xy_movement = calc_correction_in_pixels(_final_calibration);
 
     // Clip any (average) movement of pixels if it's too big
     AC_LOG( INFO, "    average pixel movement= " << xy_movement );
@@ -231,8 +231,8 @@ void optimizer::collect_decision_params(z_frame_data& z_data, yuy2_frame_data& y
 
     _decision_params.initial_cost = calc_cost(z_data, yuy_data, uvmap); //1.560848046875000e+04;
     //_decision_params.is_valid = 0;
-    _decision_params.xy_movement = calc_correction_in_pixels(); //2.376f; // 
-    _decision_params.xy_movement_from_origin = calc_correction_in_pixels(); //2.376f;
+    _decision_params.xy_movement = calc_correction_in_pixels(_optimaized_calibration); //2.376f; // 
+    _decision_params.xy_movement_from_origin = calc_correction_in_pixels(_optimaized_calibration); //2.376f;
     _decision_params.improvement_per_section = _z.cost_diff_per_section; // { -4.4229550, 828.93903, 1424.0482, 2536.4409 }; 
     _decision_params.min_improvement_per_section = *std::min_element(_z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end());// -4.422955036163330;
     _decision_params.max_improvement_per_section = *std::max_element(_z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end()); //2.536440917968750e+03;// 
@@ -348,7 +348,7 @@ bool optimizer::is_valid_results()
     // far away from the camera's original factory calibration -- which we may not have
     if( _factory_calibration.width  &&  _factory_calibration.height )
     {
-        double xy_movement = calc_correction_in_pixels();
+        double xy_movement = calc_correction_in_pixels(_final_calibration);
         AC_LOG( DEBUG, "... average pixel movement from factory calibration= " << xy_movement );
         if( xy_movement > _params.max_xy_movement_from_origin )
         {
