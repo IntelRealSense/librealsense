@@ -696,7 +696,7 @@ namespace ivcam2 {
                         {
                             AC_LOG( DEBUG, "Triggering another cycle for calibration..." );
                             int n_seconds = env_var< int >( "RS2_AC_INVALID_RETRY_SECONDS",
-                                60,
+                                2,  // TODO: should be 60, but changed for manual trigger
                                 []( int n ) { return n > 0; } );
                             _recycler = retrier::start( *this, std::chrono::seconds( n_seconds ) );
                         }
