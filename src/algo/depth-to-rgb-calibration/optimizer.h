@@ -219,13 +219,26 @@ namespace depth_to_rgb_calibration {
         optimization_params next_params;
     };
 
+    struct cycle_data_params
+    {
+        size_t cycle;
+        optimization_params new_params;
+        calib new_calib;
+        rs2_intrinsics_double new_k_depth;
+        algo_calibration_registers new_dsm_regs;
+        rs2_dsm_params_double new_dsm_params;
+        std::vector<double3> new_vertices;
+        calib optimaized_calib_candidate;
+    };
+
     struct data_collect
     {
         data_type type;
-        size_t cycle;
-        
-        k2dsm_data_params cycle_data_p;
+
+        cycle_data_params cycle_data_p;
+        k2dsm_data_params k2dsm_data_p;
         iteration_data_params iteration_data_p;
+
     };
 
 
@@ -265,8 +278,8 @@ namespace depth_to_rgb_calibration {
         double get_cost() const;
         double calc_correction_in_pixels( std::vector< double2 > const & old_uvmap,
                                           std::vector< double2 > const & new_uvmap ) const;
-        double calc_correction_in_pixels( calib const & from_calibration ) const;
-        double calc_correction_in_pixels() const { return calc_correction_in_pixels( _original_calibration ); }
+        double calc_correction_in_pixels( calib const & from_calibration, calib const & to_calibration) const;
+        double calc_correction_in_pixels(calib const & to_calibration) const { return calc_correction_in_pixels( _original_calibration, to_calibration); }
 
         // for debugging/unit-testing
         z_frame_data    const & get_z_data() const   { return _z; }

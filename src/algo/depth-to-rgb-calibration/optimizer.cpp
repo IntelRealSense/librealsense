@@ -1551,6 +1551,7 @@ size_t optimizer::optimize_p
         if (data)
         {
             data->type = iteration_data;
+            data->iteration_data_p.iteration = n_iterations;
             data->iteration_data_p.params = curr;
             data->iteration_data_p.c = new_rgb_calib_for_k_to_dsm;
             data->iteration_data_p.iteration = n_iterations;
@@ -1591,7 +1592,7 @@ size_t optimizer::optimize_p
     }
 
     AC_LOG( DEBUG,
-            "    cycle " << data->cycle << " finished after " << n_iterations << " iterations; cost "
+            "    cycle " << data->cycle_data_p.cycle << " finished after " << n_iterations << " iterations; cost "
                          << AC_D_PREC << params_curr.cost << "  -->  " << params_new.cost );
     new_rgb_calib_for_k_to_dsm = optimaized_calibration = decompose_p_mat(params_new.curr_p_mat);
 
@@ -1617,7 +1618,7 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
     data_collect data;
 
     auto cycle = 1;
-    data.cycle = cycle;
+    data.cycle_data_p.cycle = cycle;
 
     auto res = calc_cost_and_grad(_z, _z.vertices, _yuy, decompose(_params_curr.curr_p_mat, _original_calibration), _params_curr.curr_p_mat, &data);
     _params_curr.cost = res.first;
@@ -1638,10 +1639,7 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
 
     while (cycle < _params.max_K2DSM_iters)
     {
-        data.cycle = ++cycle;
-
-       
-        AC_LOG( INFO, "CYCLE " << data.cycle << ": cost = " << AC_D_PREC << new_params.cost );
+        AC_LOG( INFO, "CYCLE " << data.cycle_data_p.cycle << ": cost = " << AC_D_PREC << new_params.cost );
 
         std::vector<double3> cand_vertices = _z.vertices;
         auto dsm_regs_cand = new_dsm_regs;
@@ -1651,10 +1649,18 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
         calib optimaized_calib_candidate = _optimaized_calibration;
         rs2_intrinsics_double k_depth_candidate = new_k_depth;
 
+        data.cycle_data_p.cycle = ++cycle;
+        data.cycle_data_p.new_calib = new_calib;
+        data.cycle_data_p.new_k_depth = new_k_depth;
+        data.cycle_data_p.new_params = new_params;
+        data.cycle_data_p.new_dsm_params = new_dsm_params;
+        data.cycle_data_p.new_dsm_regs = new_dsm_regs;
+        data.cycle_data_p.new_vertices = new_vertices;
+        data.cycle_data_p.optimaized_calib_candidate = optimaized_calib_candidate;
+
         if (cb)
         {
             data.type = cycle_data;
-            data.cycle_data_p.k_depth = k_depth_candidate;
             cb(data);
         }
 
@@ -1670,9 +1676,9 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
         auto dsm_candidate = _k_to_DSM->convert_new_k_to_DSM(_z.orig_intrinsics, new_k_depth, _z, cand_vertices, new_dsm_params, dsm_regs_cand, &data);
         data.type = cycle_data;
 
-        data.cycle_data_p.dsm_params_cand = dsm_candidate;
-        data.cycle_data_p.vertices = cand_vertices;
-        data.cycle_data_p.dsm_pre_process_data = _k_to_DSM->get_pre_process_data();
+        data.k2dsm_data_p.dsm_params_cand = dsm_candidate;
+        data.k2dsm_data_p.vertices = cand_vertices;
+        data.k2dsm_data_p.dsm_pre_process_data = _k_to_DSM->get_pre_process_data();
 
         if (cb)
         {
@@ -1690,6 +1696,7 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
         }
 
         new_params = params_candidate;
+        _params_curr = new_params;
         new_calib = calib_candidate;
         new_k_depth = k_depth_candidate;
         new_dsm_params = dsm_candidate;

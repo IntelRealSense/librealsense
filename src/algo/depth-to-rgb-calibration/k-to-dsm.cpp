@@ -167,7 +167,7 @@ pre_process_data k_to_DSM::pre_processing
 
     convert_norm_vertices_to_los_data* vertices_to_los_data = nullptr;
     if (data)
-        vertices_to_los_data = &data->cycle_data_p.first_norm_vertices_to_los_data;
+        vertices_to_los_data = &data->k2dsm_data_p.first_norm_vertices_to_los_data;
 
     res.los_orig = convert_norm_vertices_to_los(regs, dsm_res_orig, res.vertices_orig, vertices_to_los_data);
     return res;
@@ -186,12 +186,12 @@ rs2_dsm_params_double k_to_DSM::convert_new_k_to_DSM
 {
     if (data)
     {
-        data->cycle_data_p.inputs.old_k = old_k;
-        data->cycle_data_p.inputs.new_k = new_k;
-        data->cycle_data_p.inputs.z = z;
-        data->cycle_data_p.inputs.new_vertices = new_vertices;
-        data->cycle_data_p.inputs.previous_dsm_params = previous_dsm_params;
-        data->cycle_data_p.inputs.new_dsm_regs = new_dsm_regs;
+        data->k2dsm_data_p.inputs.old_k = old_k;
+        data->k2dsm_data_p.inputs.new_k = new_k;
+        data->k2dsm_data_p.inputs.z = z;
+        data->k2dsm_data_p.inputs.new_vertices = new_vertices;
+        data->k2dsm_data_p.inputs.previous_dsm_params = previous_dsm_params;
+        data->k2dsm_data_p.inputs.new_dsm_regs = new_dsm_regs;
     }
 
 
@@ -223,17 +223,17 @@ rs2_dsm_params_double k_to_DSM::convert_new_k_to_DSM
 
     convert_norm_vertices_to_los_data* vertices_to_los_data = nullptr;
     if (data)
-        vertices_to_los_data = &data->cycle_data_p.second_norm_vertices_to_los_data;
+        vertices_to_los_data = &data->k2dsm_data_p.second_norm_vertices_to_los_data;
     auto los_orig = convert_norm_vertices_to_los(_regs, new_dsm_regs, sc_vertices, vertices_to_los_data);
     new_vertices = convert_los_to_norm_vertices(_regs, dsm_regs_cand, los_orig, data);
 
     if (data)
     {
-        data->cycle_data_p.dsm_regs_orig = dsm_orig;
-        data->cycle_data_p.relevant_pixels_image_rot = relevant_pixels_image_rot;
-        data->cycle_data_p.new_los_scaling = new_los_scaling;
-        data->cycle_data_p.dsm_regs_cand = dsm_regs_cand;
-        data->cycle_data_p.los_orig = los_orig;
+        data->k2dsm_data_p.dsm_regs_orig = dsm_orig;
+        data->k2dsm_data_p.relevant_pixels_image_rot = relevant_pixels_image_rot;
+        data->k2dsm_data_p.new_los_scaling = new_los_scaling;
+        data->k2dsm_data_p.dsm_regs_cand = dsm_regs_cand;
+        data->k2dsm_data_p.los_orig = los_orig;
     }
 
     for (auto i = 0; i < new_vertices.size(); i++)
@@ -303,8 +303,8 @@ double2 k_to_DSM::convert_k_to_los_error
 
     if (data)
     {
-        data->cycle_data_p.focal_scaling = focal_scaling;
-        data->cycle_data_p.opt_scaling = opt_scaling;
+        data->k2dsm_data_p.focal_scaling = focal_scaling;
+        data->k2dsm_data_p.opt_scaling = opt_scaling;
     }
         
 
@@ -439,21 +439,21 @@ double2 k_to_DSM::run_scaling_optimization_step
 
     if (data)
     {
-        data->cycle_data_p.errL2 = std::vector<double>(std::begin(err_l2), std::end(err_l2));
+        data->k2dsm_data_p.errL2 = std::vector<double>(std::begin(err_l2), std::end(err_l2));
 
-        data->cycle_data_p.sg_mat.resize(SIZE_OF_GRID_X);
+        data->k2dsm_data_p.sg_mat.resize(SIZE_OF_GRID_X);
         for (auto i = 0; i < SIZE_OF_GRID_X; i++)
         {
-            data->cycle_data_p.sg_mat[i].resize(SIZE_OF_GRID_Y);
+            data->k2dsm_data_p.sg_mat[i].resize(SIZE_OF_GRID_Y);
             for (auto j = 0; j < SIZE_OF_GRID_Y; j++)
             {
-                data->cycle_data_p.sg_mat[i][j] = sg_mat[i][j];
+                data->k2dsm_data_p.sg_mat[i][j] = sg_mat[i][j];
             }
         }
 
-        data->cycle_data_p.sg_mat_tag_x_sg_mat = std::vector<double>(std::begin(sg_mat_tag_x_sg_mat), std::end(sg_mat_tag_x_sg_mat));
-        data->cycle_data_p.sg_mat_tag_x_err_l2 = std::vector<double>(std::begin(sg_mat_tag_x_err_l2), std::end(sg_mat_tag_x_err_l2));
-        data->cycle_data_p.quad_coef = std::vector<double>(std::begin(quad_coef), std::end(quad_coef));
+        data->k2dsm_data_p.sg_mat_tag_x_sg_mat = std::vector<double>(std::begin(sg_mat_tag_x_sg_mat), std::end(sg_mat_tag_x_sg_mat));
+        data->k2dsm_data_p.sg_mat_tag_x_err_l2 = std::vector<double>(std::begin(sg_mat_tag_x_err_l2), std::end(sg_mat_tag_x_err_l2));
+        data->k2dsm_data_p.quad_coef = std::vector<double>(std::begin(quad_coef), std::end(quad_coef));
     }
 
     double A[4] = { quad_coef[0], quad_coef[2] / 2, quad_coef[2] / 2, quad_coef[1] };
@@ -629,7 +629,7 @@ std::vector<double3> k_to_DSM::convert_los_to_norm_vertices
     }
 
     if (data)
-        data->cycle_data_p.dsm = dsm;
+        data->k2dsm_data_p.dsm = dsm;
 
     for (auto i = 0; i < fove_x_indicent_direction.size(); i++)
     {

@@ -21,13 +21,28 @@ bool is_equal_approximetly( F fx, D dx, bool print = true)
     return dx == approx( fx );
 }
 
+template< typename D>
+bool compare_and_trace(D val_matlab, D val_cpp, std::string const & compared)
+{
+    if (val_cpp != approx(val_matlab))
+    {
+        AC_LOG(DEBUG, "... " << std::setprecision(16) << compared << ":  {matlab} " << val_matlab << " !~ " << val_cpp << " {cpp}");
+        return false;
+    }
+    return true;
+}
+
 template<>
 bool is_equal_approximetly<algo::k_matrix, algo::k_matrix>( algo::k_matrix fx, algo::k_matrix dx, bool print)
 {
-    return dx.get_fx() == approx( fx.get_fx() ) &&
-        dx.get_fy() == approx( fx.get_fy()) &&
-        dx.get_ppx() == approx( fx.get_ppx()) &&
-        dx.get_ppy() == approx( fx.get_ppy());
+    bool ok = true;
+
+    ok = compare_and_trace(dx.get_fx(), fx.get_fx(), "fx");
+    ok = compare_and_trace(dx.get_fy(), fx.get_fy(), "fy");
+    ok = compare_and_trace(dx.get_ppx(), fx.get_ppx(), "ppx");
+    ok = compare_and_trace(dx.get_ppy(), fx.get_ppy(), "ppy");
+
+    return ok;
 }
 
 template<>
@@ -59,17 +74,6 @@ bool is_equal_approximetly<std::vector<double>, std::vector<double>>(std::vector
     {
         if (dx[i] != approx(fx[i]))
             return false;
-    }
-    return true;
-}
-
-template< typename D>
-bool compare_and_trace(D val_matlab, D val_cpp, std::string const & compared)
-{
-    if (val_cpp != approx(val_matlab))
-    {
-        AC_LOG(DEBUG, "... " <<std::setprecision(16)<< compared << ":  {matlab} " << val_matlab << " !~ " << val_cpp << " {cpp}");
-        return false;
     }
     return true;
 }
