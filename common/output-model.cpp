@@ -601,7 +601,7 @@ void output_model::draw(ux_window& win, rect view_rect, std::vector<rs2::device>
         for(auto&& dash : dashboards)
         {   
             auto h = dash->get_height();
-            auto r = rect { 0.f, top, 0.3f * w - 2, h };
+            auto r = rect { 0.f, (float)top, 0.3f * w - 2, (float)h };
             dash->draw(win, r);
             top += h;
         }
