@@ -9,7 +9,8 @@
 #include <chrono>
 
 #include "ux-window.h"
-#include "../src/concurrency.h"
+
+#include "output-model.h"
 
 namespace rs2
 {
@@ -195,25 +196,22 @@ namespace rs2
         void add_notification(std::shared_ptr<notification_model> model);
         void draw(ux_window& win, int w, int h, std::string& error_message);
 
-        void foreach_log(std::function<void(const std::string& line)> action);
-        void add_log(std::string line);
+        notifications_model() {}
 
-        void draw_snoozed_button();
+        void add_log(std::string message) 
+        {            
+            output.add_log(RS2_LOG_SEVERITY_INFO, "", 0, message); 
+        }
 
-        notifications_model() : last_snoozed(std::chrono::system_clock::now()) {}
+        output_model output;
         
     private:
         std::vector<std::shared_ptr<notification_model>> pending_notifications;
-        std::vector<std::shared_ptr<notification_model>> snoozed_notifications;
         int index = 1;
         const int MAX_SIZE = 6;
         std::recursive_mutex m;
-        bool new_log = false;
 
-        single_consumer_queue<std::string> incoming_log_queue;
-        std::deque<std::string> notification_logs;
         std::shared_ptr<notification_model> selected;
-        std::chrono::system_clock::time_point last_snoozed;
     };
 
     inline ImVec4 saturate(const ImVec4& a, float f)
