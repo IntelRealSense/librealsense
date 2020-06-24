@@ -1627,6 +1627,7 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
 
     optimization_params new_params;
     calib new_calib = _original_calibration;
+    calib new_k_to_dsm_calib = _original_calibration;
     rs2_intrinsics_double new_k_depth;
     algo_calibration_registers new_dsm_regs = _k_to_DSM->get_calibration_registers();
     auto new_vertices = _z.vertices;
@@ -1645,8 +1646,9 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
         std::vector<double3> cand_vertices = _z.vertices;
         auto dsm_regs_cand = new_dsm_regs;
 
-        optimization_params params_candidate;
+        optimization_params params_candidate = new_params;
         calib calib_candidate = new_calib;
+        calib calib_k_to_dsm_candidate = new_calib;
         calib optimaized_calib_candidate = _optimaized_calibration;
         rs2_intrinsics_double k_depth_candidate = new_k_depth;
 
@@ -1677,6 +1679,9 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
         auto dsm_candidate = _k_to_DSM->convert_new_k_to_DSM(_z.orig_intrinsics, new_k_depth, _z, cand_vertices, new_dsm_params, dsm_regs_cand, &data);
         data.type = cycle_data;
 
+        //this calib is now candidate to be the optimaized we can confirm it only after running more optimize_p
+        calib_k_to_dsm_candidate = calib_candidate;
+
         data.k2dsm_data_p.dsm_params_cand = dsm_candidate;
         data.k2dsm_data_p.vertices = cand_vertices;
         data.k2dsm_data_p.dsm_pre_process_data = _k_to_DSM->get_pre_process_data();
@@ -1687,7 +1692,6 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
             cb(data);
         }
 
-        
         optimize_p(new_params, cand_vertices, params_candidate, optimaized_calib_candidate, calib_candidate, k_depth_candidate, cb, &data);
 
         if( params_candidate.cost < last_cost )
@@ -1699,6 +1703,7 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
         new_params = params_candidate;
         _params_curr = new_params;
         new_calib = calib_candidate;
+        new_k_to_dsm_calib = calib_k_to_dsm_candidate;
         new_k_depth = k_depth_candidate;
         new_dsm_params = dsm_candidate;
         new_dsm_regs = dsm_regs_cand;
@@ -1715,7 +1720,7 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
     _final_dsm_params = _z.orig_dsm_params;
     clip_ac_scaling( _z.orig_dsm_params, new_dsm_params );
     new_dsm_params.copy_to( _final_dsm_params );
-    _final_calibration = new_calib;
+    _final_calibration = new_k_to_dsm_calib;
 
     return n_iterations;
 }
