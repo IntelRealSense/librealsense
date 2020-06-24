@@ -11,7 +11,7 @@
 #define AC_D_PREC  std::setprecision( std::numeric_limits< double >::max_digits10 )
 
 
-#define AC_LOG_PREFIX "AC1: "
+#define AC_LOG_PREFIX "CAH: "
 #define AC_LOG_PREFIX_LEN 5
 
 #define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << (std::string)( librealsense::to_string() << MSG ))

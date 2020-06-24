@@ -351,7 +351,7 @@ namespace ivcam2 {
         {
             log_message const & wrapper = (log_message const &)(msg);
             char const * raw = wrapper.el_msg.message().c_str();
-            if( strncmp( "AC1: ", raw, 5 ) )
+            if( strncmp( AC_LOG_PREFIX, raw, AC_LOG_PREFIX_LEN ) )
                 return;
             std::ostringstream ss;
             ss << "-" << "DIWE"[severity] << "- ";
@@ -741,7 +741,10 @@ namespace ivcam2 {
     {
         // We get here when we've reached some final state (failed/successful)
         _n_cycles = 0;  // now inactive
-        AC_LOG( INFO, "Camera Accuracy Health has finished" );
+        if( _last_status_sent != RS2_CALIBRATION_SUCCESSFUL )
+            AC_LOG( WARNING, "Camera Accuracy Health has finished unsuccessfully" );
+        else
+            AC_LOG( INFO, "Camera Accuracy Health has finished" );
 
         // Trigger the next AC -- but only if we're "on", meaning this wasn't a manual calibration
         if( !auto_calibration_is_on() )
