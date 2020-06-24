@@ -89,7 +89,8 @@ typedef enum rs2_dsm_correction_model
 {
     RS2_DSM_CORRECTION_NONE,        /**< hFactor and hOffset are not used, and no artificial error is induced */
     RS2_DSM_CORRECTION_AOT,         /**< Aging-over-thermal (default); aging-induced error is uniform across temperature */
-    RS2_DSM_CORRECTION_TOA          /**< Thermal-over-aging; aging-induced error changes alongside temperature */
+    RS2_DSM_CORRECTION_TOA,         /**< Thermal-over-aging; aging-induced error changes alongside temperature */
+    RS2_DSM_CORRECTION_COUNT
 } rs2_dsm_correction_model;
 
 /** \brief Motion device intrinsics: scale, bias, and variances. */

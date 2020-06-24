@@ -124,19 +124,18 @@ namespace librealsense
                 auto sensor = ((frame_interface*)other.get())->get_sensor();
                 if (sensor)
                 {
+                    _registered_auto_calib_cb
+                        = std::shared_ptr< pointcloud >( this, []( pointcloud * p ) {} );
+
                     auto dev = sensor->get_device().shared_from_this();
                     device_calibration * d2r = dynamic_cast<device_calibration*>(dev.get());
-                    assert( d2r );
-                    try
-                    {
-                        _registered_auto_calib_cb
-                            = std::shared_ptr< pointcloud >( this, []( pointcloud * p ) {} );
-                        std::weak_ptr< pointcloud > wr { _registered_auto_calib_cb };
-                        auto fn =
-                            [=]( rs2_calibration_status status )
-                            {
+                    if( d2r )
+                        try
+                        {
+                            std::weak_ptr< pointcloud > wr{ _registered_auto_calib_cb };
+                            auto fn = [=]( rs2_calibration_status status ) {
                                 auto r = wr.lock();
-                                if( !r )
+                                if( ! r )
                                     // nobody there any more!
                                     return;
                                 if( status == RS2_CALIBRATION_SUCCESSFUL )
@@ -149,12 +148,14 @@ namespace librealsense
                                         {
                                             if( sp->get_stream_type() == RS2_STREAM_COLOR )
                                             {
-                                                auto vspi = As< video_stream_profile_interface >( sp.get() );
+                                                auto vspi = As< video_stream_profile_interface >(
+                                                    sp.get() );
                                                 if( vspi )
                                                 {
                                                     os = vspi;
                                                     _other_intrinsics = vspi->get_intrinsics();
-                                                    _occlusion_filter->set_texel_intrinsics( _other_intrinsics.value() );
+                                                    _occlusion_filter->set_texel_intrinsics(
+                                                        _other_intrinsics.value() );
                                                 }
                                             }
                                             else if( sp->get_stream_type() == RS2_STREAM_DEPTH )
@@ -163,10 +164,12 @@ namespace librealsense
                                             }
                                         }
                                     }
-                                    if( ds  &&  os )
+                                    if( ds && os )
                                     {
                                         rs2_extrinsics ex;
-                                        if( environment::get_instance().get_extrinsics_graph().try_fetch_extrinsics( *ds, *os, &ex ) )
+                                        if( environment::get_instance()
+                                                .get_extrinsics_graph()
+                                                .try_fetch_extrinsics( *ds, *os, &ex ) )
                                             _extrinsics = ex;
                                         else
                                             LOG_ERROR( "Failed to refresh extrinsics after calibration change" );
@@ -174,15 +177,13 @@ namespace librealsense
                                 }
                             };
 
-                        d2r->register_calibration_change_callback(
-                            create_calibration_change_callback_ptr( std::move( fn ))
-                            //{ new rs2::calibration_change_callback( fn ), [](rs2_calibration_change_callback * p) { p->release(); } }
-                        );
-                    }
-                    catch (const std::bad_weak_ptr&)
-                    {
-                        LOG_WARNING("Device destroyed");
-                    }
+                            d2r->register_calibration_change_callback(
+                                create_calibration_change_callback_ptr( std::move( fn ) ) );
+                        }
+                        catch( const std::bad_weak_ptr & )
+                        {
+                            LOG_WARNING( "Device destroyed" );
+                        }
                 }
             }
         }

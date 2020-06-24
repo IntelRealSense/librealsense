@@ -365,7 +365,7 @@ void rs2_register_calibration_change_callback( rs2_device* dev, rs2_calibration_
 void rs2_register_calibration_change_callback_cpp( rs2_device* dev, rs2_calibration_change_callback* callback, rs2_error** error );
 
 /**
- * TODO
+ * Triggers calibration of the given type
  * \param[in] dev           the device
  * \param[in] type          the type of calibration requested
  * \param[out] error        if non-null, receives any error that occurs during this call, otherwise, errors are ignored

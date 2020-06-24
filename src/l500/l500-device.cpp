@@ -381,11 +381,11 @@ namespace librealsense
 
         if( !_autocal )
             throw not_implemented_exception(
-                to_string() << "your firmware version (" << _fw_version
+                to_string() << "the current firmware version (" << _fw_version
                             << ") does not support depth-to-rgb calibration" );
 
         if( _autocal->is_active() )
-            throw wrong_api_call_sequence_exception( "calibration is already active" );
+            throw wrong_api_call_sequence_exception( "Camera Accuracy Health is already active" );
 
         AC_LOG( INFO, "Camera Accuracy Health has been manually triggered" );
         _autocal->trigger_calibration();

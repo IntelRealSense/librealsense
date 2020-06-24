@@ -126,8 +126,8 @@ enum class ERealSenseOptionType : uint8
     SENSOR_MODE                                , /**< The resolution mode: see rs2_sensor_mode for values */
     EMITTER_ALWAYS_ON                          , /**< Enable Laser On constantly (GS SKU Only) */
     THERMAL_COMPENSATION                       , /**< Depth Thermal Compensation for selected D400 SKUs */
-	TRIGGER_CAMERA_ACCURACY_HEALTH             ,
-	RESET_CAMERA_ACCURACY_HEALTH               ,
+    TRIGGER_CAMERA_ACCURACY_HEALTH             ,
+    RESET_CAMERA_ACCURACY_HEALTH               ,
 };
 
 UENUM(Blueprintable)

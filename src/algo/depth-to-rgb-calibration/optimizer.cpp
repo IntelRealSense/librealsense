@@ -1306,7 +1306,7 @@ void write_to_file( void const * data, size_t cb,
     char const * filename
 )
 {
-    std::string path = dir + '\\' + filename;
+    std::string path = dir + filename;
     std::fstream f( path, std::ios::out | std::ios::binary );
     if( !f )
         throw std::runtime_error( "failed to open file:\n" + path );
@@ -1337,7 +1337,7 @@ void write_matlab_camera_params_file(
     char const * filename
 )
 {
-    std::string path = dir + '\\' + filename;
+    std::string path = dir + filename;
     std::fstream f( path, std::ios::out | std::ios::binary );
     if( !f )
         throw std::runtime_error( "failed to open file:\n" + path );
@@ -1394,6 +1394,7 @@ void write_matlab_camera_params_file(
 
 void optimizer::write_data_to( std::string const & dir )
 {
+    // NOTE: it is expected that dir ends with a path separator or this won't work!
     AC_LOG( DEBUG, "... writing data to: " << dir );
     
     try

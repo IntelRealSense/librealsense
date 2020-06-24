@@ -104,22 +104,6 @@ namespace depth_to_rgb_calibration {
     {
         double vals[12];
 
-#if 0
-        bool operator==( const p_matrix & other ) const
-        {
-            for (auto i = 0; i < 12; i++)
-            {
-                if (vals[i] != other.vals[i])
-                    return false;
-            }
-            return true;
-        }
-        bool operator!=( const p_matrix & other ) const
-        {
-            return !(*this == other);
-        }
-#endif
-
         bool operator<( const p_matrix & other ) const
         {
             for (auto i = 0; i < 12; i++)

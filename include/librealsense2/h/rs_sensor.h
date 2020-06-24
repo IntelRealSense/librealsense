@@ -469,8 +469,8 @@ void rs2_register_extrinsics(const rs2_stream_profile* from,
  *
  * This will affect extrinsics at the source device and may affect multiple profiles. Used for DEPTH_TO_RGB calibration.
  *
-* \param[in] sensor       The RealSense device
-* \param[in] extrinsics   Extrinsics between the two device sensors
+* \param[in] sensor       The sensor
+* \param[in] extrinsics   Extrinsics from Depth to the named sensor
 * \param[out] error       If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_override_extrinsics( const rs2_sensor* sensor, const rs2_extrinsics* extrinsics, rs2_error** error );
