@@ -717,7 +717,7 @@ std::vector<double2> k_to_DSM::convert_norm_vertices_to_los
     convert_norm_vertices_to_los_data* data
 )
 {
-    const double angle = 45;
+    const size_t angle = 45;
     auto directions = transform_to_direction(vertices);
 
     auto fovex_indicent_direction = directions;
