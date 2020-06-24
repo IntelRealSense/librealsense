@@ -66,7 +66,9 @@ global_target_config()
 
 include(CMake/install_config.cmake)
 
-add_subdirectory(wrappers)
+if (BUILD_WRAPPERS)
+    add_subdirectory(wrappers)
+endif()
 
 if (BUILD_EXAMPLES AND BUILD_GLSL_EXTENSIONS)
     find_package(glfw3 3.3 QUIET)

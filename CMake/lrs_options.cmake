@@ -33,3 +33,4 @@ option(FORCE_WINUSB_UVC "Explicitly turn-on winusb_uvc (for win7) backend - depr
 option(ANDROID_USB_HOST_UVC "Build UVC backend for Android - deprecated, use FORCE_RSUSB_BACKEND instead" OFF)
 option(ENABLE_L500_DEPTH_INVALIDATION "Turn on the depth frame validator to automatically catch corrupted frames and restart the sensor" ON)
 option(CHECK_FOR_UPDATES "Checks for versions updates" OFF)
+option(BUILD_WRAPPERS "Build wrappers" OFF)
