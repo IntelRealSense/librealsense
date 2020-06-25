@@ -24,7 +24,7 @@ public class Pipeline extends LrsClass{
     }
 
     public FrameSet waitForFrames() throws Exception {
-        return waitForFrames(5000);
+        return waitForFrames();
     }
 
     public FrameSet waitForFrames (int timeoutMilliseconds) throws Exception{

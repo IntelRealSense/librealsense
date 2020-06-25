@@ -129,7 +129,7 @@ public class MainActivity extends AppCompatActivity {
         public void run() {
             try {
                 for(int i = 0; i < mPipelines.size(); i++) {
-                    try (FrameSet frames = mPipelines.get(i).waitForFrames(1000)) {
+                    try (FrameSet frames = mPipelines.get(i).waitForFrames()) {
                         try (FrameSet processed = frames.applyFilter(mColorizers.get(i))) {
                             mGLSurfaceView.upload(processed);
                         }
