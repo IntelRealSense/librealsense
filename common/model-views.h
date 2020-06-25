@@ -821,6 +821,7 @@ namespace rs2
             std::vector<std::string>& restarting_device_info,
             viewer_model& view,
             ux_window& window);
+        bool prompt_trigger_camera_accuracy_health(ux_window& window);
         void load_viewer_configurations(const std::string& json_str);
         void save_viewer_configurations(std::ofstream& outfile, nlohmann::json& j);
 
