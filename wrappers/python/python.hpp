@@ -35,12 +35,13 @@ using namespace pybind11::literals;
 // Binding enums
 const std::string rs2_prefix{ "rs2_" };
 std::string make_pythonic_str(std::string str);
-#define BIND_ENUM(module, rs2_enum_type, RS2_ENUM_COUNT, docstring)                                                         \
+#define BIND_ENUM(module, rs2_enum_type, RS2_ENUM_COUNT, docstring) BIND_ENUM_CUSTOM( module, rs2_enum_type, 0, RS2_ENUM_COUNT-1, docstring)
+#define BIND_ENUM_CUSTOM(module, rs2_enum_type, FIRST, LAST, docstring)                                                     \
     static std::string rs2_enum_type##pyclass_name = std::string(#rs2_enum_type).substr(rs2_prefix.length());               \
     /* Above 'static' is required in order to keep the string alive since py::class_ does not copy it */                    \
     py::enum_<rs2_enum_type> py_##rs2_enum_type(module, rs2_enum_type##pyclass_name.c_str(), docstring);                    \
     /* std::cout << std::endl << "## " << rs2_enum_type##pyclass_name  << ":" << std::endl; */                              \
-    for (int i = 0; i < static_cast<int>(RS2_ENUM_COUNT); i++)                                                              \
+    for (int i = FIRST; i <= LAST; i++)                                                                                     \
     {                                                                                                                       \
         rs2_enum_type v = static_cast<rs2_enum_type>(i);                                                                    \
         const char* enum_name = rs2_enum_type##_to_string(v);                                                               \

@@ -2,7 +2,16 @@
 //// Copyright(c) 2018 Intel Corporation. All Rights Reserved.
 
 #include "l500-private.h"
+#include "l500-device.h"
+#include "l500-color.h"
+#include "l500-depth.h"
 #include "fw-update/fw-update-unsigned.h"
+#include "context.h"
+#include "core/video.h"
+#include "depth-to-rgb-calibration.h"
+#include "log.h"
+#include <chrono>
+#include "algo/depth-to-rgb-calibration/debug.h"
 
 using namespace std;
 
@@ -10,19 +19,25 @@ namespace librealsense
 {
     namespace ivcam2
     {
-        pose get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data)
+        rs2_extrinsics get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data)
         {
             if (raw_data.size() < sizeof(pose))
                 throw invalid_value_exception("size of extrinsic invalid");
-            auto res = *((pose*)raw_data.data());
+            
+            assert( sizeof( pose ) == sizeof( rs2_extrinsics ) );
+            auto res = *(rs2_extrinsics*)raw_data.data();
+            AC_LOG( DEBUG, "raw extrinsics data from camera:\n" << std::setprecision(15) << res );
+            
             float trans_scale = 0.001f; // Convert units from mm to meter
+            res.translation[0] *= trans_scale;
+            res.translation[1] *= trans_scale;
+            res.translation[2] *= trans_scale;
 
-            if (res.position.y > 0.f) // Extrinsic of color is referenced to the Depth Sensor CS
-                trans_scale *= -1;
-
-            res.position.x *= trans_scale;
-            res.position.y *= trans_scale;
-            res.position.z *= trans_scale;
+            // This transposing is absolutely mandatory because our internal algorithms are
+            // written with a transposed matrix in mind! (see rs2_transform_point_to_point)
+            std::swap( res.rotation[1], res.rotation[3] );
+            std::swap( res.rotation[2], res.rotation[6] );
+            std::swap( res.rotation[5], res.rotation[7] );
             return res;
         }
 
@@ -64,16 +79,6 @@ namespace librealsense
             if (!is_enabled())
                 throw wrong_api_call_sequence_exception("query option is allow only in streaming!");
 
-#pragma pack(push, 1)
-            struct temperatures
-            {
-                double LLD_temperature;
-                double MC_temperature;
-                double MA_temperature;
-                double APD_temperature;
-            };
-#pragma pack(pop)
-
             auto res = _hw_monitor->send(command{ TEMPERATURES_GET });
 
             if (res.size() < sizeof(temperatures))
@@ -86,7 +91,7 @@ namespace librealsense
             switch (_option)
             {
             case RS2_OPTION_LLD_TEMPERATURE:
-                return float(temperature_data.LLD_temperature);
+                return float(temperature_data.LDD_temperature);
             case RS2_OPTION_MC_TEMPERATURE:
                 return float(temperature_data.MC_temperature);
             case RS2_OPTION_MA_TEMPERATURE:
@@ -195,5 +200,7 @@ namespace librealsense
             auto res = _hwm.send( cmd );
             _record_action( *this );
         }
+
+
     } // librealsense::ivcam2
 } // namespace librealsense
