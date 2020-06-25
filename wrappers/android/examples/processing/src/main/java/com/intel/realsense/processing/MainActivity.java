@@ -194,7 +194,7 @@ public class MainActivity extends AppCompatActivity {
         public void run() {
             try {
                 try(FrameReleaser fr = new FrameReleaser()){
-                    FrameSet frames = mPipeline.waitForFrames(1000).releaseWith(fr);
+                    FrameSet frames = mPipeline.waitForFrames().releaseWith(fr);
                     FrameSet orgSet = frames.applyFilter(mColorizerOrg).releaseWith(fr);
                     FrameSet processedSet = frames.applyFilter(mDecimationFilter).releaseWith(fr).
                             applyFilter(mHoleFillingFilter).releaseWith(fr).

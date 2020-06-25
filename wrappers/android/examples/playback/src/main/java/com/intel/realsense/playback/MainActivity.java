@@ -105,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
                             // try statement needed here to release resources allocated by the Pipeline:start() method
                             try (PipelineProfile pp = pipeline.start(config)) {}
                             while (!mStreaming.isInterrupted()) {
-                                try (FrameSet frames = pipeline.waitForFrames(1000)) {
+                                try (FrameSet frames = pipeline.waitForFrames()) {
                                     try (FrameSet processed = frames.applyFilter(colorizer)) {
                                         mGLSurfaceView.upload(processed);
                                     }

@@ -53,7 +53,7 @@ public class Streamer {
         @Override
         public void run() {
             try {
-                try(FrameSet frames = mPipeline.waitForFrames(1000)) {
+                try(FrameSet frames = mPipeline.waitForFrames()) {
                     mListener.onFrameset(frames);
                 }
                 mHandler.post(mStreaming);
