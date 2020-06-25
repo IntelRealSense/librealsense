@@ -196,7 +196,7 @@ namespace librealsense
                                    std::vector< rs2::frame > results ) override {
             if( results.empty() )
                 return rs2::frame{};
-            return results.front();
+            return source.allocate_composite_frame(results);
         }
     };
 
