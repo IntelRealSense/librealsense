@@ -267,13 +267,14 @@ public:
         invoke([&, func](dispatcher::cancellable_timer c)
         {
             func(c);
+            std::lock_guard<std::mutex> lk(_blocking_invoke_mutex);
             done = true;
             _blocking_invoke_cv.notify_one();
         }, is_blocking);
 
         //wait
         std::unique_lock<std::mutex> lk(_blocking_invoke_mutex);
-        while(_blocking_invoke_cv.wait_for(lk, std::chrono::milliseconds(10), [&](){ return !done && !exit_condition(); }));
+        _blocking_invoke_cv.wait(lk, [&](){ return done || exit_condition(); });
     }
 
     void start()
