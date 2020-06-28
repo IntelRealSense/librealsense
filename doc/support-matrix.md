@@ -28,3 +28,11 @@ Please check the Supported Features matrix at https://dev.intelrealsense.com/doc
 ## T265 Tracking Module Notes:
 
 * Tracking module is currently not available on Android
+
+## L500 Camera Notes:
+* On Chip calibration is only relevant for D400 stereo cameras
+
+The following features are not available for L500 and can be added upon demand:
+* Win7 support
+* pre-compiled binaries for: Android (7+) & JAVA, LabView and Node.js
+* LabView wrapper
