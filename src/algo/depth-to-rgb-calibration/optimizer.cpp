@@ -1624,6 +1624,7 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
     auto res = calc_cost_and_grad(_z, _z.vertices, _yuy, decompose(_params_curr.curr_p_mat, _original_calibration), _params_curr.curr_p_mat, &data);
     _params_curr.cost = res.first;
     _params_curr.calib_gradients = res.second;
+    params_orig.cost = res.first;
 
     optimization_params new_params;
     calib new_calib = _original_calibration;
@@ -1641,8 +1642,6 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
 
     while (cycle < _params.max_K2DSM_iters)
     {
-        AC_LOG( INFO, "CYCLE " << data.cycle_data_p.cycle << ": cost = " << AC_D_PREC << new_params.cost );
-
         std::vector<double3> cand_vertices = _z.vertices;
         auto dsm_regs_cand = new_dsm_regs;
 
@@ -1696,6 +1695,13 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
 
         if( params_candidate.cost < last_cost )
         {
+            // No change at all (probably very good starting point)
+            if (cycle == 2)
+            {
+                new_k_to_dsm_calib = new_calib;
+                _optimaized_calibration = _original_calibration;
+            }
+
             AC_LOG( DEBUG, "    cost is a regression; stopping -- not using last cycle" );
             break;
         }
@@ -1711,10 +1717,11 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
         new_vertices = cand_vertices;
         _z.vertices = new_vertices;
         _optimaized_calibration = optimaized_calib_candidate;
+        AC_LOG(INFO, "CYCLE " << data.cycle_data_p.cycle << ": cost = " << AC_D_PREC << new_params.cost);
     }
    
     AC_LOG( INFO,
-            "Calibration converged; cost " << AC_D_PREC << _params_curr.cost << "  -->  "
+            "Calibration converged; cost " << AC_D_PREC << params_orig.cost << "  -->  "
                                            << new_params.cost );
 
     _final_dsm_params = _z.orig_dsm_params;
