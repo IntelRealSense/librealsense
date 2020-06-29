@@ -41,8 +41,13 @@ cd $KERNEL_NAME
 
 echo "RealSense patch..."
 
-# Apply our RealSense specific patch
+# TODO: The patches should be chosen to fit to the kernel version
+
+# Apply our RealSense specific camera formats patch
 patch -p1 < ../../realsense-camera-formats.patch
+
+# Apply our RealSense specific metadata patch
+patch -p1 < ../../realsense-metadata-bionic-5.patch
 
 # Prepare to compile modules
 
