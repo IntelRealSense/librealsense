@@ -809,12 +809,14 @@ namespace rs2
         public:
             enum class model_state_type { TRIGGER_MODAL, PROCESS_MODAL };
             std::atomic<model_state_type> cah_state; // will be set from a different thread callback function
-            std::atomic<rs2_calibration_status> calib_stts; // will be set from a different thread callback function
+            std::atomic<rs2_calibration_status> calib_status; // will be set from a different thread callback function
             bool show_trigger_camera_accuracy_health_popup;
             bool show_reset_camera_accuracy_health_popup;
+            bool registered_to_callback;
 
-            camera_accuracy_health_model():cah_state(model_state_type::TRIGGER_MODAL), calib_stts(RS2_CALIBRATION_RETRY),
-                show_trigger_camera_accuracy_health_popup(false), show_reset_camera_accuracy_health_popup(false)
+            camera_accuracy_health_model():cah_state(model_state_type::TRIGGER_MODAL), calib_status(RS2_CALIBRATION_RETRY),
+                show_trigger_camera_accuracy_health_popup(false), show_reset_camera_accuracy_health_popup(false),
+                registered_to_callback(false)
             {}
 
         };
@@ -841,9 +843,9 @@ namespace rs2
             std::vector<std::string>& restarting_device_info,
             viewer_model& view,
             ux_window& window,
-            std::string& error_message);
-        bool prompt_trigger_camera_accuracy_health(ux_window& window, viewer_model& viewer,  std::string& error_message);
-        bool prompt_reset_camera_accuracy_health(ux_window& window, std::string& error_message);
+            const std::string& error_message);
+        bool prompt_trigger_camera_accuracy_health(ux_window& window, viewer_model& viewer,  const std::string& error_message);
+        bool prompt_reset_camera_accuracy_health(ux_window& window, const std::string& error_message);
 
         void load_viewer_configurations(const std::string& json_str);
         void save_viewer_configurations(std::ofstream& outfile, nlohmann::json& j);

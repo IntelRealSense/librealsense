@@ -213,7 +213,7 @@ namespace ivcam2 {
             if (auto color_sensor = _autocal->_dev.get_color_sensor())
             {
                 color_sensor->reset_calibration();
-                AC_LOG(INFO, "Calibration data was reseted");
+                AC_LOG(INFO, "Calibration data was reset");
             }
             _autocal->_dev.get_depth_sensor().reset_calibration();
             _autocal->_dev.notify_of_calibration_change( RS2_CALIBRATION_SUCCESSFUL );

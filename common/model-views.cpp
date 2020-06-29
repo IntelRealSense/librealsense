@@ -4128,7 +4128,7 @@ namespace rs2
         return device_names;
     }
 
-    bool yes_no_dialog(const std::string& title, const std::string& message_text, bool& approved, ux_window& window, std::string& error_message)
+    bool yes_no_dialog(const std::string& title, const std::string& message_text, bool& approved, ux_window& window, const std::string& error_message)
     {
         ImGui_ScopePushFont(window.get_large_font());
         ImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
@@ -4143,8 +4143,12 @@ namespace rs2
         ImGui::OpenPopup(title.c_str());
         if (ImGui::BeginPopupModal(title.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
         {
-            if (error_message != "")
+            if (!error_message.empty())
+            {
+
                 ImGui::CloseCurrentPopup();
+                return false;
+            }
 
             ImGui::Text("\n%s\n\n", message_text.c_str());
             ImGui::SameLine();
@@ -4173,7 +4177,7 @@ namespace rs2
 
     // Create a process windows with process details from the caller,
     // and close button activated by the caller
-    bool process_model(const std::string& title, const std::string& process_topic_text, const std::string& process_status_text , bool enable_close, ux_window& window)
+    bool status_dialog(const std::string& title, const std::string& process_topic_text, const std::string& process_status_text , bool enable_close, ux_window& window)
     {
         ImGui_ScopePushFont(window.get_large_font());
         ImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
@@ -4217,7 +4221,7 @@ namespace rs2
         return close_clicked;
     }
 
-    bool device_model::prompt_toggle_advanced_mode(bool enable_advanced_mode, const std::string& message_text, std::vector<std::string>& restarting_device_info, viewer_model& view, ux_window& window, std::string& error_message)
+    bool device_model::prompt_toggle_advanced_mode(bool enable_advanced_mode, const std::string& message_text, std::vector<std::string>& restarting_device_info, viewer_model& view, ux_window& window, const std::string& error_message)
     {
         bool keep_showing = true;
         bool yes_was_chosen = false;
@@ -4234,7 +4238,7 @@ namespace rs2
         return keep_showing;
     }
 
-    bool device_model::prompt_trigger_camera_accuracy_health(ux_window& window, viewer_model& viewer, std::string& error_message)
+    bool device_model::prompt_trigger_camera_accuracy_health(ux_window& window, viewer_model& viewer, const std::string& error_message)
     {
         // This process is built from a 2 stages windows, first a yes/no window and then a process window
         bool keep_showing = true;
@@ -4269,20 +4273,24 @@ namespace rs2
                         sd->s->set_option(RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, 1.0f);
                         device_calibration dev_cal(dev);
                         // Register AC status change callback
-                        dev_cal.register_calibration_change_callback([&](rs2_calibration_status cal_stts)
+                        if (!cah_model.registered_to_callback)
                         {
-                            cah_model.calib_stts = cal_stts;
-                            if (cah_model.calib_stts == RS2_CALIBRATION_STARTED || cah_model.calib_stts == RS2_CALIBRATION_SPECIAL_FRAME)
+                            cah_model.registered_to_callback = true;
+                            dev_cal.register_calibration_change_callback([&](rs2_calibration_status cal_status)
                             {
-                                cah_model.cah_state = camera_accuracy_health_model::model_state_type::PROCESS_MODAL;
-                            }
-                        });
+                                cah_model.calib_status = cal_status;
+                                if (cah_model.calib_status == RS2_CALIBRATION_STARTED || cah_model.calib_status == RS2_CALIBRATION_SPECIAL_FRAME)
+                                {
+                                    cah_model.cah_state = camera_accuracy_health_model::model_state_type::PROCESS_MODAL;
+                                }
+                            });
+                        }
 
                     }
                     else
                     {
                         std::stringstream ss;
-                        ss << "Can not trigger Camera Accuracy Health, required streams not active";
+                        ss << "Camera Accuracy Health cannot be triggered: both depth & RGB streams must be active.";
                         viewer.not_model->add_log(ss.str());
                     }
                 }
@@ -4296,7 +4304,7 @@ namespace rs2
 
         case camera_accuracy_health_model::model_state_type::PROCESS_MODAL:
         {
-            bool process_finished(cah_model.calib_stts == RS2_CALIBRATION_SUCCESSFUL || cah_model.calib_stts == RS2_CALIBRATION_FAILED || cah_model.calib_stts == RS2_CALIBRATION_NOT_NEEDED);
+            bool process_finished(cah_model.calib_status == RS2_CALIBRATION_SUCCESSFUL || cah_model.calib_status == RS2_CALIBRATION_FAILED || cah_model.calib_status == RS2_CALIBRATION_NOT_NEEDED);
             
             static std::map<rs2_calibration_status, std::string> status_map{
                 {RS2_CALIBRATION_SPECIAL_FRAME  , "In Progress" },
@@ -4309,7 +4317,7 @@ namespace rs2
                 {RS2_CALIBRATION_BAD_RESULT     , "In Progress" } };
 
 
-            if (process_model("Camera Accuracy Health", "Camera Accuracy Health is In progress...  this may take a while.", status_map[cah_model.calib_stts], process_finished, window))
+            if (status_dialog("Camera Accuracy Health", "Camera Accuracy Health is In progress, this may take a while...", status_map[cah_model.calib_status], process_finished, window))
             {
                 keep_showing = false;
             }
@@ -4324,18 +4332,18 @@ namespace rs2
         if (!keep_showing)
         {
             cah_model.cah_state = camera_accuracy_health_model::model_state_type::TRIGGER_MODAL;
-            cah_model.calib_stts = RS2_CALIBRATION_RETRY;
+            cah_model.calib_status = RS2_CALIBRATION_RETRY;
         }
         return keep_showing;
         ;
     }
 
-    bool device_model::prompt_reset_camera_accuracy_health(ux_window& window, std::string& error_message)
+    bool device_model::prompt_reset_camera_accuracy_health(ux_window& window, const std::string& error_message)
     {
         bool keep_showing = true;
         bool yes_was_chosen = false;
 
-        std::string message_text("Would you like to reset Camera Accuracy Health ");
+        std::string message_text("This will reset the camera settings to their factory-calibrated state.\n You will lose any improvements made with Camera Accuracy Health.\n\n Are you sure?");
         if (yes_no_dialog("Camera Accuracy Health", message_text, yes_was_chosen, window,error_message))
         {
             if (yes_was_chosen)
@@ -4707,8 +4715,6 @@ namespace rs2
         bool open_calibration_ui = false;
         if (ImGui::BeginPopup(label.c_str()))
         {
-            if (error_message != "")
-                ImGui::CloseCurrentPopup();
 
             bool something_to_show = false;
             ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
@@ -4889,16 +4895,11 @@ namespace rs2
                             // we trigger the pop up and activate it outside the menu pop up
                             cah_model.show_trigger_camera_accuracy_health_popup = true;
                         }
-                        if (ImGui::IsItemHovered())
-                            ImGui::SetTooltip("Trigger Camera Accuracy Health process");
-
 
                         if (ImGui::Selectable("Reset Camera Accuracy Health"))
                         {
                             cah_model.show_reset_camera_accuracy_health_popup = true;
                         }
-                        if (ImGui::IsItemHovered())
-                            ImGui::SetTooltip("Reset Camera Accuracy Health process outputs");
                     }
                     else
                     {
@@ -4906,12 +4907,12 @@ namespace rs2
 
                         ImGui::Selectable("Trigger Camera Accuracy Health",&selected, ImGuiSelectableFlags_Disabled);
                         if (ImGui::IsItemHovered())
-                            ImGui::SetTooltip("Required firmware versions 1.4.1.0 and above");
+                            ImGui::SetTooltip("Requires firmware version 1.4.1.0 and above");
 
 
                         ImGui::Selectable("Reset Camera Accuracy Health", &selected, ImGuiSelectableFlags_Disabled);
                         if (ImGui::IsItemHovered())
-                            ImGui::SetTooltip("Required firmware versions 1.4.1.0 and above");
+                            ImGui::SetTooltip("Requires firmware version 1.4.1.2 and above");
                     }
                 }
             }
