@@ -1162,9 +1162,6 @@ std::pair< std::vector<double2>, std::vector<double>> calc_rc(
     auto ppx = (double)yuy_intrin.ppx;
     auto ppy = (double)yuy_intrin.ppy;
 
-    auto & r = yuy_extrin.rotation;
-    auto & t = yuy_extrin.translation;
-
    /* double mat[3][4] = {
         fx*(double)r[0] + ppx * (double)r[2], fx*(double)r[3] + ppx * (double)r[5], fx*(double)r[6] + ppx * (double)r[8], fx*(double)t[0] + ppx * (double)t[2],
         fy*(double)r[1] + ppy * (double)r[2], fy*(double)r[4] + ppy * (double)r[5], fy*(double)r[7] + ppy * (double)r[8], fy*(double)t[1] + ppy * (double)t[2],

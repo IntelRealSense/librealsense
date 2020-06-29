@@ -498,7 +498,6 @@ namespace rs2
         const float len_x = 0.1f;
         const float len_y = 0.03f;
         const float len_z = 0.01f;
-        const float lens_radius = 0.005f;
         /*
         4--------------------------3
         /|                         /|
@@ -532,8 +531,6 @@ namespace rs2
             } };
 
         colored_cube camera_box{ { { f1,colors[0] },{ f2,colors[1] },{ f3,colors[2] },{ f4,colors[3] },{ f5,colors[4] },{ f6,colors[5] } } };
-        float3 center_left{ v5.x + len_x / 3, v6.y - len_y / 3, v5.z };
-        float3 center_right{ v6.x - len_x / 3, v6.y - len_y / 3, v5.z };
 
         std::vector<tracked_point> trajectory;
         std::vector<float2> boundary;
@@ -927,10 +924,6 @@ namespace rs2
         std::atomic<bool> render_thread_active; // True when render post processing filter rendering thread is active, False otherwise
         std::shared_ptr<std::thread> render_thread;              // Post processing filter rendering Thread running render_loop()
         void render_loop();                     // Post processing filter rendering function
-
-        int last_frame_number = 0;
-        double last_timestamp = 0;
-        int last_stream_id = 0;
 
         std::shared_ptr<gl::uploader> uploader; // GL element that helps pre-emptively copy frames to the GPU
     };
