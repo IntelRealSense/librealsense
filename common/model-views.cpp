@@ -4140,8 +4140,10 @@ namespace rs2
         ImGui_ScopePushStyleColor(ImGuiCol_PopupBg, sensor_bg);
         ImGui_ScopePushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
         auto clicked = false;
+
         ImGui::OpenPopup(title.c_str());
-        if (ImGui::BeginPopupModal(title.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        ImGui::SetNextWindowPos( {window.width() * 0.3f, window.height() * 0.3f });
+        if (ImGui::BeginPopup(title.c_str()))
         {
             if (!error_message.empty())
             {
@@ -4189,9 +4191,10 @@ namespace rs2
         ImGui_ScopePushStyleColor(ImGuiCol_PopupBg, sensor_bg);
         ImGui_ScopePushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
         auto close_clicked = false;
-        //ImGui_ScopePushStyleVar(ImGuiAlign, ImGuiAlign_Center);
+
         ImGui::OpenPopup(title.c_str());
-        if (ImGui::BeginPopupModal(title.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        ImGui::SetNextWindowPos({ window.width() * 0.3f, window.height() * 0.3f });
+        if (ImGui::BeginPopup(title.c_str()))
         {
             ImGui::NewLine();
             ImGui::Text("%s", process_topic_text.c_str());
@@ -4252,7 +4255,7 @@ namespace rs2
                                             "This process may take several minutes and requires special setup to get good results.\n"
                                             "While it is working, the viewer will not be usable.\n\n"
                                             "Are you sure you want to continue?");
-            if (yes_no_dialog("Camera Accuracy Health", message_text, yes_was_chosen, window, error_message))
+            if (yes_no_dialog("Camera Accuracy Health Trigger", message_text, yes_was_chosen, window, error_message))
             {
                 if (yes_was_chosen)
                 {
@@ -4289,9 +4292,8 @@ namespace rs2
                     }
                     else
                     {
-                        std::stringstream ss;
-                        ss << "Camera Accuracy Health cannot be triggered: both depth & RGB streams must be active.";
-                        viewer.not_model->add_log(ss.str());
+                        viewer.not_model->output.add_log(RS2_LOG_SEVERITY_ERROR, __FILE__, __LINE__,
+                            to_string() << "Camera Accuracy Health cannot be triggered : both depth & RGB streams must be active.");
                     }
                 }
                 else
@@ -4317,7 +4319,7 @@ namespace rs2
                 {RS2_CALIBRATION_BAD_RESULT     , "In Progress" } };
 
 
-            if (status_dialog("Camera Accuracy Health", "Camera Accuracy Health is In progress, this may take a while...", status_map[cah_model.calib_status], process_finished, window))
+            if (status_dialog("Camera Accuracy Health Status", "Camera Accuracy Health is In progress, this may take a while...", status_map[cah_model.calib_status], process_finished, window))
             {
                 keep_showing = false;
             }
@@ -4335,7 +4337,6 @@ namespace rs2
             cah_model.calib_status = RS2_CALIBRATION_RETRY;
         }
         return keep_showing;
-        ;
     }
 
     bool device_model::prompt_reset_camera_accuracy_health(ux_window& window, const std::string& error_message)
@@ -4343,8 +4344,8 @@ namespace rs2
         bool keep_showing = true;
         bool yes_was_chosen = false;
 
-        std::string message_text("This will reset the camera settings to their factory-calibrated state.\n You will lose any improvements made with Camera Accuracy Health.\n\n Are you sure?");
-        if (yes_no_dialog("Camera Accuracy Health", message_text, yes_was_chosen, window,error_message))
+        std::string message_text("This will reset the camera settings to their factory-calibrated state.\nYou will lose any improvements made with Camera Accuracy Health.\n\n Are you sure?");
+        if (yes_no_dialog("Camera Accuracy Health Reset", message_text, yes_was_chosen, window,error_message))
         {
             if (yes_was_chosen)
             {
