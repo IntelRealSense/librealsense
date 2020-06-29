@@ -1697,7 +1697,7 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
         {
             if (cycle == 2)
             {// No change at all (probably very good starting point)
-                LOG_DEBUG("No change requeired (probably very good starting point)");
+                AC_LOG(DEBUG, "No change required (probably very good starting point)");
                 new_k_to_dsm_calib = new_calib;
                 _optimaized_calibration = _original_calibration;
             }
