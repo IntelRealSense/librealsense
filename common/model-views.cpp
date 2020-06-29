@@ -4128,7 +4128,61 @@ namespace rs2
         return device_names;
     }
 
-    bool yes_no_dialog(const std::string& title, const std::string& message_text, bool& approved, ux_window& window)
+    bool yes_no_dialog(const std::string& title, const std::string& message_text, bool& approved, ux_window& window, const std::string& error_message)
+    {
+        ImGui_ScopePushFont(window.get_font());
+        ImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
+        ImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, sensor_header_light_blue); //TODO: Change color?
+        ImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, regular_blue); //TODO: Change color?
+        ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
+        ImGui_ScopePushStyleColor(ImGuiCol_TitleBg, header_color);
+        ImGui_ScopePushStyleColor(ImGuiCol_PopupBg, sensor_bg);
+        ImGui_ScopePushStyleColor(ImGuiCol_BorderShadow, dark_grey);
+        ImGui_ScopePushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20, 10));
+        auto clicked = false;
+
+        ImGui::OpenPopup(title.c_str());
+        ImGui::SetNextWindowPos( {window.width() * 0.35f, window.height() * 0.35f });
+        if (ImGui::BeginPopup(title.c_str()))
+        {
+            {
+                ImGui_ScopePushStyleColor(ImGuiCol_Text, almost_white_bg);
+
+                ImGui::SetWindowFontScale(1.3);
+                ImGui::Text("%s", title.c_str());
+            }
+            {
+                ImGui_ScopePushStyleColor(ImGuiCol_Text, light_grey);
+                ImGui::Separator();
+                ImGui::SetWindowFontScale(1.1);
+                ImGui::Text("\n%s\n\n", message_text.c_str());
+                ImGui::SameLine();
+                auto width = ImGui::GetWindowWidth();
+                ImGui::Dummy(ImVec2(0, 0));
+                ImGui::Dummy(ImVec2(width / 3.f, 0));
+                ImGui::SameLine();
+                if (ImGui::Button("Yes", ImVec2(60, 30)))
+                {
+                    ImGui::CloseCurrentPopup();
+                    approved = true;
+                    clicked = true;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("No", ImVec2(60, 30)))
+                {
+                    ImGui::CloseCurrentPopup();
+                    approved = false;
+                    clicked = true;
+                }
+            }
+            ImGui::EndPopup();
+        }
+        return clicked;
+    }
+
+    // Create a process windows with process details from the caller,
+    // and close button activated by the caller
+    bool status_dialog(const std::string& title, const std::string& process_topic_text, const std::string& process_status_text , bool enable_close, ux_window& window)
     {
         ImGui_ScopePushFont(window.get_font());
         ImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
@@ -4138,39 +4192,57 @@ namespace rs2
         ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
         ImGui_ScopePushStyleColor(ImGuiCol_TitleBg, header_color);
         ImGui_ScopePushStyleColor(ImGuiCol_PopupBg, sensor_bg);
-        ImGui_ScopePushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
-        auto clicked = false;
+        ImGui_ScopePushStyleColor(ImGuiCol_BorderShadow, dark_grey);
+        ImGui_ScopePushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20, 10));
+        auto close_clicked = false;
+
         ImGui::OpenPopup(title.c_str());
-        if (ImGui::BeginPopupModal(title.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        ImGui::SetNextWindowPos({ window.width() * 0.35f, window.height() * 0.35f });
+        if (ImGui::BeginPopup(title.c_str()))
         {
-            ImGui::Text("\n%s\n\n", message_text.c_str());
-            auto width = ImGui::GetWindowWidth();
-            ImGui::Dummy(ImVec2(0, 0));
-            ImGui::Dummy(ImVec2(width / 4.f, 0));
-            ImGui::SameLine();
-            if (ImGui::Button("Yes", ImVec2(60, 30)))
             {
-                ImGui::CloseCurrentPopup();
-                approved = true;
-                clicked = true;
+                ImGui_ScopePushStyleColor(ImGuiCol_Text, almost_white_bg);
+
+                ImGui::SetWindowFontScale(1.3);
+                ImGui::Text("%s", title.c_str());
             }
-            ImGui::SameLine();
-            if (ImGui::Button("No", ImVec2(60, 30)))
             {
-                ImGui::CloseCurrentPopup();
-                approved = false;
-                clicked = true;
+
+                ImGui::Separator();
+                ImGui::SetWindowFontScale(1.1);
+
+                ImGui::NewLine();
+                ImGui::Text("%s", process_topic_text.c_str());
+                ImGui::NewLine();
+                auto process_topic_text_size = ImGui::CalcTextSize(process_topic_text.c_str()).x;
+                auto process_status_text_size = ImGui::CalcTextSize(process_status_text.c_str()).x + ImGui::CalcTextSize("Status: ").x;
+                if (process_topic_text_size > process_status_text_size)
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + process_topic_text_size / 2.f - process_status_text_size / 2.f);
+
+                ImGui::Text("Status: %s", process_status_text.c_str());
+                ImGui::NewLine();
+                auto width = ImGui::GetWindowWidth();
+
+                if (enable_close)
+                {
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + width / 2.f - 50.f); // 50 = 30 (button size) + 20 (padding)
+                    if (ImGui::Button("Close", ImVec2(60, 30)))
+                    {
+                        ImGui::CloseCurrentPopup();
+                        close_clicked = true;
+                    }
+                }
             }
-            ImGui::NewLine();
             ImGui::EndPopup();
         }
-        return clicked;
+        return close_clicked;
     }
-    bool device_model::prompt_toggle_advanced_mode(bool enable_advanced_mode, const std::string& message_text, std::vector<std::string>& restarting_device_info, viewer_model& view, ux_window& window)
+
+    bool device_model::prompt_toggle_advanced_mode(bool enable_advanced_mode, const std::string& message_text, std::vector<std::string>& restarting_device_info, viewer_model& view, ux_window& window, const std::string& error_message)
     {
         bool keep_showing = true;
         bool yes_was_chosen = false;
-        if (yes_no_dialog("Advanced Mode", message_text, yes_was_chosen, window))
+        if (yes_no_dialog("Advanced Mode", message_text, yes_was_chosen, window, error_message))
         {
             if (yes_was_chosen)
             {
@@ -4180,6 +4252,135 @@ namespace rs2
             }
             keep_showing = false;
         }
+        return keep_showing;
+    }
+
+    bool device_model::prompt_trigger_camera_accuracy_health(ux_window& window, viewer_model& viewer, const std::string& error_message)
+    {
+        // This process is built from a 2 stages windows, first a yes/no window and then a process window
+        bool keep_showing = true;
+        bool yes_was_chosen = false;
+
+        switch (cah_model.cah_state.load())
+        {
+        case camera_accuracy_health_model::model_state_type::TRIGGER_MODAL:
+        {
+            const std::string message_text("Camera Accuracy Health will ensure you get the highest accuracy from your camera.\n\n"
+                                            "This process may take several minutes and requires special setup to get good results.\n"
+                                            "While it is working, the viewer will not be usable.\n\n"
+                                            "Are you sure you want to continue?");
+            if (yes_no_dialog("Camera Accuracy Health Trigger", message_text, yes_was_chosen, window, error_message))
+            {
+                if (yes_was_chosen)
+                {
+                    bool is_depth_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm) { return sm->streaming && sm->s->as<depth_sensor>(); });
+                    bool is_color_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm) { return sm->streaming && sm->s->as<color_sensor>(); });
+
+                    auto itr = std::find_if(subdevices.begin(), subdevices.end(), [](std::shared_ptr<subdevice_model> sub)
+                    {
+                        if (sub->s->as<depth_sensor>())
+                            return true;
+                        return false;
+                    });
+
+
+                    if (is_depth_streaming && is_color_streaming && itr != subdevices.end())
+                    {
+                        auto sd = *itr;
+                        sd->s->set_option(RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, 1.0f);
+                        device_calibration dev_cal(dev);
+                        // Register AC status change callback
+                        if (!cah_model.registered_to_callback)
+                        {
+                            cah_model.registered_to_callback = true;
+                            dev_cal.register_calibration_change_callback([&](rs2_calibration_status cal_status)
+                            {
+                                cah_model.calib_status = cal_status;
+                                if (cah_model.calib_status == RS2_CALIBRATION_STARTED || cah_model.calib_status == RS2_CALIBRATION_SPECIAL_FRAME)
+                                {
+                                    cah_model.cah_state = camera_accuracy_health_model::model_state_type::PROCESS_MODAL;
+                                }
+                            });
+                        }
+
+                    }
+                    else
+                    {
+                        viewer.not_model->output.add_log(RS2_LOG_SEVERITY_ERROR, __FILE__, __LINE__,
+                            to_string() << "Camera Accuracy Health cannot be triggered : both depth & RGB streams must be active.");
+                    }
+                }
+                else
+                {
+                    keep_showing = false;
+                }
+            }
+        }
+        break;
+
+        case camera_accuracy_health_model::model_state_type::PROCESS_MODAL:
+        {
+            bool process_finished(cah_model.calib_status == RS2_CALIBRATION_SUCCESSFUL || cah_model.calib_status == RS2_CALIBRATION_FAILED || cah_model.calib_status == RS2_CALIBRATION_NOT_NEEDED);
+            
+            static std::map<rs2_calibration_status, std::string> status_map{
+                {RS2_CALIBRATION_SPECIAL_FRAME  , "In Progress" },
+                {RS2_CALIBRATION_STARTED        , "In Progress" },
+                {RS2_CALIBRATION_NOT_NEEDED     , "Ended" },
+                {RS2_CALIBRATION_SUCCESSFUL     , "Ended Successfully" },
+                {RS2_CALIBRATION_RETRY          , "In Progress" },
+                {RS2_CALIBRATION_FAILED         , "Ended With Failure" },
+                {RS2_CALIBRATION_SCENE_INVALID  , "In Progress" },
+                {RS2_CALIBRATION_BAD_RESULT     , "In Progress" } };
+
+
+            if (status_dialog("Camera Accuracy Health Status", "Camera Accuracy Health is In progress, this may take a while...", status_map[cah_model.calib_status], process_finished, window))
+            {
+                keep_showing = false;
+            }
+        }
+        break;
+        default:
+            break;
+
+        }
+
+        //reset internal elements
+        if (!keep_showing)
+        {
+            cah_model.cah_state = camera_accuracy_health_model::model_state_type::TRIGGER_MODAL;
+            cah_model.calib_status = RS2_CALIBRATION_RETRY;
+        }
+        return keep_showing;
+    }
+
+    bool device_model::prompt_reset_camera_accuracy_health(ux_window& window, const std::string& error_message)
+    {
+        bool keep_showing = true;
+        bool yes_was_chosen = false;
+
+        std::string message_text("This will reset the camera settings to their factory-calibrated state.\nYou will lose any improvements made with Camera Accuracy Health.\n\n Are you sure?");
+        if (yes_no_dialog("Camera Accuracy Health Reset", message_text, yes_was_chosen, window,error_message))
+        {
+            if (yes_was_chosen)
+            {
+                auto itr = std::find_if(subdevices.begin(), subdevices.end(), [](std::shared_ptr<subdevice_model> sub)
+                {
+                    if (sub->s->as<depth_sensor>())
+                        return true;
+                    return false;
+                });
+
+
+                if (itr != subdevices.end())
+                {
+                    auto sd = *itr;
+                    sd->s->set_option(RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH, 1.0f);
+
+                }
+            }
+            keep_showing = false;
+        }
+
         return keep_showing;
     }
 
@@ -4214,7 +4415,7 @@ namespace rs2
                     }
                     if (show_yes_no_modal)
                     {
-                        show_yes_no_modal = prompt_toggle_advanced_mode(true, "\t\tAre you sure you want to turn on Advanced Mode?\t\t", restarting_device_info, view, window);
+                        show_yes_no_modal = prompt_toggle_advanced_mode(true, "\t\tAre you sure you want to turn on Advanced Mode?\t\t", restarting_device_info, view, window, error_message);
                     }
                 }
             }
@@ -4403,6 +4604,7 @@ namespace rs2
         // TODO: Once auto-calib makes it into the API, switch to querying camera info
     }
 
+
     float device_model::draw_device_panel(float panel_width,
         ux_window& window,
         std::string& error_message,
@@ -4414,6 +4616,7 @@ namespace rs2
         Record   Sync    Info    More
         =============================
         */
+
 
         const bool is_playback_device = dev.is<playback>();
         const float device_panel_height = 60.0f;
@@ -4511,7 +4714,6 @@ namespace rs2
         ////////////////////////////////////////
         std::string label = to_string() << "device_menu" << id;
         std::string bars_button_name = to_string() << textual_icons::bars << "##" << id;
-
         if (ImGui::Button(bars_button_name.c_str(), device_panel_icons_size))
         {
             ImGui::OpenPopup(label.c_str());
@@ -4527,6 +4729,7 @@ namespace rs2
         bool open_calibration_ui = false;
         if (ImGui::BeginPopup(label.c_str()))
         {
+
             bool something_to_show = false;
             ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
             if (auto tm2_extensions = dev.as<rs2::tm2>())
@@ -4611,6 +4814,7 @@ namespace rs2
                 }
             }
 
+
             if (allow_remove)
             {
                 something_to_show = true;
@@ -4689,6 +4893,44 @@ namespace rs2
                         ImGui::SetTooltip("Install non official unsigned firmware from file to the device");
                 }
             }
+
+
+            if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && dev.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION))
+            { 
+                auto product_line_str = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
+                if (RS2_PRODUCT_LINE_L500 == parse_product_line(product_line_str))
+                {
+                    // Make sure the firmware is at least 1.4.1.2 for Trigger Camera Accuracy features
+                    if (false == is_upgradeable(dev.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION), "1.4.1.2"))
+                    {
+                        if (ImGui::Selectable("Trigger Camera Accuracy Health"))
+                        {
+                            // We cannot open a pop up window here since we are already in a pop up window
+                            // we trigger the pop up and activate it outside the menu pop up
+                            cah_model.show_trigger_camera_accuracy_health_popup = true;
+                        }
+
+                        if (ImGui::Selectable("Reset Camera Accuracy Health"))
+                        {
+                            cah_model.show_reset_camera_accuracy_health_popup = true;
+                        }
+                    }
+                    else
+                    {
+                        bool selected = false;
+
+                        ImGui::Selectable("Trigger Camera Accuracy Health",&selected, ImGuiSelectableFlags_Disabled);
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Requires firmware version 1.4.1.0 and above");
+
+
+                        ImGui::Selectable("Reset Camera Accuracy Health", &selected, ImGuiSelectableFlags_Disabled);
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Requires firmware version 1.4.1.2 and above");
+                    }
+                }
+            }
+
 
             bool has_autocalib = false;
             for (auto&& sub : subdevices)
@@ -4849,14 +5091,27 @@ namespace rs2
             }
 
             ImGui::PopStyleColor();
+                
             ImGui::EndPopup();
+
+        }
+
+
+        if (cah_model.show_trigger_camera_accuracy_health_popup)
+        {
+            cah_model.show_trigger_camera_accuracy_health_popup = prompt_trigger_camera_accuracy_health(window, viewer, error_message);
+        }
+
+        if (cah_model.show_reset_camera_accuracy_health_popup)
+        {
+            cah_model.show_reset_camera_accuracy_health_popup = prompt_reset_camera_accuracy_health(window, error_message);
         }
 
         if (keep_showing_advanced_mode_modal)
         {
             const bool is_advanced_mode_enabled = dev.as<advanced_mode>().is_enabled();
             std::string msg = to_string() << "\t\tAre you sure you want to " << (is_advanced_mode_enabled ? "turn off Advanced mode" : "turn on Advanced mode") << "\t\t";
-            keep_showing_advanced_mode_modal = prompt_toggle_advanced_mode(!is_advanced_mode_enabled, msg, restarting_device_info, viewer, window);
+            keep_showing_advanced_mode_modal = prompt_toggle_advanced_mode(!is_advanced_mode_enabled, msg, restarting_device_info, viewer, window, error_message);
         }
 
         _calib_model.update(window, error_message);
@@ -5296,7 +5551,7 @@ namespace rs2
                         }
                         if (keep_showing_popup)
                         {
-                            keep_showing_popup = prompt_toggle_advanced_mode(true, popup_message, restarting_device_info, viewer, window);
+                            keep_showing_popup = prompt_toggle_advanced_mode(true, popup_message, restarting_device_info, viewer, window, error_message);
                         }
                     }
                     catch (const error& e)
@@ -5397,7 +5652,7 @@ namespace rs2
 
         if (require_advanced_mode_enable_prompt)
         {
-            require_advanced_mode_enable_prompt = prompt_toggle_advanced_mode(true, popup_message, restarting_device_info, viewer, window);
+            require_advanced_mode_enable_prompt = prompt_toggle_advanced_mode(true, popup_message, restarting_device_info, viewer, window, error_message);
         }
 
         ImGui::PopFont();

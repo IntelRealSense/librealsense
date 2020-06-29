@@ -265,7 +265,9 @@ namespace rs2
             opt == RS2_OPTION_STREAM_FORMAT_FILTER ||
             opt == RS2_OPTION_STREAM_INDEX_FILTER ||
             opt == RS2_OPTION_FRAMES_QUEUE_SIZE ||
-            opt == RS2_OPTION_SENSOR_MODE)
+            opt == RS2_OPTION_SENSOR_MODE || 
+            opt == RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH ||
+            opt == RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH)
             return true;
         return false;
     }
@@ -800,6 +802,26 @@ namespace rs2
         std::vector<std::shared_ptr<notification_model>> related_notifications;
 
     private:
+        // This class is in charge of camera accuracy health window parameters,
+        // Needed as a member for reseting the window memory on device disconnection.
+        class camera_accuracy_health_model
+        {
+        public:
+            enum class model_state_type { TRIGGER_MODAL, PROCESS_MODAL };
+            std::atomic<model_state_type> cah_state; // will be set from a different thread callback function
+            std::atomic<rs2_calibration_status> calib_status; // will be set from a different thread callback function
+            bool show_trigger_camera_accuracy_health_popup;
+            bool show_reset_camera_accuracy_health_popup;
+            bool registered_to_callback;
+
+            camera_accuracy_health_model():cah_state(model_state_type::TRIGGER_MODAL), calib_status(RS2_CALIBRATION_RETRY),
+                show_trigger_camera_accuracy_health_popup(false), show_reset_camera_accuracy_health_popup(false),
+                registered_to_callback(false)
+            {}
+
+        };
+
+        camera_accuracy_health_model cah_model;
         void draw_info_icon(ux_window& window, ImFont* font, const ImVec2& size);
         int draw_seek_bar();
         int draw_playback_controls(ux_window& window, ImFont* font, viewer_model& view);
@@ -820,7 +842,11 @@ namespace rs2
         bool prompt_toggle_advanced_mode(bool enable_advanced_mode, const std::string& message_text,
             std::vector<std::string>& restarting_device_info,
             viewer_model& view,
-            ux_window& window);
+            ux_window& window,
+            const std::string& error_message);
+        bool prompt_trigger_camera_accuracy_health(ux_window& window, viewer_model& viewer,  const std::string& error_message);
+        bool prompt_reset_camera_accuracy_health(ux_window& window, const std::string& error_message);
+
         void load_viewer_configurations(const std::string& json_str);
         void save_viewer_configurations(std::ofstream& outfile, nlohmann::json& j);
 
