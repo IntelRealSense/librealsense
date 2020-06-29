@@ -4130,48 +4130,51 @@ namespace rs2
 
     bool yes_no_dialog(const std::string& title, const std::string& message_text, bool& approved, ux_window& window, const std::string& error_message)
     {
-        ImGui_ScopePushFont(window.get_large_font());
+        ImGui_ScopePushFont(window.get_font());
         ImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
         ImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, sensor_header_light_blue); //TODO: Change color?
         ImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, regular_blue); //TODO: Change color?
-        ImGui_ScopePushStyleColor(ImGuiCol_Text, light_grey);
         ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
         ImGui_ScopePushStyleColor(ImGuiCol_TitleBg, header_color);
         ImGui_ScopePushStyleColor(ImGuiCol_PopupBg, sensor_bg);
-        ImGui_ScopePushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
+        ImGui_ScopePushStyleColor(ImGuiCol_BorderShadow, dark_grey);
+        ImGui_ScopePushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20, 10));
         auto clicked = false;
 
         ImGui::OpenPopup(title.c_str());
-        ImGui::SetNextWindowPos( {window.width() * 0.3f, window.height() * 0.3f });
+        ImGui::SetNextWindowPos( {window.width() * 0.35f, window.height() * 0.35f });
         if (ImGui::BeginPopup(title.c_str()))
         {
-            if (!error_message.empty())
             {
+                ImGui_ScopePushStyleColor(ImGuiCol_Text, almost_white_bg);
 
-                ImGui::CloseCurrentPopup();
-                return false;
+                ImGui::SetWindowFontScale(1.3);
+                ImGui::Text("%s", title.c_str());
             }
-
-            ImGui::Text("\n%s\n\n", message_text.c_str());
-            ImGui::SameLine();
-            auto width = ImGui::GetWindowWidth();
-            ImGui::Dummy(ImVec2(0, 0));
-            ImGui::Dummy(ImVec2(width / 3.f, 0));
-            ImGui::SameLine();
-            if (ImGui::Button("Yes", ImVec2(60, 30)))
             {
-                ImGui::CloseCurrentPopup();
-                approved = true;
-                clicked = true;
+                ImGui_ScopePushStyleColor(ImGuiCol_Text, light_grey);
+                ImGui::Separator();
+                ImGui::SetWindowFontScale(1.1);
+                ImGui::Text("\n%s\n\n", message_text.c_str());
+                ImGui::SameLine();
+                auto width = ImGui::GetWindowWidth();
+                ImGui::Dummy(ImVec2(0, 0));
+                ImGui::Dummy(ImVec2(width / 3.f, 0));
+                ImGui::SameLine();
+                if (ImGui::Button("Yes", ImVec2(60, 30)))
+                {
+                    ImGui::CloseCurrentPopup();
+                    approved = true;
+                    clicked = true;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("No", ImVec2(60, 30)))
+                {
+                    ImGui::CloseCurrentPopup();
+                    approved = false;
+                    clicked = true;
+                }
             }
-            ImGui::SameLine();
-            if (ImGui::Button("No", ImVec2(60, 30)))
-            {
-                ImGui::CloseCurrentPopup();
-                approved = false;
-                clicked = true;
-            }
-            ImGui::NewLine();
             ImGui::EndPopup();
         }
         return clicked;
@@ -4181,7 +4184,7 @@ namespace rs2
     // and close button activated by the caller
     bool status_dialog(const std::string& title, const std::string& process_topic_text, const std::string& process_status_text , bool enable_close, ux_window& window)
     {
-        ImGui_ScopePushFont(window.get_large_font());
+        ImGui_ScopePushFont(window.get_font());
         ImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
         ImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, sensor_header_light_blue); //TODO: Change color?
         ImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, regular_blue); //TODO: Change color?
@@ -4189,36 +4192,47 @@ namespace rs2
         ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
         ImGui_ScopePushStyleColor(ImGuiCol_TitleBg, header_color);
         ImGui_ScopePushStyleColor(ImGuiCol_PopupBg, sensor_bg);
-        ImGui_ScopePushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
+        ImGui_ScopePushStyleColor(ImGuiCol_BorderShadow, dark_grey);
+        ImGui_ScopePushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20, 10));
         auto close_clicked = false;
 
         ImGui::OpenPopup(title.c_str());
-        ImGui::SetNextWindowPos({ window.width() * 0.3f, window.height() * 0.3f });
+        ImGui::SetNextWindowPos({ window.width() * 0.35f, window.height() * 0.35f });
         if (ImGui::BeginPopup(title.c_str()))
         {
-            ImGui::NewLine();
-            ImGui::Text("%s", process_topic_text.c_str());
-            ImGui::NewLine();
-            auto process_topic_text_size = ImGui::CalcTextSize(process_topic_text.c_str()).x ;
-            auto process_status_text_size = ImGui::CalcTextSize(process_status_text.c_str()).x + ImGui::CalcTextSize("Status: ").x;
-            if (process_topic_text_size > process_status_text_size)
-                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + process_topic_text_size / 2.f - process_status_text_size / 2.f);
+            {
+                ImGui_ScopePushStyleColor(ImGuiCol_Text, almost_white_bg);
 
-            ImGui::Text("Status: %s", process_status_text.c_str());
-            ImGui::NewLine();
-            auto width = ImGui::GetWindowWidth();
-
-            if (enable_close)
+                ImGui::SetWindowFontScale(1.3);
+                ImGui::Text("%s", title.c_str());
+            }
             {
 
-                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + width / 2.f - 30.f);
-                if (ImGui::Button("Close", ImVec2(60, 30)))
+                ImGui::Separator();
+                ImGui::SetWindowFontScale(1.1);
+
+                ImGui::NewLine();
+                ImGui::Text("%s", process_topic_text.c_str());
+                ImGui::NewLine();
+                auto process_topic_text_size = ImGui::CalcTextSize(process_topic_text.c_str()).x;
+                auto process_status_text_size = ImGui::CalcTextSize(process_status_text.c_str()).x + ImGui::CalcTextSize("Status: ").x;
+                if (process_topic_text_size > process_status_text_size)
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + process_topic_text_size / 2.f - process_status_text_size / 2.f);
+
+                ImGui::Text("Status: %s", process_status_text.c_str());
+                ImGui::NewLine();
+                auto width = ImGui::GetWindowWidth();
+
+                if (enable_close)
                 {
-                    ImGui::CloseCurrentPopup();
-                    close_clicked = true;
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + width / 2.f - 50.f); // 50 = 30 (button size) + 20 (padding)
+                    if (ImGui::Button("Close", ImVec2(60, 30)))
+                    {
+                        ImGui::CloseCurrentPopup();
+                        close_clicked = true;
+                    }
                 }
             }
-
             ImGui::EndPopup();
         }
         return close_clicked;
