@@ -4244,7 +4244,7 @@ namespace rs2
         bool keep_showing = true;
         bool yes_was_chosen = false;
 
-        switch (cah_model.cah_state)
+        switch (cah_model.cah_state.load())
         {
         case camera_accuracy_health_model::model_state_type::TRIGGER_MODAL:
         {
@@ -4699,7 +4699,6 @@ namespace rs2
         ////////////////////////////////////////
         std::string label = to_string() << "device_menu" << id;
         std::string bars_button_name = to_string() << textual_icons::bars << "##" << id;
-
         if (ImGui::Button(bars_button_name.c_str(), device_panel_icons_size))
         {
             ImGui::OpenPopup(label.c_str());
