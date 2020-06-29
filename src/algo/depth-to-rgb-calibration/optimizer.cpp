@@ -1697,9 +1697,9 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
         {
             if (cycle == 2)
             {// No change at all (probably very good starting point)
+                LOG_DEBUG("No change requeired (probably very good starting point)");
                 new_k_to_dsm_calib = new_calib;
                 _optimaized_calibration = _original_calibration;
-                cycle = 0;
             }
 
             AC_LOG( DEBUG, "    cost is a regression; stopping -- not using last cycle" );
@@ -1729,5 +1729,6 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
     new_dsm_params.copy_to( _final_dsm_params );
     _final_calibration = new_k_to_dsm_calib;
 
-    return cycle;
+    // The actual valid cycles - we starting from 1 and the last cycle is only for verification
+    return cycle - 2;
 }
