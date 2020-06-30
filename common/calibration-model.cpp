@@ -207,15 +207,12 @@ void calibration_model::update(ux_window& window, std::string& error_message)
                     load_float3x4("intrinsic_right", table->intrinsic_right);
                     load_float3x4("world2left_rot", table->world2left_rot);
                     load_float3x4("world2right_rot", table->world2right_rot);
-                    
+
                     for (int i = 0; i < librealsense::ds::max_ds5_rect_resolutions; i++)
                     {
-                        auto xy = librealsense::ds::resolutions_list[(librealsense::ds::ds5_rect_resolutions)i];
-                        int w = xy.x; int h = xy.y;
-
                         table->rect_params[i].x = cf.get(std::string(to_string() << "rectified." << i << ".fx").c_str());
                         table->rect_params[i].y = cf.get(std::string(to_string() << "rectified." << i << ".fy").c_str());
-                        
+
                         table->rect_params[i].z = cf.get(std::string(to_string() << "rectified." << i << ".ppx").c_str());
                         table->rect_params[i].w = cf.get(std::string(to_string() << "rectified." << i << ".ppy").c_str());
                     }

@@ -42,12 +42,12 @@ namespace depth_to_rgb_calibration {
 
         rs2_dsm_params_double() = default;
         rs2_dsm_params_double( rs2_dsm_params const & obj )
-            : h_scale( obj.h_scale )
+            : model( rs2_dsm_correction_model( obj.model ) )
+            , h_scale( obj.h_scale )
             , v_scale( obj.v_scale )
             , h_offset( obj.h_offset )
             , v_offset( obj.v_offset )
             , rtd_offset( obj.rtd_offset )
-            , model( rs2_dsm_correction_model( obj.model ) )
         {
             //todo: flags
         }
@@ -62,7 +62,7 @@ namespace depth_to_rgb_calibration {
             o.model = model;
         }
     };
-    
+
     std::ostream & operator<<( std::ostream &, rs2_dsm_params_double const & );
 
 #pragma pack(push, 1)

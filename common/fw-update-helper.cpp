@@ -56,8 +56,6 @@ namespace rs2
 
     std::string get_available_firmware_version(int product_line)
     {
-        bool allow_rc_firmware = config_file::instance().get_or_default(configurations::update::allow_rc_firmware, false);
-
         if (product_line == RS2_PRODUCT_LINE_D400) return FW_D4XX_FW_IMAGE_VERSION;
         //else if (product_line == RS2_PRODUCT_LINE_SR300) return FW_SR3XX_FW_IMAGE_VERSION;
         else if (product_line == RS2_PRODUCT_LINE_L500) return FW_L5XX_FW_IMAGE_VERSION;
@@ -284,7 +282,7 @@ namespace rs2
             log("Firmware Update completed, waiting for device to reconnect");
         }
 
-        if (!check_for([this, serial, &dfu]() {
+        if (!check_for([this, serial]() {
             auto devs = _ctx.query_devices();
 
             for (uint32_t j = 0; j < devs.size(); j++)

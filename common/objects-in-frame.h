@@ -15,11 +15,11 @@ struct object_in_frame
     size_t id;
 
     object_in_frame( size_t id, std::string const & name, rs2::rect bbox_color, rs2::rect bbox_depth, float depth )
-        : id( id )
-        , name( name )
-        , normalized_color_bbox( bbox_color )
-        , normalized_depth_bbox( bbox_depth )
-        , mean_depth( depth )
+    : normalized_color_bbox( bbox_color )
+    , normalized_depth_bbox( bbox_depth )
+    , name( name )
+    , mean_depth( depth )
+    , id( id )
     {
     }
 };

@@ -973,13 +973,11 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
         else has_room = false;
     }
     ticks_x -= 3;
-    
-    auto total = 0;
+
     for (int i = 0; i < ticks_x; i++)
     {
         auto x = min_x + i * (gap_x / ticks_x);
         std::string x_label = to_string() << std::fixed << std::setprecision(2) << x;
-        auto y_pixel = ImGui::GetTextLineHeight() + i * (height_y / ticks_y);
         ImGui::SetCursorPos(ImVec2( 15 + max_y_label_width+ i * (graph_width / ticks_x), r.h - ImGui::GetTextLineHeight() ));
         ImGui::Text("%s", x_label.c_str());
 

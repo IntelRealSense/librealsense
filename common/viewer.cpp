@@ -373,8 +373,6 @@ namespace rs2
         auto font = win.get_font();
         auto large_font = win.get_large_font();
 
-        const float combo_box_width = 200;
-
         // Draw pose header if pose stream exists
         bool pose_render = false;
 
@@ -981,10 +979,6 @@ namespace rs2
 
     void rs2::viewer_model::show_popup(const ux_window& window, const popup& p)
     {
-        auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
-            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar;
-
         auto font_14 = window.get_font();
 
         ImGui_ScopePushFont(font_14);
@@ -1453,14 +1447,12 @@ namespace rs2
         static const auto colored_ruler_width = 20;
         const auto left_x_colored_ruler = stream_width - left_x_colored_ruler_offset;
         const auto right_x_colored_ruler = stream_width - (left_x_colored_ruler_offset - colored_ruler_width);
-        const auto first_rgb = rgb_per_distance_vec.begin()->rgb_val;
         assert((bottom_y_ruler - top_y_ruler) != 0.f);
         const auto ratio = (bottom_y_ruler - top_y_ruler) / ruler_length;
 
         // Draw numbered ruler
         float y_ruler_val = top_y_ruler;
         static const auto numbered_ruler_width = 20.f;
-        const auto numbered_ruler_height = bottom_y_ruler - top_y_ruler;
 
         const auto right_x_numbered_ruler = right_x_colored_ruler + numbered_ruler_width;
         static const auto hovered_numbered_ruler_opac = 0.8f;
@@ -1840,7 +1832,6 @@ namespace rs2
                     auto depth_vid_profile = stream_mv.profile.as<video_stream_profile>();
                     auto depth_width = depth_vid_profile.width();
                     auto depth_height = depth_vid_profile.height();
-                    auto num_of_pixels = depth_width * depth_height;
                     auto depth_data = static_cast<const uint16_t*>(frame.get_data());
                     auto textured_depth_data = static_cast<const uint8_t*>(textured_frame.get_data());
                     static const auto skip_pixels_factor = 30;

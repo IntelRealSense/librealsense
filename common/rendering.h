@@ -887,7 +887,7 @@ namespace rs2
             }),
                 _measurements.end());
             auto trues = std::count_if(_measurements.begin(), _measurements.end(),
-                [this](std::pair<clock::time_point, bool> pair) {
+                [](std::pair<clock::time_point, bool> pair) {
                 return pair.second;
             });
             return size_t(trues) / (float)_measurements.size(); 
@@ -1019,7 +1019,6 @@ namespace rs2
                     {
                         // Upload vertices
                         data = pc.get_vertices();
-                        auto v = pc.get_vertices();
                         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
                     }
                     else
@@ -1747,8 +1746,7 @@ namespace rs2
         auto mvp = pc * vc * fc;
 
         // test - origin (0, 0, -1.0, 1) should be translated into (0, 0, 0, 0) at this point
-        float4 origin{ 0.f, 0.f, -1.f, 1.f };
-        float4 projected = mvp * origin;
+        //float4 origin{ 0.f, 0.f, -1.f, 1.f };
 
         // translate 3d vertex into 2d windows coordinates
         float4 p3d;

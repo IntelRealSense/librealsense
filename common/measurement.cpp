@@ -454,7 +454,6 @@ void measurement::draw(ux_window& win)
         if (input_ctrl.mouse_down) size -= _picked.z * 0.01f;
         size += _picked.z * 0.01f * single_wave(input_ctrl.click_period());
 
-        auto end = _picked + _normal * size;
         auto axis1 = cross(vec3d{ _normal.x, _normal.y, _normal.z }, vec3d{ 0.f, 1.f, 0.f });
         auto faxis1 = float3 { axis1.x, axis1.y, axis1.z };
         faxis1.normalize();

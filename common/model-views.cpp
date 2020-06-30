@@ -1649,7 +1649,6 @@ namespace rs2
             {
                 if (auto vid_prof = p.as<video_stream_profile>())
                 {
-                    auto key = std::make_tuple(p.fps(), vid_prof.width(), vid_prof.height());
                     if (check_profile(p, [&](stream_profile prof) { return (std::find_if(matching_profiles.begin(), matching_profiles.end(), [&](stream_profile sp)
                     { return (stream_id != p.unique_id() && sp.fps() == p.fps() && sp.as<video_stream_profile>().width() == vid_prof.width() &&
                         sp.as<video_stream_profile>().height() == vid_prof.height()); }) != matching_profiles.end()); },
@@ -1762,7 +1761,7 @@ namespace rs2
     {
         viewer.not_model->add_log("Stopping streaming");
 
-        for_each(stream_display_names.begin(), stream_display_names.end(), [this, &viewer](std::pair<int, std::string> kvp)
+        for_each(stream_display_names.begin(), stream_display_names.end(), [this](std::pair<int, std::string> kvp)
         {
             if ("Pose" == kvp.second)
             {
@@ -1853,7 +1852,7 @@ namespace rs2
         viewer.not_model->add_log(ss.str());
 
         // TODO  - refactor tm2 from viewer to subdevice
-        for_each(stream_display_names.begin(), stream_display_names.end(), [this, &viewer](std::pair<int, std::string> kvp)
+        for_each(stream_display_names.begin(), stream_display_names.end(), [this](std::pair<int, std::string> kvp)
         {
             if ("Pose" == kvp.second)
             {
@@ -4011,7 +4010,6 @@ namespace rs2
         duration -= mm;
         auto ss = duration_cast<seconds>(duration);
         duration -= ss;
-        auto ms = duration_cast<milliseconds>(duration);
 
         std::ostringstream stream;
         stream << std::setfill('0') << std::setw(hhh.count() >= 10 ? 2 : 1) << hhh.count() << ':' <<
@@ -4026,7 +4024,7 @@ namespace rs2
         auto pos = ImGui::GetCursorPos();
 
         auto p = dev.as<playback>();
-        rs2_playback_status current_playback_status = p.current_status();
+        //rs2_playback_status current_playback_status = p.current_status();
         int64_t playback_total_duration = p.get_duration().count();
         auto progress = p.get_position();
         double part = (1.0 * progress) / playback_total_duration;
@@ -5237,7 +5235,6 @@ namespace rs2
             // Disable depth stream on all sub devices
             for (auto&& sub : subdevices)
             {
-                int i = 0;
                 for (auto&& profile : sub->profiles)
                 {
                     if (profile.stream_type() == RS2_STREAM_DEPTH)
@@ -5964,7 +5961,7 @@ namespace rs2
             if (show_depth_only && !sub->s->is<depth_sensor>()) continue;
 
             const ImVec2 pos = ImGui::GetCursorPos();
-            const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
+            //const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
             //model_to_y[sub.get()] = pos.y;
             //model_to_abs_y[sub.get()] = abs_pos.y;
 
@@ -6287,7 +6284,6 @@ namespace rs2
                             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
                             const ImVec2 pos = ImGui::GetCursorPos();
-                            const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
 
                             draw_later.push_back([windows_width, &window, sub, pos, &viewer, this, pb]() {
                                 if (!sub->streaming || !sub->post_processing_enabled) ImGui::SetCursorPos({ windows_width - 35, pos.y - 3 });

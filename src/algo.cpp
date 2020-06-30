@@ -47,10 +47,10 @@ void auto_exposure_state::set_auto_exposure_step(float value)
 }
 
 auto_exposure_mechanism::auto_exposure_mechanism(option& gain_option, option& exposure_option, const auto_exposure_state& auto_exposure_state)
-    : _auto_exposure_algo(auto_exposure_state),
-      _keep_alive(true), _frames_counter(0),
-      _skip_frames(auto_exposure_state.skip_frames), _data_queue(queue_size),
-      _gain_option(gain_option), _exposure_option(exposure_option)
+    : _gain_option(gain_option), _exposure_option(exposure_option),
+      _auto_exposure_algo(auto_exposure_state),
+      _keep_alive(true), _data_queue(queue_size), _frames_counter(0),
+      _skip_frames(auto_exposure_state.skip_frames)
 {
     _exposure_thread = std::make_shared<std::thread>(
                 [this]()

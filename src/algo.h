@@ -94,7 +94,7 @@ namespace librealsense
         float exposure = 10.0f, gain = 2.0f, target_exposure = 0.0f;
         uint8_t under_exposure_limit = 5, over_exposure_limit = 250; int under_exposure_noise_limit = 50, over_exposure_noise_limit = 50;
         int direction = 0, prev_direction = 0; float hysteresis = 0.075f;// 05;
-        float eps = 0.01f, minimal_exposure_step = 0.01f;
+        float eps = 0.01f;
         std::atomic<float> exposure_step;
         auto_exposure_state state; float flicker_cycle; bool anti_flicker_mode = true;
         region_of_interest roi{};

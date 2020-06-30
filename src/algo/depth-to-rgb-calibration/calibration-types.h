@@ -59,7 +59,7 @@ namespace depth_to_rgb_calibration {
         double mat[3][3];
         double3x3 transpose()
         {
-            double3x3 res = { 0 };
+            double3x3 res = { {0} };
 
             for( auto i = 0; i < 3; i++ )
             {
@@ -73,7 +73,7 @@ namespace depth_to_rgb_calibration {
 
         double3x3 operator*( const double3x3 & other )
         {
-            double3x3 res = { 0 };
+            double3x3 res = { {0} };
 
             for( auto i = 0; i < 3; i++ )
             {

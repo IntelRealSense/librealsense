@@ -154,8 +154,6 @@ bool refresh_devices(std::mutex& m,
         return false;
     try
     {
-        auto prev_size = current_connected_devices.size();
-
         //Remove disconnected
         auto dev_itr = begin(current_connected_devices);
         while (dev_itr != end(current_connected_devices))
@@ -522,7 +520,6 @@ int main(int argc, const char** argv) try
 
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
-                    bool connect = false;
                     static char ip_input[255];
                     std::copy(ip_address.begin(), ip_address.end(), ip_input);
                     ip_input[ip_address.size()] = '\0';

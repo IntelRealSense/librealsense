@@ -156,9 +156,6 @@ namespace rs2
         bool info_highlighted = false;
         bool drops_highlighted = false;
 
-        rs2_log_severity min_severity = RS2_LOG_SEVERITY_DEBUG;
-        rs2_log_severity max_severity = RS2_LOG_SEVERITY_FATAL;
-
         int number_of_errors = 0;
         int number_of_warnings = 0;
         int number_of_info = 0;
