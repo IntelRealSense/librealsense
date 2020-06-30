@@ -331,10 +331,11 @@ namespace librealsense
         AC_LOG( DEBUG, "    done" );
 
         _owner->_color_intrinsics_table_raw.reset();
-        environment::get_instance().get_extrinsics_graph().override_extrinsics(
+
+         environment::get_instance().get_extrinsics_graph().override_extrinsics(
             *_owner->_depth_stream,
             *_owner->_color_stream,
-            table.get_extrinsics() );
+             convert_extrinsic_to_lrs_format(table.get_extrinsics()));
         AC_LOG( INFO, "Color sensor calibration has been reset" );
     }
 
