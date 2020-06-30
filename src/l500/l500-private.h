@@ -204,7 +204,7 @@ namespace librealsense
             rs2_extrinsics extr;
             byte reserved[8];
 
-            void ivcam2::rgb_calibration_table::set_intrinsics( rs2_intrinsics const & );
+            void set_intrinsics( rs2_intrinsics const & );
             rs2_intrinsics get_intrinsics() const;
             rs2_extrinsics const & get_extrinsics() const { return extr; }
             void update_write_fields();
