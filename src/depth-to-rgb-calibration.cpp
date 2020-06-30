@@ -96,9 +96,12 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     {
         std::string dir( dir_ );
         dir += std::to_string( depth.get_frame_number() );
+        
 #ifdef _WIN32
+        dir += "\\";
         auto status = _mkdir( dir.c_str() );
 #else
+        dir += "/";
         auto status = mkdir( dir.c_str(), 0700 );
 #endif
         if( status == 0 )
