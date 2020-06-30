@@ -215,58 +215,80 @@ namespace librealsense
     }
 
 
-
-    void l500_color::update_intrinsics( stream_profile const& profile, rs2_intrinsics const& intr )
+    rs2_intrinsics ivcam2::rgb_calibration_table::get_intrinsics() const
     {
-        if( intr.width != profile.width  ||  intr.height != profile.height )
-            throw std::runtime_error( to_string() << "new calibration intrinsics do not match profile! (" << intr.width << 'x' << intr.height << "; expected " << profile.width << 'x' << profile.height << ")" );
+        // TODO: we currently use the wrong distortion model, but all the code is
+        // written to expect the INVERSE brown. The table assumes REGULAR brown.
+        return { width, height,
+                 intr.px, intr.py,  // NOTE: this is normalized!
+                 intr.fx, intr.fy,  // NOTE: this is normalized!
+                 RS2_DISTORTION_INVERSE_BROWN_CONRADY,  // see comment above
+                 { intr.d[0], intr.d[1], intr.d[2], intr.d[3], intr.d[4] } };
+    }
 
-        using namespace ivcam2;
 
-        auto & intrinsic = *const_cast<intrinsic_rgb *>( check_calib< intrinsic_rgb >( *_color_intrinsics_table_raw ));
-        auto num_of_res = intrinsic.resolution.num_of_resolutions;
-        bool found = false;
-        for( auto i = 0; i < num_of_res; i++ )
-        {
-            auto & model = intrinsic.resolution.intrinsic_resolution[i];
-            if( model.height != profile.height || model.width != profile.width )
-                continue;
-
-            model.ipm.focal_length.x = intr.fx;
-            model.ipm.focal_length.y = intr.fy;
-            model.ipm.principal_point.x = intr.ppx;
-            model.ipm.principal_point.y = intr.ppy;
-
-            bool const is_inverse = (intr.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY);
-
-            model.distort.radial_k1     = is_inverse ? intr.coeffs[0] : 0;
-            model.distort.radial_k2     = is_inverse ? intr.coeffs[1] : 0;
-            model.distort.tangential_p1 = is_inverse ? intr.coeffs[2] : 0;
-            model.distort.tangential_p2 = is_inverse ? intr.coeffs[3] : 0;
-            model.distort.radial_k3     = is_inverse ? intr.coeffs[4] : 0;
-            found = true;
-        }
-        if( ! found )
-            throw std::runtime_error( to_string() << "intrinsics for resolution " << profile.width << "," << profile.height << " don't exist" );
+    void ivcam2::rgb_calibration_table::set_intrinsics( rs2_intrinsics const & i )
+    {
+        // The table in FW is resolution-agnostic; it can apply to ALL resolutions. To
+        // do this, the focal length and principal point are normalized:
+        width = i.width;
+        height = i.height;
+        intr.fx = 2 * i.fx / i.width;
+        intr.fy = 2 * i.fy / i.height;
+        intr.px = 2 * i.ppx / i.width - 1;
+        intr.py = 2 * i.ppy / i.height - 1;
+        intr.d[0] = i.coeffs[0];
+        intr.d[1] = i.coeffs[1];
+        intr.d[2] = i.coeffs[2];
+        intr.d[3] = i.coeffs[3];
+        intr.d[4] = i.coeffs[4];
     }
 
 
     void l500_color_sensor::override_intrinsics( rs2_intrinsics const& intr )
     {
-        auto&& active_streams = get_active_streams();
-        if( active_streams.size() != 1 )
-            throw std::runtime_error( to_string() << "expected 1 active stream; found " << active_streams.size() );
-        std::shared_ptr< stream_profile_interface > spi = active_streams.front();
-        auto vspi = dynamic_cast<video_stream_profile_interface*>(spi.get());
-        if( !vspi )
-            throw std::runtime_error( "could not get video stream profile" );
-        _owner->update_intrinsics(
-            { vspi->get_format(), vspi->get_stream_type(), vspi->get_stream_index(), vspi->get_width(), vspi->get_height(), 0 },
-            intr );
+        // The distortion model is not part of the table. The FW assumes it is brown,
+        // but in LRS we (mistakenly) use INVERSE brown. We therefore make sure the user
+        // has not tried to change anything from the intrinsics reported:
+        if( intr.model != RS2_DISTORTION_INVERSE_BROWN_CONRADY )
+            throw invalid_value_exception( "invalid intrinsics distortion model" );
+
+        ivcam2::rgb_calibration_table table;
+        AC_LOG( DEBUG, "Reading RGB calibration table 0x" << std::hex << table.table_id );
+        ivcam2::read_fw_table( *_owner->_hw_monitor, table.table_id, &table );
+        AC_LOG( DEBUG, "    version:     " << table.version );
+        AC_LOG( DEBUG, "    timestamp:   " << table.timestamp << "; incrementing" );
+        AC_LOG( DEBUG, "    type:        " << table.type << "; setting to 0x10" );
+        AC_LOG( DEBUG, "    intrinsics:  " << table.get_intrinsics() );
+        table.set_intrinsics( intr );
+        AC_LOG( INFO, "Overriding intr: " << intr );
+        AC_LOG( DEBUG, "    normalized:  " << table.get_intrinsics() );
+        table.update_write_fields();
+        ivcam2::write_fw_table( *_owner->_hw_monitor, table.table_id, table );
+        AC_LOG( DEBUG, "    done" );
+
+        // Intrinsics are resolution-specific, so all the rest of the profile info is not
+        // important
+        _owner->_color_intrinsics_table_raw.reset();
     }
 
     void l500_color_sensor::override_extrinsics( rs2_extrinsics const& extr )
     {
+        ivcam2::rgb_calibration_table table;
+        AC_LOG( DEBUG, "Reading RGB calibration table 0x" << std::hex << table.table_id );
+        ivcam2::read_fw_table( *_owner->_hw_monitor, table.table_id, &table );
+        AC_LOG( DEBUG, "    version:     " << table.version );
+        AC_LOG( DEBUG, "    timestamp:   " << table.timestamp << "; incrementing" );
+        AC_LOG( DEBUG, "    type:        " << table.type << "; setting to 0x10" );
+        AC_LOG( DEBUG, "    raw extr:    " << table.get_extrinsics() );
+        table.extr = to_raw_extrinsics(extr);
+        AC_LOG( INFO , "Overriding extr: " << extr );
+        table.update_write_fields();
+        AC_LOG( DEBUG, "    as raw:      " << table.get_extrinsics());
+        ivcam2::write_fw_table( *_owner->_hw_monitor, table.table_id, table );
+        AC_LOG( DEBUG, "    done" );
+
+
         environment::get_instance().get_extrinsics_graph().override_extrinsics( *_owner->_depth_stream, *_owner->_color_stream, extr );
     }
 
@@ -280,10 +302,42 @@ namespace librealsense
         throw std::logic_error( "color sensor does not support DSM parameters" );
     }
 
+    void ivcam2::rgb_calibration_table::update_write_fields()
+    {
+        // We don't touch the version...
+        //version = ;
+
+        // This signifies AC results:
+        type = 0x10;
+
+        // The time-stamp is simply a sequential number that we increment
+        ++timestamp;
+    }
+
     void l500_color_sensor::reset_calibration()
     {
-        _owner->_color_intrinsics_table_raw = [&]() { return _owner->get_raw_intrinsics_table(); };
-        override_extrinsics( get_color_stream_extrinsic( *_owner->_color_extrinsics_table_raw ) );
+        // Read from EEPROM (factory defaults), write to FLASH (current)
+        // Note that factory defaults may be different than the trinsics at the time of
+        // our initialization!
+        ivcam2::rgb_calibration_table table;
+        AC_LOG( DEBUG, "Reading factory calibration from table 0x" << std::hex << table.eeprom_table_id );
+        ivcam2::read_fw_table( *_owner->_hw_monitor, table.eeprom_table_id, &table );
+        AC_LOG( DEBUG, "    version:     " << table.version );
+        AC_LOG( DEBUG, "    timestamp:   " << table.timestamp << "; incrementing" );
+        AC_LOG( DEBUG, "    type:        " << table.type << "; setting to 0x10" );
+        AC_LOG( DEBUG, "Normalized:" );
+        AC_LOG( DEBUG, "    intrinsics:  " << table.get_intrinsics() );
+        AC_LOG( DEBUG, "    extrinsics:  " << table.get_extrinsics() );
+        AC_LOG( DEBUG, "Writing RGB calibration table 0x" << std::hex << table.table_id );
+        ivcam2::write_fw_table( *_owner->_hw_monitor, table.table_id, table );
+        AC_LOG( DEBUG, "    done" );
+
+        _owner->_color_intrinsics_table_raw.reset();
+
+         environment::get_instance().get_extrinsics_graph().override_extrinsics(
+            *_owner->_depth_stream,
+            *_owner->_color_stream,
+             from_raw_extrinsics(table.get_extrinsics()));
         AC_LOG( INFO, "Color sensor calibration has been reset" );
     }
 
@@ -299,10 +353,12 @@ namespace librealsense
 
     std::vector<uint8_t> l500_color::get_raw_intrinsics_table() const
     {
+        AC_LOG( DEBUG, "RGB_INTRINSIC_GET" );
         return _hw_monitor->send(command{ RGB_INTRINSIC_GET });
     }
     std::vector<uint8_t> l500_color::get_raw_extrinsics_table() const
     {
+        AC_LOG( DEBUG, "RGB_EXTRINSIC_GET" );
         return _hw_monitor->send(command{ RGB_EXTRINSIC_GET });
     }
 }

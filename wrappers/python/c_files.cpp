@@ -50,15 +50,8 @@ void init_c_files(py::module &m) {
         .def_readwrite("model", &rs2_intrinsics::model, "Distortion model of the image")
         .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_intrinsics, coeffs, float, 5), "Distortion coefficients")
         .def("__repr__", [](const rs2_intrinsics& self) {
-            std::stringstream ss;
-            ss << "width: " << self.width << ", ";
-            ss << "height: " << self.height << ", ";
-            ss << "ppx: " << self.ppx << ", ";
-            ss << "ppy: " << self.ppy << ", ";
-            ss << "fx: " << self.fx << ", ";
-            ss << "fy: " << self.fy << ", ";
-            ss << "model: " << self.model << ", ";
-            ss << "coeffs: " << array_to_string(self.coeffs);
+            std::ostringstream ss;
+            ss << self;
             return ss.str();
         });
 
