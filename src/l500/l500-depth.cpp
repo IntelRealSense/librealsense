@@ -246,7 +246,6 @@ namespace librealsense
         if( dsm_params.model != RS2_DSM_CORRECTION_AOT )
             throw invalid_value_exception( "DSM non-AoT (1) mode is currently unsupported" );
 
-        command cmd( ivcam2::fw_cmd::WRITE_TABLE, 0 );
         ac_depth_results table( dsm_params );
         // table.params.timestamp = std::chrono::system_clock::now().time_since_epoch().count();
         time_t t;
@@ -266,24 +265,15 @@ namespace librealsense
             table.params.temp_x2 = byte( ts.LDD_temperature * 2 );
         }
 
-        cmd.data.resize( sizeof( table_header ) + sizeof( table ) );
-        table_header * h = (table_header *)cmd.data.data();
-        h->major = 1;
-        h->minor = 0;
-        h->table_id = ac_depth_results::table_id;
-        h->table_size = sizeof( ac_depth_results );
-        h->reserved = 0xFFFFFFFF;
-        h->crc32 = calc_crc32( (byte *)&table, sizeof( table ) );
-
-        memcpy( cmd.data.data() + sizeof( table_header ), &table, sizeof( table ) );
-        _owner->_hw_monitor->send( cmd );
+        AC_LOG( INFO, "Overriding DSM : " << table.params );
+        ivcam2::write_fw_table( *_owner->_hw_monitor, ac_depth_results::table_id, table );
     }
 
     void l500_depth_sensor::reset_calibration()
     {
         command cmd( ivcam2::fw_cmd::DELETE_TABLE, ac_depth_results::table_id );
         _owner->_hw_monitor->send( cmd );
-        AC_LOG( INFO, "Depth sensor DSM parameters calibration has been reset" );
+        AC_LOG( INFO, "Depth sensor calibration has been reset" );
     }
 
 

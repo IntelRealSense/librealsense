@@ -186,13 +186,7 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
 
 void depth_to_rgb_calibration::debug_calibration( char const * prefix )
 {
-    AC_LOG( DEBUG, AC_F_PREC
-                       << prefix << " intr[ "
-                       << _intr.width << "x" << _intr.height
-                       << "  ppx: " << _intr.ppx << ", ppy: " << _intr.ppy << ", fx: " << _intr.fx
-                       << ", fy: " << _intr.fy << ", model: " << int( _intr.model ) << " coeffs["
-                       << _intr.coeffs[0] << ", " << _intr.coeffs[1] << ", " << _intr.coeffs[2]
-                       << ", " << _intr.coeffs[3] << ", " << _intr.coeffs[4] << "] ]" );
+    AC_LOG( DEBUG, AC_F_PREC << prefix << _intr );
     AC_LOG( DEBUG, AC_F_PREC << prefix << " extr" << _extr );
     AC_LOG( DEBUG, AC_F_PREC << prefix << " dsm" << _dsm_params );
 }
