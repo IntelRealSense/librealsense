@@ -289,6 +289,9 @@ public:
     {
         {
             std::unique_lock<std::mutex> lock(_was_stopped_mutex);
+
+            if (_was_stopped.load()) return;
+
             _was_stopped = true;
             _was_stopped_cv.notify_all();
         }
@@ -380,8 +383,10 @@ public:
 
     void stop()
     {
-        _stopped = true;
-        _dispatcher.stop();
+        if (!_stopped.load()) {
+            _stopped = true;
+            _dispatcher.stop();
+        }
     }
 
     ~active_object()
