@@ -280,12 +280,14 @@ namespace librealsense
         AC_LOG( DEBUG, "    version:     " << table.version );
         AC_LOG( DEBUG, "    timestamp:   " << table.timestamp << "; incrementing" );
         AC_LOG( DEBUG, "    type:        " << table.type << "; setting to 0x10" );
-        AC_LOG( DEBUG, "    extrinsics:  " << table.get_extrinsics() );
-        table.extr = extr;
-        AC_LOG( INFO, "Overriding extr: " << extr );
+        AC_LOG( DEBUG, "    raw extr:    " << table.get_extrinsics() );
+        table.extr = to_raw_extrinsics(extr);
+        AC_LOG( INFO , "Overriding extr: " << extr );
         table.update_write_fields();
+        AC_LOG( DEBUG, "    as raw:      " << table.get_extrinsics());
         ivcam2::write_fw_table( *_owner->_hw_monitor, table.table_id, table );
         AC_LOG( DEBUG, "    done" );
+
 
         environment::get_instance().get_extrinsics_graph().override_extrinsics( *_owner->_depth_stream, *_owner->_color_stream, extr );
     }
@@ -335,7 +337,7 @@ namespace librealsense
          environment::get_instance().get_extrinsics_graph().override_extrinsics(
             *_owner->_depth_stream,
             *_owner->_color_stream,
-             convert_extrinsic_to_lrs_format(table.get_extrinsics()));
+             from_raw_extrinsics(table.get_extrinsics()));
         AC_LOG( INFO, "Color sensor calibration has been reset" );
     }
 

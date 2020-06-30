@@ -385,8 +385,6 @@ namespace librealsense
         };
 #pragma pack( pop )
 
-        rs2_extrinsics convert_extrinsic_to_lrs_format(const rs2_extrinsics& extr);
-
         rs2_extrinsics get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
 
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,

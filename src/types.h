@@ -606,6 +606,12 @@ namespace librealsense
     }
     inline rs2_extrinsics inverse(const rs2_extrinsics& a) { auto p = to_pose(a); return from_pose(inverse(p)); }
 
+    // The extrinsics on the camera ("raw extrinsics") are in milimeters, but LRS works in meters
+    // Additionally, LRS internal algorithms are
+    // written with a transposed matrix in mind! (see rs2_transform_point_to_point)
+    rs2_extrinsics to_raw_extrinsics(rs2_extrinsics);
+    rs2_extrinsics from_raw_extrinsics(rs2_extrinsics);
+
     inline std::ostream& operator <<(std::ostream& stream, const float3& elem)
     {
         return stream << elem.x << " " << elem.y << " " << elem.z;
