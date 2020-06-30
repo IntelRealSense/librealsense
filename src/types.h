@@ -1775,6 +1775,18 @@ inline std::ostream& operator<<( std::ostream& out, rs2_extrinsics const & e )
         << "]  t[" << e.translation[0] << "," << e.translation[1] << "," << e.translation[2] << "] ]";
 }
 
+inline std::ostream& operator<<( std::ostream& out, rs2_intrinsics const & i )
+{
+    return out
+        << "[ " << i.width << "x" << i.height
+        << "  p[" << i.ppx << " " << i.ppy << "]"
+        << "  f[" << i.fx << " " << i.fy << "]"
+        << "  " << librealsense::get_string( i.model )
+        << " [" << i.coeffs[0] << " " << i.coeffs[1] << " " << i.coeffs[2]
+        << " " << i.coeffs[3] << " " << i.coeffs[4]
+        << "] ]";
+}
+
 inline std::ostream& operator<<( std::ostream& s, rs2_dsm_params const & self )
 {
     s << "[ ";
