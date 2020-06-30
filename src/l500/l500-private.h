@@ -10,7 +10,7 @@
 #include "fw-update/fw-update-unsigned.h"
 
 static const int NUM_OF_RGB_RESOLUTIONS = 5;
-static const int NUM_OF_DEPTH_RESOLUTIONS = 3;
+static const int NUM_OF_DEPTH_RESOLUTIONS = 2;
 
 namespace librealsense
 {
