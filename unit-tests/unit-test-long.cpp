@@ -126,13 +126,19 @@ TEST_CASE("multicam_streaming", "[code][live]")
 {
     // Test will start and stop streaming on 2 devices simultaneously for 10 times, thus testing the named_mutex mechnism.
     rs2::context ctx;
-    rs2::device_list list(ctx.query_devices());
-    REQUIRE(list.size() >= 2);
     std::vector<std::string> serials_numbers;
     for (auto&& dev : ctx.query_devices())
     {
-        serials_numbers.push_back(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+        std::string serial(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+        std::string usb_type(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
+        if ( usb_type != "3.2")
+        {
+            std::cout << "Device " << serial << " with usb_type " << usb_type << " is skipped.";
+            continue;
+        }
+        serials_numbers.push_back(serial);
     }
+    REQUIRE(serials_numbers.size() >= 2);
     std::vector<pid_t> pids;
     pid_t pid;
 
