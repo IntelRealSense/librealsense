@@ -213,15 +213,7 @@ namespace librealsense
                     float d[5];
                 };
             } intr;
-#if 1
             rs2_extrinsics extr;
-#else
-            struct /*extrinsics*/
-            {
-                float r[9];  // rotation Matrix between the depth sensor and the RGB sensor (by row 1,1|1,2|1,3|2,1|...)
-                float t[3];  // translation (mm) vector between the depth sensor and the RGB sensor
-            } extr;
-#endif
             byte reserved[8];
 
             void ivcam2::rgb_calibration_table::set_intrinsics( rs2_intrinsics const & );
