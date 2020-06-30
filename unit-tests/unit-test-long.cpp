@@ -122,7 +122,7 @@ void multiple_stream(std::string serial_number, sem_t* sem, bool do_query)
     exit(0);
 }
 
-TEST_CASE("multicam_streaming", "[code][live]")
+TEST_CASE("multicam_streaming", "[live][code]")
 {
     // Test will start and stop streaming on 2 devices simultaneously for 10 times, thus testing the named_mutex mechnism.
     rs2::context ctx;
