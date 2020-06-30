@@ -26,13 +26,15 @@ public class FwLogMsg extends LrsClass{
 
     public LogSeverity getSeverity() { return LogSeverity.values()[nGetSeverity(mHandle)]; }
     public String getSeverityStr(){ return nGetSeverityStr(mHandle); }
-    public int getTimestamp(){return nGetTimestamp(mHandle);}
+    public long getTimestamp(){return nGetTimestamp(mHandle);}
     public byte[] getData(byte[] buffer){ return nGetData(mHandle, buffer);}
+    public int getSize() { return nGetSize(mHandle);}
 
 
-    private static native void nRelease(long handle);
-    private static native int nGetSeverity(long handle);
-    private static native String nGetSeverityStr(long handle);
-    private static native int nGetTimestamp(long handle);
-    private static native byte[] nGetData(long handle, byte[] buffer);
+    private native static void nRelease(long handle);
+    private native static int nGetSeverity(long handle);
+    private native static String nGetSeverityStr(long handle);
+    private native static long nGetTimestamp(long handle);
+    private native static byte[] nGetData(long handle, byte[] buffer);
+    private native static int nGetSize(long handle);
 }

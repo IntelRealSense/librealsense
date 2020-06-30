@@ -16,14 +16,14 @@ public class FwLogParsedMsg extends LrsClass {
     public String getThreadName() {return nGetThreadName(mHandle);}
     public String getSeverity() {return nGetSeverity(mHandle);}
     public int getLine() {return nGetLine(mHandle);}
-    public int getTimestamp(){return nGetTimestamp(mHandle);}
+    public long getTimestamp(){return nGetTimestamp(mHandle);}
 
 
-    private static native void nRelease(long handle);
-    private static native String nGetMessage(long handle);
-    private static native String nGetFileName(long handle);
-    private static native String nGetThreadName(long handle);
-    private static native String nGetSeverity(long handle);
-    private static native int nGetLine(long handle);
-    private static native int nGetTimestamp(long handle);
+    private native static void nRelease(long handle);
+    private native static String nGetMessage(long handle);
+    private native static String nGetFileName(long handle);
+    private native static String nGetThreadName(long handle);
+    private native static String nGetSeverity(long handle);
+    private native static int nGetLine(long handle);
+    private native static long nGetTimestamp(long handle);
 }
