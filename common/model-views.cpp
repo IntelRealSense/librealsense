@@ -4898,8 +4898,8 @@ namespace rs2
                 auto product_line_str = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
                 if (RS2_PRODUCT_LINE_L500 == parse_product_line(product_line_str))
                 {
-                    // Make sure the firmware is at least 1.4.1.2 for Trigger Camera Accuracy features
-                    if (false == is_upgradeable(dev.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION), "1.4.1.2"))
+                    // Make sure the firmware is at least 1.4.1.0 for Trigger Camera Accuracy features
+                    if (false == is_upgradeable(dev.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION), "1.4.1.0"))
                     {
                         if (ImGui::Selectable("Trigger Camera Accuracy Health"))
                         {
@@ -4924,7 +4924,7 @@ namespace rs2
 
                         ImGui::Selectable("Reset Camera Accuracy Health", &selected, ImGuiSelectableFlags_Disabled);
                         if (ImGui::IsItemHovered())
-                            ImGui::SetTooltip("Requires firmware version 1.4.1.2 and above");
+                            ImGui::SetTooltip("Requires firmware version 1.4.1.0 and above");
                     }
                 }
             }
