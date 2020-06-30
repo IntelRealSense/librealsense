@@ -62,9 +62,8 @@ namespace rs2
 
         const float panel_width = 340.f;
         const float panel_y = 50.f;
-        const float default_log_h = 110.f;
 
-        float get_output_height() const { return (is_output_collapsed ? default_log_h : 15); }
+        float get_output_height() const { return not_model->output.get_output_height(); }
 
         rs2::frame handle_ready_frames(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message);
 
@@ -103,8 +102,6 @@ namespace rs2
 
         void popup_firmware_update_progress(const ux_window& window, const float progress);
 
-        void show_event_log(ImFont* font_14, float x, float y, float w, float h);
-
         void render_pose(rs2::rect stream_rect, float buttons_heights);
         void try_select_pointcloud(ux_window& win);
 
@@ -132,7 +129,6 @@ namespace rs2
 
         context &ctx;
         std::shared_ptr<notifications_model> not_model = std::make_shared<notifications_model>();
-        bool is_output_collapsed = false;
         bool is_3d_view = false;
         bool paused = false;
         bool metric_system = true;

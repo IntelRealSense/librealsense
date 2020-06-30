@@ -887,7 +887,7 @@ namespace rs2
             }),
                 _measurements.end());
             auto trues = std::count_if(_measurements.begin(), _measurements.end(),
-                [this](std::pair<clock::time_point, bool> pair) {
+                [](std::pair<clock::time_point, bool> pair) {
                 return pair.second;
             });
             return size_t(trues) / (float)_measurements.size(); 
@@ -1019,7 +1019,6 @@ namespace rs2
                     {
                         // Upload vertices
                         data = pc.get_vertices();
-                        auto v = pc.get_vertices();
                         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
                     }
                     else
@@ -1581,6 +1580,43 @@ namespace rs2
         }
     };
 
+    // Helper class that lets smoothly animate between its values
+    template<class T>
+    class animated
+    {
+    private:
+        T _old, _new;
+        std::chrono::system_clock::time_point _last_update;
+        std::chrono::system_clock::duration _duration;
+    public:
+        animated(T def, std::chrono::system_clock::duration duration = std::chrono::milliseconds(200))
+            : _duration(duration), _old(def), _new(def)
+        {
+            _last_update = std::chrono::system_clock::now();
+        }
+        animated& operator=(const T& other)
+        {
+            if (other != _new)
+            {
+                _old = get();
+                _new = other;
+                _last_update = std::chrono::system_clock::now();
+            }
+            return *this;
+        }
+        T get() const
+        {
+            auto now = std::chrono::system_clock::now();
+            auto ms = std::chrono::duration_cast<std::chrono::microseconds>(now - _last_update).count();
+            auto duration_ms = std::chrono::duration_cast<std::chrono::microseconds>(_duration).count();
+            auto t = (float)ms / duration_ms;
+            t = std::max(0.f, std::min(rs2::smoothstep(t, 0.f, 1.f), 1.f));
+            return _old * (1.f - t) + _new * t;
+        }
+        operator T() const { return get(); }
+        T value() const { return _new; }
+    };
+
     inline bool is_integer(float f)
     {
         return (fabs(fmod(f, 1)) < std::numeric_limits<float>::min());
@@ -1656,7 +1692,7 @@ namespace rs2
     inline float single_wave(float x)
     {
         auto c = clamp(x, 0.f, 1.f);
-        return 0.5f * (sinf(2.f * M_PI * c - M_PI_2) + 1.f);
+        return 0.5f * (sinf(2.f * float(M_PI) * c - float(M_PI_2)) + 1.f);
     }
 
     // convert 3d points into 2d viewport coordinates
@@ -1710,8 +1746,7 @@ namespace rs2
         auto mvp = pc * vc * fc;
 
         // test - origin (0, 0, -1.0, 1) should be translated into (0, 0, 0, 0) at this point
-        float4 origin{ 0.f, 0.f, -1.f, 1.f };
-        float4 projected = mvp * origin;
+        //float4 origin{ 0.f, 0.f, -1.f, 1.f };
 
         // translate 3d vertex into 2d windows coordinates
         float4 p3d;
@@ -1737,8 +1772,8 @@ namespace rs2
         p2d.z = clamp(p2d.z, -1.0, 1.0);
 
         // viewport coordinates
-        float x_vp = round((p2d.x + 1.0) / 2.0 * vp[2]) + vp[0];
-        float y_vp = round((p2d.y + 1.0) / 2.0 * vp[3]) + vp[1];
+        float x_vp = round((p2d.x + 1.f) / 2.f * vp[2]) + vp[0];
+        float y_vp = round((p2d.y + 1.f) / 2.f * vp[3]) + vp[1];
 
         float2 p_w;
         p_w.x = x_vp;

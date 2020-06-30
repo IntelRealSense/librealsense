@@ -135,7 +135,7 @@ namespace rs2
                 auto a = curr_progress_value / 100.f;
                 ImGui::GetWindowDrawList()->AddRectFilled({ float(pos.x + 3 - i), float(pos.y + 3 - i) },
                 { float(pos.x + filled_w + i), float(pos.y + 17 + i) },
-                    ImColor(alpha(light_blue, sqrt(a) * 0.02f)), i);
+                    ImColor(alpha(light_blue, sqrt(a) * 0.02f)), float(i));
             }
 
             ImGui::GetWindowDrawList()->AddRectFilled({ float(pos.x + 3), float(pos.y + 3) },
@@ -170,9 +170,9 @@ namespace rs2
     {
         ImVec4 c;
 
-        ImGui::PushStyleColor(ImGuiCol_Button, saturate(c, 1.3));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, saturate(c, 0.9));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(c, 1.5));
+        ImGui::PushStyleColor(ImGuiCol_Button, saturate(c, 1.3f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, saturate(c, 0.9f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(c, 1.5f));
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
         c = alpha(white, 1 - t);
         ImGui::PushStyleColor(ImGuiCol_Text, c);
@@ -198,7 +198,7 @@ namespace rs2
     void notification_model::draw_text(const char* msg, int x, int y, int h)
     {
         std::string text_name = to_string() << "##notification_text_" << index;
-        ImGui::PushTextWrapPos(x + width - 100);
+        ImGui::PushTextWrapPos(x + width - 100.f);
         ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
         ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
         ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
@@ -232,7 +232,7 @@ namespace rs2
     {
         auto title = get_title();
         auto lines = static_cast<int>(std::count(title.begin(), title.end(), '\n') + 1);
-        return (lines + 1) * ImGui::GetTextLineHeight() + 5;
+        return int((lines + 1) * ImGui::GetTextLineHeight() + 5);
     }
 
     void process_notification_model::draw_pre_effect(int x, int y)
@@ -333,8 +333,8 @@ namespace rs2
             {
                 if (last_x > 100000)
                 {
-                    last_x = x + 500;
-                    last_y = y;
+                    last_x = x + 500.f;
+                    last_y = float(y);
                 }
                 last_moved = system_clock::now();
                 animating = true;
@@ -345,12 +345,12 @@ namespace rs2
 
             if (s < 1.f)
             {
-                x = s * x + (1 - s) * last_x;
-                y = s * y + (1 - s) * last_y;
+                x = int(s * x + (1 - s) * last_x);
+                y = int(s * y + (1 - s) * last_y);
             }
             else
             {
-                last_x = x; last_y = y;
+                last_x = float(x); last_y = float(y);
                 animating = false;
                 if (dismissed && !expanded) to_close = true;
             }
@@ -511,7 +511,7 @@ namespace rs2
             }
         }
 
-        add_log(n.get_description());
+        output.add_log(n.get_severity(), __FILE__, __LINE__, n.get_description());
         return result;
     }
 
@@ -538,55 +538,7 @@ namespace rs2
             }
         }
 
-        add_log(model->get_title());
-    }
-
-    void notifications_model::draw_snoozed_button()
-    {
-        auto has_snoozed = snoozed_notifications.size();
-        ImGui::PushStyleColor(ImGuiCol_Text, !has_snoozed ? sensor_bg : light_grey);
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, !has_snoozed ? sensor_bg : light_blue);
-
-        const auto width = 50.f;
-
-        using namespace std;
-        using namespace chrono;
-
-        if (!has_snoozed) 
-        {
-            ImGui::ButtonEx(textual_icons::mail, { width, width }, ImGuiButtonFlags_Disabled);
-
-            if (ImGui::IsItemActive())
-                ImGui::SetTooltip("No pending notifications at this point");
-        }
-        else
-        {
-            auto k = duration_cast<milliseconds>(system_clock::now() - last_snoozed).count() / 500.f;
-            if (k <= 1.f)
-            {
-                auto size = 50.f;
-
-                ImGui::PopStyleColor();
-                ImGui::PushStyleColor(ImGuiCol_Text, saturate(white, smoothstep(static_cast<float>(k), 0.f, 1.f)));
-            }
-
-            if (ImGui::Button(textual_icons::mail, { width, width }))
-            {
-                for (auto&& n : snoozed_notifications)
-                {
-                    n->forced = true;
-                    n->snoozed = false;
-                    n->last_y -= 500;
-                    pending_notifications.push_back(n);
-                }
-                snoozed_notifications.clear();
-            }
-
-            if (ImGui::IsItemActive())
-                ImGui::SetTooltip("Pending notifications available. Click to review");
-        }
-
-        ImGui::PopStyleColor(2);
+        output.add_log(model->severity, __FILE__, __LINE__, model->get_title());
     }
 
     void notifications_model::draw(ux_window& win, int w, int h, std::string& error_message)
@@ -600,13 +552,6 @@ namespace rs2
             std::lock_guard<std::recursive_mutex> lock(m);
             if (pending_notifications.size() > 0)
             {
-                snoozed_notifications.erase(std::remove_if(std::begin(snoozed_notifications),
-                    std::end(snoozed_notifications),
-                    [&](std::shared_ptr<notification_model>& n)
-                {
-                    return n->dismissed;
-                }), end(snoozed_notifications));
-
                 // loop over all notifications, remove "old" ones
                 pending_notifications.erase(std::remove_if(std::begin(pending_notifications),
                     std::end(pending_notifications),
@@ -616,8 +561,6 @@ namespace rs2
                     {
                         n->dismissed = false;
                         n->to_close = false;
-                        snoozed_notifications.push_back(n);
-                        last_snoozed = std::chrono::system_clock::now();
                         return true;
                     }
                     return ((n->get_age_in_ms() > n->get_max_lifetime_ms() && 
@@ -642,10 +585,6 @@ namespace rs2
                 }
             }
 
-            auto flags = ImGuiWindowFlags_NoResize |
-                ImGuiWindowFlags_NoMove |
-                ImGuiWindowFlags_NoCollapse |
-                ImGuiWindowFlags_NoTitleBar;
 
             ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
             //ImGui::Begin("Notification parent window", nullptr, flags);
@@ -725,45 +664,6 @@ namespace rs2
         }
         
         ImGui::PopFont();
-    }
-
-    void notifications_model::foreach_log(std::function<void(const std::string& line)> action)
-    {
-        std::lock_guard<std::recursive_mutex> lock(m);
-
-        // Process only the messages that are available upon invocation
-        std::string log_entry;
-        for (size_t len = 0; len < incoming_log_queue.size(); len++)
-        {
-            if (incoming_log_queue.try_dequeue(&log_entry))
-                notification_logs.push_back(log_entry);
-        }
-
-        // Limit the notification window
-        while (notification_logs.size() > 200)
-            notification_logs.pop_front();
-
-        for (auto&& l : notification_logs)
-            action(l);
-
-        auto rc = ImGui::GetCursorPos();
-        ImGui::SetCursorPos({ rc.x, rc.y + 5 });
-
-        if (new_log)
-        {
-            ImGui::SetScrollPosHere();
-            new_log = false;
-        }
-    }
-
-    // Callback function must not include mutex
-    void notifications_model::add_log(std::string line)
-    {
-        if (!line.size()) return;
-
-        if (line[line.size() - 1] != '\n') line += "\n";
-        incoming_log_queue.enqueue(std::move(line));
-        new_log = true;
     }
 
     version_upgrade_model::version_upgrade_model(int version) 
@@ -939,7 +839,7 @@ namespace rs2
 
             ImGui::SetCursorScreenPos({ float(x + 10), float(y + 35) });
 
-            ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1. - t));
+            ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1.f - t));
 
             std::string s = to_string() << "Saving 3D view to " <<
                 get_file_name(get_manager().get_filename());

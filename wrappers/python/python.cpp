@@ -4,6 +4,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include "python.hpp"
 #include "../include/librealsense2/rs.hpp"
 #include "../include/librealsense2/hpp/rs_export.hpp"
+#include "types.h"
 
 PYBIND11_MODULE(NAME, m) {
     m.doc() = R"pbdoc(
@@ -37,10 +38,11 @@ PYBIND11_MODULE(NAME, m) {
         .def_property_readonly_static("option_ply_normals", [](py::object) { return rs2::save_to_ply::OPTION_PLY_NORMALS; })
         .def_property_readonly_static("option_ply_threshold", [](py::object) { return rs2::save_to_ply::OPTION_PLY_THRESHOLD; });
 
-    /** rs.hpp **/
     m.def("log_to_console", &rs2::log_to_console, "min_severity"_a);
     m.def("log_to_file", &rs2::log_to_file, "min_severity"_a, "file_path"_a);
 
+	// Access to log_message is only from a callback (see log_to_callback below) and so already
+	// should have the GIL acquired
     py::class_<rs2::log_message> log_message(m, "log_message");
     log_message.def("line_number", &rs2::log_message::line_number)
         .def("filename", &rs2::log_message::filename)
@@ -49,12 +51,26 @@ PYBIND11_MODULE(NAME, m) {
         .def("__str__", &rs2::log_message::raw)
         .def("__repr__", &rs2::log_message::full);
 
-    m.def("log_to_callback", [](rs2_log_severity min_severity, std::function<void(rs2_log_severity, rs2::log_message)> callback)
-    {
-        rs2::log_to_callback(min_severity, callback);
-    }, "min_severity"_a, "callback"_a);
-    m.def("log", &rs2::log, "severity"_a, "message"_a);
-
-    // rs2::log?
-    /** end rs.hpp **/
+    m.def("log_to_callback",
+        [](rs2_log_severity min_severity, std::function<void(rs2_log_severity, rs2::log_message)> callback)
+        {
+            rs2::log_to_callback( min_severity,
+                [callback]( rs2_log_severity severity, rs2::log_message const & msg ) noexcept
+                {
+                    try
+                    {
+                        // We're not being called from Python but instead are calling it,
+                        // we need to acquire it to not have issues with other threads...
+                        py::gil_scoped_acquire gil;
+                        callback( severity, msg );
+                    }
+                    catch( ... )
+                    {
+                        std::cerr << "?!?!?!!? exception in python log_to_callback callback ?!?!?!?!?" << std::endl;
+                    }
+                } );
+        }, "min_severity"_a, "callback"_a);
+    // A call to rs.log() will cause a callback to get called! We should already own the GIL, but
+    // release it just in case to let others do their thing...
+    m.def("log", &rs2::log, "severity"_a, "message"_a, py::call_guard<py::gil_scoped_release>());
 }

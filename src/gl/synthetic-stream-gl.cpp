@@ -8,7 +8,9 @@
 
 #include <GLFW/glfw3.h>
 
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif // NOMINMAX
 
 #include <glad/glad.h>
 

@@ -328,8 +328,8 @@ namespace rs2
         }
         else
         {
-            ImGui::PushStyleColor(ImGuiCol_Text, grey);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, grey);
+            ImGui::PushStyleColor(ImGuiCol_Text, header_color);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, header_color);
         }
         
         ImGui::SetCursorPos({float(x), float(y)});
@@ -372,8 +372,6 @@ namespace rs2
     {
         auto font = win.get_font();
         auto large_font = win.get_large_font();
-
-        const float combo_box_width = 200;
 
         // Draw pose header if pose stream exists
         bool pose_render = false;
@@ -611,7 +609,7 @@ namespace rs2
 
         // ------------ Texture Selection --------------
 
-        auto t = single_wave((glfwGetTime() - texture_update_time) * 2.f);
+        auto t = single_wave(float(glfwGetTime() - texture_update_time) * 2);
         ImVec4 text_color = light_grey * (1.f - t) + light_blue * t;
 
         const auto tex_selection_popup = "Tex Selection";
@@ -979,58 +977,8 @@ namespace rs2
         }
     }
 
-    void viewer_model::show_event_log(ImFont* font_14, float x, float y, float w, float h)
-    {
-        auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
-            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar;
-
-        ImGui::PushFont(font_14);
-        ImGui::SetNextWindowPos({ x, y });
-        ImGui::SetNextWindowSize({ w, h });
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-
-        is_output_collapsed = ImGui::Begin("Output", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_ShowBorders);
-
-        int i = 0;
-        not_model->foreach_log([&](const std::string& line) {
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-
-            auto rc = ImGui::GetCursorPos();
-            ImGui::SetCursorPos({ rc.x + 10, rc.y + 4 });
-
-            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-            ImGui::Icon(textual_icons::minus); ImGui::SameLine();
-            ImGui::PopStyleColor();
-
-            rc = ImGui::GetCursorPos();
-            ImGui::SetCursorPos({ rc.x, rc.y - 4 });
-
-            std::string label = to_string() << "##log_entry" << i++;
-            ImGui::InputTextEx(label.c_str(),
-                        (char*)line.data(),
-                        static_cast<int>(line.size() + 1),
-                        ImVec2(-1, ImGui::GetTextLineHeight() * 1.5f * float(std::max(1,(int)std::count(line.begin(),line.end(), '\n')))),
-                        ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
-            ImGui::PopStyleColor(2);
-
-            rc = ImGui::GetCursorPos();
-            ImGui::SetCursorPos({ rc.x, rc.y - 6 });
-        });
-
-        ImGui::End();
-        ImGui::PopStyleVar();
-        ImGui::PopFont();
-    }
-
     void rs2::viewer_model::show_popup(const ux_window& window, const popup& p)
     {
-        auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
-            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar;
-
         auto font_14 = window.get_font();
 
         ImGui_ScopePushFont(font_14);
@@ -1345,6 +1293,9 @@ namespace rs2
                 last_frames[f.get_profile().unique_id()] = f;
             }
 
+            for(auto&& f : last_frames)
+                not_model->output.update_dashboards(f.second);
+
             for(auto&& frame : last_frames)
             {
                 auto f = frame.second;
@@ -1496,14 +1447,12 @@ namespace rs2
         static const auto colored_ruler_width = 20;
         const auto left_x_colored_ruler = stream_width - left_x_colored_ruler_offset;
         const auto right_x_colored_ruler = stream_width - (left_x_colored_ruler_offset - colored_ruler_width);
-        const auto first_rgb = rgb_per_distance_vec.begin()->rgb_val;
         assert((bottom_y_ruler - top_y_ruler) != 0.f);
         const auto ratio = (bottom_y_ruler - top_y_ruler) / ruler_length;
 
         // Draw numbered ruler
         float y_ruler_val = top_y_ruler;
         static const auto numbered_ruler_width = 20.f;
-        const auto numbered_ruler_height = bottom_y_ruler - top_y_ruler;
 
         const auto right_x_numbered_ruler = right_x_colored_ruler + numbered_ruler_width;
         static const auto hovered_numbered_ruler_opac = 0.8f;
@@ -1883,7 +1832,6 @@ namespace rs2
                     auto depth_vid_profile = stream_mv.profile.as<video_stream_profile>();
                     auto depth_width = depth_vid_profile.width();
                     auto depth_height = depth_vid_profile.height();
-                    auto num_of_pixels = depth_width * depth_height;
                     auto depth_data = static_cast<const uint16_t*>(frame.get_data());
                     auto textured_depth_data = static_cast<const uint8_t*>(textured_frame.get_data());
                     static const auto skip_pixels_factor = 30;
@@ -2464,6 +2412,8 @@ namespace rs2
 
             if (ImGui::BeginPopupModal(settings, nullptr, flags))
             {
+                if (ImGui::IsWindowHovered()) window.set_hovered_over_input();
+
                 ImGui::SetCursorScreenPos({ (float)(x0 + w / 2 - 280), (float)(y0 + 27) });
                 ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
@@ -2741,6 +2691,38 @@ namespace rs2
 
                     ImGui::Separator();
 
+                    {
+                        ImGui::Text("Commands.xml Path:");
+                        ImGui::SameLine();
+                        static char logpath[256];
+                        memset(logpath, 0, 256);
+                        std::string path_str = temp_cfg.get(configurations::viewer::commands_xml);
+                        memcpy(logpath, path_str.c_str(), std::min(255, (int)path_str.size()));
+
+                        if (ImGui::InputText("##commands_xml_path", logpath, 255))
+                        {
+                            path_str = logpath;
+                            temp_cfg.set(configurations::viewer::commands_xml, path_str);
+                        }
+                    }
+
+                    {
+                        ImGui::Text("HWLoggerEvents.xml Path:");
+                        ImGui::SameLine();
+                        static char logpath[256];
+                        memset(logpath, 0, 256);
+                        std::string path_str = temp_cfg.get(configurations::viewer::hwlogger_xml);
+                        memcpy(logpath, path_str.c_str(), std::min(255, (int)path_str.size()));
+
+                        if (ImGui::InputText("##fw_log_xml_path", logpath, 255))
+                        {
+                            path_str = logpath;
+                            temp_cfg.set(configurations::viewer::hwlogger_xml, path_str);
+                        }
+                    }
+                    
+                    ImGui::Separator();
+
                     ImGui::Text("RealSense tools settings capture the state of UI, and not of the hardware:");
 
                     if (ImGui::Button(" Restore Defaults "))
@@ -2784,7 +2766,7 @@ namespace rs2
                 if (tab == 3)
                 {
                     bool recommend_fw_updates = temp_cfg.get(configurations::update::recommend_updates);
-                    if (ImGui::Checkbox("Recommend Firmware Updates", &recommend_fw_updates))
+                    if (ImGui::Checkbox("Recommend Bundled Firmware", &recommend_fw_updates))
                     {
                         temp_cfg.set(configurations::update::recommend_updates, recommend_fw_updates);
                         refresh_updates = true;
@@ -2792,6 +2774,42 @@ namespace rs2
                     if (ImGui::IsItemHovered())
                     {
                         ImGui::SetTooltip("%s", "When firmware of the device is below the version bundled with this software release\nsuggest firmware update");
+                    }
+                    ImGui::Separator();
+                    ImGui::Text("%s", "SW/FW Updates From Server:");
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("%s", "Select the server URL of the SW/FW updates information");
+                    }
+                    ImGui::SameLine(); 
+
+                    static bool official_url(temp_cfg.get(configurations::update::sw_updates_official_server));
+                    static char custom_url[256] = { 0 };
+                    static std::string url_str = (temp_cfg.get(configurations::update::sw_updates_url));
+                    memcpy(custom_url, url_str.c_str(), std::min(255, (int)url_str.size()));
+                    if (ImGui::RadioButton("Official Server", official_url))
+                    {
+                        official_url = true;
+                        temp_cfg.set(configurations::update::sw_updates_url, server_versions_db_url);
+                        temp_cfg.set(configurations::update::sw_updates_official_server, true);
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::RadioButton("Custom Server", !official_url))
+                    {
+                        official_url = false;
+                    }
+                    if (!official_url)
+                    {
+                        if (ImGui::InputText("##custom_server_url", custom_url, 255))
+                        {
+                            url_str = custom_url;
+                        }
+                        ImGui::SameLine();
+                        if (ImGui::Button("Update URL", ImVec2(80, 20)))
+                        {
+                            temp_cfg.set(configurations::update::sw_updates_url, url_str);
+                            temp_cfg.set(configurations::update::sw_updates_official_server, false);
+                        }
                     }
                 }
 
@@ -2967,6 +2985,7 @@ namespace rs2
         const rect& viewer_rect, bool force)
     {
         if (_measurements.manipulating()) return;
+        if (win.get_hovered_over_input()) return;
 
         mouse_info& mouse = win.get_mouse();
         auto now = std::chrono::high_resolution_clock::now();

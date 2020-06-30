@@ -333,7 +333,6 @@ namespace librealsense
             uint32_t                param;          // This field content is defined ny table type
             uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
         };
-#pragma pack(pop)
 
         enum ds5_rect_resolutions : unsigned short
         {
@@ -380,6 +379,7 @@ namespace librealsense
             float  ppx;
             float  ppy;
         };
+#pragma pack(pop)
 
         template<class T>
         const T* check_calib(const std::vector<uint8_t>& raw_data)
@@ -561,7 +561,8 @@ namespace librealsense
         enum imu_eeprom_id : uint16_t
         {
             dm_v2_eeprom_id     = 0x0101,   // The pack alignment is Big-endian
-            tm1_eeprom_id       = 0x0002
+            tm1_eeprom_id       = 0x0002,
+            l500_eeprom_id      = 0x0105
         };
 
         struct depth_table_control

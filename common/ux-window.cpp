@@ -44,6 +44,8 @@ namespace rs2
         config_file::instance().set_default(configurations::update::allow_rc_firmware, false);
         config_file::instance().set_default(configurations::update::recommend_calibration, true);
         config_file::instance().set_default(configurations::update::recommend_updates, true);
+        config_file::instance().set_default(configurations::update::sw_updates_url, server_versions_db_url);
+        config_file::instance().set_default(configurations::update::sw_updates_official_server, true);
 
         config_file::instance().set_default(configurations::window::is_fullscreen, false);
         config_file::instance().set_default(configurations::window::saved_pos, false);
@@ -69,8 +71,12 @@ namespace rs2
         config_file::instance().set_default(configurations::ply::use_normals, false);
         config_file::instance().set_default(configurations::ply::encoding, configurations::ply::binary);
 
+        config_file::instance().set_default(configurations::viewer::commands_xml, "./Commands.xml");
+        config_file::instance().set_default(configurations::viewer::hwlogger_xml, "./HWLoggerEvents.xml");
+
 #ifdef __APPLE__
-        config_file::instance().set_default(configurations::performance::font_oversample, 8);
+
+        config_file::instance().set_default(configurations::performance::font_oversample, 2);
         config_file::instance().set_default(configurations::performance::enable_msaa, true);
         config_file::instance().set_default(configurations::performance::msaa_samples, 4);
         // On Mac-OS, mixing OpenGL 2 with OpenGL 3 is not supported by the driver
@@ -340,7 +346,7 @@ namespace rs2
             _2d_vis = std::make_shared<visualizer_2d>(std::make_shared<splash_screen_shader>());
 
         // Load fonts to be used with the ImGui - TODO move to RAII
-        imgui_easy_theming(_font_14, _font_18);
+        imgui_easy_theming(_font_14, _font_18, _monofont);
 
         // Register for UI-controller events
         glfwSetWindowUserPointer(_win, this);
@@ -395,7 +401,7 @@ namespace rs2
 
     ux_window::ux_window(const char* title, context &ctx) :
         _win(nullptr), _width(0), _height(0), _output_height(0),
-        _font_14(nullptr), _font_18(nullptr), _app_ready(false),
+        _font_14(nullptr), _font_18(nullptr), _monofont(nullptr), _app_ready(false),
         _first_frame(true), _query_devices(true), _missing_device(false),
         _hourglass_index(0), _dev_stat_message{}, _keep_alive(true), _title(title), _ctx(ctx)
     {
@@ -595,6 +601,7 @@ namespace rs2
             glfwSetCursor(_win, nullptr);
         _cross_hovered = false;
         _link_hovered = false;
+        _hovers_any_input_window = false;
 
         return res;
     }

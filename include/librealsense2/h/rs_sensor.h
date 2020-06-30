@@ -465,6 +465,17 @@ void rs2_register_extrinsics(const rs2_stream_profile* from,
     rs2_extrinsics extrin, rs2_error** error);
 
 /**
+ * \brief Override extrinsics of a given sensor that supports calibrated_sensor.
+ *
+ * This will affect extrinsics at the source device and may affect multiple profiles. Used for DEPTH_TO_RGB calibration.
+ *
+* \param[in] sensor       The sensor
+* \param[in] extrinsics   Extrinsics from Depth to the named sensor
+* \param[out] error       If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_override_extrinsics( const rs2_sensor* sensor, const rs2_extrinsics* extrinsics, rs2_error** error );
+
+/**
  * When called on a video profile, returns the intrinsics of specific stream configuration
  * \param[in] mode          input stream profile
  * \param[out] intrinsics   resulting intrinsics for the video profile
@@ -580,6 +591,17 @@ int rs2_send_wheel_odometry(const rs2_sensor* sensor, char wo_sensor_id, unsigne
 void rs2_set_intrinsics(const rs2_sensor* sensor, const rs2_stream_profile* profile , const rs2_intrinsics* intrinsics, rs2_error** error);
 
 /**
+ * \brief Override intrinsics of a given sensor that supports calibrated_sensor.
+ *
+ * This will affect intrinsics at the source and may affect multiple profiles. Used for DEPTH_TO_RGB calibration.
+ *
+* \param[in] sensor       The RealSense device
+* \param[in] intrinsics   Intrinsics value to be written to the sensor
+* \param[out] error       If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_override_intrinsics( const rs2_sensor* sensor, const rs2_intrinsics* intrinsics, rs2_error** error );
+
+/**
  * Set extrinsics between two sensors
  * \param[in]  from_sensor  Origin sensor
  * \param[in]  from_profile Origin profile
@@ -589,6 +611,32 @@ void rs2_set_intrinsics(const rs2_sensor* sensor, const rs2_stream_profile* prof
  * \param[out] error        If non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs2_set_extrinsics(const rs2_sensor* from_sensor, const rs2_stream_profile* from_profile, rs2_sensor* to_sensor, const rs2_stream_profile* to_profile, const rs2_extrinsics* extrinsics, rs2_error** error);
+
+/**
+ * Get the DSM parameters for a sensor
+ * \param[in]  sensor        Sensor that supports the CALIBRATED_SENSOR extension
+ * \param[out] p_params_out  Pointer to the structure that will get the DSM parameters
+ * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_get_dsm_params( rs2_sensor const * sensor, rs2_dsm_params * p_params_out, rs2_error** error );
+
+/**
+ * Set the sensor DSM parameters
+ * This should ideally be done when the stream is NOT running. If it is, the
+ * parameters may not take effect immediately.
+ * \param[in]  sensor        Sensor that supports the CALIBRATED_SENSOR extension
+ * \param[out] p_params      Pointer to the structure that contains the DSM parameters
+ * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_override_dsm_params( rs2_sensor const * sensor, rs2_dsm_params const * p_params, rs2_error** error );
+
+/**
+ * Reset the sensor DSM parameters
+ * This should ideally be done when the stream is NOT running. May not take effect immediately.
+ * \param[in]  sensor        Sensor that supports the CALIBRATED_SENSOR extension
+ * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_reset_sensor_calibration( rs2_sensor const * sensor, rs2_error** error );
 
 /**
 * Set motion device intrinsics

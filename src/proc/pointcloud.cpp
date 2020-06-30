@@ -9,7 +9,10 @@
 #include "option.h"
 #include "environment.h"
 #include "context.h"
+#include "../device.h"
+#include "../stream.h"
 #include <iostream>
+#include "device-calibration.h"
 
 #ifdef RS2_USE_CUDA
 #include "proc/cuda/cuda-pointcloud.h"
@@ -60,7 +63,7 @@ namespace librealsense
             }
         }
     }
-
+    
     void pointcloud::inspect_depth_frame(const rs2::frame& depth)
     {
         if (!_output_stream || _depth_stream.get_profile().get() != depth.get_profile().get())
@@ -101,11 +104,88 @@ namespace librealsense
         set_extrinsics();
     }
 
+    template< class callback >
+    calibration_change_callback_ptr create_calibration_change_callback_ptr( callback&& cb )
+    {
+        return {
+            new rs2::calibration_change_callback< callback >( std::move( cb ) ),
+            []( rs2_calibration_change_callback* p ) { p->release(); }
+        };
+    }
+
     void pointcloud::inspect_other_frame(const rs2::frame& other)
     {
         if (_stream_filter != _prev_stream_filter)
         {
             _prev_stream_filter = _stream_filter;
+
+            if (!_registered_auto_calib_cb)
+            {
+                auto sensor = ((frame_interface*)other.get())->get_sensor();
+                if (sensor)
+                {
+                    _registered_auto_calib_cb
+                        = std::shared_ptr< pointcloud >( this, []( pointcloud * p ) {} );
+
+                    auto dev = sensor->get_device().shared_from_this();
+                    device_calibration * d2r = dynamic_cast<device_calibration*>(dev.get());
+                    if( d2r )
+                        try
+                        {
+                            std::weak_ptr< pointcloud > wr{ _registered_auto_calib_cb };
+                            auto fn = [=]( rs2_calibration_status status ) {
+                                auto r = wr.lock();
+                                if( ! r )
+                                    // nobody there any more!
+                                    return;
+                                if( status == RS2_CALIBRATION_SUCCESSFUL )
+                                {
+                                    stream_profile_interface *ds = nullptr, *os = nullptr;
+                                    for( size_t x = 0, N = dev->get_sensors_count(); x < N; ++x )
+                                    {
+                                        sensor_interface & s = dev->get_sensor( x );
+                                        for( auto const & sp : s.get_active_streams() )
+                                        {
+                                            if( sp->get_stream_type() == RS2_STREAM_COLOR )
+                                            {
+                                                auto vspi = As< video_stream_profile_interface >(
+                                                    sp.get() );
+                                                if( vspi )
+                                                {
+                                                    os = vspi;
+                                                    _other_intrinsics = vspi->get_intrinsics();
+                                                    _occlusion_filter->set_texel_intrinsics(
+                                                        _other_intrinsics.value() );
+                                                }
+                                            }
+                                            else if( sp->get_stream_type() == RS2_STREAM_DEPTH )
+                                            {
+                                                ds = sp.get();
+                                            }
+                                        }
+                                    }
+                                    if( ds && os )
+                                    {
+                                        rs2_extrinsics ex;
+                                        if( environment::get_instance()
+                                                .get_extrinsics_graph()
+                                                .try_fetch_extrinsics( *ds, *os, &ex ) )
+                                            _extrinsics = ex;
+                                        else
+                                            LOG_ERROR( "Failed to refresh extrinsics after calibration change" );
+                                    }
+                                }
+                            };
+
+                            d2r->register_calibration_change_callback(
+                                create_calibration_change_callback_ptr( std::move( fn ) ) );
+                        }
+                        catch( const std::bad_weak_ptr & )
+                        {
+                            LOG_WARNING( "Device destroyed" );
+                        }
+                }
+            }
         }
 
         if (_extrinsics.has_value() && other.get_profile().get() == _other_stream.get_profile().get())
@@ -263,10 +343,10 @@ namespace librealsense
         }
         else
         {
-            if (frame.get_profile().stream_type() == RS2_STREAM_DEPTH && frame.get_profile().format() == RS2_FORMAT_Z16)
+            auto p = frame.get_profile();
+            if (p.stream_type() == RS2_STREAM_DEPTH && p.format() == RS2_FORMAT_Z16)
                 return true;
 
-            auto p = frame.get_profile();
             if (p.stream_type() == _stream_filter.stream && p.format() == _stream_filter.format && p.stream_index() == _stream_filter.index)
                 return true;
             return false;

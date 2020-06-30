@@ -17,6 +17,9 @@ import threading
 READ_TABLE  = 0x43     # READ_TABLE 0x243 0
 WRITE_TABLE = 0x44     # WRITE_TABLE 0 <table>
 
+# L515 minimum firmware version required to support IMU calibration
+L515_FW_VER_REQUIRED = '01.04.01.00'
+
 is_data = None
 get_key = None
 if os.name == 'posix':
@@ -540,6 +543,7 @@ def wait_for_rs_device(serial_no):
         now = int(round(time.time() * 1000))
     raise Exception('No RealSense device' + str('.' if len(serial_no) == 0 else ' with serial number: '+serial_no))
 
+
 def main():
     if any([help_str in sys.argv for help_str in ['-h', '--help', '/?']]):
         print("Usage:", sys.argv[0], "[Options]")
@@ -572,14 +576,28 @@ def main():
 
         product_line = dev.get_info(rs.camera_info.product_line)
 
+        if product_line == 'L500':
+            print('checking minimum firmware requirement ...')
+            fw_version = dev.get_info(rs.camera_info.firmware_version)
+            if fw_version < L515_FW_VER_REQUIRED:
+                raise Exception('L515 requires firmware ' + L515_FW_VER_REQUIRED + " or later to support IMU calibration. Please upgrade firmware and try again.")
+            else:
+                print('  firmware ' + fw_version + ' passed check.')
+
         buckets = [[0, -g,  0], [ g,  0, 0],
                 [0,  g,  0], [-g,  0, 0],
                 [0,  0, -g], [ 0,  0, g]]
 
-        buckets_labels = ["Upright facing out", "USB cable up facing out", "Upside down facing out", "USB cable pointed down", "Viewing direction facing down", "Viewing direction facing up"]
-
-        if product_line == 'L500':
-            buckets_labels = ["Mounting Screw Down facing out", "Mounting Screw Right facing out", "Mounting Screw Up facing out", "Mounting Screw Left facing out", "Viewing direction facing up", "Viewing direction facing down"]
+        # all D400 and L500 cameras with IMU equipped with a mounting screw at the bottom of the device
+        # when device is in normal use position upright facing out, mount screw is pointing down, aligned with positive Y direction in depth coordinate system
+        # IMU output on each of these devices is transformed into the depth coordinate system, i.e.,
+        # looking from back of the camera towards front, the positive x-axis points to the right, the positive y-axis points down, and the positive z-axis points forward.
+        # output of motion data is consistent with convention that positive direction aligned with gravity leads to -1g and opposite direction leads to +1g, for example,
+        # positive z_aixs points forward away from front glass of the device,
+        #  1) if place the device flat on a table, facing up, positive z-axis points up, z-axis acceleration is around +1g
+        #  2) facing down, positive z-axis points down, z-axis accleration would be around -1g
+        #
+        buckets_labels = ["Mounting screw pointing down, device facing out", "Mounting screw pointing left, device facing out", "Mounting screw pointing up, device facing out", "Mounting screw pointing right, device facing out", "Viewing direction facing down", "Viewing direction facing up"]
 
         gyro_bais = np.zeros(3, np.float32)
         old_settings = None
@@ -723,7 +741,7 @@ def main():
             print('Abort writing to device')
 
     except Exception as e:
-        print ('\nDone. %s' % e)
+        print ('\nError: %s' % e)
     finally:
         if os.name == 'posix' and old_settings is not None:
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)

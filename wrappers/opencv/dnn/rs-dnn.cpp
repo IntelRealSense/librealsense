@@ -107,7 +107,7 @@ int main(int argc, char** argv) try
                 // Calculate mean depth inside the detection region
                 // This is a very naive way to estimate objects depth
                 // but it is intended to demonstrate how one might 
-                // use depht data in general
+                // use depth data in general
                 Scalar m = mean(depth_mat(object));
 
                 std::ostringstream ss;

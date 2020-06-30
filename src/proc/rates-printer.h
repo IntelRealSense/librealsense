@@ -24,12 +24,12 @@ namespace librealsense
             rs2::stream_profile _stream_profile;
             int _counter;
             std::vector<std::chrono::steady_clock::time_point> _time_points;
-            int _last_frame_number;
-            float _acctual_fps;
+            unsigned long long _last_frame_number;
+            float _actual_fps;
             std::chrono::steady_clock::time_point _last_time;
         public:
             profile();
-            int last_frame_number();
+            unsigned long long last_frame_number();
             rs2::stream_profile get_stream_profile();
             float get_fps();
             void on_frame_arrival(const rs2::frame& f);

@@ -6,6 +6,7 @@
 #include "backend.h"
 #include "types.h"
 #include "option.h"
+#include "core/extension.h"
 #include "fw-update/fw-update-unsigned.h"
 
 static const int NUM_OF_RGB_RESOLUTIONS = 5;
@@ -17,6 +18,8 @@ namespace librealsense
     const uint16_t L500_PID             = 0x0b0d;
     const uint16_t L515_PID_PRE_PRQ     = 0x0b3d;
     const uint16_t L515_PID             = 0x0b64;
+
+    class l500_device;
 
     namespace ivcam2
     {
@@ -39,6 +42,8 @@ namespace librealsense
 
         const int REGISTER_CLOCK_0 = 0x9003021c;
 
+        const uint16_t L515_IMU_TABLE   = 0x0243;  // IMU calibration table on L515
+
         enum fw_cmd : uint8_t
         {
             MRD                         = 0x01, //"Read Tensilica memory ( 32bit ). Output : 32bit dump"
@@ -53,14 +58,97 @@ namespace librealsense
             HW_RESET                    = 0x20, //"HW Reset"
             AMCSET                      = 0x2B, // Set options (L515)
             AMCGET                      = 0x2C, // Get options (L515)
+            DELETE_TABLE                = 0x2E,
             PFD                         = 0x3B, // Disable power features <Parameter1 Name="0 - Disable, 1 - Enable" />
+            READ_TABLE                  = 0x43, // read table from flash, for example, read imu calibration table, read_table 0x243 0
+            WRITE_TABLE                 = 0x44,
             DPT_INTRINSICS_GET          = 0x5A,
             TEMPERATURES_GET            = 0x6A,
             DPT_INTRINSICS_FULL_GET     = 0x7F,
             RGB_INTRINSIC_GET           = 0x81,
             RGB_EXTRINSIC_GET           = 0x82,
             FALL_DETECT_ENABLE          = 0x9D, // Enable (by default) free-fall sensor shutoff (0=disable; 1=enable)
+            GET_SPECIAL_FRAME           = 0xA0  // Request auto-calibration (0) special frames (#)
         };
+
+#pragma pack(push, 1)
+        // Table header returned by READ_TABLE before the actual table data
+        struct table_header
+        {
+            uint8_t                 major;
+            uint8_t                 minor;
+            uint16_t                table_id;
+            uint32_t                table_size;     // full size including: TOC header + TOC + actual tables
+            uint32_t                reserved;       // 0xFFFFFFFF
+            uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
+        };
+#pragma pack(pop)
+
+        // Read a table from firmware and, if FW says the table is empty, optionally initialize it
+        // using your own code...
+        template< typename T >
+        void read_fw_table( hw_monitor & hwm,
+                            int table_id, T * ptable,
+                            table_header * pheader = nullptr,
+                            std::function< void() > init = nullptr )
+        {
+            command cmd( fw_cmd::READ_TABLE, table_id );
+            hwmon_response response;
+            std::vector<byte> data = hwm.send( cmd, &response );
+            size_t expected_size = sizeof( table_header ) + sizeof( T );
+            switch( response )
+            {
+            case hwm_Success:
+                if( data.size() != expected_size )
+                    throw std::runtime_error( to_string()
+                        << "READ_TABLE data size received= " << data.size()
+                        << " (expected " << expected_size << ")" );
+                if( pheader )
+                    *pheader = *(table_header *)data.data();
+                if( ptable )
+                    *ptable = *(T *)(data.data() + sizeof( table_header ));
+                break;
+
+            case hwm_TableIsEmpty:
+                if( init )
+                {
+                    // Initialize a new table
+                    init();
+                    break;
+                }
+                // fall-thru!
+                
+            default:
+                LOG_DEBUG( "Failed to get read FW table 0x" << std::hex << table_id );
+                throw invalid_value_exception( hwmon_error_string( cmd, response ) );
+            }
+        }
+
+        template< typename T >
+        void read_fw_register( hw_monitor & hwm, T * preg, int const baseline_address )
+        {
+            command cmd( ivcam2::fw_cmd::MRD, baseline_address, baseline_address + sizeof( T ) );
+            auto res = hwm.send( cmd );
+            if( res.size() != sizeof( T ) )
+                throw std::runtime_error( to_string()
+                                          << "MRD data size received= " << res.size()
+                                          << " (expected " << sizeof( T ) << ")" );
+            if( preg )
+                *preg = *(T *)res.data();
+        }
+
+#pragma pack(push, 1)
+        struct ac_depth_results  // aka "Algo_AutoCalibration" in FW
+        {
+            static const int table_id = 0x240;
+            static const uint16_t this_version = (RS2_API_MAJOR_VERSION << 12 | RS2_API_MINOR_VERSION << 4 | RS2_API_PATCH_VERSION);
+
+            rs2_dsm_params params;
+
+            ac_depth_results() {}
+            ac_depth_results( rs2_dsm_params const & dsm_params ) : params( dsm_params ) {}
+        };
+#pragma pack(pop)
 
         enum gvd_fields
         {
@@ -205,13 +293,21 @@ namespace librealsense
             rgb_common common;
             resolutions_rgb resolution;
         };
-#pragma pack(pop)
 
-        pose get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
+        struct temperatures {
+            double LDD_temperature;  // Laser Diode Driver
+            double MC_temperature;
+            double MA_temperature;
+            double APD_temperature;
+            double HUM_temperature;
+            double AlgoTermalLddAvg_temperature;
+        };
+#pragma pack( pop )
+
+        rs2_extrinsics get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
 
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
                                          const platform::uvc_device_info& info, platform::usb_device_info& result);
-
 
         class l500_temperature_options : public readonly_option
         {
@@ -368,6 +464,7 @@ namespace librealsense
             std::shared_ptr< freefall_option > _freefall_opt;
         };
 
+        class ac_trigger;
 
     } // librealsense::ivcam2
 } // namespace librealsense

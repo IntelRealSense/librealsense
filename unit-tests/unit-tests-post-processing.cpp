@@ -654,15 +654,15 @@ TEST_CASE("Align Processing Block", "[live][pipeline][post-processing-filters][!
             const auto align_dpt_intr = aligned_dpth_video_pf.get_intrinsics();
             for (auto i = 0; i < 5; i++)
             {
-                REQUIRE(ref_intr.coeffs[i] == Approx(align_dpt_intr.coeffs[i]));
+                REQUIRE(ref_intr.coeffs[i] == approx(align_dpt_intr.coeffs[i]));
             }
-            REQUIRE(ref_intr.fx == Approx(align_dpt_intr.fx));
-            REQUIRE(ref_intr.fy == Approx(align_dpt_intr.fy));
-            REQUIRE(ref_intr.ppx == Approx(align_dpt_intr.ppx));
-            REQUIRE(ref_intr.ppy == Approx(align_dpt_intr.ppy));
-            REQUIRE(ref_intr.model == Approx(align_dpt_intr.model));
-            REQUIRE(ref_intr.width == Approx(align_dpt_intr.width));
-            REQUIRE(ref_intr.height == Approx(align_dpt_intr.height));
+            REQUIRE(ref_intr.fx == approx(align_dpt_intr.fx));
+            REQUIRE(ref_intr.fy == approx(align_dpt_intr.fy));
+            REQUIRE(ref_intr.ppx == approx(align_dpt_intr.ppx));
+            REQUIRE(ref_intr.ppy == approx(align_dpt_intr.ppy));
+            REQUIRE(ref_intr.model == align_dpt_intr.model);
+            REQUIRE(ref_intr.width == align_dpt_intr.width);
+            REQUIRE(ref_intr.height == align_dpt_intr.height);
 
             // Extrinsic tests: Aligned_depth_extrinsic == Target frame extrinsic
             rs2_extrinsics actual_extrinsics = ref_video_profile.get_extrinsics_to(aligned_dpt_profile);
@@ -671,11 +671,11 @@ TEST_CASE("Align Processing Block", "[live][pipeline][post-processing-filters][!
             CAPTURE(actual_extrinsics.translation);
             for (auto i = 0; i < 9; i++)
             {
-                REQUIRE(actual_extrinsics.rotation[i] == Approx(expected_extrinsics.rotation[i]));
+                REQUIRE(actual_extrinsics.rotation[i] == approx(expected_extrinsics.rotation[i]));
             }
             for (auto i = 0; i < 3; i++)
             {
-                REQUIRE(actual_extrinsics.translation[i] == Approx(expected_extrinsics.translation[i]));
+                REQUIRE(actual_extrinsics.translation[i] == approx(expected_extrinsics.translation[i]));
             }
         }
 
@@ -707,15 +707,15 @@ TEST_CASE("Align Processing Block", "[live][pipeline][post-processing-filters][!
             const auto align_2D_intr = aligned_2D_profile.get_intrinsics();
             for (auto i = 0; i < 5; i++)
             {
-                REQUIRE(ref_intr.coeffs[i] == Approx(align_2D_intr.coeffs[i]));
+                REQUIRE(ref_intr.coeffs[i] == approx(align_2D_intr.coeffs[i]));
             }
-            REQUIRE(ref_intr.fx == Approx(align_2D_intr.fx));
-            REQUIRE(ref_intr.fy == Approx(align_2D_intr.fy));
-            REQUIRE(ref_intr.ppx == Approx(align_2D_intr.ppx));
-            REQUIRE(ref_intr.ppy == Approx(align_2D_intr.ppy));
-            REQUIRE(ref_intr.model == Approx(align_2D_intr.model));
-            REQUIRE(ref_intr.width == Approx(align_2D_intr.width));
-            REQUIRE(ref_intr.height == Approx(align_2D_intr.height));
+            REQUIRE(ref_intr.fx == approx(align_2D_intr.fx));
+            REQUIRE(ref_intr.fy == approx(align_2D_intr.fy));
+            REQUIRE(ref_intr.ppx == approx(align_2D_intr.ppx));
+            REQUIRE(ref_intr.ppy == approx(align_2D_intr.ppy));
+            REQUIRE(ref_intr.model == align_2D_intr.model);
+            REQUIRE(ref_intr.width == align_2D_intr.width);
+            REQUIRE(ref_intr.height == align_2D_intr.height);
 
             // Extrinsic tests: Aligned_depth_extrinsic == Target frame extrinsic
             rs2_extrinsics actual_extrinsics = aligned_2D_profile.get_extrinsics_to(ref_video_profile);
@@ -724,11 +724,11 @@ TEST_CASE("Align Processing Block", "[live][pipeline][post-processing-filters][!
             CAPTURE(actual_extrinsics.translation);
             for (auto i = 0; i < 9; i++)
             {
-                REQUIRE(actual_extrinsics.rotation[i] == Approx(expected_extrinsics.rotation[i]));
+                REQUIRE(actual_extrinsics.rotation[i] == approx(expected_extrinsics.rotation[i]));
             }
             for (auto i = 0; i < 3; i++)
             {
-                REQUIRE(actual_extrinsics.translation[i] == Approx(expected_extrinsics.translation[i]));
+                REQUIRE(actual_extrinsics.translation[i] == approx(expected_extrinsics.translation[i]));
             }
         }
     }

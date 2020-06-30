@@ -13,6 +13,7 @@ void measurement::enable() {
 }
 void measurement::disable() { 
     state.points.clear(); 
+    state.edges.clear();
     measurement_active = false;
     config_file::instance().set(configurations::viewer::is_measuring, false);
 }
@@ -84,8 +85,8 @@ void measurement::add_point(interest_point p)
             state.polygons.clear();
         }
 
-        int last = state.points.size();
-        if (current_hovered_point == -1 || 
+        int last = int(state.points.size());
+        if (current_hovered_point == -1 ||
             current_hovered_point >= state.points.size())
         {
             state.points.push_back(p);
@@ -121,7 +122,7 @@ void measurement::add_point(interest_point p)
             log_function(to_string() << "Measured distance of " << length_to_string(dist.length()));
         }
 
-        last_hovered_point = state.points.size() - 1;
+        last_hovered_point = int(state.points.size() - 1);
 
         commit_state();
     }
@@ -185,18 +186,18 @@ void draw_sphere(const float3& pos, float r, int lats, int longs)
 {
     for(int i = 0; i <= lats; i++) 
     {
-        float lat0 = M_PI * (-0.5 + (float) (i - 1) / lats);
+        float lat0 = float(M_PI) * (-0.5f + (float) (i - 1) / lats);
         float z0  = sin(lat0);
         float zr0 =  cos(lat0);
 
-        float lat1 = M_PI * (-0.5 + (float) i / lats);
+        float lat1 = float(M_PI) * (-0.5f + (float) i / lats);
         float z1 = sin(lat1);
         float zr1 = cos(lat1);
 
         glBegin(GL_QUAD_STRIP);
         for(int j = 0; j <= longs; j++) 
         {
-            float lng = 2 * M_PI * (float) (j - 1) / longs;
+            float lng = 2.f * float(M_PI) * (float) (j - 1) / longs;
             float x = cos(lng);
             float y = sin(lng);
 
@@ -304,7 +305,7 @@ void measurement::draw_ruler(ux_window& win, float3 from, float3 to, float heigh
         // calculate center of the ruler line
         float3 ctr = from + (to - from) / 2;
         float distance = (to - from).length();
-        draw_label(win, ctr, distance, height);
+        draw_label(win, ctr, distance, int(height));
     }
 }
 
@@ -351,7 +352,7 @@ void measurement::update_input(ux_window& win, const rs2::rect& viewer_rect)
             if (rect_copy.contains(win.get_mouse().cursor))
             {
                 input_ctrl.click = true;
-                input_ctrl.click_time = glfwGetTime();
+                input_ctrl.click_time = float(glfwGetTime());
             }
         }
     }
@@ -453,7 +454,6 @@ void measurement::draw(ux_window& win)
         if (input_ctrl.mouse_down) size -= _picked.z * 0.01f;
         size += _picked.z * 0.01f * single_wave(input_ctrl.click_period());
 
-        auto end = _picked + _normal * size;
         auto axis1 = cross(vec3d{ _normal.x, _normal.y, _normal.z }, vec3d{ 0.f, 1.f, 0.f });
         auto faxis1 = float3 { axis1.x, axis1.y, axis1.z };
         faxis1.normalize();
@@ -477,8 +477,8 @@ void measurement::draw(ux_window& win)
         const int segments = 50;
         for (int i = 0; i < segments; i++)
         {
-            auto t1 = 2 * M_PI * ((float)i / segments);
-            auto t2 = 2 * M_PI * ((float)(i+1) / segments);
+            auto t1 = 2.f * float(M_PI) * ((float)i / segments);
+            auto t2 = 2.f * float(M_PI) * ((float)(i+1) / segments);
             float4 xy1 { cosf(t1) * size, sinf(t1) * size, 0.f, 1.f };
             xy1 = basis * xy1;
             xy1 = float4 { _picked.x + xy1.x, _picked.y + xy1.y, _picked.z  + xy1.z, 1.f };
@@ -555,7 +555,7 @@ void measurement::draw(ux_window& win)
 
         auto area = calculate_area(points);
 
-        draw_label(win, mid, area, win.framebuf_height(), true);
+        draw_label(win, mid, area, int(win.framebuf_height()), true);
     }
 
     for (int i = 0; i < state.edges.size(); i++)

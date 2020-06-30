@@ -451,8 +451,6 @@ namespace librealsense
                     }
                     _durations.push_back(now);
 
-                    const auto fps = _durations.size();
-
                     //scoped_timer t("pointcloud_renderer.gl");
 
                     GLint curr_tex;
@@ -552,9 +550,9 @@ namespace librealsense
                                 ox = (xy.x / wh.x) * 2 - 1;
                                 oy = (xy.y / wh.y) * 2 - 1;
 
-                                auto p = frustum(left/(0.5*wh.x), right/(0.5*wh.x), 
-                                    bottom/(0.5*wh.y), top/(0.5*wh.y), near_plane, far_plae, 
-                                    ox * (0.5*wh.x), oy * (0.5*wh.y));
+                                auto p = frustum(left/(0.5f*wh.x), right/(0.5f*wh.x),
+                                    bottom / (0.5f * wh.y), top / (0.5f * wh.y), near_plane, far_plae,
+                                    ox * (0.5f * wh.x), oy * (0.5f * wh.y));
 
                                 auto fbo_width = 3;
                                 auto fbo_height = 3;
@@ -621,7 +619,6 @@ namespace librealsense
                                     if (rgba.a > 0)
                                     {
                                         std::vector<rs2::float3> pos_floats(size);
-                                        rs2::float2 w_pos;
                                         for (int i = 0; i < size; i++)
                                         {
                                             auto pos = pos_halfs[i];

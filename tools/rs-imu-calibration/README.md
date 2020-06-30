@@ -30,7 +30,7 @@ The script runs you through the 6 main orientations of the camera.
 For each direction there are the following steps:
 *	**Rotation:**<br>
   *	The script prints the following line, describing how to orient the camera:<br>
-`Align to direction:  [ 0. -1.  0.]   Upright facing out`<br>
+`Align to direction:  [ 0. -1.  0.]   Mounting screw pointing down, device facing out`<br>
   *	Then it prints the status (rotate) and the difference from the desired orientation:<br>
   `Status.rotate:           [ 1.0157 -0.1037  0.9945]:                 [False False False]`<br>
   *	You have to bring the numbers to [0,0,0] and then you are in the right direction and the script moves on to the next status.<br><br>
@@ -60,6 +60,7 @@ That’s it. At the end a confirmation message appears:<br>
 `SUCCESS: saved calibration to camera.`
 
 **NOTICE:**<br>
+Press ESC key to abort the calibration process.
 CTRL-C isn’t working so press CTRL-Z and then `kill -9 %1` if you want to terminate in the middle…
 
 **Appendix A:**<br>

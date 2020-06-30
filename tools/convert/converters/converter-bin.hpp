@@ -44,8 +44,8 @@ namespace rs2 {
                             shift--;
                         }
 
-                        f = f - 1.0;
-                        uint32_t mantissa = f * ((1U << 23) + 0.5f);
+                        f = f - 1.f;
+                        uint32_t mantissa = uint32_t(f * ((1U << 23) + 0.5f));
                         uint32_t exponent = shift + ((1 << 7) - 1);
 
                         ieee754 = (sign << 31) | (exponent << 23) | mantissa;
