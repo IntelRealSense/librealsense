@@ -4126,7 +4126,7 @@ namespace rs2
         return device_names;
     }
 
-    bool yes_no_dialog(const std::string& title, const std::string& message_text, bool& approved, ux_window& window, const std::string& error_message)
+    bool yes_no_dialog(const std::string& title, const std::string& message_text, bool& approved, ux_window& window, const std::string& error_message, bool disabled = false)
     {
         ImGui_ScopePushFont(window.get_font());
         ImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
@@ -4146,31 +4146,47 @@ namespace rs2
             {
                 ImGui_ScopePushStyleColor(ImGuiCol_Text, almost_white_bg);
 
-                ImGui::SetWindowFontScale(1.3);
+                ImGui::SetWindowFontScale(1.3f);
                 ImGui::Text("%s", title.c_str());
             }
             {
                 ImGui_ScopePushStyleColor(ImGuiCol_Text, light_grey);
                 ImGui::Separator();
-                ImGui::SetWindowFontScale(1.1);
+                ImGui::SetWindowFontScale(1.1f);
                 ImGui::Text("\n%s\n\n", message_text.c_str());
-                ImGui::SameLine();
-                auto width = ImGui::GetWindowWidth();
-                ImGui::Dummy(ImVec2(0, 0));
-                ImGui::Dummy(ImVec2(width / 3.f, 0));
-                ImGui::SameLine();
-                if (ImGui::Button("Yes", ImVec2(60, 30)))
+
+                if (!disabled)
                 {
-                    ImGui::CloseCurrentPopup();
-                    approved = true;
-                    clicked = true;
+                    ImGui::SameLine();
+                    auto width = ImGui::GetWindowWidth();
+                    ImGui::Dummy(ImVec2(0, 0));
+                    ImGui::Dummy(ImVec2(width / 3.f, 0));
+                    ImGui::SameLine();
+                    if (ImGui::Button("Yes", ImVec2(60, 30)))
+                    {
+                        ImGui::CloseCurrentPopup();
+                        approved = true;
+                        clicked = true;
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::Button("No", ImVec2(60, 30)))
+                    {
+                        ImGui::CloseCurrentPopup();
+                        approved = false;
+                        clicked = true;
+                    }
                 }
-                ImGui::SameLine();
-                if (ImGui::Button("No", ImVec2(60, 30)))
+                else
                 {
-                    ImGui::CloseCurrentPopup();
-                    approved = false;
-                    clicked = true;
+                    ImGui::NewLine();
+                    auto window_width = ImGui::GetWindowWidth();
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + window_width / 2.f - 30.f - ImGui::GetStyle().WindowPadding.x);
+                    if (ImGui::Button("Close", ImVec2(60, 30)))
+                    {
+                        ImGui::CloseCurrentPopup();
+                        approved = false;
+                        clicked = true;
+                    }
                 }
             }
             ImGui::EndPopup();
@@ -4201,29 +4217,30 @@ namespace rs2
             {
                 ImGui_ScopePushStyleColor(ImGuiCol_Text, almost_white_bg);
 
-                ImGui::SetWindowFontScale(1.3);
+                ImGui::SetWindowFontScale(1.3f);
                 ImGui::Text("%s", title.c_str());
             }
             {
 
                 ImGui::Separator();
-                ImGui::SetWindowFontScale(1.1);
+                ImGui::SetWindowFontScale(1.1f);
 
                 ImGui::NewLine();
                 ImGui::Text("%s", process_topic_text.c_str());
                 ImGui::NewLine();
-                auto process_topic_text_size = ImGui::CalcTextSize(process_topic_text.c_str()).x;
-                auto process_status_text_size = ImGui::CalcTextSize(process_status_text.c_str()).x + ImGui::CalcTextSize("Status: ").x;
-                if (process_topic_text_size > process_status_text_size)
-                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + process_topic_text_size / 2.f - process_status_text_size / 2.f);
+
+                auto window_width = ImGui::GetWindowWidth();
+                auto process_status_text_size = ImGui::CalcTextSize(process_status_text.c_str()).x + ImGui::CalcTextSize("Status: ").x + ImGui::GetStyle().WindowPadding.x;
+                auto future_window_width = std::max(process_status_text_size, window_width);
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + future_window_width / 2.f - process_status_text_size / 2.f);
 
                 ImGui::Text("Status: %s", process_status_text.c_str());
                 ImGui::NewLine();
-                auto width = ImGui::GetWindowWidth();
+                window_width = ImGui::GetWindowWidth();
 
                 if (enable_close)
                 {
-                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + width / 2.f - 50.f); // 50 = 30 (button size) + 20 (padding)
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + window_width / 2.f - 50.f); // 50 = 30 (button size) + 20 (padding)
                     if (ImGui::Button("Close", ImVec2(60, 30)))
                     {
                         ImGui::CloseCurrentPopup();
@@ -4263,16 +4280,45 @@ namespace rs2
         {
         case camera_accuracy_health_model::model_state_type::TRIGGER_MODAL:
         {
-            const std::string message_text("Camera Accuracy Health will ensure you get the highest accuracy from your camera.\n\n"
-                                            "This process may take several minutes and requires special setup to get good results.\n"
-                                            "While it is working, the viewer will not be usable.\n\n"
-                                            "Are you sure you want to continue?");
-            if (yes_no_dialog("Camera Accuracy Health Trigger", message_text, yes_was_chosen, window, error_message))
+            // Make sure the firmware meets the minimal version for Trigger Camera Accuracy features
+            const std::string& min_fw_version("1.4.1.0");
+            auto fw_upgrade_needed = is_upgradeable(dev.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION), min_fw_version);
+            bool is_depth_streaming(false);
+            bool is_color_streaming(false);
+
+            std::string message_text = "Camera Accuracy Health will ensure you get the highest accuracy from your camera.\n\n"
+                "This process may take several minutes and requires special setup to get good results.\n"
+                "While it is working, the viewer will not be usable.\n\n";
+
+            if (fw_upgrade_needed)
+            {
+                std::string fw_upgrade_message = "Camera Accuracy Health requires a minimal FW version of " + min_fw_version +
+                    "\n\nPlease update your firmware and try again. ";
+
+                message_text += fw_upgrade_message;
+            }
+            else
+            {
+                is_depth_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm) { return sm->streaming && sm->s->as<depth_sensor>(); });
+                is_color_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm) { return sm->streaming && sm->s->as<color_sensor>(); });
+
+                if (is_depth_streaming && is_color_streaming)
+                {
+                    message_text += "Are you sure you want to continue?";
+                }
+                else
+                {
+                    std::string stream_missing_message = "Camera Accuracy Health cannot be triggered : both depth & RGB streams must be active.";
+                    message_text += stream_missing_message;
+                }
+
+            }
+
+            bool option_disabled = !is_depth_streaming || !is_color_streaming || fw_upgrade_needed;
+            if (yes_no_dialog("Camera Accuracy Health Trigger", message_text, yes_was_chosen, window, error_message, option_disabled))
             {
                 if (yes_was_chosen)
                 {
-                    bool is_depth_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm) { return sm->streaming && sm->s->as<depth_sensor>(); });
-                    bool is_color_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm) { return sm->streaming && sm->s->as<color_sensor>(); });
 
                     auto itr = std::find_if(subdevices.begin(), subdevices.end(), [](std::shared_ptr<subdevice_model> sub)
                     {
@@ -4302,11 +4348,6 @@ namespace rs2
                         }
 
                     }
-                    else
-                    {
-                        viewer.not_model->output.add_log(RS2_LOG_SEVERITY_ERROR, __FILE__, __LINE__,
-                            to_string() << "Camera Accuracy Health cannot be triggered : both depth & RGB streams must be active.");
-                    }
                 }
                 else
                 {
@@ -4330,8 +4371,9 @@ namespace rs2
                 {RS2_CALIBRATION_SCENE_INVALID  , "In Progress" },
                 {RS2_CALIBRATION_BAD_RESULT     , "In Progress" } };
 
-
-            if (status_dialog("Camera Accuracy Health Status", "Camera Accuracy Health is In progress, this may take a while...", status_map[cah_model.calib_status], process_finished, window))
+            const std::string & message = process_finished ?    "                                                               " : 
+                                                                "Camera Accuracy Health is In progress, this may take a while...";
+            if (status_dialog("Camera Accuracy Health Status", message, status_map[cah_model.calib_status], process_finished, window))
             {
                 keep_showing = false;
             }
@@ -4898,38 +4940,20 @@ namespace rs2
                 auto product_line_str = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
                 if (RS2_PRODUCT_LINE_L500 == parse_product_line(product_line_str))
                 {
-                    // Make sure the firmware is at least 1.4.1.0 for Trigger Camera Accuracy features
-                    if (false == is_upgradeable(dev.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION), "1.4.1.0"))
+                    if (ImGui::Selectable("Trigger Camera Accuracy Health"))
                     {
-                        if (ImGui::Selectable("Trigger Camera Accuracy Health"))
-                        {
-                            // We cannot open a pop up window here since we are already in a pop up window
-                            // we trigger the pop up and activate it outside the menu pop up
-                            cah_model.show_trigger_camera_accuracy_health_popup = true;
-                        }
-
-                        if (ImGui::Selectable("Reset Camera Accuracy Health"))
-                        {
-                            cah_model.show_reset_camera_accuracy_health_popup = true;
-                        }
+                        // We cannot open a pop up window here since we are already in a pop up window
+                        // we trigger the pop up and activate it outside the menu pop up
+                        cah_model.show_trigger_camera_accuracy_health_popup = true;
                     }
-                    else
+
+                    if (ImGui::Selectable("Reset Camera Accuracy Health"))
                     {
-                        bool selected = false;
-
-                        ImGui::Selectable("Trigger Camera Accuracy Health",&selected, ImGuiSelectableFlags_Disabled);
-                        if (ImGui::IsItemHovered())
-                            ImGui::SetTooltip("Requires firmware version 1.4.1.0 and above");
-
-
-                        ImGui::Selectable("Reset Camera Accuracy Health", &selected, ImGuiSelectableFlags_Disabled);
-                        if (ImGui::IsItemHovered())
-                            ImGui::SetTooltip("Requires firmware version 1.4.1.0 and above");
+                        cah_model.show_reset_camera_accuracy_health_popup = true;
                     }
                 }
             }
-
-
+            
             bool has_autocalib = false;
             for (auto&& sub : subdevices)
             {
