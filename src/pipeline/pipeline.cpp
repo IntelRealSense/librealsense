@@ -20,7 +20,6 @@ namespace librealsense
 
         pipeline::~pipeline()
         {
-            std::lock_guard<std::mutex> lock(_mtx);
             if (_active_profile) {
                 try {
                     unsafe_stop();
@@ -146,10 +145,11 @@ namespace librealsense
                 catch (...)
                 {
                 } // Stop will throw if device was disconnected. TODO - refactoring anticipated
+
+                _active_profile.reset();
+                _prev_conf.reset();
+                _streams_callback.reset();
             }
-            _active_profile.reset();
-            _prev_conf.reset();
-            _streams_callback.reset();
         }
 
         std::shared_ptr<device_interface> pipeline::wait_for_device(const std::chrono::milliseconds& timeout, const std::string& serial)
