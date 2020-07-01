@@ -29,7 +29,7 @@ public class FwLogsThread extends Thread{
                                 mFwLoggerDevice = fwLoggerDevice;
                                 if (mIsParsingFileInitialized)
                                     mFwLoggerDevice.initParser(mFwLogsParsingFilePath);
-                                while (mAreFwLogsRequested) { ;
+                                while (mAreFwLogsRequested) {
                                     String logReceived = "";
                                     try (FwLogMsg logMsg = mFwLoggerDevice.getFwLog()) {
                                         if (logMsg.getSize() > 0) {
@@ -93,7 +93,7 @@ public class FwLogsThread extends Thread{
                                     try (FwLogMsg logMsg = mFwLoggerDevice.getFlashLog()) {
                                         Log.d(TAG, "after getFwLog");
                                         if (logMsg.getSize() > 0) {
-                                            if (true) {
+                                            if (mIsParsingFileInitialized) {
                                                 try (FwLogParsedMsg parsedMsg = mFwLoggerDevice.parseFwLog(logMsg)) {
                                                     Log.d("remi", "after parseFwLog");
                                                     logReceived = parsedMsg.getTimestamp() + " - " +
