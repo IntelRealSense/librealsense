@@ -4126,7 +4126,7 @@ namespace rs2
         return device_names;
     }
 
-    bool yes_no_dialog(const std::string& title, const std::string& message_text, bool& approved, ux_window& window, const std::string& error_message, bool disabled = false)
+    bool yes_no_dialog(const std::string& title, const std::string& message_text, bool& approved, ux_window& window, const std::string& error_message, bool disabled)
     {
         ImGui_ScopePushFont(window.get_font());
         ImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
@@ -4270,178 +4270,7 @@ namespace rs2
         return keep_showing;
     }
 
-    bool device_model::prompt_trigger_camera_accuracy_health(ux_window& window, viewer_model& viewer, const std::string& error_message)
-    {
-        // This process is built from a 2 stages windows, first a yes/no window and then a process window
-        bool keep_showing = true;
-        bool yes_was_chosen = false;
-
-        switch (cah_model.cah_state.load())
-        {
-        case camera_accuracy_health_model::model_state_type::TRIGGER_MODAL:
-        {
-            // Make sure the firmware meets the minimal version for Trigger Camera Accuracy features
-            const std::string& min_fw_version("1.4.1.0");
-            auto fw_upgrade_needed = is_upgradeable(dev.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION), min_fw_version);
-            bool is_depth_streaming(false);
-            bool is_color_streaming(false);
-
-            std::string message_text = "Camera Accuracy Health will ensure you get the highest accuracy from your camera.\n\n"
-                "This process may take several minutes and requires special setup to get good results.\n"
-                "While it is working, the viewer will not be usable.\n\n";
-
-            if (fw_upgrade_needed)
-            {
-                std::string fw_upgrade_message = "Camera Accuracy Health requires a minimal FW version of " + min_fw_version +
-                    "\n\nPlease update your firmware and try again. ";
-
-                message_text += fw_upgrade_message;
-            }
-            else
-            {
-                is_depth_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm) { return sm->streaming && sm->s->as<depth_sensor>(); });
-                is_color_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm) { return sm->streaming && sm->s->as<color_sensor>(); });
-
-                if (is_depth_streaming && is_color_streaming)
-                {
-                    message_text += "Are you sure you want to continue?";
-                }
-                else
-                {
-                    std::string stream_missing_message = "Camera Accuracy Health cannot be triggered : both depth & RGB streams must be active.";
-                    message_text += stream_missing_message;
-                }
-
-            }
-
-            bool option_disabled = !is_depth_streaming || !is_color_streaming || fw_upgrade_needed;
-            if (yes_no_dialog("Camera Accuracy Health Trigger", message_text, yes_was_chosen, window, error_message, option_disabled))
-            {
-                if (yes_was_chosen)
-                {
-
-                    auto itr = std::find_if(subdevices.begin(), subdevices.end(), [](std::shared_ptr<subdevice_model> sub)
-                    {
-                        if (sub->s->as<depth_sensor>())
-                            return true;
-                        return false;
-                    });
-
-
-                    if (is_depth_streaming && is_color_streaming && itr != subdevices.end())
-                    {
-                        auto sd = *itr;
-                        sd->s->set_option(RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, 1.0f);
-                        device_calibration dev_cal(dev);
-                        // Register AC status change callback
-                        if (!cah_model.registered_to_callback)
-                        {
-                            cah_model.registered_to_callback = true;
-                            cah_model.cah_state = camera_accuracy_health_model::model_state_type::PROCESS_MODAL;
-                            cah_model.cah_process_start_time = std::chrono::high_resolution_clock::now();
-                            dev_cal.register_calibration_change_callback([&](rs2_calibration_status cal_status)
-                            {
-                                cah_model.calib_status = cal_status; 
-                            });
-                        }
-
-                    }
-                }
-                else
-                {
-                    keep_showing = false;
-                }
-            }
-        }
-        break;
-
-        case camera_accuracy_health_model::model_state_type::PROCESS_MODAL:
-        {
-            if (!cah_model.process_started)
-            {
-                cah_model.process_started = (cah_model.calib_status == RS2_CALIBRATION_SPECIAL_FRAME || cah_model.calib_status == RS2_CALIBRATION_STARTED);
-            }
-
-            bool process_finished(cah_model.calib_status == RS2_CALIBRATION_SUCCESSFUL || cah_model.calib_status == RS2_CALIBRATION_FAILED || cah_model.calib_status == RS2_CALIBRATION_NOT_NEEDED);
-
-            static std::map<rs2_calibration_status, std::string> status_map{
-                {RS2_CALIBRATION_SPECIAL_FRAME  , "In Progress" },
-                {RS2_CALIBRATION_STARTED        , "In Progress" },
-                {RS2_CALIBRATION_NOT_NEEDED     , "Ended" },
-                {RS2_CALIBRATION_SUCCESSFUL     , "Ended Successfully" },
-                {RS2_CALIBRATION_RETRY          , "In Progress" },
-                {RS2_CALIBRATION_FAILED         , "Ended With Failure" },
-                {RS2_CALIBRATION_SCENE_INVALID  , "In Progress" },
-                {RS2_CALIBRATION_BAD_RESULT     , "In Progress" } };
-
-            rs2_calibration_status calibration_status = cah_model.calib_status;
-
-            // We don't know if AC really started working so we add a timeout for not blocking the viewer forever.
-            if (!cah_model.process_started)
-            {
-                auto now = std::chrono::high_resolution_clock::now();
-                if (now > (cah_model.cah_process_start_time + std::chrono::seconds(30)))
-                {
-                    process_finished = true; // timeout
-                    calibration_status = RS2_CALIBRATION_FAILED;
-                }
-            }
-
-            const std::string & message = process_finished ?    "                                                               " : 
-                                                                "Camera Accuracy Health is In progress, this may take a while...";
-            if (status_dialog("Camera Accuracy Health Status", message, status_map[calibration_status], process_finished, window))
-            {
-                keep_showing = false;
-            }
-        }
-        break;
-        default:
-            break;
-
-        }
-
-        //reset internal elements
-        if (!keep_showing)
-        {
-            cah_model.cah_state = camera_accuracy_health_model::model_state_type::TRIGGER_MODAL;
-            cah_model.calib_status = RS2_CALIBRATION_RETRY;
-            cah_model.process_started = false;
-            cah_model.registered_to_callback = false;
-        }
-        return keep_showing;
-    }
-
-    bool device_model::prompt_reset_camera_accuracy_health(ux_window& window, const std::string& error_message)
-    {
-        bool keep_showing = true;
-        bool yes_was_chosen = false;
-
-        std::string message_text("This will reset the camera settings to their factory-calibrated state.\nYou will lose any improvements made with Camera Accuracy Health.\n\n Are you sure?");
-        if (yes_no_dialog("Camera Accuracy Health Reset", message_text, yes_was_chosen, window,error_message))
-        {
-            if (yes_was_chosen)
-            {
-                auto itr = std::find_if(subdevices.begin(), subdevices.end(), [](std::shared_ptr<subdevice_model> sub)
-                {
-                    if (sub->s->as<depth_sensor>())
-                        return true;
-                    return false;
-                });
-
-
-                if (itr != subdevices.end())
-                {
-                    auto sd = *itr;
-                    sd->s->set_option(RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH, 1.0f);
-
-                }
-            }
-            keep_showing = false;
-        }
-
-        return keep_showing;
-    }
-
+   
     bool device_model::draw_advanced_controls(viewer_model& view, ux_window& window, std::string& error_message)
     {
         bool was_set = false;
@@ -4962,12 +4791,12 @@ namespace rs2
                     {
                         // We cannot open a pop up window here since we are already in a pop up window
                         // we trigger the pop up and activate it outside the menu pop up
-                        cah_model.show_trigger_camera_accuracy_health_popup = true;
+                        show_trigger_camera_accuracy_health_popup = true;
                     }
 
                     if (ImGui::Selectable("Reset Camera Accuracy Health"))
                     {
-                        cah_model.show_reset_camera_accuracy_health_popup = true;
+                        show_reset_camera_accuracy_health_popup = true;
                     }
                 }
             }
@@ -5137,14 +4966,14 @@ namespace rs2
         }
 
 
-        if (cah_model.show_trigger_camera_accuracy_health_popup)
+        if (show_trigger_camera_accuracy_health_popup)
         {
-            cah_model.show_trigger_camera_accuracy_health_popup = prompt_trigger_camera_accuracy_health(window, viewer, error_message);
+            show_trigger_camera_accuracy_health_popup = accuracy_health_model.prompt_trigger_camera_accuracy_health(*this, window, viewer, error_message);
         }
 
-        if (cah_model.show_reset_camera_accuracy_health_popup)
+        if (show_reset_camera_accuracy_health_popup)
         {
-            cah_model.show_reset_camera_accuracy_health_popup = prompt_reset_camera_accuracy_health(window, error_message);
+            show_reset_camera_accuracy_health_popup = accuracy_health_model.prompt_reset_camera_accuracy_health(*this, window, error_message);
         }
 
         if (keep_showing_advanced_mode_modal)
