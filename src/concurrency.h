@@ -307,7 +307,7 @@ public:
         std::unique_lock<std::mutex> lock_was_flushed(_was_flushed_mutex);
         _was_flushed_cv.wait_for(lock_was_flushed, std::chrono::hours(999999), [&]() { return _was_flushed.load(); });
 
-////        _queue.start();
+        _queue.start();
     }
 
     ~dispatcher()
