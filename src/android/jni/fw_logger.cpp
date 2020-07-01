@@ -3,23 +3,10 @@
 
 #include <jni.h>
 #include <memory>
-#include <vector>
-#include <string>
 #include "error.h"
 #include "../../../include/librealsense2/h/rs_internal.h"
-//#include "../fw-logger/rs-fw-logger.h"
 
 // Fw Logger methods
-
-extern "C"
-JNIEXPORT jlong JNICALL
-Java_com_intel_realsense_librealsense_FwLogger_nCreateFwLogMsg(JNIEnv *env, jclass clazz,
-                                                                   jlong fw_logger_handle) {
-    rs2_error* e = NULL;
-    rs2_firmware_log_message* msg = rs2_create_fw_log_message(reinterpret_cast<rs2_device*>(fw_logger_handle), &e);
-    handle_error(env, e);
-    return (jlong)msg;
-}
 
 extern "C"
 JNIEXPORT jlong JNICALL
@@ -35,19 +22,6 @@ Java_com_intel_realsense_librealsense_FwLogger_nGetFwLog(JNIEnv *env, jclass cla
     return (jlong)log_msg;
 }
 
-/*extern "C"
-JNIEXPORT jboolean JNICALL
-Java_com_intel_realsense_librealsense_FwLogger_nGetFlashLog(JNIEnv *env, jclass clazz,
-                                                         jlong fw_logger_handle, jlong fw_log_msg_handle) {
-    rs2_error* e = NULL;
-    int result = rs2_get_flash_log(reinterpret_cast<rs2_device*>(fw_logger_handle),
-                                reinterpret_cast<rs2_firmware_log_message**>(&fw_log_msg_handle), &e);
-    handle_error(env, e);
-
-    bool resultBool = (result == 1) ? true : false;
-    return (jboolean)resultBool;
-}
-*/
 extern "C"
 JNIEXPORT jlong JNICALL
 Java_com_intel_realsense_librealsense_FwLogger_nGetFlashLog(JNIEnv *env, jclass clazz,
@@ -60,16 +34,6 @@ Java_com_intel_realsense_librealsense_FwLogger_nGetFlashLog(JNIEnv *env, jclass 
     handle_error(env, e);
 
     return (jlong)log_msg;
-}
-
-extern "C"
-JNIEXPORT jlong JNICALL
-Java_com_intel_realsense_librealsense_FwLogger_nCreateFwLogParsedMsg(JNIEnv *env, jclass clazz,
-                                                               jlong fw_logger_handle) {
-    rs2_error* e = NULL;
-    rs2_firmware_log_parsed_message* msg = rs2_create_fw_log_parsed_message(reinterpret_cast<rs2_device*>(fw_logger_handle), &e);
-    handle_error(env, e);
-    return (jlong)msg;
 }
 
 extern "C"
@@ -147,11 +111,9 @@ Java_com_intel_realsense_librealsense_FwLogMsg_nGetSize(JNIEnv *env, jclass claz
 }
 
 extern "C" JNIEXPORT jbyteArray JNICALL
-Java_com_intel_realsense_librealsense_FwLogMsg_nGetData(JNIEnv *env, jclass clazz,
-                                                        jlong handle,jbyteArray input_buffer) {
+    Java_com_intel_realsense_librealsense_FwLogMsg_nGetData(JNIEnv *env, jclass clazz,
+                                                            jlong handle,jbyteArray input_buffer) {
     jbyte *buffer = env->GetByteArrayElements(input_buffer, NULL);
-    jsize length = env->GetArrayLength(input_buffer);
-    std::vector<uint8_t> buff(reinterpret_cast<uint8_t*>(buffer), reinterpret_cast<uint8_t*>(buffer) + length);
 
     rs2_error* e = NULL;
     int size = rs2_fw_log_message_size(reinterpret_cast<rs2_firmware_log_message*>(handle), &e);
@@ -228,22 +190,3 @@ Java_com_intel_realsense_librealsense_FwLogParsedMsg_nGetTimestamp(JNIEnv *env, 
     return (jlong)(unsigned long long)timestamp;
 }
 
-
-/*std::shared_ptr<android_fw_logger> g_fw_logger;
-#define TAG "rs_fw_log"
-
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_intel_realsense_librealsense_FwLogger_nStartReadingFwLogs(JNIEnv *env, jclass clazz,
-        jstring file_path) {
-    const char *filePath = env->GetStringUTFChars(file_path, 0);
-    g_fw_logger = std::make_shared<android_fw_logger>(filePath);
-
-    env->ReleaseStringUTFChars(file_path, filePath);
-}
-
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_intel_realsense_librealsense_FwLogger_nStopReadingFwLogs(JNIEnv *env, jclass clazz) {
-    g_fw_logger.reset();
-}*/
