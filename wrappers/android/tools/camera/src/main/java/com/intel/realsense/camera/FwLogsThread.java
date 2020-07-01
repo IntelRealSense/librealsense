@@ -27,12 +27,13 @@ public class FwLogsThread extends Thread{
                         if (device != null) {
                             try (final FwLogger fwLoggerDevice = device.as(Extension.FW_LOGGER)) {
                                 mFwLoggerDevice = fwLoggerDevice;
-                                while (mAreFwLogsRequested) {
+                                if (mIsParsingFileInitialized)
+                                    mFwLoggerDevice.initParser(mFwLogsParsingFilePath);
+                                while (mAreFwLogsRequested) { ;
                                     String logReceived = "";
                                     try (FwLogMsg logMsg = mFwLoggerDevice.getFwLog()) {
                                         if (logMsg.getSize() > 0) {
                                             if (mIsParsingFileInitialized) {
-                                                mFwLoggerDevice.initParser(mFwLogsParsingFilePath);
                                                 try (FwLogParsedMsg parsedMsg = mFwLoggerDevice.parseFwLog(logMsg)) {
                                                     logReceived = parsedMsg.getTimestamp() + " - " +
                                                             parsedMsg.getSeverity() + " " +

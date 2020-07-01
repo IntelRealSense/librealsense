@@ -196,7 +196,7 @@ public class SettingsActivity extends AppCompatActivity {
                         break;
                     }
                     case INDEX_FW_LOG: {
-                        toggleFwLogging((FwLogger) device.as(Extension.FW_LOGGER));
+                        toggleFwLogging();
                         recreate();
                         break;
                     }
@@ -338,7 +338,7 @@ public class SettingsActivity extends AppCompatActivity {
         return lines.toArray(new StreamProfileSelector[lines.size()]);
     }
 
-    void toggleFwLogging(FwLogger fwLoggerDevice){
+    void toggleFwLogging(){
         SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);
         boolean fw_logging_enabled = sharedPref.getBoolean(getString(R.string.fw_logging), false);
         String fw_logging_file_path = sharedPref.getString(getString(R.string.fw_logging_file_path), "");
@@ -375,7 +375,7 @@ public class SettingsActivity extends AppCompatActivity {
                 SharedPreferences.Editor editor = sharedPref.edit();
                 editor.putString(getString(R.string.fw_logging_file_path), filePath);
                 editor.commit();
-                toggleFwLogging((FwLogger)_device.as(Extension.FW_LOGGER));
+                toggleFwLogging();
                 break;
             }
         }
