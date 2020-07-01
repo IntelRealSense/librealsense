@@ -171,8 +171,8 @@ namespace librealsense
 #pragma pack(push, 1)
         struct ac_depth_results  // aka "Algo_AutoCalibration" in FW
         {
-            static constexpr int table_id = 0x240;
-            static constexpr uint16_t this_version = (RS2_API_MAJOR_VERSION << 12 | RS2_API_MINOR_VERSION << 4 | RS2_API_PATCH_VERSION);
+            static const int table_id = 0x240;
+            static const uint16_t this_version = (RS2_API_MAJOR_VERSION << 12 | RS2_API_MINOR_VERSION << 4 | RS2_API_PATCH_VERSION);
 
             rs2_dsm_params params;
 
@@ -182,8 +182,8 @@ namespace librealsense
 
         struct rgb_calibration_table
         {
-            static constexpr uint16_t table_id = 0x310;        // in flash
-            static constexpr uint16_t eeprom_table_id = 0x10;  // factory calibration - read-only
+            static const uint16_t table_id = 0x310;        // in flash
+            static const uint16_t eeprom_table_id = 0x10;  // factory calibration - read-only
 
             uint16_t version;
             uint16_t type;
