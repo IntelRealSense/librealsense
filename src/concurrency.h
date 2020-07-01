@@ -64,6 +64,7 @@ public:
     bool dequeue(T* item ,unsigned int timeout_ms)
     {
         std::unique_lock<std::mutex> lock(_mutex);
+
         _accepting = true;
         _was_flushed = false;
         const auto ready = [this]() { return (_queue.size() > 0) || _need_to_flush; };
@@ -306,7 +307,7 @@ public:
         std::unique_lock<std::mutex> lock_was_flushed(_was_flushed_mutex);
         _was_flushed_cv.wait_for(lock_was_flushed, std::chrono::hours(999999), [&]() { return _was_flushed.load(); });
 
-        _queue.start();
+////        _queue.start();
     }
 
     ~dispatcher()
@@ -314,6 +315,8 @@ public:
         stop();
         _queue.clear();
         _is_alive = false;
+
+        if (_thread.joinable())
         _thread.join();
     }
 

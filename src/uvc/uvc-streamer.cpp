@@ -173,6 +173,7 @@ namespace librealsense
 
         void uvc_streamer::stop()
         {
+            std::unique_lock<std::mutex> lock(_running_mutex);
             _action_dispatcher.invoke_and_wait([this](dispatcher::cancellable_timer c)
             {
                 if(!_running)
@@ -204,7 +205,8 @@ namespace librealsense
 
         void uvc_streamer::flush()
         {
-            stop();
+            std::unique_lock<std::mutex> lock(_running_mutex);
+//            stop();
 
             _read_endpoint.reset();
 

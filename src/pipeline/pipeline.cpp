@@ -20,11 +20,13 @@ namespace librealsense
 
         pipeline::~pipeline()
         {
-            try
-            {
-                unsafe_stop();
+            std::lock_guard<std::mutex> lock(_mtx);
+            if (_active_profile) {
+                try {
+                    unsafe_stop();
+                }
+                catch (...) {}
             }
-            catch (...) {}
         }
 
         std::shared_ptr<profile> pipeline::start(std::shared_ptr<config> conf, frame_callback_ptr callback)

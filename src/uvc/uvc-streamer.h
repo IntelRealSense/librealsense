@@ -33,7 +33,6 @@ namespace librealsense
         public:
             uvc_streamer(uvc_streamer_context context);
             virtual ~uvc_streamer();
-
             const uvc_streamer_context get_context() { return _context; }
 
             bool running() { return _running; }
@@ -44,6 +43,7 @@ namespace librealsense
             bool wait_for_first_frame(uint32_t timeout_ms);
 
         private:
+            std::mutex _running_mutex;
             bool _running = false;
             bool _frame_arrived = false;
             bool _publish_frames = true;
