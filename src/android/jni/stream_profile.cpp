@@ -16,9 +16,6 @@ Java_com_intel_realsense_librealsense_StreamProfile_nGetProfile(JNIEnv *env, jcl
     int frameRate = -1;
     rs2_error *e = NULL;
 
-    // TODO: why handle could be NULL?
-    if (handle == (jlong) 0) return;
-
     rs2_get_stream_profile_data((const rs2_stream_profile *) handle, &stream_type, &format, &index, &uniqueId, &frameRate, &e);
     handle_error(env, e);
 
