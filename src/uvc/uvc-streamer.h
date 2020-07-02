@@ -44,6 +44,7 @@ namespace librealsense
 
         private:
             std::mutex _running_mutex;
+            std::condition_variable _stopped_cv;
             bool _running = false;
             bool _frame_arrived = false;
             bool _publish_frames = true;

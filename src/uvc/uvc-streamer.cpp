@@ -157,7 +157,10 @@ namespace librealsense
 
                 _context.messenger->reset_endpoint(_read_endpoint, RS2_USB_ENDPOINT_DIRECTION_READ);
 
-                _running = true;
+                {
+                    std::lock_guard<std::mutex> lock(_running_mutex);
+                    _running = true;
+                }
 
                 for(auto&& r : _requests)
                 {
@@ -173,7 +176,6 @@ namespace librealsense
 
         void uvc_streamer::stop()
         {
-            std::unique_lock<std::mutex> lock(_running_mutex);
             _action_dispatcher.invoke_and_wait([this](dispatcher::cancellable_timer c)
             {
                 if(!_running)
@@ -198,15 +200,24 @@ namespace librealsense
 
                 _publish_frame_thread->stop();
 
-                _running = false;
+                {
+                    std::lock_guard<std::mutex> lock(_running_mutex);
+                    _running = false;
+                    _stopped_cv.notify_one();
+                }
 
             }, [this](){ return !_running; });
         }
 
         void uvc_streamer::flush()
         {
-            std::unique_lock<std::mutex> lock(_running_mutex);
-//            stop();
+            if(_running)
+                stop();
+
+            {
+                std::unique_lock<std::mutex> lock(_running_mutex);
+                _stopped_cv.wait_for(lock, std::chrono::seconds(1), [&]() { return !_running; });
+            }
 
             _read_endpoint.reset();
 
