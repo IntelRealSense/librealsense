@@ -36,6 +36,7 @@ Java_com_intel_realsense_librealsense_Sensor_nGetStreamProfiles(JNIEnv *env, jcl
         profiles.push_back(sp);
     }
 
+    // jlong is 64-bit, but pointer in profiles could be 32-bit, copy element by element
     jlongArray rv = env->NewLongArray(profiles.size());
     for (auto i = 0; i < size; i++)
     {

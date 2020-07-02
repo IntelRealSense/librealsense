@@ -146,6 +146,8 @@ namespace librealsense
                 {
                 } // Stop will throw if device was disconnected. TODO - refactoring anticipated
 
+                // shared pointers initialized when pipeline running with _active_profile
+                // should be reset with _active_profile too
                 _active_profile.reset();
                 _prev_conf.reset();
                 _streams_callback.reset();

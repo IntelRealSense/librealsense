@@ -214,6 +214,7 @@ namespace librealsense
             if(_running)
                 stop();
 
+            // synchronized so do not destroy shared pointers while it's still being running
             {
                 std::unique_lock<std::mutex> lock(_running_mutex);
                 _stopped_cv.wait_for(lock, std::chrono::seconds(1), [&]() { return !_running; });
