@@ -2,7 +2,6 @@
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
 #include <jni.h>
-#include <memory>
 #include "error.h"
 #include "../../../include/librealsense2/h/rs_internal.h"
 
