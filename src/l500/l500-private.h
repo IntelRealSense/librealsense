@@ -199,32 +199,12 @@ namespace librealsense
                 float px;  // Principal point in x, normalize by [-1 1]
                 float py;  // Principal point in x, normalize by [-1 1]
                 float sheer;
-                union /*dist_rgb*/
-                {
-                    // RGB forward distortion parameters, brown model
-                    struct
-                    {
-                        float k1;
-                        float k2;
-                        float p1;
-                        float p2;
-                        float k3;
-                    };
-                    float d[5];
-                };
+                float d[5];  // RGB forward distortion parameters (k1, k2, p1, p2, k3), brown model
             } intr;
-#if 1
             rs2_extrinsics extr;
-#else
-            struct /*extrinsics*/
-            {
-                float r[9];  // rotation Matrix between the depth sensor and the RGB sensor (by row 1,1|1,2|1,3|2,1|...)
-                float t[3];  // translation (mm) vector between the depth sensor and the RGB sensor
-            } extr;
-#endif
             byte reserved[8];
 
-            void ivcam2::rgb_calibration_table::set_intrinsics( rs2_intrinsics const & );
+            void set_intrinsics( rs2_intrinsics const & );
             rs2_intrinsics get_intrinsics() const;
             rs2_extrinsics const & get_extrinsics() const { return extr; }
             void update_write_fields();

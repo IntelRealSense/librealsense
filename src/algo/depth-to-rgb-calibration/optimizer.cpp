@@ -1344,7 +1344,7 @@ void write_matlab_camera_params_file(
     //depth intrinsics
     write_obj( f, (double)_intr_depth.width );
     write_obj( f, (double)_intr_depth.height );
-    write_obj( f, (double)1/_depth_units);
+    write_obj( f, (double)1/_depth_units );
 
     double k_depth[9] = { _intr_depth.fx, 0, _intr_depth.ppx,
                         0, _intr_depth.fy, _intr_depth.ppy,

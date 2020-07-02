@@ -810,10 +810,13 @@ namespace rs2
             bool show_trigger_camera_accuracy_health_popup;
             bool show_reset_camera_accuracy_health_popup;
             bool registered_to_callback;
+            std::chrono::high_resolution_clock::time_point cah_process_start_time;
+            bool process_started;
+
 
             camera_accuracy_health_model():cah_state(model_state_type::TRIGGER_MODAL), calib_status(RS2_CALIBRATION_RETRY),
                 show_trigger_camera_accuracy_health_popup(false), show_reset_camera_accuracy_health_popup(false),
-                registered_to_callback(false)
+                registered_to_callback(false), cah_process_start_time(), process_started(false)
             {}
 
         };

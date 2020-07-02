@@ -4337,13 +4337,11 @@ namespace rs2
                         if (!cah_model.registered_to_callback)
                         {
                             cah_model.registered_to_callback = true;
+                            cah_model.cah_state = camera_accuracy_health_model::model_state_type::PROCESS_MODAL;
+                            cah_model.cah_process_start_time = std::chrono::high_resolution_clock::now();
                             dev_cal.register_calibration_change_callback([&](rs2_calibration_status cal_status)
                             {
-                                cah_model.calib_status = cal_status;
-                                if (cah_model.calib_status == RS2_CALIBRATION_STARTED || cah_model.calib_status == RS2_CALIBRATION_SPECIAL_FRAME)
-                                {
-                                    cah_model.cah_state = camera_accuracy_health_model::model_state_type::PROCESS_MODAL;
-                                }
+                                cah_model.calib_status = cal_status; 
                             });
                         }
 
@@ -4359,8 +4357,13 @@ namespace rs2
 
         case camera_accuracy_health_model::model_state_type::PROCESS_MODAL:
         {
+            if (!cah_model.process_started)
+            {
+                cah_model.process_started = (cah_model.calib_status == RS2_CALIBRATION_SPECIAL_FRAME || cah_model.calib_status == RS2_CALIBRATION_STARTED);
+            }
+
             bool process_finished(cah_model.calib_status == RS2_CALIBRATION_SUCCESSFUL || cah_model.calib_status == RS2_CALIBRATION_FAILED || cah_model.calib_status == RS2_CALIBRATION_NOT_NEEDED);
-            
+
             static std::map<rs2_calibration_status, std::string> status_map{
                 {RS2_CALIBRATION_SPECIAL_FRAME  , "In Progress" },
                 {RS2_CALIBRATION_STARTED        , "In Progress" },
@@ -4371,9 +4374,22 @@ namespace rs2
                 {RS2_CALIBRATION_SCENE_INVALID  , "In Progress" },
                 {RS2_CALIBRATION_BAD_RESULT     , "In Progress" } };
 
+            rs2_calibration_status calibration_status = cah_model.calib_status;
+
+            // We don't know if AC really started working so we add a timeout for not blocking the viewer forever.
+            if (!cah_model.process_started)
+            {
+                auto now = std::chrono::high_resolution_clock::now();
+                if (now > (cah_model.cah_process_start_time + std::chrono::seconds(30)))
+                {
+                    process_finished = true; // timeout
+                    calibration_status = RS2_CALIBRATION_FAILED;
+                }
+            }
+
             const std::string & message = process_finished ?    "                                                               " : 
                                                                 "Camera Accuracy Health is In progress, this may take a while...";
-            if (status_dialog("Camera Accuracy Health Status", message, status_map[cah_model.calib_status], process_finished, window))
+            if (status_dialog("Camera Accuracy Health Status", message, status_map[calibration_status], process_finished, window))
             {
                 keep_showing = false;
             }
@@ -4389,6 +4405,8 @@ namespace rs2
         {
             cah_model.cah_state = camera_accuracy_health_model::model_state_type::TRIGGER_MODAL;
             cah_model.calib_status = RS2_CALIBRATION_RETRY;
+            cah_model.process_started = false;
+            cah_model.registered_to_callback = false;
         }
         return keep_showing;
     }

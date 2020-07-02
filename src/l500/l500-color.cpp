@@ -253,7 +253,7 @@ namespace librealsense
         if( intr.model != RS2_DISTORTION_INVERSE_BROWN_CONRADY )
             throw invalid_value_exception( "invalid intrinsics distortion model" );
 
-        ivcam2::rgb_calibration_table table;
+        rgb_calibration_table table;
         AC_LOG( DEBUG, "Reading RGB calibration table 0x" << std::hex << table.table_id );
         ivcam2::read_fw_table( *_owner->_hw_monitor, table.table_id, &table );
         AC_LOG( DEBUG, "    version:     " << table.version );
@@ -264,7 +264,7 @@ namespace librealsense
         AC_LOG( INFO, "Overriding intr: " << intr );
         AC_LOG( DEBUG, "    normalized:  " << table.get_intrinsics() );
         table.update_write_fields();
-        ivcam2::write_fw_table( *_owner->_hw_monitor, table.table_id, table );
+        write_fw_table( *_owner->_hw_monitor, table.table_id, table );
         AC_LOG( DEBUG, "    done" );
 
         // Intrinsics are resolution-specific, so all the rest of the profile info is not
@@ -274,7 +274,7 @@ namespace librealsense
 
     void l500_color_sensor::override_extrinsics( rs2_extrinsics const& extr )
     {
-        ivcam2::rgb_calibration_table table;
+        rgb_calibration_table table;
         AC_LOG( DEBUG, "Reading RGB calibration table 0x" << std::hex << table.table_id );
         ivcam2::read_fw_table( *_owner->_hw_monitor, table.table_id, &table );
         AC_LOG( DEBUG, "    version:     " << table.version );
@@ -319,7 +319,7 @@ namespace librealsense
         // Read from EEPROM (factory defaults), write to FLASH (current)
         // Note that factory defaults may be different than the trinsics at the time of
         // our initialization!
-        ivcam2::rgb_calibration_table table;
+        rgb_calibration_table table;
         AC_LOG( DEBUG, "Reading factory calibration from table 0x" << std::hex << table.eeprom_table_id );
         ivcam2::read_fw_table( *_owner->_hw_monitor, table.eeprom_table_id, &table );
         AC_LOG( DEBUG, "    version:     " << table.version );
