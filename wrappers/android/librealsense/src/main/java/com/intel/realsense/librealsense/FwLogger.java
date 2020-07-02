@@ -37,7 +37,7 @@ public class FwLogger extends Device {
         return new FwLogMsg(nGetFwLog(mHandle));
     }
 
-    public FwLogMsg getFlashLog() {
+    public FwLogMsg getFwLogsFromFlash() {
         return new FwLogMsg(nGetFlashLog(mHandle));
     }
 
