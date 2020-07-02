@@ -1,0 +1,4 @@
+LIBRARY
+
+EXPORTS
+    rs2_create_legacy_adaptor_device

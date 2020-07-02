@@ -254,7 +254,7 @@ namespace librealsense
                 }
                 catch (const std::exception& e)
                 {
-                    throw std::runtime_error(to_string() << "Device disconnected. Failed to recconect: " << e.what() << timeout_ms);
+                    throw std::runtime_error(to_string() << "Device disconnected. Failed to reconnect: " << e.what() << timeout_ms);
                 }
             }
             throw std::runtime_error(to_string() << "Frame didn't arrive within " << timeout_ms);

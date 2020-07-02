@@ -206,7 +206,7 @@ rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error
     return rs2_query_devices_ex(context, RS2_PRODUCT_LINE_ANY_INTEL, error);
 }
 
-rs2_device_list* rs2_query_devices_ex(const rs2_context* context, int product_mask, rs2_error** error)
+rs2_device_list* rs2_query_devices_ex(const rs2_context* context, int product_mask, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(context);
 
@@ -226,6 +226,7 @@ rs2_device_list* rs2_query_devices_ex(const rs2_context* context, int product_ma
 
     return new rs2_device_list{ context->ctx, results };
 }
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context, product_mask);
 
 rs2_sensor_list* rs2_query_sensors(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
@@ -2392,6 +2393,15 @@ void rs2_software_sensor_add_option(rs2_sensor* sensor, rs2_option option, float
     return bs->add_option(option, option_range{ min, max, step, def }, bool(is_writable));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, option, min, max, step, def, is_writable)
+
+void rs2_software_sensor_add_recommended_processing_block(rs2_sensor* sensor, rs2_processing_block* block, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
+    VALIDATE_NOT_NULL(block);
+    return bs->add_processing_block(block->block);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, block)
 
 void rs2_software_sensor_detach(rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
 {

@@ -35,6 +35,8 @@
 #define FW_L5XX_FW_IMAGE_VERSION ""
 #endif // INTERNAL_FW
 
+#include "../examples/software-device-advanced/legacy_adaptor.hpp"
+
 #include <easylogging++.h>
 
 
@@ -136,6 +138,36 @@ void add_playback_device(context& ctx, device_models_list& device_models,
         catch (...) {}
     }
 }
+
+#ifdef RS2_USE_LEGACY_ADAPTOR
+void add_legacy_device(context& ctx, device_models_list& device_models,
+    std::string& error_message, viewer_model& viewer_model, int idx)
+{
+    bool was_loaded = false;
+    bool failed = false;
+    try
+    {
+        auto dev = rs2::legacy::legacy_device(idx);
+        dev.add_to(ctx);
+        was_loaded = true;
+        device_models.emplace_back(new device_model(dev, error_message, viewer_model)); // Will cause the new device to appear in the left panel
+    }
+    catch (const error& e)
+    {
+        error_message = to_string() << "Failed to load device " << idx << ". Reason: " << error_to_string(e);
+        failed = true;
+    }
+    catch (const std::exception& e)
+    {
+        error_message = to_string() << "Failed to load file " << idx << ". Reason: " << e.what();
+        failed = true;
+    }
+    if (failed && was_loaded)
+    {
+        // TODO: What do?
+    }
+}
+#endif
 
 // This function is called every frame
 // If between the frames there was an asyncronous connect/disconnect event
@@ -395,6 +427,9 @@ int main(int argc, const char** argv) try
             ImGui::OpenPopup("select");
 
         auto new_devices_count = device_names.size() + 1;
+#ifdef RS2_USE_LEGACY_ADAPTOR
+        new_devices_count++; // Add row for legacy device menu option
+#endif
 
         for (auto&& dev_model : *device_models)
         {
@@ -408,7 +443,7 @@ int main(int argc, const char** argv) try
 
         ImGui::PushFont(window.get_font());
 
-        int multiline_devices_names = 0;
+      int multiline_devices_names = 0;
         for (size_t i = 0; i < device_names.size(); i++)
         {
             if (device_names[i].first.find("\n") != std::string::npos)
@@ -484,6 +519,14 @@ int main(int argc, const char** argv) try
                     add_playback_device(ctx, *device_models, error_message, viewer_model, ret);
                 }
             }
+#ifdef RS2_USE_LEGACY_ADAPTOR
+            if (ImGui::Selectable("Load Legacy Device", false, ImGuiSelectableFlags_SpanAllColumns))
+            {
+                // TODO: Select index
+                int idx = 0;
+                add_legacy_device(ctx, *device_models, error_message, viewer_model, idx);
+            }
+#endif
             ImGui::NextColumn();
             ImGui::Text("%s", "");
             ImGui::NextColumn();

@@ -223,6 +223,18 @@ namespace rs2
             error::handle(e);
         }
 
+        /**
+        * Register processing block that the sensor will recommend for use
+        *
+        * \param[in] pb     processing block to recommend
+        */
+        void add_recommended_processing(const rs2::processing_block& pb)
+        {
+            rs2_error* e = nullptr;
+            rs2_software_sensor_add_recommended_processing_block(_sensor.get(), pb.get(), &e);
+            error::handle(e);
+        }
+
         void on_notification(rs2_software_notification notif)
         {
             rs2_error * e = nullptr;
@@ -272,12 +284,10 @@ namespace rs2
     public:
         software_device(std::function<void(rs2_device*)> deleter = &rs2_delete_device)
             : device(create_device_ptr(deleter))
-        {
-            this->set_destruction_callback([]{});
-        }
+        {}
 
-        software_device(std::string name)
-            : device(create_device_ptr(&rs2_delete_device))
+        software_device(std::string name, std::function<void(rs2_device*)> deleter = &rs2_delete_device)
+            : device(create_device_ptr(deleter))
         {
             update_info(RS2_CAMERA_INFO_NAME, name);
         }
@@ -361,6 +371,9 @@ namespace rs2
             rs2_software_device_create_matcher(_dev.get(), matcher, &e);
             error::handle(e);
         }
+
+    protected:
+        software_device(std::shared_ptr<rs2_device> dev) : device(dev) {}
     };
 
     class firmware_log_message

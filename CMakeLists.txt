@@ -79,6 +79,7 @@ if (BUILD_EXAMPLES AND BUILD_GLSL_EXTENSIONS)
 endif()
 
 if(BUILD_EXAMPLES)
+    # Order is important here
     add_subdirectory(examples)
     add_subdirectory(tools)
 endif()

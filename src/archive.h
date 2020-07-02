@@ -358,6 +358,7 @@ namespace librealsense
             {
                 try
                 {
+                    // std::shared_ptr<librealsense::depth_sensor>
                     auto depth_sensor = As<librealsense::depth_sensor>(sensor);
                     if (depth_sensor != nullptr)
                     {
@@ -367,9 +368,10 @@ namespace librealsense
                     {
                         //For playback sensors
                         auto extendable = As<librealsense::extendable_interface>(sensor);
-                        if (extendable && extendable->extend_to(TypeToExtension<librealsense::depth_sensor>::value, (void**)(&depth_sensor)))
+                        librealsense::depth_sensor* ds;
+                        if (extendable && extendable->extend_to(TypeToExtension<librealsense::depth_sensor>::value, (void**)(&ds)))
                         {
-                            return depth_sensor->get_depth_scale();
+                            return ds->get_depth_scale();
                         }
                     }
                 }
