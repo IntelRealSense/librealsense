@@ -121,6 +121,7 @@ namespace depth_to_rgb_calibration {
 
         //svm
         double dir_ratio1;
+        k_matrix k_depth_pinv;
     };
 
     struct yuy2_frame_data : frame_data

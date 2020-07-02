@@ -176,7 +176,7 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
     CHECK(compare_to_bin_file< double >(depth_data.valid_direction_per_pixel, scene_dir, "validdirPerPixel", 1, md.n_valid_pixels, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< uint8_t >(depth_data.valid_section_map, scene_dir, "validsectionMapDepth", 1, md.n_valid_pixels, "uint8_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.valid_directions, scene_dir, "validdirectionIndex", 1, md.n_valid_pixels, "double_00", compare_same_vectors));
-    
+    CHECK(compare_to_bin_file< algo::k_matrix >(depth_data.k_depth_pinv, scene_dir, bin_file("k_depth_pinv", 3, 3, "double_00.bin")));
     //CHECK(compare_to_bin_file< double >(depth_data.valid_edge_sub_pixel_x, scene_dir, "xim", 1, md.n_valid_pixels, "double_00", compare_same_vectors));
     //CHECK(compare_to_bin_file< double >(depth_data.valid_edge_sub_pixel_y, scene_dir, "yim", 1, md.n_valid_pixels, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double>(depth_data.sub_points, scene_dir, "subPoints", 3, md.n_valid_pixels, "double_00", compare_same_vectors));

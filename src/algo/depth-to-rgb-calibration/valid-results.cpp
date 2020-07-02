@@ -380,16 +380,6 @@ bool optimizer::is_valid_results()
     double max_cost_diff
         = *std::max_element( _z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end() );
     AC_LOG( DEBUG, "... min cost diff= " << min_cost_diff << "  max= " << max_cost_diff );
-    if( min_cost_diff < 0. )
-    {
-        AC_LOG( ERROR,
-                "Some image sections were hurt by the optimization; invalidating calibration!" );
-        for( size_t x = 0; x < _z.cost_diff_per_section.size(); ++x )
-            AC_LOG( DEBUG,
-                    "... cost diff in section " << x << "= " << _z.cost_diff_per_section[x] );
-        // return false;
-        res = false;
-    }
 
     bool res_svm = valid_by_svm( linear );  //(gaussian);
     return ( res && res_svm );

@@ -672,6 +672,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     k_matrix k = depth_intrinsics;
     matrix_3x3 k_depth_pinv = { 0 };
     pinv_3x3( k.as_3x3().rot, k_depth_pinv.rot );
+    _z.k_depth_pinv = k_depth_pinv;
     transform(_z.valid_edge_sub_pixel_x.begin(), _z.valid_edge_sub_pixel_x.end(), _z.valid_edge_sub_pixel_x.begin(), bind2nd(std::plus<double>(), -1.0));
     transform(_z.valid_edge_sub_pixel_y.begin(), _z.valid_edge_sub_pixel_y.end(), _z.valid_edge_sub_pixel_y.begin(), bind2nd(std::plus<double>(), -1.0));
     for (auto i = 0; i < _z.sub_points.size(); i += 3)
@@ -1343,7 +1344,7 @@ void write_matlab_camera_params_file(
     //depth intrinsics
     write_obj( f, (double)_intr_depth.width );
     write_obj( f, (double)_intr_depth.height );
-    write_obj( f, (double)_depth_units );
+    write_obj( f, (double)1/_depth_units);
 
     double k_depth[9] = { _intr_depth.fx, 0, _intr_depth.ppx,
                         0, _intr_depth.fy, _intr_depth.ppy,
