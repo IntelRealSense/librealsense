@@ -84,6 +84,7 @@ public class FwLogsThread extends Thread{
             try(RsContext ctx = new RsContext()){
                 try(DeviceList devices = ctx.queryDevices()) {
                     if (devices.getDeviceCount() > 0) {
+                        // only device 0 is taken care of, as the camera app is supposed to work only with one device
                         try (Device device = devices.createDevice(0)) {
                             if(device != null) {
                                 try(final FwLogger fwLoggerDevice = device.as(Extension.FW_LOGGER)){
