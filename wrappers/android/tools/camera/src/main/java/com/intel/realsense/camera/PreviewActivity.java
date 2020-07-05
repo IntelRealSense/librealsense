@@ -49,6 +49,7 @@ public class PreviewActivity extends AppCompatActivity {
     private StreamingStats mStreamingStats;
 
     private FwLogsThread mFwLogsThread;
+    private boolean mFwLogsRunning = false;
 
     private boolean statsToggle = false;
     private boolean mShow3D = false;
@@ -322,30 +323,33 @@ public class PreviewActivity extends AppCompatActivity {
             Toast.makeText(this, "This control is not supported by this device", Toast.LENGTH_LONG).show();
     }
 
-    void resumeBackgroundTasks() {
+    private synchronized void resumeBackgroundTasks() {
         resumeFwLogger();
     }
 
-    void pauseBackgroundTasks() {
+    private synchronized void pauseBackgroundTasks() {
         pauseFwLogger();
     }
 
-    void resumeFwLogger() {
-        SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);
-        boolean fw_logging_enabled = sharedPref.getBoolean(getString(R.string.fw_logging), false);
-        String fw_logging_file_path = sharedPref.getString(getString(R.string.fw_logging_file_path), "");
+    private synchronized void resumeFwLogger() {
+        if (!mFwLogsRunning)
+        {
+            SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);
+            boolean fw_logging_enabled = sharedPref.getBoolean(getString(R.string.fw_logging), false);
+            String fw_logging_file_path = sharedPref.getString(getString(R.string.fw_logging_file_path), "");
 
-
-        if (fw_logging_enabled) {
-            mFwLogsThread = new FwLogsThread();
-            if(!fw_logging_file_path.equals("")){
-                mFwLogsThread.init(fw_logging_file_path);
+            if (fw_logging_enabled) {
+                mFwLogsThread = new FwLogsThread();
+                if(!fw_logging_file_path.equals("")){
+                    mFwLogsThread.init(fw_logging_file_path);
+                }
+                mFwLogsThread.start();
+                mFwLogsRunning = true;
             }
-            mFwLogsThread.start();
         }
     }
 
-    void pauseFwLogger(){
+    private synchronized void pauseFwLogger(){
         SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);
         boolean fw_logging_enabled = sharedPref.getBoolean(getString(R.string.fw_logging), false);
         if (fw_logging_enabled) {
@@ -354,5 +358,6 @@ public class PreviewActivity extends AppCompatActivity {
         if(mFwLogsThread != null && mFwLogsThread.isAlive()) {
             mFwLogsThread.interrupt();
         }
+        mFwLogsRunning = false;
     }
 }
