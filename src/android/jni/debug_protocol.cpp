@@ -35,7 +35,7 @@ Java_com_intel_realsense_librealsense_DebugProtocol_nSendAndReceiveRawData(JNIEn
     return rv;
 }
 
-char* getFileContentFromFilePath(const char* file_path)
+char* get_file_content_from_file_path(const char* file_path)
 {
     FILE* fp;
     long lSize;
@@ -68,7 +68,7 @@ Java_com_intel_realsense_librealsense_DebugProtocol_nSendAndReceiveData(JNIEnv *
     const char *file_path = env->GetStringUTFChars(filePath, 0);
     const char *line = env->GetStringUTFChars(command, 0);
 
-    char* xml_content = getFileContentFromFilePath(file_path);
+    char* xml_content = get_file_content_from_file_path(file_path);
 
     rs2_error* e = NULL;
 
