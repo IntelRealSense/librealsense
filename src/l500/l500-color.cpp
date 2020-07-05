@@ -184,32 +184,39 @@ namespace librealsense
 
         auto num_of_res = intrinsic->resolution.num_of_resolutions;
 
-        for( auto i = 0; i < num_of_res; i++ )
+        if (num_of_res <= MAX_NUM_OF_RGB_RESOLUTIONS)
         {
-            auto model = intrinsic->resolution.intrinsic_resolution[i];
-            if( model.height == profile.height && model.width == profile.width )
+            for (auto i = 0; i < num_of_res; i++)
             {
-                rs2_intrinsics intrinsics;
-                intrinsics.width = model.width;
-                intrinsics.height = model.height;
-                intrinsics.fx = model.ipm.focal_length.x;
-                intrinsics.fy = model.ipm.focal_length.y;
-                intrinsics.ppx = model.ipm.principal_point.x;
-                intrinsics.ppy = model.ipm.principal_point.y;
-
-                if( model.distort.radial_k1 || model.distort.radial_k2 || model.distort.tangential_p1 || model.distort.tangential_p2 || model.distort.radial_k3 )
+                auto model = intrinsic->resolution.intrinsic_resolution[i];
+                if (model.height == profile.height && model.width == profile.width)
                 {
-                    intrinsics.coeffs[0] = model.distort.radial_k1;
-                    intrinsics.coeffs[1] = model.distort.radial_k2;
-                    intrinsics.coeffs[2] = model.distort.tangential_p1;
-                    intrinsics.coeffs[3] = model.distort.tangential_p2;
-                    intrinsics.coeffs[4] = model.distort.radial_k3;
+                    rs2_intrinsics intrinsics;
+                    intrinsics.width = model.width;
+                    intrinsics.height = model.height;
+                    intrinsics.fx = model.ipm.focal_length.x;
+                    intrinsics.fy = model.ipm.focal_length.y;
+                    intrinsics.ppx = model.ipm.principal_point.x;
+                    intrinsics.ppy = model.ipm.principal_point.y;
 
-                    intrinsics.model = RS2_DISTORTION_INVERSE_BROWN_CONRADY;
+                    if (model.distort.radial_k1 || model.distort.radial_k2 || model.distort.tangential_p1 || model.distort.tangential_p2 || model.distort.radial_k3)
+                    {
+                        intrinsics.coeffs[0] = model.distort.radial_k1;
+                        intrinsics.coeffs[1] = model.distort.radial_k2;
+                        intrinsics.coeffs[2] = model.distort.tangential_p1;
+                        intrinsics.coeffs[3] = model.distort.tangential_p2;
+                        intrinsics.coeffs[4] = model.distort.radial_k3;
+
+                        intrinsics.model = RS2_DISTORTION_INVERSE_BROWN_CONRADY;
+                    }
+
+                    return intrinsics;
                 }
-
-                return intrinsics;
             }
+        }
+        else
+        {
+            throw std::runtime_error(to_string() << "Firmware intrinsics tables count(" << num_of_res << "), is higher then maximum supported(" << MAX_NUM_OF_DEPTH_RESOLUTIONS << ")");
         }
         throw std::runtime_error( to_string() << "intrinsics for resolution " << profile.width << "," << profile.height << " don't exist" );
     }

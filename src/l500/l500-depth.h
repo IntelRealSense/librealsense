@@ -129,16 +129,24 @@ namespace librealsense
         static ivcam2::intrinsic_params get_intrinsic_params(const uint32_t width, const uint32_t height, ivcam2::intrinsic_depth intrinsic)
         {
             auto num_of_res = intrinsic.resolution.num_of_resolutions;
-
-            for (auto i = 0; i < num_of_res; i++)
+            
+            if (num_of_res <= MAX_NUM_OF_DEPTH_RESOLUTIONS)
             {
-                auto model_world = intrinsic.resolution.intrinsic_resolution[i].world;
-                auto model_raw = intrinsic.resolution.intrinsic_resolution[i].raw;
+                for (auto i = 0; i < num_of_res; i++)
+                {
+                    auto model_world = intrinsic.resolution.intrinsic_resolution[i].world;
+                    auto model_raw = intrinsic.resolution.intrinsic_resolution[i].raw;
 
-                if (model_world.pinhole_cam_model.height == height && model_world.pinhole_cam_model.width == width)
-                    return model_world;
-                else if (model_raw.pinhole_cam_model.height == height && model_raw.pinhole_cam_model.width == width)
-                    return  model_raw;
+                    if (model_world.pinhole_cam_model.height == height && model_world.pinhole_cam_model.width == width)
+                        return model_world;
+                    else if (model_raw.pinhole_cam_model.height == height && model_raw.pinhole_cam_model.width == width)
+                        return  model_raw;
+                }
+            }
+            else
+            {
+                throw std::runtime_error(to_string() << "Firmware intrinsic tables count(" << num_of_res << "), is higher then maximum supported(" << MAX_NUM_OF_DEPTH_RESOLUTIONS << ")");
+
             }
             throw std::runtime_error(to_string() << "intrinsics for resolution " << width << "," << height << " doesn't exist");
         }

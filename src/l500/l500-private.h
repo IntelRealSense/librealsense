@@ -9,8 +9,8 @@
 #include "core/extension.h"
 #include "fw-update/fw-update-unsigned.h"
 
-static const int NUM_OF_RGB_RESOLUTIONS = 5;
-static const int NUM_OF_DEPTH_RESOLUTIONS = 2;
+static const int MAX_NUM_OF_RGB_RESOLUTIONS = 5;
+static const int MAX_NUM_OF_DEPTH_RESOLUTIONS = 5;
 
 namespace librealsense
 {
@@ -266,10 +266,10 @@ namespace librealsense
             using namespace std;
 
             auto table = reinterpret_cast<const T*>(raw_data.data());
-
-            if (raw_data.size() < sizeof(T))
+            auto expected_size = table->get_expected_size(raw_data);
+            if (raw_data.size() < expected_size)
             {
-                throw invalid_value_exception(to_string() << "Calibration data invald, buffer too small : expected " << sizeof(T) << " , actual: " << raw_data.size());
+                throw invalid_value_exception(to_string() << "Calibration data invalid, buffer too small : expected " << expected_size << " , actual: " << raw_data.size());
             }
 
             return table;
@@ -317,7 +317,7 @@ namespace librealsense
             uint16_t reserved16;
             uint8_t reserved8;
             uint8_t num_of_resolutions;
-            intrinsic_per_resolution intrinsic_resolution[NUM_OF_DEPTH_RESOLUTIONS]; //Dynamic number of entries according to num of resolutions
+            intrinsic_per_resolution intrinsic_resolution[MAX_NUM_OF_DEPTH_RESOLUTIONS]; //Dynamic number of entries according to num of resolutions
         };
 
         struct orientation
@@ -333,6 +333,18 @@ namespace librealsense
         {
             orientation orient;
             resolutions_depth resolution;
+
+            size_t get_expected_size(const std::vector<uint8_t> & raw_data_vec) const 
+            {
+                size_t expected_size(0);
+                const auto raw = reinterpret_cast<const intrinsic_depth *>(raw_data_vec.data());
+
+                expected_size += sizeof(raw->orient);
+                // Get full maximum size of the resolution array and deduct the unused resolutions size from it.
+                expected_size += sizeof(raw->resolution);
+                expected_size -= (MAX_NUM_OF_DEPTH_RESOLUTIONS - raw->resolution.num_of_resolutions) * sizeof(intrinsic_per_resolution);
+                return expected_size;
+            }
         };
 
         struct resolutions_rgb
@@ -340,7 +352,7 @@ namespace librealsense
             uint16_t reserved16;
             uint8_t reserved8;
             uint8_t num_of_resolutions;
-            pinhole_camera_model intrinsic_resolution[NUM_OF_RGB_RESOLUTIONS]; //Dynamic number of entries according to num of resolutions
+            pinhole_camera_model intrinsic_resolution[MAX_NUM_OF_RGB_RESOLUTIONS]; //Dynamic number of entries according to num of resolutions
         };
 
         struct rgb_common
@@ -353,6 +365,19 @@ namespace librealsense
         {
             rgb_common common;
             resolutions_rgb resolution;
+
+            size_t get_expected_size(const std::vector<uint8_t> & raw_data_vec) const
+            {
+                size_t expected_size(0);
+                const auto raw = reinterpret_cast<const intrinsic_rgb *>(raw_data_vec.data());
+
+                expected_size += sizeof(raw->common);
+                // Get full maximum size of the resolution array and deduct the unused resolutions size from it.
+                expected_size += sizeof(raw->resolution);
+                expected_size -= (MAX_NUM_OF_RGB_RESOLUTIONS - raw->resolution.num_of_resolutions) * sizeof(intrinsic_per_resolution);
+                return expected_size;
+            }
+
         };
 
         struct temperatures {
