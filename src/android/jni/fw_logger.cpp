@@ -15,7 +15,7 @@ Java_com_intel_realsense_librealsense_FwLogger_nGetFwLog(JNIEnv *env, jclass cla
     rs2_firmware_log_message* log_msg = rs2_create_fw_log_message(reinterpret_cast<rs2_device*>(fw_logger_handle), &e);
     handle_error(env, e);
 
-    int result = rs2_get_fw_log(reinterpret_cast<rs2_device*>(fw_logger_handle), &log_msg, &e);
+    int result = rs2_get_fw_log(reinterpret_cast<rs2_device*>(fw_logger_handle), log_msg, &e);
     handle_error(env, e);
 
     return (jlong)log_msg;
@@ -29,7 +29,7 @@ Java_com_intel_realsense_librealsense_FwLogger_nGetFlashLog(JNIEnv *env, jclass 
     rs2_firmware_log_message* log_msg = rs2_create_fw_log_message(reinterpret_cast<rs2_device*>(fw_logger_handle), &e);
     handle_error(env, e);
 
-    int result = rs2_get_flash_log(reinterpret_cast<rs2_device*>(fw_logger_handle), &log_msg, &e);
+    int result = rs2_get_flash_log(reinterpret_cast<rs2_device*>(fw_logger_handle), log_msg, &e);
     if (result == 0){
         e = rs2_create_error("No more logs in flash", "dummy_name", "dummy_args", RS2_EXCEPTION_TYPE_UNKNOWN);
     }
