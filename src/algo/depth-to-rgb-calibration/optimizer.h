@@ -186,6 +186,7 @@ namespace depth_to_rgb_calibration {
         std::vector <double> sg_mat_tag_x_err_l2;
         std::vector <double> quad_coef;
         double2 focal_scaling;
+        double2 opt_scaling_1;
         double2 opt_scaling;
         double2 new_los_scaling;
         rs2_dsm_params_double dsm_params_cand;

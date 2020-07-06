@@ -363,6 +363,11 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
                 data.k2dsm_data_p.quad_coef.size(), 1, compare_same_vectors));
 
             CHECK(compare_to_bin_file< algo::double2 >(
+                data.k2dsm_data_p.opt_scaling_1,
+                scene_dir,
+                bin_file("optScaling1", data.cycle_data_p.cycle, 1, 2, "double_00.bin")));
+
+            CHECK(compare_to_bin_file< algo::double2 >(
                 data.k2dsm_data_p.opt_scaling,
                 scene_dir,
                 bin_file("optScaling", data.cycle_data_p.cycle, 1, 2, "double_00.bin")));
