@@ -207,13 +207,14 @@ namespace librealsense
                 else if (model_raw.pinhole_cam_model.height == height && model_raw.pinhole_cam_model.width == width)
                     return  model_raw;
             }
+            // Should not get here
+            throw std::runtime_error(to_string() << "intrinsics for resolution " << width << "," << height << " doesn't exist");
         }
         else
         {
             throw std::runtime_error(to_string() << "Firmware intrinsic tables count(" << num_of_res << "), is higher than maximum supported(" << MAX_NUM_OF_DEPTH_RESOLUTIONS << ")");
 
         }
-        throw std::runtime_error(to_string() << "intrinsics for resolution " << width << "," << height << " doesn't exist");
     }
     int l500_depth_sensor::read_algo_version()
     {
