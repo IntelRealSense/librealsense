@@ -4968,12 +4968,12 @@ namespace rs2
 
         if (show_trigger_camera_accuracy_health_popup)
         {
-            show_trigger_camera_accuracy_health_popup = accuracy_health_model.prompt_trigger_camera_accuracy_health(*this, window, viewer, error_message);
+            show_trigger_camera_accuracy_health_popup = accuracy_health_model.prompt_trigger_popup(*this, window, viewer, error_message);
         }
 
         if (show_reset_camera_accuracy_health_popup)
         {
-            show_reset_camera_accuracy_health_popup = accuracy_health_model.prompt_reset_camera_accuracy_health(*this, window, error_message);
+            show_reset_camera_accuracy_health_popup = accuracy_health_model.prompt_reset_popup(*this, window, error_message);
         }
 
         if (keep_showing_advanced_mode_modal)

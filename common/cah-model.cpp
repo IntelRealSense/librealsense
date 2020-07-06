@@ -9,13 +9,13 @@
 
 using namespace rs2;
 
-bool cah_model::prompt_trigger_camera_accuracy_health(device_model & dev_model, ux_window& window, viewer_model& viewer, const std::string& error_message)
+bool cah_model::prompt_trigger_popup(device_model & dev_model, ux_window& window, viewer_model& viewer, const std::string& error_message)
 {
     // This process is built from a 2 stages windows, first a yes/no window and then a process window
     bool keep_showing = true;
     bool yes_was_chosen = false;
 
-    switch (cah_state.load())
+    switch (_state.load())
     {
     case model_state_type::TRIGGER_MODAL:
     {
@@ -73,16 +73,16 @@ bool cah_model::prompt_trigger_camera_accuracy_health(device_model & dev_model, 
                     sd->s->set_option(RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, 1.0f);
                     device_calibration dev_cal(dev_model.dev);
                     // Register AC status change callback
-                    if (!registered_to_callback)
+                    if (!_registered_to_callback)
                     {
-                        registered_to_callback = true;
-                        cah_state = model_state_type::PROCESS_MODAL;
+                        _registered_to_callback = true;
+                        _state = model_state_type::PROCESS_MODAL;
                         // We switch to process state without a guarantee that the process really started,
                         // Set a timeout to make sure if it is not started we will allow closing the window.
-                        cah_process_timeout.start(std::chrono::seconds(30)); 
+                        _process_timeout.start(std::chrono::seconds(30)); 
                         dev_cal.register_calibration_change_callback([&](rs2_calibration_status cal_status)
                         {
-                            calib_status = cal_status;
+                            _calib_status = cal_status;
                         });
                     }
                 }
@@ -97,13 +97,13 @@ bool cah_model::prompt_trigger_camera_accuracy_health(device_model & dev_model, 
 
     case model_state_type::PROCESS_MODAL:
     {
-        if (!process_started)
+        if (!_process_started)
         {
             // Indication of calibration process start
-            process_started = (calib_status == RS2_CALIBRATION_SPECIAL_FRAME || calib_status == RS2_CALIBRATION_STARTED);
+            _process_started = (_calib_status == RS2_CALIBRATION_SPECIAL_FRAME || _calib_status == RS2_CALIBRATION_STARTED);
         }
 
-        bool process_finished(calib_status == RS2_CALIBRATION_SUCCESSFUL || calib_status == RS2_CALIBRATION_FAILED || calib_status == RS2_CALIBRATION_NOT_NEEDED);
+        bool process_finished(_calib_status == RS2_CALIBRATION_SUCCESSFUL || _calib_status == RS2_CALIBRATION_FAILED || _calib_status == RS2_CALIBRATION_NOT_NEEDED);
 
         static std::map<rs2_calibration_status, std::string> status_map{
             {RS2_CALIBRATION_SPECIAL_FRAME  , "In Progress" },
@@ -115,12 +115,12 @@ bool cah_model::prompt_trigger_camera_accuracy_health(device_model & dev_model, 
             {RS2_CALIBRATION_SCENE_INVALID  , "In Progress" },
             {RS2_CALIBRATION_BAD_RESULT     , "In Progress" } };
 
-        rs2_calibration_status calibration_status = calib_status;
+        rs2_calibration_status calibration_status = _calib_status;
 
         // We don't know if AC really started working so we add a timeout for not blocking the viewer forever.
-        if (!process_started)
+        if (!_process_started)
         {
-            if (cah_process_timeout.has_expired())
+            if (_process_timeout.has_expired())
             {
                 process_finished = true; // on timeout display failure and allow closing the window
                 calibration_status = RS2_CALIBRATION_FAILED;
@@ -143,15 +143,15 @@ bool cah_model::prompt_trigger_camera_accuracy_health(device_model & dev_model, 
     //reset internal elements for next process
     if (!keep_showing)
     {
-        cah_state = model_state_type::TRIGGER_MODAL;
-        calib_status = RS2_CALIBRATION_RETRY;
-        process_started = false;
-        registered_to_callback = false;
+        _state = model_state_type::TRIGGER_MODAL;
+        _calib_status = RS2_CALIBRATION_RETRY;
+        _process_started = false;
+        _registered_to_callback = false;
     }
     return keep_showing;
 }
 
-bool cah_model::prompt_reset_camera_accuracy_health(device_model & dev_model, ux_window& window, const std::string& error_message)
+bool cah_model::prompt_reset_popup(device_model & dev_model, ux_window& window, const std::string& error_message)
 {
     bool keep_showing = true;
     bool yes_was_chosen = false;
