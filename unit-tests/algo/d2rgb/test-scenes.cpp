@@ -3,6 +3,11 @@
 
 //#cmake:add-file ../../../src/algo/depth-to-rgb-calibration/*.cpp
 
+#ifndef BUILD_SHARED_LIBS
+#include <easylogging++.h>
+INITIALIZE_EASYLOGGINGPP
+#endif
+
 // We have our own main
 #define NO_CATCH_CONFIG_MAIN
 #define CATCH_CONFIG_RUNNER
