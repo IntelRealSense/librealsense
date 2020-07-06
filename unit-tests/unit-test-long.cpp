@@ -126,76 +126,79 @@ TEST_CASE("multicam_streaming", "[live][multicam]")
 {
     // Test will start and stop streaming on 2 devices simultaneously for 10 times, thus testing the named_mutex mechnism.
     rs2::context ctx;
-    std::vector<std::string> serials_numbers;
-    for (auto&& dev : ctx.query_devices())
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        std::string serial(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-        std::string usb_type(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
-        if ( usb_type != "3.2")
+        std::vector<std::string> serials_numbers;
+        for (auto&& dev : ctx.query_devices())
         {
-            std::cout << "Device " << serial << " with usb_type " << usb_type << " is skipped.";
-            continue;
-        }
-        serials_numbers.push_back(serial);
-    }
-    REQUIRE(serials_numbers.size() >= 2);
-    std::vector<pid_t> pids;
-    pid_t pid;
-
-    bool do_query(true);
-    std::vector<sem_t*> sems;
-    for (size_t idx = 0; idx < serials_numbers.size(); idx++)
-    {
-        std::stringstream sem_name;
-        sem_name << "sem_" << idx;
-        sem_unlink(sem_name.str().c_str());
-        sems.push_back(sem_open(sem_name.str().c_str(), O_CREAT|O_EXCL, S_IRWXU, 0));
-        CHECK_FALSE(sems[idx] == SEM_FAILED);
-        pid = fork();
-        if (pid == 0) // child
-        {
-            multiple_stream(serials_numbers[idx], sems[idx], do_query); //on normal behavior - should block
-        }
-        else
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            pids.push_back(pid);
-        }
-    }
-    if (pid != 0)
-    {
-        int status0;
-        pid_t pid = wait(&status0);
-        std::cout << "status0 = " << status0 << std::endl;
-        for (auto sem : sems)
-        {
-            sem_post(sem);
-        }
-        for (auto pid : pids)
-        {
-            int status;
-            pid_t w = waitpid(pid, &status, WNOHANG);
-            std::cout << "status: " << pid << " : " << status << std::endl;
-            bool child_alive(w == 0);
-
-            double start_time = duration<double, std::milli>(system_clock::now().time_since_epoch()).count();
-            double crnt_time = duration<double, std::milli>(system_clock::now().time_since_epoch()).count();
-            while (child_alive && (crnt_time - start_time < 6000))
+            std::string serial(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+            std::string usb_type(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
+            if ( usb_type != "3.2")
             {
-                std::cout << "waiting for: " << pid << std::endl;
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                std::cout << "Device " << serial << " with usb_type " << usb_type << " is skipped.";
+                continue;
+            }
+            serials_numbers.push_back(serial);
+        }
+        REQUIRE(serials_numbers.size() >= 2);
+        std::vector<pid_t> pids;
+        pid_t pid;
+
+        bool do_query(true);
+        std::vector<sem_t*> sems;
+        for (size_t idx = 0; idx < serials_numbers.size(); idx++)
+        {
+            std::stringstream sem_name;
+            sem_name << "sem_" << idx;
+            sem_unlink(sem_name.str().c_str());
+            sems.push_back(sem_open(sem_name.str().c_str(), O_CREAT|O_EXCL, S_IRWXU, 0));
+            CHECK_FALSE(sems[idx] == SEM_FAILED);
+            pid = fork();
+            if (pid == 0) // child
+            {
+                multiple_stream(serials_numbers[idx], sems[idx], do_query); //on normal behavior - should block
+            }
+            else
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                pids.push_back(pid);
+            }
+        }
+        if (pid != 0)
+        {
+            int status0;
+            pid_t pid = wait(&status0);
+            std::cout << "status0 = " << status0 << std::endl;
+            for (auto sem : sems)
+            {
+                sem_post(sem);
+            }
+            for (auto pid : pids)
+            {
+                int status;
                 pid_t w = waitpid(pid, &status, WNOHANG);
-                child_alive = (w == 0);
-                crnt_time = duration<double, std::milli>(system_clock::now().time_since_epoch()).count();
+                std::cout << "status: " << pid << " : " << status << std::endl;
+                bool child_alive(w == 0);
+
+                double start_time = duration<double, std::milli>(system_clock::now().time_since_epoch()).count();
+                double crnt_time = duration<double, std::milli>(system_clock::now().time_since_epoch()).count();
+                while (child_alive && (crnt_time - start_time < 6000))
+                {
+                    std::cout << "waiting for: " << pid << std::endl;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                    pid_t w = waitpid(pid, &status, WNOHANG);
+                    child_alive = (w == 0);
+                    crnt_time = duration<double, std::milli>(system_clock::now().time_since_epoch()).count();
+                }
+                if (child_alive)
+                {
+                    std::cout << "kill: " << pid << std::endl;
+                    int res = kill(pid,SIGTERM);
+                    pid_t w = waitpid(pid, &status, 0);
+                    std::cout << "status: " << status << ", " << w << std::endl;
+                }
             }
-            if (child_alive)
-            {
-                std::cout << "kill: " << pid << std::endl;
-                int res = kill(pid,SIGTERM);
-                pid_t w = waitpid(pid, &status, 0);
-                std::cout << "status: " << status << ", " << w << std::endl;
-            }
+            REQUIRE(status0 == 0);
         }
-        REQUIRE(status0 == 0);
     }
 }
