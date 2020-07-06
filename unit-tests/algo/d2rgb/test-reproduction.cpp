@@ -80,7 +80,7 @@ int main( int argc, char * argv[] )
             {
                 // The build number is only available within Jenkins and so we have to hard-
                 // code it ><
-                std::cout << RS2_API_VERSION_STR << ".1973" << std::endl;
+                std::cout << RS2_API_VERSION_STR << ".2003" << std::endl;
                 continue;
             }
             std::cout << "Processing: " << dir << " ..." << std::endl;
@@ -137,7 +137,7 @@ int main( int argc, char * argv[] )
             {
                 status += "SUCCESSFUL";
             }
-            TRACE( "\n___\nRESULTS:  (" << RS2_API_VERSION_STR << " build 1973)" );
+            TRACE( "\n___\nRESULTS:  (" << RS2_API_VERSION_STR << " build 2003)" );
 
             auto intr = cal.get_calibration().get_intrinsics();
             auto extr = cal.get_calibration().get_extrinsics();
