@@ -138,6 +138,8 @@ namespace rs2
         {
             static const char* is_3d_view          { "viewer_model.is_3d_view" };
             static const char* ground_truth_r      { "viewer_model.ground_truth_r" };
+            static const char* target_width_r      { "viewer_model.target_width_r" };
+            static const char* target_height_r     { "viewer_model.target_height_r" };
             static const char* continue_with_ui_not_aligned { "viewer_model.continue_with_ui_not_aligned" };
             static const char* continue_with_current_fw{ "viewer_model.continue_with_current_fw" };
             static const char* settings_tab        { "viewer_model.settings_tab" };
