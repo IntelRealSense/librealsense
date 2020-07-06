@@ -216,7 +216,7 @@ namespace librealsense
         }
         else
         {
-            throw std::runtime_error(to_string() << "Firmware intrinsics tables count(" << num_of_res << "), is higher then maximum supported(" << MAX_NUM_OF_DEPTH_RESOLUTIONS << ")");
+            throw std::runtime_error(to_string() << "Firmware intrinsics tables count(" << num_of_res << "), is higher than maximum supported(" << MAX_NUM_OF_DEPTH_RESOLUTIONS << ")");
         }
         throw std::runtime_error( to_string() << "intrinsics for resolution " << profile.width << "," << profile.height << " don't exist" );
     }
