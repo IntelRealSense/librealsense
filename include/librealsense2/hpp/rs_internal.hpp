@@ -512,7 +512,7 @@ namespace rs2
             rs2_error* e = nullptr;
             rs2_firmware_log_message* m = msg.get_message().get();
             bool fw_log_pulling_status =
-                rs2_get_fw_log(_dev.get(), &(m), &e);
+                rs2_get_fw_log(_dev.get(), m, &e);
 
             error::handle(e);
 
@@ -524,7 +524,7 @@ namespace rs2
             rs2_error* e = nullptr;
             rs2_firmware_log_message* m = msg.get_message().get();
             bool flash_log_pulling_status =
-                rs2_get_flash_log(_dev.get(), &(m), &e);
+                rs2_get_flash_log(_dev.get(), m, &e);
 
             error::handle(e);
 

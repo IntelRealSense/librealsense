@@ -2,6 +2,7 @@
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
+#include "../include/librealsense2/hpp/rs_internal.hpp"
 #include "../include/librealsense2/hpp/rs_device.hpp"
 #include "../include/librealsense2/hpp/rs_record_playback.hpp" // for downcasts
 
@@ -32,6 +33,7 @@ void init_device(py::module &m) {
         .def(BIND_DOWNCAST(device, update_device))
         .def(BIND_DOWNCAST(device, auto_calibrated_device))
         .def(BIND_DOWNCAST(device, device_calibration))
+        .def(BIND_DOWNCAST(device, firmware_logger))
         .def("__repr__", [](const rs2::device &self) {
             std::stringstream ss;
             ss << "<" SNAME ".device: " << self.get_info(RS2_CAMERA_INFO_NAME)

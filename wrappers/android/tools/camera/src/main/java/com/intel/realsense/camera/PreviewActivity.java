@@ -13,8 +13,6 @@ import android.util.Pair;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.RadioButton;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -23,8 +21,6 @@ import android.widget.Toast;
 import com.intel.realsense.librealsense.Config;
 import com.intel.realsense.librealsense.Device;
 import com.intel.realsense.librealsense.DeviceList;
-import com.intel.realsense.librealsense.Frame;
-import com.intel.realsense.librealsense.FrameCallback;
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
 import com.intel.realsense.librealsense.Option;
@@ -51,6 +47,9 @@ public class PreviewActivity extends AppCompatActivity {
 
     private Streamer mStreamer;
     private StreamingStats mStreamingStats;
+
+    private FwLogsThread mFwLogsThread;
+    private boolean mFwLogsRunning = false;
 
     private boolean statsToggle = false;
     private boolean mShow3D = false;
@@ -212,7 +211,6 @@ public class PreviewActivity extends AppCompatActivity {
 
             }
 
-
             @Override
             public void onFrameset(final FrameSet frameSet) {
                 mStreamingStats.onFrameset(frameSet);
@@ -246,6 +244,8 @@ public class PreviewActivity extends AppCompatActivity {
             Intent intent = new Intent(PreviewActivity.this, SettingsActivity.class);
             startActivity(intent);
         }
+
+        resumeBackgroundTasks();
     }
 
     @Override
@@ -257,6 +257,8 @@ public class PreviewActivity extends AppCompatActivity {
             mStreamer.stop();
         if(mGLSurfaceView != null)
             mGLSurfaceView.clear();
+
+        pauseBackgroundTasks();
     }
 
     public void onRadioButtonClicked(View view) {
@@ -319,5 +321,43 @@ public class PreviewActivity extends AppCompatActivity {
             s.setValue(option, val);
         else
             Toast.makeText(this, "This control is not supported by this device", Toast.LENGTH_LONG).show();
+    }
+
+    private synchronized void resumeBackgroundTasks() {
+        resumeFwLogger();
+    }
+
+    private synchronized void pauseBackgroundTasks() {
+        pauseFwLogger();
+    }
+
+    private synchronized void resumeFwLogger() {
+        if (!mFwLogsRunning)
+        {
+            SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);
+            boolean fw_logging_enabled = sharedPref.getBoolean(getString(R.string.fw_logging), false);
+            String fw_logging_file_path = sharedPref.getString(getString(R.string.fw_logging_file_path), "");
+
+            if (fw_logging_enabled) {
+                mFwLogsThread = new FwLogsThread();
+                if(!fw_logging_file_path.equals("")){
+                    mFwLogsThread.init(fw_logging_file_path);
+                }
+                mFwLogsThread.start();
+                mFwLogsRunning = true;
+            }
+        }
+    }
+
+    private synchronized void pauseFwLogger(){
+        SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);
+        boolean fw_logging_enabled = sharedPref.getBoolean(getString(R.string.fw_logging), false);
+        if (fw_logging_enabled) {
+            mFwLogsThread.stopLogging();
+        }
+        if(mFwLogsThread != null && mFwLogsThread.isAlive()) {
+            mFwLogsThread.interrupt();
+        }
+        mFwLogsRunning = false;
     }
 }
