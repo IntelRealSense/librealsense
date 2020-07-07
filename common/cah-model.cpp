@@ -9,6 +9,19 @@
 
 using namespace rs2;
 
+// This registration should happen once in the SW runtime life.
+static bool global_registered_to_callback = false;
+
+// This variable is global for protecting the case when the callback will be called when the device model no longer exist.
+static std::atomic<rs2_calibration_status> global_calib_status; 
+
+cah_model::cah_model() :_state(model_state_type::TRIGGER_MODAL),
+_process_started(false), _process_timeout()
+{
+    global_calib_status = RS2_CALIBRATION_RETRY;
+}
+
+
 bool cah_model::prompt_trigger_popup(device_model & dev_model, ux_window& window, viewer_model& viewer, const std::string& error_message)
 {
     // This process is built from a 2 stages windows, first a yes/no window and then a process window
@@ -73,18 +86,19 @@ bool cah_model::prompt_trigger_popup(device_model & dev_model, ux_window& window
                     sd->s->set_option(RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, 1.0f);
                     device_calibration dev_cal(dev_model.dev);
                     // Register AC status change callback
-                    if (!_registered_to_callback)
+                    if (!global_registered_to_callback)
                     {
-                        _registered_to_callback = true;
-                        _state = model_state_type::PROCESS_MODAL;
-                        // We switch to process state without a guarantee that the process really started,
-                        // Set a timeout to make sure if it is not started we will allow closing the window.
-                        _process_timeout.start(std::chrono::seconds(30)); 
                         dev_cal.register_calibration_change_callback([&](rs2_calibration_status cal_status)
                         {
-                            _calib_status = cal_status;
+                            global_calib_status = cal_status;
                         });
+                        global_registered_to_callback = true;
                     }
+                    _state = model_state_type::PROCESS_MODAL;
+                    // We switch to process state without a guarantee that the process really started,
+                    // Set a timeout to make sure if it is not started we will allow closing the window.
+                    _process_timeout.start(std::chrono::seconds(30));
+
                 }
             }
             else
@@ -100,10 +114,10 @@ bool cah_model::prompt_trigger_popup(device_model & dev_model, ux_window& window
         if (!_process_started)
         {
             // Indication of calibration process start
-            _process_started = (_calib_status == RS2_CALIBRATION_SPECIAL_FRAME || _calib_status == RS2_CALIBRATION_STARTED);
+            _process_started = (global_calib_status == RS2_CALIBRATION_SPECIAL_FRAME || global_calib_status == RS2_CALIBRATION_STARTED);
         }
 
-        bool process_finished(_calib_status == RS2_CALIBRATION_SUCCESSFUL || _calib_status == RS2_CALIBRATION_FAILED || _calib_status == RS2_CALIBRATION_NOT_NEEDED);
+        bool process_finished(global_calib_status == RS2_CALIBRATION_SUCCESSFUL || global_calib_status == RS2_CALIBRATION_FAILED || global_calib_status == RS2_CALIBRATION_NOT_NEEDED);
 
         static std::map<rs2_calibration_status, std::string> status_map{
             {RS2_CALIBRATION_SPECIAL_FRAME  , "In Progress" },
@@ -115,7 +129,7 @@ bool cah_model::prompt_trigger_popup(device_model & dev_model, ux_window& window
             {RS2_CALIBRATION_SCENE_INVALID  , "In Progress" },
             {RS2_CALIBRATION_BAD_RESULT     , "In Progress" } };
 
-        rs2_calibration_status calibration_status = _calib_status;
+        rs2_calibration_status calibration_status = global_calib_status;
 
         // We don't know if AC really started working so we add a timeout for not blocking the viewer forever.
         if (!_process_started)
@@ -144,9 +158,8 @@ bool cah_model::prompt_trigger_popup(device_model & dev_model, ux_window& window
     if (!keep_showing)
     {
         _state = model_state_type::TRIGGER_MODAL;
-        _calib_status = RS2_CALIBRATION_RETRY;
+        global_calib_status = RS2_CALIBRATION_RETRY;
         _process_started = false;
-        _registered_to_callback = false;
     }
     return keep_showing;
 }

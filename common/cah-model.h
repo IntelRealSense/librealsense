@@ -48,9 +48,7 @@ namespace rs2
     class cah_model // CAH = Camera Accuracy Health
     {
     public:
-        cah_model() :_state(model_state_type::TRIGGER_MODAL), _calib_status(RS2_CALIBRATION_RETRY),
-            _registered_to_callback(false), _process_started(false), _process_timeout()
-        {}
+        cah_model();
 
         bool prompt_trigger_popup(device_model & dev_model, ux_window& window, viewer_model& viewer, const std::string& error_message);
         bool prompt_reset_popup(device_model & dev_model, ux_window& window, const std::string& error_message);
@@ -59,8 +57,6 @@ namespace rs2
 
         enum class model_state_type { TRIGGER_MODAL, PROCESS_MODAL };
         std::atomic<model_state_type> _state; // will be set from a different thread callback function
-        std::atomic<rs2_calibration_status> _calib_status; // will be set from a different thread callback function
-        bool _registered_to_callback;
         bool _process_started;
         timeout _process_timeout;
     };
