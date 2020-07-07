@@ -266,7 +266,7 @@ namespace librealsense
             using namespace std;
 
             auto table = reinterpret_cast<const T*>(raw_data.data());
-            auto expected_size = table->get_expected_size(raw_data);
+            auto expected_size = table->get_expected_size();
             if (raw_data.size() < expected_size)
             {
                 throw invalid_value_exception(to_string() << "Calibration data invalid, buffer too small : expected " << expected_size << " , actual: " << raw_data.size());
@@ -334,15 +334,15 @@ namespace librealsense
             orientation orient;
             resolutions_depth resolution;
 
-            size_t get_expected_size(const std::vector<uint8_t> & raw_data_vec) const 
+            // This function use the value inside the struct "num_of_resolutions" to calculate the expected size of the intrinsics table buffer recieved from the firmware.
+            // Note: call this function only with real values inside the struct.            
+            size_t get_expected_size() const 
             {
                 size_t expected_size(0);
-                const auto raw = reinterpret_cast<const intrinsic_depth *>(raw_data_vec.data());
 
-                expected_size += sizeof(raw->orient);
                 // Get full maximum size of the resolution array and deduct the unused resolutions size from it.
-                expected_size += sizeof(raw->resolution);
-                expected_size -= (MAX_NUM_OF_DEPTH_RESOLUTIONS - raw->resolution.num_of_resolutions) * sizeof(intrinsic_per_resolution);
+                expected_size += sizeof(*this);
+                expected_size -= (MAX_NUM_OF_DEPTH_RESOLUTIONS - this->resolution.num_of_resolutions) * sizeof(intrinsic_per_resolution);
                 return expected_size;
             }
         };
@@ -366,15 +366,16 @@ namespace librealsense
             rgb_common common;
             resolutions_rgb resolution;
 
-            size_t get_expected_size(const std::vector<uint8_t> & raw_data_vec) const
+            // This function use the value inside the struct "num_of_resolutions"
+            // to calculate the struct utilize size got from the firmware raw intrinsics table data.
+            // Note: call this function only with real values inside the struct.
+            size_t get_expected_size() const
             {
                 size_t expected_size(0);
-                const auto raw = reinterpret_cast<const intrinsic_rgb *>(raw_data_vec.data());
 
-                expected_size += sizeof(raw->common);
                 // Get full maximum size of the resolution array and deduct the unused resolutions size from it.
-                expected_size += sizeof(raw->resolution);
-                expected_size -= (MAX_NUM_OF_RGB_RESOLUTIONS - raw->resolution.num_of_resolutions) * sizeof(intrinsic_per_resolution);
+                expected_size += sizeof(*this);
+                expected_size -= (MAX_NUM_OF_RGB_RESOLUTIONS - this->resolution.num_of_resolutions) * sizeof(intrinsic_per_resolution);
                 return expected_size;
             }
 
