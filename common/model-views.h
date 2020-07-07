@@ -27,6 +27,7 @@
 #include "fw-update-helper.h"
 #include "updates-model.h"
 #include "calibration-model.h"
+#include "cah-model.h"
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);
@@ -483,6 +484,9 @@ namespace rs2
         std::string icon[2];
     };
 
+    bool yes_no_dialog(const std::string& title, const std::string& message_text, bool& approved, ux_window& window, const std::string& error_message, bool disabled = false);
+    bool status_dialog(const std::string& title, const std::string& process_topic_text, const std::string& process_status_text, bool enable_close, ux_window& window);
+
     class tm2_model
     {
     public:
@@ -798,30 +802,15 @@ namespace rs2
 
         std::vector<std::shared_ptr<notification_model>> related_notifications;
 
+        bool show_trigger_camera_accuracy_health_popup = false;
+        bool show_reset_camera_accuracy_health_popup = false;
+
     private:
         // This class is in charge of camera accuracy health window parameters,
         // Needed as a member for reseting the window memory on device disconnection.
-        class camera_accuracy_health_model
-        {
-        public:
-            enum class model_state_type { TRIGGER_MODAL, PROCESS_MODAL };
-            std::atomic<model_state_type> cah_state; // will be set from a different thread callback function
-            std::atomic<rs2_calibration_status> calib_status; // will be set from a different thread callback function
-            bool show_trigger_camera_accuracy_health_popup;
-            bool show_reset_camera_accuracy_health_popup;
-            bool registered_to_callback;
-            std::chrono::high_resolution_clock::time_point cah_process_start_time;
-            bool process_started;
+       
 
-
-            camera_accuracy_health_model():cah_state(model_state_type::TRIGGER_MODAL), calib_status(RS2_CALIBRATION_RETRY),
-                show_trigger_camera_accuracy_health_popup(false), show_reset_camera_accuracy_health_popup(false),
-                registered_to_callback(false), cah_process_start_time(), process_started(false)
-            {}
-
-        };
-
-        camera_accuracy_health_model cah_model;
+        cah_model accuracy_health_model;
         void draw_info_icon(ux_window& window, ImFont* font, const ImVec2& size);
         int draw_seek_bar();
         int draw_playback_controls(ux_window& window, ImFont* font, viewer_model& view);
@@ -844,8 +833,6 @@ namespace rs2
             viewer_model& view,
             ux_window& window,
             const std::string& error_message);
-        bool prompt_trigger_camera_accuracy_health(ux_window& window, viewer_model& viewer,  const std::string& error_message);
-        bool prompt_reset_camera_accuracy_health(ux_window& window, const std::string& error_message);
 
         void load_viewer_configurations(const std::string& json_str);
         void save_viewer_configurations(std::ofstream& outfile, nlohmann::json& j);
