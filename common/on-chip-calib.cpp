@@ -86,18 +86,29 @@ namespace rs2
                 _sub->stream_enabled[0] = false;
                 _sub->stream_enabled[1] = true;
                 _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
+
+                // Select only left infrared Y8 stream
+                _sub->ui.selected_format_id.clear();
+                for (int i = 0; i < _sub->format_values[1].size(); i++)
+                {
+                    if (_sub->format_values[1][i] == RS2_FORMAT_Y8)
+                    {
+                        _sub->ui.selected_format_id[1] = i;
+                        break;
+                    }
+                }
             }
             else
             {
                 _sub->stream_enabled[0] = true;
                 _sub->stream_enabled[1] = false;
+
+                if (_ui) _sub->ui = *_ui; // Save previous configuration
+
+                // Select only depth stream
+                _sub->ui.selected_format_id.clear();
+                _sub->ui.selected_format_id[RS2_STREAM_DEPTH] = 0;
             }
-
-            if (_ui) _sub->ui = *_ui; // Save previous configuration
-
-            // Select only depth stream
-            _sub->ui.selected_format_id.clear();
-            _sub->ui.selected_format_id[RS2_STREAM_DEPTH] = 0;
 
             // Select FPS value
             for (int i = 0; i < _sub->shared_fps_values.size(); i++)
@@ -1659,11 +1670,6 @@ namespace rs2
         _pts[q].x = 0;
         _pts[q].y = 0;
 
-#ifdef THRESH_DIFF
-        float mmm = 1.0f;
-        float MMM = 0.0f;
-#endif
-
         for (int j = 0; j < _hht; ++j)
         {
             for (int i = 0; i < _hwt; ++i)
@@ -1704,14 +1710,6 @@ namespace rs2
 
                 *pncc = sum / norm;
 
-#ifdef THRESH_DIFF
-                if (*pncc < mmm)
-                    mmm = *pncc;
-
-                if (*pncc > MMM)
-                    MMM = *pncc;
-#endif
-
                 if (*pncc < thresh)
                     *pncc = 0;
 
@@ -1724,30 +1722,11 @@ namespace rs2
 
                 ++pncc;
                 ++pi;
-
-#if 0 // Test
-                sum = 0.0f;
-                pit = _imgt[q].data();
-                for (int k = 0; k < _tsize2; ++k)
-                {
-                    sum += *pit * *pit;
-                    ++pit;
-                }
-                std::cout << "img norm: " << sum / (norm * norm) << std::endl;
-#endif
             }
 
             pncc += _tsize;
             pi += _tsize;
         }
-
-#ifdef THRESH_DIFF
-        float ddd = MMM - mmm;
-        ddd *= 0.8f;
-        ddd += mmm;
-
-        std::cout << ddd << std::endl;
-#endif
 
         // refine the corner point
         if (_pts[q].x > 0 && _pts[q].y > 0)
