@@ -1,3 +1,4 @@
+#ifdef __linux__
 #include <cmath>
 #include "unit-tests-common.h"
 #include <librealsense2/hpp/rs_types.hpp>
@@ -202,3 +203,4 @@ TEST_CASE("multicam_streaming", "[live][multicam]")
         }
     }
 }
+#endif // __linux__
