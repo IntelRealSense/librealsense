@@ -8,6 +8,7 @@ import java.util.Scanner;
 public class FwLogger extends Device {
 
     private boolean mIsParserAvailable = false;
+    private boolean mFwLogPullingStatus = false;
 
     FwLogger(long handle){
         super(handle);
@@ -34,20 +35,24 @@ public class FwLogger extends Device {
     }
 
     public FwLogMsg getFwLog(){
+        mFwLogPullingStatus = false;
         return new FwLogMsg(nGetFwLog(mHandle));
     }
 
     public FwLogMsg getFwLogsFromFlash() {
+        mFwLogPullingStatus = false;
         return new FwLogMsg(nGetFlashLog(mHandle));
     }
+
+    public boolean getFwLogPullingStatus() { return mFwLogPullingStatus; }
 
     public FwLogParsedMsg parseFwLog(FwLogMsg msg) {
         return new FwLogParsedMsg(nParseFwLog(mHandle, msg.getHandle()));
     }
 
 
-    private static native long nGetFwLog(long handle);
-    private static native long nGetFlashLog(long handle);
+    private native long nGetFwLog(long handle);
+    private native long nGetFlashLog(long handle);
     private static native boolean nInitParser(long handle, String xml_content);
     private static native long nParseFwLog(long handle, long fw_log_msg_handle);
 }

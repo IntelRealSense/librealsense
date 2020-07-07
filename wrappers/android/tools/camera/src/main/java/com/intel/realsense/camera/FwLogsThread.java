@@ -14,7 +14,7 @@ public class FwLogsThread extends Thread{
     private static final String TAG = "librs_fwLogsThread";
     private FwLogger mFwLoggerDevice;
     private volatile boolean mAreFwLogsRequested;
-    private String mFwLogsParsingFilePath;
+    private String mFwLogsParsingFilePath = "";
     private boolean mIsParsingFileInitialized = false;
     private boolean mAllFlashLogsAlreadyPulled = false;
 
@@ -29,12 +29,12 @@ public class FwLogsThread extends Thread{
                         if (device != null) {
                             try (final FwLogger fwLoggerDevice = device.as(Extension.FW_LOGGER)) {
                                 mFwLoggerDevice = fwLoggerDevice;
-                                if (mIsParsingFileInitialized)
-                                    mFwLoggerDevice.initParser(mFwLogsParsingFilePath);
+                                if (mFwLogsParsingFilePath != "")
+                                    mIsParsingFileInitialized = mFwLoggerDevice.initParser(mFwLogsParsingFilePath);
                                 while (mAreFwLogsRequested) {
                                     String logReceived = "";
                                     try (FwLogMsg logMsg = mFwLoggerDevice.getFwLog()) {
-                                        if (logMsg.getSize() > 0) {
+                                        if (mFwLoggerDevice.getFwLogPullingStatus()) {
                                             if (mIsParsingFileInitialized) {
                                                 try (FwLogParsedMsg parsedMsg = mFwLoggerDevice.parseFwLog(logMsg)) {
                                                     logReceived = parsedMsg.getTimestamp() + " - " +
@@ -48,7 +48,8 @@ public class FwLogsThread extends Thread{
                                             } else {
                                                 logReceived = logMsg.getTimestamp() + " " +
                                                         logMsg.getSeverityStr() + " ";
-                                                byte[] buffer = new byte[512];
+                                                int logMsgSize = logMsg.getSize();
+                                                byte[] buffer = new byte[logMsgSize];
                                                 buffer = logMsg.getData(buffer);
                                                 for (byte b : buffer) {
                                                     logReceived += String.format("%02X", b) + " ";
@@ -69,7 +70,6 @@ public class FwLogsThread extends Thread{
     public void init(String fw_logging_file_path)
     {
         mFwLogsParsingFilePath = fw_logging_file_path;
-        mIsParsingFileInitialized = true;
     }
 
 
@@ -89,42 +89,40 @@ public class FwLogsThread extends Thread{
                             if(device != null) {
                                 try(final FwLogger fwLoggerDevice = device.as(Extension.FW_LOGGER)){
                                     mFwLoggerDevice = fwLoggerDevice;
-                                    if (mIsParsingFileInitialized)
-                                        mFwLoggerDevice.initParser(mFwLogsParsingFilePath);
+                                    if (mFwLogsParsingFilePath != "")
+                                        mIsParsingFileInitialized = mFwLoggerDevice.initParser(mFwLogsParsingFilePath);
                                     Log.d(TAG, "-------------------flash logs retrieval--------------------");
                                     while (true) {
-                                        try{
-                                            String logReceived = "";
-                                            try (FwLogMsg logMsg = mFwLoggerDevice.getFwLogsFromFlash()) {
-                                                if (logMsg.getSize() > 0) {
-                                                    if (mIsParsingFileInitialized) {
-                                                        try (FwLogParsedMsg parsedMsg = mFwLoggerDevice.parseFwLog(logMsg)) {
-                                                            logReceived = parsedMsg.getTimestamp() + " - " +
-                                                                    parsedMsg.getSeverity() + " " +
-                                                                    parsedMsg.getFileName() + " " +
-                                                                    parsedMsg.getLine() + " " +
-                                                                    parsedMsg.getThreadName() + " " +
-                                                                    parsedMsg.getMessage();
-                                                            Log.d(TAG, logReceived);
-                                                        }
-                                                    } else {
-                                                        logReceived = logMsg.getTimestamp() + " " +
-                                                                logMsg.getSeverityStr() + " ";
-                                                        byte[] buffer = new byte[512];
-                                                        buffer = logMsg.getData(buffer);
-                                                        for (byte b : buffer) {
-                                                            logReceived += String.format("%02X", b) + " ";
-                                                        }
+                                        String logReceived = "";
+                                        try (FwLogMsg logMsg = mFwLoggerDevice.getFwLogsFromFlash()) {
+                                            if (mFwLoggerDevice.getFwLogPullingStatus()) {
+                                                if (mIsParsingFileInitialized) {
+                                                    try (FwLogParsedMsg parsedMsg = mFwLoggerDevice.parseFwLog(logMsg)) {
+                                                        logReceived = parsedMsg.getTimestamp() + " - " +
+                                                                parsedMsg.getSeverity() + " " +
+                                                                parsedMsg.getFileName() + " " +
+                                                                parsedMsg.getLine() + " " +
+                                                                parsedMsg.getThreadName() + " " +
+                                                                parsedMsg.getMessage();
                                                         Log.d(TAG, logReceived);
                                                     }
+                                                } else {
+                                                    logReceived = logMsg.getTimestamp() + " " +
+                                                            logMsg.getSeverityStr() + " ";
+                                                    int logMsgSize = logMsg.getSize();
+                                                    byte[] buffer = new byte[logMsgSize];
+                                                    buffer = logMsg.getData(buffer);
+                                                    for (byte b : buffer) {
+                                                        logReceived += String.format("%02X", b) + " ";
+                                                    }
+                                                    Log.d(TAG, logReceived);
                                                 }
                                             }
-                                        }
-                                        catch (Exception e)
-                                        {
-                                            Log.d(TAG, "Interrupted: " + e.getMessage());
-                                            mAllFlashLogsAlreadyPulled = true;
-                                            break;
+                                            else {
+                                                Log.d(TAG, "No more fw logs in flash");
+                                                mAllFlashLogsAlreadyPulled = true;
+                                                break;
+                                            }
                                         }
                                     }
                                     Log.d(TAG, "-------------------flash logs finished--------------------");

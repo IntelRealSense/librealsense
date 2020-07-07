@@ -9,7 +9,7 @@
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_com_intel_realsense_librealsense_FwLogger_nGetFwLog(JNIEnv *env, jclass clazz,
+Java_com_intel_realsense_librealsense_FwLogger_nGetFwLog(JNIEnv *env, jobject instance,
                                                         jlong fw_logger_handle) {
     rs2_error* e = NULL;
     rs2_firmware_log_message* log_msg = rs2_create_fw_log_message(reinterpret_cast<rs2_device*>(fw_logger_handle), &e);
@@ -18,22 +18,29 @@ Java_com_intel_realsense_librealsense_FwLogger_nGetFwLog(JNIEnv *env, jclass cla
     int result = rs2_get_fw_log(reinterpret_cast<rs2_device*>(fw_logger_handle), log_msg, &e);
     handle_error(env, e);
 
+    bool result_bool = (result != 0);
+    jclass clazz = env->GetObjectClass(instance);
+    jfieldID resultField = env->GetFieldID(clazz, "mFwLogPullingStatus", "Z");
+    env->SetBooleanField(instance, resultField, result_bool);
+
     return (jlong)log_msg;
 }
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_com_intel_realsense_librealsense_FwLogger_nGetFlashLog(JNIEnv *env, jclass clazz,
+Java_com_intel_realsense_librealsense_FwLogger_nGetFlashLog(JNIEnv *env, jobject instance,
                                                             jlong fw_logger_handle) {
     rs2_error* e = NULL;
     rs2_firmware_log_message* log_msg = rs2_create_fw_log_message(reinterpret_cast<rs2_device*>(fw_logger_handle), &e);
     handle_error(env, e);
 
     int result = rs2_get_flash_log(reinterpret_cast<rs2_device*>(fw_logger_handle), log_msg, &e);
-    if (result == 0){
-        e = rs2_create_error("No more logs in flash", "dummy_name", "dummy_args", RS2_EXCEPTION_TYPE_UNKNOWN);
-    }
     handle_error(env, e);
+
+    bool result_bool = (result != 0);
+    jclass clazz = env->GetObjectClass(instance);
+    jfieldID resultField = env->GetFieldID(clazz, "mFwLogPullingStatus", "Z");
+    env->SetBooleanField(instance, resultField, result_bool);
 
     return (jlong)log_msg;
 }
@@ -51,7 +58,7 @@ Java_com_intel_realsense_librealsense_FwLogger_nInitParser(JNIEnv *env, jclass c
 
     env->ReleaseStringUTFChars(xml_content, xml_content_arr);
 
-    bool resultBool = (result == 1) ? true : false;
+    bool resultBool = (result != 0);
     return (jboolean)resultBool;
 }
 
