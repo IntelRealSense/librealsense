@@ -512,14 +512,25 @@ namespace ivcam2 {
             return;
 
         // By using a thread we protect a case that tries to close a sensor from it's processing block callback and creates a deadlock.
-        std::thread([&]()  // TODO - Consider using thread member instead of detach, verify on device disconnect during AC testings
+        std::thread([&]()
         {
-            AC_LOG(INFO, "STOPPING color sensor...");
-            auto & color_sensor = *_dev.get_color_sensor();
-            color_sensor.stop();
-            AC_LOG(INFO, "CLOSING color sensor...");
-            color_sensor.close();
-            AC_LOG(INFO, "Closed!");
+            try
+            {
+                AC_LOG(INFO, "STOPPING color sensor...");
+                auto & color_sensor = *_dev.get_color_sensor();
+                color_sensor.stop();
+                AC_LOG(INFO, "CLOSING color sensor...");
+                color_sensor.close();
+                AC_LOG(INFO, "Closed!");
+            }
+            catch (std::exception& ex)
+            {
+                AC_LOG(ERROR, "caught exception in closing color sensor: " << ex.what());
+            }
+            catch (...)
+            {
+                AC_LOG(ERROR, "unknown exception in closing color sensor");
+            }
         }).detach();
         
     }
