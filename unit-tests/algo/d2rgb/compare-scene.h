@@ -197,9 +197,14 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
     // ---
     TRACE( "\nChecking scene validity:" );
 
-    bool const is_scene_valid = cal.is_scene_valid();
+    algo::input_validity_data data;
+    bool const is_scene_valid = cal.is_scene_valid(&data);
     bool const matlab_scene_valid = md.is_scene_valid;
     CHECK( is_scene_valid == matlab_scene_valid );
+    auto spread = read_from<uint8_t>(bin_dir(scene_dir) + "DirSpread_1x1_uint8_00.bin");
+    CHECK(data.edges_dir_spread == spread);
+    auto isnt_saturated = read_from<uint8_t>(bin_dir(scene_dir) + "IsntSaturated_1x1_uint8_00.bin");
+    CHECK(data.saturated == isnt_saturated);
     if( stats )
     {
         stats->n_valid_scene = is_scene_valid;
@@ -480,6 +485,19 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
                     1,
                     "double_00.bin"),
                 num_of_p_matrix_elements, 1,
+                compare_same_vectors));
+
+            CHECK(compare_to_bin_file< double >(
+                std::vector< double >(std::begin(data.iteration_data_p.c.k_mat.k_mat.rot),
+                    std::end(data.iteration_data_p.c.k_mat.k_mat.rot)),
+                scene_dir,
+                bin_file("Krgb_iteration",
+                    data.cycle_data_p.cycle,
+                    data.iteration_data_p.iteration + 1,
+                    9,
+                    1,
+                    "double_00.bin"),
+                9, 1,
                 compare_same_vectors));
 
             CHECK(compare_to_bin_file< double >(

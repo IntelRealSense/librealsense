@@ -9,7 +9,7 @@
 #include "cost.h"
 #include "debug.h"
 #include <math.h>
-
+#include <numeric>
 
 #define GAUSS_CONV_ROWS 4
 #define GAUSS_CONV_COLUMNS 4
@@ -633,7 +633,7 @@ end*/
 
     return false;
 }
-bool optimizer::is_scene_valid()
+bool optimizer::is_scene_valid(input_validity_data* data)
 {
     std::vector< byte > section_map_depth(_z.width * _z.height);
     std::vector< byte > section_map_rgb(_yuy.width * _yuy.height);
@@ -679,5 +679,137 @@ bool optimizer::is_scene_valid()
                                               &_z.dir_ratio1 );
 
     //return((!res_movement) && res_edges && res_gradient);
-    return(!res_movement);
+
+    auto valid = !res_movement;
+    if (!_manual_trigger)
+        valid = valid && input_validity_checks(data);
+        
+    return(valid);
+}
+
+bool optimizer::input_validity_checks(input_validity_data* data )
+{
+    auto dir_spread = check_edges_dir_spread(_z);
+    auto saturation = check_for_saturation(_ir);
+
+    if (data)
+    {
+        data->edges_dir_spread = dir_spread;
+        data->saturated = saturation;
+    }
+
+    return dir_spread && saturation;
+}
+
+bool optimizer::check_edges_dir_spread(const z_frame_data & z_data)
+{
+    // check if there are enough edges per direction
+    double edges_amount_per_dir[DIRECTIONS] = { 0 };
+    
+    for (auto && i : z_data.directions)
+    {
+        edges_amount_per_dir[(int)i-1]++;
+    }
+    
+    bool dirs_with_enough_edges[DIRECTIONS] = { false };
+
+    for (auto i = 0; i < DIRECTIONS; i++)
+    {
+        edges_amount_per_dir[i] /= z_data.width*z_data.height;
+        dirs_with_enough_edges[i] = (edges_amount_per_dir[i] > _params.edges_per_direction_ratio_th);
+    }
+
+     // std Check for valid directions
+    double2 dir_vecs[DIRECTIONS] =
+    {
+        { 1,             0},
+        { 1 / sqrt(2),   1 / sqrt(2) },
+        { 0,             1 },
+        { -1 / sqrt(2),  1 / sqrt(2) }
+    };
+
+   
+    auto diag_length = sqrt((double)z_data.width*(double)z_data.width + (double)z_data.height*+(double)z_data.height);
+
+    std::vector<double> val_per_dir[DIRECTIONS];
+
+    for (auto i = 0; i < z_data.subpixels_x.size(); i++)
+    {
+        auto dir = (int)z_data.directions[i] - 1;
+        auto val = z_data.subpixels_x[i] * dir_vecs[dir].x + z_data.subpixels_y[i] * dir_vecs[dir].y;
+        val_per_dir[dir].push_back(val);
+    }
+
+    double std_per_dir[DIRECTIONS] = { 0 };
+    bool std_bigger_than_th[DIRECTIONS] = { false };
+
+    for (auto i = 0; i < DIRECTIONS; i++)
+    {
+        auto curr_dir = val_per_dir[i];
+        double sum = std::accumulate(curr_dir.begin(), curr_dir.end(), 0.0);
+        double mean = sum / curr_dir.size();
+
+        double dists_sum = 0;
+        std::for_each(curr_dir.begin(), curr_dir.end(), [&](double val) {dists_sum += (val - mean)*(val - mean); });
+        auto stdev = sqrt(dists_sum / (curr_dir.size()-1));
+        std_per_dir[i] = stdev / diag_length;
+        std_bigger_than_th[i] = std_per_dir[i] > _params.dir_std_th[i];
+    }
+
+    bool valid_directions[DIRECTIONS] = { false };
+
+    for (auto i = 0; i < DIRECTIONS; i++)
+    {
+        valid_directions[i] = dirs_with_enough_edges[i] && std_bigger_than_th[i];
+    }
+    auto valid_directions_sum = std::accumulate(&valid_directions[0], &valid_directions[DIRECTIONS], 0);
+    
+    auto edges_dir_spread = valid_directions_sum > _params.minimal_full_directions;
+
+    if (!edges_dir_spread)
+    {
+        LOG_DEBUG("Scene is not valid since edges directions is not enough spread");
+        return edges_dir_spread;
+    }
+       
+    if (_params.require_orthogonal_valid_dirs)
+    {
+        auto valid_even = true;
+        for (auto i = 0; i < DIRECTIONS; i+=2)
+        {
+            valid_even &= valid_directions[i];
+        }
+
+        auto valid_odd = true;
+        for (auto i = 1; i < DIRECTIONS; i += 2)
+        {
+            valid_odd &= valid_directions[i];
+        }
+        auto orthogonal_valid_dirs = valid_even || valid_odd;
+
+        if(!orthogonal_valid_dirs)
+            LOG_DEBUG("Scene is not valid since there is no at least two orthogonal directions that have enough spread edges");
+
+        return edges_dir_spread && orthogonal_valid_dirs;
+    }
+    
+    return edges_dir_spread;
+}
+
+bool optimizer::check_for_saturation(const ir_frame_data& ir)
+{
+    double saturated_pixels = 0;
+
+    for (auto&& i : ir.ir_frame)
+    {
+        if (i >= _params.saturation_value)
+            saturated_pixels++;
+    }
+
+    auto saturated_pixels_ratio = saturated_pixels / (ir.width*ir.height);
+
+    if(saturated_pixels_ratio < _params.saturation_ratio_th)
+        LOG_DEBUG("Scene is not valid since the saturated is above threshold");
+
+    return saturated_pixels_ratio < _params.saturation_ratio_th;
 }
