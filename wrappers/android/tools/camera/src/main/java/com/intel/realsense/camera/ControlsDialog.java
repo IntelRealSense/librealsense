@@ -79,12 +79,12 @@ public class ControlsDialog extends DialogFragment {
                 RsContext ctx = new RsContext();
                 try(DeviceList devices = ctx.queryDevices()) {
                     try(Device device = devices.createDevice(0)) {
-                        if (device == null)
-                            return;
-                        List<Sensor> sensors = device.querySensors();
-                        for (Sensor s : sensors) {
-                            if (s.supports(Option.EMITTER_ENABLED)) {
-                                s.setValue(Option.EMITTER_ENABLED, checkedId);
+                        if (device != null) {
+                            List<Sensor> sensors = device.querySensors();
+                            for (Sensor s : sensors) {
+                                if (s.supports(Option.EMITTER_ENABLED)) {
+                                    s.setValue(Option.EMITTER_ENABLED, checkedId);
+                                }
                             }
                         }
                     }
