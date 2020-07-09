@@ -89,17 +89,22 @@ namespace ivcam2 {
         };
 
         /* For RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH */
-        class enabler_option : public bool_option
+        class enabler_option : public float_option
         {
+            typedef float_option super;
+
             std::shared_ptr< ac_trigger > _autocal;
 
         public:
             enabler_option( std::shared_ptr< ac_trigger > const & autocal );
 
+            bool is_auto() const { return (_value == _opt_range.max); }
+            bool is_manual() const { return ! is_auto(); }
+
             virtual void set( float value ) override;
             virtual const char* get_description() const override
             {
-                return "Trigger Camera Accuracy Health";
+                return "Trigger Camera Accuracy Health (off, run now, auto)";
             }
             virtual void enable_recording( std::function<void( const option& )> record_action ) override { _record_action = record_action; }
 

@@ -110,13 +110,13 @@ static int get_retry_sf_seconds()
 static double get_temp_diff_trigger()
 {
     static double d_temp
-        = env_var< int >( "RS2_AC_TEMP_DIFF", 0, []( int n ) { return n >= 0; } ).value();
+        = env_var< int >( "RS2_AC_TEMP_DIFF", 5, []( int n ) { return n >= 0; } ).value();
     return d_temp;
 }
 static std::chrono::seconds get_trigger_seconds()
 {
     auto n_seconds = env_var< int >( "RS2_AC_TRIGGER_SECONDS",
-        0,  // off by default (600 = 10 minutes since last is the normal default)
+        600,  // 10 minutes since last (0 to disable)
         []( int n ) { return n >= 0; } );
     // 0 means turn off auto-trigger
     return std::chrono::seconds( n_seconds );
@@ -146,7 +146,7 @@ namespace librealsense {
 namespace ivcam2 {
 
 
-    static bool is_auto_trigger_default()
+    static bool is_auto_trigger_possible()
     {
         if( get_trigger_seconds().count() )
             return true;
@@ -154,9 +154,18 @@ namespace ivcam2 {
             return true;
         return false;
     }
+    static bool is_auto_trigger_default()
+    {
+        return env_var< bool >( "RS2_AC_AUTO_TRIGGER", true )
+            && is_auto_trigger_possible();
+    }
 
     ac_trigger::enabler_option::enabler_option( std::shared_ptr< ac_trigger > const & autocal )
-        : bool_option( is_auto_trigger_default() )
+        : super( option_range{ 0,
+                               RS2_CAH_TRIGGER_COUNT - 1,
+                               1,
+                               is_auto_trigger_default() ? float( RS2_CAH_TRIGGER_AUTO )
+                                                         : float( RS2_CAH_TRIGGER_MANUAL ) } )
         , _autocal( autocal )
     {
     }
@@ -169,27 +178,30 @@ namespace ivcam2 {
 
     void ac_trigger::enabler_option::set( float value )
     {
-        //bool_option::set( value );
-        if( is_auto_trigger_default() )
+        if( value != RS2_CAH_TRIGGER_NOW )
         {
             // When auto trigger is on in the environment, we control the timed activation
             // of AC, and do NOT trigger manual calibration
-            bool_option::set( value );
-            if( is_true() )
+            if( value == RS2_CAH_TRIGGER_AUTO )
             {
+                if( ! is_auto_trigger_possible() )
+                    throw invalid_value_exception( "auto trigger is disabled in the environment" );
+                super::set( value );
                 if( _autocal->_dev.get_depth_sensor().is_streaming() )
                     _autocal->start();
                 // else start() will get called on stream start
             }
             else
             {
+                super::set( value );
                 _autocal->stop();
             }
+            _record_action( *this );
         }
         else
         {
-            // Without the auto-trigger, turning us on never actually toggles us so we stay
-            // "off" and just trigger a new calibration
+            // User wants to trigger it RIGHT NOW
+            // We don't change the actual control value!
             auto & depth_sensor = _autocal->_dev.get_depth_sensor();
             if( depth_sensor.is_streaming() )
             {
@@ -198,10 +210,9 @@ namespace ivcam2 {
             }
             else
             {
-                AC_LOG( ERROR, "Cannot trigger calibration: depth sensor is not on!" );
+                throw wrong_api_call_sequence_exception( "Cannot trigger calibration: depth sensor is not on!" );
             }
         }
-        _record_action( *this );
     }
 
     void ac_trigger::reset_option::set( float value )
@@ -809,15 +820,13 @@ namespace ivcam2 {
 
         if( !n_seconds.count() )
         {
-#if 0 // TODO on auto trigger, we want this back
-            option & o = _dev.get_depth_sensor().get_option( RS2_OPTION_CAMERA_ACCURACY_HEALTH_ENABLED );
+            option & o = _dev.get_depth_sensor().get_option( RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH );
             if( !o.query() )
             {
                 // auto trigger is turned off
-                AC_LOG( DEBUG, "Camera Accuracy Health is turned off -- no trigger set" );
+                AC_LOG( DEBUG, "Turned off -- no trigger set" );
                 return;
             }
-#endif
 
             // Check if we want auto trigger
             // Note: we arbitrarly choose the time before AC starts at 10 second -- enough time to
@@ -829,7 +838,7 @@ namespace ivcam2 {
                 _temp_check = retrier::start< temp_check >( *this, std::chrono::seconds( 60 ) );
             else
             {
-                AC_LOG( DEBUG, "Camera Accuracy Health auto trigger is disabled in environment" );
+                AC_LOG( DEBUG, "Auto trigger is disabled in environment" );
                 return;  // no auto trigger
             }
         }

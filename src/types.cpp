@@ -223,6 +223,19 @@ namespace librealsense
 #undef CASE
     }
 
+    const char* get_string( rs2_cah_trigger value )
+    {
+#define CASE(X) STRCASE(CAH_TRIGGER, X)
+        switch( value )
+        {
+        CASE( MANUAL )
+        CASE( NOW )
+        CASE( AUTO )
+        default: assert( !is_valid( value ) ); return UNKNOWN_VALUE;
+        }
+#undef CASE
+    }
+
     const char* get_string(rs2_extension value)
     {
 #define CASE(X) STRCASE(EXTENSION, X)
