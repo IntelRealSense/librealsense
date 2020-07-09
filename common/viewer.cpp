@@ -2926,6 +2926,14 @@ namespace rs2
                 
                 ImGui::Text("Copyright 2018 Intel Corporation.");
 
+                if( RS2_API_BUILD_VERSION )
+                {
+                    ImGui::Text( "---" );
+                    ImGui::Text( "Full version: " );
+                    ImGui::SameLine();
+                    ImGui::Text( RS2_API_FULL_VERSION_STR );
+                }
+
                 ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
                 ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
