@@ -388,6 +388,7 @@ namespace ivcam2 {
 
     ac_trigger::~ac_trigger() 
     { 
+        reset();
         if( _worker.joinable() )
         {
             _is_processing = false;  // Signal the thread that we want to stop!
@@ -681,12 +682,20 @@ namespace ivcam2 {
 
                     auto df = _sf.get_depth_frame();
                     auto irf = _sf.get_infrared_frame();
-                    depth_to_rgb_calibration algo( df, irf, _cf, _pcf, cal_info, cal_regs );
+
+                    depth_to_rgb_calibration algo(df, irf, _cf, _pcf, cal_info, cal_regs, [&]() {return is_processing(); });
+
                     _from_profile = algo.get_from_profile();
                     _to_profile = algo.get_to_profile();
 
-                    auto status = algo.optimize(
-                        [this]( rs2_calibration_status status ) { call_back( status ); } );
+                    rs2_calibration_status status(RS2_CALIBRATION_FAILED); // assume fail until gets a success status.
+
+                    if (is_processing()) // check if the device still exists
+                    {
+                        status = algo.optimize(
+                            [this]( rs2_calibration_status status ) { call_back( status ); } ,
+                            [&]() {return is_processing(); });
+                    }
 
                     // It's possible that, while algo was working, stop() was called. In this case,
                     // we have to make sure that we notify of failure:
