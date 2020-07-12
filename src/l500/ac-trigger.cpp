@@ -493,16 +493,6 @@ namespace ivcam2 {
     }
 
 
-    template<class T>
-    frame_callback_ptr make_frame_callback( T callback )
-    {
-        return {
-            new internal_frame_callback<T>( callback ),
-            []( rs2_frame_callback* p ) { p->release(); }
-        };
-    }
-
-
     void ac_trigger::start_color_sensor_if_needed()
     {
         // With AC, we need a color sensor even when the user has not asked for one --
@@ -516,13 +506,6 @@ namespace ivcam2 {
                 return;
             }
 
-            if (color_sensor->is_streaming())
-            {
-                AC_LOG(DEBUG, "Color sensor is already streaming");
-                return;
-            }
-
-            AC_LOG(INFO, "Color sensor was NOT streaming; turning on...");
 
 
             auto & depth_sensor = _dev.get_depth_sensor();
@@ -531,17 +514,16 @@ namespace ivcam2 {
                 return;  // error should have already been printed
             //AC_LOG( DEBUG, "Picked profile: " << *rgb_profile );
 
-            AC_LOG(DEBUG, "Open...");
-            color_sensor->open({ rgb_profile });
-            AC_LOG(DEBUG, "Start...");
+            color_sensor->start_stream_for_calibration({ rgb_profile });
+           
+            if(false == color_sensor->is_streaming())
+            {
+                AC_LOG(DEBUG, "Color sensor was opened by the user, calibration will wait for the stream to start.");
+            }
 
-            color_sensor->start(make_frame_callback([&](frame_holder fref) {}));
-
-            AC_LOG(DEBUG, "Started!");
             // Note that we don't do anything with the frames -- they shouldn't end up
             // at the user. But AC will still get them.
 
-            _own_color_stream = true;
         }
         catch (std::exception const & e)
         {
@@ -552,20 +534,14 @@ namespace ivcam2 {
 
     void ac_trigger::stop_color_sensor_if_started()
     {
-        if( !_own_color_stream.exchange( false ) )
-            return;
 
         // By using a thread we protect a case that tries to close a sensor from it's processing block callback and creates a deadlock.
         std::thread([&]()
         {
             try
             {
-                AC_LOG(INFO, "STOPPING color sensor...");
                 auto & color_sensor = *_dev.get_color_sensor();
-                color_sensor.stop();
-                AC_LOG(INFO, "CLOSING color sensor...");
-                color_sensor.close();
-                AC_LOG(INFO, "Closed!");
+                color_sensor.stop_stream_for_calibration();
             }
             catch (std::exception& ex)
             {

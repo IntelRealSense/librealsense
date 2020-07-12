@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <unordered_map>
 
 #include "l500-device.h"
 #include "stream.h"
@@ -57,7 +58,8 @@ namespace librealsense
             std::map<uint32_t, rs2_format> l500_color_fourcc_to_rs2_format,
             std::map<uint32_t, rs2_stream> l500_color_fourcc_to_rs2_stream)
             : synthetic_sensor("RGB Camera", uvc_sensor, owner, l500_color_fourcc_to_rs2_format, l500_color_fourcc_to_rs2_stream),
-            _owner(owner)
+            _owner(owner),
+            _state(sensor_state::CLOSED)
         {}
 
         rs2_intrinsics get_intrinsics( const stream_profile& profile ) const override;
@@ -106,24 +108,85 @@ namespace librealsense
             return get_color_recommended_proccesing_blocks();
         }
 
-        void start(frame_callback_ptr callback) override
+
+        // Opens the color sensor profile, if the sensor is opened by calibration process,
+        // It will close it and reopen with the requested profile.
+        void open(const stream_profiles& requests) override;
+
+        // Close the color sensor
+        void close() override;
+    
+        // Start the color sensor streaming
+        void start(frame_callback_ptr callback) override;
+        
+        // Stops the color sensor streaming
+        void stop() override;
+
+
+        void delayed_start(frame_callback_ptr callback)
         {
-            _action_delayer.do_after_delay([&]() {
-                    synthetic_sensor::start(callback);
-                    //_owner->trigger_device_calibration( RS2_CALIBRATION_DEPTH_TO_RGB );
-            });
+            LOG_DEBUG("Starting color sensor...");
+            // The delay is here as a work around to a firmware bug [RS5-5453]
+            _action_delayer.do_after_delay([&]() { synthetic_sensor::start(callback); });
+            LOG_DEBUG("Color sensor started");
         }
 
-        void stop() override
+        void delayed_stop()
         {
-            _action_delayer.do_after_delay([&]() {
-                synthetic_sensor::stop();
-            });
+            LOG_DEBUG("Stopping color sensor...");
+            // The delay is here as a work around to a firmware bug [RS5-5453]
+            _action_delayer.do_after_delay([&]() { synthetic_sensor::stop(); });
+            LOG_DEBUG("Color sensor stopped");
         }
 
+        // This function serves the auto calibration process,
+        // It is used to open and start the color sensor with a single call if it is closed.
+        // Note: if the sensor is opened by the user, the function assumes that the user will start the stream.
+        void start_stream_for_calibration(const stream_profiles& requests);
+       
+        // Stops the color sensor if was opened by the calibration process, otherwise does nothing
+        void stop_stream_for_calibration();
+        
     private:
         l500_color* const _owner;
         action_delayer _action_delayer;
+        std::mutex _state_mutex;
+
+        enum class sensor_state 
+        {
+            CLOSED,
+            OWNED_BY_USER,
+            OWNED_BY_AUTO_CAL
+        };
+
+        std::atomic<sensor_state> _state;
+
+        const std::string & state_to_string(sensor_state state)
+        {
+            static std::unordered_map<sensor_state, std::string> state_map =
+            { {sensor_state::CLOSED, "CLOSED"},
+              {sensor_state::OWNED_BY_AUTO_CAL, "OWNED_BY_AUTO_CAL"} ,
+              {sensor_state::OWNED_BY_USER,"OWNED_BY_USER"} };
+           
+            static const std::string unknown = "Unknown state";
+
+            auto val = state_map.find(state);
+            if (val != state_map.end())
+            {
+                return val->second;
+            }
+
+            LOG_DEBUG("Invalid color sensor state: " << (int)state);
+            return unknown;
+        }
+
+        
+        void set_sensor_state(sensor_state state)
+        {
+                LOG_DEBUG("Sensor state changed from: " << state_to_string(_state) <<
+                    " to: " << state_to_string(state));
+                _state = state;
+        }
     };
 
 }
