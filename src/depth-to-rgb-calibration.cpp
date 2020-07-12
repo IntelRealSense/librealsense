@@ -17,6 +17,8 @@
 using namespace librealsense;
 namespace impl = librealsense::algo::depth_to_rgb_calibration;
 
+#define CHECK_IF_NEEDS_TO_STOP() if (_should_continue) _should_continue()
+
 depth_to_rgb_calibration::depth_to_rgb_calibration(
     rs2::frame depth,
     rs2::frame ir,
@@ -24,12 +26,13 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     rs2::frame prev_yuy,
     algo::depth_to_rgb_calibration::algo_calibration_info const & cal_info,
     algo::depth_to_rgb_calibration::algo_calibration_registers const & cal_regs,
-    std::function<bool()> should_continue
+    std::function<void()> should_continue
 )
     : _intr( yuy.get_profile().as< rs2::video_stream_profile >().get_intrinsics() )
     , _extr(to_raw_extrinsics( depth.get_profile().get_extrinsics_to( yuy.get_profile() )))
     , _from( depth.get_profile().get()->profile )
-    , _to( yuy.get_profile().get()->profile )
+    , _to( yuy.get_profile().get()->profile)
+    , _should_continue(should_continue)
 {
     AC_LOG( DEBUG, "... setting yuy data" );
     auto color_profile = yuy.get_profile().as< rs2::video_stream_profile >();
@@ -37,11 +40,8 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     auto prev_yuy_data = (impl::yuy_t const *) prev_yuy.get_data();
     impl::calib calibration( _intr, _extr );
 
-    if (!should_continue())
-    {
-        throw librealsense::camera_disconnected_exception("The device has been disconnected during Camera Accuracy Health process");
-        return;
-    }
+    CHECK_IF_NEEDS_TO_STOP();
+
     _algo.set_yuy_data(
         std::vector< impl::yuy_t >( yuy_data, yuy_data + yuy.get_data_size() / sizeof( impl::yuy_t )),
         std::vector< impl::yuy_t >( prev_yuy_data, prev_yuy_data + yuy.get_data_size() / sizeof( impl::yuy_t ) ),
@@ -51,11 +51,9 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     AC_LOG( DEBUG, "... setting ir data" );
     auto ir_profile = ir.get_profile().as< rs2::video_stream_profile >();
     auto ir_data = (impl::ir_t const *) ir.get_data();
-    if (!should_continue())
-    {
-        throw librealsense::camera_disconnected_exception("The device has been disconnected during Camera Accuracy Health process");
-        return;
-    }
+
+    CHECK_IF_NEEDS_TO_STOP();
+
     _algo.set_ir_data(
         std::vector< impl::ir_t >( ir_data, ir_data + ir.get_data_size() / sizeof( impl::ir_t )),
         ir_profile.width(), ir_profile.height()
@@ -73,11 +71,9 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     AC_LOG( DEBUG, "... setting z data" );
     auto z_profile = depth.get_profile().as< rs2::video_stream_profile >();
     auto z_data = (impl::z_t const *) depth.get_data();
-    if (!should_continue())
-    {
-        throw librealsense::camera_disconnected_exception("The device has been disconnected during Camera Accuracy Health process");
-        return;
-    }
+
+    CHECK_IF_NEEDS_TO_STOP();
+
     _algo.set_z_data(
         std::vector< impl::z_t >( z_data, z_data + depth.get_data_size() / sizeof( impl::z_t ) ),
         z_profile.get_intrinsics(), _dsm_params, cal_info, cal_regs,
@@ -110,8 +106,7 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
 
 
 rs2_calibration_status depth_to_rgb_calibration::optimize(
-    std::function<void( rs2_calibration_status )> call_back,
-    std::function<bool()> should_continue
+    std::function<void( rs2_calibration_status )> call_back
 )
 {
 #define DISABLE_RS2_CALIBRATION_CHECKS "RS2_AC_DISABLE_RETRIES"
@@ -138,20 +133,14 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
             AC_LOG( DEBUG, DISABLE_RS2_CALIBRATION_CHECKS << " is on; continuing" );
         }
 
-        if (!should_continue())
-        {
-            call_back(RS2_CALIBRATION_FAILED);
-            return RS2_CALIBRATION_FAILED;
-        }
+        CHECK_IF_NEEDS_TO_STOP();
+
 
         AC_LOG( DEBUG, "... optimizing" );
 
-        std::function<void(impl::data_collect const &)> opt_cb ([&](impl::data_collect const &data) 
+        auto opt_cb ([&](impl::data_collect const &data) 
         {
-            if (!should_continue())
-            {
-                throw librealsense::camera_disconnected_exception("The device has been disconnected during Camera Accuracy Health process");
-            }
+            CHECK_IF_NEEDS_TO_STOP();
         });
         _algo.optimize(opt_cb);
 

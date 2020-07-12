@@ -388,10 +388,10 @@ namespace ivcam2 {
 
     ac_trigger::~ac_trigger() 
     { 
-        reset();
         if( _worker.joinable() )
         {
             _is_processing = false;  // Signal the thread that we want to stop!
+            _is_on = false;          // Set auto calibration off
             _worker.join();
         }
     }
@@ -683,7 +683,15 @@ namespace ivcam2 {
                     auto df = _sf.get_depth_frame();
                     auto irf = _sf.get_infrared_frame();
 
-                    depth_to_rgb_calibration algo(df, irf, _cf, _pcf, cal_info, cal_regs, [&]() {return is_processing(); });
+                    depth_to_rgb_calibration algo(df, irf, _cf, _pcf, cal_info, cal_regs, 
+                    [&]() 
+                    {
+                        if (!is_processing())
+                        {
+                            AC_LOG( DEBUG , "Stopping CAH algorithm");
+                            throw librealsense::camera_disconnected_exception("Stopping CAH algorithm");
+                        }
+                    });
 
                     _from_profile = algo.get_from_profile();
                     _to_profile = algo.get_to_profile();
@@ -693,8 +701,7 @@ namespace ivcam2 {
                     if (is_processing()) // check if the device still exists
                     {
                         status = algo.optimize(
-                            [this]( rs2_calibration_status status ) { call_back( status ); } ,
-                            [&]() {return is_processing(); });
+                            [this]( rs2_calibration_status status ) { call_back( status ); });
                     }
 
                     // It's possible that, while algo was working, stop() was called. In this case,

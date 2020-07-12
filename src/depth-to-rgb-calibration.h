@@ -26,6 +26,7 @@ namespace librealsense
         rs2_dsm_params _dsm_params;
 
         algo::depth_to_rgb_calibration::optimizer _algo;
+        std::function<void()> _should_continue;
 
     public:
         depth_to_rgb_calibration(
@@ -35,7 +36,7 @@ namespace librealsense
             rs2::frame prev_yuy,
             algo::depth_to_rgb_calibration::algo_calibration_info const & cal_info,
             algo::depth_to_rgb_calibration::algo_calibration_registers const & cal_regs,
-            std::function<bool()> should_continue
+            std::function<void()> should_continue = nullptr
         );
 
         rs2_extrinsics const & get_extrinsics() const { return _extr; }
@@ -44,8 +45,7 @@ namespace librealsense
         stream_profile_interface * get_to_profile() const { return _to; }
         rs2_dsm_params const & get_dsm_params() const { return _dsm_params; }
 
-        rs2_calibration_status optimize( std::function<void( rs2_calibration_status )> call_back = nullptr ,
-            std::function<bool()> should_continue = nullptr);
+        rs2_calibration_status optimize( std::function<void( rs2_calibration_status )> call_back = nullptr);
 
     private:
         void debug_calibration( char const * prefix );
