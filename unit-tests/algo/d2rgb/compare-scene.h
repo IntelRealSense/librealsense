@@ -203,8 +203,8 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
     CHECK( is_scene_valid == matlab_scene_valid );
     auto spread = read_from<uint8_t>(bin_dir(scene_dir) + "DirSpread_1x1_uint8_00.bin");
     CHECK(data.edges_dir_spread == spread);
-    auto isnt_saturated = read_from<uint8_t>(bin_dir(scene_dir) + "IsntSaturated_1x1_uint8_00.bin");
-    CHECK(data.saturated == isnt_saturated);
+    auto not_saturated = read_from<uint8_t>(bin_dir(scene_dir) + "IsntSaturated_1x1_uint8_00.bin");
+    CHECK(data.not_saturated == not_saturated);
     if( stats )
     {
         stats->n_valid_scene = is_scene_valid;

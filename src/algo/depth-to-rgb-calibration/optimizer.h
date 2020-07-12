@@ -18,7 +18,7 @@ namespace librealsense {
 namespace algo {
 namespace depth_to_rgb_calibration {
 
-    const int DIRECTIONS = 4;
+    const int DIRECTIONS = direction::deg_180;
 
     struct optimization_params
     {
@@ -256,7 +256,7 @@ namespace depth_to_rgb_calibration {
     struct input_validity_data
     {
         bool edges_dir_spread;
-        bool saturated;
+        bool not_saturated;
     };
 
     class optimizer
@@ -285,7 +285,7 @@ namespace depth_to_rgb_calibration {
         // 1. Enough Edges in RGB image(Lights off bug fix)
         // 2. Enough Edges in enough locations(3 / 4 quarters)
         // 3. Enough Edges in enough directions(2 / 4 directions)
-        // 4. Large enough STD of edges in the cosen direction(weights will be
+        // 4. Large enough STD of edges in the chosen direction(weights will be
         //    normalized by direction)  (Normalize by weights is done in a seperate
         //    function)
         // 5. Verify there is movement in RGB between this scene and the previous
@@ -364,8 +364,6 @@ namespace depth_to_rgb_calibration {
         void sum_per_section(std::vector< double >& sum_weights_per_section, std::vector< byte > const& section_map, std::vector< double > const& weights, size_t num_of_sections);
         void images_dilation(yuy2_frame_data& yuy);
         void gaussian_filter(yuy2_frame_data& yuy);
-        bool check_edges_dir_spread(const z_frame_data & z_data);
-        bool check_for_saturation(const ir_frame_data& _ir);
 
         // svm
         bool valid_by_svm(svm_model model);
