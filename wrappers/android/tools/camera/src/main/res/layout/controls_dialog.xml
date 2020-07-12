@@ -30,31 +30,10 @@
         //buttons added within code
     </RadioGroup>
 
-    <TextView
-        android:id="@+id/hw_preset_title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hardware Preset"
-        android:textColor="#ffffff"
-        android:textSize="20dp"
-        android:textStyle="bold"
-        android:layout_marginBottom="5dp"
-        android:layout_below="@id/emitter_options_list"/>
-
-    // HW Presets
-    <RadioGroup xmlns:android="http://schemas.android.com/apk/res/android"
-        android:id="@+id/hw_presets_radio_group"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/hw_preset_title"
-        android:orientation="vertical"
-        tools:layout_height="50dip">
-        //buttons added within code
-    </RadioGroup>
 
     //Close button
     <Button android:id="@+id/controls_close_button"
-        android:layout_below="@id/hw_presets_radio_group"
+        android:layout_below="@id/emitter_options_list"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="14dp"
