@@ -695,23 +695,23 @@ bool check_edges_dir_spread(const std::vector<double>& directions,
     const params& p)
 {
     // check if there are enough edges per direction
-    int edges_amount_per_dir[DIRECTIONS] = { 0 };
+    int edges_amount_per_dir[N_BASIC_DIRECTIONS] = { 0 };
 
     for (auto && i : directions)
     {
         edges_amount_per_dir[(int)i - 1]++;
     }
 
-    bool dirs_with_enough_edges[DIRECTIONS] = { false };
+    bool dirs_with_enough_edges[N_BASIC_DIRECTIONS] = { false };
 
-    for (auto i = 0; i < DIRECTIONS; i++)
+    for (auto i = 0; i < N_BASIC_DIRECTIONS; i++)
     {
         auto edges_amount_per_dir_normalized =  (double)edges_amount_per_dir[i] / (width * height);
         dirs_with_enough_edges[i] = (edges_amount_per_dir_normalized > p.edges_per_direction_ratio_th);
     }
 
     // std Check for valid directions
-    double2 dir_vecs[DIRECTIONS] =
+    double2 dir_vecs[N_BASIC_DIRECTIONS] =
     {
         { 1,             0},
         { 1 / sqrt(2),   1 / sqrt(2) },
@@ -722,7 +722,7 @@ bool check_edges_dir_spread(const std::vector<double>& directions,
 
     auto diag_length = sqrt((double)width*(double)width + (double)height*(double)height);
 
-    std::vector<double> val_per_dir[DIRECTIONS];
+    std::vector<double> val_per_dir[N_BASIC_DIRECTIONS];
 
     for (auto i = 0; i < subpixels_x.size(); i++)
     {
@@ -731,10 +731,10 @@ bool check_edges_dir_spread(const std::vector<double>& directions,
         val_per_dir[dir].push_back(val);
     }
 
-    double std_per_dir[DIRECTIONS] = { 0 };
-    bool std_bigger_than_th[DIRECTIONS] = { false };
+    double std_per_dir[N_BASIC_DIRECTIONS] = { 0 };
+    bool std_bigger_than_th[N_BASIC_DIRECTIONS] = { false };
 
-    for (auto i = 0; i < DIRECTIONS; i++)
+    for (auto i = 0; i < N_BASIC_DIRECTIONS; i++)
     {
         auto curr_dir = val_per_dir[i];
         double sum = std::accumulate(curr_dir.begin(), curr_dir.end(), 0.0);
@@ -751,39 +751,39 @@ bool check_edges_dir_spread(const std::vector<double>& directions,
         std_bigger_than_th[i] = std_per_dir[i] > p.dir_std_th[i];
     }
 
-    bool valid_directions[DIRECTIONS] = { false };
+    bool valid_directions[N_BASIC_DIRECTIONS] = { false };
 
-    for (auto i = 0; i < DIRECTIONS; i++)
+    for (auto i = 0; i < N_BASIC_DIRECTIONS; i++)
     {
         valid_directions[i] = dirs_with_enough_edges[i] && std_bigger_than_th[i];
     }
-    auto valid_directions_sum = std::accumulate(&valid_directions[0], &valid_directions[DIRECTIONS], 0);
+    auto valid_directions_sum = std::accumulate(&valid_directions[0], &valid_directions[N_BASIC_DIRECTIONS], 0);
 
     auto edges_dir_spread = valid_directions_sum > p.minimal_full_directions;
 
     if (!edges_dir_spread)
     {
-        AC_LOG(DEBUG, "Scene is not valid since there is not enough edge direction spread");
+        AC_LOG(ERROR, "Scene is not valid since there is not enough edge direction spread");
         return edges_dir_spread;
     }
 
     if (p.require_orthogonal_valid_dirs)
     {
         auto valid_even = true;
-        for (auto i = 0; i < DIRECTIONS; i += 2)
+        for (auto i = 0; i < N_BASIC_DIRECTIONS; i += 2)
         {
             valid_even &= valid_directions[i];
         }
 
         auto valid_odd = true;
-        for (auto i = 1; i < DIRECTIONS; i += 2)
+        for (auto i = 1; i < N_BASIC_DIRECTIONS; i += 2)
         {
             valid_odd &= valid_directions[i];
         }
         auto orthogonal_valid_dirs = valid_even || valid_odd;
 
         if (!orthogonal_valid_dirs)
-            AC_LOG(DEBUG, "Scene is not valid since there is no at least two orthogonal directions that have enough spread edges");
+            AC_LOG(ERROR, "Scene is not valid since there is no at least two orthogonal directions that have enough spread edges");
 
         return edges_dir_spread && orthogonal_valid_dirs;
     }
@@ -807,7 +807,7 @@ bool check_saturation(const std::vector< ir_t >& ir_frame,
     auto saturated_pixels_ratio = (double)saturated_pixels / (double)(width*height);
 
     if (saturated_pixels_ratio < p.saturation_ratio_th)
-        AC_LOG(DEBUG, "Scene is not valid since the saturated is above threshold");
+        AC_LOG(ERROR, "Scene is not valid since the saturated is above threshold");
 
     return saturated_pixels_ratio < p.saturation_ratio_th;
 }

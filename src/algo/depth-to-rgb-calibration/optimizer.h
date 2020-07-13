@@ -18,8 +18,6 @@ namespace librealsense {
 namespace algo {
 namespace depth_to_rgb_calibration {
 
-    const int DIRECTIONS = direction::deg_180;
-
     struct optimization_params
     {
         p_matrix curr_p_mat;
@@ -79,7 +77,7 @@ namespace depth_to_rgb_calibration {
         double const max_global_los_scaling_step = 0.005;  // the difference (.5%) between starting and final scale
 
         double const edges_per_direction_ratio_th = 0.0041;
-        double const dir_std_th[DIRECTIONS] = { 0.126, 0.126, 0.126, 0.126 };
+        double const dir_std_th[N_BASIC_DIRECTIONS] = { 0.126, 0.126, 0.126, 0.126 };
         int const minimal_full_directions = 2;
         bool const require_orthogonal_valid_dirs = true;
 

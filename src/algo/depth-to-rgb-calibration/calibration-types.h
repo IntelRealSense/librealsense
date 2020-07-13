@@ -127,6 +127,9 @@ namespace depth_to_rgb_calibration {
         deg_315, //
         deg_none
     };
+
+    const int N_BASIC_DIRECTIONS = direction::deg_180;
+
     enum svm_model :uint8_t
     {
         linear,
