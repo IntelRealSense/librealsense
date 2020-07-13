@@ -116,10 +116,10 @@ namespace rs2
             RS2_CALIB_STATE_TARE_INPUT,      // Collect input parameters for Tare calib
             RS2_CALIB_STATE_TARE_INPUT_ADVANCED,      // Collect input parameters for Tare calib
             RS2_CALIB_STATE_SELF_INPUT,      // Collect input parameters for Self calib
-            RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH,// Calculating ground truth in process... Shows progressbar
-            RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_IN_PROCESS,// Calculating ground truth in process... Shows progressbar
-            RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_COMPLETE,  // Calculating ground truth complete, show succeeded or failed
-            RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED,    // Failed to calculating the ground truth
+            RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH,            // Calculating ground truth
+            RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_IN_PROCESS, // Calculating ground truth in process... Shows progressbar
+            RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_COMPLETE,   // Calculating ground truth complete, show succeeded or failed
+            RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED,     // Failed to calculating the ground truth
         };
 
         autocalib_notification_model(std::string name,
