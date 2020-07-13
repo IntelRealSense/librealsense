@@ -87,7 +87,7 @@ namespace librealsense
         // Read a table from firmware and, if FW says the table is empty, optionally initialize it
         // using your own code...
         template< typename T >
-        void read_fw_table( hw_monitor & hwm,
+        void read_fw_table( hw_monitor& hwm,
                             int table_id, T * ptable,
                             table_header * pheader = nullptr,
                             std::function< void() > init = nullptr )
@@ -127,7 +127,7 @@ namespace librealsense
 
         // Write a table to firmware
         template< typename T >
-        void write_fw_table( hw_monitor & hwm, uint16_t const table_id, T const & table )
+        void write_fw_table( hw_monitor& hwm, uint16_t const table_id, T const & table )
         {
             command cmd( fw_cmd::WRITE_TABLE, 0 );
             cmd.data.resize( sizeof( table_header ) + sizeof( table ) );
@@ -156,7 +156,7 @@ namespace librealsense
         }
 
         template< typename T >
-        void read_fw_register( hw_monitor & hwm, T * preg, int const baseline_address )
+        void read_fw_register(hw_monitor& hwm, T * preg, int const baseline_address )
         {
             command cmd( ivcam2::fw_cmd::MRD, baseline_address, baseline_address + sizeof( T ) );
             auto res = hwm.send( cmd );
@@ -511,7 +511,7 @@ namespace librealsense
         class freefall_option : public bool_option
         {
         public:
-            freefall_option( hw_monitor & hwm, bool enabled = true );
+            freefall_option( hw_monitor& hwm, bool enabled = true );
 
             bool is_enabled() const override { return _enabled; }
             virtual void enable( bool = true );

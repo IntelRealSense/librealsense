@@ -213,7 +213,7 @@ namespace librealsense
         if( _fw_version >= firmware_version( "1.3.12.0" ) )
         {
             // TODO may not need auto-cal if there's no color sensor, like on the rs500...
-            _autocal = std::make_shared< ac_trigger >( *this, *_hw_monitor );
+            _autocal = std::make_shared< ac_trigger >( *this, _hw_monitor );
 
             // Have the auto-calibration mechanism notify us when calibration has finished
             _autocal->register_callback(
