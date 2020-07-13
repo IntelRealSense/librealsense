@@ -259,7 +259,7 @@ namespace librealsense
 
         rgb_calibration_table table;
         AC_LOG( DEBUG, "Reading RGB calibration table 0x" << std::hex << table.table_id );
-        ivcam2::read_fw_table( *_owner->_hw_monitor, table.table_id, &table );
+        ivcam2::read_fw_table( _owner->_hw_monitor, table.table_id, &table );
         AC_LOG( DEBUG, "    version:     " << table.version );
         AC_LOG( DEBUG, "    timestamp:   " << table.timestamp << "; incrementing" );
         AC_LOG( DEBUG, "    type:        " << table.type << "; setting to 0x10" );
@@ -268,7 +268,7 @@ namespace librealsense
         AC_LOG( INFO, "Overriding intr: " << intr );
         AC_LOG( DEBUG, "    normalized:  " << table.get_intrinsics() );
         table.update_write_fields();
-        write_fw_table( *_owner->_hw_monitor, table.table_id, table );
+        write_fw_table( _owner->_hw_monitor, table.table_id, table );
         AC_LOG( DEBUG, "    done" );
 
         // Intrinsics are resolution-specific, so all the rest of the profile info is not
@@ -280,7 +280,7 @@ namespace librealsense
     {
         rgb_calibration_table table;
         AC_LOG( DEBUG, "Reading RGB calibration table 0x" << std::hex << table.table_id );
-        ivcam2::read_fw_table( *_owner->_hw_monitor, table.table_id, &table );
+        ivcam2::read_fw_table( _owner->_hw_monitor, table.table_id, &table );
         AC_LOG( DEBUG, "    version:     " << table.version );
         AC_LOG( DEBUG, "    timestamp:   " << table.timestamp << "; incrementing" );
         AC_LOG( DEBUG, "    type:        " << table.type << "; setting to 0x10" );
@@ -289,7 +289,7 @@ namespace librealsense
         AC_LOG( INFO , "Overriding extr: " << extr );
         table.update_write_fields();
         AC_LOG( DEBUG, "    as raw:      " << table.get_extrinsics());
-        ivcam2::write_fw_table( *_owner->_hw_monitor, table.table_id, table );
+        ivcam2::write_fw_table( _owner->_hw_monitor, table.table_id, table );
         AC_LOG( DEBUG, "    done" );
 
 
@@ -325,7 +325,7 @@ namespace librealsense
         // our initialization!
         rgb_calibration_table table;
         AC_LOG( DEBUG, "Reading factory calibration from table 0x" << std::hex << table.eeprom_table_id );
-        ivcam2::read_fw_table( *_owner->_hw_monitor, table.eeprom_table_id, &table );
+        ivcam2::read_fw_table( _owner->_hw_monitor, table.eeprom_table_id, &table );
         AC_LOG( DEBUG, "    version:     " << table.version );
         AC_LOG( DEBUG, "    timestamp:   " << table.timestamp << "; incrementing" );
         AC_LOG( DEBUG, "    type:        " << table.type << "; setting to 0x10" );
@@ -333,7 +333,7 @@ namespace librealsense
         AC_LOG( DEBUG, "    intrinsics:  " << table.get_intrinsics() );
         AC_LOG( DEBUG, "    extrinsics:  " << table.get_extrinsics() );
         AC_LOG( DEBUG, "Writing RGB calibration table 0x" << std::hex << table.table_id );
-        ivcam2::write_fw_table( *_owner->_hw_monitor, table.table_id, table );
+        ivcam2::write_fw_table( _owner->_hw_monitor, table.table_id, table );
         AC_LOG( DEBUG, "    done" );
 
         _owner->_color_intrinsics_table_raw.reset();

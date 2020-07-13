@@ -29,7 +29,7 @@ namespace ivcam2 {
         float _dsm_x_offset;
         float _dsm_y_offset;
 
-        hw_monitor & _hwm;
+        std::weak_ptr<hw_monitor> _hwm;
         l500_device & _dev;
 
         bool _is_on = false;
@@ -132,7 +132,7 @@ namespace ivcam2 {
         };
 
     public:
-        ac_trigger( l500_device & dev, hw_monitor & hwm );
+        ac_trigger( l500_device & dev, std::shared_ptr<hw_monitor> hwm );
         ~ac_trigger();
 
         // Wait a certain amount of time before the next calibration happens. Can only happen if not

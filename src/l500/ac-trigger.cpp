@@ -376,7 +376,7 @@ namespace ivcam2 {
     };
 
 
-    ac_trigger::ac_trigger( l500_device & dev, hw_monitor & hwm )
+    ac_trigger::ac_trigger( l500_device & dev, std::shared_ptr<hw_monitor> hwm )
         : _hwm( hwm )
         , _dev( dev )
     {
@@ -447,7 +447,13 @@ namespace ivcam2 {
         command cmd{ GET_SPECIAL_FRAME, 0x5F, 1 };  // 5F = SF = Special Frame, for easy recognition
         try
         {
-            _hwm.send( cmd );
+            auto weak_hwm = _hwm.lock();
+            if (!weak_hwm)
+            {
+                AC_LOG(DEBUG, "Hardware monitor is inaccessible");
+                return;
+            }
+            weak_hwm->send(cmd);
         }
         catch( std::exception const & e )
         {
@@ -587,10 +593,15 @@ namespace ivcam2 {
         // NOTE: the following is I/O to FW, meaning it takes time! In this time, another
         // thread can receive a set_color_frame() and, since we've already received the SF,
         // start working even before we finish! NOT GOOD!
-        ivcam2::read_fw_register( _hwm, &_dsm_x_scale, 0xfffe3844 );
-        ivcam2::read_fw_register( _hwm, &_dsm_y_scale, 0xfffe3830 );
-        ivcam2::read_fw_register( _hwm, &_dsm_x_offset, 0xfffe3840 );
-        ivcam2::read_fw_register( _hwm, &_dsm_y_offset, 0xfffe382c );
+        {
+            auto hwm_weak = _hwm.lock();
+            if (!hwm_weak)
+                return;
+            ivcam2::read_fw_register(hwm_weak, &_dsm_x_scale, 0xfffe3844);
+            ivcam2::read_fw_register(hwm_weak, &_dsm_y_scale, 0xfffe3830);
+            ivcam2::read_fw_register(hwm_weak, &_dsm_x_offset, 0xfffe3840);
+            ivcam2::read_fw_register(hwm_weak, &_dsm_y_offset, 0xfffe382c);
+        }
         AC_LOG( DEBUG, "dsm registers=  x[" << AC_F_PREC << _dsm_x_scale << ' ' << _dsm_y_scale
             << "]  +[" << _dsm_x_offset << ' ' << _dsm_y_offset
             << "]" );
@@ -672,7 +683,10 @@ namespace ivcam2 {
                     if( !cal_info_initialized )
                     {
                         cal_info_initialized = true;
-                        ivcam2::read_fw_table( _hwm, cal_info.table_id, &cal_info );  // throws!
+                        auto hwm_weak = _hwm.lock();
+                        if (!hwm_weak)
+                            return;
+                        ivcam2::read_fw_table(hwm_weak, cal_info.table_id, &cal_info );  // throws!
                     }
                     algo::depth_to_rgb_calibration::algo_calibration_registers cal_regs;
                     cal_regs.EXTLdsmXscale = _dsm_x_scale;
@@ -815,8 +829,14 @@ namespace ivcam2 {
 
     double ac_trigger::read_temperature()
     {
+        auto weak_hwm = _hwm.lock();
+        if (!weak_hwm)
+        {
+            AC_LOG(DEBUG ,"Hardware monitor is inaccessible");
+            return 0.0;
+        }
         // The temperature may depend on streaming?
-        auto res = _hwm.send( command{ TEMPERATURES_GET } );
+        auto res = weak_hwm->send( command{ TEMPERATURES_GET } );
         if( res.size() < sizeof( temperatures ) )  // New temperatures may get added by FW...
         {
             AC_LOG( ERROR,

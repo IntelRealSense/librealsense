@@ -87,14 +87,14 @@ namespace librealsense
         // Read a table from firmware and, if FW says the table is empty, optionally initialize it
         // using your own code...
         template< typename T >
-        void read_fw_table( hw_monitor & hwm,
+        void read_fw_table( std::shared_ptr<hw_monitor> hwm,
                             int table_id, T * ptable,
                             table_header * pheader = nullptr,
                             std::function< void() > init = nullptr )
         {
             command cmd( fw_cmd::READ_TABLE, table_id );
             hwmon_response response;
-            std::vector<byte> data = hwm.send( cmd, &response );
+            std::vector<byte> data = hwm->send( cmd, &response );
             size_t expected_size = sizeof( table_header ) + sizeof( T );
             switch( response )
             {
@@ -127,7 +127,7 @@ namespace librealsense
 
         // Write a table to firmware
         template< typename T >
-        void write_fw_table( hw_monitor & hwm, uint16_t const table_id, T const & table )
+        void write_fw_table( std::shared_ptr<hw_monitor> hwm, uint16_t const table_id, T const & table )
         {
             command cmd( fw_cmd::WRITE_TABLE, 0 );
             cmd.data.resize( sizeof( table_header ) + sizeof( table ) );
@@ -143,7 +143,7 @@ namespace librealsense
             memcpy( cmd.data.data() + sizeof( table_header ), &table, sizeof( table ) );
             
             hwmon_response response;
-            hwm.send( cmd, &response );
+            hwm->send( cmd, &response );
             switch( response )
             {
             case hwm_Success:
@@ -156,10 +156,10 @@ namespace librealsense
         }
 
         template< typename T >
-        void read_fw_register( hw_monitor & hwm, T * preg, int const baseline_address )
+        void read_fw_register(std::shared_ptr<hw_monitor> hwm, T * preg, int const baseline_address )
         {
             command cmd( ivcam2::fw_cmd::MRD, baseline_address, baseline_address + sizeof( T ) );
-            auto res = hwm.send( cmd );
+            auto res = hwm->send( cmd );
             if( res.size() != sizeof( T ) )
                 throw std::runtime_error( to_string()
                                           << "MRD data size received= " << res.size()
