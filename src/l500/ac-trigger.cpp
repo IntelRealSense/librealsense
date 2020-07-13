@@ -391,7 +391,7 @@ namespace ivcam2 {
         if( _worker.joinable() )
         {
             _is_processing = false;  // Signal the thread that we want to stop!
-            _is_on = false;          // Set auto calibration off
+            _is_on = false;          // Set auto calibration off so it won't retry.
             _worker.join();
         }
     }
@@ -447,13 +447,13 @@ namespace ivcam2 {
         command cmd{ GET_SPECIAL_FRAME, 0x5F, 1 };  // 5F = SF = Special Frame, for easy recognition
         try
         {
-            auto weak_hwm = _hwm.lock();
-            if (!weak_hwm)
+            auto hwm = _hwm.lock();
+            if (!hwm)
             {
-                AC_LOG(DEBUG, "Hardware monitor is inaccessible");
+                AC_LOG(DEBUG, "Hardware monitor is inaccessible - calibration not triggered");
                 return;
             }
-            weak_hwm->send(cmd);
+            hwm->send(cmd);
         }
         catch( std::exception const & e )
         {
@@ -594,13 +594,16 @@ namespace ivcam2 {
         // thread can receive a set_color_frame() and, since we've already received the SF,
         // start working even before we finish! NOT GOOD!
         {
-            auto hwm_weak = _hwm.lock();
-            if (!hwm_weak)
+            auto hwm = _hwm.lock();
+            if (!hwm)
+            {
+                AC_LOG(DEBUG, "Hardware monitor is inaccessible - don't use special frame");
                 return;
-            ivcam2::read_fw_register(hwm_weak, &_dsm_x_scale, 0xfffe3844);
-            ivcam2::read_fw_register(hwm_weak, &_dsm_y_scale, 0xfffe3830);
-            ivcam2::read_fw_register(hwm_weak, &_dsm_x_offset, 0xfffe3840);
-            ivcam2::read_fw_register(hwm_weak, &_dsm_y_offset, 0xfffe382c);
+            }
+            ivcam2::read_fw_register(*hwm, &_dsm_x_scale, 0xfffe3844);
+            ivcam2::read_fw_register(*hwm, &_dsm_y_scale, 0xfffe3830);
+            ivcam2::read_fw_register(*hwm, &_dsm_x_offset, 0xfffe3840);
+            ivcam2::read_fw_register(*hwm, &_dsm_y_offset, 0xfffe382c);
         }
         AC_LOG( DEBUG, "dsm registers=  x[" << AC_F_PREC << _dsm_x_scale << ' ' << _dsm_y_scale
             << "]  +[" << _dsm_x_offset << ' ' << _dsm_y_offset
@@ -683,10 +686,13 @@ namespace ivcam2 {
                     if( !cal_info_initialized )
                     {
                         cal_info_initialized = true;
-                        auto hwm_weak = _hwm.lock();
-                        if (!hwm_weak)
+                        auto hwm = _hwm.lock();
+                        if (!hwm)
+                        {
+                            AC_LOG(DEBUG, "Hardware monitor is inaccessible - stopping algo");
                             return;
-                        ivcam2::read_fw_table(hwm_weak, cal_info.table_id, &cal_info );  // throws!
+                        }
+                        ivcam2::read_fw_table(*hwm, cal_info.table_id, &cal_info );  // throws!
                     }
                     algo::depth_to_rgb_calibration::algo_calibration_registers cal_regs;
                     cal_regs.EXTLdsmXscale = _dsm_x_scale;
@@ -697,15 +703,16 @@ namespace ivcam2 {
                     auto df = _sf.get_depth_frame();
                     auto irf = _sf.get_infrared_frame();
 
-                    depth_to_rgb_calibration algo(df, irf, _cf, _pcf, cal_info, cal_regs, 
-                    [&]() 
+                    auto  should_continue = [&]()
                     {
                         if (!is_processing())
                         {
-                            AC_LOG( DEBUG , "Stopping CAH algorithm");
-                            throw librealsense::camera_disconnected_exception("Stopping CAH algorithm");
+                            AC_LOG(DEBUG, "Stopping algo: not processing any more");
+                            throw std::runtime_error("stopping algo: not processing any more");
                         }
-                    });
+                    };
+                    depth_to_rgb_calibration algo(df, irf, _cf, _pcf, cal_info, cal_regs, should_continue
+                   );
 
                     _from_profile = algo.get_from_profile();
                     _to_profile = algo.get_to_profile();
@@ -720,7 +727,7 @@ namespace ivcam2 {
 
                     // It's possible that, while algo was working, stop() was called. In this case,
                     // we have to make sure that we notify of failure:
-                    if( !is_active() )
+                    if( !is_processing())
                     {
                         AC_LOG( DEBUG, "Algo finished (with " << status << "), but stop() was detected; notifying of failure..." );
                         status = RS2_CALIBRATION_FAILED;
@@ -829,14 +836,14 @@ namespace ivcam2 {
 
     double ac_trigger::read_temperature()
     {
-        auto weak_hwm = _hwm.lock();
-        if (!weak_hwm)
+        auto hwm = _hwm.lock();
+        if (!hwm)
         {
-            AC_LOG(DEBUG ,"Hardware monitor is inaccessible");
+            AC_LOG(DEBUG ,"Hardware monitor is inaccessible - cannot read temperatures");
             return 0.0;
         }
         // The temperature may depend on streaming?
-        auto res = weak_hwm->send( command{ TEMPERATURES_GET } );
+        auto res = hwm->send( command{ TEMPERATURES_GET } );
         if( res.size() < sizeof( temperatures ) )  // New temperatures may get added by FW...
         {
             AC_LOG( ERROR,
@@ -904,6 +911,7 @@ namespace ivcam2 {
         _temp_check.reset();
         _retrier.reset();
         _recycler.reset();
+        reset();
     }
 
     void ac_trigger::reset()
@@ -912,8 +920,11 @@ namespace ivcam2 {
         _cf = rs2::frame{};;
         _pcf = rs2::frame{};
 
-        _is_processing = false;
-        AC_LOG( DEBUG, "reset()" );
+        if (_is_processing)
+        {
+            _is_processing = false;
+            AC_LOG(DEBUG, "trigger processing to stop");
+        }
     }
 
 

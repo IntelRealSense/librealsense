@@ -243,7 +243,7 @@ namespace librealsense
     rs2_dsm_params l500_depth_sensor::get_dsm_params() const
     {
         ac_depth_results table = { { 0 } };
-        read_fw_table( _owner->_hw_monitor, table.table_id, &table, nullptr,
+        read_fw_table( *_owner->_hw_monitor, table.table_id, &table, nullptr,
             [&]()
             {
                 //time_t t;
@@ -291,7 +291,7 @@ namespace librealsense
         }
 
         AC_LOG( INFO, "Overriding DSM : " << table.params );
-        ivcam2::write_fw_table( _owner->_hw_monitor, ac_depth_results::table_id, table );
+        ivcam2::write_fw_table( *_owner->_hw_monitor, ac_depth_results::table_id, table );
     }
 
     void l500_depth_sensor::reset_calibration()

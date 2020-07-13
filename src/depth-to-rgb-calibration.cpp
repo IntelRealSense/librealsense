@@ -138,11 +138,10 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
 
         AC_LOG( DEBUG, "... optimizing" );
 
-        auto opt_cb ([&](impl::data_collect const &data) 
+        _algo.optimize([&](impl::data_collect const &data)
         {
             CHECK_IF_NEEDS_TO_STOP();
         });
-        _algo.optimize(opt_cb);
 
         AC_LOG( DEBUG, "... checking result validity" );
         if( !_algo.is_valid_results() )
