@@ -912,17 +912,17 @@ namespace ivcam2 {
         {
             try
             {
-                option & o = _dev.get_depth_sensor().get_option(RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH);
-                if (!o.query())
+                option & o = _dev.get_depth_sensor().get_option( RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH );
+                if( o.query() != float( RS2_CAH_TRIGGER_AUTO ) )
                 {
                     // auto trigger is turned off
-                    AC_LOG(DEBUG, "Turned off -- no trigger set");
+                    AC_LOG( DEBUG, "Turned off -- no trigger set" );
                     return;
                 }
             }
-            catch (std::exception const & e)
+            catch( std::exception const & e )
             {
-                AC_LOG(ERROR, "EXCEPTION caught in access to device: " << e.what());
+                AC_LOG( ERROR, "EXCEPTION caught in access to device: " << e.what() );
                 return;
             }
 
