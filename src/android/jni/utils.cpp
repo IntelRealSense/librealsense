@@ -16,7 +16,7 @@ Java_com_intel_realsense_librealsense_Utils_nProjectPointToPixel(JNIEnv *env, jc
     jfieldID point_x_field = env->GetFieldID(point_3D_class, "mX", "F");
     jfieldID point_y_field = env->GetFieldID(point_3D_class, "mY", "F");
     jfieldID point_z_field = env->GetFieldID(point_3D_class, "mZ", "F");
-    float* point = new float[3];
+    float point[3];
     point[0] =  env->GetFloatField(point_3D, point_x_field);
     point[1] =  env->GetFloatField(point_3D, point_y_field);
     point[2] =  env->GetFloatField(point_3D, point_z_field);
@@ -48,9 +48,7 @@ Java_com_intel_realsense_librealsense_Utils_nProjectPointToPixel(JNIEnv *env, jc
     env->ReleaseFloatArrayElements(*coeffsArray, coeffs, 0);
 
     // preparing struct to be filled by API function
-    float* pixel = new float[2];
-    pixel[0] = 0.f;
-    pixel[1] = 0.f;
+    float pixel[2] = {0.f, 0.f};
 
     rs2_project_point_to_pixel(pixel, &intrinsics, point);
 
@@ -71,7 +69,7 @@ Java_com_intel_realsense_librealsense_Utils_nDeprojectPixelToPoint(JNIEnv *env, 
     jclass pixel_2D_class = env->GetObjectClass(pixel_2D);
     jfieldID pixel_x_field = env->GetFieldID(pixel_2D_class, "mX", "I");
     jfieldID pixel_y_field = env->GetFieldID(pixel_2D_class, "mY", "I");
-    float* pixel = new float[2];
+    float pixel[2];
     pixel[0] = env->GetIntField(pixel_2D, pixel_x_field);
     pixel[1] = env->GetIntField(pixel_2D, pixel_y_field);
 
@@ -101,10 +99,7 @@ Java_com_intel_realsense_librealsense_Utils_nDeprojectPixelToPoint(JNIEnv *env, 
     env->ReleaseFloatArrayElements(*coeffsArray, coeffs, 0);
 
     // preparing struct to be filled by API function
-    float* point = new float[3];
-    point[0] = 0.f;
-    point[1] = 0.f;
-    point[2] = 0.f;
+    float point[3] = {0.f, 0.f, 0.f};
 
     rs2_deproject_pixel_to_point(point, &intrinsics, pixel, depth);
 
@@ -127,7 +122,7 @@ Java_com_intel_realsense_librealsense_Utils_nTransformPointToPoint(JNIEnv *env, 
     jfieldID from_point_x_field = env->GetFieldID(from_point_3D_class, "mX", "F");
     jfieldID from_point_y_field = env->GetFieldID(from_point_3D_class, "mY", "F");
     jfieldID from_point_z_field = env->GetFieldID(from_point_3D_class, "mZ", "F");
-    float* from_point = new float[3];
+    float from_point[3];
     from_point[0] =  env->GetFloatField(from_point_3D, from_point_x_field);
     from_point[1] =  env->GetFloatField(from_point_3D, from_point_y_field);
     from_point[2] =  env->GetFloatField(from_point_3D, from_point_z_field);
@@ -148,15 +143,12 @@ Java_com_intel_realsense_librealsense_Utils_nTransformPointToPoint(JNIEnv *env, 
     jobject translationObject = env->GetObjectField(extrinsic, translation_field);
     jfloatArray* translationArray = reinterpret_cast<jfloatArray *>(&translationObject);
     jfloat * translation = env->GetFloatArrayElements(*translationArray, NULL);
-    memcpy(extrinsics.translation, translation, 9 * sizeof(float));
+    memcpy(extrinsics.translation, translation, 3 * sizeof(float));
     env->ReleaseFloatArrayElements(*translationArray, translation, 0);
 
 
     // preparing struct to be filled by API function
-    float* to_point = new float[3];
-    to_point[0] = 0.f;
-    to_point[1] = 0.f;
-    to_point[2] = 0.f;
+    float to_point[3] = {0.f, 0.f, 0.f};
 
     //api call
     rs2_transform_point_to_point(to_point, &extrinsics, from_point);

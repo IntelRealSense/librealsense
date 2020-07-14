@@ -133,7 +133,7 @@ Java_com_intel_realsense_librealsense_StreamProfile_nRegisterExtrinsic(JNIEnv *e
     jobject translationObject = env->GetObjectField(extrinsic, translation_field);
     jfloatArray* translationArray = reinterpret_cast<jfloatArray *>(&translationObject);
     jfloat * translation = env->GetFloatArrayElements(*translationArray, NULL);
-    memcpy(extr.translation, translation, 9 * sizeof(float));
+    memcpy(extr.translation, translation, 3 * sizeof(float));
     env->ReleaseFloatArrayElements(*translationArray, translation, 0);
 
     //calling the api method
