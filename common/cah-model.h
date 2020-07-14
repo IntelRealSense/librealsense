@@ -48,13 +48,14 @@ namespace rs2
     class cah_model // CAH = Camera Accuracy Health
     {
     public:
-        cah_model();
+        cah_model(device_model & dev_model, viewer_model& viewer);
 
-        bool prompt_trigger_popup(device_model & dev_model, ux_window& window, viewer_model& viewer, const std::string& error_message);
-        bool prompt_reset_popup(device_model & dev_model, ux_window& window, const std::string& error_message);
-
+        bool prompt_trigger_popup(ux_window& window, const std::string& error_message);
+        bool prompt_reset_popup(ux_window& window, const std::string& error_message);
     private:
 
+        device_model & _dev_model;
+        viewer_model& _viewer;
         enum class model_state_type { TRIGGER_MODAL, PROCESS_MODAL };
         std::atomic<model_state_type> _state; // will be set from a different thread callback function
         bool _process_started;

@@ -484,7 +484,7 @@ namespace rs2
         std::string icon[2];
     };
 
-    bool yes_no_dialog(const std::string& title, const std::string& message_text, bool& approved, ux_window& window, const std::string& error_message, bool disabled = false);
+    bool yes_no_dialog(const std::string& title, const std::string& message_text, bool& approved, ux_window& window, const std::string& error_message, bool disabled = false, const std::string& disabled_reason = "");
     bool status_dialog(const std::string& title, const std::string& process_topic_text, const std::string& process_status_text, bool enable_close, ux_window& window);
 
     class tm2_model
@@ -810,7 +810,7 @@ namespace rs2
         // Needed as a member for reseting the window memory on device disconnection.
        
 
-        cah_model accuracy_health_model;
+        cah_model _accuracy_health_model;
         void draw_info_icon(ux_window& window, ImFont* font, const ImVec2& size);
         int draw_seek_bar();
         int draw_playback_controls(ux_window& window, ImFont* font, viewer_model& view);

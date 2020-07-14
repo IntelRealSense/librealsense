@@ -3377,7 +3377,8 @@ namespace rs2
         syncer(viewer.syncer),
         _update_readonly_options_timer(std::chrono::seconds(6))
         , _detected_objects(std::make_shared< atomic_objects_in_frame >()),
-        _updates(viewer.updates)
+        _updates(viewer.updates),
+        _accuracy_health_model(*this, viewer)
     {
         auto name = get_device_name(dev);
         id = to_string() << name.first << ", " << name.second;
@@ -4126,7 +4127,7 @@ namespace rs2
         return device_names;
     }
 
-    bool yes_no_dialog(const std::string& title, const std::string& message_text, bool& approved, ux_window& window, const std::string& error_message, bool disabled)
+    bool yes_no_dialog(const std::string& title, const std::string& message_text, bool& approved, ux_window& window, const std::string& error_message, bool disabled, const std::string& disabled_reason)
     {
         ImGui_ScopePushFont(window.get_font());
         ImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
@@ -4153,7 +4154,7 @@ namespace rs2
                 ImGui_ScopePushStyleColor(ImGuiCol_Text, light_grey);
                 ImGui::Separator();
                 ImGui::SetWindowFontScale(1.1f);
-                ImGui::Text("\n%s\n\n", message_text.c_str());
+                ImGui::Text("\n%s\n", message_text.c_str());
 
                 if (!disabled)
                 {
@@ -4179,6 +4180,10 @@ namespace rs2
                 else
                 {
                     ImGui::NewLine();
+                    {
+                        ImGui_ScopePushStyleColor(ImGuiCol_Text, red);
+                        ImGui::Text("%s\n\n", disabled_reason.c_str());
+                    }
                     auto window_width = ImGui::GetWindowWidth();
                     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + window_width / 2.f - 30.f - ImGui::GetStyle().WindowPadding.x);
                     if (ImGui::Button("Close", ImVec2(60, 30)))
@@ -4968,12 +4973,12 @@ namespace rs2
 
         if (show_trigger_camera_accuracy_health_popup)
         {
-            show_trigger_camera_accuracy_health_popup = accuracy_health_model.prompt_trigger_popup(*this, window, viewer, error_message);
+            show_trigger_camera_accuracy_health_popup = _accuracy_health_model.prompt_trigger_popup(window, error_message);
         }
 
         if (show_reset_camera_accuracy_health_popup)
         {
-            show_reset_camera_accuracy_health_popup = accuracy_health_model.prompt_reset_popup(*this, window, error_message);
+            show_reset_camera_accuracy_health_popup = _accuracy_health_model.prompt_reset_popup(window, error_message);
         }
 
         if (keep_showing_advanced_mode_modal)
