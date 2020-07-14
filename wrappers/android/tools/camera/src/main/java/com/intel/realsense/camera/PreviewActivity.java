@@ -55,6 +55,8 @@ public class PreviewActivity extends AppCompatActivity {
     private boolean statsToggle = false;
     private boolean mShow3D = false;
 
+    boolean keepalive = true;
+
     public synchronized void toggleStats(){
         statsToggle = !statsToggle;
         if(statsToggle){
@@ -73,6 +75,15 @@ public class PreviewActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_preview);
+
+        keepalive = true;
+
+        Intent intent = this.getIntent();
+
+        if (intent != null && intent.getExtras() != null ) {
+            keepalive = intent.getExtras().getBoolean("keepalive");
+        }
+
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         mGLSurfaceView = findViewById(R.id.glSurfaceView);
@@ -143,6 +154,7 @@ public class PreviewActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+
         mGLSurfaceView.close();
     }
 
@@ -204,6 +216,11 @@ public class PreviewActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+
+        if(keepalive == false)
+        {
+            return;
+        }
 
         mStreamingStats  = new StreamingStats();
         mStreamer = new Streamer(this, true, new Streamer.Listener() {
@@ -319,5 +336,21 @@ public class PreviewActivity extends AppCompatActivity {
             s.setValue(option, val);
         else
             Toast.makeText(this, "This control is not supported by this device", Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent)
+    {
+        super.onNewIntent(intent);
+
+        if (intent != null && intent.getExtras() != null ) {
+            keepalive = intent.getExtras().getBoolean("keepalive");
+        }
+
+        // destroy activity if requested
+        if(keepalive == false)
+        {
+            PreviewActivity.this.finish();
+        }
     }
 }
