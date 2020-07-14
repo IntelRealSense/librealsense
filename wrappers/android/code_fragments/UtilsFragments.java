@@ -30,6 +30,13 @@ import com.intel.realsense.librealsense.StreamType;
 import com.intel.realsense.librealsense.Utils;
 import com.intel.realsense.librealsense.VideoFrame;
 
+// Aim of this fragment is to show how the following functions must be used:
+// From class Utils:
+// deprojectPixelToPoint
+// transformPointToPoint
+// projectPointToPixel
+
+
 private int framesCounter = 1;
 Runnable mStreaming = new Runnable() {
     @Override
