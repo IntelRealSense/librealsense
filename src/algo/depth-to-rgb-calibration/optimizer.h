@@ -18,7 +18,6 @@ namespace librealsense {
 namespace algo {
 namespace depth_to_rgb_calibration {
 
-
     struct optimization_params
     {
         p_matrix curr_p_mat;
@@ -76,6 +75,14 @@ namespace depth_to_rgb_calibration {
         // TODO: the following should be 0.2% but was increased to 0.5% to account for
         // manual trigger activation
         double const max_global_los_scaling_step = 0.005;  // the difference (.5%) between starting and final scale
+
+        double const edges_per_direction_ratio_th = 0.0041;
+        double const dir_std_th[N_BASIC_DIRECTIONS] = { 0.126, 0.126, 0.126, 0.126 };
+        int const minimal_full_directions = 2;
+        bool const require_orthogonal_valid_dirs = true;
+
+        int const saturation_value = 230;
+        double const saturation_ratio_th = 0.05;
     };
     // svm
     struct decision_params
@@ -244,11 +251,16 @@ namespace depth_to_rgb_calibration {
 
     };
 
+    struct input_validity_data
+    {
+        bool edges_dir_spread;
+        bool not_saturated;
+    };
 
     class optimizer
     {
     public:
-        optimizer();
+        optimizer(bool manual_trigger = false);
 
         void set_yuy_data( std::vector< yuy_t > && yuy_data, std::vector< yuy_t > && prev_yuy_data,
                            calib const & calibration );
@@ -263,7 +275,21 @@ namespace depth_to_rgb_calibration {
         void write_data_to( std::string const & directory );
 
         // (optional) Return whether the scene passed in is valid and can go thru optimization
-        bool is_scene_valid();
+        bool is_scene_valid(input_validity_data* data = nullptr);
+
+        // This function checks for specific cases in which we expect poor
+        // performance of the AC2 algorithm.
+        // Covered Cases(By priority) :
+        // 1. Enough Edges in RGB image(Lights off bug fix)
+        // 2. Enough Edges in enough locations(3 / 4 quarters)
+        // 3. Enough Edges in enough directions(2 / 4 directions)
+        // 4. Large enough STD of edges in the chosen direction(weights will be
+        //    normalized by direction)  (Normalize by weights is done in a seperate
+        //    function)
+        // 5. Verify there is movement in RGB between this scene and the previous
+        // 6. Check for saturation in the depth
+        //    one in which we converged
+        bool input_validity_checks(input_validity_data* data = nullptr);
 
         // Optimize the calibration, optionally calling the callback after each iteration
         size_t optimize( std::function< void( data_collect const & data ) >
@@ -348,6 +374,7 @@ namespace depth_to_rgb_calibration {
                               rs2_dsm_params_double & ac_data_new ) const;
 
     private:
+        bool _manual_trigger;
         params _params;
         decision_params _decision_params;
         svm_features _svm_features;

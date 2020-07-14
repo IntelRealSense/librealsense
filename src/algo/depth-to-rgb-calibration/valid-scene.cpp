@@ -1,4 +1,4 @@
-//// License: Apache 2.0. See LICENSE file in root directory.
+﻿//// License: Apache 2.0. See LICENSE file in root directory.
 //// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "optimizer.h"
@@ -9,7 +9,7 @@
 #include "cost.h"
 #include "debug.h"
 #include <math.h>
-
+#include <numeric>
 
 #define GAUSS_CONV_ROWS 4
 #define GAUSS_CONV_COLUMNS 4
@@ -27,7 +27,7 @@ std::vector<double> gauss_convolution(std::vector<T> const& image,
 {
     // boundaries handling 
     // Extend - The nearest border pixels are conceptually extended as far as necessary to provide values for the convolution.
-    // Corner pixels are extended in 90� wedges.Other edge pixels are extended in lines.
+    // Corner pixels are extended in 90° wedges.Other edge pixels are extended in lines.
     // https://en.wikipedia.org/wiki/Kernel_(image_processing)
     // handling order:
     // 1. rows: 0,1 and image_height-1, image_height-2
@@ -633,7 +633,7 @@ end*/
 
     return false;
 }
-bool optimizer::is_scene_valid()
+bool optimizer::is_scene_valid(input_validity_data* data)
 {
     std::vector< byte > section_map_depth(_z.width * _z.height);
     std::vector< byte > section_map_rgb(_yuy.width * _yuy.height);
@@ -679,5 +679,151 @@ bool optimizer::is_scene_valid()
                                               &_z.dir_ratio1 );
 
     //return((!res_movement) && res_edges && res_gradient);
-    return(!res_movement);
+
+    auto valid = !res_movement;
+    if (!_manual_trigger)
+        valid = valid && input_validity_checks(data);
+        
+    return(valid);
 }
+
+bool check_edges_dir_spread(const std::vector<double>& directions,
+    const std::vector<double>& subpixels_x,
+    const std::vector<double>& subpixels_y,
+    size_t width,
+    size_t height,
+    const params& p)
+{
+    // check if there are enough edges per direction
+    int edges_amount_per_dir[N_BASIC_DIRECTIONS] = { 0 };
+
+    for (auto && i : directions)
+    {
+        edges_amount_per_dir[(int)i - 1]++;
+    }
+
+    bool dirs_with_enough_edges[N_BASIC_DIRECTIONS] = { false };
+
+    for (auto i = 0; i < N_BASIC_DIRECTIONS; i++)
+    {
+        auto edges_amount_per_dir_normalized =  (double)edges_amount_per_dir[i] / (width * height);
+        dirs_with_enough_edges[i] = (edges_amount_per_dir_normalized > p.edges_per_direction_ratio_th);
+    }
+
+    // std Check for valid directions
+    double2 dir_vecs[N_BASIC_DIRECTIONS] =
+    {
+        { 1,             0},
+        { 1 / sqrt(2),   1 / sqrt(2) },
+        { 0,             1 },
+        { -1 / sqrt(2),  1 / sqrt(2) }
+    };
+
+
+    auto diag_length = sqrt((double)width*(double)width + (double)height*(double)height);
+
+    std::vector<double> val_per_dir[N_BASIC_DIRECTIONS];
+
+    for (auto i = 0; i < subpixels_x.size(); i++)
+    {
+        auto dir = (int)directions[i] - 1;
+        auto val = subpixels_x[i] * dir_vecs[dir].x + subpixels_y[i] * dir_vecs[dir].y;
+        val_per_dir[dir].push_back(val);
+    }
+
+    double std_per_dir[N_BASIC_DIRECTIONS] = { 0 };
+    bool std_bigger_than_th[N_BASIC_DIRECTIONS] = { false };
+
+    for (auto i = 0; i < N_BASIC_DIRECTIONS; i++)
+    {
+        auto curr_dir = val_per_dir[i];
+        double sum = std::accumulate(curr_dir.begin(), curr_dir.end(), 0.0);
+        double mean = sum / curr_dir.size();
+
+        double dists_sum = 0;
+        std::for_each(curr_dir.begin(), curr_dir.end(), [&](double val) {dists_sum += (val - mean)*(val - mean); });
+
+        // The denominator in the 'Sample standard deviation' formula is N − 1 vs 'Population standard deviation' that is N
+        // https://en.wikipedia.org/wiki/Standard_deviation
+        // we use 'Sample standard deviation' as Matlab
+        auto stdev = sqrt(dists_sum / (curr_dir.size() - 1));
+        std_per_dir[i] = stdev / diag_length;
+        std_bigger_than_th[i] = std_per_dir[i] > p.dir_std_th[i];
+    }
+
+    bool valid_directions[N_BASIC_DIRECTIONS] = { false };
+
+    for (auto i = 0; i < N_BASIC_DIRECTIONS; i++)
+    {
+        valid_directions[i] = dirs_with_enough_edges[i] && std_bigger_than_th[i];
+    }
+    auto valid_directions_sum = std::accumulate(&valid_directions[0], &valid_directions[N_BASIC_DIRECTIONS], 0);
+
+    auto edges_dir_spread = valid_directions_sum > p.minimal_full_directions;
+
+    if (!edges_dir_spread)
+    {
+        AC_LOG(ERROR, "Scene is not valid since there is not enough edge direction spread");
+        return edges_dir_spread;
+    }
+
+    if (p.require_orthogonal_valid_dirs)
+    {
+        auto valid_even = true;
+        for (auto i = 0; i < N_BASIC_DIRECTIONS; i += 2)
+        {
+            valid_even &= valid_directions[i];
+        }
+
+        auto valid_odd = true;
+        for (auto i = 1; i < N_BASIC_DIRECTIONS; i += 2)
+        {
+            valid_odd &= valid_directions[i];
+        }
+        auto orthogonal_valid_dirs = valid_even || valid_odd;
+
+        if (!orthogonal_valid_dirs)
+            AC_LOG(ERROR, "Scene is not valid since there is no at least two orthogonal directions that have enough spread edges");
+
+        return edges_dir_spread && orthogonal_valid_dirs;
+    }
+
+    return edges_dir_spread;
+}
+
+bool check_saturation(const std::vector< ir_t >& ir_frame,
+    size_t width,
+    size_t height,
+    const params& p)
+{
+    int saturated_pixels = 0;
+
+    for (auto&& i : ir_frame)
+    {
+        if (i >= p.saturation_value)
+            saturated_pixels++;
+    }
+
+    auto saturated_pixels_ratio = (double)saturated_pixels / (double)(width*height);
+
+    if (saturated_pixels_ratio < p.saturation_ratio_th)
+        AC_LOG(ERROR, "Scene is not valid since the saturated is above threshold");
+
+    return saturated_pixels_ratio < p.saturation_ratio_th;
+}
+
+bool optimizer::input_validity_checks(input_validity_data* data )
+{
+    auto dir_spread = check_edges_dir_spread(_z.directions, _z.subpixels_x, _z.subpixels_y, _z.width, _z.height, _params);
+    auto not_saturated = check_saturation(_ir.ir_frame, _ir.width, _ir.height, _params);
+
+    if (data)
+    {
+        data->edges_dir_spread = dir_spread;
+        data->not_saturated = not_saturated;
+    }
+
+    return dir_spread && not_saturated;
+}
+
+

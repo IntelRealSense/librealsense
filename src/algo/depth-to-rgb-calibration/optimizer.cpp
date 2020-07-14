@@ -119,7 +119,8 @@ namespace
 }
 
 
-optimizer::optimizer()
+optimizer::optimizer(bool manual_trigger)
+    :_manual_trigger(manual_trigger)
 {
 }
 
@@ -1595,14 +1596,12 @@ size_t optimizer::optimize_p
                          << AC_D_PREC << params_curr.cost << "  -->  " << params_new.cost );
     new_rgb_calib_for_k_to_dsm = optimaized_calibration = decompose_p_mat(params_new.curr_p_mat);
 
-    auto orig_rgb_calib = decompose_p_mat(params_curr.curr_p_mat);
     new_rgb_calib_for_k_to_dsm.k_mat.k_mat.rot[1] = 0;
 
-    new_z_k = get_new_z_intrinsics_from_new_calib(_z.orig_intrinsics, new_rgb_calib_for_k_to_dsm, orig_rgb_calib);
+    new_z_k = get_new_z_intrinsics_from_new_calib(_z.orig_intrinsics, new_rgb_calib_for_k_to_dsm, _original_calibration);
     new_rgb_calib_for_k_to_dsm.k_mat.k_mat.rot[0] = _original_calibration.k_mat.get_fx();
     new_rgb_calib_for_k_to_dsm.k_mat.k_mat.rot[4] = _original_calibration.k_mat.get_fy();
     params_new.curr_p_mat = new_rgb_calib_for_k_to_dsm.calc_p_mat();
-    new_rgb_calib_for_k_to_dsm = decompose_p_mat(params_new.curr_p_mat);
 
     return n_iterations;
 }
@@ -1611,7 +1610,6 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
 {
     optimization_params params_orig;
     params_orig.curr_p_mat = _original_calibration.calc_p_mat();
-    _original_calibration = decompose(params_orig.curr_p_mat, _original_calibration);
     _params_curr = params_orig;
 
     data_collect data;
