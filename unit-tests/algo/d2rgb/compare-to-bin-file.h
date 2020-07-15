@@ -37,10 +37,10 @@ bool is_equal_approximetly<algo::k_matrix, algo::k_matrix>( algo::k_matrix fx, a
 {
     bool ok = true;
 
-    ok = ok && compare_and_trace(dx.get_fx(), fx.get_fx(), "fx");
-    ok = ok && compare_and_trace(dx.get_fy(), fx.get_fy(), "fy");
-    ok = ok && compare_and_trace(dx.get_ppx(), fx.get_ppx(), "ppx");
-    ok = ok && compare_and_trace(dx.get_ppy(), fx.get_ppy(), "ppy");
+    ok = compare_and_trace(dx.get_fx(), fx.get_fx(), "fx") && ok;
+    ok = compare_and_trace(dx.get_fy(), fx.get_fy(), "fy") && ok;
+    ok = compare_and_trace(dx.get_ppx(), fx.get_ppx(), "ppx") && ok;
+    ok = compare_and_trace(dx.get_ppy(), fx.get_ppy(), "ppy") && ok;
 
     return ok;
 }
@@ -60,9 +60,9 @@ bool is_equal_approximetly<algo::p_matrix, algo::p_matrix>( algo::p_matrix fx, a
     for( auto i = 0; i < 12; i++ )
     {
         if (print)
-            ok = ok && compare_and_trace(dx.vals[i], fx.vals[i], "p_matrix");
+            ok = compare_and_trace(dx.vals[i], fx.vals[i], "p_matrix") && ok;
         else
-            ok = ok && is_equal_approximetly(dx.vals[i], fx.vals[i], false);
+            ok = is_equal_approximetly(dx.vals[i], fx.vals[i], false) && ok;
 
     }
     return ok;
