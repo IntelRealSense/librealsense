@@ -9,20 +9,29 @@
 
 using namespace rs2;
 
-// This registration should happen once in the SW runtime life.
-static bool global_registered_to_callback = false;
-
 // This variable is global for protecting the case when the callback will be called when the device model no longer exist.
+// TODO: Refactor for handling multiple L515 devices support.
 static std::atomic<rs2_calibration_status> global_calib_status; 
 
-cah_model::cah_model() :_state(model_state_type::TRIGGER_MODAL),
-_process_started(false), _process_timeout()
+cah_model::cah_model(device_model & dev_model, viewer_model& viewer) :
+    _dev_model(dev_model),
+    _viewer(viewer),
+    _state(model_state_type::TRIGGER_MODAL),
+    _process_started(false), 
+    _process_timeout()
 {
-    global_calib_status = RS2_CALIBRATION_RETRY;
+    global_calib_status = RS2_CALIBRATION_NOT_NEEDED;
+
+    // Register AC status change callback
+    device_calibration dev_cal(dev_model.dev);
+    dev_cal.register_calibration_change_callback([&](rs2_calibration_status cal_status)
+    {
+        global_calib_status = cal_status;
+    });
 }
 
 
-bool cah_model::prompt_trigger_popup(device_model & dev_model, ux_window& window, viewer_model& viewer, const std::string& error_message)
+bool cah_model::prompt_trigger_popup(ux_window& window, const std::string& error_message)
 {
     // This process is built from a 2 stages windows, first a yes/no window and then a process window
     bool keep_showing = true;
@@ -34,45 +43,45 @@ bool cah_model::prompt_trigger_popup(device_model & dev_model, ux_window& window
     {
         // Make sure the firmware meets the minimal version for Trigger Camera Accuracy features
         const std::string& min_fw_version("1.4.1.0");
-        auto fw_upgrade_needed = is_upgradeable(dev_model.dev.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION), min_fw_version);
-        bool is_depth_streaming(false);
-        bool is_color_streaming(false);
+        auto fw_upgrade_needed = is_upgradeable(_dev_model.dev.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION), min_fw_version);
+        bool is_depth_streaming = std::any_of(_dev_model.subdevices.begin(), _dev_model.subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm) { return sm->streaming && sm->s->as<depth_sensor>(); });
+        bool is_color_streaming = std::any_of(_dev_model.subdevices.begin(), _dev_model.subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm) { return sm->streaming && sm->s->as<color_sensor>(); });
+        bool auto_cah_is_working = 
+            (RS2_CALIBRATION_SUCCESSFUL != global_calib_status) &&
+            (RS2_CALIBRATION_FAILED != global_calib_status) &&
+            (RS2_CALIBRATION_NOT_NEEDED != global_calib_status);
 
         std::string message_text = "Camera Accuracy Health will ensure you get the highest accuracy from your camera.\n\n"
             "This process may take several minutes and requires special setup to get good results.\n"
-            "While it is working, the viewer will not be usable.\n\n";
+            "While it is working, the viewer will not be usable.";
 
+        std::string disable_reason_text;
         if (fw_upgrade_needed)
         {
-            std::string fw_upgrade_message = "Camera Accuracy Health requires a minimal FW version of " + min_fw_version +
+            disable_reason_text = "Camera Accuracy Health requires a minimal FW version of " + min_fw_version +
                 "\n\nPlease update your firmware and try again. ";
-
-            message_text += fw_upgrade_message;
+        }
+        else if (!is_depth_streaming || !is_color_streaming)
+        {
+            disable_reason_text = "Camera Accuracy Health cannot be triggered : both depth & RGB streams must be active.";
+        }
+        else if (auto_cah_is_working)
+        {
+            disable_reason_text = "Camera Accuracy Health is already in progress in the background.\n"
+                            "Please try again in a few minutes. ";
         }
         else
         {
-            is_depth_streaming = std::any_of(dev_model.subdevices.begin(), dev_model.subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm) { return sm->streaming && sm->s->as<depth_sensor>(); });
-            is_color_streaming = std::any_of(dev_model.subdevices.begin(), dev_model.subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm) { return sm->streaming && sm->s->as<color_sensor>(); });
-
-            if (is_depth_streaming && is_color_streaming)
-            {
-                message_text += "Are you sure you want to continue?";
-            }
-            else
-            {
-                std::string stream_missing_message = "Camera Accuracy Health cannot be triggered : both depth & RGB streams must be active.";
-                message_text += stream_missing_message;
-            }
-
+            message_text += "\n\nAre you sure you want to continue?";
         }
 
-        bool option_disabled = !is_depth_streaming || !is_color_streaming || fw_upgrade_needed;
-        if (yes_no_dialog("Camera Accuracy Health Trigger", message_text, yes_was_chosen, window, error_message, option_disabled))
+        bool option_disabled = !is_depth_streaming || !is_color_streaming || auto_cah_is_working || fw_upgrade_needed;
+        if (yes_no_dialog("Camera Accuracy Health Trigger", message_text, yes_was_chosen, window, error_message, option_disabled, disable_reason_text))
         {
             if (yes_was_chosen)
             {
 
-                auto itr = std::find_if(dev_model.subdevices.begin(), dev_model.subdevices.end(), [](std::shared_ptr<subdevice_model> sub)
+                auto itr = std::find_if(_dev_model.subdevices.begin(), _dev_model.subdevices.end(), [](std::shared_ptr<subdevice_model> sub)
                 {
                     if (sub->s->as<depth_sensor>())
                         return true;
@@ -80,20 +89,12 @@ bool cah_model::prompt_trigger_popup(device_model & dev_model, ux_window& window
                 });
 
 
-                if (is_depth_streaming && is_color_streaming && itr != dev_model.subdevices.end())
+                if (is_depth_streaming && is_color_streaming && itr != _dev_model.subdevices.end())
                 {
                     auto sd = *itr;
+                    global_calib_status = RS2_CALIBRATION_RETRY; // To indicate in progress state
                     sd->s->set_option(RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, 1.0f);
-                    device_calibration dev_cal(dev_model.dev);
-                    // Register AC status change callback
-                    if (!global_registered_to_callback)
-                    {
-                        dev_cal.register_calibration_change_callback([&](rs2_calibration_status cal_status)
-                        {
-                            global_calib_status = cal_status;
-                        });
-                        global_registered_to_callback = true;
-                    }
+                    
                     _state = model_state_type::PROCESS_MODAL;
                     // We switch to process state without a guarantee that the process really started,
                     // Set a timeout to make sure if it is not started we will allow closing the window.
@@ -158,13 +159,12 @@ bool cah_model::prompt_trigger_popup(device_model & dev_model, ux_window& window
     if (!keep_showing)
     {
         _state = model_state_type::TRIGGER_MODAL;
-        global_calib_status = RS2_CALIBRATION_RETRY;
         _process_started = false;
     }
     return keep_showing;
 }
 
-bool cah_model::prompt_reset_popup(device_model & dev_model, ux_window& window, const std::string& error_message)
+bool cah_model::prompt_reset_popup(ux_window& window, const std::string& error_message)
 {
     bool keep_showing = true;
     bool yes_was_chosen = false;
@@ -174,7 +174,7 @@ bool cah_model::prompt_reset_popup(device_model & dev_model, ux_window& window, 
     {
         if (yes_was_chosen)
         {
-            auto itr = std::find_if(dev_model.subdevices.begin(), dev_model.subdevices.end(), [](std::shared_ptr<subdevice_model> sub)
+            auto itr = std::find_if(_dev_model.subdevices.begin(), _dev_model.subdevices.end(), [](std::shared_ptr<subdevice_model> sub)
             {
                 if (sub->s->as<depth_sensor>())
                     return true;
@@ -182,7 +182,7 @@ bool cah_model::prompt_reset_popup(device_model & dev_model, ux_window& window, 
             });
 
 
-            if (itr != dev_model.subdevices.end())
+            if (itr != _dev_model.subdevices.end())
             {
                 auto sd = *itr;
                 // Trigger CAH process
