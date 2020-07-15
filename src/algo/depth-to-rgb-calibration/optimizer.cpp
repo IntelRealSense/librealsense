@@ -122,6 +122,10 @@ namespace
 optimizer::optimizer( settings const & s )
     : _settings( s )
 {
+    if (manual_trigger)
+    {
+        adjust_params_to_manual_mode();
+    }
 }
 
 static std::vector< double > get_direction_deg(
@@ -1523,6 +1527,21 @@ void optimizer::set_cycle_data(const std::vector<double3>& vertices,
     _p_mat_from_bin = p_mat;
     _dsm_regs_cand_from_bin = dsm_regs_cand;
     _dsm_params_cand_from_bin = dsm_params_cand;
+}
+
+void optimizer::adjust_params_to_manual_mode()
+{
+    _params.max_global_los_scaling_step = 0.005;
+    _params.pix_per_section_depth_th = 0;
+    _params.pix_per_section_rgb_th = 0;
+    _params.min_section_with_enough_edges = 0;
+    _params.edges_per_direction_ratio_th = 0;
+    _params.minimal_full_directions = 0;
+
+    const static int newvals[N_BASIC_DIRECTIONS] = { 0, 0, 0, 0 };
+    std::copy(std::begin(newvals), std::end(newvals), std::begin(_params.dir_std_th));
+    _params.saturation_ratio_th = 1;
+    _params.saturation_value = 256;
 }
 
 size_t optimizer::optimize_p

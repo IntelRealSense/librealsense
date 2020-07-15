@@ -74,18 +74,18 @@ namespace depth_to_rgb_calibration {
         double const max_K2DSM_iters = 10;
         // TODO: the following should be 0.2% but was increased to 0.5% to account for
         // manual trigger activation
-        double const max_global_los_scaling_step = 0.005;  // the difference (.5%) between starting and final scale
+        double max_global_los_scaling_step = 0.004;  // the difference (.5%) between starting and final scale
 
-        double const edges_per_direction_ratio_th = 0.0041;
-        double const dir_std_th[N_BASIC_DIRECTIONS] = { 0.126, 0.126, 0.126, 0.126 };
-        int const minimal_full_directions = 2;
-        bool const require_orthogonal_valid_dirs = false;
-
-        int const saturation_value = 230;
-        double const saturation_ratio_th = 0.05;
-
-        double const pix_per_section_th = 0.01;
-        int const min_section_with_enough_edges = 2;
+        // input validation
+        double edges_per_direction_ratio_th = 0.004;
+        double dir_std_th[N_BASIC_DIRECTIONS] = { 0.09, 0.09, 0.09, 0.09 };
+        int minimal_full_directions = 2;
+        bool require_orthogonal_valid_dirs = false;
+        int saturation_value = 230;
+        double saturation_ratio_th = 0.05;
+        double pix_per_section_rgb_th = 0.01;
+        double pix_per_section_depth_th = 0.01;
+        int min_section_with_enough_edges = 2;
     };
     // svm
     struct decision_params
@@ -340,6 +340,8 @@ namespace depth_to_rgb_calibration {
             const p_matrix& p_mat,
             const p_matrix& p_mat_opt = p_matrix());
     private:
+
+        void adjust_params_to_manual_mode();
 
         // 1 cycle of optimization
         size_t optimize_p(const optimization_params& params_curr,
