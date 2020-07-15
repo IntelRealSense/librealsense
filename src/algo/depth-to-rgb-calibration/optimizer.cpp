@@ -1636,7 +1636,7 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
     _z.orig_vertices = _z.vertices;
     rs2_dsm_params_double new_dsm_params = _z.orig_dsm_params;
 
-    while (cycle < _params.max_K2DSM_iters)
+    while (cycle-1 < _params.max_K2DSM_iters)
     {
         std::vector<double3> cand_vertices = _z.vertices;
         auto dsm_regs_cand = new_dsm_regs;

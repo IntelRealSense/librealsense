@@ -79,10 +79,13 @@ namespace depth_to_rgb_calibration {
         double const edges_per_direction_ratio_th = 0.0041;
         double const dir_std_th[N_BASIC_DIRECTIONS] = { 0.126, 0.126, 0.126, 0.126 };
         int const minimal_full_directions = 2;
-        bool const require_orthogonal_valid_dirs = true;
+        bool const require_orthogonal_valid_dirs = false;
 
         int const saturation_value = 230;
         double const saturation_ratio_th = 0.05;
+
+        double const pix_per_section_th = 0.01;
+        int const min_section_with_enough_edges = 2;
     };
     // svm
     struct decision_params
@@ -255,6 +258,8 @@ namespace depth_to_rgb_calibration {
     {
         bool edges_dir_spread;
         bool not_saturated;
+        bool depth_spatial_spread;
+        bool rgb_spatial_spread;
     };
 
     class optimizer

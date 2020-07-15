@@ -64,6 +64,8 @@ void print_dividers()
     std::cout << std::right << std::setw( 4 ) << "---";
     std::cout << std::right << std::setw( 2 ) << " ";
     std::cout << std::right << std::setw( 7 ) << "-----";
+    std::cout << std::right << std::setw(2) << " ";
+    std::cout << std::right << std::setw(4) << "---";
     std::cout << std::endl;
 }
 
@@ -81,6 +83,8 @@ void print_headers()
     std::cout << std::right << std::setw( 4 ) << "Con";
     std::cout << std::right << std::setw( 2 ) << " ";
     std::cout << std::right << std::setw( 7 ) << "dPix";
+    std::cout << std::right << std::setw(2) << " ";
+    std::cout << std::right << std::setw(4) << "NC";
     std::cout << std::endl;
 
     print_dividers();
@@ -107,7 +111,7 @@ void print_scene_stats( std::string const & name, size_t n_failed, scene_stats c
     std::cout << std::left << std::setw( 2 ) << (scene.n_converged_diff ? "!" : "");
 
     std::cout << std::right << std::setw( 7 ) << scene.d_movement;
-
+    std::cout << std::right << std::setw(6) << scene.n_cycles;
     std::cout << std::endl;
 }
 
