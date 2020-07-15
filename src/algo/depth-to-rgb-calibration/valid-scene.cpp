@@ -759,7 +759,7 @@ bool check_edges_dir_spread(const std::vector<double>& directions,
     }
     auto valid_directions_sum = std::accumulate(&valid_directions[0], &valid_directions[N_BASIC_DIRECTIONS], 0);
 
-    auto edges_dir_spread = valid_directions_sum > p.minimal_full_directions;
+    auto edges_dir_spread = valid_directions_sum >= p.minimal_full_directions;
 
     if (!edges_dir_spread)
     {
@@ -812,18 +812,55 @@ bool check_saturation(const std::vector< ir_t >& ir_frame,
     return saturated_pixels_ratio < p.saturation_ratio_th;
 }
 
+bool check_edges_spatial_spread(const std::vector<byte>& section_map,
+    size_t width,
+    size_t height, 
+    const params& p)
+{
+    const auto n_sections = p.num_of_sections_for_edge_distribution_x*p.num_of_sections_for_edge_distribution_y;
+
+    std::vector<int> num_pix_per_sec(n_sections, 0);
+
+    for (auto&&i : section_map)
+    {
+        num_pix_per_sec[i]++;
+    }
+    std::vector<double> num_pix_per_sec_over_area(n_sections, 0);
+    std::vector<bool> num_sections_with_enough_edges(n_sections, false);
+
+    for (auto i = 0; i < n_sections; i++)
+    {
+        num_pix_per_sec_over_area[i] = (double)num_pix_per_sec[i] / (width*height)*n_sections;
+        num_sections_with_enough_edges[i] = num_pix_per_sec_over_area[i] > p.pix_per_section_th;
+    }
+
+    double sum = std::accumulate(num_sections_with_enough_edges.begin(), num_sections_with_enough_edges.end(), 0.0);
+
+    return sum >= p.min_section_with_enough_edges;
+}
+
 bool optimizer::input_validity_checks(input_validity_data* data )
 {
     auto dir_spread = check_edges_dir_spread(_z.directions, _z.subpixels_x, _z.subpixels_y, _z.width, _z.height, _params);
     auto not_saturated = check_saturation(_ir.ir_frame, _ir.width, _ir.height, _params);
+    auto depth_spatial_spread = check_edges_spatial_spread(_z.section_map, _z.width, _z.height, _params);
+    auto rgb_spatial_spread = check_edges_spatial_spread(_yuy.section_map, _yuy.width, _yuy.height, _params);
+
+    if (!depth_spatial_spread)
+        AC_LOG(ERROR, "Scene is not valid since there is not enough depth edge spread");
+
+    if (!rgb_spatial_spread)
+        AC_LOG(ERROR, "Scene is not valid since there is not enough rgb edge spread");
 
     if (data)
     {
         data->edges_dir_spread = dir_spread;
         data->not_saturated = not_saturated;
+        data->depth_spatial_spread = depth_spatial_spread;
+        data->rgb_spatial_spread = rgb_spatial_spread;
     }
 
-    return dir_spread && not_saturated;
+    return dir_spread && not_saturated && depth_spatial_spread && rgb_spatial_spread;
 }
 
 

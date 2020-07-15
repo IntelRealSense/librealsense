@@ -26,7 +26,7 @@ bool compare_and_trace(D val_matlab, D val_cpp, std::string const & compared)
 {
     if (val_cpp != approx(val_matlab))
     {
-        AC_LOG(DEBUG, "... " << std::setprecision(16) << compared << ":  {matlab} " << val_matlab << " !~ " << val_cpp << " {cpp}");
+        AC_LOG(DEBUG, "... " << std::setprecision(16) << compared << ":  {matlab} " << val_matlab << " !~ " << val_cpp << " {cpp} Diff = " << val_matlab - val_cpp);
         return false;
     }
     return true;
@@ -37,10 +37,10 @@ bool is_equal_approximetly<algo::k_matrix, algo::k_matrix>( algo::k_matrix fx, a
 {
     bool ok = true;
 
-    ok = compare_and_trace(dx.get_fx(), fx.get_fx(), "fx");
-    ok = compare_and_trace(dx.get_fy(), fx.get_fy(), "fy");
-    ok = compare_and_trace(dx.get_ppx(), fx.get_ppx(), "ppx");
-    ok = compare_and_trace(dx.get_ppy(), fx.get_ppy(), "ppy");
+    ok = compare_and_trace(dx.get_fx(), fx.get_fx(), "fx") && ok;
+    ok = compare_and_trace(dx.get_fy(), fx.get_fy(), "fy") && ok;
+    ok = compare_and_trace(dx.get_ppx(), fx.get_ppx(), "ppx") && ok;
+    ok = compare_and_trace(dx.get_ppy(), fx.get_ppy(), "ppy") && ok;
 
     return ok;
 }
@@ -56,12 +56,16 @@ bool is_equal_approximetly<algo::rotation_in_angles, algo::rotation_in_angles>( 
 template<>
 bool is_equal_approximetly<algo::p_matrix, algo::p_matrix>( algo::p_matrix fx, algo::p_matrix dx, bool print)
 {
+    bool ok = true;
     for( auto i = 0; i < 12; i++ )
     {
-        if( dx.vals[i] != approx( fx.vals[i] ) )
-            return false;
+        if (print)
+            ok = compare_and_trace(dx.vals[i], fx.vals[i], "p_matrix") && ok;
+        else
+            ok = is_equal_approximetly(dx.vals[i], fx.vals[i], false) && ok;
+
     }
-    return true;
+    return ok;
 }
 
 template<>
@@ -138,7 +142,7 @@ template< typename F, typename D >
 void print( size_t x, F f, D d, bool is_approx = false )
 {
     // bytes will be written to stdout as characters, which we never want... hence '+fx'
-    AC_LOG( DEBUG, "... " << AC_D_PREC << x << ": {matlab}" << +f << (is_approx ? " !~ " : " != ") << +d << "{c++}" );
+    AC_LOG( DEBUG, "... " << AC_D_PREC << x << ": {matlab}" << +f << (is_approx ? " !~ " : " != ") << +d << "{c++}"  );
 }
 
 template<>

@@ -9,6 +9,7 @@ struct scene_stats
     size_t n_converged, n_converged_diff;
     double cost, d_cost;
     double movement, d_movement;
+    size_t n_cycles;
 };
 
 void compare_vertices_to_los_data( std::string const & scene_dir,
@@ -203,8 +204,11 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
     CHECK( is_scene_valid == matlab_scene_valid );
     auto spread = read_from<uint8_t>(bin_dir(scene_dir) + "DirSpread_1x1_uint8_00.bin");
     CHECK(data.edges_dir_spread == spread);
-    auto not_saturated = read_from<uint8_t>(bin_dir(scene_dir) + "IsntSaturated_1x1_uint8_00.bin");
-    CHECK(data.not_saturated == not_saturated);
+    auto rgbEdgesSpread = read_from<uint8_t>(bin_dir(scene_dir) + "rgbEdgesSpread_1x1_uint8_00.bin");
+    CHECK(data.rgb_spatial_spread == rgbEdgesSpread);
+    auto depthEdgesSpread = read_from<uint8_t>(bin_dir(scene_dir) + "depthEdgesSpread_1x1_uint8_00.bin");
+    CHECK(data.depth_spatial_spread == depthEdgesSpread);
+
     if( stats )
     {
         stats->n_valid_scene = is_scene_valid;
@@ -474,18 +478,10 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
         else if(data.type == algo::iteration_data)
         {
             std::cout << std::endl << "COMPARING ITERATION DATA " << data.cycle_data_p.cycle <<" "<< data.iteration_data_p.iteration + 1 << std::endl;
-            CHECK(compare_to_bin_file< double >(
-                std::vector< double >(std::begin(data.iteration_data_p.params.curr_p_mat.vals),
-                    std::end(data.iteration_data_p.params.curr_p_mat.vals)),
+            CHECK(compare_to_bin_file< algo::p_matrix >(
+                data.iteration_data_p.params.curr_p_mat,
                 scene_dir,
-                bin_file("p_matrix_iteration",
-                    data.cycle_data_p.cycle,
-                    data.iteration_data_p.iteration + 1,
-                    num_of_p_matrix_elements,
-                    1,
-                    "double_00.bin"),
-                num_of_p_matrix_elements, 1,
-                compare_same_vectors));
+                bin_file("p_matrix_iteration", data.cycle_data_p.cycle, data.iteration_data_p.iteration + 1, num_of_p_matrix_elements, 1, "double_00.bin")));
 
             CHECK(compare_to_bin_file< double >(
                 std::vector< double >(std::begin(data.iteration_data_p.c.k_mat.k_mat.rot),
@@ -668,7 +664,7 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
 
     // Our code doesn't count the first iteration; the Matlab code starts at 1 even if it doesn't do anything...
     //REQUIRE( cal.optimize( cb ) + 1 == md.n_iterations );
-    cal.optimize( cb );
+    auto n_cycles = cal.optimize( cb );
 
     
     auto new_calibration = cal.get_calibration();
@@ -726,6 +722,7 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
     CHECK( is_valid_results == matlab_valid_results );
     if( stats )
     {
+        stats->n_cycles = n_cycles;
         stats->n_valid_result = is_valid_results;
         stats->n_valid_result_diff = is_valid_results != matlab_valid_results;
 
