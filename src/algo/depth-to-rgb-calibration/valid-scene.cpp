@@ -507,13 +507,19 @@ uint8_t dilation_calc(std::vector<T> const& sub_image, std::vector<uint8_t> cons
 }
 void optimizer::images_dilation(yuy2_frame_data& yuy)
 {
-    auto area = yuy.height * yuy.width;
-    std::vector<uint8_t> dilation_mask = { 1, 1, 1,
-                                              1,  1,  1,
-                                              1,  1,  1 };
+    if (_params.dilation_size == 1)
+        yuy.dilated_image = yuy.prev_logic_edges;
+    else
+    {
+        auto area = yuy.height * yuy.width;
+        std::vector<uint8_t> dilation_mask = { 1, 1, 1,
+                                                  1,  1,  1,
+                                                  1,  1,  1 };
 
-    yuy.dilated_image = dilation_convolution<uint8_t>(yuy.prev_logic_edges, yuy.width, yuy.height, _params.dilation_size, _params.dilation_size, [&](std::vector<uint8_t> const& sub_image)
+        yuy.dilated_image = dilation_convolution<uint8_t>(yuy.prev_logic_edges, yuy.width, yuy.height, _params.dilation_size, _params.dilation_size, [&](std::vector<uint8_t> const& sub_image)
         {return dilation_calc(sub_image, dilation_mask); });
+    }
+   
 
 }
 template<class T>
