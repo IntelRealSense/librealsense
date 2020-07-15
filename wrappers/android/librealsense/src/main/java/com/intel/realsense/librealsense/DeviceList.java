@@ -38,7 +38,7 @@ public class DeviceList extends LrsClass {
 
     @Override
     public void close() {
-//        nRelease(mHandle);
+        nRelease(mHandle);
     }
 
     private static native int nGetDeviceCount(long handle);
