@@ -35,6 +35,9 @@ import com.intel.realsense.librealsense.VideoFrame;
 // deprojectPixelToPoint
 // transformPointToPoint
 // projectPointToPixel
+// getFov
+// project2dPixelToDepthPixel
+
 
 
 private int framesCounter = 1;
@@ -47,33 +50,38 @@ Runnable mStreaming = new Runnable() {
                     mGLSurfaceView.upload(processed);
 
                     if((++framesCounter % 80) == 0) {
-                            VideoFrame depthFrame = frames.first(StreamType.DEPTH).as(Extension.DEPTH_FRAME);
-                            VideoFrame colorFrame = frames.first(StreamType.COLOR).as(Extension.VIDEO_FRAME);
-                            Intrinsic depthFrameIntrinsic = depthFrame.getProfile().getIntrinsic();
-                            Intrinsic colorFrameIntrinsic = colorFrame.getProfile().getIntrinsic();
-                            Extrinsic depthToColorExtrinsic = depthFrame.getProfile().getExtrinsicTo(colorFrame.getProfile());
-                            Point_3D depth_point = new Point_3D();
-                            int w = depthFrameIntrinsic.getWidth();
-                            int h = depthFrameIntrinsic.getHeight();
-                            byte[] depthFrameData = new byte[ w * h ];
-                            depthFrame.getData(depthFrameData);
-                            int middle = w * h / 2;
-                            float depthAtMiddleOfFrame = depthFrameData[middle];
-                            while (depthAtMiddleOfFrame < 0.2) {
-                                middle += 10;
-                                depthAtMiddleOfFrame = depthFrameData[middle];
-                            }
-                            Log.d(TAG, "depth = " + depthAtMiddleOfFrame);
-                            Pixel pixel = new Pixel(w/2, h/2);
-                            depth_point = Utils.deprojectPixelToPoint(depthFrameIntrinsic, pixel, depthAtMiddleOfFrame );
-                            Point_3D color_point = new Point_3D();
-                            color_point = Utils.transformPointToPoint(depthToColorExtrinsic, depth_point );
-                            Pixel color_pixel = new Pixel();
-                            color_pixel = Utils.projectPointToPixel(colorFrameIntrinsic, color_point);
-                            Log.d(TAG, "depthPoint = (" + depth_point.mX + ", " + depth_point.mY + ", " + depth_point.mZ + ")");
-                            Log.d(TAG, "colorPoint = (" + color_point.mX + ", " + color_point.mY + ", " + color_point.mZ + ")");
-                            Log.d(TAG, "pixel = (" + pixel.mX + ", " + pixel.mY + ")");
-                            Log.d(TAG", "color pixel = (" + color_pixel.mX + ", " + color_pixel.mY + ")");
+        DepthFrame depthFrame = frames.first(StreamType.DEPTH).as(Extension.DEPTH_FRAME);
+        Intrinsic depthFrameIntrinsic = depthFrame.getProfile().getIntrinsic();
+        float fov[] = Utils.getFov(depthFrameIntrinsic);
+        Log.d(TAG, "fov = (" + fov[0] + ", " + fov[1] + ")");
+        VideoFrame colorFrame = frames.first(StreamType.COLOR).as(Extension.VIDEO_FRAME);
+        Intrinsic colorFrameIntrinsic = colorFrame.getProfile().getIntrinsic();
+        Extrinsic depthToColorExtrinsic = depthFrame.getProfile().getExtrinsicTo(colorFrame.getProfile());
+        int w = depthFrameIntrinsic.getWidth();
+        int h = depthFrameIntrinsic.getHeight();
+        byte[] depthFrameData = new byte[ w * h ];
+        depthFrame.getData(depthFrameData);
+        int middle = w * h / 2;
+        float depthAtMiddleOfFrame = depthFrameData[middle];
+        while (depthAtMiddleOfFrame < 0.2) {
+            middle += 10;
+            depthAtMiddleOfFrame = depthFrameData[middle];
+        }
+        Log.d(TAG, "depth = " + depthAtMiddleOfFrame);
+        Pixel depth_pixel = new Pixel(w/2, h/2);
+        Point_3D depth_point = Utils.deprojectPixelToPoint(depthFrameIntrinsic, depth_pixel, depthAtMiddleOfFrame );
+        Point_3D color_point = Utils.transformPointToPoint(depthToColorExtrinsic, depth_point );
+        Pixel color_pixel = Utils.projectPointToPixel(colorFrameIntrinsic, color_point);
+        Log.d(TAG, "depthPoint = (" + depth_point.mX + ", " + depth_point.mY + ", " + depth_point.mZ + ")");
+        Log.d(TAG, "colorPoint = (" + color_point.mX + ", " + color_point.mY + ", " + color_point.mZ + ")");
+        Log.d(TAG, "pixel = (" + depth_pixel.mX + ", " + depth_pixel.mY + ")");
+        Log.d(TAG, "color pixel = (" + color_pixel.mX + ", " + color_pixel.mY + ")");
+        float depthMin = 0.1f;
+        float depthMax = 10.f;
+        Extrinsic colorToDepthExtrinsic = colorFrame.getProfile().getExtrinsicTo(depthFrame.getProfile());
+        Pixel toPixel = Utils.project2dPixelToDepthPixel(depthFrame, mDepthScale, depthMin, depthMax,
+        depthFrameIntrinsic, colorFrameIntrinsic, colorToDepthExtrinsic, depthToColorExtrinsic, color_pixel);
+        Log.d(TAG, "to_pixel = (" + toPixel.mX + ", " + toPixel.mY + ")");
                     }
                 }
             }
