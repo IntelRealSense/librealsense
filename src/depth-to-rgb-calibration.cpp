@@ -59,6 +59,8 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
         ir_profile.width(), ir_profile.height()
     );
 
+    CHECK_IF_NEEDS_TO_STOP();
+
     auto si = ((frame_interface *) depth.get() )->get_sensor();
     auto cs = VALIDATE_INTERFACE_NO_THROW( si, librealsense::calibrated_sensor );
     if( !cs )
