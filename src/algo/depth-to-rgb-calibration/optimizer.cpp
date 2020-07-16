@@ -119,8 +119,8 @@ namespace
 }
 
 
-optimizer::optimizer(bool manual_trigger)
-    :_manual_trigger(manual_trigger)
+optimizer::optimizer( settings const & s )
+    : _settings( s )
 {
 }
 

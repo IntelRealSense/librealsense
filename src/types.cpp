@@ -186,7 +186,8 @@ namespace librealsense
 #define CASE(X) STRCASE(CALIBRATION, X)
         switch( type )
         {
-            CASE( DEPTH_TO_RGB )
+        CASE( AUTO_DEPTH_TO_RGB )
+        CASE( MANUAL_DEPTH_TO_RGB )
         default: assert( !is_valid( type ) ); return UNKNOWN_VALUE;
         }
 #undef CASE

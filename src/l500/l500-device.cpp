@@ -375,9 +375,19 @@ namespace librealsense
 
     void l500_device::trigger_device_calibration( rs2_calibration_type type )
     {
-        if( type != RS2_CALIBRATION_DEPTH_TO_RGB )
+        ac_trigger::calibration_type calibration_type;
+        switch( type )
+        {
+        case RS2_CALIBRATION_AUTO_DEPTH_TO_RGB:
+            calibration_type = ac_trigger::calibration_type::AUTO;
+            break;
+        case RS2_CALIBRATION_MANUAL_DEPTH_TO_RGB:
+            calibration_type = ac_trigger::calibration_type::MANUAL;
+            break;
+        default:
             throw not_implemented_exception(
                 to_string() << "unsupported calibration type (" << type << ")" );
+        }
 
         if( !_autocal )
             throw not_implemented_exception(
@@ -388,7 +398,7 @@ namespace librealsense
             throw wrong_api_call_sequence_exception( "Camera Accuracy Health is already active" );
 
         AC_LOG( INFO, "Camera Accuracy Health has been manually triggered" );
-        _autocal->trigger_calibration();
+        _autocal->trigger_calibration( calibration_type );
     }
 
     void l500_device::force_hardware_reset() const

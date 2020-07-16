@@ -30,6 +30,7 @@ namespace librealsense
 
     public:
         depth_to_rgb_calibration(
+            algo::depth_to_rgb_calibration::optimizer::settings const & settings,
             rs2::frame depth,
             rs2::frame ir,
             rs2::frame yuy,

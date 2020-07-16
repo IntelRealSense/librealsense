@@ -218,7 +218,7 @@ namespace ivcam2 {
             if(is_depth_streaming)
             {
                 AC_LOG( DEBUG, "Triggering manual calibration..." );
-                _autocal->trigger_calibration();
+                _autocal->trigger_calibration( calibration_type::MANUAL );
             }
             else
             {
@@ -264,14 +264,13 @@ namespace ivcam2 {
 
         virtual void retry()
         {
-            AC_LOG( DEBUG, "triggering " << _name << ' ' << get_id() );
-            _ac.trigger_calibration( true );
+            _ac.trigger_retry();
         }
 
     public:
         virtual ~retrier()
         {
-            AC_LOG( DEBUG, "~" << get_name() << " " << get_id() );
+            AC_LOG( DEBUG, "... ~" << get_name() << " " << get_id() );
         }
 
         template < class T = retrier >
@@ -282,23 +281,58 @@ namespace ivcam2 {
             T * r = new T( trigger, name );
             auto id = r->get_id();
             name = r->get_name();
-            AC_LOG( DEBUG, name << ' ' << id << ": " << n_seconds.count() << " seconds starting" );
+            AC_LOG( DEBUG, "... " << name << ' ' << id << ": " << n_seconds.count() << " seconds starting" );
             auto pr = std::shared_ptr< T >( r );
             std::weak_ptr< T > weak{ pr };
-            std::thread([=]() {
-                std::this_thread::sleep_for(n_seconds);
+            std::thread( [=]() {
+                std::this_thread::sleep_for( n_seconds );
                 auto pr = weak.lock();
-                if (pr && pr->get_id() == id)
+                if( pr && pr->get_id() == id )
                 {
-                    ((retrier *)pr.get())->retry();
+                    try
+                    {
+                        AC_LOG( DEBUG, "... " << name << ' ' << id << ": triggering" );
+                        ( (retrier *)pr.get() )->retry();
+                    }
+                    catch( std::exception const & e )
+                    {
+                        // Unexpected! If we don't handle, we'll crash!
+                        AC_LOG( ERROR, "EXCEPTION caught: " << e.what() );
+                    }
                 }
                 else
                     AC_LOG( DEBUG,
-                            name << ' ' << id << ": " << n_seconds.count()
-                                 << " seconds are up; nothing needed" );
+                            "... " << name << ' ' << id << ": " << n_seconds.count()
+                                   << " seconds are up; nothing needed" );
             } ).detach();
             return pr;
         };
+    };
+    class ac_trigger::next_trigger : public ac_trigger::retrier
+    {
+    public:
+        next_trigger( ac_trigger & ac, const char * name )
+            : retrier( ac, name ? name : "next trigger" )
+        {
+        }
+    private:
+        void retry() override
+        {
+            auto & trigger = get_ac();
+            // We start another trigger regardless of what happens next; if a calibration actually
+            // proceeds, it will be cancelled...
+            trigger.schedule_next_time_trigger();
+            try
+            {
+                trigger.trigger_calibration( calibration_type::AUTO );
+            }
+            catch( invalid_value_exception const & )
+            {
+                // Invalid conditions for calibration
+                // Error should already have been printed
+                // We should already have the next triggers set -- do nothing else
+            }
+        }
     };
     class ac_trigger::temp_check : public ac_trigger::retrier
     {
@@ -314,21 +348,31 @@ namespace ivcam2 {
             auto & trigger = get_ac();
             if( trigger.is_active() )
             {
-                AC_LOG( DEBUG, "temp check " << get_id() << ": AC already active" );
+                AC_LOG( DEBUG, "... already active; ignoring" );
                 return;
             }
+            // We start another trigger regardless of what happens next; if a calibration actually
+            // proceeds, it will be cancelled...
+            trigger.schedule_next_temp_trigger();
             auto current_temp = trigger.read_temperature();
-            auto d_temp = current_temp - trigger._last_temp;
-            if( d_temp >= get_temp_diff_trigger() )
+            if( current_temp )
             {
-                AC_LOG( DEBUG, "Delta since last calibration is " << d_temp << " degrees Celsius; triggering..." );
-                trigger.trigger_calibration();
-            }
-            else
-            {
-                // We do not update the trigger temperature: that is only updated after calibration
-                AC_LOG( DEBUG, "Delta since last calibration is " << d_temp << " degrees Celsius" );
-                trigger._temp_check = retrier::start< temp_check >( trigger, std::chrono::seconds( 60 ) );
+                auto d_temp = current_temp - trigger._last_temp;
+                if( d_temp >= get_temp_diff_trigger() )
+                {
+                    try
+                    {
+                        AC_LOG( DEBUG, "Delta since last successful calibration is " << d_temp << " degrees Celsius; triggering..." );
+                        trigger.trigger_calibration( calibration_type::AUTO );
+                    }
+                    catch( invalid_value_exception const & )
+                    {
+                        // Invalid conditions for calibration
+                        // Error should already have been printed
+                        // We should already have the next trigger set -- do nothing else
+                    }
+                }
+                // We do not update the trigger temperature: it is only updated after calibration
             }
         }
     };
@@ -410,86 +454,100 @@ namespace ivcam2 {
     }
 
 
-    void ac_trigger::trigger_calibration(bool is_retry)
+    void ac_trigger::trigger_retry()
     {
-        bool depth_is_streaming(false);
+        _retrier.reset();
+        if( ! is_active() )
+        {
+            AC_LOG( ERROR, "Retry attempted but we're not active; ignoring" );
+            return;
+        }
 
         try
         {
-            depth_is_streaming = _dev.get_depth_sensor().is_streaming();
+            check_conditions();
+            throw invalid_value_exception( "TODO" );
         }
-        catch (std::exception const & e)
+        catch( invalid_value_exception const & )
         {
-            AC_LOG(ERROR, "EXCEPTION caught in access to device: " << e.what());
-            stop();
+            //AC_LOG( ERROR, "Cancelling calibration" );
+            cancel_current_calibration();
             return;
         }
 
-        if (false == depth_is_streaming)
+        if( _recycler )
         {
-            AC_LOG(ERROR, "Depth streaming not found, canceling calibration");
-            stop();
-            return;
-        }
-
-        _retrier.reset();
-        if(is_retry  &&  is_active() )
-        {
-            if( _recycler )
-            {
-                // This is another cycle of AC, after we've woken up from some time after
-                // the previous invalid-scene or bad-result...
-                _n_retries = 0;
-                _recycler.reset();
-            }
-            else if( ++_n_retries > 4 )
-            {
-                AC_LOG( ERROR, "too many retries; aborting" );
-                stop_color_sensor_if_started();
-                call_back( RS2_CALIBRATION_FAILED );
-                calibration_is_done();
-                return;
-            }
-
-            AC_LOG( DEBUG, "Sending GET_SPECIAL_FRAME (cycle " << _n_cycles << " retry " << _n_retries << ")" );
-            call_back( RS2_CALIBRATION_RETRY );
-        }
-        else
-        {
-            if( is_active() )
-            {
-                AC_LOG( ERROR, "Failed to trigger calibration: AC is already active" );
-                return;
-            }
+            // This is another cycle of AC, after we've woken up from some time after
+            // the previous invalid-scene or bad-result...
             _n_retries = 0;
-            _n_cycles = 1;          // now active
-            AC_LOG( INFO, "Camera Accuracy Health check has started in the background" );
-            _next_trigger.reset();  // don't need a trigger any more
-            _temp_check.reset();    // nor a temperature check
-            _recycler.reset();      // just in case
-            start_color_sensor_if_needed();
-            AC_LOG( DEBUG, "Sending GET_SPECIAL_FRAME (cycle 1); now active..." );
+            _recycler.reset();
         }
+        else if( ++_n_retries > 4 )
+        {
+            AC_LOG( ERROR, "Too many retries; aborting" );
+            cancel_current_calibration();
+            return;
+        }
+
+        AC_LOG( DEBUG, "Sending GET_SPECIAL_FRAME (cycle " << _n_cycles << " retry " << _n_retries << ")" );
+        call_back( RS2_CALIBRATION_RETRY );
+
+        trigger_special_frame();
+    }
+
+
+    void ac_trigger::trigger_special_frame()
+    {
         command cmd{ GET_SPECIAL_FRAME, 0x5F, 1 };  // 5F = SF = Special Frame, for easy recognition
         try
         {
             auto hwm = _hwm.lock();
-            if (!hwm)
+            if( ! hwm )
             {
-                AC_LOG(ERROR, "Hardware monitor is inaccessible - calibration not triggered");
+                AC_LOG( ERROR, "Hardware monitor is inaccessible - calibration not triggered" );
                 return;
             }
-            hwm->send(cmd);
+            hwm->send( cmd );
         }
         catch( std::exception const & e )
         {
             AC_LOG( ERROR, "EXCEPTION caught: " << e.what() );
         }
         // Start a timer: enable retries if something's wrong with the special frame
-        if (is_active())
+        if( is_active() )
+            _retrier = retrier::start( *this, std::chrono::seconds( get_retry_sf_seconds() ) );
+    }
+
+
+    void ac_trigger::trigger_calibration( calibration_type type )
+    {
+        if( is_active() )
         {
-            _retrier = retrier::start(*this, std::chrono::seconds(get_retry_sf_seconds()));
+            AC_LOG( ERROR, "Failed to trigger calibration: AC is already active" );
+            throw wrong_api_call_sequence_exception( "AC is already active" );
         }
+        if( _retrier.get() || _recycler.get() )
+        {
+            AC_LOG( ERROR, "Bad inactive state: one of retrier or recycler is set!" );
+            throw std::runtime_error( "bad inactive state" );
+        }
+
+        _calibration_type = type;
+        AC_LOG( DEBUG, "Calibration type is " << (type == calibration_type::MANUAL ? "MANUAL" : "AUTO") );
+        
+        check_conditions();
+        // Above throws invalid_value_exception, which we want: if calibration is triggered under
+        // bad conditions, we want the user to get this!
+
+        _n_retries = 0;
+        _n_cycles = 1;          // now active
+        AC_LOG( INFO, "Camera Accuracy Health check has started in the background" );
+        _next_trigger.reset();  // don't need a trigger any more
+        _temp_check.reset();    // nor a temperature check
+        start_color_sensor_if_needed();
+        AC_LOG( DEBUG, "Sending GET_SPECIAL_FRAME (cycle 1); now active..." );
+
+        trigger_special_frame();
     }
 
 
@@ -739,15 +797,21 @@ namespace ivcam2 {
                     auto df = _sf.get_depth_frame();
                     auto irf = _sf.get_infrared_frame();
 
-                    auto  should_continue = [&]()
+                    auto should_continue = [&]()
                     {
-                        if (!is_processing())
+                        if( ! is_processing() )
                         {
-                            AC_LOG(DEBUG, "Stopping algo: not processing any more");
-                            throw std::runtime_error("stopping algo: not processing any more");
+                            AC_LOG( DEBUG, "Stopping algo: not processing any more" );
+                            throw std::runtime_error( "stopping algo: not processing any more" );
                         }
                     };
-                    depth_to_rgb_calibration algo(df, irf, _cf, _pcf, cal_info, cal_regs, should_continue);
+                    algo::depth_to_rgb_calibration::optimizer::settings settings;
+                    settings.is_manual_trigger = _calibration_type == calibration_type::MANUAL;
+                    settings.hum_temp = _temp;
+                    settings.ambient = _ambient;
+                    settings.receiver_gain = _receiver_gain;
+                    depth_to_rgb_calibration
+                        algo( settings, df, irf, _cf, _pcf, cal_info, cal_regs, should_continue );
 
                     _from_profile = algo.get_from_profile();
                     _to_profile = algo.get_to_profile();
@@ -774,6 +838,7 @@ namespace ivcam2 {
                         _extr = algo.get_extrinsics();
                         _intr = algo.get_intrinsics();
                         _dsm_params = algo.get_dsm_params();
+                        _last_temp = _temp;
                         // Fall-thru!
                     case RS2_CALIBRATION_NOT_NEEDED:
                         // This is the same as SUCCESSFUL, except there was no change because the
@@ -791,9 +856,12 @@ namespace ivcam2 {
                         else
                         {
                             AC_LOG( DEBUG, "Triggering another cycle for calibration..." );
-                            int n_seconds = env_var< int >( "RS2_AC_INVALID_RETRY_SECONDS",
-                                2,  // TODO: should be 60, but changed for manual trigger
-                                []( int n ) { return n > 0; } );
+                            bool const is_manual = _calibration_type == calibration_type::MANUAL;
+                            int n_seconds
+                                = env_var< int >( is_manual ? "RS2_AC_INVALID_RETRY_SECONDS_MANUAL"
+                                                            : "RS2_AC_INVALID_RETRY_SECONDS_AUTO",
+                                                  is_manual ? 2 : 60,
+                                                  []( int n ) { return n > 0; } );
                             _recycler = retrier::start( *this, std::chrono::seconds( n_seconds ) );
                         }
                         break;
@@ -812,14 +880,15 @@ namespace ivcam2 {
                 }
                 catch( std::exception& ex )
                 {
-                    AC_LOG( ERROR, "caught exception in calibration algo: " << ex.what() );
+                    AC_LOG( ERROR, "EXCEPTION in calibration algo: " << ex.what() );
                     call_back( RS2_CALIBRATION_FAILED );
                 }
                 catch( ... )
                 {
-                    AC_LOG( ERROR, "unknown exception in calibration algo!!!" );
+                    AC_LOG( ERROR, "Unknown EXCEPTION in calibration algo!!!" );
                     call_back( RS2_CALIBRATION_FAILED );
                 }
+                _is_processing = false;  // to avoid debug msg in reset()
                 reset();
                 switch( _last_status_sent )
                 {
@@ -833,15 +902,42 @@ namespace ivcam2 {
     }
 
 
+    void ac_trigger::cancel_current_calibration()
+    {
+        if( ! is_active() )
+            return;
+        if( is_processing() )
+        {
+            reset();
+            // Wait until we're out of run_algo() -- until then, we're active!
+        }
+        else
+        {
+            stop_color_sensor_if_started();
+            call_back( RS2_CALIBRATION_FAILED );
+            reset();
+            calibration_is_done();
+        }
+    }
+
+
     void ac_trigger::calibration_is_done()
     {
-        // We get here when we've reached some final state (failed/successful)
-        set_not_active();  // now inactive
-        if( _last_status_sent != RS2_CALIBRATION_SUCCESSFUL )
-            AC_LOG( WARNING, "Camera Accuracy Health has finished unsuccessfully" );
-        else
-            AC_LOG( INFO, "Camera Accuracy Health has finished" );
+        if( is_active() )
+        {
+            // We get here when we've reached some final state (failed/successful)
+            set_not_active();
+            if( _last_status_sent != RS2_CALIBRATION_SUCCESSFUL )
+                AC_LOG( WARNING, "Camera Accuracy Health has finished unsuccessfully" );
+            else
+                AC_LOG( INFO, "Camera Accuracy Health has finished" );
+        }
 
+        schedule_next_calibration();
+    }
+
+    void ac_trigger::schedule_next_calibration()
+    {
         // Trigger the next AC -- but only if we're "on", meaning this wasn't a manual calibration
         if( !auto_calibration_is_on() )
         {
@@ -849,18 +945,30 @@ namespace ivcam2 {
             return;
         }
 
-        // Trigger after a set amount of time
+        schedule_next_time_trigger();
+        schedule_next_temp_trigger();
+    }
+
+    void ac_trigger::schedule_next_time_trigger()
+    {
         auto n_seconds = get_trigger_seconds();
         if( n_seconds.count() )
             start( n_seconds );
         else
             AC_LOG( DEBUG, "RS2_AC_TRIGGER_SECONDS is 0; no time trigger" );
-        
-        // Or after a certain temperature change
+    }
+
+    void ac_trigger::schedule_next_temp_trigger()
+    {
         if( get_temp_diff_trigger() )
         {
-            if( _last_temp = read_temperature() )
+            if( _last_temp )
+            {
+                //AC_LOG( DEBUG, "Last HUM temperature= " << _last_temp );
                 _temp_check = retrier::start< temp_check >( *this, std::chrono::seconds( 60 ) );
+            }
+            else
+                AC_LOG( DEBUG, "No temp check retrier created: no temperature available" );
         }
         else
         {
@@ -872,10 +980,10 @@ namespace ivcam2 {
     double ac_trigger::read_temperature()
     {
         auto hwm = _hwm.lock();
-        if (!hwm)
+        if( ! hwm )
         {
-            AC_LOG(ERROR, "Hardware monitor is inaccessible - cannot read temperatures");
-            return 0.0;
+            AC_LOG( ERROR, "Hardware monitor is inaccessible; cannot read temperature" );
+            return 0.;
         }
         // The temperature may depend on streaming?
         std::vector<byte> res;
@@ -888,7 +996,7 @@ namespace ivcam2 {
         {
             AC_LOG(ERROR,
                 "Failed to get temperatures; hardware monitor in inaccessible: " << e.what());
-            return 0.0;
+            return 0.;
         }
 
         if( res.size() < sizeof( temperatures ) )  // New temperatures may get added by FW...
@@ -896,17 +1004,102 @@ namespace ivcam2 {
             AC_LOG( ERROR,
                     "Failed to get temperatures; result size= "
                         << res.size() << "; expecting at least " << sizeof( temperatures ) );
-            return 0.0;
+            return 0.;
         }
         auto const & ts = *( reinterpret_cast< temperatures * >( res.data() ) );
         AC_LOG( DEBUG, "HUM temperture is currently " << ts.HUM_temperature << " degrees Celsius" );
         return ts.HUM_temperature;
     }
 
+
+    void ac_trigger::check_conditions()
+    {
+        // Make sure we're still streaming
+        bool is_streaming = false;
+        try
+        {
+            is_streaming = _dev.get_depth_sensor().is_streaming();
+        }
+        catch( std::exception const & e )
+        {
+            AC_LOG( ERROR, "EXCEPTION caught: " << e.what() );
+        }
+        if( ! is_streaming )
+        {
+            AC_LOG( ERROR, "Not streaming; stopping" );
+            stop();
+            throw wrong_api_call_sequence_exception( "not streaming" );
+        }
+
+        std::string invalid_reason;
+
+        // Temperature must be within range or algo may not work right
+        _temp = read_temperature();
+        if( _temp < 32. )
+        {
+            if( ! invalid_reason.empty() )
+                invalid_reason += ", ";
+            invalid_reason += to_string() << "temperature (" << _temp << ") too low (<32)";
+        }
+        else if( _temp > 46. )
+        {
+            if( ! invalid_reason.empty() )
+                invalid_reason += ", ";
+            invalid_reason += to_string() << "temperature (" << _temp << ") too high (>46)";
+        }
+
+        // Algo was written with specific receiver gain (APD) in mind, depending on
+        // the FW preset (ambient light)
+        auto & depth_sensor = _dev.get_depth_sensor();
+        auto & ambient_light = depth_sensor.get_option( RS2_OPTION_AMBIENT_LIGHT );
+        float raw_ambient = ambient_light.query();
+        auto & apd = depth_sensor.get_option( RS2_OPTION_AVALANCHE_PHOTO_DIODE );
+        float raw_apd = apd.query();
+        _receiver_gain = int( raw_apd );
+        _ambient = ( rs2_ambient_light ) int( raw_ambient );
+        switch( _ambient )
+        {
+        case RS2_AMBIENT_LIGHT_LOW_AMBIENT:  // SHORT
+            if( _receiver_gain != 18 )
+            {
+                if( ! invalid_reason.empty() )
+                    invalid_reason += ", ";
+                invalid_reason += to_string()
+                               << "low-ambient (SHORT) receiver gain (" << raw_apd << ") != 18";
+            }
+            break;
+
+        case RS2_AMBIENT_LIGHT_NO_AMBIENT:  // LONG
+            if( _receiver_gain != 9 )
+            {
+                if( ! invalid_reason.empty() )
+                    invalid_reason += ", ";
+                invalid_reason += to_string()
+                               << "no-ambient (LONG) receiver gain (" << raw_apd << ") != 9";
+            }
+            break;
+
+        default:
+            if( ! invalid_reason.empty() )
+                invalid_reason += ", ";
+            invalid_reason += to_string() << "invalid (" << raw_ambient << ") ambient preset";
+            break;
+        }
+
+        if( ! invalid_reason.empty() )
+        {
+            // This can and will happen every minute (from the temp check), therefore not an error...
+            AC_LOG( DEBUG, "Invalid conditions: " << invalid_reason );
+            if( ! env_var< bool >( "RS2_AC_DISABLE_CONDITIONS", false ) )
+                throw invalid_value_exception( invalid_reason );
+            AC_LOG( DEBUG, "RS2_AC_DISABLE_CONDITIONS is on; continuing anyway" );
+        }
+    }
+
     void ac_trigger::start( std::chrono::seconds n_seconds )
     {
         if( is_active() )
-            throw wrong_api_call_sequence_exception( "AC is already active" );
+            throw wrong_api_call_sequence_exception( "CAH is already active" );
 
         if( !n_seconds.count() )
         {
@@ -943,9 +1136,9 @@ namespace ivcam2 {
         _is_on = true;
         if( n_seconds.count() )
         {
-            AC_LOG( DEBUG, "Calibration will be triggered in " << n_seconds.count() << " seconds..." );
+            AC_LOG( DEBUG, "Trigger in " << n_seconds.count() << " seconds..." );
             // If there's already a trigger, this will simply override it
-            _next_trigger = retrier::start( *this, n_seconds, "next calibration" );
+            _next_trigger = retrier::start< next_trigger >( *this, n_seconds );
         }
     }
 
@@ -975,10 +1168,10 @@ namespace ivcam2 {
         _cf = rs2::frame{};;
         _pcf = rs2::frame{};
 
-        if (_is_processing)
+        if( _is_processing )
         {
             _is_processing = false;
-            AC_LOG(DEBUG, "trigger processing to stop");
+            AC_LOG( DEBUG, "Algo is processing; signalling stop" );
         }
     }
 

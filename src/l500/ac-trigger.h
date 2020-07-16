@@ -29,6 +29,10 @@ namespace ivcam2 {
         float _dsm_x_offset;
         float _dsm_y_offset;
 
+        rs2_ambient_light _ambient;
+        int _receiver_gain;
+        double _temp;
+
         std::weak_ptr<hw_monitor> _hwm;
         l500_device & _dev;
 
@@ -48,9 +52,11 @@ namespace ivcam2 {
         class retrier;
         std::shared_ptr< retrier > _retrier;
         std::shared_ptr< retrier > _recycler;
-        std::shared_ptr< retrier > _next_trigger;
         rs2_calibration_status _last_status_sent;
         std::atomic_bool _own_color_stream{ false };
+
+        class next_trigger;
+        std::shared_ptr< next_trigger > _next_trigger;
 
         class temp_check;
         double _last_temp = 0;
@@ -131,6 +137,15 @@ namespace ivcam2 {
             std::function<void( const option& )> _record_action = []( const option& ) {};
         };
 
+        enum class calibration_type
+        {
+            MANUAL,
+            AUTO
+        };
+
+    private:
+        calibration_type _calibration_type;
+
     public:
         ac_trigger( l500_device & dev, std::shared_ptr<hw_monitor> hwm );
         ~ac_trigger();
@@ -156,7 +171,7 @@ namespace ivcam2 {
         bool auto_calibration_is_on() const { return _is_on; }
 
         // Start calibration -- after this, is_active() returns true. See the note for is_on().
-        void trigger_calibration( bool is_retry = false );
+        void trigger_calibration( calibration_type type );
 
         rs2_extrinsics const & get_extrinsics() const { return _extr; }
         rs2_intrinsics const & get_intrinsics() const { return _intr; }
@@ -179,9 +194,17 @@ namespace ivcam2 {
 
         bool is_processing() const { return _is_processing; }
         bool is_expecting_special_frame() const { return !!_retrier; }
+
         double read_temperature();
         void calibration_is_done();
+        void schedule_next_calibration();
+        void schedule_next_time_trigger();
+        void schedule_next_temp_trigger();
+        void cancel_current_calibration();
         void set_not_active() { _n_cycles = 0; }
+        void trigger_retry();
+        void trigger_special_frame();
+        void check_conditions();
 
         std::vector< callback > _callbacks;
 

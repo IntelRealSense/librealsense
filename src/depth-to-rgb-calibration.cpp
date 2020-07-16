@@ -20,15 +20,17 @@ namespace impl = librealsense::algo::depth_to_rgb_calibration;
 #define CHECK_IF_NEEDS_TO_STOP() if (_should_continue) _should_continue()
 
 depth_to_rgb_calibration::depth_to_rgb_calibration(
+    impl::optimizer::settings const & settings,
     rs2::frame depth,
     rs2::frame ir,
     rs2::frame yuy,
     rs2::frame prev_yuy,
-    algo::depth_to_rgb_calibration::algo_calibration_info const & cal_info,
-    algo::depth_to_rgb_calibration::algo_calibration_registers const & cal_regs,
+    impl::algo_calibration_info const & cal_info,
+    impl::algo_calibration_registers const & cal_regs,
     std::function<void()> should_continue
 )
-    : _intr( yuy.get_profile().as< rs2::video_stream_profile >().get_intrinsics() )
+    : _algo( settings )
+    , _intr( yuy.get_profile().as< rs2::video_stream_profile >().get_intrinsics() )
     , _extr(to_raw_extrinsics( depth.get_profile().get_extrinsics_to( yuy.get_profile() )))
     , _from( depth.get_profile().get()->profile )
     , _to( yuy.get_profile().get()->profile)

@@ -265,7 +265,15 @@ namespace depth_to_rgb_calibration {
     class optimizer
     {
     public:
-        optimizer(bool manual_trigger = false);
+        struct settings
+        {
+            bool is_manual_trigger = false;
+            double hum_temp = 0.;
+            rs2_ambient_light ambient = RS2_AMBIENT_LIGHT_NO_AMBIENT;
+            int receiver_gain = 0;  // aka APD
+        };
+
+        optimizer( settings const & );
 
         void set_yuy_data( std::vector< yuy_t > && yuy_data, std::vector< yuy_t > && prev_yuy_data,
                            calib const & calibration );
@@ -379,7 +387,7 @@ namespace depth_to_rgb_calibration {
                               rs2_dsm_params_double & ac_data_new ) const;
 
     private:
-        bool _manual_trigger;
+        settings const _settings;
         params _params;
         decision_params _decision_params;
         svm_features _svm_features;
