@@ -8,7 +8,7 @@
 #include "../../../include/librealsense2/rsutil.h"
 
 // helper method for retrieving rs2_intrinsics from intrinsic object
-rs2_intrinsics retrieveIntrinsic(JNIEnv *env, jobject intrinsic) {
+rs2_intrinsics intrinsic_jobject2rs(JNIEnv *env, jobject intrinsic) {
     jclass intrinsic_class = env->GetObjectClass(intrinsic);
     jfieldID width_field = env->GetFieldID(intrinsic_class, "mWidth", "I");
     jfieldID height_field = env->GetFieldID(intrinsic_class, "mHeight", "I");
@@ -37,7 +37,7 @@ rs2_intrinsics retrieveIntrinsic(JNIEnv *env, jobject intrinsic) {
 }
 
 // helper method for retrieving rs2_extrinsics from extrinsic object
-rs2_extrinsics retrieveExtrinsic(JNIEnv *env, jobject extrinsic) {
+rs2_extrinsics extrinsic_jobject2rs(JNIEnv *env, jobject extrinsic) {
     rs2_extrinsics extrinsics;
     jclass extrinsic_class = env->GetObjectClass(extrinsic);
     //fill rotation
@@ -58,11 +58,6 @@ rs2_extrinsics retrieveExtrinsic(JNIEnv *env, jobject extrinsic) {
     return extrinsics;
 }
 
-// helper method for retrieving float[3] from Point_3D object
-std::shared_ptr<float> retrievePoint3D(JNIEnv *env, jobject point_3D) {
-
-}
-
 extern "C" JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_Utils_nProjectPointToPixel(JNIEnv *env, jclass type,
                                                               jobject pixel_2D, jobject intrinsic,
@@ -78,7 +73,7 @@ Java_com_intel_realsense_librealsense_Utils_nProjectPointToPixel(JNIEnv *env, jc
     point[2] =  env->GetFloatField(point_3D, point_z_field);
 
     // retrieving rs2_intrinsics from intrinsic object
-    rs2_intrinsics intrinsics = retrieveIntrinsic(env, intrinsic);
+    rs2_intrinsics intrinsics = intrinsic_jobject2rs(env, intrinsic);
 
     // preparing struct to be filled by API function
     float pixel[2] = {0.f, 0.f};
@@ -107,7 +102,7 @@ Java_com_intel_realsense_librealsense_Utils_nDeprojectPixelToPoint(JNIEnv *env, 
     pixel[1] = env->GetFloatField(pixel_2D, pixel_y_field);
 
     // retrieving rs2_intrinsics from intrinsic object
-    rs2_intrinsics intrinsics = retrieveIntrinsic(env, intrinsic);
+    rs2_intrinsics intrinsics = intrinsic_jobject2rs(env, intrinsic);
 
     // preparing struct to be filled by API function
     float point[3] = {0.f, 0.f, 0.f};
@@ -139,7 +134,7 @@ Java_com_intel_realsense_librealsense_Utils_nTransformPointToPoint(JNIEnv *env, 
     from_point[2] =  env->GetFloatField(from_point_3D, point_z_field);
 
     // retrieving rs2_extrinsics from extrinsic object
-    rs2_extrinsics extrinsics = retrieveExtrinsic(env, extrinsic);
+    rs2_extrinsics extrinsics = extrinsic_jobject2rs(env, extrinsic);
 
     // preparing struct to be filled by API function
     float to_point[3] = {0.f, 0.f, 0.f};
@@ -161,7 +156,7 @@ extern "C" JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_Utils_nGetFov(JNIEnv *env, jclass type,
                                                     jobject fov, jobject intrinsic) {
     // retrieving rs2_intrinsics from intrinsic object
-    rs2_intrinsics intrinsics = retrieveIntrinsic(env, intrinsic);
+    rs2_intrinsics intrinsics = intrinsic_jobject2rs(env, intrinsic);
 
     float fov_cpp[2] = {0.f, 0.f};
     rs2_fov(&intrinsics, fov_cpp);
@@ -191,11 +186,11 @@ Java_com_intel_realsense_librealsense_Utils_nProject2dPixelToDepthPixel(JNIEnv *
     rs2_error* e = nullptr;
     const uint16_t* depthFrameData = (const uint16_t*)rs2_get_frame_data(depthFrame, &e);
     // retrieving intrinsics objects
-    rs2_intrinsics depth_intrinsics = retrieveIntrinsic(env, depthIntrinsic);
-    rs2_intrinsics other_intrinsics = retrieveIntrinsic(env, otherIntrinsic);
+    rs2_intrinsics depth_intrinsics = intrinsic_jobject2rs(env, depthIntrinsic);
+    rs2_intrinsics other_intrinsics = intrinsic_jobject2rs(env, otherIntrinsic);
     // retrieving extrinsics objects
-    rs2_extrinsics other_to_depth_extrinsics = retrieveExtrinsic(env, otherToDepth);
-    rs2_extrinsics depth_to_other_extrinsics = retrieveExtrinsic(env, depthToOther);
+    rs2_extrinsics other_to_depth_extrinsics = extrinsic_jobject2rs(env, otherToDepth);
+    rs2_extrinsics depth_to_other_extrinsics = extrinsic_jobject2rs(env, depthToOther);
     // retrieving float[2] from fromPixel
     jclass from_pixel_class = env->GetObjectClass(fromPixel);
     jfieldID from_pixel_x_field = env->GetFieldID(from_pixel_class, "mX", "F");
