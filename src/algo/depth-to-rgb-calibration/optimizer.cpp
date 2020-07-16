@@ -126,6 +126,10 @@ optimizer::optimizer( settings const & s )
     {
         adjust_params_to_manual_mode();
     }
+    else
+    {
+        adjust_params_to_apd_gain(apd_gain);
+    }
 }
 
 static std::vector< double > get_direction_deg(
@@ -1527,6 +1531,16 @@ void optimizer::set_cycle_data(const std::vector<double3>& vertices,
     _p_mat_from_bin = p_mat;
     _dsm_regs_cand_from_bin = dsm_regs_cand;
     _dsm_params_cand_from_bin = dsm_params_cand;
+}
+
+void optimizer::adjust_params_to_apd_gain(int apd_gain)
+{
+    if(apd_gain == 0 || apd_gain == 9) // long preset
+        _params.saturation_value = 230;
+    else if(apd_gain == 18) // short preset
+        _params.saturation_value = 250;
+    else
+        throw std::runtime_error("invalid apd_gain value: " + apd_gain);
 }
 
 void optimizer::adjust_params_to_manual_mode()

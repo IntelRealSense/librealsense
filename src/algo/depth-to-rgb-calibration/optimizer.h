@@ -342,6 +342,7 @@ namespace depth_to_rgb_calibration {
     private:
 
         void adjust_params_to_manual_mode();
+        void adjust_params_to_apd_gain(int apd_gain);
 
         // 1 cycle of optimization
         size_t optimize_p(const optimization_params& params_curr,
