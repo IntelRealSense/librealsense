@@ -520,10 +520,6 @@ namespace ivcam2 {
             {
                 AC_LOG(DEBUG, "Color sensor was opened by the user, calibration will wait for the stream to start.");
             }
-
-            // Note that we don't do anything with the frames -- they shouldn't end up
-            // at the user. But AC will still get them.
-
         }
         catch (std::exception const & e)
         {

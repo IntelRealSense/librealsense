@@ -375,24 +375,24 @@ namespace librealsense
     {
         std::lock_guard< std::mutex > lock( _state_mutex );
 
-            if( sensor_state::OWNED_BY_AUTO_CAL == _state )
+        if( sensor_state::OWNED_BY_AUTO_CAL == _state )
+        {
+            if( is_streaming() )
             {
-                if( is_streaming() )
-                {
-                    delayed_stop();
-                }
-                if (is_opened())
-                {
-                    LOG_DEBUG("Closing color sensor...");
-                    synthetic_sensor::close();
-                }
-                set_sensor_state(sensor_state::CLOSED);
-                LOG_DEBUG( "Calibration color stream was on, turned it off" );
+                delayed_stop();
             }
+            if( is_opened() )
+            {
+                LOG_DEBUG( "Closing color sensor..." );
+                synthetic_sensor::close();
+            }
+            set_sensor_state( sensor_state::CLOSED );
+            LOG_DEBUG( "Calibration color stream was on, turned it off" );
+        }
 
-            LOG_DEBUG("Opening color sensor...");
-        synthetic_sensor::open(requests);
-        set_sensor_state(sensor_state::OWNED_BY_USER);
+        LOG_DEBUG( "Opening color sensor..." );
+        synthetic_sensor::open( requests );
+        set_sensor_state( sensor_state::OWNED_BY_USER );
     }
 
     
