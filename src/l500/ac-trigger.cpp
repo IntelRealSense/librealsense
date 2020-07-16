@@ -186,9 +186,18 @@ namespace ivcam2 {
             {
                 if( ! is_auto_trigger_possible() )
                     throw invalid_value_exception( "auto trigger is disabled in the environment" );
-                super::set( value );
-                if( _autocal->_dev.get_depth_sensor().is_streaming() )
-                    _autocal->start();
+                try
+                {
+                    if (_autocal->_dev.get_depth_sensor().is_streaming())
+                        _autocal->start();
+
+                    super::set(value);
+                }
+                catch (std::exception const & e)
+                {
+                    AC_LOG(ERROR, "EXCEPTION caught in access to device: " << e.what());
+                    return;
+                }
                 // else start() will get called on stream start
             }
             else
@@ -202,8 +211,11 @@ namespace ivcam2 {
         {
             // User wants to trigger it RIGHT NOW
             // We don't change the actual control value!
-            auto & depth_sensor = _autocal->_dev.get_depth_sensor();
-            if( depth_sensor.is_streaming() )
+            bool is_depth_streaming(false);
+
+            is_depth_streaming = _autocal->_dev.get_depth_sensor().is_streaming();
+
+            if(is_depth_streaming)
             {
                 AC_LOG( DEBUG, "Triggering manual calibration..." );
                 _autocal->trigger_calibration();
@@ -215,7 +227,7 @@ namespace ivcam2 {
         }
     }
 
-    void ac_trigger::reset_option::set( float value )
+    void ac_trigger::reset_option::set(float value)
     {
         //bool_option::set( value );
 
@@ -223,8 +235,8 @@ namespace ivcam2 {
         if (auto color_sensor = _autocal->_dev.get_color_sensor())
             color_sensor->reset_calibration();
         _autocal->_dev.get_depth_sensor().reset_calibration();
-        _autocal->_dev.notify_of_calibration_change( RS2_CALIBRATION_SUCCESSFUL );
-        _record_action( *this );
+        _autocal->_dev.notify_of_calibration_change(RS2_CALIBRATION_SUCCESSFUL);
+        _record_action(*this);
     }
 
 
@@ -386,6 +398,7 @@ namespace ivcam2 {
     }
 
 
+
     ac_trigger::~ac_trigger() 
     { 
         if( _worker.joinable() )
@@ -397,9 +410,22 @@ namespace ivcam2 {
     }
 
 
-    void ac_trigger::trigger_calibration( bool is_retry )
+    void ac_trigger::trigger_calibration(bool is_retry)
     {
-        if (false == _dev.get_depth_sensor().is_streaming())
+        bool depth_is_streaming(false);
+
+        try
+        {
+            depth_is_streaming = _dev.get_depth_sensor().is_streaming();
+        }
+        catch (std::exception const & e)
+        {
+            AC_LOG(ERROR, "EXCEPTION caught in access to device: " << e.what());
+            stop();
+            return;
+        }
+
+        if (false == depth_is_streaming)
         {
             AC_LOG(ERROR, "Depth streaming not found, canceling calibration");
             stop();
@@ -450,7 +476,7 @@ namespace ivcam2 {
             auto hwm = _hwm.lock();
             if (!hwm)
             {
-                AC_LOG(DEBUG, "Hardware monitor is inaccessible - calibration not triggered");
+                AC_LOG(ERROR, "Hardware monitor is inaccessible - calibration not triggered");
                 return;
             }
             hwm->send(cmd);
@@ -481,45 +507,45 @@ namespace ivcam2 {
     {
         // With AC, we need a color sensor even when the user has not asked for one --
         // otherwise we risk misalignment over time. We turn it on automatically!
-
-        auto color_sensor = _dev.get_color_sensor();
-        if( !color_sensor )
-        {
-            AC_LOG( ERROR, "No color sensor in device; cannot run AC?!" );
-            return;
-        }
-
-        if( color_sensor->is_streaming() )
-        {
-            AC_LOG( DEBUG, "Color sensor is already streaming" );
-            return;
-        }
-
-        AC_LOG( INFO, "Color sensor was NOT streaming; turning on..." );
-
         try
         {
+            auto color_sensor = _dev.get_color_sensor();
+            if (!color_sensor)
+            {
+                AC_LOG(ERROR, "No color sensor in device; cannot run AC?!");
+                return;
+            }
+
+            if (color_sensor->is_streaming())
+            {
+                AC_LOG(DEBUG, "Color sensor is already streaming");
+                return;
+            }
+
+            AC_LOG(INFO, "Color sensor was NOT streaming; turning on...");
+
+
             auto & depth_sensor = _dev.get_depth_sensor();
             auto rgb_profile = depth_sensor.is_color_sensor_needed();
-            if( !rgb_profile )
+            if (!rgb_profile)
                 return;  // error should have already been printed
             //AC_LOG( DEBUG, "Picked profile: " << *rgb_profile );
 
-            AC_LOG( DEBUG, "Open..." );
-            color_sensor->open( { rgb_profile } );
-            AC_LOG( DEBUG, "Start..." );
+            AC_LOG(DEBUG, "Open...");
+            color_sensor->open({ rgb_profile });
+            AC_LOG(DEBUG, "Start...");
 
             color_sensor->start(make_frame_callback([&](frame_holder fref) {}));
 
-            AC_LOG( DEBUG, "Started!" );
+            AC_LOG(DEBUG, "Started!");
             // Note that we don't do anything with the frames -- they shouldn't end up
             // at the user. But AC will still get them.
 
             _own_color_stream = true;
         }
-        catch( std::exception const & e )
+        catch (std::exception const & e)
         {
-            AC_LOG( ERROR, "EXCEPTION caught: " << e.what() );
+            AC_LOG(ERROR, "EXCEPTION caught: " << e.what());
         }
     }
 
@@ -597,13 +623,23 @@ namespace ivcam2 {
             auto hwm = _hwm.lock();
             if (!hwm)
             {
-                AC_LOG(DEBUG, "Hardware monitor is inaccessible - don't use special frame");
+                AC_LOG(ERROR, "Hardware monitor is inaccessible - don't use special frame");
                 return;
             }
-            ivcam2::read_fw_register(*hwm, &_dsm_x_scale, 0xfffe3844);
-            ivcam2::read_fw_register(*hwm, &_dsm_y_scale, 0xfffe3830);
-            ivcam2::read_fw_register(*hwm, &_dsm_x_offset, 0xfffe3840);
-            ivcam2::read_fw_register(*hwm, &_dsm_y_offset, 0xfffe382c);
+
+            try
+            {
+                ivcam2::read_fw_register(*hwm, &_dsm_x_scale, 0xfffe3844);
+                ivcam2::read_fw_register(*hwm, &_dsm_y_scale, 0xfffe3830);
+                ivcam2::read_fw_register(*hwm, &_dsm_x_offset, 0xfffe3840);
+                ivcam2::read_fw_register(*hwm, &_dsm_y_offset, 0xfffe382c);
+            }
+            catch (std::exception& ex)
+            {
+                AC_LOG(ERROR, "caught exception in reading firmware registers: " << ex.what());
+                set_not_active();  // now inactive
+            }
+
         }
         AC_LOG( DEBUG, "dsm registers=  x[" << AC_F_PREC << _dsm_x_scale << ' ' << _dsm_y_scale
             << "]  +[" << _dsm_x_offset << ' ' << _dsm_y_offset
@@ -689,7 +725,7 @@ namespace ivcam2 {
                         auto hwm = _hwm.lock();
                         if (!hwm)
                         {
-                            AC_LOG(DEBUG, "Hardware monitor is inaccessible - stopping algo");
+                            AC_LOG(ERROR, "Hardware monitor is inaccessible - stopping algo");
                             return;
                         }
                         ivcam2::read_fw_table(*hwm, cal_info.table_id, &cal_info );  // throws!
@@ -711,8 +747,7 @@ namespace ivcam2 {
                             throw std::runtime_error("stopping algo: not processing any more");
                         }
                     };
-                    depth_to_rgb_calibration algo(df, irf, _cf, _pcf, cal_info, cal_regs, should_continue
-                   );
+                    depth_to_rgb_calibration algo(df, irf, _cf, _pcf, cal_info, cal_regs, should_continue);
 
                     _from_profile = algo.get_from_profile();
                     _to_profile = algo.get_to_profile();
@@ -801,7 +836,7 @@ namespace ivcam2 {
     void ac_trigger::calibration_is_done()
     {
         // We get here when we've reached some final state (failed/successful)
-        _n_cycles = 0;  // now inactive
+        set_not_active();  // now inactive
         if( _last_status_sent != RS2_CALIBRATION_SUCCESSFUL )
             AC_LOG( WARNING, "Camera Accuracy Health has finished unsuccessfully" );
         else
@@ -839,17 +874,29 @@ namespace ivcam2 {
         auto hwm = _hwm.lock();
         if (!hwm)
         {
-            AC_LOG(DEBUG ,"Hardware monitor is inaccessible - cannot read temperatures");
+            AC_LOG(ERROR, "Hardware monitor is inaccessible - cannot read temperatures");
             return 0.0;
         }
         // The temperature may depend on streaming?
-        auto res = hwm->send( command{ TEMPERATURES_GET } );
+        std::vector<byte> res;
+
+        try
+        {
+            res = hwm->send(command{ TEMPERATURES_GET });
+        }
+        catch (std::exception const & e)
+        {
+            AC_LOG(ERROR,
+                "Failed to get temperatures; hardware monitor in inaccessible: " << e.what());
+            return 0.0;
+        }
+
         if( res.size() < sizeof( temperatures ) )  // New temperatures may get added by FW...
         {
             AC_LOG( ERROR,
                     "Failed to get temperatures; result size= "
                         << res.size() << "; expecting at least " << sizeof( temperatures ) );
-            return 0;
+            return 0.0;
         }
         auto const & ts = *( reinterpret_cast< temperatures * >( res.data() ) );
         AC_LOG( DEBUG, "HUM temperture is currently " << ts.HUM_temperature << " degrees Celsius" );
@@ -863,11 +910,19 @@ namespace ivcam2 {
 
         if( !n_seconds.count() )
         {
-            option & o = _dev.get_depth_sensor().get_option( RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH );
-            if( !o.query() )
+            try
             {
-                // auto trigger is turned off
-                AC_LOG( DEBUG, "Turned off -- no trigger set" );
+                option & o = _dev.get_depth_sensor().get_option(RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH);
+                if (!o.query())
+                {
+                    // auto trigger is turned off
+                    AC_LOG(DEBUG, "Turned off -- no trigger set");
+                    return;
+                }
+            }
+            catch (std::exception const & e)
+            {
+                AC_LOG(ERROR, "EXCEPTION caught in access to device: " << e.what());
                 return;
             }
 
@@ -905,7 +960,7 @@ namespace ivcam2 {
         if( is_active() )
         {
             AC_LOG( DEBUG, "Cancelling current calibration" );
-            _n_cycles = 0;  // now inactive!
+            set_not_active();  // now inactive!
         }
         stop_color_sensor_if_started();
         _temp_check.reset();

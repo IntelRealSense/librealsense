@@ -181,6 +181,7 @@ namespace ivcam2 {
         bool is_expecting_special_frame() const { return !!_retrier; }
         double read_temperature();
         void calibration_is_done();
+        void set_not_active() { _n_cycles = 0; }
 
         std::vector< callback > _callbacks;
 
