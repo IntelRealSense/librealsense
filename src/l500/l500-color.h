@@ -122,23 +122,6 @@ namespace librealsense
         // Stops the color sensor streaming
         void stop() override;
 
-
-        void delayed_start(frame_callback_ptr callback)
-        {
-            LOG_DEBUG("Starting color sensor...");
-            // The delay is here as a work around to a firmware bug [RS5-5453]
-            _action_delayer.do_after_delay([&]() { synthetic_sensor::start(callback); });
-            LOG_DEBUG("Color sensor started");
-        }
-
-        void delayed_stop()
-        {
-            LOG_DEBUG("Stopping color sensor...");
-            // The delay is here as a work around to a firmware bug [RS5-5453]
-            _action_delayer.do_after_delay([&]() { synthetic_sensor::stop(); });
-            LOG_DEBUG("Color sensor stopped");
-        }
-
         // This function serves the auto calibration process,
         // It is used to open and start the color sensor with a single call if it is closed.
         // Note: if the sensor is opened by the user, the function assumes that the user will start the stream.
@@ -161,25 +144,23 @@ namespace librealsense
 
         std::atomic< sensor_state > _state;
 
-        std::string state_to_string( sensor_state state )
+        void delayed_start(frame_callback_ptr callback)
         {
-            switch( state )
-            {
-            case sensor_state::CLOSED:
-                return "CLOSED";
-                break;
-            case sensor_state::OWNED_BY_AUTO_CAL:
-                return "OWNED_BY_AUTO_CAL";
-                break;
-            case sensor_state::OWNED_BY_USER:
-                return "OWNED_BY_USER";
-                break;
-            default:
-                LOG_DEBUG( "Invalid color sensor state: " << static_cast< int >( state ) );
-                break;
-            }
-            return "Unknown state";
+            LOG_DEBUG("Starting color sensor...");
+            // The delay is here as a work around to a firmware bug [RS5-5453]
+            _action_delayer.do_after_delay([&]() { synthetic_sensor::start(callback); });
+            LOG_DEBUG("Color sensor started");
         }
+
+        void delayed_stop()
+        {
+            LOG_DEBUG("Stopping color sensor...");
+            // The delay is here as a work around to a firmware bug [RS5-5453]
+            _action_delayer.do_after_delay([&]() { synthetic_sensor::stop(); });
+            LOG_DEBUG("Color sensor stopped");
+        }
+
+        std::string state_to_string(sensor_state state);
 
         
         void set_sensor_state(sensor_state state)

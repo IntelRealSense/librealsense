@@ -466,6 +466,26 @@ namespace librealsense
         }
     }
 
+    std::string l500_color_sensor::state_to_string(sensor_state state)
+    {
+        switch (state)
+        {
+        case sensor_state::CLOSED:
+            return "CLOSED";
+            break;
+        case sensor_state::OWNED_BY_AUTO_CAL:
+            return "OWNED_BY_AUTO_CAL";
+            break;
+        case sensor_state::OWNED_BY_USER:
+            return "OWNED_BY_USER";
+            break;
+        default:
+            LOG_DEBUG("Invalid color sensor state: " << static_cast<int>(state));
+            break;
+        }
+        return "Unknown state";
+    }
+
 
     std::vector<tagged_profile> l500_color::get_profiles_tags() const
     {
