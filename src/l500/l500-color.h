@@ -159,25 +159,26 @@ namespace librealsense
             OWNED_BY_AUTO_CAL
         };
 
-        std::atomic<sensor_state> _state;
+        std::atomic< sensor_state > _state;
 
-        const std::string & state_to_string(sensor_state state)
+        std::string state_to_string( sensor_state state )
         {
-            static std::unordered_map<sensor_state, std::string> state_map =
-            { {sensor_state::CLOSED, "CLOSED"},
-              {sensor_state::OWNED_BY_AUTO_CAL, "OWNED_BY_AUTO_CAL"} ,
-              {sensor_state::OWNED_BY_USER,"OWNED_BY_USER"} };
-           
-            static const std::string unknown = "Unknown state";
-
-            auto val = state_map.find(state);
-            if (val != state_map.end())
+            switch( state )
             {
-                return val->second;
+            case sensor_state::CLOSED:
+                return "CLOSED";
+                break;
+            case sensor_state::OWNED_BY_AUTO_CAL:
+                return "OWNED_BY_AUTO_CAL";
+                break;
+            case sensor_state::OWNED_BY_USER:
+                return "OWNED_BY_USER";
+                break;
+            default:
+                LOG_DEBUG( "Invalid color sensor state: " << static_cast< int >( state ) );
+                break;
             }
-
-            LOG_DEBUG("Invalid color sensor state: " << (int)state);
-            return unknown;
+            return "Unknown state";
         }
 
         
