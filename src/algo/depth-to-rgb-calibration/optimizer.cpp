@@ -1411,6 +1411,7 @@ void optimizer::write_data_to( std::string const & dir )
         write_to_file( &cal_regs, sizeof( cal_regs ), dir, "cal.registers" );
         write_to_file( &_z.orig_intrinsics, sizeof( _z.orig_intrinsics), dir, "depth.intrinsics" );
         write_to_file( &_z.depth_units, sizeof( _z.depth_units ), dir, "depth.units" );
+        write_to_file( &_settings, sizeof( _settings ), dir, "settings" );
 
         // This file is meant for matlab -- it packages all the information needed
         write_matlab_camera_params_file( _z.orig_intrinsics,

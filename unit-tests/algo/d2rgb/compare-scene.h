@@ -93,7 +93,13 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
 
     scene_metadata md( scene_dir );
 
-    algo::optimizer cal;
+    algo::optimizer::settings settings;
+    //read_data_from( bin_dir( scene_dir ) + filename, &settings );
+    settings.is_manual_trigger = true;
+    settings.ambient = RS2_AMBIENT_LIGHT_NO_AMBIENT;
+    settings.receiver_gain = 9;
+    settings.hum_temp = 40;
+    algo::optimizer cal( settings );
 
     /*std::vector<double> in = { 1,2,3,4 };
     std::vector<double>out(4);

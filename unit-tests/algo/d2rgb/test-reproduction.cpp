@@ -109,7 +109,21 @@ int main( int argc, char * argv[] )
             read_binary_file( dir, "cal.registers", &camera.cal_regs );
             read_binary_file( dir, "dsm.params", &camera.dsm_params );
 
-            algo::optimizer cal;
+            algo::optimizer::settings settings;
+            try
+            {
+                read_binary_file( dir, "settings", &settings );
+            }
+            catch( std::exception const & e )
+            {
+                std::cout << "!! failed: " << e.what() << " -> assuming [MANUAL LONG 9 @40degC]" << std::endl;
+                settings.ambient = RS2_AMBIENT_LIGHT_NO_AMBIENT;
+                settings.hum_temp = 40;
+                settings.is_manual_trigger = true;
+                settings.receiver_gain = 9;
+            }
+
+            algo::optimizer cal( settings );
             init_algo( cal, dir, "\\rgb.raw", "\\rgb_prev.raw", "\\ir.raw", "\\depth.raw", camera );
 
             std::string status;
