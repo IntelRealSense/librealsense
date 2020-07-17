@@ -352,7 +352,7 @@ bool optimizer::is_valid_results()
     if( _factory_calibration.width  &&  _factory_calibration.height )
     {
         double xy_movement = calc_correction_in_pixels(_final_calibration);
-        AC_LOG( DEBUG, "... average pixel movement from factory calibration= " << xy_movement );
+        AC_LOG( DEBUG, "    average pixel movement from factory calibration= " << xy_movement );
         if( xy_movement > _params.max_xy_movement_from_origin )
         {
             AC_LOG( ERROR, "Calibration has moved too far from the original factory calibration (" << xy_movement << " pixels)" );
@@ -361,7 +361,7 @@ bool optimizer::is_valid_results()
     }
     else
     {
-        AC_LOG( DEBUG, "... no factory calibration available; skipping distance check" );
+        AC_LOG( DEBUG, "    no factory calibration available; skipping distance check" );
     }
 
     /* %% Check and see that the score didn't increased by a lot in one image section and decreased in the others
@@ -379,7 +379,7 @@ bool optimizer::is_valid_results()
         = *std::min_element( _z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end() );
     double max_cost_diff
         = *std::max_element( _z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end() );
-    AC_LOG( DEBUG, "... min cost diff= " << min_cost_diff << "  max= " << max_cost_diff );
+    AC_LOG( DEBUG, "    min cost diff= " << min_cost_diff << "  max= " << max_cost_diff );
 
     bool res_svm = valid_by_svm( linear );  //(gaussian);
     return ( res && res_svm );

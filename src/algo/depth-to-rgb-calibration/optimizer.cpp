@@ -1269,19 +1269,19 @@ svm_model_gaussian::svm_model_gaussian()
 }
 void params::set_depth_resolution( size_t width, size_t height )
 {
-    AC_LOG( DEBUG, "... depth resolution= " << width << "x" << height );
+    AC_LOG( DEBUG, "    depth resolution= " << width << "x" << height );
     // Some parameters are resolution-dependent
     bool const XGA = (width == 1024 && height == 768);
     if( XGA )
     {
-        AC_LOG( DEBUG, "... changing IR threshold: " << grad_ir_threshold << " -> " << 2.5 << "  (because of resolution)" );
+        AC_LOG( DEBUG, "    changing IR threshold: " << grad_ir_threshold << " -> " << 2.5 << "  (because of resolution)" );
         grad_ir_threshold = 2.5;
     }
 }
 
 void params::set_rgb_resolution( size_t width, size_t height )
 {
-    AC_LOG( DEBUG, "... RGB resolution= " << width << "x" << height );
+    AC_LOG( DEBUG, "    RGB resolution= " << width << "x" << height );
 }
 
 calib const & optimizer::get_calibration() const
@@ -1394,7 +1394,7 @@ void write_matlab_camera_params_file(
 void optimizer::write_data_to( std::string const & dir )
 {
     // NOTE: it is expected that dir ends with a path separator or this won't work!
-    AC_LOG( DEBUG, "... writing data to: " << dir );
+    AC_LOG( DEBUG, "    writing data to: " << dir );
     
     try
     {
@@ -1474,7 +1474,7 @@ optimization_params optimizer::back_tracking_line_search( optimization_params co
            && abs( step_size ) > _params.min_step_size
            && iter_count++ < _params.max_back_track_iters )
     {
-        AC_LOG( DEBUG, "    back tracking line search cost= " << AC_D_PREC << new_params.cost );
+        //AC_LOG( DEBUG, "    back tracking line search cost= " << AC_D_PREC << new_params.cost );
         step_size = _params.tau * step_size;
 
         new_params.curr_p_mat = curr_params.curr_p_mat + unit_grad * step_size;

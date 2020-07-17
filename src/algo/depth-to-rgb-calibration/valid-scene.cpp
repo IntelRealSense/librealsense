@@ -334,7 +334,7 @@ bool optimizer::is_edge_distributed(z_frame_data& z, yuy2_frame_data& yuy)
     size_t num_of_sections = _params.num_of_sections_for_edge_distribution_x * _params.num_of_sections_for_edge_distribution_y;
 
     // depth frame
-    AC_LOG(DEBUG, "... checking Z edge distribution");
+    AC_LOG(DEBUG, "    checking Z edge distribution");
     sum_per_section(z.sum_weights_per_section, z.section_map, z.weights, num_of_sections);
     //for debug 
     auto it = z.sum_weights_per_section.begin();
@@ -344,7 +344,7 @@ bool optimizer::is_edge_distributed(z_frame_data& z, yuy2_frame_data& yuy)
     AC_LOG(DEBUG, "    sum_per_section(z), section #3  " << *(it + 3));
     check_edge_distribution(z.sum_weights_per_section, z.min_max_ratio, z.is_edge_distributed);
     // yuy frame
-    AC_LOG(DEBUG, "... checking YUY edge distribution");
+    AC_LOG(DEBUG, "    checking YUY edge distribution");
     sum_per_section(yuy.sum_weights_per_section, yuy.section_map, yuy.edges_IDT, num_of_sections);
     //for debug 
     it = yuy.sum_weights_per_section.begin();
@@ -432,14 +432,14 @@ static bool is_grad_dir_balanced( std::vector< double > const & weights,
         if( perp_ratio > _params.grad_dir_ratio_prep )
         {
             AC_LOG( DEBUG,
-                    "... gradient direction is not balanced : " << dir_ratio1 << "; threshold is: "
+                    "    gradient direction is not balanced : " << dir_ratio1 << "; threshold is: "
                                                                 << _params.grad_dir_ratio );
             return false;
         }
         if( min_val_perp < 1e-3 )  // % Don't devide by zero...
         {
             AC_LOG( DEBUG,
-                    "... gradient direction is not balanced : " << dir_ratio1 << "; threshold is: "
+                    "    gradient direction is not balanced : " << dir_ratio1 << "; threshold is: "
                                                                 << _params.grad_dir_ratio );
             return false;
         }
@@ -450,7 +450,7 @@ static bool is_grad_dir_balanced( std::vector< double > const & weights,
         if( dir_ratio2 > _params.grad_dir_ratio )
         {
             AC_LOG( DEBUG,
-                    "... gradient direction is not balanced : " << dir_ratio1 << "; threshold is: "
+                    "    gradient direction is not balanced : " << dir_ratio1 << "; threshold is: "
                                                                 << _params.grad_dir_ratio );
             return false;
         }
@@ -646,7 +646,7 @@ bool optimizer::is_scene_valid(input_validity_data* data)
     section_per_pixel(_yuy, section_w, section_h, section_map_rgb.data());
 
     // remove pixels in section map that were removed in weights
-    AC_LOG(DEBUG, "... " << _z.supressed_edges.size() << " total edges");
+    AC_LOG(DEBUG, "    " << _z.supressed_edges.size() << " total edges");
     for (auto i = 0; i < _z.supressed_edges.size(); i++)
     {
         if (_z.supressed_edges[i])
@@ -655,11 +655,11 @@ bool optimizer::is_scene_valid(input_validity_data* data)
         }
     }
     _z.section_map = _z.section_map_depth_inside; // NOHA :: taken from preprocessDepth
-    AC_LOG(DEBUG, "... " << _z.section_map.size() << " not suppressed");
+    AC_LOG(DEBUG, "    " << _z.section_map.size() << " not suppressed");
 
     // remove pixels in section map where edges_IDT > 0
     int i = 0;
-    AC_LOG(DEBUG, "... " << _z.supressed_edges.size() << " total edges IDT");
+    AC_LOG(DEBUG, "    " << _z.supressed_edges.size() << " total edges IDT");
 
     for (auto it = _yuy.edges_IDT.begin(); it != _yuy.edges_IDT.end(); ++it, ++i)
     {
@@ -668,7 +668,7 @@ bool optimizer::is_scene_valid(input_validity_data* data)
             _yuy.section_map.push_back(section_map_rgb[i]);
         }
     }
-    AC_LOG(DEBUG, "... " << _yuy.section_map.size() << " not suppressed");
+    AC_LOG(DEBUG, "    " << _yuy.section_map.size() << " not suppressed");
 
     bool res_movement = is_movement_in_images(_yuy);
     bool res_edges = is_edge_distributed(_z, _yuy);

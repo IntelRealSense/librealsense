@@ -36,7 +36,7 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     , _to( yuy.get_profile().get()->profile)
     , _should_continue(should_continue)
 {
-    AC_LOG( DEBUG, "... setting yuy data" );
+    AC_LOG( DEBUG, "Setting YUY data" );
     auto color_profile = yuy.get_profile().as< rs2::video_stream_profile >();
     auto yuy_data = (impl::yuy_t const *) yuy.get_data();
     auto prev_yuy_data = (impl::yuy_t const *) prev_yuy.get_data();
@@ -50,7 +50,7 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
         calibration
     );
 
-    AC_LOG( DEBUG, "... setting ir data" );
+    AC_LOG( DEBUG, "Setting IR data" );
     auto ir_profile = ir.get_profile().as< rs2::video_stream_profile >();
     auto ir_data = (impl::ir_t const *) ir.get_data();
 
@@ -72,7 +72,7 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     }
     _dsm_params = cs->get_dsm_params();
 
-    AC_LOG( DEBUG, "... setting z data" );
+    AC_LOG( DEBUG, "Setting Z data" );
     auto z_profile = depth.get_profile().as< rs2::video_stream_profile >();
     auto z_data = (impl::z_t const *) depth.get_data();
 
@@ -117,7 +117,7 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
 
     try
     {
-        AC_LOG( DEBUG, "... checking scene validity" );
+        AC_LOG( DEBUG, "Checking scene validity" );
         if( !_algo.is_scene_valid() )
         {
             AC_LOG( ERROR, "Calibration scene was found invalid!" );
@@ -140,14 +140,13 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
         CHECK_IF_NEEDS_TO_STOP();
 
 
-        AC_LOG( DEBUG, "... optimizing" );
+        AC_LOG( DEBUG, "Optimizing" );
 
-        _algo.optimize([&](impl::data_collect const &data)
-        {
-            CHECK_IF_NEEDS_TO_STOP();
-        });
+        _algo.optimize(
+            [&]( impl::data_collect const & data ) { CHECK_IF_NEEDS_TO_STOP(); }
+        );
 
-        AC_LOG( DEBUG, "... checking result validity" );
+        AC_LOG( DEBUG, "Checking result validity" );
         if( !_algo.is_valid_results() )
         {
             // Error would have printed inside
@@ -172,7 +171,7 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
         // AC_LOG( INFO, "Calibration finished; original cost= " << original_cost << "  optimized
         // cost= " << params_curr.cost );
 
-        AC_LOG( DEBUG, "... optimization successful!" );
+        AC_LOG( DEBUG, "Optimization successful!" );
         _intr = _algo.get_calibration().get_intrinsics();
         _intr.model = RS2_DISTORTION_INVERSE_BROWN_CONRADY; //restore LRS model 
         _extr = from_raw_extrinsics( _algo.get_calibration().get_extrinsics() );
@@ -190,8 +189,8 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
 
 void depth_to_rgb_calibration::debug_calibration( char const * prefix )
 {
-    AC_LOG( DEBUG, AC_F_PREC << prefix << _intr );
-    AC_LOG( DEBUG, AC_F_PREC << prefix << " extr" << _extr );
-    AC_LOG( DEBUG, AC_F_PREC << prefix << " dsm" << _dsm_params );
+    AC_LOG( DEBUG, AC_F_PREC << "    " << prefix << " intr" << _intr );
+    AC_LOG( DEBUG, AC_F_PREC << "    " << prefix << " extr" << _extr );
+    AC_LOG( DEBUG, AC_F_PREC << "    " << prefix << "  dsm" << _dsm_params );
 }
 
