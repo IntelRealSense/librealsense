@@ -287,7 +287,7 @@ namespace librealsense
         else
         {
             auto const & ts = *( reinterpret_cast<temperatures *>( res.data() ) );
-            table.params.temp_x2 = byte( ts.LDD_temperature * 2 );
+            table.params.temp_x2 = byte( ts.HUM_temperature * 2 );
         }
 
         AC_LOG( INFO, "Overriding DSM : " << table.params );
