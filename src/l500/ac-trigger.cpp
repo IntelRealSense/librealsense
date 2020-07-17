@@ -466,7 +466,6 @@ namespace ivcam2 {
         try
         {
             check_conditions();
-            throw invalid_value_exception( "TODO" );
         }
         catch( invalid_value_exception const & )
         {
