@@ -1606,7 +1606,7 @@ void optimizer::adjust_params_to_apd_gain()
     else if(_settings.ambient == RS2_AMBIENT_LIGHT_LOW_AMBIENT) // short preset
         _params.saturation_value = 250;
     else
-        throw std::runtime_error("invalid apd_gain value: " + _settings.ambient);
+        throw std::runtime_error( to_string() <<_settings.ambient <<" invalid ambient value");
 }
 
 void optimizer::adjust_params_to_manual_mode()
@@ -1618,7 +1618,7 @@ void optimizer::adjust_params_to_manual_mode()
     _params.edges_per_direction_ratio_th = 0;
     _params.minimal_full_directions = 0;
 
-    const static int newvals[N_BASIC_DIRECTIONS] = { 0, 0, 0, 0 };
+    const static double newvals[N_BASIC_DIRECTIONS] = { 0, 0, 0, 0 };
     std::copy(std::begin(newvals), std::end(newvals), std::begin(_params.dir_std_th));
     _params.saturation_ratio_th = 1;
     _params.saturation_value = 256;
@@ -1633,7 +1633,7 @@ void optimizer::adjust_params_to_auto_mode()
     _params.edges_per_direction_ratio_th = 0.004;
     _params.minimal_full_directions = 2;
 
-    const static int newvals[N_BASIC_DIRECTIONS] = { 0.09,0.09,0.09,0.09 };
+    const static double newvals[N_BASIC_DIRECTIONS] = { 0.09,0.09,0.09,0.09 };
     std::copy(std::begin(newvals), std::end(newvals), std::begin(_params.dir_std_th));
     _params.saturation_ratio_th = 0.05;
     adjust_params_to_apd_gain();
