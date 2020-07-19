@@ -10,6 +10,8 @@
 #include <vector>
 #include <algorithm>
 #include <iterator>
+#include <sstream>
+#include <iostream>
 
 #include "metadata-helper.h"
 
@@ -49,5 +51,16 @@ int CALLBACK WinMain(
     std::vector<const char*> argc;
     std::transform(args.begin(), args.end(), std::back_inserter(argc), [](const std::string& s) { return s.c_str(); });
 
-    return main(static_cast<int>(argc.size()), argc.data());
+    std::stringstream ss;
+    std::cerr.rdbuf(ss.rdbuf());
+
+    auto res = main(static_cast<int>(argc.size()), argc.data());
+    if (res == EXIT_FAILURE)
+    {
+        auto error = ss.str();
+        std::wstring ws(error.begin(), error.end());
+        MessageBox(NULL, ws.c_str(), L"Something went wrong...", MB_ICONERROR | MB_OK);
+    }
+
+    return res;
 }
