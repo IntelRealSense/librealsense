@@ -687,8 +687,7 @@ bool optimizer::is_scene_valid(input_validity_data* data)
     //return((!res_movement) && res_edges && res_gradient);
 
     auto valid = !res_movement;
-    if( ! _settings.is_manual_trigger )
-        valid = valid && input_validity_checks(data);
+    valid = valid && input_validity_checks(data);
         
     return(valid);
 }

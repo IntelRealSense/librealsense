@@ -122,13 +122,13 @@ namespace
 optimizer::optimizer( settings const & s )
     : _settings( s )
 {
-    if (manual_trigger)
+    if (_settings.is_manual_trigger)
     {
         adjust_params_to_manual_mode();
     }
     else
     {
-        adjust_params_to_apd_gain(apd_gain);
+        adjust_params_to_apd_gain(_settings.ambient);
     }
 }
 
@@ -1565,7 +1565,7 @@ void optimizer::set_cycle_data(const std::vector<double3>& vertices,
 
 void optimizer::enhanced_preprocessing()
 {
-    if (_apd_gain == 0 || _apd_gain == 9)
+    if (_settings.ambient == RS2_AMBIENT_LIGHT_NO_AMBIENT)
     {
         if (_z.width == 640 && _z.height == 480)
         {
@@ -1601,14 +1601,14 @@ void optimizer::enhanced_preprocessing()
     }
 }
 
-void optimizer::adjust_params_to_apd_gain(int apd_gain)
+void optimizer::adjust_params_to_apd_gain(rs2_ambient_light ambient)
 {
-    if(apd_gain == 0 || apd_gain == 9) // long preset
+    if(ambient == RS2_AMBIENT_LIGHT_NO_AMBIENT) // long preset
         _params.saturation_value = 230;
-    else if(apd_gain == 18) // short preset
+    else if(ambient == RS2_AMBIENT_LIGHT_LOW_AMBIENT) // short preset
         _params.saturation_value = 250;
     else
-        throw std::runtime_error("invalid apd_gain value: " + apd_gain);
+        throw std::runtime_error("invalid apd_gain value: " + ambient);
 }
 
 void optimizer::adjust_params_to_manual_mode()

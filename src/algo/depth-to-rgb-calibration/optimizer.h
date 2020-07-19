@@ -273,6 +273,7 @@ namespace depth_to_rgb_calibration {
     class optimizer
     {
     public:
+#pragma pack(push, 1)
         struct settings
         {
             bool is_manual_trigger = false;
@@ -280,6 +281,7 @@ namespace depth_to_rgb_calibration {
             rs2_ambient_light ambient = RS2_AMBIENT_LIGHT_NO_AMBIENT;
             int receiver_gain = 0;  // aka APD
         };
+#pragma pack(pop)
 
         optimizer( settings const & );
 
@@ -350,7 +352,7 @@ namespace depth_to_rgb_calibration {
     private:
 
         void adjust_params_to_manual_mode();
-        void adjust_params_to_apd_gain(int apd_gain);
+        void adjust_params_to_apd_gain(rs2_ambient_light ambient);
         void enhanced_preprocessing();
 
         // 1 cycle of optimization
