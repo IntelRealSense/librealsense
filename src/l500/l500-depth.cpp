@@ -395,6 +395,7 @@ namespace librealsense
 
     void l500_depth_sensor::start(frame_callback_ptr callback)
     {
+        // The delay is here as a work around to a firmware bug [RS5-5453]
         _action_delayer.do_after_delay( [&]() {
             if( _depth_invalidation_enabled )
                 synthetic_sensor::start(
@@ -411,6 +412,7 @@ namespace librealsense
 
     void l500_depth_sensor::stop()
     {
+    // The delay is here as a work around to a firmware bug [RS5-5453]
         _action_delayer.do_after_delay([&]() {
             synthetic_sensor::stop();
             _depth_invalidation_option->set_streaming(false);
