@@ -383,18 +383,35 @@ std::vector<double> sum_gradient_depth(std::vector<double> &gradient, std::vecto
 std::vector< byte > find_valid_depth_edges( std::vector< double > const & grad_in_direction,
                                             std::vector< byte > const & is_supressed,
                                             std::vector< double > const & values_for_subedges,
-                                            int const gradZTh )
+                                            std::vector< double > const & ir_local_edges,
+                                            const params & p )
 {
     std::vector< byte > res;
     res.reserve( grad_in_direction.size() );
     //%validEdgePixels = zGradInDirection > params.gradZTh & isSupressed & zValuesForSubEdges > 0;
-    for (int i = 0; i < grad_in_direction.size(); i++)
+    if (p.use_enhanced_preprocessing)
     {
-        bool cond1 = grad_in_direction[i] > gradZTh;
-        bool cond2 = is_supressed[i];
-        bool cond3 = values_for_subedges[i] > 0;
-        res.push_back( cond1 && cond2 && cond3 );
+        for (int i = 0; i < grad_in_direction.size(); i++)
+        {
+            bool cond1 = (grad_in_direction[i] > p.grad_z_low_th  && ir_local_edges[i * 4 + 2] > p.grad_ir_high_th) ||
+                         (grad_in_direction[i] > p.grad_z_high_th && ir_local_edges[i * 4 + 2] > p.grad_ir_low_th);
+
+            bool cond2 = is_supressed[i];
+            bool cond3 = values_for_subedges[i] > 0;
+            res.push_back(cond1 && cond2 && cond3);
+        }
     }
+    else
+    {
+        for (int i = 0; i < grad_in_direction.size(); i++)
+        {
+            bool cond1 = grad_in_direction[i] > p.grad_z_threshold;
+            bool cond2 = is_supressed[i];
+            bool cond3 = values_for_subedges[i] > 0;
+            res.push_back(cond1 && cond2 && cond3);
+        }
+    }
+   
     return res;
 }
 
@@ -434,6 +451,8 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     _z.orig_dsm_params = dsm_params;
     _z.depth_units = depth_units;
 
+    enhanced_preprocessing();
+
     _z.frame = std::move(depth_data);
 
     _z.gradient_x = calc_vertical_gradient(_z.frame, depth_intrinsics.width, depth_intrinsics.height);
@@ -450,8 +469,18 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     _z.edges = calc_intensity(_z.gradient_x, _z.gradient_y);
     _ir.edges = calc_intensity(_ir.gradient_x, _ir.gradient_y);
 
-    for( auto it = _ir.edges.begin(); it < _ir.edges.end(); it++ )
-        _ir.valid_edge_pixels_by_ir.push_back( *it > _params.grad_ir_threshold );
+    for (auto ir = _ir.edges.begin(), z = _z.edges.begin(); ir < _ir.edges.end() && z < _z.edges.end(); ir++, z++)
+    {
+        auto valid_edge = true;
+        if (_params.use_enhanced_preprocessing)
+        {
+            _ir.valid_edge_pixels_by_ir.push_back((*ir > _params.grad_ir_high_th && *z > _params.grad_z_low_th)
+                || (*ir > _params.grad_ir_low_th && *z > _params.grad_z_high_th));
+        }
+        else
+            _ir.valid_edge_pixels_by_ir.push_back(*ir > _params.grad_ir_threshold);
+    }
+        
 
     /*sz = size(frame.i);
     [gridX,gridY] = meshgrid(1:sz(2),1:sz(1)); % gridX/Y contains the indices of the pixels
@@ -624,7 +653,8 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     _z.supressed_edges = find_valid_depth_edges( _z.grad_in_direction,
                                                  _ir.is_supressed,
                                                  _z.values_for_subedges,
-                                                 _params.grad_z_threshold );
+                                                 _ir.local_edges,
+                                                 _params);
     std::vector<double> valid_values_for_subedges;
 
 
@@ -1531,6 +1561,44 @@ void optimizer::set_cycle_data(const std::vector<double3>& vertices,
     _p_mat_from_bin = p_mat;
     _dsm_regs_cand_from_bin = dsm_regs_cand;
     _dsm_params_cand_from_bin = dsm_params_cand;
+}
+
+void optimizer::enhanced_preprocessing()
+{
+    if (_apd_gain == 0 || _apd_gain == 9)
+    {
+        if (_z.width == 640 && _z.height == 480)
+        {
+            _params.grad_ir_low_th = 1.5;
+            _params.grad_ir_high_th = 3.5;
+            _params.grad_z_low_th = 0;
+            _params.grad_z_high_th = 100;
+        }
+        else if (_z.width == 1024 && _z.height == 768)
+        {
+            _params.grad_ir_low_th = 1;
+            _params.grad_ir_high_th = 2.5;
+            _params.grad_z_low_th = 0;
+            _params.grad_z_high_th = 80;
+        }
+    }
+    else
+    {
+        if (_z.width == 640 && _z.height == 480)
+        {
+            _params.grad_ir_low_th = std::numeric_limits<double>::max();
+            _params.grad_ir_high_th = 3.5;
+            _params.grad_z_low_th = 0;
+            _params.grad_z_high_th = std::numeric_limits<double>::max();
+        }
+        else if (_z.width == 1024 && _z.height == 768)
+        {
+            _params.grad_ir_low_th = std::numeric_limits<double>::max();
+            _params.grad_ir_high_th = 2.5;
+            _params.grad_z_low_th = 0;
+            _params.grad_z_high_th = std::numeric_limits<double>::max();
+        }
+    }
 }
 
 void optimizer::adjust_params_to_apd_gain(int apd_gain)

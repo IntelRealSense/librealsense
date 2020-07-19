@@ -41,6 +41,12 @@ namespace depth_to_rgb_calibration {
         double grad_z_max = 1000;
         double edge_thresh4_logic_lum = 0.1;
 
+        // enhanced preprocessing params
+        double grad_ir_low_th = std::numeric_limits<double>::max();
+        double grad_ir_high_th = 2.5;
+        double grad_z_low_th = 0;
+        double grad_z_high_th = std::numeric_limits<double>::max();
+
         double max_step_size = 1;
         double min_step_size = 0.00001;
         double control_param = 0.5;
@@ -86,6 +92,8 @@ namespace depth_to_rgb_calibration {
         double pix_per_section_rgb_th = 0.01;
         double pix_per_section_depth_th = 0.01;
         int min_section_with_enough_edges = 2;
+
+        bool use_enhanced_preprocessing = true;
     };
     // svm
     struct decision_params
@@ -343,6 +351,7 @@ namespace depth_to_rgb_calibration {
 
         void adjust_params_to_manual_mode();
         void adjust_params_to_apd_gain(int apd_gain);
+        void enhanced_preprocessing();
 
         // 1 cycle of optimization
         size_t optimize_p(const optimization_params& params_curr,
