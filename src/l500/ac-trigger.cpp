@@ -516,9 +516,11 @@ namespace ivcam2 {
 
             color_sensor->start_stream_for_calibration({ rgb_profile });
            
+            // Check if the user started the color streaming, if the user opened the sensor and did not start it,
+            // The calibration process will not work, We continue assuming that the user will start streaming.
             if(false == color_sensor->is_streaming())
             {
-                AC_LOG(DEBUG, "Color sensor was opened by the user, calibration will wait for the stream to start.");
+                AC_LOG(WARNING, "Color sensor was opened by the user, calibration will wait for the stream to start.");
             }
         }
         catch (std::exception const & e)
