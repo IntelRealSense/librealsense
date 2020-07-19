@@ -122,6 +122,14 @@ namespace
 optimizer::optimizer( settings const & s )
     : _settings( s )
 {
+    if (_settings.is_manual_trigger)
+    {
+        adjust_params_to_manual_mode();
+    }
+    else
+    {
+        adjust_params_to_auto_mode();
+    }
 }
 
 static std::vector< double > get_direction_deg(
@@ -375,18 +383,35 @@ std::vector<double> sum_gradient_depth(std::vector<double> &gradient, std::vecto
 std::vector< byte > find_valid_depth_edges( std::vector< double > const & grad_in_direction,
                                             std::vector< byte > const & is_supressed,
                                             std::vector< double > const & values_for_subedges,
-                                            int const gradZTh )
+                                            std::vector< double > const & ir_local_edges,
+                                            const params & p )
 {
     std::vector< byte > res;
     res.reserve( grad_in_direction.size() );
     //%validEdgePixels = zGradInDirection > params.gradZTh & isSupressed & zValuesForSubEdges > 0;
-    for (int i = 0; i < grad_in_direction.size(); i++)
+    if (p.use_enhanced_preprocessing)
     {
-        bool cond1 = grad_in_direction[i] > gradZTh;
-        bool cond2 = is_supressed[i];
-        bool cond3 = values_for_subedges[i] > 0;
-        res.push_back( cond1 && cond2 && cond3 );
+        for (int i = 0; i < grad_in_direction.size(); i++)
+        {
+            bool cond1 = (grad_in_direction[i] > p.grad_z_low_th  && ir_local_edges[i * 4 + 2] > p.grad_ir_high_th) ||
+                         (grad_in_direction[i] > p.grad_z_high_th && ir_local_edges[i * 4 + 2] > p.grad_ir_low_th);
+
+            bool cond2 = is_supressed[i];
+            bool cond3 = values_for_subedges[i] > 0;
+            res.push_back(cond1 && cond2 && cond3);
+        }
     }
+    else
+    {
+        for (int i = 0; i < grad_in_direction.size(); i++)
+        {
+            bool cond1 = grad_in_direction[i] > p.grad_z_threshold;
+            bool cond2 = is_supressed[i];
+            bool cond3 = values_for_subedges[i] > 0;
+            res.push_back(cond1 && cond2 && cond3);
+        }
+    }
+   
     return res;
 }
 
@@ -419,7 +444,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     /*[zEdge,Zx,Zy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.z),2); % Added the second input - margin to zero out
     [iEdge,Ix,Iy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.i),2); % Added the second input - margin to zero out
     validEdgePixelsByIR = iEdge>params.gradITh; */
-    _params.set_depth_resolution(depth_intrinsics.width, depth_intrinsics.height);
+    _params.set_depth_resolution(depth_intrinsics.width, depth_intrinsics.height, _settings.ambient);
     _z.width = depth_intrinsics.width;
     _z.height = depth_intrinsics.height;
     _z.orig_intrinsics = depth_intrinsics;
@@ -442,8 +467,18 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     _z.edges = calc_intensity(_z.gradient_x, _z.gradient_y);
     _ir.edges = calc_intensity(_ir.gradient_x, _ir.gradient_y);
 
-    for( auto it = _ir.edges.begin(); it < _ir.edges.end(); it++ )
-        _ir.valid_edge_pixels_by_ir.push_back( *it > _params.grad_ir_threshold );
+    for (auto ir = _ir.edges.begin(), z = _z.edges.begin(); ir < _ir.edges.end() && z < _z.edges.end(); ir++, z++)
+    {
+        auto valid_edge = true;
+        if (_params.use_enhanced_preprocessing)
+        {
+            _ir.valid_edge_pixels_by_ir.push_back((*ir > _params.grad_ir_high_th && *z > _params.grad_z_low_th)
+                || (*ir > _params.grad_ir_low_th && *z > _params.grad_z_high_th));
+        }
+        else
+            _ir.valid_edge_pixels_by_ir.push_back(*ir > _params.grad_ir_threshold);
+    }
+        
 
     /*sz = size(frame.i);
     [gridX,gridY] = meshgrid(1:sz(2),1:sz(1)); % gridX/Y contains the indices of the pixels
@@ -616,7 +651,8 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     _z.supressed_edges = find_valid_depth_edges( _z.grad_in_direction,
                                                  _ir.is_supressed,
                                                  _z.values_for_subedges,
-                                                 _params.grad_z_threshold );
+                                                 _ir.local_edges,
+                                                 _params);
     std::vector<double> valid_values_for_subedges;
 
 
@@ -1267,15 +1303,53 @@ svm_model_linear::svm_model_linear()
 svm_model_gaussian::svm_model_gaussian()
 {
 }
-void params::set_depth_resolution( size_t width, size_t height )
+void params::set_depth_resolution( size_t width, size_t height, rs2_ambient_light ambient)
 {
     AC_LOG( DEBUG, "    depth resolution= " << width << "x" << height );
     // Some parameters are resolution-dependent
     bool const XGA = (width == 1024 && height == 768);
+    bool const VGA = (width == 640 && height == 480);
     if( XGA )
     {
         AC_LOG( DEBUG, "    changing IR threshold: " << grad_ir_threshold << " -> " << 2.5 << "  (because of resolution)" );
         grad_ir_threshold = 2.5;
+    }
+    if (use_enhanced_preprocessing)
+    {
+        if (ambient == RS2_AMBIENT_LIGHT_NO_AMBIENT)
+        {
+            if (VGA)
+            {
+                grad_ir_low_th = 1.5;
+                grad_ir_high_th = 3.5;
+                grad_z_low_th = 0;
+                grad_z_high_th = 100;
+            }
+            else if (XGA)
+            {
+                grad_ir_low_th = 1;
+                grad_ir_high_th = 2.5;
+                grad_z_low_th = 0;
+                grad_z_high_th = 80;
+            }
+        }
+        else
+        {
+            if (VGA)
+            {
+                grad_ir_low_th = std::numeric_limits<double>::max();
+                grad_ir_high_th = 3.5;
+                grad_z_low_th = 0;
+                grad_z_high_th = std::numeric_limits<double>::max();
+            }
+            else if (XGA)
+            {
+                grad_ir_low_th = std::numeric_limits<double>::max();
+                grad_ir_high_th = 2.5;
+                grad_z_low_th = 0;
+                grad_z_high_th = std::numeric_limits<double>::max();
+            }
+        }
     }
 }
 
@@ -1523,6 +1597,46 @@ void optimizer::set_cycle_data(const std::vector<double3>& vertices,
     _p_mat_from_bin = p_mat;
     _dsm_regs_cand_from_bin = dsm_regs_cand;
     _dsm_params_cand_from_bin = dsm_params_cand;
+}
+
+void optimizer::adjust_params_to_apd_gain()
+{
+    if(_settings.ambient == RS2_AMBIENT_LIGHT_NO_AMBIENT) // long preset
+        _params.saturation_value = 230;
+    else if(_settings.ambient == RS2_AMBIENT_LIGHT_LOW_AMBIENT) // short preset
+        _params.saturation_value = 250;
+    else
+        throw std::runtime_error( to_string() <<_settings.ambient <<" invalid ambient value");
+}
+
+void optimizer::adjust_params_to_manual_mode()
+{
+    _params.max_global_los_scaling_step = 0.005;
+    _params.pix_per_section_depth_th = 0;
+    _params.pix_per_section_rgb_th = 0;
+    _params.min_section_with_enough_edges = 0;
+    _params.edges_per_direction_ratio_th = 0;
+    _params.minimal_full_directions = 0;
+
+    const static double newvals[N_BASIC_DIRECTIONS] = { 0, 0, 0, 0 };
+    std::copy(std::begin(newvals), std::end(newvals), std::begin(_params.dir_std_th));
+    _params.saturation_ratio_th = 1;
+    _params.saturation_value = 256;
+}
+
+void optimizer::adjust_params_to_auto_mode()
+{
+    _params.max_global_los_scaling_step = 0.004;
+    _params.pix_per_section_depth_th = 0.01;
+    _params.pix_per_section_rgb_th = 0.01;
+    _params.min_section_with_enough_edges = 2;
+    _params.edges_per_direction_ratio_th = 0.004;
+    _params.minimal_full_directions = 2;
+
+    const static double newvals[N_BASIC_DIRECTIONS] = { 0.09,0.09,0.09,0.09 };
+    std::copy(std::begin(newvals), std::end(newvals), std::begin(_params.dir_std_th));
+    _params.saturation_ratio_th = 0.05;
+    adjust_params_to_apd_gain();
 }
 
 size_t optimizer::optimize_p

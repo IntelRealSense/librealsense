@@ -507,13 +507,19 @@ uint8_t dilation_calc(std::vector<T> const& sub_image, std::vector<uint8_t> cons
 }
 void optimizer::images_dilation(yuy2_frame_data& yuy)
 {
-    auto area = yuy.height * yuy.width;
-    std::vector<uint8_t> dilation_mask = { 1, 1, 1,
-                                              1,  1,  1,
-                                              1,  1,  1 };
+    if (_params.dilation_size == 1)
+        yuy.dilated_image = yuy.prev_logic_edges;
+    else
+    {
+        auto area = yuy.height * yuy.width;
+        std::vector<uint8_t> dilation_mask = { 1, 1, 1,
+                                                  1,  1,  1,
+                                                  1,  1,  1 };
 
-    yuy.dilated_image = dilation_convolution<uint8_t>(yuy.prev_logic_edges, yuy.width, yuy.height, _params.dilation_size, _params.dilation_size, [&](std::vector<uint8_t> const& sub_image)
+        yuy.dilated_image = dilation_convolution<uint8_t>(yuy.prev_logic_edges, yuy.width, yuy.height, _params.dilation_size, _params.dilation_size, [&](std::vector<uint8_t> const& sub_image)
         {return dilation_calc(sub_image, dilation_mask); });
+    }
+   
 
 }
 template<class T>
@@ -681,8 +687,7 @@ bool optimizer::is_scene_valid(input_validity_data* data)
     //return((!res_movement) && res_edges && res_gradient);
 
     auto valid = !res_movement;
-    if( ! _settings.is_manual_trigger )
-        valid = valid && input_validity_checks(data);
+    valid = valid && input_validity_checks(data);
         
     return(valid);
 }
@@ -815,10 +820,10 @@ bool check_saturation(const std::vector< ir_t >& ir_frame,
 bool check_edges_spatial_spread(const std::vector<byte>& section_map,
     size_t width,
     size_t height, 
-    const params& p)
+    double th,
+    size_t n_sections,
+    size_t min_section_with_enough_edges)
 {
-    const auto n_sections = p.num_of_sections_for_edge_distribution_x*p.num_of_sections_for_edge_distribution_y;
-
     std::vector<int> num_pix_per_sec(n_sections, 0);
 
     for (auto&&i : section_map)
@@ -831,20 +836,31 @@ bool check_edges_spatial_spread(const std::vector<byte>& section_map,
     for (auto i = 0; i < n_sections; i++)
     {
         num_pix_per_sec_over_area[i] = (double)num_pix_per_sec[i] / (width*height)*n_sections;
-        num_sections_with_enough_edges[i] = num_pix_per_sec_over_area[i] > p.pix_per_section_th;
+        num_sections_with_enough_edges[i] = num_pix_per_sec_over_area[i] > th;
     }
 
     double sum = std::accumulate(num_sections_with_enough_edges.begin(), num_sections_with_enough_edges.end(), 0.0);
 
-    return sum >= p.min_section_with_enough_edges;
+    return sum >= min_section_with_enough_edges;
 }
 
 bool optimizer::input_validity_checks(input_validity_data* data )
 {
     auto dir_spread = check_edges_dir_spread(_z.directions, _z.subpixels_x, _z.subpixels_y, _z.width, _z.height, _params);
     auto not_saturated = check_saturation(_ir.ir_frame, _ir.width, _ir.height, _params);
-    auto depth_spatial_spread = check_edges_spatial_spread(_z.section_map, _z.width, _z.height, _params);
-    auto rgb_spatial_spread = check_edges_spatial_spread(_yuy.section_map, _yuy.width, _yuy.height, _params);
+
+    auto depth_spatial_spread = check_edges_spatial_spread(
+        _z.section_map, _z.width, _z.height, 
+        _params.pix_per_section_depth_th, 
+        _params.num_of_sections_for_edge_distribution_x*_params.num_of_sections_for_edge_distribution_y,
+        _params.min_section_with_enough_edges);
+
+    auto rgb_spatial_spread = check_edges_spatial_spread(
+        _yuy.section_map, 
+        _yuy.width, _yuy.height, 
+        _params.pix_per_section_rgb_th,
+        _params.num_of_sections_for_edge_distribution_x*_params.num_of_sections_for_edge_distribution_y,
+        _params.min_section_with_enough_edges);
 
     if (!depth_spatial_spread)
         AC_LOG(ERROR, "Scene is not valid since there is not enough depth edge spread");

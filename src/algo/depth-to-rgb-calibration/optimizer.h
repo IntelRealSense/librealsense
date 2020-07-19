@@ -30,7 +30,7 @@ namespace depth_to_rgb_calibration {
     {
         params();
 
-        void set_depth_resolution(size_t width, size_t height);
+        void set_depth_resolution(size_t width, size_t height, rs2_ambient_light ambient);
         void set_rgb_resolution(size_t width, size_t height);
 
         double gamma = 0.9;
@@ -40,6 +40,12 @@ namespace depth_to_rgb_calibration {
         double grad_z_min = 25; // Ignore pixels with Z grad of less than this
         double grad_z_max = 1000;
         double edge_thresh4_logic_lum = 0.1;
+
+        // enhanced preprocessing params
+        double grad_ir_low_th = std::numeric_limits<double>::max();
+        double grad_ir_high_th = 2.5;
+        double grad_z_low_th = 0;
+        double grad_z_high_th = std::numeric_limits<double>::max();
 
         double max_step_size = 1;
         double min_step_size = 0.00001;
@@ -57,7 +63,7 @@ namespace depth_to_rgb_calibration {
         double edge_distribution_min_max_ratio = 0.005;
         double grad_dir_ratio = 10;
         double grad_dir_ratio_prep = 1.5;
-        size_t dilation_size = 3;
+        size_t dilation_size = 1;
         double gauss_sigma = 1;
         size_t gause_kernel_size = 5;
         double move_thresh_pix_val = 20;
@@ -74,18 +80,20 @@ namespace depth_to_rgb_calibration {
         double const max_K2DSM_iters = 10;
         // TODO: the following should be 0.2% but was increased to 0.5% to account for
         // manual trigger activation
-        double const max_global_los_scaling_step = 0.005;  // the difference (.5%) between starting and final scale
+        double max_global_los_scaling_step = 0.004;  // the difference (.5%) between starting and final scale
 
-        double const edges_per_direction_ratio_th = 0.0041;
-        double const dir_std_th[N_BASIC_DIRECTIONS] = { 0.126, 0.126, 0.126, 0.126 };
-        int const minimal_full_directions = 2;
-        bool const require_orthogonal_valid_dirs = false;
+        // input validation
+        double edges_per_direction_ratio_th = 0.004;
+        double dir_std_th[N_BASIC_DIRECTIONS] = { 0.09, 0.09, 0.09, 0.09 };
+        int minimal_full_directions = 2;
+        bool require_orthogonal_valid_dirs = false;
+        int saturation_value = 230;
+        double saturation_ratio_th = 0.05;
+        double pix_per_section_rgb_th = 0.01;
+        double pix_per_section_depth_th = 0.01;
+        int min_section_with_enough_edges = 2;
 
-        int const saturation_value = 230;
-        double const saturation_ratio_th = 0.05;
-
-        double const pix_per_section_th = 0.01;
-        int const min_section_with_enough_edges = 2;
+        bool use_enhanced_preprocessing = true;
     };
     // svm
     struct decision_params
@@ -265,6 +273,7 @@ namespace depth_to_rgb_calibration {
     class optimizer
     {
     public:
+#pragma pack(push, 1)
         struct settings
         {
             bool is_manual_trigger = false;
@@ -272,6 +281,7 @@ namespace depth_to_rgb_calibration {
             rs2_ambient_light ambient = RS2_AMBIENT_LIGHT_NO_AMBIENT;
             int receiver_gain = 0;  // aka APD
         };
+#pragma pack(pop)
 
         optimizer( settings const & );
 
@@ -340,6 +350,10 @@ namespace depth_to_rgb_calibration {
             const p_matrix& p_mat,
             const p_matrix& p_mat_opt = p_matrix());
     private:
+
+        void adjust_params_to_manual_mode();
+        void adjust_params_to_auto_mode();
+        void adjust_params_to_apd_gain();
 
         // 1 cycle of optimization
         size_t optimize_p(const optimization_params& params_curr,
