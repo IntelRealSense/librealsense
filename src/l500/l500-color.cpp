@@ -433,7 +433,16 @@ namespace librealsense
         }
         else
         {
-            AC_LOG(DEBUG, "Color sensor is already opened");
+            if( ! is_streaming() )
+            {
+                // This is a corner case that is not covered at the moment: The user opened the sensor
+                // but did not start it.
+                // AC will not work!
+                AC_LOG( WARNING,
+                        "The color sensor was opened but never started by the user; streaming may not work" );
+            }
+            else
+                AC_LOG( DEBUG, "Color sensor is already streaming (" << state_to_string(_state) << ")" );
         }
     }
 
@@ -472,18 +481,14 @@ namespace librealsense
         {
         case sensor_state::CLOSED:
             return "CLOSED";
-            break;
         case sensor_state::OWNED_BY_AUTO_CAL:
             return "OWNED_BY_AUTO_CAL";
-            break;
         case sensor_state::OWNED_BY_USER:
             return "OWNED_BY_USER";
-            break;
         default:
             LOG_DEBUG("Invalid color sensor state: " << static_cast<int>(state));
-            break;
+            return "Unknown state";
         }
-        return "Unknown state";
     }
 
 

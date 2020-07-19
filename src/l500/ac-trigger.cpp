@@ -506,8 +506,6 @@ namespace ivcam2 {
                 return;
             }
 
-
-
             auto & depth_sensor = _dev.get_depth_sensor();
             auto rgb_profile = depth_sensor.is_color_sensor_needed();
             if (!rgb_profile)
@@ -516,12 +514,6 @@ namespace ivcam2 {
 
             color_sensor->start_stream_for_calibration({ rgb_profile });
            
-            // Check if the user started the color streaming, if the user opened the sensor and did not start it,
-            // The calibration process will not work, We continue assuming that the user will start streaming.
-            if(false == color_sensor->is_streaming())
-            {
-                AC_LOG(WARNING, "Color sensor was opened by the user, calibration will wait for the stream to start.");
-            }
         }
         catch (std::exception const & e)
         {
