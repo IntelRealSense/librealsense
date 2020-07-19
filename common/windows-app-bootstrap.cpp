@@ -17,6 +17,7 @@
 #include "os.h"
 #include "metadata-helper.h"
 #include "rendering.h"
+#include <delayimp.h>
 
 // Use OS hook to modify message box behaviour
 // This lets us implement "report" functionality if Viewer is crashing
@@ -43,7 +44,7 @@ bool should_intercept(int code)
     return true;
 }
 
-std::string exception_code_to_string(int code)
+std::string exception_code_to_string(int code, struct _EXCEPTION_POINTERS *ep)
 {
     if (code == EXCEPTION_ACCESS_VIOLATION) return "Access Violation!";
     else if (code == EXCEPTION_ARRAY_BOUNDS_EXCEEDED) return "Array out of bounds access error!";
@@ -63,7 +64,13 @@ std::string exception_code_to_string(int code)
     else if (code == EXCEPTION_NONCONTINUABLE_EXCEPTION) return "Noncontinuable exception occured!";
     else if (code == EXCEPTION_PRIV_INSTRUCTION) return "Error due to invalid call to priviledged instruction!";
     else if (code == EXCEPTION_STACK_OVERFLOW) return "Stack overflow error!";
-    else return "Unknown error!";
+    else if (code == VcppException(ERROR_SEVERITY_ERROR, ERROR_MOD_NOT_FOUND)) {
+        auto details = (DelayLoadInfo*)ep->ExceptionRecord->ExceptionInformation[0];
+        std::string dll_name = details->szDll;
+        std::string fname = details->dlp.szProcName;
+        return rs2::to_string() << "Could not find " << dll_name << " library required for " << fname << ".\nMake sure all program dependencies are reachable or download standalone version of the App from our GitHub";
+    }
+    else return rs2::to_string() << "Unknown error (" << code << ")!";
 }
 
 // Show custom error message box with OK and Report options
@@ -100,7 +107,7 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* ep)
     if (should_intercept(code))
     {
         std::string error = "Unhandled exception escaping from a worker thread!\nError type: ";
-        error += exception_code_to_string(code);
+        error += exception_code_to_string(code, ep);
         report_error(error);
     }
 
@@ -114,7 +121,7 @@ int filter(unsigned int code, struct _EXCEPTION_POINTERS *ep)
 {
     if (should_intercept(code))
     {
-        auto error = exception_code_to_string(code);
+        auto error = exception_code_to_string(code, ep);
         std::cerr << "Program terminated due to an unrecoverable SEH exception:\n" << error;
         return EXCEPTION_EXECUTE_HANDLER;
     }
