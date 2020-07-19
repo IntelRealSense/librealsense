@@ -30,7 +30,7 @@ namespace depth_to_rgb_calibration {
     {
         params();
 
-        void set_depth_resolution(size_t width, size_t height);
+        void set_depth_resolution(size_t width, size_t height, rs2_ambient_light ambient);
         void set_rgb_resolution(size_t width, size_t height);
 
         double gamma = 0.9;
@@ -352,8 +352,8 @@ namespace depth_to_rgb_calibration {
     private:
 
         void adjust_params_to_manual_mode();
-        void adjust_params_to_apd_gain(rs2_ambient_light ambient);
-        void enhanced_preprocessing();
+        void adjust_params_to_auto_mode();
+        void adjust_params_to_apd_gain();
 
         // 1 cycle of optimization
         size_t optimize_p(const optimization_params& params_curr,

@@ -128,7 +128,7 @@ optimizer::optimizer( settings const & s )
     }
     else
     {
-        adjust_params_to_apd_gain(_settings.ambient);
+        adjust_params_to_auto_mode();
     }
 }
 
@@ -444,14 +444,12 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     /*[zEdge,Zx,Zy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.z),2); % Added the second input - margin to zero out
     [iEdge,Ix,Iy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.i),2); % Added the second input - margin to zero out
     validEdgePixelsByIR = iEdge>params.gradITh; */
-    _params.set_depth_resolution(depth_intrinsics.width, depth_intrinsics.height);
+    _params.set_depth_resolution(depth_intrinsics.width, depth_intrinsics.height, _settings.ambient);
     _z.width = depth_intrinsics.width;
     _z.height = depth_intrinsics.height;
     _z.orig_intrinsics = depth_intrinsics;
     _z.orig_dsm_params = dsm_params;
     _z.depth_units = depth_units;
-
-    enhanced_preprocessing();
 
     _z.frame = std::move(depth_data);
 
@@ -1305,15 +1303,53 @@ svm_model_linear::svm_model_linear()
 svm_model_gaussian::svm_model_gaussian()
 {
 }
-void params::set_depth_resolution( size_t width, size_t height )
+void params::set_depth_resolution( size_t width, size_t height, rs2_ambient_light ambient)
 {
     AC_LOG( DEBUG, "    depth resolution= " << width << "x" << height );
     // Some parameters are resolution-dependent
     bool const XGA = (width == 1024 && height == 768);
+    bool const VGA = (width == 640 && height == 480);
     if( XGA )
     {
         AC_LOG( DEBUG, "    changing IR threshold: " << grad_ir_threshold << " -> " << 2.5 << "  (because of resolution)" );
         grad_ir_threshold = 2.5;
+    }
+    if (use_enhanced_preprocessing)
+    {
+        if (ambient == RS2_AMBIENT_LIGHT_NO_AMBIENT)
+        {
+            if (VGA)
+            {
+                grad_ir_low_th = 1.5;
+                grad_ir_high_th = 3.5;
+                grad_z_low_th = 0;
+                grad_z_high_th = 100;
+            }
+            else if (XGA)
+            {
+                grad_ir_low_th = 1;
+                grad_ir_high_th = 2.5;
+                grad_z_low_th = 0;
+                grad_z_high_th = 80;
+            }
+        }
+        else
+        {
+            if (VGA)
+            {
+                grad_ir_low_th = std::numeric_limits<double>::max();
+                grad_ir_high_th = 3.5;
+                grad_z_low_th = 0;
+                grad_z_high_th = std::numeric_limits<double>::max();
+            }
+            else if (XGA)
+            {
+                grad_ir_low_th = std::numeric_limits<double>::max();
+                grad_ir_high_th = 2.5;
+                grad_z_low_th = 0;
+                grad_z_high_th = std::numeric_limits<double>::max();
+            }
+        }
     }
 }
 
@@ -1563,52 +1599,14 @@ void optimizer::set_cycle_data(const std::vector<double3>& vertices,
     _dsm_params_cand_from_bin = dsm_params_cand;
 }
 
-void optimizer::enhanced_preprocessing()
+void optimizer::adjust_params_to_apd_gain()
 {
-    if (_settings.ambient == RS2_AMBIENT_LIGHT_NO_AMBIENT)
-    {
-        if (_z.width == 640 && _z.height == 480)
-        {
-            _params.grad_ir_low_th = 1.5;
-            _params.grad_ir_high_th = 3.5;
-            _params.grad_z_low_th = 0;
-            _params.grad_z_high_th = 100;
-        }
-        else if (_z.width == 1024 && _z.height == 768)
-        {
-            _params.grad_ir_low_th = 1;
-            _params.grad_ir_high_th = 2.5;
-            _params.grad_z_low_th = 0;
-            _params.grad_z_high_th = 80;
-        }
-    }
-    else
-    {
-        if (_z.width == 640 && _z.height == 480)
-        {
-            _params.grad_ir_low_th = std::numeric_limits<double>::max();
-            _params.grad_ir_high_th = 3.5;
-            _params.grad_z_low_th = 0;
-            _params.grad_z_high_th = std::numeric_limits<double>::max();
-        }
-        else if (_z.width == 1024 && _z.height == 768)
-        {
-            _params.grad_ir_low_th = std::numeric_limits<double>::max();
-            _params.grad_ir_high_th = 2.5;
-            _params.grad_z_low_th = 0;
-            _params.grad_z_high_th = std::numeric_limits<double>::max();
-        }
-    }
-}
-
-void optimizer::adjust_params_to_apd_gain(rs2_ambient_light ambient)
-{
-    if(ambient == RS2_AMBIENT_LIGHT_NO_AMBIENT) // long preset
+    if(_settings.ambient == RS2_AMBIENT_LIGHT_NO_AMBIENT) // long preset
         _params.saturation_value = 230;
-    else if(ambient == RS2_AMBIENT_LIGHT_LOW_AMBIENT) // short preset
+    else if(_settings.ambient == RS2_AMBIENT_LIGHT_LOW_AMBIENT) // short preset
         _params.saturation_value = 250;
     else
-        throw std::runtime_error("invalid apd_gain value: " + ambient);
+        throw std::runtime_error("invalid apd_gain value: " + _settings.ambient);
 }
 
 void optimizer::adjust_params_to_manual_mode()
@@ -1624,6 +1622,21 @@ void optimizer::adjust_params_to_manual_mode()
     std::copy(std::begin(newvals), std::end(newvals), std::begin(_params.dir_std_th));
     _params.saturation_ratio_th = 1;
     _params.saturation_value = 256;
+}
+
+void optimizer::adjust_params_to_auto_mode()
+{
+    _params.max_global_los_scaling_step = 0.004;
+    _params.pix_per_section_depth_th = 0.01;
+    _params.pix_per_section_rgb_th = 0.01;
+    _params.min_section_with_enough_edges = 2;
+    _params.edges_per_direction_ratio_th = 0.004;
+    _params.minimal_full_directions = 2;
+
+    const static int newvals[N_BASIC_DIRECTIONS] = { 0.09,0.09,0.09,0.09 };
+    std::copy(std::begin(newvals), std::end(newvals), std::begin(_params.dir_std_th));
+    _params.saturation_ratio_th = 0.05;
+    adjust_params_to_apd_gain();
 }
 
 size_t optimizer::optimize_p
