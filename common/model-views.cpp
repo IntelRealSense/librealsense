@@ -3377,9 +3377,13 @@ namespace rs2
         syncer(viewer.syncer),
         _update_readonly_options_timer(std::chrono::seconds(6))
         , _detected_objects(std::make_shared< atomic_objects_in_frame >()),
-        _updates(viewer.updates),
-        _accuracy_health_model(*this, viewer)
+        _updates(viewer.updates)
     {
+        if (dev.is<device_calibration>())
+        {
+            _accuracy_health_model = std::unique_ptr<cah_model>(new cah_model(*this, viewer));
+        }
+
         auto name = get_device_name(dev);
         id = to_string() << name.first << ", " << name.second;
 
@@ -4787,7 +4791,8 @@ namespace rs2
             }
 
 
-            if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && dev.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION))
+            if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && dev.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) &&
+                dev.is<device_calibration>())
             { 
                 auto product_line_str = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
                 if (RS2_PRODUCT_LINE_L500 == parse_product_line(product_line_str))
@@ -4973,12 +4978,18 @@ namespace rs2
 
         if (show_trigger_camera_accuracy_health_popup)
         {
-            show_trigger_camera_accuracy_health_popup = _accuracy_health_model.prompt_trigger_popup(window, error_message);
+            if (_accuracy_health_model)
+            {
+                show_trigger_camera_accuracy_health_popup = _accuracy_health_model->prompt_trigger_popup(window, error_message);
+            }
         }
 
         if (show_reset_camera_accuracy_health_popup)
         {
-            show_reset_camera_accuracy_health_popup = _accuracy_health_model.prompt_reset_popup(window, error_message);
+            if (_accuracy_health_model)
+            {
+                show_reset_camera_accuracy_health_popup = _accuracy_health_model->prompt_reset_popup(window, error_message);
+            }
         }
 
         if (keep_showing_advanced_mode_modal)
