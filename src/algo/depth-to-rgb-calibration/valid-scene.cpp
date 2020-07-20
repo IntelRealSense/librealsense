@@ -505,18 +505,17 @@ uint8_t dilation_calc(std::vector<T> const& sub_image, std::vector<uint8_t> cons
 
     return res;
 }
-void optimizer::images_dilation(yuy2_frame_data& yuy)
+std::vector<uint8_t> optimizer::images_dilation(std::vector<uint8_t> const &logic_edges, size_t width, size_t height)
 {
     if (_params.dilation_size == 1)
-        yuy.dilated_image = yuy.prev_logic_edges;
+       return logic_edges;
     else
     {
-        auto area = yuy.height * yuy.width;
         std::vector<uint8_t> dilation_mask = { 1, 1, 1,
                                                   1,  1,  1,
                                                   1,  1,  1 };
 
-        yuy.dilated_image = dilation_convolution<uint8_t>(yuy.prev_logic_edges, yuy.width, yuy.height, _params.dilation_size, _params.dilation_size, [&](std::vector<uint8_t> const& sub_image)
+        return dilation_convolution<uint8_t>(logic_edges, width, height, _params.dilation_size, _params.dilation_size, [&](std::vector<uint8_t> const& sub_image)
         {return dilation_calc(sub_image, dilation_mask); });
     }
    
@@ -535,9 +534,14 @@ double gaussian_calc(std::vector<T> const& sub_image, std::vector<double> const&
     return res;
 }
 
-void optimizer::gaussian_filter(yuy2_frame_data& yuy)
+void optimizer::gaussian_filter(std::vector<uint8_t> const& lum_frame,
+    std::vector<uint8_t> const& prev_lum_frame,
+    std::vector<double>& yuy_diff, 
+    std::vector<double>& gaussian_filtered_image, 
+    size_t width, size_t height)
 {
-    auto area = yuy.height * yuy.width;
+
+    auto area = height *width;
 
     /* diffIm = abs(im1-im2);
 diffIm = imgaussfilt(im1-im2,params.moveGaussSigma);*/
@@ -549,13 +553,13 @@ diffIm = imgaussfilt(im1-im2,params.moveGaussSigma);*/
         0.0029690167439504968, 0.013306209891013651, 0.021938231279714643, 0.013306209891013651, 0.0029690167439504968
     };
 
-    std::vector<uint8_t>::iterator yuy_iter = yuy.lum_frame.begin();
-    std::vector<uint8_t>::iterator yuy_prev_iter = yuy.prev_lum_frame.begin();
+    auto yuy_iter = lum_frame.begin();
+    auto yuy_prev_iter = prev_lum_frame.begin();
     for (auto i = 0; i < area; i++, yuy_iter++, yuy_prev_iter++)
     {
-        yuy.yuy_diff.push_back((double)(*yuy_prev_iter) - (double)(*yuy_iter)); // used for testing only
+        yuy_diff.push_back((double)(*yuy_prev_iter) - (double)(*yuy_iter)); // used for testing only
     }
-    yuy.gaussian_filtered_image = gauss_convolution<double>(yuy.yuy_diff, yuy.width, yuy.height, _params.gause_kernel_size, _params.gause_kernel_size, [&](std::vector<double> const& sub_image)
+    gaussian_filtered_image = gauss_convolution<double>(yuy_diff, width,height, _params.gause_kernel_size, _params.gause_kernel_size, [&](std::vector<double> const& sub_image)
         {return gaussian_calc(sub_image, gaussian_kernel); });
     return;
 }
@@ -596,7 +600,11 @@ void move_suspected_mask(std::vector< uint8_t >& move_suspect, std::vector< doub
         }
     }
 }
-bool optimizer::is_movement_in_images(yuy2_frame_data& yuy)
+bool optimizer::is_movement_in_images(
+    movement_inputs_for_frame const& prev,
+    movement_inputs_for_frame const& curr,
+    movement_result_data& result_data,
+    size_t width, size_t height)
 {
     /*function [isMovement,movingPixels] = isMovementInImages(im1,im2, params)
 isMovement = false;
@@ -607,9 +615,9 @@ SE = strel('square', params.seSize);
 dilatedIm = imdilate(logicEdges,SE);
 diffIm = imgaussfilt(double(im1)-double(im2),params.moveGaussSigma);
 */
-    yuy.prev_logic_edges = get_logic_edges(yuy.prev_edges);
-    images_dilation(yuy);
-    gaussian_filter(yuy);
+    result_data.logic_edges = get_logic_edges(prev.edges);
+    result_data.dilated_image = images_dilation(result_data.logic_edges, width, height);
+    gaussian_filter( prev.lum_frame, curr.lum_frame, result_data.yuy_diff, result_data.gaussian_filtered_image, width, height);
     /*
 %
 IDiffMasked = abs(diffIm);
@@ -622,12 +630,12 @@ end
 movingPixels = sum(ixMoveSuspect(:));
 disp(['isMovementInImages: # of pixels above threshold ' num2str(sum(ixMoveSuspect(:))) ', allowed #: ' num2str(params.moveThreshPixNum)]);
 end*/
-    yuy.gaussian_diff_masked = yuy.gaussian_filtered_image;
-    abs_values(yuy.gaussian_diff_masked);
-    gaussian_dilation_mask(yuy.gaussian_diff_masked, yuy.dilated_image);
-    move_suspected_mask(yuy.move_suspect, yuy.gaussian_diff_masked, _params.move_thresh_pix_val);
+    result_data.gaussian_diff_masked = result_data.gaussian_filtered_image;
+    abs_values(result_data.gaussian_diff_masked);
+    gaussian_dilation_mask(result_data.gaussian_diff_masked, result_data.dilated_image);
+    move_suspected_mask(result_data.move_suspect, result_data.gaussian_diff_masked, _params.move_thresh_pix_val);
     auto sum_move_suspect = 0;
-    for (auto it = yuy.move_suspect.begin(); it != yuy.move_suspect.end(); ++it)
+    for (auto it = result_data.move_suspect.begin(); it != result_data.move_suspect.end(); ++it)
     {
         sum_move_suspect += *it;
     }
@@ -676,7 +684,12 @@ bool optimizer::is_scene_valid(input_validity_data* data)
     }
     AC_LOG(DEBUG, "    " << _yuy.section_map.size() << " not suppressed");
 
-    bool res_movement = is_movement_in_images(_yuy);
+
+    bool res_movement = is_movement_in_images(
+        { _yuy.prev_edges, _yuy.prev_lum_frame }, 
+        { _yuy.edges, _yuy.lum_frame },
+        _yuy.movement_result, _yuy.width, _yuy.height);
+
     bool res_edges = is_edge_distributed(_z, _yuy);
     bool res_gradient = is_grad_dir_balanced( _z.weights,
                                               _z.directions,
@@ -868,15 +881,28 @@ bool optimizer::input_validity_checks(input_validity_data* data )
     if (!rgb_spatial_spread)
         AC_LOG(ERROR, "Scene is not valid since there is not enough rgb edge spread");
 
+    auto is_movement_from_last_success = true;
+
+    if (!_settings.is_manual_trigger && !_yuy.last_successful_frame.empty())
+    {
+        is_movement_from_last_success = is_movement_in_images(
+            { _yuy.last_successful_edges, _yuy.last_successful_lum_frame },
+            { _yuy.edges, _yuy.lum_frame },
+            _yuy.movement_prev_valid_result, _yuy.width, _yuy.height);
+        
+        if (!is_movement_from_last_success)
+            AC_LOG(ERROR, "Scene is not valid since its didnt changed from last successful scene");
+    }
     if (data)
     {
         data->edges_dir_spread = dir_spread;
         data->not_saturated = not_saturated;
         data->depth_spatial_spread = depth_spatial_spread;
         data->rgb_spatial_spread = rgb_spatial_spread;
+        data->is_movement_from_last_success = is_movement_from_last_success;
     }
 
-    return dir_spread && not_saturated && depth_spatial_spread && rgb_spatial_spread;
+    return dir_spread && not_saturated && depth_spatial_spread && rgb_spatial_spread && is_movement_from_last_success;
 }
 
 
