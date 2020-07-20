@@ -126,8 +126,8 @@ namespace depth_to_rgb_calibration {
 
     struct movement_inputs_for_frame
     {
-        std::vector<double> edges;
-        std::vector<uint8_t> lum_frame;
+        std::vector<double> const& edges;
+        std::vector<uint8_t> const& lum_frame;
     };
 
     struct movement_result_data
