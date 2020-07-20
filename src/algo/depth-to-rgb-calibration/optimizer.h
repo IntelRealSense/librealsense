@@ -288,7 +288,7 @@ namespace depth_to_rgb_calibration {
 
         void set_yuy_data( std::vector< yuy_t > && yuy_data, 
             std::vector< yuy_t > && prev_yuy_data,
-            std::vector< yuy_t > && prev_valid_yuy_data,
+            std::vector< yuy_t > && last_successful_yuy_data,
             calib const & calibration);
 
         void set_ir_data( std::vector< ir_t > && ir_data, size_t width, size_t height );
@@ -397,8 +397,8 @@ namespace depth_to_rgb_calibration {
         void check_edge_distribution(std::vector<double>& sum_weights_per_section, double& min_max_ratio, bool& is_edge_distributed);
         void sum_per_section(std::vector< double >& sum_weights_per_section, std::vector< byte > const& section_map, std::vector< double > const& weights, size_t num_of_sections);
         std::vector<uint8_t> images_dilation(std::vector<uint8_t> const &logic_edges, size_t width, size_t height);
-        void gaussian_filter(std::vector<uint8_t> lum_frame,
-            std::vector<uint8_t> prev_lum_frame,
+        void gaussian_filter(std::vector<uint8_t> const& lum_frame,
+            std::vector<uint8_t> const& prev_lum_frame,
             std::vector<double>& yuy_diff,
             std::vector<double>& gaussian_filtered_image,
             size_t width, size_t height);

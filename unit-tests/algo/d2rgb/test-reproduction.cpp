@@ -124,7 +124,7 @@ int main( int argc, char * argv[] )
             }
 
             algo::optimizer cal( settings );
-            init_algo( cal, dir, "\\rgb.raw", "\\rgb_prev.raw", "\\last_successful_frame.raw", "\\ir.raw", "\\depth.raw", camera );
+            init_algo( cal, dir, "\\rgb.raw", "\\rgb_prev.raw", "\\rgb_last_successful.raw", "\\ir.raw", "\\depth.raw", camera );
 
             std::string status;
 

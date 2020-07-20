@@ -805,7 +805,7 @@ void optimizer::set_yuy_data(
     _yuy.orig_frame = std::move( yuy_data );
     _yuy.prev_frame = std::move( prev_yuy_data );
 
-    if (last_successful_yuy_data.size() == 0)
+    if (last_successful_yuy_data.empty())
         last_successful_yuy_data.resize(_yuy.orig_frame.size(), 0);
     _yuy.last_successful_frame = std::move(last_successful_yuy_data);
 
@@ -1482,7 +1482,7 @@ void optimizer::write_data_to( std::string const & dir )
     {
         write_vector_to_file( _yuy.orig_frame, dir, "rgb.raw" );
         write_vector_to_file( _yuy.prev_frame, dir, "rgb_prev.raw" );
-        write_vector_to_file( _yuy.last_successful_frame, dir, "last_successful_frame.raw");
+        write_vector_to_file( _yuy.last_successful_frame, dir, "rgb_last_successful.raw");
         write_vector_to_file( _ir.ir_frame, dir, "ir.raw" );
         write_vector_to_file( _z.frame, dir, "depth.raw" );
 

@@ -534,8 +534,8 @@ double gaussian_calc(std::vector<T> const& sub_image, std::vector<double> const&
     return res;
 }
 
-void optimizer::gaussian_filter(std::vector<uint8_t> lum_frame, 
-    std::vector<uint8_t> prev_lum_frame, 
+void optimizer::gaussian_filter(std::vector<uint8_t> const& lum_frame,
+    std::vector<uint8_t> const& prev_lum_frame,
     std::vector<double>& yuy_diff, 
     std::vector<double>& gaussian_filtered_image, 
     size_t width, size_t height)
@@ -553,8 +553,8 @@ diffIm = imgaussfilt(im1-im2,params.moveGaussSigma);*/
         0.0029690167439504968, 0.013306209891013651, 0.021938231279714643, 0.013306209891013651, 0.0029690167439504968
     };
 
-    std::vector<uint8_t>::iterator yuy_iter = lum_frame.begin();
-    std::vector<uint8_t>::iterator yuy_prev_iter = prev_lum_frame.begin();
+    auto yuy_iter = lum_frame.begin();
+    auto yuy_prev_iter = prev_lum_frame.begin();
     for (auto i = 0; i < area; i++, yuy_iter++, yuy_prev_iter++)
     {
         yuy_diff.push_back((double)(*yuy_prev_iter) - (double)(*yuy_iter)); // used for testing only
@@ -883,12 +883,15 @@ bool optimizer::input_validity_checks(input_validity_data* data )
 
     auto is_movement_from_last_success = true;
 
-    if (!_settings.is_manual_trigger && _yuy.last_successful_frame.size() > 0)
+    if (!_settings.is_manual_trigger && !_yuy.last_successful_frame.empty())
     {
         is_movement_from_last_success = is_movement_in_images(
             { _yuy.last_successful_edges, _yuy.last_successful_lum_frame },
             { _yuy.edges, _yuy.lum_frame },
             _yuy.movement_prev_valid_result, _yuy.width, _yuy.height);
+        
+        if (!is_movement_from_last_success)
+            AC_LOG(ERROR, "Scene is not valid since its didnt changed from last successful scene");
     }
     if (data)
     {
