@@ -6,7 +6,7 @@
 #define GLFW_INCLUDE_NONE
 #include "fw-update-helper.h"
 #include "model-views.h"
-
+ 
 using namespace rs2;
 
 // This variable is global for protecting the case when the callback will be called when the device model no longer exist.
@@ -31,7 +31,7 @@ cah_model::cah_model(device_model & dev_model, viewer_model& viewer) :
 }
 
 
-bool cah_model::prompt_trigger_popup(ux_window& window, const std::string& error_message)
+bool cah_model::prompt_trigger_popup(ux_window& window, std::string& error_message)
 {
     // This process is built from a 2 stages windows, first a yes/no window and then a process window
     bool keep_showing = true;
@@ -93,7 +93,17 @@ bool cah_model::prompt_trigger_popup(ux_window& window, const std::string& error
                 {
                     auto sd = *itr;
                     global_calib_status = RS2_CALIBRATION_RETRY; // To indicate in progress state
-                    sd->s->set_option(RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, 1.0f);
+                    try
+                    {
+                        sd->s->set_option(RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, static_cast<float>(RS2_CAH_TRIGGER_NOW));
+                    }
+                    catch (std::exception const & e)
+                    {                        
+                        error_message = to_string() << "Trigger calibration failure:\n" << e.what();
+                        _process_started = false;
+                        global_calib_status = RS2_CALIBRATION_FAILED;
+                        return false;
+                    }
                     
                     _state = model_state_type::PROCESS_MODAL;
                     // We switch to process state without a guarantee that the process really started,
@@ -164,7 +174,7 @@ bool cah_model::prompt_trigger_popup(ux_window& window, const std::string& error
     return keep_showing;
 }
 
-bool cah_model::prompt_reset_popup(ux_window& window, const std::string& error_message)
+bool cah_model::prompt_reset_popup(ux_window& window, std::string& error_message)
 {
     bool keep_showing = true;
     bool yes_was_chosen = false;
@@ -186,7 +196,14 @@ bool cah_model::prompt_reset_popup(ux_window& window, const std::string& error_m
             {
                 auto sd = *itr;
                 // Trigger CAH process
-                sd->s->set_option(RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH, 1.0f);
+                try
+                {
+                    sd->s->set_option(RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH, 1.0f);
+                }
+                catch (std::exception const & e)
+                {
+                    error_message = to_string() << "Calibration reset failure:\n" << e.what();
+                }
             }
         }
         keep_showing = false;
