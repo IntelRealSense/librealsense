@@ -6,7 +6,7 @@
 #define GLFW_INCLUDE_NONE
 #include "fw-update-helper.h"
 #include "model-views.h"
-
+ 
 using namespace rs2;
 
 // This variable is global for protecting the case when the callback will be called when the device model no longer exist.
@@ -95,11 +95,11 @@ bool cah_model::prompt_trigger_popup(ux_window& window, std::string& error_messa
                     global_calib_status = RS2_CALIBRATION_RETRY; // To indicate in progress state
                     try
                     {
-                        sd->s->set_option(RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, 1.0f);
+                        sd->s->set_option(RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, static_cast<float>(RS2_CAH_TRIGGER_NOW));
                     }
                     catch (std::exception const & e)
                     {                        
-                        error_message = to_string() << "Trigger Calibration Failure:\n" << e.what();
+                        error_message = to_string() << "Trigger calibration failure:\n" << e.what();
                         _process_started = false;
                         global_calib_status = RS2_CALIBRATION_FAILED;
                         return false;
@@ -202,7 +202,7 @@ bool cah_model::prompt_reset_popup(ux_window& window, std::string& error_message
                 }
                 catch (std::exception const & e)
                 {
-                    error_message = to_string() << "Calibration Reset Failure:\n" << e.what();
+                    error_message = to_string() << "Calibration reset failure:\n" << e.what();
                 }
             }
         }
