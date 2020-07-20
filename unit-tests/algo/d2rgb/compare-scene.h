@@ -105,6 +105,7 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
     init_algo( cal, scene_dir,
         md.rgb_file,
         md.rgb_prev_file,
+        md.rgb_prev_valid_file,
         md.ir_file,
         md.z_file,
         ci );
@@ -210,7 +211,8 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
     CHECK(data.rgb_spatial_spread == rgbEdgesSpread);
     auto depthEdgesSpread = read_from<uint8_t>(bin_dir(scene_dir) + "depthEdgesSpread_1x1_uint8_00.bin");
     CHECK(data.depth_spatial_spread == depthEdgesSpread);
-
+    auto isMovementFromLastSuccess = read_from<uint8_t>(bin_dir(scene_dir) + "isMovementFromLastSuccess_1x1_uint8_00.bin");
+    CHECK(data.is_movement_from_last_success == isMovementFromLastSuccess);
     if( stats )
     {
         stats->n_valid_scene = is_scene_valid;
@@ -231,16 +233,16 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
 
     // movment check
     // 1. dilation
-    CHECK( compare_to_bin_file< uint8_t >( yuy_data.prev_logic_edges, scene_dir, "logicEdges", rgb_w, rgb_h, "uint8_00", compare_same_vectors ) );
-    CHECK( compare_to_bin_file< double >( yuy_data.dilated_image, scene_dir, "dilatedIm", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< uint8_t >( yuy_data.movement_result.logic_edges, scene_dir, "logicEdges", rgb_w, rgb_h, "uint8_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< double >( yuy_data.movement_result.dilated_image, scene_dir, "dilatedIm", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
 
     // 2. gausssian
-    CHECK( compare_to_bin_file< double >( yuy_data.yuy_diff, scene_dir, "diffIm_01", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
-    CHECK( compare_to_bin_file< double >( yuy_data.gaussian_filtered_image, scene_dir, "diffIm", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< double >( yuy_data.movement_result.yuy_diff, scene_dir, "diffIm_01", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< double >( yuy_data.movement_result.gaussian_filtered_image, scene_dir, "diffIm", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
 
     // 3. movement
-    CHECK( compare_to_bin_file< double >( yuy_data.gaussian_diff_masked, scene_dir, "IDiffMasked", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
-    CHECK( compare_to_bin_file< uint8_t >( yuy_data.move_suspect, scene_dir, "ixMoveSuspect", rgb_w, rgb_h, "uint8_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< double >( yuy_data.movement_result.gaussian_diff_masked, scene_dir, "IDiffMasked", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< uint8_t >( yuy_data.movement_result.move_suspect, scene_dir, "ixMoveSuspect", rgb_w, rgb_h, "uint8_00", compare_same_vectors ) );
 
     //--
     TRACE( "\nOptimizing:" );

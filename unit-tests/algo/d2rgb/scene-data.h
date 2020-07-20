@@ -174,13 +174,14 @@ struct scene_metadata
     bool is_output_valid;
     std::string rgb_file;
     std::string rgb_prev_file;  // TODO: looks like these need to be turned around!!!
+    std::string rgb_prev_valid_file;
     std::string ir_file;
     std::string z_file;
 
     scene_metadata( std::string const &scene_dir )
     {
-        std::ifstream( bin_dir( scene_dir ) + "yuy_prev_z_i.files" ) >> rgb_file >>
-        rgb_prev_file >> z_file >> ir_file;
+        std::ifstream(bin_dir(scene_dir) + "yuy_prev_z_i.files") >> rgb_file >>
+            rgb_prev_file >> rgb_prev_valid_file >> z_file >> ir_file;
         if( rgb_file.empty() )
             throw std::runtime_error( "failed to read file:\n" + bin_dir( scene_dir ) + "yuy_prev_z_i.files" );
 

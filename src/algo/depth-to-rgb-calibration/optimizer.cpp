@@ -792,6 +792,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
 void optimizer::set_yuy_data(
     std::vector< yuy_t > && yuy_data,
     std::vector< yuy_t > && prev_yuy_data,
+    std::vector< yuy_t > && last_successful_yuy_data,
     calib const & calibration
 )
 {
@@ -804,11 +805,18 @@ void optimizer::set_yuy_data(
     _yuy.orig_frame = std::move( yuy_data );
     _yuy.prev_frame = std::move( prev_yuy_data );
 
+    if (last_successful_yuy_data.size() == 0)
+        last_successful_yuy_data.resize(_yuy.orig_frame.size(), 0);
+    _yuy.last_successful_frame = std::move(last_successful_yuy_data);
+
     _yuy.lum_frame = get_luminance_from_yuy2( _yuy.orig_frame );
     _yuy.prev_lum_frame = get_luminance_from_yuy2( _yuy.prev_frame );
 
     _yuy.edges = calc_edges( _yuy.lum_frame, _yuy.width, _yuy.height );
     _yuy.prev_edges = calc_edges(_yuy.prev_lum_frame, _yuy.width, _yuy.height);
+
+    _yuy.last_successful_lum_frame = get_luminance_from_yuy2(_yuy.last_successful_frame);
+    _yuy.last_successful_edges = calc_edges(_yuy.last_successful_lum_frame, _yuy.width, _yuy.height);
 
     _yuy.edges_IDT = blur_edges( _yuy.edges, _yuy.width, _yuy.height );
 
@@ -1474,6 +1482,7 @@ void optimizer::write_data_to( std::string const & dir )
     {
         write_vector_to_file( _yuy.orig_frame, dir, "rgb.raw" );
         write_vector_to_file( _yuy.prev_frame, dir, "rgb_prev.raw" );
+        write_vector_to_file( _yuy.last_successful_frame, dir, "last_successful_frame.raw");
         write_vector_to_file( _ir.ir_frame, dir, "ir.raw" );
         write_vector_to_file( _z.frame, dir, "depth.raw" );
 

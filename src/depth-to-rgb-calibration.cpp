@@ -44,9 +44,11 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
 
     CHECK_IF_NEEDS_TO_STOP();
 
+    std::vector< impl::yuy_t > prev_valid_yuy_data(0);
     _algo.set_yuy_data(
         std::vector< impl::yuy_t >( yuy_data, yuy_data + yuy.get_data_size() / sizeof( impl::yuy_t )),
         std::vector< impl::yuy_t >( prev_yuy_data, prev_yuy_data + yuy.get_data_size() / sizeof( impl::yuy_t ) ),
+        std::move(prev_valid_yuy_data),
         calibration
     );
 

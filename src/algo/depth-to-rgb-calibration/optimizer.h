@@ -268,6 +268,7 @@ namespace depth_to_rgb_calibration {
         bool not_saturated;
         bool depth_spatial_spread;
         bool rgb_spatial_spread;
+        bool is_movement_from_last_success;
     };
 
     class optimizer
@@ -285,8 +286,11 @@ namespace depth_to_rgb_calibration {
 
         optimizer( settings const & );
 
-        void set_yuy_data( std::vector< yuy_t > && yuy_data, std::vector< yuy_t > && prev_yuy_data,
-                           calib const & calibration );
+        void set_yuy_data( std::vector< yuy_t > && yuy_data, 
+            std::vector< yuy_t > && prev_yuy_data,
+            std::vector< yuy_t > && prev_valid_yuy_data,
+            calib const & calibration);
+
         void set_ir_data( std::vector< ir_t > && ir_data, size_t width, size_t height );
         void set_z_data( std::vector< z_t > && z_data,
                          rs2_intrinsics_double const & depth_intrinsics,
@@ -382,13 +386,22 @@ namespace depth_to_rgb_calibration {
                                                        data_collect * data = nullptr ) const;
        
         // input validation
-        bool is_movement_in_images(yuy2_frame_data& yuy);
+        bool is_movement_in_images(
+            movement_inputs_for_frame const& prev,
+            movement_inputs_for_frame const& curr,
+            movement_result_data& result_data,
+            size_t width, size_t height);
+
         bool is_edge_distributed( z_frame_data & z_data, yuy2_frame_data & yuy_data );
         void section_per_pixel( frame_data const &, size_t section_w, size_t section_h, byte * section_map );
         void check_edge_distribution(std::vector<double>& sum_weights_per_section, double& min_max_ratio, bool& is_edge_distributed);
         void sum_per_section(std::vector< double >& sum_weights_per_section, std::vector< byte > const& section_map, std::vector< double > const& weights, size_t num_of_sections);
-        void images_dilation(yuy2_frame_data& yuy);
-        void gaussian_filter(yuy2_frame_data& yuy);
+        std::vector<uint8_t> images_dilation(std::vector<uint8_t> const &logic_edges, size_t width, size_t height);
+        void gaussian_filter(std::vector<uint8_t> lum_frame,
+            std::vector<uint8_t> prev_lum_frame,
+            std::vector<double>& yuy_diff,
+            std::vector<double>& gaussian_filtered_image,
+            size_t width, size_t height);
 
         // svm
         bool valid_by_svm(svm_model model);
