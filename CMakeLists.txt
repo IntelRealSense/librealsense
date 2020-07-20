@@ -127,7 +127,6 @@ if(IMPORT_DEPTH_CAM_FW)
 endif()
 
 include(CMake/embedd_udev_rules.cmake)
-include(CMake/install_config.cmake)
 
 if(${ROS_BUILD_TYPE})
     ament_package()
