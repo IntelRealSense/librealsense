@@ -8,7 +8,7 @@ Class     = USBDevice
 ClassGUID = {88BAE032-5A81-49f0-BC3D-A4FF138216D6}
 Provider = %ManufacturerName%
 CatalogFile=IntelRealSense_D400_series_win7.cat
-DriverVer=10/31/2019,2.30.00.0
+DriverVer=07/20/2019,2.36.00.0
 
 ; ========== Manufacturer/Models sections ===========
 ; Supported Camera: D410, D415, D430, D435, DS5U
@@ -37,10 +37,10 @@ DriverVer=10/31/2019,2.30.00.0
 %DeviceNameColorD465% =UVC_Install, USB\VID_8086&PID_0B4D&MI_03
 %DeviceNameIMUD465% =HID_Install, USB\VID_8086&PID_0B4D&MI_05
 %DeviceNameHMD465% =USB_Install, USB\VID_8086&PID_0B4D&MI_06
-%DeviceNameDepthL515% =UVC_Install, USB\VID_8086&PID_0B3D&MI_00
-%DeviceNameColorL515% =UVC_Install, USB\VID_8086&PID_0B3D&MI_04
-%DeviceNameIMUL515% =USB_Install, USB\VID_8086&PID_0B3D&MI_07
-%DeviceNameHMDL515% =HID_Install, USB\VID_8086&PID_0B3D&MI_06
+%DeviceNameDepthL515% =UVC_Install, USB\VID_8086&PID_0B0D&MI_00
+%DeviceNameColorL515% =UVC_Install, USB\VID_8086&PID_0B0D&MI_04
+%DeviceNameIMUL515% =USB_Install, USB\VID_8086&PID_0B0D&MI_07
+%DeviceNameHMDL515% =HID_Install, USB\VID_8086&PID_0B0D&MI_06
 
 %DeviceNameDepthSR300% =UVC_Install, USB\VID_8086&PID_0AA5&MI_02
 %DeviceNameColorSR300% =UVC_Install, USB\VID_8086&PID_0AA5&MI_00
@@ -51,7 +51,7 @@ DriverVer=10/31/2019,2.30.00.0
 
 %DeviceNameDFU_USB3% =USB_Install, USB\VID_8086&PID_0ADB
 %DeviceNameDFU_USB2% =USB_Install, USB\VID_8086&PID_0ADC
-%DeviceNameL515_DFU_USB3% =USB_Install, USB\VID_8086&PID_0B55
+%DeviceNameL515_DFU_USB3% =USB_Install, USB\VID_8086&PID_0B0D
 
 %DeviceNameMOVIDIUS_BOOTLOADER% =USB_Install, USB\VID_03E7&PID_2150
 %DeviceNameT265% =USB_Install, USB\VID_8087&PID_0B37
@@ -77,10 +77,10 @@ DriverVer=10/31/2019,2.30.00.0
 %DeviceNameColorD465% =UVC_Install, USB\VID_8086&PID_0B4D&MI_03
 %DeviceNameIMUD465% =HID_Install, USB\VID_8086&PID_0B4D&MI_05
 %DeviceNameHMD465% =USB_Install, USB\VID_8086&PID_0B4D&MI_06
-%DeviceNameDepthL515% =UVC_Install, USB\VID_8086&PID_0B3D&MI_00
-%DeviceNameColorL515% =UVC_Install, USB\VID_8086&PID_0B3D&MI_04
-%DeviceNameIMUL515% =USB_Install, USB\VID_8086&PID_0B3D&MI_07
-%DeviceNameHMDL515% =HID_Install, USB\VID_8086&PID_0B3D&MI_06
+%DeviceNameDepthL515% =UVC_Install, USB\VID_8086&PID_0B0D&MI_00
+%DeviceNameColorL515% =UVC_Install, USB\VID_8086&PID_0B0D&MI_04
+%DeviceNameIMUL515% =USB_Install, USB\VID_8086&PID_0B0D&MI_07
+%DeviceNameHMDL515% =HID_Install, USB\VID_8086&PID_0B0D&MI_06
 
 %DeviceNameDepthSR300% =UVC_Install, USB\VID_8086&PID_0AA5&MI_02
 %DeviceNameColorSR300% =UVC_Install, USB\VID_8086&PID_0AA5&MI_00
