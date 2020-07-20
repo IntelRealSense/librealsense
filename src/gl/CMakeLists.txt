@@ -120,4 +120,6 @@ install(FILES "${CMAKE_BINARY_DIR}/config/realsense2-gl.pc"
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
 )
 
-install(CODE "execute_process(COMMAND ldconfig)")
+if(NOT ${ROS_BUILD_TYPE})
+    install(CODE "execute_process(COMMAND ldconfig)")
+endif()
