@@ -4790,7 +4790,7 @@ namespace rs2
                 }
             }
 
-
+#if 0 // Currently disable triggering/reseting CAH from UI
             if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && dev.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) &&
                 dev.is<device_calibration>())
             { 
@@ -4810,6 +4810,7 @@ namespace rs2
                     }
                 }
             }
+#endif
             
             bool has_autocalib = false;
             for (auto&& sub : subdevices)

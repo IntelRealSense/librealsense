@@ -53,6 +53,8 @@ namespace Intel.RealSense
         ColorSensor = 42,
         MotionSensor = 43,
         FisheyeSensor = 44,
-        DepthHuffmanDecoder = 45
+        DepthHuffmanDecoder = 45,
+        Serializable = 46,
+        FirmwareLogger = 47
     }
 }
