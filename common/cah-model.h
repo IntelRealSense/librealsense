@@ -50,8 +50,8 @@ namespace rs2
     public:
         cah_model(device_model & dev_model, viewer_model& viewer);
 
-        bool prompt_trigger_popup(ux_window& window, const std::string& error_message);
-        bool prompt_reset_popup(ux_window& window, const std::string& error_message);
+        bool prompt_trigger_popup(ux_window& window, std::string& error_message);
+        bool prompt_reset_popup(ux_window& window, std::string& error_message);
     private:
 
         device_model & _dev_model;
