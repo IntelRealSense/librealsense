@@ -805,8 +805,15 @@ void optimizer::set_yuy_data(
     _yuy.orig_frame = std::move( yuy_data );
     _yuy.prev_frame = std::move( prev_yuy_data );
 
-    if (last_successful_yuy_data.empty())
-        last_successful_yuy_data.resize(_yuy.orig_frame.size(), 0);
+    if( last_successful_yuy_data.empty() )
+    {
+        AC_LOG( DEBUG, "    previous calibration image was NOT supplied" );
+        last_successful_yuy_data.resize( _yuy.orig_frame.size(), 0 );
+    }
+    else
+    {
+        AC_LOG( DEBUG, "    previous calibration image supplied" );
+    }
     _yuy.last_successful_frame = std::move(last_successful_yuy_data);
 
     _yuy.lum_frame = get_luminance_from_yuy2( _yuy.orig_frame );
@@ -1620,6 +1627,7 @@ void optimizer::adjust_params_to_apd_gain()
 
 void optimizer::adjust_params_to_manual_mode()
 {
+    AC_LOG( DEBUG, "Calibration is MANUAL" );
     _params.max_global_los_scaling_step = 0.005;
     _params.pix_per_section_depth_th = 0;
     _params.pix_per_section_rgb_th = 0;
@@ -1635,6 +1643,7 @@ void optimizer::adjust_params_to_manual_mode()
 
 void optimizer::adjust_params_to_auto_mode()
 {
+    AC_LOG( DEBUG, "Calibration is AUTO" );
     _params.max_global_los_scaling_step = 0.004;
     _params.pix_per_section_depth_th = 0.01;
     _params.pix_per_section_rgb_th = 0.01;

@@ -775,8 +775,11 @@ namespace ivcam2 {
                     settings.hum_temp = _temp;
                     settings.ambient = _ambient;
                     settings.receiver_gain = _receiver_gain;
-                    depth_to_rgb_calibration
-                        algo( settings, df, irf, _cf, _pcf, cal_info, cal_regs, should_continue );
+                    depth_to_rgb_calibration algo( settings,
+                                                   df, irf,
+                                                   _cf, _pcf, _last_yuy_data,
+                                                   cal_info, cal_regs,
+                                                   should_continue );
 
                     _from_profile = algo.get_from_profile();
                     _to_profile = algo.get_to_profile();
@@ -804,6 +807,7 @@ namespace ivcam2 {
                         _intr = algo.get_intrinsics();
                         _dsm_params = algo.get_dsm_params();
                         _last_temp = _temp;
+                        _last_yuy_data = std::move( algo.get_last_successful_frame_data() );
                         // Fall-thru!
                     case RS2_CALIBRATION_NOT_NEEDED:
                         // This is the same as SUCCESSFUL, except there was no change because the

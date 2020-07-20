@@ -48,6 +48,7 @@ namespace ivcam2 {
         rs2_dsm_params _dsm_params;
         stream_profile_interface* _from_profile = nullptr;
         stream_profile_interface* _to_profile = nullptr;
+        std::vector< uint16_t > _last_yuy_data;
 
         class retrier;
         std::shared_ptr< retrier > _retrier;

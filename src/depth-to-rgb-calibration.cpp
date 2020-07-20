@@ -25,6 +25,7 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     rs2::frame ir,
     rs2::frame yuy,
     rs2::frame prev_yuy,
+    std::vector< impl::yuy_t > const & last_yuy_data,
     impl::algo_calibration_info const & cal_info,
     impl::algo_calibration_registers const & cal_regs,
     std::function<void()> should_continue
@@ -40,15 +41,15 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     auto color_profile = yuy.get_profile().as< rs2::video_stream_profile >();
     auto yuy_data = (impl::yuy_t const *) yuy.get_data();
     auto prev_yuy_data = (impl::yuy_t const *) prev_yuy.get_data();
+    _last_successful_frame_data = last_yuy_data;  // copy -- will be moved to algo
     impl::calib calibration( _intr, _extr );
 
     CHECK_IF_NEEDS_TO_STOP();
 
-    std::vector< impl::yuy_t > last_successful_yuy_data(0);
     _algo.set_yuy_data(
         std::vector< impl::yuy_t >( yuy_data, yuy_data + yuy.get_data_size() / sizeof( impl::yuy_t )),
         std::vector< impl::yuy_t >( prev_yuy_data, prev_yuy_data + yuy.get_data_size() / sizeof( impl::yuy_t ) ),
-        std::move(last_successful_yuy_data),
+        std::move( _last_successful_frame_data ),
         calibration
     );
 
@@ -178,6 +179,7 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
         _intr.model = RS2_DISTORTION_INVERSE_BROWN_CONRADY; //restore LRS model 
         _extr = from_raw_extrinsics( _algo.get_calibration().get_extrinsics() );
         _dsm_params = _algo.get_dsm_params();
+        _last_successful_frame_data = _algo.get_yuy_data().orig_frame;  // copy -- will be moved to ac_trigger
         debug_calibration( "new" );
         return RS2_CALIBRATION_SUCCESSFUL;
     }

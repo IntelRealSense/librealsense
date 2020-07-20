@@ -641,7 +641,9 @@ end*/
     }
     if (sum_move_suspect > _params.move_threshold_pix_num)
     {
-        AC_LOG(DEBUG, "is_movement_in_images:  # of pixels above threshold " << sum_move_suspect << " allowed #:" << _params.move_threshold_pix_num);
+        AC_LOG( DEBUG,
+                "    found movement: " << sum_move_suspect << " pixels above threshold; allowed: "
+                                       << _params.move_threshold_pix_num );
         return true;
     }
 
@@ -689,6 +691,8 @@ bool optimizer::is_scene_valid(input_validity_data* data)
         { _yuy.prev_edges, _yuy.prev_lum_frame }, 
         { _yuy.edges, _yuy.lum_frame },
         _yuy.movement_result, _yuy.width, _yuy.height);
+    if( res_movement )
+        AC_LOG( ERROR, "Scene is not valid: movement detected between current & previous frames" );
 
     bool res_edges = is_edge_distributed(_z, _yuy);
     bool res_gradient = is_grad_dir_balanced( _z.weights,
@@ -781,7 +785,7 @@ bool check_edges_dir_spread(const std::vector<double>& directions,
 
     if (!edges_dir_spread)
     {
-        AC_LOG(ERROR, "Scene is not valid since there is not enough edge direction spread");
+        AC_LOG( ERROR, "Scene is not valid: not enough edge direction spread" );
         return edges_dir_spread;
     }
 
@@ -801,7 +805,9 @@ bool check_edges_dir_spread(const std::vector<double>& directions,
         auto orthogonal_valid_dirs = valid_even || valid_odd;
 
         if (!orthogonal_valid_dirs)
-            AC_LOG(ERROR, "Scene is not valid since there is no at least two orthogonal directions that have enough spread edges");
+            AC_LOG( ERROR,
+                    "Scene is not valid: need at least two orthogonal directions that have enough "
+                    "spread edges" );
 
         return edges_dir_spread && orthogonal_valid_dirs;
     }
@@ -814,18 +820,21 @@ bool check_saturation(const std::vector< ir_t >& ir_frame,
     size_t height,
     const params& p)
 {
-    int saturated_pixels = 0;
+    size_t saturated_pixels = 0;
 
     for (auto&& i : ir_frame)
     {
-        if (i >= p.saturation_value)
+        if( i >= p.saturation_value )
             saturated_pixels++;
     }
 
     auto saturated_pixels_ratio = (double)saturated_pixels / (double)(width*height);
 
-    if (saturated_pixels_ratio < p.saturation_ratio_th)
-        AC_LOG(ERROR, "Scene is not valid since the saturated is above threshold");
+    if( saturated_pixels_ratio >= p.saturation_ratio_th )
+        AC_LOG( ERROR,
+                "Scene is not valid: saturation ratio ("
+                    << saturated_pixels_ratio << ") is above threshold (" << p.saturation_ratio_th
+                    << ")" );
 
     return saturated_pixels_ratio < p.saturation_ratio_th;
 }
@@ -875,25 +884,25 @@ bool optimizer::input_validity_checks(input_validity_data* data )
         _params.num_of_sections_for_edge_distribution_x*_params.num_of_sections_for_edge_distribution_y,
         _params.min_section_with_enough_edges);
 
-    if (!depth_spatial_spread)
-        AC_LOG(ERROR, "Scene is not valid since there is not enough depth edge spread");
+    if( ! depth_spatial_spread )
+        AC_LOG( ERROR, "Scene is not valid: not enough depth edge spread" );
 
-    if (!rgb_spatial_spread)
-        AC_LOG(ERROR, "Scene is not valid since there is not enough rgb edge spread");
+    if( ! rgb_spatial_spread )
+        AC_LOG( ERROR, "Scene is not valid: not enough RGB edge spread" );
 
     auto is_movement_from_last_success = true;
 
     if (!_settings.is_manual_trigger && !_yuy.last_successful_frame.empty())
     {
-        is_movement_from_last_success = is_movement_in_images(
-            { _yuy.last_successful_edges, _yuy.last_successful_lum_frame },
-            { _yuy.edges, _yuy.lum_frame },
-            _yuy.movement_prev_valid_result, _yuy.width, _yuy.height);
-        
-        if (!is_movement_from_last_success)
-            AC_LOG(ERROR, "Scene is not valid since its didnt changed from last successful scene");
+        is_movement_from_last_success
+            = is_movement_in_images( { _yuy.last_successful_edges, _yuy.last_successful_lum_frame },
+                                     { _yuy.edges, _yuy.lum_frame },
+                                     _yuy.movement_prev_valid_result,
+                                     _yuy.width, _yuy.height );
+        if( ! is_movement_from_last_success )
+            AC_LOG( ERROR, "Scene is not valid: not enough movement from last-calibrated scene" );
     }
-    if (data)
+    if( data )
     {
         data->edges_dir_spread = dir_spread;
         data->not_saturated = not_saturated;
