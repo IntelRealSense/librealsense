@@ -150,9 +150,9 @@ namespace ivcam2 {
         ac_trigger( l500_device & dev, std::shared_ptr<hw_monitor> hwm );
         ~ac_trigger();
 
-        // Wait a certain amount of time before the next calibration happens. Can only happen if not
-        // already active!
-        void start( std::chrono::seconds n_seconds = std::chrono::seconds(0) );
+        // Called when depth sensor start. Triggers a calibration in a few seconds if auto
+        // calibration is turned on.
+        void start();
 
         // Once triggered, we may want to cancel it... like when stopping the stream
         void stop();
@@ -198,13 +198,15 @@ namespace ivcam2 {
         double read_temperature();
         void calibration_is_done();
         void schedule_next_calibration();
-        void schedule_next_time_trigger();
+        void schedule_next_time_trigger( std::chrono::seconds n_seconds = std::chrono::seconds( 0 ) );
         void schedule_next_temp_trigger();
         void cancel_current_calibration();
         void set_not_active() { _n_cycles = 0; }
         void trigger_retry();
         void trigger_special_frame();
         void check_conditions();
+        void _start();
+
 
         std::vector< callback > _callbacks;
 
