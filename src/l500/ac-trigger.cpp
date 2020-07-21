@@ -183,6 +183,10 @@ namespace ivcam2 {
             return;
         }
 
+        auto ac = _autocal.lock();
+        if (!ac)
+            throw std::runtime_error( "device no longer exists" );
+
         if( value != RS2_CAH_TRIGGER_NOW )
         {
             // When auto trigger is on in the environment, we control the timed activation
@@ -193,8 +197,8 @@ namespace ivcam2 {
                     throw invalid_value_exception( "auto trigger is disabled in the environment" );
                 try
                 {
-                    if (_autocal->_dev.get_depth_sensor().is_streaming())
-                        _autocal->_start();
+                    if (ac->_dev.get_depth_sensor().is_streaming())
+                        ac->_start();
 
                     super::set(value);
                 }
@@ -208,7 +212,7 @@ namespace ivcam2 {
             else
             {
                 super::set( value );
-                _autocal->stop();
+                ac->stop();
             }
             _record_action( *this );
         }
@@ -218,12 +222,12 @@ namespace ivcam2 {
             // We don't change the actual control value!
             bool is_depth_streaming(false);
 
-            is_depth_streaming = _autocal->_dev.get_depth_sensor().is_streaming();
+            is_depth_streaming = ac->_dev.get_depth_sensor().is_streaming();
 
             if(is_depth_streaming)
             {
                 AC_LOG( DEBUG, "Triggering manual calibration..." );
-                _autocal->trigger_calibration( calibration_type::MANUAL );
+                ac->trigger_calibration( calibration_type::MANUAL );
             }
             else
             {
@@ -235,12 +239,15 @@ namespace ivcam2 {
     void ac_trigger::reset_option::set(float value)
     {
         //bool_option::set( value );
+        auto ac = _autocal.lock();
+        if (!ac)
+            throw std::runtime_error( "device no longer exists" );
 
         // Reset the calibration so we can do it all over again
-        if (auto color_sensor = _autocal->_dev.get_color_sensor())
+        if (auto color_sensor = ac->_dev.get_color_sensor())
             color_sensor->reset_calibration();
-        _autocal->_dev.get_depth_sensor().reset_calibration();
-        _autocal->_dev.notify_of_calibration_change(RS2_CALIBRATION_SUCCESSFUL);
+        ac->_dev.get_depth_sensor().reset_calibration();
+        ac->_dev.notify_of_calibration_change(RS2_CALIBRATION_SUCCESSFUL);
         _record_action(*this);
     }
 
@@ -250,13 +257,13 @@ namespace ivcam2 {
     // retry period elapses then nothing will happen!
     class ac_trigger::retrier
     {
-        ac_trigger & _ac;
+        std::weak_ptr<ac_trigger> _ac;
         unsigned _id;
         char const * const _name;
 
     protected:
         retrier( ac_trigger & ac, char const * name )
-            : _ac( ac )
+            : _ac( ac.shared_from_this() )
             , _name( name ? name : "retrier" )
         {
             static unsigned id = 0;
@@ -264,7 +271,7 @@ namespace ivcam2 {
         }
 
         unsigned get_id() const { return _id; }
-        ac_trigger & get_ac() const { return _ac; }
+        std::shared_ptr <ac_trigger> get_ac() const { return _ac.lock(); }
         char const * get_name() const { return _name; }
 
         static std::string now()
@@ -284,9 +291,9 @@ namespace ivcam2 {
             return _prefix( get_name(), get_id() );
         }
 
-        virtual void retry()
+        virtual void retry(ac_trigger & trigger)
         {
-            _ac.trigger_retry();
+            trigger.trigger_retry();
         }
 
     public:
@@ -314,7 +321,9 @@ namespace ivcam2 {
                     try
                     {
                         AC_LOG( DEBUG, _prefix( name, id ) << "triggering" );
-                        ( (retrier *)pr.get() )->retry();
+                        auto ac = ( (retrier *)pr.get() )->get_ac();
+                        if( ac )
+                            ( (retrier *)pr.get() )->retry( *ac );
                     }
                     catch( std::exception const & e )
                     {
@@ -328,7 +337,7 @@ namespace ivcam2 {
                                 << n_seconds.count() << " seconds are up; nothing needed" );
             } ).detach();
             return pr;
-        };
+        }
     };
     class ac_trigger::next_trigger : public ac_trigger::retrier
     {
@@ -337,10 +346,10 @@ namespace ivcam2 {
             : retrier( ac, name ? name : "next trigger" )
         {
         }
+
     private:
-        void retry() override
+        void retry( ac_trigger & trigger ) override
         {
-            auto & trigger = get_ac();
             // We start another trigger regardless of what happens next; if a calibration actually
             // proceeds, it will be cancelled...
             trigger.schedule_next_time_trigger();
@@ -365,9 +374,9 @@ namespace ivcam2 {
         }
 
     private:
-        void retry() override
+        void retry( ac_trigger & trigger ) override
         {
-            auto & trigger = get_ac();
+
             if( trigger.is_active() )
             {
                 AC_LOG( DEBUG, "... already active; ignoring" );
@@ -1290,21 +1299,21 @@ namespace ivcam2 {
                                                                   const rs2::frame & f )
     {
         // CAH can be triggered manually, too, so we do NOT check whether the option is on!
-
         auto fs = f.as< rs2::frameset >();
+        auto autocal = _autocal.lock();
         if( fs )
         {
             auto df = fs.get_depth_frame();
-            if( _autocal->is_expecting_special_frame() && is_special_frame( df ) )
+            if( autocal && autocal->is_expecting_special_frame() && is_special_frame( df ) )
             {
                 AC_LOG( DEBUG, "Depth frame #" << f.get_frame_number() << " is our special frame" );
-                _autocal->set_special_frame( f );
+                autocal->set_special_frame( f );
             }
             // Disregard framesets: we'll get those broken down into individual frames by generic_processing_block's on_frame
             return rs2::frame{};
         }
 
-        if( _autocal->is_expecting_special_frame() && is_special_frame( f.as< rs2::depth_frame >() ) )
+        if( autocal && autocal->is_expecting_special_frame() && is_special_frame( f.as< rs2::depth_frame >() ) )
             // We don't want the user getting this frame!
             return rs2::frame{};
 
@@ -1346,8 +1355,10 @@ namespace ivcam2 {
         if( f.is< rs2::frameset >() )
             return rs2::frame{};
 
-        // We record each and every color frame
-        _autocal->set_color_frame( f );
+        auto autocal = _autocal.lock();
+        if( autocal )
+            // We record each and every color frame
+            autocal->set_color_frame( f );
 
         // Return the frame as is!
         return f;
