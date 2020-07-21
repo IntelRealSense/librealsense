@@ -1628,7 +1628,7 @@ void optimizer::adjust_params_to_apd_gain()
 void optimizer::adjust_params_to_manual_mode()
 {
     AC_LOG( DEBUG, "Calibration is MANUAL" );
-    _params.max_global_los_scaling_step = 0.004;
+    _params.max_global_los_scaling_step = 0.005;
     _params.pix_per_section_depth_th = 0.01;
     _params.pix_per_section_rgb_th = 0.01;
     _params.min_section_with_enough_edges = 2;
