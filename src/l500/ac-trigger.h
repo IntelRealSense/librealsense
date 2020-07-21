@@ -213,12 +213,7 @@ namespace ivcam2 {
 
         std::vector< callback > _callbacks;
 
-        void call_back( rs2_calibration_status status )
-        {
-            _last_status_sent = status;
-            for( auto && cb : _callbacks )
-                cb( status );
-        }
+        void call_back( rs2_calibration_status status );
 
         bool check_color_depth_sync();
         void run_algo();

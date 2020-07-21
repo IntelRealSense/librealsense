@@ -3,6 +3,7 @@
 
 #include "optimizer.h"
 #include "cost.h"
+#include "utils.h"
 #include "debug.h"
 
 using namespace librealsense::algo::depth_to_rgb_calibration;
@@ -326,6 +327,7 @@ bool optimizer::valid_by_svm(svm_model model)
     case gaussian:
         is_valid = svm_rbf_predictor(_extracted_features, _svm_model_gaussian);
         break;
+
     default:
         AC_LOG(DEBUG, "ERROR : Unknown SVM kernel " << model);
         break;
@@ -345,7 +347,6 @@ bool optimizer::is_valid_results()
     }
 
 
-    bool res = true;
     // Clip any (average) movement of pixels if it's too big
     clip_pixel_movement();
 
@@ -384,6 +385,54 @@ bool optimizer::is_valid_results()
     AC_LOG( DEBUG, "    min cost diff= " << min_cost_diff << "  max= " << max_cost_diff );
 
     bool res_svm = valid_by_svm( linear );  //(gaussian);
-    return ( res && res_svm );
+    if( ! res_svm )
+        return false;
+
+#if 0
+    try
+    {
+        validate_dsm_params( get_dsm_params() );
+    }
+    catch( invalid_value_exception const & e )
+    {
+        AC_LOG( ERROR, "Result DSM parameters are invalid: " << e.what() );
+        return false;
+    }
+#endif
+
+    return true;
+}
+
+
+void librealsense::algo::depth_to_rgb_calibration::validate_dsm_params(
+    rs2_dsm_params const & dsm_params )
+{
+    /*  Considerable values for DSM correction:
+        - h/vFactor: 0.98-1.02, representing up to 2% change in FOV.
+        - h/vOffset:
+            - Under AOT model: (-2)-2, representing up to 2deg FOV tilt
+            - Under TOA model: (-125)-125, representing up to approximately
+              2deg FOV tilt
+        These values are extreme. For more reasonable values take 0.99-1.01
+        for h/vFactor and divide the suggested h/vOffset range by 10.
+
+        Update ww30: +/-1.5% limiter both H/V [0.985..1.015] until AC3.
+    */
+    if( dsm_params.model != RS2_DSM_CORRECTION_AOT )
+        throw invalid_value_exception( "non-AoT (1) mode is currently unsupported" );
+
+    if( dsm_params.h_scale < 0.985 || dsm_params.h_scale > 1.015 )
+        throw invalid_value_exception( to_string() << "H scale (" << dsm_params.h_scale
+                                                   << ") exceeds 1.5% change in FOV" );
+    if( dsm_params.v_scale < 0.985 || dsm_params.v_scale > 1.015 )
+        throw invalid_value_exception( to_string() << "V scale (" << dsm_params.v_scale
+                                                   << ") exceeds 1.5% change in FOV" );
+
+    if( dsm_params.h_offset < -2. || dsm_params.h_offset > 2. )
+        throw invalid_value_exception( to_string() << "H offset (" << dsm_params.h_offset
+                                                   << ") is limited to 2deg FOV tilt" );
+    if( dsm_params.v_offset < -2. || dsm_params.v_offset > 2. )
+        throw invalid_value_exception( to_string() << "V offset (" << dsm_params.v_offset
+                                                   << ") is limited to 2deg FOV tilt" );
 }
 

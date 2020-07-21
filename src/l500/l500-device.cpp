@@ -221,11 +221,13 @@ namespace librealsense
                 {
                     if( status == RS2_CALIBRATION_SUCCESSFUL )
                     {
+                        // We override the DSM params first, because it can throw if the parameters
+                        // are exceeding spec! This may throw!!
+                        get_depth_sensor().override_dsm_params( _autocal->get_dsm_params() );
+                     
                         auto & color_sensor = *get_color_sensor();
                         color_sensor.override_intrinsics( _autocal->get_intrinsics() );
                         color_sensor.override_extrinsics( _autocal->get_extrinsics() );
-
-                        get_depth_sensor().override_dsm_params( _autocal->get_dsm_params() );
                     }
                     notify_of_calibration_change( status );
                 } );

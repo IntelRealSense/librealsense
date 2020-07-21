@@ -19,6 +19,7 @@
 #include "l500-options.h"
 #include "ac-trigger.h"
 #include "algo/depth-to-rgb-calibration/debug.h"
+#include "algo/depth-to-rgb-calibration/utils.h"  // validate_dsm_params
 
 
 #define MM_TO_METER 1/1000
@@ -259,17 +260,7 @@ namespace librealsense
 
     void l500_depth_sensor::override_dsm_params( rs2_dsm_params const & dsm_params )
     {
-        /*  Considerable values for DSM correction:
-            - h/vFactor: 0.98-1.02, representing up to 2% change in FOV.
-            - h/vOffset:
-                - Under AOT model: (-2)-2, representing up to 2deg FOV tilt
-                - Under TOA model: (-125)-125, representing up to approximately
-                  2deg FOV tilt
-            These values are extreme. For more reasonable values take 0.99-1.01
-            for h/vFactor and divide the suggested h/vOffset range by 10.
-        */
-        if( dsm_params.model != RS2_DSM_CORRECTION_AOT )
-            throw invalid_value_exception( "DSM non-AoT (1) mode is currently unsupported" );
+        algo::depth_to_rgb_calibration::validate_dsm_params( dsm_params );  // throws!
 
         ac_depth_results table( dsm_params );
         // table.params.timestamp = std::chrono::system_clock::now().time_since_epoch().count();

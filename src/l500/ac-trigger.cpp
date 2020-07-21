@@ -611,6 +611,14 @@ namespace ivcam2 {
     }
 
 
+    void ac_trigger::call_back( rs2_calibration_status status )
+    {
+        _last_status_sent = status;
+        for( auto && cb : _callbacks )
+            cb( status );
+    }
+
+
     void ac_trigger::trigger_retry()
     {
         _retrier.reset();
@@ -1000,9 +1008,9 @@ namespace ivcam2 {
                     _from_profile = algo.get_from_profile();
                     _to_profile = algo.get_to_profile();
 
-                    rs2_calibration_status status(RS2_CALIBRATION_FAILED); // assume fail until gets a success status.
+                    rs2_calibration_status status = RS2_CALIBRATION_FAILED;  // assume fail until we get a success
 
-                    if (is_processing()) // check if the device still exists
+                    if( is_processing() )  // check if the device still exists
                     {
                         status = algo.optimize(
                             [this]( rs2_calibration_status status ) { call_back( status ); });
@@ -1010,7 +1018,7 @@ namespace ivcam2 {
 
                     // It's possible that, while algo was working, stop() was called. In this case,
                     // we have to make sure that we notify of failure:
-                    if( !is_processing())
+                    if( ! is_processing() )
                     {
                         AC_LOG( DEBUG, "Algo finished (with " << status << "), but stop() was detected; notifying of failure..." );
                         status = RS2_CALIBRATION_FAILED;
@@ -1022,9 +1030,10 @@ namespace ivcam2 {
                         _extr = algo.get_extrinsics();
                         _intr = algo.get_intrinsics();
                         _dsm_params = algo.get_dsm_params();
+                        call_back( status );  // if this throws, we don't want to do the below:
                         _last_temp = _temp;
                         _last_yuy_data = std::move( algo.get_last_successful_frame_data() );
-                        // Fall-thru!
+                        break;
                     case RS2_CALIBRATION_NOT_NEEDED:
                         // This is the same as SUCCESSFUL, except there was no change because the
                         // existing calibration is good enough. We notify and exit.
@@ -1063,15 +1072,37 @@ namespace ivcam2 {
                         break;
                     }
                 }
-                catch( std::exception& ex )
+                catch( std::exception & e )
                 {
-                    AC_LOG( ERROR, "EXCEPTION in calibration algo: " << ex.what() );
-                    call_back( RS2_CALIBRATION_FAILED );
+                    AC_LOG( ERROR, "EXCEPTION in calibration algo: " << e.what() );
+                    try
+                    {
+                        call_back( RS2_CALIBRATION_FAILED );
+                    }
+                    catch( std::exception & e )
+                    {
+                        AC_LOG( ERROR, "EXCEPTION in FAILED callback: " << e.what() );
+                    }
+                    catch( ... )
+                    {
+                        AC_LOG( ERROR, "EXCEPTION in FAILED callback!" );
+                    }
                 }
                 catch( ... )
                 {
                     AC_LOG( ERROR, "Unknown EXCEPTION in calibration algo!!!" );
-                    call_back( RS2_CALIBRATION_FAILED );
+                    try
+                    {
+                        call_back( RS2_CALIBRATION_FAILED );
+                    }
+                    catch( std::exception & e )
+                    {
+                        AC_LOG( ERROR, "EXCEPTION in FAILED callback: " << e.what() );
+                    }
+                    catch( ... )
+                    {
+                        AC_LOG( ERROR, "EXCEPTION in FAILED callback!" );
+                    }
                 }
                 _is_processing = false;  // to avoid debug msg in reset()
                 reset();
