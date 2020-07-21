@@ -394,6 +394,18 @@ namespace ivcam2 {
             : _to_stdout( to_stdout )
         {
             using namespace std::chrono;
+
+#ifdef WIN32
+            // In the Viewer, a console does not exist (even when run from a console) because
+            // it's a WIN32 application (this can be removed in its CMakeLists.txt) -- so we
+            // need to create one.
+            if( _to_stdout )
+            {
+                if( AttachConsole( ATTACH_PARENT_PROCESS ) || AllocConsole() )
+                    write_out( std::string{} );  // for a newline
+            }
+#endif
+
             auto dir = getenv( "RS2_DEBUG_DIR" );
             if( dir )
             {
@@ -404,11 +416,13 @@ namespace ivcam2 {
 
                 _f.open( filename );
                 if( _f  &&  _to_stdout )
-                    std::cout << "-D- AC log is being written to: " << filename << std::endl;
+                    write_out( to_string() << "-D- AC log is being written to: " << filename );
             }
 
-            librealsense::log_to_callback( RS2_LOG_SEVERITY_ALL,
-                { this, []( rs2_log_callback * p ) {} } );
+            if( _f || _to_stdout )
+                librealsense::log_to_callback( RS2_LOG_SEVERITY_ALL,
+                                               { this, []( rs2_log_callback * p ) {} } );
+
             AC_LOG( DEBUG, "LRS version: " << RS2_API_FULL_VERSION_STR );
         }
 
@@ -423,12 +437,28 @@ namespace ivcam2 {
             ss << (raw + 5);
             std::string text = ss.str();
             if( _to_stdout )
-                std::cout << text << std::endl;
+                write_out( text );
             if( _f )
                 _f << text << std::endl;
         }
 
         void release() override { delete this; }
+
+    private:
+        static void write_out( std::string const & s )
+        {
+#if 0 //def WIN32
+            HANDLE stdOut = GetStdHandle( STD_OUTPUT_HANDLE );
+            if( stdOut != NULL && stdOut != INVALID_HANDLE_VALUE )
+            {
+                DWORD written = 0;
+                WriteConsoleA( stdOut, s.c_str(), (DWORD)s.length(), &written, NULL );
+                WriteConsoleA( stdOut, "\n\r", 2, &written, NULL );
+            }
+#else
+            std::cout << s << std::endl;
+#endif
+        }
     };
 
 
