@@ -1629,16 +1629,16 @@ void optimizer::adjust_params_to_manual_mode()
 {
     AC_LOG( DEBUG, "Calibration is MANUAL" );
     _params.max_global_los_scaling_step = 0.005;
-    _params.pix_per_section_depth_th = 0;
-    _params.pix_per_section_rgb_th = 0;
-    _params.min_section_with_enough_edges = 0;
-    _params.edges_per_direction_ratio_th = 0;
-    _params.minimal_full_directions = 0;
+    _params.pix_per_section_depth_th = 0.01;
+    _params.pix_per_section_rgb_th = 0.01;
+    _params.min_section_with_enough_edges = 2;
+    _params.edges_per_direction_ratio_th = 0.004;
+    _params.minimal_full_directions = 2;
 
-    const static double newvals[N_BASIC_DIRECTIONS] = { 0, 0, 0, 0 };
+    const static double newvals[N_BASIC_DIRECTIONS] = { 0.09,0.09,0.09,0.09 };
     std::copy(std::begin(newvals), std::end(newvals), std::begin(_params.dir_std_th));
-    _params.saturation_ratio_th = 1;
-    _params.saturation_value = 256;
+    _params.saturation_ratio_th = 0.15;
+    adjust_params_to_apd_gain();
 }
 
 void optimizer::adjust_params_to_auto_mode()
