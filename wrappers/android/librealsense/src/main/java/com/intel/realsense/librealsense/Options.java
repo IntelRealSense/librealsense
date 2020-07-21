@@ -69,7 +69,7 @@ public abstract class Options extends LrsClass implements OptionsInterface {
 
     @Override
     public String valueDescription(Option option, float value) {
-        return null;
+        return nGetValueDescription(mHandle, option.value(), value);
     }
 
     private static native boolean nSupports(long handle, int option);
