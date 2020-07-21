@@ -418,7 +418,7 @@ namespace librealsense
         };
     }
 
-    void l500_color_sensor::start_stream_for_calibration(const stream_profiles& requests)
+    bool l500_color_sensor::start_stream_for_calibration(const stream_profiles& requests)
     {
         std::lock_guard< std::mutex > lock( _state_mutex );
 
@@ -430,20 +430,18 @@ namespace librealsense
             AC_LOG( INFO, "Start color sensor stream for calibration" );
             delayed_start( make_frame_callback( [&]( frame_holder fref ) {} ) );
             AC_LOG( INFO, "Color sensor stream started" );
+            return true;
+        }
+        if( ! is_streaming() )
+        {
+            // This is a corner case that is not covered at the moment: The user opened the sensor
+            // but did not start it.
+            AC_LOG( WARNING,
+                    "The color sensor was opened but never started by the user; streaming may not work" );
         }
         else
-        {
-            if( ! is_streaming() )
-            {
-                // This is a corner case that is not covered at the moment: The user opened the sensor
-                // but did not start it.
-                // AC will not work!
-                AC_LOG( WARNING,
-                        "The color sensor was opened but never started by the user; streaming may not work" );
-            }
-            else
-                AC_LOG( DEBUG, "Color sensor is already streaming (" << state_to_string(_state) << ")" );
-        }
+            AC_LOG( DEBUG, "Color sensor is already streaming (" << state_to_string(_state) << ")" );
+        return false;
     }
 
     void l500_color_sensor::stop_stream_for_calibration()

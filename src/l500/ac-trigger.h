@@ -62,6 +62,9 @@ namespace ivcam2 {
         double _last_temp = 0;
         std::shared_ptr< temp_check > _temp_check;
 
+        bool _need_to_wait_for_color_sensor_stability = false;
+        std::chrono::high_resolution_clock::time_point _rgb_sensor_start;
+
     public:
         /* Depth frame processing: detect special frames
         */
