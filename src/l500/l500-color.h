@@ -124,7 +124,8 @@ namespace librealsense
         // This function serves the auto calibration process,
         // It is used to open and start the color sensor with a single call if it is closed.
         // Note: if the sensor is opened by the user, the function assumes that the user will start the stream.
-        void start_stream_for_calibration(const stream_profiles& requests);
+        // Returns whether the stream was started.
+        bool start_stream_for_calibration( const stream_profiles & requests );
        
         // Stops the color sensor if was opened by the calibration process, otherwise does nothing
         void stop_stream_for_calibration();

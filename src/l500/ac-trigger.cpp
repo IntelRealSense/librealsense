@@ -267,6 +267,23 @@ namespace ivcam2 {
         ac_trigger & get_ac() const { return _ac; }
         char const * get_name() const { return _name; }
 
+        static std::string now()
+        {
+            std::time_t now = std::time( nullptr );
+            auto ptm = localtime( &now );
+            char buf[256];
+            strftime( buf, sizeof( buf ), "%T", ptm );
+            return buf;
+        }
+        static std::string _prefix( std::string const & name, unsigned id )
+        {
+            return to_string() << "... " << now() << " " << name << ' ' << id << ": ";
+        }
+        std::string prefix() const
+        {
+            return _prefix( get_name(), get_id() );
+        }
+
         virtual void retry()
         {
             _ac.trigger_retry();
@@ -275,7 +292,7 @@ namespace ivcam2 {
     public:
         virtual ~retrier()
         {
-            AC_LOG( DEBUG, "... ~" << get_name() << " " << get_id() );
+            AC_LOG( DEBUG, _prefix( '~' + std::string(get_name()), get_id() ));
         }
 
         template < class T = retrier >
@@ -286,7 +303,7 @@ namespace ivcam2 {
             T * r = new T( trigger, name );
             auto id = r->get_id();
             name = r->get_name();
-            AC_LOG( DEBUG, "... " << name << ' ' << id << ": " << n_seconds.count() << " seconds starting" );
+            AC_LOG( DEBUG, r->prefix() << n_seconds.count() << " seconds starting" );
             auto pr = std::shared_ptr< T >( r );
             std::weak_ptr< T > weak{ pr };
             std::thread( [=]() {
@@ -296,7 +313,7 @@ namespace ivcam2 {
                 {
                     try
                     {
-                        AC_LOG( DEBUG, "... " << name << ' ' << id << ": triggering" );
+                        AC_LOG( DEBUG, _prefix( name, id ) << "triggering" );
                         ( (retrier *)pr.get() )->retry();
                     }
                     catch( std::exception const & e )
@@ -307,8 +324,8 @@ namespace ivcam2 {
                 }
                 else
                     AC_LOG( DEBUG,
-                            "... " << name << ' ' << id << ": " << n_seconds.count()
-                                   << " seconds are up; nothing needed" );
+                            _prefix( name, id )
+                                << n_seconds.count() << " seconds are up; nothing needed" );
             } ).detach();
             return pr;
         };
@@ -497,6 +514,12 @@ namespace ivcam2 {
             AC_LOG( ERROR, "Retry attempted but we're not active; ignoring" );
             return;
         }
+        if( _need_to_wait_for_color_sensor_stability )
+        {
+            AC_LOG( ERROR, "Failed to receive RGB frame; cancelling calibration" );
+            cancel_current_calibration();
+            return;
+        }
 
         try
         {
@@ -575,13 +598,20 @@ namespace ivcam2 {
 
         _n_retries = 0;
         _n_cycles = 1;          // now active
-        AC_LOG( INFO, "Camera Accuracy Health check has started in the background" );
+        AC_LOG( INFO, "Camera Accuracy Health check is now active" );
         _next_trigger.reset();  // don't need a trigger any more
         _temp_check.reset();    // nor a temperature check
         start_color_sensor_if_needed();
-        AC_LOG( DEBUG, "Sending GET_SPECIAL_FRAME (cycle 1); now active..." );
-
-        trigger_special_frame();
+        if( _need_to_wait_for_color_sensor_stability )
+        {
+            AC_LOG( DEBUG, "Waiting for RGB stability before asking for special frame" );
+            _retrier = retrier::start( *this, std::chrono::seconds( get_retry_sf_seconds() + 1 ) );
+        }
+        else
+        {
+            AC_LOG( DEBUG, "Sending GET_SPECIAL_FRAME (cycle 1)" );
+            trigger_special_frame();
+        }
     }
 
 
@@ -592,30 +622,32 @@ namespace ivcam2 {
         try
         {
             auto color_sensor = _dev.get_color_sensor();
-            if (!color_sensor)
+            if( ! color_sensor )
             {
-                AC_LOG(ERROR, "No color sensor in device; cannot run AC?!");
+                AC_LOG( ERROR, "No color sensor in device; cannot run AC?!" );
                 return;
             }
 
             auto & depth_sensor = _dev.get_depth_sensor();
             auto rgb_profile = depth_sensor.is_color_sensor_needed();
-            if (!rgb_profile)
+            if( ! rgb_profile )
                 return;  // error should have already been printed
             //AC_LOG( DEBUG, "Picked profile: " << *rgb_profile );
 
-            color_sensor->start_stream_for_calibration({ rgb_profile });
-           
+            _rgb_sensor_start = std::chrono::high_resolution_clock::now();
+            _need_to_wait_for_color_sensor_stability
+                = color_sensor->start_stream_for_calibration( { rgb_profile } );
         }
-        catch (std::exception const & e)
+        catch( std::exception const & e )
         {
-            AC_LOG(ERROR, "EXCEPTION caught: " << e.what());
+            AC_LOG( ERROR, "EXCEPTION caught: " << e.what() );
         }
     }
 
 
     void ac_trigger::stop_color_sensor_if_started()
     {
+        _need_to_wait_for_color_sensor_stability = false;  // jic
 
         // By using a thread we protect a case that tries to close a sensor from it's processing block callback and creates a deadlock.
         std::thread([&]()
@@ -718,6 +750,23 @@ namespace ivcam2 {
         if( ! is_active()  ||  _is_processing )
             // No error message -- we expect to get new color frames while processing...
             return;
+        if( _need_to_wait_for_color_sensor_stability )
+        {
+            // Wait at least a second before we deem the sensor stable enough
+            auto time = std::chrono::high_resolution_clock::now() - _rgb_sensor_start;
+            if( time < std::chrono::milliseconds( 1000 ) )
+                return;
+
+            auto number = f.get_frame_number();
+            AC_LOG( DEBUG, "RGB frame #" << number << " is our first stable frame" );
+            if( f.supports_frame_metadata( RS2_FRAME_METADATA_ACTUAL_EXPOSURE ) )
+            {
+                auto exp = f.get_frame_metadata( RS2_FRAME_METADATA_ACTUAL_EXPOSURE );
+                AC_LOG( DEBUG, "Actual exposure is " << exp );
+            }
+            _need_to_wait_for_color_sensor_stability = false;
+            trigger_special_frame();
+        }
 
         _pcf = _cf;
         _cf = f;
@@ -1190,6 +1239,7 @@ namespace ivcam2 {
         _cf = rs2::frame{};;
         _pcf = rs2::frame{};
 
+        _need_to_wait_for_color_sensor_stability = false;
         if( _is_processing )
         {
             _is_processing = false;
@@ -1243,7 +1293,7 @@ namespace ivcam2 {
             auto df = fs.get_depth_frame();
             if( _autocal->is_expecting_special_frame() && is_special_frame( df ) )
             {
-                AC_LOG( DEBUG, "frame " << f.get_frame_number() << " is our special frame" );
+                AC_LOG( DEBUG, "Depth frame #" << f.get_frame_number() << " is our special frame" );
                 _autocal->set_special_frame( f );
             }
             // Disregard framesets: we'll get those broken down into individual frames by generic_processing_block's on_frame
