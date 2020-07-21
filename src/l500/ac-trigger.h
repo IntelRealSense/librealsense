@@ -70,7 +70,7 @@ namespace ivcam2 {
         */
         class depth_processing_block : public generic_processing_block
         {
-            std::shared_ptr< ac_trigger > _autocal;
+            std::weak_ptr< ac_trigger > _autocal;
 
         public:
             depth_processing_block( std::shared_ptr< ac_trigger > autocal );
@@ -86,7 +86,7 @@ namespace ivcam2 {
         */
         class color_processing_block : public generic_processing_block
         {
-            std::shared_ptr< ac_trigger > _autocal;
+            std::weak_ptr< ac_trigger > _autocal;
 
         public:
             color_processing_block( std::shared_ptr< ac_trigger > autocal );
@@ -102,7 +102,7 @@ namespace ivcam2 {
         {
             typedef float_option super;
 
-            std::shared_ptr< ac_trigger > _autocal;
+            std::weak_ptr< ac_trigger > _autocal;
 
         public:
             enabler_option( std::shared_ptr< ac_trigger > const & autocal );
@@ -124,7 +124,7 @@ namespace ivcam2 {
         /* For RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH */
         class reset_option : public bool_option
         {
-            std::shared_ptr< ac_trigger > _autocal;
+            std::weak_ptr< ac_trigger > _autocal;
 
         public:
             reset_option( std::shared_ptr< ac_trigger > const & autocal );
