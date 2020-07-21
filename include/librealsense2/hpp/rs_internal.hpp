@@ -363,5 +363,252 @@ namespace rs2
         }
     };
 
+    class firmware_log_message
+    {
+    public:
+        explicit firmware_log_message(std::shared_ptr<rs2_firmware_log_message> msg) :
+            _fw_log_message(msg) {}
+
+        rs2_log_severity get_severity() const {
+            rs2_error* e = nullptr;
+            rs2_log_severity severity = rs2_fw_log_message_severity(_fw_log_message.get(), &e);
+            error::handle(e);
+            return severity;
+        }
+        std::string get_severity_str() const {
+            return rs2_log_severity_to_string(get_severity());
+        }
+
+        uint32_t get_timestamp() const
+        {
+            rs2_error* e = nullptr;
+            uint32_t timestamp = rs2_fw_log_message_timestamp(_fw_log_message.get(), &e);
+            error::handle(e);
+            return timestamp;
+        }
+
+        int size() const
+        {
+            rs2_error* e = nullptr;
+            int size = rs2_fw_log_message_size(_fw_log_message.get(), &e);
+            error::handle(e);
+            return size;
+        }
+
+        std::vector<uint8_t> data() const
+        {
+            rs2_error* e = nullptr;
+            auto size = rs2_fw_log_message_size(_fw_log_message.get(), &e);
+            error::handle(e);
+            std::vector<uint8_t> result;
+            if (size > 0)
+            {
+                auto start = rs2_fw_log_message_data(_fw_log_message.get(), &e);
+                error::handle(e);
+                result.insert(result.begin(), start, start + size);
+            }
+            return result;
+        }
+
+        const std::shared_ptr<rs2_firmware_log_message> get_message() const { return _fw_log_message; }
+
+    private:
+        std::shared_ptr<rs2_firmware_log_message> _fw_log_message;
+    };
+
+    class firmware_log_parsed_message
+    {
+    public:
+        explicit firmware_log_parsed_message(std::shared_ptr<rs2_firmware_log_parsed_message> msg) :
+            _parsed_fw_log(msg) {}
+
+        std::string message() const
+        {
+            rs2_error* e = nullptr;
+            std::string msg(rs2_get_fw_log_parsed_message(_parsed_fw_log.get(), &e));
+            error::handle(e);
+            return msg;
+        }
+        std::string file_name() const
+        {
+            rs2_error* e = nullptr;
+            std::string file_name(rs2_get_fw_log_parsed_file_name(_parsed_fw_log.get(), &e));
+            error::handle(e);
+            return file_name;
+        }
+        std::string thread_name() const
+        {
+            rs2_error* e = nullptr;
+            std::string thread_name(rs2_get_fw_log_parsed_thread_name(_parsed_fw_log.get(), &e));
+            error::handle(e);
+            return thread_name;
+        }
+        std::string severity() const
+        {
+            rs2_error* e = nullptr;
+            rs2_log_severity sev = rs2_get_fw_log_parsed_severity(_parsed_fw_log.get(), &e);
+            error::handle(e);
+            return std::string(rs2_log_severity_to_string(sev));
+        }
+        uint32_t line() const
+        {
+            rs2_error* e = nullptr;
+            uint32_t line(rs2_get_fw_log_parsed_line(_parsed_fw_log.get(), &e));
+            error::handle(e);
+            return line;
+        }
+        uint32_t timestamp() const
+        {
+            rs2_error* e = nullptr;
+            uint32_t timestamp(rs2_get_fw_log_parsed_timestamp(_parsed_fw_log.get(), &e));
+            error::handle(e);
+            return timestamp;
+        }
+
+        const std::shared_ptr<rs2_firmware_log_parsed_message> get_message() const { return _parsed_fw_log; }
+
+    private:
+        std::shared_ptr<rs2_firmware_log_parsed_message> _parsed_fw_log;
+    };
+
+    class firmware_logger : public device
+    {
+    public:
+        firmware_logger(device d)
+            : device(d.get())
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_FW_LOGGER, &e) == 0 && !e)
+            {
+                _dev.reset();
+            }
+            error::handle(e);
+        }
+
+        rs2::firmware_log_message create_message()
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_firmware_log_message> msg(
+                rs2_create_fw_log_message(_dev.get(), &e),
+                rs2_delete_fw_log_message);
+            error::handle(e);
+
+            return firmware_log_message(msg);
+        }
+
+        rs2::firmware_log_parsed_message create_parsed_message()
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_firmware_log_parsed_message> msg(
+                rs2_create_fw_log_parsed_message(_dev.get(), &e),
+                rs2_delete_fw_log_parsed_message);
+            error::handle(e);
+
+            return firmware_log_parsed_message(msg);
+        }
+
+        bool get_firmware_log(rs2::firmware_log_message& msg) const
+        {
+            rs2_error* e = nullptr;
+            rs2_firmware_log_message* m = msg.get_message().get();
+            bool fw_log_pulling_status =
+                rs2_get_fw_log(_dev.get(), m, &e);
+
+            error::handle(e);
+
+            return fw_log_pulling_status;
+        }
+
+        bool get_flash_log(rs2::firmware_log_message& msg) const
+        {
+            rs2_error* e = nullptr;
+            rs2_firmware_log_message* m = msg.get_message().get();
+            bool flash_log_pulling_status =
+                rs2_get_flash_log(_dev.get(), m, &e);
+
+            error::handle(e);
+
+            return flash_log_pulling_status;
+        }
+
+        bool init_parser(const std::string& xml_content)
+        {
+            rs2_error* e = nullptr;
+
+            bool parser_initialized = rs2_init_fw_log_parser(_dev.get(), xml_content.c_str(), &e);
+            error::handle(e);
+
+            return parser_initialized;
+        }
+
+        bool parse_log(const rs2::firmware_log_message& msg, const rs2::firmware_log_parsed_message& parsed_msg)
+        {
+            rs2_error* e = nullptr;
+
+            bool parsingResult = rs2_parse_firmware_log(_dev.get(), msg.get_message().get(), parsed_msg.get_message().get(), &e);
+            error::handle(e);
+
+            return parsingResult;
+        }
+    };
+
+    class terminal_parser
+    {
+    public:
+        terminal_parser(const std::string& xml_content)
+        {
+            rs2_error* e = nullptr;
+
+            _terminal_parser = std::shared_ptr<rs2_terminal_parser>(
+                rs2_create_terminal_parser(xml_content.c_str(), &e),
+                rs2_delete_terminal_parser);
+            error::handle(e);
+        }
+
+        std::vector<uint8_t> parse_command(const std::string& command)
+        {
+            rs2_error* e = nullptr;
+
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_terminal_parse_command(_terminal_parser.get(), command.c_str(), command.size(), &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            std::vector<uint8_t> results;
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        std::string parse_response(const std::string& command, const std::vector<uint8_t>& response)
+        {
+            rs2_error* e = nullptr;
+
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_terminal_parse_response(_terminal_parser.get(), command.c_str(), command.size(),
+                (void*)response.data(), response.size(), &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            std::string results;
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+    private:
+        std::shared_ptr<rs2_terminal_parser> _terminal_parser;
+    };
+
 }
 #endif // LIBREALSENSE_RS2_INTERNAL_HPP

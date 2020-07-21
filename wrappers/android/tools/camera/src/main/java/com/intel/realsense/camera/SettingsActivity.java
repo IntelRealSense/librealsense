@@ -348,10 +348,7 @@ public class SettingsActivity extends AppCompatActivity {
             startActivityForResult(intent, OPEN_FW_FILE_REQUEST_CODE);
             return;
         }
-        if(fw_logging_enabled)
-            FwLogger.stopFwLogging();
-        else
-            FwLogger.startFwLogging(fw_logging_file_path);
+
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putBoolean(getString(R.string.fw_logging), !fw_logging_enabled);
         editor.commit();

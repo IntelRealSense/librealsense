@@ -34,24 +34,11 @@ namespace librealsense
     class frame_validator : public rs2_frame_callback
     {
     public:
-        explicit frame_validator(std::shared_ptr<sensor_interface> sensor, frame_callback_ptr user_callback, stream_profiles user_requests, stream_profiles validator_requests);
-        virtual ~frame_validator();
+        explicit frame_validator(std::shared_ptr<sensor_base> sensor, frame_callback_ptr user_callback, stream_profiles user_requests, stream_profiles validator_requests);
+        virtual ~frame_validator() override;
 
         void on_frame(rs2_frame * f) override;
         void release() override;
-
-        static bool stream_profiles_correspond(stream_profile_interface* l, stream_profile_interface* r)
-        {
-            auto vl = dynamic_cast<video_stream_profile_interface*>(l);
-            auto vr = dynamic_cast<video_stream_profile_interface*>(r);
-
-            if (!vl || !vr)
-                return false;
-
-            return  l->get_framerate() == r->get_framerate() &&
-                vl->get_width() == vr->get_width() &&
-                vl->get_height() == vr->get_height();
-        }
 
     private:
         bool propagate(frame_interface* frame);
@@ -64,6 +51,6 @@ namespace librealsense
         frame_callback_ptr _user_callback;
         stream_profiles _user_requests;
         stream_profiles _validator_requests;
-        std::shared_ptr<sensor_interface> _sensor;
+        std::shared_ptr<sensor_base> _sensor;
     };
 }

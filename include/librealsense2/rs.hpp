@@ -148,5 +148,7 @@ inline std::ostream & operator << (std::ostream & o, rs2_exception_type exceptio
 inline std::ostream & operator << (std::ostream & o, rs2_playback_status status) { return o << rs2_playback_status_to_string(status); }
 inline std::ostream & operator << (std::ostream & o, rs2_l500_visual_preset preset) {return o << rs2_l500_visual_preset_to_string(preset);}
 inline std::ostream & operator << (std::ostream & o, rs2_sensor_mode mode) { return o << rs2_sensor_mode_to_string(mode); }
+inline std::ostream & operator << (std::ostream & o, rs2_calibration_type mode) { return o << rs2_calibration_type_to_string(mode); }
+inline std::ostream & operator << (std::ostream & o, rs2_calibration_status mode) { return o << rs2_calibration_status_to_string(mode); }
 
 #endif // LIBREALSENSE_RS2_HPP

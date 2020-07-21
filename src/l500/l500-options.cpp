@@ -13,7 +13,7 @@ namespace librealsense
 
     float l500_hw_options::query() const
     {
-        return query(_resolution->query());
+        return query(int(_resolution->query()));
     }
 
     void l500_hw_options::set(float value)
@@ -35,7 +35,7 @@ namespace librealsense
         auto max = _hw_monitor->send(command{ AMCGET, _type, get_max });
         auto step = _hw_monitor->send(command{ AMCGET, _type, get_step });
 
-        auto def = query(_resolution->query());
+        auto def = query(int(_resolution->query()));
 
         if (min.size() < sizeof(int32_t) || max.size() < sizeof(int32_t) || step.size() < sizeof(int32_t))
         {
@@ -44,8 +44,17 @@ namespace librealsense
             throw std::runtime_error(s.str());
         }
 
-        _range = option_range{ float(*(reinterpret_cast<int32_t*>(min.data()))),
-            float(*(reinterpret_cast<int32_t*>(max.data()))),
+        auto max_value = float(*(reinterpret_cast<int32_t*>(max.data())));
+        auto min_value = float(*(reinterpret_cast<int32_t*>(min.data())));
+
+        if (type == noise_filtering) 
+        {
+            // Hack until addressed in firmware
+            min_value = std::min(max_value, std::max(min_value, 2.f));
+        }
+
+        _range = option_range{ min_value,
+            max_value,
             float(*(reinterpret_cast<int32_t*>(step.data()))),
             def };
     }
@@ -65,7 +74,7 @@ namespace librealsense
         }
 
         auto val = *(reinterpret_cast<int32_t*>((void*)res.data()));
-        return val;
+        return float(val);
     }
 
     l500_options::l500_options(std::shared_ptr<context> ctx, const platform::backend_device_group & group) :
@@ -80,12 +89,12 @@ namespace librealsense
             depth_sensor.register_option
             (RS2_OPTION_VISUAL_PRESET, std::make_shared<uvc_xu_option<int >>(raw_depth_sensor, ivcam2::depth_xu, ivcam2::L500_AMBIENT,
                 "Change the depth ambient light to ambient: 1 for no ambient and 2 for low ambient",
-                std::map<float, std::string>{ { RS2_AMBIENT_LIGHT_NO_AMBIENT, "No Ambient"},
-                { RS2_AMBIENT_LIGHT_LOW_AMBIENT, "Low Ambient" }}));
+                std::map<float, std::string>{ { float(RS2_AMBIENT_LIGHT_NO_AMBIENT), "No Ambient"},
+                { float(RS2_AMBIENT_LIGHT_LOW_AMBIENT), "Low Ambient" }}));
         }
         else
         {
-            auto resolution_option = std::make_shared<float_option_with_description<rs2_sensor_mode>>(option_range{ RS2_SENSOR_MODE_VGA,RS2_SENSOR_MODE_XGA,1, RS2_SENSOR_MODE_XGA }, "Notify the sensor about the intended streaming mode. Required for preset ");
+            auto resolution_option = std::make_shared<float_option_with_description<rs2_sensor_mode>>(option_range{ RS2_SENSOR_MODE_VGA,RS2_SENSOR_MODE_COUNT - 1,1, RS2_SENSOR_MODE_XGA }, "Notify the sensor about the intended streaming mode. Required for preset ");
 
             depth_sensor.register_option(RS2_OPTION_SENSOR_MODE, resolution_option);
 
@@ -142,7 +151,8 @@ namespace librealsense
 
     void l500_options::change_preset(rs2_l500_visual_preset preset)
     {
-        if (preset != RS2_L500_VISUAL_PRESET_CUSTOM)
+        if ((preset != RS2_L500_VISUAL_PRESET_CUSTOM) &&
+            (preset != RS2_L500_VISUAL_PRESET_DEFAULT))
             reset_hw_controls();
 
         switch (preset)
@@ -163,6 +173,12 @@ namespace librealsense
             break;
         case RS2_L500_VISUAL_PRESET_CUSTOM:
             move_to_custom();
+            break;
+        case RS2_L500_VISUAL_PRESET_DEFAULT:
+            LOG_ERROR("L515 Visual Preset option cannot be changed to Default");
+            throw  invalid_value_exception(to_string() << "The Default preset signifies that the controls have not been changed \n"
+                                                           "since initialization, the API does not support changing back to this state.\n"
+                                                           "Please choose one of the other presets");
             break;
         default: break;
         };

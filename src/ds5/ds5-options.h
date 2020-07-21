@@ -54,26 +54,6 @@ namespace librealsense
         hid_sensor& _ep;
     };
 
-    class enable_motion_correction : public option_base
-    {
-    public:
-        void set(float value) override;
-
-        float query() const override;
-
-        bool is_enabled() const override { return true; }
-
-        const char* get_description() const override
-        {
-            return "Enable/Disable Automatic Motion Data Correction";
-        }
-
-        enable_motion_correction(sensor_base* mm_ep, const option_range& opt_range);
-
-    private:
-        std::atomic<bool>   _is_active;
-    };
-
     class enable_auto_exposure_option : public option_base
     {
     public:
@@ -227,6 +207,31 @@ namespace librealsense
         std::function<void(const option &)> _record_action = [](const option&) {};
         lazy<option_range> _range;
         hw_monitor& _hwm;
+    };
+
+    class external_sync_mode2 : public option
+    {
+    public:
+        external_sync_mode2(hw_monitor& hwm, sensor_base* depth_ep);
+        virtual ~external_sync_mode2() = default;
+        virtual void set(float value) override;
+        virtual float query() const override;
+        virtual option_range get_range() const override;
+        virtual bool is_enabled() const override { return _sensor && !_sensor ->is_streaming(); }
+
+        const char* get_description() const override
+        {
+            return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave, 3:Full Salve, 4-258:Genlock with burst count of 1-255 frames for each trigger";
+        }
+        void enable_recording(std::function<void(const option &)> record_action) override
+        {
+            _record_action = record_action;
+        }
+    private:
+        std::function<void(const option &)> _record_action = [](const option&) {};
+        lazy<option_range> _range;
+        hw_monitor& _hwm;
+        sensor_base* _sensor;
     };
 
     class emitter_on_and_off_option : public option

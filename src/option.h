@@ -252,6 +252,8 @@ namespace librealsense
         bool is_true() { return (_value > _opt_range.min); }
         // TODO: expose this outwards
         const char* get_description() const override { return "A simple custom option for a processing block"; }
+
+        using ptr = std::shared_ptr< bool_option >;
     };
 
     class uvc_pu_option : public option
@@ -550,5 +552,25 @@ namespace librealsense
        std::vector<float>      _move_to_manual_values;
        float                   _manual_value;
        std::function<void(const option&)> _recording_function = [](const option&) {};
+   };
+
+   class enable_motion_correction : public option_base
+   {
+   public:
+       void set(float value) override;
+
+       float query() const override;
+
+       bool is_enabled() const override { return true; }
+
+       const char* get_description() const override
+       {
+           return "Enable/Disable Automatic Motion Data Correction";
+       }
+
+       enable_motion_correction(sensor_base* mm_ep, const option_range& opt_range);
+
+   private:
+       std::atomic<bool>   _is_active;
    };
 }

@@ -1,3 +1,6 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+
 #pragma once
 
 #include "rendering.h"
@@ -6,6 +9,19 @@
 #include <unordered_map>
 #include <vector>
 #include <memory>
+
+void _check_gl_error(const char *file, int line);
+void clear_gl_errors();
+
+#ifndef NDEBUG
+#define check_gl_error() _check_gl_error(__FILE__,__LINE__)
+#else
+#ifndef _DEBUG
+#define check_gl_error() _check_gl_error(__FILE__,__LINE__)
+#else
+#define check_gl_error()
+#endif
+#endif
 
 namespace rs2
 {
@@ -202,6 +218,7 @@ namespace rs2
         void set_scale(float2 scale) { _scale = scale; }
 
         void draw(texture_2d_shader& shader, uint32_t tex);
+        void draw(texture_2d_shader& shader, uint32_t tex1, uint32_t tex2);
 
     private:
         static obj_mesh create_mesh();
@@ -225,6 +242,7 @@ namespace rs2
         }
 
         void draw_texture(uint32_t tex, float opacity = 1.f);
+        void draw_texture(uint32_t tex1, uint32_t tex2, float opacity = 1.f);
 
         void draw_texture(float2 pos, float2 scale, uint32_t tex)
         {
@@ -232,6 +250,15 @@ namespace rs2
             _visualizer.set_position(pos);
             _visualizer.set_scale(scale);
             _visualizer.draw(*tex_2d_shader, tex);
+            tex_2d_shader->end();
+        }
+
+        void draw_texture(float2 pos, float2 scale, uint32_t tex1, uint32_t tex2)
+        {
+            tex_2d_shader->begin();
+            _visualizer.set_position(pos);
+            _visualizer.set_scale(scale);
+            _visualizer.draw(*tex_2d_shader, tex1, tex2);
             tex_2d_shader->end();
         }
 
@@ -294,6 +321,8 @@ namespace rs2
 
         std::string get_status();
 
+        void set_dims(int w, int h) { _w = w; _h = h; }
+
         int get_width() const { return _w; }
         int get_height() const { return _h; }
         uint32_t get() const { return _id; }
@@ -301,5 +330,6 @@ namespace rs2
         uint32_t _id;
         uint32_t _db = 0;
         int _w, _h;
+        int32_t _viewport[4];
     };
 }

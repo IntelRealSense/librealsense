@@ -28,12 +28,16 @@
 #ifdef INTERNAL_FW
 #include "common/fw/D4XX_FW_Image.h"
 #include "common/fw/SR3XX_FW_Image.h"
+#include "common/fw/L5XX_FW_Image.h"
 #else
 #define FW_D4XX_FW_IMAGE_VERSION ""
 #define FW_SR3XX_FW_IMAGE_VERSION ""
+#define FW_L5XX_FW_IMAGE_VERSION ""
 #endif // INTERNAL_FW
 
 #include <easylogging++.h>
+
+
 #ifdef BUILD_SHARED_LIBS
 // With static linkage, ELPP is initialized by librealsense, so doing it here will
 // create errors. When we're using the shared .so/.dll, the two are separate and we have
@@ -45,7 +49,7 @@ using namespace rs400;
 
 #define MIN_IP_SIZE 7 //TODO: Ester - update size when host name is supported
 
-bool add_remote_device(context& ctx, std::string address) 
+bool add_remote_device(context& ctx, std::string address)
 {
 #ifdef NETWORK_DEVICE
     rs2::net_device dev(address);
@@ -56,7 +60,7 @@ bool add_remote_device(context& ctx, std::string address)
 #endif
 }
 
-void add_playback_device(context& ctx, device_models_list& device_models, 
+void add_playback_device(context& ctx, device_models_list& device_models,
     std::string& error_message, viewer_model& viewer_model, const std::string& file)
 {
     bool was_loaded = false;
@@ -87,7 +91,7 @@ void add_playback_device(context& ctx, device_models_list& device_models,
                             //Calling from different since playback callback is from reading thread
                             std::thread{ [subs, &viewer_model, it]()
                             {
-                                if(!(*it)->dev_syncer)
+                                if (!(*it)->dev_syncer)
                                     (*it)->dev_syncer = viewer_model.syncer->create_syncer();
 
                                 for (auto&& sub : subs)
@@ -150,8 +154,6 @@ bool refresh_devices(std::mutex& m,
         return false;
     try
     {
-        auto prev_size = current_connected_devices.size();
-
         //Remove disconnected
         auto dev_itr = begin(current_connected_devices);
         while (dev_itr != end(current_connected_devices))
@@ -160,7 +162,7 @@ bool refresh_devices(std::mutex& m,
             if (info.was_removed(dev))
             {
                 //Notify change
-                viewer_model.not_model.add_notification({ get_device_name(dev).first + " Disconnected\n",
+                viewer_model.not_model->add_notification({ get_device_name(dev).first + " Disconnected\n",
                     RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
 
                 //Remove from devices
@@ -205,26 +207,26 @@ bool refresh_devices(std::mutex& m,
                 dev.supports(RS2_CAMERA_INFO_NAME) && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)) != "Platform Camera" && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)).find("IP Device") == std::string::npos)
             {
                 device_models.emplace_back(new device_model(dev, error_message, viewer_model));
-                viewer_model.not_model.add_log(to_string() << (*device_models.rbegin())->dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
+                viewer_model.not_model->add_log(to_string() << (*device_models.rbegin())->dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
                 added = true;
             }
 
             if (!initial_refresh)
             {
                 if (added || dev.is<playback>())
-                    viewer_model.not_model.add_notification({ dev_descriptor.first + " Connected\n",
+                    viewer_model.not_model->add_notification({ dev_descriptor.first + " Connected\n",
                         RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
                 else if (added || dev.supports(RS2_CAMERA_INFO_IP_ADDRESS))
-                    viewer_model.not_model.add_notification({ dev_descriptor.first + " Connected\n",
+                    viewer_model.not_model->add_notification({ dev_descriptor.first + " Connected\n",
                         RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
                 else
-                    viewer_model.not_model.add_notification({ dev_descriptor.first + " Connected\n",
-                        RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR }, 
-                        [&device_models, &viewer_model, &error_message, dev]{
-                            auto device = dev;
-                            device_models.emplace_back(
-                                new device_model(device, error_message, viewer_model));
-                        });
+                    viewer_model.not_model->add_notification({ dev_descriptor.first + " Connected\n",
+                        RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR },
+                        [&device_models, &viewer_model, &error_message, dev] {
+                    auto device = dev;
+                    device_models.emplace_back(
+                        new device_model(device, error_message, viewer_model));
+                });
             }
 
             current_connected_devices.push_back(dev);
@@ -238,8 +240,8 @@ bool refresh_devices(std::mutex& m,
                         if (!data.empty())
                         {
                             auto dev_model_itr = std::find_if(begin(device_models), end(device_models),
-                                [&](const std::unique_ptr<device_model>& other) 
-                                { return get_device_name(other->dev) == dev_descriptor; });
+                                [&](const std::unique_ptr<device_model>& other)
+                            { return get_device_name(other->dev) == dev_descriptor; });
 
                             if (dev_model_itr == end(device_models))
                                 return;
@@ -247,11 +249,11 @@ bool refresh_devices(std::mutex& m,
                             (*dev_model_itr)->handle_hardware_events(data);
                         }
                     }
-                    viewer_model.not_model.add_notification({ n.get_description(), n.get_severity(), n.get_category() });
+                    viewer_model.not_model->add_notification({ n.get_description(), n.get_severity(), n.get_category() });
                 });
             }
 
-            
+
         }
         initial_refresh = false;
     }
@@ -295,59 +297,22 @@ int main(int argc, const char** argv) try
     std::vector<device> connected_devs;
     std::mutex m;
 
-    if (argc == 2)
-    {
-        try
+    std::weak_ptr<notifications_model> notifications = viewer_model.not_model;
+    rs2::log_to_callback( RS2_LOG_SEVERITY_INFO,
+        [notifications]( rs2_log_severity severity, rs2::log_message const& msg )
         {
-            is_ip_device_connected = add_remote_device(ctx, argv[1]);;
-        }
-        catch (std::runtime_error e)
-        {
-            error_message = e.what();
-        }
-    }
+            if (auto not_model = notifications.lock())
+            {
+                not_model->output.add_log(severity, msg.filename(), msg.line_number(), msg.raw());
+            }
+        });
 
-#ifdef BUILD_SHARED_LIBS
-    // Configure the logger
-    el::Configurations conf;
-    conf.set( el::Level::Global, el::ConfigurationType::Format, "[%level] %msg" );
-    conf.set( el::Level::Info, el::ConfigurationType::Format, "%msg" );
-    conf.set( el::Level::Debug, el::ConfigurationType::Enabled, "false" );
-    el::Loggers::reconfigureLogger( "default", conf );
-    // Create a dispatch sink which will get any messages logged to EasyLogging, which will then
-    // post the messages on the viewer's notification window.
-    class viewer_model_dispatcher : public el::LogDispatchCallback
-    {
-    public:
-        rs2::viewer_model * vm = nullptr;  // only the default ctor is available to us...!
-    protected:
-        void handle( const el::LogDispatchData* data ) noexcept override
-        {
-            vm->not_model.add_log( 
-                data->logMessage()->logger()->logBuilder()->build(
-                    data->logMessage(),
-                    data->dispatchAction() == el::base::DispatchAction::NormalLog
-                ));
-        }
-    };
-    el::Helpers::installLogDispatchCallback< viewer_model_dispatcher >( "viewer_model_dispatcher" );
-    auto dispatcher = el::Helpers::logDispatchCallback< viewer_model_dispatcher >( "viewer_model_dispatcher" );
-    dispatcher->vm = &viewer_model;
-    el::Helpers::uninstallLogDispatchCallback< el::base::DefaultLogDispatchCallback >( "DefaultLogDispatchCallback" );
-#else
-     rs2::log_to_callback( RS2_LOG_SEVERITY_INFO,
-         [&]( rs2_log_severity severity, rs2::log_message const& msg )
-         {
-             viewer_model.not_model.add_log( msg.raw() );
-         } );
-#endif
     window.on_file_drop = [&](std::string filename)
     {
-        
         add_playback_device(ctx, *device_models, error_message, viewer_model, filename);
         if (!error_message.empty())
         {
-            viewer_model.not_model.add_notification({ error_message,
+            viewer_model.not_model->add_notification({ error_message,
                 RS2_LOG_SEVERITY_ERROR, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
         }
     };
@@ -380,11 +345,22 @@ int main(int argc, const char** argv) try
         return true;
     };
 
+    if (argc == 2)
+    {
+        try
+        {
+            is_ip_device_connected = add_remote_device(ctx, argv[1]);;
+        }
+        catch (std::runtime_error e)
+        {
+            error_message = e.what();
+        }
+    }
 
     // Closing the window
     while (window)
     {
-        auto device_changed = refresh_devices(m, ctx, devices_connection_changes, connected_devs, 
+        auto device_changed = refresh_devices(m, ctx, devices_connection_changes, connected_devs,
             device_names, *device_models, viewer_model, error_message);
 
         auto output_height = viewer_model.get_output_height();
@@ -433,7 +409,7 @@ int main(int argc, const char** argv) try
         int multiline_devices_names = 0;
         for (size_t i = 0; i < device_names.size(); i++)
         {
-            if(device_names[i].first.find("\n") != std::string::npos)
+            if (device_names[i].first.find("\n") != std::string::npos)
             {
                 bool show_device_in_list = true;
                 for (auto&& dev_model : *device_models)
@@ -444,14 +420,14 @@ int main(int argc, const char** argv) try
                         break;
                     }
                 }
-                if(show_device_in_list)
+                if (show_device_in_list)
                 {
                     multiline_devices_names++;
                 }
             }
         }
 
-        ImGui::SetNextWindowSize({ viewer_model.panel_width, 20.f * (new_devices_count + multiline_devices_names) + 8 + (is_ip_device_connected? 0 : 20)});
+        ImGui::SetNextWindowSize({ viewer_model.panel_width, 20.f * (new_devices_count + multiline_devices_names) + 8 + (is_ip_device_connected ? 0 : 20) });
         if (ImGui::BeginPopup("select"))
         {
             ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
@@ -536,76 +512,62 @@ int main(int argc, const char** argv) try
                 ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
                 ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
 
-                if (ImGui::BeginPopupModal("Network Device", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove))    
+                if (ImGui::BeginPopupModal("Network Device", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove))
                 {
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 3);
                     ImGui::SetCursorPosX(10);
                     ImGui::Text("Connect to a Linux system running rs-server");
 
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-                    
-                    bool connect = false;
-                    static char ip_input[17];
+
+                    static char ip_input[255];
                     std::copy(ip_address.begin(), ip_address.end(), ip_input);
                     ip_input[ip_address.size()] = '\0';
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
                     ImGui::SetCursorPosX(10);
                     ImGui::Text("Device IP: ");
-                    ImGui::SameLine(); 
+                    ImGui::SameLine();
                     //ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 1);
                     ImGui::PushItemWidth(width - ImGui::GetCursorPosX() - 10);
-                    if (ImGui::GetWindowIsFocused() && 
-                        !ImGui::IsAnyItemActive() && ip_address == "") 
+                    if (ImGui::GetWindowIsFocused() && !ImGui::IsAnyItemActive())
                     {
                         ImGui::SetKeyboardFocusHere();
                     }
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
 
-
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 3);
-                    if (ImGui::InputText("##ip", ip_input, 16, 
-                        ImGuiInputTextFlags_CharsDecimal || 
-                        ImGuiInputTextFlags_EnterReturnsTrue
-                        ))
+                    if (ImGui::InputText("##ip", ip_input, 255))
                     {
                         ip_address = ip_input;
                     }
                     ImGui::PopStyleColor();
-                    
+
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 6);
 
                     ImGui::PopItemWidth();
                     ImGui::SetCursorPosX(width / 2 - 105);
 
-                    std::regex rgx("\\d{1,3}(\\.\\d{1,3}){3}");
-                    if (!std::regex_match(ip_address,rgx))
+                    if (ImGui::ButtonEx("OK", { 100.f, 25.f }) || ImGui::IsKeyDown(GLFW_KEY_ENTER) || ImGui::IsKeyDown(GLFW_KEY_KP_ENTER))
                     {
-                        ImGui::ButtonEx("OK",{100.f, 25.f}, ImGuiButtonFlags_Disabled);
-                    }
-                    else
-                    {
-                        if (ImGui::ButtonEx("OK",{100.f, 25.f}) || ImGui::IsKeyDown(GLFW_KEY_ENTER) || ImGui::IsKeyDown(GLFW_KEY_KP_ENTER))
+                        try
                         {
-                            try
-                            {
-                                is_ip_device_connected = add_remote_device(ctx, ip_address);;
-                                refresh_devices(m, ctx, devices_connection_changes, connected_devs, device_names, *device_models, viewer_model, error_message);
-                                auto dev = connected_devs[connected_devs.size()-1];
-                                device_models->emplace_back(new device_model(dev, error_message, viewer_model));
-                                config_file::instance().set(configurations::viewer::last_ip, ip_address);
-                            }
-                            catch (std::runtime_error e)
-                            {
-                                error_message = e.what();
-                            }
-                            ip_address = "";
-                            close_ip_popup = true;
-                            ImGui::CloseCurrentPopup();
+                            is_ip_device_connected = add_remote_device(ctx, ip_address);;
+                            refresh_devices(m, ctx, devices_connection_changes, connected_devs, device_names, *device_models, viewer_model, error_message);
+                            auto dev = connected_devs[connected_devs.size() - 1];
+                            device_models->emplace_back(new device_model(dev, error_message, viewer_model));
+                            config_file::instance().set(configurations::viewer::last_ip, ip_address);
                         }
+                        catch (std::runtime_error e)
+                        {
+                            error_message = e.what();
+                        }
+                        ip_address = "";
+                        close_ip_popup = true;
+                        ImGui::CloseCurrentPopup();
                     }
                     ImGui::SameLine();
                     ImGui::SetCursorPosX(width / 2 + 5);
-                    if(ImGui::Button("Cancel",{100.f, 25.f}) || ImGui::IsKeyDown(GLFW_KEY_ESCAPE))
+                    if (ImGui::Button("Cancel", { 100.f, 25.f }) || ImGui::IsKeyDown(GLFW_KEY_ESCAPE))
                     {
                         ip_address = "";
                         close_ip_popup = true;
@@ -615,7 +577,7 @@ int main(int argc, const char** argv) try
                 }
                 ImGui::PopStyleColor(3);
                 ImGui::PopStyleVar(1);
-        
+
                 ImGui::NextColumn();
                 ImGui::Text("%s", "");
                 ImGui::NextColumn();
@@ -628,7 +590,7 @@ int main(int argc, const char** argv) try
             }
             ImGui::PopStyleColor();
             ImGui::EndPopup();
-        }
+            }
         ImGui::PopFont();
         ImGui::PopStyleVar();
         ImGui::PopStyleColor();
@@ -642,9 +604,16 @@ int main(int argc, const char** argv) try
 
         viewer_model.show_top_bar(window, viewer_rect, *device_models);
 
-        viewer_model.show_event_log(window.get_font(), viewer_model.panel_width,
-            window.height() - (viewer_model.is_output_collapsed ? viewer_model.default_log_h : 20),
-            window.width() - viewer_model.panel_width, viewer_model.default_log_h);
+        auto output_rect = rect{ viewer_model.panel_width,
+            window.height() - viewer_model.get_output_height(),
+            window.width() - viewer_model.panel_width, viewer_model.get_output_height() };
+
+        std::vector<rs2::device> devices;
+        for (auto&& dev_model : *device_models)
+        {
+            devices.push_back(dev_model->dev);
+        }
+        viewer_model.not_model->output.draw(window, output_rect, devices);
 
         // Set window position and size
         ImGui::SetNextWindowPos({ 0, viewer_model.panel_y });
@@ -742,7 +711,7 @@ int main(int argc, const char** argv) try
 
         // Fetch and process frames from queue
         viewer_model.handle_ready_frames(viewer_rect, window, static_cast<int>(device_models->size()), error_message);
-    }
+        }
 
     // Stopping post processing filter rendering thread
     viewer_model.ppf.stop();

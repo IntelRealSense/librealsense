@@ -1,16 +1,16 @@
 ﻿# rs-imu-calibration Tool:
 
 ## Goal
-The tool is intended to calibrate the IMU built in D435i cameras
+The tool is intended to calibrate the IMU built in D435i and L515 cameras
 
 ## Description
-D435i cameras arrive from the factory with a calibrated IMU device. However the calibration accuracy can be further imporved by a calibration procedure.
+D435i and L515 cameras arrive from the factory with a calibrated IMU device. However the calibration accuracy can be further imporved by a calibration procedure.
 
 The rs-imu-calibration tool is a code example that walks you through the calibration steps and saves the calibration coefficients to the EEPROM, to be applied automatically by the driver.
 
 ## Limitations
 While the tool achieves good overall results, it has limitations that may impact accuracy. Please refer to following white paper for further information:
-Intel® RealSense™ Depth Camera D435i [IMU Calibration](https://dev.intelrealsense.com/docs/depth-camera-d435i-imu-calibration)
+IMU Calibration Tool for Intel® RealSense™ Depth Camera White Paper (https://dev.intelrealsense.com/docs/depth-camera-imu-calibration)
 
 ## Command Line Parameters
 
@@ -30,7 +30,7 @@ The script runs you through the 6 main orientations of the camera.
 For each direction there are the following steps:
 *	**Rotation:**<br>
   *	The script prints the following line, describing how to orient the camera:<br>
-`Align to direction:  [ 0. -1.  0.]   Upright facing out`<br>
+`Align to direction:  [ 0. -1.  0.]   Mounting screw pointing down, device facing out`<br>
   *	Then it prints the status (rotate) and the difference from the desired orientation:<br>
   `Status.rotate:           [ 1.0157 -0.1037  0.9945]:                 [False False False]`<br>
   *	You have to bring the numbers to [0,0,0] and then you are in the right direction and the script moves on to the next status.<br><br>
@@ -60,6 +60,7 @@ That’s it. At the end a confirmation message appears:<br>
 `SUCCESS: saved calibration to camera.`
 
 **NOTICE:**<br>
+Press ESC key to abort the calibration process.
 CTRL-C isn’t working so press CTRL-Z and then `kill -9 %1` if you want to terminate in the middle…
 
 **Appendix A:**<br>

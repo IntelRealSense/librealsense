@@ -26,7 +26,12 @@ EXPORTS
 
     rs2_get_extrinsics
     rs2_register_extrinsics
+    rs2_override_extrinsics
     rs2_get_motion_intrinsics
+    rs2_override_intrinsics
+    rs2_get_dsm_params
+    rs2_override_dsm_params
+    rs2_reset_sensor_calibration
 
     rs2_get_stream_profiles
     rs2_get_active_streams
@@ -51,6 +56,12 @@ EXPORTS
     rs2_get_notification_severity
     rs2_get_notification_category
     rs2_get_notification_serialized_data
+
+    rs2_register_calibration_change_callback
+    rs2_register_calibration_change_callback_cpp
+    rs2_trigger_device_calibration
+    rs2_calibration_type_to_string
+    rs2_calibration_status_to_string
 
     rs2_get_frame_metadata
     rs2_supports_frame_metadata
@@ -355,4 +366,29 @@ EXPORTS
     rs2_run_tare_calibration
     rs2_get_calibration_table
     rs2_set_calibration_table
+
+    rs2_create_fw_log_message
+    rs2_delete_fw_log_message
+    rs2_get_fw_log
+    rs2_get_flash_log
+    rs2_fw_log_message_severity
+    rs2_fw_log_message_timestamp
+    rs2_fw_log_message_data
+    rs2_fw_log_message_size
+    rs2_init_fw_log_parser
+    rs2_parse_firmware_log
+    rs2_create_fw_log_parsed_message
+    rs2_delete_fw_log_parsed_message
+    rs2_get_fw_log_parsed_message
+    rs2_get_fw_log_parsed_file_name
+    rs2_get_fw_log_parsed_thread_name
+    rs2_get_fw_log_parsed_severity
+    rs2_get_fw_log_parsed_line
+    rs2_get_fw_log_parsed_timestamp
+    
+    rs2_create_terminal_parser
+    rs2_delete_terminal_parser
+    rs2_terminal_parse_command 
+    rs2_terminal_parse_response
+
 

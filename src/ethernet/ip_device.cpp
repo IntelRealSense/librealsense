@@ -10,6 +10,8 @@
 #include <chrono>
 #include <list>
 #include <thread>
+#include <iostream>
+#include <string>
 
 #include <NetdevLog.h>
 
@@ -20,7 +22,7 @@ std::string sensors_str[] = {STEREO_SENSOR_NAME, RGB_SENSOR_NAME};
 //WA for stop
 void ip_device::recover_rtsp_client(int sensor_index)
 {
-    remote_sensors[sensor_index]->rtsp_client = RsRTSPClient::getRtspClient(std::string("rtsp://" + ip_address + ":8554/" + sensors_str[sensor_index]).c_str(), "ethernet_device");
+    remote_sensors[sensor_index]->rtsp_client = RsRTSPClient::createNew(std::string("rtsp://" + ip_address + ":" + std::to_string(ip_port) + "/" + sensors_str[sensor_index]).c_str(), "rs_network_device", 0, sensor_index);
 
     ((RsRTSPClient*)remote_sensors[sensor_index]->rtsp_client)->initFunc(&rs_rtp_stream::get_memory_pool());
     ((RsRTSPClient*)remote_sensors[sensor_index]->rtsp_client)->getStreams();
@@ -64,9 +66,18 @@ void ip_device::stop_sensor_streams(int sensor_index)
     remote_sensors[sensor_index]->active_streams_keys.clear();
 }
 
-ip_device::ip_device(std::string ip_address, rs2::software_device sw_device)
+ip_device::ip_device(rs2::software_device sw_device, std::string ip_address)
 {
-    this->ip_address = ip_address;
+    int colon = ip_address.find(":");
+    this->ip_address = ip_address.substr(0, colon); // 10.10.10.10:8554 => 10.10.10.10
+    this->ip_port = 8554; // default RTSP port
+    if (colon != -1) 
+    try 
+    {
+        this->ip_port = std::stoi(ip_address.substr(colon + 1)); // 10.10.10.10:8554 => 8554
+    }
+    catch(...) {}
+
     this->is_device_alive = true;
 
     //init device data
@@ -104,12 +115,12 @@ bool ip_device::init_device_data(rs2::software_device sw_device)
     for(int sensor_id = 0; sensor_id < NUM_OF_SENSORS; sensor_id++)
     {
 
-        url = std::string("rtsp://" + ip_address + ":8554/" + sensors_str[sensor_id]);
+        url = std::string("rtsp://" + ip_address + ":" + std::to_string(ip_port) + "/" + sensors_str[sensor_id]);
         sensor_name = sensors_str[sensor_id];
 
         remote_sensors[sensor_id] = new ip_sensor();
 
-        remote_sensors[sensor_id]->rtsp_client = RsRTSPClient::getRtspClient(url.c_str(), "ip_device_device");
+        remote_sensors[sensor_id]->rtsp_client = RsRTSPClient::createNew(url.c_str(), "rs_network_device", 0, sensor_id);
         ((RsRTSPClient*)remote_sensors[sensor_id]->rtsp_client)->initFunc(&rs_rtp_stream::get_memory_pool());
 
         rs2::software_sensor tmp_sensor = sw_device.add_sensor(sensor_name);
@@ -220,7 +231,7 @@ void ip_device::polling_state_loop()
                 {
                     try
                     {
-                        //the ftate flag is togled before the actual updatee to avoid endless re-tries on case of failure.
+                        //the state flag is togled before the actual updatee to avoid endless re-tries on case of failure.
                         remote_sensors[i]->is_enabled = enabled;
                         update_sensor_state(i, sw_sensor->get_active_streams(), true);
                     }
@@ -232,6 +243,7 @@ void ip_device::polling_state_loop()
                         notification.description = e.what();
                         notification.severity = RS2_LOG_SEVERITY_ERROR;
                         notification.type = RS2_EXCEPTION_TYPE_UNKNOWN;
+                        notification.serialized_data = e.what();
                         remote_sensors[i]->sw_sensor.get()->on_notification(notification);
                         continue;
                     }
@@ -394,7 +406,7 @@ rs2_device* rs2_create_net_device(int api_version, const char* address, rs2_erro
     // create sw device
     rs2::software_device sw_dev = rs2::software_device([](rs2_device*) {});
     // create IP instance
-    ip_device* ip_dev = new ip_device(addr, sw_dev);
+    ip_device* ip_dev = new ip_device(sw_dev, addr);
     // set client destruction functioun
     sw_dev.set_destruction_callback([ip_dev] { delete ip_dev; });
     // register device info to sw device
@@ -403,8 +415,6 @@ rs2_device* rs2_create_net_device(int api_version, const char* address, rs2_erro
     sw_dev.register_info(rs2_camera_info::RS2_CAMERA_INFO_IP_ADDRESS, addr);
     sw_dev.register_info(rs2_camera_info::RS2_CAMERA_INFO_SERIAL_NUMBER, data.serialNum);
     sw_dev.register_info(rs2_camera_info::RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, data.usbType);
-    // return sw device
-    //return sw_dev;
 
     return sw_dev.get().get();
 }

@@ -309,11 +309,11 @@ namespace librealsense
 
             if (hr == DEVICE_NOT_READY_ERROR)
                 return false;
+            CHECK_HR( hr );
 
             if (bytes_received != len)
                 throw std::runtime_error(to_string() << "Get XU n:" << (int)ctrl << " received " << bytes_received << "/" << len << " bytes");
 
-            CHECK_HR(hr);
             return true;
         }
 

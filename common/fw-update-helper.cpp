@@ -15,15 +15,16 @@
 
 #ifdef INTERNAL_FW
 #include "common/fw/D4XX_FW_Image.h"
-#include "common/fw/D4XX_RC_Image.h"
 #include "common/fw/SR3XX_FW_Image.h"
+#include "common/fw/L5XX_FW_Image.h"
 #else
 #define FW_D4XX_FW_IMAGE_VERSION ""
-#define FW_D4XX_RC_IMAGE_VERSION ""
 #define FW_SR3XX_FW_IMAGE_VERSION ""
+#define FW_L5XX_FW_IMAGE_VERSION ""
 const char* fw_get_D4XX_FW_Image(int) { return NULL; }
-const char* fw_get_D4XX_RC_Image(int) { return NULL; }
 const char* fw_get_SR3XX_FW_Image(int) { return NULL; }
+const char* fw_get_L5XX_FW_Image(int) { return NULL; }
+
 #endif // INTERNAL_FW
 
 constexpr const char* recommended_fw_url = "https://dev.intelrealsense.com/docs/firmware-releases";
@@ -49,16 +50,15 @@ namespace rs2
     {
         if (id == "D400") return RS2_PRODUCT_LINE_D400;
         else if (id == "SR300") return RS2_PRODUCT_LINE_SR300;
+        else if (id == "L500") return RS2_PRODUCT_LINE_L500;
         else return -1;
     }
 
     std::string get_available_firmware_version(int product_line)
     {
-        bool allow_rc_firmware = config_file::instance().get_or_default(configurations::update::allow_rc_firmware, false);
-
-        if (product_line == RS2_PRODUCT_LINE_D400 && allow_rc_firmware) return FW_D4XX_RC_IMAGE_VERSION;
-        else if (product_line == RS2_PRODUCT_LINE_D400) return FW_D4XX_FW_IMAGE_VERSION;
+        if (product_line == RS2_PRODUCT_LINE_D400) return FW_D4XX_FW_IMAGE_VERSION;
         //else if (product_line == RS2_PRODUCT_LINE_SR300) return FW_SR3XX_FW_IMAGE_VERSION;
+        else if (product_line == RS2_PRODUCT_LINE_L500) return FW_L5XX_FW_IMAGE_VERSION;
         else return "";
     }
 
@@ -76,20 +76,20 @@ namespace rs2
             rv[RS2_PRODUCT_LINE_D400] = vec;
         }
 
-        if (strlen(FW_D4XX_RC_IMAGE_VERSION) && allow_rc_firmware)
-        {
-            int size = 0;
-            auto hex = fw_get_D4XX_RC_Image(size);
-            auto vec = std::vector<uint8_t>(hex, hex + size);
-            rv[RS2_PRODUCT_LINE_D400] = vec;
-        }
-
         if (strlen(FW_SR3XX_FW_IMAGE_VERSION))
         {
             int size = 0;
             auto hex = fw_get_SR3XX_FW_Image(size);
             auto vec = std::vector<uint8_t>(hex, hex + size);
             rv[RS2_PRODUCT_LINE_SR300] = vec;
+        }
+
+        if (strlen(FW_L5XX_FW_IMAGE_VERSION))
+        {
+            int size = 0;
+            auto hex = fw_get_L5XX_FW_Image(size);
+            auto vec = std::vector<uint8_t>(hex, hex + size);
+            rv[RS2_PRODUCT_LINE_L500] = vec;
         }
 
         return rv;
@@ -194,7 +194,7 @@ namespace rs2
 
             auto flash = upd.create_flash_backup([&](const float progress)
             {
-                _progress = ((ceil(progress * 5) / 5) * (30 - next_progress)) + next_progress;
+                _progress = int((ceil(progress * 5) / 5) * (30 - next_progress)) + next_progress;
             });
 
             auto temp = get_folder_path(special_folder::app_data);
@@ -219,7 +219,7 @@ namespace rs2
                 if (!check_for([this, serial, &dfu]() {
                     auto devs = _ctx.query_devices();
 
-                    for (int j = 0; j < devs.size(); j++)
+                    for (uint32_t j = 0; j < devs.size(); j++)
                     {
                         try
                         {
@@ -265,7 +265,7 @@ namespace rs2
 
             dfu.update(_fw, [&](const float progress)
             {
-                _progress = (ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress;
+                _progress = int((ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress);
             });
 
             log("Firmware Download completed, await DFU transition event");
@@ -277,15 +277,15 @@ namespace rs2
             auto upd = _dev.as<updatable>();
             upd.update_unsigned(_fw, [&](const float progress)
             {
-                _progress = (ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress;
+                _progress = int((ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress);
             });
             log("Firmware Update completed, waiting for device to reconnect");
         }
 
-        if (!check_for([this, serial, &dfu]() {
+        if (!check_for([this, serial]() {
             auto devs = _ctx.query_devices();
 
-            for (int j = 0; j < devs.size(); j++)
+            for (uint32_t j = 0; j < devs.size(); j++)
             {
                 try
                 {
@@ -339,7 +339,7 @@ namespace rs2
 
             ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - 67) });
 
-            ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1. - t));
+            ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1.f - t));
 
             if (update_state == RS2_FWU_STATE_INITIAL_PROMPT)
                 ImGui::Text("Firmware updates offer critical bug fixes and\nunlock new camera capabilities.");
@@ -379,11 +379,16 @@ namespace rs2
 
                 if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }) || update_manager->started())
                 {
-                    if (!update_manager->started()) update_manager->start(shared_from_this());
+                    auto _this = shared_from_this();
+                    auto invoke = [_this](std::function<void()> action) {
+                        _this->invoke(action);
+                    };
+                    
+                    if (!update_manager->started()) update_manager->start(invoke);
 
                     update_state = RS2_FWU_STATE_IN_PROGRESS;
                     enable_dismiss = false;
-                    last_progress_time = system_clock::now();
+                    _progress_bar.last_progress_time = system_clock::now();
                 }
                 ImGui::PopStyleColor(2);
 
@@ -398,7 +403,7 @@ namespace rs2
                 {
                     update_state = RS2_FWU_STATE_COMPLETE;
                     pinned = false;
-                    last_progress_time = last_interacted = system_clock::now();
+                    _progress_bar.last_progress_time = last_interacted = system_clock::now();
                 }
 
                 if (!expanded)

@@ -2,7 +2,6 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include "../include/librealsense2/hpp/rs_frame.hpp"
 #include "synthetic-stream.h"
 
 namespace librealsense
@@ -31,6 +30,7 @@ namespace librealsense
             float2* pixels_ptr);
         virtual rs2::points allocate_points(const rs2::frame_source& source, const rs2::frame& f);
         virtual void preprocess() {}
+        virtual bool run__occlusion_filter(const rs2_extrinsics& extr);
 
     protected:
         pointcloud(const char* name);
@@ -57,5 +57,6 @@ namespace librealsense
         void set_extrinsics();
 
         stream_filter _prev_stream_filter;
+        std::shared_ptr< pointcloud > _registered_auto_calib_cb;
     };
 }

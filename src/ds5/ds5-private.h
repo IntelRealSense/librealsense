@@ -52,6 +52,7 @@ namespace librealsense
         const uint8_t DS5_ENABLE_AUTO_WHITE_BALANCE       = 0xA;
         const uint8_t DS5_ENABLE_AUTO_EXPOSURE            = 0xB;
         const uint8_t DS5_LED_PWR                         = 0xE;
+        const uint8_t DS5_THERMAL_COMPENSATION            = 0xF;
 
         // Devices supported by the current version
         static const std::set<std::uint16_t> rs400_sku_pid = {
@@ -255,10 +256,11 @@ namespace librealsense
 
         enum inter_cam_sync_mode
         {
-            INTERCAM_SYNC_DEFAULT,
-            INTERCAM_SYNC_MASTER,
-            INTERCAM_SYNC_SLAVE,
-            INTERCAM_SYNC_MAX
+            INTERCAM_SYNC_DEFAULT    = 0,
+            INTERCAM_SYNC_MASTER     = 1,
+            INTERCAM_SYNC_SLAVE      = 2,
+            INTERCAM_SYNC_FULL_SLAVE = 3,
+            INTERCAM_SYNC_MAX        = 258 // 4-258 are for Genlock with burst count of 1-255 frames for each trigger
         };
 
         enum class d400_caps : uint16_t
@@ -331,7 +333,6 @@ namespace librealsense
             uint32_t                param;          // This field content is defined ny table type
             uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
         };
-#pragma pack(pop)
 
         enum ds5_rect_resolutions : unsigned short
         {
@@ -378,6 +379,7 @@ namespace librealsense
             float  ppx;
             float  ppy;
         };
+#pragma pack(pop)
 
         template<class T>
         const T* check_calib(const std::vector<uint8_t>& raw_data)
@@ -559,7 +561,8 @@ namespace librealsense
         enum imu_eeprom_id : uint16_t
         {
             dm_v2_eeprom_id     = 0x0101,   // The pack alignment is Big-endian
-            tm1_eeprom_id       = 0x0002
+            tm1_eeprom_id       = 0x0002,
+            l500_eeprom_id      = 0x0105
         };
 
         struct depth_table_control
@@ -667,7 +670,7 @@ namespace librealsense
                 data_present.emplace(imu_calibration_id, false);
                 data_present.emplace(lens_shading_id, false);
                 data_present.emplace(projector_id, false);
-            };
+            }
         };
 
         static std::map< ds5_rect_resolutions, int2> resolutions_list = {

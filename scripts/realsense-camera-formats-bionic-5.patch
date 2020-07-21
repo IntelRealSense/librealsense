@@ -15,7 +15,7 @@ diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driv
 index 33a22c016..a7b76c987 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -219,6 +219,43 @@ static struct uvc_format_desc uvc_fmts[] = {
+@@ -219,6 +219,58 @@ static struct uvc_format_desc uvc_fmts[] = {
  		.guid		= UVC_GUID_FORMAT_CNF4,
  		.fcc		= V4L2_PIX_FMT_CNF4,
  	},
@@ -56,6 +56,21 @@ index 33a22c016..a7b76c987 100644
 +		.guid		= UVC_GUID_FORMAT_Z16H,
 +		.fcc		= V4L2_PIX_FMT_Z16H,
 +	},
++	{
++		.name		= "Frame Grabber (FG  )",
++		.guid		= UVC_GUID_FORMAT_FG,
++		.fcc		= V4L2_PIX_FMT_FG,
++	},
++	{
++		.name		= "SR300 Depth/Confidence (INZC)",
++		.guid		= UVC_GUID_FORMAT_INZC,
++		.fcc		= V4L2_PIX_FMT_INZC,
++	},
++	{
++		.name		= "Relative IR (PAIR)",
++		.guid		= UVC_GUID_FORMAT_PAIR,
++		.fcc		= V4L2_PIX_FMT_PAIR,
++	},
  };
  
  /* ------------------------------------------------------------------------
@@ -63,7 +78,7 @@ diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
 index 9b41b14ce..4b88f31f5 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
-@@ -165,6 +165,28 @@
+@@ -165,6 +165,37 @@
  	{0x32, 0x00, 0x00, 0x00, 0x02, 0x00, 0x10, 0x00, \
  	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
  
@@ -89,6 +104,15 @@ index 9b41b14ce..4b88f31f5 100644
 +	#define UVC_GUID_FORMAT_Z16H \
 +	{ 'Z',  '1',  '6',  'H', 0x00, 0x00, 0x10, 0x00, \
 +	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++	#define UVC_GUID_FORMAT_FG \
++	{ 'F',  'G',  ' ',  ' ', 0x00, 0x00, 0x10, 0x00, \
++	0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++	#define UVC_GUID_FORMAT_INZC \
++	{ 'I',  'N',  'Z',  'C', 0x02, 0xb6, 0x0f, 0x48, \
++	0x97, 0x8c, 0xe4, 0xe8, 0x8a, 0xe8, 0x9b, 0x89}
++	#define UVC_GUID_FORMAT_PAIR \
++	{ 'P',  'A',  'I',  'R', 0x36, 0x85, 0x41, 0x48, \
++	0xb6, 0xbf, 0x8f, 0xc6, 0xff, 0xb0, 0x83, 0xa8}
  
  /* ------------------------------------------------------------------------
   * Driver specific constants.
@@ -103,7 +127,7 @@ index 90aad465f..e2d757e9a 100644
 +	/* Librealsense formats*/
 +	case V4L2_PIX_FMT_RW16:		descr = "16-bit Raw data"; break;
 +	case V4L2_PIX_FMT_W10:		descr = "10-bit packed 8888[2222]"; break;
-+	case V4L2_META_FMT_D4XX:		descr = "D4XX Payload Header metadata"; break;
++	case V4L2_META_FMT_D4XX:	descr = "D4XX Payload Header metadata"; break;
 +	case V4L2_PIX_FMT_CONFIDENCE_MAP:	descr = "Packed [44] confidence data"; break;
 +	case V4L2_PIX_FMT_FG:		descr = "Frame Grabber (FG  )"; break;
 +	case V4L2_PIX_FMT_INZC:		descr = "Planar Depth/Confidence (INZC)"; break;
@@ -122,7 +146,7 @@ index b5671ce27..8954f78be 100644
  #define V4L2_PIX_FMT_CNF4     v4l2_fourcc('C', 'N', 'F', '4') /* Intel 4-bit packed depth confidence information */
 +#define V4L2_PIX_FMT_RW16     v4l2_fourcc('R', 'W', '1', '6') /* Raw data 16-bit */
 +#define V4L2_PIX_FMT_W10      v4l2_fourcc('W', '1', '0', ' ') /* Packed raw data 10-bit */
-+#define V4L2_PIX_FMT_CONFIDENCE_MAP	v4l2_fourcc('C', ' ', ' ', ' ') /* Two pixels in one byte */
++#define V4L2_PIX_FMT_CONFIDENCE_MAP    v4l2_fourcc('C', ' ', ' ', ' ') /* Two pixels in one byte */
 +/*  Librealsense development*/
 +#define V4L2_PIX_FMT_FG       v4l2_fourcc('F', 'G', ' ', ' ') /* Frame Grabber */
 +#define V4L2_PIX_FMT_INZC     v4l2_fourcc('I', 'N', 'Z', 'C') /* Planar Depth/Confidence */

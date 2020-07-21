@@ -38,29 +38,40 @@ int RsRTSPClient::getPhysicalSensorUniqueKey(rs2_stream stream_type, int sensors
     return stream_type * 10 + sensors_index;
 }
 
-IRsRtsp *RsRTSPClient::getRtspClient(char const *t_rtspURL, char const *t_applicationName, portNumBits t_tunnelOverHTTPPortNum)
+IRsRtsp *RsRTSPClient::createNew(char const *t_rtspURL, char const *t_applicationName, portNumBits t_tunnelOverHTTPPortNum, int idx)
 {
     TaskScheduler *scheduler = BasicTaskScheduler::createNew();
     UsageEnvironment *env = RSUsageEnvironment::createNew(*scheduler);
 
     RTSPClient::responseBufferSize = 100000;
-    return (IRsRtsp *)new RsRTSPClient(scheduler, env, t_rtspURL, RTSP_CLIENT_VERBOSITY_LEVEL, t_applicationName, t_tunnelOverHTTPPortNum);
+    return (IRsRtsp *)new RsRTSPClient(scheduler, env, t_rtspURL, RTSP_CLIENT_VERBOSITY_LEVEL, t_applicationName, t_tunnelOverHTTPPortNum, idx);
 }
 
-RsRTSPClient::RsRTSPClient(TaskScheduler *t_scheduler, UsageEnvironment *t_env, char const *t_rtspURL, int t_verbosityLevel, char const *t_applicationName, portNumBits t_tunnelOverHTTPPortNum)
+RsRTSPClient::RsRTSPClient(TaskScheduler *t_scheduler, UsageEnvironment *t_env, char const *t_rtspURL, int t_verbosityLevel, char const *t_applicationName, portNumBits t_tunnelOverHTTPPortNum, int idx)
     : RTSPClient(*t_env, t_rtspURL, t_verbosityLevel, t_applicationName, t_tunnelOverHTTPPortNum, -1)
 {
     m_lastReturnValue.exit_code = RsRtspReturnCode::OK;
     m_env = t_env;
     m_scheduler = t_scheduler;
+    m_idx = idx;
 }
 
 RsRTSPClient::~RsRTSPClient() {}
 
+std::string g_sdp[2];
+
 std::vector<rs2_video_stream> RsRTSPClient::getStreams()
 {
-    this->sendDescribeCommand(this->continueAfterDESCRIBE);
-    
+    if (g_sdp[m_idx].size() == 0)
+    {
+        this->sendDescribeCommand(this->continueAfterDESCRIBE);
+    }
+    else
+    {
+        char* buf = strdup(g_sdp[m_idx].c_str());
+        this->continueAfterDESCRIBE(this, 0, buf);
+    }
+
     // wait for continueAfterDESCRIBE to finish
     std::unique_lock<std::mutex> lck(m_commandMtx);
     m_cv.wait_for(lck, std::chrono::seconds(RTSP_CLIENT_COMMANDS_TIMEOUT_SEC), [this] { return m_commandDone; });
@@ -185,30 +196,34 @@ int RsRTSPClient::stop()
 
 int RsRTSPClient::close()
 {
-    unsigned res = this->sendTeardownCommand(*this->m_scs.m_session, this->continueAfterTEARDOWN);
-    // wait for continueAfterTEARDOWN to finish
-    std::unique_lock<std::mutex> lck(m_commandMtx);
-    m_cv.wait_for(lck, std::chrono::seconds(RTSP_CLIENT_COMMANDS_TIMEOUT_SEC), [this] { return m_commandDone; });
-    // for the next command
-    if (!m_commandDone)
     {
-        RsRtspReturnValue err = {RsRtspReturnCode::ERROR_TIME_OUT, "client time out"};
-        throw std::runtime_error(format_error_msg(__FUNCTION__, err));
-    }
-    m_commandDone = false;
+        unsigned res = this->sendTeardownCommand(*this->m_scs.m_session, this->continueAfterTEARDOWN);
+        // wait for continueAfterTEARDOWN to finish
+        std::unique_lock<std::mutex> lck(m_commandMtx);
+        m_cv.wait_for(lck, std::chrono::seconds(RTSP_CLIENT_COMMANDS_TIMEOUT_SEC), [this] { return m_commandDone; });
+        // for the next command
+        if (!m_commandDone)
+        {
+            RsRtspReturnValue err = {RsRtspReturnCode::ERROR_TIME_OUT, "client time out"};
+            throw std::runtime_error(format_error_msg(__FUNCTION__, err));
+        }
+        m_commandDone = false;
 
-    if (m_lastReturnValue.exit_code != RsRtspReturnCode::OK)
-    {
-        throw std::runtime_error(format_error_msg(__FUNCTION__, m_lastReturnValue));
+        if (m_lastReturnValue.exit_code != RsRtspReturnCode::OK)
+        {
+            throw std::runtime_error(format_error_msg(__FUNCTION__, m_lastReturnValue));
+        }
     }
     m_eventLoopWatchVariable = ~0;
-    std::unique_lock<std::mutex> lk(m_taskSchedulerMutex);
+    {
+        std::lock_guard<std::mutex> lk(m_taskSchedulerMutex);
+    }
     this->envir() << "Closing the stream.\n";
+    UsageEnvironment *env = m_env;
+    TaskScheduler *scheduler = m_scheduler;
     Medium::close(this);
-    m_env->reclaim();
-    m_env = NULL;
-    delete m_scheduler;
-    m_scheduler = NULL;
+    env->reclaim();
+    delete scheduler;
     return m_lastReturnValue.exit_code;
 }
 
@@ -364,16 +379,16 @@ void updateExtrinsicsMap(rs2_video_stream videoStream, std::string extrinsics_st
 void RsRTSPClient::continueAfterDESCRIBE(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
     std::string resultStr;
-    if(nullptr != resultString)
+    if (nullptr != resultString)
     {
         resultStr = resultString;
-        delete [] resultString;
+        delete[] resultString;
     }
     UsageEnvironment &env = rtspClient->envir();                           // alias
     RsRTSPClient *rsRtspClient = dynamic_cast<RsRTSPClient *>(rtspClient); // alias
     StreamClientState &scs = rsRtspClient->m_scs;                          // alias
 
-    if(!resultStr.empty())
+    if (!resultStr.empty())
         rsRtspClient->m_lastReturnValue.msg = resultStr;
     rsRtspClient->m_lastReturnValue.exit_code = (RsRtspReturnCode)resultCode;
 
@@ -384,6 +399,8 @@ void RsRTSPClient::continueAfterDESCRIBE(RTSPClient *rtspClient, int resultCode,
             env << "Failed to get a SDP description: " << resultStr.c_str() << "\n";
             break;
         }
+
+        g_sdp[rsRtspClient->m_idx] = resultStr;
 
         // Create a media session object from this SDP description(resultString):
         scs.m_session = RsMediaSession::createNew(env, resultStr.c_str());
@@ -479,10 +496,10 @@ void RsRTSPClient::continueAfterDESCRIBE(RTSPClient *rtspClient, int resultCode,
 void RsRTSPClient::continueAfterSETUP(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
     std::string resultStr;
-    if(nullptr != resultString)
+    if (nullptr != resultString)
     {
         resultStr = resultString;
-        delete [] resultString;
+        delete[] resultString;
     }
     UsageEnvironment &env = rtspClient->envir();                           // alias
     RsRTSPClient *rsRtspClient = dynamic_cast<RsRTSPClient *>(rtspClient); // alias
@@ -490,7 +507,7 @@ void RsRTSPClient::continueAfterSETUP(RTSPClient *rtspClient, int resultCode, ch
 
     env << "continueAfterSETUP " << resultCode << " " << resultStr.c_str() << "\n";
 
-    if(!resultStr.empty())
+    if (!resultStr.empty())
         rsRtspClient->m_lastReturnValue.msg = resultStr;
 
     rsRtspClient->m_lastReturnValue.exit_code = (RsRtspReturnCode)resultCode;
@@ -504,16 +521,16 @@ void RsRTSPClient::continueAfterSETUP(RTSPClient *rtspClient, int resultCode, ch
 void RsRTSPClient::continueAfterPLAY(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
     std::string resultStr;
-    if(nullptr != resultString)
+    if (nullptr != resultString)
     {
         resultStr = resultString;
-        delete [] resultString;
+        delete[] resultString;
     }
     UsageEnvironment &env = rtspClient->envir();                           // alias
     RsRTSPClient *rsRtspClient = dynamic_cast<RsRTSPClient *>(rtspClient); // alias
     env << "continueAfterPLAY " << resultCode << " " << resultStr.c_str() << "\n";
 
-    if(!resultStr.empty())
+    if (!resultStr.empty())
         rsRtspClient->m_lastReturnValue.msg = resultStr;
     rsRtspClient->m_lastReturnValue.exit_code = (RsRtspReturnCode)resultCode;
 
@@ -527,16 +544,16 @@ void RsRTSPClient::continueAfterPLAY(RTSPClient *rtspClient, int resultCode, cha
 void RsRTSPClient::continueAfterTEARDOWN(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
     std::string resultStr;
-    if(nullptr != resultString)
+    if (nullptr != resultString)
     {
         resultStr = resultString;
-        delete [] resultString;
+        delete[] resultString;
     }
     UsageEnvironment &env = rtspClient->envir();                           // alias
     RsRTSPClient *rsRtspClient = dynamic_cast<RsRTSPClient *>(rtspClient); // alias
     env << "continueAfterTEARDOWN " << resultCode << " " << resultStr.c_str() << "\n";
 
-    if(!resultStr.empty())
+    if (!resultStr.empty())
         rsRtspClient->m_lastReturnValue.msg = resultStr;
     rsRtspClient->m_lastReturnValue.exit_code = (RsRtspReturnCode)resultCode;
 
@@ -550,16 +567,16 @@ void RsRTSPClient::continueAfterTEARDOWN(RTSPClient *rtspClient, int resultCode,
 void RsRTSPClient::continueAfterPAUSE(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
     std::string resultStr;
-    if(nullptr != resultString)
+    if (nullptr != resultString)
     {
         resultStr = resultString;
-        delete [] resultString;
+        delete[] resultString;
     }
     UsageEnvironment &env = rtspClient->envir();                           // alias
     RsRTSPClient *rsRtspClient = dynamic_cast<RsRTSPClient *>(rtspClient); // alias
     env << "continueAfterPAUSE " << resultCode << " " << resultStr.c_str() << "\n";
 
-    if(!resultStr.empty())
+    if (!resultStr.empty())
         rsRtspClient->m_lastReturnValue.msg = resultStr;
     rsRtspClient->m_lastReturnValue.exit_code = (RsRtspReturnCode)resultCode;
 
@@ -573,16 +590,16 @@ void RsRTSPClient::continueAfterPAUSE(RTSPClient *rtspClient, int resultCode, ch
 void RsRTSPClient::continueAfterOPTIONS(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
     std::string resultStr;
-    if(nullptr != resultString)
+    if (nullptr != resultString)
     {
         resultStr = resultString;
-        delete [] resultString;
+        delete[] resultString;
     }
     UsageEnvironment &env = rtspClient->envir();                           // alias
     RsRTSPClient *rsRtspClient = dynamic_cast<RsRTSPClient *>(rtspClient); // alias
     env << "continueAfterOPTIONS " << resultCode << " " << resultStr.c_str() << "\n";
 
-    if(!resultStr.empty())
+    if (!resultStr.empty())
         rsRtspClient->m_lastReturnValue.msg = resultStr;
     rsRtspClient->m_lastReturnValue.exit_code = (RsRtspReturnCode)resultCode;
 
@@ -621,16 +638,16 @@ void RsRTSPClient::continueAfterOPTIONS(RTSPClient *rtspClient, int resultCode, 
 void RsRTSPClient::continueAfterSETCOMMAND(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
     std::string resultStr;
-    if(nullptr != resultString)
+    if (nullptr != resultString)
     {
         resultStr = resultString;
-        delete [] resultString;
+        delete[] resultString;
     }
     UsageEnvironment &env = rtspClient->envir();                           // alias
     RsRTSPClient *rsRtspClient = dynamic_cast<RsRTSPClient *>(rtspClient); // alias
     env << "continueAfterSETCOMMAND " << resultCode << "\n";
 
-    if(!resultStr.empty())
+    if (!resultStr.empty())
     {
         rsRtspClient->m_lastReturnValue.msg = resultStr;
     }
@@ -646,16 +663,16 @@ void RsRTSPClient::continueAfterSETCOMMAND(RTSPClient *rtspClient, int resultCod
 void RsRTSPClient::continueAfterGETCOMMAND(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
     std::string resultStr;
-    if(nullptr != resultString)
+    if (nullptr != resultString)
     {
         resultStr = resultString;
-        delete [] resultString;
+        delete[] resultString;
     }
     UsageEnvironment &env = rtspClient->envir();                           // alias
     RsRTSPClient *rsRtspClient = dynamic_cast<RsRTSPClient *>(rtspClient); // alias
     DBG << "continueAfterGETCOMMAND: resultCode " << resultCode << ", resultString '" << resultStr.c_str();
 
-    if(!resultStr.empty())
+    if (!resultStr.empty())
     {
         rsRtspClient->m_lastReturnValue.msg = resultStr;
     }

@@ -66,7 +66,6 @@ namespace librealsense
     private:
         bool try_get(const frame& frm, rs2_metadata_type& result) const
         {
-            auto pair_size = (sizeof(rs2_frame_metadata_value) + sizeof(rs2_metadata_type));
             const uint8_t* pos = frm.additional_data.metadata_blob.data();
             while (pos <= frm.additional_data.metadata_blob.data() + frm.additional_data.metadata_blob.size())
             {
@@ -340,7 +339,7 @@ namespace librealsense
     {
     public:
         ds5_md_attribute_actual_fps(bool discrete = true, attrib_modifyer  exposure_mod = [](const rs2_metadata_type& param) {return param; })
-            :_exposure_modifyer(exposure_mod), _discrete(discrete), _fps_values{ 6, 15, 30, 60, 90 }
+            : _fps_values{ 6, 15, 30, 60, 90 } , _exposure_modifyer(exposure_mod), _discrete(discrete)
         {}
 
         rs2_metadata_type get(const librealsense::frame & frm) const override

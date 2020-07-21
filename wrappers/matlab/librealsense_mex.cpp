@@ -393,6 +393,11 @@ void make_factory(){
             auto y = MatlabParamParser::parse<int>(inv[2]);
             outv[0] = MatlabParamParser::wrap(thiz.get_distance(x, y));
         });
+        depth_frame_factory.record("get_units", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+                auto thiz = MatlabParamParser::parse<rs2::depth_frame>(inv[0]);
+                outv[0] = MatlabParamParser::wrap(thiz.get_units());
+        });
         factory->record(depth_frame_factory);
     }
     {
@@ -1204,6 +1209,12 @@ void make_factory(){
                 auto pc = MatlabParamParser::parse<rs2::pointcloud>(inv[1]);
                 outv[0] = MatlabParamParser::wrap(rs2::save_to_ply(filename, pc));
             }
+        });
+        save_to_ply_factory.record("process", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+                auto thiz = MatlabParamParser::parse<rs2::save_to_ply>(inv[0]);
+                auto frame = MatlabParamParser::parse<rs2::frameset>(inv[1]);
+                outv[0] = MatlabParamParser::wrap(thiz.process(frame));
         });
         factory->record(save_to_ply_factory);
     }

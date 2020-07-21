@@ -91,13 +91,13 @@ namespace rs2
                         }
                         catch (...)
                         {
-                            _viewer_model.not_model.add_notification(notification_data{ to_string() << "Metrics Recording: JSON Serializaion has failed",
+                            _viewer_model.not_model->add_notification(notification_data{ to_string() << "Metrics Recording: JSON Serializaion has failed",
                                 RS2_LOG_SEVERITY_WARN, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
                         }
                     }
                 }
                 _samples.clear();
-                _viewer_model.not_model.add_notification(notification_data{ to_string() << "Finished to record frames and matrics data " ,
+                _viewer_model.not_model->add_notification(notification_data{ to_string() << "Finished to record frames and matrics data " ,
                     RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
             }
 

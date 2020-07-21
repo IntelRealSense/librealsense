@@ -18,6 +18,15 @@ namespace librealsense
         {
             bool filtered = false;
             auto data = dev->get_device_data();
+            for (const auto& usb : data.usb_devices)
+            {
+                if (usb.vid == vid || vid == 0)
+                {
+                    result.push_back(dev);
+                    filtered = true;
+                    break;
+                }
+            }
             for (const auto& uvc : data.uvc_devices)
             {
                 if (uvc.vid == vid || vid == 0)
@@ -71,21 +80,28 @@ namespace librealsense
         {
             // _camera_index is the curr device that the hub will expose
             auto d = _device_list[ (_camera_index + i) % _device_list.size()];
-            auto dev = d->create_device(_register_device_notifications);
-
-            if(serial.size() > 0 )
+            try
             {
-                auto new_serial = dev->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+                auto dev = d->create_device(_register_device_notifications);
 
-                if(serial == new_serial)
+                if(serial.size() > 0 )
+                {
+                    auto new_serial = dev->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+
+                    if(serial == new_serial)
+                    {
+                        res = dev;
+                        cycle_devices = false;  // Requesting a device by its serial shall not invoke internal cycling
+                    }
+                }
+                else // Use the first selected if "any device" pattern was used
                 {
                     res = dev;
-                    cycle_devices = false;  // Requesting a device by its serial shall not invoke internal cycling
                 }
-            }
-            else // Use the first selected if "any device" pattern was used
+            } 
+            catch (const std::exception& ex)
             {
-                res = dev;
+                LOG(WARNING) << "Could not open device " << ex.what();
             }
         }
 

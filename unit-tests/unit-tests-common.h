@@ -1,10 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+
 #pragma once
 #ifndef LIBREALSENSE_UNITTESTS_COMMON_H
 #define LIBREALSENSE_UNITTESTS_COMMON_H
 
-#include "catch/catch.hpp"
+#include "approx.h"
 #include "../include/librealsense2/rs.hpp"
 #include "../include/librealsense2/hpp/rs_context.hpp"
 #include "../include/librealsense2/hpp/rs_internal.hpp"
@@ -426,9 +427,9 @@ inline float vector_length(const float(&v)[3])
 // Require that r = cross(a, b)
 inline void require_cross_product(const float(&r)[3], const float(&a)[3], const float(&b)[3])
 {
-    REQUIRE(r[0] == Approx(a[1] * b[2] - a[2] * b[1]));
-    REQUIRE(r[1] == Approx(a[2] * b[0] - a[0] * b[2]));
-    REQUIRE(r[2] == Approx(a[0] * b[1] - a[1] * b[0]));
+    REQUIRE(r[0] == approx(a[1] * b[2] - a[2] * b[1]));
+    REQUIRE(r[1] == approx(a[2] * b[0] - a[0] * b[2]));
+    REQUIRE(r[2] == approx(a[0] * b[1] - a[1] * b[0]));
 }
 
 // Require that vector is exactly the zero vector
@@ -440,15 +441,15 @@ inline void require_zero_vector(const float(&vector)[3])
 // Require that a == transpose(b)
 inline void require_transposed(const float(&a)[9], const float(&b)[9])
 {
-    REQUIRE(a[0] == Approx(b[0]));
-    REQUIRE(a[1] == Approx(b[3]));
-    REQUIRE(a[2] == Approx(b[6]));
-    REQUIRE(a[3] == Approx(b[1]));
-    REQUIRE(a[4] == Approx(b[4]));
-    REQUIRE(a[5] == Approx(b[7]));
-    REQUIRE(a[6] == Approx(b[2]));
-    REQUIRE(a[7] == Approx(b[5]));
-    REQUIRE(a[8] == Approx(b[8]));
+    REQUIRE(a[0] == approx(b[0]));
+    REQUIRE(a[1] == approx(b[3]));
+    REQUIRE(a[2] == approx(b[6]));
+    REQUIRE(a[3] == approx(b[1]));
+    REQUIRE(a[4] == approx(b[4]));
+    REQUIRE(a[5] == approx(b[7]));
+    REQUIRE(a[6] == approx(b[2]));
+    REQUIRE(a[7] == approx(b[5]));
+    REQUIRE(a[8] == approx(b[8]));
 }
 
 // Require that matrix is an orthonormal 3x3 matrix
@@ -457,21 +458,23 @@ inline void require_rotation_matrix(const float(&matrix)[9])
     const float row0[] = { matrix[0], matrix[3], matrix[6] };
     const float row1[] = { matrix[1], matrix[4], matrix[7] };
     const float row2[] = { matrix[2], matrix[5], matrix[8] };
-    CAPTURE(row0[0]);
-    CAPTURE(row0[1]);
-    CAPTURE(row0[2]);
-    CAPTURE(row1[0]);
-    CAPTURE(row1[1]);
-    CAPTURE(row1[2]);
-    CAPTURE(row2[0]);
-    CAPTURE(row2[1]);
-    CAPTURE(row2[2]);
-    REQUIRE(dot_product(row0, row0) == Approx(1));
-    REQUIRE(dot_product(row1, row1) == Approx(1));
-    REQUIRE(dot_product(row2, row2) == Approx(1));
-    REQUIRE(dot_product(row0, row1) == Approx(0));
-    REQUIRE(dot_product(row1, row2) == Approx(0));
-    REQUIRE(dot_product(row2, row0) == Approx(0));
+    CAPTURE( full_precision( row0[0] ));
+    CAPTURE( full_precision( row0[1] ));
+    CAPTURE( full_precision( row0[2] ));
+    CAPTURE( full_precision( row1[0] ));
+    CAPTURE( full_precision( row1[1] ));
+    CAPTURE( full_precision( row1[2] ));
+    CAPTURE( full_precision( row2[0] ));
+    CAPTURE( full_precision( row2[1] ));
+    CAPTURE( full_precision( row2[2] ));
+    CHECK(dot_product(row0, row0) == approx(1.f));
+    CAPTURE( full_precision( dot_product( row1, row1 )));
+    CHECK( dot_product( row1, row1 ) == approx( 1.f ) );     // this line is problematic, and needs higher epsilon!!
+    CHECK_THAT(dot_product(row1, row1), approx_equals(1.f));
+    CHECK(dot_product(row2, row2) == approx(1.f));
+    CHECK(dot_product(row0, row1) == approx(0.f));
+    CHECK(dot_product(row1, row2) == approx(0.f));
+    CHECK(dot_product(row2, row0) == approx(0.f));
     require_cross_product(row0, row1, row2);
     require_cross_product(row0, row1, row2);
     require_cross_product(row0, row1, row2);
@@ -481,7 +484,8 @@ inline void require_rotation_matrix(const float(&matrix)[9])
 inline void require_identity_matrix(const float(&matrix)[9])
 {
     static const float identity_matrix_3x3[] = { 1,0,0, 0,1,0, 0,0,1 };
-    for (int i = 0; i < 9; ++i) REQUIRE(matrix[i] == Approx(identity_matrix_3x3[i]));
+    for (int i = 0; i < 9; ++i)
+        REQUIRE(matrix[i] == approx(identity_matrix_3x3[i]));
 }
 
 struct test_duration {

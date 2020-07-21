@@ -18,6 +18,7 @@
 #include "error-handling.h"
 #include "frame-validator.h"
 #include "l500-options.h"
+#include "calibrated-sensor.h"
 
 namespace librealsense
 {
@@ -83,36 +84,20 @@ namespace librealsense
         float _baseline;
     };
 
-    class l500_depth_sensor : public synthetic_sensor, public video_sensor_interface, public virtual depth_sensor, public virtual l500_depth_sensor_interface
+    class l500_depth_sensor
+        : public synthetic_sensor
+        , public video_sensor_interface
+        , public virtual depth_sensor
+        , public virtual l500_depth_sensor_interface
+        , public calibrated_sensor
     {
     public:
-        explicit l500_depth_sensor(l500_device* owner, std::shared_ptr<uvc_sensor> uvc_sensor, std::map<uint32_t,rs2_format> l500_depth_fourcc_to_rs2_format_map, std::map<uint32_t, rs2_stream> l500_depth_fourcc_to_rs2_stream_map)
-            : synthetic_sensor("L500 Depth Sensor", uvc_sensor, owner, l500_depth_fourcc_to_rs2_format_map, l500_depth_fourcc_to_rs2_stream_map), _owner(owner), _depth_invalidation_enabled(false)
-        {
-            register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
-                lazy<float>([&]() {
-                return read_znorm(); })));
-
-            register_option(RS2_OPTION_DEPTH_OFFSET, std::make_shared<const_value_option>("Offset from sensor to depth origin in millimetrers",
-                lazy<float>([&]() {
-                return get_depth_offset(); })));
-
-            _depth_invalidation_option = std::make_shared<depth_invalidation_option>(
-                0,
-                1,
-                1,
-                0,
-                &_depth_invalidation_enabled,
-                "depth invalidation enabled");
-            _depth_invalidation_option->on_set([this](float val)
-            {
-                if (!_depth_invalidation_option->is_valid(val))
-                    throw invalid_value_exception(to_string()
-                        << "Unsupported depth invalidation enabled " << val << " is out of range.");
-            });
-
-            register_option(static_cast<rs2_option>(RS2_OPTION_DEPTH_INVALIDATION_ENABLE), _depth_invalidation_option);
-        }
+        explicit l500_depth_sensor(
+            l500_device * owner,
+            std::shared_ptr< uvc_sensor > uvc_sensor,
+            std::map< uint32_t, rs2_format > l500_depth_sourcc_to_rs2_format_map,
+            std::map< uint32_t, rs2_stream > l500_depth_sourcc_to_rs2_stream_map
+        );
 
         std::vector<rs2_option> get_supported_options() const override
         {
@@ -164,15 +149,30 @@ namespace librealsense
 
             auto intrinsic_params = get_intrinsic_params(profile.width, profile.height, get_intrinsic());
 
-            rs2_intrinsics intrinsics;
+            rs2_intrinsics intrinsics = { 0 };
             intrinsics.width = intrinsic_params.pinhole_cam_model.width;
             intrinsics.height = intrinsic_params.pinhole_cam_model.height;
             intrinsics.fx = intrinsic_params.pinhole_cam_model.ipm.focal_length.x;
             intrinsics.fy = intrinsic_params.pinhole_cam_model.ipm.focal_length.y;
             intrinsics.ppx = intrinsic_params.pinhole_cam_model.ipm.principal_point.x;
             intrinsics.ppy = intrinsic_params.pinhole_cam_model.ipm.principal_point.y;
+
+            intrinsics.coeffs[0] = intrinsic_params.pinhole_cam_model.distort.radial_k1;
+            intrinsics.coeffs[1] = intrinsic_params.pinhole_cam_model.distort.radial_k2;
+            intrinsics.coeffs[2] = intrinsic_params.pinhole_cam_model.distort.tangential_p1;
+            intrinsics.coeffs[3] = intrinsic_params.pinhole_cam_model.distort.tangential_p2;
+            intrinsics.coeffs[4] = intrinsic_params.pinhole_cam_model.distort.radial_k3;
+
+            intrinsics.model = RS2_DISTORTION_NONE;
             return intrinsics;
         }
+
+        // calibrated_sensor
+        void override_intrinsics( rs2_intrinsics const & intr ) override;
+        void override_extrinsics( rs2_extrinsics const & extr ) override;
+        rs2_dsm_params get_dsm_params() const override;
+        void override_dsm_params( rs2_dsm_params const & dsm_params ) override;
+        void reset_calibration() override;
 
         stream_profiles init_stream_profiles() override
         {
@@ -250,6 +250,8 @@ namespace librealsense
             return get_l500_recommended_proccesing_blocks();
         };
 
+        std::shared_ptr< stream_profile_interface > is_color_sensor_needed() const;
+
         int read_algo_version();
         float read_baseline() const override;
         float read_znorm();
@@ -260,7 +262,7 @@ namespace librealsense
         float get_depth_offset() const;
     private:
         action_delayer _action_delayer;
-        const l500_device* _owner;
+        l500_device * const _owner;
         float _depth_units;
         stream_profiles _user_requests;
         stream_profiles _validator_requests;

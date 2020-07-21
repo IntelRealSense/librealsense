@@ -8,7 +8,9 @@
 
 #include <GLFW/glfw3.h>
 
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif // NOMINMAX
 
 #include <glad/glad.h>
 
@@ -320,6 +322,8 @@ namespace librealsense
                         glDeleteTextures(1, &res);
                         
                         fbo.unbind();
+
+                        preloaded = true;
                     }
                 }, [&]{
                     memcpy(to, backup.get(), get_frame_size());

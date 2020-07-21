@@ -15,7 +15,7 @@ namespace librealsense
         {
             for (auto& elem : resolutions_list)
             {
-                if (elem.second.x == width && elem.second.y == height)
+                if (uint32_t(elem.second.x) == width && uint32_t(elem.second.y) == height)
                     return elem.first;
             }
             return max_ds5_rect_resolutions;
@@ -342,7 +342,9 @@ namespace librealsense
             case 102: return { 3, { 9, 10, 16, 40, 29, 18, 19, 30, 20, 21, 54 } };
             case 103: return { 4, { 9, 10, 16, 40, 29, 18, 19, 30, 20, 21, 54 } };
             case 104: return { 4, { 9, 10, 40, 29, 18, 19, 30, 20, 21, 54 } };
-            case 105: return { 5, { 9, 10, 40, 29, 18, 19, 30, 20, 21, 54 } };
+            case 105: // fall through
+            case 106:
+                return { 5, { 9, 10, 40, 29, 18, 19, 30, 20, 21, 54 } };
             default:
                 throw std::runtime_error("Unsupported flash version: " + std::to_string(flash_version));
             }

@@ -1,6 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 string(REPLACE ${PROJECT_SOURCE_DIR}/ "" _rel_path ${CMAKE_CURRENT_LIST_DIR})
+include(${_rel_path}/algo/CMakeLists.txt)
 include(${_rel_path}/core/CMakeLists.txt)
 include(${_rel_path}/ds5/CMakeLists.txt)
 include(${_rel_path}/ivcam/CMakeLists.txt)
@@ -11,6 +12,7 @@ include(${_rel_path}/proc/CMakeLists.txt)
 include(${_rel_path}/res/CMakeLists.txt)
 include(${_rel_path}/pipeline/CMakeLists.txt)
 include(${_rel_path}/usb/CMakeLists.txt)
+include(${_rel_path}/fw-logs/CMakeLists.txt)
 include(${_rel_path}/fw-update/CMakeLists.txt)
 
 message(STATUS "using ${BACKEND}")
@@ -77,6 +79,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/device_hub.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/environment.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/error-handling.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/firmware_logger_device.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/global_timestamp_reader.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/hw-monitor.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/image.cpp"
@@ -89,9 +92,11 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/source.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/stream.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/sync.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/terminal-parser.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/types.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/verify.c"
         "${CMAKE_CURRENT_LIST_DIR}/frame-validator.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/depth-to-rgb-calibration.cpp"
 
         "${CMAKE_CURRENT_LIST_DIR}/algo.h"
         "${CMAKE_CURRENT_LIST_DIR}/api.h"
@@ -104,6 +109,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/environment.h"
         "${CMAKE_CURRENT_LIST_DIR}/log.h"
         "${CMAKE_CURRENT_LIST_DIR}/error-handling.h"
+        "${CMAKE_CURRENT_LIST_DIR}/firmware_logger_device.h"
         "${CMAKE_CURRENT_LIST_DIR}/frame-archive.h"
         "${CMAKE_CURRENT_LIST_DIR}/global_timestamp_reader.h"
         "${CMAKE_CURRENT_LIST_DIR}/hw-monitor.h"
@@ -117,9 +123,13 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/source.h"
         "${CMAKE_CURRENT_LIST_DIR}/stream.h"
         "${CMAKE_CURRENT_LIST_DIR}/sync.h"
+        "${CMAKE_CURRENT_LIST_DIR}/terminal-parser.h"
         "${CMAKE_CURRENT_LIST_DIR}/types.h"
         "${CMAKE_CURRENT_LIST_DIR}/command_transfer.h"
         "${CMAKE_CURRENT_LIST_DIR}/frame-validator.h"
         "${CMAKE_CURRENT_LIST_DIR}/auto-calibrated-device.h"
+        "${CMAKE_CURRENT_LIST_DIR}/device-calibration.h"
+        "${CMAKE_CURRENT_LIST_DIR}/calibrated-sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/serializable-interface.h"
+        "${CMAKE_CURRENT_LIST_DIR}/depth-to-rgb-calibration.h"
 )

@@ -118,7 +118,7 @@ namespace rs2
                         &cbSecurityDescriptor,   // security descriptor 
                         &ftLastWriteTime);       // last write time 
 
-                    for (int i = 0; i < cSubKeys; i++)
+                    for (auto i = 0ul; i < cSubKeys; i++)
                     {
                         TCHAR achKey[MAX_KEY_LENGTH];
                         DWORD cbName = MAX_KEY_LENGTH;
@@ -133,7 +133,8 @@ namespace rs2
                         {
                             std::wstring suffix = achKey;
                             device_id rdid;
-                            if (parse_device_id(std::string(suffix.begin(), suffix.end()), &rdid))
+                            auto a = std::string(suffix.begin(), suffix.end());
+                            if (parse_device_id(a, &rdid))
                             {
                                 for (auto&& did : kvp.second)
                                 {
@@ -158,7 +159,7 @@ namespace rs2
             if (mi == "00")
             {
                 // L500 has 3 media-pins
-                if (equal(pid, "0b0d") || equal(pid, "0b3d")) return 3;
+                if (equal(pid, "0b0d") || equal(pid, "0b3d") || equal(pid, "0b64")) return 3;
                 else return 2; // D400 has two
             }
             return 1; // RGB has one
@@ -223,6 +224,7 @@ namespace rs2
                         CloseHandle(sei.hProcess);
                         if (exitCode)
                             throw std::runtime_error("Failed to set metadata registry keys!");
+                        return true;
                     }
                 }
                 else
@@ -287,7 +289,7 @@ namespace rs2
 
                 rs2::context ctx;
                 auto list = ctx.query_devices();
-                for (int i = 0; i < list.size(); i++)
+                for (uint32_t i = 0; i < list.size(); i++)
                 {
                     try
                     {

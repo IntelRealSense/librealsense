@@ -41,6 +41,10 @@
 #include "software-device.h"
 #include "global_timestamp_reader.h"
 #include "auto-calibrated-device.h"
+#include "terminal-parser.h"
+#include "firmware_logger_device.h"
+#include "device-calibration.h"
+#include "calibrated-sensor.h"
 ////////////////////////
 // API implementation //
 ////////////////////////
@@ -114,6 +118,22 @@ struct rs2_sensor_list
     rs2_device dev;
 };
 
+struct rs2_terminal_parser
+{
+    std::shared_ptr<librealsense::terminal_parser> terminal_parser;
+};
+
+struct rs2_firmware_log_message
+{
+    std::shared_ptr<librealsense::fw_logs::fw_logs_binary_data> firmware_log_binary_data;
+};
+
+struct rs2_firmware_log_parsed_message
+{
+    std::shared_ptr<librealsense::fw_logs::fw_log_data> firmware_log_parsed;
+};
+
+
 struct rs2_error
 {
     std::string message;
@@ -183,12 +203,13 @@ int rs2_device_hub_is_device_connected(const rs2_device_hub* hub, const rs2_devi
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, hub, device)
 
-rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error)
+rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error) BEGIN_API_CALL
 {
     return rs2_query_devices_ex(context, RS2_PRODUCT_LINE_ANY_INTEL, error);
 }
+HANDLE_EXCEPTIONS_AND_RETURN(0, context)
 
-rs2_device_list* rs2_query_devices_ex(const rs2_context* context, int product_mask, rs2_error** error)
+rs2_device_list* rs2_query_devices_ex(const rs2_context* context, int product_mask, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(context);
 
@@ -208,6 +229,7 @@ rs2_device_list* rs2_query_devices_ex(const rs2_context* context, int product_ma
 
     return new rs2_device_list{ context->ctx, results };
 }
+HANDLE_EXCEPTIONS_AND_RETURN(0, context, product_mask)
 
 rs2_sensor_list* rs2_query_sensors(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
@@ -346,7 +368,77 @@ void rs2_get_video_stream_intrinsics(const rs2_stream_profile* from, rs2_intrins
 
     *intr = vid->get_intrinsics();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, from, intr)
+HANDLE_EXCEPTIONS_AND_RETURN( , from, intr )
+
+// librealsense wrapper around a C function
+class calibration_change_callback : public rs2_calibration_change_callback
+{
+    rs2_calibration_change_callback_ptr _callback;
+    void* _user_arg;
+
+public:
+    calibration_change_callback( rs2_calibration_change_callback_ptr callback, void* user_arg )
+        : _callback( callback ), _user_arg( user_arg ) {}
+
+    void on_calibration_change( rs2_calibration_status status ) noexcept override
+    {
+        if( _callback )
+        {
+            try
+            {
+                _callback( status, _user_arg );
+            }
+            catch( ... )
+            {
+                std::cerr << "Received an execption from profile intrinsics callback!" << std::endl;
+            }
+        }
+    }
+    void release() override
+    {
+        // Shouldn't get called...
+        throw std::runtime_error( "calibration_change_callback::release() ?!?!?!" );
+        delete this;
+    }
+};
+
+void rs2_register_calibration_change_callback( rs2_device* dev, rs2_calibration_change_callback_ptr callback, void * user, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( dev );
+    VALIDATE_NOT_NULL( callback );
+
+    auto d2r = VALIDATE_INTERFACE( dev->device, librealsense::device_calibration );
+
+    // Wrap the C function with a callback interface that will get deleted when done
+    d2r->register_calibration_change_callback(
+        std::make_shared< calibration_change_callback >( callback, user )
+        );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , dev, callback, user )
+
+void rs2_register_calibration_change_callback_cpp( rs2_device* dev, rs2_calibration_change_callback* callback, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( dev );
+    VALIDATE_NOT_NULL( callback );
+
+    auto d2r = VALIDATE_INTERFACE( dev->device, librealsense::device_calibration );
+
+    // Wrap the C++ callback interface with a shared_ptr that we set to release() it (rather than delete it)
+    d2r->register_calibration_change_callback(
+        { callback, []( rs2_calibration_change_callback* p ) { p->release(); } }
+        );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , dev, callback )
+
+void rs2_trigger_device_calibration( rs2_device * dev, rs2_calibration_type type, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( dev );
+    
+    auto cal = VALIDATE_INTERFACE( dev->device, librealsense::device_calibration );
+
+    cal->trigger_device_calibration( type );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , dev, type )
 
 void rs2_get_motion_intrinsics(const rs2_stream_profile* mode, rs2_motion_device_intrinsic * intrinsics, rs2_error ** error) BEGIN_API_CALL
 {
@@ -1027,7 +1119,47 @@ void rs2_register_extrinsics(const rs2_stream_profile* from,
 
     environment::get_instance().get_extrinsics_graph().register_extrinsics(*from->profile, *to->profile, extrin);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, from, to)
+HANDLE_EXCEPTIONS_AND_RETURN(, from, to, extrin)
+
+void rs2_override_extrinsics( const rs2_sensor* sensor, const rs2_extrinsics* extrinsics, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( sensor );
+    VALIDATE_NOT_NULL( extrinsics );
+
+    auto ois = VALIDATE_INTERFACE( sensor->sensor, librealsense::calibrated_sensor );
+    ois->override_extrinsics( *extrinsics );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , sensor, extrinsics )
+
+void rs2_get_dsm_params( const rs2_sensor * sensor, rs2_dsm_params * p_params_out, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( sensor );
+    VALIDATE_NOT_NULL( p_params_out );
+
+    auto cs = VALIDATE_INTERFACE( sensor->sensor, librealsense::calibrated_sensor );
+    *p_params_out = cs->get_dsm_params();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , sensor, p_params_out )
+
+void rs2_override_dsm_params( const rs2_sensor * sensor, rs2_dsm_params const * p_params, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( sensor );
+    VALIDATE_NOT_NULL( p_params );
+
+    auto cs = VALIDATE_INTERFACE( sensor->sensor, librealsense::calibrated_sensor );
+    cs->override_dsm_params( *p_params );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , sensor, p_params )
+
+void rs2_reset_sensor_calibration( rs2_sensor const * sensor, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( sensor );
+
+    auto cs = VALIDATE_INTERFACE( sensor->sensor, librealsense::calibrated_sensor );
+    cs->reset_calibration();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , sensor )
+
 
 void rs2_hardware_reset(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
@@ -1132,7 +1264,9 @@ const char* rs2_extension_to_string(rs2_extension type)                         
 const char* rs2_frame_metadata_value_to_string(rs2_frame_metadata_value metadata)         { return rs2_frame_metadata_to_string(metadata); }
 const char* rs2_l500_visual_preset_to_string(rs2_l500_visual_preset preset)               { return get_string(preset); }
 const char* rs2_sensor_mode_to_string(rs2_sensor_mode mode)                               { return get_string(mode); }
-const char* rs2_ambient_light_to_string(rs2_ambient_light ambient)                        { return get_string(ambient); }
+const char* rs2_ambient_light_to_string( rs2_ambient_light ambient ) { return get_string( ambient ); }
+const char* rs2_calibration_type_to_string(rs2_calibration_type type)                     { return get_string(type); }
+const char* rs2_calibration_status_to_string(rs2_calibration_status status)               { return get_string(status); }
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error** error) BEGIN_API_CALL
 {
@@ -1254,6 +1388,7 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
     case RS2_EXTENSION_COLOR_SENSOR        : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::color_sensor)           != nullptr;
     case RS2_EXTENSION_MOTION_SENSOR       : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::motion_sensor)          != nullptr;
     case RS2_EXTENSION_FISHEYE_SENSOR      : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::fisheye_sensor)         != nullptr;
+    case RS2_EXTENSION_CALIBRATED_SENSOR   : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::calibrated_sensor)      != nullptr;
 
     default:
         return false;
@@ -1284,8 +1419,10 @@ int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension, 
         case RS2_EXTENSION_UPDATABLE             : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::updatable)                   != nullptr;
         case RS2_EXTENSION_UPDATE_DEVICE         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::update_device_interface)     != nullptr;
         case RS2_EXTENSION_GLOBAL_TIMER          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::global_time_interface)       != nullptr;
-        case RS2_EXTENSION_AUTO_CALIBRATED_DEVICE: return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::auto_calibrated_interface) != nullptr;
-        case RS2_EXTENSION_SERIALIZABLE          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::serializable_interface) != nullptr;
+        case RS2_EXTENSION_AUTO_CALIBRATED_DEVICE: return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::auto_calibrated_interface)   != nullptr;
+        case RS2_EXTENSION_DEVICE_CALIBRATION    : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::device_calibration)          != nullptr;
+        case RS2_EXTENSION_SERIALIZABLE          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::serializable_interface)      != nullptr;
+        case RS2_EXTENSION_FW_LOGGER             : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::firmware_logger_extensions)  != nullptr;
 
         default:
             return false;
@@ -2473,6 +2610,16 @@ void rs2_set_intrinsics(const rs2_sensor* sensor, const rs2_stream_profile* prof
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, profile, intrinsics)
 
+void rs2_override_intrinsics( const rs2_sensor* sensor, const rs2_intrinsics* intrinsics, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( sensor );
+    VALIDATE_NOT_NULL( intrinsics );
+    
+    auto ois = VALIDATE_INTERFACE( sensor->sensor, librealsense::calibrated_sensor );
+    ois->override_intrinsics( *intrinsics );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , sensor, intrinsics )
+
 void rs2_set_extrinsics(const rs2_sensor* from_sensor, const rs2_stream_profile* from_profile, rs2_sensor* to_sensor, const rs2_stream_profile* to_profile, const rs2_extrinsics* extrinsics, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(from_sensor);
@@ -2962,3 +3109,216 @@ void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_s
     serializable->load_json(std::string(static_cast<const char*>(json_content), content_size));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, json_content, content_size)
+
+rs2_firmware_log_message* rs2_create_fw_log_message(rs2_device* dev, rs2_error** error)BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(dev);
+    auto fw_loggerable = VALIDATE_INTERFACE(dev->device, librealsense::firmware_logger_extensions);
+    
+    return new rs2_firmware_log_message{ std::make_shared <librealsense::fw_logs::fw_logs_binary_data>() };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev)
+
+int rs2_get_fw_log(rs2_device* dev, rs2_firmware_log_message* fw_log_msg, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(dev);
+    VALIDATE_NOT_NULL(fw_log_msg);
+    auto fw_loggerable = VALIDATE_INTERFACE(dev->device, librealsense::firmware_logger_extensions);
+
+    fw_logs::fw_logs_binary_data binary_data;
+    bool result = fw_loggerable->get_fw_log(binary_data);
+    if (result)
+    {
+        *(fw_log_msg->firmware_log_binary_data).get() = binary_data;
+    }
+    return result? 1 : 0;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, dev, fw_log_msg)
+
+int rs2_get_flash_log(rs2_device* dev, rs2_firmware_log_message* fw_log_msg, rs2_error** error)BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(dev);
+    VALIDATE_NOT_NULL(fw_log_msg);
+    auto fw_loggerable = VALIDATE_INTERFACE(dev->device, librealsense::firmware_logger_extensions);
+
+    fw_logs::fw_logs_binary_data binary_data;
+    bool result = fw_loggerable->get_flash_log(binary_data);
+    if (result)
+    {
+        *(fw_log_msg->firmware_log_binary_data).get() = binary_data;
+    }
+    return result ? 1 : 0;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, dev, fw_log_msg)
+void rs2_delete_fw_log_message(rs2_firmware_log_message* msg) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(msg);
+    delete msg;
+}
+NOEXCEPT_RETURN(, msg)
+
+const unsigned char* rs2_fw_log_message_data(rs2_firmware_log_message* msg, rs2_error** error)BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(msg);
+    return msg->firmware_log_binary_data->logs_buffer.data();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, msg)
+
+int rs2_fw_log_message_size(rs2_firmware_log_message* msg, rs2_error** error)BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(msg);
+    return msg->firmware_log_binary_data->logs_buffer.size();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, msg)
+
+rs2_log_severity rs2_fw_log_message_severity(const rs2_firmware_log_message* msg, rs2_error** error) BEGIN_API_CALL
+{
+    return msg->firmware_log_binary_data->get_severity();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(RS2_LOG_SEVERITY_NONE, msg)
+
+unsigned int rs2_fw_log_message_timestamp(rs2_firmware_log_message* msg, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(msg);
+    return msg->firmware_log_binary_data->get_timestamp();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, msg)
+
+int rs2_init_fw_log_parser(rs2_device* dev, const char* xml_content,rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(xml_content);
+    
+    auto fw_loggerable = VALIDATE_INTERFACE(dev->device, librealsense::firmware_logger_extensions);
+
+    return (fw_loggerable->init_parser(xml_content)) ? 1 : 0;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, xml_content)
+
+rs2_firmware_log_parsed_message* rs2_create_fw_log_parsed_message(rs2_device* dev, rs2_error** error)BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(dev);
+
+    auto fw_loggerable = VALIDATE_INTERFACE(dev->device, librealsense::firmware_logger_extensions);
+
+    return new rs2_firmware_log_parsed_message{ std::make_shared <librealsense::fw_logs::fw_log_data>() };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, dev)
+
+int rs2_parse_firmware_log(rs2_device* dev, rs2_firmware_log_message* fw_log_msg, rs2_firmware_log_parsed_message* parsed_msg, rs2_error** error)BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(dev);
+    VALIDATE_NOT_NULL(fw_log_msg);
+    VALIDATE_NOT_NULL(parsed_msg);
+
+    auto fw_loggerable = VALIDATE_INTERFACE(dev->device, librealsense::firmware_logger_extensions);
+
+    bool parsing_result = fw_loggerable->parse_log(fw_log_msg->firmware_log_binary_data.get(),
+        parsed_msg->firmware_log_parsed.get());
+
+    return parsing_result ? 1 : 0;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, dev, fw_log_msg)
+
+void rs2_delete_fw_log_parsed_message(rs2_firmware_log_parsed_message* fw_log_parsed_msg) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(fw_log_parsed_msg);
+    delete fw_log_parsed_msg;
+}
+NOEXCEPT_RETURN(, fw_log_parsed_msg)
+
+const char* rs2_get_fw_log_parsed_message(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(fw_log_parsed_msg);
+    return fw_log_parsed_msg->firmware_log_parsed->get_message().c_str();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, fw_log_parsed_msg)
+
+const char* rs2_get_fw_log_parsed_file_name(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(fw_log_parsed_msg);
+    return fw_log_parsed_msg->firmware_log_parsed->get_file_name().c_str();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, fw_log_parsed_msg)
+
+const char* rs2_get_fw_log_parsed_thread_name(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(fw_log_parsed_msg);
+    return fw_log_parsed_msg->firmware_log_parsed->get_thread_name().c_str();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, fw_log_parsed_msg)
+
+rs2_log_severity rs2_get_fw_log_parsed_severity(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(fw_log_parsed_msg);
+    return fw_log_parsed_msg->firmware_log_parsed->get_severity();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(RS2_LOG_SEVERITY_NONE, fw_log_parsed_msg)
+
+unsigned int rs2_get_fw_log_parsed_line(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(fw_log_parsed_msg);
+    return fw_log_parsed_msg->firmware_log_parsed->get_line();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, fw_log_parsed_msg)
+
+unsigned int rs2_get_fw_log_parsed_timestamp(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(fw_log_parsed_msg);
+    return fw_log_parsed_msg->firmware_log_parsed->get_timestamp();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, fw_log_parsed_msg)
+
+
+rs2_terminal_parser* rs2_create_terminal_parser(const char* xml_content, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(xml_content);
+    return new rs2_terminal_parser{ std::make_shared<librealsense::terminal_parser>(std::string(xml_content)) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, xml_content)
+
+void rs2_delete_terminal_parser(rs2_terminal_parser* terminal_parser) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(terminal_parser);
+    delete terminal_parser;
+}
+NOEXCEPT_RETURN(, terminal_parser)
+
+rs2_raw_data_buffer* rs2_terminal_parse_command(rs2_terminal_parser* terminal_parser,
+    const char* command, unsigned int size_of_command, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(terminal_parser);
+    VALIDATE_NOT_NULL(command);
+    VALIDATE_LE(size_of_command, 1000);//bufer shall be less than 1000 bytes or similar
+
+    std::string command_string;
+    command_string.insert(command_string.begin(), command, command + size_of_command);
+
+    auto result = terminal_parser->terminal_parser->parse_command(command_string);
+    return new rs2_raw_data_buffer{ result };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, terminal_parser, command)
+
+rs2_raw_data_buffer* rs2_terminal_parse_response(rs2_terminal_parser* terminal_parser,
+    const char* command, unsigned int size_of_command,
+    const void* response, unsigned int size_of_response, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(terminal_parser);
+    VALIDATE_NOT_NULL(command);
+    VALIDATE_NOT_NULL(response);
+    VALIDATE_LE(size_of_command, 1000); //bufer shall be less than 1000 bytes or similar
+    VALIDATE_LE(size_of_response, 5000);//bufer shall be less than 5000 bytes or similar
+
+
+    std::string command_string;
+    command_string.insert(command_string.begin(), command, command + size_of_command);
+
+    std::vector<uint8_t> response_vec;
+    response_vec.insert(response_vec.begin(), (uint8_t*)response, (uint8_t*)response + size_of_response);
+
+    auto result = terminal_parser->terminal_parser->parse_response(command_string, response_vec);
+    return new rs2_raw_data_buffer{ result };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, terminal_parser, command, response)
+
+
+

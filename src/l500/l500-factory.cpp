@@ -11,12 +11,15 @@
 #include "context.h"
 #include "image.h"
 #include "metadata-parser.h"
+#include "../firmware_logger_device.h"
 
 #include "l500-factory.h"
 #include "l500-depth.h"
 #include "l500-motion.h"
 #include "l500-color.h"
 #include "l500-serializable.h"
+
+#include "../firmware_logger_device.h"
 
 namespace librealsense
 {
@@ -27,7 +30,8 @@ namespace librealsense
         public l500_options,
         public l500_color,
         public l500_motion,
-        public l500_serializable
+        public l500_serializable,
+        public firmware_logger_device
     {
     public:
         rs515_device(std::shared_ptr<context> ctx,
@@ -39,7 +43,10 @@ namespace librealsense
             l500_options(ctx, group),
             l500_color(ctx, group),
             l500_motion(ctx, group),
-            l500_serializable(_hw_monitor, get_depth_sensor())
+            l500_serializable(l500_device::_hw_monitor, get_depth_sensor()),
+            firmware_logger_device(ctx, group, l500_device::_hw_monitor,
+                get_firmware_logs_command(),
+                get_flash_logs_command())
         {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
@@ -59,7 +66,8 @@ namespace librealsense
     };
 
     // l500
-    class rs500_device : public l500_depth
+    class rs500_device : public l500_depth,
+        public firmware_logger_device
     {
     public:
         rs500_device(std::shared_ptr<context> ctx,
@@ -67,11 +75,15 @@ namespace librealsense
             bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
             l500_device(ctx, group),
-            l500_depth(ctx, group)
+            l500_depth(ctx, group),
+            firmware_logger_device(ctx, group,l500_device::_hw_monitor,
+                get_firmware_logs_command(),
+                get_flash_logs_command())
         {}
 
-        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+        l500_color_sensor * get_color_sensor() override { return nullptr; }
 
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
     };
 
     std::shared_ptr<device_interface> l500_info::create(std::shared_ptr<context> ctx,
@@ -85,6 +97,7 @@ namespace librealsense
         {
         case L500_PID:
             return std::make_shared<rs500_device>(ctx, group, register_device_notifications);
+        case L515_PID_PRE_PRQ:
         case L515_PID:
             return std::make_shared<rs515_device>(ctx, group, register_device_notifications);
        default:
@@ -100,7 +113,7 @@ namespace librealsense
         std::vector<platform::uvc_device_info> chosen;
         std::vector<std::shared_ptr<device_info>> results;
 
-        auto correct_pid = filter_by_product(group.uvc_devices, { L500_PID, L515_PID });
+        auto correct_pid = filter_by_product(group.uvc_devices, { L500_PID, L515_PID, L515_PID_PRE_PRQ });
         auto group_devices = group_devices_and_hids_by_unique_id(group_devices_by_unique_id(correct_pid), group.hid_devices);
         for (auto& g : group_devices)
         {
@@ -110,12 +123,12 @@ namespace librealsense
                 platform::usb_device_info hwm;
 
                 if (!ivcam2::try_fetch_usb_device(group.usb_devices, depth, hwm))
-                    LOG_WARNING("try_fetch_usb_device(...) failed.");
+                    LOG_DEBUG("try_fetch_usb_device(...) failed.");
 
                 if(g.first[0].pid != L500_PID)
                     if (g.second.size() < 2)
                     {
-                        LOG_WARNING("L500 partial enum: " << g.second.size() << " HID devices were recognized (2+ expected)");
+                        LOG_DEBUG("L500 partial enum: " << g.second.size() << " HID devices were recognized (2+ expected)");
 #if !defined(ANDROID) && !defined(__APPLE__) // Not supported by android & macos
                         continue;
 #endif // Not supported by android & macos
@@ -127,7 +140,7 @@ namespace librealsense
             }
             else
             {
-                LOG_WARNING("L500 group_devices is empty.");
+                LOG_DEBUG("L500 group_devices is empty.");
             }
         }
 
@@ -148,6 +161,7 @@ namespace librealsense
 
     std::shared_ptr<matcher> rs515_device::create_matcher(const frame_holder & frame) const
     {
+        LOG_DEBUG( "rs515_device::create_matcher" );
         std::vector<std::shared_ptr<matcher>> depth_rgb_matchers = { l500_depth::create_matcher(frame),
             std::make_shared<identity_matcher>(_color_stream->get_unique_id(), _color_stream->get_stream_type())};
 

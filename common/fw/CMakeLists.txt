@@ -11,16 +11,10 @@ message(STATUS "Fetching recommended firmwares:")
 set(REALSENSE_FIRMWARE_URL "http://realsense-hw-public.s3.amazonaws.com" CACHE STRING
     "URL to download firmware binaries from")
 
-string(REGEX MATCH "D4XX_RC_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
-set(D4XX_RC_VERSION ${CMAKE_MATCH_1})
-message(STATUS "D4XX_RC_VERSION: ${D4XX_RC_VERSION}")
-set(D4XX_RC_SHA1 be77db800142110b35d1cc7f12dfc77e75ed9c8a)
-set(D4XX_RC_URL "${REALSENSE_FIRMWARE_URL}/Releases/RS4xx/FW")
-
 string(REGEX MATCH "D4XX_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
 set(D4XX_FW_VERSION ${CMAKE_MATCH_1})
 message(STATUS "D4XX_FW_VERSION: ${D4XX_FW_VERSION}")
-set(D4XX_FW_SHA1 be77db800142110b35d1cc7f12dfc77e75ed9c8a)
+set(D4XX_FW_SHA1 b8161801bffb8880952b23c12c52581a4c62adb6)
 set(D4XX_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/RS4xx/FW")
 
 
@@ -33,8 +27,14 @@ set(SR3XX_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/SR300/FW")
 string(REGEX MATCH "T26X_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
 set(T26X_FW_VERSION ${CMAKE_MATCH_1})
 message(STATUS "T26X_FW_VERSION: ${T26X_FW_VERSION}")
-set(T26X_FW_SHA1 fb857641b003977478c4e5855658803e13a784c7)
+set(T26X_FW_SHA1 c3940ccbb0e3045603e4aceaa2d73427f96e24bc)
 set(T26X_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/TM2/FW/target/${T26X_FW_VERSION}")
+
+string(REGEX MATCH "L5XX_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
+set(L5XX_FW_VERSION ${CMAKE_MATCH_1})
+message(STATUS "L5XX_FW_VERSION: ${L5XX_FW_VERSION}")
+set(L5XX_FW_SHA1 7e92856a80e7b63a9976718a56b6fb7e51af714f)
+set(L5XX_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/L5xx/FW")
 
 add_library(${PROJECT_NAME} STATIC empty.c)
 
@@ -78,9 +78,10 @@ function(target_binary url version sha1 symbol ext)
 endfunction()
 
 target_binary( "${D4XX_FW_URL}"  "${D4XX_FW_VERSION}"  "${D4XX_FW_SHA1}" D4XX_FW_Image .bin)
-target_binary( "${D4XX_RC_URL}"  "${D4XX_RC_VERSION}"  "${D4XX_RC_SHA1}" D4XX_RC_Image .bin)
 target_binary( "${SR3XX_FW_URL}"  "${SR3XX_FW_VERSION}"  "${SR3XX_FW_SHA1}" SR3XX_FW_Image .bin)
 target_binary( "${T26X_FW_URL}"  "${T26X_FW_VERSION}"  "${T26X_FW_SHA1}" target .mvcmd)
+target_binary( "${L5XX_FW_URL}"  "${L5XX_FW_VERSION}"  "${L5XX_FW_SHA1}" L5XX_FW_Image .bin)
+
 
 install(TARGETS ${PROJECT_NAME} EXPORT realsense2Targets
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

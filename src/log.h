@@ -81,7 +81,12 @@ namespace librealsense
 
             // NOTE: you can only log to one file, so successive calls to log_to_file
             // will override one another!
-            defaultConf.setGlobally( el::ConfigurationType::Filename, filename );
+            if (minimum_file_severity != RS2_LOG_SEVERITY_NONE)
+            {
+                // Configure filename for logging only if the severity requires it, which
+                // prevents creation of empty log files that are not required.
+                defaultConf.setGlobally(el::ConfigurationType::Filename, filename);
+            }
             for (int i = minimum_file_severity; i < RS2_LOG_SEVERITY_NONE; i++)
             {
                 defaultConf.set(severity_to_level(static_cast<rs2_log_severity>(i)),

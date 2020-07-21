@@ -20,7 +20,7 @@ set( ELPP_FILES
 include(../../common/CMakeLists.txt)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
-set(RS_VIEWER_CPP
+    set(RS_VIEWER_CPP
     ${COMMON_SRC}
     realsense-viewer.cpp
     ../../third-party/imgui/imgui.cpp
@@ -53,6 +53,12 @@ set(RS_VIEWER_CPP
     ../../common/os.cpp
 )
 
+SET(DELAYED 
+    realsense2d.dll
+    realsense2-gld.dll
+    realsense2.dll
+    realsense2-gl.dll
+)
 
 if(DEFINED OpenCV_DIR  AND  IS_DIRECTORY ${OpenCV_DIR})
 
@@ -61,6 +67,17 @@ if(DEFINED OpenCV_DIR  AND  IS_DIRECTORY ${OpenCV_DIR})
     get_property(deps VARIABLE PROPERTY DEPENDENCIES)
     set(DEPENDENCIES ${deps} ${OpenCV_LIBS})
     include_directories( ../../wrappers/opencv )
+
+    list(APPEND DELAYED
+        opencv_highgui341.dll
+        opencv_core341.dll
+        opencv_imgproc341.dll
+        opencv_dnn341.dll
+        opencv_highgui341d.dll
+        opencv_core341d.dll
+        opencv_imgproc341d.dll
+        opencv_dnn341d.dll
+    )
 
 endif()
 if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
@@ -105,8 +122,19 @@ if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
     dl_vino_model( "age-gender-recognition-retail-0013.bin"  "206f6e97e53cd600fcac7d31e1c56accbbe461b9" )
     dl_vino_model( "age-gender-recognition-retail-0013.xml"  "2654d7f1638d575b8d1886f8128deae2ea79ee55" )
 
+    list(APPEND DELAYED
+        cpu_extension.dll
+        inference_engine.dll
+        libmmd.dll
+        mkl_tiny_tbb.dll
+        MKLDNNPlugin.dll
+        opencv_core412.dll
+        opencv_imgproc412.dll
+        svml_dispmd.dll
+        tbb.dll
+        tbbmalloc.dll
+    )
 endif()
-
 
 # config-ui
 if(WIN32)
@@ -115,7 +143,8 @@ if(WIN32)
         ${ELPP_FILES}
         ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
         ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
-        ../../common/windows-app-bootstrap.cpp)
+        ../../common/windows-app-bootstrap.cpp
+        )
 
     source_group("3rd Party" FILES
         ../../third-party/tinyfiledialogs/tinyfiledialogs.c
@@ -133,6 +162,10 @@ if(WIN32)
 
     source_group("OpenVINO" FILES ${OPENVINO_FILES})
 
+    list(TRANSFORM DELAYED PREPEND " /DELAYLOAD:")
+    string(REPLACE ";" " " LD_FLAGS_STR "${DELAYED}")
+    set_target_properties(realsense-viewer PROPERTIES LINK_FLAGS "${LD_FLAGS_STR}")
+
 else()
     add_executable(realsense-viewer
         ${RS_VIEWER_CPP}
@@ -141,6 +174,7 @@ else()
 endif()
 
 source_group("EasyLogging++" FILES ${ELPP_FILES})
+source_group("SW-Update" FILES ${SW_UPDATE_FILES})
 
 include_directories(
     ../../common
@@ -155,6 +189,12 @@ include_directories(
 set_property(TARGET realsense-viewer PROPERTY CXX_STANDARD 11)
 
 set(RS_VIEWER_LIBS ${GTK3_LIBRARIES} Threads::Threads realsense2-gl)
+
+if (CHECK_FOR_UPDATES)
+    message( STATUS "Check for updates capability added to realsense-viewer" )
+    add_dependencies(realsense-viewer libcurl)
+    set(RS_VIEWER_LIBS ${RS_VIEWER_LIBS} curl)
+endif()
 
 if (IMPORT_DEPTH_CAM_FW)
     add_definitions(-DINTERNAL_FW)
@@ -171,6 +211,7 @@ target_link_libraries(realsense-viewer ${DEPENDENCIES} ${RS_VIEWER_LIBS})
 set_target_properties (realsense-viewer PROPERTIES
     FOLDER Tools
 )
+
 
 install(
     TARGETS

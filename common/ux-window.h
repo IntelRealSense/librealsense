@@ -34,6 +34,7 @@ namespace rs2
     public:
         std::function<void(std::string)> on_file_drop = [](std::string) {};
         std::function<bool()>            on_load = []() { return false; };
+        std::function<void()>            on_reload_complete = []() { };
 
         ux_window(const char* title, context &ctx);
 
@@ -59,6 +60,7 @@ namespace rs2
         void reset();
 
         ImFont* get_large_font() const { return _font_18; }
+        ImFont* get_monofont() const { return _monofont; }
         ImFont* get_font() const { return _font_14; }
 
         rs2::mouse_info& get_mouse() { return _mouse; }
@@ -75,6 +77,12 @@ namespace rs2
         void refresh();
 
         void link_hovered();
+        void cross_hovered();
+
+        void set_hovered_over_input() { _hovers_any_input_window = true; }
+        bool get_hovered_over_input() const { return _hovers_any_input_window; }
+
+        double time() const { return glfwGetTime(); }
     private:
         void open_window();
 
@@ -85,11 +93,12 @@ namespace rs2
 
         GLFWwindow               *_win;
         int                      _width, _height, _output_height;
-        int                     _fb_width, _fb_height;
+        int                     _fb_width = 0;
+        int                     _fb_height = 0;
         rs2::rect                _viewer_rect;
 
-        ImFont                   *_font_14, *_font_18;
-        rs2::mouse_info          _mouse;
+        ImFont                   *_font_14, *_font_18, *_monofont;
+        rs2::mouse_info          _mouse{};
         std::string              _error_message;
         float                    _scale_factor;
 
@@ -103,6 +112,7 @@ namespace rs2
         std::vector<std::string> _on_load_message;
         std::mutex               _on_load_message_mtx;
 
+        bool                     _hovers_any_input_window = false;
         bool                     _query_devices = true;
         bool                     _missing_device = false;
         int                      _hourglass_index = 0;
@@ -119,6 +129,8 @@ namespace rs2
 
         bool                     _link_hovered = false;
         GLFWcursor*              _hand_cursor = nullptr;
+        bool                     _cross_hovered = false;
+        GLFWcursor*              _cross_cursor = nullptr;
 
         std::string              _title;
         std::shared_ptr<visualizer_2d> _2d_vis;

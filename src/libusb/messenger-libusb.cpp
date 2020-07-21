@@ -99,7 +99,7 @@ namespace librealsense
         {
             auto nr = reinterpret_cast<libusb_transfer*>(request->get_native_request());
             auto sts = libusb_cancel_transfer(nr);
-            if (sts < 0)
+            if (sts < 0 && sts != LIBUSB_ERROR_NOT_FOUND)
             {
                 std::string strerr = strerror(errno);
                 LOG_WARNING("usb_request_cancel returned error, endpoint: " << (int)request->get_endpoint()->get_address() << " error: " << strerr << ", number: " << (int)errno);

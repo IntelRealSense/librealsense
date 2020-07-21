@@ -193,7 +193,6 @@ namespace rs2
             bool record,
             std::vector<single_metric_data>& samples)
         {
-            float TO_METERS = sensor.get_depth_scale();
             static const float TO_MM = 1000.f;
             static const float TO_PERCENT = 100.f;
 
@@ -216,10 +215,6 @@ namespace rs2
             {
                 // Find distance from point to the reconstructed plane
                 auto dist2plane = p.a*point.x + p.b*point.y + p.c*point.z + p.d;
-                // Project the point to plane in 3D and find distance to the intersection point
-                rs2::float3 plane_intersect = { float(point.x - dist2plane*p.a),
-                    float(point.y - dist2plane*p.b),
-                    float(point.z - dist2plane*p.c) };
 
                 // Store distance, disparity and gt- error
                 distances.push_back(dist2plane * TO_MM);
@@ -320,9 +315,9 @@ namespace rs2
 
         auto calib_dev = _dev.as<auto_calibrated_device>();
         if (tare)
-            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = progress;}, 5000);
+            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = int(progress);}, 5000);
         else
-            _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = progress;}, 5000);
+            _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = int(progress);}, 5000);
     }
 
     void on_chip_calib_manager::process_flow(std::function<void()> cleanup, 
@@ -393,7 +388,7 @@ namespace rs2
 
             _viewer.is_3d_view = _in_3d_view;
 
-            _viewer.ground_truth_r = ground_truth;
+            _viewer.ground_truth_r = uint32_t(ground_truth);
             config_file::instance().set(configurations::viewer::ground_truth_r, ground_truth);
 
             _viewer.synchronization_enable = _synchronized;
@@ -516,7 +511,7 @@ namespace rs2
             else
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + 27) });
 
-            ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1. - t));
+            ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1.f - t));
 
             if (update_state == RS2_CALIB_STATE_INITIAL_PROMPT)
             {
@@ -570,7 +565,7 @@ namespace rs2
                     ImGui::SetCursorScreenPos({ float(x + 135), float(y + 30) });
 
                     std::string id = to_string() << "##avg_step_count_" << index;
-                    ImGui::PushItemWidth(width - 145);
+                    ImGui::PushItemWidth(width - 145.f);
                     ImGui::SliderInt(id.c_str(), &get_manager().average_step_count, 1, 30);
                     ImGui::PopItemWidth();
 
@@ -586,7 +581,7 @@ namespace rs2
 
                     id = to_string() << "##step_count_" << index;
 
-                    ImGui::PushItemWidth(width - 145);
+                    ImGui::PushItemWidth(width - 145.f);
                     ImGui::SliderInt(id.c_str(), &get_manager().step_count, 1, 30);
                     ImGui::PopItemWidth();
 
@@ -607,14 +602,14 @@ namespace rs2
                     std::vector<const char*> vals_cstr;
                     for (auto&& s : vals) vals_cstr.push_back(s.c_str());
 
-                    ImGui::PushItemWidth(width - 145);
-                    ImGui::Combo(id.c_str(), &get_manager().accuracy, vals_cstr.data(), vals.size());
-                   
+                    ImGui::PushItemWidth(width - 145.f);
+                    ImGui::Combo(id.c_str(), &get_manager().accuracy, vals_cstr.data(), int(vals.size()));
+
                     ImGui::SetCursorScreenPos({ float(x + 135), float(y + 35 + ImGui::GetTextLineHeightWithSpacing()) });
 
                     ImGui::PopItemWidth();
 
-                    draw_intrinsic_extrinsic(x, y + 3 * ImGui::GetTextLineHeightWithSpacing() - 10);
+                    draw_intrinsic_extrinsic(x, y + 3 * int(ImGui::GetTextLineHeightWithSpacing()) - 10);
 
                     ImGui::SetCursorScreenPos({ float(x + 9), float(y + 52 + 4 * ImGui::GetTextLineHeightWithSpacing()) });
                     id = to_string() << "Apply High-Accuracy Preset##apply_preset_" << index;
@@ -651,7 +646,7 @@ namespace rs2
                 char buff[MAX_SIZE];
                 memcpy(buff, gt.c_str(), gt.size() + 1);
 
-                ImGui::PushItemWidth(width - 145);
+                ImGui::PushItemWidth(width - 145.f);
                 if (ImGui::InputText(id.c_str(), buff, std::max((int)gt.size() + 1, 10)))
                 {
                     std::stringstream ss;
@@ -672,10 +667,14 @@ namespace rs2
                 ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
                 if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
                 {
-                    get_manager().restore_workspace([this](std::function<void()> a){ a(); });
+                    get_manager().restore_workspace([](std::function<void()> a){ a(); });
                     get_manager().reset();
                     get_manager().tare = true;
-                    get_manager().start(shared_from_this());
+                    auto _this = shared_from_this();
+                    auto invoke = [_this](std::function<void()> action) {
+                        _this->invoke(action);
+                    };
+                    get_manager().start(invoke);
                     update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
                     enable_dismiss = false;
                 }
@@ -700,9 +699,9 @@ namespace rs2
                 std::vector<const char*> vals_cstr;
                 for (auto&& s : vals) vals_cstr.push_back(s.c_str());
 
-                ImGui::PushItemWidth(width - 145);
+                ImGui::PushItemWidth(width - 145.f);
 
-                ImGui::Combo(id.c_str(), &get_manager().speed, vals_cstr.data(), vals.size());
+                ImGui::Combo(id.c_str(), &get_manager().speed, vals_cstr.data(), int(vals.size()));
                 ImGui::PopItemWidth();
 
                 draw_intrinsic_extrinsic(x, y);
@@ -720,7 +719,11 @@ namespace rs2
                     get_manager().restore_workspace([this](std::function<void()> a) { a(); });
                     get_manager().reset();
                     get_manager().tare = false;
-                    get_manager().start(shared_from_this());
+                    auto _this = shared_from_this();
+                    auto invoke = [_this](std::function<void()> action) {
+                        _this->invoke(action);
+                    };
+                    get_manager().start(invoke);
                     update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
                     enable_dismiss = false;
                 }
@@ -746,9 +749,13 @@ namespace rs2
                 ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
                 if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
                 {
-                    get_manager().restore_workspace([this](std::function<void()> a){ a(); });
+                    get_manager().restore_workspace([](std::function<void()> a){ a(); });
                     get_manager().reset();
-                    get_manager().start(shared_from_this());
+                    auto _this = shared_from_this();
+                    auto invoke = [_this](std::function<void()> action) {
+                        _this->invoke(action);
+                    };
+                    get_manager().start(invoke);
                     update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
                     enable_dismiss = false;
                 }
@@ -945,11 +952,11 @@ namespace rs2
                         update_state = RS2_CALIB_STATE_COMPLETE;
                         pinned = false;
                         enable_dismiss = false;
-                        last_progress_time = last_interacted = system_clock::now() + milliseconds(500);
+                        _progress_bar.last_progress_time = last_interacted = system_clock::now() + milliseconds(500);
                     }
                     else dismiss(false);
 
-                    get_manager().restore_workspace([this](std::function<void()> a) { a(); });
+                    get_manager().restore_workspace([](std::function<void()> a) { a(); });
                 }
                 if (recommend_keep || get_manager().tare)
                 {
@@ -991,11 +998,16 @@ namespace rs2
 
                 if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }) || update_manager->started())
                 {
-                    if (!update_manager->started()) update_manager->start(shared_from_this());
+                    auto _this = shared_from_this();
+                    auto invoke = [_this](std::function<void()> action) {
+                        _this->invoke(action);
+                    };
+
+                    if (!update_manager->started()) update_manager->start(invoke);
 
                     update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
                     enable_dismiss = false;
-                    last_progress_time = system_clock::now();
+                    _progress_bar.last_progress_time = system_clock::now();
                 }
                 ImGui::PopStyleColor(2);
 
@@ -1049,7 +1061,7 @@ namespace rs2
         if (!use_new_calib && get_manager().done()) 
             get_manager().apply_calib(false);
 
-        get_manager().restore_workspace([this](std::function<void()> a){ a(); });
+        get_manager().restore_workspace([](std::function<void()> a){ a(); });
 
         if (update_state != RS2_CALIB_STATE_TARE_INPUT)
             update_state = RS2_CALIB_STATE_INITIAL_PROMPT;

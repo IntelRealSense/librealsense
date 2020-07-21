@@ -101,10 +101,8 @@ namespace rs2
         ImGui::PopStyleColor(6);
     }
 
-    void process_notification_model::draw_progress_bar(ux_window & win, int bar_width)
+    void progress_bar::draw(ux_window & win, int bar_width, int progress)
     {
-        auto progress = update_manager->get_progress();
-
         auto now = system_clock::now();
         auto ellapsed = duration_cast<milliseconds>(now - last_progress_time).count() / 1000.f;
 
@@ -137,7 +135,7 @@ namespace rs2
                 auto a = curr_progress_value / 100.f;
                 ImGui::GetWindowDrawList()->AddRectFilled({ float(pos.x + 3 - i), float(pos.y + 3 - i) },
                 { float(pos.x + filled_w + i), float(pos.y + 17 + i) },
-                    ImColor(alpha(light_blue, sqrt(a) * 0.02f)), i);
+                    ImColor(alpha(light_blue, sqrt(a) * 0.02f)), float(i));
             }
 
             ImGui::GetWindowDrawList()->AddRectFilled({ float(pos.x + 3), float(pos.y + 3) },
@@ -160,15 +158,21 @@ namespace rs2
         ImGui::SetCursorScreenPos({ float(pos.x), float(pos.y + 25) });
     }
 
+    void process_notification_model::draw_progress_bar(ux_window & win, int bar_width)
+    {
+        auto progress = update_manager->get_progress();
+        _progress_bar.draw(win, bar_width, progress);
+    }
+
     /* Sets color scheme for notifications, must be used with unset_color_scheme to pop all colors in the end
        Parameter t indicates the transparency of the nofication interface */
     void notification_model::set_color_scheme(float t) const
     {
         ImVec4 c;
 
-        ImGui::PushStyleColor(ImGuiCol_Button, saturate(c, 1.3));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, saturate(c, 0.9));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(c, 1.5));
+        ImGui::PushStyleColor(ImGuiCol_Button, saturate(c, 1.3f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, saturate(c, 0.9f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(c, 1.5f));
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
         c = alpha(white, 1 - t);
         ImGui::PushStyleColor(ImGuiCol_Text, c);
@@ -186,7 +190,7 @@ namespace rs2
         }
     }
 
-    const int notification_model::get_max_lifetime_ms() const
+    int notification_model::get_max_lifetime_ms() const
     {
         return 10000;
     }
@@ -194,7 +198,7 @@ namespace rs2
     void notification_model::draw_text(const char* msg, int x, int y, int h)
     {
         std::string text_name = to_string() << "##notification_text_" << index;
-        ImGui::PushTextWrapPos(x + width - 100);
+        ImGui::PushTextWrapPos(x + width - 100.f);
         ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
         ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
         ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
@@ -228,7 +232,7 @@ namespace rs2
     {
         auto title = get_title();
         auto lines = static_cast<int>(std::count(title.begin(), title.end(), '\n') + 1);
-        return (lines + 1) * ImGui::GetTextLineHeight() + 5;
+        return int((lines + 1) * ImGui::GetTextLineHeight() + 5);
     }
 
     void process_notification_model::draw_pre_effect(int x, int y)
@@ -236,7 +240,7 @@ namespace rs2
         // TODO: Make polymorphic
         if (update_state == 2)
         {
-            auto k = duration_cast<milliseconds>(system_clock::now() - last_progress_time).count() / 500.f;
+            auto k = duration_cast<milliseconds>(system_clock::now() - _progress_bar.last_progress_time).count() / 500.f;
             if (k <= 1.f)
             {
                 auto size = 100;
@@ -258,9 +262,52 @@ namespace rs2
         ImGui::SetCursorScreenPos({ float(x + width - 105), float(y + height - 25) });
 
         string id = to_string() << "Dismiss" << "##" << index;
+
+        ImGui::PushStyleColor(ImGuiCol_Text, black);
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, light_blue);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+
+        ImGui::PushFont(win.get_font());
+
+        ImGui::SetNextWindowPos({ float(x + width - 125), float(y + height - 25) });
+        ImGui::SetNextWindowSize({ 120, 70 });
+
+        std::string dismiss_popup = to_string() << "Dismiss Options" << "##" << index;
+        if (ImGui::BeginPopup(dismiss_popup.c_str()))
+        {
+            if (ImGui::Selectable("Just this time"))
+            {
+                dismiss(true);
+            }
+
+            if (ImGui::Selectable("Remind me later"))
+            {
+                delay(7);
+                dismiss(true);
+            }
+
+            if (ImGui::Selectable("Don't show again"))
+            {
+                delay(1000);
+                dismiss(true);
+            }
+
+            ImGui::EndPopup();
+        }
+
+        ImGui::PopFont();
+        ImGui::PopStyleColor(4);
+
         if (ImGui::Button(id.c_str(), { 100, 20 }))
         {
-            dismiss(true);
+            if (enable_complex_dismiss)
+                ImGui::OpenPopup(dismiss_popup.c_str());
+            else dismiss(true);
+        }
+        if (ImGui::IsItemHovered())
+        {
+            win.link_hovered();
         }
     }
 
@@ -286,8 +333,8 @@ namespace rs2
             {
                 if (last_x > 100000)
                 {
-                    last_x = x + 500;
-                    last_y = y;
+                    last_x = x + 500.f;
+                    last_y = float(y);
                 }
                 last_moved = system_clock::now();
                 animating = true;
@@ -298,12 +345,12 @@ namespace rs2
 
             if (s < 1.f)
             {
-                x = s * x + (1 - s) * last_x;
-                y = s * y + (1 - s) * last_y;
+                x = int(s * x + (1 - s) * last_x);
+                y = int(s * y + (1 - s) * last_y);
             }
             else
             {
-                last_x = x; last_y = y;
+                last_x = float(x); last_y = float(y);
                 animating = false;
                 if (dismissed && !expanded) to_close = true;
             }
@@ -464,7 +511,7 @@ namespace rs2
             }
         }
 
-        add_log(n.get_description());
+        output.add_log(n.get_severity(), __FILE__, __LINE__, n.get_description());
         return result;
     }
 
@@ -491,55 +538,7 @@ namespace rs2
             }
         }
 
-        add_log(model->get_title());
-    }
-
-    void notifications_model::draw_snoozed_button()
-    {
-        auto has_snoozed = snoozed_notifications.size();
-        ImGui::PushStyleColor(ImGuiCol_Text, !has_snoozed ? sensor_bg : light_grey);
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, !has_snoozed ? sensor_bg : light_blue);
-
-        const auto width = 50.f;
-
-        using namespace std;
-        using namespace chrono;
-
-        if (!has_snoozed) 
-        {
-            ImGui::ButtonEx(textual_icons::mail, { width, width }, ImGuiButtonFlags_Disabled);
-
-            if (ImGui::IsItemActive())
-                ImGui::SetTooltip("No pending notifications at this point");
-        }
-        else
-        {
-            auto k = duration_cast<milliseconds>(system_clock::now() - last_snoozed).count() / 500.f;
-            if (k <= 1.f)
-            {
-                auto size = 50.f;
-
-                ImGui::PopStyleColor();
-                ImGui::PushStyleColor(ImGuiCol_Text, saturate(white, smoothstep(static_cast<float>(k), 0.f, 1.f)));
-            }
-
-            if (ImGui::Button(textual_icons::mail, { width, width }))
-            {
-                for (auto&& n : snoozed_notifications)
-                {
-                    n->forced = true;
-                    n->snoozed = false;
-                    n->last_y -= 500;
-                    pending_notifications.push_back(n);
-                }
-                snoozed_notifications.clear();
-            }
-
-            if (ImGui::IsItemActive())
-                ImGui::SetTooltip("Pending notifications available. Click to review");
-        }
-
-        ImGui::PopStyleColor(2);
+        output.add_log(model->severity, __FILE__, __LINE__, model->get_title());
     }
 
     void notifications_model::draw(ux_window& win, int w, int h, std::string& error_message)
@@ -553,13 +552,6 @@ namespace rs2
             std::lock_guard<std::recursive_mutex> lock(m);
             if (pending_notifications.size() > 0)
             {
-                snoozed_notifications.erase(std::remove_if(std::begin(snoozed_notifications),
-                    std::end(snoozed_notifications),
-                    [&](std::shared_ptr<notification_model>& n)
-                {
-                    return n->dismissed;
-                }), end(snoozed_notifications));
-
                 // loop over all notifications, remove "old" ones
                 pending_notifications.erase(std::remove_if(std::begin(pending_notifications),
                     std::end(pending_notifications),
@@ -569,8 +561,6 @@ namespace rs2
                     {
                         n->dismissed = false;
                         n->to_close = false;
-                        snoozed_notifications.push_back(n);
-                        last_snoozed = std::chrono::system_clock::now();
                         return true;
                     }
                     return ((n->get_age_in_ms() > n->get_max_lifetime_ms() && 
@@ -595,10 +585,6 @@ namespace rs2
                 }
             }
 
-            auto flags = ImGuiWindowFlags_NoResize |
-                ImGuiWindowFlags_NoMove |
-                ImGuiWindowFlags_NoCollapse |
-                ImGuiWindowFlags_NoTitleBar;
 
             ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
             //ImGui::Begin("Notification parent window", nullptr, flags);
@@ -680,33 +666,6 @@ namespace rs2
         ImGui::PopFont();
     }
 
-    void notifications_model::foreach_log(std::function<void(const std::string& line)> action)
-    {
-        std::lock_guard<std::recursive_mutex> lock(m);
-        for (auto&& l : log)
-        {
-            action(l);
-        }
-
-        auto rc = ImGui::GetCursorPos();
-        ImGui::SetCursorPos({ rc.x, rc.y + 5 });
-
-        if (new_log)
-        {
-            ImGui::SetScrollPosHere();
-            new_log = false;
-        }
-    }
-
-    void notifications_model::add_log(std::string line)
-    {
-        std::lock_guard<std::recursive_mutex> lock(m);
-        if (!line.size()) return;
-        if (line[line.size() - 1] != '\n') line += "\n";
-        log.push_back(line);
-        new_log = true;
-    }
-
     version_upgrade_model::version_upgrade_model(int version) 
         : process_notification_model(nullptr), _version(version)
     {
@@ -714,7 +673,7 @@ namespace rs2
         enable_dismiss = true;
         update_state = 2;
         //pinned = true;
-        last_progress_time = system_clock::now();
+        _progress_bar.last_progress_time = system_clock::now();
     } 
 
     void version_upgrade_model::set_color_scheme(float t) const
@@ -729,7 +688,7 @@ namespace rs2
     {
         if (_first)
         {
-            last_progress_time = system_clock::now();
+            _progress_bar.last_progress_time = system_clock::now();
             _first = false;
         }
 
@@ -813,14 +772,9 @@ namespace rs2
             throw std::runtime_error("Invoke operation failed!");
     }
 
-    void process_manager::start(std::shared_ptr<notification_model> n)
+    void process_manager::start(invoker invoke)
     {
-        auto cleanup = [n]() {
-            //n->dismiss(false);
-        };
-
-        auto invoke = [n](std::function<void()> action) {
-            n->invoke(action);
+        auto cleanup = [invoke]() {
         };
 
         log(to_string() << "Started " << _process_name << " process");
@@ -885,7 +839,7 @@ namespace rs2
 
             ImGui::SetCursorScreenPos({ float(x + 10), float(y + 35) });
 
-            ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1. - t));
+            ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1.f - t));
 
             std::string s = to_string() << "Saving 3D view to " <<
                 get_file_name(get_manager().get_filename());
@@ -920,7 +874,7 @@ namespace rs2
             {
                 update_state = STATE_COMPLETE;
                 pinned = false;
-                last_progress_time = last_interacted = system_clock::now();
+                _progress_bar.last_progress_time = last_interacted = system_clock::now();
             }
 
             if (!expanded)
@@ -1035,5 +989,25 @@ namespace rs2
         {
             ImGui::SetTooltip("%s", "Enables metadata on connected devices (you may be prompted for administrator privileges)");
         }
+    }
+
+    bool notification_model::is_delayed() const
+    {
+        // Make sure we don't spam calibration remainders too often:
+        time_t rawtime;
+        time(&rawtime);
+        std::string str = to_string() << "notifications." << delay_id << ".next";
+        long long next_time = config_file::instance().get_or_default(str.c_str(), (long long)0);
+
+        return rawtime < next_time;
+    }
+
+    void notification_model::delay(int days)
+    {
+        // Make sure we don't spam calibration remainders too often:
+        time_t rawtime;
+        time(&rawtime);
+        std::string str = to_string() << "notifications." << delay_id << ".next";
+        config_file::instance().set(str.c_str(), (long long)(rawtime + days * 60 * 60 * 24));
     }
 }

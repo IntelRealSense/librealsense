@@ -11,7 +11,9 @@
 #include "colorizer-gl.h"
 #include "option.h"
 
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif // NOMINMAX
 
 #include <glad/glad.h>
 
@@ -181,7 +183,7 @@ namespace librealsense
 
         void colorizer::populate_floating_histogram(float* f, int* hist)
         {
-            float total = hist[MAX_DEPTH-1];
+            float total = float(hist[MAX_DEPTH-1]);
             for (int i = 0; i < MAX_DEPTH; i++)
                 f[i] = hist[i] / total;
         }

@@ -1,3 +1,6 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+
 #include "opengl3.h"
 
 #include <glad/glad.h>
@@ -38,6 +41,7 @@ void vbo::upload(int attribute, const float* xyz, int size, int count, bool dyna
         dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
     glVertexAttribPointer(attribute, size, GL_FLOAT, GL_FALSE, 0, 0);
     _size = count;
+    check_gl_error();
     unbind();
 }
 
@@ -46,6 +50,7 @@ void vbo::upload(const int3* indx, int count)
     assert(_type == vbo_type::element_array_buffer);
     bind();
     glBufferData(convert_type(_type), count * sizeof(int3), indx, GL_STATIC_DRAW);
+    check_gl_error();
     _size = count;
 }
 
@@ -54,6 +59,7 @@ void vbo::draw_points()
     assert(_type == vbo_type::array_buffer);
     bind();
     glDrawArrays(GL_POINTS, 0, _size);
+    check_gl_error();
     unbind();
 }
 
@@ -62,6 +68,7 @@ void vbo::draw_triangles()
     assert(_type == vbo_type::array_buffer);
     bind();
     glDrawArrays(GL_TRIANGLES, 0, _size);
+    check_gl_error();
     unbind();
 }
 
@@ -69,6 +76,7 @@ void vbo::draw_indexed_triangles()
 {
     assert(_type == vbo_type::element_array_buffer);
     glDrawElements(GL_TRIANGLES, _size * (sizeof(int3) / sizeof(int)), GL_UNSIGNED_INT, 0);
+    check_gl_error();
 }
 
 vbo::vbo(vbo&& other)
@@ -91,6 +99,7 @@ vao::vao(const float3* vert, const float2* uvs, const float3* normals,
     _vertex_count(vert_count)
 {
     glGenVertexArrays(1, &_id);
+    check_gl_error();
     bind();
     _indexes.upload(indx, indx_count);
     _vertexes.upload(0, (float*)vert, 3, vert_count, true);
@@ -130,6 +139,7 @@ vao::~vao()
 void vao::bind()
 {
     glBindVertexArray(_id);
+    check_gl_error();
 }
 
 void vao::unbind()
@@ -145,13 +155,17 @@ void vao::draw_points()
     if (_uvs.size())        glEnableVertexAttribArray(1); // uv
     if (_normals.size())    glEnableVertexAttribArray(2); // normals
     if (_tangents.size())   glEnableVertexAttribArray(3); // tangents
+    check_gl_error();
 
     _vertexes.draw_points();
+    check_gl_error();
 
     glDisableVertexAttribArray(0);
     if (_uvs.size())        glDisableVertexAttribArray(1);
     if (_normals.size())    glDisableVertexAttribArray(2);
     if (_tangents.size())   glDisableVertexAttribArray(3);
+
+    check_gl_error();
 
     unbind();
 }
@@ -165,12 +179,18 @@ void vao::draw()
     if (_normals.size())    glEnableVertexAttribArray(2); // normals
     if (_tangents.size())   glEnableVertexAttribArray(3); // tangents
 
+    check_gl_error();
+
     _indexes.draw_indexed_triangles();
+
+    check_gl_error();
 
     glDisableVertexAttribArray(0);
     if (_uvs.size())        glDisableVertexAttribArray(1);
     if (_normals.size())    glDisableVertexAttribArray(2);
     if (_tangents.size())   glDisableVertexAttribArray(3);
+
+    check_gl_error();
 
     unbind();
 }
@@ -264,6 +284,18 @@ void visualizer_2d::draw_texture(uint32_t tex, float opacity)
     tex_2d_shader->end();
     draw_texture({ 0.f, 0.f }, { 1.f, 1.f }, tex);
     glDisable(GL_BLEND);
+    check_gl_error();
+}
+
+void visualizer_2d::draw_texture(uint32_t tex1, uint32_t tex2, float opacity)
+{
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    tex_2d_shader->begin();
+    tex_2d_shader->set_opacity(opacity);
+    tex_2d_shader->end();
+    draw_texture({ 0.f, 0.f }, { 1.0f, 1.0f }, tex1, tex2);
+    glDisable(GL_BLEND);
 }
 
 void texture_2d_shader::set_position_and_scale(
@@ -314,6 +346,7 @@ void texture_2d_shader::end() { _shader->end(); }
 void texture_2d_shader::set_opacity(float opacity)
 {
     _shader->load_uniform(_opacity_location, opacity);
+    check_gl_error();
 }
 
 void texture_visualizer::draw(texture_2d_shader& shader, uint32_t tex)
@@ -322,6 +355,23 @@ void texture_visualizer::draw(texture_2d_shader& shader, uint32_t tex)
     shader.set_position_and_scale(_position, _scale);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tex);
+    _geometry->draw();
+    glBindTexture(GL_TEXTURE_2D, 0);
+    shader.end();
+    check_gl_error();
+}
+
+void texture_visualizer::draw(texture_2d_shader& shader, uint32_t tex1, uint32_t tex2)
+{
+    shader.begin();
+    shader.set_position_and_scale(_position, _scale);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, tex1);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, tex2);
+
     _geometry->draw();
     glBindTexture(GL_TEXTURE_2D, 0);
     shader.end();
@@ -362,36 +412,43 @@ int shader_program::get_uniform_location(const std::string& name)
 void shader_program::load_uniform(int location, int value)
 {
     glUniform1i(location, value);
+    check_gl_error();
 }
 
 void shader_program::load_uniform(int location, float value)
 {
     glUniform1f(location, value);
+    check_gl_error();
 }
 
 void shader_program::load_uniform(int location, bool value)
 {
     load_uniform(location, value ? 1.f : 0.f);
+    check_gl_error();
 }
 
 void shader_program::load_uniform(int location, const float3& vec)
 {
     glUniform3f(location, vec.x, vec.y, vec.z);
+    check_gl_error();
 }
 
 void shader_program::load_uniform(int location, const float2& vec)
 {
     glUniform2f(location, vec.x, vec.y);
+    check_gl_error();
 }
 
 void shader_program::load_uniform(int location, const matrix4& matrix)
 {
     glUniformMatrix4fv(location, 1, GL_FALSE, (float*)&matrix);
+    check_gl_error();
 }
 
 void shader_program::bind_attribute(int attr, const std::string& name)
 {
     glBindAttribLocation(_id, attr, name.c_str());
+    check_gl_error();
 }
 
 shader::shader(const std::string& shader_code, shader_type type)
@@ -429,6 +486,8 @@ shader::shader(const std::string& shader_code, shader_type type)
         throw std::runtime_error(error);
     }
 
+    check_gl_error();
+
     _id = shader_id;
 }
 
@@ -440,6 +499,7 @@ shader::~shader()
 shader_program::shader_program()
 {
     GLuint program_id = glCreateProgram();
+    check_gl_error();
     _id = program_id;
 }
 shader_program::~shader_program()
@@ -499,11 +559,14 @@ void shader_program::link()
         glDetachShader(_id, ps->get_id());
     }
     _shaders.clear();
+
+    check_gl_error();
 }
 
 void shader_program::begin() const
 {
     glUseProgram(_id);
+    check_gl_error();
 }
 void shader_program::end() const
 {
@@ -526,9 +589,11 @@ std::unique_ptr<shader_program> shader_program::load(
 
     if (input0) glBindAttribLocation(res->get_id(), 0, input0);
     if (input1) glBindAttribLocation(res->get_id(), 1, input1);
+    check_gl_error();
 
     if (output0) glBindFragDataLocation(res->get_id(), 0, output0);
     if (output1) glBindFragDataLocation(res->get_id(), 1, output1);
+    check_gl_error();
 
     res->link();
     return std::move(res);
@@ -537,36 +602,54 @@ std::unique_ptr<shader_program> shader_program::load(
 fbo::fbo(int w, int h) : _w(w), _h(h)
 {
     glGenFramebuffers(1, &_id);
+    check_gl_error();
     glBindFramebuffer(GL_FRAMEBUFFER, _id);
+    check_gl_error();
     glDrawBuffer(GL_COLOR_ATTACHMENT0);
+    check_gl_error();
 }
 
 void fbo::createTextureAttachment(uint32_t handle)
 {
     glBindTexture(GL_TEXTURE_2D, handle);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _w, _h, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _w, _h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, handle, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
+    check_gl_error();
 }
 
 void fbo::createDepthTextureAttachment(uint32_t handle)
 {
     glBindTexture(GL_TEXTURE_2D, handle);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, _w, _h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, handle, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
+    check_gl_error();
 }
 
 void fbo::bind()
 {
+    glGetIntegerv(GL_VIEWPORT, _viewport);
+
     glBindTexture(GL_TEXTURE_2D, 0);
+    check_gl_error();
     glBindFramebuffer(GL_FRAMEBUFFER, _id);
+    check_gl_error();
     glViewport(0, 0, _w, _h);
+    check_gl_error();
 }
 
 void fbo::unbind()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    check_gl_error();
+    glViewport(_viewport[0], _viewport[1], _viewport[2], _viewport[3]);
+    check_gl_error();
 }
 
 void fbo::createDepthBufferAttachment()
@@ -576,6 +659,7 @@ void fbo::createDepthBufferAttachment()
     glBindRenderbuffer(GL_RENDERBUFFER, _db);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, _w, _h);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _db);
+    check_gl_error();
 }
 
 fbo::~fbo()
@@ -600,4 +684,48 @@ std::string fbo::get_status()
     unbind();
 
     return res;
+}
+
+
+void _check_gl_error(const char *file, int line) 
+{
+#ifdef _DEBUG
+    GLenum err (glGetError());
+    std::stringstream ss;
+
+    bool has_errors = false;
+    while (err != GL_NO_ERROR) 
+    {
+        std::string error;
+
+        switch (err) 
+        {
+            case GL_INVALID_OPERATION:      error="INVALID_OPERATION";      break;
+            case GL_INVALID_ENUM:           error="INVALID_ENUM";           break;
+            case GL_INVALID_VALUE:          error="INVALID_VALUE";          break;
+            case GL_OUT_OF_MEMORY:          error="OUT_OF_MEMORY";          break;
+            case GL_INVALID_FRAMEBUFFER_OPERATION:  error="INVALID_FRAMEBUFFER_OPERATION";  break;
+            default:                        error="Unknown"; break;
+        }
+
+        ss << "GL_" << error.c_str() << " - " << file << ":" << line << "\n";
+        err = glGetError();
+        has_errors = true;
+    }
+
+    if (has_errors) 
+    {
+        auto error = ss.str();
+        throw std::runtime_error(error);
+    }
+#endif
+}
+
+void clear_gl_errors()
+{
+    GLenum err(glGetError());
+    while (err != GL_NO_ERROR) 
+    {
+        err = glGetError();
+    }
 }

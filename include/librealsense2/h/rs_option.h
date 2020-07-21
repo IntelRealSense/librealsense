@@ -93,6 +93,9 @@ extern "C" {
         RS2_OPTION_AMBIENT_LIGHT, /**< Change the depth ambient light see rs2_ambient_light for values */
         RS2_OPTION_SENSOR_MODE, /**< The resolution mode: see rs2_sensor_mode for values */
         RS2_OPTION_EMITTER_ALWAYS_ON, /**< Enable Laser On constantly (GS SKU Only) */
+        RS2_OPTION_THERMAL_COMPENSATION, /**< Depth Thermal Compensation for selected D400 SKUs */
+        RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, /**< Enable depth & color frame sync with periodic calibration for proper alignment */
+        RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH,
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
@@ -149,6 +152,7 @@ extern "C" {
     {
         RS2_SENSOR_MODE_VGA,
         RS2_SENSOR_MODE_XGA,
+        RS2_SENSOR_MODE_QVGA,
         RS2_SENSOR_MODE_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_sensor_mode;
     const char* rs2_sensor_mode_to_string(rs2_sensor_mode preset);

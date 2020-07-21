@@ -9,7 +9,8 @@
 #include <chrono>
 
 #include "ux-window.h"
-#include "../src/concurrency.h"
+
+#include "output-model.h"
 
 namespace rs2
 {
@@ -42,7 +43,7 @@ namespace rs2
         void draw_text(const char* msg, int x, int y, int h);
         virtual void set_color_scheme(float t) const;
         void unset_color_scheme() const;
-        virtual const int get_max_lifetime_ms() const;
+        virtual int get_max_lifetime_ms() const;
 
         virtual int calc_height();
         virtual void draw_pre_effect(int x, int y) {}
@@ -80,6 +81,12 @@ namespace rs2
         bool enable_dismiss = true;
         bool enable_expand = true;
         bool enable_click = false;
+        bool enable_complex_dismiss = false;
+
+        std::string delay_id = "";
+
+        bool is_delayed() const;
+        void delay(int days);
 
         float last_x, last_y;
         bool animating = false;
@@ -100,7 +107,9 @@ namespace rs2
         process_manager(std::string name)
             : _process_name(name) {}
 
-        void start(std::shared_ptr<notification_model> n);
+        virtual ~process_manager() = default;
+
+        void start(invoker invoke);
         int get_progress() const { return _progress; }
         bool done() const { return _done; }
         bool started() const { return _started; }
@@ -129,6 +138,17 @@ namespace rs2
         std::string _process_name;
     };
 
+    struct progress_bar
+    {
+        void draw(ux_window& win, int w, int progress);
+
+        float progress_speed = 5.f;
+        std::chrono::system_clock::time_point last_progress_time;
+        int last_progress = 0;
+        float curr_progress_value = 0.f;
+        float threshold_progress = 5.f;
+    };
+
     struct process_notification_model : public notification_model
     {
         process_notification_model(std::shared_ptr<process_manager> manager)
@@ -140,11 +160,7 @@ namespace rs2
 
         std::shared_ptr<process_manager> update_manager = nullptr;
         int update_state = 0;
-        float progress_speed = 5.f;
-        std::chrono::system_clock::time_point last_progress_time;
-        int last_progress = 0;
-        float curr_progress_value = 0.f;
-        float threshold_progress = 5.f;
+        progress_bar _progress_bar;
     };
 
     struct version_upgrade_model : public process_notification_model
@@ -154,7 +170,7 @@ namespace rs2
         void set_color_scheme(float t) const override;
         void draw_content(ux_window& win, int x, int y, float t, std::string& error_message) override;
         int calc_height() override;
-        const int get_max_lifetime_ms() const override { return 40000; }
+        int get_max_lifetime_ms() const override { return 40000; }
 
         int _version;
         bool _first = true;
@@ -167,7 +183,7 @@ namespace rs2
         void set_color_scheme(float t) const override;
         void draw_content(ux_window& win, int x, int y, float t, std::string& error_message) override;
         int calc_height() override { return 130; }
-        const int get_max_lifetime_ms() const override { return 40000; }
+        int get_max_lifetime_ms() const override { return 40000; }
     };
 
 
@@ -180,24 +196,22 @@ namespace rs2
         void add_notification(std::shared_ptr<notification_model> model);
         void draw(ux_window& win, int w, int h, std::string& error_message);
 
-        void foreach_log(std::function<void(const std::string& line)> action);
-        void add_log(std::string line);
+        notifications_model() {}
 
-        void draw_snoozed_button();
+        void add_log(std::string message) 
+        {            
+            output.add_log(RS2_LOG_SEVERITY_INFO, "", 0, message); 
+        }
 
-        notifications_model() : last_snoozed(std::chrono::system_clock::now()) {}
+        output_model output;
         
     private:
         std::vector<std::shared_ptr<notification_model>> pending_notifications;
-        std::vector<std::shared_ptr<notification_model>> snoozed_notifications;
         int index = 1;
         const int MAX_SIZE = 6;
         std::recursive_mutex m;
-        bool new_log = false;
 
-        std::vector<std::string> log;
         std::shared_ptr<notification_model> selected;
-        std::chrono::system_clock::time_point last_snoozed;
     };
 
     inline ImVec4 saturate(const ImVec4& a, float f)
