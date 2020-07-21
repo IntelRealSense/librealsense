@@ -447,7 +447,7 @@ namespace ivcam2 {
     private:
         static void write_out( std::string const & s )
         {
-#if 0 //def WIN32
+#ifdef WIN32
             HANDLE stdOut = GetStdHandle( STD_OUTPUT_HANDLE );
             if( stdOut != NULL && stdOut != INVALID_HANDLE_VALUE )
             {
