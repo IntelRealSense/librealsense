@@ -178,6 +178,11 @@ namespace ivcam2 {
 
     void ac_trigger::enabler_option::set( float value )
     {
+        if( value == query() )
+        {
+            return;
+        }
+
         if( value != RS2_CAH_TRIGGER_NOW )
         {
             // When auto trigger is on in the environment, we control the timed activation
@@ -189,13 +194,13 @@ namespace ivcam2 {
                 try
                 {
                     if (_autocal->_dev.get_depth_sensor().is_streaming())
-                        _autocal->start();
+                        _autocal->_start();
 
                     super::set(value);
                 }
                 catch (std::exception const & e)
                 {
-                    AC_LOG(ERROR, "EXCEPTION caught in access to device: " << e.what());
+                    AC_LOG(ERROR, "EXCEPTION caught during start: " << e.what());
                     return;
                 }
                 // else start() will get called on stream start
@@ -379,7 +384,7 @@ namespace ivcam2 {
 
 
     /*
-        Temporary (?) class used to direct AC logs to either console or a special log
+        Temporary (?) class used to direct CAH logs to either console or a special log
 
         If RS2_DEBUG_DIR is defined in the environment, we try to create a log file in there
         that has the name "<pid>.ac_log".
@@ -416,7 +421,7 @@ namespace ivcam2 {
 
                 _f.open( filename );
                 if( _f  &&  _to_stdout )
-                    write_out( to_string() << "-D- AC log is being written to: " << filename );
+                    write_out( to_string() << "-D- CAH log is being written to: " << filename );
             }
 
             if( _f || _to_stdout )
@@ -552,8 +557,8 @@ namespace ivcam2 {
     {
         if( is_active() )
         {
-            AC_LOG( ERROR, "Failed to trigger calibration: AC is already active" );
-            throw wrong_api_call_sequence_exception( "AC is already active" );
+            AC_LOG( ERROR, "Failed to trigger calibration: CAH is already active" );
+            throw wrong_api_call_sequence_exception( "CAH is already active" );
         }
         if( _retrier.get() || _recycler.get() )
         {
@@ -755,9 +760,9 @@ namespace ivcam2 {
                 "Starting processing:"
                     << "  color #" << _cf.get_frame_number() << " " << _cf.get_profile()
                     << "  depth #" << _sf.get_frame_number() << ' ' << _sf.get_profile() );
+        stop_color_sensor_if_started();
         _is_processing = true;
         _retrier.reset();
-        stop_color_sensor_if_started();
         if( _worker.joinable() )
         {
             AC_LOG( DEBUG, "Waiting for worker to join ..." );
@@ -872,7 +877,7 @@ namespace ivcam2 {
                         // All the rest of the codes are not end-states of the algo, so we don't expect
                         // to get here!
                         AC_LOG( ERROR,
-                            "Unexpected status '" << status << "' received from AC algo; stopping!" );
+                            "Unexpected status '" << status << "' received from CAH algo; stopping!" );
                         call_back( RS2_CALIBRATION_FAILED );
                         break;
                     }
@@ -915,6 +920,8 @@ namespace ivcam2 {
             stop_color_sensor_if_started();
             call_back( RS2_CALIBRATION_FAILED );
             reset();
+            _retrier.reset();
+            _recycler.reset();
             calibration_is_done();
         }
     }
@@ -937,7 +944,7 @@ namespace ivcam2 {
 
     void ac_trigger::schedule_next_calibration()
     {
-        // Trigger the next AC -- but only if we're "on", meaning this wasn't a manual calibration
+        // Trigger the next CAH -- but only if we're "on", meaning this wasn't a manual calibration
         if( !auto_calibration_is_on() )
         {
             AC_LOG( DEBUG, "Calibration mechanism is not on; not scheduling next calibration" );
@@ -948,13 +955,21 @@ namespace ivcam2 {
         schedule_next_temp_trigger();
     }
 
-    void ac_trigger::schedule_next_time_trigger()
+    void ac_trigger::schedule_next_time_trigger( std::chrono::seconds n_seconds )
     {
-        auto n_seconds = get_trigger_seconds();
-        if( n_seconds.count() )
-            start( n_seconds );
-        else
-            AC_LOG( DEBUG, "RS2_AC_TRIGGER_SECONDS is 0; no time trigger" );
+        if( ! n_seconds.count() )
+        {
+            n_seconds = get_trigger_seconds();
+            if (!n_seconds.count())
+            {
+                AC_LOG(DEBUG, "RS2_AC_TRIGGER_SECONDS is 0; no time trigger");
+                return;
+            }
+        }
+
+        AC_LOG( DEBUG, "Trigger in " << n_seconds.count() << " seconds..." );
+        // If there's already a trigger, this will simply override it
+        _next_trigger = retrier::start< next_trigger >( *this, n_seconds );
     }
 
     void ac_trigger::schedule_next_temp_trigger()
@@ -1095,70 +1110,78 @@ namespace ivcam2 {
         }
     }
 
-    void ac_trigger::start( std::chrono::seconds n_seconds )
+    void ac_trigger::start()
     {
-        if( is_active() )
-            throw wrong_api_call_sequence_exception( "CAH is already active" );
-
-        if( !n_seconds.count() )
+        try
         {
-            try
+            option & o
+                = _dev.get_depth_sensor().get_option( RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH );
+            if( o.query() != float( RS2_CAH_TRIGGER_AUTO ) )
             {
-                option & o = _dev.get_depth_sensor().get_option( RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH );
-                if( o.query() != float( RS2_CAH_TRIGGER_AUTO ) )
-                {
-                    // auto trigger is turned off
-                    AC_LOG( DEBUG, "Turned off -- no trigger set" );
-                    return;
-                }
-            }
-            catch( std::exception const & e )
-            {
-                AC_LOG( ERROR, "EXCEPTION caught in access to device: " << e.what() );
+                // auto trigger is turned off
+                AC_LOG( DEBUG, "Turned off -- no trigger set" );
                 return;
             }
-
-            // Check if we want auto trigger
-            // Note: we arbitrarly choose the time before AC starts at 10 second -- enough time to
-            // make sure the user isn't going to fiddle with color sensor activity too much, because
-            // if color is off then AC will automatically turn it on!
-            if( get_trigger_seconds().count() )
-                n_seconds = std::chrono::seconds( 10 );
-            else if( get_temp_diff_trigger() && (_last_temp = read_temperature()) )
-                _temp_check = retrier::start< temp_check >( *this, std::chrono::seconds( 60 ) );
-            else
-            {
-                AC_LOG( DEBUG, "Auto trigger is disabled in environment" );
-                return;  // no auto trigger
-            }
         }
-        _is_on = true;
-        if( n_seconds.count() )
+        catch( std::exception const & e )
         {
-            AC_LOG( DEBUG, "Trigger in " << n_seconds.count() << " seconds..." );
-            // If there's already a trigger, this will simply override it
-            _next_trigger = retrier::start< next_trigger >( *this, n_seconds );
+            AC_LOG( ERROR, "EXCEPTION caught in access to device: " << e.what() );
+            return;
         }
+
+        _start();
+    }
+
+    void ac_trigger::_start()
+    {
+        if( auto_calibration_is_on() )
+            throw wrong_api_call_sequence_exception( "CAH is already active" );
+
+        if (!is_auto_trigger_possible())
+        {
+            AC_LOG(DEBUG, "Auto trigger is disabled in environment");
+            return;  // no auto trigger
+        }
+
+        _is_on = true;
+
+        // If we are already active then we don't need to do anything: another calibration will be
+        // triggered automatically at the end of the current one 
+        if (is_active())
+        {
+            return;
+        }
+
+        // Note: we arbitrarily choose the time before CAH starts at 10 second -- enough time to
+        // make sure the user isn't going to fiddle with color sensor activity too much, because
+        // if color is off then CAH will automatically turn it on!
+        if( get_trigger_seconds().count() )
+            schedule_next_time_trigger( std::chrono::seconds( 10 ) );
+        else if( _last_temp = read_temperature() )
+            schedule_next_temp_trigger();
     }
 
     void ac_trigger::stop()
     {
         _is_on = false;
-        if( _next_trigger )
+        if (is_active())
         {
-            AC_LOG( DEBUG, "Cancelling next calibration" );
-            _next_trigger.reset();
+            cancel_current_calibration();
         }
-        if( is_active() )
+        else
         {
-            AC_LOG( DEBUG, "Cancelling current calibration" );
-            set_not_active();  // now inactive!
+            if (_next_trigger)
+            {
+                AC_LOG(DEBUG, "Cancelling next time trigger");
+                _next_trigger.reset();
+            }
+
+            if (_temp_check)
+            {
+                AC_LOG(DEBUG, "Cancelling next temp trigger");
+                _temp_check.reset();
+            }
         }
-        stop_color_sensor_if_started();
-        _temp_check.reset();
-        _retrier.reset();
-        _recycler.reset();
-        reset();
     }
 
     void ac_trigger::reset()
@@ -1212,7 +1235,7 @@ namespace ivcam2 {
     rs2::frame ac_trigger::depth_processing_block::process_frame( const rs2::frame_source & source,
                                                                   const rs2::frame & f )
     {
-        // AC can be triggered manually, too, so we do NOT check whether the option is on!
+        // CAH can be triggered manually, too, so we do NOT check whether the option is on!
 
         auto fs = f.as< rs2::frameset >();
         if( fs )
@@ -1263,7 +1286,7 @@ namespace ivcam2 {
 
     rs2::frame ac_trigger::color_processing_block::process_frame( const rs2::frame_source& source, const rs2::frame& f )
     {
-        // AC can be triggered manually, too, so we do NOT check whether the option is on!
+        // CAH can be triggered manually, too, so we do NOT check whether the option is on!
 
         // Disregard framesets: we'll get those broken down into individual frames by generic_processing_block's on_frame
         if( f.is< rs2::frameset >() )
