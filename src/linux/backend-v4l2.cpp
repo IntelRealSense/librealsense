@@ -117,6 +117,14 @@ namespace librealsense
         std::map<std::string, std::recursive_mutex> named_mutex::_dev_mutex;
         std::map<std::string, int> named_mutex::_dev_mutex_cnt;
 
+        // named_mutex usage note:
+        // ----------------------
+        // acquire() (or the encapsulating lock() ) function throws exception if fails.
+        // It increase its counters count non the less.
+        // Therefor, a lock() must be surrounded by try-catch section and a call to 
+        // release() (or unlock() or destructor) must be performed, in case of failure,
+        // to decrease the counters count.
+        // 
         named_mutex::named_mutex(const std::string& device_path, unsigned timeout)
             : _device_path(device_path),
               _timeout(timeout), // TODO: try to lock with timeout
@@ -169,7 +177,7 @@ namespace librealsense
         void named_mutex::acquire()
         {
             _dev_mutex[_device_path].lock();
-            _dev_mutex_cnt[_device_path] += 1;
+            _dev_mutex_cnt[_device_path] += 1;  //Advance counters even if throws because catch calls release()
             _object_lock_counter += 1;
             if (_dev_mutex_cnt[_device_path] == 1)
             {
@@ -199,7 +207,7 @@ namespace librealsense
             if (_dev_mutex_cnt[_device_path] < 0)
             {
                 _dev_mutex_cnt[_device_path] = 0;
-                throw linux_backend_exception("HOW DID WE GET HERE??");
+                throw linux_backend_exception(to_string() << "Error: _dev_mutex_cnt[" << _device_path << "] < 0");
             }
 
             if ((_dev_mutex_cnt[_device_path] == 0) && (-1 != _fildes))

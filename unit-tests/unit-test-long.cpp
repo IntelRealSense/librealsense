@@ -136,7 +136,7 @@ TEST_CASE("multicam_streaming", "[live][multicam]")
             std::string usb_type(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
             if ( usb_type != "3.2")
             {
-                std::cout << "Device " << serial << " with usb_type " << usb_type << " is skipped.";
+                WARN("Device " << serial << " with usb_type " << usb_type << " is skipped.");
                 continue;
             }
             serials_numbers.push_back(serial);
