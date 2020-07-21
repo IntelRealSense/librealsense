@@ -516,7 +516,7 @@ namespace ivcam2 {
         }
         if( _need_to_wait_for_color_sensor_stability )
         {
-            AC_LOG( ERROR, "Failed to receive RGB frame; cancelling calibration" );
+            AC_LOG( ERROR, "Failed to receive stable RGB frame; cancelling calibration" );
             cancel_current_calibration();
             return;
         }
@@ -634,6 +634,10 @@ namespace ivcam2 {
                 return;  // error should have already been printed
             //AC_LOG( DEBUG, "Picked profile: " << *rgb_profile );
 
+            // If we just started the sensor, especially for AC, then we cannot simply take
+            // the first RGB frame we get: for various reasons, including auto exposure, the
+            // first frames we receive cannot be used (there's a "fade-in" effect). So we
+            // only enable frame capture after some time has passed (see set_color_frame):
             _rgb_sensor_start = std::chrono::high_resolution_clock::now();
             _need_to_wait_for_color_sensor_stability
                 = color_sensor->start_stream_for_calibration( { rgb_profile } );
