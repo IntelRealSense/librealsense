@@ -420,16 +420,16 @@ namespace librealsense
 
     void l500_color_sensor::start_stream_for_calibration(const stream_profiles& requests)
     {
-        std::lock_guard<std::mutex> lock(_state_mutex);
+        std::lock_guard< std::mutex > lock( _state_mutex );
 
         // Allow calibration process to open the color stream only if it is not started by the user.
-        if (_state == sensor_state::CLOSED)
+        if( _state == sensor_state::CLOSED )
         {
             synthetic_sensor::open(requests);
             set_sensor_state(sensor_state::OWNED_BY_AUTO_CAL);
-            AC_LOG(INFO, "Start color sensor stream for calibration");
-            delayed_start(make_frame_callback([&](frame_holder fref) {}));
-            AC_LOG(INFO, "Color sensor stream started");
+            AC_LOG( INFO, "Start color sensor stream for calibration" );
+            delayed_start( make_frame_callback( [&]( frame_holder fref ) {} ) );
+            AC_LOG( INFO, "Color sensor stream started" );
         }
         else
         {
@@ -448,30 +448,30 @@ namespace librealsense
 
     void l500_color_sensor::stop_stream_for_calibration()
     {
-        std::lock_guard<std::mutex> lock(_state_mutex);
+        std::lock_guard< std::mutex > lock( _state_mutex );
         
-        if (_state == sensor_state::OWNED_BY_AUTO_CAL)
+        if( _state == sensor_state::OWNED_BY_AUTO_CAL )
         {
             if( is_streaming() )
             {
-                AC_LOG(INFO, "Stopping color sensor stream from calibration");
+                AC_LOG( INFO, "Stopping color sensor stream from calibration" );
                 delayed_stop();
-                AC_LOG(INFO, "Color sensor stream stopped");
+                AC_LOG( INFO, "Color sensor stream stopped" );
 
             }
             if (is_opened())
             {
-                LOG_DEBUG("Closing color sensor...");
+                LOG_DEBUG( "Closing color sensor..." );
                 synthetic_sensor::close();
-                LOG_DEBUG("Color sensor closed");
+                LOG_DEBUG( "Color sensor closed" );
             }
 
             // If we got here with no exception it means the start has succeeded.
-            set_sensor_state(sensor_state::CLOSED);
+            set_sensor_state( sensor_state::CLOSED );
         }
         else
         {
-            AC_LOG(DEBUG, "Color sensor was opened before calibration stated, no need to close");
+            AC_LOG( DEBUG, "Color sensor was not opened by us; no need to close" );
         }
     }
 

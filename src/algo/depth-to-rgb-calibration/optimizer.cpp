@@ -1053,11 +1053,11 @@ std::vector< byte > optimizer::get_luminance_from_yuy2( std::vector< yuy_t > con
     return res;
 }
 
-std::vector<uint8_t> optimizer::get_logic_edges( std::vector<double> edges )
+std::vector< uint8_t > optimizer::get_logic_edges( std::vector< double > const & edges )
 {
     std::vector<uint8_t> logic_edges( edges.size(), 0 );
     auto max = std::max_element( edges.begin(), edges.end() );
-    auto thresh = *max*_params.edge_thresh4_logic_lum;
+    auto thresh = *max * _params.edge_thresh4_logic_lum;
 
     for( auto i = 0; i < edges.size(); i++ )
     {

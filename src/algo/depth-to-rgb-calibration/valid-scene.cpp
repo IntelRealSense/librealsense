@@ -505,22 +505,27 @@ uint8_t dilation_calc(std::vector<T> const& sub_image, std::vector<uint8_t> cons
 
     return res;
 }
-std::vector<uint8_t> optimizer::images_dilation(std::vector<uint8_t> const &logic_edges, size_t width, size_t height)
+
+
+std::vector< uint8_t > optimizer::images_dilation( std::vector< uint8_t > const & logic_edges,
+                                                   size_t width,
+                                                   size_t height )
 {
-    if (_params.dilation_size == 1)
+    if( _params.dilation_size == 1 )
        return logic_edges;
-    else
-    {
-        std::vector<uint8_t> dilation_mask = { 1, 1, 1,
-                                                  1,  1,  1,
-                                                  1,  1,  1 };
 
-        return dilation_convolution<uint8_t>(logic_edges, width, height, _params.dilation_size, _params.dilation_size, [&](std::vector<uint8_t> const& sub_image)
-        {return dilation_calc(sub_image, dilation_mask); });
-    }
-   
-
+    std::vector< uint8_t > dilation_mask = { 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+    return dilation_convolution< uint8_t >( logic_edges,
+                                            width,
+                                            height,
+                                            _params.dilation_size,
+                                            _params.dilation_size,
+                                            [&]( std::vector< uint8_t > const & sub_image ) {
+                                                return dilation_calc( sub_image, dilation_mask );
+                                            } );
 }
+
+
 template<class T>
 double gaussian_calc(std::vector<T> const& sub_image, std::vector<double> const& mask)
 {
@@ -534,11 +539,12 @@ double gaussian_calc(std::vector<T> const& sub_image, std::vector<double> const&
     return res;
 }
 
-void optimizer::gaussian_filter(std::vector<uint8_t> const& lum_frame,
-    std::vector<uint8_t> const& prev_lum_frame,
-    std::vector<double>& yuy_diff, 
-    std::vector<double>& gaussian_filtered_image, 
-    size_t width, size_t height)
+void optimizer::gaussian_filter( std::vector< uint8_t > const & lum_frame,
+                                 std::vector< uint8_t > const & prev_lum_frame,
+                                 std::vector< double > & yuy_diff,
+                                 std::vector< double > & gaussian_filtered_image,
+                                 size_t width,
+                                 size_t height )
 {
 
     auto area = height *width;
@@ -546,12 +552,14 @@ void optimizer::gaussian_filter(std::vector<uint8_t> const& lum_frame,
     /* diffIm = abs(im1-im2);
 diffIm = imgaussfilt(im1-im2,params.moveGaussSigma);*/
     // use this matlab function to get gauss kernel with sigma=1: disp17(fspecial('gaussian',5,1))
-    std::vector<double>  gaussian_kernel = { 0.0029690167439504968, 0.013306209891013651, 0.021938231279714643, 0.013306209891013651, 0.0029690167439504968,
-        0.013306209891013651, 0.059634295436180138, 0.098320331348845769, 0.059634295436180138, 0.013306209891013651,
-        0.021938231279714643, 0.098320331348845769, 0.16210282163712664, 0.098320331348845769, 0.021938231279714643,
-        0.013306209891013651, 0.059634295436180138, 0.098320331348845769, 0.059634295436180138, 0.013306209891013651,
-        0.0029690167439504968, 0.013306209891013651, 0.021938231279714643, 0.013306209891013651, 0.0029690167439504968
-    };
+    std::vector< double > gaussian_kernel
+        = { 0.0029690167439504968, 0.013306209891013651, 0.021938231279714643, 0.013306209891013651,
+            0.0029690167439504968, 0.013306209891013651, 0.059634295436180138, 0.098320331348845769,
+            0.059634295436180138,  0.013306209891013651, 0.021938231279714643, 0.098320331348845769,
+            0.16210282163712664,   0.098320331348845769, 0.021938231279714643, 0.013306209891013651,
+            0.059634295436180138,  0.098320331348845769, 0.059634295436180138, 0.013306209891013651,
+            0.0029690167439504968, 0.013306209891013651, 0.021938231279714643, 0.013306209891013651,
+            0.0029690167439504968 };
 
     auto yuy_iter = lum_frame.begin();
     auto yuy_prev_iter = prev_lum_frame.begin();
@@ -559,9 +567,15 @@ diffIm = imgaussfilt(im1-im2,params.moveGaussSigma);*/
     {
         yuy_diff.push_back((double)(*yuy_prev_iter) - (double)(*yuy_iter)); // used for testing only
     }
-    gaussian_filtered_image = gauss_convolution<double>(yuy_diff, width,height, _params.gause_kernel_size, _params.gause_kernel_size, [&](std::vector<double> const& sub_image)
-        {return gaussian_calc(sub_image, gaussian_kernel); });
-    return;
+    gaussian_filtered_image
+        = gauss_convolution< double >( yuy_diff,
+                                       width,
+                                       height,
+                                       _params.gause_kernel_size,
+                                       _params.gause_kernel_size,
+                                       [&]( std::vector< double > const & sub_image ) {
+                                           return gaussian_calc( sub_image, gaussian_kernel );
+                                       } );
 }
 void abs_values(std::vector< double >& vec_in)
 {
@@ -586,25 +600,32 @@ void gaussian_dilation_mask(std::vector< double >& gauss_diff, std::vector< uint
         }
     }
 }
-void move_suspected_mask(std::vector< uint8_t >& move_suspect, std::vector< double >& gauss_diff_masked, double movement_threshold)
+
+static size_t move_suspected_mask( std::vector< uint8_t > & move_suspect,
+                                   std::vector< double > & gauss_diff_masked,
+                                   double const movement_threshold )
 {
-    for (auto it = gauss_diff_masked.begin(); it != gauss_diff_masked.end(); ++it)
+    size_t n_movements = 0;
+    for( auto it = gauss_diff_masked.begin(); it != gauss_diff_masked.end(); ++it )
     {
-        if (*it > movement_threshold)
+        if( *it > movement_threshold )
         {
             move_suspect.push_back(1);
+            ++n_movements;
         }
         else
         {
             move_suspect.push_back(0);
         }
     }
+    return n_movements;
 }
-bool optimizer::is_movement_in_images(
-    movement_inputs_for_frame const& prev,
-    movement_inputs_for_frame const& curr,
-    movement_result_data& result_data,
-    size_t width, size_t height)
+
+bool optimizer::is_movement_in_images( movement_inputs_for_frame const & prev,
+                                       movement_inputs_for_frame const & curr,
+                                       movement_result_data & result_data,
+                                       size_t width,
+                                       size_t height )
 {
     /*function [isMovement,movingPixels] = isMovementInImages(im1,im2, params)
 isMovement = false;
@@ -633,13 +654,10 @@ end*/
     result_data.gaussian_diff_masked = result_data.gaussian_filtered_image;
     abs_values(result_data.gaussian_diff_masked);
     gaussian_dilation_mask(result_data.gaussian_diff_masked, result_data.dilated_image);
-    move_suspected_mask(result_data.move_suspect, result_data.gaussian_diff_masked, _params.move_thresh_pix_val);
-    auto sum_move_suspect = 0;
-    for (auto it = result_data.move_suspect.begin(); it != result_data.move_suspect.end(); ++it)
-    {
-        sum_move_suspect += *it;
-    }
-    if (sum_move_suspect > _params.move_threshold_pix_num)
+    auto sum_move_suspect = move_suspected_mask( result_data.move_suspect,
+                                                 result_data.gaussian_diff_masked,
+                                                 _params.move_thresh_pix_val );
+    if( sum_move_suspect > _params.move_threshold_pix_num )
     {
         AC_LOG( DEBUG,
                 "    found movement: " << sum_move_suspect << " pixels above threshold; allowed: "
@@ -785,7 +803,9 @@ bool check_edges_dir_spread(const std::vector<double>& directions,
 
     if (!edges_dir_spread)
     {
-        AC_LOG( ERROR, "Scene is not valid: not enough edge direction spread" );
+        AC_LOG( ERROR,
+                "Scene is not valid: not enough edge direction spread (have "
+                    << valid_directions_sum << "; need " << p.minimal_full_directions << ")" );
         return edges_dir_spread;
     }
 
@@ -892,7 +912,7 @@ bool optimizer::input_validity_checks(input_validity_data* data )
 
     auto is_movement_from_last_success = true;
 
-    if (!_settings.is_manual_trigger && !_yuy.last_successful_frame.empty())
+    if( ! _settings.is_manual_trigger )
     {
         is_movement_from_last_success
             = is_movement_in_images( { _yuy.last_successful_edges, _yuy.last_successful_lum_frame },

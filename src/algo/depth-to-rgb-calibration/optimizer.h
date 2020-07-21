@@ -378,7 +378,7 @@ namespace depth_to_rgb_calibration {
         std::vector<double> blur_edges( std::vector<double> const & edges, size_t image_width, size_t image_height );
         std::vector< byte > get_luminance_from_yuy2( std::vector< yuy_t > const & yuy2_imagh );
 
-        std::vector<uint8_t> get_logic_edges( std::vector<double> edges );
+        std::vector<uint8_t> get_logic_edges( std::vector<double> const & edges );
         std::vector <double3> subedges2vertices(z_frame_data& z_data, const rs2_intrinsics_double& intrin, double depth_units);
         
         optimization_params back_tracking_line_search( optimization_params const & opt_params,
