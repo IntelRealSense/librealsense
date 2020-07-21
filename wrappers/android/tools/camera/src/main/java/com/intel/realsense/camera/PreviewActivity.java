@@ -261,68 +261,6 @@ public class PreviewActivity extends AppCompatActivity {
         pauseBackgroundTasks();
     }
 
-    public void onRadioButtonClicked(View view) {
-        // TODO - Ariel - Move touch logic into controls fragment. Only Sensor's logic should stay here.
-        // TODO - Ariel - Add more controls
-        boolean checked = ((RadioButton) view).isChecked();
-
-        if(!checked)
-            return;
-        RsContext ctx = new RsContext();
-        try(DeviceList devices = ctx.queryDevices()) {
-            try(Device device = devices.createDevice(0)){
-                if(device == null)
-                    return;
-                List<Sensor> sensors = device.querySensors();
-                for(Sensor s : sensors){
-                    if(s.supports(Option.EMITTER_ENABLED)) {
-                        switch(view.getId()) {
-                            case R.id.radio_no_projector:{
-                                setOption(s, Option.EMITTER_ENABLED, 0);
-                                break;
-                            }
-                            case R.id.radio_laser:{
-                                setOption(s, Option.EMITTER_ENABLED, 1);
-                                break;
-                            }
-                            case R.id.radio_laser_auto:{
-                                setOption(s, Option.EMITTER_ENABLED, 2);
-                                break;
-                            }
-                            case R.id.radio_led:{
-                                setOption(s, Option.EMITTER_ENABLED, 3);
-                                break;
-                            }
-                        }
-                    }
-                    if(s.supports(Option.HARDWARE_PRESET)) {
-                        switch(view.getId()) {
-                            case R.id.radio_custom:{
-                                setOption(s, Option.HARDWARE_PRESET, 0);
-                                break;
-                            }
-                            case R.id.radio_burst:{
-                                setOption(s, Option.HARDWARE_PRESET, 2);
-                                break;
-                            }
-                        }
-                    }
-
-                }
-            } catch(Exception e){
-                Log.e(TAG, "Failed to set controls: " + e.getMessage());
-                Toast.makeText(this, "Failed to set controls", Toast.LENGTH_LONG).show();
-            }
-        }
-    }
-
-    private void setOption(Sensor s, Option option, int val) {
-        if(s.supports(option))
-            s.setValue(option, val);
-        else
-            Toast.makeText(this, "This control is not supported by this device", Toast.LENGTH_LONG).show();
-    }
-
     private synchronized void resumeBackgroundTasks() {
         resumeFwLogger();
     }

@@ -113,11 +113,31 @@ namespace librealsense
 {
     namespace platform
     {
+        std::recursive_mutex named_mutex::_init_mutex;
+        std::map<std::string, std::recursive_mutex> named_mutex::_dev_mutex;
+        std::map<std::string, int> named_mutex::_dev_mutex_cnt;
+
+        // named_mutex usage note:
+        // ----------------------
+        // acquire() (or the encapsulating lock() ) function throws exception if fails.
+        // It increase its counters count non the less.
+        // Therefor, a lock() must be surrounded by try-catch section and a call to 
+        // release() (or unlock() or destructor) must be performed, in case of failure,
+        // to decrease the counters count.
+        // 
         named_mutex::named_mutex(const std::string& device_path, unsigned timeout)
             : _device_path(device_path),
               _timeout(timeout), // TODO: try to lock with timeout
-              _fildes(-1)
+              _fildes(-1),
+              _object_lock_counter(0)
         {
+            _init_mutex.lock();
+            _dev_mutex[_device_path];   // insert a mutex for _device_path
+            if (_dev_mutex_cnt.find(_device_path) == _dev_mutex_cnt.end())
+            {
+                _dev_mutex_cnt[_device_path] = 0;
+            }
+            _init_mutex.unlock();
         }
 
         named_mutex::~named_mutex()
@@ -156,32 +176,59 @@ namespace librealsense
 
         void named_mutex::acquire()
         {
-            if (-1 == _fildes)
+            _dev_mutex[_device_path].lock();
+            _dev_mutex_cnt[_device_path] += 1;  //Advance counters even if throws because catch calls release()
+            _object_lock_counter += 1;
+            if (_dev_mutex_cnt[_device_path] == 1)
             {
-                _fildes = open(_device_path.c_str(), O_RDWR, 0); //TODO: check
-                if(0 > _fildes)
-                    throw linux_backend_exception(to_string() << "Cannot open '" << _device_path);
-            }
+                if (-1 == _fildes)
+                {
+                    _fildes = open(_device_path.c_str(), O_RDWR, 0); //TODO: check
+                    if(0 > _fildes)
+                        throw linux_backend_exception(to_string() << "Cannot open '" << _device_path);
+                }
 
-            auto ret = lockf(_fildes, F_LOCK, 0);
-            if (0 != ret)
-                throw linux_backend_exception(to_string() << "Acquire failed");
+                auto ret = lockf(_fildes, F_LOCK, 0);
+                if (0 != ret)
+                    throw linux_backend_exception(to_string() << "Acquire failed");
+            }
         }
 
         void named_mutex::release()
         {
-            if (-1 == _fildes)
+            _object_lock_counter -= 1;
+            if (_object_lock_counter < 0)
+            {
+                _object_lock_counter = 0;
                 return;
+            }
+            _dev_mutex_cnt[_device_path] -= 1;
+            std::string err_msg;
+            if (_dev_mutex_cnt[_device_path] < 0)
+            {
+                _dev_mutex_cnt[_device_path] = 0;
+                throw linux_backend_exception(to_string() << "Error: _dev_mutex_cnt[" << _device_path << "] < 0");
+            }
 
-            auto ret = lockf(_fildes, F_ULOCK, 0);
-            if (0 != ret)
-                throw linux_backend_exception(to_string() << "lockf(...) failed");
+            if ((_dev_mutex_cnt[_device_path] == 0) && (-1 != _fildes))
+            {
+                auto ret = lockf(_fildes, F_ULOCK, 0);
+                if (0 != ret)
+                    err_msg = to_string() << "lockf(...) failed";
+                else
+                {
+                    ret = close(_fildes);
+                    if (0 != ret)
+                        err_msg = to_string() << "close(...) failed";
+                    else
+                        _fildes = -1;
+                }
+            }
+            _dev_mutex[_device_path].unlock();
 
-            ret = close(_fildes);
-            if (0 != ret)
-                throw linux_backend_exception(to_string() << "close(...) failed");
-
-            _fildes = -1;
+            if (!err_msg.empty())
+                throw linux_backend_exception(err_msg);
+            
         }
 
         static int xioctl(int fh, unsigned long request, void *arg)

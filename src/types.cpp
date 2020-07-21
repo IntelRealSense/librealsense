@@ -529,6 +529,7 @@ namespace librealsense
             CASE(FRAME_EMITTER_MODE)
             CASE(FRAME_LED_POWER)
             CASE(RAW_FRAME_SIZE)
+            CASE(GPIO_INPUT_DATA)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
