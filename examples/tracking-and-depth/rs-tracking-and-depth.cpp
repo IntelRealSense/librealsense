@@ -31,17 +31,26 @@ int main(int argc, char * argv[]) try
     rs2::pose_frame pose_frame(nullptr);
     std::vector<rs2_vector> trajectory;
 
-    rs2::context                ctx;            // Create librealsense context for managing devices
-    std::vector<rs2::pipeline>  pipelines;
+    rs2::context                          ctx;        // Create librealsense context for managing devices
+    std::map<std::string, rs2::colorizer> colorizers; // Declare map from device serial number to colorizer (utility class to convert depth data RGB colorspace)
+    std::vector<rs2::pipeline>            pipelines;
+
+    // Capture serial numbers before opening streaming
+    std::vector<std::string>              serials;
+    for (auto&& dev : ctx.query_devices())
+        serials.push_back(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+
 
     // Start a streaming pipe per each connected device
-    for (auto&& dev : ctx.query_devices())
+    for (auto&& serial : serials)
     {
         rs2::pipeline pipe(ctx);
         rs2::config cfg;
-        cfg.enable_device(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+        cfg.enable_device(serial);
         pipe.start(cfg);
         pipelines.emplace_back(pipe);
+        // Map from each device's serial number to a different colorizer
+        colorizers[serial] = rs2::colorizer();
     }
 
     // extrinsics

@@ -162,7 +162,8 @@ if(WIN32)
 
     source_group("OpenVINO" FILES ${OPENVINO_FILES})
 
-    list(TRANSFORM DELAYED PREPEND " /DELAYLOAD:")
+    #list(TRANSFORM DELAYED PREPEND " /DELAYLOAD:")  - Requires cmake v3.12
+    PREPEND(DELAYED " /DELAYLOAD:" ${DELAYED})
     string(REPLACE ";" " " LD_FLAGS_STR "${DELAYED}")
     set_target_properties(realsense-viewer PROPERTIES LINK_FLAGS "${LD_FLAGS_STR}")
 
