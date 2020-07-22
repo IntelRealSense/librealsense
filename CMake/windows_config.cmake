@@ -1,5 +1,5 @@
 message(STATUS "Setting Windows configurations")
-
+cmake_minimum_required(VERSION 3.6.0) #Required by list(FILTER ...
 config_crt()
 
 macro(os_set_flags)
@@ -89,3 +89,12 @@ macro(os_target_config)
         source_group("Source Files\\${_file_path_msvc}" FILES "${_relative_file}")
     endforeach()
 endmacro()
+
+#modify variable with prefix. Mimics list(TRANSFORM ... PREPEND introduced with cmake 3.12
+FUNCTION(PREPEND var prefix)
+   SET(listVar "")
+   FOREACH(f ${ARGN})
+      LIST(APPEND listVar "${prefix}/${f}")
+   ENDFOREACH(f)
+   SET(${var} "${listVar}" PARENT_SCOPE)
+ENDFUNCTION(PREPEND)
