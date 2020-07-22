@@ -34,14 +34,17 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     , _intr( yuy.get_profile().as< rs2::video_stream_profile >().get_intrinsics() )
     , _extr(to_raw_extrinsics( depth.get_profile().get_extrinsics_to( yuy.get_profile() )))
     , _from( depth.get_profile().get()->profile )
-    , _to( yuy.get_profile().get()->profile)
-    , _should_continue(should_continue)
+    , _to( yuy.get_profile().get()->profile )
+    , _should_continue( should_continue )
 {
     AC_LOG( DEBUG, "Setting YUY data" );
     auto color_profile = yuy.get_profile().as< rs2::video_stream_profile >();
     auto yuy_data = (impl::yuy_t const *) yuy.get_data();
     auto prev_yuy_data = (impl::yuy_t const *) prev_yuy.get_data();
-    _last_successful_frame_data = last_yuy_data;  // copy -- will be moved to algo
+    if( last_yuy_data.size() == yuy.get_data_size() / sizeof( impl::yuy_t ) )
+        _last_successful_frame_data = last_yuy_data;  // copy -- will be moved to algo
+    else if( ! last_yuy_data.empty() )
+        AC_LOG( DEBUG, "Not using last successfully-calibrated scene: it's of a different resolution" );
     impl::calib calibration( _intr, _extr );
 
     CHECK_IF_NEEDS_TO_STOP();
