@@ -259,7 +259,7 @@ rs2_dsm_params_double k_to_DSM::convert_new_k_to_DSM
         xim_new[i] = projed[i].x / projed[i].z;
         yim_new[i] = projed[i].y / projed[i].z;
     }
-    AC_LOG( DEBUG, "    new DSM params: " << AC_D_PREC << ac_data_cand );
+    AC_LOG( DEBUG, "    new DSM params: " << AC_D_PREC << ac_data_cand <<"; vertices are changed" );
     new_dsm_regs = dsm_regs_cand;
     return ac_data_cand;
 }

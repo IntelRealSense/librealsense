@@ -624,6 +624,8 @@ static size_t move_suspected_mask( std::vector< uint8_t > & move_suspect,
 bool optimizer::is_movement_in_images( movement_inputs_for_frame const & prev,
                                        movement_inputs_for_frame const & curr,
                                        movement_result_data & result_data,
+                                       double const move_thresh_pix_val,
+                                       double const move_threshold_pix_num,
                                        size_t width,
                                        size_t height )
 {
@@ -656,8 +658,8 @@ end*/
     gaussian_dilation_mask(result_data.gaussian_diff_masked, result_data.dilated_image);
     auto sum_move_suspect = move_suspected_mask( result_data.move_suspect,
                                                  result_data.gaussian_diff_masked,
-                                                 _params.move_thresh_pix_val );
-    if( sum_move_suspect > _params.move_threshold_pix_num )
+                                                 move_thresh_pix_val );
+    if( sum_move_suspect > move_threshold_pix_num )
     {
         AC_LOG( DEBUG,
                 "    found movement: " << sum_move_suspect << " pixels above threshold; allowed: "
@@ -708,7 +710,10 @@ bool optimizer::is_scene_valid(input_validity_data* data)
     bool res_movement = is_movement_in_images(
         { _yuy.prev_edges, _yuy.prev_lum_frame }, 
         { _yuy.edges, _yuy.lum_frame },
-        _yuy.movement_result, _yuy.width, _yuy.height);
+        _yuy.movement_result, 
+        _params.move_thresh_pix_val,
+        _params.move_threshold_pix_num,
+        _yuy.width, _yuy.height);
     if( res_movement )
         AC_LOG( ERROR, "Scene is not valid: movement detected between current & previous frames" );
 
@@ -918,6 +923,8 @@ bool optimizer::input_validity_checks(input_validity_data* data )
             = is_movement_in_images( { _yuy.last_successful_edges, _yuy.last_successful_lum_frame },
                                      { _yuy.edges, _yuy.lum_frame },
                                      _yuy.movement_prev_valid_result,
+                                     _params.move_last_success_thresh_pix_val,
+                                     _params.move_last_success_thresh_pix_num,
                                      _yuy.width, _yuy.height );
         if( ! is_movement_from_last_success )
             AC_LOG( ERROR, "Scene is not valid: not enough movement from last-calibrated scene" );

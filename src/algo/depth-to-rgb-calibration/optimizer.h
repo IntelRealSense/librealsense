@@ -68,6 +68,8 @@ namespace depth_to_rgb_calibration {
         size_t gause_kernel_size = 5;
         double move_thresh_pix_val = 20;
         double move_threshold_pix_num = 62.2080;
+        double move_last_success_thresh_pix_val = 20;
+        double move_last_success_thresh_pix_num = 18432;
 
         //smearing
         double max_sub_mm_z = 4;
@@ -390,6 +392,8 @@ namespace depth_to_rgb_calibration {
             movement_inputs_for_frame const& prev,
             movement_inputs_for_frame const& curr,
             movement_result_data& result_data,
+            double const move_thresh_pix_val,
+            double const move_threshold_pix_num,
             size_t width, size_t height);
 
         bool is_edge_distributed( z_frame_data & z_data, yuy2_frame_data & yuy_data );
