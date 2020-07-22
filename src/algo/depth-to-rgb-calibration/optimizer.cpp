@@ -1669,7 +1669,11 @@ size_t optimizer::optimize_p
     data_collect* data 
 )
 {
-
+    // The params_curr that we get contains a cost and p_matrix that do not match:
+    // The cost is the optimal cost calculated in the previous cycle, but we don't use it here.
+    // The p_matrix is the optimal p_matrix that has been modified (see the end of this function).
+    // Between the previous cycle and now we have new vertices so we recalculate a new cost based
+    // on the modified p_matrix and the new vertices
     size_t n_iterations = 0;
     auto curr = params_curr;
     while (1)
@@ -1706,7 +1710,7 @@ size_t optimizer::optimize_p
         }
 
         auto delta = params_new.cost - curr.cost;
-        AC_LOG( DEBUG, "    delta= " << AC_D_PREC << delta );
+        //AC_LOG( DEBUG, "    delta= " << AC_D_PREC << delta );
         delta = abs(delta);
         if (delta < _params.min_cost_delta)
         {
@@ -1729,7 +1733,7 @@ size_t optimizer::optimize_p
                          << AC_D_PREC << params_curr.cost << "  -->  " << params_new.cost );
     new_rgb_calib_for_k_to_dsm = optimaized_calibration = decompose_p_mat(params_new.curr_p_mat);
 
-    new_rgb_calib_for_k_to_dsm.k_mat.k_mat.rot[1] = 0;
+    new_rgb_calib_for_k_to_dsm.k_mat.k_mat.rot[1] = 0; //sheer
 
     new_z_k = get_new_z_intrinsics_from_new_calib(_z.orig_intrinsics, new_rgb_calib_for_k_to_dsm, _original_calibration);
     new_rgb_calib_for_k_to_dsm.k_mat.k_mat.rot[0] = _original_calibration.k_mat.get_fx();
@@ -1789,6 +1793,8 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
         data.cycle_data_p.new_vertices = new_vertices;
         data.cycle_data_p.optimaized_calib_candidate = optimaized_calib_candidate;
 
+        AC_LOG(INFO, "CYCLE " << data.cycle_data_p.cycle << " started with: cost = " << AC_D_PREC << new_params.cost);
+
         if (cb)
         {
             data.type = cycle_data;
@@ -1846,7 +1852,6 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
         new_vertices = cand_vertices;
         _z.vertices = new_vertices;
         _optimaized_calibration = optimaized_calib_candidate;
-        AC_LOG(INFO, "CYCLE " << data.cycle_data_p.cycle << ": cost = " << AC_D_PREC << new_params.cost);
     }
    
     AC_LOG( INFO,
