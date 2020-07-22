@@ -78,7 +78,9 @@ if(BUILD_GRAPHICAL_EXAMPLES)
                                              ../../third-party/tinyfiledialogs
                                              ${CMAKE_CURRENT_SOURCE_DIR}/res/)
 
-        list(TRANSFORM DELAYED PREPEND " /DELAYLOAD:")
+        #list(TRANSFORM DELAYED PREPEND " /DELAYLOAD:")
+        PREPEND(DELAYED " /DELAYLOAD:" ${DELAYED})
+        #infoValue(DELAYED)
         string(REPLACE ";" " " LD_FLAGS_STR "${DELAYED}")
         set_target_properties(rs-depth-quality PROPERTIES LINK_FLAGS "${LD_FLAGS_STR}")
 
