@@ -3,15 +3,11 @@
 
 //#cmake:add-file ../../../src/algo/depth-to-rgb-calibration/*.cpp
 
-#ifndef BUILD_SHARED_LIBS
-#include <easylogging++.h>
-INITIALIZE_EASYLOGGINGPP
-#endif
-
 // We have our own main
 #define NO_CATCH_CONFIG_MAIN
 #define CATCH_CONFIG_RUNNER
 
+#define DISABLE_LOG_TO_STDOUT
 #include "d2rgb-common.h"
 #include "compare-to-bin-file.h"
 
@@ -119,7 +115,7 @@ void print_scene_stats( std::string const & name, size_t n_failed, scene_stats c
 int main( int argc, char * argv[] )
 {
     Catch::Session session;
-    LOG_TO_STDOUT.enable( false );
+    ac_logger LOG_TO_STDOUT( false );
 
     Catch::ConfigData config;
     config.verbosity = Catch::Verbosity::Normal;

@@ -4,19 +4,12 @@
 //#cmake:add-file ../../../src/algo/depth-to-rgb-calibration/*.cpp
 
 
-#ifndef BUILD_SHARED_LIBS
-#include <easylogging++.h>
-INITIALIZE_EASYLOGGINGPP
-#endif
-
-
 // We have our own main
 #define NO_CATCH_CONFIG_MAIN
 //#define CATCH_CONFIG_RUNNER
 
+#define DISABLE_LOG_TO_STDOUT
 #include "d2rgb-common.h"
-
-//INITIALIZE_EASYLOGGINGPP
 
 
 template< typename T >
@@ -65,8 +58,83 @@ struct old_algo_calib
     }
 };
 
+
+class custom_ac_logger : public ac_logger
+{
+    typedef ac_logger super;
+
+    std::string _codes;
+
+public:
+    custom_ac_logger() {}
+
+    std::string const & get_codes() const { return _codes; }
+    void reset() { _codes.clear(); }
+
+protected:
+    void on_log( char severity, char const * message ) override
+    {
+        super::on_log( severity, message );
+
+        // parse it for keyword
+        auto cch = strlen( message );
+        if( cch < 4 || message[cch - 1] != ']' )
+            return;
+        char const * end = message + cch - 1;
+        char const * start = end - 1;
+        while( *start != '[' )
+        {
+            if( *start == ' ' )
+                return;
+            if( --start == message )
+                return;
+        }
+        if( start[-1] != ' ' )
+            return;
+        // parse it for parameters
+        char const * param = message;
+        std::string values;
+        while( param < start )
+        {
+            if( *param == '{'  &&  ++param < start )
+            {
+                char const * param_end = param;
+                while( *param_end != '}'  &&  param_end < start )
+                    ++param_end;
+                if( param_end == start || param_end - param < 1 )
+                    break;
+                char const * value = param_end + 1;
+                char const * value_end = value;
+                while( *value_end != ' ' )
+                    ++value_end;
+                if( value_end == value )
+                    break;
+                if( value_end - value > 1  &&  strchr( ".;", value_end[-1] ))
+                    --value_end;
+                std::string param_name( param, param_end - param );
+                std::string param_value( value, value_end - value );
+                if( ! values.empty() )
+                    values += ' ';
+                values += param_name;
+                values += '=';
+                values += param_value;
+                param = value_end;
+            }
+            ++param;
+        }
+        std::string code( start + 1, end - start - 1 );
+        if( ! values.empty() )
+            code += '[' + values + ']';
+        if( ! _codes.empty() )
+            _codes += ' ';
+        _codes += code;
+    }
+};
+
 int main( int argc, char * argv[] )
 {
+    custom_ac_logger logger;
+
     bool ok = true;
     // Each of the arguments is the path to a directory to simulate
     // We skip argv[0] which is the path to the executable
@@ -80,7 +148,7 @@ int main( int argc, char * argv[] )
             {
                 // The build number is only available within Jenkins and so we have to hard-
                 // code it ><
-                std::cout << RS2_API_VERSION_STR << ".2003" << std::endl;
+                std::cout << RS2_API_VERSION_STR << ".2082" << std::endl;
                 continue;
             }
             std::cout << "Processing: " << dir << " ..." << std::endl;
@@ -126,13 +194,16 @@ int main( int argc, char * argv[] )
             algo::optimizer cal( settings );
             init_algo( cal, dir, "\\rgb.raw", "\\rgb_prev.raw", "\\rgb_last_successful.raw", "\\ir.raw", "\\depth.raw", camera );
 
-            std::string status;
+            std::string status = logger.get_codes();
+            logger.reset();
 
             TRACE( "\n___\nis_scene_valid" );
             if( !cal.is_scene_valid() )
             {
                 TRACE("NOT VALID\n");
-                status += "SCENE_INVALID ";
+                if( ! status.empty() )
+                    status += ' ';
+                status += "SCENE_INVALID";
             }
 
             TRACE( "\n___\noptimize" );
@@ -142,16 +213,29 @@ int main( int argc, char * argv[] )
                 } );
 
             TRACE( "\n___\nis_valid_results" );
+            std::string results;
             if( !cal.is_valid_results() )
             {
                 TRACE("NOT VALID\n");
-                status += "BAD_RESULT";
+                results = "BAD_RESULT";
             }
             else
             {
-                status += "SUCCESSFUL";
+                results = "SUCCESSFUL";
             }
-            TRACE( "\n___\nRESULTS:  (" << RS2_API_VERSION_STR << " build 2003)" );
+
+            if( ! logger.get_codes().empty() )
+            {
+                if( ! status.empty() )
+                    status += ' ';
+                status += logger.get_codes();
+                logger.reset();
+            }
+            if( ! status.empty() )
+                status += ' ';
+            status += results;
+
+            TRACE( "\n___\nRESULTS:  (" << RS2_API_VERSION_STR << " build 2082)" );
 
             auto intr = cal.get_calibration().get_intrinsics();
             auto extr = cal.get_calibration().get_extrinsics();
