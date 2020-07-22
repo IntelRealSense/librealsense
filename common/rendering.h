@@ -1138,6 +1138,7 @@ namespace rs2
                     break;
                 }
                 case RS2_FORMAT_Y16:
+                case RS2_FORMAT_RAW16:
                 case RS2_FORMAT_Y10BPACK:
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
                     break;
@@ -1468,6 +1469,7 @@ namespace rs2
             {
             case RS2_FORMAT_Z16:
             case RS2_FORMAT_Y16:
+            case RS2_FORMAT_RAW16:
             case RS2_FORMAT_DISPARITY16:
             {
                 auto ptr = (const uint16_t*)image.get_data();
