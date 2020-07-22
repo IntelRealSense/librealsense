@@ -12,7 +12,9 @@
 
 
 #include "ac-logger.h"
+#if ! defined( DISABLE_LOG_TO_STDOUT )
 ac_logger LOG_TO_STDOUT;
+#endif
 
 
 namespace algo = librealsense::algo::depth_to_rgb_calibration;
