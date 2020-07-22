@@ -146,10 +146,11 @@ void optimizer::clip_ac_scaling( rs2_dsm_params_double const & ac_data_in,
                                        / abs( ac_data_new.h_scale - ac_data_in.h_scale )
                                        * _params.max_global_los_scaling_step;
         AC_LOG( DEBUG,
-                "    H scale delta ("
-                    << AC_D_PREC << abs( ac_data_in.h_scale - ac_data_new.h_scale )
-                    << " > max global LoS scaling per step (" << _params.max_global_los_scaling_step
-                    << "); clipping to " << new_h_scale );
+                "    " << AC_D_PREC << "H scale {new}" << ac_data_new.h_scale
+                       << " is not within {step}"
+                       << std::string( to_string() << _params.max_global_los_scaling_step )
+                       << " of {old}" << ac_data_in.h_scale << "; clipping to {final}"
+                       << new_h_scale << " [CLIP-H]" );
         ac_data_new.h_scale = new_h_scale;
     }
     if( abs( ac_data_in.v_scale - ac_data_new.v_scale ) > _params.max_global_los_scaling_step )
@@ -159,10 +160,11 @@ void optimizer::clip_ac_scaling( rs2_dsm_params_double const & ac_data_in,
                                        / abs( ac_data_new.v_scale - ac_data_in.v_scale )
                                        * _params.max_global_los_scaling_step;
         AC_LOG( DEBUG,
-                "    V scale delta ("
-                    << AC_D_PREC << abs( ac_data_in.v_scale - ac_data_new.v_scale )
-                    << " > max global LoS scaling per step (" << _params.max_global_los_scaling_step
-                    << "); clipping to " << new_v_scale );
+                "    " << AC_D_PREC << "V scale {new}" << ac_data_new.v_scale
+                       << " is not within {step}"
+                       << std::string( to_string() << _params.max_global_los_scaling_step )
+                       << " of {old}" << ac_data_in.v_scale << "; clipping to {final}"
+                       << new_v_scale << " [CLIP-V]" );
         ac_data_new.v_scale = new_v_scale;
     }
 }

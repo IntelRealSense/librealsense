@@ -715,7 +715,7 @@ bool optimizer::is_scene_valid(input_validity_data* data)
         _params.move_threshold_pix_num,
         _yuy.width, _yuy.height);
     if( res_movement )
-        AC_LOG( ERROR, "Scene is not valid: movement detected between current & previous frames" );
+        AC_LOG( ERROR, "Scene is not valid: movement detected between current & previous frames [MOVE]" );
 
     bool res_edges = is_edge_distributed(_z, _yuy);
     bool res_gradient = is_grad_dir_balanced( _z.weights,
@@ -810,7 +810,7 @@ bool check_edges_dir_spread(const std::vector<double>& directions,
     {
         AC_LOG( ERROR,
                 "Scene is not valid: not enough edge direction spread (have "
-                    << valid_directions_sum << "; need " << p.minimal_full_directions << ")" );
+                    << valid_directions_sum << "; need " << p.minimal_full_directions << ") [EDGE-DIR]" );
         return edges_dir_spread;
     }
 
@@ -829,10 +829,10 @@ bool check_edges_dir_spread(const std::vector<double>& directions,
         }
         auto orthogonal_valid_dirs = valid_even || valid_odd;
 
-        if (!orthogonal_valid_dirs)
+        if( ! orthogonal_valid_dirs )
             AC_LOG( ERROR,
                     "Scene is not valid: need at least two orthogonal directions that have enough "
-                    "spread edges" );
+                    "spread edges [EDGE-DIR]" );
 
         return edges_dir_spread && orthogonal_valid_dirs;
     }
@@ -859,7 +859,7 @@ bool check_saturation(const std::vector< ir_t >& ir_frame,
         AC_LOG( ERROR,
                 "Scene is not valid: saturation ratio ("
                     << saturated_pixels_ratio << ") is above threshold (" << p.saturation_ratio_th
-                    << ")" );
+                    << ") [SAT]" );
 
     return saturated_pixels_ratio < p.saturation_ratio_th;
 }
@@ -910,10 +910,10 @@ bool optimizer::input_validity_checks(input_validity_data* data )
         _params.min_section_with_enough_edges);
 
     if( ! depth_spatial_spread )
-        AC_LOG( ERROR, "Scene is not valid: not enough depth edge spread" );
+        AC_LOG( ERROR, "Scene is not valid: not enough depth edge spread [EDGE-D]" );
 
     if( ! rgb_spatial_spread )
-        AC_LOG( ERROR, "Scene is not valid: not enough RGB edge spread" );
+        AC_LOG( ERROR, "Scene is not valid: not enough RGB edge spread [EDGE-C]" );
 
     auto is_movement_from_last_success = true;
 
@@ -927,7 +927,7 @@ bool optimizer::input_validity_checks(input_validity_data* data )
                                      _params.move_last_success_thresh_pix_num,
                                      _yuy.width, _yuy.height );
         if( ! is_movement_from_last_success )
-            AC_LOG( ERROR, "Scene is not valid: not enough movement from last-calibrated scene" );
+            AC_LOG( ERROR, "Scene is not valid: not enough movement from last-calibrated scene [SALC]" );
     }
     if( data )
     {
