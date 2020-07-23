@@ -897,7 +897,8 @@ namespace librealsense
         };
     };
 
-    class rs405_device  :      public ds5_active,
+    class rs405_device  :      public ds5_nonmonochrome,
+                               public ds5_active,
                                public ds5_color,
                                public ds5_motion,
                                public ds5_advanced_mode_base,
@@ -909,6 +910,7 @@ namespace librealsense
                     bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
               ds5_device(ctx, group),
+              ds5_nonmonochrome(ctx, group),
               ds5_active(ctx, group),
               ds5_color(ctx,  group),
               ds5_motion(ctx, group),
@@ -943,7 +945,8 @@ namespace librealsense
         bool compress_while_record() const override { return false; }
     };
 
-    class rs455_device  :      public ds5_active,
+    class rs455_device  :      public ds5_nonmonochrome,
+                               public ds5_active,
                                public ds5_color,
                                public ds5_motion,
                                public ds5_advanced_mode_base,
@@ -955,6 +958,7 @@ namespace librealsense
                     bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
               ds5_device(ctx, group),
+              ds5_nonmonochrome(ctx, group),
               ds5_active(ctx, group),
               ds5_color(ctx,  group),
               ds5_motion(ctx, group),
