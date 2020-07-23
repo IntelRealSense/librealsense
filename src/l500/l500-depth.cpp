@@ -191,6 +191,31 @@ namespace librealsense
         //register_option(static_cast<rs2_option>(RS2_OPTION_DEPTH_INVALIDATION_ENABLE), _depth_invalidation_option);
     }
 
+    ivcam2::intrinsic_params l500_depth_sensor::get_intrinsic_params(const uint32_t width, const uint32_t height, ivcam2::intrinsic_depth intrinsic)
+    {
+        auto num_of_res = intrinsic.resolution.num_of_resolutions;
+
+        if (num_of_res <= MAX_NUM_OF_DEPTH_RESOLUTIONS)
+        {
+            for (auto i = 0; i < num_of_res; i++)
+            {
+                auto model_world = intrinsic.resolution.intrinsic_resolution[i].world;
+                auto model_raw = intrinsic.resolution.intrinsic_resolution[i].raw;
+
+                if (model_world.pinhole_cam_model.height == height && model_world.pinhole_cam_model.width == width)
+                    return model_world;
+                else if (model_raw.pinhole_cam_model.height == height && model_raw.pinhole_cam_model.width == width)
+                    return  model_raw;
+            }
+            // Should not get here
+            throw std::runtime_error(to_string() << "intrinsics for resolution " << width << "," << height << " doesn't exist");
+        }
+        else
+        {
+            throw std::runtime_error(to_string() << "Firmware intrinsic tables count(" << num_of_res << "), is higher than maximum supported(" << MAX_NUM_OF_DEPTH_RESOLUTIONS << ")");
+
+        }
+    }
     int l500_depth_sensor::read_algo_version()
     {
         const int algo_version_address = 0xa0020bd8;
@@ -262,7 +287,7 @@ namespace librealsense
         else
         {
             auto const & ts = *( reinterpret_cast<temperatures *>( res.data() ) );
-            table.params.temp_x2 = byte( ts.LDD_temperature * 2 );
+            table.params.temp_x2 = byte( ts.HUM_temperature * 2 );
         }
 
         AC_LOG( INFO, "Overriding DSM : " << table.params );
@@ -370,6 +395,7 @@ namespace librealsense
 
     void l500_depth_sensor::start(frame_callback_ptr callback)
     {
+        // The delay is here as a work around to a firmware bug [RS5-5453]
         _action_delayer.do_after_delay( [&]() {
             if( _depth_invalidation_enabled )
                 synthetic_sensor::start(
@@ -386,6 +412,7 @@ namespace librealsense
 
     void l500_depth_sensor::stop()
     {
+    // The delay is here as a work around to a firmware bug [RS5-5453]
         _action_delayer.do_after_delay([&]() {
             synthetic_sensor::stop();
             _depth_invalidation_option->set_streaming(false);

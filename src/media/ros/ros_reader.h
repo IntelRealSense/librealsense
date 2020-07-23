@@ -121,7 +121,7 @@ namespace librealsense
         struct l500_depth_data
         {
             float num_of_resolution;
-            l500_data_per_resolution data[NUM_OF_DEPTH_RESOLUTIONS];
+            l500_data_per_resolution data[MAX_NUM_OF_DEPTH_RESOLUTIONS];
             float baseline;
         };
 

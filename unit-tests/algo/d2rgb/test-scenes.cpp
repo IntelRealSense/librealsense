@@ -7,6 +7,7 @@
 #define NO_CATCH_CONFIG_MAIN
 #define CATCH_CONFIG_RUNNER
 
+#define DISABLE_LOG_TO_STDOUT
 #include "d2rgb-common.h"
 #include "compare-to-bin-file.h"
 
@@ -59,6 +60,8 @@ void print_dividers()
     std::cout << std::right << std::setw( 4 ) << "---";
     std::cout << std::right << std::setw( 2 ) << " ";
     std::cout << std::right << std::setw( 7 ) << "-----";
+    std::cout << std::right << std::setw(2) << " ";
+    std::cout << std::right << std::setw(4) << "---";
     std::cout << std::endl;
 }
 
@@ -76,6 +79,8 @@ void print_headers()
     std::cout << std::right << std::setw( 4 ) << "Con";
     std::cout << std::right << std::setw( 2 ) << " ";
     std::cout << std::right << std::setw( 7 ) << "dPix";
+    std::cout << std::right << std::setw(2) << " ";
+    std::cout << std::right << std::setw(4) << "NC";
     std::cout << std::endl;
 
     print_dividers();
@@ -102,7 +107,7 @@ void print_scene_stats( std::string const & name, size_t n_failed, scene_stats c
     std::cout << std::left << std::setw( 2 ) << (scene.n_converged_diff ? "!" : "");
 
     std::cout << std::right << std::setw( 7 ) << scene.d_movement;
-
+    std::cout << std::right << std::setw(6) << scene.n_cycles;
     std::cout << std::endl;
 }
 
@@ -110,7 +115,7 @@ void print_scene_stats( std::string const & name, size_t n_failed, scene_stats c
 int main( int argc, char * argv[] )
 {
     Catch::Session session;
-    LOG_TO_STDOUT.enable( false );
+    ac_logger LOG_TO_STDOUT( false );
 
     Catch::ConfigData config;
     config.verbosity = Catch::Verbosity::Normal;

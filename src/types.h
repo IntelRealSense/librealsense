@@ -549,6 +549,7 @@ namespace librealsense
     RS2_ENUM_HELPERS(rs2_calibration_type, CALIBRATION_TYPE)
     RS2_ENUM_HELPERS_CUSTOMIZED(rs2_calibration_status, RS2_CALIBRATION_STATUS_FIRST, RS2_CALIBRATION_STATUS_LAST )
     RS2_ENUM_HELPERS_CUSTOMIZED(rs2_ambient_light, RS2_AMBIENT_LIGHT_NO_AMBIENT, RS2_AMBIENT_LIGHT_LOW_AMBIENT)
+    RS2_ENUM_HELPERS(rs2_cah_trigger, CAH_TRIGGER)
 
 
     ////////////////////////////////////////////

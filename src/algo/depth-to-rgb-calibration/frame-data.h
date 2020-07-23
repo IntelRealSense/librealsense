@@ -121,23 +121,38 @@ namespace depth_to_rgb_calibration {
 
         //svm
         double dir_ratio1;
+        k_matrix k_depth_pinv;
+    };
+
+    struct movement_inputs_for_frame
+    {
+        std::vector<double> const& edges;
+        std::vector<uint8_t> const& lum_frame;
+    };
+
+    struct movement_result_data
+    {
+        std::vector<uint8_t> dilated_image;
+        std::vector<uint8_t> logic_edges;
+        std::vector<double> yuy_diff;
+        std::vector<double> gaussian_filtered_image;
+        std::vector<double> gaussian_diff_masked;
+        std::vector<uint8_t> move_suspect;
     };
 
     struct yuy2_frame_data : frame_data
     {
         std::vector< yuy_t > orig_frame;
         std::vector< yuy_t > prev_frame;
+        std::vector< yuy_t > last_successful_frame;
         std::vector<uint8_t> lum_frame;
         std::vector<uint8_t> prev_lum_frame;
-        std::vector<double> yuy_diff;
-        std::vector<uint8_t> dilated_image;
-        std::vector<double> gaussian_filtered_image;
-        std::vector<double> gaussian_diff_masked;
-        std::vector<uint8_t> move_suspect;
+        std::vector<uint8_t> last_successful_lum_frame;
+        movement_result_data movement_result;
+        movement_result_data movement_prev_valid_result;
         std::vector<double> edges;                          // W*H, pre-smearing
         std::vector<double> prev_edges;                     // W*H, for prev_frame
-        std::vector<uint8_t> logic_edges;
-        std::vector<uint8_t> prev_logic_edges;
+        std::vector<double> last_successful_edges;               // W*H, for prev_frame
         std::vector<double> edges_IDT;                      // W*H, smeared, for cost
         std::vector<double> edges_IDTx;                     // W*H, smeared, dedge/dx, for gradients
         std::vector<double> edges_IDTy;                     // W*H, smeared, dedge/dy, for gradients

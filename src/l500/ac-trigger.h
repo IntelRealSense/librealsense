@@ -29,12 +29,16 @@ namespace ivcam2 {
         float _dsm_x_offset;
         float _dsm_y_offset;
 
-        hw_monitor & _hwm;
+        rs2_ambient_light _ambient;
+        int _receiver_gain;
+        double _temp;
+
+        std::weak_ptr<hw_monitor> _hwm;
         l500_device & _dev;
 
         bool _is_on = false;
         std::mutex _mutex;
-        bool _is_processing = false;  // Whether algo is currently running
+        std::atomic_bool _is_processing {false};  // Whether algo is currently running
         std::thread _worker;
         unsigned _n_retries;     // how many special frame requests we've made
         unsigned _n_cycles = 0;  // how many times we've run algo
@@ -44,24 +48,29 @@ namespace ivcam2 {
         rs2_dsm_params _dsm_params;
         stream_profile_interface* _from_profile = nullptr;
         stream_profile_interface* _to_profile = nullptr;
+        std::vector< uint16_t > _last_yuy_data;
 
         class retrier;
         std::shared_ptr< retrier > _retrier;
         std::shared_ptr< retrier > _recycler;
-        std::shared_ptr< retrier > _next_trigger;
         rs2_calibration_status _last_status_sent;
-        std::atomic_bool _own_color_stream{ false };
+
+        class next_trigger;
+        std::shared_ptr< next_trigger > _next_trigger;
 
         class temp_check;
         double _last_temp = 0;
         std::shared_ptr< temp_check > _temp_check;
+
+        bool _need_to_wait_for_color_sensor_stability = false;
+        std::chrono::high_resolution_clock::time_point _rgb_sensor_start;
 
     public:
         /* Depth frame processing: detect special frames
         */
         class depth_processing_block : public generic_processing_block
         {
-            std::shared_ptr< ac_trigger > _autocal;
+            std::weak_ptr< ac_trigger > _autocal;
 
         public:
             depth_processing_block( std::shared_ptr< ac_trigger > autocal );
@@ -77,7 +86,7 @@ namespace ivcam2 {
         */
         class color_processing_block : public generic_processing_block
         {
-            std::shared_ptr< ac_trigger > _autocal;
+            std::weak_ptr< ac_trigger > _autocal;
 
         public:
             color_processing_block( std::shared_ptr< ac_trigger > autocal );
@@ -89,17 +98,22 @@ namespace ivcam2 {
         };
 
         /* For RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH */
-        class enabler_option : public bool_option
+        class enabler_option : public float_option
         {
-            std::shared_ptr< ac_trigger > _autocal;
+            typedef float_option super;
+
+            std::weak_ptr< ac_trigger > _autocal;
 
         public:
             enabler_option( std::shared_ptr< ac_trigger > const & autocal );
 
+            bool is_auto() const { return (_value == _opt_range.max); }
+            bool is_manual() const { return ! is_auto(); }
+
             virtual void set( float value ) override;
             virtual const char* get_description() const override
             {
-                return "Trigger Camera Accuracy Health";
+                return "Trigger Camera Accuracy Health (off, run now, auto)";
             }
             virtual void enable_recording( std::function<void( const option& )> record_action ) override { _record_action = record_action; }
 
@@ -110,7 +124,7 @@ namespace ivcam2 {
         /* For RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH */
         class reset_option : public bool_option
         {
-            std::shared_ptr< ac_trigger > _autocal;
+            std::weak_ptr< ac_trigger > _autocal;
 
         public:
             reset_option( std::shared_ptr< ac_trigger > const & autocal );
@@ -126,13 +140,22 @@ namespace ivcam2 {
             std::function<void( const option& )> _record_action = []( const option& ) {};
         };
 
+        enum class calibration_type
+        {
+            MANUAL,
+            AUTO
+        };
+
+    private:
+        calibration_type _calibration_type;
+
     public:
-        ac_trigger( l500_device & dev, hw_monitor & hwm );
+        ac_trigger( l500_device & dev, std::shared_ptr<hw_monitor> hwm );
         ~ac_trigger();
 
-        // Wait a certain amount of time before the next calibration happens. Can only happen if not
-        // already active!
-        void start( std::chrono::seconds n_seconds = std::chrono::seconds(0) );
+        // Called when depth sensor start. Triggers a calibration in a few seconds if auto
+        // calibration is turned on.
+        void start();
 
         // Once triggered, we may want to cancel it... like when stopping the stream
         void stop();
@@ -151,7 +174,7 @@ namespace ivcam2 {
         bool auto_calibration_is_on() const { return _is_on; }
 
         // Start calibration -- after this, is_active() returns true. See the note for is_on().
-        void trigger_calibration( bool is_retry = false );
+        void trigger_calibration( calibration_type type );
 
         rs2_extrinsics const & get_extrinsics() const { return _extr; }
         rs2_intrinsics const & get_intrinsics() const { return _intr; }
@@ -174,8 +197,19 @@ namespace ivcam2 {
 
         bool is_processing() const { return _is_processing; }
         bool is_expecting_special_frame() const { return !!_retrier; }
+
         double read_temperature();
         void calibration_is_done();
+        void schedule_next_calibration();
+        void schedule_next_time_trigger( std::chrono::seconds n_seconds = std::chrono::seconds( 0 ) );
+        void schedule_next_temp_trigger();
+        void cancel_current_calibration();
+        void set_not_active() { _n_cycles = 0; }
+        void trigger_retry();
+        void trigger_special_frame();
+        void check_conditions();
+        void _start();
+
 
         std::vector< callback > _callbacks;
 
