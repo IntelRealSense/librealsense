@@ -9,7 +9,6 @@ struct scene_stats
     size_t n_converged, n_converged_diff;
     double cost, d_cost;
     double movement, d_movement;
-    size_t n_cycles;
 };
 
 void compare_vertices_to_los_data( std::string const & scene_dir,
@@ -93,9 +92,7 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
 
     scene_metadata md( scene_dir );
 
-    algo::optimizer::settings settings;
-    read_data_from( bin_dir( scene_dir ) + "settings", &settings );
-    algo::optimizer cal( settings );
+    algo::optimizer cal;
 
     /*std::vector<double> in = { 1,2,3,4 };
     std::vector<double>out(4);
@@ -105,7 +102,6 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
     init_algo( cal, scene_dir,
         md.rgb_file,
         md.rgb_prev_file,
-        md.rgb_prev_valid_file,
         md.ir_file,
         md.z_file,
         ci );
@@ -180,7 +176,7 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
     CHECK(compare_to_bin_file< double >(depth_data.valid_direction_per_pixel, scene_dir, "validdirPerPixel", 1, md.n_valid_pixels, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< uint8_t >(depth_data.valid_section_map, scene_dir, "validsectionMapDepth", 1, md.n_valid_pixels, "uint8_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double >(depth_data.valid_directions, scene_dir, "validdirectionIndex", 1, md.n_valid_pixels, "double_00", compare_same_vectors));
-    CHECK(compare_to_bin_file< algo::k_matrix >(depth_data.k_depth_pinv, scene_dir, bin_file("k_depth_pinv", 3, 3, "double_00.bin")));
+    
     //CHECK(compare_to_bin_file< double >(depth_data.valid_edge_sub_pixel_x, scene_dir, "xim", 1, md.n_valid_pixels, "double_00", compare_same_vectors));
     //CHECK(compare_to_bin_file< double >(depth_data.valid_edge_sub_pixel_y, scene_dir, "yim", 1, md.n_valid_pixels, "double_00", compare_same_vectors));
     CHECK(compare_to_bin_file< double>(depth_data.sub_points, scene_dir, "subPoints", 3, md.n_valid_pixels, "double_00", compare_same_vectors));
@@ -201,18 +197,9 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
     // ---
     TRACE( "\nChecking scene validity:" );
 
-    algo::input_validity_data data;
-    bool const is_scene_valid = cal.is_scene_valid(&data);
+    bool const is_scene_valid = cal.is_scene_valid();
     bool const matlab_scene_valid = md.is_scene_valid;
     CHECK( is_scene_valid == matlab_scene_valid );
-    auto spread = read_from<uint8_t>(bin_dir(scene_dir) + "DirSpread_1x1_uint8_00.bin");
-    CHECK(data.edges_dir_spread == spread);
-    auto rgbEdgesSpread = read_from<uint8_t>(bin_dir(scene_dir) + "rgbEdgesSpread_1x1_uint8_00.bin");
-    CHECK(data.rgb_spatial_spread == rgbEdgesSpread);
-    auto depthEdgesSpread = read_from<uint8_t>(bin_dir(scene_dir) + "depthEdgesSpread_1x1_uint8_00.bin");
-    CHECK(data.depth_spatial_spread == depthEdgesSpread);
-    auto isMovementFromLastSuccess = read_from<uint8_t>(bin_dir(scene_dir) + "isMovementFromLastSuccess_1x1_uint8_00.bin");
-    CHECK(data.is_movement_from_last_success == isMovementFromLastSuccess);
     if( stats )
     {
         stats->n_valid_scene = is_scene_valid;
@@ -233,16 +220,16 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
 
     // movment check
     // 1. dilation
-    CHECK( compare_to_bin_file< uint8_t >( yuy_data.movement_result.logic_edges, scene_dir, "logicEdges", rgb_w, rgb_h, "uint8_00", compare_same_vectors ) );
-    CHECK( compare_to_bin_file< double >( yuy_data.movement_result.dilated_image, scene_dir, "dilatedIm", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< uint8_t >( yuy_data.prev_logic_edges, scene_dir, "logicEdges", rgb_w, rgb_h, "uint8_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< double >( yuy_data.dilated_image, scene_dir, "dilatedIm", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
 
     // 2. gausssian
-    CHECK( compare_to_bin_file< double >( yuy_data.movement_result.yuy_diff, scene_dir, "diffIm_01", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
-    CHECK( compare_to_bin_file< double >( yuy_data.movement_result.gaussian_filtered_image, scene_dir, "diffIm", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< double >( yuy_data.yuy_diff, scene_dir, "diffIm_01", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< double >( yuy_data.gaussian_filtered_image, scene_dir, "diffIm", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
 
     // 3. movement
-    CHECK( compare_to_bin_file< double >( yuy_data.movement_result.gaussian_diff_masked, scene_dir, "IDiffMasked", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
-    CHECK( compare_to_bin_file< uint8_t >( yuy_data.movement_result.move_suspect, scene_dir, "ixMoveSuspect", rgb_w, rgb_h, "uint8_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< double >( yuy_data.gaussian_diff_masked, scene_dir, "IDiffMasked", rgb_w, rgb_h, "double_00", compare_same_vectors ) );
+    CHECK( compare_to_bin_file< uint8_t >( yuy_data.move_suspect, scene_dir, "ixMoveSuspect", rgb_w, rgb_h, "uint8_00", compare_same_vectors ) );
 
     //--
     TRACE( "\nOptimizing:" );
@@ -376,11 +363,6 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
                 data.k2dsm_data_p.quad_coef.size(), 1, compare_same_vectors));
 
             CHECK(compare_to_bin_file< algo::double2 >(
-                data.k2dsm_data_p.opt_scaling_1,
-                scene_dir,
-                bin_file("optScaling1", data.cycle_data_p.cycle, 1, 2, "double_00.bin")));
-
-            CHECK(compare_to_bin_file< algo::double2 >(
                 data.k2dsm_data_p.opt_scaling,
                 scene_dir,
                 bin_file("optScaling", data.cycle_data_p.cycle, 1, 2, "double_00.bin")));
@@ -482,22 +464,17 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
         else if(data.type == algo::iteration_data)
         {
             std::cout << std::endl << "COMPARING ITERATION DATA " << data.cycle_data_p.cycle <<" "<< data.iteration_data_p.iteration + 1 << std::endl;
-            CHECK(compare_to_bin_file< algo::p_matrix >(
-                data.iteration_data_p.params.curr_p_mat,
-                scene_dir,
-                bin_file("p_matrix_iteration", data.cycle_data_p.cycle, data.iteration_data_p.iteration + 1, num_of_p_matrix_elements, 1, "double_00.bin")));
-
             CHECK(compare_to_bin_file< double >(
-                std::vector< double >(std::begin(data.iteration_data_p.c.k_mat.k_mat.rot),
-                    std::end(data.iteration_data_p.c.k_mat.k_mat.rot)),
+                std::vector< double >(std::begin(data.iteration_data_p.params.curr_p_mat.vals),
+                    std::end(data.iteration_data_p.params.curr_p_mat.vals)),
                 scene_dir,
-                bin_file("Krgb_iteration",
+                bin_file("p_matrix_iteration",
                     data.cycle_data_p.cycle,
                     data.iteration_data_p.iteration + 1,
-                    9,
+                    num_of_p_matrix_elements,
                     1,
                     "double_00.bin"),
-                9, 1,
+                num_of_p_matrix_elements, 1,
                 compare_same_vectors));
 
             CHECK(compare_to_bin_file< double >(
@@ -668,7 +645,7 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
 
     // Our code doesn't count the first iteration; the Matlab code starts at 1 even if it doesn't do anything...
     //REQUIRE( cal.optimize( cb ) + 1 == md.n_iterations );
-    auto n_cycles = cal.optimize( cb );
+    cal.optimize( cb );
 
     
     auto new_calibration = cal.get_calibration();
@@ -726,7 +703,6 @@ void compare_scene( std::string const & scene_dir, scene_stats * stats = nullptr
     CHECK( is_valid_results == matlab_valid_results );
     if( stats )
     {
-        stats->n_cycles = n_cycles;
         stats->n_valid_result = is_valid_results;
         stats->n_valid_result_diff = is_valid_results != matlab_valid_results;
 

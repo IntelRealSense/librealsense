@@ -186,8 +186,7 @@ namespace librealsense
 #define CASE(X) STRCASE(CALIBRATION, X)
         switch( type )
         {
-        CASE( AUTO_DEPTH_TO_RGB )
-        CASE( MANUAL_DEPTH_TO_RGB )
+            CASE( DEPTH_TO_RGB )
         default: assert( !is_valid( type ) ); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -220,19 +219,6 @@ namespace librealsense
             CASE(NO_AMBIENT)
             CASE(LOW_AMBIENT)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
-        }
-#undef CASE
-    }
-
-    const char* get_string( rs2_cah_trigger value )
-    {
-#define CASE(X) STRCASE(CAH_TRIGGER, X)
-        switch( value )
-        {
-        CASE( MANUAL )
-        CASE( NOW )
-        CASE( AUTO )
-        default: assert( !is_valid( value ) ); return UNKNOWN_VALUE;
         }
 #undef CASE
     }

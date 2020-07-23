@@ -146,11 +146,10 @@ void optimizer::clip_ac_scaling( rs2_dsm_params_double const & ac_data_in,
                                        / abs( ac_data_new.h_scale - ac_data_in.h_scale )
                                        * _params.max_global_los_scaling_step;
         AC_LOG( DEBUG,
-                "    " << AC_D_PREC << "H scale {new}" << ac_data_new.h_scale
-                       << " is not within {step}"
-                       << std::string( to_string() << _params.max_global_los_scaling_step )
-                       << " of {old}" << ac_data_in.h_scale << "; clipping to {final}"
-                       << new_h_scale << " [CLIP-H]" );
+                "    H scale delta ("
+                    << AC_D_PREC << abs( ac_data_in.h_scale - ac_data_new.h_scale )
+                    << " > max global LoS scaling per step (" << _params.max_global_los_scaling_step
+                    << "); clipping to " << new_h_scale );
         ac_data_new.h_scale = new_h_scale;
     }
     if( abs( ac_data_in.v_scale - ac_data_new.v_scale ) > _params.max_global_los_scaling_step )
@@ -160,11 +159,10 @@ void optimizer::clip_ac_scaling( rs2_dsm_params_double const & ac_data_in,
                                        / abs( ac_data_new.v_scale - ac_data_in.v_scale )
                                        * _params.max_global_los_scaling_step;
         AC_LOG( DEBUG,
-                "    " << AC_D_PREC << "V scale {new}" << ac_data_new.v_scale
-                       << " is not within {step}"
-                       << std::string( to_string() << _params.max_global_los_scaling_step )
-                       << " of {old}" << ac_data_in.v_scale << "; clipping to {final}"
-                       << new_v_scale << " [CLIP-V]" );
+                "    V scale delta ("
+                    << AC_D_PREC << abs( ac_data_in.v_scale - ac_data_new.v_scale )
+                    << " > max global LoS scaling per step (" << _params.max_global_los_scaling_step
+                    << "); clipping to " << new_v_scale );
         ac_data_new.v_scale = new_v_scale;
     }
 }
@@ -354,7 +352,7 @@ bool optimizer::is_valid_results()
     if( _factory_calibration.width  &&  _factory_calibration.height )
     {
         double xy_movement = calc_correction_in_pixels(_final_calibration);
-        AC_LOG( DEBUG, "    average pixel movement from factory calibration= " << xy_movement );
+        AC_LOG( DEBUG, "... average pixel movement from factory calibration= " << xy_movement );
         if( xy_movement > _params.max_xy_movement_from_origin )
         {
             AC_LOG( ERROR, "Calibration has moved too far from the original factory calibration (" << xy_movement << " pixels)" );
@@ -363,7 +361,7 @@ bool optimizer::is_valid_results()
     }
     else
     {
-        AC_LOG( DEBUG, "    no factory calibration available; skipping distance check" );
+        AC_LOG( DEBUG, "... no factory calibration available; skipping distance check" );
     }
 
     /* %% Check and see that the score didn't increased by a lot in one image section and decreased in the others
@@ -381,7 +379,17 @@ bool optimizer::is_valid_results()
         = *std::min_element( _z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end() );
     double max_cost_diff
         = *std::max_element( _z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end() );
-    AC_LOG( DEBUG, "    min cost diff= " << min_cost_diff << "  max= " << max_cost_diff );
+    AC_LOG( DEBUG, "... min cost diff= " << min_cost_diff << "  max= " << max_cost_diff );
+    if( min_cost_diff < 0. )
+    {
+        AC_LOG( ERROR,
+                "Some image sections were hurt by the optimization; invalidating calibration!" );
+        for( size_t x = 0; x < _z.cost_diff_per_section.size(); ++x )
+            AC_LOG( DEBUG,
+                    "... cost diff in section " << x << "= " << _z.cost_diff_per_section[x] );
+        // return false;
+        res = false;
+    }
 
     bool res_svm = valid_by_svm( linear );  //(gaussian);
     return ( res && res_svm );

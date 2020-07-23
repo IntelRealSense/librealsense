@@ -18,6 +18,7 @@ namespace librealsense {
 namespace algo {
 namespace depth_to_rgb_calibration {
 
+
     struct optimization_params
     {
         p_matrix curr_p_mat;
@@ -30,7 +31,7 @@ namespace depth_to_rgb_calibration {
     {
         params();
 
-        void set_depth_resolution(size_t width, size_t height, rs2_ambient_light ambient);
+        void set_depth_resolution(size_t width, size_t height);
         void set_rgb_resolution(size_t width, size_t height);
 
         double gamma = 0.9;
@@ -40,12 +41,6 @@ namespace depth_to_rgb_calibration {
         double grad_z_min = 25; // Ignore pixels with Z grad of less than this
         double grad_z_max = 1000;
         double edge_thresh4_logic_lum = 0.1;
-
-        // enhanced preprocessing params
-        double grad_ir_low_th = std::numeric_limits<double>::max();
-        double grad_ir_high_th = 2.5;
-        double grad_z_low_th = 0;
-        double grad_z_high_th = std::numeric_limits<double>::max();
 
         double max_step_size = 1;
         double min_step_size = 0.00001;
@@ -63,13 +58,11 @@ namespace depth_to_rgb_calibration {
         double edge_distribution_min_max_ratio = 0.005;
         double grad_dir_ratio = 10;
         double grad_dir_ratio_prep = 1.5;
-        size_t dilation_size = 1;
+        size_t dilation_size = 3;
         double gauss_sigma = 1;
         size_t gause_kernel_size = 5;
         double move_thresh_pix_val = 20;
         double move_threshold_pix_num = 62.2080;
-        double move_last_success_thresh_pix_val = 20;
-        double move_last_success_thresh_pix_num = 18432;
 
         //smearing
         double max_sub_mm_z = 4;
@@ -82,20 +75,7 @@ namespace depth_to_rgb_calibration {
         double const max_K2DSM_iters = 10;
         // TODO: the following should be 0.2% but was increased to 0.5% to account for
         // manual trigger activation
-        double max_global_los_scaling_step = 0.004;  // the difference (.5%) between starting and final scale
-
-        // input validation
-        double edges_per_direction_ratio_th = 0.004;
-        double dir_std_th[N_BASIC_DIRECTIONS] = { 0.09, 0.09, 0.09, 0.09 };
-        int minimal_full_directions = 2;
-        bool require_orthogonal_valid_dirs = false;
-        int saturation_value = 230;
-        double saturation_ratio_th = 0.05;
-        double pix_per_section_rgb_th = 0.01;
-        double pix_per_section_depth_th = 0.01;
-        int min_section_with_enough_edges = 2;
-
-        bool use_enhanced_preprocessing = true;
+        double const max_global_los_scaling_step = 0.005;  // the difference (.5%) between starting and final scale
     };
     // svm
     struct decision_params
@@ -206,7 +186,6 @@ namespace depth_to_rgb_calibration {
         std::vector <double> sg_mat_tag_x_err_l2;
         std::vector <double> quad_coef;
         double2 focal_scaling;
-        double2 opt_scaling_1;
         double2 opt_scaling;
         double2 new_los_scaling;
         rs2_dsm_params_double dsm_params_cand;
@@ -264,35 +243,14 @@ namespace depth_to_rgb_calibration {
 
     };
 
-    struct input_validity_data
-    {
-        bool edges_dir_spread;
-        bool not_saturated;
-        bool depth_spatial_spread;
-        bool rgb_spatial_spread;
-        bool is_movement_from_last_success;
-    };
 
     class optimizer
     {
     public:
-#pragma pack(push, 1)
-        struct settings
-        {
-            bool is_manual_trigger = false;
-            double hum_temp = 0.;
-            rs2_ambient_light ambient = RS2_AMBIENT_LIGHT_NO_AMBIENT;
-            int receiver_gain = 0;  // aka APD
-        };
-#pragma pack(pop)
+        optimizer();
 
-        optimizer( settings const & );
-
-        void set_yuy_data( std::vector< yuy_t > && yuy_data, 
-            std::vector< yuy_t > && prev_yuy_data,
-            std::vector< yuy_t > && last_successful_yuy_data,
-            calib const & calibration);
-
+        void set_yuy_data( std::vector< yuy_t > && yuy_data, std::vector< yuy_t > && prev_yuy_data,
+                           calib const & calibration );
         void set_ir_data( std::vector< ir_t > && ir_data, size_t width, size_t height );
         void set_z_data( std::vector< z_t > && z_data,
                          rs2_intrinsics_double const & depth_intrinsics,
@@ -304,21 +262,7 @@ namespace depth_to_rgb_calibration {
         void write_data_to( std::string const & directory );
 
         // (optional) Return whether the scene passed in is valid and can go thru optimization
-        bool is_scene_valid(input_validity_data* data = nullptr);
-
-        // This function checks for specific cases in which we expect poor
-        // performance of the AC2 algorithm.
-        // Covered Cases(By priority) :
-        // 1. Enough Edges in RGB image(Lights off bug fix)
-        // 2. Enough Edges in enough locations(3 / 4 quarters)
-        // 3. Enough Edges in enough directions(2 / 4 directions)
-        // 4. Large enough STD of edges in the chosen direction(weights will be
-        //    normalized by direction)  (Normalize by weights is done in a seperate
-        //    function)
-        // 5. Verify there is movement in RGB between this scene and the previous
-        // 6. Check for saturation in the depth
-        //    one in which we converged
-        bool input_validity_checks(input_validity_data* data = nullptr);
+        bool is_scene_valid();
 
         // Optimize the calibration, optionally calling the callback after each iteration
         size_t optimize( std::function< void( data_collect const & data ) >
@@ -357,10 +301,6 @@ namespace depth_to_rgb_calibration {
             const p_matrix& p_mat_opt = p_matrix());
     private:
 
-        void adjust_params_to_manual_mode();
-        void adjust_params_to_auto_mode();
-        void adjust_params_to_apd_gain();
-
         // 1 cycle of optimization
         size_t optimize_p(const optimization_params& params_curr,
             const std::vector<double3>& new_vertices,
@@ -380,7 +320,7 @@ namespace depth_to_rgb_calibration {
         std::vector<double> blur_edges( std::vector<double> const & edges, size_t image_width, size_t image_height );
         std::vector< byte > get_luminance_from_yuy2( std::vector< yuy_t > const & yuy2_imagh );
 
-        std::vector<uint8_t> get_logic_edges( std::vector<double> const & edges );
+        std::vector<uint8_t> get_logic_edges( std::vector<double> edges );
         std::vector <double3> subedges2vertices(z_frame_data& z_data, const rs2_intrinsics_double& intrin, double depth_units);
         
         optimization_params back_tracking_line_search( optimization_params const & opt_params,
@@ -388,24 +328,13 @@ namespace depth_to_rgb_calibration {
                                                        data_collect * data = nullptr ) const;
        
         // input validation
-        bool is_movement_in_images(
-            movement_inputs_for_frame const& prev,
-            movement_inputs_for_frame const& curr,
-            movement_result_data& result_data,
-            double const move_thresh_pix_val,
-            double const move_threshold_pix_num,
-            size_t width, size_t height);
-
+        bool is_movement_in_images(yuy2_frame_data& yuy);
         bool is_edge_distributed( z_frame_data & z_data, yuy2_frame_data & yuy_data );
         void section_per_pixel( frame_data const &, size_t section_w, size_t section_h, byte * section_map );
         void check_edge_distribution(std::vector<double>& sum_weights_per_section, double& min_max_ratio, bool& is_edge_distributed);
         void sum_per_section(std::vector< double >& sum_weights_per_section, std::vector< byte > const& section_map, std::vector< double > const& weights, size_t num_of_sections);
-        std::vector<uint8_t> images_dilation(std::vector<uint8_t> const &logic_edges, size_t width, size_t height);
-        void gaussian_filter(std::vector<uint8_t> const& lum_frame,
-            std::vector<uint8_t> const& prev_lum_frame,
-            std::vector<double>& yuy_diff,
-            std::vector<double>& gaussian_filtered_image,
-            size_t width, size_t height);
+        void images_dilation(yuy2_frame_data& yuy);
+        void gaussian_filter(yuy2_frame_data& yuy);
 
         // svm
         bool valid_by_svm(svm_model model);
@@ -418,7 +347,6 @@ namespace depth_to_rgb_calibration {
                               rs2_dsm_params_double & ac_data_new ) const;
 
     private:
-        settings const _settings;
         params _params;
         decision_params _decision_params;
         svm_features _svm_features;

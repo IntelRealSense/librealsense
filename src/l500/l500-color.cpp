@@ -4,9 +4,6 @@
 #include "l500-color.h"
 
 #include <cstddef>
-#include <mutex>
-
-
 
 #include "l500-private.h"
 #include "proc/color-formats-converter.h"
@@ -187,36 +184,32 @@ namespace librealsense
 
         auto num_of_res = intrinsic->resolution.num_of_resolutions;
 
-        if (num_of_res <= MAX_NUM_OF_RGB_RESOLUTIONS)
+        for( auto i = 0; i < num_of_res; i++ )
         {
-            for (auto i = 0; i < num_of_res; i++)
+            auto model = intrinsic->resolution.intrinsic_resolution[i];
+            if( model.height == profile.height && model.width == profile.width )
             {
-                auto model = intrinsic->resolution.intrinsic_resolution[i];
-                if (model.height == profile.height && model.width == profile.width)
-                {
-                    rs2_intrinsics intrinsics;
-                    intrinsics.width = model.width;
-                    intrinsics.height = model.height;
-                    intrinsics.fx = model.ipm.focal_length.x;
-                    intrinsics.fy = model.ipm.focal_length.y;
-                    intrinsics.ppx = model.ipm.principal_point.x;
-                    intrinsics.ppy = model.ipm.principal_point.y;
+                rs2_intrinsics intrinsics;
+                intrinsics.width = model.width;
+                intrinsics.height = model.height;
+                intrinsics.fx = model.ipm.focal_length.x;
+                intrinsics.fy = model.ipm.focal_length.y;
+                intrinsics.ppx = model.ipm.principal_point.x;
+                intrinsics.ppy = model.ipm.principal_point.y;
 
+                if( model.distort.radial_k1 || model.distort.radial_k2 || model.distort.tangential_p1 || model.distort.tangential_p2 || model.distort.radial_k3 )
+                {
                     intrinsics.coeffs[0] = model.distort.radial_k1;
                     intrinsics.coeffs[1] = model.distort.radial_k2;
                     intrinsics.coeffs[2] = model.distort.tangential_p1;
                     intrinsics.coeffs[3] = model.distort.tangential_p2;
                     intrinsics.coeffs[4] = model.distort.radial_k3;
 
-                    intrinsics.model = RS2_DISTORTION_INVERSE_BROWN_CONRADY; // TODO - according to algo, should be changed to RS2_DISTORTION_BROWN_CONRADY
-
-                    return intrinsics;
+                    intrinsics.model = RS2_DISTORTION_INVERSE_BROWN_CONRADY;
                 }
+
+                return intrinsics;
             }
-        }
-        else
-        {
-            throw std::runtime_error(to_string() << "Firmware intrinsics tables count(" << num_of_res << "), is higher than maximum supported(" << MAX_NUM_OF_DEPTH_RESOLUTIONS << ")");
         }
         throw std::runtime_error( to_string() << "intrinsics for resolution " << profile.width << "," << profile.height << " don't exist" );
     }
@@ -348,146 +341,6 @@ namespace librealsense
         AC_LOG( INFO, "Color sensor calibration has been reset" );
     }
 
-    void l500_color_sensor::start(frame_callback_ptr callback)
-    {
-        std::lock_guard<std::mutex> lock(_state_mutex);
-
-        if (_state != sensor_state::OWNED_BY_USER)
-            throw wrong_api_call_sequence_exception("tried to start an unopened sensor");
-
-        delayed_start(callback);
-    }
-
-    
-    void l500_color_sensor::stop()
-    {
-        std::lock_guard<std::mutex> lock(_state_mutex);
-        
-        // Protect not stopping the calibration color stream due to wrong API sequence
-        if (_state != sensor_state::OWNED_BY_USER)
-            throw wrong_api_call_sequence_exception("tried to stop sensor without starting it");
-
-        delayed_stop();
-    }
-
-
-    void l500_color_sensor::open( const stream_profiles & requests )
-    {
-        std::lock_guard< std::mutex > lock( _state_mutex );
-
-        if( sensor_state::OWNED_BY_AUTO_CAL == _state )
-        {
-            if( is_streaming() )
-            {
-                delayed_stop();
-            }
-            if( is_opened() )
-            {
-                LOG_DEBUG( "Closing color sensor..." );
-                synthetic_sensor::close();
-            }
-            set_sensor_state( sensor_state::CLOSED );
-            LOG_DEBUG( "Calibration color stream was on, turned it off" );
-        }
-
-        LOG_DEBUG( "Opening color sensor..." );
-        synthetic_sensor::open( requests );
-        set_sensor_state( sensor_state::OWNED_BY_USER );
-    }
-
-    
-    void l500_color_sensor::close()
-    {
-        std::lock_guard< std::mutex > lock( _state_mutex );
-
-        if( _state != sensor_state::OWNED_BY_USER )
-            throw wrong_api_call_sequence_exception( "tried to close sensor without opening it" );
-
-        LOG_DEBUG("Closing color sensor...");
-        synthetic_sensor::close();
-        set_sensor_state(sensor_state::CLOSED);
-    }
-
-    // Helper function for start stream callback
-    template<class T>
-    frame_callback_ptr make_frame_callback(T callback)
-    {
-        return {
-            new internal_frame_callback<T>(callback),
-            [](rs2_frame_callback* p) { p->release(); }
-        };
-    }
-
-    bool l500_color_sensor::start_stream_for_calibration(const stream_profiles& requests)
-    {
-        std::lock_guard< std::mutex > lock( _state_mutex );
-
-        // Allow calibration process to open the color stream only if it is not started by the user.
-        if( _state == sensor_state::CLOSED )
-        {
-            synthetic_sensor::open(requests);
-            set_sensor_state(sensor_state::OWNED_BY_AUTO_CAL);
-            AC_LOG( INFO, "Start color sensor stream for calibration" );
-            delayed_start( make_frame_callback( [&]( frame_holder fref ) {} ) );
-            AC_LOG( INFO, "Color sensor stream started" );
-            return true;
-        }
-        if( ! is_streaming() )
-        {
-            // This is a corner case that is not covered at the moment: The user opened the sensor
-            // but did not start it.
-            AC_LOG( WARNING,
-                    "The color sensor was opened but never started by the user; streaming may not work" );
-        }
-        else
-            AC_LOG( DEBUG, "Color sensor is already streaming (" << state_to_string(_state) << ")" );
-        return false;
-    }
-
-    void l500_color_sensor::stop_stream_for_calibration()
-    {
-        std::lock_guard< std::mutex > lock( _state_mutex );
-        
-        if( _state == sensor_state::OWNED_BY_AUTO_CAL )
-        {
-            if( is_streaming() )
-            {
-                AC_LOG( INFO, "Stopping color sensor stream from calibration" );
-                delayed_stop();
-                AC_LOG( INFO, "Color sensor stream stopped" );
-
-            }
-            if (is_opened())
-            {
-                LOG_DEBUG( "Closing color sensor..." );
-                synthetic_sensor::close();
-                LOG_DEBUG( "Color sensor closed" );
-            }
-
-            // If we got here with no exception it means the start has succeeded.
-            set_sensor_state( sensor_state::CLOSED );
-        }
-        else
-        {
-            AC_LOG( DEBUG, "Color sensor was not opened by us; no need to close" );
-        }
-    }
-
-    std::string l500_color_sensor::state_to_string(sensor_state state)
-    {
-        switch (state)
-        {
-        case sensor_state::CLOSED:
-            return "CLOSED";
-        case sensor_state::OWNED_BY_AUTO_CAL:
-            return "OWNED_BY_AUTO_CAL";
-        case sensor_state::OWNED_BY_USER:
-            return "OWNED_BY_USER";
-        default:
-            LOG_DEBUG("Invalid color sensor state: " << static_cast<int>(state));
-            return "Unknown state";
-        }
-    }
 
 
     std::vector<tagged_profile> l500_color::get_profiles_tags() const

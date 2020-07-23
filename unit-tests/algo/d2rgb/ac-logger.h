@@ -13,17 +13,17 @@ class ac_logger
 {
     struct dispatch : public el::LogDispatchCallback
     {
-        ac_logger * _p_logger;
+        bool * _p_on;
         
         void handle( const el::LogDispatchData* data ) noexcept override
         {
-            if( ! _p_logger->_on )
+            if( !*_p_on )
                 return;
             char const * raw = data->logMessage()->message().data();
-            if( ! strncmp( AC_LOG_PREFIX, raw, AC_LOG_PREFIX_LEN ) )
+            if( !strncmp( AC_LOG_PREFIX, raw, AC_LOG_PREFIX_LEN ) )
             {
-                _p_logger->on_log( *el::LevelHelper::convertToString( data->logMessage()->level() ),
-                                   raw + AC_LOG_PREFIX_LEN );
+                std::cout << "-" << *el::LevelHelper::convertToString( data->logMessage()->level() ) << "- ";
+                std::cout << (raw + AC_LOG_PREFIX_LEN) << std::endl;
             }
         }
     };
@@ -38,17 +38,10 @@ public:
 
         el::Helpers::installLogDispatchCallback< dispatch >( "our_dispatch" );
         auto dispatcher = el::Helpers::logDispatchCallback< dispatch >( "our_dispatch" );
-        dispatcher->_p_logger = this;
+        dispatcher->_p_on = &_on;
         el::Helpers::uninstallLogDispatchCallback< el::base::DefaultLogDispatchCallback >( "DefaultLogDispatchCallback" );
     }
-    virtual ~ac_logger() {}
 
     void enable( bool on = true ) { _on = on; }
 
-protected:
-    virtual void on_log( char severity, char const * message )
-    {
-        std::cout << "-" << severity << "- ";
-        std::cout << message << std::endl;
-    }
 };

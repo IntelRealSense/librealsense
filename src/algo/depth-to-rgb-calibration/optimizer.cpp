@@ -119,17 +119,8 @@ namespace
 }
 
 
-optimizer::optimizer( settings const & s )
-    : _settings( s )
+optimizer::optimizer()
 {
-    if (_settings.is_manual_trigger)
-    {
-        adjust_params_to_manual_mode();
-    }
-    else
-    {
-        adjust_params_to_auto_mode();
-    }
 }
 
 static std::vector< double > get_direction_deg(
@@ -383,35 +374,18 @@ std::vector<double> sum_gradient_depth(std::vector<double> &gradient, std::vecto
 std::vector< byte > find_valid_depth_edges( std::vector< double > const & grad_in_direction,
                                             std::vector< byte > const & is_supressed,
                                             std::vector< double > const & values_for_subedges,
-                                            std::vector< double > const & ir_local_edges,
-                                            const params & p )
+                                            int const gradZTh )
 {
     std::vector< byte > res;
     res.reserve( grad_in_direction.size() );
     //%validEdgePixels = zGradInDirection > params.gradZTh & isSupressed & zValuesForSubEdges > 0;
-    if (p.use_enhanced_preprocessing)
+    for (int i = 0; i < grad_in_direction.size(); i++)
     {
-        for (int i = 0; i < grad_in_direction.size(); i++)
-        {
-            bool cond1 = (grad_in_direction[i] > p.grad_z_low_th  && ir_local_edges[i * 4 + 2] > p.grad_ir_high_th) ||
-                         (grad_in_direction[i] > p.grad_z_high_th && ir_local_edges[i * 4 + 2] > p.grad_ir_low_th);
-
-            bool cond2 = is_supressed[i];
-            bool cond3 = values_for_subedges[i] > 0;
-            res.push_back(cond1 && cond2 && cond3);
-        }
+        bool cond1 = grad_in_direction[i] > gradZTh;
+        bool cond2 = is_supressed[i];
+        bool cond3 = values_for_subedges[i] > 0;
+        res.push_back( cond1 && cond2 && cond3 );
     }
-    else
-    {
-        for (int i = 0; i < grad_in_direction.size(); i++)
-        {
-            bool cond1 = grad_in_direction[i] > p.grad_z_threshold;
-            bool cond2 = is_supressed[i];
-            bool cond3 = values_for_subedges[i] > 0;
-            res.push_back(cond1 && cond2 && cond3);
-        }
-    }
-   
     return res;
 }
 
@@ -444,7 +418,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     /*[zEdge,Zx,Zy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.z),2); % Added the second input - margin to zero out
     [iEdge,Ix,Iy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.i),2); % Added the second input - margin to zero out
     validEdgePixelsByIR = iEdge>params.gradITh; */
-    _params.set_depth_resolution(depth_intrinsics.width, depth_intrinsics.height, _settings.ambient);
+    _params.set_depth_resolution(depth_intrinsics.width, depth_intrinsics.height);
     _z.width = depth_intrinsics.width;
     _z.height = depth_intrinsics.height;
     _z.orig_intrinsics = depth_intrinsics;
@@ -467,18 +441,8 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     _z.edges = calc_intensity(_z.gradient_x, _z.gradient_y);
     _ir.edges = calc_intensity(_ir.gradient_x, _ir.gradient_y);
 
-    for (auto ir = _ir.edges.begin(), z = _z.edges.begin(); ir < _ir.edges.end() && z < _z.edges.end(); ir++, z++)
-    {
-        auto valid_edge = true;
-        if (_params.use_enhanced_preprocessing)
-        {
-            _ir.valid_edge_pixels_by_ir.push_back((*ir > _params.grad_ir_high_th && *z > _params.grad_z_low_th)
-                || (*ir > _params.grad_ir_low_th && *z > _params.grad_z_high_th));
-        }
-        else
-            _ir.valid_edge_pixels_by_ir.push_back(*ir > _params.grad_ir_threshold);
-    }
-        
+    for( auto it = _ir.edges.begin(); it < _ir.edges.end(); it++ )
+        _ir.valid_edge_pixels_by_ir.push_back( *it > _params.grad_ir_threshold );
 
     /*sz = size(frame.i);
     [gridX,gridY] = meshgrid(1:sz(2),1:sz(1)); % gridX/Y contains the indices of the pixels
@@ -651,8 +615,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     _z.supressed_edges = find_valid_depth_edges( _z.grad_in_direction,
                                                  _ir.is_supressed,
                                                  _z.values_for_subedges,
-                                                 _ir.local_edges,
-                                                 _params);
+                                                 _params.grad_z_threshold );
     std::vector<double> valid_values_for_subedges;
 
 
@@ -709,7 +672,6 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     k_matrix k = depth_intrinsics;
     matrix_3x3 k_depth_pinv = { 0 };
     pinv_3x3( k.as_3x3().rot, k_depth_pinv.rot );
-    _z.k_depth_pinv = k_depth_pinv;
     transform(_z.valid_edge_sub_pixel_x.begin(), _z.valid_edge_sub_pixel_x.end(), _z.valid_edge_sub_pixel_x.begin(), bind2nd(std::plus<double>(), -1.0));
     transform(_z.valid_edge_sub_pixel_y.begin(), _z.valid_edge_sub_pixel_y.end(), _z.valid_edge_sub_pixel_y.begin(), bind2nd(std::plus<double>(), -1.0));
     for (auto i = 0; i < _z.sub_points.size(); i += 3)
@@ -792,7 +754,6 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
 void optimizer::set_yuy_data(
     std::vector< yuy_t > && yuy_data,
     std::vector< yuy_t > && prev_yuy_data,
-    std::vector< yuy_t > && last_successful_yuy_data,
     calib const & calibration
 )
 {
@@ -805,25 +766,11 @@ void optimizer::set_yuy_data(
     _yuy.orig_frame = std::move( yuy_data );
     _yuy.prev_frame = std::move( prev_yuy_data );
 
-    if( last_successful_yuy_data.empty() )
-    {
-        AC_LOG( DEBUG, "    previous calibration image was NOT supplied" );
-        last_successful_yuy_data.resize( _yuy.orig_frame.size(), 0 );
-    }
-    else
-    {
-        AC_LOG( DEBUG, "    previous calibration image supplied" );
-    }
-    _yuy.last_successful_frame = std::move(last_successful_yuy_data);
-
     _yuy.lum_frame = get_luminance_from_yuy2( _yuy.orig_frame );
     _yuy.prev_lum_frame = get_luminance_from_yuy2( _yuy.prev_frame );
 
     _yuy.edges = calc_edges( _yuy.lum_frame, _yuy.width, _yuy.height );
     _yuy.prev_edges = calc_edges(_yuy.prev_lum_frame, _yuy.width, _yuy.height);
-
-    _yuy.last_successful_lum_frame = get_luminance_from_yuy2(_yuy.last_successful_frame);
-    _yuy.last_successful_edges = calc_edges(_yuy.last_successful_lum_frame, _yuy.width, _yuy.height);
 
     _yuy.edges_IDT = blur_edges( _yuy.edges, _yuy.width, _yuy.height );
 
@@ -1053,11 +1000,11 @@ std::vector< byte > optimizer::get_luminance_from_yuy2( std::vector< yuy_t > con
     return res;
 }
 
-std::vector< uint8_t > optimizer::get_logic_edges( std::vector< double > const & edges )
+std::vector<uint8_t> optimizer::get_logic_edges( std::vector<double> edges )
 {
     std::vector<uint8_t> logic_edges( edges.size(), 0 );
     auto max = std::max_element( edges.begin(), edges.end() );
-    auto thresh = *max * _params.edge_thresh4_logic_lum;
+    auto thresh = *max*_params.edge_thresh4_logic_lum;
 
     for( auto i = 0; i < edges.size(); i++ )
     {
@@ -1318,59 +1265,21 @@ svm_model_linear::svm_model_linear()
 svm_model_gaussian::svm_model_gaussian()
 {
 }
-void params::set_depth_resolution( size_t width, size_t height, rs2_ambient_light ambient)
+void params::set_depth_resolution( size_t width, size_t height )
 {
-    AC_LOG( DEBUG, "    depth resolution= " << width << "x" << height );
+    AC_LOG( DEBUG, "... depth resolution= " << width << "x" << height );
     // Some parameters are resolution-dependent
     bool const XGA = (width == 1024 && height == 768);
-    bool const VGA = (width == 640 && height == 480);
     if( XGA )
     {
-        AC_LOG( DEBUG, "    changing IR threshold: " << grad_ir_threshold << " -> " << 2.5 << "  (because of resolution)" );
+        AC_LOG( DEBUG, "... changing IR threshold: " << grad_ir_threshold << " -> " << 2.5 << "  (because of resolution)" );
         grad_ir_threshold = 2.5;
-    }
-    if (use_enhanced_preprocessing)
-    {
-        if (ambient == RS2_AMBIENT_LIGHT_NO_AMBIENT)
-        {
-            if (VGA)
-            {
-                grad_ir_low_th = 1.5;
-                grad_ir_high_th = 3.5;
-                grad_z_low_th = 0;
-                grad_z_high_th = 100;
-            }
-            else if (XGA)
-            {
-                grad_ir_low_th = 1;
-                grad_ir_high_th = 2.5;
-                grad_z_low_th = 0;
-                grad_z_high_th = 80;
-            }
-        }
-        else
-        {
-            if (VGA)
-            {
-                grad_ir_low_th = std::numeric_limits<double>::max();
-                grad_ir_high_th = 3.5;
-                grad_z_low_th = 0;
-                grad_z_high_th = std::numeric_limits<double>::max();
-            }
-            else if (XGA)
-            {
-                grad_ir_low_th = std::numeric_limits<double>::max();
-                grad_ir_high_th = 2.5;
-                grad_z_low_th = 0;
-                grad_z_high_th = std::numeric_limits<double>::max();
-            }
-        }
     }
 }
 
 void params::set_rgb_resolution( size_t width, size_t height )
 {
-    AC_LOG( DEBUG, "    RGB resolution= " << width << "x" << height );
+    AC_LOG( DEBUG, "... RGB resolution= " << width << "x" << height );
 }
 
 calib const & optimizer::get_calibration() const
@@ -1434,7 +1343,7 @@ void write_matlab_camera_params_file(
     //depth intrinsics
     write_obj( f, (double)_intr_depth.width );
     write_obj( f, (double)_intr_depth.height );
-    write_obj( f, (double)1/_depth_units );
+    write_obj( f, (double)_depth_units );
 
     double k_depth[9] = { _intr_depth.fx, 0, _intr_depth.ppx,
                         0, _intr_depth.fy, _intr_depth.ppy,
@@ -1483,13 +1392,12 @@ void write_matlab_camera_params_file(
 void optimizer::write_data_to( std::string const & dir )
 {
     // NOTE: it is expected that dir ends with a path separator or this won't work!
-    AC_LOG( DEBUG, "    writing data to: " << dir );
+    AC_LOG( DEBUG, "... writing data to: " << dir );
     
     try
     {
         write_vector_to_file( _yuy.orig_frame, dir, "rgb.raw" );
         write_vector_to_file( _yuy.prev_frame, dir, "rgb_prev.raw" );
-        write_vector_to_file( _yuy.last_successful_frame, dir, "rgb_last_successful.raw");
         write_vector_to_file( _ir.ir_frame, dir, "ir.raw" );
         write_vector_to_file( _z.frame, dir, "depth.raw" );
 
@@ -1501,7 +1409,6 @@ void optimizer::write_data_to( std::string const & dir )
         write_to_file( &cal_regs, sizeof( cal_regs ), dir, "cal.registers" );
         write_to_file( &_z.orig_intrinsics, sizeof( _z.orig_intrinsics), dir, "depth.intrinsics" );
         write_to_file( &_z.depth_units, sizeof( _z.depth_units ), dir, "depth.units" );
-        write_to_file( &_settings, sizeof( _settings ), dir, "settings" );
 
         // This file is meant for matlab -- it packages all the information needed
         write_matlab_camera_params_file( _z.orig_intrinsics,
@@ -1565,7 +1472,7 @@ optimization_params optimizer::back_tracking_line_search( optimization_params co
            && abs( step_size ) > _params.min_step_size
            && iter_count++ < _params.max_back_track_iters )
     {
-        //AC_LOG( DEBUG, "    back tracking line search cost= " << AC_D_PREC << new_params.cost );
+        AC_LOG( DEBUG, "    back tracking line search cost= " << AC_D_PREC << new_params.cost );
         step_size = _params.tau * step_size;
 
         new_params.curr_p_mat = curr_params.curr_p_mat + unit_grad * step_size;
@@ -1615,48 +1522,6 @@ void optimizer::set_cycle_data(const std::vector<double3>& vertices,
     _dsm_params_cand_from_bin = dsm_params_cand;
 }
 
-void optimizer::adjust_params_to_apd_gain()
-{
-    if(_settings.ambient == RS2_AMBIENT_LIGHT_NO_AMBIENT) // long preset
-        _params.saturation_value = 230;
-    else if(_settings.ambient == RS2_AMBIENT_LIGHT_LOW_AMBIENT) // short preset
-        _params.saturation_value = 250;
-    else
-        throw std::runtime_error( to_string() <<_settings.ambient <<" invalid ambient value");
-}
-
-void optimizer::adjust_params_to_manual_mode()
-{
-    AC_LOG( DEBUG, "Calibration is MANUAL" );
-    _params.max_global_los_scaling_step = 0.005;
-    _params.pix_per_section_depth_th = 0.01;
-    _params.pix_per_section_rgb_th = 0.01;
-    _params.min_section_with_enough_edges = 2;
-    _params.edges_per_direction_ratio_th = 0.004;
-    _params.minimal_full_directions = 2;
-
-    const static double newvals[N_BASIC_DIRECTIONS] = { 0.09,0.09,0.09,0.09 };
-    std::copy(std::begin(newvals), std::end(newvals), std::begin(_params.dir_std_th));
-    _params.saturation_ratio_th = 0.15;
-    adjust_params_to_apd_gain();
-}
-
-void optimizer::adjust_params_to_auto_mode()
-{
-    AC_LOG( DEBUG, "Calibration is AUTO" );
-    _params.max_global_los_scaling_step = 0.004;
-    _params.pix_per_section_depth_th = 0.01;
-    _params.pix_per_section_rgb_th = 0.01;
-    _params.min_section_with_enough_edges = 2;
-    _params.edges_per_direction_ratio_th = 0.004;
-    _params.minimal_full_directions = 2;
-
-    const static double newvals[N_BASIC_DIRECTIONS] = { 0.09,0.09,0.09,0.09 };
-    std::copy(std::begin(newvals), std::end(newvals), std::begin(_params.dir_std_th));
-    _params.saturation_ratio_th = 0.05;
-    adjust_params_to_apd_gain();
-}
-
 size_t optimizer::optimize_p
 (
     const optimization_params& params_curr,
@@ -1669,11 +1534,7 @@ size_t optimizer::optimize_p
     data_collect* data 
 )
 {
-    // The params_curr that we get contains a cost and p_matrix that do not match:
-    // The cost is the optimal cost calculated in the previous cycle, but we don't use it here.
-    // The p_matrix is the optimal p_matrix that has been modified (see the end of this function).
-    // Between the previous cycle and now we have new vertices so we recalculate a new cost based
-    // on the modified p_matrix and the new vertices
+
     size_t n_iterations = 0;
     auto curr = params_curr;
     while (1)
@@ -1710,7 +1571,7 @@ size_t optimizer::optimize_p
         }
 
         auto delta = params_new.cost - curr.cost;
-        //AC_LOG( DEBUG, "    delta= " << AC_D_PREC << delta );
+        AC_LOG( DEBUG, "    delta= " << AC_D_PREC << delta );
         delta = abs(delta);
         if (delta < _params.min_cost_delta)
         {
@@ -1733,12 +1594,14 @@ size_t optimizer::optimize_p
                          << AC_D_PREC << params_curr.cost << "  -->  " << params_new.cost );
     new_rgb_calib_for_k_to_dsm = optimaized_calibration = decompose_p_mat(params_new.curr_p_mat);
 
-    new_rgb_calib_for_k_to_dsm.k_mat.k_mat.rot[1] = 0; //sheer
+    auto orig_rgb_calib = decompose_p_mat(params_curr.curr_p_mat);
+    new_rgb_calib_for_k_to_dsm.k_mat.k_mat.rot[1] = 0;
 
-    new_z_k = get_new_z_intrinsics_from_new_calib(_z.orig_intrinsics, new_rgb_calib_for_k_to_dsm, _original_calibration);
+    new_z_k = get_new_z_intrinsics_from_new_calib(_z.orig_intrinsics, new_rgb_calib_for_k_to_dsm, orig_rgb_calib);
     new_rgb_calib_for_k_to_dsm.k_mat.k_mat.rot[0] = _original_calibration.k_mat.get_fx();
     new_rgb_calib_for_k_to_dsm.k_mat.k_mat.rot[4] = _original_calibration.k_mat.get_fy();
     params_new.curr_p_mat = new_rgb_calib_for_k_to_dsm.calc_p_mat();
+    new_rgb_calib_for_k_to_dsm = decompose_p_mat(params_new.curr_p_mat);
 
     return n_iterations;
 }
@@ -1747,6 +1610,7 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
 {
     optimization_params params_orig;
     params_orig.curr_p_mat = _original_calibration.calc_p_mat();
+    _original_calibration = decompose(params_orig.curr_p_mat, _original_calibration);
     _params_curr = params_orig;
 
     data_collect data;
@@ -1773,7 +1637,7 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
     _z.orig_vertices = _z.vertices;
     rs2_dsm_params_double new_dsm_params = _z.orig_dsm_params;
 
-    while (cycle-1 < _params.max_K2DSM_iters)
+    while (cycle < _params.max_K2DSM_iters)
     {
         std::vector<double3> cand_vertices = _z.vertices;
         auto dsm_regs_cand = new_dsm_regs;
@@ -1792,8 +1656,6 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
         data.cycle_data_p.new_dsm_regs = new_dsm_regs;
         data.cycle_data_p.new_vertices = new_vertices;
         data.cycle_data_p.optimaized_calib_candidate = optimaized_calib_candidate;
-
-        AC_LOG(INFO, "CYCLE " << data.cycle_data_p.cycle << " started with: cost = " << AC_D_PREC << new_params.cost);
 
         if (cb)
         {
@@ -1852,6 +1714,7 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
         new_vertices = cand_vertices;
         _z.vertices = new_vertices;
         _optimaized_calibration = optimaized_calib_candidate;
+        AC_LOG(INFO, "CYCLE " << data.cycle_data_p.cycle << ": cost = " << AC_D_PREC << new_params.cost);
     }
    
     AC_LOG( INFO,

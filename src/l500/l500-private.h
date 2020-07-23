@@ -9,8 +9,8 @@
 #include "core/extension.h"
 #include "fw-update/fw-update-unsigned.h"
 
-static const int MAX_NUM_OF_RGB_RESOLUTIONS = 5;
-static const int MAX_NUM_OF_DEPTH_RESOLUTIONS = 5;
+static const int NUM_OF_RGB_RESOLUTIONS = 5;
+static const int NUM_OF_DEPTH_RESOLUTIONS = 2;
 
 namespace librealsense
 {
@@ -87,7 +87,7 @@ namespace librealsense
         // Read a table from firmware and, if FW says the table is empty, optionally initialize it
         // using your own code...
         template< typename T >
-        void read_fw_table( hw_monitor& hwm,
+        void read_fw_table( hw_monitor & hwm,
                             int table_id, T * ptable,
                             table_header * pheader = nullptr,
                             std::function< void() > init = nullptr )
@@ -127,7 +127,7 @@ namespace librealsense
 
         // Write a table to firmware
         template< typename T >
-        void write_fw_table( hw_monitor& hwm, uint16_t const table_id, T const & table )
+        void write_fw_table( hw_monitor & hwm, uint16_t const table_id, T const & table )
         {
             command cmd( fw_cmd::WRITE_TABLE, 0 );
             cmd.data.resize( sizeof( table_header ) + sizeof( table ) );
@@ -156,7 +156,7 @@ namespace librealsense
         }
 
         template< typename T >
-        void read_fw_register(hw_monitor& hwm, T * preg, int const baseline_address )
+        void read_fw_register( hw_monitor & hwm, T * preg, int const baseline_address )
         {
             command cmd( ivcam2::fw_cmd::MRD, baseline_address, baseline_address + sizeof( T ) );
             auto res = hwm.send( cmd );
@@ -266,10 +266,10 @@ namespace librealsense
             using namespace std;
 
             auto table = reinterpret_cast<const T*>(raw_data.data());
-            auto expected_size = table->get_expected_size();
-            if (raw_data.size() < expected_size)
+
+            if (raw_data.size() < sizeof(T))
             {
-                throw invalid_value_exception(to_string() << "Calibration data invalid, buffer too small : expected " << expected_size << " , actual: " << raw_data.size());
+                throw invalid_value_exception(to_string() << "Calibration data invald, buffer too small : expected " << sizeof(T) << " , actual: " << raw_data.size());
             }
 
             return table;
@@ -317,7 +317,7 @@ namespace librealsense
             uint16_t reserved16;
             uint8_t reserved8;
             uint8_t num_of_resolutions;
-            intrinsic_per_resolution intrinsic_resolution[MAX_NUM_OF_DEPTH_RESOLUTIONS]; //Dynamic number of entries according to num of resolutions
+            intrinsic_per_resolution intrinsic_resolution[NUM_OF_DEPTH_RESOLUTIONS]; //Dynamic number of entries according to num of resolutions
         };
 
         struct orientation
@@ -333,18 +333,6 @@ namespace librealsense
         {
             orientation orient;
             resolutions_depth resolution;
-
-            // This function use the value inside the struct "num_of_resolutions" to calculate the expected size of the intrinsics table buffer recieved from the firmware.
-            // Note: call this function only with real values inside the struct.            
-            size_t get_expected_size() const 
-            {
-                size_t expected_size(0);
-
-                // Get full maximum size of the resolution array and deduct the unused resolutions size from it.
-                expected_size += sizeof(*this);
-                expected_size -= (MAX_NUM_OF_DEPTH_RESOLUTIONS - this->resolution.num_of_resolutions) * sizeof(intrinsic_per_resolution);
-                return expected_size;
-            }
         };
 
         struct resolutions_rgb
@@ -352,7 +340,7 @@ namespace librealsense
             uint16_t reserved16;
             uint8_t reserved8;
             uint8_t num_of_resolutions;
-            pinhole_camera_model intrinsic_resolution[MAX_NUM_OF_RGB_RESOLUTIONS]; //Dynamic number of entries according to num of resolutions
+            pinhole_camera_model intrinsic_resolution[NUM_OF_RGB_RESOLUTIONS]; //Dynamic number of entries according to num of resolutions
         };
 
         struct rgb_common
@@ -365,20 +353,6 @@ namespace librealsense
         {
             rgb_common common;
             resolutions_rgb resolution;
-
-            // This function use the value inside the struct "num_of_resolutions"
-            // to calculate the struct utilize size got from the firmware raw intrinsics table data.
-            // Note: call this function only with real values inside the struct.
-            size_t get_expected_size() const
-            {
-                size_t expected_size(0);
-
-                // Get full maximum size of the resolution array and deduct the unused resolutions size from it.
-                expected_size += sizeof(*this);
-                expected_size -= (MAX_NUM_OF_RGB_RESOLUTIONS - this->resolution.num_of_resolutions) * sizeof(intrinsic_per_resolution);
-                return expected_size;
-            }
-
         };
 
         struct temperatures {
@@ -511,7 +485,7 @@ namespace librealsense
         class freefall_option : public bool_option
         {
         public:
-            freefall_option( hw_monitor& hwm, bool enabled = true );
+            freefall_option( hw_monitor & hwm, bool enabled = true );
 
             bool is_enabled() const override { return _enabled; }
             virtual void enable( bool = true );

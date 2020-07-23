@@ -213,7 +213,7 @@ namespace librealsense
         if( _fw_version >= firmware_version( "1.3.12.0" ) )
         {
             // TODO may not need auto-cal if there's no color sensor, like on the rs500...
-            _autocal = std::make_shared< ac_trigger >( *this, _hw_monitor );
+            _autocal = std::make_shared< ac_trigger >( *this, *_hw_monitor );
 
             // Have the auto-calibration mechanism notify us when calibration has finished
             _autocal->register_callback(
@@ -375,19 +375,9 @@ namespace librealsense
 
     void l500_device::trigger_device_calibration( rs2_calibration_type type )
     {
-        ac_trigger::calibration_type calibration_type;
-        switch( type )
-        {
-        case RS2_CALIBRATION_AUTO_DEPTH_TO_RGB:
-            calibration_type = ac_trigger::calibration_type::AUTO;
-            break;
-        case RS2_CALIBRATION_MANUAL_DEPTH_TO_RGB:
-            calibration_type = ac_trigger::calibration_type::MANUAL;
-            break;
-        default:
+        if( type != RS2_CALIBRATION_DEPTH_TO_RGB )
             throw not_implemented_exception(
                 to_string() << "unsupported calibration type (" << type << ")" );
-        }
 
         if( !_autocal )
             throw not_implemented_exception(
@@ -398,7 +388,7 @@ namespace librealsense
             throw wrong_api_call_sequence_exception( "Camera Accuracy Health is already active" );
 
         AC_LOG( INFO, "Camera Accuracy Health has been manually triggered" );
-        _autocal->trigger_calibration( calibration_type );
+        _autocal->trigger_calibration();
     }
 
     void l500_device::force_hardware_reset() const
