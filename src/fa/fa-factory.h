@@ -37,7 +37,7 @@ namespace librealsense
 
         platform::backend_device_group get_device_data() const override
         {
-            return platform::backend_device_group();
+            return platform::backend_device_group(_uvcs);
         }
 
     private:

@@ -517,6 +517,9 @@ namespace librealsense
             backend_device_group(const std::vector<usb_device_info>& usb_devices)
                 :usb_devices(usb_devices) {}
 
+            backend_device_group(const std::vector<uvc_device_info>& uvc_devices)
+                :uvc_devices(uvc_devices) {}
+
             backend_device_group(const std::vector<uvc_device_info>& uvc_devices, const std::vector<usb_device_info>& usb_devices)
                 :uvc_devices(uvc_devices), usb_devices(usb_devices) {}
 
