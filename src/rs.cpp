@@ -3119,7 +3119,7 @@ rs2_firmware_log_message* rs2_create_fw_log_message(rs2_device* dev, rs2_error**
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev)
 
-int rs2_get_fw_log(rs2_device* dev, rs2_firmware_log_message** fw_log_msg, rs2_error** error) BEGIN_API_CALL
+int rs2_get_fw_log(rs2_device* dev, rs2_firmware_log_message* fw_log_msg, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(fw_log_msg);
@@ -3129,13 +3129,13 @@ int rs2_get_fw_log(rs2_device* dev, rs2_firmware_log_message** fw_log_msg, rs2_e
     bool result = fw_loggerable->get_fw_log(binary_data);
     if (result)
     {
-        (*(*fw_log_msg)->firmware_log_binary_data.get()) = binary_data;
+        *(fw_log_msg->firmware_log_binary_data).get() = binary_data;
     }
     return result? 1 : 0;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, dev, fw_log_msg)
 
-int rs2_get_flash_log(rs2_device* dev, rs2_firmware_log_message** fw_log_msg, rs2_error** error)BEGIN_API_CALL
+int rs2_get_flash_log(rs2_device* dev, rs2_firmware_log_message* fw_log_msg, rs2_error** error)BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(fw_log_msg);
@@ -3145,7 +3145,7 @@ int rs2_get_flash_log(rs2_device* dev, rs2_firmware_log_message** fw_log_msg, rs
     bool result = fw_loggerable->get_flash_log(binary_data);
     if (result)
     {
-        (*(*fw_log_msg)->firmware_log_binary_data.get()) = binary_data;
+        *(fw_log_msg->firmware_log_binary_data).get() = binary_data;
     }
     return result ? 1 : 0;
 }

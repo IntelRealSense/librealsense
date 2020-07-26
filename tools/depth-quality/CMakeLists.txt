@@ -19,6 +19,13 @@ set( ELPP_FILES
     
 include(../../common/CMakeLists.txt)
 
+SET(DELAYED 
+    realsense2d.dll
+    realsense2-gld.dll
+    realsense2.dll
+    realsense2-gl.dll
+)
+
 if(BUILD_GRAPHICAL_EXAMPLES)
     set(RS_QUALITY_TOOL_CPP
         ${COMMON_SRC}
@@ -70,6 +77,12 @@ if(BUILD_GRAPHICAL_EXAMPLES)
                                              ../../third-party/tclap/include
                                              ../../third-party/tinyfiledialogs
                                              ${CMAKE_CURRENT_SOURCE_DIR}/res/)
+
+        #list(TRANSFORM DELAYED PREPEND " /DELAYLOAD:")
+        PREPEND(DELAYED " /DELAYLOAD:" ${DELAYED})
+        #infoValue(DELAYED)
+        string(REPLACE ";" " " LD_FLAGS_STR "${DELAYED}")
+        set_target_properties(rs-depth-quality PROPERTIES LINK_FLAGS "${LD_FLAGS_STR}")
 
     else()
         add_executable(rs-depth-quality 

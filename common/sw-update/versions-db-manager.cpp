@@ -85,7 +85,7 @@ namespace rs2
 
             // Look for the required version
             auto res = std::find_if(_server_versions_vec.begin(), _server_versions_vec.end(),
-                [this, version, component_str, platform](std::unordered_map<std::string, std::string> version_map)
+                [version, component_str, platform](std::unordered_map<std::string, std::string> version_map)
             {
                 return (versions_db_manager::version(version_map["version"]) == version && component_str == version_map["component"] && (platform == version_map["platform"] || version_map["platform"] == "*"));
             });

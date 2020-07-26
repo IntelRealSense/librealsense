@@ -17,26 +17,6 @@
 using namespace librealsense;
 namespace impl = librealsense::algo::depth_to_rgb_calibration;
 
-
-static rs2_extrinsics fix_extrinsics( rs2_extrinsics extr, float by )
-{
-    // The extrinsics we get are based in meters, and AC algo is based in millimeters
-    // NOTE that the scaling here needs to be accompanied by the same scaling of the depth
-    // units!
-    extr.translation[0] *= by;
-    extr.translation[1] *= by;
-    extr.translation[2] *= by;
-    // This transposing is absolutely mandatory because our internal algorithms are
-    // written with a transposed matrix in mind! (see rs2_transform_point_to_point)
-    // This is the opposite transpose to the one we do with the extrinsics we get
-    // from the camera...
-    std::swap( extr.rotation[1], extr.rotation[3] );
-    std::swap( extr.rotation[2], extr.rotation[6] );
-    std::swap( extr.rotation[5], extr.rotation[7] );
-    return extr;
-}
-
-
 depth_to_rgb_calibration::depth_to_rgb_calibration(
     rs2::frame depth,
     rs2::frame ir,
@@ -46,7 +26,7 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     algo::depth_to_rgb_calibration::algo_calibration_registers const & cal_regs
 )
     : _intr( yuy.get_profile().as< rs2::video_stream_profile >().get_intrinsics() )
-    , _extr( fix_extrinsics( depth.get_profile().get_extrinsics_to( yuy.get_profile() ), 1000 ))
+    , _extr(to_raw_extrinsics( depth.get_profile().get_extrinsics_to( yuy.get_profile() )))
     , _from( depth.get_profile().get()->profile )
     , _to( yuy.get_profile().get()->profile )
 {
@@ -96,9 +76,12 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     {
         std::string dir( dir_ );
         dir += std::to_string( depth.get_frame_number() );
+        
 #ifdef _WIN32
+        dir += "\\";
         auto status = _mkdir( dir.c_str() );
 #else
+        dir += "/";
         auto status = mkdir( dir.c_str(), 0700 );
 #endif
         if( status == 0 )
@@ -168,7 +151,7 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
         AC_LOG( DEBUG, "... optimization successful!" );
         _intr = _algo.get_calibration().get_intrinsics();
         _intr.model = RS2_DISTORTION_INVERSE_BROWN_CONRADY; //restore LRS model 
-        _extr = fix_extrinsics( _algo.get_calibration().get_extrinsics(), 0.001f );
+        _extr = from_raw_extrinsics( _algo.get_calibration().get_extrinsics() );
         _dsm_params = _algo.get_dsm_params();
         debug_calibration( "new" );
         return RS2_CALIBRATION_SUCCESSFUL;
@@ -183,13 +166,7 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
 
 void depth_to_rgb_calibration::debug_calibration( char const * prefix )
 {
-    AC_LOG( DEBUG, AC_F_PREC
-                       << prefix << " intr[ "
-                       << _intr.width << "x" << _intr.height
-                       << "  ppx: " << _intr.ppx << ", ppy: " << _intr.ppy << ", fx: " << _intr.fx
-                       << ", fy: " << _intr.fy << ", model: " << int( _intr.model ) << " coeffs["
-                       << _intr.coeffs[0] << ", " << _intr.coeffs[1] << ", " << _intr.coeffs[2]
-                       << ", " << _intr.coeffs[3] << ", " << _intr.coeffs[4] << "] ]" );
+    AC_LOG( DEBUG, AC_F_PREC << prefix << _intr );
     AC_LOG( DEBUG, AC_F_PREC << prefix << " extr" << _extr );
     AC_LOG( DEBUG, AC_F_PREC << prefix << " dsm" << _dsm_params );
 }

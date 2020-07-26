@@ -207,14 +207,12 @@ namespace ivcam2 {
     void ac_trigger::reset_option::set( float value )
     {
         //bool_option::set( value );
-        if( _autocal->_to_profile )
-        {
-            // Reset the calibration so we can do it all over again
-            if( auto color_sensor = _autocal->_dev.get_color_sensor() )
-                color_sensor->reset_calibration();
-            _autocal->_dev.get_depth_sensor().reset_calibration();
-            _autocal->_dev.notify_of_calibration_change( RS2_CALIBRATION_SUCCESSFUL );
-        }
+
+        // Reset the calibration so we can do it all over again
+        if (auto color_sensor = _autocal->_dev.get_color_sensor())
+            color_sensor->reset_calibration();
+        _autocal->_dev.get_depth_sensor().reset_calibration();
+        _autocal->_dev.notify_of_calibration_change( RS2_CALIBRATION_SUCCESSFUL );
         _record_action( *this );
     }
 
@@ -371,7 +369,6 @@ namespace ivcam2 {
         : _hwm( hwm )
         , _dev( dev )
     {
-        bool to_stdout = true;
         static ac_logger one_logger(
             env_var< bool >( "RS2_AC_LOG_TO_STDOUT", false )  // log to stdout
             );

@@ -363,7 +363,7 @@ rs2_firmware_log_message* rs2_create_fw_log_message(rs2_device* dev, rs2_error**
 * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return                   true for success, false for failure - failure happens if no firmware log was sent by the hardware monitor
 */
-int rs2_get_fw_log(rs2_device* dev, rs2_firmware_log_message** fw_log_msg, rs2_error** error);
+int rs2_get_fw_log(rs2_device* dev, rs2_firmware_log_message* fw_log_msg, rs2_error** error);
 
 /**
 * \brief Gets RealSense flash log - this is a fw log that has been written in the device during the previous shutdown of the device
@@ -372,7 +372,7 @@ int rs2_get_fw_log(rs2_device* dev, rs2_firmware_log_message** fw_log_msg, rs2_e
 * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return                   true for success, false for failure - failure happens if no firmware log was sent by the hardware monitor
 */
-int rs2_get_flash_log(rs2_device* dev, rs2_firmware_log_message** fw_log_msg, rs2_error** error);
+int rs2_get_flash_log(rs2_device* dev, rs2_firmware_log_message* fw_log_msg, rs2_error** error);
 
 /**
 * Delete RealSense firmware log message
@@ -447,12 +447,6 @@ void rs2_delete_fw_log_parsed_message(rs2_firmware_log_parsed_message* fw_log_pa
 * \return                       true for success, false for failure - failure happens if message could not be parsed
 */
 int rs2_parse_firmware_log(rs2_device* dev, rs2_firmware_log_message* fw_log_msg, rs2_firmware_log_parsed_message* parsed_msg, rs2_error** error);
-
-/**
-* Delete RealSense firmware log parsed message
-* \param[in]  device    Realsense firmware log parsed message to delete
-*/
-void rs2_delete_fw_log_parsed_message(rs2_firmware_log_parsed_message* fw_log_parsed_msg);
 
 /**
 * \brief Gets RealSense firmware log parsed message.

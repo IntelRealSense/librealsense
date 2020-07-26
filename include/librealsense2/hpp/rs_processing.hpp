@@ -428,7 +428,7 @@ namespace rs2
         * \param[in] depth - the depth frame to generate point cloud and texture.
         * \return points instance.
         */
-        points calculate(frame depth)
+        points calculate(frame depth) const
         {
             auto res = process(depth);
             if (res.as<points>())

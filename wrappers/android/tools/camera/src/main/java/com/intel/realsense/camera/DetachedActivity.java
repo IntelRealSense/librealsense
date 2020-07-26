@@ -161,6 +161,9 @@ public class DetachedActivity extends AppCompatActivity {
                     // launch preview activity and keep it alive
                     // the activity is single top instance, can be killed later the same instance
                     // to prevent issues with multiple instances
+                    
+                    finish();
+                    
                     Intent intent = new Intent(this, PreviewActivity.class);
                     intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                     intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);

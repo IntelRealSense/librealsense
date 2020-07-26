@@ -101,8 +101,9 @@ namespace librealsense
             case hwm_Success:
                 if( data.size() != expected_size )
                     throw std::runtime_error( to_string()
-                        << "READ_TABLE data size received= " << data.size()
-                        << " (expected " << expected_size << ")" );
+                                              << "READ_TABLE (0x" << std::hex << table_id
+                                              << std::dec << ") data size received= " << data.size()
+                                              << " (expected " << expected_size << ")" );
                 if( pheader )
                     *pheader = *(table_header *)data.data();
                 if( ptable )
@@ -119,8 +120,38 @@ namespace librealsense
                 // fall-thru!
                 
             default:
-                LOG_DEBUG( "Failed to get read FW table 0x" << std::hex << table_id );
+                LOG_DEBUG( "Failed to read FW table 0x" << std::hex << table_id );
                 throw invalid_value_exception( hwmon_error_string( cmd, response ) );
+            }
+        }
+
+        // Write a table to firmware
+        template< typename T >
+        void write_fw_table( hw_monitor & hwm, uint16_t const table_id, T const & table )
+        {
+            command cmd( fw_cmd::WRITE_TABLE, 0 );
+            cmd.data.resize( sizeof( table_header ) + sizeof( table ) );
+
+            table_header * h = (table_header *)cmd.data.data();
+            h->major = 1;
+            h->minor = 0;
+            h->table_id = table_id;
+            h->table_size = sizeof( T );
+            h->reserved = 0xFFFFFFFF;
+            h->crc32 = calc_crc32( (byte *)&table, sizeof( table ) );
+
+            memcpy( cmd.data.data() + sizeof( table_header ), &table, sizeof( table ) );
+            
+            hwmon_response response;
+            hwm.send( cmd, &response );
+            switch( response )
+            {
+            case hwm_Success:
+                break;
+
+            default:
+                LOG_DEBUG( "Failed to write FW table 0x" << std::hex << table_id << " " << sizeof( table ) << " bytes: " );
+                throw invalid_value_exception( to_string() << "Failed to write FW table 0x" << std::hex << table_id << ": " << hwmon_error_string( cmd, response ));
             }
         }
 
@@ -147,6 +178,36 @@ namespace librealsense
 
             ac_depth_results() {}
             ac_depth_results( rs2_dsm_params const & dsm_params ) : params( dsm_params ) {}
+        };
+
+        struct rgb_calibration_table
+        {
+            static const uint16_t table_id = 0x310;        // in flash
+            static const uint16_t eeprom_table_id = 0x10;  // factory calibration - read-only
+
+            uint16_t version;
+            uint16_t type;
+            uint32_t timestamp;
+            uint16_t width;
+            uint16_t height;
+            uint16_t h_offset;
+            uint16_t v_offset;
+            struct /*intrinsics*/
+            {
+                float fx;  // focal length in X, normalize by [-1 1]
+                float fy;  // focal length in Y, normalize by [-1 1]
+                float px;  // Principal point in x, normalize by [-1 1]
+                float py;  // Principal point in x, normalize by [-1 1]
+                float sheer;
+                float d[5];  // RGB forward distortion parameters (k1, k2, p1, p2, k3), brown model
+            } intr;
+            rs2_extrinsics extr;
+            byte reserved[8];
+
+            void set_intrinsics( rs2_intrinsics const & );
+            rs2_intrinsics get_intrinsics() const;
+            rs2_extrinsics const & get_extrinsics() const { return extr; }
+            void update_write_fields();
         };
 #pragma pack(pop)
 

@@ -53,6 +53,12 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     ../../common/os.cpp
 )
 
+SET(DELAYED 
+    realsense2d.dll
+    realsense2-gld.dll
+    realsense2.dll
+    realsense2-gl.dll
+)
 
 if(DEFINED OpenCV_DIR  AND  IS_DIRECTORY ${OpenCV_DIR})
 
@@ -61,6 +67,17 @@ if(DEFINED OpenCV_DIR  AND  IS_DIRECTORY ${OpenCV_DIR})
     get_property(deps VARIABLE PROPERTY DEPENDENCIES)
     set(DEPENDENCIES ${deps} ${OpenCV_LIBS})
     include_directories( ../../wrappers/opencv )
+
+    list(APPEND DELAYED
+        opencv_highgui341.dll
+        opencv_core341.dll
+        opencv_imgproc341.dll
+        opencv_dnn341.dll
+        opencv_highgui341d.dll
+        opencv_core341d.dll
+        opencv_imgproc341d.dll
+        opencv_dnn341d.dll
+    )
 
 endif()
 if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
@@ -105,6 +122,18 @@ if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
     dl_vino_model( "age-gender-recognition-retail-0013.bin"  "206f6e97e53cd600fcac7d31e1c56accbbe461b9" )
     dl_vino_model( "age-gender-recognition-retail-0013.xml"  "2654d7f1638d575b8d1886f8128deae2ea79ee55" )
 
+    list(APPEND DELAYED
+        cpu_extension.dll
+        inference_engine.dll
+        libmmd.dll
+        mkl_tiny_tbb.dll
+        MKLDNNPlugin.dll
+        opencv_core412.dll
+        opencv_imgproc412.dll
+        svml_dispmd.dll
+        tbb.dll
+        tbbmalloc.dll
+    )
 endif()
 
 # config-ui
@@ -132,6 +161,11 @@ if(WIN32)
         ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc)
 
     source_group("OpenVINO" FILES ${OPENVINO_FILES})
+
+    #list(TRANSFORM DELAYED PREPEND " /DELAYLOAD:")  - Requires cmake v3.12
+    PREPEND(DELAYED " /DELAYLOAD:" ${DELAYED})
+    string(REPLACE ";" " " LD_FLAGS_STR "${DELAYED}")
+    set_target_properties(realsense-viewer PROPERTIES LINK_FLAGS "${LD_FLAGS_STR}")
 
 else()
     add_executable(realsense-viewer

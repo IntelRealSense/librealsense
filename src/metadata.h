@@ -160,6 +160,7 @@ namespace librealsense
         fps_attribute                   = (1u << 6),
         trigger_attribute               = (1u << 7),
         calibration_count_attribute     = (1u << 8),
+        gpio_input_data_attribute       = (1u << 9),
     };
 
     /**\brief md_stat_attributes - bit mask to find active attributes,
@@ -460,7 +461,8 @@ namespace librealsense
                                               2 external trigger (depth only)
                                     Byte <1>  configured delay (depth only)*/
         uint16_t    calibration_count;
-        uint8_t     reserved[6];
+        uint8_t     gpioInputData;
+        uint8_t     reserved[5];
     };
 
     REGISTER_MD_TYPE(md_configuration, md_type::META_DATA_INTEL_CONFIGURATION_ID)

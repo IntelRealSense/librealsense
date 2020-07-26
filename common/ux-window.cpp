@@ -21,6 +21,11 @@
 
 #include <iostream>
 
+void glfw_error_callback(int error, const char* description)
+{
+    std::cerr << "GLFW Driver Error: " << description << "\n";
+}
+
 namespace rs2
 {
     void GLAPIENTRY MessageCallback(GLenum source,
@@ -75,7 +80,8 @@ namespace rs2
         config_file::instance().set_default(configurations::viewer::hwlogger_xml, "./HWLoggerEvents.xml");
 
 #ifdef __APPLE__
-        config_file::instance().set_default(configurations::performance::font_oversample, 8);
+
+        config_file::instance().set_default(configurations::performance::font_oversample, 2);
         config_file::instance().set_default(configurations::performance::enable_msaa, true);
         config_file::instance().set_default(configurations::performance::msaa_samples, 4);
         // On Mac-OS, mixing OpenGL 2 with OpenGL 3 is not supported by the driver
@@ -203,6 +209,8 @@ namespace rs2
 
         if (!glfwInit())
             exit(1);
+
+        glfwSetErrorCallback(glfw_error_callback);
 
         _hand_cursor = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
         _cross_cursor = glfwCreateStandardCursor(GLFW_CROSSHAIR_CURSOR);

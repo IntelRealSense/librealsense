@@ -28,7 +28,7 @@ class single_consumer_queue
     std::atomic<bool> _was_flushed;
 public:
     explicit single_consumer_queue<T>(unsigned int cap = QUEUE_MAX_SIZE)
-        : _queue(), _mutex(), _deq_cv(), _enq_cv(), _cap(cap), _need_to_flush(false), _was_flushed(false), _accepting(true)
+        : _queue(), _mutex(), _deq_cv(), _enq_cv(), _cap(cap), _accepting(true), _need_to_flush(false), _was_flushed(false)
     {}
 
     void enqueue(T&& item)
@@ -418,7 +418,7 @@ class watchdog
 {
 public:
     watchdog(std::function<void()> operation, uint64_t timeout_ms) :
-            _operation(std::move(operation)), _timeout_ms(timeout_ms)
+            _timeout_ms(timeout_ms), _operation(std::move(operation))
     {
         _watcher = std::make_shared<active_object<>>([this](dispatcher::cancellable_timer cancellable_timer)
         {
@@ -449,7 +449,6 @@ private:
     uint64_t _timeout_ms;
     bool _kicked = false;
     bool _running = false;
-    bool _blocker = true;
     std::function<void()> _operation;
     std::shared_ptr<active_object<>> _watcher;
 };

@@ -28,8 +28,6 @@ namespace librealsense
 
         std::vector<tagged_profile> get_profiles_tags() const override;
 
-        void update_intrinsics( const stream_profile& profile, rs2_intrinsics const& intr );
-
     protected:
         std::shared_ptr<stream_interface> _color_stream;
 

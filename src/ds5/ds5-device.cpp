@@ -693,12 +693,12 @@ namespace librealsense
                     "Set the power level of the LED, with 0 meaning LED off"));
         }
 
-        //if ((pid == RS405_PID || pid == RS455_PID) && _fw_version >= firmware_version("5.12.4.0"))
-        //{
-        //    depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
-        //        std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_THERMAL_COMPENSATION,
-        //            "Toggle Depth Sensor Thermal Compensation"));
-        //}
+        if ((pid == RS405_PID || pid == RS455_PID) && _fw_version >= firmware_version("5.12.7.0"))
+        {
+            depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
+                std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_THERMAL_COMPENSATION,
+                    "Toggle Depth Sensor Thermal Compensation"));
+        }
 
         if (_fw_version >= firmware_version("5.6.3.0"))
         {
@@ -863,6 +863,11 @@ namespace librealsense
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_WIDTH, make_attribute_parser(&md_configuration::width, md_configuration_attributes::width_attribute, md_prop_offset));
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_HEIGHT, make_attribute_parser(&md_configuration::height, md_configuration_attributes::height_attribute, md_prop_offset));
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_ACTUAL_FPS,  std::make_shared<ds5_md_attribute_actual_fps> ());
+
+        if (_fw_version >= firmware_version("5.12.7.0"))
+        {
+            depth_sensor.register_metadata(RS2_FRAME_METADATA_GPIO_INPUT_DATA, make_attribute_parser(&md_configuration::gpioInputData, md_configuration_attributes::gpio_input_data_attribute, md_prop_offset));
+        }
 
         register_info(RS2_CAMERA_INFO_NAME, device_name);
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, optic_serial);

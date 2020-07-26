@@ -19,6 +19,13 @@ namespace librealsense
 {
     namespace ivcam2
     {
+        const int ac_depth_results::table_id;
+        const uint16_t ac_depth_results::this_version;
+        
+        const uint16_t rgb_calibration_table::table_id;
+        const uint16_t rgb_calibration_table::eeprom_table_id;
+
+
         rs2_extrinsics get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data)
         {
             if (raw_data.size() < sizeof(pose))
@@ -28,17 +35,7 @@ namespace librealsense
             auto res = *(rs2_extrinsics*)raw_data.data();
             AC_LOG( DEBUG, "raw extrinsics data from camera:\n" << std::setprecision(15) << res );
             
-            float trans_scale = 0.001f; // Convert units from mm to meter
-            res.translation[0] *= trans_scale;
-            res.translation[1] *= trans_scale;
-            res.translation[2] *= trans_scale;
-
-            // This transposing is absolutely mandatory because our internal algorithms are
-            // written with a transposed matrix in mind! (see rs2_transform_point_to_point)
-            std::swap( res.rotation[1], res.rotation[3] );
-            std::swap( res.rotation[2], res.rotation[6] );
-            std::swap( res.rotation[5], res.rotation[7] );
-            return res;
+            return from_raw_extrinsics(res);
         }
 
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
