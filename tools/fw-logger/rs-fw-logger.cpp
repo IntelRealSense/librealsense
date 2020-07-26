@@ -127,10 +127,12 @@ int main(int argc, char* argv[])
                     else
                     {
                         stringstream sstr;
-                        sstr << log_message.get_timestamp();
-                        sstr << " " << log_message.get_severity_str();
-                        sstr << "  FW_Log_Data:";
+                        sstr << datetime_string() << "  FW_Log_Data:";
+                        //sstr << log_message.get_timestamp();
+                        //sstr << " " << log_message.get_severity_str();
+                        //sstr << "  FW_Log_Data:";
                         std::vector<uint8_t> msg_data = log_message.data();
+                        size_t sizeMsg = msg_data.size();
                         for (int i = 0; i < msg_data.size(); ++i)
                         {
                         sstr << char2hex(msg_data[i]) << " ";
