@@ -216,6 +216,7 @@ namespace librealsense
             CASE(FISHEYE_SENSOR)
             CASE(DEPTH_HUFFMAN_DECODER)
             CASE(SERIALIZABLE)
+            CASE(F450_SENSOR)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

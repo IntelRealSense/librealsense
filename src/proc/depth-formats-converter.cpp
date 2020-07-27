@@ -93,10 +93,27 @@ namespace librealsense
         // Put the 10 bit into the msb of uint16_t
         for (int i = 0; i < count; i++, from += 5) // traverse macro-pixels
         {
-            *to++ = ((from[0] << 2) | (from[4] & 3)) << 6;
-            *to++ = ((from[1] << 2) | ((from[4] >> 2) & 3)) << 6;
-            *to++ = ((from[2] << 2) | ((from[4] >> 4) & 3)) << 6;
-            *to++ = ((from[3] << 2) | ((from[4] >> 6) & 3)) << 6;
+            *to++ = ( (from[0] << 2) | (from[4] & 3) ) << 6;
+            *to++ = ( (from[1] << 2) | ((from[4] >> 2) & 3) ) << 6;
+            *to++ = ( (from[2] << 2) | ((from[4] >> 4) & 3) ) << 6;
+            *to++ = ( (from[3] << 2) | ((from[4] >> 6) & 3) ) << 6;
+        }
+    }
+
+    //same method as above, but the 6 zeros are in MSB
+    void unpack_raw10p_to_raw16_lsb(byte* const dest[], const byte* source, int width, int height, int actual_size)
+    {
+        auto count = width * height / 4; // num of pixels
+        uint8_t* from = (uint8_t*)(source);
+        uint16_t* to = (uint16_t*)(dest[0]);
+        
+        // Put the 10 bit into the msb of uint16_t
+        for (int i = 0; i < count; i++, from += 5) // traverse macro-pixels
+        {
+            *to++ = ((from[0] << 2) | (from[4] & 3));
+            *to++ = ((from[1] << 2) | ((from[4] >> 2) & 3));
+            *to++ = ((from[2] << 2) | ((from[4] >> 4) & 3));
+            *to++ = ((from[3] << 2) | ((from[4] >> 6) & 3));
         }
     }
 
@@ -128,7 +145,7 @@ namespace librealsense
             copy_raw10(d, s, width, height, actual_size);
             break;
         case RS2_FORMAT_RAW16:
-            unpack_y10bpack(d, s, width, height, actual_size);
+            unpack_raw10p_to_raw16_lsb(d, s, width, height, actual_size);
             break;
         default:
             LOG_ERROR("Unsupported format for SRGGB10P unpacking.");

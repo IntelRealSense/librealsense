@@ -1041,6 +1041,9 @@ namespace rs2
             }
             else
             {
+                // needed for rendering of raw16 when data is in LSB
+                uint16_t* data_16 = (uint16_t*)data;
+
                 switch (format)
                 {
                 case RS2_FORMAT_ANY:
@@ -1137,8 +1140,13 @@ namespace rs2
                     }
                     break;
                 }
-                case RS2_FORMAT_Y16:
                 case RS2_FORMAT_RAW16:
+                    for (int i = 0; i < frame.get_data_size() / 2; ++i) {
+                        data_16[i] = data_16[i] << 6;
+                    }
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, (void*)data_16);
+                    break;
+                case RS2_FORMAT_Y16:
                 case RS2_FORMAT_Y10BPACK:
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
                     break;
