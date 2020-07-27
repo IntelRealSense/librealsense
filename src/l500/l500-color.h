@@ -36,11 +36,11 @@ namespace librealsense
 
         uint8_t _color_device_idx = -1;
 
-        lazy<std::vector<uint8_t>> _color_intrinsics_table_raw;
+        lazy<ivcam2::intrinsic_rgb> _color_intrinsics_table;
         lazy<std::vector<uint8_t>> _color_extrinsics_table_raw;
         std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
 
-        std::vector<uint8_t> get_raw_intrinsics_table() const;
+        ivcam2::intrinsic_rgb get_intrinsics_table() const;
         std::vector<uint8_t> get_raw_extrinsics_table() const;
     };
 

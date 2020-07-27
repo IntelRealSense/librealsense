@@ -29,32 +29,44 @@ namespace librealsense
 {
     using namespace ivcam2;
 
-    std::vector<uint8_t> l500_depth::get_raw_calibration_table() const
+    ivcam2::intrinsic_depth l500_depth::get_calibration_table() const
     {
-        static const char* fw_ver = "1.2.11.0";
+        // Get RAW data from firmware
+        std::vector< uint8_t > response_vec = _hw_monitor->send( command{ DPT_INTRINSICS_FULL_GET } );
 
-        if(_fw_version >= firmware_version(fw_ver))
-            return _hw_monitor->send(command{ DPT_INTRINSICS_FULL_GET });
-        else
+        if (response_vec.size() == 0)
+            throw invalid_value_exception("Calibration data invalid,buffer size is zero");
+
+        auto resolutions_depth_table_ptr = reinterpret_cast<const ivcam2::intrinsic_depth *>(response_vec.data());
+
+        // Get full maximum size of the resolution array and deduct the unused resolutions size from it
+        size_t expected_size = sizeof( ivcam2::intrinsic_depth ) - 
+                                     ( ( MAX_NUM_OF_DEPTH_RESOLUTIONS
+                                     - resolutions_depth_table_ptr->resolution.num_of_resolutions )
+                                     * sizeof( intrinsic_per_resolution ) );
+
+        // Validate table size
+        if (expected_size > response_vec.size())
         {
-            //WA untill fw will fix DPT_INTRINSICS_GET command
-            command cmd_fx(0x01, 0xa00e0804, 0xa00e0808);
-            command cmd_fy(0x01, 0xa00e080c, 0xa00e0810);
-            command cmd_cx(0x01, 0xa00e0814, 0xa00e0818);
-            command cmd_cy(0x01, 0xa00e0818, 0xa00e081c);
-            auto fx = _hw_monitor->send(cmd_fx); // CBUFspare_000
-            auto fy = _hw_monitor->send(cmd_fy); // CBUFspare_002
-            auto cx = _hw_monitor->send(cmd_cx); // CBUFspare_004
-            auto cy = _hw_monitor->send(cmd_cy); // CBUFspare_005
-
-            std::vector<uint8_t> vec;
-            vec.insert(vec.end(), fx.begin(), fx.end());
-            vec.insert(vec.end(), cx.begin(), cx.end());
-            vec.insert(vec.end(), fy.begin(), fy.end());
-            vec.insert(vec.end(), cy.begin(), cy.end());
-
-            return vec;
+            throw invalid_value_exception(
+                to_string() << "Calibration data invalid, buffer too small : expected "
+                            << expected_size << " , actual: " << response_vec.size() );
         }
+
+        // Set a new memory allocated intrinsics struct (Full size 5 resolutions)
+        // Copy the relevant data from the dynamic resolution received from the FW
+        ivcam2::intrinsic_depth  resolutions_depth_table_output;
+        resolutions_depth_table_output.orient = resolutions_depth_table_ptr->orient;
+        resolutions_depth_table_output.resolution.num_of_resolutions = resolutions_depth_table_ptr->resolution.num_of_resolutions;
+        resolutions_depth_table_output.resolution.reserved16 = resolutions_depth_table_ptr->resolution.reserved16;
+        resolutions_depth_table_output.resolution.reserved8 = resolutions_depth_table_ptr->resolution.reserved8;
+
+        for (int i = 0; i < resolutions_depth_table_output.resolution.num_of_resolutions; ++i)
+        {
+            resolutions_depth_table_output.resolution.intrinsic_resolution[i] = resolutions_depth_table_ptr->resolution.intrinsic_resolution[i];
+        }
+
+        return resolutions_depth_table_output;
     }
 
     l500_depth::l500_depth(std::shared_ptr<context> ctx,
@@ -62,7 +74,7 @@ namespace librealsense
         :device(ctx, group),
         l500_device(ctx, group)
     {
-        _calib_table_raw = [this]() { return get_raw_calibration_table(); };
+        _calib_table = [this]() { return get_calibration_table(); };
 
         auto& depth_sensor = get_depth_sensor();
         auto& raw_depth_sensor = get_raw_depth_sensor();
@@ -293,8 +305,8 @@ namespace librealsense
     float l500_depth_sensor::get_depth_offset() const
     {
         using namespace ivcam2;
-        auto intrinsic = check_calib<intrinsic_depth>(*_owner->_calib_table_raw);
-        return intrinsic->orient.depth_offset;
+        auto & intrinsic = *_owner->_calib_table;
+        return intrinsic.orient.depth_offset;
     }
 
     rs2_time_t l500_timestamp_reader_from_metadata::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)

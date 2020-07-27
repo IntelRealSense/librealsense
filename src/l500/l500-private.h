@@ -9,8 +9,8 @@
 #include "core/extension.h"
 #include "fw-update/fw-update-unsigned.h"
 
-static const int NUM_OF_RGB_RESOLUTIONS = 5;
-static const int NUM_OF_DEPTH_RESOLUTIONS = 2;
+static const int MAX_NUM_OF_RGB_RESOLUTIONS = 5;
+static const int MAX_NUM_OF_DEPTH_RESOLUTIONS = 5; 
 
 namespace librealsense
 {
@@ -261,21 +261,6 @@ namespace librealsense
             { DFU_error,                    "DFU error" },
         };
 
-        template<class T>
-        const T* check_calib(const std::vector<uint8_t>& raw_data)
-        {
-            using namespace std;
-
-            auto table = reinterpret_cast<const T*>(raw_data.data());
-
-            if (raw_data.size() < sizeof(T))
-            {
-                throw invalid_value_exception(to_string() << "Calibration data invald, buffer too small : expected " << sizeof(T) << " , actual: " << raw_data.size());
-            }
-
-            return table;
-        }
-
 #pragma pack(push, 1)
         struct pinhole_model
         {
@@ -318,7 +303,7 @@ namespace librealsense
             uint16_t reserved16;
             uint8_t reserved8;
             uint8_t num_of_resolutions;
-            intrinsic_per_resolution intrinsic_resolution[NUM_OF_DEPTH_RESOLUTIONS]; //Dynamic number of entries according to num of resolutions
+            intrinsic_per_resolution intrinsic_resolution[MAX_NUM_OF_DEPTH_RESOLUTIONS]; //Dynamic number of entries according to num of resolutions
         };
 
         struct orientation
@@ -341,7 +326,7 @@ namespace librealsense
             uint16_t reserved16;
             uint8_t reserved8;
             uint8_t num_of_resolutions;
-            pinhole_camera_model intrinsic_resolution[NUM_OF_RGB_RESOLUTIONS]; //Dynamic number of entries according to num of resolutions
+            pinhole_camera_model intrinsic_resolution[MAX_NUM_OF_RGB_RESOLUTIONS]; //Dynamic number of entries according to num of resolutions
         };
 
         struct rgb_common
