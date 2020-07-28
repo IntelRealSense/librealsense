@@ -597,7 +597,7 @@ def main():
         #  1) if place the device flat on a table, facing up, positive z-axis points up, z-axis acceleration is around +1g
         #  2) facing down, positive z-axis points down, z-axis accleration would be around -1g
         #
-        buckets_labels = ["Mounting screw pointing down, device facing out", "Mounting screw pointing left, device facing out", "Mounting screw pointing up, device facing out", "Mounting screw pointing right, device facing out", "Viewing direction facing down", "Viewing direction facing up"]
+        buckets_labels = ["Mounting screw pointing down, device facing out", "Mounting screw pointing right, device facing out", "Mounting screw pointing up, device facing out", "Mounting screw pointing left, device facing out", "Viewing direction facing down", "Viewing direction facing up"]
 
         gyro_bais = np.zeros(3, np.float32)
         old_settings = None
