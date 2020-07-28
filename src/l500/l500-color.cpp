@@ -164,7 +164,7 @@ namespace librealsense
                 return get_color_stream_extrinsic(*_color_extrinsics_table_raw);
             } );
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_color_stream, _color_extrinsic);
-        register_stream_to_extrinsic_group(*_depth_stream, 0);
+        register_stream_to_extrinsic_group(*_color_stream, 0);
 
 
         _color_device_idx = add_sensor(create_color_device(ctx, color_devs_info));
