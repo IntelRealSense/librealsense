@@ -984,8 +984,6 @@ namespace ivcam2 {
                                                    cal_info, cal_regs,
                                                    should_continue );
 
-                    // If the user has this env var defined, then we write out logs and frames
-                    // to it NOTE: The var should end with a directory separator \ or /
                     std::string debug_dir = get_ac_logger().get_active_dir();
                     if( ! debug_dir.empty() )
                         algo.write_data_to( debug_dir );
