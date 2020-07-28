@@ -105,12 +105,15 @@ public:
 };
 
 
-static std::string now_string()
+// Returns the current date and time, with the chosen formatting
+// See format docs here: https://en.cppreference.com/w/cpp/chrono/c/strftime
+// %T = equivalent to "%H:%M:%S"
+static std::string now_string( char const * format_string = "%T" )
 {
     std::time_t now = std::time( nullptr );
     auto ptm = localtime( &now );
     char buf[256];
-    strftime( buf, sizeof( buf ), "%T", ptm );
+    strftime( buf, sizeof( buf ), format_string, ptm );
     return buf;
 }
 
@@ -484,12 +487,7 @@ namespace ivcam2 {
             {
                 path = dir_;
                 add_dir_sep( path );
-
-                std::time_t now = std::time( nullptr );
-                auto ptm = localtime( &now );
-                char buf[256];
-                strftime( buf, sizeof( buf ), "%y%m%d.%H%M%S", ptm );
-                path += buf;
+                path += now_string( "%y%m%d.%H%M%S" );
             }
             
             return path;
@@ -505,7 +503,7 @@ namespace ivcam2 {
 #ifdef _WIN32
             auto status = _mkdir( _active_dir.c_str() );
 #else
-            auto status = mkdir( dir.c_str(), 0700 );
+            auto status = mkdir( _active_dir.c_str(), 0700 ); // 0700 = user r/w/x
 #endif
 
             if( status != 0 )
