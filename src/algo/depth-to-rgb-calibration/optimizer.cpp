@@ -122,8 +122,11 @@ namespace
 std::string optimizer::settings::to_string() const
 {
     return librealsense::to_string()
-        << '[' << ( is_manual_trigger ? "MANUAL" : "AUTO" ) << ' '
-        << rs2_ambient_light_to_string( ambient ) << ' ' << hum_temp << "degC"
+        << '[' << ( is_manual_trigger ? "MANUAL" : "AUTO" ) << ' ' << hum_temp << "degC"
+        << " ambience="
+        << ( ambient == RS2_AMBIENT_LIGHT_NO_AMBIENT    ? "none/long"
+             : ambient == RS2_AMBIENT_LIGHT_LOW_AMBIENT ? "low/short"
+                                                        : "??" )
         << " gain=" << receiver_gain << ']';
 }
 
