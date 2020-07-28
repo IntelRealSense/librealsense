@@ -119,17 +119,23 @@ namespace
 }
 
 
+std::string optimizer::settings::to_string() const
+{
+    return librealsense::to_string()
+        << '[' << ( is_manual_trigger ? "MANUAL" : "AUTO" ) << ' '
+        << rs2_ambient_light_to_string( ambient ) << ' ' << hum_temp << "degC"
+        << " gain=" << receiver_gain << ']';
+}
+
+
 optimizer::optimizer( settings const & s )
     : _settings( s )
 {
-    if (_settings.is_manual_trigger)
-    {
+    AC_LOG( DEBUG, "Optimizer settings are " << _settings.to_string() );
+    if( _settings.is_manual_trigger )
         adjust_params_to_manual_mode();
-    }
     else
-    {
         adjust_params_to_auto_mode();
-    }
 }
 
 static std::vector< double > get_direction_deg(
@@ -1627,7 +1633,6 @@ void optimizer::adjust_params_to_apd_gain()
 
 void optimizer::adjust_params_to_manual_mode()
 {
-    AC_LOG( DEBUG, "Calibration is MANUAL" );
     _params.max_global_los_scaling_step = 0.005;
     _params.pix_per_section_depth_th = 0.01;
     _params.pix_per_section_rgb_th = 0.01;
@@ -1643,7 +1648,6 @@ void optimizer::adjust_params_to_manual_mode()
 
 void optimizer::adjust_params_to_auto_mode()
 {
-    AC_LOG( DEBUG, "Calibration is AUTO" );
     _params.max_global_los_scaling_step = 0.004;
     _params.pix_per_section_depth_th = 0.01;
     _params.pix_per_section_rgb_th = 0.01;

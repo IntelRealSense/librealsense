@@ -283,6 +283,8 @@ namespace depth_to_rgb_calibration {
             double hum_temp = 0.;
             rs2_ambient_light ambient = RS2_AMBIENT_LIGHT_NO_AMBIENT;
             int receiver_gain = 0;  // aka APD
+
+            std::string to_string() const;
         };
 #pragma pack(pop)
 

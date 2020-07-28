@@ -427,9 +427,8 @@ namespace librealsense
         {
             synthetic_sensor::open(requests);
             set_sensor_state(sensor_state::OWNED_BY_AUTO_CAL);
-            AC_LOG( INFO, "Start color sensor stream for calibration" );
+            AC_LOG( INFO, "Starting color sensor stream -- for calibration" );
             delayed_start( make_frame_callback( [&]( frame_holder fref ) {} ) );
-            AC_LOG( INFO, "Color sensor stream started" );
             return true;
         }
         if( ! is_streaming() )

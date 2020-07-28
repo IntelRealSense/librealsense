@@ -53,6 +53,8 @@ namespace librealsense
             return _last_successful_frame_data;
         }
 
+        void write_data_to( std::string const & dir );
+
         rs2_calibration_status optimize( std::function<void( rs2_calibration_status )> call_back = nullptr);
 
     private:

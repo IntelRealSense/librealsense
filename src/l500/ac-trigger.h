@@ -204,7 +204,7 @@ namespace ivcam2 {
         void schedule_next_time_trigger( std::chrono::seconds n_seconds = std::chrono::seconds( 0 ) );
         void schedule_next_temp_trigger();
         void cancel_current_calibration();
-        void set_not_active() { _n_cycles = 0; }
+        void set_not_active();
         void trigger_retry();
         void trigger_special_frame();
         void check_conditions();
@@ -223,6 +223,10 @@ namespace ivcam2 {
         bool check_color_depth_sync();
         void run_algo();
         void reset();
+
+        class ac_logger;
+        ac_logger & get_ac_logger();
+
     };
 
 

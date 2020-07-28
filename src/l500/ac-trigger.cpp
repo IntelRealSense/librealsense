@@ -9,6 +9,10 @@
 #include "algo/depth-to-rgb-calibration/debug.h"
 #include "log.h"
 
+#ifndef _WIN32
+#include <sys/stat.h>  // mkdir
+#endif
+
 
 template < class X > struct string_to {};
 
@@ -99,6 +103,17 @@ public:
 
     operator T() const { return _value; }
 };
+
+
+static std::string now_string()
+{
+    std::time_t now = std::time( nullptr );
+    auto ptm = localtime( &now );
+    char buf[256];
+    strftime( buf, sizeof( buf ), "%T", ptm );
+    return buf;
+}
+
 
 
 static int get_retry_sf_seconds()
@@ -274,17 +289,9 @@ namespace ivcam2 {
         std::shared_ptr <ac_trigger> get_ac() const { return _ac.lock(); }
         char const * get_name() const { return _name; }
 
-        static std::string now()
-        {
-            std::time_t now = std::time( nullptr );
-            auto ptm = localtime( &now );
-            char buf[256];
-            strftime( buf, sizeof( buf ), "%T", ptm );
-            return buf;
-        }
         static std::string _prefix( std::string const & name, unsigned id )
         {
-            return to_string() << "... " << now() << " " << name << ' ' << id << ": ";
+            return to_string() << "... " << now_string() << " " << name << ' ' << id << ": ";
         }
         std::string prefix() const
         {
@@ -415,9 +422,11 @@ namespace ivcam2 {
         If RS2_DEBUG_DIR is defined in the environment, we try to create a log file in there
         that has the name "<pid>.ac_log".
     */
-    class ac_logger : public rs2_log_callback
+    class ac_trigger::ac_logger : public rs2_log_callback
     {
-        std::ofstream _f;
+        std::ofstream _f_main;
+        std::ofstream _f_active;
+        std::string _active_dir;
         bool _to_stdout;
 
     public:
@@ -437,24 +446,105 @@ namespace ivcam2 {
             }
 #endif
 
-            auto dir = getenv( "RS2_DEBUG_DIR" );
-            if( dir )
+            std::string filename = get_debug_path_base();
+            if( ! filename.empty() )
             {
-                std::string filename = to_string()
-                    << dir
-                    << system_clock::now().time_since_epoch().count() * system_clock::period::num / system_clock::period::den
-                    << ".ac_log";
+                filename += ".ac_log";
 
-                _f.open( filename );
-                if( _f  &&  _to_stdout )
-                    write_out( to_string() << "-D- CAH log is being written to: " << filename );
+                _f_main.open( filename );
+                if( _f_main  &&  _to_stdout )
+                    write_out( to_string() << "-D- CAH main log is being written to: " << filename );
             }
 
-            if( _f || _to_stdout )
-                librealsense::log_to_callback( RS2_LOG_SEVERITY_ALL,
-                                               { this, []( rs2_log_callback * p ) {} } );
+            librealsense::log_to_callback( RS2_LOG_SEVERITY_ALL,
+                                            { this, []( rs2_log_callback * p ) {} } );
 
             AC_LOG( DEBUG, "LRS version: " << RS2_API_FULL_VERSION_STR );
+        }
+
+        static void add_dir_sep( std::string & path )
+        {
+#ifdef _WIN32
+            char const dir_sep = '\\';
+#else
+            char const dir_sep = '/';
+#endif
+            if( ! path.empty() && path.back() != dir_sep )
+                path += dir_sep;
+        }
+
+        static std::string get_debug_path_base()
+        {
+            std::string path;
+
+            // If the user has this env var defined, then we write out logs and frames to it
+            // NOTE: The var should end with a directory separator \ or /
+            auto dir_ = getenv( "RS2_DEBUG_DIR" );
+            if( dir_ )
+            {
+                path = dir_;
+                add_dir_sep( path );
+
+                std::time_t now = std::time( nullptr );
+                auto ptm = localtime( &now );
+                char buf[256];
+                strftime( buf, sizeof( buf ), "%y%m%d.%H%M%S", ptm );
+                path += buf;
+            }
+            
+            return path;
+        }
+
+        bool set_active_dir()
+        {
+            _active_dir = get_debug_path_base();
+            if( _active_dir.empty() )
+                return false;
+            add_dir_sep( _active_dir );
+
+#ifdef _WIN32
+            auto status = _mkdir( _active_dir.c_str() );
+#else
+            auto status = mkdir( dir.c_str(), 0700 );
+#endif
+
+            if( status != 0 )
+            {
+                AC_LOG( WARNING,
+                        "Failed (" << status << ") to create directory for AC frame data in: " << _active_dir );
+                _active_dir.clear();
+                return false;
+            }
+            return true;
+        }
+
+        std::string const & get_active_dir() const { return _active_dir; }
+
+        void open_active()
+        {
+            close_active();
+            if( ! set_active_dir() )
+                return;
+            std::string filename = get_active_dir() + "ac.log";
+            if( _f_main || _to_stdout )
+                AC_LOG( DEBUG, now_string() << "  Active calibration log is being written to: " << filename );
+            _f_active.open( filename );
+            if( ! _f_active )
+                AC_LOG( DEBUG, "             failed!" );
+            else if( _to_stdout )
+                write_out( to_string() << "-D- CAH active log is being written to: " << filename );
+        }
+
+        void close_active()
+        {
+            if( _f_active )
+            {
+                _f_active.close();
+                _f_active.setstate( std::ios_base::failbit );  // so we don't try to write to it
+                _active_dir.clear();
+                if( _f_main )
+                    AC_LOG( DEBUG, now_string() << "  ... done" );
+            }
         }
 
         void on_log( rs2_log_severity severity, rs2_log_message const & msg ) noexcept override
@@ -469,8 +559,10 @@ namespace ivcam2 {
             std::string text = ss.str();
             if( _to_stdout )
                 write_out( text );
-            if( _f )
-                _f << text << std::endl;
+            if( _f_active )
+                _f_active << text << std::endl;
+            else if( _f_main )
+                _f_main << text << std::endl;
         }
 
         void release() override { delete this; }
@@ -497,11 +589,17 @@ namespace ivcam2 {
         : _hwm( hwm )
         , _dev( dev )
     {
+        get_ac_logger();
+    }
+
+
+    ac_trigger::ac_logger & ac_trigger::get_ac_logger()
+    {
         static ac_logger one_logger(
             env_var< bool >( "RS2_AC_LOG_TO_STDOUT", false )  // log to stdout
             );
+        return one_logger;
     }
-
 
 
     ac_trigger::~ac_trigger() 
@@ -607,6 +705,7 @@ namespace ivcam2 {
 
         _n_retries = 0;
         _n_cycles = 1;          // now active
+        get_ac_logger().open_active();
         AC_LOG( INFO, "Camera Accuracy Health check is now active" );
         _next_trigger.reset();  // don't need a trigger any more
         _temp_check.reset();    // nor a temperature check
@@ -685,13 +784,12 @@ namespace ivcam2 {
 
     void ac_trigger::set_special_frame( rs2::frameset const & fs )
     {
-        if( !is_active() )
+        if( ! is_active() )
         {
             AC_LOG( ERROR, "Special frame received while is_active() is false" );
             return;
         }
 
-        AC_LOG( DEBUG, "special frame received :)" );
         // Notify of the special frame -- mostly for validation team so they know to expect a frame
         // drop...
         call_back( RS2_CALIBRATION_SPECIAL_FRAME );
@@ -702,14 +800,14 @@ namespace ivcam2 {
             return;
         }
         auto irf = fs.get_infrared_frame();
-        if( !irf )
+        if( ! irf )
         {
             AC_LOG( ERROR, "no IR frame found; ignoring special frame!" );
             //call_back( RS2_CALIBRATION_FAILED );
             return;
         }
         auto df = fs.get_depth_frame();
-        if( !df )
+        if( ! df )
         {
             AC_LOG( ERROR, "no depth frame found; ignoring special frame!" );
             //call_back( RS2_CALIBRATION_FAILED );
@@ -724,29 +822,29 @@ namespace ivcam2 {
         // start working even before we finish! NOT GOOD!
         {
             auto hwm = _hwm.lock();
-            if (!hwm)
+            if( ! hwm )
             {
-                AC_LOG(ERROR, "Hardware monitor is inaccessible - don't use special frame");
+                AC_LOG( ERROR, "Hardware monitor is inaccessible - don't use special frame" );
                 return;
             }
 
             try
             {
-                ivcam2::read_fw_register(*hwm, &_dsm_x_scale, 0xfffe3844);
-                ivcam2::read_fw_register(*hwm, &_dsm_y_scale, 0xfffe3830);
-                ivcam2::read_fw_register(*hwm, &_dsm_x_offset, 0xfffe3840);
-                ivcam2::read_fw_register(*hwm, &_dsm_y_offset, 0xfffe382c);
+                ivcam2::read_fw_register( *hwm, &_dsm_x_scale, 0xfffe3844 );
+                ivcam2::read_fw_register( *hwm, &_dsm_y_scale, 0xfffe3830 );
+                ivcam2::read_fw_register( *hwm, &_dsm_x_offset, 0xfffe3840 );
+                ivcam2::read_fw_register( *hwm, &_dsm_y_offset, 0xfffe382c );
             }
             catch (std::exception& ex)
             {
-                AC_LOG(ERROR, "caught exception in reading firmware registers: " << ex.what());
+                AC_LOG( ERROR, "caught exception in reading firmware registers: " << ex.what() );
                 set_not_active();  // now inactive
             }
 
         }
-        AC_LOG( DEBUG, "dsm registers=  x[" << AC_F_PREC << _dsm_x_scale << ' ' << _dsm_y_scale
-            << "]  +[" << _dsm_x_offset << ' ' << _dsm_y_offset
-            << "]" );
+        AC_LOG( DEBUG,
+                "dsm registers=  x[" << AC_F_PREC << _dsm_x_scale << ' ' << _dsm_y_scale << "]  +["
+                                     << _dsm_x_offset << ' ' << _dsm_y_offset << "]" );
 
         _sf = fs;  // Assign right before the sync otherwise we may start() prematurely
         _sf.keep();
@@ -774,8 +872,18 @@ namespace ivcam2 {
             AC_LOG( DEBUG, "RGB frame #" << number << " is our first stable frame" );
             if( f.supports_frame_metadata( RS2_FRAME_METADATA_ACTUAL_EXPOSURE ) )
             {
-                auto exp = f.get_frame_metadata( RS2_FRAME_METADATA_ACTUAL_EXPOSURE );
-                AC_LOG( DEBUG, "Actual exposure is " << exp );
+                AC_LOG( DEBUG,
+                        "    actual exposure= "
+                            << f.get_frame_metadata( RS2_FRAME_METADATA_ACTUAL_EXPOSURE ) );
+                AC_LOG( DEBUG,
+                        "    backlight compensation= "
+                            << f.get_frame_metadata( RS2_FRAME_METADATA_BACKLIGHT_COMPENSATION ) );
+                AC_LOG( DEBUG,
+                        "    brightness= "
+                            << f.get_frame_metadata( RS2_FRAME_METADATA_BRIGHTNESS ) );
+                AC_LOG( DEBUG,
+                        "    contrast= "
+                            << f.get_frame_metadata( RS2_FRAME_METADATA_CONTRAST ) );
             }
             _need_to_wait_for_color_sensor_stability = false;
             trigger_special_frame();
@@ -877,6 +985,12 @@ namespace ivcam2 {
                                                    _cf, _pcf, _last_yuy_data,
                                                    cal_info, cal_regs,
                                                    should_continue );
+
+                    // If the user has this env var defined, then we write out logs and frames
+                    // to it NOTE: The var should end with a directory separator \ or /
+                    std::string debug_dir = get_ac_logger().get_active_dir();
+                    if( ! debug_dir.empty() )
+                        algo.write_data_to( debug_dir );
 
                     _from_profile = algo.get_from_profile();
                     _to_profile = algo.get_to_profile();
@@ -994,15 +1108,23 @@ namespace ivcam2 {
         if( is_active() )
         {
             // We get here when we've reached some final state (failed/successful)
-            set_not_active();
             if( _last_status_sent != RS2_CALIBRATION_SUCCESSFUL )
                 AC_LOG( WARNING, "Camera Accuracy Health has finished unsuccessfully" );
             else
                 AC_LOG( INFO, "Camera Accuracy Health has finished" );
+            set_not_active();
         }
 
         schedule_next_calibration();
     }
+
+
+    void ac_trigger::set_not_active()
+    {
+        _n_cycles = 0;
+        get_ac_logger().close_active();
+    }
+
 
     void ac_trigger::schedule_next_calibration()
     {
