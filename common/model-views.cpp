@@ -4717,7 +4717,7 @@ namespace rs2
                 std::string default_path = config_file::instance().get(configurations::record::default_path);
                 if (!ends_with(default_path, "/") && !ends_with(default_path, "\\")) default_path += "/";
                 std::string default_filename = rs2::get_timestamped_file_name() + ".bag";
-                if (recording_setting == 0)
+                if (recording_setting == 0 && default_path.size() > 1 )
                 {
                     path = default_path + default_filename;
                 }
