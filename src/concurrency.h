@@ -266,14 +266,16 @@ public:
         auto func = std::move(item);
         invoke([&, func](dispatcher::cancellable_timer c)
         {
+            std::lock_guard<std::mutex> lk(_blocking_invoke_mutex);
             func(c);
+
             done = true;
             _blocking_invoke_cv.notify_one();
         }, is_blocking);
 
         //wait
         std::unique_lock<std::mutex> lk(_blocking_invoke_mutex);
-        while(_blocking_invoke_cv.wait_for(lk, std::chrono::milliseconds(10), [&](){ return !done && !exit_condition(); }));
+        _blocking_invoke_cv.wait(lk, [&](){ return done || exit_condition(); });
     }
 
     void start()
@@ -288,6 +290,9 @@ public:
     {
         {
             std::unique_lock<std::mutex> lock(_was_stopped_mutex);
+
+            if (_was_stopped.load()) return;
+
             _was_stopped = true;
             _was_stopped_cv.notify_all();
         }
@@ -310,6 +315,8 @@ public:
         stop();
         _queue.clear();
         _is_alive = false;
+
+        if (_thread.joinable())
         _thread.join();
     }
 
@@ -379,8 +386,10 @@ public:
 
     void stop()
     {
-        _stopped = true;
-        _dispatcher.stop();
+        if (!_stopped.load()) {
+            _stopped = true;
+            _dispatcher.stop();
+        }
     }
 
     ~active_object()
