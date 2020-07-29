@@ -503,9 +503,11 @@ namespace librealsense
     // Enumerated type support //
     /////////////////////////////
 
+// Require the last enumerator value to be in format of RS2_#####_COUNT
 #define RS2_ENUM_HELPERS( TYPE, PREFIX )                                                           \
     RS2_ENUM_HELPERS_CUSTOMIZED( TYPE, 0, RS2_##PREFIX##_COUNT - 1 )
 
+// This macro can be used directly if needed to support enumerators with no RS2_#####_COUNT last value
 #define RS2_ENUM_HELPERS_CUSTOMIZED( TYPE, FIRST, LAST )                                           \
     LRS_EXTENSION_API const char * get_string( TYPE value );                                       \
     inline bool is_valid( TYPE value ) { return value >= FIRST && value <= LAST; }                 \
@@ -518,7 +520,7 @@ namespace librealsense
     }                                                                                              \
     inline bool try_parse( const std::string & str, TYPE & res )                                   \
     {                                                                                              \
-        for( int i = FIRST; i < LAST; i++ )                                                        \
+        for( int i = FIRST; i <= LAST; i++ )                                                       \
         {                                                                                          \
             auto v = static_cast< TYPE >( i );                                                     \
             if( str == get_string( v ) )                                                           \
