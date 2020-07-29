@@ -1,4 +1,4 @@
-//// License: Apache 2.0. See LICENSE file in root directory.
+﻿//// License: Apache 2.0. See LICENSE file in root directory.
 //// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "optimizer.h"
@@ -9,7 +9,7 @@
 #include "cost.h"
 #include "debug.h"
 #include <math.h>
-
+#include <numeric>
 
 #define GAUSS_CONV_ROWS 4
 #define GAUSS_CONV_COLUMNS 4
@@ -27,7 +27,7 @@ std::vector<double> gauss_convolution(std::vector<T> const& image,
 {
     // boundaries handling 
     // Extend - The nearest border pixels are conceptually extended as far as necessary to provide values for the convolution.
-    // Corner pixels are extended in 90� wedges.Other edge pixels are extended in lines.
+    // Corner pixels are extended in 90° wedges.Other edge pixels are extended in lines.
     // https://en.wikipedia.org/wiki/Kernel_(image_processing)
     // handling order:
     // 1. rows: 0,1 and image_height-1, image_height-2
@@ -334,7 +334,7 @@ bool optimizer::is_edge_distributed(z_frame_data& z, yuy2_frame_data& yuy)
     size_t num_of_sections = _params.num_of_sections_for_edge_distribution_x * _params.num_of_sections_for_edge_distribution_y;
 
     // depth frame
-    AC_LOG(DEBUG, "... checking Z edge distribution");
+    AC_LOG(DEBUG, "    checking Z edge distribution");
     sum_per_section(z.sum_weights_per_section, z.section_map, z.weights, num_of_sections);
     //for debug 
     auto it = z.sum_weights_per_section.begin();
@@ -344,7 +344,7 @@ bool optimizer::is_edge_distributed(z_frame_data& z, yuy2_frame_data& yuy)
     AC_LOG(DEBUG, "    sum_per_section(z), section #3  " << *(it + 3));
     check_edge_distribution(z.sum_weights_per_section, z.min_max_ratio, z.is_edge_distributed);
     // yuy frame
-    AC_LOG(DEBUG, "... checking YUY edge distribution");
+    AC_LOG(DEBUG, "    checking YUY edge distribution");
     sum_per_section(yuy.sum_weights_per_section, yuy.section_map, yuy.edges_IDT, num_of_sections);
     //for debug 
     it = yuy.sum_weights_per_section.begin();
@@ -432,14 +432,14 @@ static bool is_grad_dir_balanced( std::vector< double > const & weights,
         if( perp_ratio > _params.grad_dir_ratio_prep )
         {
             AC_LOG( DEBUG,
-                    "... gradient direction is not balanced : " << dir_ratio1 << "; threshold is: "
+                    "    gradient direction is not balanced : " << dir_ratio1 << "; threshold is: "
                                                                 << _params.grad_dir_ratio );
             return false;
         }
         if( min_val_perp < 1e-3 )  // % Don't devide by zero...
         {
             AC_LOG( DEBUG,
-                    "... gradient direction is not balanced : " << dir_ratio1 << "; threshold is: "
+                    "    gradient direction is not balanced : " << dir_ratio1 << "; threshold is: "
                                                                 << _params.grad_dir_ratio );
             return false;
         }
@@ -450,7 +450,7 @@ static bool is_grad_dir_balanced( std::vector< double > const & weights,
         if( dir_ratio2 > _params.grad_dir_ratio )
         {
             AC_LOG( DEBUG,
-                    "... gradient direction is not balanced : " << dir_ratio1 << "; threshold is: "
+                    "    gradient direction is not balanced : " << dir_ratio1 << "; threshold is: "
                                                                 << _params.grad_dir_ratio );
             return false;
         }
@@ -505,17 +505,27 @@ uint8_t dilation_calc(std::vector<T> const& sub_image, std::vector<uint8_t> cons
 
     return res;
 }
-void optimizer::images_dilation(yuy2_frame_data& yuy)
+
+
+std::vector< uint8_t > optimizer::images_dilation( std::vector< uint8_t > const & logic_edges,
+                                                   size_t width,
+                                                   size_t height )
 {
-    auto area = yuy.height * yuy.width;
-    std::vector<uint8_t> dilation_mask = { 1, 1, 1,
-                                              1,  1,  1,
-                                              1,  1,  1 };
+    if( _params.dilation_size == 1 )
+       return logic_edges;
 
-    yuy.dilated_image = dilation_convolution<uint8_t>(yuy.prev_logic_edges, yuy.width, yuy.height, _params.dilation_size, _params.dilation_size, [&](std::vector<uint8_t> const& sub_image)
-        {return dilation_calc(sub_image, dilation_mask); });
-
+    std::vector< uint8_t > dilation_mask = { 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+    return dilation_convolution< uint8_t >( logic_edges,
+                                            width,
+                                            height,
+                                            _params.dilation_size,
+                                            _params.dilation_size,
+                                            [&]( std::vector< uint8_t > const & sub_image ) {
+                                                return dilation_calc( sub_image, dilation_mask );
+                                            } );
 }
+
+
 template<class T>
 double gaussian_calc(std::vector<T> const& sub_image, std::vector<double> const& mask)
 {
@@ -529,29 +539,43 @@ double gaussian_calc(std::vector<T> const& sub_image, std::vector<double> const&
     return res;
 }
 
-void optimizer::gaussian_filter(yuy2_frame_data& yuy)
+void optimizer::gaussian_filter( std::vector< uint8_t > const & lum_frame,
+                                 std::vector< uint8_t > const & prev_lum_frame,
+                                 std::vector< double > & yuy_diff,
+                                 std::vector< double > & gaussian_filtered_image,
+                                 size_t width,
+                                 size_t height )
 {
-    auto area = yuy.height * yuy.width;
+
+    auto area = height *width;
 
     /* diffIm = abs(im1-im2);
 diffIm = imgaussfilt(im1-im2,params.moveGaussSigma);*/
     // use this matlab function to get gauss kernel with sigma=1: disp17(fspecial('gaussian',5,1))
-    std::vector<double>  gaussian_kernel = { 0.0029690167439504968, 0.013306209891013651, 0.021938231279714643, 0.013306209891013651, 0.0029690167439504968,
-        0.013306209891013651, 0.059634295436180138, 0.098320331348845769, 0.059634295436180138, 0.013306209891013651,
-        0.021938231279714643, 0.098320331348845769, 0.16210282163712664, 0.098320331348845769, 0.021938231279714643,
-        0.013306209891013651, 0.059634295436180138, 0.098320331348845769, 0.059634295436180138, 0.013306209891013651,
-        0.0029690167439504968, 0.013306209891013651, 0.021938231279714643, 0.013306209891013651, 0.0029690167439504968
-    };
+    std::vector< double > gaussian_kernel
+        = { 0.0029690167439504968, 0.013306209891013651, 0.021938231279714643, 0.013306209891013651,
+            0.0029690167439504968, 0.013306209891013651, 0.059634295436180138, 0.098320331348845769,
+            0.059634295436180138,  0.013306209891013651, 0.021938231279714643, 0.098320331348845769,
+            0.16210282163712664,   0.098320331348845769, 0.021938231279714643, 0.013306209891013651,
+            0.059634295436180138,  0.098320331348845769, 0.059634295436180138, 0.013306209891013651,
+            0.0029690167439504968, 0.013306209891013651, 0.021938231279714643, 0.013306209891013651,
+            0.0029690167439504968 };
 
-    std::vector<uint8_t>::iterator yuy_iter = yuy.lum_frame.begin();
-    std::vector<uint8_t>::iterator yuy_prev_iter = yuy.prev_lum_frame.begin();
+    auto yuy_iter = lum_frame.begin();
+    auto yuy_prev_iter = prev_lum_frame.begin();
     for (auto i = 0; i < area; i++, yuy_iter++, yuy_prev_iter++)
     {
-        yuy.yuy_diff.push_back((double)(*yuy_prev_iter) - (double)(*yuy_iter)); // used for testing only
+        yuy_diff.push_back((double)(*yuy_prev_iter) - (double)(*yuy_iter)); // used for testing only
     }
-    yuy.gaussian_filtered_image = gauss_convolution<double>(yuy.yuy_diff, yuy.width, yuy.height, _params.gause_kernel_size, _params.gause_kernel_size, [&](std::vector<double> const& sub_image)
-        {return gaussian_calc(sub_image, gaussian_kernel); });
-    return;
+    gaussian_filtered_image
+        = gauss_convolution< double >( yuy_diff,
+                                       width,
+                                       height,
+                                       _params.gause_kernel_size,
+                                       _params.gause_kernel_size,
+                                       [&]( std::vector< double > const & sub_image ) {
+                                           return gaussian_calc( sub_image, gaussian_kernel );
+                                       } );
 }
 void abs_values(std::vector< double >& vec_in)
 {
@@ -576,21 +600,34 @@ void gaussian_dilation_mask(std::vector< double >& gauss_diff, std::vector< uint
         }
     }
 }
-void move_suspected_mask(std::vector< uint8_t >& move_suspect, std::vector< double >& gauss_diff_masked, double movement_threshold)
+
+static size_t move_suspected_mask( std::vector< uint8_t > & move_suspect,
+                                   std::vector< double > & gauss_diff_masked,
+                                   double const movement_threshold )
 {
-    for (auto it = gauss_diff_masked.begin(); it != gauss_diff_masked.end(); ++it)
+    size_t n_movements = 0;
+    for( auto it = gauss_diff_masked.begin(); it != gauss_diff_masked.end(); ++it )
     {
-        if (*it > movement_threshold)
+        if( *it > movement_threshold )
         {
             move_suspect.push_back(1);
+            ++n_movements;
         }
         else
         {
             move_suspect.push_back(0);
         }
     }
+    return n_movements;
 }
-bool optimizer::is_movement_in_images(yuy2_frame_data& yuy)
+
+bool optimizer::is_movement_in_images( movement_inputs_for_frame const & prev,
+                                       movement_inputs_for_frame const & curr,
+                                       movement_result_data & result_data,
+                                       double const move_thresh_pix_val,
+                                       double const move_threshold_pix_num,
+                                       size_t width,
+                                       size_t height )
 {
     /*function [isMovement,movingPixels] = isMovementInImages(im1,im2, params)
 isMovement = false;
@@ -601,9 +638,9 @@ SE = strel('square', params.seSize);
 dilatedIm = imdilate(logicEdges,SE);
 diffIm = imgaussfilt(double(im1)-double(im2),params.moveGaussSigma);
 */
-    yuy.prev_logic_edges = get_logic_edges(yuy.prev_edges);
-    images_dilation(yuy);
-    gaussian_filter(yuy);
+    result_data.logic_edges = get_logic_edges(prev.edges);
+    result_data.dilated_image = images_dilation(result_data.logic_edges, width, height);
+    gaussian_filter( prev.lum_frame, curr.lum_frame, result_data.yuy_diff, result_data.gaussian_filtered_image, width, height);
     /*
 %
 IDiffMasked = abs(diffIm);
@@ -616,24 +653,23 @@ end
 movingPixels = sum(ixMoveSuspect(:));
 disp(['isMovementInImages: # of pixels above threshold ' num2str(sum(ixMoveSuspect(:))) ', allowed #: ' num2str(params.moveThreshPixNum)]);
 end*/
-    yuy.gaussian_diff_masked = yuy.gaussian_filtered_image;
-    abs_values(yuy.gaussian_diff_masked);
-    gaussian_dilation_mask(yuy.gaussian_diff_masked, yuy.dilated_image);
-    move_suspected_mask(yuy.move_suspect, yuy.gaussian_diff_masked, _params.move_thresh_pix_val);
-    auto sum_move_suspect = 0;
-    for (auto it = yuy.move_suspect.begin(); it != yuy.move_suspect.end(); ++it)
+    result_data.gaussian_diff_masked = result_data.gaussian_filtered_image;
+    abs_values(result_data.gaussian_diff_masked);
+    gaussian_dilation_mask(result_data.gaussian_diff_masked, result_data.dilated_image);
+    auto sum_move_suspect = move_suspected_mask( result_data.move_suspect,
+                                                 result_data.gaussian_diff_masked,
+                                                 move_thresh_pix_val );
+    if( sum_move_suspect > move_threshold_pix_num )
     {
-        sum_move_suspect += *it;
-    }
-    if (sum_move_suspect > _params.move_threshold_pix_num)
-    {
-        AC_LOG(DEBUG, "is_movement_in_images:  # of pixels above threshold " << sum_move_suspect << " allowed #:" << _params.move_threshold_pix_num);
+        AC_LOG( DEBUG,
+                "    found movement: " << sum_move_suspect << " pixels above threshold; allowed: "
+                                       << _params.move_threshold_pix_num );
         return true;
     }
 
     return false;
 }
-bool optimizer::is_scene_valid()
+bool optimizer::is_scene_valid(input_validity_data* data)
 {
     std::vector< byte > section_map_depth(_z.width * _z.height);
     std::vector< byte > section_map_rgb(_yuy.width * _yuy.height);
@@ -646,7 +682,7 @@ bool optimizer::is_scene_valid()
     section_per_pixel(_yuy, section_w, section_h, section_map_rgb.data());
 
     // remove pixels in section map that were removed in weights
-    AC_LOG(DEBUG, "... " << _z.supressed_edges.size() << " total edges");
+    AC_LOG(DEBUG, "    " << _z.supressed_edges.size() << " total edges");
     for (auto i = 0; i < _z.supressed_edges.size(); i++)
     {
         if (_z.supressed_edges[i])
@@ -655,11 +691,11 @@ bool optimizer::is_scene_valid()
         }
     }
     _z.section_map = _z.section_map_depth_inside; // NOHA :: taken from preprocessDepth
-    AC_LOG(DEBUG, "... " << _z.section_map.size() << " not suppressed");
+    AC_LOG(DEBUG, "    " << _z.section_map.size() << " not suppressed");
 
     // remove pixels in section map where edges_IDT > 0
     int i = 0;
-    AC_LOG(DEBUG, "... " << _z.supressed_edges.size() << " total edges IDT");
+    AC_LOG(DEBUG, "    " << _z.supressed_edges.size() << " total edges IDT");
 
     for (auto it = _yuy.edges_IDT.begin(); it != _yuy.edges_IDT.end(); ++it, ++i)
     {
@@ -668,9 +704,19 @@ bool optimizer::is_scene_valid()
             _yuy.section_map.push_back(section_map_rgb[i]);
         }
     }
-    AC_LOG(DEBUG, "... " << _yuy.section_map.size() << " not suppressed");
+    AC_LOG(DEBUG, "    " << _yuy.section_map.size() << " not suppressed");
 
-    bool res_movement = is_movement_in_images(_yuy);
+
+    bool res_movement = is_movement_in_images(
+        { _yuy.prev_edges, _yuy.prev_lum_frame }, 
+        { _yuy.edges, _yuy.lum_frame },
+        _yuy.movement_result, 
+        _params.move_thresh_pix_val,
+        _params.move_threshold_pix_num,
+        _yuy.width, _yuy.height);
+    if( res_movement )
+        AC_LOG( ERROR, "Scene is not valid: movement detected between current & previous frames [MOVE]" );
+
     bool res_edges = is_edge_distributed(_z, _yuy);
     bool res_gradient = is_grad_dir_balanced( _z.weights,
                                               _z.directions,
@@ -679,5 +725,220 @@ bool optimizer::is_scene_valid()
                                               &_z.dir_ratio1 );
 
     //return((!res_movement) && res_edges && res_gradient);
-    return(!res_movement);
+
+    auto valid = !res_movement;
+    valid = valid && input_validity_checks(data);
+        
+    return(valid);
 }
+
+bool check_edges_dir_spread(const std::vector<double>& directions,
+    const std::vector<double>& subpixels_x,
+    const std::vector<double>& subpixels_y,
+    size_t width,
+    size_t height,
+    const params& p)
+{
+    // check if there are enough edges per direction
+    int edges_amount_per_dir[N_BASIC_DIRECTIONS] = { 0 };
+
+    for (auto && i : directions)
+    {
+        edges_amount_per_dir[(int)i - 1]++;
+    }
+
+    bool dirs_with_enough_edges[N_BASIC_DIRECTIONS] = { false };
+
+    for (auto i = 0; i < N_BASIC_DIRECTIONS; i++)
+    {
+        auto edges_amount_per_dir_normalized =  (double)edges_amount_per_dir[i] / (width * height);
+        dirs_with_enough_edges[i] = (edges_amount_per_dir_normalized > p.edges_per_direction_ratio_th);
+    }
+
+    // std Check for valid directions
+    double2 dir_vecs[N_BASIC_DIRECTIONS] =
+    {
+        { 1,             0},
+        { 1 / sqrt(2),   1 / sqrt(2) },
+        { 0,             1 },
+        { -1 / sqrt(2),  1 / sqrt(2) }
+    };
+
+
+    auto diag_length = sqrt((double)width*(double)width + (double)height*(double)height);
+
+    std::vector<double> val_per_dir[N_BASIC_DIRECTIONS];
+
+    for (auto i = 0; i < subpixels_x.size(); i++)
+    {
+        auto dir = (int)directions[i] - 1;
+        auto val = subpixels_x[i] * dir_vecs[dir].x + subpixels_y[i] * dir_vecs[dir].y;
+        val_per_dir[dir].push_back(val);
+    }
+
+    double std_per_dir[N_BASIC_DIRECTIONS] = { 0 };
+    bool std_bigger_than_th[N_BASIC_DIRECTIONS] = { false };
+
+    for (auto i = 0; i < N_BASIC_DIRECTIONS; i++)
+    {
+        auto curr_dir = val_per_dir[i];
+        double sum = std::accumulate(curr_dir.begin(), curr_dir.end(), 0.0);
+        double mean = sum / curr_dir.size();
+
+        double dists_sum = 0;
+        std::for_each(curr_dir.begin(), curr_dir.end(), [&](double val) {dists_sum += (val - mean)*(val - mean); });
+
+        // The denominator in the 'Sample standard deviation' formula is N − 1 vs 'Population standard deviation' that is N
+        // https://en.wikipedia.org/wiki/Standard_deviation
+        // we use 'Sample standard deviation' as Matlab
+        auto stdev = sqrt(dists_sum / (curr_dir.size() - 1));
+        std_per_dir[i] = stdev / diag_length;
+        std_bigger_than_th[i] = std_per_dir[i] > p.dir_std_th[i];
+    }
+
+    bool valid_directions[N_BASIC_DIRECTIONS] = { false };
+
+    for (auto i = 0; i < N_BASIC_DIRECTIONS; i++)
+    {
+        valid_directions[i] = dirs_with_enough_edges[i] && std_bigger_than_th[i];
+    }
+    auto valid_directions_sum = std::accumulate(&valid_directions[0], &valid_directions[N_BASIC_DIRECTIONS], 0);
+
+    auto edges_dir_spread = valid_directions_sum >= p.minimal_full_directions;
+
+    if (!edges_dir_spread)
+    {
+        AC_LOG( ERROR,
+                "Scene is not valid: not enough edge direction spread (have "
+                    << valid_directions_sum << "; need " << p.minimal_full_directions << ") [EDGE-DIR]" );
+        return edges_dir_spread;
+    }
+
+    if (p.require_orthogonal_valid_dirs)
+    {
+        auto valid_even = true;
+        for (auto i = 0; i < N_BASIC_DIRECTIONS; i += 2)
+        {
+            valid_even &= valid_directions[i];
+        }
+
+        auto valid_odd = true;
+        for (auto i = 1; i < N_BASIC_DIRECTIONS; i += 2)
+        {
+            valid_odd &= valid_directions[i];
+        }
+        auto orthogonal_valid_dirs = valid_even || valid_odd;
+
+        if( ! orthogonal_valid_dirs )
+            AC_LOG( ERROR,
+                    "Scene is not valid: need at least two orthogonal directions that have enough "
+                    "spread edges [EDGE-DIR]" );
+
+        return edges_dir_spread && orthogonal_valid_dirs;
+    }
+
+    return edges_dir_spread;
+}
+
+bool check_saturation(const std::vector< ir_t >& ir_frame,
+    size_t width,
+    size_t height,
+    const params& p)
+{
+    size_t saturated_pixels = 0;
+
+    for (auto&& i : ir_frame)
+    {
+        if( i >= p.saturation_value )
+            saturated_pixels++;
+    }
+
+    auto saturated_pixels_ratio = (double)saturated_pixels / (double)(width*height);
+
+    if( saturated_pixels_ratio >= p.saturation_ratio_th )
+        AC_LOG( ERROR,
+                "Scene is not valid: saturation ratio ("
+                    << saturated_pixels_ratio << ") is above threshold (" << p.saturation_ratio_th
+                    << ") [SAT]" );
+
+    return saturated_pixels_ratio < p.saturation_ratio_th;
+}
+
+bool check_edges_spatial_spread(const std::vector<byte>& section_map,
+    size_t width,
+    size_t height, 
+    double th,
+    size_t n_sections,
+    size_t min_section_with_enough_edges)
+{
+    std::vector<int> num_pix_per_sec(n_sections, 0);
+
+    for (auto&&i : section_map)
+    {
+        num_pix_per_sec[i]++;
+    }
+    std::vector<double> num_pix_per_sec_over_area(n_sections, 0);
+    std::vector<bool> num_sections_with_enough_edges(n_sections, false);
+
+    for (auto i = 0; i < n_sections; i++)
+    {
+        num_pix_per_sec_over_area[i] = (double)num_pix_per_sec[i] / (width*height)*n_sections;
+        num_sections_with_enough_edges[i] = num_pix_per_sec_over_area[i] > th;
+    }
+
+    double sum = std::accumulate(num_sections_with_enough_edges.begin(), num_sections_with_enough_edges.end(), 0.0);
+
+    return sum >= min_section_with_enough_edges;
+}
+
+bool optimizer::input_validity_checks(input_validity_data* data )
+{
+    auto dir_spread = check_edges_dir_spread(_z.directions, _z.subpixels_x, _z.subpixels_y, _z.width, _z.height, _params);
+    auto not_saturated = check_saturation(_ir.ir_frame, _ir.width, _ir.height, _params);
+
+    auto depth_spatial_spread = check_edges_spatial_spread(
+        _z.section_map, _z.width, _z.height, 
+        _params.pix_per_section_depth_th, 
+        _params.num_of_sections_for_edge_distribution_x*_params.num_of_sections_for_edge_distribution_y,
+        _params.min_section_with_enough_edges);
+
+    auto rgb_spatial_spread = check_edges_spatial_spread(
+        _yuy.section_map, 
+        _yuy.width, _yuy.height, 
+        _params.pix_per_section_rgb_th,
+        _params.num_of_sections_for_edge_distribution_x*_params.num_of_sections_for_edge_distribution_y,
+        _params.min_section_with_enough_edges);
+
+    if( ! depth_spatial_spread )
+        AC_LOG( ERROR, "Scene is not valid: not enough depth edge spread [EDGE-D]" );
+
+    if( ! rgb_spatial_spread )
+        AC_LOG( ERROR, "Scene is not valid: not enough RGB edge spread [EDGE-C]" );
+
+    auto is_movement_from_last_success = true;
+
+    if( ! _settings.is_manual_trigger )
+    {
+        is_movement_from_last_success
+            = is_movement_in_images( { _yuy.last_successful_edges, _yuy.last_successful_lum_frame },
+                                     { _yuy.edges, _yuy.lum_frame },
+                                     _yuy.movement_prev_valid_result,
+                                     _params.move_last_success_thresh_pix_val,
+                                     _params.move_last_success_thresh_pix_num,
+                                     _yuy.width, _yuy.height );
+        if( ! is_movement_from_last_success )
+            AC_LOG( ERROR, "Scene is not valid: not enough movement from last-calibrated scene [SALC]" );
+    }
+    if( data )
+    {
+        data->edges_dir_spread = dir_spread;
+        data->not_saturated = not_saturated;
+        data->depth_spatial_spread = depth_spatial_spread;
+        data->rgb_spatial_spread = rgb_spatial_spread;
+        data->is_movement_from_last_success = is_movement_from_last_success;
+    }
+
+    return dir_spread && not_saturated && depth_spatial_spread && rgb_spatial_spread && is_movement_from_last_success;
+}
+
+

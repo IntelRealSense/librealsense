@@ -259,7 +259,7 @@ rs2_dsm_params_double k_to_DSM::convert_new_k_to_DSM
         xim_new[i] = projed[i].x / projed[i].z;
         yim_new[i] = projed[i].y / projed[i].z;
     }
-    AC_LOG( DEBUG, "    new DSM params: " << AC_D_PREC << ac_data_cand );
+    AC_LOG( DEBUG, "    new DSM params: " << AC_D_PREC << ac_data_cand <<"; vertices are changed" );
     new_dsm_regs = dsm_regs_cand;
     return ac_data_cand;
 }
@@ -437,6 +437,16 @@ double2 k_to_DSM::run_scaling_optimization_step
     double quad_coef[6];
     direct_inv_6x6(sg_mat_tag_x_sg_mat, sg_mat_tag_x_err_l2, quad_coef);
 
+   
+
+    double A[4] = { quad_coef[0], quad_coef[2] / 2, quad_coef[2] / 2, quad_coef[1] };
+    double B[2] = { quad_coef[3] , quad_coef[4] };
+    double opt_scaling[2];
+
+    direct_inv_2x2(A, B, opt_scaling);
+    opt_scaling[0] = -opt_scaling[0] / 2;
+    opt_scaling[1] = -opt_scaling[1] / 2;
+
     if (data)
     {
         data->k2dsm_data_p.errL2 = std::vector<double>(std::begin(err_l2), std::end(err_l2));
@@ -454,16 +464,8 @@ double2 k_to_DSM::run_scaling_optimization_step
         data->k2dsm_data_p.sg_mat_tag_x_sg_mat = std::vector<double>(std::begin(sg_mat_tag_x_sg_mat), std::end(sg_mat_tag_x_sg_mat));
         data->k2dsm_data_p.sg_mat_tag_x_err_l2 = std::vector<double>(std::begin(sg_mat_tag_x_err_l2), std::end(sg_mat_tag_x_err_l2));
         data->k2dsm_data_p.quad_coef = std::vector<double>(std::begin(quad_coef), std::end(quad_coef));
+        data->k2dsm_data_p.opt_scaling_1 = { opt_scaling[0], opt_scaling[1] };
     }
-
-    double A[4] = { quad_coef[0], quad_coef[2] / 2, quad_coef[2] / 2, quad_coef[1] };
-    double B[2] = { quad_coef[3] / 2, quad_coef[4] / 2 };
-    double opt_scaling[2];
-
-    direct_inv_2x2(A, B, opt_scaling);
-    opt_scaling[0] = -opt_scaling[0];
-    opt_scaling[1] = -opt_scaling[1];
-
     // sanity check
 
     double min_x, min_y, max_x, max_y;
@@ -486,7 +488,7 @@ double2 k_to_DSM::run_scaling_optimization_step
     }
 
     auto is_pos_def = (quad_coef[0] + quad_coef[1]) > 0 && (quad_coef[0] * quad_coef[1] - quad_coef[2] * quad_coef[2] / 4) > 0;
-    auto is_with_in_lims = (opt_scaling[0] > min_x) && (opt_scaling[0] < max_y) && (opt_scaling[1] > min_y) && (opt_scaling[1] < max_y);
+    auto is_with_in_lims = (opt_scaling[0] > min_x) && (opt_scaling[0] < max_x) && (opt_scaling[1] > min_y) && (opt_scaling[1] < max_y);
 
     if (!is_pos_def || !is_with_in_lims)
     {

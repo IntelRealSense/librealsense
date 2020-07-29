@@ -57,7 +57,8 @@ namespace librealsense
             std::map<uint32_t, rs2_format> l500_color_fourcc_to_rs2_format,
             std::map<uint32_t, rs2_stream> l500_color_fourcc_to_rs2_stream)
             : synthetic_sensor("RGB Camera", uvc_sensor, owner, l500_color_fourcc_to_rs2_format, l500_color_fourcc_to_rs2_stream),
-            _owner(owner)
+            _owner(owner),
+            _state(sensor_state::CLOSED)
         {}
 
         rs2_intrinsics get_intrinsics( const stream_profile& profile ) const override;
@@ -106,24 +107,68 @@ namespace librealsense
             return get_color_recommended_proccesing_blocks();
         }
 
-        void start(frame_callback_ptr callback) override
-        {
-            _action_delayer.do_after_delay([&]() {
-                    synthetic_sensor::start(callback);
-                    //_owner->trigger_device_calibration( RS2_CALIBRATION_DEPTH_TO_RGB );
-            });
-        }
 
-        void stop() override
-        {
-            _action_delayer.do_after_delay([&]() {
-                synthetic_sensor::stop();
-            });
-        }
+        // Opens the color sensor profile, if the sensor is opened by calibration process,
+        // It will close it and reopen with the requested profile.
+        void open(const stream_profiles& requests) override;
 
+        // Close the color sensor
+        void close() override;
+    
+        // Start the color sensor streaming
+        void start(frame_callback_ptr callback) override;
+        
+        // Stops the color sensor streaming
+        void stop() override;
+
+        // This function serves the auto calibration process,
+        // It is used to open and start the color sensor with a single call if it is closed.
+        // Note: if the sensor is opened by the user, the function assumes that the user will start the stream.
+        // Returns whether the stream was started.
+        bool start_stream_for_calibration( const stream_profiles & requests );
+       
+        // Stops the color sensor if was opened by the calibration process, otherwise does nothing
+        void stop_stream_for_calibration();
+        
     private:
         l500_color* const _owner;
         action_delayer _action_delayer;
+        std::mutex _state_mutex;
+
+        enum class sensor_state 
+        {
+            CLOSED,
+            OWNED_BY_USER,
+            OWNED_BY_AUTO_CAL
+        };
+
+        std::atomic< sensor_state > _state;
+
+        void delayed_start(frame_callback_ptr callback)
+        {
+            LOG_DEBUG("Starting color sensor...");
+            // The delay is here as a work around to a firmware bug [RS5-5453]
+            _action_delayer.do_after_delay([&]() { synthetic_sensor::start(callback); });
+            LOG_DEBUG("Color sensor started");
+        }
+
+        void delayed_stop()
+        {
+            LOG_DEBUG("Stopping color sensor...");
+            // The delay is here as a work around to a firmware bug [RS5-5453]
+            _action_delayer.do_after_delay([&]() { synthetic_sensor::stop(); });
+            LOG_DEBUG("Color sensor stopped");
+        }
+
+        std::string state_to_string(sensor_state state);
+
+        
+        void set_sensor_state(sensor_state state)
+        {
+                LOG_DEBUG("Sensor state changed from: " << state_to_string(_state) <<
+                    " to: " << state_to_string(state));
+                _state = state;
+        }
     };
 
 }

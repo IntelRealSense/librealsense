@@ -9,45 +9,61 @@
 #include "api.h"  // VALIDATE_INTERFACE_NO_THROW
 #include "algo/depth-to-rgb-calibration/debug.h"
 
-#ifndef _WIN32
-#include <sys/stat.h>  // mkdir
-#endif
-
 
 using namespace librealsense;
 namespace impl = librealsense::algo::depth_to_rgb_calibration;
 
+#define CHECK_IF_NEEDS_TO_STOP() if (_should_continue) _should_continue()
+
 depth_to_rgb_calibration::depth_to_rgb_calibration(
+    impl::optimizer::settings const & settings,
     rs2::frame depth,
     rs2::frame ir,
     rs2::frame yuy,
     rs2::frame prev_yuy,
-    algo::depth_to_rgb_calibration::algo_calibration_info const & cal_info,
-    algo::depth_to_rgb_calibration::algo_calibration_registers const & cal_regs
+    std::vector< impl::yuy_t > const & last_yuy_data,
+    impl::algo_calibration_info const & cal_info,
+    impl::algo_calibration_registers const & cal_regs,
+    std::function<void()> should_continue
 )
-    : _intr( yuy.get_profile().as< rs2::video_stream_profile >().get_intrinsics() )
+    : _algo( settings )
+    , _intr( yuy.get_profile().as< rs2::video_stream_profile >().get_intrinsics() )
     , _extr(to_raw_extrinsics( depth.get_profile().get_extrinsics_to( yuy.get_profile() )))
     , _from( depth.get_profile().get()->profile )
     , _to( yuy.get_profile().get()->profile )
+    , _should_continue( should_continue )
 {
-    AC_LOG( DEBUG, "... setting yuy data" );
+    AC_LOG( DEBUG, "Setting YUY data" );
     auto color_profile = yuy.get_profile().as< rs2::video_stream_profile >();
     auto yuy_data = (impl::yuy_t const *) yuy.get_data();
     auto prev_yuy_data = (impl::yuy_t const *) prev_yuy.get_data();
+    if( last_yuy_data.size() == yuy.get_data_size() / sizeof( impl::yuy_t ) )
+        _last_successful_frame_data = last_yuy_data;  // copy -- will be moved to algo
+    else if( ! last_yuy_data.empty() )
+        AC_LOG( DEBUG, "Not using last successfully-calibrated scene: it's of a different resolution" );
     impl::calib calibration( _intr, _extr );
+
+    CHECK_IF_NEEDS_TO_STOP();
+
     _algo.set_yuy_data(
         std::vector< impl::yuy_t >( yuy_data, yuy_data + yuy.get_data_size() / sizeof( impl::yuy_t )),
         std::vector< impl::yuy_t >( prev_yuy_data, prev_yuy_data + yuy.get_data_size() / sizeof( impl::yuy_t ) ),
+        std::move( _last_successful_frame_data ),
         calibration
     );
 
-    AC_LOG( DEBUG, "... setting ir data" );
+    AC_LOG( DEBUG, "Setting IR data" );
     auto ir_profile = ir.get_profile().as< rs2::video_stream_profile >();
     auto ir_data = (impl::ir_t const *) ir.get_data();
+
+    CHECK_IF_NEEDS_TO_STOP();
+
     _algo.set_ir_data(
         std::vector< impl::ir_t >( ir_data, ir_data + ir.get_data_size() / sizeof( impl::ir_t )),
         ir_profile.width(), ir_profile.height()
     );
+
+    CHECK_IF_NEEDS_TO_STOP();
 
     auto si = ((frame_interface *) depth.get() )->get_sensor();
     auto cs = VALIDATE_INTERFACE_NO_THROW( si, librealsense::calibrated_sensor );
@@ -58,9 +74,12 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     }
     _dsm_params = cs->get_dsm_params();
 
-    AC_LOG( DEBUG, "... setting z data" );
+    AC_LOG( DEBUG, "Setting Z data" );
     auto z_profile = depth.get_profile().as< rs2::video_stream_profile >();
     auto z_data = (impl::z_t const *) depth.get_data();
+
+    CHECK_IF_NEEDS_TO_STOP();
+
     _algo.set_z_data(
         std::vector< impl::z_t >( z_data, z_data + depth.get_data_size() / sizeof( impl::z_t ) ),
         z_profile.get_intrinsics(), _dsm_params, cal_info, cal_regs,
@@ -68,27 +87,12 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     );
 
     debug_calibration( "old" );
+}
 
-    // If the user has this env var defined, then we write out logs and frames to it
-    // NOTE: The var should end with a directory separator \ or /
-    auto dir_ = getenv( "RS2_DEBUG_DIR" );
-    if( dir_ )
-    {
-        std::string dir( dir_ );
-        dir += std::to_string( depth.get_frame_number() );
-        
-#ifdef _WIN32
-        dir += "\\";
-        auto status = _mkdir( dir.c_str() );
-#else
-        dir += "/";
-        auto status = mkdir( dir.c_str(), 0700 );
-#endif
-        if( status == 0 )
-            _algo.write_data_to( dir );
-        else
-            AC_LOG( WARNING, "Failed (" << status << ") to write AC frame data to: " << dir );
-    }
+
+void depth_to_rgb_calibration::write_data_to( std::string const & dir )
+{
+    _algo.write_data_to( dir );
 }
 
 
@@ -100,10 +104,10 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
 
     try
     {
-        AC_LOG( DEBUG, "... checking scene validity" );
+        AC_LOG( DEBUG, "Checking scene validity" );
         if( !_algo.is_scene_valid() )
         {
-            AC_LOG( ERROR, "Calibration scene was found invalid!" );
+            //AC_LOG( ERROR, "Calibration scene was found invalid!" );
             call_back( RS2_CALIBRATION_SCENE_INVALID );
             if( !getenv( DISABLE_RS2_CALIBRATION_CHECKS ) )
             {
@@ -120,10 +124,16 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
             AC_LOG( DEBUG, DISABLE_RS2_CALIBRATION_CHECKS << " is on; continuing" );
         }
 
-        AC_LOG( DEBUG, "... optimizing" );
-        _algo.optimize();
+        CHECK_IF_NEEDS_TO_STOP();
 
-        AC_LOG( DEBUG, "... checking result validity" );
+
+        AC_LOG( DEBUG, "Optimizing" );
+
+        _algo.optimize(
+            [&]( impl::data_collect const & data ) { CHECK_IF_NEEDS_TO_STOP(); }
+        );
+
+        AC_LOG( DEBUG, "Checking result validity" );
         if( !_algo.is_valid_results() )
         {
             // Error would have printed inside
@@ -148,11 +158,12 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
         // AC_LOG( INFO, "Calibration finished; original cost= " << original_cost << "  optimized
         // cost= " << params_curr.cost );
 
-        AC_LOG( DEBUG, "... optimization successful!" );
+        AC_LOG( DEBUG, "Optimization successful!" );
         _intr = _algo.get_calibration().get_intrinsics();
         _intr.model = RS2_DISTORTION_INVERSE_BROWN_CONRADY; //restore LRS model 
         _extr = from_raw_extrinsics( _algo.get_calibration().get_extrinsics() );
         _dsm_params = _algo.get_dsm_params();
+        _last_successful_frame_data = _algo.get_yuy_data().orig_frame;  // copy -- will be moved to ac_trigger
         debug_calibration( "new" );
         return RS2_CALIBRATION_SUCCESSFUL;
     }
@@ -166,8 +177,8 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
 
 void depth_to_rgb_calibration::debug_calibration( char const * prefix )
 {
-    AC_LOG( DEBUG, AC_F_PREC << prefix << _intr );
-    AC_LOG( DEBUG, AC_F_PREC << prefix << " extr" << _extr );
-    AC_LOG( DEBUG, AC_F_PREC << prefix << " dsm" << _dsm_params );
+    AC_LOG( DEBUG, AC_F_PREC << "    " << prefix << " intr" << _intr );
+    AC_LOG( DEBUG, AC_F_PREC << "    " << prefix << " extr" << _extr );
+    AC_LOG( DEBUG, AC_F_PREC << "    " << prefix << "  dsm" << _dsm_params );
 }
 

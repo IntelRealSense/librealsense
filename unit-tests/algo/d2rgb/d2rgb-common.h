@@ -12,7 +12,9 @@
 
 
 #include "ac-logger.h"
+#if ! defined( DISABLE_LOG_TO_STDOUT )
 ac_logger LOG_TO_STDOUT;
+#endif
 
 
 namespace algo = librealsense::algo::depth_to_rgb_calibration;
@@ -24,6 +26,7 @@ void init_algo( algo::optimizer & cal,
     std::string const & dir,
     std::string const & yuy,
     std::string const & yuy_prev,
+    std::string const & yuy_last_successful,
     std::string const & ir,
     std::string const & z,
     camera_params const & camera
@@ -31,9 +34,21 @@ void init_algo( algo::optimizer & cal,
 {
     algo::calib calibration( camera.rgb, camera.extrinsics );
 
+    std::vector< algo::yuy_t> yuy_last_successful_frame;
+
+    try
+    {
+        yuy_last_successful_frame = read_image_file< algo::yuy_t >(dir + yuy_last_successful, camera.rgb.width, camera.rgb.height);
+    }
+    catch (...) 
+    {
+        yuy_last_successful_frame.clear();
+    };
+
     cal.set_yuy_data(
         read_image_file< algo::yuy_t >( dir + yuy, camera.rgb.width, camera.rgb.height ),
         read_image_file< algo::yuy_t >( dir + yuy_prev, camera.rgb.width, camera.rgb.height ),
+        std::move(yuy_last_successful_frame),
         calibration
     );
 
