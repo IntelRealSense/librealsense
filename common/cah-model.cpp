@@ -6,6 +6,7 @@
 #define GLFW_INCLUDE_NONE
 #include "fw-update-helper.h"
 #include "model-views.h"
+#include "types.h"
  
 using namespace rs2;
 
@@ -46,10 +47,10 @@ bool cah_model::prompt_trigger_popup(ux_window& window, std::string& error_messa
         auto fw_upgrade_needed = is_upgradeable(_dev_model.dev.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION), min_fw_version);
         bool is_depth_streaming = std::any_of(_dev_model.subdevices.begin(), _dev_model.subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm) { return sm->streaming && sm->s->as<depth_sensor>(); });
         bool is_color_streaming = std::any_of(_dev_model.subdevices.begin(), _dev_model.subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm) { return sm->streaming && sm->s->as<color_sensor>(); });
-        bool auto_cah_is_working = 
-            (RS2_CALIBRATION_SUCCESSFUL != global_calib_status) &&
-            (RS2_CALIBRATION_FAILED != global_calib_status) &&
-            (RS2_CALIBRATION_NOT_NEEDED != global_calib_status);
+        bool auto_cah_is_working = RS2_CALIBRATION_SUCCESSFUL != global_calib_status
+                                && RS2_CALIBRATION_FAILED != global_calib_status
+                                && RS2_CALIBRATION_NOT_NEEDED != global_calib_status
+                                && RS2_CALIBRATION_BAD_CONDITIONS != global_calib_status;
 
         std::string message_text = "Camera Accuracy Health will ensure you get the highest accuracy from your camera.\n\n"
             "This process may take several minutes and requires special setup to get good results.\n"
@@ -97,8 +98,8 @@ bool cah_model::prompt_trigger_popup(ux_window& window, std::string& error_messa
                     {
                         sd->s->set_option(RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, static_cast<float>(RS2_CAH_TRIGGER_NOW));
                     }
-                    catch (std::exception const & e)
-                    {                        
+                    catch( std::exception const & e )
+                    {
                         error_message = to_string() << "Trigger calibration failure:\n" << e.what();
                         _process_started = false;
                         global_calib_status = RS2_CALIBRATION_FAILED;
@@ -108,7 +109,7 @@ bool cah_model::prompt_trigger_popup(ux_window& window, std::string& error_messa
                     _state = model_state_type::PROCESS_MODAL;
                     // We switch to process state without a guarantee that the process really started,
                     // Set a timeout to make sure if it is not started we will allow closing the window.
-                    _process_timeout.start(std::chrono::seconds(30));
+                    _process_timeout.start( std::chrono::seconds( 30 ) );
 
                 }
             }
@@ -125,16 +126,23 @@ bool cah_model::prompt_trigger_popup(ux_window& window, std::string& error_messa
         if (!_process_started)
         {
             // Indication of calibration process start
-            _process_started = (global_calib_status == RS2_CALIBRATION_SPECIAL_FRAME || global_calib_status == RS2_CALIBRATION_STARTED);
+            _process_started = global_calib_status == RS2_CALIBRATION_TRIGGERED
+                            || global_calib_status == RS2_CALIBRATION_SPECIAL_FRAME
+                            || global_calib_status == RS2_CALIBRATION_STARTED;
         }
 
-        bool process_finished(global_calib_status == RS2_CALIBRATION_SUCCESSFUL || global_calib_status == RS2_CALIBRATION_FAILED || global_calib_status == RS2_CALIBRATION_NOT_NEEDED);
+        bool process_finished = global_calib_status == RS2_CALIBRATION_SUCCESSFUL
+                             || global_calib_status == RS2_CALIBRATION_FAILED
+                             || global_calib_status == RS2_CALIBRATION_NOT_NEEDED
+                             || global_calib_status == RS2_CALIBRATION_BAD_CONDITIONS;
 
         static std::map<rs2_calibration_status, std::string> status_map{
+            {RS2_CALIBRATION_TRIGGERED      , "In Progress" },
             {RS2_CALIBRATION_SPECIAL_FRAME  , "In Progress" },
             {RS2_CALIBRATION_STARTED        , "In Progress" },
             {RS2_CALIBRATION_NOT_NEEDED     , "Ended" },
             {RS2_CALIBRATION_SUCCESSFUL     , "Ended Successfully" },
+            {RS2_CALIBRATION_BAD_CONDITIONS , "Invalid Conditions" },
             {RS2_CALIBRATION_RETRY          , "In Progress" },
             {RS2_CALIBRATION_FAILED         , "Ended With Failure" },
             {RS2_CALIBRATION_SCENE_INVALID  , "In Progress" },

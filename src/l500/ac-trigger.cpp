@@ -242,7 +242,7 @@ namespace ivcam2 {
 
             is_depth_streaming = ac->_dev.get_depth_sensor().is_streaming();
 
-            if(is_depth_streaming)
+            if( is_depth_streaming )
             {
                 AC_LOG( DEBUG, "Triggering manual calibration..." );
                 ac->trigger_calibration( calibration_type::MANUAL );
@@ -697,14 +697,23 @@ namespace ivcam2 {
         _calibration_type = type;
         AC_LOG( DEBUG, "Calibration type is " << (type == calibration_type::MANUAL ? "MANUAL" : "AUTO") );
         
-        check_conditions();
-        // Above throws invalid_value_exception, which we want: if calibration is triggered under
-        // bad conditions, we want the user to get this!
+        try
+        {
+            check_conditions();
+        }
+        catch( invalid_value_exception const & )
+        {
+            call_back( RS2_CALIBRATION_BAD_CONDITIONS );
+            // Above throws invalid_value_exception, which we want: if calibration is triggered
+            // under bad conditions, we want the user to get this!
+            throw;
+        }
 
         _n_retries = 0;
         _n_cycles = 1;          // now active
         get_ac_logger().open_active();
         AC_LOG( INFO, "Camera Accuracy Health check is now active" );
+        call_back( RS2_CALIBRATION_TRIGGERED );
         _next_trigger.reset();  // don't need a trigger any more
         _temp_check.reset();    // nor a temperature check
         start_color_sensor_if_needed();

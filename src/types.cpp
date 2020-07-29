@@ -198,15 +198,17 @@ namespace librealsense
 #define CASE(X) STRCASE(CALIBRATION, X)
         switch( value )
         {
-            CASE( SPECIAL_FRAME )
-            CASE( STARTED )
-            CASE( NOT_NEEDED )
-            CASE( SUCCESSFUL )
-            
-            CASE( FAILED )
-            CASE( SCENE_INVALID )
-            CASE( BAD_RESULT )
-            CASE( RETRY )
+        CASE( TRIGGERED )
+        CASE( SPECIAL_FRAME )
+        CASE( STARTED )
+        CASE( NOT_NEEDED )
+        CASE( SUCCESSFUL )
+        
+        CASE( BAD_CONDITIONS )
+        CASE( FAILED )
+        CASE( SCENE_INVALID )
+        CASE( BAD_RESULT )
+        CASE( RETRY )
         default: assert( !is_valid( value ) ); return UNKNOWN_VALUE;
         }
 #undef CASE
