@@ -919,13 +919,18 @@ bool optimizer::input_validity_checks(input_validity_data* data )
 
     if( ! _settings.is_manual_trigger )
     {
-        is_movement_from_last_success
-            = is_movement_in_images( { _yuy.last_successful_edges, _yuy.last_successful_lum_frame },
-                                     { _yuy.edges, _yuy.lum_frame },
-                                     _yuy.movement_prev_valid_result,
-                                     _params.move_last_success_thresh_pix_val,
-                                     _params.move_last_success_thresh_pix_num,
-                                     _yuy.width, _yuy.height );
+        if( _yuy.last_successful_frame.size() )
+        {
+            is_movement_from_last_success = is_movement_in_images(
+                { _yuy.last_successful_edges, _yuy.last_successful_lum_frame },
+                { _yuy.edges, _yuy.lum_frame },
+                _yuy.movement_prev_valid_result,
+                _params.move_last_success_thresh_pix_val,
+                _params.move_last_success_thresh_pix_num,
+                _yuy.width,
+                _yuy.height );
+        }
+       
         if( ! is_movement_from_last_success )
             AC_LOG( ERROR, "Scene is not valid: not enough movement from last-calibrated scene [SALC]" );
     }

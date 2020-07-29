@@ -62,6 +62,8 @@ void print_dividers()
     std::cout << std::right << std::setw( 7 ) << "-----";
     std::cout << std::right << std::setw(2) << " ";
     std::cout << std::right << std::setw(4) << "---";
+    std::cout << std::right << std::setw( 2 ) << " ";
+    std::cout << std::right << std::setw( 8 ) << "---";
     std::cout << std::endl;
 }
 
@@ -81,6 +83,8 @@ void print_headers()
     std::cout << std::right << std::setw( 7 ) << "dPix";
     std::cout << std::right << std::setw(2) << " ";
     std::cout << std::right << std::setw(4) << "NC";
+    std::cout << std::right << std::setw( 2 ) << " ";
+    std::cout << std::right << std::setw( 8 ) << "MEM";
     std::cout << std::endl;
 
     print_dividers();
@@ -108,6 +112,7 @@ void print_scene_stats( std::string const & name, size_t n_failed, scene_stats c
 
     std::cout << std::right << std::setw( 7 ) << scene.d_movement;
     std::cout << std::right << std::setw(6) << scene.n_cycles;
+    std::cout << std::right << std::setw( 10 ) << scene.memory_consumption_peak;
     std::cout << std::endl;
 }
 
@@ -174,7 +179,7 @@ int main( int argc, char * argv[] )
                     {
                         redirect_file no( stats ? stdout : stderr );
                         catch_total = ctx.run_test( test_name, [&]() {
-                            REQUIRE_NOTHROW( compare_scene( scene_dir, &scene ) );
+                            REQUIRE_NOTHROW( compare_scene( scene_dir,false, &scene ) );
                         } );
                     }
                     

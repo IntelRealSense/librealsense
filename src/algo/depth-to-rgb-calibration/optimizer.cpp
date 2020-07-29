@@ -131,8 +131,9 @@ std::string optimizer::settings::to_string() const
 }
 
 
-optimizer::optimizer( settings const & s )
+optimizer::optimizer( settings const & s, bool debug_mode )
     : _settings( s )
+    , _debug_mode( debug_mode )
 {
     AC_LOG( DEBUG, "Optimizer settings are " << _settings.to_string() );
     if( _settings.is_manual_trigger )
@@ -462,30 +463,34 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
 
     _z.frame = std::move(depth_data);
 
-    _z.gradient_x = calc_vertical_gradient(_z.frame, depth_intrinsics.width, depth_intrinsics.height);
-    _z.gradient_y = calc_horizontal_gradient(_z.frame, depth_intrinsics.width, depth_intrinsics.height);
-    _ir.gradient_x = calc_vertical_gradient(_ir.ir_frame, depth_intrinsics.width, depth_intrinsics.height);
-    _ir.gradient_y = calc_horizontal_gradient(_ir.ir_frame, depth_intrinsics.width, depth_intrinsics.height);
+     auto z_gradient_x = calc_vertical_gradient(_z.frame, depth_intrinsics.width, depth_intrinsics.height);
+     auto z_gradient_y = calc_horizontal_gradient( _z.frame, depth_intrinsics.width, depth_intrinsics.height );
+     auto ir_gradient_x = calc_vertical_gradient( _ir.ir_frame, depth_intrinsics.width, depth_intrinsics.height );
+     auto ir_gradient_y = calc_horizontal_gradient( _ir.ir_frame, depth_intrinsics.width, depth_intrinsics.height );
+
 
     // set margin of 2 pixels to 0
-    set_margin(_z.gradient_x, 2, _z.width, _z.height);
-    set_margin(_z.gradient_y, 2, _z.width, _z.height);
-    set_margin(_ir.gradient_x, 2, _z.width, _z.height);
-    set_margin(_ir.gradient_y, 2, _z.width, _z.height);
+     set_margin( z_gradient_x, 2, _z.width, _z.height );
+     set_margin( z_gradient_y, 2, _z.width, _z.height );
+     set_margin( ir_gradient_x, 2, _z.width, _z.height );
+     set_margin( ir_gradient_y, 2, _z.width, _z.height );
 
-    _z.edges = calc_intensity(_z.gradient_x, _z.gradient_y);
-    _ir.edges = calc_intensity(_ir.gradient_x, _ir.gradient_y);
+    auto z_edges = calc_intensity(z_gradient_x, z_gradient_y);
+    auto ir_edges = calc_intensity( ir_gradient_x, ir_gradient_y );
 
-    for (auto ir = _ir.edges.begin(), z = _z.edges.begin(); ir < _ir.edges.end() && z < _z.edges.end(); ir++, z++)
+    std::vector< byte > valid_edge_pixels_by_ir;
+
+    for( auto ir = ir_edges.begin(), z = z_edges.begin(); ir < ir_edges.end() && z < z_edges.end();
+         ir++, z++ )
     {
         auto valid_edge = true;
         if (_params.use_enhanced_preprocessing)
         {
-            _ir.valid_edge_pixels_by_ir.push_back((*ir > _params.grad_ir_high_th && *z > _params.grad_z_low_th)
+            valid_edge_pixels_by_ir.push_back((*ir > _params.grad_ir_high_th && *z > _params.grad_z_low_th)
                 || (*ir > _params.grad_ir_low_th && *z > _params.grad_z_high_th));
         }
         else
-            _ir.valid_edge_pixels_by_ir.push_back(*ir > _params.grad_ir_threshold);
+            valid_edge_pixels_by_ir.push_back(*ir > _params.grad_ir_threshold);
     }
         
 
@@ -494,10 +499,11 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     sectionMapDepth = OnlineCalibration.aux.sectionPerPixel(params);
     */
     // Get a map for each pixel to its corresponding section
-    _z.section_map_depth.resize(_z.width * _z.height);
+    std::vector< byte > section_map_depth;
+    section_map_depth.resize(_z.width * _z.height);
     size_t const section_w = _params.num_of_sections_for_edge_distribution_x;  //% params.numSectionsH
     size_t const section_h = _params.num_of_sections_for_edge_distribution_y;  //% params.numSectionsH
-    section_per_pixel(_z, section_w, section_h, _z.section_map_depth.data());
+    section_per_pixel(_z, section_w, section_h, section_map_depth.data());
 
     //%locRC = [sampleByMask( gridY, validEdgePixelsByIR ), sampleByMask( gridX, validEdgePixelsByIR )];
     //%sectionMapValid = sampleByMask( sectionMapDepth, validEdgePixelsByIR );
@@ -508,20 +514,28 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     std::vector<double> grid_y;
     grid_xy(grid_x, grid_y, _z.width, _z.height);
 
-    sample_by_mask( _ir.valid_location_rc_x, grid_x, _ir.valid_edge_pixels_by_ir, _z.width, _z.height );
-    sample_by_mask( _ir.valid_location_rc_y, grid_y, _ir.valid_edge_pixels_by_ir, _z.width, _z.height );
-    sample_by_mask( _ir.valid_section_map, _z.section_map_depth, _ir.valid_edge_pixels_by_ir, _z.width, _z.height );
-    sample_by_mask( _ir.valid_gradient_x, _ir.gradient_x, _ir.valid_edge_pixels_by_ir, _z.width, _z.height );
-    sample_by_mask( _ir.valid_gradient_y, _ir.gradient_y, _ir.valid_edge_pixels_by_ir, _z.width, _z.height );
+    std::vector< double > valid_location_rc_x;
+    std::vector< double > valid_location_rc_y;
+    std::vector< byte > valid_section_map;
+    std::vector< double > valid_gradient_x;
+    std::vector< double > valid_gradient_y;
 
-    auto itx = _ir.valid_location_rc_x.begin();
-    auto ity = _ir.valid_location_rc_y.begin();
-    for (auto i = 0; i < _ir.valid_location_rc_x.size(); i++)
+    sample_by_mask( valid_location_rc_x, grid_x, valid_edge_pixels_by_ir, _z.width, _z.height );
+    sample_by_mask( valid_location_rc_y, grid_y, valid_edge_pixels_by_ir, _z.width, _z.height );
+    sample_by_mask( valid_section_map,  section_map_depth, valid_edge_pixels_by_ir, _z.width, _z.height );
+    sample_by_mask( valid_gradient_x, ir_gradient_x, valid_edge_pixels_by_ir, _z.width, _z.height );
+    sample_by_mask( valid_gradient_y, ir_gradient_y, valid_edge_pixels_by_ir, _z.width, _z.height );
+
+    auto itx = valid_location_rc_x.begin();
+    auto ity = valid_location_rc_y.begin();
+
+    std::vector< double > valid_location_rc;
+    for (auto i = 0; i < valid_location_rc_x.size(); i++)
     {
         auto x = *(itx + i);
         auto y = *(ity + i);
-        _ir.valid_location_rc.push_back(y);
-        _ir.valid_location_rc.push_back(x);
+        valid_location_rc.push_back(y);
+        valid_location_rc.push_back(x);
     }
 
     /*
@@ -530,8 +544,8 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     [~,directionIndex] = min(abs(directionInDeg - [0:45:315]),[],2); % Quantize the direction to 4 directions (don't care about the sign)
     */
 
-    _ir.direction_deg = get_direction_deg2(_ir.valid_gradient_x, _ir.valid_gradient_y); // used for debug only
-    _ir.directions = get_direction2(_ir.valid_gradient_x, _ir.valid_gradient_y);
+    _ir.direction_deg = get_direction_deg2( valid_gradient_x,  valid_gradient_y); // used for debug only
+    _ir.directions = get_direction2( valid_gradient_x,  valid_gradient_y);
 
     /*dirsVec = [0,1; 1,1; 1,0; 1,-1]; % These are the 4 directions
     dirsVec = [dirsVec;-dirsVec];
@@ -557,7 +571,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     }
     double vec[4] = { -2,-1,0,1 }; // one pixel along gradient direction, 2 pixels against gradient direction
 
-    auto loc_it = _ir.valid_location_rc.begin();
+    auto loc_it = valid_location_rc.begin();
     auto dir_pp_it = _ir.direction_per_pixel.begin();
 
     for (auto k = 0; k < 4; k++)
@@ -570,7 +584,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     }
     for (auto k = 0; k < 4; k++)
     {
-        for (auto i = 0; i < 2 * _ir.valid_location_rc_x.size(); i++)
+        for (auto i = 0; i < 2 * valid_location_rc_x.size(); i++)
         {
             _ir.local_region_y[k].push_back(*(_ir.local_region[k].begin() + i));
             i++;
@@ -578,10 +592,10 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
         }
     }
     // interpolation 
-    _ir.local_edges = interpolation(_ir.edges, _ir.local_region_x, _ir.local_region_y, 4, _ir.valid_location_rc_x.size(), _ir.width);
+    _ir.local_edges = interpolation(ir_edges, _ir.local_region_x, _ir.local_region_y, 4,  valid_location_rc_x.size(), _ir.width);
 
     // is suppressed
-    _ir.is_supressed = is_suppressed(_ir.local_edges, _ir.valid_location_rc_x.size());
+    _ir.is_supressed = is_suppressed(_ir.local_edges,  valid_location_rc_x.size());
 
 
     /*fraqStep = (-0.5*(localEdges(:,4)-localEdges(:,2))./(localEdges(:,4)+localEdges(:,2)-2*localEdges(:,3))); % The step we need to move to reach the subpixel gradient i nthe gradient direction
@@ -602,13 +616,13 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
 
     std::vector< double > ::iterator loc_edg_it = _ir.local_edges.begin();
     //std::vector<double > ::iterator loc_rc_sub_it = _depth.local_rc_subpixel.begin(); // locRCsub
-    auto valid_loc_rc = _ir.valid_location_rc.begin(); // locRC
+    auto valid_loc_rc = valid_location_rc.begin(); // locRC
     auto dir_per_pixel_it = _ir.direction_per_pixel.begin(); // dirPerPixel
 
     std::vector< double > edge_sub_pixel_x;
     std::vector< double > edge_sub_pixel_y;
 
-    for (auto i = 0; i < _ir.valid_location_rc_x.size(); i++)
+    for (auto i = 0; i <  valid_location_rc_x.size(); i++)
     {
         double vec2 = *(loc_edg_it + 1);
         double vec3 = *(loc_edg_it + 2);
@@ -637,13 +651,14 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
         edge_sub_pixel_y.push_back(valx);
     }
 
+
     std::vector<double> local_region_x[2] = { _ir.local_region_x[1] ,_ir.local_region_x[2] };
     std::vector<double> local_region_y[2] = { _ir.local_region_y[1] ,_ir.local_region_y[2] };
-    _z.local_x = interpolation(_z.gradient_x, local_region_x, local_region_y, 2, _ir.valid_location_rc_x.size(), _z.width);
-    _z.local_y = interpolation(_z.gradient_y, local_region_x, local_region_y, 2, _ir.valid_location_rc_x.size(), _z.width);
+    _z.local_x = interpolation(z_gradient_x, local_region_x, local_region_y, 2, valid_location_rc_x.size(), _z.width);
+    _z.local_y = interpolation(z_gradient_y, local_region_x, local_region_y, 2, valid_location_rc_x.size(), _z.width);
     _z.gradient = depth_mean(_z.local_x, _z.local_y);
     _z.grad_in_direction = sum_gradient_depth(_z.gradient, _ir.direction_per_pixel);
-    _z.local_values = interpolation(_z.frame, _ir.local_region_x, _ir.local_region_y, 4, _ir.valid_location_rc_x.size(), _z.width);
+    _z.local_values = interpolation(_z.frame, _ir.local_region_x, _ir.local_region_y, 4, valid_location_rc_x.size(), _z.width);
     _z.values_for_subedges = find_local_values_min(_z.local_values);
 
     //_params.alpha;
@@ -680,7 +695,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     }
     depth_filter(valid_values_for_subedges, _z.values_for_subedges, _z.supressed_edges, 1, _z.supressed_edges.size());
     depth_filter(_z.valid_direction_per_pixel, direction_per_pixel_x, _z.supressed_edges, 1, _z.supressed_edges.size());
-    depth_filter(_z.valid_section_map, _ir.valid_section_map, _z.supressed_edges, 1, _z.supressed_edges.size());
+    depth_filter(_z.valid_section_map, valid_section_map, _z.supressed_edges, 1, _z.supressed_edges.size());
     std::vector<double> edited_ir_directions;
 
     for (auto i = 0; i < _ir.directions.size(); i++)
@@ -795,6 +810,24 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
 
         _z.relevant_pixels_image[size_t( ( y - 1 ) * _z.width + x - 1 )] = 1;
     }
+
+     if( _debug_mode )
+    {
+        _z.gradient_x = std::move( z_gradient_x );
+        _z.gradient_y = std::move( z_gradient_y );
+        _ir.gradient_x = std::move( ir_gradient_x );
+        _ir.gradient_y = std::move( ir_gradient_y );
+        _z.edges = std::move( z_edges );
+        _ir.edges = std::move( ir_edges );
+        _ir.valid_edge_pixels_by_ir = std::move( valid_edge_pixels_by_ir );
+        _z.section_map_depth = std::move( section_map_depth );
+        _ir.valid_section_map = std::move( valid_section_map );
+        _ir.valid_gradient_x = std::move( valid_gradient_x );
+        _ir.valid_gradient_y = std::move( valid_gradient_y );
+        _ir.valid_location_rc_x = std::move( valid_location_rc_x );
+        _ir.valid_location_rc_y = std::move( valid_location_rc_y );
+        _ir.valid_location_rc = std::move( valid_location_rc );
+    }
 }
 
 
@@ -817,7 +850,7 @@ void optimizer::set_yuy_data(
     if( last_successful_yuy_data.empty() )
     {
         AC_LOG( DEBUG, "    previous calibration image was NOT supplied" );
-        last_successful_yuy_data.resize( _yuy.orig_frame.size(), 0 );
+        //last_successful_yuy_data.resize( _yuy.orig_frame.size(), 0 );
     }
     else
     {
@@ -831,8 +864,12 @@ void optimizer::set_yuy_data(
     _yuy.edges = calc_edges( _yuy.lum_frame, _yuy.width, _yuy.height );
     _yuy.prev_edges = calc_edges(_yuy.prev_lum_frame, _yuy.width, _yuy.height);
 
-    _yuy.last_successful_lum_frame = get_luminance_from_yuy2(_yuy.last_successful_frame);
-    _yuy.last_successful_edges = calc_edges(_yuy.last_successful_lum_frame, _yuy.width, _yuy.height);
+    if (_yuy.last_successful_frame.size())
+    {
+        _yuy.last_successful_lum_frame = get_luminance_from_yuy2( _yuy.last_successful_frame );
+        _yuy.last_successful_edges = calc_edges( _yuy.last_successful_lum_frame, _yuy.width, _yuy.height );
+    }
+
 
     _yuy.edges_IDT = blur_edges( _yuy.edges, _yuy.width, _yuy.height );
 
@@ -869,20 +906,6 @@ rs2_intrinsics_double optimizer::get_new_z_intrinsics_from_new_calib(const rs2_i
     res.fy = res.fy / new_c.k_mat.get_fy()*orig_c.k_mat.get_fy();
 
     return res;
-}
-
-void optimizer::zero_invalid_edges( z_frame_data & z_data, ir_frame_data const & ir_data )
-{
-    for( auto i = 0; i < ir_data.edges.size(); i++ )
-    {
-        if( ir_data.edges[i] <= _params.grad_ir_threshold || z_data.edges[i] <= _params.grad_z_threshold )
-        {
-            z_data.supressed_edges[i] = 0;
-            z_data.subpixels_x[i] = 0;
-            z_data.subpixels_y[i] = 0;
-            z_data.closest[i] = 0;
-        }
-    }
 }
 
 std::vector< direction > optimizer::get_direction( std::vector<double> gradient_x, std::vector<double> gradient_y )
@@ -1706,7 +1729,7 @@ size_t optimizer::optimize_p
         if (data)
             data->iteration_data_p.next_params = params_new;
 
-        if (cb)
+        if( data && cb )
             cb(*data);
 
         auto norm = (params_new.curr_p_mat - curr.curr_p_mat).get_norma();
@@ -1736,7 +1759,7 @@ size_t optimizer::optimize_p
     }
 
     AC_LOG( DEBUG,
-            "    cycle " << data->cycle_data_p.cycle << " finished after " << n_iterations << " iterations; cost "
+            "    optimize_p finished after " << n_iterations << " iterations; cost "
                          << AC_D_PREC << params_curr.cost << "  -->  " << params_new.cost );
     new_rgb_calib_for_k_to_dsm = optimaized_calibration = decompose_p_mat(params_new.curr_p_mat);
 
@@ -1761,7 +1784,13 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
     auto cycle = 1;
     data.cycle_data_p.cycle = cycle;
 
-    auto res = calc_cost_and_grad(_z, _z.vertices, _yuy, decompose(_params_curr.curr_p_mat, _original_calibration), _params_curr.curr_p_mat, &data);
+    auto res = calc_cost_and_grad( _z,
+                                   _z.vertices,
+                                   _yuy,
+                                   decompose( _params_curr.curr_p_mat, _original_calibration ),
+                                   _params_curr.curr_p_mat,
+                                   _debug_mode? &data: nullptr );
+
     _params_curr.cost = res.first;
     _params_curr.calib_gradients = res.second;
     params_orig.cost = res.first;
@@ -1775,7 +1804,14 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
 
     double last_cost = _params_curr.cost;
     
-    auto n_iterations = optimize_p(_params_curr, new_vertices, new_params, _optimaized_calibration, new_calib, new_k_depth, cb, &data);
+    auto n_iterations = optimize_p( _params_curr,
+                                    new_vertices,
+                                    new_params,
+                                    _optimaized_calibration,
+                                    new_calib,
+                                    new_k_depth,
+                                    cb,
+                                    _debug_mode ? &data : nullptr );
 
     _z.orig_vertices = _z.vertices;
     rs2_dsm_params_double new_dsm_params = _z.orig_dsm_params;
@@ -1791,22 +1827,29 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
         calib optimaized_calib_candidate = _optimaized_calibration;
         rs2_intrinsics_double k_depth_candidate = new_k_depth;
 
-        data.cycle_data_p.cycle = ++cycle;
-        data.cycle_data_p.new_calib = new_calib;
-        data.cycle_data_p.new_k_depth = new_k_depth;
-        data.cycle_data_p.new_params = new_params;
-        data.cycle_data_p.new_dsm_params = new_dsm_params;
-        data.cycle_data_p.new_dsm_regs = new_dsm_regs;
-        data.cycle_data_p.new_vertices = new_vertices;
-        data.cycle_data_p.optimaized_calib_candidate = optimaized_calib_candidate;
+        ++cycle;
+
+        if (_debug_mode)
+        {
+            data.cycle_data_p.cycle = cycle;
+            data.cycle_data_p.new_calib = new_calib;
+            data.cycle_data_p.new_k_depth = new_k_depth;
+            data.cycle_data_p.new_params = new_params;
+            data.cycle_data_p.new_dsm_params = new_dsm_params;
+            data.cycle_data_p.new_dsm_regs = new_dsm_regs;
+            data.cycle_data_p.new_vertices = new_vertices;
+            data.cycle_data_p.optimaized_calib_candidate = optimaized_calib_candidate;
+
+             if( cb )
+            {
+                 data.type = cycle_data;
+                 cb(data);
+            }
+        }
+       
 
         AC_LOG(INFO, "CYCLE " << data.cycle_data_p.cycle << " started with: cost = " << AC_D_PREC << new_params.cost);
 
-        if (cb)
-        {
-            data.type = cycle_data;
-            cb(data);
-        }
 
         if (get_cycle_data_from_bin)
         {
@@ -1817,23 +1860,40 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
             new_dsm_params = _dsm_params_cand_from_bin;
         }
 
-        auto dsm_candidate = _k_to_DSM->convert_new_k_to_DSM(_z.orig_intrinsics, new_k_depth, _z, cand_vertices, new_dsm_params, dsm_regs_cand, &data);
-        data.type = cycle_data;
+        auto dsm_candidate = _k_to_DSM->convert_new_k_to_DSM( _z.orig_intrinsics,
+                                                              new_k_depth,
+                                                              _z,
+                                                              cand_vertices,
+                                                              new_dsm_params,
+                                                              dsm_regs_cand,
+                                                              _debug_mode ? &data : nullptr );
+        //data.type = cycle_data;
 
         //this calib is now candidate to be the optimaized we can confirm it only after running more optimize_p
         calib_k_to_dsm_candidate = calib_candidate;
 
-        data.k2dsm_data_p.dsm_params_cand = dsm_candidate;
-        data.k2dsm_data_p.vertices = cand_vertices;
-        data.k2dsm_data_p.dsm_pre_process_data = _k_to_DSM->get_pre_process_data();
-
-        if (cb)
+        if (_debug_mode)
         {
-            data.type = k_to_dsm_data;
-            cb(data);
-        }
+            data.k2dsm_data_p.dsm_params_cand = dsm_candidate;
+            data.k2dsm_data_p.vertices = cand_vertices;
+            data.k2dsm_data_p.dsm_pre_process_data = _k_to_DSM->get_pre_process_data();
 
-        optimize_p(new_params, cand_vertices, params_candidate, optimaized_calib_candidate, calib_candidate, k_depth_candidate, cb, &data);
+            if( cb )
+            {
+                 data.type = k_to_dsm_data;
+                 cb(data);
+            }
+        }
+     
+
+        optimize_p( new_params,
+                    cand_vertices,
+                    params_candidate,
+                    optimaized_calib_candidate,
+                    calib_candidate,
+                    k_depth_candidate,
+                    cb,
+                    _debug_mode ? &data : nullptr );
 
         if( params_candidate.cost < last_cost )
         {

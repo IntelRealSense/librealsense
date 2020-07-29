@@ -288,7 +288,7 @@ namespace depth_to_rgb_calibration {
         };
 #pragma pack(pop)
 
-        optimizer( settings const & );
+        optimizer( settings const &, bool debug_mode = false );
 
         void set_yuy_data( std::vector< yuy_t > && yuy_data, 
             std::vector< yuy_t > && prev_yuy_data,
@@ -375,7 +375,6 @@ namespace depth_to_rgb_calibration {
 
         calib decompose_p_mat(p_matrix p);
         rs2_intrinsics_double get_new_z_intrinsics_from_new_calib(const rs2_intrinsics_double& orig, const calib & new_c, const calib & orig_c);
-        void zero_invalid_edges( z_frame_data& z_data, ir_frame_data const & ir_data );
         std::vector<direction> get_direction( std::vector<double> gradient_x, std::vector<double> gradient_y );
         std::vector<direction> get_direction2(std::vector<double> gradient_x, std::vector<double> gradient_y);
         std::vector<uint16_t> get_closest_edges( const z_frame_data& z_data, ir_frame_data const & ir_data, size_t width, size_t height );
@@ -449,6 +448,7 @@ namespace depth_to_rgb_calibration {
         rs2_dsm_params_double _dsm_params_cand_from_bin;
 
         std::shared_ptr<k_to_DSM> _k_to_DSM;
+        bool _debug_mode;
     };
 
 }  // librealsense::algo::depth_to_rgb_calibration
