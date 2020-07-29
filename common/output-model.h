@@ -13,6 +13,8 @@
 
 namespace rs2
 {
+    class device_model;
+
     class stream_dashboard
     {
     public:
@@ -29,7 +31,7 @@ namespace rs2
 
         virtual void draw(ux_window& win, rect r) = 0;
 
-        virtual int get_height() const { return 150.f; }
+        virtual int get_height() const { return 150; }
 
         virtual void clear(bool full = false) {}
 
@@ -123,11 +125,13 @@ namespace rs2
 
         void add_log(rs2_log_severity severity, std::string filename, int line_number, std::string line);
 
-        void draw(ux_window& win, rect view_rect, std::vector<rs2::device> devices);
+        void draw(ux_window& win, rect view_rect, std::vector<std::unique_ptr<device_model>> &  device_models);
 
         int get_output_height() const { return default_log_h; }
 
-        void run_command(std::string command, std::vector<rs2::device> devices);
+        void run_command(std::string command, std::vector<std::unique_ptr<device_model>> & device_models);
+        bool user_defined_command(std::string command, std::vector<std::unique_ptr<device_model>> & device_models);
+
 
     private:
         void open(ux_window& win);

@@ -3379,9 +3379,9 @@ namespace rs2
         , _detected_objects(std::make_shared< atomic_objects_in_frame >()),
         _updates(viewer.updates)
     {
-        if (dev.is<device_calibration>())
+        if( dev.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) && dev.is< device_calibration >() )
         {
-            _accuracy_health_model = std::unique_ptr<cah_model>(new cah_model(*this, viewer));
+            _accuracy_health_model = std::unique_ptr< cah_model >( new cah_model( *this, viewer ) );
         }
 
         auto name = get_device_name(dev);
@@ -4790,12 +4790,8 @@ namespace rs2
                 }
             }
 
-            if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && dev.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) &&
-                dev.is<device_calibration>())
-            { 
-                auto product_line_str = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-                if (RS2_PRODUCT_LINE_L500 == parse_product_line(product_line_str))
-                {
+            if (_accuracy_health_model)
+            {
                     if (ImGui::Selectable("Trigger Camera Accuracy Health"))
                     {
                         // We cannot open a pop up window here since we are already in a pop up window
@@ -4807,7 +4803,7 @@ namespace rs2
                     {
                         show_reset_camera_accuracy_health_popup = true;
                     }
-                }
+                
             }
             
             bool has_autocalib = false;
