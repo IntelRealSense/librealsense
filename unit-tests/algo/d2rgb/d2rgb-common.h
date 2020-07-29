@@ -42,7 +42,7 @@ void init_algo( algo::optimizer & cal,
     }
     catch (...) 
     {
-        yuy_last_successful_frame.resize(camera.rgb.width*camera.rgb.height, 0);
+        yuy_last_successful_frame.clear();
     };
 
     cal.set_yuy_data(
