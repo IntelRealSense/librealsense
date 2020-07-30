@@ -57,7 +57,6 @@ namespace rs2
         config_file::instance().set_default(configurations::window::saved_size, false);
 
         config_file::instance().set_default(configurations::viewer::is_measuring, false);
-        config_file::instance().set_default(configurations::viewer::log_filename, get_folder_path(special_folder::user_documents) + "librealsense.log");
         config_file::instance().set_default(configurations::viewer::log_to_console, true);
         config_file::instance().set_default(configurations::viewer::log_to_file, false);
         config_file::instance().set_default(configurations::viewer::log_severity, 2);
@@ -65,7 +64,6 @@ namespace rs2
         config_file::instance().set_default(configurations::viewer::ground_truth_r, 2500);
 
         config_file::instance().set_default(configurations::record::compression_mode, 2); // Let the device decide
-        config_file::instance().set_default(configurations::record::default_path, get_folder_path(special_folder::user_documents));
         config_file::instance().set_default(configurations::record::file_save_mode, 0); // Auto-select name
 
         config_file::instance().set_default(configurations::performance::show_fps, false);
@@ -78,6 +76,20 @@ namespace rs2
 
         config_file::instance().set_default(configurations::viewer::commands_xml, "./Commands.xml");
         config_file::instance().set_default(configurations::viewer::hwlogger_xml, "./HWLoggerEvents.xml");
+
+        std::string path;
+        try
+        {
+            path = get_folder_path(special_folder::user_documents);
+        }
+        catch (const std::exception& e)
+        {
+            std::string msg = "Failed to get Documents folder";
+            rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());
+            path = "";
+        }
+        config_file::instance().set_default(configurations::viewer::log_filename, path + "librealsense.log");
+        config_file::instance().set_default(configurations::record::default_path, path);
 
 #ifdef __APPLE__
 
