@@ -195,6 +195,7 @@ int main( int argc, char * argv[] )
                     total.n_valid_result_diff += scene.n_valid_result_diff;
                     total.n_converged += scene.n_converged;
                     total.n_converged_diff += scene.n_converged_diff;
+                    total.memory_consumption_peak += scene.memory_consumption_peak;
 
                     if( stats )
                         print_scene_stats( test_name, catch_total.assertions.failed, scene );
