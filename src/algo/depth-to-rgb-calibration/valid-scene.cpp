@@ -18,6 +18,7 @@
 using namespace librealsense::algo::depth_to_rgb_calibration;
 using librealsense::to_string;
 
+
 template<class T>
 std::vector<double> gauss_convolution(std::vector<T> const& image,
     size_t image_width, size_t image_height,
@@ -186,6 +187,8 @@ std::vector<double> gauss_convolution(std::vector<T> const& image,
     }
     return res;
 }
+
+
 template<class T>
 std::vector<uint8_t> dilation_convolution(std::vector<T> const& image,
     size_t image_width, size_t image_height,
@@ -278,11 +281,11 @@ std::vector<uint8_t> dilation_convolution(std::vector<T> const& image,
     }
     return res;
 }
-void optimizer::check_edge_distribution(
-    std::vector<double>& sum_weights_per_section,
-    double& min_max_ratio,
-    bool& is_edge_distributed
-    )
+
+
+void optimizer::check_edge_distribution( std::vector< double > & sum_weights_per_section,
+                                         double & min_max_ratio,
+                                         bool & is_edge_distributed )
 {
     /*minMaxRatio = min(sumWeightsPerSection)/max(sumWeightsPerSection);
       if minMaxRatio < params.edgeDistributMinMaxRatio
@@ -318,18 +321,17 @@ end*/
             break;
         }
     }
-    if (!is_edge_distributed) {
-        AC_LOG(DEBUG, "check_edge_distribution: weighted edge per section is too low:  ");
-        for (auto it = sum_weights_per_section.begin(); it != sum_weights_per_section.end(); ++it)
-        {
-            AC_LOG(DEBUG, "    " << *it);
-        }
-        AC_LOG(DEBUG, "threshold is: " << _params.min_weighted_edge_per_section);
-        return;
+    if( ! is_edge_distributed )
+    {
+        AC_LOG( DEBUG, "check_edge_distribution: weighted edge per section is too low:  " );
+        for( auto it = sum_weights_per_section.begin(); it != sum_weights_per_section.end(); ++it )
+            AC_LOG( DEBUG, "    " << *it );
+        AC_LOG( DEBUG, "threshold is: " << _params.min_weighted_edge_per_section );
     }
-    
 }
-bool optimizer::is_edge_distributed(z_frame_data& z, yuy2_frame_data& yuy)
+
+
+bool optimizer::is_edge_distributed( z_frame_data & z, yuy2_frame_data & yuy )
 {
     size_t num_of_sections = _params.num_of_sections_for_edge_distribution_x * _params.num_of_sections_for_edge_distribution_y;
 
@@ -458,6 +460,7 @@ static bool is_grad_dir_balanced( std::vector< double > const & weights,
     return true;
 }
 
+
 void optimizer::section_per_pixel(
     frame_data const& f,
     size_t const section_w,
@@ -492,6 +495,7 @@ void optimizer::section_per_pixel(
         }
     }
 }
+
 
 template<class T>
 uint8_t dilation_calc(std::vector<T> const& sub_image, std::vector<uint8_t> const& mask)
@@ -539,6 +543,7 @@ double gaussian_calc(std::vector<T> const& sub_image, std::vector<double> const&
     return res;
 }
 
+
 void optimizer::gaussian_filter( std::vector< uint8_t > const & lum_frame,
                                  std::vector< uint8_t > const & prev_lum_frame,
                                  std::vector< double > & yuy_diff,
@@ -577,29 +582,30 @@ diffIm = imgaussfilt(im1-im2,params.moveGaussSigma);*/
                                            return gaussian_calc( sub_image, gaussian_kernel );
                                        } );
 }
-void abs_values(std::vector< double >& vec_in)
+
+
+void abs_values( std::vector< double > & vec_in )
 {
-    //std::vector< double > abs_vec_in = vec_in;
-    for (double& val : vec_in)
+    for( double & val : vec_in )
     {
         if (val < 0)
-        {
             val *= -1;
-        }
     }
 }
-void gaussian_dilation_mask(std::vector< double >& gauss_diff, std::vector< uint8_t >& dilation_mask)
+
+
+void gaussian_dilation_mask( std::vector< double > & gauss_diff,
+                             std::vector< uint8_t > & dilation_mask )
 {
     auto gauss_it = gauss_diff.begin();
     auto dilation_it = dilation_mask.begin();
-    for (auto i = 0; i < gauss_diff.size(); i++, gauss_it++, dilation_it++)
+    for( auto i = 0; i < gauss_diff.size(); i++, gauss_it++, dilation_it++ )
     {
-        if (*dilation_it)
-        {
+        if( *dilation_it )
             *gauss_it = 0;
-        }
     }
 }
+
 
 static size_t move_suspected_mask( std::vector< uint8_t > & move_suspect,
                                    std::vector< double > & gauss_diff_masked,
@@ -620,6 +626,7 @@ static size_t move_suspected_mask( std::vector< uint8_t > & move_suspect,
     }
     return n_movements;
 }
+
 
 bool optimizer::is_movement_in_images( movement_inputs_for_frame const & prev,
                                        movement_inputs_for_frame const & curr,
@@ -669,7 +676,9 @@ end*/
 
     return false;
 }
-bool optimizer::is_scene_valid(input_validity_data* data)
+
+
+bool optimizer::is_scene_valid( input_validity_data * data )
 {
     std::vector< byte > section_map_depth(_z.width * _z.height);
     std::vector< byte > section_map_rgb(_yuy.width * _yuy.height);
@@ -678,56 +687,53 @@ bool optimizer::is_scene_valid(input_validity_data* data)
     size_t const section_h = _params.num_of_sections_for_edge_distribution_y;  //% params.numSectionsH
 
     // Get a map for each pixel to its corresponding section
-    section_per_pixel(_z, section_w, section_h, section_map_depth.data());
-    section_per_pixel(_yuy, section_w, section_h, section_map_rgb.data());
+    section_per_pixel( _z, section_w, section_h, section_map_depth.data() );
+    section_per_pixel( _yuy, section_w, section_h, section_map_rgb.data() );
 
     // remove pixels in section map that were removed in weights
-    AC_LOG(DEBUG, "    " << _z.supressed_edges.size() << " total edges");
-    for (auto i = 0; i < _z.supressed_edges.size(); i++)
+    AC_LOG( DEBUG, "    " << _z.supressed_edges.size() << " total edges" );
+    for( auto i = 0; i < _z.supressed_edges.size(); i++ )
     {
-        if (_z.supressed_edges[i])
+        if( _z.supressed_edges[i] )
         {
-            _z.section_map.push_back(section_map_depth[i]);
+            _z.section_map.push_back( section_map_depth[i] );
         }
     }
     _z.section_map = _z.section_map_depth_inside; // NOHA :: taken from preprocessDepth
-    AC_LOG(DEBUG, "    " << _z.section_map.size() << " not suppressed");
+    AC_LOG( DEBUG, "    " << _z.section_map.size() << " not suppressed" );
 
     // remove pixels in section map where edges_IDT > 0
     int i = 0;
-    AC_LOG(DEBUG, "    " << _z.supressed_edges.size() << " total edges IDT");
+    AC_LOG( DEBUG, "    " << _z.supressed_edges.size() << " total edges IDT" );
 
-    for (auto it = _yuy.edges_IDT.begin(); it != _yuy.edges_IDT.end(); ++it, ++i)
+    for( auto it = _yuy.edges_IDT.begin(); it != _yuy.edges_IDT.end(); ++it, ++i )
     {
-        if (*it > 0)
-        {
-            _yuy.section_map.push_back(section_map_rgb[i]);
-        }
+        if( *it > 0 )
+            _yuy.section_map.push_back( section_map_rgb[i] );
     }
-    AC_LOG(DEBUG, "    " << _yuy.section_map.size() << " not suppressed");
+    AC_LOG( DEBUG, "    " << _yuy.section_map.size() << " not suppressed" );
 
-
-    bool res_movement = is_movement_in_images(
-        { _yuy.prev_edges, _yuy.prev_lum_frame }, 
-        { _yuy.edges, _yuy.lum_frame },
-        _yuy.movement_result, 
-        _params.move_thresh_pix_val,
-        _params.move_threshold_pix_num,
-        _yuy.width, _yuy.height);
-    if( res_movement )
+    // The previous and current frames must have "NO" movement between them
+    bool movement_from_prev_frame = is_movement_in_images( { _yuy.prev_edges, _yuy.prev_lum_frame },
+                                                           { _yuy.edges, _yuy.lum_frame },
+                                                           _yuy.movement_result,
+                                                           _params.move_thresh_pix_val,
+                                                           _params.move_threshold_pix_num,
+                                                           _yuy.width,
+                                                           _yuy.height );
+    if( movement_from_prev_frame )
         AC_LOG( ERROR, "Scene is not valid: movement detected between current & previous frames [MOVE]" );
 
-    bool res_edges = is_edge_distributed(_z, _yuy);
+    // These two are used in the results validity, in the decision params
+    bool res_edges = is_edge_distributed( _z, _yuy );
     bool res_gradient = is_grad_dir_balanced( _z.weights,
                                               _z.directions,
                                               _params,
                                               &_z.sum_weights_per_direction,
                                               &_z.dir_ratio1 );
 
-    //return((!res_movement) && res_edges && res_gradient);
-
-    auto valid = !res_movement;
-    valid = valid && input_validity_checks(data);
+    auto valid = ! movement_from_prev_frame;
+    valid = input_validity_checks(data)  &&  valid;
         
     return(valid);
 }

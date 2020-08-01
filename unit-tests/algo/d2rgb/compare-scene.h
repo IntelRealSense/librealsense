@@ -563,6 +563,19 @@ void compare_preprocessing_data( std::string const & scene_dir,
 }
 
 
+float mb_in_use()
+{
+    float mem = 0;
+#ifdef _WIN32
+    PROCESS_MEMORY_COUNTERS_EX pmc;
+    GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS *)&pmc, sizeof( pmc ) );
+
+    mem = float( pmc.WorkingSetSize / ( 1024. * 1024. ) );
+#else
+#endif
+    return mem;
+}
+
 
 std::thread memory_mesurments_thread( std::function< bool() > alive,
                                       std::function< void( float mem ) > memory_mesurment )
@@ -570,19 +583,7 @@ std::thread memory_mesurments_thread( std::function< bool() > alive,
     std::thread t( [=]() {
         while( alive() )
         {
-
-            auto mem = 0.f;
-#ifdef _WIN32
-            PROCESS_MEMORY_COUNTERS_EX pmc;
-            GetProcessMemoryInfo( GetCurrentProcess(),
-                                  (PROCESS_MEMORY_COUNTERS *)&pmc,
-                                  sizeof( pmc ) );
-
-            mem = (float)pmc.WorkingSetSize / ( 1024.0 * 1024.0 );
-#else
-#endif
-
-            memory_mesurment( mem );
+            memory_mesurment( mb_in_use() );
             std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
         }
     } );
@@ -591,19 +592,83 @@ std::thread memory_mesurments_thread( std::function< bool() > alive,
 }
 
 
-void compare_scene( std::string const & scene_dir, bool debug_mode = true, scene_stats * stats = nullptr )
+class profile
+{
+    float _baseline;
+    std::atomic< float > _peak{ 0 };
+    std::atomic_bool _alive{ true };
+
+    std::thread _th;
+
+    // section
+    float _s_start = 0.f;
+    std::atomic< float > _s_peak;
+
+public:
+    profile()
+        : _baseline( mb_in_use() )
+    {
+        _th = std::thread( [&]() {
+            while( _alive )
+            {
+                auto const mb = mb_in_use();
+                _peak = std::max( mb, (float)_peak );
+                _s_peak = std::max( mb, (float)_s_peak );
+                std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+            }
+        } );
+    }
+
+    void section( char const * heading )
+    {
+        _s_start = mb_in_use();
+        _s_peak = _s_start;
+        TRACE( "\n-------------- " << heading << ":" );
+    }
+
+    void section_end()
+    {
+        auto const mb = mb_in_use();
+        _s_peak = std::max( mb, (float)_s_peak );
+        TRACE( "-------------- " << _s_start << " --> " << mb << "  /  " << _s_peak
+                                 << " MB        delta  " << ( mb - _s_start ) << "  /  "
+                                 << ( _s_peak - _s_start ) << "  peak\n" );
+    }
+
+    ~profile()
+    {
+        stop();
+
+        auto const mb = mb_in_use();
+        TRACE( "\n-------------- FINAL: " << mb << "  /  " << _peak << " peak  (" << _baseline << " baseline)" );
+    }
+
+    void snapshot( char const * desc )
+    {
+        TRACE( "--- " << mb_in_use() << " MB   -->   peak= " << (float)_peak );
+    }
+
+    void stop()
+    {
+        if( _alive )
+        {
+            _alive = false;
+            _th.join();
+        }
+    }
+
+    float get_peak() const { return _peak; }
+    float get_baseline() const { return _baseline; }
+};
+
+
+void compare_scene( std::string const & scene_dir,
+                    bool debug_mode = true,
+                    scene_stats * stats = nullptr )
 {
     TRACE( "Loading " << scene_dir << " ..." );
 
-    auto memory_consumption_peak = 0.0f;
-    auto alive = true;
-
-    auto t
-        = memory_mesurments_thread( [&]() { return alive; },
-                                    [&]( float memory_mesurment ) {
-                                        memory_consumption_peak
-                                            = std::max( memory_mesurment, memory_consumption_peak );
-                                    } );
+    profile profiler;
 
     camera_params ci = read_camera_params( scene_dir, "camera_params" );
     dsm_params dsm = read_dsm_params( scene_dir, "DSM_params" );
@@ -615,8 +680,10 @@ void compare_scene( std::string const & scene_dir, bool debug_mode = true, scene
 
     algo::optimizer::settings settings;
     read_data_from( bin_dir( scene_dir ) + "settings", &settings );
-    algo::optimizer cal( settings, debug_mode );
 
+    profiler.section( "Preprocessing" );
+
+    algo::optimizer cal( settings, debug_mode );
     init_algo( cal,
                scene_dir,
                md.rgb_file,
@@ -625,6 +692,8 @@ void compare_scene( std::string const & scene_dir, bool debug_mode = true, scene
                md.ir_file,
                md.z_file,
                ci );
+
+    profiler.section_end();
 
     auto & z_data = cal.get_z_data();
     auto & ir_data = cal.get_ir_data();
@@ -641,26 +710,27 @@ void compare_scene( std::string const & scene_dir, bool debug_mode = true, scene
     auto num_of_p_matrix_elements = sizeof( algo::p_matrix ) / sizeof( double );
     auto num_of_k_matrix_elements = sizeof( algo::k_matrix ) / sizeof( double );
 
-    TRACE( "\nChecking preprocessing data:" );
     if( debug_mode )
         compare_preprocessing_data( scene_dir, z_data, ir_data, yuy_data, md );
 
     // ---
-    TRACE( "\nChecking scene validity:" );
 
     algo::input_validity_data data;
+    profiler.section( "Checking scene validity" );
     bool const is_scene_valid = cal.is_scene_valid( &data );
+    profiler.section_end();
+
     bool const matlab_scene_valid = md.is_scene_valid;
     CHECK( is_scene_valid == matlab_scene_valid );
-    auto spread = read_from< uint8_t >( bin_dir( scene_dir ) + "DirSpread_1x1_uint8_00.bin" );
+    bool spread = read_from< uint8_t >( bin_dir( scene_dir ) + "DirSpread_1x1_uint8_00.bin" );
     CHECK( data.edges_dir_spread == spread );
-    auto rgbEdgesSpread
+    bool rgbEdgesSpread
         = read_from< uint8_t >( bin_dir( scene_dir ) + "rgbEdgesSpread_1x1_uint8_00.bin" );
     CHECK( data.rgb_spatial_spread == rgbEdgesSpread );
-    auto depthEdgesSpread
+    bool depthEdgesSpread
         = read_from< uint8_t >( bin_dir( scene_dir ) + "depthEdgesSpread_1x1_uint8_00.bin" );
     CHECK( data.depth_spatial_spread == depthEdgesSpread );
-    auto isMovementFromLastSuccess = read_from< uint8_t >(
+    bool isMovementFromLastSuccess = read_from< uint8_t >(
         bin_dir( scene_dir ) + "isMovementFromLastSuccess_1x1_uint8_00.bin" );
     CHECK( data.is_movement_from_last_success == isMovementFromLastSuccess );
     if( stats )
@@ -751,7 +821,6 @@ void compare_scene( std::string const & scene_dir, bool debug_mode = true, scene
                                            compare_same_vectors ) );
 
     //--
-    TRACE( "\nOptimizing:" );
 
     auto cb = [&]( algo::data_collect const & data ) {
         // data.iteration_data_p is 0-based!
@@ -1342,7 +1411,9 @@ void compare_scene( std::string const & scene_dir, bool debug_mode = true, scene
     // Our code doesn't count the first iteration; the Matlab code starts at 1 even if it doesn't do
     // anything...
     // REQUIRE( cal.optimize( cb ) + 1 == md.n_iterations );
+    profiler.section( "Optimizing" );
     auto n_cycles = cal.optimize( cb );
+    profiler.section_end();
 
 
     auto new_calibration = cal.get_calibration();
@@ -1365,9 +1436,6 @@ void compare_scene( std::string const & scene_dir, bool debug_mode = true, scene
 #if 1
     auto vertices = read_vector_from< algo::double3 >(
         bin_file( bin_dir( scene_dir ) + "end_vertices", 3, md.n_edges, "double_00.bin" ) );
-
-    alive = false;
-    t.join();
 
     if( stats )
     {
@@ -1401,10 +1469,13 @@ void compare_scene( std::string const & scene_dir, bool debug_mode = true, scene
     std::copy( p_vec_opt.begin(), p_vec_opt.end(), p_mat_opt.vals );
 
     cal.set_final_data( vertices, p_mat, p_mat_opt );
+
     //--
-    TRACE( "\nChecking output validity:" );
+
     // Pixel movement is OK, but some sections have negative cost
+    profiler.section( "Checking output validity" );
     bool const is_valid_results = cal.is_valid_results();
+    profiler.section_end();
     bool const matlab_valid_results = md.is_output_valid;
     CHECK( is_valid_results == matlab_valid_results );
     if( stats )
@@ -1425,7 +1496,6 @@ void compare_scene( std::string const & scene_dir, bool debug_mode = true, scene
     {
         stats->movement = movement_in_pixels;
         // stats->d_movement = movement_in_pixels - matlab_movement_in_pixels;
-        stats->memory_consumption_peak = memory_consumption_peak;
     }
 
     CHECK( compare_to_bin_file< double >( z_data.cost_diff_per_section,
@@ -1477,4 +1547,9 @@ void compare_scene( std::string const & scene_dir, bool debug_mode = true, scene
                                           "double_00",
                                           compare_same_vectors ) );
 #endif
+
+    profiler.stop();
+
+    if( stats )
+        stats->memory_consumption_peak = profiler.get_peak() - profiler.get_baseline();
 }
