@@ -680,8 +680,8 @@ end*/
 
 bool optimizer::is_scene_valid( input_validity_data * data )
 {
-    std::vector< byte > section_map_depth(_z.width * _z.height);
-    std::vector< byte > section_map_rgb(_yuy.width * _yuy.height);
+    std::vector< byte > section_map_depth( _z.width * _z.height );
+    std::vector< byte > section_map_rgb( _yuy.width * _yuy.height );
 
     size_t const section_w = _params.num_of_sections_for_edge_distribution_x;  //% params.numSectionsH
     size_t const section_h = _params.num_of_sections_for_edge_distribution_y;  //% params.numSectionsH
@@ -692,14 +692,6 @@ bool optimizer::is_scene_valid( input_validity_data * data )
 
     // remove pixels in section map that were removed in weights
     AC_LOG( DEBUG, "    " << _z.supressed_edges.size() << " total edges" );
-    for( auto i = 0; i < _z.supressed_edges.size(); i++ )
-    {
-        if( _z.supressed_edges[i] )
-        {
-            _z.section_map.push_back( section_map_depth[i] );
-        }
-    }
-    _z.section_map = _z.section_map_depth_inside; // NOHA :: taken from preprocessDepth
     AC_LOG( DEBUG, "    " << _z.section_map.size() << " not suppressed" );
 
     // remove pixels in section map where edges_IDT > 0

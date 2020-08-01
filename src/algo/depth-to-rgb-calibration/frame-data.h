@@ -79,7 +79,6 @@ namespace depth_to_rgb_calibration {
 
         //smearing
         std::vector< byte > section_map_depth; // for debug
-        std::vector< byte > section_map_depth_inside;
         std::vector< double > local_x; // for debug
         std::vector< double > local_y; // for debug
         std::vector< double > gradient; // for debug

@@ -843,12 +843,12 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     depth_filter(grad_in_direction_inside, grad_in_direction_valid, is_inside, 1, is_inside.size());
     depth_filter(_z.directions, valid_directions, is_inside, 1, is_inside.size());
     depth_filter(_z.vertices, vertices_all, is_inside, 1, is_inside.size());
-    depth_filter( _z.section_map_depth_inside,
+    depth_filter( _z.section_map,
                   z_valid_section_map,
                   is_inside,
                   1,
                   is_inside.size() );
-    depth_filter(_z.weights, valid_weights, is_inside, 1, is_inside.size());
+    depth_filter( _z.weights, valid_weights, is_inside, 1, is_inside.size() );
 
     _z.relevant_pixels_image.resize(_z.width * _z.height, 0);
     std::vector<double> sub_pixel_x = _z.subpixels_x;

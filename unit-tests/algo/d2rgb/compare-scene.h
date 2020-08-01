@@ -517,7 +517,7 @@ void compare_preprocessing_data( std::string const & scene_dir,
                                                  md.n_edges,
                                                  1,
                                                  compare_same_vectors ) );
-    CHECK( compare_to_bin_file< uint8_t >( depth_data.section_map_depth_inside,
+    CHECK( compare_to_bin_file< uint8_t >( depth_data.section_map,
                                            scene_dir,
                                            "sectionMapDepthInside",
                                            1,
@@ -717,22 +717,25 @@ void compare_scene( std::string const & scene_dir,
 
     algo::input_validity_data data;
     profiler.section( "Checking scene validity" );
-    bool const is_scene_valid = cal.is_scene_valid( &data );
+    bool const is_scene_valid = cal.is_scene_valid( debug_mode ? &data : nullptr );
     profiler.section_end();
 
     bool const matlab_scene_valid = md.is_scene_valid;
     CHECK( is_scene_valid == matlab_scene_valid );
-    bool spread = read_from< uint8_t >( bin_dir( scene_dir ) + "DirSpread_1x1_uint8_00.bin" );
-    CHECK( data.edges_dir_spread == spread );
-    bool rgbEdgesSpread
-        = read_from< uint8_t >( bin_dir( scene_dir ) + "rgbEdgesSpread_1x1_uint8_00.bin" );
-    CHECK( data.rgb_spatial_spread == rgbEdgesSpread );
-    bool depthEdgesSpread
-        = read_from< uint8_t >( bin_dir( scene_dir ) + "depthEdgesSpread_1x1_uint8_00.bin" );
-    CHECK( data.depth_spatial_spread == depthEdgesSpread );
-    bool isMovementFromLastSuccess = read_from< uint8_t >(
-        bin_dir( scene_dir ) + "isMovementFromLastSuccess_1x1_uint8_00.bin" );
-    CHECK( data.is_movement_from_last_success == isMovementFromLastSuccess );
+    if( debug_mode )
+    {
+        bool spread = read_from< uint8_t >( bin_dir( scene_dir ) + "DirSpread_1x1_uint8_00.bin" );
+        CHECK( data.edges_dir_spread == spread );
+        bool rgbEdgesSpread
+            = read_from< uint8_t >( bin_dir( scene_dir ) + "rgbEdgesSpread_1x1_uint8_00.bin" );
+        CHECK( data.rgb_spatial_spread == rgbEdgesSpread );
+        bool depthEdgesSpread
+            = read_from< uint8_t >( bin_dir( scene_dir ) + "depthEdgesSpread_1x1_uint8_00.bin" );
+        CHECK( data.depth_spatial_spread == depthEdgesSpread );
+        bool isMovementFromLastSuccess = read_from< uint8_t >(
+            bin_dir( scene_dir ) + "isMovementFromLastSuccess_1x1_uint8_00.bin" );
+        CHECK( data.is_movement_from_last_success == isMovementFromLastSuccess );
+    }
     if( stats )
     {
         stats->n_valid_scene = is_scene_valid;
