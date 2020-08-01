@@ -389,13 +389,12 @@ namespace depth_to_rgb_calibration {
                                                        data_collect * data = nullptr ) const;
        
         // input validation
-        bool is_movement_in_images(
-            movement_inputs_for_frame const& prev,
-            movement_inputs_for_frame const& curr,
-            movement_result_data& result_data,
-            double const move_thresh_pix_val,
-            double const move_threshold_pix_num,
-            size_t width, size_t height);
+        bool is_movement_in_images( movement_inputs_for_frame const & prev,
+                                    movement_inputs_for_frame const & curr,
+                                    movement_result_data * result_data,
+                                    double const move_thresh_pix_val,
+                                    double const move_threshold_pix_num,
+                                    size_t width, size_t height );
 
         bool is_edge_distributed( z_frame_data & z_data, yuy2_frame_data & yuy_data );
         void section_per_pixel( frame_data const &, size_t section_w, size_t section_h, byte * section_map );

@@ -298,10 +298,13 @@ void optimizer::check_edge_distribution( std::vector< double > & sum_weights_per
     double z_max = *std::max_element(sum_weights_per_section.begin(), sum_weights_per_section.end());
     double z_min = *std::min_element(sum_weights_per_section.begin(), sum_weights_per_section.end());
     min_max_ratio = z_min / z_max;
-    if (min_max_ratio < _params.edge_distribution_min_max_ratio)
+    if( min_max_ratio < _params.edge_distribution_min_max_ratio )
     {
         is_edge_distributed = false;
-        AC_LOG(ERROR, "Edge distribution ratio ({min}" << z_min << "/" << z_max << "{max} = " << min_max_ratio << ") is too small; threshold= " << _params.edge_distribution_min_max_ratio);
+        AC_LOG( DEBUG,
+                "Edge distribution ratio ({min}"
+                    << z_min << "/" << z_max << "{max} = " << min_max_ratio
+                    << ") is too small; threshold= " << _params.edge_distribution_min_max_ratio );
         return;
     }
     /*if any(sumWeightsPerSection< params.minWeightedEdgePerSection)
@@ -582,7 +585,7 @@ diffIm = imgaussfilt(im1-im2,params.moveGaussSigma);*/
 }
 
 
-void abs_values( std::vector< double > & vec_in )
+static void abs_values( std::vector< double > & vec_in )
 {
     for( double & val : vec_in )
     {
@@ -592,8 +595,8 @@ void abs_values( std::vector< double > & vec_in )
 }
 
 
-void gaussian_dilation_mask( std::vector< double > & gauss_diff,
-                             std::vector< uint8_t > & dilation_mask )
+static void gaussian_dilation_mask( std::vector< double > & gauss_diff,
+                                    std::vector< uint8_t > const & dilation_mask )
 {
     auto gauss_it = gauss_diff.begin();
     auto dilation_it = dilation_mask.begin();
@@ -606,9 +609,10 @@ void gaussian_dilation_mask( std::vector< double > & gauss_diff,
 
 
 static size_t move_suspected_mask( std::vector< uint8_t > & move_suspect,
-                                   std::vector< double > & gauss_diff_masked,
+                                   std::vector< double > const & gauss_diff_masked,
                                    double const movement_threshold )
 {
+    move_suspect.reserve( gauss_diff_masked.size() );
     size_t n_movements = 0;
     for( auto it = gauss_diff_masked.begin(); it != gauss_diff_masked.end(); ++it )
     {
@@ -628,12 +632,13 @@ static size_t move_suspected_mask( std::vector< uint8_t > & move_suspect,
 
 bool optimizer::is_movement_in_images( movement_inputs_for_frame const & prev,
                                        movement_inputs_for_frame const & curr,
-                                       movement_result_data & result_data,
+                                       movement_result_data * const result_data,
                                        double const move_thresh_pix_val,
                                        double const move_threshold_pix_num,
-                                       size_t width,
-                                       size_t height )
+                                       size_t const width,
+                                       size_t const height )
 {
+
     /*function [isMovement,movingPixels] = isMovementInImages(im1,im2, params)
 isMovement = false;
 
@@ -643,31 +648,58 @@ SE = strel('square', params.seSize);
 dilatedIm = imdilate(logicEdges,SE);
 diffIm = imgaussfilt(double(im1)-double(im2),params.moveGaussSigma);
 */
-    result_data.logic_edges = get_logic_edges(prev.edges);
-    result_data.dilated_image = images_dilation(result_data.logic_edges, width, height);
-    gaussian_filter( prev.lum_frame,
-                     curr.lum_frame,
-                     result_data.yuy_diff,
-                     result_data.gaussian_filtered_image,
-                     width, height );
-    /*
-%
-IDiffMasked = abs(diffIm);
-IDiffMasked(dilatedIm) = 0;
-% figure; imagesc(IDiffMasked); title('IDiffMasked');impixelinfo; colorbar;
-ixMoveSuspect = IDiffMasked > params.moveThreshPixVal;
-if sum(ixMoveSuspect(:)) > params.moveThreshPixNum
-    isMovement = true;
-end
-movingPixels = sum(ixMoveSuspect(:));
-disp(['isMovementInImages: # of pixels above threshold ' num2str(sum(ixMoveSuspect(:))) ', allowed #: ' num2str(params.moveThreshPixNum)]);
-end*/
-    result_data.gaussian_diff_masked = result_data.gaussian_filtered_image;
-    abs_values(result_data.gaussian_diff_masked);
-    gaussian_dilation_mask(result_data.gaussian_diff_masked, result_data.dilated_image);
-    auto sum_move_suspect = move_suspected_mask( result_data.move_suspect,
-                                                 result_data.gaussian_diff_masked,
-                                                 move_thresh_pix_val );
+    std::vector< double > gaussian_diff_masked;
+    {
+        std::vector< uint8_t > dilated_image;
+        {
+            std::vector< double > gaussian_filtered_image;
+            {
+                auto logic_edges = get_logic_edges( prev.edges );
+                dilated_image = images_dilation( logic_edges, width, height );
+                std::vector< double > yuy_diff;
+                gaussian_filter( prev.lum_frame,
+                                 curr.lum_frame,
+                                 yuy_diff,
+                                 gaussian_filtered_image,
+                                 width,
+                                 height );
+                if( result_data )
+                {
+                    result_data->logic_edges = std::move( logic_edges );
+                    result_data->yuy_diff = std::move( yuy_diff );
+                }
+            }
+            /*
+            %
+            IDiffMasked = abs(diffIm);
+            IDiffMasked(dilatedIm) = 0;
+            % figure; imagesc(IDiffMasked); title('IDiffMasked');impixelinfo; colorbar;
+            ixMoveSuspect = IDiffMasked > params.moveThreshPixVal;
+            if sum(ixMoveSuspect(:)) > params.moveThreshPixNum
+                isMovement = true;
+            end
+            movingPixels = sum(ixMoveSuspect(:));
+            disp(['isMovementInImages: # of pixels above threshold ' num2str(sum(ixMoveSuspect(:))) ',
+            allowed #: ' num2str(params.moveThreshPixNum)]); end*/
+            gaussian_diff_masked = gaussian_filtered_image;
+            if( result_data )
+                result_data->gaussian_filtered_image = std::move( gaussian_filtered_image );
+        }
+        abs_values( gaussian_diff_masked );
+        gaussian_dilation_mask( gaussian_diff_masked, dilated_image );
+        if( result_data )
+            result_data->dilated_image = std::move( dilated_image );
+    }
+
+    std::vector< uint8_t > move_suspect;
+    auto sum_move_suspect
+        = move_suspected_mask( move_suspect, gaussian_diff_masked, move_thresh_pix_val );
+    if( result_data )
+    {
+        result_data->gaussian_diff_masked = std::move( gaussian_diff_masked );
+        result_data->move_suspect = std::move( move_suspect );
+    }
+
     if( sum_move_suspect > move_threshold_pix_num )
     {
         AC_LOG( DEBUG,

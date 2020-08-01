@@ -1,11 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#ifdef _WIN32
-#include "windows.h"
-#include "psapi.h"
-#else
-#endif
 struct scene_stats
 {
     size_t n_valid_scene, n_valid_scene_diff;
@@ -531,105 +526,6 @@ void compare_preprocessing_data( std::string const & scene_dir,
 }
 
 
-float mb_in_use()
-{
-    float mem = 0;
-#ifdef _WIN32
-    PROCESS_MEMORY_COUNTERS_EX pmc;
-    GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS *)&pmc, sizeof( pmc ) );
-
-    mem = float( pmc.WorkingSetSize / ( 1024. * 1024. ) );
-#else
-#endif
-    return mem;
-}
-
-
-std::thread memory_mesurments_thread( std::function< bool() > alive,
-                                      std::function< void( float mem ) > memory_mesurment )
-{
-    std::thread t( [=]() {
-        while( alive() )
-        {
-            memory_mesurment( mb_in_use() );
-            std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
-        }
-    } );
-    // t.detach();
-    return t;
-}
-
-
-class profile
-{
-    float _baseline;
-    std::atomic< float > _peak{ 0 };
-    std::atomic_bool _alive{ true };
-
-    std::thread _th;
-
-    // section
-    float _s_start = 0.f;
-    std::atomic< float > _s_peak;
-
-public:
-    profile()
-        : _baseline( mb_in_use() )
-    {
-        _th = std::thread( [&]() {
-            while( _alive )
-            {
-                auto const mb = mb_in_use();
-                _peak = std::max( mb, (float)_peak );
-                _s_peak = std::max( mb, (float)_s_peak );
-                std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
-            }
-        } );
-    }
-
-    void section( char const * heading )
-    {
-        _s_start = mb_in_use();
-        _s_peak = _s_start;
-        TRACE( "\n-------------- " << heading << ":" );
-    }
-
-    void section_end()
-    {
-        auto const mb = mb_in_use();
-        _s_peak = std::max( mb, (float)_s_peak );
-        TRACE( "-------------- " << _s_start << " --> " << mb << "  /  " << _s_peak
-                                 << " MB        delta  " << ( mb - _s_start ) << "  /  "
-                                 << ( _s_peak - _s_start ) << "  peak\n" );
-    }
-
-    ~profile()
-    {
-        stop();
-
-        auto const mb = mb_in_use();
-        TRACE( "\n-------------- FINAL: " << mb << "  /  " << _peak << " peak  (" << _baseline << " baseline)" );
-    }
-
-    void snapshot( char const * desc )
-    {
-        TRACE( "--- " << mb_in_use() << " MB   -->   peak= " << (float)_peak );
-    }
-
-    void stop()
-    {
-        if( _alive )
-        {
-            _alive = false;
-            _th.join();
-        }
-    }
-
-    float get_peak() const { return _peak; }
-    float get_baseline() const { return _baseline; }
-};
-
-
 void compare_scene( std::string const & scene_dir,
                     bool debug_mode = true,
                     scene_stats * stats = nullptr )
@@ -649,8 +545,6 @@ void compare_scene( std::string const & scene_dir,
     algo::optimizer::settings settings;
     read_data_from( bin_dir( scene_dir ) + "settings", &settings );
 
-    profiler.section( "Preprocessing" );
-
     algo::optimizer cal( settings, debug_mode );
     init_algo( cal,
                scene_dir,
@@ -659,9 +553,8 @@ void compare_scene( std::string const & scene_dir,
                md.rgb_prev_valid_file,
                md.ir_file,
                md.z_file,
-               ci );
-
-    profiler.section_end();
+               ci,
+               &profiler );
 
     auto & z_data = cal.get_z_data();
     auto & ir_data = cal.get_ir_data();

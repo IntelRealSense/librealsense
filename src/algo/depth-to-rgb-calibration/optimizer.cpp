@@ -390,6 +390,7 @@ std::vector<double> sum_gradient_depth(std::vector<double> &gradient, std::vecto
     return res;
 }
 
+
 std::vector< byte > find_valid_depth_edges( std::vector< double > const & grad_in_direction,
                                             std::vector< byte > const & is_supressed,
                                             std::vector< double > const & values_for_subedges,
@@ -425,6 +426,7 @@ std::vector< byte > find_valid_depth_edges( std::vector< double > const & grad_i
     return res;
 }
 
+
 std::vector<double> find_local_values_min(std::vector<double>& local_values)
 {
     std::vector<double> res;
@@ -442,6 +444,8 @@ std::vector<double> find_local_values_min(std::vector<double>& local_values)
     }
     return res;
 }
+
+
 void optimizer::set_z_data( std::vector< z_t > && depth_data,
                             rs2_intrinsics_double const & depth_intrinsics,
                             rs2_dsm_params const & dsm_params,
@@ -941,16 +945,6 @@ void optimizer::set_yuy_data(
 
     _yuy.orig_frame = std::move( yuy_data );
     _yuy.prev_frame = std::move( prev_yuy_data );
-
-    if( last_successful_yuy_data.empty() )
-    {
-        AC_LOG( DEBUG, "    previous calibration image was NOT supplied" );
-        //last_successful_yuy_data.resize( _yuy.orig_frame.size(), 0 );
-    }
-    else
-    {
-        AC_LOG( DEBUG, "    previous calibration image supplied" );
-    }
     _yuy.last_successful_frame = std::move( last_successful_yuy_data );
 
     std::vector< uint8_t > lum_frame;
@@ -960,34 +954,32 @@ void optimizer::set_yuy_data(
     lum_frame = get_luminance_from_yuy2( _yuy.orig_frame );
     prev_lum_frame = get_luminance_from_yuy2( _yuy.prev_frame );
 
-    std::vector< double > edges;
-    std::vector< double > prev_edges;
-    std::vector< double > last_successful_edges;
-
-    edges = calc_edges( lum_frame, _yuy.width, _yuy.height );
-    prev_edges = calc_edges( prev_lum_frame, _yuy.width, _yuy.height );
+    auto edges = calc_edges( lum_frame, _yuy.width, _yuy.height );
 
     {
-        movement_result_data movement_result;
+        auto prev_edges = calc_edges( prev_lum_frame, _yuy.width, _yuy.height );
+
         _yuy.movement_from_prev_frame
             = is_movement_in_images( { prev_edges, prev_lum_frame },
                                      { edges, lum_frame },
-                                     _debug_mode ? _yuy.debug.movement_result : movement_result,
+                                     _debug_mode ? &_yuy.debug.movement_result : nullptr,
                                      _params.move_thresh_pix_val,
                                      _params.move_threshold_pix_num,
                                      _yuy.width, _yuy.height );
     }
 
-    if( _yuy.last_successful_frame.size() )
+    AC_LOG( DEBUG,
+            "    previous calibration image "
+                << ( last_successful_yuy_data.empty() ? "was NOT supplied" : "supplied" ) );
+    if( ! _yuy.last_successful_frame.empty() )
     {
         last_successful_lum_frame = get_luminance_from_yuy2( _yuy.last_successful_frame );
-        last_successful_edges = calc_edges( last_successful_lum_frame, _yuy.width, _yuy.height );
+        auto last_successful_edges = calc_edges( last_successful_lum_frame, _yuy.width, _yuy.height );
 
-        movement_result_data movement_prev_valid_result;
         _yuy.movement_from_last_success = is_movement_in_images(
             { last_successful_edges, last_successful_lum_frame },
             { edges, lum_frame },
-            _debug_mode ? _yuy.debug.movement_prev_valid_result : movement_prev_valid_result,
+            _debug_mode ? &_yuy.debug.movement_prev_valid_result : nullptr,
             _params.move_last_success_thresh_pix_val,
             _params.move_last_success_thresh_pix_num,
             _yuy.width, _yuy.height );
