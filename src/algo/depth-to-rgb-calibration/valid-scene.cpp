@@ -461,12 +461,10 @@ static bool is_grad_dir_balanced( std::vector< double > const & weights,
 }
 
 
-void optimizer::section_per_pixel(
-    frame_data const& f,
-    size_t const section_w,
-    size_t const section_h,
-    byte* const section_map
-    )
+void optimizer::section_per_pixel( frame_data const & f,
+                                   size_t const section_w,
+                                   size_t const section_h,
+                                   byte * const section_map )
 {
     //% [gridX,gridY] = meshgrid(0:res(2)-1,0:res(1)-1);
     //% gridX = floor(gridX/res(2)*params.numSectionsH);
@@ -647,7 +645,11 @@ diffIm = imgaussfilt(double(im1)-double(im2),params.moveGaussSigma);
 */
     result_data.logic_edges = get_logic_edges(prev.edges);
     result_data.dilated_image = images_dilation(result_data.logic_edges, width, height);
-    gaussian_filter( prev.lum_frame, curr.lum_frame, result_data.yuy_diff, result_data.gaussian_filtered_image, width, height);
+    gaussian_filter( prev.lum_frame,
+                     curr.lum_frame,
+                     result_data.yuy_diff,
+                     result_data.gaussian_filtered_image,
+                     width, height );
     /*
 %
 IDiffMasked = abs(diffIm);
@@ -696,8 +698,8 @@ bool optimizer::is_scene_valid( input_validity_data * data )
 
     // remove pixels in section map where edges_IDT > 0
     int i = 0;
-    AC_LOG( DEBUG, "    " << _z.supressed_edges.size() << " total edges IDT" );
-
+    AC_LOG( DEBUG, "    " << _yuy.edges_IDT.size() << " total edges IDT" );
+    _yuy.section_map.reserve( _yuy.edges_IDT.size() );
     for( auto it = _yuy.edges_IDT.begin(); it != _yuy.edges_IDT.end(); ++it, ++i )
     {
         if( *it > 0 )
@@ -706,14 +708,7 @@ bool optimizer::is_scene_valid( input_validity_data * data )
     AC_LOG( DEBUG, "    " << _yuy.section_map.size() << " not suppressed" );
 
     // The previous and current frames must have "NO" movement between them
-    bool movement_from_prev_frame = is_movement_in_images( { _yuy.prev_edges, _yuy.prev_lum_frame },
-                                                           { _yuy.edges, _yuy.lum_frame },
-                                                           _yuy.movement_result,
-                                                           _params.move_thresh_pix_val,
-                                                           _params.move_threshold_pix_num,
-                                                           _yuy.width,
-                                                           _yuy.height );
-    if( movement_from_prev_frame )
+    if( _yuy.movement_from_prev_frame )
         AC_LOG( ERROR, "Scene is not valid: movement detected between current & previous frames [MOVE]" );
 
     // These two are used in the results validity, in the decision params
@@ -724,7 +719,7 @@ bool optimizer::is_scene_valid( input_validity_data * data )
                                               &_z.sum_weights_per_direction,
                                               &_z.dir_ratio1 );
 
-    auto valid = ! movement_from_prev_frame;
+    auto valid = ! _yuy.movement_from_prev_frame;
     valid = input_validity_checks(data)  &&  valid;
         
     return(valid);
@@ -917,19 +912,7 @@ bool optimizer::input_validity_checks(input_validity_data* data )
 
     if( ! _settings.is_manual_trigger )
     {
-        if( _yuy.last_successful_frame.size() )
-        {
-            is_movement_from_last_success = is_movement_in_images(
-                { _yuy.last_successful_edges, _yuy.last_successful_lum_frame },
-                { _yuy.edges, _yuy.lum_frame },
-                _yuy.movement_prev_valid_result,
-                _params.move_last_success_thresh_pix_val,
-                _params.move_last_success_thresh_pix_num,
-                _yuy.width,
-                _yuy.height );
-        }
-       
-        if( ! is_movement_from_last_success )
+        if( ! _yuy.movement_from_last_success )
             AC_LOG( ERROR, "Scene is not valid: not enough movement from last-calibrated scene [SALC]" );
     }
     if( data )

@@ -139,14 +139,23 @@ namespace depth_to_rgb_calibration {
         std::vector< yuy_t > orig_frame;
         std::vector< yuy_t > prev_frame;
         std::vector< yuy_t > last_successful_frame;
-        std::vector<uint8_t> lum_frame;
-        std::vector<uint8_t> prev_lum_frame;
-        std::vector<uint8_t> last_successful_lum_frame;
-        movement_result_data movement_result;
-        movement_result_data movement_prev_valid_result;
-        std::vector<double> edges;                          // W*H, pre-smearing
-        std::vector<double> prev_edges;                     // W*H, for prev_frame
-        std::vector<double> last_successful_edges;               // W*H, for prev_frame
+     
+        struct
+        {
+            std::vector< uint8_t > lum_frame;
+            std::vector< uint8_t > prev_lum_frame;
+            std::vector< uint8_t > last_successful_lum_frame;
+
+            movement_result_data movement_result;
+            movement_result_data movement_prev_valid_result;
+
+            std::vector< double > edges;  // W*H, pre-smearing
+        }
+        debug;
+
+        bool movement_from_prev_frame;
+        bool movement_from_last_success;
+
         std::vector<double> edges_IDT;                      // W*H, smeared, for cost
         std::vector<double> edges_IDTx;                     // W*H, smeared, dedge/dx, for gradients
         std::vector<double> edges_IDTy;                     // W*H, smeared, dedge/dy, for gradients

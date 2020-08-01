@@ -440,124 +440,92 @@ void compare_preprocessing_data( std::string const & scene_dir,
     // >(depth_data.valid_edge_sub_pixel_y, scene_dir, "yim", 1, md.n_valid_pixels, "double_00",
     // compare_same_vectors));
     CHECK( compare_to_bin_file< double >( depth_data.sub_points,
-                                          scene_dir,
-                                          "subPoints",
-                                          3,
-                                          md.n_valid_pixels,
+                                          scene_dir, "subPoints",
+                                          3, md.n_valid_pixels,
                                           "double_00",
                                           compare_same_vectors ) );
     CHECK( compare_to_bin_file< algo::double2 >( depth_data.uvmap,
                                                  scene_dir,
                                                  bin_file( "uv", 2, md.n_valid_pixels, "double_00" )
                                                      + ".bin",
-                                                 md.n_valid_pixels,
-                                                 1,
+                                                 md.n_valid_pixels, 1,
                                                  compare_same_vectors ) );
     CHECK( compare_to_bin_file< byte >( depth_data.is_inside,
-                                        scene_dir,
-                                        "isInside",
-                                        1,
-                                        md.n_valid_pixels,
+                                        scene_dir, "isInside",
+                                        1, md.n_valid_pixels,
                                         "uint8_00",
                                         compare_same_vectors ) );
     CHECK( compare_to_bin_file< double >( depth_data.subpixels_x,
-                                          scene_dir,
-                                          "Z_xim",
-                                          1,
-                                          md.n_edges,
+                                          scene_dir, "Z_xim",
+                                          1, md.n_edges,
                                           "double_00",
                                           compare_same_vectors ) );
     CHECK( compare_to_bin_file< double >( depth_data.subpixels_y,
-                                          scene_dir,
-                                          "Z_yim",
-                                          1,
-                                          md.n_edges,
+                                          scene_dir, "Z_yim",
+                                          1, md.n_edges,
                                           "double_00",
                                           compare_same_vectors ) );
     CHECK( compare_to_bin_file< double >( depth_data.directions,
-                                          scene_dir,
-                                          "directionIndexInside",
-                                          1,
-                                          md.n_edges,
+                                          scene_dir, "directionIndexInside",
+                                          1, md.n_edges,
                                           "double_00",
                                           compare_same_vectors ) );
 
     CHECK( compare_to_bin_file< double >( depth_data.subpixels_x_round,
-                                          scene_dir,
-                                          "round_xim",
-                                          1,
-                                          md.n_edges,
+                                          scene_dir, "round_xim",
+                                          1, md.n_edges,
                                           "double_00",
                                           compare_same_vectors ) );
     CHECK( compare_to_bin_file< double >( depth_data.subpixels_y_round,
-                                          scene_dir,
-                                          "round_yim",
-                                          1,
-                                          md.n_edges,
+                                          scene_dir, "round_yim",
+                                          1, md.n_edges,
                                           "double_00",
                                           compare_same_vectors ) );
     CHECK( compare_to_bin_file< double >( depth_data.weights,
-                                          scene_dir,
-                                          "weights",
-                                          1,
-                                          md.n_edges,
+                                          scene_dir, "weights",
+                                          1, md.n_edges,
                                           "double_00",
                                           compare_same_vectors ) );
     CHECK( compare_to_bin_file< uint8_t >( depth_data.relevant_pixels_image,
-                                           scene_dir,
-                                           "relevantPixelsImage",
-                                           z_w,
-                                           z_h,
+                                           scene_dir, "relevantPixelsImage",
+                                           z_w, z_h,
                                            "uint8_00",
                                            compare_same_vectors ) );
     CHECK( compare_to_bin_file< algo::double3 >( depth_data.vertices,
                                                  scene_dir,
                                                  bin_file( "vertices", 3, md.n_edges, "double_00" )
                                                      + ".bin",
-                                                 md.n_edges,
-                                                 1,
+                                                 md.n_edges, 1,
                                                  compare_same_vectors ) );
     CHECK( compare_to_bin_file< uint8_t >( depth_data.section_map,
-                                           scene_dir,
-                                           "sectionMapDepthInside",
-                                           1,
-                                           md.n_edges,
+                                           scene_dir, "sectionMapDepthInside",
+                                           1, md.n_edges,
                                            "uint8_00",
                                            compare_same_vectors ) );
 
-    CHECK( compare_to_bin_file< uint8_t >( yuy_data.lum_frame,
-                                           scene_dir,
-                                           "YUY2_lum",
-                                           rgb_w,
-                                           rgb_h,
+    CHECK( compare_to_bin_file< uint8_t >( yuy_data.debug.lum_frame,
+                                           scene_dir, "YUY2_lum",
+                                           rgb_w, rgb_h,
                                            "uint8_00",
                                            compare_same_vectors ) );
-    CHECK( compare_to_bin_file< double >( yuy_data.edges,
-                                          scene_dir,
-                                          "YUY2_edge",
-                                          rgb_w,
-                                          rgb_h,
+    CHECK( compare_to_bin_file< double >( yuy_data.debug.edges,
+                                          scene_dir, "YUY2_edge",
+                                          rgb_w, rgb_h,
                                           "double_00",
                                           compare_same_vectors ) );
     CHECK( compare_to_bin_file< double >( yuy_data.edges_IDT,
-                                          scene_dir,
-                                          "YUY2_IDT",
-                                          rgb_w,
-                                          rgb_h,
+                                          scene_dir, "YUY2_IDT",
+                                          rgb_w, rgb_h,
                                           "double_00",
                                           compare_same_vectors ) );
     CHECK( compare_to_bin_file< double >( yuy_data.edges_IDTx,
-                                          scene_dir,
-                                          "YUY2_IDTx",
-                                          rgb_w,
-                                          rgb_h,
+                                          scene_dir, "YUY2_IDTx",
+                                          rgb_w, rgb_h,
                                           "double_00",
                                           compare_same_vectors ) );
     CHECK( compare_to_bin_file< double >( yuy_data.edges_IDTy,
-                                          scene_dir,
-                                          "YUY2_IDTy",
-                                          rgb_w,
-                                          rgb_h,
+                                          scene_dir, "YUY2_IDTy",
+                                          rgb_w, rgb_h,
                                           "double_00",
                                           compare_same_vectors ) );
 }
@@ -776,52 +744,46 @@ void compare_scene( std::string const & scene_dir,
 
     // movment check
     // 1. dilation
-    CHECK( compare_to_bin_file< uint8_t >( yuy_data.movement_result.logic_edges,
-                                           scene_dir,
-                                           "logicEdges",
-                                           rgb_w,
-                                           rgb_h,
-                                           "uint8_00",
-                                           compare_same_vectors ) );
-    CHECK( compare_to_bin_file< double >( yuy_data.movement_result.dilated_image,
-                                          scene_dir,
-                                          "dilatedIm",
-                                          rgb_w,
-                                          rgb_h,
-                                          "double_00",
-                                          compare_same_vectors ) );
+    if( debug_mode )
+        CHECK( compare_to_bin_file< uint8_t >( yuy_data.debug.movement_result.logic_edges,
+                                               scene_dir, "logicEdges",
+                                               rgb_w, rgb_h,
+                                               "uint8_00",
+                                               compare_same_vectors ) );
+    if( debug_mode )
+        CHECK( compare_to_bin_file< double >( yuy_data.debug.movement_result.dilated_image,
+                                              scene_dir, "dilatedIm",
+                                              rgb_w, rgb_h,
+                                              "double_00",
+                                              compare_same_vectors ) );
 
     // 2. gausssian
-    CHECK( compare_to_bin_file< double >( yuy_data.movement_result.yuy_diff,
-                                          scene_dir,
-                                          "diffIm_01",
-                                          rgb_w,
-                                          rgb_h,
-                                          "double_00",
-                                          compare_same_vectors ) );
-    CHECK( compare_to_bin_file< double >( yuy_data.movement_result.gaussian_filtered_image,
-                                          scene_dir,
-                                          "diffIm",
-                                          rgb_w,
-                                          rgb_h,
-                                          "double_00",
-                                          compare_same_vectors ) );
+    if( debug_mode )
+        CHECK( compare_to_bin_file< double >( yuy_data.debug.movement_result.yuy_diff,
+                                              scene_dir, "diffIm_01",
+                                              rgb_w, rgb_h,
+                                              "double_00",
+                                              compare_same_vectors ) );
+    if( debug_mode )
+        CHECK( compare_to_bin_file< double >( yuy_data.debug.movement_result.gaussian_filtered_image,
+                                              scene_dir, "diffIm",
+                                              rgb_w, rgb_h,
+                                              "double_00",
+                                              compare_same_vectors ) );
 
     // 3. movement
-    CHECK( compare_to_bin_file< double >( yuy_data.movement_result.gaussian_diff_masked,
-                                          scene_dir,
-                                          "IDiffMasked",
-                                          rgb_w,
-                                          rgb_h,
-                                          "double_00",
-                                          compare_same_vectors ) );
-    CHECK( compare_to_bin_file< uint8_t >( yuy_data.movement_result.move_suspect,
-                                           scene_dir,
-                                           "ixMoveSuspect",
-                                           rgb_w,
-                                           rgb_h,
-                                           "uint8_00",
-                                           compare_same_vectors ) );
+    if( debug_mode )
+        CHECK( compare_to_bin_file< double >( yuy_data.debug.movement_result.gaussian_diff_masked,
+                                              scene_dir, "IDiffMasked",
+                                              rgb_w, rgb_h,
+                                              "double_00",
+                                              compare_same_vectors ) );
+    if( debug_mode )
+        CHECK( compare_to_bin_file< uint8_t >( yuy_data.debug.movement_result.move_suspect,
+                                               scene_dir, "ixMoveSuspect",
+                                               rgb_w, rgb_h,
+                                               "uint8_00",
+                                               compare_same_vectors ) );
 
     //--
 

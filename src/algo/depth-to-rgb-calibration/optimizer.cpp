@@ -871,7 +871,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
         _z.relevant_pixels_image[size_t( ( y - 1 ) * _z.width + x - 1 )] = 1;
     }
 
-     if( _debug_mode )
+    if( _debug_mode )
     {
         _z.gradient_x = std::move( z_gradient_x );
         _z.gradient_y = std::move( z_gradient_y );
@@ -922,7 +922,6 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
         _z.grad_in_direction_inside = std::move( grad_in_direction_inside );
         _z.subpixels_x_round = std::move( subpixels_x_round );
         _z.subpixels_y_round = std::move( subpixels_y_round );
-      
     }
 }
 
@@ -952,26 +951,60 @@ void optimizer::set_yuy_data(
     {
         AC_LOG( DEBUG, "    previous calibration image supplied" );
     }
-    _yuy.last_successful_frame = std::move(last_successful_yuy_data);
+    _yuy.last_successful_frame = std::move( last_successful_yuy_data );
 
-    _yuy.lum_frame = get_luminance_from_yuy2( _yuy.orig_frame );
-    _yuy.prev_lum_frame = get_luminance_from_yuy2( _yuy.prev_frame );
+    std::vector< uint8_t > lum_frame;
+    std::vector< uint8_t > prev_lum_frame;
+    std::vector< uint8_t > last_successful_lum_frame;
 
-    _yuy.edges = calc_edges( _yuy.lum_frame, _yuy.width, _yuy.height );
-    _yuy.prev_edges = calc_edges(_yuy.prev_lum_frame, _yuy.width, _yuy.height);
+    lum_frame = get_luminance_from_yuy2( _yuy.orig_frame );
+    prev_lum_frame = get_luminance_from_yuy2( _yuy.prev_frame );
 
-    if (_yuy.last_successful_frame.size())
+    std::vector< double > edges;
+    std::vector< double > prev_edges;
+    std::vector< double > last_successful_edges;
+
+    edges = calc_edges( lum_frame, _yuy.width, _yuy.height );
+    prev_edges = calc_edges( prev_lum_frame, _yuy.width, _yuy.height );
+
     {
-        _yuy.last_successful_lum_frame = get_luminance_from_yuy2( _yuy.last_successful_frame );
-        _yuy.last_successful_edges = calc_edges( _yuy.last_successful_lum_frame, _yuy.width, _yuy.height );
+        movement_result_data movement_result;
+        _yuy.movement_from_prev_frame
+            = is_movement_in_images( { prev_edges, prev_lum_frame },
+                                     { edges, lum_frame },
+                                     _debug_mode ? _yuy.debug.movement_result : movement_result,
+                                     _params.move_thresh_pix_val,
+                                     _params.move_threshold_pix_num,
+                                     _yuy.width, _yuy.height );
     }
 
+    if( _yuy.last_successful_frame.size() )
+    {
+        last_successful_lum_frame = get_luminance_from_yuy2( _yuy.last_successful_frame );
+        last_successful_edges = calc_edges( last_successful_lum_frame, _yuy.width, _yuy.height );
 
-    _yuy.edges_IDT = blur_edges( _yuy.edges, _yuy.width, _yuy.height );
+        movement_result_data movement_prev_valid_result;
+        _yuy.movement_from_last_success = is_movement_in_images(
+            { last_successful_edges, last_successful_lum_frame },
+            { edges, lum_frame },
+            _debug_mode ? _yuy.debug.movement_prev_valid_result : movement_prev_valid_result,
+            _params.move_last_success_thresh_pix_val,
+            _params.move_last_success_thresh_pix_num,
+            _yuy.width, _yuy.height );
+    }
 
+    _yuy.edges_IDT = blur_edges( edges, _yuy.width, _yuy.height );
     _yuy.edges_IDTx = calc_vertical_gradient( _yuy.edges_IDT, _yuy.width, _yuy.height );
-
     _yuy.edges_IDTy = calc_horizontal_gradient( _yuy.edges_IDT, _yuy.width, _yuy.height );
+
+    if( _debug_mode )
+    {
+        _yuy.debug.lum_frame = std::move( lum_frame );
+        _yuy.debug.prev_lum_frame = std::move( prev_lum_frame );
+        _yuy.debug.last_successful_lum_frame = std::move( last_successful_lum_frame );
+
+        _yuy.debug.edges = std::move( edges );
+    }
 }
 
 void optimizer::set_ir_data(
