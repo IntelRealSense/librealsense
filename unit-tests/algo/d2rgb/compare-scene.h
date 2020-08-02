@@ -532,7 +532,7 @@ void compare_scene( std::string const & scene_dir,
 {
     TRACE( "Loading " << scene_dir << " ..." );
 
-    profile profiler;
+    memory_profiler profiler;
 
     camera_params ci = read_camera_params( scene_dir, "camera_params" );
     dsm_params dsm = read_dsm_params( scene_dir, "DSM_params" );
@@ -1303,7 +1303,11 @@ void compare_scene( std::string const & scene_dir,
         auto matlab_uvmap
             = algo::get_texture_map( vertices, matlab_calib, matlab_calib.calc_p_mat() );
 
-        stats->d_movement = cal.calc_correction_in_pixels( our_uvmap, matlab_uvmap );
+        CHECK( our_uvmap.size() == matlab_uvmap.size() );
+        if( our_uvmap.size() == matlab_uvmap.size() )
+            stats->d_movement = cal.calc_correction_in_pixels( our_uvmap, matlab_uvmap );
+        else
+            stats->d_movement = -1;
     }
 
 

@@ -19,7 +19,7 @@ float mb_in_use()
 #endif
     return mem;
 }
-class profile
+class memory_profiler
 {
     float _baseline;
     std::atomic< float > _peak{ 0 };
@@ -32,7 +32,7 @@ class profile
     std::atomic< float > _s_peak;
 
 public:
-    profile()
+    memory_profiler()
         : _baseline( mb_in_use() )
     {
         _th = std::thread( [&]() {
@@ -50,30 +50,30 @@ public:
     {
         _s_start = mb_in_use();
         _s_peak = _s_start;
-        TRACE( "\n-------------- " << heading << ":" );
+        TRACE( "\n\n-P------------ " << heading << ":" );
     }
 
     void section_end()
     {
         auto const mb = mb_in_use();
         _s_peak = std::max( mb, (float)_s_peak );
-        TRACE( "-------------- " << _s_start << " --> " << mb << "  /  " << _s_peak
+        TRACE( "-P------------ " << _s_start << " --> " << mb << "  /  " << _s_peak
             << " MB        delta  " << (mb - _s_start) << "  /  "
             << (_s_peak - _s_start) << "  peak\n" );
     }
 
-    ~profile()
+    ~memory_profiler()
     {
         stop();
 
         auto const mb = mb_in_use();
-        TRACE( "\n-------------- FINAL: " << mb << "  /  " << _peak << " peak  (" << _baseline
+        TRACE( "\n-P------------ FINAL: " << mb << "  /  " << _peak << " peak  (" << _baseline
             << " baseline)" );
     }
 
     void snapshot( char const * desc )
     {
-        TRACE( "--- " << mb_in_use() << " MB   -->   peak= " << (float)_peak );
+        TRACE( "-P------------ " << desc << ": " << mb_in_use() << "  /  " << (float)_peak << " peak" );
     }
 
     void stop()

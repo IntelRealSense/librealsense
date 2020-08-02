@@ -71,11 +71,9 @@ namespace depth_to_rgb_calibration {
         std::vector<double> subpixels_y;
         std::vector<double> subpixels_y_round; // for debug
         std::vector<double> subpixels_x_round; // for debug
-        std::vector< double > valid_weights; // for debug
         std::vector<uint8_t> relevant_pixels_image;
 
         std::vector<double> weights;
-        std::vector< double3 > vertices_all; // for debug
 
         //smearing
         std::vector< byte > section_map_depth; // for debug
@@ -85,7 +83,6 @@ namespace depth_to_rgb_calibration {
         std::vector< double > local_values; // for debug
         std::vector< double > grad_in_direction; // for debug
         std::vector< double > grad_in_direction_valid; // for debug
-        std::vector< double > grad_in_direction_inside; // for debug
         std::vector<double> values_for_subedges; // for debug
         std::vector<double> closest;
         std::vector<double> valid_direction_per_pixel; // for debug

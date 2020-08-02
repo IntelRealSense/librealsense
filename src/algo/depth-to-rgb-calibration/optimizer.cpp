@@ -670,30 +670,37 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
         edge_sub_pixel_y.push_back(valx);
     }
 
-    std::vector< double > local_x;
-    std::vector< double > local_y;
-    std::vector< double > gradient;
     std::vector< double > grad_in_direction;
-    std::vector< double > values_for_subedges;
+    {
+        std::vector< double > local_x;
+        std::vector< double > local_y;
+        std::vector< double > gradient;
 
-    std::vector<double> local_region_x_2[2] = { local_region_x[1] ,local_region_x[2] };
-    std::vector<double> local_region_y_2[2] = { local_region_y[1] ,local_region_y[2] };
-    local_x = interpolation( z_gradient_x,
-                             local_region_x_2,
-                             local_region_y_2,
-                             2,
-                             valid_location_rc_x.size(),
-                             _z.width );
-    local_y = interpolation( z_gradient_y,
-                             local_region_x_2,
-                             local_region_y_2,
-                             2,
-                             valid_location_rc_x.size(),
-                             _z.width );
-    gradient = depth_mean( local_x, local_y );
-    grad_in_direction = sum_gradient_depth(gradient, direction_per_pixel);
+        std::vector< double > local_region_x_2[2] = { local_region_x[1], local_region_x[2] };
+        std::vector< double > local_region_y_2[2] = { local_region_y[1], local_region_y[2] };
+        local_x = interpolation( z_gradient_x,
+                                 local_region_x_2,
+                                 local_region_y_2,
+                                 2,
+                                 valid_location_rc_x.size(),
+                                 _z.width );
+        local_y = interpolation( z_gradient_y,
+                                 local_region_x_2,
+                                 local_region_y_2,
+                                 2,
+                                 valid_location_rc_x.size(),
+                                 _z.width );
+        gradient = depth_mean( local_x, local_y );
+        grad_in_direction = sum_gradient_depth( gradient, direction_per_pixel );
+        if( _debug_mode )
+        {
+            _z.local_x = std::move( local_x );
+            _z.local_y = std::move( local_y );
+            _z.gradient = std::move( gradient );
+        }
+    }
     local_values = interpolation(_z.frame, local_region_x, local_region_y, 4, valid_location_rc_x.size(), _z.width);
-    values_for_subedges = find_local_values_min(local_values);
+    std::vector< double > values_for_subedges = find_local_values_min( local_values );
 
     //_params.alpha;
     /* validEdgePixels = zGradInDirection > params.gradZTh & isSupressed & zValuesForSubEdges > 0;
@@ -711,8 +718,6 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
                                                  values_for_subedges,
                                                  _ir.local_edges,
                                                  _params);
-    std::vector<double> valid_values_for_subedges;
-
 
     std::vector< double > grad_in_direction_valid;
     std::vector< double > valid_edge_sub_pixel_x;
@@ -720,7 +725,6 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     std::vector< double > valid_edge_sub_pixel;
     std::vector< double > sub_points;
     std::vector< double > valid_direction_per_pixel;
-    std::vector< byte > z_valid_section_map;
     depth_filter(grad_in_direction_valid, grad_in_direction, _z.supressed_edges, 1, _z.supressed_edges.size());
     depth_filter(valid_edge_sub_pixel_x, edge_sub_pixel_x, _z.supressed_edges, 1, _z.supressed_edges.size()); //edgeSubPixel = edgeSubPixel(validEdgePixels,:);
     depth_filter(valid_edge_sub_pixel_y, edge_sub_pixel_y, _z.supressed_edges, 1, _z.supressed_edges.size());
@@ -733,28 +737,38 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
         sub_points.push_back(*(valid_edge_sub_pixel_y.begin() + i)-1);
         sub_points.push_back(1);
     }
-    depth_filter(valid_values_for_subedges, values_for_subedges, _z.supressed_edges, 1, _z.supressed_edges.size());
-    depth_filter(valid_direction_per_pixel, direction_per_pixel_x, _z.supressed_edges, 1, _z.supressed_edges.size());
-    depth_filter( z_valid_section_map,
-                  valid_section_map,
-                  _z.supressed_edges,
-                  1,
-                  _z.supressed_edges.size() );
-    std::vector<double> edited_ir_directions;
-
-    for( auto i = 0; i < dirs.size(); i++ )
     {
-        auto val = double( *( dirs.begin() + i ) );
-        val = val + 1;// +1 to align with matlab
-        val = val > 4 ? val - 4 : val;
-        edited_ir_directions.push_back(val);
+        std::vector< double > valid_values_for_subedges;
+        depth_filter( valid_values_for_subedges,   // out
+                      values_for_subedges,         // in
+                      _z.supressed_edges,
+                      1,
+                      _z.supressed_edges.size() );
+        values_for_subedges = valid_values_for_subedges;
+    }
+    depth_filter( valid_direction_per_pixel, direction_per_pixel_x, _z.supressed_edges, 1, _z.supressed_edges.size() );
+    std::vector< byte > z_valid_section_map;
+    depth_filter( z_valid_section_map, valid_section_map, _z.supressed_edges, 1, _z.supressed_edges.size() );
+
+    std::vector< double > valid_directions;
+    {
+        std::vector< double > edited_ir_directions;
+        edited_ir_directions.reserve( dirs.size() );
+        for( auto i = 0; i < dirs.size(); i++ )
+        {
+            auto val = double( *( dirs.begin() + i ) );
+            val = val + 1;  // +1 to align with matlab
+            val = val > 4 ? val - 4 : val;
+            edited_ir_directions.push_back( val );
+        }
+
+        depth_filter( valid_directions,
+                      edited_ir_directions,
+                      _z.supressed_edges,
+                      1,
+                      _z.supressed_edges.size() );
     }
 
-     std::vector< double > valid_directions;
-
-    depth_filter(valid_directions, edited_ir_directions, _z.supressed_edges, 1, _z.supressed_edges.size());
-
-    values_for_subedges = valid_values_for_subedges;
 
     /* weights = min(max(zGradInDirection - params.gradZTh,0),params.gradZMax - params.gradZTh);
     if params.constantWeights
@@ -784,42 +798,45 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     transform(valid_edge_sub_pixel_x.begin(), valid_edge_sub_pixel_x.end(), valid_edge_sub_pixel_x.begin(), bind2nd(std::plus<double>(), -1.0));
     transform(valid_edge_sub_pixel_y.begin(), valid_edge_sub_pixel_y.end(), valid_edge_sub_pixel_y.begin(), bind2nd(std::plus<double>(), -1.0));
     
-    std::vector< double3 > vertices_all;
-    for (auto i = 0; i < sub_points.size(); i += 3)
-    {
-        //%vertices = subPoints * pinv(params.Kdepth)' .* zValuesForSubEdges / params.zMaxSubMM;
-        double sub_points_mult[3];
-        double x = sub_points[i];
-        double y = sub_points[i + 1];
-        double z = sub_points[i + 2];
-        for (auto jj = 0; jj < 3; jj++)
-        {
-            sub_points_mult[jj] = x * k_depth_pinv.rot[3 * jj + 0]
-                                + y * k_depth_pinv.rot[3 * jj + 1]
-                                + z * k_depth_pinv.rot[3 * jj + 2];
-        }
-        auto z_value_for_subedge = values_for_subedges[i / 3];
-        auto val1 = sub_points_mult[0] * z_value_for_subedge / _params.max_sub_mm_z;
-        auto val2 = sub_points_mult[1] * z_value_for_subedge / _params.max_sub_mm_z;
-        auto val3 = sub_points_mult[2] * z_value_for_subedge / _params.max_sub_mm_z;
-        vertices_all.push_back( { val1, val2, val3 } );
-    }
-    std::vector< double2 > uvmap;
-    uvmap = get_texture_map( vertices_all,
-                                _original_calibration,
-                                _original_calibration.calc_p_mat() );
-
     std::vector< byte > is_inside;
-
-    for (auto i = 0; i < uvmap.size(); i++)
     {
-        //%isInside = xy(:,1) >= 0 & ...
-        //%           xy(:,1) <= res(2) - 1 & ...
-        //%           xy(:,2) >= 0 & ...
-        //%           xy(:,2) <= res(1) - 1;
-        bool cond_x = (uvmap[i].x >= 0) && (uvmap[i].x <= _yuy.width-1);
-        bool cond_y = (uvmap[i].y >= 0) && (uvmap[i].y <= _yuy.height-1);
-        is_inside.push_back( cond_x && cond_y );
+        std::vector< double3 > vertices_all;
+        vertices_all.reserve( sub_points.size() );
+        for( auto i = 0; i < sub_points.size(); i += 3 )
+        {
+            //% vertices = subPoints * pinv(params.Kdepth)' .* zValuesForSubEdges / params.zMaxSubMM;
+            double sub_points_mult[3];
+            double x = sub_points[i];
+            double y = sub_points[i + 1];
+            double z = sub_points[i + 2];
+            for( auto jj = 0; jj < 3; jj++ )
+            {
+                sub_points_mult[jj] = x * k_depth_pinv.rot[3 * jj + 0]
+                                    + y * k_depth_pinv.rot[3 * jj + 1]
+                                    + z * k_depth_pinv.rot[3 * jj + 2];
+            }
+            auto z_value_for_subedge = values_for_subedges[i / 3];
+            auto val1 = sub_points_mult[0] * z_value_for_subedge / _params.max_sub_mm_z;
+            auto val2 = sub_points_mult[1] * z_value_for_subedge / _params.max_sub_mm_z;
+            auto val3 = sub_points_mult[2] * z_value_for_subedge / _params.max_sub_mm_z;
+            vertices_all.push_back( { val1, val2, val3 } );
+        }
+        std::vector< double2 > uvmap = get_texture_map( vertices_all,
+                                                        _original_calibration,
+                                                        _original_calibration.calc_p_mat() );
+        for( auto i = 0; i < uvmap.size(); i++ )
+        {
+            //%isInside = xy(:,1) >= 0 & ...
+            //%           xy(:,1) <= res(2) - 1 & ...
+            //%           xy(:,2) >= 0 & ...
+            //%           xy(:,2) <= res(1) - 1;
+            bool cond_x = ( uvmap[i].x >= 0 ) && ( uvmap[i].x <= _yuy.width - 1 );
+            bool cond_y = ( uvmap[i].y >= 0 ) && ( uvmap[i].y <= _yuy.height - 1 );
+            is_inside.push_back( cond_x && cond_y );
+        }
+        depth_filter( _z.vertices, vertices_all, is_inside, 1, is_inside.size() );
+        if( _debug_mode )
+            _z.uvmap = std::move( uvmap );
     }
 
     /*xim = xim(isInside);
@@ -832,27 +849,23 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     sectionMapDepth = sectionMapDepth(isInside);*/
     //std::vector<double> weights;
 
-    std::vector< double > valid_weights;
-
-    for (auto i = 0; i < is_inside.size(); i++) {
-
-        valid_weights.push_back(_params.constant_weights);
+    {
+        std::vector< double > valid_weights;
+        valid_weights.reserve( is_inside.size() );
+        for( auto i = 0; i < is_inside.size(); i++ )
+            valid_weights.push_back( _params.constant_weights );
+        depth_filter( _z.weights, valid_weights, is_inside, 1, is_inside.size() );
     }
-
-    std::vector< double > grad_in_direction_inside;
 
     depth_filter(_z.subpixels_x, valid_edge_sub_pixel_x, is_inside, 1, is_inside.size());
     depth_filter(_z.subpixels_y, valid_edge_sub_pixel_y, is_inside, 1, is_inside.size());
     depth_filter(_z.closest, values_for_subedges, is_inside, 1, is_inside.size());
-    depth_filter(grad_in_direction_inside, grad_in_direction_valid, is_inside, 1, is_inside.size());
     depth_filter(_z.directions, valid_directions, is_inside, 1, is_inside.size());
-    depth_filter(_z.vertices, vertices_all, is_inside, 1, is_inside.size());
     depth_filter( _z.section_map,
                   z_valid_section_map,
                   is_inside,
                   1,
                   is_inside.size() );
-    depth_filter( _z.weights, valid_weights, is_inside, 1, is_inside.size() );
 
     _z.relevant_pixels_image.resize(_z.width * _z.height, 0);
     std::vector<double> sub_pixel_x = _z.subpixels_x;
@@ -897,9 +910,6 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
         _ir.fraq_step = std::move( fraq_step );
         _z.local_rc_subpixel = std::move( local_rc_subpixel );
         _z.edge_sub_pixel = std::move( edge_sub_pixel );
-        _z.local_x = std::move( local_x );
-        _z.local_y = std::move( local_y );
-        _z.gradient = std::move( gradient );
         _z.grad_in_direction = std::move( grad_in_direction );
         _z.local_values = std::move( local_values );
         _z.grad_in_direction_valid = std::move( grad_in_direction_valid );
@@ -919,11 +929,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
         _z.valid_direction_per_pixel = std::move( valid_direction_per_pixel );
         _z.valid_section_map = std::move( z_valid_section_map );
         _z.valid_directions = std::move( valid_directions );
-        _z.vertices_all = std::move( vertices_all );
-        _z.uvmap = std::move( uvmap );
         _z.is_inside = std::move( is_inside );
-        _z.valid_weights = std::move( valid_weights );
-        _z.grad_in_direction_inside = std::move( grad_in_direction_inside );
         _z.subpixels_x_round = std::move( subpixels_x_round );
         _z.subpixels_y_round = std::move( subpixels_y_round );
     }

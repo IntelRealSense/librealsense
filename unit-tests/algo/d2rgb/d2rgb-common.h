@@ -33,7 +33,7 @@ void init_algo( algo::optimizer & cal,
     std::string const & ir,
     std::string const & z,
     camera_params const & camera,
-    profile * profiler
+    memory_profiler * profiler = nullptr
 )
 {
     algo::calib calibration( camera.rgb, camera.extrinsics );
