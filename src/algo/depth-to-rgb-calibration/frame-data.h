@@ -92,8 +92,6 @@ namespace depth_to_rgb_calibration {
         std::vector<double> valid_directions; // for debug
         std::vector<double> directions;
         std::vector< double > valid_edge_sub_pixel; // for debug
-        std::vector<double > valid_edge_sub_pixel_x; // for debug
-        std::vector< double > valid_edge_sub_pixel_y; // for debug
         std::vector<double> sub_points; // for debug
         std::vector<double3> vertices; // for debug
         std::vector<double3> orig_vertices;
