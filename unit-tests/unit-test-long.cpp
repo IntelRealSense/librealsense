@@ -1,4 +1,3 @@
-#ifdef __linux__
 #include <cmath>
 #include "unit-tests-common.h"
 #include <librealsense2/hpp/rs_types.hpp>
@@ -8,12 +7,14 @@
 #include <ctime>
 #include <algorithm>
 #include <librealsense2/rsutil.h>
-#include <sys/wait.h>
-#include <semaphore.h>
-#include <fcntl.h>
 
 using namespace rs2;
 using namespace std::chrono;
+
+#ifdef __linux__
+#include <sys/wait.h>
+#include <semaphore.h>
+#include <fcntl.h>
 
 bool stream(std::string serial_number, sem_t* sem2, bool do_query)
 {
@@ -204,3 +205,174 @@ TEST_CASE("multicam_streaming", "[live][multicam]")
     }
 }
 #endif // __linux__
+
+struct global_time_test_meta_data : public internal_frame_additional_data
+{
+    double system_time;
+
+    global_time_test_meta_data(const double &ts, const unsigned long long frame_num, const rs2_timestamp_domain& ts_domain, const rs2_stream& strm, const rs2_format& fmt, double& sts) :
+        internal_frame_additional_data(ts, frame_num, ts_domain, strm, fmt)
+    {
+        system_time = sts;
+    }
+};
+
+
+TEST_CASE("global-time-start", "[live][!mayfail]") {
+    //Require at least one device to be plugged in
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
+        REQUIRE(list.size() > 0);
+
+        const int frames_before_start_measure = 10;
+        const double msec_to_sec = 0.001;
+        const int num_of_profiles_for_each_subdevice = 2;
+        const float max_diff_between_real_and_metadata_fps = 1.0f;
+
+        // Find profile with greatest fps:
+        int max_fps(0);
+        for (auto && subdevice : list) {
+            if (!subdevice.supports(RS2_OPTION_GLOBAL_TIME_ENABLED))
+                continue;
+            std::vector<rs2::stream_profile> modes;
+            REQUIRE_NOTHROW(modes = subdevice.get_stream_profiles());
+            REQUIRE(modes.size() > 0);
+            for (auto profile : modes)
+            {
+                if (max_fps < profile.fps())
+                {
+                    max_fps = profile.fps();
+                }
+            }
+        }
+        const int frames_for_fps_measure(max_fps * 3);  // max number of frames
+
+        for (auto && subdevice : list) {
+            if (!subdevice.supports(RS2_OPTION_GLOBAL_TIME_ENABLED))
+                continue;
+            std::vector<rs2::stream_profile> modes;
+            REQUIRE_NOTHROW(modes = subdevice.get_stream_profiles());
+
+            REQUIRE(modes.size() > 0);
+            CAPTURE(subdevice.get_info(RS2_CAMERA_INFO_NAME));
+
+            //the test will be done only on the profile with maximal fps:
+            for (auto profile : modes)
+            {
+                if (profile.fps() < max_fps)
+                    continue;
+
+                //// GPIO Requires external triggers to produce events
+                //if (RS2_STREAM_GPIO == profile.stream_type())
+                //    continue;   // Disabling for now
+
+                CAPTURE(profile.format());
+                CAPTURE(profile.fps());
+                CAPTURE(profile.stream_type());
+                CAPTURE(profile.stream_index());
+                if (auto video = profile.as<video_stream_profile>())
+                {
+                    CAPTURE(video.width());
+                    CAPTURE(video.height());
+                }
+
+                std::vector<global_time_test_meta_data> frames_additional_data;
+                auto frames = 0;
+                double start_time;
+                std::condition_variable cv;
+                std::mutex m;
+                auto first = true;
+
+                REQUIRE_NOTHROW(subdevice.open({ profile }));
+
+                disable_sensitive_options_for(subdevice);
+                REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_GLOBAL_TIME_ENABLED, 1));
+
+                REQUIRE_NOTHROW(subdevice.start([&](rs2::frame f)
+                {
+                    double crnt_time(internal::get_time());
+                    if (first)
+                    {
+                        start_time = crnt_time;
+                    }
+                    first = false;
+
+                    if ((frames_additional_data.size() >= frames_for_fps_measure))
+                    {
+                        cv.notify_one();
+                    }
+
+                    if (frames_additional_data.size() < frames_for_fps_measure)
+                    {
+                        global_time_test_meta_data data{ f.get_timestamp(),
+                            f.get_frame_number(),
+                            f.get_frame_timestamp_domain(),
+                            f.get_profile().stream_type(),
+                            f.get_profile().format(),
+                            crnt_time
+                        };
+
+                        std::unique_lock<std::mutex> lock(m);
+                        frames_additional_data.push_back(data);
+                    }
+                    frames++;
+                }));
+
+                CAPTURE(frames_for_fps_measure);
+
+                std::unique_lock<std::mutex> lock(m);
+                cv.wait_for(lock, std::chrono::seconds(10), [&] {return ((frames_additional_data.size() >= frames_for_fps_measure)); });
+                CAPTURE(frames_additional_data.size());
+
+                auto end = internal::get_time();
+                REQUIRE_NOTHROW(subdevice.stop());
+                REQUIRE_NOTHROW(subdevice.close());
+
+                lock.unlock();
+
+                auto seconds = (end - start_time)*msec_to_sec;
+
+                CAPTURE(start_time);
+                CAPTURE(end);
+                CAPTURE(seconds);
+
+                REQUIRE(seconds > 0);
+
+                if (frames_additional_data.size())
+                {
+                    std::ofstream fout("test_results.txt");
+                    for (auto data : frames_additional_data)
+                    {
+                        fout << std::fixed << std::setprecision(4) << data.system_time << " " << data.timestamp << " " << rs2_timestamp_domain_to_string(data.timestamp_domain) << std::endl;
+                    }
+                    fout.close();
+
+                    auto actual_fps = (double)frames_additional_data.size() / (double)seconds;
+                    for (int i = 1; i < frames_additional_data.size(); i++)
+                    {
+                        const global_time_test_meta_data& crnt_data = frames_additional_data[i];
+                        const global_time_test_meta_data& prev_data = frames_additional_data[i-1];
+                        if ((crnt_data.timestamp_domain != RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME) ||
+                            (prev_data.timestamp_domain != RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME))
+                        {
+                            continue;
+                        }
+                        double system_ts_diff = crnt_data.system_time - prev_data.system_time;
+                        double ts_diff = crnt_data.timestamp - prev_data.timestamp;
+
+                        CAPTURE(i);
+                        REQUIRE(ts_diff / 10.0 < system_ts_diff);
+                        REQUIRE(ts_diff * 10.0 > system_ts_diff);
+                    }
+                    CAPTURE(actual_fps);
+
+                }
+                break; // Check 1 profile only.
+            }
+        }
+    }
+}
+
