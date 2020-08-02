@@ -3,10 +3,7 @@
 
 #include <algorithm>
 #include "cah-model.h"
-#define GLFW_INCLUDE_NONE
-#include "fw-update-helper.h"
 #include "model-views.h"
-#include "types.h"
  
 using namespace rs2;
 
