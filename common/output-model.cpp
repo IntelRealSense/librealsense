@@ -91,7 +91,7 @@ output_model::~output_model()
     fw_logger.join();
 }
 
-output_model::output_model() : fw_logger([this](){ thread_loop(); })
+output_model::output_model() : fw_logger([this](){ thread_loop(); }) , incoming_log_queue(100)
 {
     is_output_open = config_file::instance().get_or_default(
             configurations::viewer::output_open, false);
