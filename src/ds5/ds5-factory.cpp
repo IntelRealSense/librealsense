@@ -1120,7 +1120,10 @@ namespace librealsense
             }
             else
             {
-                LOG_WARNING("DS5 group_devices is empty.");
+                if (!devices.empty())
+                    LOG_INFO("PID: 0x" << std::hex << devices.front().pid << std::dec << " was partially enumerated");
+                else
+                    LOG_WARNING("DS5 group_devices is empty.");
             }
         }
 

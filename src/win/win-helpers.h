@@ -19,9 +19,10 @@ namespace librealsense
 {
     namespace platform
     {
-        bool check(const char * call, HRESULT hr, bool to_throw = true);
+        bool check(const char * call, HRESULT hr, bool to_throw = true, bool sdk_exception = true);
 #define CHECK_HR(x) check(#x, x);
 #define LOG_HR(x) check(#x, x, false);
+#define THROW_HR(x) check(#x, x, false, false);
 
         std::string win_to_utf(const WCHAR * s);
 

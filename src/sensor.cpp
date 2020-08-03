@@ -613,7 +613,7 @@ namespace librealsense
         register_option(id, std::make_shared<uvc_pu_option>(*this, id));
     }
 
-    void uvc_sensor::try_register_pu(rs2_option id)
+    void uvc_sensor::try_register_pu(rs2_option id, bool report_errors)
     {
         auto opt = std::make_shared<uvc_pu_option>(*this, id);
         try
@@ -629,7 +629,8 @@ namespace librealsense
         }
         catch (...)
         {
-            LOG_WARNING("Exception was thrown when inspecting " << this->get_info(RS2_CAMERA_INFO_NAME) << " property " << opt->get_description());
+            if (report_errors)
+                LOG_WARNING("Exception was thrown when inspecting " << this->get_info(RS2_CAMERA_INFO_NAME) << " property " << opt->get_description());
         }
     }
 

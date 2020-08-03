@@ -264,17 +264,18 @@ namespace librealsense
             color_ep->register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_COLOR));
             color_ep->register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
 
-            raw_color_ep->try_register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
-            raw_color_ep->try_register_pu(RS2_OPTION_BRIGHTNESS);
-            raw_color_ep->try_register_pu(RS2_OPTION_CONTRAST);
-            raw_color_ep->try_register_pu(RS2_OPTION_EXPOSURE);
-            raw_color_ep->try_register_pu(RS2_OPTION_GAMMA);
-            raw_color_ep->try_register_pu(RS2_OPTION_HUE);
-            raw_color_ep->try_register_pu(RS2_OPTION_SATURATION);
-            raw_color_ep->try_register_pu(RS2_OPTION_SHARPNESS);
-            raw_color_ep->try_register_pu(RS2_OPTION_WHITE_BALANCE);
-            raw_color_ep->try_register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
-            raw_color_ep->try_register_pu(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+            // Third-party UVC cameras with unverified capabilities shall avoid writing to log during dynamic feature identification.
+            raw_color_ep->try_register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION,false);
+            raw_color_ep->try_register_pu(RS2_OPTION_BRIGHTNESS, false);
+            raw_color_ep->try_register_pu(RS2_OPTION_CONTRAST, false);
+            raw_color_ep->try_register_pu(RS2_OPTION_EXPOSURE, false);
+            raw_color_ep->try_register_pu(RS2_OPTION_GAMMA, false);
+            raw_color_ep->try_register_pu(RS2_OPTION_HUE, false);
+            raw_color_ep->try_register_pu(RS2_OPTION_SATURATION, false);
+            raw_color_ep->try_register_pu(RS2_OPTION_SHARPNESS, false);
+            raw_color_ep->try_register_pu(RS2_OPTION_WHITE_BALANCE, false);
+            raw_color_ep->try_register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE, false);
+            raw_color_ep->try_register_pu(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, false);
         }
 
         virtual rs2_intrinsics get_intrinsics(unsigned int, const stream_profile&) const
@@ -362,7 +363,7 @@ namespace librealsense
                 list.push_back(dev);
         }
 
-        LOG_INFO( "Found " << list.size() << " RealSense devices (mask " << mask << ")" );
+        LOG_INFO( "Found " << list.size() << " RealSense devices (mask 0x" << std::hex << mask << std::dec << ")" );
         return list;
     }
 
