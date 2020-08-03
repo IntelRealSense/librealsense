@@ -936,8 +936,6 @@ bool optimizer::input_validity_checks(input_validity_data* data )
     if( ! rgb_spatial_spread )
         AC_LOG( ERROR, "Scene is not valid: not enough RGB edge spread [EDGE-C]" );
 
-    auto is_movement_from_last_success = true;
-
     if( ! _settings.is_manual_trigger )
     {
         if( ! _yuy.movement_from_last_success )
@@ -949,10 +947,11 @@ bool optimizer::input_validity_checks(input_validity_data* data )
         data->not_saturated = not_saturated;
         data->depth_spatial_spread = depth_spatial_spread;
         data->rgb_spatial_spread = rgb_spatial_spread;
-        data->is_movement_from_last_success = is_movement_from_last_success;
+        data->is_movement_from_last_success = _yuy.movement_from_last_success;
     }
 
-    return dir_spread && not_saturated && depth_spatial_spread && rgb_spatial_spread && is_movement_from_last_success;
+    return dir_spread && not_saturated && depth_spatial_spread && rgb_spatial_spread
+        && _yuy.movement_from_last_success;
 }
 
 

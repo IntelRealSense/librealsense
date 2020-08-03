@@ -1042,6 +1042,8 @@ void optimizer::set_yuy_data(
             _params.move_last_success_thresh_pix_num,
             _yuy.width, _yuy.height );
     }
+    else
+        _yuy.movement_from_last_success = true;
 
     _yuy.edges_IDT = blur_edges( edges, _yuy.width, _yuy.height );
     _yuy.edges_IDTx = calc_vertical_gradient( _yuy.edges_IDT, _yuy.width, _yuy.height );
