@@ -174,8 +174,9 @@ namespace librealsense
 #define CASE(X) STRCASE(SENSOR_MODE, X)
         switch (value)
         {
-            CASE(XGA)
             CASE(VGA)
+            CASE(XGA)
+            CASE(QVGA)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
