@@ -403,7 +403,7 @@ TEST_CASE("global-time-start", "[live][!mayfail]") {
                 CAPTURE(median_diff_gts_off);
 
                 REQUIRE(median_diff_gts_on > 0.5*median_diff_gts_off);
-                REQUIRE(median_diff_gts_on < 1.5*median_diff_gts_off);
+                REQUIRE(median_diff_gts_on < 2.0*median_diff_gts_off);
                 
                 break; // Check 1 profile only.
             }
