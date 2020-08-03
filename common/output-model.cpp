@@ -907,6 +907,10 @@ bool output_model::user_defined_command( std::string command, device_models_list
             }
         }
     }
+    else if (to_lower(command) == "get-nest")
+    {
+        user_defined_command_detected = true;
+    }
 
     // Log a warning if a known command was not activated
     if( user_defined_command_detected && ! user_defined_command_activated )
