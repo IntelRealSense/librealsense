@@ -126,6 +126,8 @@ namespace librealsense
     {
         static const double max_device_time(pow(2, 32) * TIMESTAMP_USEC_TO_MSEC);
         double base_x;
+        if (_last_values.empty())
+            return false;
         if ((_last_values.front()._x - x) > max_device_time / 2)
             base_x = max_device_time;
         else if ((x - _last_values.front()._x) > max_device_time / 2)
@@ -183,6 +185,7 @@ namespace librealsense
             LOG_DEBUG("time_diff_keeper::stop: stop object.");
             _active_object.stop();
             _coefs.reset();
+            _is_ready = false;
         }
     }
 
