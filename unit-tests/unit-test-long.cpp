@@ -225,7 +225,7 @@ struct time_results
 void run_sensor(rs2::sensor subdevice, rs2::stream_profile profile, bool enable_gts, int iter, double& max_diff_system_global_time)
 {
     const double msec_to_sec = 0.001;
-    const int frames_for_fps_measure(profile.fps() * 3);  // max number of frames
+    const int frames_for_fps_measure(profile.fps() * 2);  // max number of frames
 
     std::vector<global_time_test_meta_data> frames_additional_data;
     double start_time;
@@ -321,7 +321,7 @@ void run_sensor(rs2::sensor subdevice, rs2::stream_profile profile, bool enable_
     }
 }
 
-TEST_CASE("global-time-start", "[live][!mayfail]") {
+TEST_CASE("global-time-start", "[live]") {
     //Require at least one device to be plugged in
     // This test checks if there are delays caused by GlobalTimeStampReader:
     // The test finds the maximal system time difference and frame time difference between every 2 consecutive frames.
@@ -385,15 +385,16 @@ TEST_CASE("global-time-start", "[live][!mayfail]") {
                 double max_diff_system_global_time;
                 std::vector<double> all_results_gts_on;
                 std::vector<double> all_results_gts_off;
-                for (int i = 0; i < 5; i++)
+                const int num_of_runs(7);
+                for (int i = 0; i < 7; i++)
                 {
                     run_sensor(subdevice, profile, true, i, max_diff_system_global_time);
                     all_results_gts_on.push_back(max_diff_system_global_time);
-                    std::cout << "Ran iteration " << i << "/" << 5 << " - gts-ON: max_diff_system_global_time=" << max_diff_system_global_time << std::endl;
+                    std::cout << "Ran iteration " << i << "/" << num_of_runs << " - gts-ON: max_diff_system_global_time=" << max_diff_system_global_time << std::endl;
 
                     run_sensor(subdevice, profile, false, i, max_diff_system_global_time);
                     all_results_gts_off.push_back(max_diff_system_global_time);
-                    std::cout << "Ran iteration " << i << "/" << 5 << " - gts-OFF: max_diff_system_global_time=" << max_diff_system_global_time << std::endl;
+                    std::cout << "Ran iteration " << i << "/" << num_of_runs << " - gts-OFF: max_diff_system_global_time=" << max_diff_system_global_time << std::endl;
                 }
                 std::nth_element(all_results_gts_on.begin(), all_results_gts_on.begin() + all_results_gts_on.size() / 2, all_results_gts_on.end());
                 double median_diff_gts_on = all_results_gts_on[all_results_gts_on.size() / 2];
