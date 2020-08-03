@@ -4790,28 +4790,7 @@ namespace rs2
                 }
             }
 
-#if 0
 
-            if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && dev.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) &&
-                dev.is<device_calibration>())
-            { 
-                auto product_line_str = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-                if (RS2_PRODUCT_LINE_L500 == parse_product_line(product_line_str))
-                {
-                    if (ImGui::Selectable("Trigger Camera Accuracy Health"))
-                    {
-                        // We cannot open a pop up window here since we are already in a pop up window
-                        // we trigger the pop up and activate it outside the menu pop up
-                        show_trigger_camera_accuracy_health_popup = true;
-                    }
-
-                    if (ImGui::Selectable("Reset Camera Accuracy Health"))
-                    {
-                        show_reset_camera_accuracy_health_popup = true;
-                    }
-                }
-            }
-#endif      
             bool has_autocalib = false;
             for (auto&& sub : subdevices)
             {
