@@ -25,8 +25,9 @@ namespace librealsense
     {
         using namespace ds;
 
+        //Projector's capacity is established based on actual HW capabilities
         auto pid = group.uvc_devices.front().pid;
-        if (pid != RS_USB2_PID)
+        if ((pid != RS_USB2_PID) && ((_device_capabilities & d400_caps::CAP_ACTIVE_PROJECTOR) == d400_caps::CAP_ACTIVE_PROJECTOR))
         {
             auto&& depth_ep = get_depth_sensor();
             auto&& raw_depth_ep = get_raw_depth_sensor();
@@ -38,6 +39,7 @@ namespace librealsense
                                                                          depth_xu,
                                                                          DS5_LASER_POWER,
                                                                          "Manual laser power in mw. applicable only when laser power mode is set to Manual");
+
             depth_ep.register_option(RS2_OPTION_LASER_POWER,
                                      std::make_shared<auto_disabling_control>(
                                      laser_power,
@@ -45,8 +47,13 @@ namespace librealsense
                                      std::vector<float>{0.f, 2.f}, 1.f));
 
             depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                    std::make_shared<asic_and_projector_temperature_options>(raw_depth_ep,
+                std::make_shared<asic_and_projector_temperature_options>(raw_depth_ep,
                     RS2_OPTION_PROJECTOR_TEMPERATURE));
+        }
+        else
+        {
+            LOG_WARNING("Projector capacity is overrided and disabled by FW\nDevice PID = 0x" << std::hex << pid
+                << std::dec << ", Capabilities Vector = [" << _device_capabilities << "]");
         }
     }
 }
