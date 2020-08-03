@@ -362,7 +362,7 @@ namespace ivcam2 {
         {
             // We start another trigger regardless of what happens next; if a calibration actually
             // proceeds, it will be cancelled...
-            trigger.schedule_next_time_trigger();
+            trigger.schedule_next_calibration();
             try
             {
                 trigger.trigger_calibration( calibration_type::AUTO );
@@ -386,7 +386,6 @@ namespace ivcam2 {
     private:
         void retry( ac_trigger & trigger ) override
         {
-
             if( trigger.is_active() )
             {
                 AC_LOG( DEBUG, "... already active; ignoring" );
@@ -1165,7 +1164,7 @@ namespace ivcam2 {
     void ac_trigger::schedule_next_calibration()
     {
         // Trigger the next CAH -- but only if we're "on", meaning this wasn't a manual calibration
-        if( !auto_calibration_is_on() )
+        if( ! auto_calibration_is_on() )
         {
             AC_LOG( DEBUG, "Calibration mechanism is not on; not scheduling next calibration" );
             return;
@@ -1187,22 +1186,18 @@ namespace ivcam2 {
             }
         }
 
-        AC_LOG( DEBUG, "Trigger in " << n_seconds.count() << " seconds..." );
         // If there's already a trigger, this will simply override it
         _next_trigger = retrier::start< next_trigger >( *this, n_seconds );
     }
 
     void ac_trigger::schedule_next_temp_trigger()
     {
-        if( get_temp_diff_trigger() )
+        // If no _last_temp --> first calibration! We want to keep checking every minute
+        // until temperature is within proper conditions...
+        if( get_temp_diff_trigger()  ||  ! _last_temp )
         {
-            if( _last_temp )
-            {
-                //AC_LOG( DEBUG, "Last HUM temperature= " << _last_temp );
-                _temp_check = retrier::start< temp_check >( *this, std::chrono::seconds( 60 ) );
-            }
-            else
-                AC_LOG( DEBUG, "No temp check retrier created: no temperature available" );
+            //AC_LOG( DEBUG, "Last HUM temperature= " << _last_temp );
+            _temp_check = retrier::start< temp_check >( *this, std::chrono::seconds( 60 ) );
         }
         else
         {
@@ -1357,9 +1352,9 @@ namespace ivcam2 {
         if( auto_calibration_is_on() )
             throw wrong_api_call_sequence_exception( "CAH is already active" );
 
-        if (!is_auto_trigger_possible())
+        if( ! is_auto_trigger_possible() )
         {
-            AC_LOG(DEBUG, "Auto trigger is disabled in environment");
+            AC_LOG( DEBUG, "Auto trigger is disabled in environment" );
             return;  // no auto trigger
         }
 
@@ -1367,7 +1362,7 @@ namespace ivcam2 {
 
         // If we are already active then we don't need to do anything: another calibration will be
         // triggered automatically at the end of the current one 
-        if (is_active())
+        if( is_active() )
         {
             return;
         }
@@ -1375,10 +1370,7 @@ namespace ivcam2 {
         // Note: we arbitrarily choose the time before CAH starts at 10 second -- enough time to
         // make sure the user isn't going to fiddle with color sensor activity too much, because
         // if color is off then CAH will automatically turn it on!
-        if( get_trigger_seconds().count() )
-            schedule_next_time_trigger( std::chrono::seconds( 10 ) );
-        else if( _last_temp = read_temperature() )
-            schedule_next_temp_trigger();
+        schedule_next_time_trigger( std::chrono::seconds( 10 ) );
     }
 
     void ac_trigger::stop()
