@@ -830,36 +830,6 @@ namespace ivcam2 {
 
         _retrier.reset();  // No need to activate a retry if the following takes a bit of time!
 
-        // We have to read the FW registers at the time of the special frame.
-        // NOTE: the following is I/O to FW, meaning it takes time! In this time, another
-        // thread can receive a set_color_frame() and, since we've already received the SF,
-        // start working even before we finish! NOT GOOD!
-        {
-            auto hwm = _hwm.lock();
-            if( ! hwm )
-            {
-                AC_LOG( ERROR, "Hardware monitor is inaccessible - don't use special frame" );
-                return;
-            }
-
-            try
-            {
-                ivcam2::read_fw_register( *hwm, &_dsm_x_scale, 0xfffe3844 );
-                ivcam2::read_fw_register( *hwm, &_dsm_y_scale, 0xfffe3830 );
-                ivcam2::read_fw_register( *hwm, &_dsm_x_offset, 0xfffe3840 );
-                ivcam2::read_fw_register( *hwm, &_dsm_y_offset, 0xfffe382c );
-            }
-            catch (std::exception& ex)
-            {
-                AC_LOG( ERROR, "caught exception in reading firmware registers: " << ex.what() );
-                set_not_active();  // now inactive
-            }
-
-        }
-        AC_LOG( DEBUG,
-                "dsm registers=  x[" << AC_F_PREC << _dsm_x_scale << ' ' << _dsm_y_scale << "]  +["
-                                     << _dsm_x_offset << ' ' << _dsm_y_offset << "]" );
-
         _sf = fs;  // Assign right before the sync otherwise we may start() prematurely
         _sf.keep();
         std::lock_guard< std::mutex > lock( _mutex );
@@ -959,24 +929,35 @@ namespace ivcam2 {
                     AC_LOG( DEBUG, "Calibration algo has started ..." );
                     call_back( RS2_CALIBRATION_STARTED );
 
-                    static algo::depth_to_rgb_calibration::algo_calibration_info cal_info;
-                    static bool cal_info_initialized = false;
-                    if( !cal_info_initialized )
+                    // We have to read the FW registers at the time of the special frame, but we
+                    // cannot do it from set_special_frame() because it takes time and we should not
+                    // hold up the thread that the frame callbacks are on!
+                    float dsm_x_scale, dsm_y_scale, dsm_x_offset, dsm_y_offset;
+                    algo::depth_to_rgb_calibration::algo_calibration_info cal_info;
                     {
-                        cal_info_initialized = true;
                         auto hwm = _hwm.lock();
-                        if (!hwm)
-                        {
-                            AC_LOG(ERROR, "Hardware monitor is inaccessible - stopping algo");
-                            return;
-                        }
-                        ivcam2::read_fw_table(*hwm, cal_info.table_id, &cal_info );  // throws!
+                        if( ! hwm )
+                            throw std::runtime_error( "HW monitor is inaccessible - stopping algo" );
+
+                        ivcam2::read_fw_register( *hwm, &dsm_x_scale, 0xfffe3844 );
+                        ivcam2::read_fw_register( *hwm, &dsm_y_scale, 0xfffe3830 );
+                        ivcam2::read_fw_register( *hwm, &dsm_x_offset, 0xfffe3840 );
+                        ivcam2::read_fw_register( *hwm, &dsm_y_offset, 0xfffe382c );
+
+                        ivcam2::read_fw_table( *hwm, cal_info.table_id, &cal_info );
+
+                        // If the above throw (and they can!) then we catch below and stop...
                     }
+
+                    AC_LOG( DEBUG,
+                            "dsm registers=  x[" << AC_F_PREC << dsm_x_scale << ' ' << dsm_y_scale
+                                                 << "]  +[" << dsm_x_offset << ' ' << dsm_y_offset
+                                                 << "]" );
                     algo::depth_to_rgb_calibration::algo_calibration_registers cal_regs;
-                    cal_regs.EXTLdsmXscale = _dsm_x_scale;
-                    cal_regs.EXTLdsmYscale = _dsm_y_scale;
-                    cal_regs.EXTLdsmXoffset = _dsm_x_offset;
-                    cal_regs.EXTLdsmYoffset = _dsm_y_offset;
+                    cal_regs.EXTLdsmXscale  = dsm_x_scale;
+                    cal_regs.EXTLdsmYscale  = dsm_y_scale;
+                    cal_regs.EXTLdsmXoffset = dsm_x_offset;
+                    cal_regs.EXTLdsmYoffset = dsm_y_offset;
 
                     auto df = _sf.get_depth_frame();
                     auto irf = _sf.get_infrared_frame();

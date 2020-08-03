@@ -24,16 +24,11 @@ namespace ivcam2 {
         rs2::frameset _sf;
         rs2::frame _cf, _pcf;  // Keep the last and previous frame!
 
-        float _dsm_x_scale;  // registers read when we get a special frame
-        float _dsm_y_scale;
-        float _dsm_x_offset;
-        float _dsm_y_offset;
-
         rs2_ambient_light _ambient;
         int _receiver_gain;
         double _temp;
 
-        std::weak_ptr<hw_monitor> _hwm;
+        std::weak_ptr< hw_monitor > _hwm;
         l500_device & _dev;
 
         bool _is_on = false;
