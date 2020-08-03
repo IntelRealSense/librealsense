@@ -217,9 +217,117 @@ struct global_time_test_meta_data : public internal_frame_additional_data
     }
 };
 
+struct time_results
+{
+    double min_diff, max_diff;
+};
+
+void run_sensor(rs2::sensor subdevice, rs2::stream_profile profile, bool enable_gts, int iter, double& max_diff_system_global_time)
+{
+    const double msec_to_sec = 0.001;
+    const int frames_for_fps_measure(profile.fps() * 3);  // max number of frames
+
+    std::vector<global_time_test_meta_data> frames_additional_data;
+    double start_time;
+    std::condition_variable cv;
+    std::mutex m;
+    auto first = true;
+
+    REQUIRE_NOTHROW(subdevice.open({ profile }));
+
+    disable_sensitive_options_for(subdevice);
+    if (enable_gts)
+        REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_GLOBAL_TIME_ENABLED, 1));
+
+    REQUIRE_NOTHROW(subdevice.start([&](rs2::frame f)
+    {
+        double crnt_time(internal::get_time());
+        if (first)
+        {
+            start_time = crnt_time;
+        }
+        first = false;
+
+        if ((frames_additional_data.size() >= frames_for_fps_measure))
+        {
+            cv.notify_one();
+        }
+
+        if (frames_additional_data.size() < frames_for_fps_measure)
+        {
+            global_time_test_meta_data data{ f.get_timestamp(),
+                f.get_frame_number(),
+                f.get_frame_timestamp_domain(),
+                f.get_profile().stream_type(),
+                f.get_profile().format(),
+                crnt_time
+            };
+
+            std::unique_lock<std::mutex> lock(m);
+            frames_additional_data.push_back(data);
+        }
+    }));
+
+    CAPTURE(frames_for_fps_measure);
+
+    std::unique_lock<std::mutex> lock(m);
+    cv.wait_for(lock, std::chrono::seconds(10), [&] {return ((frames_additional_data.size() >= frames_for_fps_measure)); });
+    CAPTURE(frames_additional_data.size());
+
+    auto end = internal::get_time();
+    REQUIRE_NOTHROW(subdevice.stop());
+    REQUIRE_NOTHROW(subdevice.close());
+
+    lock.unlock();
+
+    auto seconds = (end - start_time)*msec_to_sec;
+
+    CAPTURE(start_time);
+    CAPTURE(end);
+    CAPTURE(seconds);
+
+    REQUIRE(seconds > 0);
+
+    if (frames_additional_data.size())
+    {
+        std::stringstream name;
+        name << "test_results_" << iter << "_" << enable_gts << ".txt";
+        std::ofstream fout(name.str());
+        //std::ofstream fout("test_results.txt");
+        for (auto data : frames_additional_data)
+        {
+            fout << std::fixed << std::setprecision(4) << data.system_time << " " << data.timestamp << " " << rs2_timestamp_domain_to_string(data.timestamp_domain) << std::endl;
+        }
+        fout.close();
+
+        rs2_timestamp_domain first_timestamp_domain(frames_additional_data[0].timestamp_domain);
+        auto actual_fps = (double)frames_additional_data.size() / (double)seconds;
+        CAPTURE(actual_fps);
+        max_diff_system_global_time = 0;
+        for (int i = 1; i < frames_additional_data.size(); i++)
+        {
+            const global_time_test_meta_data& crnt_data = frames_additional_data[i];
+            const global_time_test_meta_data& prev_data = frames_additional_data[i - 1];
+            if ((crnt_data.timestamp_domain != first_timestamp_domain) ||
+                (prev_data.timestamp_domain != first_timestamp_domain))
+            {
+                continue;
+            }
+            double system_ts_diff = crnt_data.system_time - prev_data.system_time;
+            double ts_diff = crnt_data.timestamp - prev_data.timestamp;
+            double crnt_diff(std::abs(system_ts_diff - ts_diff));
+            max_diff_system_global_time = std::max(max_diff_system_global_time, crnt_diff);
+        }
+    }
+}
 
 TEST_CASE("global-time-start", "[live][!mayfail]") {
     //Require at least one device to be plugged in
+    // This test checks if there are delays caused by GlobalTimeStampReader:
+    // The test finds the maximal system time difference and frame time difference between every 2 consecutive frames.
+    // It then checks that the maximal difference found between system time and frame time is about the same 
+    // for runs with global time stamp on and runs with global time stamp off.
+
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -248,7 +356,6 @@ TEST_CASE("global-time-start", "[live][!mayfail]") {
                 }
             }
         }
-        const int frames_for_fps_measure(max_fps * 3);  // max number of frames
 
         for (auto && subdevice : list) {
             if (!subdevice.supports(RS2_OPTION_GLOBAL_TIME_ENABLED))
@@ -265,10 +372,6 @@ TEST_CASE("global-time-start", "[live][!mayfail]") {
                 if (profile.fps() < max_fps)
                     continue;
 
-                //// GPIO Requires external triggers to produce events
-                //if (RS2_STREAM_GPIO == profile.stream_type())
-                //    continue;   // Disabling for now
-
                 CAPTURE(profile.format());
                 CAPTURE(profile.fps());
                 CAPTURE(profile.stream_type());
@@ -279,97 +382,29 @@ TEST_CASE("global-time-start", "[live][!mayfail]") {
                     CAPTURE(video.height());
                 }
 
-                std::vector<global_time_test_meta_data> frames_additional_data;
-                auto frames = 0;
-                double start_time;
-                std::condition_variable cv;
-                std::mutex m;
-                auto first = true;
-
-                REQUIRE_NOTHROW(subdevice.open({ profile }));
-
-                disable_sensitive_options_for(subdevice);
-                REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_GLOBAL_TIME_ENABLED, 1));
-
-                REQUIRE_NOTHROW(subdevice.start([&](rs2::frame f)
+                double max_diff_system_global_time;
+                std::vector<double> all_results_gts_on;
+                std::vector<double> all_results_gts_off;
+                for (int i = 0; i < 5; i++)
                 {
-                    double crnt_time(internal::get_time());
-                    if (first)
-                    {
-                        start_time = crnt_time;
-                    }
-                    first = false;
+                    run_sensor(subdevice, profile, true, i, max_diff_system_global_time);
+                    all_results_gts_on.push_back(max_diff_system_global_time);
+                    std::cout << "Ran iteration " << i << "/" << 5 << " - gts-ON: max_diff_system_global_time=" << max_diff_system_global_time << std::endl;
 
-                    if ((frames_additional_data.size() >= frames_for_fps_measure))
-                    {
-                        cv.notify_one();
-                    }
-
-                    if (frames_additional_data.size() < frames_for_fps_measure)
-                    {
-                        global_time_test_meta_data data{ f.get_timestamp(),
-                            f.get_frame_number(),
-                            f.get_frame_timestamp_domain(),
-                            f.get_profile().stream_type(),
-                            f.get_profile().format(),
-                            crnt_time
-                        };
-
-                        std::unique_lock<std::mutex> lock(m);
-                        frames_additional_data.push_back(data);
-                    }
-                    frames++;
-                }));
-
-                CAPTURE(frames_for_fps_measure);
-
-                std::unique_lock<std::mutex> lock(m);
-                cv.wait_for(lock, std::chrono::seconds(10), [&] {return ((frames_additional_data.size() >= frames_for_fps_measure)); });
-                CAPTURE(frames_additional_data.size());
-
-                auto end = internal::get_time();
-                REQUIRE_NOTHROW(subdevice.stop());
-                REQUIRE_NOTHROW(subdevice.close());
-
-                lock.unlock();
-
-                auto seconds = (end - start_time)*msec_to_sec;
-
-                CAPTURE(start_time);
-                CAPTURE(end);
-                CAPTURE(seconds);
-
-                REQUIRE(seconds > 0);
-
-                if (frames_additional_data.size())
-                {
-                    std::ofstream fout("test_results.txt");
-                    for (auto data : frames_additional_data)
-                    {
-                        fout << std::fixed << std::setprecision(4) << data.system_time << " " << data.timestamp << " " << rs2_timestamp_domain_to_string(data.timestamp_domain) << std::endl;
-                    }
-                    fout.close();
-
-                    auto actual_fps = (double)frames_additional_data.size() / (double)seconds;
-                    for (int i = 1; i < frames_additional_data.size(); i++)
-                    {
-                        const global_time_test_meta_data& crnt_data = frames_additional_data[i];
-                        const global_time_test_meta_data& prev_data = frames_additional_data[i-1];
-                        if ((crnt_data.timestamp_domain != RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME) ||
-                            (prev_data.timestamp_domain != RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME))
-                        {
-                            continue;
-                        }
-                        double system_ts_diff = crnt_data.system_time - prev_data.system_time;
-                        double ts_diff = crnt_data.timestamp - prev_data.timestamp;
-
-                        CAPTURE(i);
-                        REQUIRE(ts_diff / 10.0 < system_ts_diff);
-                        REQUIRE(ts_diff * 10.0 > system_ts_diff);
-                    }
-                    CAPTURE(actual_fps);
-
+                    run_sensor(subdevice, profile, false, i, max_diff_system_global_time);
+                    all_results_gts_off.push_back(max_diff_system_global_time);
+                    std::cout << "Ran iteration " << i << "/" << 5 << " - gts-OFF: max_diff_system_global_time=" << max_diff_system_global_time << std::endl;
                 }
+                std::nth_element(all_results_gts_on.begin(), all_results_gts_on.begin() + all_results_gts_on.size() / 2, all_results_gts_on.end());
+                double median_diff_gts_on = all_results_gts_on[all_results_gts_on.size() / 2];
+                std::nth_element(all_results_gts_off.begin(), all_results_gts_off.begin() + all_results_gts_off.size() / 2, all_results_gts_off.end());
+                double median_diff_gts_off = all_results_gts_off[all_results_gts_off.size() / 2];
+                CAPTURE(median_diff_gts_on);
+                CAPTURE(median_diff_gts_off);
+
+                REQUIRE(median_diff_gts_on > 0.5*median_diff_gts_off);
+                REQUIRE(median_diff_gts_on < 1.5*median_diff_gts_off);
+                
                 break; // Check 1 profile only.
             }
         }
