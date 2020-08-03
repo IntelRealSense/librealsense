@@ -154,7 +154,7 @@ namespace depth_to_rgb_calibration {
         std::vector<double> edges_IDT;                      // W*H, smeared, for cost
         std::vector<double> edges_IDTx;                     // W*H, smeared, dedge/dx, for gradients
         std::vector<double> edges_IDTy;                     // W*H, smeared, dedge/dy, for gradients
-        std::vector<unsigned char> section_map;
+        std::vector< byte > section_map_edges;              // > params.gradRgbTh
         bool is_edge_distributed;
         std::vector<double>sum_weights_per_section;
         double min_max_ratio;

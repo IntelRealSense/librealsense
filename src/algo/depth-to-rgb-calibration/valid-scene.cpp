@@ -348,9 +348,18 @@ bool optimizer::is_edge_distributed( z_frame_data & z, yuy2_frame_data & yuy )
     AC_LOG(DEBUG, "    sum_per_section(z), section #2  " << *(it + 1));
     AC_LOG(DEBUG, "    sum_per_section(z), section #3  " << *(it + 3));
     check_edge_distribution(z.sum_weights_per_section, z.min_max_ratio, z.is_edge_distributed);
+
     // yuy frame
     AC_LOG(DEBUG, "    checking YUY edge distribution");
-    sum_per_section(yuy.sum_weights_per_section, yuy.section_map, yuy.edges_IDT, num_of_sections);
+
+    // Get a map for each pixel to its corresponding section
+    std::vector< byte > section_map_rgb( _yuy.width * _yuy.height );
+    section_per_pixel( _yuy,
+                       _params.num_of_sections_for_edge_distribution_x,  //% params.numSectionsH
+                       _params.num_of_sections_for_edge_distribution_y,  //% params.numSectionsV
+                       section_map_rgb.data() );
+
+    sum_per_section( yuy.sum_weights_per_section, section_map_rgb, yuy.edges_IDT, num_of_sections );
     //for debug 
     it = yuy.sum_weights_per_section.begin();
     AC_LOG(DEBUG, "    sum_per_section(yuy), section #0  " << *(it));
@@ -715,29 +724,16 @@ diffIm = imgaussfilt(double(im1)-double(im2),params.moveGaussSigma);
 bool optimizer::is_scene_valid( input_validity_data * data )
 {
     std::vector< byte > section_map_depth( _z.width * _z.height );
-    std::vector< byte > section_map_rgb( _yuy.width * _yuy.height );
 
     size_t const section_w = _params.num_of_sections_for_edge_distribution_x;  //% params.numSectionsH
     size_t const section_h = _params.num_of_sections_for_edge_distribution_y;  //% params.numSectionsH
 
     // Get a map for each pixel to its corresponding section
     section_per_pixel( _z, section_w, section_h, section_map_depth.data() );
-    section_per_pixel( _yuy, section_w, section_h, section_map_rgb.data() );
 
     // remove pixels in section map that were removed in weights
     AC_LOG( DEBUG, "    " << _z.supressed_edges.size() << " total edges" );
     AC_LOG( DEBUG, "    " << _z.section_map.size() << " not suppressed" );
-
-    // remove pixels in section map where edges_IDT > 0
-    int i = 0;
-    AC_LOG( DEBUG, "    " << _yuy.edges_IDT.size() << " total edges IDT" );
-    _yuy.section_map.reserve( _yuy.edges_IDT.size() );
-    for( auto it = _yuy.edges_IDT.begin(); it != _yuy.edges_IDT.end(); ++it, ++i )
-    {
-        if( *it > 0 )
-            _yuy.section_map.push_back( section_map_rgb[i] );
-    }
-    AC_LOG( DEBUG, "    " << _yuy.section_map.size() << " not suppressed" );
 
     // The previous and current frames must have "NO" movement between them
     if( _yuy.movement_from_prev_frame )
@@ -928,7 +924,7 @@ bool optimizer::input_validity_checks(input_validity_data* data )
         _params.min_section_with_enough_edges);
 
     auto rgb_spatial_spread = check_edges_spatial_spread(
-        _yuy.section_map, 
+        _yuy.section_map_edges,
         _yuy.width, _yuy.height, 
         _params.pix_per_section_rgb_th,
         _params.num_of_sections_for_edge_distribution_x*_params.num_of_sections_for_edge_distribution_y,

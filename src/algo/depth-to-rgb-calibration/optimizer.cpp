@@ -1047,6 +1047,25 @@ void optimizer::set_yuy_data(
     _yuy.edges_IDTx = calc_vertical_gradient( _yuy.edges_IDT, _yuy.width, _yuy.height );
     _yuy.edges_IDTy = calc_horizontal_gradient( _yuy.edges_IDT, _yuy.width, _yuy.height );
 
+    // Get a map for each pixel to its corresponding section
+    std::vector< byte > section_map_rgb( _yuy.width * _yuy.height );
+    section_per_pixel( _yuy,
+                       _params.num_of_sections_for_edge_distribution_x,  //% params.numSectionsH
+                       _params.num_of_sections_for_edge_distribution_y,  //% params.numSectionsV
+                       section_map_rgb.data() );
+
+    // remove pixels in section map where rgbEdge <= params.gradRgbTh (see preprocessRGB)
+    double const gradRgbTh = 15. * 1280 / _yuy.width;
+    int i = 0;
+    _yuy.section_map_edges.reserve( edges.size() );
+    for( auto it = edges.begin(); it != edges.end(); ++it, ++i )
+    {
+        if( *it > gradRgbTh )
+            _yuy.section_map_edges.push_back( section_map_rgb[i] );
+    }
+    _yuy.section_map_edges.shrink_to_fit();
+    AC_LOG( DEBUG, "    " << _yuy.section_map_edges.size() << " pixels with a relevant edge" );
+
     if( _debug_mode )
     {
         _yuy.debug.lum_frame = std::move( lum_frame );
@@ -1288,6 +1307,10 @@ void optimizer::sum_per_section(
 for ix = 1:params.numSectionsV*params.numSectionsH
     sumWeightsPerSection(ix) = sum(weights(sectionMap == ix-1));
 end*/
+    if( section_map.size() != weights.size() )
+        throw std::runtime_error( to_string()
+                                  << "unexpected size for section_map (" << section_map.size()
+                                  << ") vs weights (" << weights.size() << ")" );
     sum_weights_per_section.resize( num_of_sections );
     auto p_sum = sum_weights_per_section.data();
     for( byte i = 0; i < num_of_sections; ++i, ++p_sum )
@@ -1854,7 +1877,7 @@ void optimizer::adjust_params_to_auto_mode()
 {
     _params.max_global_los_scaling_step = 0.004;
     _params.pix_per_section_depth_th = 0.01;
-    _params.pix_per_section_rgb_th = 0.01;
+    _params.pix_per_section_rgb_th = 0.02;
     _params.min_section_with_enough_edges = 2;
     _params.edges_per_direction_ratio_th = 0.004;
     _params.minimal_full_directions = 2;
