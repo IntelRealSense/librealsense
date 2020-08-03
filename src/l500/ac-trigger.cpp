@@ -174,7 +174,13 @@ namespace ivcam2 {
     }
     static bool is_auto_trigger_default()
     {
-        return env_var< bool >( "RS2_AC_AUTO_TRIGGER", true )
+        return env_var< bool >( "RS2_AC_AUTO_TRIGGER",
+#ifdef __arm__
+                                false
+#else
+                                true
+#endif
+                                )
             && is_auto_trigger_possible();
     }
 
