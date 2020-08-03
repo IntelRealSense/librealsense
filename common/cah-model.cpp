@@ -40,7 +40,7 @@ bool cah_model::prompt_trigger_popup(ux_window& window, std::string& error_messa
     case model_state_type::TRIGGER_MODAL:
     {
         // Make sure the firmware meets the minimal version for Trigger Camera Accuracy features
-        const std::string& min_fw_version("1.4.1.0");
+        const std::string& min_fw_version("1.5.0.0");
         auto fw_upgrade_needed = is_upgradeable(_dev_model.dev.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION), min_fw_version);
         bool is_depth_streaming = std::any_of(_dev_model.subdevices.begin(), _dev_model.subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm) { return sm->streaming && sm->s->as<depth_sensor>(); });
         bool is_color_streaming = std::any_of(_dev_model.subdevices.begin(), _dev_model.subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm) { return sm->streaming && sm->s->as<color_sensor>(); });
