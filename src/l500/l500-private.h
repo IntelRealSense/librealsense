@@ -46,6 +46,7 @@ namespace librealsense
 
         enum fw_cmd : uint8_t
         {
+            IRB                         = 0x03, //"Read from i2c ( 8x8 )"
             MRD                         = 0x01, //"Read Tensilica memory ( 32bit ). Output : 32bit dump"
             FRB                         = 0x09, //"Read from flash"
             FWB                         = 0x0A, //"Write to flash"
@@ -388,6 +389,12 @@ namespace librealsense
             double APD_temperature;
             double HUM_temperature;
             double AlgoTermalLddAvg_temperature;
+        };
+
+        //FW versions >= 1.5.0.0 added to the response vector the nest AVG value
+        struct extended_temperatures {
+            temperatures base_temperatures;
+            double nest_avg;
         };
 #pragma pack( pop )
 
