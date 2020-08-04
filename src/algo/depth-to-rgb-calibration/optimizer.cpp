@@ -1601,11 +1601,20 @@ void params::set_depth_resolution( size_t width, size_t height, rs2_ambient_ligh
             }
         }
     }
+    min_weighted_edge_per_section_depth = 50. * ( 480 * 640 ) / ( width * height );
 }
 
 void params::set_rgb_resolution( size_t width, size_t height )
 {
     AC_LOG( DEBUG, "    RGB resolution= " << width << "x" << height );
+    auto area = width * height;
+    size_t const hd_area = 1920 * 1080;
+    move_threshold_pix_num = 3e-5 * area;
+    move_last_success_thresh_pix_num = 0.1 * area;
+    max_xy_movement_per_calibration[0] = 10. * area / hd_area;
+    max_xy_movement_per_calibration[1] = max_xy_movement_per_calibration[2] = 2. * area / hd_area;
+    max_xy_movement_from_origin = 20. * area / hd_area;
+    min_weighted_edge_per_section_rgb = 0.05 * hd_area / area;
 }
 
 calib const & optimizer::get_calibration() const
