@@ -178,7 +178,7 @@ namespace ivcam2 {
 #ifdef __arm__
                                 false
 #else
-                                true
+                                false
 #endif
                                 )
             && is_auto_trigger_possible();
