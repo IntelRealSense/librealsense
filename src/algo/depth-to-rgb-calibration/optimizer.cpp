@@ -2140,6 +2140,8 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
     _final_dsm_params = _z.orig_dsm_params;
     clip_ac_scaling( _z.orig_dsm_params, new_dsm_params );
     new_dsm_params.copy_to( _final_dsm_params );
+    _final_dsm_params.temp_x2 = byte( _settings.hum_temp * 2 );
+
     _final_calibration = new_k_to_dsm_calib;
 
     // The actual valid cycles - we starting from 1 and the last cycle is only for verification

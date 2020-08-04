@@ -269,18 +269,6 @@ namespace librealsense
         table.params.timestamp = mktime( gmtime( &t ) );  // UTC time
         table.params.version = ac_depth_results::this_version;
 
-        // The temperature may depend on streaming?
-        auto res = _owner->_hw_monitor->send( command{TEMPERATURES_GET} );
-        if( res.size() < sizeof( temperatures ) )  // New temperatures may get added by FW...
-        {
-            AC_LOG( ERROR, "Failed to get temperatures; result size= " << res.size() << "; expecting at least " << sizeof( temperatures ) );
-        }
-        else
-        {
-            auto const & ts = *( reinterpret_cast<temperatures *>( res.data() ) );
-            table.params.temp_x2 = byte( ts.HUM_temperature * 2 );
-        }
-
         AC_LOG( INFO, "Overriding DSM : " << table.params );
         ivcam2::write_fw_table( *_owner->_hw_monitor, ac_depth_results::table_id, table );
     }
