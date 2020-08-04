@@ -664,10 +664,19 @@ namespace ivcam2 {
             return;
         }
 
-        AC_LOG( DEBUG, "Sending GET_SPECIAL_FRAME (cycle " << _n_cycles << " retry " << _n_retries << ")" );
         call_back( RS2_CALIBRATION_RETRY );
 
-        trigger_special_frame();
+        start_color_sensor_if_needed();
+        if( _need_to_wait_for_color_sensor_stability )
+        {
+            AC_LOG( DEBUG, "Waiting for RGB stability before asking for special frame" );
+            _retrier = retrier::start( *this, std::chrono::seconds( get_retry_sf_seconds() + 1 ) );
+        }
+        else
+        {
+            AC_LOG( DEBUG, "Sending GET_SPECIAL_FRAME (cycle " << _n_cycles << " retry " << _n_retries << ")" );
+            trigger_special_frame();
+        }
     }
 
 
@@ -725,7 +734,7 @@ namespace ivcam2 {
         _n_retries = 0;
         _n_cycles = 1;          // now active
         get_ac_logger().open_active();
-        AC_LOG( INFO, "Camera Accuracy Health check is now active" );
+        AC_LOG( INFO, "Camera Accuracy Health check is now active (HUM temp is " << _temp << " dec C)" );
         call_back( RS2_CALIBRATION_TRIGGERED );
         _next_trigger.reset();  // don't need a trigger any more
         _temp_check.reset();    // nor a temperature check
@@ -1030,12 +1039,12 @@ namespace ivcam2 {
                         if( ++_n_cycles > 5 )
                         {
                             // ... but we've tried too many times
-                            AC_LOG( ERROR, "Too many cycles of calibration; quitting" );
+                            AC_LOG( ERROR, "Too many retry cycles; quitting" );
                             call_back( RS2_CALIBRATION_FAILED );
                         }
                         else
                         {
-                            AC_LOG( DEBUG, "Triggering another cycle for calibration..." );
+                            AC_LOG( DEBUG, "Waiting for retry cycle " << _n_cycles << " ..." );
                             bool const is_manual = _calibration_type == calibration_type::MANUAL;
                             int n_seconds
                                 = env_var< int >( is_manual ? "RS2_AC_INVALID_RETRY_SECONDS_MANUAL"
@@ -1305,7 +1314,7 @@ namespace ivcam2 {
         if( ! invalid_reason.empty() )
         {
             // This can and will happen every minute (from the temp check), therefore not an error...
-            AC_LOG( DEBUG, "Invalid conditions: " << invalid_reason );
+            AC_LOG( DEBUG, "Invalid conditions for CAH: " << invalid_reason );
             if( ! env_var< bool >( "RS2_AC_DISABLE_CONDITIONS", false ) )
                 throw invalid_value_exception( invalid_reason );
             AC_LOG( DEBUG, "RS2_AC_DISABLE_CONDITIONS is on; continuing anyway" );
