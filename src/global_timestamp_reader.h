@@ -37,7 +37,8 @@ namespace librealsense
         void reset();
         void add_value(CSample val);
         void add_const_y_coefs(double dy);
-        bool update_samples_base(double x, double& last_sample_x);
+        bool update_samples_base(double x);
+        void update_last_sample_time(double x);
         double calc_value(double x) const;
         bool is_full() const;
 
@@ -52,6 +53,7 @@ namespace librealsense
         double _prev_a, _prev_b;    //Linear regression coeffitions - previously used values.
         double _dest_a, _dest_b;    //Linear regression coeffitions - recently calculated.
         double _prev_time, _time_span_ms;
+        double _last_request_time;
     };
 
     class global_time_interface;
@@ -71,7 +73,6 @@ namespace librealsense
 
     private:
         global_time_interface* _device;
-        double _last_sample_hw_time;
         unsigned int _poll_intervals_ms;
         int             _users_count;
         active_object<> _active_object;
