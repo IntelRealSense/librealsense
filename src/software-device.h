@@ -141,7 +141,23 @@ namespace librealsense
             software_sensor* _owner;
         };
 
+        class depth_extension : public depth_sensor
+        {
+        public:
+            depth_extension(software_sensor* owner) : _owner(owner) {}
+
+            float get_depth_scale() const override {
+                return _owner->get_option(RS2_OPTION_DEPTH_UNITS).query();
+            }
+
+            void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const override {}
+            void enable_recording(std::function<void(const depth_sensor&)> recording_function) override {}
+        private:
+            software_sensor* _owner;
+        };
+
         lazy<stereo_extension> _stereo_extension;
+        lazy<depth_extension> _depth_extension;
 
         software_recommended_proccesing_blocks _pbs;
 

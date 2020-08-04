@@ -666,20 +666,18 @@ namespace librealsense
             depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16H, RS2_STREAM_DEPTH));
         }
 
-        if (advanced_mode && (_usb_mode >= usb3_type))
-        {
-            depth_sensor.register_processing_block(
-                { {RS2_FORMAT_Y8I} },
-                { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1} , {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2} },
-                []() { return std::make_shared<y8i_to_y8y8>(); }
-            ); // L+R
 
-            depth_sensor.register_processing_block(
-                {RS2_FORMAT_Y12I},
-                {{RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2}},
-                []() {return std::make_shared<y12i_to_y16y16>(); }
-            );
-        }
+        depth_sensor.register_processing_block(
+            { {RS2_FORMAT_Y8I} },
+            { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1} , {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2} },
+            []() { return std::make_shared<y8i_to_y8y8>(); }
+        ); // L+R
+
+        depth_sensor.register_processing_block(
+            {RS2_FORMAT_Y12I},
+            {{RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2}},
+            []() {return std::make_shared<y12i_to_y16y16>(); }
+        );
 
         auto pid_hex_str = hexify(pid);
 
@@ -693,12 +691,12 @@ namespace librealsense
                     "Set the power level of the LED, with 0 meaning LED off"));
         }
 
-        if ((pid == RS405_PID || pid == RS455_PID) && _fw_version >= firmware_version("5.12.7.0"))
-        {
-            depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
-                std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_THERMAL_COMPENSATION,
-                    "Toggle Depth Sensor Thermal Compensation"));
-        }
+        //if ((pid == RS405_PID || pid == RS455_PID) && _fw_version >= firmware_version("5.12.4.0"))
+        //{
+        //    depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
+        //        std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_THERMAL_COMPENSATION,
+        //            "Toggle Depth Sensor Thermal Compensation"));
+        //}
 
         if (_fw_version >= firmware_version("5.6.3.0"))
         {

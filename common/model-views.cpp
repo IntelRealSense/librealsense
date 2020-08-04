@@ -4555,7 +4555,7 @@ namespace rs2
                 std::string default_path = config_file::instance().get(configurations::record::default_path);
                 if (!ends_with(default_path, "/") && !ends_with(default_path, "\\")) default_path += "/";
                 std::string default_filename = rs2::get_timestamped_file_name() + ".bag";
-                if (recording_setting == 0)
+                if (recording_setting == 0 && default_path.size() > 1 )
                 {
                     path = default_path + default_filename;
                 }
@@ -4790,22 +4790,8 @@ namespace rs2
                 }
             }
 
-            if (_accuracy_health_model)
-            {
-                    if (ImGui::Selectable("Trigger Camera Accuracy Health"))
-                    {
-                        // We cannot open a pop up window here since we are already in a pop up window
-                        // we trigger the pop up and activate it outside the menu pop up
-                        show_trigger_camera_accuracy_health_popup = true;
-                    }
 
-                    if (ImGui::Selectable("Reset Camera Accuracy Health"))
-                    {
-                        show_reset_camera_accuracy_health_popup = true;
-                    }
                 
-            }
-            
             bool has_autocalib = false;
             for (auto&& sub : subdevices)
             {

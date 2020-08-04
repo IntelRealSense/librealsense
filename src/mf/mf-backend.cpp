@@ -87,7 +87,10 @@ namespace librealsense
             return device_infos;
         }
 
-        wmf_hid_device::wmf_hid_device(const hid_device_info& info)
+        wmf_hid_device::wmf_hid_device(const hid_device_info& info,
+                                       std::shared_ptr<const wmf_backend> backend)
+            : _backend(std::move(backend)),
+              _cb(nullptr)
         {
             bool found = false;
 
@@ -107,7 +110,7 @@ namespace librealsense
 
         std::shared_ptr<hid_device> wmf_backend::create_hid_device(hid_device_info info) const
         {
-            return std::make_shared<wmf_hid_device>(info);
+            return std::make_shared<wmf_hid_device>(info, shared_from_this());
         }
 
         std::vector<hid_device_info> wmf_backend::query_hid_devices() const

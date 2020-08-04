@@ -44,6 +44,8 @@ namespace librealsense
             bool wait_for_first_frame(uint32_t timeout_ms);
 
         private:
+            std::mutex _running_mutex;
+            std::condition_variable _stopped_cv;
             bool _running = false;
             bool _frame_arrived = false;
             bool _publish_frames = true;

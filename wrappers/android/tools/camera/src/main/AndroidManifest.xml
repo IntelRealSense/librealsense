@@ -24,6 +24,7 @@
         </activity>
         <activity
             android:name=".PreviewActivity"
+            android:launchMode="singleTop"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".SettingsActivity"
