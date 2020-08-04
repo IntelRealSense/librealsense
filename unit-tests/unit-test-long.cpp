@@ -387,8 +387,8 @@ TEST_CASE("global-time-start", "[live]") {
                 double max_diff_system_global_time;
                 std::vector<double> all_results_gts_on;
                 std::vector<double> all_results_gts_off;
-                const int num_of_runs(7);
-                for (int i = 0; i < 30; i++)
+                const int num_of_runs(30);
+                for (int i = 0; i < num_of_runs; i++)
                 {
                     run_sensor(subdevice, profile, true, i, max_diff_system_global_time);
                     all_results_gts_on.push_back(max_diff_system_global_time);
