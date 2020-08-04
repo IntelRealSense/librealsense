@@ -72,7 +72,8 @@ namespace librealsense
 
     software_sensor::software_sensor(std::string name, software_device* owner)
         : sensor_base(name, owner, &_pbs),
-          _stereo_extension([this]() { return stereo_extension(this); })
+          _stereo_extension([this]() { return stereo_extension(this); }),
+          _depth_extension([this]() { return depth_extension(this); })
     {
         _metadata_parsers = md_constant_parser::create_metadata_parser_map();
         _unique_id = unique_id::generate_id();
@@ -180,7 +181,7 @@ namespace librealsense
         {
             if (supports_option(RS2_OPTION_DEPTH_UNITS))
             {
-                *ptr = &(*_stereo_extension);
+                *ptr = &(*_depth_extension);
                 return true;
             }
         }
