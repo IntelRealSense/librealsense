@@ -119,6 +119,9 @@ namespace librealsense
             void set_d0();
             void set_d3();
 
+            // Don't move the position of wmf_backend member. This object must be destroyed only after COM objects.
+            std::shared_ptr<const wmf_backend>      _backend;
+
             const uvc_device_info                   _info;
             power_state                             _power_state = D3;
 
@@ -138,8 +141,6 @@ namespace librealsense
             uint16_t                                _streamIndex;
             std::vector<profile_and_callback>       _streams;
             std::mutex                              _streams_mutex;
-
-            std::shared_ptr<const wmf_backend>      _backend;
 
             named_mutex                             _systemwide_lock;
             std::string                             _location;
