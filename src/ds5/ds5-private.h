@@ -317,7 +317,7 @@ namespace librealsense
                             d400_caps::CAP_BMI_055,         d400_caps::CAP_BMI_085 })
             {
                 if (i==(i&cap))
-                    stream << d400_capabilities_names.at(i) << " ";
+                    stream << d400_capabilities_names.at(i) << "/";
             }
             return stream;
         }
