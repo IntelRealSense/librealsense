@@ -58,14 +58,7 @@ namespace librealsense
 
         void notify_of_calibration_change( rs2_calibration_status status );
 
-        bool is_special_command( const std::vector< uint8_t > & input );
-
-        std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override
-        {
-            if( is_special_command( input ) )
-                return std::vector< uint8_t >();
-            return _hw_monitor->send(input);
-        }
+        std::vector< uint8_t > send_receive_raw_data(const std::vector< uint8_t > & input) override;
 
         void hardware_reset() override
         {
@@ -87,8 +80,6 @@ namespace librealsense
             update_progress_callback_ptr callback, int update_mode);
 
     protected:
-        void log_FW_response_first_byte(const std::string& command_name, const command &cmd, size_t expected_size) ;
-
         friend class l500_depth_sensor;
 
         std::shared_ptr<hw_monitor> _hw_monitor;

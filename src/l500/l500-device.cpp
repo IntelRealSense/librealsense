@@ -619,49 +619,52 @@ namespace librealsense
         return command{ ivcam2::FRB, 0x0011E000, 0x3f8 };
     }
 
-    bool l500_device::is_special_command( const std::vector< uint8_t > & input )
+    static void log_FW_response_first_byte(hw_monitor& hwm, const std::string& command_name, const command &cmd, size_t expected_size)
     {
-        std::string command_str( input.begin(), input.end() );
+        auto res = hwm.send(cmd);
+        if (res.size() < expected_size)
+        {
+            throw invalid_value_exception(to_string()
+                << command_name + " FW command failed: size expected: "
+                << expected_size << " , size received: " << res.size());
+        }
 
-        if( command_str == "GET-NEST" )
+        LOG_INFO(command_name << ": " << static_cast<int>(res[0]));
+    }
+
+    std::vector< uint8_t > l500_device::send_receive_raw_data(const std::vector< uint8_t > & input)
+    {
+        std::string command_str(input.begin(), input.end());
+
+        if (command_str == "GET-NEST")
         {
             // Handle extended temperature command
-            auto nest_response = _hw_monitor->send( command{ ivcam2::TEMPERATURES_GET } );
-            if( nest_response.size() != sizeof( extended_temperatures ) )
+            auto nest_response = _hw_monitor->send(command{ ivcam2::TEMPERATURES_GET });
+            if (nest_response.size() < sizeof(extended_temperatures))
             {
-                throw invalid_value_exception( "Extended temperatures get FW command failed" );
+                throw invalid_value_exception(to_string() <<
+                    "Extended temperatures get FW command failed, size expected: " << sizeof(extended_temperatures )
+                    << " , size received: " << nest_response.size() );
             }
 
             auto const & ext_temp
-                = *( reinterpret_cast< extended_temperatures * >( nest_response.data() ) );
-            LOG_INFO( "Nest AVG: " << ext_temp.nest_avg );
+                = *(reinterpret_cast<extended_temperatures *>(nest_response.data()));
+            LOG_INFO("Nest AVG: " << ext_temp.nest_avg);
 
             // Handle other commands (all results log the first byte)
-            log_FW_response_first_byte( "Gain trim",
-                             command( ivcam2::IRB, 0x6C, 0x2, 0x1 ),
-                             sizeof( uint8_t ) );
-            log_FW_response_first_byte( "IPF gain",
-                             command( ivcam2::MRD, 0xA003007C, 0xA0030080 ),
-                             sizeof( uint32_t ) );
-            log_FW_response_first_byte( "APB VBR",
-                             command( ivcam2::AMCGET, 0x4, 0x0, 0x0 ),
-                             sizeof( uint32_t ) );
-
-            return true;
-        }
-        return false;
-    }
-
- 
-    void l500_device::log_FW_response_first_byte(const std::string& command_name, const command &cmd, size_t expected_size)
-    {
-        auto res = _hw_monitor->send(cmd);
-        if (res.size() < expected_size)
-        {
-            throw invalid_value_exception(command_name + " command failed");
+            log_FW_response_first_byte(*_hw_monitor, "Gain trim",
+                command(ivcam2::IRB, 0x6C, 0x2, 0x1),
+                sizeof(uint8_t));
+            log_FW_response_first_byte(*_hw_monitor, "IPF gain",
+                command(ivcam2::MRD, 0xA003007C, 0xA0030080),
+                sizeof(uint32_t));
+            log_FW_response_first_byte(*_hw_monitor, "APB VBR",
+                command(ivcam2::AMCGET, 0x4, 0x0, 0x0),
+                sizeof(uint32_t));
+            return std::vector< uint8_t >();
         }
 
-        LOG_INFO(command_name <<": " <<  static_cast<int>(res[0]));
+        return _hw_monitor->send(input);
     }
 
     notification l500_notification_decoder::decode(int value)
