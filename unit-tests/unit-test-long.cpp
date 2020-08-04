@@ -225,7 +225,7 @@ struct time_results
 void run_sensor(rs2::sensor subdevice, rs2::stream_profile profile, bool enable_gts, int iter, double& max_diff_system_global_time)
 {
     const double msec_to_sec = 0.001;
-    const int frames_for_fps_measure(profile.fps() * 2);  // max number of frames
+    const int frames_for_fps_measure(profile.fps() * 1);  // max number of frames
 
     std::vector<global_time_test_meta_data> frames_additional_data;
     double start_time;
@@ -315,7 +315,9 @@ void run_sensor(rs2::sensor subdevice, rs2::stream_profile profile, bool enable_
             }
             double system_ts_diff = crnt_data.system_time - prev_data.system_time;
             double ts_diff = crnt_data.timestamp - prev_data.timestamp;
-            double crnt_diff(std::abs(system_ts_diff - ts_diff));
+            REQUIRE(system_ts_diff > 0);
+            REQUIRE(ts_diff > 0);
+            double crnt_diff(system_ts_diff - ts_diff); //big positive difference means system load. big negative means big global time correction.
             max_diff_system_global_time = std::max(max_diff_system_global_time, crnt_diff);
         }
     }
@@ -386,7 +388,7 @@ TEST_CASE("global-time-start", "[live]") {
                 std::vector<double> all_results_gts_on;
                 std::vector<double> all_results_gts_off;
                 const int num_of_runs(7);
-                for (int i = 0; i < 7; i++)
+                for (int i = 0; i < 30; i++)
                 {
                     run_sensor(subdevice, profile, true, i, max_diff_system_global_time);
                     all_results_gts_on.push_back(max_diff_system_global_time);
