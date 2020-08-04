@@ -157,7 +157,10 @@ namespace librealsense
 
                 _context.messenger->reset_endpoint(_read_endpoint, RS2_USB_ENDPOINT_DIRECTION_READ);
 
-                _running = true;
+                {
+                    std::lock_guard<std::mutex> lock(_running_mutex);
+                    _running = true;
+                }
 
                 for(auto&& r : _requests)
                 {
@@ -197,14 +200,25 @@ namespace librealsense
 
                 _publish_frame_thread->stop();
 
-                _running = false;
+                {
+                    std::lock_guard<std::mutex> lock(_running_mutex);
+                    _running = false;
+                    _stopped_cv.notify_one();
+                }
 
             }, [this](){ return !_running; });
         }
 
         void uvc_streamer::flush()
         {
-            stop();
+            if(_running)
+                stop();
+
+            // synchronized so do not destroy shared pointers while it's still being running
+            {
+                std::unique_lock<std::mutex> lock(_running_mutex);
+                _stopped_cv.wait_for(lock, std::chrono::seconds(1), [&]() { return !_running; });
+            }
 
             _read_endpoint.reset();
 

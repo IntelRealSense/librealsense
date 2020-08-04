@@ -160,7 +160,7 @@ namespace librealsense
 
             stop_stream_cleanup(profile, elem);
 
-            if (_profiles.empty())
+            if (!_profiles.empty())
                 _streamers.clear();
         }
 
