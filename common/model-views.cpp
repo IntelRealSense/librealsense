@@ -3379,9 +3379,9 @@ namespace rs2
         , _detected_objects(std::make_shared< atomic_objects_in_frame >()),
         _updates(viewer.updates)
     {
-        if (dev.is<device_calibration>())
+        if( dev.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) && dev.is< device_calibration >() )
         {
-            _accuracy_health_model = std::unique_ptr<cah_model>(new cah_model(*this, viewer));
+            _accuracy_health_model = std::unique_ptr< cah_model >( new cah_model( *this, viewer ) );
         }
 
         auto name = get_device_name(dev);
@@ -4791,6 +4791,7 @@ namespace rs2
             }
 
 
+                
             bool has_autocalib = false;
             for (auto&& sub : subdevices)
             {

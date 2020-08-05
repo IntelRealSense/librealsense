@@ -28,6 +28,10 @@ namespace depth_to_rgb_calibration {
 
     double3x3 cholesky3x3( double3x3 const & mat );
 
+    // Check that the DSM parameters given do not exceed certain boundaries, and
+    // throw invalid_value_exception if they do.
+    void validate_dsm_params( struct rs2_dsm_params const & dsm_params );
+
 }
 }
 }

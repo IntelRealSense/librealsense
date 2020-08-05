@@ -7,8 +7,6 @@
 #include <chrono>
 #include <atomic>
 
-#include <librealsense2/rs.hpp>
-
 namespace rs2
 {
     class ux_window;

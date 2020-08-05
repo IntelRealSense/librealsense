@@ -136,6 +136,7 @@ int main( int argc, char * argv[] )
     custom_ac_logger logger;
 
     bool ok = true;
+    bool debug_mode = false;
     // Each of the arguments is the path to a directory to simulate
     // We skip argv[0] which is the path to the executable
     // We don't complain if no arguments -- that's how we'll run as part of unit-testing
@@ -149,6 +150,11 @@ int main( int argc, char * argv[] )
                 // The build number is only available within Jenkins and so we have to hard-
                 // code it ><
                 std::cout << RS2_API_VERSION_STR << ".2082" << std::endl;
+                continue;
+            }
+            if( ! strcmp( dir, "--debug" ) || ! strcmp( dir, "-d" ) )
+            {
+                debug_mode = true;
                 continue;
             }
             std::cout << "Processing: " << dir << " ..." << std::endl;
@@ -191,49 +197,62 @@ int main( int argc, char * argv[] )
                 settings.receiver_gain = 9;
             }
 
-            algo::optimizer cal( settings );
-            init_algo( cal, dir, "\\rgb.raw", "\\rgb_prev.raw", "\\rgb_last_successful.raw", "\\ir.raw", "\\depth.raw", camera );
+            algo::optimizer cal( settings, debug_mode );
+            std::string status;
 
-            std::string status = logger.get_codes();
-            logger.reset();
-
-            TRACE( "\n___\nis_scene_valid" );
-            if( !cal.is_scene_valid() )
             {
-                TRACE("NOT VALID\n");
-                if( ! status.empty() )
-                    status += ' ';
-                status += "SCENE_INVALID";
-            }
+                memory_profiler profiler;
+                init_algo( cal,
+                           dir,
+                           "\\rgb.raw",
+                           "\\rgb_prev.raw",
+                           "\\rgb_last_successful.raw",
+                           "\\ir.raw",
+                           "\\depth.raw",
+                           camera,
+                           &profiler );
 
-            TRACE( "\n___\noptimize" );
-            size_t n_iteration = cal.optimize(
-                []( algo::data_collect const & data )
-                {
-                } );
-
-            TRACE( "\n___\nis_valid_results" );
-            std::string results;
-            if( !cal.is_valid_results() )
-            {
-                TRACE("NOT VALID\n");
-                results = "BAD_RESULT";
-            }
-            else
-            {
-                results = "SUCCESSFUL";
-            }
-
-            if( ! logger.get_codes().empty() )
-            {
-                if( ! status.empty() )
-                    status += ' ';
-                status += logger.get_codes();
+                status = logger.get_codes();
                 logger.reset();
+
+                profiler.section( "is_scene_valid" );
+                if( ! cal.is_scene_valid() )
+                {
+                    TRACE( "-E- SCENE_INVALID" );
+                    if( ! status.empty() )
+                        status += ' ';
+                    status += "SCENE_INVALID";
+                }
+                profiler.section_end();
+
+                profiler.section( "optimize" );
+                size_t n_iteration = cal.optimize();
+                profiler.section_end();
+
+                std::string results;
+                profiler.section( "is_valid_results" );
+                if( ! cal.is_valid_results() )
+                {
+                    TRACE( "NOT VALID\n" );
+                    results = "BAD_RESULT";
+                }
+                else
+                {
+                    results = "SUCCESSFUL";
+                }
+                profiler.section_end();
+
+                if( ! logger.get_codes().empty() )
+                {
+                    if( ! status.empty() )
+                        status += ' ';
+                    status += logger.get_codes();
+                    logger.reset();
+                }
+                if( ! status.empty() )
+                    status += ' ';
+                status += results;
             }
-            if( ! status.empty() )
-                status += ' ';
-            status += results;
 
             TRACE( "\n___\nRESULTS:  (" << RS2_API_VERSION_STR << " build 2082)" );
 

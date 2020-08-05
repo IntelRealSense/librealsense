@@ -55,7 +55,8 @@ namespace depth_to_rgb_calibration {
         double min_rgb_mat_delta = 0.00001;
         double min_cost_delta = 1;
         double tau = 0.5;
-        double min_weighted_edge_per_section = 19.5313;
+        double min_weighted_edge_per_section_depth = 0;      // resolution-dependent
+        double min_weighted_edge_per_section_rgb = 0;        // resolution-dependent
         size_t num_of_sections_for_edge_distribution_x = 2;
         size_t num_of_sections_for_edge_distribution_y = 2;
         p_matrix normalize_mat;  //% rgbPmatNormalizationMat
@@ -66,18 +67,18 @@ namespace depth_to_rgb_calibration {
         size_t dilation_size = 1;
         double gauss_sigma = 1;
         size_t gause_kernel_size = 5;
-        double move_thresh_pix_val = 20;
-        double move_threshold_pix_num = 62.2080;
-        double move_last_success_thresh_pix_val = 20;
-        double move_last_success_thresh_pix_num = 18432;
+        double const move_thresh_pix_val = 20;
+        double move_threshold_pix_num = 0;                   // resolution-dependent
+        double const move_last_success_thresh_pix_val = 25;
+        double move_last_success_thresh_pix_num = 0;         // resolution-dependent
 
         //smearing
         double max_sub_mm_z = 4;
         double constant_weights = 1000;
 
         // output validation
-        double const max_xy_movement_per_calibration[3] = { 10, 2, 2 };
-        double const max_xy_movement_from_origin = 20;
+        double max_xy_movement_per_calibration[3]; // resolution-dependent = { 10, 2, 2 } * res/hd
+        double max_xy_movement_from_origin;        // resolution-dependent = 20 * res/hd
         double const max_scaling_step = 0.020000000000000;
         double const max_K2DSM_iters = 10;
         // TODO: the following should be 0.2% but was increased to 0.5% to account for
@@ -288,7 +289,7 @@ namespace depth_to_rgb_calibration {
         };
 #pragma pack(pop)
 
-        optimizer( settings const & );
+        optimizer( settings const &, bool debug_mode = false );
 
         void set_yuy_data( std::vector< yuy_t > && yuy_data, 
             std::vector< yuy_t > && prev_yuy_data,
@@ -375,7 +376,6 @@ namespace depth_to_rgb_calibration {
 
         calib decompose_p_mat(p_matrix p);
         rs2_intrinsics_double get_new_z_intrinsics_from_new_calib(const rs2_intrinsics_double& orig, const calib & new_c, const calib & orig_c);
-        void zero_invalid_edges( z_frame_data& z_data, ir_frame_data const & ir_data );
         std::vector<direction> get_direction( std::vector<double> gradient_x, std::vector<double> gradient_y );
         std::vector<direction> get_direction2(std::vector<double> gradient_x, std::vector<double> gradient_y);
         std::vector<uint16_t> get_closest_edges( const z_frame_data& z_data, ir_frame_data const & ir_data, size_t width, size_t height );
@@ -390,17 +390,15 @@ namespace depth_to_rgb_calibration {
                                                        data_collect * data = nullptr ) const;
        
         // input validation
-        bool is_movement_in_images(
-            movement_inputs_for_frame const& prev,
-            movement_inputs_for_frame const& curr,
-            movement_result_data& result_data,
-            double const move_thresh_pix_val,
-            double const move_threshold_pix_num,
-            size_t width, size_t height);
+        bool is_movement_in_images( movement_inputs_for_frame const & prev,
+                                    movement_inputs_for_frame const & curr,
+                                    movement_result_data * result_data,
+                                    double const move_thresh_pix_val,
+                                    double const move_threshold_pix_num,
+                                    size_t width, size_t height );
 
         bool is_edge_distributed( z_frame_data & z_data, yuy2_frame_data & yuy_data );
         void section_per_pixel( frame_data const &, size_t section_w, size_t section_h, byte * section_map );
-        void check_edge_distribution(std::vector<double>& sum_weights_per_section, double& min_max_ratio, bool& is_edge_distributed);
         void sum_per_section(std::vector< double >& sum_weights_per_section, std::vector< byte > const& section_map, std::vector< double > const& weights, size_t num_of_sections);
         std::vector<uint8_t> images_dilation(std::vector<uint8_t> const &logic_edges, size_t width, size_t height);
         void gaussian_filter(std::vector<uint8_t> const& lum_frame,
@@ -449,6 +447,7 @@ namespace depth_to_rgb_calibration {
         rs2_dsm_params_double _dsm_params_cand_from_bin;
 
         std::shared_ptr<k_to_DSM> _k_to_DSM;
+        bool _debug_mode;
     };
 
 }  // librealsense::algo::depth_to_rgb_calibration

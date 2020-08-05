@@ -96,7 +96,13 @@ void init_device(py::module &m) {
 
     py::class_<rs2::device_calibration, rs2::device> device_calibration( m, "device_calibration" );
     device_calibration.def( py::init<rs2::device>(), "device"_a )
-        .def( "trigger_device_calibration", &rs2::device_calibration::trigger_device_calibration, "TODO", "calibration_type"_a )
+        .def( "trigger_device_calibration",
+            []( rs2::device_calibration & self, rs2_calibration_type type )
+            {
+                py::gil_scoped_release gil;
+                self.trigger_device_calibration( type );
+            },
+            "Trigger the given calibration, if available", "calibration_type"_a )
         .def( "register_calibration_change_callback",
             []( rs2::device_calibration& self, std::function<void( rs2_calibration_status )> callback )
             {
@@ -117,7 +123,7 @@ void init_device(py::module &m) {
                         }
                     } );
             },
-            "TODO", "callback"_a );
+            "Register (only once!) a callback that gets called for each change in calibration", "callback"_a );
 
 
     py::class_<rs2::debug_protocol> debug_protocol(m, "debug_protocol"); // No docstring in C++

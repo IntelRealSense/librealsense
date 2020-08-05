@@ -777,6 +777,7 @@ namespace rs2
 
 
         std::shared_ptr< atomic_objects_in_frame > get_detected_objects() const { return _detected_objects; }
+        bool is_cah_model_enabled() const { return _accuracy_health_model ? true : false; }
 
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
         std::shared_ptr<syncer_model> syncer;
@@ -810,7 +811,9 @@ namespace rs2
         // Needed as a member for reseting the window memory on device disconnection.
        
 
-        std::unique_ptr<cah_model> _accuracy_health_model;
+        std::unique_ptr< cah_model > _accuracy_health_model;  // If this device does not support CAH feature,
+                                                              // the pointer will point to nullptr
+
         void draw_info_icon(ux_window& window, ImFont* font, const ImVec2& size);
         int draw_seek_bar();
         int draw_playback_controls(ux_window& window, ImFont* font, viewer_model& view);
