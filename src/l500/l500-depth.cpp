@@ -465,47 +465,41 @@ namespace librealsense
             _user_requests = requests;
             _depth_invalidation_option->set_streaming(true);
 
-            if (_depth_invalidation_enabled)
+            auto is_ir_requested
+                = std::find_if( requests.begin(),
+                                requests.end(),
+                                []( std::shared_ptr< stream_profile_interface > const & sp ) {
+                                    return sp->get_stream_type() == RS2_STREAM_INFRARED;
+                                } )
+               != requests.end();
+
+            _validator_requests = requests;
+
+            //enable ir if user didn't asked ir in order to validate the ir frame
+            if (!is_ir_requested)
             {
-                auto is_ir_requested
-                    = std::find_if( requests.begin(),
-                                    requests.end(),
-                                    []( std::shared_ptr< stream_profile_interface > const & sp ) {
-                                        return sp->get_stream_type() == RS2_STREAM_INFRARED;
-                                    } )
-                   != requests.end();
+                auto user_request = std::find_if(requests.begin(), requests.end(), [](std::shared_ptr<stream_profile_interface> sp)
+                {return sp->get_stream_type() != RS2_STREAM_INFRARED;});
 
-                _validator_requests = requests;
+                if (user_request == requests.end())
+                    throw std::runtime_error(to_string() << "input stream_profiles is invalid");
 
-                //enable ir if user didn't asked ir in order to validate the ir frame
-                if (!is_ir_requested)
+                auto user_request_profile = dynamic_cast<video_stream_profile*>(user_request->get());
+
+                auto sp = synthetic_sensor::get_stream_profiles();
+
+                auto corresponding_ir = std::find_if(sp.begin(), sp.end(), [&](std::shared_ptr<stream_profile_interface> sp)
                 {
-                    auto user_request = std::find_if(requests.begin(), requests.end(), [](std::shared_ptr<stream_profile_interface> sp)
-                    {return sp->get_stream_type() != RS2_STREAM_INFRARED;});
+                    auto vs = dynamic_cast<video_stream_profile*>(sp.get());
+                    return sp->get_stream_type() == RS2_STREAM_INFRARED && stream_profiles_correspond(sp.get(), user_request_profile);
+                });
 
-                    if (user_request == requests.end())
-                        throw std::runtime_error(to_string() << "input stream_profiles is invalid");
+                if (corresponding_ir == sp.end())
+                    throw std::runtime_error(to_string() << "can't find ir stream corresponding to user request");
 
-                    auto user_request_profile = dynamic_cast<video_stream_profile*>(user_request->get());
-
-                    auto sp = synthetic_sensor::get_stream_profiles();
-
-                    auto corresponding_ir = std::find_if(sp.begin(), sp.end(), [&](std::shared_ptr<stream_profile_interface> sp)
-                    {
-                        auto vs = dynamic_cast<video_stream_profile*>(sp.get());
-                        return sp->get_stream_type() == RS2_STREAM_INFRARED && stream_profiles_correspond(sp.get(), user_request_profile);
-                    });
-
-                    if (corresponding_ir == sp.end())
-                        throw std::runtime_error(to_string() << "can't find ir stream corresponding to user request");
-
-                    _validator_requests.push_back(*corresponding_ir);
-                }
+                _validator_requests.push_back(*corresponding_ir);
             }
-            else
-            {
-                _validator_requests = requests;
-            }
+
 
             auto dp = std::find_if( requests.begin(),
                                     requests.end(),
