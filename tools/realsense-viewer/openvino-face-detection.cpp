@@ -1,9 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-// NOTE: This file will be compiled only with INTEL_OPENVINO_DIR pointing to an OpenVINO install!
-
-
 #include "post-processing-filters-list.h"
 #include "post-processing-worker-filter.h"
 #include <rs-vino/object-detection.h>
@@ -34,22 +31,6 @@ public:
         , _male_score( male_prob > 0.5f ? male_prob - 0.5f : 0.f )
         , _female_score( male_prob > 0.5f ? 0.f : 0.5f - male_prob )
     {
-    }
-
-    void detected_face::update_age( float value )
-    {
-        _age = (_age == -1) ? value : 0.95f * _age + 0.05f * value;
-    }
-    
-    void detected_face::update_gender( float value )
-    {
-        if( value >= 0 )
-        {
-            if( value > 0.5 )
-                _male_score += value - 0.5f;
-            else
-                _female_score += 0.5f - value;
-        }
     }
 
     int get_age() const { return static_cast< int >( std::floor( _age + 0.5f )); }
@@ -100,7 +81,6 @@ private:
     void worker_start() override
     {
         LOG(INFO) << "Loading CPU extensions...";
-        _ie.AddExtension( std::make_shared< InferenceEngine::Extensions::Cpu::CpuExtensions >(), "CPU" );
         _face_detector.load_into( _ie, "CPU" );
         _age_detector.load_into( _ie, "CPU" );
     }

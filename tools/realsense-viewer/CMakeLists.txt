@@ -63,19 +63,18 @@ if(DEFINED OpenCV_DIR  AND  IS_DIRECTORY ${OpenCV_DIR})
     include_directories( ../../wrappers/opencv )
 
 endif()
-if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
+if(ON)
 
     message( STATUS "Enabling OpenVINO face-detection for realsense-viewer ..." )
-    set(IE_ROOT_DIR "${INTEL_OPENVINO_DIR}/inference_engine")
-    include(${INTEL_OPENVINO_DIR}/inference_engine/share/InferenceEngineConfig.cmake)
+    find_package(InferenceEngine REQUIRED)
+    find_package(ngraph REQUIRED)
 
     get_property(deps VARIABLE PROPERTY DEPENDENCIES)
-    set(DEPENDENCIES ${deps} ${InferenceEngine_LIBRARIES} ie_cpu_extension)
+    set(DEPENDENCIES ${deps} ${InferenceEngine_LIBRARIES} ${NGRAPH_LIBRARIES})
     include_directories( ../../wrappers/openvino )
     include_directories( ../../wrappers/opencv )
     include_directories( ${InferenceEngine_INCLUDE_DIRS} )
-    # We need additional access to ext_list.hpp, for CPU extension support:
-    include_directories( ${IE_ROOT_DIR}/src/extension )
+    include_directories( $<TARGET_PROPERTY:ngraph::ngraph,INTERFACE_INCLUDE_DIRECTORIES> )
 
     set(OPENVINO_FILES
         ../../wrappers/openvino/rs-vino/base-detection.cpp
@@ -87,7 +86,6 @@ if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
         ../../wrappers/openvino/rs-vino/detected-object.cpp
         ../../wrappers/openvino/rs-vino/detected-object.h
         ../../wrappers/openvino/rs-vino/openvino-helpers.h
-        ${IE_ROOT_DIR}/src/extension/ext_list.hpp
         )
 
     set(RS_VIEWER_CPP

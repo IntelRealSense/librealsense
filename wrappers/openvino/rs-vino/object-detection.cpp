@@ -6,6 +6,7 @@
 #include <rs-vino/openvino-helpers.h>
 #include <easylogging++.h>
 
+#include <ngraph/ngraph.hpp>
 
 using namespace InferenceEngine;
 
@@ -73,19 +74,16 @@ namespace openvino_helpers
     {
         LOG(INFO) << "Loading " << topoName << " model from: " << pathToModel;
 
-        CNNNetReader netReader;
-        /** Read network model **/
-        netReader.ReadNetwork( pathToModel );
+        // TODO: use global Core object from main()
+        Core netReader;
+        /** Read network model and load its weights **/
+        auto network = netReader.ReadNetwork( pathToModel );
         /** Set batch size **/
         //LOG(DEBUG) << "Batch size is set to " << maxBatch;
-        netReader.getNetwork().setBatchSize( maxBatch );
-
-        /** Extract model name and load its weights **/
-        std::string binFileName = remove_ext( pathToModel ) + ".bin";
-        netReader.ReadWeights( binFileName );
+        network.setBatchSize( maxBatch );
 
         // We support networks with one or two inputs, though others may be possible...
-        InputsDataMap inputInfo( netReader.getNetwork().getInputsInfo() );
+        InputsDataMap inputInfo( network.getInputsInfo() );
         if( inputInfo.size() != 1  &&  inputInfo.size() != 2 )
             throw std::logic_error( "Object detection network should have only one or two inputs" );
         for( auto & item : inputInfo )
@@ -115,21 +113,25 @@ namespace openvino_helpers
             throw std::logic_error( "Could not find input \"data\" layer in network" );
 
         // Only a single "DetectionOuput" layer is expected
-        OutputsDataMap outputInfo( netReader.getNetwork().getOutputsInfo() );
+        OutputsDataMap outputInfo( network.getOutputsInfo() );
         if( outputInfo.size() != 1 )
             throw std::logic_error(
                 "Object detection network should have only one output" );
         _output_layer_name = outputInfo.begin()->first;
         DataPtr & outputDataPtr = outputInfo.begin()->second;
-        const CNNLayerPtr outputLayer = netReader.getNetwork().getLayerByName( _output_layer_name.c_str() );
-        if( outputLayer->type != "DetectionOutput" )
-            throw std::logic_error(
-                "Object detection network output layer(" + outputLayer->name +
-                ") should be DetectionOutput, but was " + outputLayer->type );
-        if( outputLayer->params.find( "num_classes" ) == outputLayer->params.end() )
-            throw std::logic_error(
-                "Object detection network output layer (" +
-                _output_layer_name + ") should have num_classes integer attribute" );
+
+        // TODO: copy this code
+        // https://github.com/openvinotoolkit/open_model_zoo/blob/master/demos/object_detection_demo_ssd_async/main.cpp#L182-L197
+
+        // const CNNLayerPtr outputLayer = network.getLayerByName( _output_layer_name.c_str() );
+        // if( outputLayer->type != "DetectionOutput" )
+        //     throw std::logic_error(
+        //         "Object detection network output layer(" + outputLayer->name +
+        //         ") should be DetectionOutput, but was " + outputLayer->type );
+        // if( outputLayer->params.find( "num_classes" ) == outputLayer->params.end() )
+        //     throw std::logic_error(
+        //         "Object detection network output layer (" +
+        //         _output_layer_name + ") should have num_classes integer attribute" );
 
         /*
             Expect a blob of [1, 1, N, 7], where N is the number of detected bounding boxes.
@@ -152,7 +154,7 @@ namespace openvino_helpers
         _max_results = outputDims[2];
         outputDataPtr->setPrecision( Precision::FP32 );
 
-        return netReader.getNetwork();
+        return network;
     }
 
 

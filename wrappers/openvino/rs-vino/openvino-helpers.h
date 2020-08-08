@@ -14,7 +14,6 @@
 #pragma warning(disable:4275)
 #   include <inference_engine.hpp>
 #   include <ie_iextension.h>
-#   include <ext_list.hpp>              // Required for CPU extension usage
 #pragma warning(pop)
 
 #include <opencv2/opencv.hpp>
@@ -172,22 +171,4 @@ namespace openvino_helpers
 
         return cv::Rect( new_x, new_y, new_width, new_height );
     }
-
-
-    /*
-        Implementation of OpenVINO interface, allowing us to listen to any errors that occur
-        and output them for debugging using LOG(DEBUG).
-
-        Example usage:
-            InferenceEngine::Core engine;
-            openvino_helpers::error_listener error_listener;
-            engine.SetLogCallback( error_listener );
-    */
-    class error_listener : public InferenceEngine::IErrorListener
-    {
-        void onError( char const * msg ) noexcept override
-        {
-            LOG(DEBUG) << "[InferenceEngine] " << msg;
-        }
-    };
 }

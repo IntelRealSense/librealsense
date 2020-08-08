@@ -6,6 +6,7 @@
 #include <rs-vino/openvino-helpers.h>
 #include <easylogging++.h>
 
+#include <ngraph/ngraph.hpp>
 
 using namespace InferenceEngine;
 
@@ -67,18 +68,15 @@ namespace openvino_helpers
     {
         LOG(INFO) << "Loading " << topoName << " model from: " << pathToModel;
         
-        CNNNetReader netReader;
-        netReader.ReadNetwork(pathToModel);
-        netReader.getNetwork().setBatchSize(maxBatch);
-
-        // Extract model name and load its weights
-        std::string binFileName = remove_ext( pathToModel ) + ".bin";
-        netReader.ReadWeights( binFileName );
+        // TODO: use global Core object from main() function
+        Core netReader;
+        auto network = netReader.ReadNetwork(pathToModel);
+        network.setBatchSize(maxBatch);
 
         // Age/Gender Recognition network should have one input and two outputs
 
         LOG(DEBUG) << "Checking Age/Gender Recognition network inputs";
-        InputsDataMap inputInfo(netReader.getNetwork().getInputsInfo());
+        InputsDataMap inputInfo(network.getInputsInfo());
         if (inputInfo.size() != 1)
             throw std::logic_error("Age/Gender Recognition network should have only one input");
         InputInfo::Ptr& inputInfoFirst = inputInfo.begin()->second;
@@ -86,7 +84,7 @@ namespace openvino_helpers
         input = inputInfo.begin()->first;
 
         LOG(DEBUG) << "Checking Age/Gender Recognition network outputs";
-        OutputsDataMap outputInfo(netReader.getNetwork().getOutputsInfo());
+        OutputsDataMap outputInfo(network.getOutputsInfo());
         if (outputInfo.size() != 2)
             throw std::logic_error("Age/Gender Recognition network should have two output layers");
         auto it = outputInfo.begin();
@@ -99,35 +97,38 @@ namespace openvino_helpers
         if (!ptrGenderOutput)
             throw std::logic_error("Gender output data pointer is not valid");
 
-        auto genderCreatorLayer = ptrGenderOutput->getCreatorLayer().lock();
-        auto ageCreatorLayer = ptrAgeOutput->getCreatorLayer().lock();
+        // TODO: use ngraph
 
-        if (!ageCreatorLayer)
-            throw std::logic_error("Age creator layer pointer is not valid");
-        if (!genderCreatorLayer)
-            throw std::logic_error("Gender creator layer pointer is not valid");
+        // auto genderCreatorLayer = ptrGenderOutput->getCreatorLayer().lock();
+        // auto ageCreatorLayer = ptrAgeOutput->getCreatorLayer().lock();
 
-        // if gender output is convolution, it can be swapped with age
-        if (genderCreatorLayer->type == "Convolution")
-            std::swap(ptrAgeOutput, ptrGenderOutput);
+        // if (!ageCreatorLayer)
+        //     throw std::logic_error("Age creator layer pointer is not valid");
+        // if (!genderCreatorLayer)
+        //     throw std::logic_error("Gender creator layer pointer is not valid");
 
-        if (ptrAgeOutput->getCreatorLayer().lock()->type != "Convolution")
-            throw std::logic_error("In Age/Gender Recognition network, age layer (" + ageCreatorLayer->name +
-                                    ") should be a Convolution, but was: " + ageCreatorLayer->type);
+        // // if gender output is convolution, it can be swapped with age
+        // if (genderCreatorLayer->type == "Convolution")
+        //     std::swap(ptrAgeOutput, ptrGenderOutput);
 
-        if (ptrGenderOutput->getCreatorLayer().lock()->type != "SoftMax")
-            throw std::logic_error("In Age/Gender Recognition network, gender layer (" + genderCreatorLayer->name +
-                                    ") should be a SoftMax, but was: " + genderCreatorLayer->type);
-        if( doRawOutputMessages )
-        {
-            LOG(DEBUG) << "Age layer: " << ageCreatorLayer->name;
-            LOG(DEBUG) << "Gender layer: " << genderCreatorLayer->name;
-        }
+        // if (ptrAgeOutput->getCreatorLayer().lock()->type != "Convolution")
+        //     throw std::logic_error("In Age/Gender Recognition network, age layer (" + ageCreatorLayer->name +
+        //                             ") should be a Convolution, but was: " + ageCreatorLayer->type);
+
+        // if (ptrGenderOutput->getCreatorLayer().lock()->type != "SoftMax")
+        //     throw std::logic_error("In Age/Gender Recognition network, gender layer (" + genderCreatorLayer->name +
+        //                             ") should be a SoftMax, but was: " + genderCreatorLayer->type);
+        
+        // if( doRawOutputMessages )
+        // {
+        //     LOG(DEBUG) << "Age layer: " << ageCreatorLayer->name;
+        //     LOG(DEBUG) << "Gender layer: " << genderCreatorLayer->name;
+        // }
 
         outputAge = ptrAgeOutput->getName();
         outputGender = ptrGenderOutput->getName();
 
         _enabled = true;
-        return netReader.getNetwork();
+        return network;
     }
 }

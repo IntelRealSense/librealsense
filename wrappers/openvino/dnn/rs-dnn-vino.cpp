@@ -215,10 +215,7 @@ int main(int argc, char * argv[]) try
     // us to run the inference on the CPU. A GPU solution may be possible but, at least without a GPU,
     // a CPU-bound process is faster. To change to GPU, use "GPU" instead (and remove AddExtension()):
     openvino::Core engine;
-    openvino_helpers::error_listener error_listener;
-    engine.SetLogCallback( error_listener );
     std::string const device_name { "CPU" };
-    engine.AddExtension( std::make_shared< openvino::Extensions::Cpu::CpuExtensions >(), device_name );
 
     std::vector< detector_and_labels > detectors;
     load_detectors_into( detectors, engine, device_name );
