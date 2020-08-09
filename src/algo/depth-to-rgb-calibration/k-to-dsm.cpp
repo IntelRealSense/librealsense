@@ -703,7 +703,7 @@ std::vector<double2> k_to_DSM::convert_norm_vertices_to_los
 (
     algo_calibration_info const &regs,
     algo_calibration_registers const &dsm_regs,
-    std::vector<double3> const & vertices,
+    std::vector< double3 > const & vertices,
     convert_norm_vertices_to_los_data* data
 )
 {
