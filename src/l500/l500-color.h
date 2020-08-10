@@ -131,11 +131,8 @@ namespace librealsense
         // Stops the color sensor if was opened by the calibration process, otherwise does nothing
         void stop_stream_for_calibration();
 
-        void init_calibration_controls()
-        {
-            register_calibration_controls();
-            read_calibration_controls_defaults();
-        }
+        // Sets the calibration controls needed to be controlled calibration
+        void register_calibration_controls();
         
     private:
         l500_color* const _owner;
@@ -152,14 +149,14 @@ namespace librealsense
 
         struct calibration_control
         {
-            rs2_option option;
-            float default_value;
+            const rs2_option option;
+            const float default_value;
             float previous_value;  
             bool need_to_restore;
 
-            calibration_control(rs2_option opt)
+            calibration_control(rs2_option opt, float def)
                 : option(opt)
-                , default_value(0.0f)
+                , default_value(def)
                 , previous_value(0.0f)
                 , need_to_restore(false) {}
         };
@@ -195,11 +192,9 @@ namespace librealsense
 
 
         // For better results the CAH process require default values to some of the RGB sensor controls
-        // This function handle the setting / restoring process of this controls
-        void set_default_controls_for_calibration_if_needed();
-        void restore_pre_calibration_controls_if_needed();
-        void register_calibration_controls();
-        void read_calibration_controls_defaults();
+        // This functions handle the setting / restoring process of this controls
+        void set_calibration_controls_to_defaults();
+        void restore_pre_calibration_controls();
     };
 
 }
