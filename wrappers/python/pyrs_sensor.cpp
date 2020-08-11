@@ -105,11 +105,24 @@ void init_sensor(py::module &m) {
 
     py::class_<rs2::calibrated_sensor, rs2::sensor> cal_sensor( m, "calibrated_sensor" );
     cal_sensor.def( py::init<rs2::sensor>(), "sensor"_a )
-        .def( "override_intrinsics", &rs2::calibrated_sensor::override_intrinsics, "intrinsics"_a )
-        .def( "override_extrinsics", &rs2::calibrated_sensor::override_extrinsics, "extrinsics"_a )
-        .def( "get_dsm_params", &rs2::calibrated_sensor::get_dsm_params )
-        .def( "override_dsm_params", &rs2::calibrated_sensor::override_dsm_params, "dsm_params"_a )
-        .def( "reset_calibration", &rs2::calibrated_sensor::reset_calibration )
+        .def( "override_intrinsics",
+              &rs2::calibrated_sensor::override_intrinsics,
+              "intrinsics"_a,
+              py::call_guard< py::gil_scoped_release >() )
+        .def( "override_extrinsics",
+              &rs2::calibrated_sensor::override_extrinsics,
+              "extrinsics"_a,
+              py::call_guard< py::gil_scoped_release >() )
+        .def( "get_dsm_params",
+              &rs2::calibrated_sensor::get_dsm_params,
+              py::call_guard< py::gil_scoped_release >() )
+        .def( "override_dsm_params",
+              &rs2::calibrated_sensor::override_dsm_params,
+              "dsm_params"_a,
+              py::call_guard< py::gil_scoped_release >() )
+        .def( "reset_calibration",
+              &rs2::calibrated_sensor::reset_calibration,
+              py::call_guard< py::gil_scoped_release >() )
         .def( "__nonzero__", &rs2::calibrated_sensor::operator bool );
 
     // rs2::depth_stereo_sensor
