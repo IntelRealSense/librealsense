@@ -149,7 +149,7 @@ int main( int argc, char * argv[] )
             {
                 // The build number is only available within Jenkins and so we have to hard-
                 // code it ><
-                std::cout << RS2_API_VERSION_STR << ".2082" << std::endl;
+                std::cout << RS2_API_VERSION_STR << ".2158" << std::endl;
                 continue;
             }
             if( ! strcmp( dir, "--debug" ) || ! strcmp( dir, "-d" ) )
@@ -182,6 +182,14 @@ int main( int argc, char * argv[] )
             read_binary_file( dir, "cal.info", &camera.cal_info );
             read_binary_file( dir, "cal.registers", &camera.cal_regs );
             read_binary_file( dir, "dsm.params", &camera.dsm_params );
+
+            if( camera.cal_regs.EXTLdsmXoffset < 0. || camera.cal_regs.EXTLdsmXoffset > 100000.
+                || camera.cal_regs.EXTLdsmXscale < 0. || camera.cal_regs.EXTLdsmXscale > 100000.
+                || camera.cal_regs.EXTLdsmYoffset < 0 || camera.cal_regs.EXTLdsmYoffset > 100000.
+                || camera.cal_regs.EXTLdsmYscale < 0 || camera.cal_regs.EXTLdsmYscale > 100000. )
+            {
+                throw std::invalid_argument( "cal.registers file is malformed! (hexdump -v -e '4/ \"%f  \"')" );
+            }
 
             algo::optimizer::settings settings;
             try
@@ -254,7 +262,7 @@ int main( int argc, char * argv[] )
                 status += results;
             }
 
-            TRACE( "\n___\nRESULTS:  (" << RS2_API_VERSION_STR << " build 2082)" );
+            TRACE( "\n___\nRESULTS:  (" << RS2_API_VERSION_STR << " build 2158)" );
 
             auto intr = cal.get_calibration().get_intrinsics();
             auto extr = cal.get_calibration().get_extrinsics();
@@ -267,6 +275,19 @@ int main( int argc, char * argv[] )
                 << ", " << intr.coeffs[3] << ", " << intr.coeffs[4] << "] ]" );
             AC_LOG( DEBUG, AC_D_PREC << "extr" << (rs2_extrinsics) extr );
             AC_LOG( DEBUG, AC_D_PREC << "dsm" << cal.get_dsm_params() );
+
+            try
+            {
+                algo::validate_dsm_params( cal.get_dsm_params() );
+            }
+            catch( librealsense::invalid_value_exception const & e )
+            {
+                AC_LOG( ERROR, "Exception: " << e.what() );
+                if( ! status.empty() )
+                    status += ' ';
+                status += logger.get_codes();
+                logger.reset();
+            }
 
             TRACE( "\n___\nVS:" );
             AC_LOG( DEBUG, AC_D_PREC << "dsm" << camera.dsm_params );
