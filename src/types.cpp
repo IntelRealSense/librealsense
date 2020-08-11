@@ -75,7 +75,7 @@ namespace librealsense
         rs2_exception_type exception_type) noexcept
         : librealsense_exception(msg, exception_type)
     {
-        LOG_WARNING(msg);
+        LOG_DEBUG("recoverable_exception: " << msg);
     }
 
     bool file_exists(const char* filename)
