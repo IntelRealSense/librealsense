@@ -236,7 +236,16 @@ namespace librealsense
 
     void l500_depth_sensor::override_dsm_params( rs2_dsm_params const & dsm_params )
     {
-        algo::depth_to_rgb_calibration::validate_dsm_params( dsm_params );  // throws!
+        try
+        {
+            algo::depth_to_rgb_calibration::validate_dsm_params( dsm_params );  // throws!
+        }
+        catch( invalid_value_exception const & e )
+        {
+            if( ! getenv( "RS2_AC_IGNORE_LIMITERS" ))
+                throw;
+            AC_LOG( ERROR, "Ignoring (RS2_AC_IGNORE_LIMITERS) " << e.what() );
+        }
 
         ac_depth_results table( dsm_params );
         // table.params.timestamp = std::chrono::system_clock::now().time_since_epoch().count();

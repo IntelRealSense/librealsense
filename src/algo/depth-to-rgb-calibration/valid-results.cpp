@@ -417,22 +417,25 @@ void librealsense::algo::depth_to_rgb_calibration::validate_dsm_params(
         for h/vFactor and divide the suggested h/vOffset range by 10.
 
         Update ww30: +/-1.5% limiter both H/V [0.985..1.015] until AC3.
+        Update ww33: vFactor for all 60 cocktail 1500h units is in the range
+                     of 1.000-1.015; changing to [0.995-1.015]
     */
+    std::string error;
+    
     if( dsm_params.model != RS2_DSM_CORRECTION_AOT )
-        throw invalid_value_exception( "non-AoT (1) mode is currently unsupported" );
+        error += to_string() << " {mode}" << +dsm_params.model << " must be AOT";
 
     if( dsm_params.h_scale < 0.985 || dsm_params.h_scale > 1.015 )
-        throw invalid_value_exception( to_string() << "H scale (" << dsm_params.h_scale
-                                                   << ") exceeds 1.5% change in FOV" );
-    if( dsm_params.v_scale < 0.985 || dsm_params.v_scale > 1.015 )
-        throw invalid_value_exception( to_string() << "V scale (" << dsm_params.v_scale
-                                                   << ") exceeds 1.5% change in FOV" );
+        error += to_string() << " {H-scale}" << dsm_params.h_scale << " exceeds 1.5% change";
+    if( dsm_params.v_scale < 0.995 || dsm_params.v_scale > 1.015 )
+        error += to_string() << " {V-scale}" << dsm_params.v_scale << " exceeds [-0.5%-1.5%]";
 
     if( dsm_params.h_offset < -2. || dsm_params.h_offset > 2. )
-        throw invalid_value_exception( to_string() << "H offset (" << dsm_params.h_offset
-                                                   << ") is limited to 2deg FOV tilt" );
+        error += to_string() << " {H-offset}" << dsm_params.h_offset << " is limited to 2 degrees";
     if( dsm_params.v_offset < -2. || dsm_params.v_offset > 2. )
-        throw invalid_value_exception( to_string() << "V offset (" << dsm_params.v_offset
-                                                   << ") is limited to 2deg FOV tilt" );
+        error += to_string() << " {V-offset}" << dsm_params.v_offset << " is limited to 2 degrees";
+
+    if( ! error.empty() )
+        throw invalid_value_exception( "invalid DSM:" + error + " [LIMIT]" );
 }
 
