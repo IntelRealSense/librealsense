@@ -167,7 +167,8 @@ namespace depth_to_rgb_calibration {
     {
         k_to_dsm_data,
         cycle_data,
-        iteration_data
+        iteration_data,
+        general_data
     };
 
     struct k_to_dsm_inputs
@@ -372,7 +373,7 @@ namespace depth_to_rgb_calibration {
             calib& new_rgb_calib_for_k_to_dsm,
             rs2_intrinsics_double& new_z_k,
             std::function<void(data_collect const&data)> cb,
-            data_collect* data);
+            data_collect& data);
 
         calib decompose_p_mat(p_matrix p);
         rs2_intrinsics_double get_new_z_intrinsics_from_new_calib(const rs2_intrinsics_double& orig, const calib & new_c, const calib & orig_c);
