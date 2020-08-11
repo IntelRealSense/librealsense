@@ -1908,8 +1908,7 @@ size_t optimizer::optimize_p
     calib& new_rgb_calib_for_k_to_dsm,
     rs2_intrinsics_double& new_z_k,
     std::function<void(data_collect const&data)> cb,
-    data_collect* data 
-)
+    data_collect& data )
 {
     // The params_curr that we get contains a cost and p_matrix that do not match:
     // The cost is the optimal cost calculated in the previous cycle, but we don't use it here.
@@ -1921,28 +1920,30 @@ size_t optimizer::optimize_p
     while (1)
     {
 
-        auto res = calc_cost_and_grad(_z, new_vertices, _yuy, new_rgb_calib_for_k_to_dsm, curr.curr_p_mat, data);
+        auto res = calc_cost_and_grad(_z, new_vertices, _yuy, new_rgb_calib_for_k_to_dsm, curr.curr_p_mat, &data);
         curr.cost = res.first;
         curr.calib_gradients = res.second;
         AC_LOG( DEBUG, std::setw( 3 ) << std::right << n_iterations << std::left
                            << " cost= " << AC_D_PREC << curr.cost );
 
-        if (data)
+        data.iteration_data_p.iteration = n_iterations;
+        if( _debug_mode )
         {
-            data->type = iteration_data;
-            data->iteration_data_p.iteration = n_iterations;
-            data->iteration_data_p.params = curr;
-            data->iteration_data_p.c = new_rgb_calib_for_k_to_dsm;
-            data->iteration_data_p.iteration = n_iterations;
+            
+            data.iteration_data_p.params = curr;
+            data.iteration_data_p.c = new_rgb_calib_for_k_to_dsm;
+            data.iteration_data_p.iteration = n_iterations;
         }
 
-        params_new = back_tracking_line_search(curr, new_vertices, data);
+        params_new = back_tracking_line_search( curr, new_vertices, &data );
         
-        if (data)
-            data->iteration_data_p.next_params = params_new;
+        if( _debug_mode )
+            data.iteration_data_p.next_params = params_new;
 
-        if( data && cb )
-            cb(*data);
+        data.type = _debug_mode ? iteration_data : general_data;
+        if( cb )
+            cb(data);
+
 
         auto norm = (params_new.curr_p_mat - curr.curr_p_mat).get_norma();
         if (norm < _params.min_rgb_mat_delta)
@@ -2023,7 +2024,7 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
                                     new_calib,
                                     new_k_depth,
                                     cb,
-                                    _debug_mode ? &data : nullptr );
+                                    data );
 
     _z.orig_vertices = _z.vertices;
     rs2_dsm_params_double new_dsm_params = _z.orig_dsm_params;
@@ -2040,10 +2041,10 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
         rs2_intrinsics_double k_depth_candidate = new_k_depth;
 
         ++cycle;
+        data.cycle_data_p.cycle = cycle;
 
         if (_debug_mode)
         {
-            data.cycle_data_p.cycle = cycle;
             data.cycle_data_p.new_calib = new_calib;
             data.cycle_data_p.new_k_depth = new_k_depth;
             data.cycle_data_p.new_params = new_params;
@@ -2052,13 +2053,13 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
             data.cycle_data_p.new_vertices = new_vertices;
             data.cycle_data_p.optimaized_calib_candidate = optimaized_calib_candidate;
 
-             if( cb )
-            {
-                 data.type = cycle_data;
-                 cb(data);
-            }
         }
        
+        if( cb )
+        {
+            data.type = _debug_mode ? cycle_data : general_data;
+            cb( data );
+        }
 
         AC_LOG(INFO, "CYCLE " << data.cycle_data_p.cycle << " started with: cost = " << AC_D_PREC << new_params.cost);
 
@@ -2105,7 +2106,7 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
                     calib_candidate,
                     k_depth_candidate,
                     cb,
-                    _debug_mode ? &data : nullptr );
+                    data );
 
         if( params_candidate.cost < last_cost )
         {
