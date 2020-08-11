@@ -24,6 +24,9 @@ macro(global_set_flags)
     add_definitions(-DELPP_THREAD_SAFE)
     add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 
+    validate_number(BACKEND_POLLING_INTERVAL)
+    add_definitions(-DLRS_BACKEND_POLLING_INTERVAL=${BACKEND_POLLING_INTERVAL})
+
     if (BUILD_GLSL_EXTENSIONS)
         set(LRS_GL_TARGET realsense2-gl)
         set(LRS_GL_LIB_NAME ${LRS_GL_TARGET})
