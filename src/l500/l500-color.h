@@ -40,7 +40,7 @@ namespace librealsense
         lazy<std::vector<uint8_t>> _color_extrinsics_table_raw;
         std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
 
-        ivcam2::intrinsic_rgb get_intrinsics_table() const;
+        ivcam2::intrinsic_rgb read_intrinsics_table() const;
         std::vector<uint8_t> get_raw_extrinsics_table() const;
     };
 
