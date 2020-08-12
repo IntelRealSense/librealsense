@@ -107,6 +107,7 @@ extern "C" {
     // This function is being deprecated. For existing options it will return option name, but for future API additions the user should call rs2_get_option_name instead.
     const char* rs2_option_to_string(rs2_option option);
 
+
     /** \brief For SR300 devices: provides optimized settings (presets) for specific types of usage. */
     typedef enum rs2_sr300_visual_preset
     {
