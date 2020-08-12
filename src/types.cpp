@@ -411,6 +411,10 @@ namespace librealsense
             CASE(THERMAL_COMPENSATION)
             CASE(TRIGGER_CAMERA_ACCURACY_HEALTH)
             CASE(RESET_CAMERA_ACCURACY_HEALTH)
+            CASE(HDR_ENABLED)
+            CASE(HDR_SEQUENCE_SIZE)
+            CASE(HDR_SEQUENCE_ID)
+            CASE(HDR_RELATIVE_MODE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
