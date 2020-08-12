@@ -584,18 +584,18 @@ namespace librealsense
     }
 
 
-    void hdr_option::set(float value)
+    void hdr_option::set(float value) 
     {
         _hdr_cfg->set(_option, value, _range);
         _record_action(*this);
     }
 
-    float hdr_option::query() const
+    float hdr_option::query() const 
     {
         return _hdr_cfg->get(_option);
     }
 
-    option_range hdr_option::get_range() const
+    option_range hdr_option::get_range() const 
     {
         return _range;
     }
@@ -653,5 +653,4 @@ namespace librealsense
         else
             return _uvc_option->is_enabled();
     }
-
 }
