@@ -75,10 +75,9 @@ private:
     void stop_sensor_streams(int sensor_id);
 
     void update_sensor_state(int sensor_index, std::vector<rs2::stream_profile> updated_streams, bool recover);
-    void update_option_value(int sensor_index, rs2_option opt, float val);
-
+    
     void set_option_value(int sensor_index, rs2_option opt, float val);
-    void get_option_value(int sensor_index, rs2_option opt, float& val);
+    float get_option_value(int sensor_index, rs2_option opt);
 
     std::vector<rs2_video_stream> query_streams(int sensor_id);
 

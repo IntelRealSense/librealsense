@@ -266,10 +266,10 @@ void RsRTSPClient::setGetParamResponse(float t_res)
     m_getParamRes = t_res;
 }
 
-int RsRTSPClient::getOption(const std::string &t_sensorName, rs2_option t_option, float &t_value)
+float RsRTSPClient::getOption(const std::string &t_sensorName, rs2_option t_option)
 {
     unsigned res;
-    t_value = m_getParamRes = -1;
+    m_getParamRes = -1;
     std::string option = t_sensorName + "_" + std::to_string(t_option);
     if (isActiveSession)
     {
@@ -294,9 +294,7 @@ int RsRTSPClient::getOption(const std::string &t_sensorName, rs2_option t_option
         throw std::runtime_error(format_error_msg(__FUNCTION__, m_lastReturnValue));
     }
 
-    t_value = m_getParamRes;
-
-    return m_lastReturnValue.exit_code;
+    return m_getParamRes;
 }
 
 void schedulerThread(RsRTSPClient *t_rtspClientInstance)

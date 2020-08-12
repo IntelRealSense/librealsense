@@ -67,7 +67,7 @@ public:
     virtual int start();
     virtual int stop();
     virtual int close();
-    virtual int getOption(const std::string& t_sensorName, rs2_option t_option, float& t_value);
+    virtual float getOption(const std::string& t_sensorName, rs2_option t_option);
     virtual int setOption(const std::string& t_sensorName, rs2_option t_option, float t_value);
     void setGetParamResponse(float t_res);
     virtual DeviceData getDeviceData()
