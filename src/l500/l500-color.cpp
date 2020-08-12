@@ -141,6 +141,13 @@ namespace librealsense
         color_ep->register_metadata(RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION, make_attribute_parser(&md_rgb_control::low_light_comp, md_rgb_control_attributes::low_light_comp_attribute, md_prop_offset));
         color_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
 
+        // We manipulate several controls when the CAH process turn on/off the color stream
+        // This should be done after registration of the device options
+        if (_autocal)
+        {
+            color_ep->register_calibration_controls();
+        }
+
         return color_ep;
     }
 
@@ -379,14 +386,15 @@ namespace librealsense
             }
             if( is_opened() )
             {
-                LOG_DEBUG( "Closing color sensor..." );
+                AC_LOG( DEBUG, "Calibration color stream was on, Closing color sensor..." );
                 synthetic_sensor::close();
             }
+
+            restore_pre_calibration_controls();
+
             set_sensor_state( sensor_state::CLOSED );
-            LOG_DEBUG( "Calibration color stream was on, turned it off" );
         }
 
-        LOG_DEBUG( "Opening color sensor..." );
         synthetic_sensor::open( requests );
         set_sensor_state( sensor_state::OWNED_BY_USER );
     }
@@ -399,7 +407,6 @@ namespace librealsense
         if( _state != sensor_state::OWNED_BY_USER )
             throw wrong_api_call_sequence_exception( "tried to close sensor without opening it" );
 
-        LOG_DEBUG("Closing color sensor...");
         synthetic_sensor::close();
         set_sensor_state(sensor_state::CLOSED);
     }
@@ -421,9 +428,11 @@ namespace librealsense
         // Allow calibration process to open the color stream only if it is not started by the user.
         if( _state == sensor_state::CLOSED )
         {
+            set_calibration_controls_to_defaults();
+
             synthetic_sensor::open(requests);
             set_sensor_state(sensor_state::OWNED_BY_AUTO_CAL);
-            AC_LOG( INFO, "Starting color sensor stream -- for calibration" );
+            AC_LOG( DEBUG, "Starting color sensor stream -- for calibration" );
             delayed_start( make_frame_callback( [&]( frame_holder fref ) {} ) );
             return true;
         }
@@ -445,19 +454,19 @@ namespace librealsense
         
         if( _state == sensor_state::OWNED_BY_AUTO_CAL )
         {
+            AC_LOG(DEBUG, "Closing color sensor stream from calibration");
+
             if( is_streaming() )
             {
-                AC_LOG( INFO, "Stopping color sensor stream from calibration" );
                 delayed_stop();
-                AC_LOG( INFO, "Color sensor stream stopped" );
 
             }
             if (is_opened())
             {
-                LOG_DEBUG( "Closing color sensor..." );
                 synthetic_sensor::close();
-                LOG_DEBUG( "Color sensor closed" );
             }
+
+            restore_pre_calibration_controls();
 
             // If we got here with no exception it means the start has succeeded.
             set_sensor_state( sensor_state::CLOSED );
@@ -484,6 +493,74 @@ namespace librealsense
         }
     }
 
+
+    void l500_color_sensor::set_calibration_controls_to_defaults()
+    {
+        for (auto && calib_control : _calib_controls)
+        {
+            auto && control = get_option(calib_control.option);
+
+            auto curr_val = control.query();
+            if (curr_val != calib_control.default_value)
+            {
+                AC_LOG(DEBUG, "Calibration - changed option: " << rs2_option_to_string( calib_control.option ) << " value,"
+                                              << " from: " << curr_val
+                                              << " to: " << calib_control.default_value );
+                calib_control.need_to_restore = true;
+                calib_control.previous_value = curr_val;
+                control.set(calib_control.default_value);
+            }
+            else
+            {
+                AC_LOG(DEBUG, "Calibration - no need to changed option: " << rs2_option_to_string(calib_control.option) << " value,"
+                    << " current value is: " << curr_val
+                    << " which is the default value");
+            }
+        }
+    }
+
+    void l500_color_sensor::restore_pre_calibration_controls()
+    {
+        for (auto && calib_control : _calib_controls)
+        {
+            auto && control = get_option(calib_control.option);
+
+            auto curr_val = control.query();
+            if( calib_control.need_to_restore &&
+                ( curr_val == calib_control.default_value ) )
+            {
+                AC_LOG(DEBUG, "Calibration - restored option: " << rs2_option_to_string(calib_control.option) << " value,"
+                    << " from: " << curr_val
+                    << " to: " << calib_control.previous_value);
+                control.set(calib_control.previous_value);
+            }
+            else
+            {
+                std::stringstream ss;
+                ss << "Calibration - no need to restore option : "
+                   << rs2_option_to_string( calib_control.option ) << " value, "
+                   << " current value is: " << curr_val;
+
+                if( curr_val == calib_control.default_value ) ss << " which is the default value";
+                else  ss << " which is the user value";
+
+                AC_LOG(DEBUG, ss.str());
+            }
+            calib_control.need_to_restore = false;
+        }
+    }
+
+    void l500_color_sensor::register_calibration_controls()
+    {
+        for( auto && option : { RS2_OPTION_ENABLE_AUTO_EXPOSURE,
+                                RS2_OPTION_BACKLIGHT_COMPENSATION,
+                                RS2_OPTION_BRIGHTNESS,
+                                RS2_OPTION_CONTRAST } )
+        {
+            auto && control = get_option(option);
+            _calib_controls.push_back({ option, control.get_range().def });
+        }
+    }
 
     std::vector<tagged_profile> l500_color::get_profiles_tags() const
     {

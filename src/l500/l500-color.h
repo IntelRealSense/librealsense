@@ -59,7 +59,8 @@ namespace librealsense
             : synthetic_sensor("RGB Camera", uvc_sensor, owner, l500_color_fourcc_to_rs2_format, l500_color_fourcc_to_rs2_stream),
             _owner(owner),
             _state(sensor_state::CLOSED)
-        {}
+        {
+        }
 
         rs2_intrinsics get_intrinsics( const stream_profile& profile ) const override;
         
@@ -129,6 +130,9 @@ namespace librealsense
        
         // Stops the color sensor if was opened by the calibration process, otherwise does nothing
         void stop_stream_for_calibration();
+
+        // Sets the calibration controls needed to be controlled calibration
+        void register_calibration_controls();
         
     private:
         l500_color* const _owner;
@@ -142,6 +146,22 @@ namespace librealsense
             OWNED_BY_AUTO_CAL
         };
 
+
+        struct calibration_control
+        {
+            const rs2_option option;
+            const float default_value;
+            float previous_value;  
+            bool need_to_restore;
+
+            calibration_control(rs2_option opt, float def)
+                : option(opt)
+                , default_value(def)
+                , previous_value(0.0f)
+                , need_to_restore(false) {}
+        };
+
+        std::vector<calibration_control> _calib_controls;
         std::atomic< sensor_state > _state;
 
         void delayed_start(frame_callback_ptr callback)
@@ -169,6 +189,12 @@ namespace librealsense
                     " to: " << state_to_string(state));
                 _state = state;
         }
+
+
+        // For better results the CAH process require default values to some of the RGB sensor controls
+        // This functions handle the setting / restoring process of this controls
+        void set_calibration_controls_to_defaults();
+        void restore_pre_calibration_controls();
     };
 
 }
