@@ -29,43 +29,40 @@ namespace librealsense
 {
     using namespace ivcam2;
 
-    ivcam2::intrinsic_depth l500_depth::get_calibration_table() const
+    ivcam2::intrinsic_depth l500_depth::read_intrinsics_table() const
     {
         // Get RAW data from firmware
+        AC_LOG(DEBUG, "DPT_INTRINSICS_FULL_GET");
         std::vector< uint8_t > response_vec = _hw_monitor->send( command{ DPT_INTRINSICS_FULL_GET } );
 
-        if (response_vec.size() == 0)
+        if (response_vec.empty())
             throw invalid_value_exception("Calibration data invalid,buffer size is zero");
 
         auto resolutions_depth_table_ptr = reinterpret_cast<const ivcam2::intrinsic_depth *>(response_vec.data());
 
+        auto num_of_resolutions = resolutions_depth_table_ptr->resolution.num_of_resolutions;
         // Get full maximum size of the resolution array and deduct the unused resolutions size from it
         size_t expected_size = sizeof( ivcam2::intrinsic_depth ) - 
                                      ( ( MAX_NUM_OF_DEPTH_RESOLUTIONS
-                                     - resolutions_depth_table_ptr->resolution.num_of_resolutions )
+                                     - num_of_resolutions)
                                      * sizeof( intrinsic_per_resolution ) );
 
         // Validate table size
-        if (expected_size > response_vec.size())
+        // FW API guarantee only as many bytes as required for the given number of resolutions, 
+        // The FW keeps the right to send more bytes.
+        if (expected_size > response_vec.size() || 
+            num_of_resolutions > MAX_NUM_OF_DEPTH_RESOLUTIONS)
         {
             throw invalid_value_exception(
-                to_string() << "Calibration data invalid, buffer too small : expected "
-                            << expected_size << " , actual: " << response_vec.size() );
+                to_string() << "Calibration data invalid, number of resolutions is: " << num_of_resolutions <<
+                ", expected size: " << expected_size << " , actual size: " << response_vec.size() );
         }
 
         // Set a new memory allocated intrinsics struct (Full size 5 resolutions)
         // Copy the relevant data from the dynamic resolution received from the FW
         ivcam2::intrinsic_depth  resolutions_depth_table_output;
-        resolutions_depth_table_output.orient = resolutions_depth_table_ptr->orient;
-        resolutions_depth_table_output.resolution.num_of_resolutions = resolutions_depth_table_ptr->resolution.num_of_resolutions;
-        resolutions_depth_table_output.resolution.reserved16 = resolutions_depth_table_ptr->resolution.reserved16;
-        resolutions_depth_table_output.resolution.reserved8 = resolutions_depth_table_ptr->resolution.reserved8;
-
-        for (int i = 0; i < resolutions_depth_table_output.resolution.num_of_resolutions; ++i)
-        {
-            resolutions_depth_table_output.resolution.intrinsic_resolution[i] = resolutions_depth_table_ptr->resolution.intrinsic_resolution[i];
-        }
-
+        librealsense::copy(&resolutions_depth_table_output, resolutions_depth_table_ptr, expected_size);
+      
         return resolutions_depth_table_output;
     }
 
@@ -74,7 +71,7 @@ namespace librealsense
         :device(ctx, group),
         l500_device(ctx, group)
     {
-        _calib_table = [this]() { return get_calibration_table(); };
+        _calib_table = [this]() { return read_intrinsics_table(); };
 
         auto& depth_sensor = get_depth_sensor();
         auto& raw_depth_sensor = get_raw_depth_sensor();

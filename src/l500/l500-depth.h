@@ -27,7 +27,7 @@ namespace librealsense
     {
     public:
 
-        ivcam2::intrinsic_depth get_calibration_table() const;
+        ivcam2::intrinsic_depth read_intrinsics_table() const;
 
         l500_depth(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);

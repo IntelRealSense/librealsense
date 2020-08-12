@@ -154,7 +154,7 @@ namespace librealsense
             throw invalid_value_exception(to_string() << "L500 with RGB models are expected to include a single color device! - "
                 << color_devs_info.size() << " found");
 
-        _color_intrinsics_table = [this]() { return get_intrinsics_table(); };
+        _color_intrinsics_table = [this]() { return read_intrinsics_table(); };
         _color_extrinsics_table_raw = [this]() { return get_raw_extrinsics_table(); };
 
         // This lazy instance will get shared between all the extrinsics edges. If you ever need to override
@@ -493,42 +493,39 @@ namespace librealsense
         return tags;
     }
 
-    ivcam2::intrinsic_rgb l500_color::get_intrinsics_table() const
+    ivcam2::intrinsic_rgb l500_color::read_intrinsics_table() const
     {
         // Get RAW data from firmware
+        AC_LOG(DEBUG, "RGB_INTRINSIC_GET");
         std::vector< uint8_t > response_vec = _hw_monitor->send(command{ RGB_INTRINSIC_GET });
 
-        if (response_vec.size() == 0)
+        if (response_vec.empty())
             throw invalid_value_exception("Calibration data invalid,buffer size is zero");
 
         auto resolutions_rgb_table_ptr = reinterpret_cast<const ivcam2::intrinsic_rgb *>(response_vec.data());
+        auto num_of_resolutions = resolutions_rgb_table_ptr->resolution.num_of_resolutions;
 
         // Get full maximum size of the resolution array and deduct the unused resolutions size from it
         size_t expected_size = sizeof( ivcam2::intrinsic_rgb )
                                 - ( ( MAX_NUM_OF_RGB_RESOLUTIONS
-                                - resolutions_rgb_table_ptr->resolution.num_of_resolutions )
+                                - num_of_resolutions)
                                 * sizeof( pinhole_camera_model ) );
 
         // Validate table size
-        if (expected_size > response_vec.size())
+        // FW API guarantee only as many bytes as required for the given number of resolutions, 
+        // The FW keeps the right to send more bytes.
+        if (expected_size > response_vec.size() ||
+            num_of_resolutions > MAX_NUM_OF_RGB_RESOLUTIONS)
         {
             throw invalid_value_exception(
-                to_string() << "Calibration data invalid, buffer too small : expected "
-                << expected_size << " , actual: " << response_vec.size());
+                to_string() << "Calibration data invalid, number of resolutions is: " << num_of_resolutions <<
+                ", expected size: " << expected_size << " , actual size: " << response_vec.size());
         }
 
         // Set a new memory allocated intrinsics struct (Full size 5 resolutions)
         // Copy the relevant data from the dynamic resolution received from the FW
         ivcam2::intrinsic_rgb  resolutions_rgb_table_output;
-        resolutions_rgb_table_output.common = resolutions_rgb_table_ptr->common;
-        resolutions_rgb_table_output.resolution.num_of_resolutions = resolutions_rgb_table_ptr->resolution.num_of_resolutions;
-        resolutions_rgb_table_output.resolution.reserved16 = resolutions_rgb_table_ptr->resolution.reserved16;
-        resolutions_rgb_table_output.resolution.reserved8 = resolutions_rgb_table_ptr->resolution.reserved8;
-
-        for (int i = 0; i < resolutions_rgb_table_output.resolution.num_of_resolutions; ++i)
-        {
-            resolutions_rgb_table_output.resolution.intrinsic_resolution[i] = resolutions_rgb_table_ptr->resolution.intrinsic_resolution[i];
-        }
+        librealsense::copy(&resolutions_rgb_table_output, resolutions_rgb_table_ptr, expected_size);
 
         return resolutions_rgb_table_output;
     }
