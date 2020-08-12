@@ -557,4 +557,62 @@ namespace librealsense
     {
         return *_range;
     }
+
+
+    void hdr_option::set(float value) 
+    {
+        _hdr_cfg->set(_option, value, _range);
+        _record_action(*this);
+    }
+
+    float hdr_option::query() const 
+    {
+        return _hdr_cfg->get(_option);
+    }
+
+    option_range hdr_option::get_range() const 
+    {
+        return _range;
+    }
+
+
+    void hdr_conditional_option::set(float value)
+    {
+        if (_hdr_cfg->is_config_in_process())
+            _hdr_option->set(value);
+        else
+            _uvc_option->set(value);
+    }
+
+    float hdr_conditional_option::query() const
+    {
+        if (_hdr_cfg->is_config_in_process())
+            return _hdr_option->query();
+        else
+            return _uvc_option->query();
+    }
+
+    option_range hdr_conditional_option::get_range() const
+    {
+        if (_hdr_cfg->is_config_in_process())
+            return _hdr_option->get_range();
+        else
+            return _uvc_option->get_range();
+    }
+
+    const char* hdr_conditional_option::get_description() const
+    {
+        if (_hdr_cfg->is_config_in_process())
+            return _hdr_option->get_description();
+        else
+            return _uvc_option->get_description();
+    }
+
+    bool hdr_conditional_option::is_enabled() const
+    {
+        if (_hdr_cfg->is_config_in_process())
+            return _hdr_option->is_enabled();
+        else
+            return _uvc_option->is_enabled();
+    }
 }

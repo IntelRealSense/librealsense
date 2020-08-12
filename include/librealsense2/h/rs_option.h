@@ -96,11 +96,16 @@ extern "C" {
         RS2_OPTION_THERMAL_COMPENSATION, /**< Depth Thermal Compensation for selected D400 SKUs */
         RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, /**< Enable depth & color frame sync with periodic calibration for proper alignment */
         RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH,
+        RS2_OPTION_HDR_ENABLED,  /**< Enable / disable HDR */
+        RS2_OPTION_HDR_SEQUENCE_SIZE, /**< HDR Sequence size */
+        RS2_OPTION_HDR_SEQUENCE_ID, /**< HDR Sequence ID - 0 is not HDR; sequence ID for HDR configuartion starts from 1 */
+        RS2_OPTION_HDR_RELATIVE_MODE, /**< HDR Configuration as Absolute values or Relative values */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
     // This function is being deprecated. For existing options it will return option name, but for future API additions the user should call rs2_get_option_name instead.
     const char* rs2_option_to_string(rs2_option option);
+
 
     /** \brief For SR300 devices: provides optimized settings (presets) for specific types of usage. */
     typedef enum rs2_sr300_visual_preset
