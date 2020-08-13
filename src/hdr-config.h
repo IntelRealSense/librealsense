@@ -34,7 +34,17 @@ namespace librealsense
 
 
     private:
-        command prepare_hdr_sub_preset_command();
+        command prepare_hdr_sub_preset_command() const;
+        std::vector<uint8_t> prepare_sub_preset_header() const;
+        std::vector<uint8_t> prepare_sub_preset_frames_config() const;
+
+        typedef enum control_id
+        {
+            depth_laser_mode = 0,
+            depth_manual_exposure = 1,
+            depth_gain = 2
+        }control_id;
+
         bool validate_config() const;
         void enable();
         void disable();
