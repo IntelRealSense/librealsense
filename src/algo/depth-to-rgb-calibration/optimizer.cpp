@@ -1029,7 +1029,7 @@ void optimizer::set_yuy_data(
     AC_LOG( DEBUG,
             "    previous calibration image "
                 << ( last_successful_yuy_data.empty() ? "was NOT supplied" : "supplied" ) );
-    if( ! _yuy.last_successful_frame.empty() )
+    if( ! _settings.is_manual_trigger && ! _yuy.last_successful_frame.empty() )
     {
         last_successful_lum_frame = get_luminance_from_yuy2( _yuy.last_successful_frame );
         auto last_successful_edges = calc_edges( last_successful_lum_frame, _yuy.width, _yuy.height );
