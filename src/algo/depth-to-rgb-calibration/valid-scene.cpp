@@ -944,11 +944,9 @@ bool optimizer::input_validity_checks(input_validity_data* data )
     if( ! rgb_spatial_spread )
         AC_LOG( ERROR, "Scene is not valid: not enough RGB edge spread [EDGE-C]" );
 
-    if( ! _settings.is_manual_trigger )
-    {
-        if( ! _yuy.movement_from_last_success )
-            AC_LOG( ERROR, "Scene is not valid: not enough movement from last-calibrated scene [SALC]" );
-    }
+    if( ! _yuy.movement_from_last_success )
+        AC_LOG( ERROR, "Scene is not valid: not enough movement from last-calibrated scene [SALC]" );
+
     if( data )
     {
         data->edges_dir_spread = dir_spread;
