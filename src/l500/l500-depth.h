@@ -26,7 +26,8 @@ namespace librealsense
     class l500_depth : public virtual l500_device
     {
     public:
-        std::vector<uint8_t> get_raw_calibration_table() const;
+
+        ivcam2::intrinsic_depth read_intrinsics_table() const;
 
         l500_depth(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
@@ -221,7 +222,7 @@ namespace librealsense
         ivcam2::intrinsic_depth get_intrinsic() const override
         {
             using namespace ivcam2;
-            return *check_calib<intrinsic_depth>(*_owner->_calib_table_raw);
+            return *_owner->_calib_table;
         }
 
         void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const override

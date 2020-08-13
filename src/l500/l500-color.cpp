@@ -161,7 +161,7 @@ namespace librealsense
             throw invalid_value_exception(to_string() << "L500 with RGB models are expected to include a single color device! - "
                 << color_devs_info.size() << " found");
 
-        _color_intrinsics_table_raw = [this]() { return get_raw_intrinsics_table(); };
+        _color_intrinsics_table = [this]() { return read_intrinsics_table(); };
         _color_extrinsics_table_raw = [this]() { return get_raw_extrinsics_table(); };
 
         // This lazy instance will get shared between all the extrinsics edges. If you ever need to override
@@ -190,13 +190,13 @@ namespace librealsense
     {
         using namespace ivcam2;
 
-        auto intrinsic = check_calib<intrinsic_rgb>( *_owner->_color_intrinsics_table_raw );
+        auto & intrinsic = *_owner->_color_intrinsics_table;
 
-        auto num_of_res = intrinsic->resolution.num_of_resolutions;
+        auto num_of_res = intrinsic.resolution.num_of_resolutions;
 
         for( auto i = 0; i < num_of_res; i++ )
         {
-            auto model = intrinsic->resolution.intrinsic_resolution[i];
+            auto model = intrinsic.resolution.intrinsic_resolution[i];
             if( model.height == profile.height && model.width == profile.width )
             {
                 rs2_intrinsics intrinsics;
@@ -279,7 +279,7 @@ namespace librealsense
 
         // Intrinsics are resolution-specific, so all the rest of the profile info is not
         // important
-        _owner->_color_intrinsics_table_raw.reset();
+        _owner->_color_intrinsics_table.reset();
     }
 
     void l500_color_sensor::override_extrinsics( rs2_extrinsics const& extr )
@@ -342,7 +342,7 @@ namespace librealsense
         ivcam2::write_fw_table( *_owner->_hw_monitor, table.table_id, table );
         AC_LOG( DEBUG, "    done" );
 
-        _owner->_color_intrinsics_table_raw.reset();
+        _owner->_color_intrinsics_table.reset();
 
          environment::get_instance().get_extrinsics_graph().override_extrinsics(
             *_owner->_depth_stream,
@@ -570,10 +570,41 @@ namespace librealsense
         return tags;
     }
 
-    std::vector<uint8_t> l500_color::get_raw_intrinsics_table() const
+    ivcam2::intrinsic_rgb l500_color::read_intrinsics_table() const
     {
-        AC_LOG( DEBUG, "RGB_INTRINSIC_GET" );
-        return _hw_monitor->send(command{ RGB_INTRINSIC_GET });
+        // Get RAW data from firmware
+        AC_LOG(DEBUG, "RGB_INTRINSIC_GET");
+        std::vector< uint8_t > response_vec = _hw_monitor->send(command{ RGB_INTRINSIC_GET });
+
+        if (response_vec.empty())
+            throw invalid_value_exception("Calibration data invalid,buffer size is zero");
+
+        auto resolutions_rgb_table_ptr = reinterpret_cast<const ivcam2::intrinsic_rgb *>(response_vec.data());
+        auto num_of_resolutions = resolutions_rgb_table_ptr->resolution.num_of_resolutions;
+
+        // Get full maximum size of the resolution array and deduct the unused resolutions size from it
+        size_t expected_size = sizeof( ivcam2::intrinsic_rgb )
+                                - ( ( MAX_NUM_OF_RGB_RESOLUTIONS
+                                - num_of_resolutions)
+                                * sizeof( pinhole_camera_model ) );
+
+        // Validate table size
+        // FW API guarantee only as many bytes as required for the given number of resolutions, 
+        // The FW keeps the right to send more bytes.
+        if (expected_size > response_vec.size() ||
+            num_of_resolutions > MAX_NUM_OF_RGB_RESOLUTIONS)
+        {
+            throw invalid_value_exception(
+                to_string() << "Calibration data invalid, number of resolutions is: " << num_of_resolutions <<
+                ", expected size: " << expected_size << " , actual size: " << response_vec.size());
+        }
+
+        // Set a new memory allocated intrinsics struct (Full size 5 resolutions)
+        // Copy the relevant data from the dynamic resolution received from the FW
+        ivcam2::intrinsic_rgb  resolutions_rgb_table_output;
+        librealsense::copy(&resolutions_rgb_table_output, resolutions_rgb_table_ptr, expected_size);
+
+        return resolutions_rgb_table_output;
     }
     std::vector<uint8_t> l500_color::get_raw_extrinsics_table() const
     {
