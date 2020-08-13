@@ -19,9 +19,9 @@ elseif(COMPILER_SUPPORTS_CXX0X)
 endif()
 
 if(BUILD_GRAPHICAL_EXAMPLES)
-    add_executable(rs-benchmark rs-benchmark.cpp ../../third-party/glad/glad.c)
+    add_executable(rs-benchmark rs-benchmark.cpp ${CMAKE_SOURCE_DIR}/third-party/glad/glad.c)
     target_link_libraries(rs-benchmark ${DEPENDENCIES} realsense2-gl)
-    include_directories(rs-benchmark ../../third-party/tclap/include ../../third-party/glad)
+    include_directories(rs-benchmark ${CMAKE_SOURCE_DIR}/third-party/tclap/include ${CMAKE_SOURCE_DIR}/third-party/glad)
     set_target_properties (rs-benchmark PROPERTIES
         FOLDER Tools
     )

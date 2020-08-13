@@ -10,14 +10,14 @@ find_package(Threads REQUIRED)
 
 include_directories(${CMAKE_BINARY_DIR})
 
-set( ELPP_DIR ../../third-party/easyloggingpp/src )
+set( ELPP_DIR ${CMAKE_SOURCE_DIR}/third-party/easyloggingpp/src )
 
 include_directories( ${ELPP_DIR} )
 set( ELPP_FILES
     ${ELPP_DIR}/easylogging++.cc
     ${ELPP_DIR}/easylogging++.h)
     
-include(../../common/CMakeLists.txt)
+include(${CMAKE_SOURCE_DIR}/common/CMakeLists.txt)
 
 SET(DELAYED 
     realsense2d.dll
@@ -33,15 +33,15 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         depth-quality-model.h
         depth-quality-model.cpp
         depth-metrics.h
-        ../../common/realsense-ui-advanced-mode.h
-        ../../third-party/imgui/imgui.cpp
-        ../../third-party/imgui/imgui_draw.cpp
-        ../../third-party/imgui/imgui_impl_glfw.cpp
-        ../../third-party/imgui/imgui-fonts-karla.hpp
-        ../../third-party/imgui/imgui-fonts-fontawesome.hpp
-        ../../third-party/glad/glad.c
-        ../../third-party/tinyfiledialogs/tinyfiledialogs.c
-        ../../third-party/tinyfiledialogs/tinyfiledialogs.h
+        ${CMAKE_SOURCE_DIR}/common/realsense-ui-advanced-mode.h
+        ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui.cpp
+        ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui_draw.cpp
+        ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui_impl_glfw.cpp
+        ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui-fonts-karla.hpp
+        ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui-fonts-fontawesome.hpp
+        ${CMAKE_SOURCE_DIR}/third-party/glad/glad.c
+        ${CMAKE_SOURCE_DIR}/third-party/tinyfiledialogs/tinyfiledialogs.c
+        ${CMAKE_SOURCE_DIR}/third-party/tinyfiledialogs/tinyfiledialogs.h
         )
 
     if(WIN32)
@@ -49,7 +49,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
                 ${ELPP_FILES}
                 ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
                 ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
-                ../../common/windows-app-bootstrap.cpp)
+                ${CMAKE_SOURCE_DIR}/common/windows-app-bootstrap.cpp)
 
         set_property(TARGET rs-depth-quality PROPERTY CXX_STANDARD 11)
         source_group("Resources" FILES
@@ -57,13 +57,13 @@ if(BUILD_GRAPHICAL_EXAMPLES)
                 ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc)
 
         source_group("3rd Party" FILES
-            ../../third-party/tinyfiledialogs/tinyfiledialogs.c
-            ../../third-party/tinyfiledialogs/tinyfiledialogs.h
-            ../../third-party/imgui/imgui.cpp
-            ../../third-party/imgui/imgui_draw.cpp
-            ../../third-party/imgui/imgui_impl_glfw.cpp
-            ../../third-party/imgui/imgui-fonts-karla.hpp
-            ../../third-party/imgui/imgui-fonts-fontawesome.hpp)
+            ${CMAKE_SOURCE_DIR}/third-party/tinyfiledialogs/tinyfiledialogs.c
+            ${CMAKE_SOURCE_DIR}/third-party/tinyfiledialogs/tinyfiledialogs.h
+            ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui.cpp
+            ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui_draw.cpp
+            ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui_impl_glfw.cpp
+            ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui-fonts-karla.hpp
+            ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui-fonts-fontawesome.hpp)
 
         source_group("Utils" FILES
             depth-quality-model.h
@@ -71,11 +71,11 @@ if(BUILD_GRAPHICAL_EXAMPLES)
             depth-metrics.h
             ${COMMON_SRC})
 
-        include_directories(rs-depth-quality ../../common  ../../third-party
-                                             ../../third-party/imgui
-                                             ../../third-party/glad
-                                             ../../third-party/tclap/include
-                                             ../../third-party/tinyfiledialogs
+        include_directories(rs-depth-quality ${CMAKE_SOURCE_DIR}/common  ${CMAKE_SOURCE_DIR}/third-party
+                                             ${CMAKE_SOURCE_DIR}/third-party/imgui
+                                             ${CMAKE_SOURCE_DIR}/third-party/glad
+                                             ${CMAKE_SOURCE_DIR}/third-party/tclap/include
+                                             ${CMAKE_SOURCE_DIR}/third-party/tinyfiledialogs
                                              ${CMAKE_CURRENT_SOURCE_DIR}/res/)
 
         #list(TRANSFORM DELAYED PREPEND " /DELAYLOAD:")
@@ -90,11 +90,11 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         ${ELPP_FILES}
         )
 
-        include_directories(rs-depth-quality ../../common  ../../third-party
-                                             ../../third-party/imgui
-                                             ../../third-party/glad
-                                             ../../third-party/tinyfiledialogs
-                                             ../../third-party/tclap/include)
+        include_directories(rs-depth-quality ${CMAKE_SOURCE_DIR}/common  ${CMAKE_SOURCE_DIR}/third-party
+                                             ${CMAKE_SOURCE_DIR}/third-party/imgui
+                                             ${CMAKE_SOURCE_DIR}/third-party/glad
+                                             ${CMAKE_SOURCE_DIR}/third-party/tinyfiledialogs
+                                             ${CMAKE_SOURCE_DIR}/third-party/tclap/include)
     endif()
 
     source_group("EasyLogging++" FILES ${ELPP_FILES})

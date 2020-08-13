@@ -8,10 +8,10 @@ find_package(OpenGL REQUIRED)
 
 set(DEPENDENCIES glfw ${OPENGL_LIBRARIES} ${DEPENDENCIES})
 
-add_executable(rs-kinfu rs-kinfu.cpp ../../../examples/example.hpp)
+add_executable(rs-kinfu rs-kinfu.cpp ${CMAKE_SOURCE_DIR}/examples/example.hpp)
 set_property(TARGET rs-kinfu PROPERTY CXX_STANDARD 11)
 target_link_libraries(rs-kinfu ${DEPENDENCIES})
-include_directories(rs-kinfu ../../../examples)
+include_directories(rs-kinfu ${CMAKE_SOURCE_DIR}/examples)
 set_target_properties (rs-kinfu PROPERTIES
 	FOLDER "Examples/OpenCV"
 )

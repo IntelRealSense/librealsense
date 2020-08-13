@@ -6,7 +6,7 @@ include(${_rel_path}/realsense-file/config.cmake)
 include(${_rel_path}/sqlite/CMakeLists.txt)
 
 if(BUILD_EASYLOGGINGPP)
-    include(${_rel_path}/easyloggingpp/CMakeLists.txt)
+    include(${CMAKE_SOURCE_DIR}/third-party/easyloggingpp/CMakeLists.txt)
 endif()
 
 add_subdirectory(${_rel_path}/realsense-file)

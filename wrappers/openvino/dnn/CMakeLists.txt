@@ -12,7 +12,7 @@ endif()
 find_package(OpenCV REQUIRED)
 get_property(deps VARIABLE PROPERTY DEPENDENCIES)
 set(DEPENDENCIES ${deps} ${OpenCV_LIBS})
-include_directories( ../../opencv )
+include_directories( ${CMAKE_SOURCE_DIR}/wrappers/opencv/opencv )
 
 
 add_executable(rs-dnn-vino
