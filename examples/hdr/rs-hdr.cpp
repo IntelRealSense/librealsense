@@ -23,7 +23,7 @@ int main(int argc, char * argv[]) try
 
     rs2::depth_sensor depth_sensor= dev.query_sensors().front();
 
-    //depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+    depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
     
     
     depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_SIZE, 2);
