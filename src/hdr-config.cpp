@@ -172,6 +172,14 @@ namespace librealsense
             std::cout << hdrchar2hex(pattern[i]) << " ";
         std::cout << std::endl;
 
+        /*std::vector<uint8_t> pattern_emitter{};
+        pattern_emitter = ds::alternating_emitter_pattern;
+
+        std::cout << "pattern for emitter on off sub-preset: ";
+        for (int i = 0; i < pattern_emitter.size(); ++i)
+            std::cout << hdrchar2hex(pattern_emitter[i]) << " ";
+        std::cout << std::endl;*/
+
         // TODO - make it usable not only for ds - use _sensor
         command cmd(ds::SETSUBPRESET, static_cast<int>(pattern.size()));
         cmd.data = pattern;

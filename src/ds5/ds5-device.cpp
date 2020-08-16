@@ -838,13 +838,13 @@ namespace librealsense
             depth_sensor.register_option(RS2_OPTION_GAIN, hdr_conditional_gain_option);
             
             //AUTO EXPOSURE
-            /*auto enable_auto_exposure = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor,
+            auto enable_auto_exposure = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor,
                 depth_xu,
                 DS5_ENABLE_AUTO_EXPOSURE,
                 "Enable Auto Exposure");
             depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
 
-            depth_sensor.register_option(RS2_OPTION_EXPOSURE,
+            /*depth_sensor.register_option(RS2_OPTION_EXPOSURE,
                 std::make_shared<auto_disabling_control>(
                     uvc_xu_exposure_option,
                     enable_auto_exposure));
