@@ -701,7 +701,8 @@ namespace librealsense
         //}
 
         // HDR fw version to be checked
-        firmware_version hdr_firmware_version("5.12.7.1");
+        //firmware_version hdr_firmware_version("5.12.7.1");
+        firmware_version hdr_firmware_version("5.12.1.0");
 
         if (_fw_version >= firmware_version("5.6.3.0"))
         {
@@ -802,42 +803,42 @@ namespace librealsense
         {
             auto hdr_cfg = std::make_shared<hdr_config>(*_hw_monitor, &raw_depth_sensor);
 
-            auto hdr_sequence_size_range = depth_sensor.get_option(RS2_OPTION_HDR_SEQUENCE_SIZE).get_range();
+            option_range hdr_sequence_size_range = { 1.f /*min*/, 3.f /*max*/, 1.f /*step*/, 1.f /*default*/ };
             auto hdr_sequence_size_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_HDR_SEQUENCE_SIZE, hdr_sequence_size_range);
             depth_sensor.register_option(RS2_OPTION_HDR_SEQUENCE_SIZE, hdr_sequence_size_option);
 
-            auto hdr_relative_mode_range = depth_sensor.get_option(RS2_OPTION_HDR_RELATIVE_MODE).get_range();
+            option_range hdr_relative_mode_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
             auto hdr_relative_mode_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_HDR_RELATIVE_MODE, hdr_relative_mode_range);
             depth_sensor.register_option(RS2_OPTION_HDR_RELATIVE_MODE, hdr_relative_mode_option);
             
-            auto hdr_enable_range = depth_sensor.get_option(RS2_OPTION_HDR_ENABLED).get_range();
+            option_range hdr_enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/};
             auto hdr_enabled_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_HDR_ENABLED, hdr_enable_range);
             depth_sensor.register_option(RS2_OPTION_HDR_ENABLED, hdr_enabled_option);
             
-            auto hdr_sequ_id_range = depth_sensor.get_option(RS2_OPTION_HDR_SEQUENCE_ID).get_range();
+            option_range hdr_sequ_id_range = { 0.f /*min*/, 3.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
             auto hdr_sequ_id_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_HDR_SEQUENCE_ID, hdr_sequ_id_range);
             depth_sensor.register_option(RS2_OPTION_HDR_SEQUENCE_ID, hdr_sequ_id_option);
-
+            
             // options that change behavior during HDR configuration
             //EXPOSURE
             auto uvc_xu_exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(raw_depth_sensor,
                 depth_xu,
                 DS5_EXPOSURE,
                 "Depth Exposure (usec)");
-            auto hdr_exposure_range = depth_sensor.get_option(RS2_OPTION_EXPOSURE).get_range();
-            auto hdr_exposure_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_EXPOSURE, hdr_enable_range);
+            option_range hdr_exposure_range = { 1.f /*min*/, 165000.f /*max*/, 1.f /*step*/, 8500.f /*default*/ };
+            auto hdr_exposure_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_EXPOSURE, hdr_exposure_range);
             auto hdr_conditional_exposure_option = std::make_shared<hdr_conditional_option>(hdr_cfg, uvc_xu_exposure_option, hdr_exposure_option);
             depth_sensor.register_option(RS2_OPTION_EXPOSURE, hdr_conditional_exposure_option);
 
             //GAIN
             auto uvc_pu_gain_option = std::make_shared<uvc_pu_option>(raw_depth_sensor, RS2_OPTION_GAIN);
-            auto hdr_gain_range = depth_sensor.get_option(RS2_OPTION_GAIN).get_range();
-            auto hdr_gain_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_GAIN, hdr_enable_range);
-            auto hdr_conditional_gain_option = std::make_shared<hdr_conditional_option>(hdr_cfg, uvc_pu_gain_option, hdr_exposure_option);
+            option_range hdr_gain_range = { 16.f /*min*/, 248.f /*max*/, 1.f /*step*/, 16.f /*default*/ };
+            auto hdr_gain_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_GAIN, hdr_gain_range);
+            auto hdr_conditional_gain_option = std::make_shared<hdr_conditional_option>(hdr_cfg, uvc_pu_gain_option, hdr_gain_option);
             depth_sensor.register_option(RS2_OPTION_GAIN, hdr_conditional_gain_option);
             
             //AUTO EXPOSURE
-            auto enable_auto_exposure = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor,
+            /*auto enable_auto_exposure = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor,
                 depth_xu,
                 DS5_ENABLE_AUTO_EXPOSURE,
                 "Enable Auto Exposure");
@@ -851,7 +852,7 @@ namespace librealsense
             depth_sensor.register_option(RS2_OPTION_GAIN,
                 std::make_shared<auto_disabling_control>(
                     uvc_pu_gain_option,
-                    enable_auto_exposure));
+                    enable_auto_exposure));*/
         }
 
         roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);
