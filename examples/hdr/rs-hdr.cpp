@@ -23,7 +23,9 @@ int main(int argc, char * argv[]) try
 
     rs2::depth_sensor depth_sensor= dev.query_sensors().front();
 
-
+    //depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+    
+    
     depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_SIZE, 2);
     depth_sensor.set_option(RS2_OPTION_HDR_RELATIVE_MODE, 0);
 
@@ -54,7 +56,11 @@ int main(int argc, char * argv[]) try
     // Start streaming with default recommended configuration
     // The default video configuration contains Depth and Color streams
     // If a device is capable to stream IMU data, both Gyro and Accelerometer are enabled by default
-    pipe.start();
+    rs2::config cfg;
+    cfg.enable_stream(RS2_STREAM_DEPTH);
+    cfg.enable_stream(RS2_STREAM_INFRARED, 1);
+    cfg.enable_stream(RS2_STREAM_INFRARED, 2);
+    pipe.start(cfg);
 
     while (app) // Application still alive?
     {
