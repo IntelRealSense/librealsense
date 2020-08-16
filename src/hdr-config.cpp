@@ -31,7 +31,7 @@ namespace librealsense
             rv = static_cast<float>(_relative_mode);
             break;
         case RS2_OPTION_HDR_SEQUENCE_ID:
-            rv = static_cast<float>(_current_hdr_sequence_index);
+            rv = static_cast<float>(_current_hdr_sequence_index + 1);
             break;
         case RS2_OPTION_HDR_ENABLED:
             rv = static_cast<float>(_is_enabled);
