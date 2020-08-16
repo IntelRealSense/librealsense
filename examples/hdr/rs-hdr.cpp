@@ -10,8 +10,16 @@ int main(int argc, char * argv[]) try
 {
     rs2::context ctx;
 
-    rs2::device_list devices = ctx.query_devices();
-    rs2::device dev = devices.front();
+    rs2::device_list devices_list = ctx.query_devices();
+
+    size_t device_count = devices_list.size();
+    if (!device_count)
+    {
+        std::cout << "No device detected. Is it plugged in?\n";
+        return EXIT_SUCCESS;
+    }
+
+    rs2::device dev = devices_list[0];
 
     rs2::depth_sensor depth_sensor= dev.query_sensors().front();
 
@@ -32,6 +40,32 @@ int main(int argc, char * argv[]) try
 
     depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
 
+    // Create a simple OpenGL window for rendering:
+    window app(1280, 720, "RealSense Capture Example");
+
+    // Declare depth colorizer for pretty visualization of depth data
+    rs2::colorizer color_map;
+    // Declare rates printer for showing streaming rates of the enabled streams.
+    rs2::rates_printer printer;
+
+    // Declare RealSense pipeline, encapsulating the actual device and sensors
+    rs2::pipeline pipe;
+
+    // Start streaming with default recommended configuration
+    // The default video configuration contains Depth and Color streams
+    // If a device is capable to stream IMU data, both Gyro and Accelerometer are enabled by default
+    pipe.start();
+
+    while (app) // Application still alive?
+    {
+        rs2::frameset data = pipe.wait_for_frames().    // Wait for next set of frames from the camera
+            apply_filter(printer).     // Print each enabled stream frame rate
+            apply_filter(color_map);   // Find and colorize the depth data
+
+// The show method, when applied on frameset, break it to frames and upload each frame into a gl textures
+// Each texture is displayed on different viewport according to it's stream unique id
+        app.show(data);
+    }
 
     return EXIT_SUCCESS;
 }
