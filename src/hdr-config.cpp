@@ -167,17 +167,9 @@ namespace librealsense
         pattern.insert(pattern.end(), &subpreset_header[0], &subpreset_header[0] + subpreset_header.size());
         pattern.insert(pattern.end(), &subpreset_frames_config[0], &subpreset_frames_config[0] + subpreset_frames_config.size());
 
-        std::cout << "pattern for hdr sub-preset: ";
+        /*std::cout << "pattern for hdr sub-preset: ";
         for (int i = 0; i < pattern.size(); ++i)
             std::cout << hdrchar2hex(pattern[i]) << " ";
-        std::cout << std::endl;
-
-        /*std::vector<uint8_t> pattern_emitter{};
-        pattern_emitter = ds::alternating_emitter_pattern;
-
-        std::cout << "pattern for emitter on off sub-preset: ";
-        for (int i = 0; i < pattern_emitter.size(); ++i)
-            std::cout << hdrchar2hex(pattern_emitter[i]) << " ";
         std::cout << std::endl;*/
 
         //uint8_t sub_preset_opcode = _sensor->get_set_sub_preset_opcode();
