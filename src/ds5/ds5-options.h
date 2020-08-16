@@ -329,7 +329,7 @@ namespace librealsense
     public:
         hdr_conditional_option(std::shared_ptr<hdr_config> hdr_cfg, 
             std::shared_ptr<option> uvc_option, 
-            std::shared_ptr<hdr_option> hdr_option) :
+            std::shared_ptr<option> hdr_option) :
             _hdr_cfg(hdr_cfg),
             _uvc_option(uvc_option),
             _hdr_option(hdr_option) {}
@@ -346,6 +346,6 @@ namespace librealsense
         std::function<void(const option&)> _record_action = [](const option&) {};
         std::shared_ptr<hdr_config> _hdr_cfg;
         std::shared_ptr<option> _uvc_option;
-        std::shared_ptr<hdr_option> _hdr_option;
+        std::shared_ptr<option> _hdr_option;
     };
 }
