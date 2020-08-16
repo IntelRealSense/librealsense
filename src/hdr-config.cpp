@@ -80,7 +80,7 @@ namespace librealsense
             set_sequence_index(value);
             break;
         case RS2_OPTION_HDR_ENABLED:
-            set_is_active_status(value);
+            set_enable_status(value);
             break;
         case RS2_OPTION_EXPOSURE:
             set_exposure(value, range);
@@ -98,7 +98,7 @@ namespace librealsense
         return _is_config_in_process;
     }
 
-    void hdr_config::set_is_active_status(float value)
+    void hdr_config::set_enable_status(float value)
     {
         if (value)
         {
@@ -180,6 +180,7 @@ namespace librealsense
             std::cout << hdrchar2hex(pattern_emitter[i]) << " ";
         std::cout << std::endl;*/
 
+        //uint8_t sub_preset_opcode = _sensor->get_set_sub_preset_opcode();
         // TODO - make it usable not only for ds - use _sensor
         command cmd(ds::SETSUBPRESET, static_cast<int>(pattern.size()));
         cmd.data = pattern;
