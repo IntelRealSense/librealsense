@@ -825,14 +825,14 @@ namespace librealsense
                 depth_xu,
                 DS5_EXPOSURE,
                 "Depth Exposure (usec)");
-            option_range hdr_exposure_range = { 1.f /*min*/, 165000.f /*max*/, 1.f /*step*/, 8500.f /*default*/ };
+            option_range hdr_exposure_range = uvc_xu_exposure_option->get_range();
             auto hdr_exposure_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_EXPOSURE, hdr_exposure_range);
             auto hdr_conditional_exposure_option = std::make_shared<hdr_conditional_option>(hdr_cfg, uvc_xu_exposure_option, hdr_exposure_option);
             depth_sensor.register_option(RS2_OPTION_EXPOSURE, hdr_conditional_exposure_option);
 
             //GAIN
             auto uvc_pu_gain_option = std::make_shared<uvc_pu_option>(raw_depth_sensor, RS2_OPTION_GAIN);
-            option_range hdr_gain_range = { 16.f /*min*/, 248.f /*max*/, 1.f /*step*/, 16.f /*default*/ };
+            option_range hdr_gain_range = uvc_pu_gain_option->get_range();
             auto hdr_gain_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_GAIN, hdr_gain_range);
             auto hdr_conditional_gain_option = std::make_shared<hdr_conditional_option>(hdr_cfg, uvc_pu_gain_option, hdr_gain_option);
             depth_sensor.register_option(RS2_OPTION_GAIN, hdr_conditional_gain_option);
