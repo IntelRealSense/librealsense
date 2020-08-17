@@ -11,6 +11,8 @@ namespace librealsense
 {
     struct hdr_params {
         const int _sequence_id;
+        bool _is_exposure_configured;
+        bool _is_gain_configured;
         float _exposure;
         float _gain;
 
@@ -54,11 +56,14 @@ namespace librealsense
         void set_enable_status(float value);
         void set_exposure(float value, option_range range);
         void set_gain(float value);
+        void reset();
 
+        static const size_t DEFAULT_SEQUENCE_SIZE = 0;
+        static const size_t DEFAULT_HDR_SEQUENCE_INDEX = -1;
 
         size_t _sequence_size;
         std::vector<hdr_params> _hdr_sequence_params;
-        size_t _current_hdr_sequence_index;
+        int _current_hdr_sequence_index;
         bool _relative_mode;
         bool _is_enabled;
         bool _is_config_in_process;
