@@ -6,7 +6,7 @@ project(RealsenseUnitTests)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-set(DEPENDENCIES realsense2)
+set(DEPENDENCIES realsense2 realsense2-net)
 
 find_package (Python3 COMPONENTS Interpreter Development)
 if(Python3_FOUND)
