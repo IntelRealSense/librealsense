@@ -26,6 +26,8 @@
 
 using namespace rs2;
 
+#define TIME_TEST_SEC 10
+
 std::string server_log;
 
 std::ofstream fuflog("c:/temp/fuflog.log");
@@ -66,7 +68,7 @@ std::string exec_cmd(std::string command) {
     char buffer[128];
     std::string result = "";
 
-    fuflog << "Command to run: " << command << "" << std::endl;
+    fuflog << "[LRS-NET TEST] Command to run: " << command << std::endl;
 
     FILE* pipe = _popen(command.c_str(), "r");
     if (!pipe) throw std::runtime_error("popen() failed!");
@@ -91,52 +93,56 @@ void stop_server() {
     ssh_cmd("killall    rs-server");
     std::this_thread::sleep_for(std::chrono::seconds(1));
     ssh_cmd("killall -9 rs-server");
+    std::this_thread::sleep_for(std::chrono::seconds(5));
     return;
 }
 
 std::thread start_server() {
-    fuflog << "Server at " << server_address() << " username is " << user_name() << std::endl;
+    fuflog << "[LRS-NET TEST] Server at " << server_address() << " username is " << user_name() << std::endl;
 
     stop_server();
 
     std::thread t([&]() {
-        fuflog << "Starting remote server" << std::endl;
+        fuflog << "[LRS-NET TEST] Starting remote server" << std::endl;
         server_log = ssh_cmd("/tmp/rs-server -i "  + server_address());
-        fuflog << "Remote server exited" << std::endl;
+        fuflog << "[LRS-NET TEST] Remote server exited" << std::endl;
     });
     std::this_thread::sleep_for(std::chrono::seconds(5));
     return t;
 }
 
-TEST_CASE("Basic Depth Streaming (10 sec)", "[net]") {
+TEST_CASE("Basic Pipeline Depth Streaming", "[net]") {
+    fuflog << "[LRS-NET TEST] " << Catch::getResultCapture().getCurrentTestName() << std::endl;
+
     rs2::context ctx;
-
-    fuflog << "LRS-Net Streaming test" << std::endl;
-
     std::thread server = start_server();
-    fuflog << "Server started" << std::endl;
+    fuflog << "[LRS-NET TEST] Server started" << std::endl;
 
-    rs2::net_device dev(server_address());
-    fuflog << "Device created" << std::endl;
+    rs2::net_device dev(server_address().c_str());
     dev.add_to(ctx);
-    fuflog << "Added to context" << std::endl;
 
     // Create a Pipeline - this serves as a top-level API for streaming and processing frames
     rs2::pipeline p(ctx);
-    fuflog << "Pipeline created" << std::endl;
 
     // Configure and start the pipeline
     p.start();
-    fuflog << "Pipeline started" << std::endl;
 
     uint32_t depth_frames = 0;
 
     time_t last, start = time(nullptr);
-    float width, height;
-    do 
+    float width = 0;
+    float height = 0;
+    do
     {
         // Block program until frames arrive
-        rs2::frameset frames = p.wait_for_frames();
+        rs2::frameset frames;
+        try {
+            frames = p.wait_for_frames();
+        }
+        catch (...) {
+            fuflog << "[LRS-NET TEST] Frames didn't arrive" << std::endl;
+            break;
+        }
 
         // Try to get a frame of a depth image
         rs2::depth_frame depth = frames.get_depth_frame();
@@ -148,31 +154,86 @@ TEST_CASE("Basic Depth Streaming (10 sec)", "[net]") {
         depth_frames++;
 
         last = time(nullptr);
-    } while (last - start < 10);
+    } while (last - start < TIME_TEST_SEC);
 
-    try {
-        p.stop();
-    }
-    catch (...) {
-        fuflog << "Cannot stop pipeline" << std::endl;
-    }
-    fuflog << "Pipeline stopped" << std::endl;
     stop_server();
-    fuflog << "Server stopped" << std::endl;
+    fuflog << "[LRS-NET TEST] Server stopped" << std::endl;
 
-    fuflog << "Waiting for remote server" << std::endl;
+    fuflog << "[LRS-NET TEST] Waiting for remote server" << std::endl;
     server.join();
 
     // Report
-    fuflog << "============================" << std::endl;
-    fuflog << "Stream Width  : " << width << "" << std::endl;
-    fuflog << "Stream Height : " << height << "" << std::endl;
-    fuflog << "Stream FPS    : " << depth_frames / 10 << "" << std::endl;
-    fuflog << "Total frames  : " << depth_frames << "" << std::endl;
-    fuflog << "Server log    :" << std::endl << server_log;
-    fuflog << "============================" << std::endl;
+    fuflog << "[LRS-NET TEST] ============================" << std::endl;
+    fuflog << "[LRS-NET TEST] Stream Width  : " << width << std::endl;
+    fuflog << "[LRS-NET TEST] Stream Height : " << height << std::endl;
+    fuflog << "[LRS-NET TEST] Stream FPS    : " << depth_frames / TIME_TEST_SEC << std::endl;
+    fuflog << "[LRS-NET TEST] Total frames  : " << depth_frames << std::endl;
+    fuflog << "[LRS-NET TEST] Server log    :" << std::endl << server_log;
+    fuflog << "[LRS-NET TEST] ============================" << std::endl;
+    fuflog << "[LRS-NET TEST] " << std::endl;
 
     REQUIRE(depth_frames > 0);
 }
 
+int frames = 0;
+auto callback = [&](const rs2::frame &frame) {
+    frames++;
+    if (frames % 10 == 0) fuflog << "[LRS-NET TEST] Got the frame: " << frames << std::endl;
+};
+
+TEST_CASE("All profiles Streaming", "[net]") {
+    fuflog << "[LRS-NET TEST] " << Catch::getResultCapture().getCurrentTestName() << std::endl;
+
+    std::thread server = start_server();
+    fuflog << "[LRS-NET TEST] Server started" << std::endl;
+
+    rs2::device dev = rs2::net_device((server_address()).c_str());
+
+    auto sensors = dev.query_sensors();
+    for (int i = 0; i < sensors.size(); i++) {
+        auto profiles = sensors[i].get_stream_profiles();
+        for (rs2::stream_profile profile : profiles) {
+            fuflog << "[LRS-NET TEST] ====================================" << std::endl;
+            fuflog << "[LRS-NET TEST] Stream Type: " << profile.stream_type() << std::endl;
+            fuflog << "[LRS-NET TEST] FPS      : " << profile.fps() << std::endl;
+            fuflog << "[LRS-NET TEST] Width    : " << ((rs2::video_stream_profile)profile).width() << std::endl;
+            fuflog << "[LRS-NET TEST] Height   : " << ((rs2::video_stream_profile)profile).height() << std::endl;
+
+            fuflog << "[LRS-NET TEST] " << std::endl;
+            frames = 0;
+            REQUIRE_NOTHROW([&]() {
+                sensors[i].open(profile);
+                sensors[i].start(callback);
+                std::this_thread::sleep_for(std::chrono::seconds(TIME_TEST_SEC));
+                sensors[i].stop();
+                sensors[i].close();
+            }());
+            fuflog << "[LRS-NET TEST] " << std::endl;
+
+            int expected_frames = TIME_TEST_SEC * profile.fps();
+            int received_frames = frames;
+            float frame_range = (float)received_frames / (float)expected_frames;
+            fuflog << "[LRS-NET TEST] Expected : " << expected_frames << std::endl;
+            fuflog << "[LRS-NET TEST] Received : " << received_frames << std::endl;
+            fuflog << "[LRS-NET TEST] Range    : " << frame_range << std::endl;
+            fuflog << "[LRS-NET TEST] ====================================" << std::endl;
+
+            Approx target = Approx(expected_frames).epsilon(0.1); // 10%
+            REQUIRE(received_frames == target);
+
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        } //end for profile
+    }
+
+    stop_server();
+    fuflog << "[LRS-NET TEST] Server stopped" << std::endl;
+
+    fuflog << "[LRS-NET TEST] Waiting for remote server" << std::endl;
+    server.join();
+
+    fuflog << "[LRS-NET TEST] ============================" << std::endl;
+    fuflog << "[LRS-NET TEST] Server log    :" << std::endl << server_log;
+
+    fuflog << "[LRS-NET TEST] " << std::endl;
+}
 
