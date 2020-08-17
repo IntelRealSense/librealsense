@@ -32,17 +32,12 @@ TEST_CASE( "HDR Config - changing only exposure", "[HDR]" ) {
     REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_SEQUENCE_ID) == 1.f);
     depth_sensor.set_option(RS2_OPTION_EXPOSURE, first_exposure);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_EXPOSURE) == first_exposure);
-    depth_sensor.set_option(RS2_OPTION_GAIN, 90.f);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_GAIN) == 90.f);
-
 
     float second_exposure = 1200.f;
     depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 2);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_SEQUENCE_ID) == 2.f);
     depth_sensor.set_option(RS2_OPTION_EXPOSURE, second_exposure);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_EXPOSURE) == second_exposure);
-    depth_sensor.set_option(RS2_OPTION_GAIN, 20.f);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_GAIN) == 20.f);
 
     depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 0);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_SEQUENCE_ID) == 0.f);
