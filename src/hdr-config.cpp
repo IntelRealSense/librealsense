@@ -7,12 +7,13 @@
 namespace librealsense
 {
     hdr_config::hdr_config(hw_monitor& hwm, sensor_base* depth_ep) :
-        _sequence_size(DEFAULT_SEQUENCE_SIZE), 
+        _sequence_size(DEFAULT_SEQUENCE_SIZE),
         _hdr_sequence_params(),
         _current_hdr_sequence_index(DEFAULT_HDR_SEQUENCE_INDEX),
         _relative_mode(false),
         _is_enabled(false),
         _is_config_in_process(false),
+        _has_config_changed(false),
         _hwm(hwm),
         _sensor(depth_ep)
     { }
@@ -89,6 +90,11 @@ namespace librealsense
         default:
             throw invalid_value_exception("option is not an HDR option");
         }
+
+        if (_is_enabled && _has_config_changed)
+        {
+            send_sub_preset_to_fw();
+        }
     }
 
     bool hdr_config::is_config_in_process() const
@@ -102,7 +108,7 @@ namespace librealsense
         {
             if (validate_config())
             {
-                enable();
+                send_sub_preset_to_fw();
                 _is_enabled = true;
             }
             else
@@ -116,7 +122,7 @@ namespace librealsense
         }
     }
 
-    void hdr_config::enable()
+    void hdr_config::send_sub_preset_to_fw()
     {
         // prepare sub-preset command
         command cmd = prepare_hdr_sub_preset_command();
@@ -144,6 +150,7 @@ namespace librealsense
         _relative_mode = false;
         _is_enabled = false;
         _is_config_in_process = false;
+        _has_config_changed = false;
     }
 
     //helper method - for debug only - to be deleted
@@ -285,12 +292,14 @@ namespace librealsense
         {
             _hdr_sequence_params.resize(new_size);
             _sequence_size = new_size;
+            _has_config_changed = true;
         }       
     }
 
     void hdr_config::set_relative_mode(float value)
     {
         _relative_mode = static_cast<bool>(value);
+        _has_config_changed = true;
     }
 
     void hdr_config::set_sequence_index(float value)
@@ -302,6 +311,7 @@ namespace librealsense
         if (new_index <= _hdr_sequence_params.size())
         {
             _current_hdr_sequence_index = new_index - 1;
+            _has_config_changed = true;
         }
         else
             throw invalid_value_exception(to_string() << "hdr_config::set_sequence_index(...) failed! Index above sequence size.");
@@ -312,12 +322,14 @@ namespace librealsense
         /* TODO - add limitation on max exposure to be below frame interval - is range really needed for this?*/
         _hdr_sequence_params[_current_hdr_sequence_index]._exposure = value;
         _hdr_sequence_params[_current_hdr_sequence_index]._is_exposure_configured = true;
+        _has_config_changed = true;
     }
 
     void hdr_config::set_gain(float value)
     {
         _hdr_sequence_params[_current_hdr_sequence_index]._gain = value;
         _hdr_sequence_params[_current_hdr_sequence_index]._is_gain_configured = true;
+        _has_config_changed = true;
     }
 
 
