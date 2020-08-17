@@ -7,17 +7,15 @@
 namespace librealsense
 {
     hdr_config::hdr_config(hw_monitor& hwm, sensor_base* depth_ep) :
-        _sequence_size(1),
-        _current_hdr_sequence_index(0),
+        _sequence_size(DEFAULT_SEQUENCE_SIZE), 
+        _hdr_sequence_params(),
+        _current_hdr_sequence_index(DEFAULT_HDR_SEQUENCE_INDEX),
         _relative_mode(false),
         _is_enabled(false),
         _is_config_in_process(false),
         _hwm(hwm),
         _sensor(depth_ep)
-    {
-        hdr_params first_id_params;
-        _hdr_sequence_params.push_back(first_id_params);
-    }
+    { }
 
     float hdr_config::get(rs2_option option) const
     {
@@ -113,7 +111,7 @@ namespace librealsense
         }
         else
         {
-            disable();
+            disable(); 
             _is_enabled = false;
         }
     }
@@ -134,6 +132,18 @@ namespace librealsense
         command cmd(ds::SETSUBPRESET, static_cast<int>(pattern.size()));
         cmd.data = pattern;
         auto res = _hwm.send(cmd);
+
+        reset();
+    }
+
+    void hdr_config::reset()
+    {
+        _sequence_size = DEFAULT_SEQUENCE_SIZE;
+        _hdr_sequence_params.clear();
+        _current_hdr_sequence_index = DEFAULT_HDR_SEQUENCE_INDEX;
+        _relative_mode = false;
+        _is_enabled = false;
+        _is_config_in_process = false;
     }
 
     //helper method - for debug only - to be deleted
@@ -164,13 +174,22 @@ namespace librealsense
         std::vector<uint8_t> subpreset_frames_config = prepare_sub_preset_frames_config();
 
         std::vector<uint8_t> pattern{};
-        pattern.insert(pattern.end(), &subpreset_header[0], &subpreset_header[0] + subpreset_header.size());
-        pattern.insert(pattern.end(), &subpreset_frames_config[0], &subpreset_frames_config[0] + subpreset_frames_config.size());
-
+        if (subpreset_frames_config.size() > 0)
+        {
+            pattern.insert(pattern.end(), &subpreset_header[0], &subpreset_header[0] + subpreset_header.size());
+            pattern.insert(pattern.end(), &subpreset_frames_config[0], &subpreset_frames_config[0] + subpreset_frames_config.size());
+        }
+        
         /*std::cout << "pattern for hdr sub-preset: ";
         for (int i = 0; i < pattern.size(); ++i)
             std::cout << hdrchar2hex(pattern[i]) << " ";
-        std::cout << std::endl;*/
+        std::cout << std::endl;
+
+        std::ofstream outFile("subpreset_bytes.txt", std::ofstream::out);
+        outFile << "pattern for hdr sub-preset: ";
+        for (int i = 0; i < pattern.size(); ++i)
+            outFile << hdrchar2hex(pattern[i]) << " ";
+        outFile << std::endl;*/
 
         //uint8_t sub_preset_opcode = _sensor->get_set_sub_preset_opcode();
         // TODO - make it usable not only for ds - use _sensor
@@ -213,28 +232,38 @@ namespace librealsense
         uint16_t frame_header_size = 5;
         //number of iterations for each frame
         uint8_t iterations = 1;
-        // number of Controls for each frame
-        uint16_t num_of_controls = 1; // 2; //gain, exposure
-
-        std::vector<uint8_t> each_frame_header;
-        each_frame_header.insert(each_frame_header.end(), (uint8_t*)&frame_header_size, (uint8_t*)&frame_header_size + 2);
-        each_frame_header.insert(each_frame_header.end(), &iterations, &iterations + 1);
-        each_frame_header.insert(each_frame_header.end(), (uint8_t*)&num_of_controls, (uint8_t*)&num_of_controls + 2);
 
         std::vector<uint8_t> frames_config;
         for (int i = 0; i < _sequence_size; ++i)
         {
-            frames_config.insert(frames_config.end(), &each_frame_header[0], &each_frame_header[0] + each_frame_header.size());
+            // number of Controls for current frame
+            uint16_t num_of_controls = 0;
+            int exposure_configured = _hdr_sequence_params[i]._is_exposure_configured ? 1 : 0;
+            int gain_configured = _hdr_sequence_params[i]._is_gain_configured ? 1 : 0;
+            num_of_controls = exposure_configured + gain_configured;
 
-            uint16_t exposure_id = static_cast<uint16_t>(depth_manual_exposure);
-            uint32_t exposure_value = static_cast<uint32_t>(_hdr_sequence_params[i]._exposure);
-            frames_config.insert(frames_config.end(), (uint8_t*)&exposure_id, (uint8_t*)&exposure_id + 2);
-            frames_config.insert(frames_config.end(), (uint8_t*)&exposure_value, (uint8_t*)&exposure_value + 4);
+            std::vector<uint8_t> frame_header;
+            frame_header.insert(frame_header.end(), (uint8_t*)&frame_header_size, (uint8_t*)&frame_header_size + 2);
+            frame_header.insert(frame_header.end(), &iterations, &iterations + 1);
+            frame_header.insert(frame_header.end(), (uint8_t*)&num_of_controls, (uint8_t*)&num_of_controls + 2);
 
-            /*uint16_t gain_id = static_cast<uint16_t>(depth_gain);
-            uint32_t gain_value = static_cast<uint32_t>(_hdr_sequence_params[i]._gain);
-            frames_config.insert(frames_config.end(), (uint8_t*)&gain_id, (uint8_t*)&gain_id + 2);
-            frames_config.insert(frames_config.end(), (uint8_t*)&gain_value, (uint8_t*)&gain_value + 4);*/
+            frames_config.insert(frames_config.end(), &frame_header[0], &frame_header[0] + frame_header.size());
+
+            if (_hdr_sequence_params[i]._is_exposure_configured)
+            {
+                uint16_t exposure_id = static_cast<uint16_t>(depth_manual_exposure);
+                uint32_t exposure_value = static_cast<uint32_t>(_hdr_sequence_params[i]._exposure);
+                frames_config.insert(frames_config.end(), (uint8_t*)&exposure_id, (uint8_t*)&exposure_id + 2);
+                frames_config.insert(frames_config.end(), (uint8_t*)&exposure_value, (uint8_t*)&exposure_value + 4);
+            }
+            
+            if (_hdr_sequence_params[i]._is_gain_configured)
+            {
+                uint16_t gain_id = static_cast<uint16_t>(depth_gain);
+                uint32_t gain_value = static_cast<uint32_t>(_hdr_sequence_params[i]._gain);
+                frames_config.insert(frames_config.end(), (uint8_t*)&gain_id, (uint8_t*)&gain_id + 2);
+                frames_config.insert(frames_config.end(), (uint8_t*)&gain_value, (uint8_t*)&gain_value + 4);
+            }
         }
 
         return frames_config;
@@ -282,22 +311,28 @@ namespace librealsense
     {
         /* TODO - add limitation on max exposure to be below frame interval - is range really needed for this?*/
         _hdr_sequence_params[_current_hdr_sequence_index]._exposure = value;
+        _hdr_sequence_params[_current_hdr_sequence_index]._is_exposure_configured = true;
     }
 
     void hdr_config::set_gain(float value)
     {
         _hdr_sequence_params[_current_hdr_sequence_index]._gain = value;
+        _hdr_sequence_params[_current_hdr_sequence_index]._is_gain_configured = true;
     }
 
 
     hdr_params::hdr_params() :
         _sequence_id(0),
+        _is_exposure_configured(false),
+        _is_gain_configured(false),
         _exposure(0.f),
         _gain(0.f)
     {}
     
     hdr_params::hdr_params(int sequence_id, float exposure, float gain) :
         _sequence_id(sequence_id),
+        _is_exposure_configured(false),
+        _is_gain_configured(false),
         _exposure(exposure),
         _gain(gain)
     {}
