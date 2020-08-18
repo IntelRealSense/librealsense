@@ -451,8 +451,6 @@ namespace librealsense
                     }
                     _durations.push_back(now);
 
-                    const auto fps = _durations.size();
-
                     //scoped_timer t("pointcloud_renderer.gl");
 
                     GLint curr_tex;

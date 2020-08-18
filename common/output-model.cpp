@@ -22,7 +22,7 @@ void output_model::thread_loop()
             dev_copy = devices;
         }
         if (enable_firmware_logs)
-            for (auto&& dev : devices)
+            for (auto&& dev : dev_copy)
             {
                 try
                 {
@@ -91,7 +91,7 @@ output_model::~output_model()
     fw_logger.join();
 }
 
-output_model::output_model() : fw_logger([this](){ thread_loop(); })
+output_model::output_model() : fw_logger([this](){ thread_loop(); }) , incoming_log_queue(100)
 {
     is_output_open = config_file::instance().get_or_default(
             configurations::viewer::output_open, false);
@@ -158,7 +158,7 @@ void output_model::open(ux_window& win)
     new_log = true;
 }
 
-void output_model::draw(ux_window& win, rect view_rect, std::vector<rs2::device> devices)
+void output_model::draw(ux_window& win, rect view_rect, device_models_list & device_models)
 {
     ImGui::PushStyleColor(ImGuiCol_FrameBg, scrollbar_bg);
 
@@ -583,7 +583,7 @@ void output_model::draw(ux_window& win, rect view_rect, std::vector<rs2::device>
         {
             if (commands_histroy.size() > 100) commands_histroy.pop_back();
             commands_histroy.push_front(command_line);
-            run_command(command_line, devices);
+            run_command(command_line, device_models);
             command_line = "";
             command_focus = true;
         }
@@ -685,7 +685,9 @@ void output_model::draw(ux_window& win, rect view_rect, std::vector<rs2::device>
 
     {
         std::lock_guard<std::mutex> lock(devices_mutex);
-        this->devices = devices;
+        this->devices.clear();
+        for (auto && dev_model : device_models)
+            this->devices.push_back(dev_model->dev);
     }
 }
 
@@ -751,7 +753,7 @@ void output_model::add_log(rs2_log_severity severity, std::string filename, int 
     new_log = true;
 }
 
-void output_model::run_command(std::string command, std::vector<rs2::device> devices)
+void output_model::run_command(std::string command, device_models_list & device_models)
 {
     try
     {
@@ -771,7 +773,10 @@ void output_model::run_command(std::string command, std::vector<rs2::device> dev
             return;
         }
 
-        std::regex e("([0-9A-Fa-f]{2}\\s)+");
+        if( user_defined_command( command, device_models ) )
+            return;
+
+        std::regex e( "([0-9A-Fa-f]{2}\\s)+" );
 
         if (std::regex_match(command, e))
         {
@@ -863,9 +868,79 @@ void output_model::run_command(std::string command, std::vector<rs2::device> dev
     } 
     catch(const std::exception& ex)
     {
-        add_log(RS2_LOG_SEVERITY_ERROR, __FILE__, __LINE__, ex.what());
+        add_log( RS2_LOG_SEVERITY_ERROR, __FILE__, __LINE__, ex.what() );
     }
 }
+
+bool output_model::user_defined_command( std::string command, device_models_list & device_models )
+{
+    bool user_defined_command_detected = false;
+    bool user_defined_command_activated = false;
+
+    // If a known command is detected , it will treated as a user_defined_command and will not be
+    // passed to the FW commands check logic.
+    // Note: For now we find the first device that supports the command and activate the command only on it.
+
+    if( to_lower( command ) == "trigger-camera-accuracy-health" )
+    {
+        user_defined_command_detected = true;
+
+        for( auto && dev_model : device_models )
+        {
+            if( dev_model->is_cah_model_enabled() && !user_defined_command_activated)
+            {
+                dev_model->show_trigger_camera_accuracy_health_popup = true;
+                user_defined_command_activated = true;
+            }
+        }
+    }
+    else if( to_lower( command ) == "reset-camera-accuracy-health" )
+    {
+        user_defined_command_detected = true;
+
+        for( auto && dev_model : device_models )
+        {
+            if( dev_model->is_cah_model_enabled() && !user_defined_command_activated)
+            {
+                dev_model->show_reset_camera_accuracy_health_popup = true;
+                user_defined_command_activated = true;
+            }
+        }
+    }
+    else if( to_lower( command ) == "get-nest" )
+    {
+        user_defined_command_detected = true;
+
+        for( auto && dev : devices )
+        {
+            if( auto dbg = dev.as< rs2::debug_protocol >() )
+            {
+                if( dev.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) )
+                {  // Verify minimal version for handling this command
+                    if( ! is_upgradeable( dev.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ), "01.05.0.0" ) )
+                    {
+                        std::vector< uint8_t > special_command
+                            = { 'G', 'E', 'T', '-', 'N', 'E', 'S', 'T' };
+                        auto res = dbg.send_and_receive_raw_data( special_command );
+                        user_defined_command_activated = true;
+                    }
+                }
+            }
+        }
+    }
+
+    // Log a warning if a known command was not activated
+    if( user_defined_command_detected && ! user_defined_command_activated )
+    {
+        add_log( RS2_LOG_SEVERITY_WARN,
+                 __FILE__,
+                 __LINE__,
+                 to_string() << "None of the connected devices supports '" << command << "'" );
+    }
+
+    return user_defined_command_detected;
+}
+
 
 void output_model::update_dashboards(rs2::frame f)
 {
@@ -973,13 +1048,11 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
         else has_room = false;
     }
     ticks_x -= 3;
-    
-    auto total = 0;
+
     for (int i = 0; i < ticks_x; i++)
     {
         auto x = min_x + i * (gap_x / ticks_x);
         std::string x_label = to_string() << std::fixed << std::setprecision(2) << x;
-        auto y_pixel = ImGui::GetTextLineHeight() + i * (height_y / ticks_y);
         ImGui::SetCursorPos(ImVec2( 15 + max_y_label_width+ i * (graph_width / ticks_x), r.h - ImGui::GetTextLineHeight() ));
         ImGui::Text("%s", x_label.c_str());
 

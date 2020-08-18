@@ -106,7 +106,7 @@ namespace librealsense
         on_open _on_open;
         std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
 
-        sensor_base* _source_owner;
+        sensor_base* _source_owner = nullptr;
         frame_source _source;
         device* _owner;
         std::vector<platform::stream_profile> _uvc_profiles;

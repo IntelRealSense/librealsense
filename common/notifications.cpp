@@ -585,10 +585,6 @@ namespace rs2
                 }
             }
 
-            auto flags = ImGuiWindowFlags_NoResize |
-                ImGuiWindowFlags_NoMove |
-                ImGuiWindowFlags_NoCollapse |
-                ImGuiWindowFlags_NoTitleBar;
 
             ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0, 0, 0, 0 });
             //ImGui::Begin("Notification parent window", nullptr, flags);

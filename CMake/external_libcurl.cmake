@@ -13,7 +13,6 @@ if(CHECK_FOR_UPDATES)
         GIT_REPOSITORY "https://github.com/curl/curl.git"
         GIT_TAG "53cdc2c963e33bc0cc1a51ad2df79396202e07f8" # curl-7_70_0
         SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/third-party/libcurl
-        TEST_COMMAND ""
         CMAKE_ARGS  -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
                     -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
                     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
@@ -27,6 +26,9 @@ if(CHECK_FOR_UPDATES)
                     -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
                     -DANDROID_ABI=${ANDROID_ABI}
                     -DANDROID_STL=${ANDROID_STL} ${CURL_FLAGS}
+        UPDATE_COMMAND ""
+        PATCH_COMMAND ""
+        TEST_COMMAND ""
     )
 
     set(CURL_DEBUG_TARGET_NAME "libcurl-d")

@@ -1649,7 +1649,6 @@ namespace rs2
             {
                 if (auto vid_prof = p.as<video_stream_profile>())
                 {
-                    auto key = std::make_tuple(p.fps(), vid_prof.width(), vid_prof.height());
                     if (check_profile(p, [&](stream_profile prof) { return (std::find_if(matching_profiles.begin(), matching_profiles.end(), [&](stream_profile sp)
                     { return (stream_id != p.unique_id() && sp.fps() == p.fps() && sp.as<video_stream_profile>().width() == vid_prof.width() &&
                         sp.as<video_stream_profile>().height() == vid_prof.height()); }) != matching_profiles.end()); },
@@ -1762,7 +1761,7 @@ namespace rs2
     {
         viewer.not_model->add_log("Stopping streaming");
 
-        for_each(stream_display_names.begin(), stream_display_names.end(), [this, &viewer](std::pair<int, std::string> kvp)
+        for_each(stream_display_names.begin(), stream_display_names.end(), [this](std::pair<int, std::string> kvp)
         {
             if ("Pose" == kvp.second)
             {
@@ -1853,7 +1852,7 @@ namespace rs2
         viewer.not_model->add_log(ss.str());
 
         // TODO  - refactor tm2 from viewer to subdevice
-        for_each(stream_display_names.begin(), stream_display_names.end(), [this, &viewer](std::pair<int, std::string> kvp)
+        for_each(stream_display_names.begin(), stream_display_names.end(), [this](std::pair<int, std::string> kvp)
         {
             if ("Pose" == kvp.second)
             {
@@ -3380,6 +3379,11 @@ namespace rs2
         , _detected_objects(std::make_shared< atomic_objects_in_frame >()),
         _updates(viewer.updates)
     {
+        if( dev.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) && dev.is< device_calibration >() )
+        {
+            _accuracy_health_model = std::unique_ptr< cah_model >( new cah_model( *this, viewer ) );
+        }
+
         auto name = get_device_name(dev);
         id = to_string() << name.first << ", " << name.second;
 
@@ -4011,7 +4015,6 @@ namespace rs2
         duration -= mm;
         auto ss = duration_cast<seconds>(duration);
         duration -= ss;
-        auto ms = duration_cast<milliseconds>(duration);
 
         std::ostringstream stream;
         stream << std::setfill('0') << std::setw(hhh.count() >= 10 ? 2 : 1) << hhh.count() << ':' <<
@@ -4026,7 +4029,7 @@ namespace rs2
         auto pos = ImGui::GetCursorPos();
 
         auto p = dev.as<playback>();
-        rs2_playback_status current_playback_status = p.current_status();
+        //rs2_playback_status current_playback_status = p.current_status();
         int64_t playback_total_duration = p.get_duration().count();
         auto progress = p.get_position();
         double part = (1.0 * progress) / playback_total_duration;
@@ -4128,7 +4131,81 @@ namespace rs2
         return device_names;
     }
 
-    bool yes_no_dialog(const std::string& title, const std::string& message_text, bool& approved, ux_window& window)
+    bool yes_no_dialog(const std::string& title, const std::string& message_text, bool& approved, ux_window& window, const std::string& error_message, bool disabled, const std::string& disabled_reason)
+    {
+        ImGui_ScopePushFont(window.get_font());
+        ImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
+        ImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, sensor_header_light_blue); //TODO: Change color?
+        ImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, regular_blue); //TODO: Change color?
+        ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
+        ImGui_ScopePushStyleColor(ImGuiCol_TitleBg, header_color);
+        ImGui_ScopePushStyleColor(ImGuiCol_PopupBg, sensor_bg);
+        ImGui_ScopePushStyleColor(ImGuiCol_BorderShadow, dark_grey);
+        ImGui_ScopePushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20, 10));
+        auto clicked = false;
+
+        ImGui::OpenPopup(title.c_str());
+        ImGui::SetNextWindowPos( {window.width() * 0.35f, window.height() * 0.35f });
+        if (ImGui::BeginPopup(title.c_str()))
+        {
+            {
+                ImGui_ScopePushStyleColor(ImGuiCol_Text, almost_white_bg);
+
+                ImGui::SetWindowFontScale(1.3f);
+                ImGui::Text("%s", title.c_str());
+            }
+            {
+                ImGui_ScopePushStyleColor(ImGuiCol_Text, light_grey);
+                ImGui::Separator();
+                ImGui::SetWindowFontScale(1.1f);
+                ImGui::Text("\n%s\n", message_text.c_str());
+
+                if (!disabled)
+                {
+                    ImGui::SameLine();
+                    auto width = ImGui::GetWindowWidth();
+                    ImGui::Dummy(ImVec2(0, 0));
+                    ImGui::Dummy(ImVec2(width / 3.f, 0));
+                    ImGui::SameLine();
+                    if (ImGui::Button("Yes", ImVec2(60, 30)))
+                    {
+                        ImGui::CloseCurrentPopup();
+                        approved = true;
+                        clicked = true;
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::Button("No", ImVec2(60, 30)))
+                    {
+                        ImGui::CloseCurrentPopup();
+                        approved = false;
+                        clicked = true;
+                    }
+                }
+                else
+                {
+                    ImGui::NewLine();
+                    {
+                        ImGui_ScopePushStyleColor(ImGuiCol_Text, red);
+                        ImGui::Text("%s\n\n", disabled_reason.c_str());
+                    }
+                    auto window_width = ImGui::GetWindowWidth();
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + window_width / 2.f - 30.f - ImGui::GetStyle().WindowPadding.x);
+                    if (ImGui::Button("Close", ImVec2(60, 30)))
+                    {
+                        ImGui::CloseCurrentPopup();
+                        approved = false;
+                        clicked = true;
+                    }
+                }
+            }
+            ImGui::EndPopup();
+        }
+        return clicked;
+    }
+
+    // Create a process windows with process details from the caller,
+    // and close button activated by the caller
+    bool status_dialog(const std::string& title, const std::string& process_topic_text, const std::string& process_status_text , bool enable_close, ux_window& window)
     {
         ImGui_ScopePushFont(window.get_font());
         ImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
@@ -4138,39 +4215,58 @@ namespace rs2
         ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
         ImGui_ScopePushStyleColor(ImGuiCol_TitleBg, header_color);
         ImGui_ScopePushStyleColor(ImGuiCol_PopupBg, sensor_bg);
-        ImGui_ScopePushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
-        auto clicked = false;
+        ImGui_ScopePushStyleColor(ImGuiCol_BorderShadow, dark_grey);
+        ImGui_ScopePushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20, 10));
+        auto close_clicked = false;
+
         ImGui::OpenPopup(title.c_str());
-        if (ImGui::BeginPopupModal(title.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        ImGui::SetNextWindowPos({ window.width() * 0.35f, window.height() * 0.35f });
+        if (ImGui::BeginPopup(title.c_str()))
         {
-            ImGui::Text("\n%s\n\n", message_text.c_str());
-            auto width = ImGui::GetWindowWidth();
-            ImGui::Dummy(ImVec2(0, 0));
-            ImGui::Dummy(ImVec2(width / 4.f, 0));
-            ImGui::SameLine();
-            if (ImGui::Button("Yes", ImVec2(60, 30)))
             {
-                ImGui::CloseCurrentPopup();
-                approved = true;
-                clicked = true;
+                ImGui_ScopePushStyleColor(ImGuiCol_Text, almost_white_bg);
+
+                ImGui::SetWindowFontScale(1.3f);
+                ImGui::Text("%s", title.c_str());
             }
-            ImGui::SameLine();
-            if (ImGui::Button("No", ImVec2(60, 30)))
             {
-                ImGui::CloseCurrentPopup();
-                approved = false;
-                clicked = true;
+
+                ImGui::Separator();
+                ImGui::SetWindowFontScale(1.1f);
+
+                ImGui::NewLine();
+                ImGui::Text("%s", process_topic_text.c_str());
+                ImGui::NewLine();
+
+                auto window_width = ImGui::GetWindowWidth();
+                auto process_status_text_size = ImGui::CalcTextSize(process_status_text.c_str()).x + ImGui::CalcTextSize("Status: ").x + ImGui::GetStyle().WindowPadding.x;
+                auto future_window_width = std::max(process_status_text_size, window_width);
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + future_window_width / 2.f - process_status_text_size / 2.f);
+
+                ImGui::Text("Status: %s", process_status_text.c_str());
+                ImGui::NewLine();
+                window_width = ImGui::GetWindowWidth();
+
+                if (enable_close)
+                {
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + window_width / 2.f - 50.f); // 50 = 30 (button size) + 20 (padding)
+                    if (ImGui::Button("Close", ImVec2(60, 30)))
+                    {
+                        ImGui::CloseCurrentPopup();
+                        close_clicked = true;
+                    }
+                }
             }
-            ImGui::NewLine();
             ImGui::EndPopup();
         }
-        return clicked;
+        return close_clicked;
     }
-    bool device_model::prompt_toggle_advanced_mode(bool enable_advanced_mode, const std::string& message_text, std::vector<std::string>& restarting_device_info, viewer_model& view, ux_window& window)
+
+    bool device_model::prompt_toggle_advanced_mode(bool enable_advanced_mode, const std::string& message_text, std::vector<std::string>& restarting_device_info, viewer_model& view, ux_window& window, const std::string& error_message)
     {
         bool keep_showing = true;
         bool yes_was_chosen = false;
-        if (yes_no_dialog("Advanced Mode", message_text, yes_was_chosen, window))
+        if (yes_no_dialog("Advanced Mode", message_text, yes_was_chosen, window, error_message))
         {
             if (yes_was_chosen)
             {
@@ -4183,6 +4279,7 @@ namespace rs2
         return keep_showing;
     }
 
+   
     bool device_model::draw_advanced_controls(viewer_model& view, ux_window& window, std::string& error_message)
     {
         bool was_set = false;
@@ -4214,7 +4311,7 @@ namespace rs2
                     }
                     if (show_yes_no_modal)
                     {
-                        show_yes_no_modal = prompt_toggle_advanced_mode(true, "\t\tAre you sure you want to turn on Advanced Mode?\t\t", restarting_device_info, view, window);
+                        show_yes_no_modal = prompt_toggle_advanced_mode(true, "\t\tAre you sure you want to turn on Advanced Mode?\t\t", restarting_device_info, view, window, error_message);
                     }
                 }
             }
@@ -4403,6 +4500,7 @@ namespace rs2
         // TODO: Once auto-calib makes it into the API, switch to querying camera info
     }
 
+
     float device_model::draw_device_panel(float panel_width,
         ux_window& window,
         std::string& error_message,
@@ -4414,6 +4512,7 @@ namespace rs2
         Record   Sync    Info    More
         =============================
         */
+
 
         const bool is_playback_device = dev.is<playback>();
         const float device_panel_height = 60.0f;
@@ -4456,7 +4555,7 @@ namespace rs2
                 std::string default_path = config_file::instance().get(configurations::record::default_path);
                 if (!ends_with(default_path, "/") && !ends_with(default_path, "\\")) default_path += "/";
                 std::string default_filename = rs2::get_timestamped_file_name() + ".bag";
-                if (recording_setting == 0)
+                if (recording_setting == 0 && default_path.size() > 1 )
                 {
                     path = default_path + default_filename;
                 }
@@ -4511,7 +4610,6 @@ namespace rs2
         ////////////////////////////////////////
         std::string label = to_string() << "device_menu" << id;
         std::string bars_button_name = to_string() << textual_icons::bars << "##" << id;
-
         if (ImGui::Button(bars_button_name.c_str(), device_panel_icons_size))
         {
             ImGui::OpenPopup(label.c_str());
@@ -4527,6 +4625,7 @@ namespace rs2
         bool open_calibration_ui = false;
         if (ImGui::BeginPopup(label.c_str()))
         {
+
             bool something_to_show = false;
             ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
             if (auto tm2_extensions = dev.as<rs2::tm2>())
@@ -4611,6 +4710,7 @@ namespace rs2
                 }
             }
 
+
             if (allow_remove)
             {
                 something_to_show = true;
@@ -4690,6 +4790,8 @@ namespace rs2
                 }
             }
 
+
+                
             bool has_autocalib = false;
             for (auto&& sub : subdevices)
             {
@@ -4849,14 +4951,33 @@ namespace rs2
             }
 
             ImGui::PopStyleColor();
+                
             ImGui::EndPopup();
+
+        }
+
+
+        if (show_trigger_camera_accuracy_health_popup)
+        {
+            if (_accuracy_health_model)
+            {
+                show_trigger_camera_accuracy_health_popup = _accuracy_health_model->prompt_trigger_popup(window, error_message);
+            }
+        }
+
+        if (show_reset_camera_accuracy_health_popup)
+        {
+            if (_accuracy_health_model)
+            {
+                show_reset_camera_accuracy_health_popup = _accuracy_health_model->prompt_reset_popup(window, error_message);
+            }
         }
 
         if (keep_showing_advanced_mode_modal)
         {
             const bool is_advanced_mode_enabled = dev.as<advanced_mode>().is_enabled();
             std::string msg = to_string() << "\t\tAre you sure you want to " << (is_advanced_mode_enabled ? "turn off Advanced mode" : "turn on Advanced mode") << "\t\t";
-            keep_showing_advanced_mode_modal = prompt_toggle_advanced_mode(!is_advanced_mode_enabled, msg, restarting_device_info, viewer, window);
+            keep_showing_advanced_mode_modal = prompt_toggle_advanced_mode(!is_advanced_mode_enabled, msg, restarting_device_info, viewer, window, error_message);
         }
 
         _calib_model.update(window, error_message);
@@ -4982,7 +5103,6 @@ namespace rs2
             // Disable depth stream on all sub devices
             for (auto&& sub : subdevices)
             {
-                int i = 0;
                 for (auto&& profile : sub->profiles)
                 {
                     if (profile.stream_type() == RS2_STREAM_DEPTH)
@@ -5296,7 +5416,7 @@ namespace rs2
                         }
                         if (keep_showing_popup)
                         {
-                            keep_showing_popup = prompt_toggle_advanced_mode(true, popup_message, restarting_device_info, viewer, window);
+                            keep_showing_popup = prompt_toggle_advanced_mode(true, popup_message, restarting_device_info, viewer, window, error_message);
                         }
                     }
                     catch (const error& e)
@@ -5397,7 +5517,7 @@ namespace rs2
 
         if (require_advanced_mode_enable_prompt)
         {
-            require_advanced_mode_enable_prompt = prompt_toggle_advanced_mode(true, popup_message, restarting_device_info, viewer, window);
+            require_advanced_mode_enable_prompt = prompt_toggle_advanced_mode(true, popup_message, restarting_device_info, viewer, window, error_message);
         }
 
         ImGui::PopFont();
@@ -5709,7 +5829,7 @@ namespace rs2
             if (show_depth_only && !sub->s->is<depth_sensor>()) continue;
 
             const ImVec2 pos = ImGui::GetCursorPos();
-            const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
+            //const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
             //model_to_y[sub.get()] = pos.y;
             //model_to_abs_y[sub.get()] = abs_pos.y;
 
@@ -6032,7 +6152,6 @@ namespace rs2
                             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
                             const ImVec2 pos = ImGui::GetCursorPos();
-                            const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
 
                             draw_later.push_back([windows_width, &window, sub, pos, &viewer, this, pb]() {
                                 if (!sub->streaming || !sub->post_processing_enabled) ImGui::SetCursorPos({ windows_width - 35, pos.y - 3 });

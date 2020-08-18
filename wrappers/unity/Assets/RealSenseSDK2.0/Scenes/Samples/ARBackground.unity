@@ -1359,6 +1359,16 @@ Prefab:
       propertyPath: Source
       value: 
       objectReference: {fileID: 1679696497}
+    - target: {fileID: 114552477897960758, guid: d2790e271f1a64347bb2ede5601b1e23,
+        type: 2}
+      propertyPath: _streamIndex
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114866818567473902, guid: d2790e271f1a64347bb2ede5601b1e23,
+        type: 2}
+      propertyPath: DeviceConfiguration.Profiles.Array.data[1].StreamIndex
+      value: -1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: d2790e271f1a64347bb2ede5601b1e23, type: 2}
   m_IsPrefabParent: 0

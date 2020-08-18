@@ -3,6 +3,8 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
 #include "../include/librealsense2/rs.h"
+#include <iomanip>
+#include "types.h"
 
 std::string make_pythonic_str(std::string str)
 {
@@ -33,6 +35,8 @@ void init_c_files(py::module &m) {
     // rs2_sr300_visual_preset
     // rs2_rs400_visual_preset
     BIND_ENUM(m, rs2_playback_status, RS2_PLAYBACK_STATUS_COUNT, "") // No docstring in C++
+    BIND_ENUM(m, rs2_calibration_type, RS2_CALIBRATION_TYPE_COUNT, "Calibration type for use in device_calibration")
+    BIND_ENUM_CUSTOM(m, rs2_calibration_status, RS2_CALIBRATION_STATUS_FIRST, RS2_CALIBRATION_STATUS_LAST, "Calibration callback status for use in device_calibration.trigger_device_calibration")
 
     /** rs_types.h **/
     py::class_<rs2_intrinsics> intrinsics(m, "intrinsics", "Video stream intrinsics.");
@@ -46,17 +50,35 @@ void init_c_files(py::module &m) {
         .def_readwrite("model", &rs2_intrinsics::model, "Distortion model of the image")
         .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_intrinsics, coeffs, float, 5), "Distortion coefficients")
         .def("__repr__", [](const rs2_intrinsics& self) {
-            std::stringstream ss;
-            ss << "width: " << self.width << ", ";
-            ss << "height: " << self.height << ", ";
-            ss << "ppx: " << self.ppx << ", ";
-            ss << "ppy: " << self.ppy << ", ";
-            ss << "fx: " << self.fx << ", ";
-            ss << "fy: " << self.fy << ", ";
-            ss << "model: " << self.model << ", ";
-            ss << "coeffs: " << array_to_string(self.coeffs);
+            std::ostringstream ss;
+            ss << self;
             return ss.str();
         });
+
+    py::class_<rs2_dsm_params> dsm_params( m, "dsm_params", "Video stream DSM parameters" );
+    dsm_params.def( py::init<>() )
+        .def_readonly( "timestamp", &rs2_dsm_params::timestamp, "seconds since epoch" )
+        .def_readonly( "version", &rs2_dsm_params::version, "major<<12 | minor<<4 | patch" )
+        .def_readwrite( "model", &rs2_dsm_params::model, "correction model (0/1/2 none/AOT/TOA)" )
+        .def_property( BIND_RAW_ARRAY_PROPERTY( rs2_dsm_params, flags, uint8_t, sizeof( rs2_dsm_params::flags )), "flags" )
+        .def_readwrite( "h_scale", &rs2_dsm_params::h_scale, "horizontal DSM scale" )
+        .def_readwrite( "v_scale", &rs2_dsm_params::v_scale, "vertical DSM scale" )
+        .def_readwrite( "h_offset", &rs2_dsm_params::h_offset, "horizontal DSM offset" )
+        .def_readwrite( "v_offset", &rs2_dsm_params::v_offset, "vertical DSM offset" )
+        .def_readwrite( "rtd_offset", &rs2_dsm_params::rtd_offset, "the Round-Trip-Distance delay" )
+        .def_property_readonly( "temp", 
+            []( rs2_dsm_params const & self ) -> float {
+                           return float( self.temp_x2 ) / 2;
+                       },
+            "temperature (LDD for depth; HUM for color)" )
+        .def_property( BIND_RAW_ARRAY_PROPERTY( rs2_dsm_params, reserved, uint8_t, sizeof( rs2_dsm_params::reserved )), "reserved" )
+        .def( "__repr__",
+            []( const rs2_dsm_params & self )
+            {
+                std::ostringstream ss;
+                ss << self;
+                return ss.str();
+            } );
 
     py::class_<rs2_motion_device_intrinsic> motion_device_intrinsic(m, "motion_device_intrinsic", "Motion device intrinsics: scale, bias, and variances.");
     motion_device_intrinsic.def(py::init<>())

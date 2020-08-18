@@ -2,6 +2,7 @@
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
+#include "../include/librealsense2/hpp/rs_internal.hpp"
 #include "../include/librealsense2/hpp/rs_device.hpp"
 #include "../include/librealsense2/hpp/rs_record_playback.hpp" // for downcasts
 
@@ -31,6 +32,8 @@ void init_device(py::module &m) {
         .def(BIND_DOWNCAST(device, updatable))
         .def(BIND_DOWNCAST(device, update_device))
         .def(BIND_DOWNCAST(device, auto_calibrated_device))
+        .def(BIND_DOWNCAST(device, device_calibration))
+        .def(BIND_DOWNCAST(device, firmware_logger))
         .def("__repr__", [](const rs2::device &self) {
             std::stringstream ss;
             ss << "<" SNAME ".device: " << self.get_info(RS2_CAMERA_INFO_NAME)
@@ -90,6 +93,37 @@ void init_device(py::module &m) {
         .def("get_calibration_table", &rs2::auto_calibrated_device::get_calibration_table, "Read current calibration table from flash.")
         .def("set_calibration_table", &rs2::auto_calibrated_device::set_calibration_table, "Set current table to dynamic area.")
         .def("reset_to_factory_calibration", &rs2::auto_calibrated_device::reset_to_factory_calibration, "Reset device to factory calibration.");
+
+    py::class_<rs2::device_calibration, rs2::device> device_calibration( m, "device_calibration" );
+    device_calibration.def( py::init<rs2::device>(), "device"_a )
+        .def( "trigger_device_calibration",
+            []( rs2::device_calibration & self, rs2_calibration_type type )
+            {
+                py::gil_scoped_release gil;
+                self.trigger_device_calibration( type );
+            },
+            "Trigger the given calibration, if available", "calibration_type"_a )
+        .def( "register_calibration_change_callback",
+            []( rs2::device_calibration& self, std::function<void( rs2_calibration_status )> callback )
+            {
+                self.register_calibration_change_callback( 
+                    [callback]( rs2_calibration_status status )
+                    {
+                        try
+                        {
+                            // "When calling a C++ function from Python, the GIL is always held"
+                            // -- since we're not being called from Python but instead are calling it,
+                            // we need to acquire it to not have issues with other threads...
+                            py::gil_scoped_acquire gil;
+                            callback( status );
+                        }
+                        catch( ... )
+                        {
+                            std::cerr << "?!?!?!!? exception in python register_calibration_change_callback ?!?!?!?!?" << std::endl;
+                        }
+                    } );
+            },
+            "Register (only once!) a callback that gets called for each change in calibration", "callback"_a );
 
 
     py::class_<rs2::debug_protocol> debug_protocol(m, "debug_protocol"); // No docstring in C++

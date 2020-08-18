@@ -16,11 +16,19 @@
 #include "error-handling.h"
 #include "global_timestamp_reader.h"
 #include "fw-update/fw-update-device-interface.h"
+#include "device-calibration.h"
 
 namespace librealsense
 {
+    class l500_depth_sensor;
+    class l500_color_sensor;
 
-    class l500_device : public virtual device, public debug_interface, public global_time_interface, public updatable
+    class l500_device
+        : public virtual device
+        , public debug_interface
+        , public global_time_interface
+        , public updatable
+        , public device_calibration
     {
     public:
         l500_device(std::shared_ptr<context> ctx,
@@ -29,18 +37,28 @@ namespace librealsense
         std::shared_ptr<synthetic_sensor> create_depth_device(std::shared_ptr<context> ctx,
             const std::vector<platform::uvc_device_info>& all_device_infos);
 
-        synthetic_sensor& get_depth_sensor() { return dynamic_cast<synthetic_sensor&>(get_sensor(_depth_device_idx)); }
+        virtual void configure_depth_options();
 
+        virtual l500_color_sensor * get_color_sensor() = 0;
+
+        synthetic_sensor & get_synthetic_depth_sensor() { return dynamic_cast< synthetic_sensor &>(get_sensor( _depth_device_idx )); }
+        l500_depth_sensor & get_depth_sensor();
         uvc_sensor& get_raw_depth_sensor()
         {
-            synthetic_sensor& depth_sensor = get_depth_sensor();
+            synthetic_sensor& depth_sensor = get_synthetic_depth_sensor();
             return dynamic_cast<uvc_sensor&>(*depth_sensor.get_raw_sensor());
         }
 
-        std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override
+        void register_calibration_change_callback( calibration_change_callback_ptr callback ) override
         {
-            return _hw_monitor->send(input);
+            _calibration_change_callbacks.push_back( callback );
         }
+
+        void trigger_device_calibration( rs2_calibration_type ) override;
+
+        void notify_of_calibration_change( rs2_calibration_status status );
+
+        std::vector< uint8_t > send_receive_raw_data(const std::vector< uint8_t > & input) override;
 
         void hardware_reset() override
         {
@@ -69,11 +87,13 @@ namespace librealsense
 
         std::unique_ptr<polling_error_handler> _polling_error_handler;
 
-        lazy<std::vector<uint8_t>> _calib_table_raw;
+        lazy<ivcam2::intrinsic_depth> _calib_table;
         firmware_version _fw_version;
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _ir_stream;
         std::shared_ptr<stream_interface> _confidence_stream;
+        
+        std::shared_ptr< ivcam2::ac_trigger > _autocal;
 
         void force_hardware_reset() const;
         bool _is_locked = true;
@@ -83,6 +103,8 @@ namespace librealsense
         command get_flash_logs_command() const;
 
         std::vector<rs2_option> _advanced_options;
+
+        std::vector< calibration_change_callback_ptr > _calibration_change_callbacks;
     };
 
     class l500_notification_decoder : public notification_decoder

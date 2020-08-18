@@ -252,6 +252,8 @@ namespace librealsense
         }
     };
 
+    std::string hwmon_error_string( command const &, hwmon_response e );
+
     class hw_monitor
     {
         struct hwmon_cmd
@@ -320,7 +322,7 @@ namespace librealsense
         {}
 
         std::vector<uint8_t> send(std::vector<uint8_t> data) const;
-        std::vector<uint8_t> send(command cmd) const;
+        std::vector<uint8_t> send( command cmd, hwmon_response * = nullptr ) const;
         void get_gvd(size_t sz, unsigned char* gvd, uint8_t gvd_cmd) const;
         static std::string get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 4);
         static std::string get_module_serial_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 6);

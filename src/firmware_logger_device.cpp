@@ -51,8 +51,6 @@ namespace librealsense
         // convert bytes to fw_logs_binary_data
         for (int i = 0; i < res.size() / fw_logs::BINARY_DATA_SIZE; ++i)
         {
-            if (*beginOfLogIterator == 0)
-                break;
             auto endOfLogIterator = beginOfLogIterator + fw_logs::BINARY_DATA_SIZE;
             std::vector<uint8_t> resultsForOneLog;
             resultsForOneLog.insert(resultsForOneLog.begin(), beginOfLogIterator, endOfLogIterator);

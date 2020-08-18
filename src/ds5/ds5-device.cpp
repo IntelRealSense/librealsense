@@ -666,20 +666,18 @@ namespace librealsense
             depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16H, RS2_STREAM_DEPTH));
         }
 
-        if (advanced_mode && (_usb_mode >= usb3_type))
-        {
-            depth_sensor.register_processing_block(
-                { {RS2_FORMAT_Y8I} },
-                { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1} , {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2} },
-                []() { return std::make_shared<y8i_to_y8y8>(); }
-            ); // L+R
 
-            depth_sensor.register_processing_block(
-                {RS2_FORMAT_Y12I},
-                {{RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2}},
-                []() {return std::make_shared<y12i_to_y16y16>(); }
-            );
-        }
+        depth_sensor.register_processing_block(
+            { {RS2_FORMAT_Y8I} },
+            { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1} , {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2} },
+            []() { return std::make_shared<y8i_to_y8y8>(); }
+        ); // L+R
+
+        depth_sensor.register_processing_block(
+            {RS2_FORMAT_Y12I},
+            {{RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2}},
+            []() {return std::make_shared<y12i_to_y16y16>(); }
+        );
 
         auto pid_hex_str = hexify(pid);
 
@@ -863,6 +861,11 @@ namespace librealsense
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_WIDTH, make_attribute_parser(&md_configuration::width, md_configuration_attributes::width_attribute, md_prop_offset));
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_HEIGHT, make_attribute_parser(&md_configuration::height, md_configuration_attributes::height_attribute, md_prop_offset));
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_ACTUAL_FPS,  std::make_shared<ds5_md_attribute_actual_fps> ());
+
+        if (_fw_version >= firmware_version("5.12.7.0"))
+        {
+            depth_sensor.register_metadata(RS2_FRAME_METADATA_GPIO_INPUT_DATA, make_attribute_parser(&md_configuration::gpioInputData, md_configuration_attributes::gpio_input_data_attribute, md_prop_offset));
+        }
 
         register_info(RS2_CAMERA_INFO_NAME, device_name);
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, optic_serial);

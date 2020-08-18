@@ -216,7 +216,6 @@ namespace rs2
             bool record,
             std::vector<single_metric_data>& samples)
         {
-            float TO_METERS = sensor.get_depth_scale();
             static const float TO_MM = 1000.f;
             static const float TO_PERCENT = 100.f;
 
@@ -239,10 +238,6 @@ namespace rs2
             {
                 // Find distance from point to the reconstructed plane
                 auto dist2plane = p.a*point.x + p.b*point.y + p.c*point.z + p.d;
-                // Project the point to plane in 3D and find distance to the intersection point
-                rs2::float3 plane_intersect = { float(point.x - dist2plane*p.a),
-                    float(point.y - dist2plane*p.b),
-                    float(point.z - dist2plane*p.c) };
 
                 // Store distance, disparity and gt- error
                 distances.push_back(dist2plane * TO_MM);
@@ -913,7 +908,7 @@ namespace rs2
                 ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
                 if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
                 {
-                    get_manager().restore_workspace([this](std::function<void()> a){ a(); });
+                    get_manager().restore_workspace([](std::function<void()> a){ a(); });
                     get_manager().reset();
                     get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB;
                     auto _this = shared_from_this();
@@ -995,7 +990,7 @@ namespace rs2
                 ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
                 if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
                 {
-                    get_manager().restore_workspace([this](std::function<void()> a){ a(); });
+                    get_manager().restore_workspace([](std::function<void()> a){ a(); });
                     get_manager().reset();
                     auto _this = shared_from_this();
                     auto invoke = [_this](std::function<void()> action) {
@@ -1202,7 +1197,7 @@ namespace rs2
                     }
                     else dismiss(false);
 
-                    get_manager().restore_workspace([this](std::function<void()> a) { a(); });
+                    get_manager().restore_workspace([](std::function<void()> a) { a(); });
                 }
                 if (recommend_keep || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB)
                 {
@@ -1324,7 +1319,7 @@ namespace rs2
         if (!use_new_calib && get_manager().done()) 
             get_manager().apply_calib(false);
 
-        get_manager().restore_workspace([this](std::function<void()> a){ a(); });
+        get_manager().restore_workspace([](std::function<void()> a){ a(); });
 
         if (update_state != RS2_CALIB_STATE_TARE_INPUT)
             update_state = RS2_CALIB_STATE_INITIAL_PROMPT;

@@ -50,11 +50,13 @@ namespace librealsense
             std::string _name;
         };
 
+        class wmf_backend;
+
         class wmf_hid_device : public hid_device
         {
         public:
             static void foreach_hid_device(std::function<void(hid_device_info, CComPtr<ISensor>)> action);
-            wmf_hid_device(const hid_device_info& info);
+            wmf_hid_device(const hid_device_info& info, std::shared_ptr<const wmf_backend> backend);
 
             void register_profiles(const std::vector<hid_profile>& hid_profiles) override { _hid_profiles = hid_profiles;}
             void open(const std::vector<hid_profile>&iio_profiles) override;
@@ -65,12 +67,14 @@ namespace librealsense
             std::vector<uint8_t> get_custom_report_data(const std::string& custom_sensor_name, const std::string& report_name, custom_sensor_report_field report_field) override;
 
         private:
+            // Don't move the position of wmf_backend member. This object must be destroyed only after COM objects.
+            std::shared_ptr<const wmf_backend>           _backend;
 
             std::vector<std::shared_ptr<wmf_hid_sensor>> _connected_sensors; // Vector of all connected sensors of this device
             std::vector<std::shared_ptr<wmf_hid_sensor>> _opened_sensors;    // Vector of all opened sensors of this device (subclass of _connected_sensors)
             std::vector<std::shared_ptr<wmf_hid_sensor>> _streaming_sensors; // Vector of all streaming sensors of this device (subclass of _connected_sensors)
 
-            CComPtr<ISensorEvents> _cb = nullptr;
+            CComPtr<ISensorEvents> _cb;
             std::vector<hid_profile> _hid_profiles;
         };
     }

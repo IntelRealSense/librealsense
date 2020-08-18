@@ -36,7 +36,6 @@
 #include <linux/usb/video.h>
 #include <linux/uvcvideo.h>
 #include <linux/videodev2.h>
-#include <fts.h>
 #include <regex>
 #include <list>
 
@@ -103,9 +102,12 @@ namespace librealsense
             std::string _device_path;
             uint32_t _timeout;
             int _fildes;
+            static std::recursive_mutex _init_mutex;
+            static std::map<std::string, std::recursive_mutex> _dev_mutex;
+            static std::map<std::string, int> _dev_mutex_cnt;
+            int _object_lock_counter;
             std::mutex _mutex;
         };
-
         static int xioctl(int fh, unsigned long request, void *arg);
 
         class buffer

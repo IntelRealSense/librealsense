@@ -29,6 +29,7 @@ set (unit_tests_sources
     unit-tests-main.cpp
     unit-tests-common.h
     unit-tests-post-processing-from-bag.cpp
+    unit-test-long.cpp
     catch.h
     approx.h
 )
@@ -138,14 +139,17 @@ endfunction()
 
 function(is_file_empty empty filename)
     set (data "")
-    if(EXISTS ${filename})
-        file(STRINGS  ${filename} data)
-    endif()
-    string(LENGTH "${data}" data_length)
-    #message(STATUS "Read ${data_length}  bytes from  ${filename}")
     set(res TRUE)
-    if (NOT ${data_length} STREQUAL "0")
-        set(res FALSE)
+    if(EXISTS ${filename})
+    	# Travis has CMake 3.5.1... no SIZE support!
+        #file(SIZE ${filename} data_length)
+        file(READ ${filename} data LIMIT 2 HEX)
+        string(LENGTH "${data}" data_length)
+        if (NOT ${data_length} STREQUAL "0")
+            set(res FALSE)
+	#else()
+        #    message(STATUS "${data_length}  bytes from  ${filename}")
+        endif()
     endif()
     set(empty ${res} PARENT_SCOPE)
 endfunction()
@@ -209,3 +213,6 @@ endforeach(i)
 if(NOT ${BUILD_SHARED_LIBS} AND ${BUILD_INTERNAL_UNIT_TESTS})
     add_subdirectory(internal)
 endif()
+
+include(algo/CMakeLists.txt)
+

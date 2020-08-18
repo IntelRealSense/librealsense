@@ -79,7 +79,6 @@ namespace rs2
             if (input_stream && output)
             {
                 std::ofstream &out_stream(*static_cast<std::ofstream*> (output));
-                uint8_t* source_bytes(static_cast<uint8_t*>(input_stream));
 
                 size_t num_of_bytem(nmemb*size);
                 out_stream.write((char *)input_stream, num_of_bytem);

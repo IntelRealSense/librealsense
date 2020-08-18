@@ -195,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
             try {
-                try(FrameSet frames = mPipeline.waitForFrames(1000)) {
+                try(FrameSet frames = mPipeline.waitForFrames()) {
                     mGLSurfaceView.upload(frames);
                 }
                 mHandler.post(mStreaming);

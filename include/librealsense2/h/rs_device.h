@@ -310,6 +310,71 @@ const rs2_raw_data_buffer* rs2_run_on_chip_calibration(rs2_device* device, const
 */
 const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* dev, float ground_truth_mm, const void* json_content, int content_size, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error);
 
+
+/**
+ * Used in device_calibration; enumerates the different calibration types
+ * available for that extension.
+ */
+typedef enum rs2_calibration_type
+{
+    RS2_CALIBRATION_AUTO_DEPTH_TO_RGB,
+    RS2_CALIBRATION_MANUAL_DEPTH_TO_RGB,
+    RS2_CALIBRATION_TYPE_COUNT
+} rs2_calibration_type;
+const char* rs2_calibration_type_to_string( rs2_calibration_type );
+
+/**
+ * Used in device_calibration with rs2_calibration_change_callback
+ */
+typedef enum rs2_calibration_status
+{
+    // Anything >= 0 is not an issue
+    RS2_CALIBRATION_TRIGGERED      =  0,  // AC triggered and is active; conditions are valid
+    RS2_CALIBRATION_SPECIAL_FRAME  =  1,  // Special frame received; expect a frame-drop!
+    RS2_CALIBRATION_STARTED        =  2,  // Have all frames in hand; starting processing
+    RS2_CALIBRATION_NOT_NEEDED     =  3,  // Finished; existing calibration within tolerances; nothing done!
+    RS2_CALIBRATION_SUCCESSFUL     =  4,  // Finished; have new calibration in-hand
+
+    RS2_CALIBRATION_RETRY          = -1,  // Initiating retry (asked for a new special frame)
+    RS2_CALIBRATION_FAILED         = -2,  // Unexpected: exception, device removed, stream stopped, etc.
+    RS2_CALIBRATION_SCENE_INVALID  = -3,  // Scene was not good enough for calibration; will retry
+    RS2_CALIBRATION_BAD_RESULT     = -4,  // Calibration finished, but results aren't good; will retry
+    RS2_CALIBRATION_BAD_CONDITIONS = -5,  // Trigger was attempted but conditions (temp/APD) were invalid (still inactive)
+
+    RS2_CALIBRATION_STATUS_FIRST   = -5,
+    RS2_CALIBRATION_STATUS_LAST    =  4,
+    RS2_CALIBRATION_STATUS_COUNT = RS2_CALIBRATION_STATUS_LAST - RS2_CALIBRATION_STATUS_FIRST + 1,
+} rs2_calibration_status;
+const char* rs2_calibration_status_to_string( rs2_calibration_status );
+
+typedef struct rs2_calibration_change_callback rs2_calibration_change_callback;
+typedef void (*rs2_calibration_change_callback_ptr)(rs2_calibration_status, void* arg);
+
+/**
+ * Adds a callback for a sensor that gets called when calibration (intrinsics) changes, e.g. due to auto-calibration
+ * \param[in] sensor        the sensor
+ * \param[in] callback      the C callback function that gets called
+ * \param[in] user          user argument that gets passed to the callback function
+ * \param[out] error        if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_register_calibration_change_callback( rs2_device* dev, rs2_calibration_change_callback_ptr callback, void* user, rs2_error** error );
+
+/**
+ * Adds a callback for a sensor that gets called when calibration (intrinsics) changes, e.g. due to auto-calibration
+ * \param[in] sensor        the sensor
+ * \param[in] callback      the C++ callback interface that gets called
+ * \param[out] error        if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_register_calibration_change_callback_cpp( rs2_device* dev, rs2_calibration_change_callback* callback, rs2_error** error );
+
+/**
+ * Triggers calibration of the given type
+ * \param[in] dev           the device
+ * \param[in] type          the type of calibration requested
+ * \param[out] error        if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_trigger_device_calibration( rs2_device* dev, rs2_calibration_type type, rs2_error** error );
+
 /**
 * This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
 * \param[in] ground_truth_mm     Ground truth in mm must be between 2500 - 2000000

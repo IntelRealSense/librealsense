@@ -166,7 +166,7 @@ namespace librealsense
             std::shared_ptr<platform::time_service> ts,
             std::shared_ptr<metadata_parser_map> parsers)
             : max_frame_queue_size(in_max_frame_queue_size),
-            mutex(), recycle_frames(true), _time_service(ts),
+            recycle_frames(true), mutex(), _time_service(ts),
             _metadata_parsers(parsers)
         {
             published_frames_count = 0;
@@ -221,7 +221,7 @@ namespace librealsense
         {
             if (pending_frames > 0)
             {
-                LOG_INFO("All frames from stream 0x"
+                LOG_DEBUG("All frames from stream 0x"
                     << std::hex << this << " are now released by the user" << std::dec);
             }
         }

@@ -3,6 +3,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
 #include "../include/librealsense2/hpp/rs_sensor.hpp"
+#include "calibrated-sensor.h"
 
 void init_sensor(py::module &m) {
     /** rs_sensor.hpp **/
@@ -61,6 +62,7 @@ void init_sensor(py::module &m) {
         }, "start passing frames into specified frame_queue", "queue"_a)
         .def("stop", &rs2::sensor::stop, "Stop streaming.", py::call_guard<py::gil_scoped_release>())
         .def("get_stream_profiles", &rs2::sensor::get_stream_profiles, "Retrieves the list of stream profiles supported by the sensor.")
+        .def("get_active_streams", &rs2::sensor::get_active_streams, "Retrieves the list of stream profiles currently streaming on the sensor.")
         .def_property_readonly("profiles", &rs2::sensor::get_stream_profiles, "The list of stream profiles supported by the sensor. Identical to calling get_stream_profiles")
         .def("get_recommended_filters", &rs2::sensor::get_recommended_filters, "Return the recommended list of filters by the sensor.")
         .def(py::init<>())
@@ -71,6 +73,7 @@ void init_sensor(py::module &m) {
         .def(BIND_DOWNCAST(sensor, motion_sensor))
         .def(BIND_DOWNCAST(sensor, fisheye_sensor))
         .def(BIND_DOWNCAST(sensor, pose_sensor))
+        .def(BIND_DOWNCAST(sensor, calibrated_sensor))
         .def(BIND_DOWNCAST(sensor, wheel_odometer));
 
     // rs2::sensor_from_frame [frame.def("get_sensor", ...)?
@@ -99,6 +102,28 @@ void init_sensor(py::module &m) {
     py::class_<rs2::fisheye_sensor, rs2::sensor> fisheye_sensor(m, "fisheye_sensor"); // No docstring in C++
     fisheye_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
         .def("__nonzero__", &rs2::fisheye_sensor::operator bool); // No docstring in C++
+
+    py::class_<rs2::calibrated_sensor, rs2::sensor> cal_sensor( m, "calibrated_sensor" );
+    cal_sensor.def( py::init<rs2::sensor>(), "sensor"_a )
+        .def( "override_intrinsics",
+              &rs2::calibrated_sensor::override_intrinsics,
+              "intrinsics"_a,
+              py::call_guard< py::gil_scoped_release >() )
+        .def( "override_extrinsics",
+              &rs2::calibrated_sensor::override_extrinsics,
+              "extrinsics"_a,
+              py::call_guard< py::gil_scoped_release >() )
+        .def( "get_dsm_params",
+              &rs2::calibrated_sensor::get_dsm_params,
+              py::call_guard< py::gil_scoped_release >() )
+        .def( "override_dsm_params",
+              &rs2::calibrated_sensor::override_dsm_params,
+              "dsm_params"_a,
+              py::call_guard< py::gil_scoped_release >() )
+        .def( "reset_calibration",
+              &rs2::calibrated_sensor::reset_calibration,
+              py::call_guard< py::gil_scoped_release >() )
+        .def( "__nonzero__", &rs2::calibrated_sensor::operator bool );
 
     // rs2::depth_stereo_sensor
     py::class_<rs2::depth_stereo_sensor, rs2::depth_sensor> depth_stereo_sensor(m, "depth_stereo_sensor"); // No docstring in C++

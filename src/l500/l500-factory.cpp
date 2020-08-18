@@ -81,8 +81,9 @@ namespace librealsense
                 get_flash_logs_command())
         {}
 
-        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+        l500_color_sensor * get_color_sensor() override { return nullptr; }
 
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
     };
 
     std::shared_ptr<device_interface> l500_info::create(std::shared_ptr<context> ctx,
@@ -122,12 +123,12 @@ namespace librealsense
                 platform::usb_device_info hwm;
 
                 if (!ivcam2::try_fetch_usb_device(group.usb_devices, depth, hwm))
-                    LOG_WARNING("try_fetch_usb_device(...) failed.");
+                    LOG_DEBUG("try_fetch_usb_device(...) failed.");
 
                 if(g.first[0].pid != L500_PID)
                     if (g.second.size() < 2)
                     {
-                        LOG_WARNING("L500 partial enum: " << g.second.size() << " HID devices were recognized (2+ expected)");
+                        LOG_DEBUG("L500 partial enum: " << g.second.size() << " HID devices were recognized (2+ expected)");
 #if !defined(ANDROID) && !defined(__APPLE__) // Not supported by android & macos
                         continue;
 #endif // Not supported by android & macos
@@ -139,7 +140,7 @@ namespace librealsense
             }
             else
             {
-                LOG_WARNING("L500 group_devices is empty.");
+                LOG_DEBUG("L500 group_devices is empty.");
             }
         }
 
@@ -160,6 +161,7 @@ namespace librealsense
 
     std::shared_ptr<matcher> rs515_device::create_matcher(const frame_holder & frame) const
     {
+        LOG_DEBUG( "rs515_device::create_matcher" );
         std::vector<std::shared_ptr<matcher>> depth_rgb_matchers = { l500_depth::create_matcher(frame),
             std::make_shared<identity_matcher>(_color_stream->get_unique_id(), _color_stream->get_stream_type())};
 

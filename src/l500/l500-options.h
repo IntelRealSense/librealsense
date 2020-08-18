@@ -77,7 +77,7 @@ namespace librealsense
         template<typename T, class ... Args>
         std::shared_ptr<cascade_option<T>> register_option(rs2_option opt, Args... args)
         {
-            auto& depth_sensor = get_depth_sensor();
+            auto& depth_sensor = get_synthetic_depth_sensor();
 
             auto signaled_opt = std::make_shared <cascade_option<T>>(std::forward<Args>(args)...);
             signaled_opt->add_observer([opt, this](float val) {on_set_option(opt, val);});

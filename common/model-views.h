@@ -27,6 +27,7 @@
 #include "fw-update-helper.h"
 #include "updates-model.h"
 #include "calibration-model.h"
+#include "cah-model.h"
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);
@@ -267,7 +268,9 @@ namespace rs2
             opt == RS2_OPTION_STREAM_FORMAT_FILTER ||
             opt == RS2_OPTION_STREAM_INDEX_FILTER ||
             opt == RS2_OPTION_FRAMES_QUEUE_SIZE ||
-            opt == RS2_OPTION_SENSOR_MODE)
+            opt == RS2_OPTION_SENSOR_MODE || 
+            opt == RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH ||
+            opt == RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH)
             return true;
         return false;
     }
@@ -483,6 +486,9 @@ namespace rs2
         std::string icon[2];
     };
 
+    bool yes_no_dialog(const std::string& title, const std::string& message_text, bool& approved, ux_window& window, const std::string& error_message, bool disabled = false, const std::string& disabled_reason = "");
+    bool status_dialog(const std::string& title, const std::string& process_topic_text, const std::string& process_status_text, bool enable_close, ux_window& window);
+
     class tm2_model
     {
     public:
@@ -500,7 +506,6 @@ namespace rs2
         const float len_x = 0.1f;
         const float len_y = 0.03f;
         const float len_z = 0.01f;
-        const float lens_radius = 0.005f;
         /*
         4--------------------------3
         /|                         /|
@@ -534,8 +539,6 @@ namespace rs2
             } };
 
         colored_cube camera_box{ { { f1,colors[0] },{ f2,colors[1] },{ f3,colors[2] },{ f4,colors[3] },{ f5,colors[4] },{ f6,colors[5] } } };
-        float3 center_left{ v5.x + len_x / 3, v6.y - len_y / 3, v5.z };
-        float3 center_right{ v6.x - len_x / 3, v6.y - len_y / 3, v5.z };
 
         std::vector<tracked_point> trajectory;
         std::vector<float2> boundary;
@@ -776,6 +779,7 @@ namespace rs2
 
 
         std::shared_ptr< atomic_objects_in_frame > get_detected_objects() const { return _detected_objects; }
+        bool is_cah_model_enabled() const { return _accuracy_health_model ? true : false; }
 
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
         std::shared_ptr<syncer_model> syncer;
@@ -801,7 +805,17 @@ namespace rs2
 
         std::vector<std::shared_ptr<notification_model>> related_notifications;
 
+        bool show_trigger_camera_accuracy_health_popup = false;
+        bool show_reset_camera_accuracy_health_popup = false;
+
     private:
+        // This class is in charge of camera accuracy health window parameters,
+        // Needed as a member for reseting the window memory on device disconnection.
+       
+
+        std::unique_ptr< cah_model > _accuracy_health_model;  // If this device does not support CAH feature,
+                                                              // the pointer will point to nullptr
+
         void draw_info_icon(ux_window& window, ImFont* font, const ImVec2& size);
         int draw_seek_bar();
         int draw_playback_controls(ux_window& window, ImFont* font, viewer_model& view);
@@ -822,7 +836,9 @@ namespace rs2
         bool prompt_toggle_advanced_mode(bool enable_advanced_mode, const std::string& message_text,
             std::vector<std::string>& restarting_device_info,
             viewer_model& view,
-            ux_window& window);
+            ux_window& window,
+            const std::string& error_message);
+
         void load_viewer_configurations(const std::string& json_str);
         void save_viewer_configurations(std::ofstream& outfile, nlohmann::json& j);
 
@@ -929,10 +945,6 @@ namespace rs2
         std::atomic<bool> render_thread_active; // True when render post processing filter rendering thread is active, False otherwise
         std::shared_ptr<std::thread> render_thread;              // Post processing filter rendering Thread running render_loop()
         void render_loop();                     // Post processing filter rendering function
-
-        int last_frame_number = 0;
-        double last_timestamp = 0;
-        int last_stream_id = 0;
 
         std::shared_ptr<gl::uploader> uploader; // GL element that helps pre-emptively copy frames to the GPU
     };

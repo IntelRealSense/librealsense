@@ -39,7 +39,7 @@ classdef frame_queue < handle
             narginchk(2, 2);
             % C++ function validates contents of type
             validateattributes(type, {'char', 'string'}, {'scalartext'}, '', 'type', 2);
-            out = realsense.librealsense_mex('rs2::frame_queue', 'poll_for_frame', this.objectHandle, type)
+            [res, out] = realsense.librealsense_mex('rs2::frame_queue', 'poll_for_frame', this.objectHandle, type)
             switch type
             case 'frame'
                 frame = realsense.frame(out);

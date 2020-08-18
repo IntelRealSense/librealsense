@@ -21,6 +21,11 @@
 
 #include <iostream>
 
+void glfw_error_callback(int error, const char* description)
+{
+    std::cerr << "GLFW Driver Error: " << description << "\n";
+}
+
 namespace rs2
 {
     void GLAPIENTRY MessageCallback(GLenum source,
@@ -52,7 +57,6 @@ namespace rs2
         config_file::instance().set_default(configurations::window::saved_size, false);
 
         config_file::instance().set_default(configurations::viewer::is_measuring, false);
-        config_file::instance().set_default(configurations::viewer::log_filename, get_folder_path(special_folder::user_documents) + "librealsense.log");
         config_file::instance().set_default(configurations::viewer::log_to_console, true);
         config_file::instance().set_default(configurations::viewer::log_to_file, false);
         config_file::instance().set_default(configurations::viewer::log_severity, 2);
@@ -60,7 +64,6 @@ namespace rs2
         config_file::instance().set_default(configurations::viewer::ground_truth_r, 2500);
 
         config_file::instance().set_default(configurations::record::compression_mode, 2); // Let the device decide
-        config_file::instance().set_default(configurations::record::default_path, get_folder_path(special_folder::user_documents));
         config_file::instance().set_default(configurations::record::file_save_mode, 0); // Auto-select name
 
         config_file::instance().set_default(configurations::performance::show_fps, false);
@@ -74,8 +77,23 @@ namespace rs2
         config_file::instance().set_default(configurations::viewer::commands_xml, "./Commands.xml");
         config_file::instance().set_default(configurations::viewer::hwlogger_xml, "./HWLoggerEvents.xml");
 
+        std::string path;
+        try
+        {
+            path = get_folder_path(special_folder::user_documents);
+        }
+        catch (const std::exception& e)
+        {
+            std::string msg = "Failed to get Documents folder";
+            rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());
+            path = "";
+        }
+        config_file::instance().set_default(configurations::viewer::log_filename, path + "librealsense.log");
+        config_file::instance().set_default(configurations::record::default_path, path);
+
 #ifdef __APPLE__
-        config_file::instance().set_default(configurations::performance::font_oversample, 8);
+
+        config_file::instance().set_default(configurations::performance::font_oversample, 2);
         config_file::instance().set_default(configurations::performance::enable_msaa, true);
         config_file::instance().set_default(configurations::performance::msaa_samples, 4);
         // On Mac-OS, mixing OpenGL 2 with OpenGL 3 is not supported by the driver
@@ -203,6 +221,8 @@ namespace rs2
 
         if (!glfwInit())
             exit(1);
+
+        glfwSetErrorCallback(glfw_error_callback);
 
         _hand_cursor = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
         _cross_cursor = glfwCreateStandardCursor(GLFW_CROSSHAIR_CURSOR);
