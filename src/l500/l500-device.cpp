@@ -642,6 +642,19 @@ namespace librealsense
         return _hw_monitor->send(input);
     }
 
+    platform::usb_spec l500_device::get_usb_spec() const
+    {
+        if (!supports_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+            return platform::usb_undefined;
+        auto str = get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+        for (auto u : platform::usb_spec_names)
+        {
+            if (u.second.compare(str) == 0)
+                return u.first;
+        }
+        return platform::usb_undefined;
+    }
+
     notification l500_notification_decoder::decode(int value)
     {
         if (l500_fw_error_report.find(static_cast<uint8_t>(value)) != l500_fw_error_report.end())
