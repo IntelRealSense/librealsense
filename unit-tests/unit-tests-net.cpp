@@ -24,6 +24,11 @@
 #include <iostream>
 #include <fstream>
 
+#ifdef WIN32
+#  define popen popen
+#  define pclose pclose
+#endif
+
 using namespace rs2;
 
 #define TIME_TEST_SEC 10
@@ -70,17 +75,17 @@ std::string exec_cmd(std::string command) {
 
     fuflog << "[LRS-NET TEST] Command to run: " << command << std::endl;
 
-    FILE* pipe = _popen(command.c_str(), "r");
+    FILE* pipe = popen(command.c_str(), "r");
     if (!pipe) throw std::runtime_error("popen() failed!");
     try {
         while ((fgets(buffer, sizeof buffer, pipe) != NULL)) {
             result += buffer;
         }
     } catch (...) {
-        _pclose(pipe);
+        pclose(pipe);
         throw;
     }
-    _pclose(pipe);
+    pclose(pipe);
 
     return result;
 }
