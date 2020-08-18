@@ -8,7 +8,7 @@
 #include <types.h>
 
 
-TEST_CASE( "HDR Config - changing only exposure", "[HDR]" ) {
+TEST_CASE( "HDR Modify - changing only gain", "[HDR]" ) {
     
     rs2::context ctx;
     rs2::device_list devices_list = ctx.query_devices();
@@ -18,12 +18,11 @@ TEST_CASE( "HDR Config - changing only exposure", "[HDR]" ) {
     rs2::device dev = devices_list[0];
     rs2::depth_sensor depth_sensor = dev.query_sensors().front();
 
-    float gain_before_hdr = 50.f;
-    depth_sensor.set_option(RS2_OPTION_GAIN, gain_before_hdr);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_GAIN) == gain_before_hdr);
-
     depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE) == 0.f);
+
+    depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
+    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 1.f);
 
     depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_SIZE, 2);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_SEQUENCE_SIZE) == 2.f);
@@ -37,7 +36,7 @@ TEST_CASE( "HDR Config - changing only exposure", "[HDR]" ) {
     depth_sensor.set_option(RS2_OPTION_GAIN, first_gain);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_GAIN) == first_gain);
 
-    float second_gain = 200.f;
+    float second_gain = 20.f;
     depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 2);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_SEQUENCE_ID) == 2.f);
     depth_sensor.set_option(RS2_OPTION_GAIN, second_gain);
@@ -46,8 +45,6 @@ TEST_CASE( "HDR Config - changing only exposure", "[HDR]" ) {
     depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 0);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_SEQUENCE_ID) == 0.f);
 
-    depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 1.f);
 
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_DEPTH);
@@ -57,11 +54,9 @@ TEST_CASE( "HDR Config - changing only exposure", "[HDR]" ) {
     pipe.start(cfg);
 
     int iterations = 0;
-    float static_gain_back = first_gain;
-    float previous_gain = 0.f;
-    float current_gain = 0.f;
-    bool static_gain_reached = false;
-    while (dev) 
+    float pair_fc_gain = first_gain;
+    float odd_fc_gain = second_gain;
+    while (dev) // Application still alive?
     {
         rs2::frameset data = pipe.wait_for_frames();
 
@@ -69,40 +64,41 @@ TEST_CASE( "HDR Config - changing only exposure", "[HDR]" ) {
         long long frame_counter = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
         long long frame_gain = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_GAIN_LEVEL);
 
-        ++iterations;
-        if (iterations == 100)
+        static long long frame_counter_s = frame_counter;
+        if (iterations++ == 0)
         {
-            depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 0);
-            REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 0.f);
-
-            previous_gain = frame_gain;
-        }
-        else if(iterations > 100)
-        {
-            if (!static_gain_reached)
+            if (frame_counter % 2 == 0)
             {
-                current_gain = frame_gain;
-                if (current_gain == previous_gain)
-                {
-                    static_gain_reached = true;
-                    static_gain_back = current_gain;
-                    REQUIRE(static_gain_back == gain_before_hdr);
-                    int iterations_from_command_to_static = iterations - 100;
-                    std::cout << "iterations since command = " << iterations_from_command_to_static << std::endl;
-                    REQUIRE(iterations_from_command_to_static < 10);
-                }  
+                if (frame_gain == first_gain)
+                    continue;
                 else
                 {
-                    previous_gain = current_gain;
+                    pair_fc_gain = second_gain;
+                    odd_fc_gain = first_gain;
                 }
             }
             else
             {
-                REQUIRE(frame_gain == static_gain_back);
+                if (frame_gain == second_gain)
+                    continue;
+                else
+                {
+                    pair_fc_gain = second_gain;
+                    odd_fc_gain = first_gain;
+                }
             }
         }
-
-        if (iterations == 200)
+        else
+        {
+            if (!(frame_counter % 2))
+            {
+                REQUIRE(frame_gain == pair_fc_gain);
+            }
+            else {
+                REQUIRE(frame_gain == odd_fc_gain);
+            }
+        }
+        if (iterations == 100)
             break;
     }
 
