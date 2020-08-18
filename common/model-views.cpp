@@ -1088,19 +1088,6 @@ namespace rs2
 
             int selection_index{};
 
-            // TODO: Once GLSL parts are properly optimised
-            // and tested on all types of hardware
-            // make sure we use Full-HD YUY overriding the default
-            // This will lower CPU utilisation and generally be faster
-            // if (!usb2 && std::string(s->get_info(RS2_CAMERA_INFO_NAME)) == "RGB Camera")
-            // {
-            //     if (config_file::instance().get(configurations::performance::glsl_for_rendering))
-            //     {
-            //         resolution_constrain = std::make_pair(1920, 1080);
-            //         def_format = RS2_FORMAT_YUYV;
-            //     }
-            // }
-
             if (!show_single_fps_list)
             {
                 for (auto fps_array : fps_values_per_stream)
