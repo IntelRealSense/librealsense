@@ -337,7 +337,6 @@ namespace librealsense
             []() { return std::make_shared<confidence_rotation_transform>(); }
         );
 
-        depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE));
 
         std::shared_ptr< freefall_option > freefall_opt;
         if( _fw_version >= firmware_version( "1.3.5.0" ) )
