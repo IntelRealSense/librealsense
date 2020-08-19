@@ -8,7 +8,9 @@
 //#include  "../../common/tiny-profiler.h"
 #include <vector>
 #include <cmath>
+#include <algorithm> 
 
+using namespace std;
 
 namespace librealsense
 {
@@ -36,6 +38,29 @@ namespace librealsense
             break;
         }
     }
+   int gcd(int a, int b) {
+       if (b == 0)
+           return a;
+       return gcd(b, a % b);
+   }
+   // Return the gretest common divisor of a 
+   // and b which lie in the given range. 
+   int maxDivisorRange(int a, int b, int l, int h)
+   {
+       int g = gcd(a, b);
+       int res = g;
+
+       // Loop from 1 to sqrt(GCD(a, b). 
+       for (int i = l; i * i <= g && i <= h; i++)
+
+           if ((g % i == 0) && (g / i) < h)
+           {
+               res = g / i; 
+               break;
+           }
+
+       return res;
+   }
    template<size_t SIZE>
    void rotate_image_optimized(byte* dest[], const byte* source, int width, int height)
    {
@@ -44,7 +69,32 @@ namespace librealsense
        auto height_out = width;
 
        auto out = dest[0];
-       byte buffer[ROTATION_BUFFER_SIZE][ROTATION_BUFFER_SIZE * SIZE];
+       //auto buffer_size = std::min(gcd(height, width), ROTATION_BUFFER_SIZE);
+       auto buffer_size = maxDivisorRange(height, width, 1, ROTATION_BUFFER_SIZE); // gcd(height, width);
+      
+       byte *buffer = new byte[buffer_size * buffer_size * SIZE];  
+
+       for (int i = 0; i < height; i = i + buffer_size)
+       {
+           for (int j = 0; j < width; j = j + buffer_size)
+           {
+               for (int ii = 0; ii < buffer_size; ii++) {
+                   for (int jj = 0; jj < buffer_size; jj++) {
+                       auto source_index = (j + jj + (width * (i + ii))) * SIZE; // capture a buffer from source
+                       memcpy((void*)(buffer + buffer_size* (buffer_size - jj - 1) + (buffer_size - ii - 1) * SIZE), &source[source_index], SIZE);
+                   }
+               }
+               for (int ii = 0; ii < buffer_size; ii++) { // copy buffer to out
+                   auto out_index = ((height - (i + buffer_size - 1) - 1) + (width - (j + buffer_size - 1) - 1 + ii) * height) * SIZE;
+                   memcpy(&out[out_index], (buffer + ii), SIZE * buffer_size);
+               }
+
+           }
+       }
+
+       /*//byte buffer[ROTATION_BUFFER_SIZE][ROTATION_BUFFER_SIZE * SIZE];
+       byte *buffer = new byte[buffer_size * buffer_size * SIZE];  
+
        for (int i = 0; i < height; i = i + ROTATION_BUFFER_SIZE)
        {
            for (int j = 0; j < width; j = j + ROTATION_BUFFER_SIZE)
@@ -61,7 +111,7 @@ namespace librealsense
                }
 
            }
-       }
+       }*/
    }
     // IMPORTANT! This implementation is based on the assumption that the RGB sensor is positioned strictly to the left of the depth sensor.
     // namely D415/D435 and SR300. The implementation WILL NOT work properly for different setups
