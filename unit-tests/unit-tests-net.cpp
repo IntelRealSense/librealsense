@@ -33,7 +33,7 @@
 
 std::string server_log;
 
-std::string get_env(std::string name, std::string default) {
+std::string get_env(std::string name, std::string def) {
     static std::map<std::string, std::string> env;
 
     if (env.find(name) == env.end()) {
@@ -42,7 +42,7 @@ std::string get_env(std::string name, std::string default) {
             env.insert(std::pair<std::string, std::string>(name, val));
         }
         else {
-            env.insert(std::pair<std::string, std::string>(name, default));
+            env.insert(std::pair<std::string, std::string>(name, def));
         }
     }
 
