@@ -33,6 +33,35 @@
 
 std::string server_log;
 
+std::string get_env(std::string name, std::string default) {
+    static std::map<std::string, std::string> env;
+
+    if (env.find(name) == env.end()) {
+        char* val = std::getenv(name.c_str());
+        if (val) {
+            env.insert(std::pair<std::string, std::string>(name, val));
+        }
+        else {
+            env.insert(std::pair<std::string, std::string>(name, default));
+        }
+    }
+
+    return env[name];
+}
+
+std::string server_address() {
+    return get_env("SERVER_ADDRESS", "127.0.0.1");
+}
+
+std::string user_name() {
+    return get_env("USER_NAME", "pi");
+}
+
+std::string server_runcmd() {
+    return get_env("SERVER_RUNCMD", "\"cd /tmp/lrs-net && /usr/bin/sudo ./rs-server -i " + server_address() + "\"");
+}
+
+/*
 std::string server_address() {
     static std::string server_address = "";
 
@@ -64,6 +93,7 @@ std::string user_name() {
 
     return user_name;
 }
+*/
 
 std::string exec_cmd(std::string command) {
     char buffer[1024];
@@ -75,7 +105,8 @@ std::string exec_cmd(std::string command) {
         while ((fgets(buffer, sizeof buffer, pipe) != NULL)) {
             result += buffer;
         }
-    } catch (...) {
+    }
+    catch (...) {
         pclose(pipe);
         throw;
     }
@@ -100,7 +131,7 @@ std::thread start_server() {
     stop_server();
 
     std::thread t([&]() {
-        server_log = ssh_cmd("/tmp/rs-server -i "  + server_address());
+        server_log = ssh_cmd(server_runcmd());
     });
     std::this_thread::sleep_for(std::chrono::seconds(5));
     return t;
