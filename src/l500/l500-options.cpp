@@ -95,14 +95,10 @@ namespace librealsense
         else
         {
             // On USB2 we have only QVGA sensor mode
-            bool usb2 = false;
-            if(supports_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
-            {
-                std::string dev_usb_type( get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) );
-                usb2 = ( std::string::npos != dev_usb_type.find( "2." ) );
-            }
+            auto usb_spec = get_usb_spec();
+            bool usb3mode = (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined);
 
-            auto default_sensor_mode = static_cast<float>(usb2 ? RS2_SENSOR_MODE_QVGA : RS2_SENSOR_MODE_VGA);
+            auto default_sensor_mode = static_cast<float>(usb3mode ? RS2_SENSOR_MODE_VGA : RS2_SENSOR_MODE_QVGA);
 
             auto resolution_option = std::make_shared<float_option_with_description<rs2_sensor_mode>>(option_range{ RS2_SENSOR_MODE_VGA,RS2_SENSOR_MODE_COUNT - 1,1, default_sensor_mode }, "Notify the sensor about the intended streaming mode. Required for preset ");
 
