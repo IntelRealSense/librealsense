@@ -8,9 +8,7 @@
 //#include  "../../common/tiny-profiler.h"
 #include <vector>
 #include <cmath>
-#include <algorithm> 
 
-using namespace std;
 
 namespace librealsense
 {
@@ -69,8 +67,7 @@ namespace librealsense
        auto height_out = width;
 
        auto out = dest[0];
-       //auto buffer_size = std::min(gcd(height, width), ROTATION_BUFFER_SIZE);
-       auto buffer_size = maxDivisorRange(height, width, 1, ROTATION_BUFFER_SIZE); // gcd(height, width);
+       auto buffer_size = maxDivisorRange(height, width, 1, ROTATION_BUFFER_SIZE); 
       
        byte *buffer = new byte[buffer_size * buffer_size * SIZE];  
 
@@ -91,27 +88,6 @@ namespace librealsense
 
            }
        }
-
-       /*//byte buffer[ROTATION_BUFFER_SIZE][ROTATION_BUFFER_SIZE * SIZE];
-       byte *buffer = new byte[buffer_size * buffer_size * SIZE];  
-
-       for (int i = 0; i < height; i = i + ROTATION_BUFFER_SIZE)
-       {
-           for (int j = 0; j < width; j = j + ROTATION_BUFFER_SIZE)
-           {
-               for (int ii = 0; ii < ROTATION_BUFFER_SIZE; ii++) {
-                   for (int jj = 0; jj < ROTATION_BUFFER_SIZE; jj++) {
-                       auto source_index = (j + jj + (width * (i + ii))) * SIZE; // capture a buffer from source
-                       memcpy((void*)&(buffer[ROTATION_BUFFER_SIZE - jj - 1][(ROTATION_BUFFER_SIZE - ii - 1) * SIZE]), &source[source_index], SIZE);
-                   }
-               }
-               for (int ii = 0; ii < ROTATION_BUFFER_SIZE; ii++) { // copy buffer to out
-                   auto out_index = ((height - (i + ROTATION_BUFFER_SIZE - 1) - 1) + (width - (j + ROTATION_BUFFER_SIZE - 1) - 1 + ii) * height) * SIZE;
-                   memcpy(&out[out_index], (buffer + ii), SIZE * ROTATION_BUFFER_SIZE);
-               }
-
-           }
-       }*/
    }
     // IMPORTANT! This implementation is based on the assumption that the RGB sensor is positioned strictly to the left of the depth sensor.
     // namely D415/D435 and SR300. The implementation WILL NOT work properly for different setups
