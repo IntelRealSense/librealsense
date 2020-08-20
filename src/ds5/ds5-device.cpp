@@ -1100,6 +1100,8 @@ namespace librealsense
     processing_blocks get_ds5_depth_recommended_proccesing_blocks()
     {
         auto res = get_depth_recommended_proccesing_blocks();
+        res.push_back(std::make_shared<hdr_merging_processor>());
+        res.push_back(std::make_shared<hdr_splitting_processor>());
         res.push_back(std::make_shared<threshold>());
         res.push_back(std::make_shared<disparity_transform>(true));
         res.push_back(std::make_shared<spatial_filter>());
