@@ -6,17 +6,38 @@
 
 namespace librealsense
 {
-    hdr_config::hdr_config(hw_monitor& hwm, sensor_base* depth_ep) :
-        _sequence_size(DEFAULT_SEQUENCE_SIZE),
-        _hdr_sequence_params(),
-        _current_hdr_sequence_index(DEFAULT_HDR_SEQUENCE_INDEX),
-        _relative_mode(false),
-        _is_enabled(false),
-        _is_config_in_process(false),
-        _has_config_changed(false),
+    hdr_config::hdr_config(hw_monitor& hwm, sensor_base* depth_ep,
+        option_range exposure_range, option_range gain_range) :
         _hwm(hwm),
-        _sensor(depth_ep)
-    { }
+        _sensor(depth_ep),
+        _exposure_range(exposure_range),
+        _gain_range(gain_range)
+    { 
+        reset_to_default();
+    }
+
+    void hdr_config::reset_to_default()
+    {
+        _relative_mode = false;
+        _is_enabled = false;
+        _is_config_in_process = false;
+        _has_config_changed = false;
+        _current_hdr_sequence_index = -1;
+
+        _sequence_size = 2;
+        _hdr_sequence_params.clear();
+        _hdr_sequence_params.resize(2);
+        
+        float exposure_default_value = _exposure_range.def;
+        float gain_default_value = _gain_range.def;
+        hdr_params params_0(0, exposure_default_value, gain_default_value);
+        _hdr_sequence_params[0] = params_0;
+
+        float exposure_min_value = _exposure_range.min;
+        float gain_min_value = _gain_range.min;
+        hdr_params params_1(1, exposure_min_value, gain_min_value);
+        _hdr_sequence_params[1] = params_1;
+    }
 
     float hdr_config::get(rs2_option option) const
     {
@@ -138,19 +159,6 @@ namespace librealsense
         command cmd(ds::SETSUBPRESET, static_cast<int>(pattern.size()));
         cmd.data = pattern;
         auto res = _hwm.send(cmd);
-
-        reset();
-    }
-
-    void hdr_config::reset()
-    {
-        _sequence_size = DEFAULT_SEQUENCE_SIZE;
-        _hdr_sequence_params.clear();
-        _current_hdr_sequence_index = DEFAULT_HDR_SEQUENCE_INDEX;
-        _relative_mode = false;
-        _is_enabled = false;
-        _is_config_in_process = false;
-        _has_config_changed = false;
     }
 
     //helper method - for debug only - to be deleted
@@ -239,38 +247,30 @@ namespace librealsense
         uint16_t frame_header_size = 5;
         //number of iterations for each frame
         uint8_t iterations = 1;
+        // number of Controls for current frame
+        // TODO - Remi: get back to 2 when getting fw with new capacity
+        uint16_t num_of_controls = 1; //2
+
+        std::vector<uint8_t> frame_header;
+        frame_header.insert(frame_header.end(), (uint8_t*)&frame_header_size, (uint8_t*)&frame_header_size + 2);
+        frame_header.insert(frame_header.end(), &iterations, &iterations + 1);
+        frame_header.insert(frame_header.end(), (uint8_t*)&num_of_controls, (uint8_t*)&num_of_controls + 2);
 
         std::vector<uint8_t> frames_config;
         for (int i = 0; i < _sequence_size; ++i)
         {
-            // number of Controls for current frame
-            uint16_t num_of_controls = 0;
-            int exposure_configured = _hdr_sequence_params[i]._is_exposure_configured ? 1 : 0;
-            int gain_configured = _hdr_sequence_params[i]._is_gain_configured ? 1 : 0;
-            num_of_controls = exposure_configured + gain_configured;
-
-            std::vector<uint8_t> frame_header;
-            frame_header.insert(frame_header.end(), (uint8_t*)&frame_header_size, (uint8_t*)&frame_header_size + 2);
-            frame_header.insert(frame_header.end(), &iterations, &iterations + 1);
-            frame_header.insert(frame_header.end(), (uint8_t*)&num_of_controls, (uint8_t*)&num_of_controls + 2);
-
             frames_config.insert(frames_config.end(), &frame_header[0], &frame_header[0] + frame_header.size());
 
-            if (_hdr_sequence_params[i]._is_exposure_configured)
-            {
-                uint16_t exposure_id = static_cast<uint16_t>(depth_manual_exposure);
-                uint32_t exposure_value = static_cast<uint32_t>(_hdr_sequence_params[i]._exposure);
-                frames_config.insert(frames_config.end(), (uint8_t*)&exposure_id, (uint8_t*)&exposure_id + 2);
-                frames_config.insert(frames_config.end(), (uint8_t*)&exposure_value, (uint8_t*)&exposure_value + 4);
-            }
+            uint16_t exposure_id = static_cast<uint16_t>(depth_manual_exposure);
+            uint32_t exposure_value = static_cast<uint32_t>(_hdr_sequence_params[i]._exposure);
+            frames_config.insert(frames_config.end(), (uint8_t*)&exposure_id, (uint8_t*)&exposure_id + 2);
+            frames_config.insert(frames_config.end(), (uint8_t*)&exposure_value, (uint8_t*)&exposure_value + 4);
             
-            if (_hdr_sequence_params[i]._is_gain_configured)
-            {
-                uint16_t gain_id = static_cast<uint16_t>(depth_gain);
-                uint32_t gain_value = static_cast<uint32_t>(_hdr_sequence_params[i]._gain);
-                frames_config.insert(frames_config.end(), (uint8_t*)&gain_id, (uint8_t*)&gain_id + 2);
-                frames_config.insert(frames_config.end(), (uint8_t*)&gain_value, (uint8_t*)&gain_value + 4);
-            }
+            // TODO - Remi: uncomment when getting fw with new capacity
+            /*uint16_t gain_id = static_cast<uint16_t>(depth_gain);
+            uint32_t gain_value = static_cast<uint32_t>(_hdr_sequence_params[i]._gain);
+            frames_config.insert(frames_config.end(), (uint8_t*)&gain_id, (uint8_t*)&gain_id + 2);
+            frames_config.insert(frames_config.end(), (uint8_t*)&gain_value, (uint8_t*)&gain_value + 4);*/
         }
 
         return frames_config;
@@ -321,33 +321,36 @@ namespace librealsense
     {
         /* TODO - add limitation on max exposure to be below frame interval - is range really needed for this?*/
         _hdr_sequence_params[_current_hdr_sequence_index]._exposure = value;
-        _hdr_sequence_params[_current_hdr_sequence_index]._is_exposure_configured = true;
         _has_config_changed = true;
     }
 
     void hdr_config::set_gain(float value)
     {
         _hdr_sequence_params[_current_hdr_sequence_index]._gain = value;
-        _hdr_sequence_params[_current_hdr_sequence_index]._is_gain_configured = true;
         _has_config_changed = true;
     }
 
 
     hdr_params::hdr_params() :
         _sequence_id(0),
-        _is_exposure_configured(false),
-        _is_gain_configured(false),
         _exposure(0.f),
         _gain(0.f)
     {}
     
     hdr_params::hdr_params(int sequence_id, float exposure, float gain) :
         _sequence_id(sequence_id),
-        _is_exposure_configured(false),
-        _is_gain_configured(false),
         _exposure(exposure),
         _gain(gain)
     {}
+
+    hdr_params& hdr_params::operator=(const hdr_params& other)
+    {
+        _sequence_id = other._sequence_id;
+        _exposure = other._exposure;
+        _gain = other._gain;
+
+        return *this;
+    }
 
     
 

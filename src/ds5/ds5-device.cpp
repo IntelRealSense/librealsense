@@ -801,7 +801,20 @@ namespace librealsense
         // register HDR options
         if (_fw_version >= hdr_firmware_version) 
         {
-            auto hdr_cfg = std::make_shared<hdr_config>(*_hw_monitor, &raw_depth_sensor);
+            // exposure and gain ranges are needed for hdr
+            //EXPOSURE RANGE
+            auto uvc_xu_exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(raw_depth_sensor,
+                depth_xu,
+                DS5_EXPOSURE,
+                "Depth Exposure (usec)");
+            option_range hdr_exposure_range = uvc_xu_exposure_option->get_range();
+
+            //GAIN RANGE
+            auto uvc_pu_gain_option = std::make_shared<uvc_pu_option>(raw_depth_sensor, RS2_OPTION_GAIN);
+            option_range hdr_gain_range = uvc_pu_gain_option->get_range();
+
+            auto hdr_cfg = std::make_shared<hdr_config>(*_hw_monitor, &raw_depth_sensor,
+                hdr_exposure_range, hdr_gain_range);
 
             option_range hdr_sequence_size_range = { 1.f /*min*/, 3.f /*max*/, 1.f /*step*/, 1.f /*default*/ };
             auto hdr_sequence_size_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_HDR_SEQUENCE_SIZE, hdr_sequence_size_range);
@@ -821,18 +834,11 @@ namespace librealsense
             
             // options that change behavior during HDR configuration
             //EXPOSURE
-            auto uvc_xu_exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(raw_depth_sensor,
-                depth_xu,
-                DS5_EXPOSURE,
-                "Depth Exposure (usec)");
-            option_range hdr_exposure_range = uvc_xu_exposure_option->get_range();
             auto hdr_exposure_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_EXPOSURE, hdr_exposure_range);
             auto hdr_conditional_exposure_option = std::make_shared<hdr_conditional_option>(hdr_cfg, uvc_xu_exposure_option, hdr_exposure_option);
             depth_sensor.register_option(RS2_OPTION_EXPOSURE, hdr_conditional_exposure_option);
 
             //GAIN
-            auto uvc_pu_gain_option = std::make_shared<uvc_pu_option>(raw_depth_sensor, RS2_OPTION_GAIN);
-            option_range hdr_gain_range = uvc_pu_gain_option->get_range();
             auto hdr_gain_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_GAIN, hdr_gain_range);
             auto hdr_conditional_gain_option = std::make_shared<hdr_conditional_option>(hdr_cfg, uvc_pu_gain_option, hdr_gain_option);
             depth_sensor.register_option(RS2_OPTION_GAIN, hdr_conditional_gain_option);
