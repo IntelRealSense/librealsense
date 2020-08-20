@@ -55,7 +55,7 @@ namespace librealsense
        // Loop from 1 to sqrt(GCD(a, b). 
        for (int i = lo; i * i <= g && i <= hi; i++)
 
-           if ((g % i == 0) && (g / i) < hi)
+           if ((g % i == 0) && (g / i) <= hi)
            {
                res = g / i; 
                break;
@@ -193,10 +193,11 @@ namespace librealsense
                    {
                        points_ptr = points + uv_index;
                        uv_map_ptr = uv_map + uv_index;
+                       auto scan_win_size = maxDivisorRange(rotated_depth_height, rotated_depth_width, 1, VERTICAL_SCAN_WINDOW_SIZE);
 
-                       if (j >= VERTICAL_SCAN_WINDOW_SIZE) {
+                       if (j >= scan_win_size) {
                            maxInLine = (uv_map_ptr - 1 * points_width)->y;
-                           for (size_t y = 0; y <= VERTICAL_SCAN_WINDOW_SIZE; ++y)
+                           for (size_t y = 0; y <= scan_win_size; ++y)
                            {
                                if (((uv_map_ptr + y * points_width)->y < maxInLine))
                                {
