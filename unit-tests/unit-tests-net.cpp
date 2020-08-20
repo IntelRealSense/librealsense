@@ -61,6 +61,10 @@ std::string server_runcmd() {
     return get_env("SERVER_RUNCMD", "\"cd /tmp/lrs-net && /usr/bin/sudo ./rs-server -i " + server_address() + "\"");
 }
 
+std::string target_coverage() {
+    return get_env("TARGET_COVERAGE", "95");
+}
+
 std::string exec_cmd(std::string command) {
     char buffer[1024];
     std::string result = "";
@@ -158,6 +162,9 @@ TEST_CASE("All profiles Streaming", "[net]") {
     std::vector<rs2::sensor> sensors;
     std::vector<rs2::stream_profile> profiles;
 
+    // calculate the epsion from the target coverage
+    float e = (100 - std::stoi(target_coverage())) / 100.0f;
+
     REQUIRE_NOTHROW(server = start_server());
     REQUIRE_NOTHROW(dev = rs2::net_device(server_address()));
     REQUIRE_NOTHROW(sensors = dev.query_sensors());
@@ -178,9 +185,9 @@ TEST_CASE("All profiles Streaming", "[net]") {
             int height = ((rs2::video_stream_profile)profile).height();
             int expected_frames = TIME_TEST_SEC * profile.fps();
             int received_frames = frames;
-            float drop = ((float)expected_frames / (float)received_frames - 1) * 100;
-            CAPTURE(stream, fps, width, height, expected_frames, received_frames, drop, server_log);
-            REQUIRE(received_frames == Approx(expected_frames).epsilon(0.5)); // 50%
+            float drop = (100 - ((float)received_frames / (float)expected_frames)) * 100;
+            CAPTURE(stream, fps, width, height, expected_frames, received_frames, drop, e, server_log);
+            REQUIRE(received_frames == Approx(expected_frames).epsilon(e));
 
             /*
             std::cerr << "====================================\n";
