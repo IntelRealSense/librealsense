@@ -1830,7 +1830,7 @@ namespace rs2
         }
 
         float lx = corners_avg[1].x - corners_avg[0].x;
-        float ly = corners_avg[1].y - corners_avg[1].y;
+        float ly = corners_avg[1].y - corners_avg[0].y;
         float d1 = _target_fw / sqrtf(lx * lx + ly * ly);
 
         lx = corners_avg[3].x - corners_avg[2].x;
