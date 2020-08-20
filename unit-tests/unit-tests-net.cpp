@@ -86,9 +86,9 @@ std::string ssh_cmd(std::string command) {
 }
 
 void stop_server() {
-    ssh_cmd("sudo killall    rs-server");
+    ssh_cmd("/usr/bin/sudo killall    rs-server");
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    ssh_cmd("sudo killall -9 rs-server");
+    ssh_cmd("/usr/bin/sudo killall -9 rs-server");
     std::this_thread::sleep_for(std::chrono::seconds(5));
     return;
 }
@@ -180,7 +180,7 @@ TEST_CASE("All profiles Streaming", "[net]") {
             int received_frames = frames;
             float drop = ((float)expected_frames / (float)received_frames - 1) * 100;
             CAPTURE(stream, fps, width, height, expected_frames, received_frames, drop, server_log);
-            REQUIRE(received_frames == Approx(expected_frames).epsilon(0.25)); // 10%
+            REQUIRE(received_frames == Approx(expected_frames).epsilon(0.5)); // 50%
 
             /*
             std::cerr << "====================================\n";
