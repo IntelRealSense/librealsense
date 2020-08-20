@@ -47,9 +47,7 @@ namespace librealsense
    {
        if (lo > hi)
        {
-           int tmp = lo;
-           lo = hi;
-           hi = tmp;
+           std::swap(hi, lo);
        }
        int g = gcd(a, b);
        int res = g;
@@ -74,25 +72,39 @@ namespace librealsense
 
        auto out = dest[0];
        auto buffer_size = maxDivisorRange(height, width, 1, ROTATION_BUFFER_SIZE); 
-      
-       std::vector<byte> buffer(buffer_size * buffer_size * SIZE);
-       for (int i = 0; i < height; i = i + buffer_size)
+
+       byte** buffer = new byte * [buffer_size];
+       for (int i = 0; i < buffer_size; ++i)
+           buffer[i] = new byte[buffer_size * SIZE];
+
+
+       for (int i = 0; i <= height - buffer_size; i = i + buffer_size)
        {
-           for (int j = 0; j < width; j = j + buffer_size)
+           for (int j = 0; j <= width - buffer_size; j = j + buffer_size)
            {
-               for (int ii = 0; ii < buffer_size; ii++) {
-                   for (int jj = 0; jj < buffer_size; jj++) {
-                       auto source_index = (j + jj + (width * (i + ii))) * SIZE; // capture a buffer from source
-                       memcpy((void*)&(buffer[buffer_size * (buffer_size - jj - 1) + (buffer_size - ii - 1) * SIZE]), &source[source_index], SIZE);
+               for (int ii = 0; ii < buffer_size; ++ii)
+               {
+                   for (int jj = 0; jj < buffer_size; ++jj)
+                   {
+                       auto source_index = ((j + jj) + (width * (i + ii))) * SIZE;
+                       memcpy((void*)&(buffer[(buffer_size-1 - jj)][(buffer_size-1 - ii) * SIZE]), &source[source_index], SIZE);
                    }
                }
-               for (int ii = 0; ii < buffer_size; ii++) { // copy buffer to out
-                   auto out_index = ((height - (i + buffer_size - 1) - 1) + (width - (j + buffer_size - 1) - 1 + ii) * height) * SIZE;
-                   memcpy(&out[out_index], &(buffer[ii]), SIZE * buffer_size);
-               }
 
+               for (int ii = 0; ii < buffer_size; ++ii)
+               {
+                   auto out_index = (((height_out - buffer_size - j + 1) * width_out) - i - buffer_size + (ii)*width_out);
+                   memcpy(&out[(out_index)*SIZE], (buffer[ii]), buffer_size * SIZE);
+               }
            }
        }
+
+       for (int i = 0; i < buffer_size; ++i)
+       {
+           delete[] buffer[i];
+       }
+       delete[] buffer;
+ 
    }
     // IMPORTANT! This implementation is based on the assumption that the RGB sensor is positioned strictly to the left of the depth sensor.
     // namely D415/D435 and SR300. The implementation WILL NOT work properly for different setups
