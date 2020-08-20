@@ -625,13 +625,14 @@ namespace librealsense
         auto&& backend = ctx->get_backend();
         auto& raw_sensor = get_raw_depth_sensor();
 
-        if (group.usb_devices.size() > 0)
+        //Evgeni - Backward compatibility break
+        /*if (group.usb_devices.size() > 0)
         {
             _hw_monitor = std::make_shared<hw_monitor>(
                 std::make_shared<locked_transfer>(
                     backend.create_usb_device(group.usb_devices.front()), raw_sensor));
         }
-        else
+        else*/
         {
             _hw_monitor = std::make_shared<hw_monitor>(
                 std::make_shared<locked_transfer>(
@@ -725,12 +726,6 @@ namespace librealsense
                     "Set the power level of the LED, with 0 meaning LED off"));
         }
 
-        //if ((pid == RS405_PID || pid == RS455_PID) && _fw_version >= firmware_version("5.12.4.0"))
-        //{
-        //    depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
-        //        std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_THERMAL_COMPENSATION,
-        //            "Toggle Depth Sensor Thermal Compensation"));
-        //}
 
         if (_fw_version >= firmware_version("5.6.3.0"))
         {

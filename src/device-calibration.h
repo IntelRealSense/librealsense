@@ -18,4 +18,3 @@ namespace librealsense
     };
     MAP_EXTENSION(RS2_EXTENSION_DEVICE_CALIBRATION, device_calibration );
 }
-

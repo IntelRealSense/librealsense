@@ -721,4 +721,32 @@ namespace librealsense
    private:
        std::atomic<bool>   _is_active;
    };
+
+   class ds5_thermal_handler;
+   class thermal_compensation : public option
+   {
+   public:
+       thermal_compensation(ds5_thermal_handler* handler)
+           : _thermal_handler(handler), _on(0.f)
+       {}
+
+       void set(float value) override;
+
+       float query() const override { return _on; }
+       option_range get_range() const override { return option_range{ 0, 1, 1, 0 }; }
+
+       bool is_enabled() const override;
+
+       const char* get_description() const override;
+
+       const char* get_value_description(float value) const override;
+       void enable_recording(std::function<void(const option&)> record_action) override
+       {
+           _recording_function = record_action;
+       }
+   private:
+       ds5_thermal_handler*             _thermal_handler;
+       float                           _on;
+       std::function<void(const option&)> _recording_function = [](const option&) {};
+   };
 }

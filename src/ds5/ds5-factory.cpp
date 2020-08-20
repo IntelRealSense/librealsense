@@ -20,9 +20,11 @@
 #include "ds5-active.h"
 #include "ds5-color.h"
 #include "ds5-motion.h"
+#include "ds5-thermal-handler.h"
 #include "sync.h"
 
 #include "../firmware_logger_device.h"
+#include "device-calibration.h"
 
 namespace librealsense
 {
@@ -948,7 +950,8 @@ namespace librealsense
                                public ds5_color,
                                public ds5_motion,
                                public ds5_advanced_mode_base,
-                               public firmware_logger_device
+                               public firmware_logger_device,
+                               public ds5_thermal_handler
     {
     public:
         rs455_device(std::shared_ptr<context> ctx,
@@ -963,7 +966,8 @@ namespace librealsense
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
               firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
                 get_firmware_logs_command(),
-                get_flash_logs_command())
+                get_flash_logs_command()),
+            ds5_thermal_handler(get_depth_sensor()/*,get_color_sensor()*/)
         {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
@@ -991,6 +995,18 @@ namespace librealsense
         }
 
         bool compress_while_record() const override { return false; }
+
+        //void register_calibration_change_callback(calibration_change_callback_ptr callback) override
+        //{
+        //    _calibration_change_callbacks.push_back(callback);
+        //}
+
+        //void trigger_device_calibration(rs2_calibration_type) override
+        //{
+        //    //TODO - identical to set option = true
+        //}
+
+        ////Evgeni void notify_of_calibration_change(rs2_calibration_status status);
     };
 
     std::shared_ptr<device_interface> ds5_info::create(std::shared_ptr<context> ctx,

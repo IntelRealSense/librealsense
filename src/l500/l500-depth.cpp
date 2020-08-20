@@ -483,8 +483,14 @@ namespace librealsense
 
     processing_blocks l500_depth_sensor::get_l500_recommended_proccesing_blocks()
     {
+        //processing_blocks res;
+        //res.push_back(std::make_shared<temporal_filter>());
+        //return res;
         processing_blocks res;
+        res.push_back(std::make_shared<decimation_filter>());
+        res.push_back(std::make_shared<spatial_filter>());
         res.push_back(std::make_shared<temporal_filter>());
+        res.push_back(std::make_shared<hole_filling_filter>());
         return res;
     }
 

@@ -189,6 +189,7 @@ namespace librealsense
         {
         CASE( AUTO_DEPTH_TO_RGB )
         CASE( MANUAL_DEPTH_TO_RGB )
+        CASE( THERMAL )
         default: assert( !is_valid( type ) ); return UNKNOWN_VALUE;
         }
 #undef CASE

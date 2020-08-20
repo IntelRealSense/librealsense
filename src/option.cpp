@@ -3,6 +3,8 @@
 #include "option.h"
 #include "sensor.h"
 
+//#include "ds5/ds5-thermal-handler.h"
+#include "ds5/ds5-thermal-handler.h"
 
 bool librealsense::option_base::is_valid(float value) const
 {
@@ -210,4 +212,45 @@ std::vector<rs2_option> librealsense::options_container::get_supported_options()
         options.push_back(option.first);
 
     return options;
+}
+
+void librealsense::thermal_compensation::set(float value)
+{
+    if (value < 0)
+        throw invalid_value_exception("Invalid input for thermal compensation toggle: " + std::to_string(value));
+
+    if (value == 0)
+    {
+        _thermal_handler->stop();
+        _on = 0;
+    }
+    else
+    {
+        _thermal_handler->start();
+        _on = 1;
+    }
+    _recording_function(*this);
+}
+
+bool librealsense::thermal_compensation::is_enabled() const
+{
+    //Todo Evgeni
+    return true;
+}
+
+const char* librealsense::thermal_compensation::get_description() const
+{
+    return "Toggle thermal compensation adjustments mechanism";
+}
+
+const char* librealsense::thermal_compensation::get_value_description(float value) const
+{
+    if (value == 0)
+    {
+        return "Disable thermal compensation";
+    }
+    else
+    {
+        return "Enable thermal compensation";
+    }
 }
