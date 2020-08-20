@@ -19,11 +19,12 @@ namespace librealsense
         rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
     private:
-        rs2::frame merging_algorithm(const rs2::frame_source& source, const rs2::frameset first_fs, const rs2::frameset second_fs);
-        //std::vector<rs2::frameset> _framesets;
-        std::map<int, rs2::frameset> _frames;
-        rs2::asynchronous_syncer _s;
-        rs2::frame_queue _queue;
+        rs2::frame merging_algorithm(const rs2::frame_source& source, const rs2::frameset first_fs, 
+            const rs2::frameset second_fs);
+
+        
+        std::queue<rs2::frameset> _framesets;
+        rs2::frame _depth_merged_frame;
     };
 
     class hdr_splitting_processor : public generic_processing_block
