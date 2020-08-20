@@ -30,7 +30,7 @@
 #endif
 
 #define TIME_TEST_SEC 10
-
+#define MARKSECT command_line_params::instance()._found_any_section = true
 std::string server_log;
 
 std::string get_env(std::string name, std::string def) {
@@ -108,6 +108,8 @@ std::thread start_server() {
 }
 
 TEST_CASE("Basic Pipeline Depth Streaming", "[net]") {
+    MARKSECT;
+
     rs2::context ctx;
     std::thread server;
     rs2::pipeline p;
@@ -157,6 +159,8 @@ auto callback = [&](const rs2::frame &frame) {
 };
 
 TEST_CASE("All profiles Streaming", "[net]") {
+    MARKSECT;
+
     std::thread server;
     rs2::device dev;
     std::vector<rs2::sensor> sensors;
