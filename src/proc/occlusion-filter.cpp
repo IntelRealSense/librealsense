@@ -41,17 +41,23 @@ namespace librealsense
            return a;
        return gcd(b, a % b);
    }
-   // Return the gretest common divisor of a 
+   // Return the greatest common divisor of a 
    // and b which lie in the given range. 
-   int maxDivisorRange(int a, int b, int l, int h)
+   int maxDivisorRange(int a, int b, int lo, int hi)
    {
+       if (lo > hi)
+       {
+           int tmp = lo;
+           lo = hi;
+           hi = tmp;
+       }
        int g = gcd(a, b);
        int res = g;
 
        // Loop from 1 to sqrt(GCD(a, b). 
-       for (int i = l; i * i <= g && i <= h; i++)
+       for (int i = lo; i * i <= g && i <= hi; i++)
 
-           if ((g % i == 0) && (g / i) < h)
+           if ((g % i == 0) && (g / i) < hi)
            {
                res = g / i; 
                break;
@@ -69,8 +75,7 @@ namespace librealsense
        auto out = dest[0];
        auto buffer_size = maxDivisorRange(height, width, 1, ROTATION_BUFFER_SIZE); 
       
-       byte *buffer = new byte[buffer_size * buffer_size * SIZE];  
-
+       std::vector<byte> buffer(buffer_size * buffer_size * SIZE);
        for (int i = 0; i < height; i = i + buffer_size)
        {
            for (int j = 0; j < width; j = j + buffer_size)
@@ -78,12 +83,12 @@ namespace librealsense
                for (int ii = 0; ii < buffer_size; ii++) {
                    for (int jj = 0; jj < buffer_size; jj++) {
                        auto source_index = (j + jj + (width * (i + ii))) * SIZE; // capture a buffer from source
-                       memcpy((void*)(buffer + buffer_size* (buffer_size - jj - 1) + (buffer_size - ii - 1) * SIZE), &source[source_index], SIZE);
+                       memcpy((void*)&(buffer[buffer_size * (buffer_size - jj - 1) + (buffer_size - ii - 1) * SIZE]), &source[source_index], SIZE);
                    }
                }
                for (int ii = 0; ii < buffer_size; ii++) { // copy buffer to out
                    auto out_index = ((height - (i + buffer_size - 1) - 1) + (width - (j + buffer_size - 1) - 1 + ii) * height) * SIZE;
-                   memcpy(&out[out_index], (buffer + ii), SIZE * buffer_size);
+                   memcpy(&out[out_index], &(buffer[ii]), SIZE * buffer_size);
                }
 
            }
