@@ -10,14 +10,14 @@ Copyright(c) 2020 Intel Corporation. All Rights Reserved. */
 namespace librealsense
 {
     struct hdr_params {
-        const int _sequence_id;
-        bool _is_exposure_configured;
-        bool _is_gain_configured;
+        int _sequence_id;
         float _exposure;
         float _gain;
 
         hdr_params();
         hdr_params(int sequence_id, float exposure, float gain);
+
+        hdr_params& operator=(const hdr_params& other);
     };
 
     inline bool operator==(const hdr_params& first, const hdr_params& second)
@@ -28,7 +28,7 @@ namespace librealsense
     class hdr_config
     {
     public:
-        hdr_config(hw_monitor& hwm, sensor_base* depth_ep);
+        hdr_config(hw_monitor& hwm, sensor_base* depth_ep, option_range exposure_range, option_range gain_range);
 
         float get(rs2_option option) const;
         void set(rs2_option option, float value, option_range range);
@@ -56,10 +56,7 @@ namespace librealsense
         void set_enable_status(float value);
         void set_exposure(float value, option_range range);
         void set_gain(float value);
-        void reset();
-
-        static const size_t DEFAULT_SEQUENCE_SIZE = 0;
-        static const size_t DEFAULT_HDR_SEQUENCE_INDEX = -1;
+        void reset_to_default();
 
         size_t _sequence_size;
         std::vector<hdr_params> _hdr_sequence_params;
@@ -70,6 +67,8 @@ namespace librealsense
         bool _has_config_changed;
         hw_monitor& _hwm;
         sensor_base* _sensor;
+        option_range _exposure_range;
+        option_range _gain_range;
     };
 
     
