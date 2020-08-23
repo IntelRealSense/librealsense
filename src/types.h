@@ -468,9 +468,25 @@ namespace librealsense
             std::lock_guard<std::mutex> lock(_mtx);
             if (_was_init)
             {
+                //std::cout << "lazy was reset" << std::endl;
                 _ptr.reset();
                 _was_init = false;
             }
+            //else
+                //std::cout << "lazy reset failed - already reset" << std::endl;
+        }
+
+        void reload() const
+        {
+            std::lock_guard<std::mutex> lock(_mtx);
+            if (_was_init)
+            {
+                //std::cout << "lazy to be reloaded" << std::endl;
+                //_ptr.reset();
+                _was_init = false;
+            }
+            //else
+                //std::cout << "lazy reload failed - already reloaded" << std::endl;
         }
 
     private:

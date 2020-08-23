@@ -25,18 +25,21 @@ namespace librealsense
 
         void trigger_device_calibration(rs2_calibration_type);
 
-        //Evgeni TODO- void notify_of_calibration_change(rs2_calibration_status status);
     private:
         void update_mode(bool on_streaming=false);
         void start();
         void stop();
         void polling(dispatcher::cancellable_timer cancellable_timer);
+        void notify_of_calibration_change(rs2_calibration_status status);
 
         std::weak_ptr<synthetic_sensor>                 _dpt_sensor;
         std::weak_ptr<ds5_recalibrable_color_sensor>    _recalib_sensor;
 
-        std::vector< calibration_change_callback_ptr > _calibration_change_callbacks;   // End-user updates to track calibration changes
+        std::vector< calibration_change_callback_ptr >  _calibration_change_callbacks;   // End-user updates to track calibration changes
 
+        std::shared_ptr<option> _tl_activation;
+        //std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_THERMAL_COMPENSATION,
+          //          "Toggle Depth Sensor Thermal Compensation") 
         active_object<> _active_object;
         unsigned int _poll_intervals_ms;
         struct temperature_record

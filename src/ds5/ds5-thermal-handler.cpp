@@ -4,6 +4,7 @@
 #include <iostream>
 #include <chrono>
 #include "ds5-color.h"
+#include "ds5-private.h"
 #include "ds5-thermal-handler.h"
 
 namespace librealsense
@@ -28,6 +29,9 @@ namespace librealsense
                 _recalib_sensor = std::dynamic_pointer_cast<ds5_recalibrable_color_sensor>(s->shared_from_this());
             }
         }
+
+        _tl_activation = std::make_shared<uvc_xu_option<uint8_t>>(dynamic_cast<uvc_sensor&>(*activation_sensor.get_raw_sensor()), 
+            ds::depth_xu, ds::DS5_THERMAL_COMPENSATION, "Toggle Thermal Compensation Mechanism");
 
         // TODO Evgeni
         //if (_fw_version >= firmware_version("5.12.7.100"))
@@ -57,6 +61,8 @@ namespace librealsense
         // Enforce calibration reread on deactivation
         if (auto sp = _recalib_sensor.lock())
             sp->reset_calibration();
+
+        notify_of_calibration_change(RS2_CALIBRATION_SUCCESSFUL);
     }
 
 
@@ -84,6 +90,7 @@ namespace librealsense
         bool change_required = false;
         if (state != _feature_on)
         {
+            _tl_activation->set(state);
             _feature_on = state;
             update_mode();
         }
@@ -115,6 +122,8 @@ namespace librealsense
                         if (auto recalib_p = _recalib_sensor.lock())
                             recalib_p->reset_calibration();
 
+                        notify_of_calibration_change(RS2_CALIBRATION_SUCCESSFUL);
+
                         auto interval_sec = (_temp_records.size()) ? (ts - _temp_records.back().timestamp_ns) / 1000000000 : 0;
                         LOG_INFO("Thermal compensation was triggered on change from " << _temp_base << " to " << val
                                   << " deg (C) after " << interval_sec << " seconds");
@@ -140,5 +149,11 @@ namespace librealsense
         {
             LOG_DEBUG("Thermal loop polling is being shut-down");
         }
+    }
+
+    void ds5_thermal_handler::notify_of_calibration_change(rs2_calibration_status status)
+    {
+        for (auto&& cb : _calibration_change_callbacks)
+            cb->on_calibration_change(status);
     }
 }

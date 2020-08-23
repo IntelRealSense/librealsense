@@ -147,6 +147,7 @@ namespace librealsense
              float3x3 intrin = table->intrinsic;
              float calib_aspect_ratio = 9.f / 16.f; // shall be overwritten with the actual calib resolution
 
+             std::cout << "Fx,fy = " << intrin.x.x << "," << intrin.y.y << std::endl;
              if (table->calib_width && table->calib_height)
                  calib_aspect_ratio = float(table->calib_height) / float(table->calib_width);
              else
