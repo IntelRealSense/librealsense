@@ -219,16 +219,8 @@ void librealsense::thermal_compensation::set(float value)
     if (value < 0)
         throw invalid_value_exception("Invalid input for thermal compensation toggle: " + std::to_string(value));
 
-    if (value == 0)
-    {
-        _thermal_handler->stop();
-        _on = 0;
-    }
-    else
-    {
-        _thermal_handler->start();
-        _on = 1;
-    }
+    _thermal_handler->set_feature(value);
+    _on = value;
     _recording_function(*this);
 }
 

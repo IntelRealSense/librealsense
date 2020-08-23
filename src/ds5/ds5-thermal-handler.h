@@ -16,29 +16,24 @@ namespace librealsense
 
         virtual ~ds5_thermal_handler();
 
-        void start();
-        void stop();
+        void set_feature(bool state);
 
         void register_calibration_change_callback(calibration_change_callback_ptr callback) override
         {
             _calibration_change_callbacks.push_back(callback);
         }
 
-        void trigger_device_calibration(rs2_calibration_type) override
-        {
-            //TODO - identical to set option = true
-            //throw librealsense::not_implemented_exception("depth sensor does not support intrinsics override");
-        }
+        void trigger_device_calibration(rs2_calibration_type);
 
         //void notify_of_calibration_change(rs2_calibration_status status);
     private:
-
+        void update_mode(bool on_streaming=false);
+        void start();
+        void stop();
         void polling(dispatcher::cancellable_timer cancellable_timer);
 
         std::weak_ptr<synthetic_sensor>                 _dpt_sensor;
         std::weak_ptr<ds5_recalibrable_color_sensor>    _recalib_sensor;
-        synthetic_sensor&                           _activation_sensor;
-        lazy<ds5_recalibrable_color_sensor*>        _affected_sensor;
 
         std::vector< calibration_change_callback_ptr > _calibration_change_callbacks;   // End-user updates to track calibration changes
 
@@ -47,10 +42,12 @@ namespace librealsense
         struct temperature_record
         {
             uint64_t    timestamp_ms;
-            float       temp_celcius;
+            int16_t     temp_celcius;
         };
         std::list<temperature_record> _temp_records;
-        float _temp_base;
+        int16_t _temp_base;
+        bool _streaming_on;
+        bool _feature_on;
     };
 
 }
