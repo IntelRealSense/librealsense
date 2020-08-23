@@ -12,7 +12,7 @@ namespace librealsense
     class ds5_thermal_handler : public virtual device_calibration
     {
     public:
-        ds5_thermal_handler(synthetic_sensor& activation_sensor/*, synthetic_sensor& recalibration_sensor*/);
+        ds5_thermal_handler(synthetic_sensor& activation_sensor);
 
         virtual ~ds5_thermal_handler();
 
@@ -35,6 +35,8 @@ namespace librealsense
 
         void polling(dispatcher::cancellable_timer cancellable_timer);
 
+        std::weak_ptr<synthetic_sensor>                 _dpt_sensor;
+        std::weak_ptr<ds5_recalibrable_color_sensor>    _recalib_sensor;
         synthetic_sensor&                           _activation_sensor;
         lazy<ds5_recalibrable_color_sensor*>        _affected_sensor;
 
