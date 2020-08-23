@@ -967,7 +967,7 @@ namespace librealsense
               firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command()),
-            ds5_thermal_handler(get_depth_sensor()/*,get_color_sensor()*/)
+            ds5_thermal_handler(get_depth_sensor())
         {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
@@ -996,17 +996,6 @@ namespace librealsense
 
         bool compress_while_record() const override { return false; }
 
-        //void register_calibration_change_callback(calibration_change_callback_ptr callback) override
-        //{
-        //    _calibration_change_callbacks.push_back(callback);
-        //}
-
-        //void trigger_device_calibration(rs2_calibration_type) override
-        //{
-        //    //TODO - identical to set option = true
-        //}
-
-        ////Evgeni void notify_of_calibration_change(rs2_calibration_status status);
     };
 
     std::shared_ptr<device_interface> ds5_info::create(std::shared_ptr<context> ctx,

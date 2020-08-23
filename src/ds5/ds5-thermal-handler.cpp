@@ -6,7 +6,6 @@
 #include "ds5-color.h"
 #include "ds5-thermal-handler.h"
 
-
 namespace librealsense
 {
     ds5_thermal_handler::ds5_thermal_handler( synthetic_sensor& activation_sensor) :
@@ -14,7 +13,8 @@ namespace librealsense
             {
                 polling(cancellable_timer);
             }),
-        _poll_intervals_ms(1000),
+        _poll_intervals_ms(2000),
+        _temp_base(0),
         _streaming_on(false),
         _feature_on(false)
      {
@@ -38,21 +38,22 @@ namespace librealsense
 
     ds5_thermal_handler::~ds5_thermal_handler()
     {
-        stop();
+        if (_streaming_on && _feature_on)
+            stop();
     }
 
     void ds5_thermal_handler::start()
     {
-        auto ts = (uint64_t)std::chrono::high_resolution_clock::now().time_since_epoch().count();
-        std::cout << __FUNCTION__ << " " << ts << std::endl;
         _active_object.start();
+        LOG_DEBUG("Thermal compensation is activated");
     }
     void ds5_thermal_handler::stop()
     {
-        auto ts = (uint64_t)std::chrono::high_resolution_clock::now().time_since_epoch().count();
-        std::cout << __FUNCTION__ << " " << ts << std::endl;
         _active_object.stop();
         _temp_records.clear();
+        _temp_base = 0;
+        LOG_DEBUG("Thermal compensation is deactivated");
+
         // Enforce calibration reread on deactivation
         if (auto sp = _recalib_sensor.lock())
             sp->reset_calibration();
@@ -92,10 +93,10 @@ namespace librealsense
     {
         if (_streaming_on && _feature_on)
             start();
+        // Deactivate when toggling off streaming or control
         if ((!_streaming_on && _feature_on && on_streaming) ||
             (_streaming_on && !_feature_on && !on_streaming))
             stop();
-
     }
 
     void ds5_thermal_handler::polling(dispatcher::cancellable_timer cancellable_timer)
@@ -114,9 +115,10 @@ namespace librealsense
                         if (auto recalib_p = _recalib_sensor.lock())
                             recalib_p->reset_calibration();
 
-                        auto interval_sec = (_temp_records.size()) ? (ts - _temp_records.back().timestamp_ms) / 1000 : 0;
+                        auto interval_sec = (_temp_records.size()) ? (ts - _temp_records.back().timestamp_ns) / 1000000000 : 0;
                         LOG_INFO("Thermal compensation was triggered on change from " << _temp_base << " to " << val
-                                  << " Deg(c) after " << interval_sec << " seconds");
+                                  << " deg (C) after " << interval_sec << " seconds");
+
                         _temp_base = val;
                         _temp_records.push_back({ ts, val });
                         // Keep record of the last 10 threshold events
@@ -131,12 +133,12 @@ namespace librealsense
             }
             catch (...)
             {
-                LOG_ERROR("Unknown error during thermal compensation handling!");
+                LOG_ERROR("Unresolved error during thermal compensation handling!");
             }
         }
         else
         {
-            LOG_DEBUG("Notification polling loop is being shut-down");
+            LOG_DEBUG("Thermal loop polling is being shut-down");
         }
     }
 }

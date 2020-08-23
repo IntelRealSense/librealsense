@@ -625,7 +625,7 @@ namespace librealsense
         auto&& backend = ctx->get_backend();
         auto& raw_sensor = get_raw_depth_sensor();
 
-        //Evgeni - Backward compatibility break
+        //Evgeni - Backward compatibility break - review on weekly
         /*if (group.usb_devices.size() > 0)
         {
             _hw_monitor = std::make_shared<hw_monitor>(

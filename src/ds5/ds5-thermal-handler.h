@@ -25,7 +25,7 @@ namespace librealsense
 
         void trigger_device_calibration(rs2_calibration_type);
 
-        //void notify_of_calibration_change(rs2_calibration_status status);
+        //Evgeni TODO- void notify_of_calibration_change(rs2_calibration_status status);
     private:
         void update_mode(bool on_streaming=false);
         void start();
@@ -41,7 +41,7 @@ namespace librealsense
         unsigned int _poll_intervals_ms;
         struct temperature_record
         {
-            uint64_t    timestamp_ms;
+            uint64_t    timestamp_ns;
             int16_t     temp_celcius;
         };
         std::list<temperature_record> _temp_records;
