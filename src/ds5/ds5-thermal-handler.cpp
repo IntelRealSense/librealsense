@@ -125,7 +125,7 @@ namespace librealsense
                         notify_of_calibration_change(RS2_CALIBRATION_SUCCESSFUL);
 
                         auto interval_sec = (_temp_records.size()) ? (ts - _temp_records.back().timestamp_ns) / 1000000000 : 0;
-                        LOG_INFO("Thermal compensation was triggered on change from " << _temp_base << " to " << val
+                        LOG_INFO("Thermal compensation was triggered on change from " << std::dec  << " to " << val
                                   << " deg (C) after " << interval_sec << " seconds");
 
                         _temp_base = val;
