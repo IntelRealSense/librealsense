@@ -262,7 +262,7 @@ static void glob_rec( const std::string & directory,
     }
     else
     {
-        throw std::runtime_error( to_string() << "could not open directory: " << directory.c_str() );
+        throw std::runtime_error( librealsense::to_string() << "could not open directory: " << directory.c_str() );
     }
 }
 
