@@ -155,7 +155,7 @@ namespace rs2
 
             if (mesh && use_normals)
             {
-                for (int i = 0; i < new_verts.size(); ++i)
+                for (size_t i = 0; i < new_verts.size(); ++i)
                 {
                     auto normals_vec = index_to_normals[i];
                     vec3d sum = { 0, 0, 0 };
@@ -202,7 +202,7 @@ namespace rs2
             {
                 out.close();
                 out.open(fname, std::ios_base::app | std::ios_base::binary);
-                for (int i = 0; i < new_verts.size(); ++i)
+                for (size_t i = 0; i < new_verts.size(); ++i)
                 {
                     // we assume little endian architecture on your device
                     out.write(reinterpret_cast<const char*>(&(new_verts[i].x)), sizeof(float));
@@ -226,7 +226,7 @@ namespace rs2
                 if (mesh)
                 {
                     auto size = faces.size();
-                    for (int i = 0; i < size; ++i) {
+                    for (size_t i = 0; i < size; ++i) {
                         static const int three = 3;
                         out.write(reinterpret_cast<const char*>(&three), sizeof(uint8_t));
                         out.write(reinterpret_cast<const char*>(&(faces[i][0])), sizeof(int));
@@ -237,7 +237,7 @@ namespace rs2
             }
             else
             {
-                for (int i = 0; i <new_verts.size(); ++i)
+                for (size_t i = 0; i <new_verts.size(); ++i)
                 {
                     out << new_verts[i].x << " ";
                     out << new_verts[i].y << " ";
@@ -263,7 +263,7 @@ namespace rs2
                 if (mesh)
                 {
                     auto size = faces.size();
-                    for (int i = 0; i < size; ++i) {
+                    for (size_t i = 0; i < size; ++i) {
                         int three = 3;
                         out << three << " ";
                         out << std::get<0>(faces[i]) << " ";
@@ -303,7 +303,7 @@ namespace rs2
             std::vector<std::tuple<stream_profile, stream_profile>> extrinsics;
 
             if (auto fs = data.as<frameset>()) {
-                for (int i = 0; i < fs.size(); ++i) {
+                for (int i = 0; size_t(i) < fs.size(); ++i) {
                     frame f = fs[i];
                     auto profile = f.get_profile();
                     std::stringstream sname;
