@@ -267,30 +267,6 @@ namespace librealsense
             }
         );
 
-        depth_sensor.register_processing_block(
-            { {RS2_FORMAT_Z16}, {RS2_FORMAT_Y8} },
-            { {RS2_FORMAT_Z16, RS2_STREAM_DEPTH} },
-            [=]() {
-                auto is_zo_enabled_opt = weak_is_zo_enabled_opt.lock();
-                auto z16rot = std::make_shared<identity_processing_block>();
-                auto y8rot = std::make_shared<identity_processing_block>();
-                auto sync = std::make_shared<syncer_process_unit>(); // is_zo_enabled_opt );
-                auto zo = std::make_shared<zero_order>(is_zo_enabled_opt);
-
-                auto cpb = std::make_shared<composite_processing_block>();
-                cpb->add(z16rot);
-                cpb->add(y8rot);
-                cpb->add(sync);
-                cpb->add(zo);
-                if( _autocal )
-                {
-                    //sync->add_enabling_option( _autocal->get_enabler_opt() );
-                    cpb->add( std::make_shared< ac_trigger::depth_processing_block >( _autocal ) );
-                }
-                cpb->add( std::make_shared< filtering_processing_block >( RS2_STREAM_DEPTH ) );
-                return cpb;
-            }
-        );
 
         depth_sensor.register_processing_block(
             { {RS2_FORMAT_Z16}, {RS2_FORMAT_Y8}, {RS2_FORMAT_RAW8} },
@@ -329,15 +305,12 @@ namespace librealsense
             []() { return std::make_shared<rotation_transform>(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME); }
         );
 
-        depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Y8, RS2_STREAM_INFRARED));
-
         depth_sensor.register_processing_block(
             { {RS2_FORMAT_RAW8} },
             { {RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE, 0, 0, 0, 0, &l500_confidence_resolution} },
             []() { return std::make_shared<confidence_rotation_transform>(); }
         );
 
-        depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE));
 
         std::shared_ptr< freefall_option > freefall_opt;
         if( _fw_version >= firmware_version( "1.3.5.0" ) )
@@ -667,6 +640,19 @@ namespace librealsense
         }
 
         return _hw_monitor->send(input);
+    }
+
+    platform::usb_spec l500_device::get_usb_spec() const
+    {
+        if (!supports_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+            return platform::usb_undefined;
+        auto str = get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+        for (auto u : platform::usb_spec_names)
+        {
+            if (u.second.compare(str) == 0)
+                return u.first;
+        }
+        return platform::usb_undefined;
     }
 
     notification l500_notification_decoder::decode(int value)

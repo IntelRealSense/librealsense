@@ -36,6 +36,33 @@ namespace librealsense
             break;
         }
     }
+   int gcd(int a, int b) {
+       if (b == 0)
+           return a;
+       return gcd(b, a % b);
+   }
+   // Return the greatest common divisor of a 
+   // and b which lie in the given range. 
+   int maxDivisorRange(int a, int b, int lo, int hi)
+   {
+       if (lo > hi)
+       {
+           std::swap(hi, lo);
+       }
+       int g = gcd(a, b);
+       int res = g;
+
+       // Loop from 1 to sqrt(GCD(a, b). 
+       for (int i = lo; i * i <= g && i <= hi; i++)
+
+           if ((g % i == 0) && (g / i) <= hi)
+           {
+               res = g / i; 
+               break;
+           }
+
+       return res;
+   }
    template<size_t SIZE>
    void rotate_image_optimized(byte* dest[], const byte* source, int width, int height)
    {
@@ -44,24 +71,40 @@ namespace librealsense
        auto height_out = width;
 
        auto out = dest[0];
-       byte buffer[ROTATION_BUFFER_SIZE][ROTATION_BUFFER_SIZE * SIZE];
-       for (int i = 0; i < height; i = i + ROTATION_BUFFER_SIZE)
+       auto buffer_size = maxDivisorRange(height, width, 1, ROTATION_BUFFER_SIZE); 
+
+       byte** buffer = new byte * [buffer_size];
+       for (int i = 0; i < buffer_size; ++i)
+           buffer[i] = new byte[buffer_size * SIZE];
+
+
+       for (int i = 0; i <= height - buffer_size; i = i + buffer_size)
        {
-           for (int j = 0; j < width; j = j + ROTATION_BUFFER_SIZE)
+           for (int j = 0; j <= width - buffer_size; j = j + buffer_size)
            {
-               for (int ii = 0; ii < ROTATION_BUFFER_SIZE; ii++) {
-                   for (int jj = 0; jj < ROTATION_BUFFER_SIZE; jj++) {
-                       auto source_index = (j + jj + (width * (i + ii))) * SIZE; // capture a buffer from source
-                       memcpy((void*)&(buffer[ROTATION_BUFFER_SIZE - jj - 1][(ROTATION_BUFFER_SIZE - ii - 1) * SIZE]), &source[source_index], SIZE);
+               for (int ii = 0; ii < buffer_size; ++ii)
+               {
+                   for (int jj = 0; jj < buffer_size; ++jj)
+                   {
+                       auto source_index = ((j + jj) + (width * (i + ii))) * SIZE;
+                       memcpy((void*)&(buffer[(buffer_size-1 - jj)][(buffer_size-1 - ii) * SIZE]), &source[source_index], SIZE);
                    }
                }
-               for (int ii = 0; ii < ROTATION_BUFFER_SIZE; ii++) { // copy buffer to out
-                   auto out_index = ((height - (i + ROTATION_BUFFER_SIZE - 1) - 1) + (width - (j + ROTATION_BUFFER_SIZE - 1) - 1 + ii) * height) * SIZE;
-                   memcpy(&out[out_index], (buffer + ii), SIZE * ROTATION_BUFFER_SIZE);
-               }
 
+               for (int ii = 0; ii < buffer_size; ++ii)
+               {
+                   auto out_index = (((height_out - buffer_size - j + 1) * width_out) - i - buffer_size + (ii)*width_out);
+                   memcpy(&out[(out_index)*SIZE], (buffer[ii]), buffer_size * SIZE);
+               }
            }
        }
+
+       for (int i = 0; i < buffer_size; ++i)
+       {
+           delete[] buffer[i];
+       }
+       delete[] buffer;
+ 
    }
     // IMPORTANT! This implementation is based on the assumption that the RGB sensor is positioned strictly to the left of the depth sensor.
     // namely D415/D435 and SR300. The implementation WILL NOT work properly for different setups
@@ -150,10 +193,11 @@ namespace librealsense
                    {
                        points_ptr = points + uv_index;
                        uv_map_ptr = uv_map + uv_index;
+                       auto scan_win_size = maxDivisorRange(rotated_depth_height, rotated_depth_width, 1, VERTICAL_SCAN_WINDOW_SIZE);
 
-                       if (j >= VERTICAL_SCAN_WINDOW_SIZE) {
+                       if (j >= scan_win_size) {
                            maxInLine = (uv_map_ptr - 1 * points_width)->y;
-                           for (size_t y = 0; y <= VERTICAL_SCAN_WINDOW_SIZE; ++y)
+                           for (size_t y = 0; y <= scan_win_size; ++y)
                            {
                                if (((uv_map_ptr + y * points_width)->y < maxInLine))
                                {
