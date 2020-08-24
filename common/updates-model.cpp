@@ -19,7 +19,12 @@ void updates_model::draw(viewer_model& viewer, ux_window& window, std::string& e
     static std::vector<update_profile_model> updates_copy;
     {
         std::lock_guard<std::mutex> lock(_lock);
-        updates_copy = _updates;
+        updates_copy.clear();
+        for (auto update : _updates)
+        {
+            if (update.displayed)
+                updates_copy.push_back(update);
+        }
     }
 
     // Prepare camera icon
@@ -37,7 +42,7 @@ void updates_model::draw(viewer_model& viewer, ux_window& window, std::string& e
     const auto window_name = "Updates Window";
      
     //Main window pop up only if essential updates exists
-    if (!popup_opened && updates_copy.size() && !ignore)
+    if (updates_copy.size() && !ignore)
     {
         ImGui::OpenPopup(window_name);
         popup_opened = true;

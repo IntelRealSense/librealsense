@@ -3251,14 +3251,8 @@ namespace rs2
     }
 
 
-    void device_model::refresh_notifications(viewer_model& viewer)
+    void device_model::check_for_bundled_fw_update(const rs2::context& ctx, std::shared_ptr<notifications_model> not_model)
     {
-        for (auto&& n : related_notifications) n->dismiss(false);
-
-        auto name = get_device_name(dev);
-
-        check_for_device_updates(viewer.ctx, viewer.updates);
-
         if ((bool)config_file::instance().get(configurations::update::recommend_updates))
         {
             bool fw_update_required = false;
@@ -3285,13 +3279,15 @@ namespace rs2
 
                         static auto table = create_default_fw_table();
 
-                        manager = std::make_shared<firmware_update_manager>(viewer, *this, dev, viewer.ctx, table[product_line], true);
+                        manager = std::make_shared<firmware_update_manager>(*this, dev, ctx, table[product_line], true);
                     }
 
                     if (is_upgradeable(fw, recommended))
                     {
+                        auto dev_name = get_device_name(dev);
+
                         std::stringstream msg;
-                        msg << name.first << " (S/N " << name.second << ")\n"
+                        msg << dev_name.first << " (S/N " << dev_name.second << ")\n"
                             << "Current Version: " << fw << "\n";
 
                         if (is_rc)
@@ -3303,11 +3299,11 @@ namespace rs2
                         {
                             auto n = std::make_shared<fw_update_notification_model>(
                                 msg.str(), manager, false);
-                            n->delay_id = "dfu." + name.second;
+                            n->delay_id = "dfu." + dev_name.second;
                             n->enable_complex_dismiss = true;
                             if (!n->is_delayed())
                             {
-                                viewer.not_model->add_notification(n);
+                                not_model->add_notification(n);
 
                                 fw_update_required = true;
 
@@ -3318,6 +3314,16 @@ namespace rs2
                 }
             }
         }
+    }
+
+
+    void device_model::refresh_notifications(viewer_model& viewer)
+    {
+        for (auto&& n : related_notifications) n->dismiss(false);
+
+        auto name = get_device_name(dev);
+
+        check_for_device_updates(viewer.ctx, viewer.updates, viewer.not_model);
 
         if ((bool)config_file::instance().get(configurations::update::recommend_calibration))
         {
@@ -4427,37 +4433,77 @@ namespace rs2
             error_message = e.what();
         }
     }
-    void device_model::check_for_device_updates(rs2::context& ctx, std::shared_ptr<updates_model> updates)
+    void device_model::check_for_device_updates(const rs2::context& ctx, std::shared_ptr<updates_model> updates , std::shared_ptr<notifications_model> not_model)
     {
         std::weak_ptr<updates_model> updates_model_protected(updates);
-        std::thread check_for_device_updates_thread([ctx, updates_model_protected, this]()
+        std::weak_ptr<notifications_model> notification_model_protected(not_model);
+        std::thread check_for_device_updates_thread([ctx, updates_model_protected, notification_model_protected, this]()
         {
             try
             {
-
+                bool need_to_check_bundle = true;
                 auto server_url = config_file::instance().get(configurations::update::sw_updates_url);
                 sw_update::dev_updates_profile updates_profile(dev, server_url);
 
-                bool sw_update_required = updates_profile.retrieve_updates(versions_db_manager::LIBREALSENSE);
-                bool fw_update_required = updates_profile.retrieve_updates(versions_db_manager::FIRMWARE);
+                bool sw_recommended_version_available(false), fw_recommended_version_available(false);
+                bool sw_update_required = updates_profile.retrieve_updates(versions_db_manager::LIBREALSENSE, sw_recommended_version_available);
+                bool fw_update_required = updates_profile.retrieve_updates(versions_db_manager::FIRMWARE, fw_recommended_version_available);
 
                 _updates_profile = updates_profile.get_update_profile();
                 updates_model::update_profile_model updates_profile_model(_updates_profile, ctx, this);
 
+                // If Essential update, add update profile
                 if (sw_update_required || fw_update_required)
                 {
                     if (auto viewer_updates = updates_model_protected.lock())
                     {
                         viewer_updates->add_profile(updates_profile_model);
+                        need_to_check_bundle = false;
                     }
                 }
                 else
-                {   // For updating current device profile if exists (Could update firmware version)
-                    if (auto viewer_updates = updates_model_protected.lock())
+                {  // On recommended update, pop up a notification to let the user choose if to open
+                   // the updates window
+                    if (sw_recommended_version_available || fw_recommended_version_available)
                     {
-                        viewer_updates->update_profile(updates_profile_model);
+                        need_to_check_bundle = false;
+                        if (auto nm = notification_model_protected.lock())
+                        {
+                            if (auto viewer_updates = updates_model_protected.lock())
+                            {
+                                if (!viewer_updates->is_popup_opened())
+                                {
+                                    updates_profile_model.displayed = false;
+                                    viewer_updates->add_profile(updates_profile_model);
+
+                                    auto n = std::make_shared< updates_alert_model >(
+                                        viewer_updates,
+                                        _updates_profile);
+
+                                    nm->add_notification(n);
+                                    related_notifications.push_back(n);
+                                }
+                                else
+                                {
+                                    // For updating current device profile if exists (Could update firmware version)
+                                    if (auto viewer_updates = updates_model_protected.lock())
+                                    {
+                                        viewer_updates->update_profile(updates_profile_model);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
+
+                if (need_to_check_bundle)
+                {
+                    if (auto nm = notification_model_protected.lock())
+                    {
+                        check_for_bundled_fw_update(ctx, nm);
+                    }
+                }
+            
             }
             catch (const std::exception& e)
             {

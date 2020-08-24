@@ -11,6 +11,7 @@
 #include "ux-window.h"
 
 #include "output-model.h"
+#include "sw-update/dev-updates-profile.h"
 
 namespace rs2
 {
@@ -184,6 +185,21 @@ namespace rs2
         void draw_content(ux_window& win, int x, int y, float t, std::string& error_message) override;
         int calc_height() override { return 130; }
         int get_max_lifetime_ms() const override { return 40000; }
+    };
+
+    class updates_model; // Forward declaration
+    struct update_profile_model;
+    struct updates_alert_model : public notification_model
+    {
+        updates_alert_model(std::shared_ptr<updates_model> updates, sw_update::dev_updates_profile::update_profile update_profile);
+
+        void set_color_scheme(float t) const override;
+        void draw_content(ux_window& win, int x, int y, float t, std::string& error_message) override;
+        int calc_height() override { return 130; }
+        int get_max_lifetime_ms() const override { return 10000; }
+
+        std::weak_ptr<updates_model> _updates;
+        sw_update::dev_updates_profile::update_profile _update_profile;
     };
 
 

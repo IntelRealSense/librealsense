@@ -24,8 +24,9 @@ namespace rs2
             sw_update::dev_updates_profile::update_profile profile;
             context ctx;
             device_model* dev_model;
+            bool displayed;
             update_profile_model(sw_update::dev_updates_profile::update_profile p,
-                context contex, device_model* device_model) : profile(p), ctx(contex), dev_model(device_model) {};
+                context contex, device_model* device_model) : profile(p), ctx(contex), dev_model(device_model), displayed(true){};
         };
         void add_profile(const update_profile_model& update)
         {
@@ -62,6 +63,7 @@ namespace rs2
                 _updates.erase(it);
         }
 
+
         // This is a helper function to indicate if a device is connected or not.
         // It change its value on device connect/disconnect
         // cause calling ctx.query_devices() is too slow for the UI
@@ -75,7 +77,19 @@ namespace rs2
                 it->profile.dev_active = active;
         }
 
+        void set_display_status(const sw_update::dev_updates_profile::update_profile &update, bool active)
+        {
+            std::lock_guard<std::mutex> lock(_lock);
+            auto it = std::find_if(_updates.begin(), _updates.end(), [&](update_profile_model& p) {
+                return (p.profile.device_name == update.device_name && p.profile.serial_number == update.serial_number);
+            });
+            if (it != _updates.end())
+                it->displayed = active;
+        }
+
         void draw(viewer_model& viewer, ux_window& window, std::string& error_message);
+        bool is_popup_opened() const { return popup_opened; }
+        
     private:
         struct position_params
         {

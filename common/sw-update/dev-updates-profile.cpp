@@ -27,9 +27,10 @@ namespace rs2
             _update_profile.serial_number = serial;
         }
 
-        bool dev_updates_profile::retrieve_updates(versions_db_manager::component_part_type comp)
+        bool dev_updates_profile::retrieve_updates(versions_db_manager::component_part_type comp, bool &recommended_update_available)
         {
             bool update_required(false);
+            recommended_update_available = false;
 
             if (_update_profile.device_name.find("Recovery") == std::string::npos)
             {
@@ -47,6 +48,10 @@ namespace rs2
                     if (try_parse_update(_versions_db, _update_profile.device_name, versions_db_manager::RECOMMENDED, comp, recommened_update))
                     {
                         versions_vec[recommened_update.ver] = recommened_update;
+                        if (current_version < recommened_update.ver)
+                        {
+                            recommended_update_available = true;
+                        }
                     }
                     update_description required_update;
                     if (try_parse_update(_versions_db, _update_profile.device_name, versions_db_manager::ESSENTIAL, comp, required_update))
