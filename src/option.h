@@ -727,26 +727,26 @@ namespace librealsense
    {
    public:
        thermal_compensation(ds5_thermal_handler* handler)
-           : _thermal_handler(handler), _on(0.f)
+           : _thermal_handler(handler)
        {}
 
        void set(float value) override;
+       float query() const override;
 
-       float query() const override { return _on; }
        option_range get_range() const override { return option_range{ 0, 1, 1, 0 }; }
-
-       bool is_enabled() const override;
+       bool is_enabled() const override { return true; }
 
        const char* get_description() const override;
-
        const char* get_value_description(float value) const override;
+
        void enable_recording(std::function<void(const option&)> record_action) override
        {
            _recording_function = record_action;
        }
+
    private:
+
        ds5_thermal_handler*             _thermal_handler;
-       float                           _on;
        std::function<void(const option&)> _recording_function = [](const option&) {};
    };
 }

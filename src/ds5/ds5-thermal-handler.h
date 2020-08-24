@@ -17,6 +17,7 @@ namespace librealsense
         virtual ~ds5_thermal_handler();
 
         void set_feature(bool state);
+        float query();
 
         void register_calibration_change_callback(calibration_change_callback_ptr callback) override
         {

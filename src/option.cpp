@@ -214,20 +214,20 @@ std::vector<rs2_option> librealsense::options_container::get_supported_options()
     return options;
 }
 
+float librealsense::thermal_compensation::query(void) const
+{
+    auto val = _thermal_handler->query();
+    _recording_function(*this);
+    return val;
+}
+
 void librealsense::thermal_compensation::set(float value)
 {
     if (value < 0)
         throw invalid_value_exception("Invalid input for thermal compensation toggle: " + std::to_string(value));
 
     _thermal_handler->set_feature(value);
-    _on = value;
     _recording_function(*this);
-}
-
-bool librealsense::thermal_compensation::is_enabled() const
-{
-    //Todo Evgeni
-    return true;
 }
 
 const char* librealsense::thermal_compensation::get_description() const

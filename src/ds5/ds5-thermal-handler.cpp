@@ -96,6 +96,18 @@ namespace librealsense
         }
     }
 
+    float ds5_thermal_handler::query()
+    {
+        auto ctrl_state = _tl_activation->query();
+        if (_feature_on != ctrl_state)
+        {
+            _feature_on = ctrl_state;
+            update_mode();
+        }
+        return ctrl_state;
+    }
+
+
     void ds5_thermal_handler::update_mode(bool on_streaming)
     {
         if (_streaming_on && _feature_on)
