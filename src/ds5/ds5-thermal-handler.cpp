@@ -17,7 +17,7 @@ namespace librealsense
         _poll_intervals_ms(2000),
         _temp_base(0),
         _streaming_on(false),
-        _feature_on(false)
+        _control_on(false)
      {
         _dpt_sensor = std::dynamic_pointer_cast<synthetic_sensor>(activation_sensor.shared_from_this());
 
@@ -33,8 +33,9 @@ namespace librealsense
         _tl_activation = std::make_shared<uvc_xu_option<uint8_t>>(dynamic_cast<uvc_sensor&>(*activation_sensor.get_raw_sensor()), 
             ds::depth_xu, ds::DS5_THERMAL_COMPENSATION, "Toggle Thermal Compensation Mechanism");
 
-        // TODO Evgeni
-        //if (_fw_version >= firmware_version("5.12.7.100"))
+        auto fw_ver = dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
+        std::cout << "FW version = " << fw_ver << std::endl;
+        if (firmware_version(fw_ver) >= firmware_version("5.12.7.100"))
         {
             activation_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION, std::make_shared<thermal_compensation>(this));
         }
@@ -42,7 +43,7 @@ namespace librealsense
 
     ds5_thermal_handler::~ds5_thermal_handler()
     {
-        if (_streaming_on && _feature_on)
+        if (_streaming_on && _control_on)
             stop();
     }
 
@@ -88,20 +89,20 @@ namespace librealsense
     void ds5_thermal_handler::set_feature(bool state)
     {
         bool change_required = false;
-        if (state != _feature_on)
+        if (state != _control_on)
         {
             _tl_activation->set(state);
-            _feature_on = state;
+            _control_on = state;
             update_mode();
         }
     }
 
     float ds5_thermal_handler::query()
     {
-        auto ctrl_state = _tl_activation->query();
-        if (_feature_on != ctrl_state)
+        auto ctrl_state = static_cast<bool>(_tl_activation->query());
+        if (_control_on != ctrl_state)
         {
-            _feature_on = ctrl_state;
+            _control_on = ctrl_state;
             update_mode();
         }
         return ctrl_state;
@@ -110,11 +111,11 @@ namespace librealsense
 
     void ds5_thermal_handler::update_mode(bool on_streaming)
     {
-        if (_streaming_on && _feature_on)
+        if (_streaming_on && _control_on)
             start();
         // Deactivate when toggling off streaming or control
-        if ((!_streaming_on && _feature_on && on_streaming) ||
-            (_streaming_on && !_feature_on && !on_streaming))
+        if ((!_streaming_on && _control_on && on_streaming) ||
+            (_streaming_on && !_control_on && !on_streaming))
             stop();
     }
 

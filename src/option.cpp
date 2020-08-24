@@ -3,7 +3,6 @@
 #include "option.h"
 #include "sensor.h"
 
-//#include "ds5/ds5-thermal-handler.h"
 #include "ds5/ds5-thermal-handler.h"
 
 bool librealsense::option_base::is_valid(float value) const

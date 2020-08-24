@@ -575,7 +575,7 @@ namespace librealsense
         {
             table_header        header;
             // RGB Intrinsic
-            float3x3            intrinsic;                  // normalized by [-1 1]  // Evgeni (Fx [0,0], Fy [1,1]
+            float3x3            intrinsic;                  // normalized by [-1 1]
             float               distortion[5];              // RGB forward distortion coefficients, Brown model
             // RGB Extrinsic
             float3              rotation;                   // RGB rotation angles (Rodrigues)

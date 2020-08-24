@@ -39,8 +39,7 @@ namespace librealsense
         std::vector< calibration_change_callback_ptr >  _calibration_change_callbacks;   // End-user updates to track calibration changes
 
         std::shared_ptr<option> _tl_activation;
-        //std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_THERMAL_COMPENSATION,
-          //          "Toggle Depth Sensor Thermal Compensation") 
+
         active_object<> _active_object;
         unsigned int _poll_intervals_ms;
         struct temperature_record
@@ -51,7 +50,7 @@ namespace librealsense
         std::list<temperature_record> _temp_records;
         int16_t _temp_base;
         bool _streaming_on;
-        bool _feature_on;
+        bool _control_on;
     };
 
 }
