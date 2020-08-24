@@ -62,6 +62,8 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_FRAME_LED_POWER                      , /**< Led power value 0-360. */
     RS2_FRAME_METADATA_RAW_FRAME_SIZE                       , /**< The number of transmitted payload bytes, not including metadata */
     RS2_FRAME_METADATA_GPIO_INPUT_DATA                      , /**< GPIO input data */
+    RS2_FRAME_METADATA_HDR_SEQUENCE_ID                      , /**< HDR sequence id */
+    RS2_FRAME_METADATA_HDR_SEQUENCE_SIZE                    , /**< HDR sequence size */
     RS2_FRAME_METADATA_COUNT
 } rs2_frame_metadata_value;
 const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata);
