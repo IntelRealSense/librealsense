@@ -22,8 +22,7 @@ namespace librealsense
         rs2::frame merging_algorithm(const rs2::frame_source& source, const rs2::frameset first_fs, 
             const rs2::frameset second_fs);
 
-        
-        std::queue<rs2::frameset> _framesets;
+        std::map<int, rs2::frameset> _framesets;
         rs2::frame _depth_merged_frame;
     };
 
@@ -35,7 +34,5 @@ namespace librealsense
     protected:
         bool should_process(const rs2::frame& frame) override;
         rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
-
-        rs2_stream _stream;
     };
 }

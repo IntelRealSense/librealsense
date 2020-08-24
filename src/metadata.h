@@ -161,6 +161,7 @@ namespace librealsense
         trigger_attribute               = (1u << 7),
         calibration_count_attribute     = (1u << 8),
         gpio_input_data_attribute       = (1u << 9),
+        hdr_sequence_data_attribute     = (1u << 10),
     };
 
     /**\brief md_stat_attributes - bit mask to find active attributes,
@@ -462,7 +463,8 @@ namespace librealsense
                                     Byte <1>  configured delay (depth only)*/
         uint16_t    calibration_count;
         uint8_t     gpioInputData;
-        uint8_t     reserved[5];
+        uint8_t     hdr_sequence_data;    // HDR sequence - 4 MSB: sequence size, 4 LSB: sequence id 
+        uint8_t     reserved[4];
     };
 
     REGISTER_MD_TYPE(md_configuration, md_type::META_DATA_INTEL_CONFIGURATION_ID)
