@@ -13,7 +13,7 @@ using namespace rs2;
 using namespace sw_update;
 using namespace http;
 
-void updates_model::draw(ux_window& window, std::string& error_message)
+void updates_model::draw(viewer_model& viewer, ux_window& window, std::string& error_message)
 {
     // Protect resources
     static std::vector<update_profile_model> updates_copy;
@@ -140,7 +140,7 @@ void updates_model::draw(ux_window& window, std::string& error_message)
             // ===========================================================================
             // Draw Firmware update Pane
             // ===========================================================================
-            fw_update_needed = draw_firmware_section(window_name, update, positions, window);
+            fw_update_needed = draw_firmware_section(viewer, window_name, update, positions, window);
 
         }
         else 
@@ -496,7 +496,7 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
     }
     return essential_sw_update_needed;
 }
-bool updates_model::draw_firmware_section(const char * window_name, update_profile_model& selected_profile, position_params& pos, ux_window& window)
+bool updates_model::draw_firmware_section(viewer_model& viewer, const char * window_name, update_profile_model& selected_profile, position_params& pos, ux_window& window)
 {
     bool essential_fw_update_needed(false);
     bool recommended_fw_update_needed(false);
@@ -765,7 +765,7 @@ bool updates_model::draw_firmware_section(const char * window_name, update_profi
             {
                 _fw_update_state = fw_update_states::started;
 
-                _update_manager = std::make_shared<firmware_update_manager>(
+                _update_manager = std::make_shared<firmware_update_manager>(viewer,
                     *selected_profile.dev_model, selected_profile.profile.dev, selected_profile.ctx, _fw_image, true
                     );
                 auto invoke = [](std::function<void()> action) { action(); };
