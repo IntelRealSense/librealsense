@@ -16,7 +16,6 @@
 #include "stream.h"
 #include "l500-private.h"
 #include "error-handling.h"
-#include "frame-validator.h"
 #include "l500-options.h"
 #include "calibrated-sensor.h"
 
@@ -115,16 +114,6 @@ namespace librealsense
                 options.push_back(option);
 
             return options;
-        }
-
-        virtual const char* get_option_name(rs2_option option) const override
-        {
-            if(option == static_cast<rs2_option>(RS2_OPTION_DEPTH_INVALIDATION_ENABLE))
-            {
-                static const std::string str = make_less_screamy("DEPTH_INVALIDATION_ENABLE");
-                return str.c_str();
-            }
-            return options_container::get_option_name(option);
         }
 
         static ivcam2::intrinsic_params get_intrinsic_params(const uint32_t width, const uint32_t height, ivcam2::intrinsic_depth intrinsic)
@@ -267,7 +256,5 @@ namespace librealsense
         float _depth_units;
         stream_profiles _user_requests;
         stream_profiles _validator_requests;
-        bool _depth_invalidation_enabled;
-        std::shared_ptr<depth_invalidation_option> _depth_invalidation_option;
     };
 }

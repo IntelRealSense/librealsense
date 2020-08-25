@@ -176,11 +176,6 @@ namespace librealsense
             l500_depth_fourcc_to_rs2_stream_map )
         , _owner( owner )
     {
-#ifdef ENABLE_L500_DEPTH_INVALIDATION
-        _depth_invalidation_enabled = true;
-#else
-        _depth_invalidation_enabled = false;
-#endif
 
         register_option( RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>( "Number of meters represented by a single depth unit",
             lazy<float>( [&]() {
@@ -190,22 +185,6 @@ namespace librealsense
             lazy<float>( [&]() {
                 return get_depth_offset(); } ) ) );
 
-        _depth_invalidation_option = std::make_shared<depth_invalidation_option>(
-            0,
-            1,
-            1,
-            0,
-            &_depth_invalidation_enabled,
-            "depth invalidation enabled" );
-        _depth_invalidation_option->on_set( [this]( float val )
-            {
-                if( !_depth_invalidation_option->is_valid( val ) )
-                    throw invalid_value_exception( to_string()
-                        << "Unsupported depth invalidation enabled " << val << " is out of range." );
-            } );
-
-        // The depth invalidation enable option is deprecated for now.
-        //register_option(static_cast<rs2_option>(RS2_OPTION_DEPTH_INVALIDATION_ENABLE), _depth_invalidation_option);
     }
 
     int l500_depth_sensor::read_algo_version()
@@ -376,14 +355,7 @@ namespace librealsense
     {
         // The delay is here as a work around to a firmware bug [RS5-5453]
         _action_delayer.do_after_delay( [&]() {
-            if( _depth_invalidation_enabled )
-                synthetic_sensor::start(
-                    std::make_shared< frame_validator >( shared_from_this(),
-                                                         callback,
-                                                         _user_requests,
-                                                         _validator_requests ) );
-            else
-                synthetic_sensor::start( callback );
+            synthetic_sensor::start( callback );
             if( _owner->_autocal )
                 _owner->_autocal->start();
         } );
@@ -392,10 +364,7 @@ namespace librealsense
     void l500_depth_sensor::stop()
     {
     // The delay is here as a work around to a firmware bug [RS5-5453]
-        _action_delayer.do_after_delay([&]() {
-            synthetic_sensor::stop();
-            _depth_invalidation_option->set_streaming(false);
-        });
+        _action_delayer.do_after_delay([&]() { synthetic_sensor::stop(); });
         if( _owner->_autocal )
             _owner->_autocal->stop();
     }
@@ -487,7 +456,6 @@ namespace librealsense
         try
         {
             _user_requests = requests;
-            _depth_invalidation_option->set_streaming(true);
 
             auto is_ir_requested
                 = std::find_if( requests.begin(),
@@ -553,7 +521,6 @@ namespace librealsense
         catch( ... )
         {
             LOG_ERROR( "Exception caught in l500_depth_sensor::open" );
-            _depth_invalidation_option->set_streaming(false);
             throw;
         }
     }

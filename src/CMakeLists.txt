@@ -95,7 +95,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/terminal-parser.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/types.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/verify.c"
-        "${CMAKE_CURRENT_LIST_DIR}/frame-validator.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/depth-to-rgb-calibration.cpp"
 
         "${CMAKE_CURRENT_LIST_DIR}/algo.h"
@@ -126,7 +125,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/terminal-parser.h"
         "${CMAKE_CURRENT_LIST_DIR}/types.h"
         "${CMAKE_CURRENT_LIST_DIR}/command_transfer.h"
-        "${CMAKE_CURRENT_LIST_DIR}/frame-validator.h"
         "${CMAKE_CURRENT_LIST_DIR}/auto-calibrated-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/device-calibration.h"
         "${CMAKE_CURRENT_LIST_DIR}/calibrated-sensor.h"
