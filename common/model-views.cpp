@@ -3285,7 +3285,7 @@ namespace rs2
 
                         static auto table = create_default_fw_table();
 
-                        manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, table[product_line], true);
+                        manager = std::make_shared<firmware_update_manager>(viewer, *this, dev, viewer.ctx, table[product_line], true);
                     }
 
                     if (is_upgradeable(fw, recommended))
@@ -4349,7 +4349,7 @@ namespace rs2
 
             else return; // Aborted by the user
 
-            auto manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, data, false);
+            auto manager = std::make_shared<firmware_update_manager>(viewer, *this, dev, viewer.ctx, data, false);
 
             auto n = std::make_shared<fw_update_notification_model>(
                 "Manual Update requested", manager, true);
@@ -4399,7 +4399,7 @@ namespace rs2
                 else return; // Aborted by the user
             }
 
-            auto manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, data, true);
+            auto manager = std::make_shared<firmware_update_manager>(viewer, *this, dev, viewer.ctx, data, true);
 
             auto n = std::make_shared<fw_update_notification_model>(
                 "Manual Update requested", manager, true);

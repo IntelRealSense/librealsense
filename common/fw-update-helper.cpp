@@ -2,14 +2,16 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 #include <glad/glad.h>
 
-#include "fw-update-helper.h"
 
 #include <map>
 #include <vector>
 #include <string>
 #include <thread>
 #include <condition_variable>
-#include <model-views.h>
+
+#include "fw-update-helper.h"
+#include "model-views.h"
+#include "viewer.h"
 
 #include "os.h"
 
@@ -379,6 +381,15 @@ namespace rs2
 
                 if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }) || update_manager->started())
                 {
+                    // stopping stream before starting fw update
+                    auto fw_update_manager = dynamic_cast<firmware_update_manager*>(update_manager.get());
+                    std::for_each(fw_update_manager->get_device_model().subdevices.begin(), 
+                        fw_update_manager->get_device_model().subdevices.end(), 
+                        [&](const std::shared_ptr<subdevice_model>& sm)
+                        {
+                            return sm->stop(fw_update_manager->get_viewer_model());
+                        });
+
                     auto _this = shared_from_this();
                     auto invoke = [_this](std::function<void()> action) {
                         _this->invoke(action);

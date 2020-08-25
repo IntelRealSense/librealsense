@@ -75,7 +75,7 @@ namespace rs2
                 it->profile.dev_active = active;
         }
 
-        void draw(ux_window& window, std::string& error_message);
+        void draw(viewer_model& viewer, ux_window& window, std::string& error_message);
     private:
         struct position_params
         {
@@ -89,7 +89,7 @@ namespace rs2
         };
 
         bool draw_software_section(const char * window_name, update_profile_model& selected_profile, position_params& pos_params , ux_window& window);
-        bool draw_firmware_section(const char * window_name, update_profile_model& selected_profile, position_params& pos_params, ux_window& window);
+        bool draw_firmware_section(viewer_model& viewer, const char * window_name, update_profile_model& selected_profile, position_params& pos_params, ux_window& window);
 
 
         int selected_index = 0;
