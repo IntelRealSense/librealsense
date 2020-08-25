@@ -6,7 +6,9 @@
 namespace librealsense
 {
 	hdr_merging_processor::hdr_merging_processor()
-		: generic_processing_block("HDR_merge")
+		: generic_processing_block("HDR_merge"),
+        _first_exp(0.f),
+        _second_exp(0.f)
 	{
 
 	}
@@ -57,7 +59,7 @@ namespace librealsense
         } 
 
         // 2. add the frameset to vector of framesets
-        int depth_sequ_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_SIZE);
+        /*int depth_sequ_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_SIZE);
         if (depth_sequ_size != 2)
             throw invalid_value_exception(to_string() << "hdr_merging_processor::process_frame(...) failed! sequence size must be 2 for merging pb.");
         int depth_sequ_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
@@ -73,18 +75,42 @@ namespace librealsense
             // timestamp to be also compared???
             // solution to be found...
             int a = 1;
-        }
+        }*/
 
-        _framesets[depth_sequ_id] = fs;
+        //_framesets[depth_sequ_id] = fs;
+
+        //to be used only till metadata is available
+        float depth_exposure = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
+        float ir_exposure = ir_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
+        if (_first_exp == depth_exposure)
+            return f;
+        if (_first_exp == 0.f)
+        {
+            _first_exp = depth_exposure;
+        }
+        else
+        {
+            _second_exp = depth_exposure;
+        }
+        _framesets_without_md[depth_exposure] = fs;
+        //till here
+
 
         // 3. check if size of this vector is at least 2 (if not - return latest merge frame)
-        if (_framesets.size() < 2)
+        //if (_framesets.size() < 2)
+        if (_framesets_without_md.size() < 2)
             return f;
+        
 
         // 4. pop out both framesets from the vector
-        rs2::frameset fs_0 = _framesets[0];
-        rs2::frameset fs_1 = _framesets[1];
-        _framesets.clear();
+        //rs2::frameset fs_0 = _framesets[0];
+        //rs2::frameset fs_1 = _framesets[1];
+        //_framesets.clear();
+        rs2::frameset fs_0 = _framesets_without_md[_first_exp];
+        rs2::frameset fs_1 = _framesets_without_md[_second_exp];
+        _first_exp = 0.f;
+        _second_exp = 0.f;
+        _framesets_without_md.clear();
 
         // 5. apply merge algo
         rs2::frame new_frame = merging_algorithm(source, fs_0, fs_1);

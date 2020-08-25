@@ -24,6 +24,9 @@ namespace librealsense
 
         std::map<int, rs2::frameset> _framesets;
         rs2::frame _depth_merged_frame;
+        std::map<float, rs2::frameset> _framesets_without_md;
+        float _first_exp;
+        float _second_exp;
     };
 
     class hdr_splitting_processor : public generic_processing_block
