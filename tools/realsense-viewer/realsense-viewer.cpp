@@ -301,7 +301,6 @@ int main(int argc, const char** argv) try
     std::mutex m;
 
     std::weak_ptr<notifications_model> notifications = viewer_model.not_model;
-#if BUILD_EASYLOGGINGPP
     rs2::log_to_callback( RS2_LOG_SEVERITY_INFO,
         [notifications]( rs2_log_severity severity, rs2::log_message const& msg )
         {
@@ -310,7 +309,6 @@ int main(int argc, const char** argv) try
                 not_model->output.add_log(severity, msg.filename(), msg.line_number(), msg.raw());
             }
         });
-#endif
 
     window.on_file_drop = [&](std::string filename)
     {

@@ -553,9 +553,9 @@ namespace ivcam2 {
             }
         }
 
+#if BUILD_EASYLOGGINGPP
         void on_log( rs2_log_severity severity, rs2_log_message const & msg ) noexcept override
         {
-#if BUILD_EASYLOGGINGPP
             log_message const & wrapper = (log_message const &)(msg);
             char const * raw = wrapper.el_msg.message().c_str();
             if( strncmp( AC_LOG_PREFIX, raw, AC_LOG_PREFIX_LEN ) )
@@ -570,8 +570,13 @@ namespace ivcam2 {
                 _f_active << text << std::endl;
             else if( _f_main )
                 _f_main << text << std::endl;
-#endif
         }
+#else 
+        void on_log(rs2_log_severity severity, rs2_log_message const & msg) noexcept override
+        {
+        }
+#endif
+
 
         void release() override { delete this; }
 
