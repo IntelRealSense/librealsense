@@ -5,8 +5,11 @@
 
 #include "notifications.h"
 
+
 namespace rs2
 {
+    class viewer_model;
+
     int parse_product_line(std::string id);
     std::string get_available_firmware_version(int product_line);
     std::map<int, std::vector<uint8_t>> create_default_fw_table();
@@ -17,9 +20,12 @@ namespace rs2
     class firmware_update_manager : public process_manager
     {
     public:
-        firmware_update_manager(device_model& model, device dev, context ctx, std::vector<uint8_t> fw, bool is_signed) 
-            : process_manager("Firmware Update"), _model(model),
+        firmware_update_manager(viewer_model& viewer, device_model& model, device dev, context ctx, std::vector<uint8_t> fw, bool is_signed)
+            : process_manager("Firmware Update"), _viewer(viewer), _model(model),
               _fw(fw), _is_signed(is_signed), _dev(dev), _ctx(ctx) {}
+
+        const device_model& get_device_model() const { return _model; }
+        viewer_model& get_viewer_model() { return _viewer; }
 
     private:
         void process_flow(std::function<void()> cleanup, 
@@ -28,6 +34,7 @@ namespace rs2
             std::function<bool()> action, std::function<void()> cleanup,
             std::chrono::system_clock::duration delta);
 
+        viewer_model& _viewer;
         device _dev;
         context _ctx;
         std::vector<uint8_t> _fw;
