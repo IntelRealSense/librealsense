@@ -5445,7 +5445,12 @@ namespace rs2
         if (advanced_dev)
         {
             is_advanced_device = true;
-            is_advanced_mode_enabled = advanced_dev.is_enabled();
+            try
+            {
+                // Prevent intermittent errors in polling mode to keep imgui in sync
+                is_advanced_mode_enabled = advanced_dev.is_enabled();
+            }
+            catch (...){}
         }
 
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 3);
