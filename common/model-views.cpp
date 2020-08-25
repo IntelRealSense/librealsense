@@ -3304,7 +3304,7 @@ namespace rs2
 
                         static auto table = create_default_fw_table();
 
-                        manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, table[product_line], true);
+                        manager = std::make_shared<firmware_update_manager>(viewer, *this, dev, viewer.ctx, table[product_line], true);
                     }
 
                     if (is_upgradeable(fw, recommended))
@@ -3820,7 +3820,10 @@ namespace rs2
             }
             auto curr_frame = p.get_position();
             uint64_t step = uint64_t(1000.0 / (float)fps * 1e6);
-            p.seek(std::chrono::nanoseconds(curr_frame - step));
+            if (curr_frame >= step)
+            {
+                p.seek(std::chrono::nanoseconds(curr_frame - step));
+            }
         }
         if (ImGui::IsItemHovered())
         {
@@ -4368,7 +4371,7 @@ namespace rs2
 
             else return; // Aborted by the user
 
-            auto manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, data, false);
+            auto manager = std::make_shared<firmware_update_manager>(viewer, *this, dev, viewer.ctx, data, false);
 
             auto n = std::make_shared<fw_update_notification_model>(
                 "Manual Update requested", manager, true);
@@ -4418,7 +4421,7 @@ namespace rs2
                 else return; // Aborted by the user
             }
 
-            auto manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, data, true);
+            auto manager = std::make_shared<firmware_update_manager>(viewer, *this, dev, viewer.ctx, data, true);
 
             auto n = std::make_shared<fw_update_notification_model>(
                 "Manual Update requested", manager, true);
@@ -4744,18 +4747,25 @@ namespace rs2
                     }
                 }
 
+                // fw update disabled when any sensor is streaming
+                ImGuiSelectableFlags updateFwFlags = (is_streaming) ? ImGuiSelectableFlags_Disabled : 0;
+
                 if (dev.is<rs2::updatable>() || dev.is<rs2::update_device>())
                 {
-                    if (ImGui::Selectable("Update Firmware..."))
+                    if (ImGui::Selectable("Update Firmware...", false, updateFwFlags))
                     {
                         begin_update({}, viewer, error_message);
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Install official signed firmware from file to the device");
+                    {
+                        std::string tooltip = to_string() << "Install official signed firmware from file to the device" << (is_streaming ? " (Disabled while streaming)" : "");
+                        ImGui::SetTooltip("%s", tooltip.c_str());
+                    }
 
                     if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && is_recommended_fw_available(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)))
                     {
-                        if (ImGui::Selectable("Install Recommended Firmware "))
+                        
+                        if (ImGui::Selectable("Install Recommended Firmware ", false, updateFwFlags))
                         {
                             auto sensors = dev.query_sensors();
                             auto product_line_str = "";
@@ -4772,7 +4782,10 @@ namespace rs2
                     }
 
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Install default recommended firmware for this device");
+                    {
+                        std::string tooltip = to_string() <<"Install default recommended firmware for this device" << (is_streaming ? " (Disabled while streaming)" : "");
+                        ImGui::SetTooltip("%s", tooltip.c_str());
+                    }
                 }
 
                 bool is_locked = true;
@@ -4781,12 +4794,15 @@ namespace rs2
 
                 if (dev.is<rs2::updatable>() && !is_locked)
                 {
-                    if (ImGui::Selectable("Update Unsigned Firmware..."))
+                    if (ImGui::Selectable("Update Unsigned Firmware...", false, updateFwFlags))
                     {
                         begin_update_unsigned(viewer, error_message);
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Install non official unsigned firmware from file to the device");
+                    {
+                        std::string tooltip = to_string() << "Install non official unsigned firmware from file to the device" << (is_streaming ? " (Disabled while streaming)" : "");
+                        ImGui::SetTooltip("%s", tooltip.c_str());
+                    }
                 }
             }
 
@@ -5448,7 +5464,12 @@ namespace rs2
         if (advanced_dev)
         {
             is_advanced_device = true;
-            is_advanced_mode_enabled = advanced_dev.is_enabled();
+            try
+            {
+                // Prevent intermittent errors in polling mode to keep imgui in sync
+                is_advanced_mode_enabled = advanced_dev.is_enabled();
+            }
+            catch (...){}
         }
 
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 3);
