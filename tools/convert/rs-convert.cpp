@@ -34,6 +34,11 @@ int main(int argc, char** argv) try
     ValueArg<string> outputFilenameBin("b", "output-bin", "output BIN (depth matrix) file(s) path", false, "", "bin-path");
     SwitchArg switchDepth("d", "depth", "convert depth frames (default - all supported)", false);
     SwitchArg switchColor("c", "color", "convert color frames (default - all supported)", false);
+    ValueArg <string> frameNumberStart("s", "start-frame", "convert frames start point (framenumber)", false, "", "framenumber-start");
+    ValueArg <string> frameNumberEnd("e", "end-frame", "convert frames end point (framenumber)", false, "", "framenumber-end");
+    ValueArg <string> timeStart("f", "start-time", "convert frames start point (in seconds)", false, "", "time-start");
+    ValueArg <string> timeEnd("t", "end-time", "convert frames end point (in seconds)", false, "", "time-end");
+
 
     cmd.add(inputFilename);
     cmd.add(outputFilenamePng);
@@ -43,6 +48,10 @@ int main(int argc, char** argv) try
     cmd.add(outputFilenameBin);
     cmd.add(switchDepth);
     cmd.add(switchColor);
+    cmd.add(frameNumberStart);
+    cmd.add(frameNumberEnd);
+    cmd.add(timeStart);
+    cmd.add(timeEnd);
     cmd.parse(argc, argv);
 
     vector<shared_ptr<rs2::tools::converter::converter_base>> converters;
@@ -83,6 +92,25 @@ int main(int argc, char** argv) try
         throw runtime_error("output not defined");
     }
 
+    auto file_begin = 0;
+    auto file_end = 0;
+    auto start_time = 0;
+    auto end_time = 0;
+
+    if (frameNumberStart.isSet()) {
+        file_begin = stoi(frameNumberStart.getValue());
+    }
+    if (frameNumberEnd.isSet()) {
+        file_end = stoi(frameNumberEnd.getValue());
+    }
+    if (timeStart.isSet()) {
+        start_time = 1000000000 *(atoi(timeStart.getValue().c_str())); //seconds to nanoseconds 
+        std::cout << start_time << endl;
+    }
+    if (timeEnd.isSet()) {
+        end_time = 1000000000 *(atoi(timeEnd.getValue().c_str())); //seconds to nanoseconds
+        std::cout << end_time << endl;
+    }
 
     //in order to convert frames into ply we need synced depth and color frames, 
     //therefore we use pipeline
@@ -122,6 +150,20 @@ int main(int argc, char** argv) try
             }
 
             frameNumber = frameset[0].get_frame_number();
+            auto frame_position = playback.get_position();
+
+            if (frameNumberStart.isSet()) {
+                if (frameNumber < file_begin || frameNumber > file_end) {
+                    break;
+                }
+            }
+
+            if (timeStart.isSet()) {
+                if (frame_position < start_time || frame_position > end_time) {
+                    break;
+                }
+            }
+
             plyconverter->convert(frameset);
             plyconverter->wait();
 
@@ -157,6 +199,22 @@ int main(int argc, char** argv) try
             sensor.start([&](rs2::frame frame)
             {
                 std::lock_guard<std::mutex> lock(mutex);
+
+                auto frameNumber = frame.get_frame_number();
+                auto frame_position = playback.get_position();
+
+                if (frameNumberStart.isSet()) {
+                    if (frameNumber < file_begin || frameNumber > file_end) {
+                        return;
+                    }
+                }
+
+                if (timeStart.isSet()) {
+                    if (frame_position < start_time || frame_position > end_time) {
+                        return;
+                    }
+                }
+
                 for_each(converters.begin(), converters.end(),
                     [&frame](shared_ptr<rs2::tools::converter::converter_base>& converter) {
                     converter->convert(frame);
