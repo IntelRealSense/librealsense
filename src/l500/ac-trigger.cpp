@@ -9,7 +9,10 @@
 #include "algo/depth-to-rgb-calibration/debug.h"
 #include "log.h"
 
-#ifndef _WIN32
+#ifdef _WIN32
+#include <windows.h>
+#include <direct.h>
+#else 
 #include <sys/stat.h>  // mkdir
 #endif
 
