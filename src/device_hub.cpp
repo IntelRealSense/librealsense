@@ -101,9 +101,7 @@ namespace librealsense
             } 
             catch (const std::exception& ex)
             {
-#if BUILD_EASYLOGGINGPP
-                LOG(WARNING) << "Could not open device " << ex.what();
-#endif
+                LOG_WARNING("Could not open device " << ex.what());
             }
         }
 

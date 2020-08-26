@@ -35,7 +35,7 @@
 #define FW_L5XX_FW_IMAGE_VERSION ""
 #endif // INTERNAL_FW
 
-#ifdef BUILD_EASYLOGGINGPP
+#if BUILD_EASYLOGGINGPP
 #include <easylogging++.h>
 #ifdef BUILD_SHARED_LIBS
 // With static linkage, ELPP is initialized by librealsense, so doing it here will
@@ -155,8 +155,6 @@ bool refresh_devices(std::mutex& m,
         return false;
     try
     {
-
-
         //Remove disconnected
         auto dev_itr = begin(current_connected_devices);
         while (dev_itr != end(current_connected_devices))
@@ -300,6 +298,7 @@ int main(int argc, const char** argv) try
     std::vector<device> connected_devs;
     std::mutex m;
 
+#if BUILD_EASYLOGGINGPP
     std::weak_ptr<notifications_model> notifications = viewer_model.not_model;
     rs2::log_to_callback( RS2_LOG_SEVERITY_INFO,
         [notifications]( rs2_log_severity severity, rs2::log_message const& msg )
@@ -309,6 +308,7 @@ int main(int argc, const char** argv) try
                 not_model->output.add_log(severity, msg.filename(), msg.line_number(), msg.raw());
             }
         });
+#endif 
 
     window.on_file_drop = [&](std::string filename)
     {
