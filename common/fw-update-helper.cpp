@@ -383,19 +383,21 @@ namespace rs2
                 {
                     // stopping stream before starting fw update
                     auto fw_update_manager = dynamic_cast<firmware_update_manager*>(update_manager.get());
-                    std::for_each(fw_update_manager->get_device_model().subdevices.begin(), 
-                        fw_update_manager->get_device_model().subdevices.end(), 
-                        [&](const std::shared_ptr<subdevice_model>& sm)
-                        {
-                            return sm->stop(fw_update_manager->get_viewer_model());
-                        });
-
+                    std::for_each(fw_update_manager->get_device_model().subdevices.begin(),
+                            fw_update_manager->get_device_model().subdevices.end(),
+                            [&](const std::shared_ptr<subdevice_model>& sm)
+                            {
+                                if (sm->streaming)
+                                    sm->stop(fw_update_manager->get_viewer_model());
+                            });
+                    
                     auto _this = shared_from_this();
                     auto invoke = [_this](std::function<void()> action) {
                         _this->invoke(action);
                     };
-                    
-                    if (!update_manager->started()) update_manager->start(invoke);
+
+                    if (!update_manager->started()) 
+                        update_manager->start(invoke);
 
                     update_state = RS2_FWU_STATE_IN_PROGRESS;
                     enable_dismiss = false;
