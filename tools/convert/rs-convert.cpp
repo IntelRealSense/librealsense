@@ -15,7 +15,8 @@
 
 #include <mutex>
 
-
+#define SECTONSEC 1000000000
+ 
 using namespace std;
 using namespace TCLAP;
 
@@ -34,13 +35,17 @@ int main(int argc, char** argv) try
     ValueArg<string> outputFilenameBin("b", "output-bin", "output BIN (depth matrix) file(s) path", false, "", "bin-path");
     SwitchArg switchDepth("d", "depth", "convert depth frames (default - all supported)", false);
     SwitchArg switchColor("c", "color", "convert color frames (default - all supported)", false);
-    ValueArg <string> frameNumberStart("s", "start-frame", "convert frames start point (framenumber)", false, "", "framenumber-start");
-    ValueArg <string> frameNumberEnd("e", "end-frame", "convert frames end point (framenumber)", false, "", "framenumber-end");
-    ValueArg <string> timeStart("f", "start-time", "convert frames start point (in seconds)", false, "", "time-start");
-    ValueArg <string> timeEnd("t", "end-time", "convert frames end point (in seconds)", false, "", "time-end");
+    ValueArg <string> frameNumberStart("f", "first-frame", "convert frame number range - start point", false, "", "first-framenumber");
+    ValueArg <string> frameNumberEnd("t", "last-frame", "convert frame number range - end point", false, "", "last-framenumber");
+    ValueArg <string> StartTime("s", "start-time", "convert time range - start point (in seconds)", false, "", "start-time");
+    ValueArg <string> EndTime("e", "end-time", "convert time range - end point (in seconds)", false, "", "end-time");
 
 
     cmd.add(inputFilename);
+    cmd.add(frameNumberEnd);
+    cmd.add(frameNumberStart);
+    cmd.add(EndTime);
+    cmd.add(StartTime);
     cmd.add(outputFilenamePng);
     cmd.add(outputFilenameCsv);
     cmd.add(outputFilenameRaw);
@@ -48,10 +53,6 @@ int main(int argc, char** argv) try
     cmd.add(outputFilenameBin);
     cmd.add(switchDepth);
     cmd.add(switchColor);
-    cmd.add(frameNumberStart);
-    cmd.add(frameNumberEnd);
-    cmd.add(timeStart);
-    cmd.add(timeEnd);
     cmd.parse(argc, argv);
 
     vector<shared_ptr<rs2::tools::converter::converter_base>> converters;
@@ -92,23 +93,23 @@ int main(int argc, char** argv) try
         throw runtime_error("output not defined");
     }
 
-    auto file_begin = 0;
-    auto file_end = 0;
+    auto first_frame = 0;
+    auto last_frame = 0;
     auto start_time = 0;
     auto end_time = 0;
 
     if (frameNumberStart.isSet()) {
-        file_begin = stoi(frameNumberStart.getValue());
+        first_frame = stoi(frameNumberStart.getValue());
     }
     if (frameNumberEnd.isSet()) {
-        file_end = stoi(frameNumberEnd.getValue());
+        last_frame = stoi(frameNumberEnd.getValue());
     }
-    if (timeStart.isSet()) {
-        start_time = 1000000000 *(atoi(timeStart.getValue().c_str())); //seconds to nanoseconds 
+    if (StartTime.isSet()) {
+        start_time = SECTONSEC *(atoi(StartTime.getValue().c_str())); //seconds to nanoseconds 
         std::cout << start_time << endl;
     }
-    if (timeEnd.isSet()) {
-        end_time = 1000000000 *(atoi(timeEnd.getValue().c_str())); //seconds to nanoseconds
+    if (EndTime.isSet()) {
+        end_time = SECTONSEC *(atoi(EndTime.getValue().c_str())); //seconds to nanoseconds
         std::cout << end_time << endl;
     }
 
@@ -152,16 +153,17 @@ int main(int argc, char** argv) try
             frameNumber = frameset[0].get_frame_number();
             auto frame_position = playback.get_position();
 
-            if (frameNumberStart.isSet()) {
-                if (frameNumber < file_begin || frameNumber > file_end) {
-                    break;
-                }
+            if (frameNumberStart.isSet() && frameNumber < first_frame) {
+                break;
             }
-
-            if (timeStart.isSet()) {
-                if (frame_position < start_time || frame_position > end_time) {
-                    break;
-                }
+            if (frameNumberEnd.isSet() && frameNumber > last_frame) {
+                break;
+            }
+            if (StartTime.isSet() && frame_position < start_time) {
+                break;
+            }
+            if (EndTime.isSet() && frame_position > end_time) {
+                break;
             }
 
             plyconverter->convert(frameset);
@@ -203,18 +205,19 @@ int main(int argc, char** argv) try
                 auto frameNumber = frame.get_frame_number();
                 auto frame_position = playback.get_position();
 
-                if (frameNumberStart.isSet()) {
-                    if (frameNumber < file_begin || frameNumber > file_end) {
-                        return;
-                    }
+                if (frameNumberStart.isSet() && frameNumber < first_frame) {
+                    return;
                 }
-
-                if (timeStart.isSet()) {
-                    if (frame_position < start_time || frame_position > end_time) {
-                        return;
-                    }
+                if (frameNumberEnd.isSet() && frameNumber > last_frame) {
+                    return;
                 }
-
+                if (StartTime.isSet() && frame_position < start_time) {
+                    return;
+                }
+                if (EndTime.isSet() && frame_position > end_time) {
+                    return;
+                }
+                    
                 for_each(converters.begin(), converters.end(),
                     [&frame](shared_ptr<rs2::tools::converter::converter_base>& converter) {
                     converter->convert(frame);
