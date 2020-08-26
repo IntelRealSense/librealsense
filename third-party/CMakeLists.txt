@@ -6,7 +6,7 @@ include(${_rel_path}/realsense-file/config.cmake)
 include(${_rel_path}/sqlite/CMakeLists.txt)
 
 if(BUILD_EASYLOGGINGPP)
-    include(${_rel_path}/easyloggingpp/CMakeLists.txt)
+    include(${CMAKE_SOURCE_DIR}/third-party/easyloggingpp/CMakeLists.txt)
 endif()
 
 add_subdirectory(${_rel_path}/realsense-file)
@@ -27,6 +27,8 @@ if(BUILD_NETWORK_DEVICE)
           "-DCMAKE_GENERATOR=${CMAKE_GENERATOR}"
           "-DCMAKE_POSITION_INDEPENDENT_CODE=ON"
           "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}"
-    )
+        UPDATE_COMMAND ""
+        PATCH_COMMAND  ""
+   )
 
 endif()

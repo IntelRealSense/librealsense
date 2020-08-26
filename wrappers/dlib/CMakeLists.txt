@@ -15,7 +15,7 @@ add_subdirectory(${DLIB_DIR} build)
 
 # Add it as the source of includes??
 set(DEPENDENCIES realsense2 dlib::dlib)
-include_directories( ../../include )
+include_directories( ${CMAKE_SOURCE_DIR}/include )
 include_directories( ${DLIB_DIR} )
 
 # List all the specific examples for dlib

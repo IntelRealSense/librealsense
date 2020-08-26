@@ -20,7 +20,7 @@ set (INTERNAL_TESTS_SOURCES
 add_executable(${PROJECT_NAME} ${INTERNAL_TESTS_SOURCES})
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES})
-include_directories(${PROJECT_NAME} ../ ../../src/)
+include_directories(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/unit-tests/ ${CMAKE_SOURCE_DIR}/src/)
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "Unit-Tests")
 
 if(UNIX)

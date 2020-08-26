@@ -12,26 +12,26 @@ if(BUILD_GRAPHICAL_EXAMPLES)
             files_container.h
             print_helpers.h
             rosbag_content.h
-            ../../common/os.cpp
-            ../../third-party/glad/glad.c
-            ../../third-party/imgui/imgui.cpp
-            ../../third-party/imgui/imgui_draw.cpp
-            ../../third-party/imgui/imgui_impl_glfw.cpp
-            ../../third-party/imgui/imgui-fonts-karla.hpp
-            ../../third-party/imgui/imgui-fonts-fontawesome.hpp
-            ../../third-party/tinyfiledialogs/tinyfiledialogs.c
-            ../../third-party/tinyfiledialogs/tinyfiledialogs.h
+            ${CMAKE_SOURCE_DIR}/common/os.cpp
+            ${CMAKE_SOURCE_DIR}/third-party/glad/glad.c
+            ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui.cpp
+            ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui_draw.cpp
+            ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui_impl_glfw.cpp
+            ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui-fonts-karla.hpp
+            ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui-fonts-fontawesome.hpp
+            ${CMAKE_SOURCE_DIR}/third-party/tinyfiledialogs/tinyfiledialogs.c
+            ${CMAKE_SOURCE_DIR}/third-party/tinyfiledialogs/tinyfiledialogs.h
         )
 
     if(WIN32)
         add_executable(rs-rosbag-inspector WIN32 ${RS_ROSBAG_INSPECTOR_CPP})
 
-        include_directories(rs-rosbag-inspector ../../third-party/imgui ../../common ../../third-party/glad 
-                                             ../../third-party/tinyfiledialogs ../../third-party ${CMAKE_CURRENT_SOURCE_DIR}/res/)
+        include_directories(rs-rosbag-inspector ${CMAKE_SOURCE_DIR}/third-party/imgui ${CMAKE_SOURCE_DIR}/common ${CMAKE_SOURCE_DIR}/third-party/glad 
+                                             ${CMAKE_SOURCE_DIR}/third-party/tinyfiledialogs ${CMAKE_SOURCE_DIR}/third-party ${CMAKE_CURRENT_SOURCE_DIR}/res/)
     else()
         add_executable(rs-rosbag-inspector ${RS_ROSBAG_INSPECTOR_CPP})
-        include_directories(rs-rosbag-inspector ../../third-party/imgui ../../common ../../third-party/glad 
-                                             ../../third-party/tinyfiledialogs ../../third-party)
+        include_directories(rs-rosbag-inspector ${CMAKE_SOURCE_DIR}/third-party/imgui ${CMAKE_SOURCE_DIR}/common ${CMAKE_SOURCE_DIR}/third-party/glad 
+                                             ${CMAKE_SOURCE_DIR}/third-party/tinyfiledialogs ${CMAKE_SOURCE_DIR}/third-party)
     endif()
     set_property(TARGET rs-rosbag-inspector PROPERTY CXX_STANDARD 11)
 
