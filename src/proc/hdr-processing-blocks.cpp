@@ -146,6 +146,19 @@ namespace librealsense
             vf.get_bytes_per_pixel(), width, height, vf.get_stride_in_bytes(), RS2_EXTENSION_DEPTH_FRAME);
 
         bool use_ir = (first_ir && second_ir);
+        if (use_ir)
+        {
+            int depth_frame_counter = static_cast<int>(first_depth.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER));
+            int ir_frame_counter = static_cast<int>(first_ir.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER));
+            use_ir = (depth_frame_counter == ir_frame_counter);
+
+            if (use_ir)
+            {
+                int depth_frame_counter = static_cast<int>(second_depth.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER));
+                int ir_frame_counter = static_cast<int>(second_ir.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER));
+                use_ir = (depth_frame_counter == ir_frame_counter);
+            }
+        }
 
         if (new_f)
         {
