@@ -20,6 +20,15 @@ namespace librealsense
     {
         _texels_intrinsics = in;
         _texels_depth.resize(_texels_intrinsics.value().width*_texels_intrinsics.value().height);
+
+        // Evgeni - profyling
+        static rs2_intrinsics t1;
+        if ((std::fabs(t1.fx - in.fx) > std::numeric_limits<float>::epsilon()) ||
+            (std::fabs(t1.fy - in.fy) > std::numeric_limits<float>::epsilon()))
+        {
+            t1 = in;
+            LOG_WARNING(__FUNCTION__ << ": RGB instrinsic is updated, new Fx,Fy are  " << t1.fx << "," << t1.fy);
+        }
     }
 
    void occlusion_filter::process(float3* points, float2* uv_map, const std::vector<float2> & pix_coord, const rs2::depth_frame& depth) const

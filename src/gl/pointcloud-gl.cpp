@@ -488,6 +488,16 @@ void pointcloud_gl::get_texture_map(
         shader.requires_projection(!(_depth_intr == other_intrinsics && 
             extr == identity_matrix()));
 
+        // Evgeni - profyling
+        static rs2_intrinsics tt;
+        if ((std::fabs(tt.fx - other_intrinsics.fx) > std::numeric_limits<float>::epsilon()) ||
+            (std::fabs(tt.fy - other_intrinsics.fy) > std::numeric_limits<float>::epsilon()))
+        {
+            tt = other_intrinsics;
+            std::cout << __FUNCTION__ << ": RGB instrinsic is updated, new Fx,Fy are  " << tt.fx << "," << tt.fy << std::endl;
+            LOG_WARNING(__FUNCTION__ << ": RGB instrinsic is updated, new Fx,Fy are  " << tt.fx << "," << tt.fy);
+        }
+
         shader.set_depth_scale(_depth_scale);
         shader.set_intrinsics(0, _depth_intr);
         shader.set_intrinsics(1, other_intrinsics);

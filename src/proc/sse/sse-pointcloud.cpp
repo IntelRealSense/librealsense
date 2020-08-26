@@ -149,6 +149,15 @@ namespace librealsense
     {
         auto tex_ptr = (float2*)output.get_texture_coordinates();
 
+        // Evgeni - profyling
+        static rs2_intrinsics tt;
+        if ((std::fabs(tt.fx - other_intrinsics.fx) > std::numeric_limits<float>::epsilon()) ||
+            (std::fabs(tt.fy - other_intrinsics.fy) > std::numeric_limits<float>::epsilon()))
+        {
+            tt = other_intrinsics;
+            LOG_WARNING(__FUNCTION__ << ": RGB instrinsic is updated, new Fx,Fy are  " << tt.fx << "," << tt.fy);
+        }
+
 #ifdef __SSSE3__
         auto point = reinterpret_cast<const float*>(points);
         auto res = reinterpret_cast<float*>(tex_ptr);
