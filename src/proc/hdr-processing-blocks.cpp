@@ -51,12 +51,6 @@ namespace librealsense
             LOG_DEBUG("HDR Merging PB - no depth frame in frameset");
             return f;
         }
-        auto ir_frame = fs.get_infrared_frame();
-        if (!ir_frame)
-        {
-            LOG_DEBUG("HDR Merging PB - no infrared frame in frameset");
-            return f;
-        } 
 
         // 2. add the frameset to vector of framesets
         /*int depth_sequ_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_SIZE);
@@ -81,7 +75,6 @@ namespace librealsense
 
         //to be used only till metadata is available
         float depth_exposure = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
-        float ir_exposure = ir_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
         if (_first_exp == depth_exposure)
             return f;
         if (_first_exp == 0.f)
@@ -98,26 +91,27 @@ namespace librealsense
 
         // 3. check if size of this vector is at least 2 (if not - return latest merge frame)
         //if (_framesets.size() < 2)
-        if (_framesets_without_md.size() < 2)
-            return f;
-        
-
-        // 4. pop out both framesets from the vector
+        if (_framesets_without_md.size() >= 2)
+        {
+            // 4. pop out both framesets from the vector
         //rs2::frameset fs_0 = _framesets[0];
         //rs2::frameset fs_1 = _framesets[1];
         //_framesets.clear();
-        rs2::frameset fs_0 = _framesets_without_md[_first_exp];
-        rs2::frameset fs_1 = _framesets_without_md[_second_exp];
-        _first_exp = 0.f;
-        _second_exp = 0.f;
-        _framesets_without_md.clear();
+            float min_exp = std::min(_first_exp, _second_exp);
+            float max_exp = std::max(_first_exp, _second_exp);
+            rs2::frameset fs_0 = _framesets_without_md[min_exp];
+            rs2::frameset fs_1 = _framesets_without_md[max_exp];
+            _first_exp = 0.f;
+            _second_exp = 0.f;
+            _framesets_without_md.clear();
 
-        // 5. apply merge algo
-        rs2::frame new_frame = merging_algorithm(source, fs_0, fs_1);
-        if (new_frame)
-        {
-            // 6. save merge frame as latest merge frame
-            _depth_merged_frame = new_frame;
+            // 5. apply merge algo
+            rs2::frame new_frame = merging_algorithm(source, fs_0, fs_1);
+            if (new_frame)
+            {
+                // 6. save merge frame as latest merge frame
+                _depth_merged_frame = new_frame;
+            }
         }
 
         // 7. return the merge frame
@@ -151,6 +145,8 @@ namespace librealsense
         auto new_f = source.allocate_video_frame(first_depth.get_profile(), first_depth,
             vf.get_bytes_per_pixel(), width, height, vf.get_stride_in_bytes(), RS2_EXTENSION_DEPTH_FRAME);
 
+        bool use_ir = (first_ir && second_ir);
+
         if (new_f)
         {
             auto ptr = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)new_f.get());
@@ -158,28 +154,48 @@ namespace librealsense
 
             auto d1 = (uint16_t*)first_depth.get_data();
             auto d0 = (uint16_t*)second_depth.get_data();
-            auto i1 = (uint8_t*)first_ir.get_data();
-            auto i0 = (uint8_t*)second_ir.get_data();
 
             auto new_data = (uint16_t*)ptr->get_frame_data();
 
             ptr->set_sensor(orig->get_sensor());
 
             memset(new_data, 0, width * height * sizeof(uint16_t));
-            for (int i = 0; i < width * height; i++)
+
+            if (use_ir)
             {
-                if (i1[i] > 0x10 && i1[i] < 0xf0 && d1[i])
-                    new_data[i] = d1[i];
-                else if (i0[i] > 0x10 && i0[i] < 0xf0 && d0[i])
-                    new_data[i] = d0[i];
-                else if (d1[i] && d0[i])
-                    new_data[i] = std::min(d0[i], d1[i]);
-                else if (d1[i])
-                    new_data[i] = d1[i];
-                else if (d0[i])
-                    new_data[i] = d0[i];
-                if (new_data[i] == 0xffff) new_data[i] = 0;
+                auto i1 = (uint8_t*)first_ir.get_data();
+                auto i0 = (uint8_t*)second_ir.get_data();
+
+                for (int i = 0; i < width * height; i++)
+                {
+                    if (i1[i] > 0x10 && i1[i] < 0xf0 && d1[i])
+                        new_data[i] = d1[i];
+                    else if (i0[i] > 0x10 && i0[i] < 0xf0 && d0[i])
+                        new_data[i] = d0[i];
+                    else if (d1[i] && d0[i])
+                        new_data[i] = std::min(d0[i], d1[i]);
+                    else if (d1[i])
+                        new_data[i] = d1[i];
+                    else if (d0[i])
+                        new_data[i] = d0[i];
+                    else
+                        new_data[i] = 0;
+                }
             }
+            else
+            {
+                for (int i = 0; i < width * height; i++)
+                {
+                    if (d1[i])
+                        new_data[i] = d1[i];
+                    else if (d0[i])
+                        new_data[i] = d0[i];
+                    else if (new_data[i] == 0xffff)
+                        new_data[i] = 0;
+                    else
+                        new_data[i] = 0;
+                }
+            }        
 
             return new_f;
         }
