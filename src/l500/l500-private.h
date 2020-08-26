@@ -214,16 +214,17 @@ namespace librealsense
 
         enum gvd_fields
         {
-            fw_version_offset = 12,
-            is_camera_locked_offset = 33,
-            module_serial_offset = 56,
-            module_asic_serial_offset = 72
+            fw_version_offset = 12,         // FunctionalPayloadVersion
+            is_camera_locked_offset = 6,    // eyeSafety: encompasses eeprom, flash, & registers
+            module_serial_offset = 60,      // "OpticalHeadModuleSN" -> RS2_CAMERA_INFO_SERIAL_NUMBER
+            module_asic_serial_offset = 74  // RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER & RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID
         };
 
         enum gvd_fields_size
         {
             // Keep sorted
-            module_serial_size = 8
+            module_serial_size = 4,
+            module_asic_serial_size = 6
         };
 
         static const std::map<std::uint16_t, std::string> rs500_sku_names = {
