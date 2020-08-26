@@ -5,7 +5,7 @@
 #include <librealsense2/rs.hpp>
 #include "depth-quality-model.h"
 
-#ifdef BUILD_EASYLOGGINGPP
+#if BUILD_EASYLOGGINGPP
 #include "easylogging++.h"
 #ifdef BUILD_SHARED_LIBS
 // With static linkage, ELPP is initialized by librealsense, so doing it here will
