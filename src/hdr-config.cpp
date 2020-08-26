@@ -248,8 +248,7 @@ namespace librealsense
         //number of iterations for each frame
         uint8_t iterations = 1;
         // number of Controls for current frame
-        // TODO - Remi: get back to 2 when getting fw with new capacity
-        uint16_t num_of_controls = 1; //2
+        uint16_t num_of_controls = 2;
 
         std::vector<uint8_t> frame_header;
         frame_header.insert(frame_header.end(), (uint8_t*)&frame_header_size, (uint8_t*)&frame_header_size + 2);
@@ -266,11 +265,10 @@ namespace librealsense
             frames_config.insert(frames_config.end(), (uint8_t*)&exposure_id, (uint8_t*)&exposure_id + 2);
             frames_config.insert(frames_config.end(), (uint8_t*)&exposure_value, (uint8_t*)&exposure_value + 4);
             
-            // TODO - Remi: uncomment when getting fw with new capacity
-            /*uint16_t gain_id = static_cast<uint16_t>(depth_gain);
+            uint16_t gain_id = static_cast<uint16_t>(depth_gain);
             uint32_t gain_value = static_cast<uint32_t>(_hdr_sequence_params[i]._gain);
             frames_config.insert(frames_config.end(), (uint8_t*)&gain_id, (uint8_t*)&gain_id + 2);
-            frames_config.insert(frames_config.end(), (uint8_t*)&gain_value, (uint8_t*)&gain_value + 4);*/
+            frames_config.insert(frames_config.end(), (uint8_t*)&gain_value, (uint8_t*)&gain_value + 4);
         }
 
         return frames_config;
