@@ -388,9 +388,15 @@ namespace rs2
                         [&](const std::shared_ptr<subdevice_model>& sm)
                         {
                             if (sm->streaming)
-                                sm->stop(fw_update_manager->get_viewer_model());
+                            {
+                                try
+                                {
+                                    sm->stop(fw_update_manager->get_viewer_model());
+                                }
+                                catch (...) { }
+                            }   
                         });
-                    
+    
                     auto _this = shared_from_this();
                     auto invoke = [_this](std::function<void()> action) {
                         _this->invoke(action);
