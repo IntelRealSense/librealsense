@@ -3,13 +3,12 @@
 #pragma once
 
 #include <list>
-#include "ds5-device.h"
 #include "device-calibration.h"
 
 namespace librealsense
 {
     class ds5_recalibrable_color_sensor;
-    class ds5_thermal_handler : public virtual device_calibration
+    class ds5_thermal_handler : public device_calibration
     {
     public:
         ds5_thermal_handler(synthetic_sensor& activation_sensor);
@@ -19,7 +18,7 @@ namespace librealsense
         void set_feature(bool state);
         float query();
 
-        void register_calibration_change_callback(calibration_change_callback_ptr callback) override
+        void register_calibration_change_callback(calibration_change_callback_ptr callback)
         {
             _calibration_change_callbacks.push_back(callback);
         }

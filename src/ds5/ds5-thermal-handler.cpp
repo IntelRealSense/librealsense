@@ -22,23 +22,34 @@ namespace librealsense
         _dpt_sensor = std::dynamic_pointer_cast<synthetic_sensor>(activation_sensor.shared_from_this());
 
         auto& dev = activation_sensor.get_device();
+        //auto nn = std::dynamic_pointer_cast<ds5_device>(dev.shared_from_this());
+
         for (size_t i = 0; i < dev.get_sensors_count(); ++i)
         {
             if (auto s = dynamic_cast<ds5_recalibrable_color_sensor*>(&(dev.get_sensor(i))))
             {
                 _recalib_sensor = std::dynamic_pointer_cast<ds5_recalibrable_color_sensor>(s->shared_from_this());
+                break;
             }
         }
 
         _tl_activation = std::make_shared<uvc_xu_option<uint8_t>>(dynamic_cast<uvc_sensor&>(*activation_sensor.get_raw_sensor()), 
             ds::depth_xu, ds::DS5_THERMAL_COMPENSATION, "Toggle Thermal Compensation Mechanism");
 
-        auto fw_ver = dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
-        std::cout << "FW version = " << fw_ver << std::endl;
-        if (firmware_version(fw_ver) >= firmware_version("5.12.7.100"))
+        activation_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION, std::make_shared<thermal_compensation>(this));
+        /*if (dev.supports_info(RS2_CAMERA_INFO_FIRMWARE_VERSION))
         {
-            activation_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION, std::make_shared<thermal_compensation>(this));
+            auto fw_ver = dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
+            std::cout << "FW version = " << fw_ver << std::endl;
+            if (firmware_version(fw_ver) >= firmware_version("5.12.7.100"))
+            {
+                activation_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION, std::make_shared<thermal_compensation>(this));
+            }
         }
+        else
+        {
+            LOG_ERROR("Thermal Handler disabled - cannot retrieve FW version");
+        }*/
     }
 
     ds5_thermal_handler::~ds5_thermal_handler()
@@ -135,11 +146,11 @@ namespace librealsense
                         if (auto recalib_p = _recalib_sensor.lock())
                             recalib_p->reset_calibration();
 
-                        notify_of_calibration_change(RS2_CALIBRATION_SUCCESSFUL);
-
                         auto interval_sec = (_temp_records.size()) ? (ts - _temp_records.back().timestamp_ns) / 1000000000 : 0;
-                        LOG_INFO("Thermal compensation was triggered on change from " << std::dec  << " to " << val
-                                  << " deg (C) after " << interval_sec << " seconds");
+                        LOG_INFO("Thermal compensation was triggered on change from " << std::dec << " to " << val
+                            << " deg (C) after " << interval_sec << " seconds");
+
+                        notify_of_calibration_change(RS2_CALIBRATION_SUCCESSFUL);
 
                         _temp_base = val;
                         _temp_records.push_back({ ts, val });
