@@ -292,7 +292,6 @@ namespace librealsense
         {
             _hdr_sequence_params.resize(new_size);
             _sequence_size = new_size;
-            _has_config_changed = true;
         }       
     }
 
