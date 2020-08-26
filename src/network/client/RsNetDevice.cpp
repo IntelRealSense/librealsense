@@ -11,6 +11,8 @@
 #include <thread>
 #include <iostream>
 #include <string>
+#include <iostream>
+#include <fstream>
 
 extern std::map<std::pair<int, int>, rs2_extrinsics> minimal_extrinsics_map;
 
@@ -104,55 +106,14 @@ std::vector<IpDeviceControlData> rs_net_device::get_controls(int sensor_id)
 bool rs_net_device::init_device_data(rs2::software_device sw_device)
 {
     std::vector<rs2::stream_profile> device_streams;
-    std::string url, sensor_name = "";
     for(int sensor_id = 0; sensor_id < NUM_OF_SENSORS; sensor_id++)
     {
-
-        url = std::string("rtsp://" + ip_address + ":" + std::to_string(ip_port) + "/" + sensors_str[sensor_id]);
-        sensor_name = sensors_str[sensor_id];
+        std::string url = std::string("rtsp://" + ip_address + ":" + std::to_string(ip_port) + "/" + sensors_str[sensor_id]);
 
         remote_sensors[sensor_id] = new ip_sensor();
-
         remote_sensors[sensor_id]->rtsp_client = RsRTSPClient::createNew(url.c_str(), "rs_network_device", 0, sensor_id);
         ((RsRTSPClient*)remote_sensors[sensor_id]->rtsp_client)->initFunc();
-
-        rs2::software_sensor tmp_sensor = sw_device.add_sensor(sensor_name);
-
-        remote_sensors[sensor_id]->sw_sensor = std::make_shared<rs2::software_sensor>(tmp_sensor);
-
-        if(sensor_id == 1) //todo: remove hard coded
-        {
-            std::vector<IpDeviceControlData> controls = get_controls(sensor_id);
-            for(auto& control : controls)
-            {
-
-                float val = NAN;
-
-                LOG_DEBUG("Init sensor " << control.sensorId << ", option '" << control.option << "', value " << control.range.def);
-
-                if(control.range.min == control.range.max)
-                {
-                    remote_sensors[control.sensorId]->sw_sensor->add_read_only_option(control.option, control.range.def);
-                }
-                else
-                {
-                    remote_sensors[control.sensorId]->sw_sensor->add_option(control.option, {control.range.min, control.range.max, control.range.def, control.range.step});
-                }
-                remote_sensors[control.sensorId]->sensors_option[control.option] = control.range.def;
-                try
-                {
-                    get_option_value(control.sensorId, control.option, val);
-                    if(val != control.range.def && val >= control.range.min && val <= control.range.max)
-                    {
-                        remote_sensors[control.sensorId]->sw_sensor->set_option(control.option, val);
-                    }
-                }
-                catch(const std::exception& e)
-                {
-                    LOG_ERROR(e.what());
-                }
-            }
-        }
+        remote_sensors[sensor_id]->sw_sensor = std::make_shared<rs2::software_sensor>(sw_device.add_sensor(sensors_str[sensor_id]));
 
         auto streams = query_streams(sensor_id);
 
@@ -181,6 +142,45 @@ bool rs_net_device::init_device_data(rs2::software_device sw_device)
             streams_collection[stream_key] = std::make_shared<rs_rtp_stream>(st, stream_profile);
         }
         LOG_DEBUG("Init done adding streams for sensor ID: " << sensor_id);
+
+        std::vector<IpDeviceControlData> controls = get_controls(sensor_id);
+        for (auto& control : controls)
+        {
+            // get_controls() returns full list of options for both sensors
+            if (control.sensorId != sensor_id) continue;
+
+            LOG_DEBUG("Init sensor " << control.sensorId << ", option '" << control.option << "', value " << control.range.def);
+
+            // Workaround: real cameras report incorrect paramethers.
+            if (control.range.def > control.range.max) control.range.def = control.range.max;
+            if (control.range.def < control.range.max) control.range.def = control.range.min;
+
+            // Workaround: real cameras depth units fails option check.
+            if (control.option == RS2_OPTION_DEPTH_UNITS)
+            {
+                control.range.step = 0;
+            }
+
+            if (control.range.min == control.range.max)
+            {
+                remote_sensors[control.sensorId]->sw_sensor->add_read_only_option(control.option, control.range.def);
+            }
+            else
+            {
+                remote_sensors[control.sensorId]->sw_sensor->add_option(control.option, { control.range.min, control.range.max, control.range.def, control.range.step });
+            }
+
+            remote_sensors[control.sensorId]->sensors_option[control.option] = control.range.def;
+
+            try
+            {
+                remote_sensors[control.sensorId]->sw_sensor->set_option(control.option, get_option_value(control.sensorId, control.option));
+            }
+            catch (const std::exception& e)
+            {
+                LOG_ERROR(e.what());
+            }
+        }
     }
 
     for(auto stream_profile_from : device_streams)
@@ -240,15 +240,25 @@ void rs_net_device::polling_state_loop()
                         continue;
                     }
                 }
-                auto sensor_supported_option = sw_sensor->get_supported_options();
-                for(rs2_option opt : sensor_supported_option)
+
+                for(rs2_option opt : sw_sensor->get_supported_options())
                 {
-                    if(remote_sensors[i]->sensors_option[opt] != (float)sw_sensor->get_option(opt))
+                    float opt_val = remote_sensors[i]->sensors_option[opt];
+
+                    if(opt_val != (float)sw_sensor->get_option(opt))
                     {
                         //TODO: get from map once to reduce logarithmic complexity
                         remote_sensors[i]->sensors_option[opt] = (float)sw_sensor->get_option(opt);
+
                         LOG_DEBUG("Option '" << opt << "' has changed to: " << remote_sensors[i]->sensors_option[opt]);
-                        update_option_value(i, opt, remote_sensors[i]->sensors_option[opt]);
+
+                        set_option_value(i, opt, opt_val);
+                        if (opt_val != get_option_value(i, opt))
+                        {
+                            //TODO:: to uncomment after adding exception handling
+                            //throw std::runtime_error("[update_option_value] error");
+                            LOG_ERROR("Cannot update option value.");
+                        }
                     }
                 }
             }
@@ -261,19 +271,6 @@ void rs_net_device::polling_state_loop()
     }
 }
 
-void rs_net_device::update_option_value(int sensor_index, rs2_option opt, float val)
-{
-    float updated_value = 0;
-    set_option_value(sensor_index, opt, val);
-    get_option_value(sensor_index, opt, updated_value);
-    if(val != updated_value)
-    {
-        //TODO:: to uncomment after adding exception handling
-        //throw std::runtime_error("[update_option_value] error");
-        LOG_ERROR("Cannot update option value.");
-    }
-}
-
 void rs_net_device::set_option_value(int sensor_index, rs2_option opt, float val)
 {
     if(sensor_index < (sizeof(remote_sensors) / sizeof(remote_sensors[0])) && remote_sensors[sensor_index] != nullptr)
@@ -282,12 +279,13 @@ void rs_net_device::set_option_value(int sensor_index, rs2_option opt, float val
     }
 }
 
-void rs_net_device::get_option_value(int sensor_index, rs2_option opt, float& val)
+float rs_net_device::get_option_value(int sensor_index, rs2_option opt)
 {
     if(sensor_index < sizeof(remote_sensors) && remote_sensors[sensor_index] != nullptr)
     {
-        remote_sensors[sensor_index]->rtsp_client->getOption(std::string(sensors_str[sensor_index]), opt, val);
+        return remote_sensors[sensor_index]->rtsp_client->getOption(std::string(sensors_str[sensor_index]), opt);
     }
+    return 0;
 }
 
 rs2_video_stream convert_stream_object(rs2::video_stream_profile sp)

@@ -32,10 +32,10 @@ set(OPENVINO_FILES
 	${IE_ROOT_DIR}/src/extension/ext_list.hpp
 )
 # And they make use of ELPP (EasyLogging++):
-include_directories( ../../third-party/easyloggingpp/src )
+include_directories( ${CMAKE_SOURCE_DIR}/third-party/easyloggingpp/src )
 set( ELPP_FILES
-    ../../../third-party/easyloggingpp/src/easylogging++.cc
-    ../../../third-party/easyloggingpp/src/easylogging++.h
+    ${CMAKE_SOURCE_DIR}/third-party/easyloggingpp/src/easylogging++.cc
+    ${CMAKE_SOURCE_DIR}/third-party/easyloggingpp/src/easylogging++.h
 )
 # The individual examples should use the above like this:
 #     add_executable( <exe> <source files ...> ${OPENVINO_FILES} ${ELPP_FILES} )

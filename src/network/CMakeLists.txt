@@ -85,7 +85,7 @@ file(GLOB LIVE555_CPP
 list(REMOVE_ITEM LIVE555_CPP "${LIVE}/liveMedia/ADTSAudioStreamDiscreteFramer.cpp")
 
 if (${BUILD_SHARED_LIBS} AND ${BUILD_EASYLOGGINGPP})
-    list(APPEND REALSENSE_NET_CPP ../../third-party/easyloggingpp/src/easylogging++.cc)
+    list(APPEND REALSENSE_NET_CPP ${CMAKE_SOURCE_DIR}/third-party/easyloggingpp/src/easylogging++.cc)
 endif()
 add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 
@@ -96,8 +96,8 @@ add_dependencies(${PROJECT_NAME}
 )
 
 set(REALSENSE_NET_PUBLIC_HEADERS
-    ../../include/librealsense2-net/rs_net.h
-    ../../include/librealsense2-net/rs_net.hpp
+    ${CMAKE_SOURCE_DIR}/include/librealsense2-net/rs_net.h
+    ${CMAKE_SOURCE_DIR}/include/librealsense2-net/rs_net.hpp
 )
 
 set(CMAKECONFIG_NET_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
@@ -109,10 +109,10 @@ include_directories(${PROJECT_NAME}
     ./server
     ./compression
 
-    ../
-    ../../common
-    ../../third-party/easyloggingpp/src
-    ../../third-party/tclap/include
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/common
+    ${CMAKE_SOURCE_DIR}/third-party/easyloggingpp/src
+    ${CMAKE_SOURCE_DIR}/third-party/tclap/include
 
     ${CMAKE_BINARY_DIR}/libjpeg-turbo/include
 
@@ -170,12 +170,12 @@ WRITE_BASIC_CONFIG_VERSION_FILE("${CMAKE_CURRENT_BINARY_DIR}/realsense2-netConfi
 )
 
 set(CMAKECONFIG_NET_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
-configure_package_config_file(../../CMake/realsense2-netConfig.cmake.in realsense2-netConfig.cmake
+    configure_package_config_file(${CMAKE_SOURCE_DIR}/CMake/realsense2-netConfig.cmake.in realsense2-netConfig.cmake
     INSTALL_DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
     INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/bin
     PATH_VARS CMAKE_INSTALL_INCLUDEDIR
 )
-configure_file(../../config/librealsense-net.pc.in ../../config/realsense2-net.pc @ONLY)
+configure_file(${CMAKE_SOURCE_DIR}/config/librealsense-net.pc.in ${CMAKE_BINARY_DIR}/config/realsense2-net.pc @ONLY)
 
 install(TARGETS ${PROJECT_NAME}
     EXPORT realsense2-netTargets

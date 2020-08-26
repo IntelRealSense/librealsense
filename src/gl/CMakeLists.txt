@@ -14,11 +14,11 @@ set(REALSENSE_GL_CPP
     pointcloud-gl.cpp
     rs-gl.cpp
     realsense-gl.def
-    ../../include/librealsense2-gl/rs_processing_gl.h
-    ../../include/librealsense2-gl/rs_processing_gl.hpp
-    ../../third-party/glad/glad.c
-    ../../common/opengl3.cpp
-    ../../common/opengl3.h
+    ${CMAKE_SOURCE_DIR}/include/librealsense2-gl/rs_processing_gl.h
+    ${CMAKE_SOURCE_DIR}/include/librealsense2-gl/rs_processing_gl.hpp
+    ${CMAKE_SOURCE_DIR}/third-party/glad/glad.c
+    ${CMAKE_SOURCE_DIR}/common/opengl3.cpp
+    ${CMAKE_SOURCE_DIR}/common/opengl3.h
     pc-shader.cpp
     pc-shader.h
     camera-shader.cpp
@@ -34,8 +34,8 @@ set(REALSENSE_GL_CPP
 )
 
 set(REALSENSE_GL_PUBLIC_HEADERS
-    ../../include/librealsense2-gl/rs_processing_gl.h
-    ../../include/librealsense2-gl/rs_processing_gl.hpp
+    ${CMAKE_SOURCE_DIR}/include/librealsense2-gl/rs_processing_gl.h
+    ${CMAKE_SOURCE_DIR}/include/librealsense2-gl/rs_processing_gl.hpp
 )
 
 set(CMAKECONFIG_GL_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${LRS_GL_TARGET}")
@@ -43,15 +43,15 @@ set(CMAKECONFIG_GL_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${LRS_GL_TARGET}")
 include(${CMAKE_SOURCE_DIR}/CMake/opengl_config.cmake)
 
 if (${BUILD_SHARED_LIBS} AND ${BUILD_EASYLOGGINGPP})
-    list(APPEND REALSENSE_GL_CPP ../../third-party/easyloggingpp/src/easylogging++.cc)
+    list(APPEND REALSENSE_GL_CPP ${CMAKE_SOURCE_DIR}/third-party/easyloggingpp/src/easylogging++.cc)
 endif()
 
 source_group("3rd Party" FILES
-    ../../third-party/glad/glad.c)
+    ${CMAKE_SOURCE_DIR}/third-party/glad/glad.c)
 
 source_group("API" FILES
-    ../../include/librealsense2-gl/rs_processing_gl.h
-    ../../include/librealsense2-gl/rs_processing_gl.hpp
+    ${CMAKE_SOURCE_DIR}/include/librealsense2-gl/rs_processing_gl.h
+    ${CMAKE_SOURCE_DIR}/include/librealsense2-gl/rs_processing_gl.hpp
     realsense-gl.def)
 
 add_library(${LRS_GL_TARGET} ${REALSENSE_GL_CPP})
@@ -78,13 +78,13 @@ set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${REALSENSE_VERSION_STR
 write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/realsense2-glConfigVersion.cmake"
     VERSION ${REALSENSE_VERSION_STRING} COMPATIBILITY AnyNewerVersion)
 
-configure_package_config_file(../../CMake/realsense2-glConfig.cmake.in realsense2-glConfig.cmake
+configure_package_config_file(${CMAKE_SOURCE_DIR}/CMake/realsense2-glConfig.cmake.in realsense2-glConfig.cmake
     INSTALL_DESTINATION ${CMAKECONFIG_GL_INSTALL_DIR}
     INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/bin
     PATH_VARS CMAKE_INSTALL_INCLUDEDIR
 )
 
-configure_file(../../config/librealsense-gl.pc.in ../../config/realsense2-gl.pc @ONLY)
+configure_file(${CMAKE_SOURCE_DIR}/config/librealsense-gl.pc.in ../../config/realsense2-gl.pc @ONLY)
 
 target_link_libraries(${PROJECT_NAME} 
     PRIVATE ${DEPENDENCIES}

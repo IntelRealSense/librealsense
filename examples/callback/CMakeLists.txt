@@ -9,7 +9,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     add_executable(${PROJECT_NAME} ${PROJECT_NAME}.cpp)
     set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
     target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES})
-    include_directories(${PROJECT_NAME} ../ ../../third-party/tclap/include)
+    include_directories(${PROJECT_NAME} ../ ${CMAKE_SOURCE_DIR}/third-party/tclap/include)
     set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "Examples")
 
     install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

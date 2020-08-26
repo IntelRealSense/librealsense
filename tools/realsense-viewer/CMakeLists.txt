@@ -10,47 +10,47 @@ find_package(Threads REQUIRED)
 
 include_directories(${CMAKE_BINARY_DIR})
 
-set( ELPP_DIR ../../third-party/easyloggingpp/src )
+set( ELPP_DIR ${CMAKE_SOURCE_DIR}/third-party/easyloggingpp/src )
 include_directories( ${ELPP_DIR} )
 set( ELPP_FILES
     ${ELPP_DIR}/easylogging++.cc
     ${ELPP_DIR}/easylogging++.h
 )
 
-include(../../common/CMakeLists.txt)
+include(${CMAKE_SOURCE_DIR}/common/CMakeLists.txt)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
     set(RS_VIEWER_CPP
     ${COMMON_SRC}
     realsense-viewer.cpp
-    ../../third-party/imgui/imgui.cpp
-    ../../third-party/imgui/imgui_draw.cpp
-    ../../third-party/imgui/imgui_impl_glfw.cpp
-    ../../third-party/imgui/imgui-fonts-karla.hpp
-    ../../third-party/imgui/imgui-fonts-fontawesome.hpp
-    ../../common/realsense-ui-advanced-mode.h
-    ../../common/rendering.h
-    ../../common/model-views.h
-    ../../common/model-views.cpp
-    ../../common/ux-window.h
-    ../../common/ux-window.cpp
-    ../../common/ux-alignment.cpp
-    ../../common/ux-alignment.h
-    ../../common/processing-block-model.h
-    ../../common/post-processing-block-model.h
-    ../../common/post-processing-filter.h
-    ../../common/post-processing-worker-filter.h
-    ../../common/post-processing-filters-list.h
-    ../../common/objects-in-frame.h
-    ../../third-party/glad/glad.c
-    ../../third-party/tinyfiledialogs/tinyfiledialogs.c
-    ../../third-party/tinyfiledialogs/tinyfiledialogs.h
-    ../../common/opengl3.cpp
-    ../../common/opengl3.h
-    ../../common/rs-config.h
-    ../../common/rs-config.cpp
-    ../../common/os.h
-    ../../common/os.cpp
+    ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui.cpp
+    ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui_draw.cpp
+    ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui_impl_glfw.cpp
+    ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui-fonts-karla.hpp
+    ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui-fonts-fontawesome.hpp
+    ${CMAKE_SOURCE_DIR}/common/realsense-ui-advanced-mode.h
+    ${CMAKE_SOURCE_DIR}/common/rendering.h
+    ${CMAKE_SOURCE_DIR}/common/model-views.h
+    ${CMAKE_SOURCE_DIR}/common/model-views.cpp
+    ${CMAKE_SOURCE_DIR}/common/ux-window.h
+    ${CMAKE_SOURCE_DIR}/common/ux-window.cpp
+    ${CMAKE_SOURCE_DIR}/common/ux-alignment.cpp
+    ${CMAKE_SOURCE_DIR}/common/ux-alignment.h
+    ${CMAKE_SOURCE_DIR}/common/processing-block-model.h
+    ${CMAKE_SOURCE_DIR}/common/post-processing-block-model.h
+    ${CMAKE_SOURCE_DIR}/common/post-processing-filter.h
+    ${CMAKE_SOURCE_DIR}/common/post-processing-worker-filter.h
+    ${CMAKE_SOURCE_DIR}/common/post-processing-filters-list.h
+    ${CMAKE_SOURCE_DIR}/common/objects-in-frame.h
+    ${CMAKE_SOURCE_DIR}/third-party/glad/glad.c
+    ${CMAKE_SOURCE_DIR}/third-party/tinyfiledialogs/tinyfiledialogs.c
+    ${CMAKE_SOURCE_DIR}/third-party/tinyfiledialogs/tinyfiledialogs.h
+    ${CMAKE_SOURCE_DIR}/common/opengl3.cpp
+    ${CMAKE_SOURCE_DIR}/common/opengl3.h
+    ${CMAKE_SOURCE_DIR}/common/rs-config.h
+    ${CMAKE_SOURCE_DIR}/common/rs-config.cpp
+    ${CMAKE_SOURCE_DIR}/common/os.h
+    ${CMAKE_SOURCE_DIR}/common/os.cpp
 )
 
 SET(DELAYED 
@@ -66,7 +66,7 @@ if(DEFINED OpenCV_DIR  AND  IS_DIRECTORY ${OpenCV_DIR})
 
     get_property(deps VARIABLE PROPERTY DEPENDENCIES)
     set(DEPENDENCIES ${deps} ${OpenCV_LIBS})
-    include_directories( ../../wrappers/opencv )
+    include_directories( ${CMAKE_SOURCE_DIR}/wrappers/opencv )
 
     list(APPEND DELAYED
         opencv_highgui341.dll
@@ -88,22 +88,22 @@ if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
 
     get_property(deps VARIABLE PROPERTY DEPENDENCIES)
     set(DEPENDENCIES ${deps} ${InferenceEngine_LIBRARIES} ie_cpu_extension)
-    include_directories( ../../wrappers/openvino )
-    include_directories( ../../wrappers/opencv )
+    include_directories( ${CMAKE_SOURCE_DIR}/wrappers/openvino )
+    include_directories( ${CMAKE_SOURCE_DIR}/wrappers/opencv )
     include_directories( ${InferenceEngine_INCLUDE_DIRS} )
     # We need additional access to ext_list.hpp, for CPU extension support:
     include_directories( ${IE_ROOT_DIR}/src/extension )
 
     set(OPENVINO_FILES
-        ../../wrappers/openvino/rs-vino/base-detection.cpp
-        ../../wrappers/openvino/rs-vino/base-detection.h
-        ../../wrappers/openvino/rs-vino/object-detection.cpp
-        ../../wrappers/openvino/rs-vino/object-detection.h
-        ../../wrappers/openvino/rs-vino/age-gender-detection.cpp
-        ../../wrappers/openvino/rs-vino/age-gender-detection.h
-        ../../wrappers/openvino/rs-vino/detected-object.cpp
-        ../../wrappers/openvino/rs-vino/detected-object.h
-        ../../wrappers/openvino/rs-vino/openvino-helpers.h
+        ${CMAKE_SOURCE_DIR}/wrappers/openvino/rs-vino/base-detection.cpp
+        ${CMAKE_SOURCE_DIR}/wrappers/openvino/rs-vino/base-detection.h
+        ${CMAKE_SOURCE_DIR}/wrappers/openvino/rs-vino/object-detection.cpp
+        ${CMAKE_SOURCE_DIR}/wrappers/openvino/rs-vino/object-detection.h
+        ${CMAKE_SOURCE_DIR}/wrappers/openvino/rs-vino/age-gender-detection.cpp
+        ${CMAKE_SOURCE_DIR}/wrappers/openvino/rs-vino/age-gender-detection.h
+        ${CMAKE_SOURCE_DIR}/wrappers/openvino/rs-vino/detected-object.cpp
+        ${CMAKE_SOURCE_DIR}/wrappers/openvino/rs-vino/detected-object.h
+        ${CMAKE_SOURCE_DIR}/wrappers/openvino/rs-vino/openvino-helpers.h
         ${IE_ROOT_DIR}/src/extension/ext_list.hpp
         )
 
@@ -113,7 +113,7 @@ if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
         ${OPENVINO_FILES}
         )
 
-    include(../../wrappers/openvino/dl_vino_model.cmake)
+    include(${CMAKE_SOURCE_DIR}/wrappers/openvino/dl_vino_model.cmake)
     # Download model files -- these will go into build/tools/realsense-viewer, which is also
     # where the sample is run from in Visual Studio
     dl_vino_model( "README.txt"                              "789e144d6cafa379c8437d2a6860829b6d935a8d" )
@@ -143,17 +143,17 @@ if(WIN32)
         ${ELPP_FILES}
         ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
         ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
-        ../../common/windows-app-bootstrap.cpp
+        ${CMAKE_SOURCE_DIR}/common/windows-app-bootstrap.cpp
         )
 
     source_group("3rd Party" FILES
-        ../../third-party/tinyfiledialogs/tinyfiledialogs.c
-        ../../third-party/tinyfiledialogs/tinyfiledialogs.h
-        ../../third-party/imgui/imgui.cpp
-        ../../third-party/imgui/imgui_draw.cpp
-        ../../third-party/imgui/imgui_impl_glfw.cpp
-        ../../third-party/imgui/imgui-fonts-karla.hpp
-        ../../third-party/imgui/imgui-fonts-fontawesome.hpp
+        ${CMAKE_SOURCE_DIR}/third-party/tinyfiledialogs/tinyfiledialogs.c
+        ${CMAKE_SOURCE_DIR}/third-party/tinyfiledialogs/tinyfiledialogs.h
+        ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui.cpp
+        ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui_draw.cpp
+        ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui_impl_glfw.cpp
+        ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui-fonts-karla.hpp
+        ${CMAKE_SOURCE_DIR}/third-party/imgui/imgui-fonts-fontawesome.hpp
         )
 
     source_group("Resources" FILES
@@ -178,12 +178,12 @@ source_group("EasyLogging++" FILES ${ELPP_FILES})
 source_group("SW-Update" FILES ${SW_UPDATE_FILES})
 
 include_directories(
-    ../../common
-    ../../third-party
-    ../../third-party/tinyfiledialogs
+    ${CMAKE_SOURCE_DIR}/common
+    ${CMAKE_SOURCE_DIR}/third-party
+    ${CMAKE_SOURCE_DIR}/third-party/tinyfiledialogs
     ${GLFW_SOURCE_DIR}/include
-    ../../third-party/imgui
-    ../../third-party/glad
+    ${CMAKE_SOURCE_DIR}/third-party/imgui
+    ${CMAKE_SOURCE_DIR}/third-party/glad
     )
 
 

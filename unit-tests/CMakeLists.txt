@@ -6,7 +6,7 @@ project(RealsenseUnitTests)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-set(DEPENDENCIES realsense2)
+set(DEPENDENCIES realsense2 realsense2-net)
 
 find_package (Python3 COMPONENTS Interpreter Development)
 if(Python3_FOUND)
@@ -27,12 +27,17 @@ set (unit_tests_sources
     unit-tests-post-processing.cpp
     unit-tests-post-processing.h
     unit-tests-main.cpp
+    unit-tests-net.cpp
     unit-tests-common.h
     unit-tests-post-processing-from-bag.cpp
     unit-test-long.cpp
     catch.h
     approx.h
 )
+
+message(STATUS "Easylogging: ${CMAKE_SOURCE_DIR}/third-party/easyloggingpp/src/")
+
+include_directories(${CMAKE_SOURCE_DIR}/third-party/easyloggingpp/src/)
 
 add_executable(live-test ${unit_tests_sources})
 set_property(TARGET live-test PROPERTY CXX_STANDARD 11)

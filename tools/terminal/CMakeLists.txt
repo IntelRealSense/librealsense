@@ -12,7 +12,7 @@ if(WIN32 OR ANDROID)
 else()
     target_link_libraries(rs-terminal -lpthread ${DEPENDENCIES})
 endif()
-include_directories(rs-terminal ../../common ../../third-party ../../third-party/tclap/include)
+include_directories(rs-terminal ${CMAKE_SOURCE_DIR}/common ${CMAKE_SOURCE_DIR}/third-party ${CMAKE_SOURCE_DIR}/third-party/tclap/include)
 set_target_properties (rs-terminal PROPERTIES
     FOLDER Tools
 )

@@ -50,75 +50,75 @@ set(RAW_RS
     pybackend.cpp
     pybackend_extras.h
     pybackend_extras.cpp
-    ../../src/types.h
-    ../../src/types.cpp
-    ../../src/log.cpp
-    ../../third-party/easyloggingpp/src/easylogging++.h
-    ../../third-party/easyloggingpp/src/easylogging++.cc
-    ../../src/backend.h
-    ../../src/backend.cpp
+    ${CMAKE_SOURCE_DIR}/src/types.h
+    ${CMAKE_SOURCE_DIR}/src/types.cpp
+    ${CMAKE_SOURCE_DIR}/src/log.cpp
+    ${CMAKE_SOURCE_DIR}/third-party/easyloggingpp/src/easylogging++.h
+    ${CMAKE_SOURCE_DIR}/third-party/easyloggingpp/src/easylogging++.cc
+    ${CMAKE_SOURCE_DIR}/src/backend.h
+    ${CMAKE_SOURCE_DIR}/src/backend.cpp
 )
 
 if(UNIX)
     list(APPEND RAW_RS
-        ../../src/libusb/interface-libusb.cpp
-        ../../src/libusb/device-libusb.cpp
-        ../../src/libusb/messenger-libusb.cpp
-        ../../src/libusb/enumerator-libusb.cpp
-        ../../src/libusb/request-libusb.cpp
-        ../../src/libusb/context-libusb.cpp
+        ${CMAKE_SOURCE_DIR}/src/libusb/interface-libusb.cpp
+        ${CMAKE_SOURCE_DIR}/src/libusb/device-libusb.cpp
+        ${CMAKE_SOURCE_DIR}/src/libusb/messenger-libusb.cpp
+        ${CMAKE_SOURCE_DIR}/src/libusb/enumerator-libusb.cpp
+        ${CMAKE_SOURCE_DIR}/src/libusb/request-libusb.cpp
+        ${CMAKE_SOURCE_DIR}/src/libusb/context-libusb.cpp
     )
 endif()
 
 if(WIN32)
     list(APPEND RAW_RS
-        ../../src/win/win-helpers.cpp
-        ../../src/winusb/interface-winusb.cpp
-        ../../src/winusb/device-winusb.cpp
-        ../../src/winusb/messenger-winusb.cpp
-        ../../src/winusb/enumerator-winusb.cpp
-        ../../src/winusb/request-winusb.cpp
+        ${CMAKE_SOURCE_DIR}/src/win/win-helpers.cpp
+        ${CMAKE_SOURCE_DIR}/src/winusb/interface-winusb.cpp
+        ${CMAKE_SOURCE_DIR}/src/winusb/device-winusb.cpp
+        ${CMAKE_SOURCE_DIR}/src/winusb/messenger-winusb.cpp
+        ${CMAKE_SOURCE_DIR}/src/winusb/enumerator-winusb.cpp
+        ${CMAKE_SOURCE_DIR}/src/winusb/request-winusb.cpp
     )
 endif()
 
 if(${BACKEND} STREQUAL RS2_USE_V4L2_BACKEND)
     list(APPEND RAW_RS
-        ../../src/linux/backend-v4l2.cpp
-        ../../src/linux/backend-hid.cpp
+        ${CMAKE_SOURCE_DIR}/src/linux/backend-v4l2.cpp
+        ${CMAKE_SOURCE_DIR}/src/linux/backend-hid.cpp
     )
 endif()
 
 if(${BACKEND} STREQUAL RS2_USE_WMF_BACKEND)
     list(APPEND RAW_RS
-        ../../src/win/win-helpers.cpp
-        ../../src/mf/mf-uvc.cpp
-        ../../src/mf/mf-hid.cpp
-        ../../src/mf/mf-backend.cpp
+        ${CMAKE_SOURCE_DIR}/src/win/win-helpers.cpp
+        ${CMAKE_SOURCE_DIR}/src/mf/mf-uvc.cpp
+        ${CMAKE_SOURCE_DIR}/src/mf/mf-hid.cpp
+        ${CMAKE_SOURCE_DIR}/src/mf/mf-backend.cpp
     )
 endif()
 
 if(${FORCE_RSUSB_BACKEND})
     list(APPEND RAW_RS
-        ../../src/rsusb-backend/rsusb-backend.h
-        ../../src/rsusb-backend/rsusb-backend.cpp
-        ../../src/uvc/uvc-device.cpp
-        ../../src/uvc/uvc-parser.cpp
-        ../../src/uvc/uvc-streamer.cpp
-        ../../src/hid/hid-device.cpp
+        ${CMAKE_SOURCE_DIR}/src/rsusb-backend/rsusb-backend.h
+        ${CMAKE_SOURCE_DIR}/src/rsusb-backend/rsusb-backend.cpp
+        ${CMAKE_SOURCE_DIR}/src/uvc/uvc-device.cpp
+        ${CMAKE_SOURCE_DIR}/src/uvc/uvc-parser.cpp
+        ${CMAKE_SOURCE_DIR}/src/uvc/uvc-streamer.cpp
+        ${CMAKE_SOURCE_DIR}/src/hid/hid-device.cpp
     )
 endif()
 
 if(${BACKEND} STREQUAL RS2_USE_WINUSB_UVC_BACKEND)
     list(APPEND RAW_RS
-        ../../src/win7/rsusb-backend-windows.h
-        ../../src/win7/rsusb-backend-windows.cpp
+        ${CMAKE_SOURCE_DIR}/src/win7/rsusb-backend-windows.h
+        ${CMAKE_SOURCE_DIR}/src/win7/rsusb-backend-windows.cpp
     )
 endif()
 
 if(${BACKEND} STREQUAL RS2_USE_LIBUVC_BACKEND)
     list(APPEND RAW_RS
-        ../../src/libuvc/rsusb-backend-linux.h
-        ../../src/libuvc/rsusb-backend-linux.cpp
+        ${CMAKE_SOURCE_DIR}/src/libuvc/rsusb-backend-linux.h
+        ${CMAKE_SOURCE_DIR}/src/libuvc/rsusb-backend-linux.cpp
     )
 endif()
 
@@ -132,12 +132,12 @@ set_target_properties(pybackend2 PROPERTIES
                         VERSION     ${REALSENSE_VERSION_STRING}
                         SOVERSION   ${REALSENSE_VERSION_MAJOR})
 set_target_properties(pybackend2 PROPERTIES FOLDER Wrappers/python)
-include_directories(pybackend2 ../../include)
+include_directories(pybackend2 ${CMAKE_SOURCE_DIR}/include)
 
 write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/pyrealsense2ConfigVersion.cmake"
     VERSION ${REALSENSE_VERSION_STRING} COMPATIBILITY AnyNewerVersion)
 
-configure_package_config_file(../../CMake/pyrealsense2Config.cmake.in pyrealsense2Config.cmake
+configure_package_config_file(${CMAKE_SOURCE_DIR}/CMake/pyrealsense2Config.cmake.in pyrealsense2Config.cmake
     INSTALL_DESTINATION ${CMAKECONFIG_PY_INSTALL_DIR}
     INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/bin
     PATH_VARS CMAKE_INSTALL_INCLUDEDIR
@@ -172,7 +172,7 @@ if(BUILD_NETWORK_DEVICE)
         VERSION     ${REALSENSE_VERSION_STRING}
         SOVERSION   "${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}"
     )
-    include_directories(../../include)
+    include_directories(${CMAKE_SOURCE_DIR}/include)
     install(TARGETS pyrealsense2-net
         EXPORT pyrealsense2-netTargets
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -183,7 +183,7 @@ if(BUILD_NETWORK_DEVICE)
     write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/pyrealsense2-netConfigVersion.cmake"
         VERSION ${REALSENSE_VERSION_STRING} COMPATIBILITY AnyNewerVersion)
 
-    configure_package_config_file(../../CMake/pyrealsense2-netConfig.cmake.in pyrealsense2-netConfig.cmake
+    configure_package_config_file(${CMAKE_SOURCE_DIR}/CMake/pyrealsense2-netConfig.cmake.in pyrealsense2-netConfig.cmake
         INSTALL_DESTINATION ${CMAKECONFIG_PY_INSTALL_DIR}
         INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/bin
         PATH_VARS CMAKE_INSTALL_INCLUDEDIR)
