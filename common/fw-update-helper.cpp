@@ -396,7 +396,7 @@ namespace rs2
                                 catch (...) { }
                             }   
                         });
-    
+
                     auto _this = shared_from_this();
                     auto invoke = [_this](std::function<void()> action) {
                         _this->invoke(action);
