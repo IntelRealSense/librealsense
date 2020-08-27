@@ -24,27 +24,15 @@ int main(int argc, char * argv[]) try
 
     rs2::depth_sensor depth_sensor= dev.query_sensors().front();
 
-    depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+    //depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
     
-    
-    depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_SIZE, 2);
-    depth_sensor.set_option(RS2_OPTION_HDR_RELATIVE_MODE, 0);
-
-    depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 1);
-    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 1.f);
-    depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
-
-
-    depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 2);
-    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 8500.f);
-    depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
-
-    depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 0);
-
     depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
 
     // Create a simple OpenGL window for rendering:
-    window app(1280, 720, "RealSense Capture Example");
+    window app1(1280, 720, "RealSense Capture Example");
+
+    // Create a simple OpenGL window for rendering:
+    window app2(1280, 720, "RealSense Capture Example");
 
     // Declare depth colorizer for pretty visualization of depth data
     rs2::colorizer color_map;
@@ -59,39 +47,30 @@ int main(int argc, char * argv[]) try
     // If a device is capable to stream IMU data, both Gyro and Accelerometer are enabled by default
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_DEPTH);
-    cfg.enable_stream(RS2_STREAM_INFRARED, 1);
     pipe.start(cfg);
 
-    rs2::merge merging_processor;
+    rs2::split spliting_processor;
 
-    bool is_merge_required = false;
 
-    while (app) // Application still alive?
+    while (app1 && app2) // Application still alive?
     {
-        rs2::frameset data = pipe.wait_for_frames() .    // Wait for next set of frames from the camera
-            apply_filter(printer).     // Print each enabled stream frame rate
-            apply_filter(color_map);   // Find and colorize the depth data
+        rs2::frameset data = pipe.wait_for_frames();
+        data = data.apply_filter(printer);     
+        data = data.apply_filter(color_map);   
 
 // The show method, when applied on frameset, break it to frames and upload each frame into a gl textures
 // Each texture is displayed on different viewport according to it's stream unique id
-        if (is_merge_required)
-        {
-            auto merged_frameset = merging_processor.process(data);
-            app.show(merged_frameset);
-        }
-        else
-        {
-            app.show(data);
-        }
+        data = spliting_processor.process(data);
+        data = data.apply_filter(color_map);
+        
+        auto depth_frame_1 = data.get_depth_frame(1);
+        if(depth_frame_1)
+            app1.show(data);
 
-        if (GetKeyState(VK_NUMPAD4) & 0x8000)
-        {
-            is_merge_required = true;
-        }
-        if (GetKeyState(VK_NUMPAD5) & 0x8000)
-        {
-            is_merge_required = false;
-        }
+        auto depth_frame_2 = data.get_depth_frame(2);
+        if (depth_frame_2)
+            app2.show(data);
+
     }
 
     return EXIT_SUCCESS;
