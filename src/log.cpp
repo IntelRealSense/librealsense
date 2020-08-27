@@ -5,7 +5,7 @@
 
 #include <fstream>
 
-#if BUILD_EASYLOGGINGPP
+#ifdef BUILD_EASYLOGGINGPP
 INITIALIZE_EASYLOGGINGPP
 
 namespace librealsense

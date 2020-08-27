@@ -555,7 +555,7 @@ namespace ivcam2 {
 
         void on_log( rs2_log_severity severity, rs2_log_message const & msg ) noexcept override
         {
-#if BUILD_EASYLOGGINGPP
+#ifdef BUILD_EASYLOGGINGPP
             log_message const & wrapper = (log_message const &)(msg);
             char const * raw = wrapper.el_msg.message().c_str();
             if( strncmp( AC_LOG_PREFIX, raw, AC_LOG_PREFIX_LEN ) )

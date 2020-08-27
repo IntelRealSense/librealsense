@@ -35,7 +35,7 @@
 #define FW_L5XX_FW_IMAGE_VERSION ""
 #endif // INTERNAL_FW
 
-#if BUILD_EASYLOGGINGPP
+#ifdef BUILD_EASYLOGGINGPP
 #include <easylogging++.h>
 #ifdef BUILD_SHARED_LIBS
 // With static linkage, ELPP is initialized by librealsense, so doing it here will
@@ -298,7 +298,7 @@ int main(int argc, const char** argv) try
     std::vector<device> connected_devs;
     std::mutex m;
 
-#if BUILD_EASYLOGGINGPP
+#ifdef BUILD_EASYLOGGINGPP
     std::weak_ptr<notifications_model> notifications = viewer_model.not_model;
     rs2::log_to_callback( RS2_LOG_SEVERITY_INFO,
         [notifications]( rs2_log_severity severity, rs2::log_message const& msg )
