@@ -101,7 +101,7 @@ namespace librealsense
             } 
             catch (const std::exception& ex)
             {
-                LOG(WARNING) << "Could not open device " << ex.what();
+                LOG_WARNING("Could not open device " << ex.what());
             }
         }
 
