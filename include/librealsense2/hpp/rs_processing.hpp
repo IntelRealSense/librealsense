@@ -1100,5 +1100,53 @@ namespace rs2
             return block;
         }
     };
+
+    class merge : public filter
+    {
+    public:
+        /**
+        * Create merge processing block
+        * the processing perform the hole filling base on different hole filling mode.
+        */
+        merge() : filter(init()) {}
+
+    private:
+        friend class context;
+
+        std::shared_ptr<rs2_processing_block> init()
+        {
+            rs2_error* e = nullptr;
+            auto block = std::shared_ptr<rs2_processing_block>(
+                rs2_create_merge_processing_block(&e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return block;
+        }
+    };
+
+    class split : public filter
+    {
+    public:
+        /**
+        * Create split processing block
+        * the processing perform the hole filling base on different hole filling mode.
+        */
+        split() : filter(init()) {}
+
+    private:
+        friend class context;
+
+        std::shared_ptr<rs2_processing_block> init()
+        {
+            rs2_error* e = nullptr;
+            auto block = std::shared_ptr<rs2_processing_block>(
+                rs2_create_split_processing_block(&e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return block;
+        }
+    };
 }
 #endif // LIBREALSENSE_RS2_PROCESSING_HPP
