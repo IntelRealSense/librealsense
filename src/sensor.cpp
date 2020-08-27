@@ -471,6 +471,19 @@ namespace librealsense
         else if (!_is_opened)
             throw wrong_api_call_sequence_exception("start_streaming(...) failed. UVC device was not opened!");
 
+        // RS2_OPTION_AUTO_EXPOSURE_PRIORITY will be disabled by default in firmware
+        // temporarily disable here to facilitate android stability tests
+#ifdef __ANDROID__
+        try {
+            if (supports_option(RS2_OPTION_AUTO_EXPOSURE_PRIORITY)) {
+                _device->set_pu(rs2_option::RS2_OPTION_AUTO_EXPOSURE_PRIORITY, 0.0);
+            }
+        } catch (...)
+        {
+            LOG_WARNING("disable RS2_OPTION_AUTO_EXPOSURE_PRIORITY failed.");
+        }
+#endif
+
         raise_on_before_streaming_changes(true); //Required to be just before actual start allow recording to work
         _source.set_callback(callback);
         _is_streaming = true;

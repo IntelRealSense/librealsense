@@ -60,6 +60,8 @@ namespace librealsense
             AMCSET                      = 0x2B, // Set options (L515)
             AMCGET                      = 0x2C, // Get options (L515)
             DELETE_TABLE                = 0x2E,
+            TPROC_TRB_THRSLD_SET        = 0x35, // TPROC TRB threshold
+            TPROC_USB_GRAN_SET          = 0x36, // TPROC USB granularity
             PFD                         = 0x3B, // Disable power features <Parameter1 Name="0 - Disable, 1 - Enable" />
             READ_TABLE                  = 0x43, // read table from flash, for example, read imu calibration table, read_table 0x243 0
             WRITE_TABLE                 = 0x44,
@@ -518,6 +520,5 @@ namespace librealsense
         };
 
         class ac_trigger;
-
     } // librealsense::ivcam2
 } // namespace librealsense

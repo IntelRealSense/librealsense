@@ -105,6 +105,16 @@ namespace librealsense
                 { 2.f, "60Hz" },
                 { 3.f, "Auto" }, }));
 
+
+#ifdef __ANDROID__
+        // option to enable workaround for help weak usb hosts to support L515 devices
+        // with improved performance and stability
+        if(_fw_version >= firmware_version( "1.4.0.66" ) )
+        {
+            color_ep->register_option(RS2_OPTION_ENABLE_WEAK_USB_HOST_WA, std::make_shared<librealsense::float_option>(option_range{ 0, 1, 1, 1 }));
+        }
+#endif
+
         // metadata
         // attributes of md_capture_timing
         auto md_prop_offset = offsetof(metadata_raw, mode) +
@@ -357,6 +367,33 @@ namespace librealsense
 
         if (_state != sensor_state::OWNED_BY_USER)
             throw wrong_api_call_sequence_exception("tried to start an unopened sensor");
+
+#ifdef __ANDROID__
+        if (supports_option(RS2_OPTION_ENABLE_WEAK_USB_HOST_WA))
+        {
+            auto usb_perf_enabled = get_option(RS2_OPTION_ENABLE_WEAK_USB_HOST_WA).query();
+
+            if (usb_perf_enabled)
+            {
+                // TPROC USB Granularity and TRB threshold settings for improved performance and stability
+                // on hosts with weak cpu and system performance
+                // settings values are validated through many experiments, do not change unless
+                try {
+                    // endpoint 5 - 32KB
+                    command cmdTprocGranEp5(ivcam2::TPROC_USB_GRAN_SET, 5, 32);
+                    _owner->_hw_monitor->send(cmdTprocGranEp5);
+
+                    command cmdTprocThresholdEp5(ivcam2::TPROC_TRB_THRSLD_SET, 5, 1);
+                    _owner->_hw_monitor->send(cmdTprocThresholdEp5);
+
+                    LOG_INFO("Color usb tproc granularity and TRB threshold updated.");
+                } catch (...)
+                {
+                    LOG_WARNING("Failed to update color usb tproc granularity and TRB threshold. performance and stability maybe impacted on certain platforms.");
+                }
+            }
+        }
+#endif
 
         delayed_start(callback);
     }

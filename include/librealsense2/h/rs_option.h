@@ -96,6 +96,7 @@ extern "C" {
         RS2_OPTION_THERMAL_COMPENSATION, /**< Depth Thermal Compensation for selected D400 SKUs */
         RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, /**< Enable depth & color frame sync with periodic calibration for proper alignment */
         RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH,
+        RS2_OPTION_ENABLE_WEAK_USB_HOST_WA, /**< Enable workaround for weak USB hosts to improve performance and stability */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
