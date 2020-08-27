@@ -253,7 +253,7 @@ rs2_processing_block* rs2_gl_create_pointcloud_renderer(int api_version, rs2_err
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
 
-#if BUILD_EASYLOGGINGPP
+#ifdef BUILD_EASYLOGGINGPP
 #ifdef SHARED_LIBS
 INITIALIZE_EASYLOGGINGPP
 #endif
