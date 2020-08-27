@@ -393,7 +393,11 @@ namespace rs2
                                 {
                                     sm->stop(fw_update_manager->get_viewer_model());
                                 }
-                                catch (...) { }
+                                catch (...) 
+                                { 
+                                    // avoiding exception that can be sent by stop method
+                                    // this could happen if the sensor is not streaming and the stop method is called - for example 
+                                }
                             }   
                         });
 
