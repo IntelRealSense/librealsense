@@ -9,10 +9,10 @@ Copyright(c) 2020 Intel Corporation. All Rights Reserved. */
 
 namespace librealsense
 {
-    class hdr_merging_processor : public generic_processing_block
+    class merge : public generic_processing_block
     {
     public:
-        hdr_merging_processor();
+        merge();
 
     protected:
         bool should_process(const rs2::frame& frame) override;
@@ -27,15 +27,5 @@ namespace librealsense
         std::map<float, rs2::frameset> _framesets_without_md;
         float _first_exp;
         float _second_exp;
-    };
-
-    class hdr_splitting_processor : public generic_processing_block
-    {
-    public:
-        hdr_splitting_processor();
-
-    protected:
-        bool should_process(const rs2::frame& frame) override;
-        rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
     };
 }
