@@ -252,6 +252,20 @@ rs2_processing_block* rs2_create_zero_order_invalidation_block(rs2_error** error
 rs2_processing_block* rs2_create_huffman_depth_decompress_block(rs2_error** error);
 
 /**
+* Creates a merge processing block. 
+* The block merges between two depth frames with different exposure values
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_merge_processing_block(rs2_error** error);
+
+/**
+* Creates a split processing block.
+* The block splits the depth streaming to two streams depth frames with different exposure values
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_split_processing_block(rs2_error** error);
+
+/**
 * Retrieve processing block specific information, like name.
 * \param[in]  block     The processing block
 * \param[in]  info      processing block info type to retrieve

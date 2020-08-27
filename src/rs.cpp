@@ -31,6 +31,8 @@
 #include "proc/hole-filling-filter.h"
 #include "proc/color-formats-converter.h"
 #include "proc/rates-printer.h"
+#include "proc/merge.h"
+#include "proc/split.h"
 #include "media/playback/playback_device.h"
 #include "stream.h"
 #include "../include/librealsense2/h/rs_types.h"
@@ -2256,6 +2258,22 @@ NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 rs2_processing_block* rs2_create_huffman_depth_decompress_block(rs2_error** error) BEGIN_API_CALL
 {
     auto block = std::make_shared<librealsense::depth_decompression_huffman>();
+
+    return new rs2_processing_block{ block };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+rs2_processing_block* rs2_create_merge_processing_block(rs2_error** error) BEGIN_API_CALL
+{
+    auto block = std::make_shared<librealsense::merge>();
+
+    return new rs2_processing_block{ block };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+rs2_processing_block* rs2_create_split_processing_block(rs2_error** error) BEGIN_API_CALL
+{
+    auto block = std::make_shared<librealsense::split>();
 
     return new rs2_processing_block{ block };
 }
