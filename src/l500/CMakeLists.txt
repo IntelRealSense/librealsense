@@ -26,6 +26,3 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/ac-trigger.cpp"
 )
 
-if (ENABLE_L500_DEPTH_INVALIDATION)
-    add_definitions(-DENABLE_L500_DEPTH_INVALIDATION)
-endif()

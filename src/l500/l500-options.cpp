@@ -94,7 +94,13 @@ namespace librealsense
         }
         else
         {
-            auto resolution_option = std::make_shared<float_option_with_description<rs2_sensor_mode>>(option_range{ RS2_SENSOR_MODE_VGA,RS2_SENSOR_MODE_COUNT - 1,1, RS2_SENSOR_MODE_XGA }, "Notify the sensor about the intended streaming mode. Required for preset ");
+            // On USB2 we have only QVGA sensor mode
+            auto usb_spec = get_usb_spec();
+            bool usb3mode = (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined);
+
+            auto default_sensor_mode = static_cast<float>(usb3mode ? RS2_SENSOR_MODE_VGA : RS2_SENSOR_MODE_QVGA);
+
+            auto resolution_option = std::make_shared<float_option_with_description<rs2_sensor_mode>>(option_range{ RS2_SENSOR_MODE_VGA,RS2_SENSOR_MODE_COUNT - 1,1, default_sensor_mode }, "Notify the sensor about the intended streaming mode. Required for preset ");
 
             depth_sensor.register_option(RS2_OPTION_SENSOR_MODE, resolution_option);
 

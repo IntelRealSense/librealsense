@@ -14,6 +14,27 @@ namespace librealsense
         std::string built_msg;
 
         log_message( el::LogMessage const& el_msg ) : el_msg( el_msg ) {}
+
+        unsigned get_log_message_line_number() const {
+            return el_msg.line();
+        }
+
+        const char* get_log_message_filename() const {
+            return el_msg.file().c_str();
+        }
+
+        const char* get_raw_log_message() const {
+            return el_msg.message().c_str();
+        }
+
+        const char* get_full_log_message() {
+            if (built_msg.empty())
+            {
+                bool const append_new_line = false;
+                built_msg = el_msg.logger()->logBuilder()->build(&el_msg, append_new_line);
+            }
+            return built_msg.c_str();
+        }
     };
 
     template<char const * NAME>
@@ -221,6 +242,26 @@ namespace librealsense
                 // Remove the default logger (which will log to standard out/err) or it'll still be active
                 //el::Helpers::uninstallLogDispatchCallback< el::base::DefaultLogDispatchCallback >( "DefaultLogDispatchCallback" );
             }
+        }
+    };
+#else //BUILD_EASYLOGGINGPP
+    struct log_message
+    {
+
+        unsigned get_log_message_line_number() const {
+            throw std::runtime_error("rs2_get_log_message_line_number is not supported without BUILD_EASYLOGGINGPP");
+        }
+
+        const char* get_log_message_filename() const {
+            throw std::runtime_error("rs2_get_log_message_filename is not supported without BUILD_EASYLOGGINGPP");
+        }
+
+        const char* get_raw_log_message() const {
+            throw std::runtime_error("rs2_get_raw_log_message is not supported without BUILD_EASYLOGGINGPP");
+        }
+
+        const char* get_full_log_message() {
+            throw std::runtime_error("rs2_get_full_log_message is not supported without BUILD_EASYLOGGINGPP");
         }
     };
 #endif //BUILD_EASYLOGGINGPP

@@ -15,9 +15,7 @@
 template< typename T >
 void read_binary_file( char const * dir, char const * bin, T * data )
 {
-    std::string filename = dir;
-    filename += "\\";
-    filename += bin;
+    std::string filename = join( dir, bin );
     AC_LOG( DEBUG, "... " << filename );
     std::fstream f = std::fstream( filename, std::ios::in | std::ios::binary );
     if( ! f )
@@ -212,11 +210,11 @@ int main( int argc, char * argv[] )
                 memory_profiler profiler;
                 init_algo( cal,
                            dir,
-                           "\\rgb.raw",
-                           "\\rgb_prev.raw",
-                           "\\rgb_last_successful.raw",
-                           "\\ir.raw",
-                           "\\depth.raw",
+                           "rgb.raw",
+                           "rgb_prev.raw",
+                           "rgb_last_successful.raw",
+                           "ir.raw",
+                           "depth.raw",
                            camera,
                            &profiler );
 

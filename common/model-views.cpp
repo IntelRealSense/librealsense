@@ -1033,13 +1033,17 @@ namespace rs2
             reverse(begin(sensor_profiles), end(sensor_profiles));
             rs2_format def_format{ RS2_FORMAT_ANY };
             auto default_resolution = std::make_pair(1280, 720);
+            auto default_fps = 30;
             for (auto&& profile : sensor_profiles)
             {
                 std::stringstream res;
                 if (auto vid_prof = profile.as<video_stream_profile>())
                 {
                     if (profile.is_default())
+                    {
                         default_resolution = std::pair<int, int>(vid_prof.width(), vid_prof.height());
+                        default_fps = profile.fps();
+                    }
                     res << vid_prof.width() << " x " << vid_prof.height();
                     push_back_if_not_exists(res_values, std::pair<int, int>(vid_prof.width(), vid_prof.height()));
                     push_back_if_not_exists(resolutions, res.str());
@@ -1082,36 +1086,13 @@ namespace rs2
 
             show_single_fps_list = is_there_common_fps();
 
-            // set default selections. USB2 configuration requires low-res resolution/fps.
             int selection_index{};
-            bool usb2 = false;
-            if (dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
-            {
-                std::string dev_usb_type(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
-                usb2 = (std::string::npos != dev_usb_type.find("2."));
-            }
-
-            int fps_constrain = usb2 ? 15 : 30;
-            auto resolution_constrain = usb2 ? std::make_pair(640, 480) : default_resolution;
-
-            // TODO: Once GLSL parts are properly optimised
-            // and tested on all types of hardware
-            // make sure we use Full-HD YUY overriding the default
-            // This will lower CPU utilisation and generally be faster
-            // if (!usb2 && std::string(s->get_info(RS2_CAMERA_INFO_NAME)) == "RGB Camera")
-            // {
-            //     if (config_file::instance().get(configurations::performance::glsl_for_rendering))
-            //     {
-            //         resolution_constrain = std::make_pair(1920, 1080);
-            //         def_format = RS2_FORMAT_YUYV;
-            //     }
-            // }
 
             if (!show_single_fps_list)
             {
                 for (auto fps_array : fps_values_per_stream)
                 {
-                    if (get_default_selection_index(fps_array.second, fps_constrain, &selection_index))
+                    if (get_default_selection_index(fps_array.second, default_fps, &selection_index))
                     {
                         ui.selected_fps_id[fps_array.first] = selection_index;
                         break;
@@ -1120,7 +1101,7 @@ namespace rs2
             }
             else
             {
-                if (get_default_selection_index(shared_fps_values, fps_constrain, &selection_index))
+                if (get_default_selection_index(shared_fps_values, default_fps, &selection_index))
                     ui.selected_shared_fps_id = selection_index;
             }
 
@@ -1133,7 +1114,7 @@ namespace rs2
                 }
             }
 
-            get_default_selection_index(res_values, resolution_constrain, &selection_index);
+            get_default_selection_index(res_values, default_resolution, &selection_index);
             ui.selected_res_id = selection_index;
 
             // Have the various preset options automatically update based on the resolution of the
