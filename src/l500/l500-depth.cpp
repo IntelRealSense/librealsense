@@ -108,7 +108,7 @@ namespace librealsense
         // option to enable workaround for help weak usb hosts to support L515 devices
         // with improved performance and stability
 #ifdef __ANDROID__
-        if(_fw_version >= firmware_version( "1.4.0.66" ) )
+        if(_fw_version >= firmware_version( "1.5.1.0" ) )
         {
             depth_sensor.register_option(RS2_OPTION_ENABLE_WEAK_USB_HOST_WA, std::make_shared<librealsense::float_option>(option_range{ 0, 1, 1, 1 }));
         }
@@ -386,13 +386,17 @@ namespace librealsense
 #ifdef __ANDROID__
         if (supports_option(RS2_OPTION_ENABLE_WEAK_USB_HOST_WA))
         {
+            // option to improve performance and stability on weak android hosts
+            // please refer to following bug report for details
+            // RS5-8011 [Android-L500 Hard failure] Device detach and disappear from system during stream
+
             auto usb_perf_enabled = get_option(RS2_OPTION_ENABLE_WEAK_USB_HOST_WA).query();
 
             if (usb_perf_enabled)
             {
                 // TPROC USB Granularity and TRB threshold settings for improved performance and stability
                 // on hosts with weak cpu and system performance
-                // settings values are validated through many experiments, do not change unless
+                // settings values are validated through many experiments, do not change
                 try {
                     // endpoint 2 - 16KB
                     command cmdTprocGranEp2(ivcam2::TPROC_USB_GRAN_SET, 2, 16);
@@ -408,7 +412,7 @@ namespace librealsense
                     command cmdTprocThresholdEp3(ivcam2::TPROC_TRB_THRSLD_SET, 3, 1);
                     _owner->_hw_monitor->send(cmdTprocThresholdEp3);
 
-                    LOG_INFO("Depth and IR usb tproc granularity and TRB threshold updated.");
+                    LOG_DEBUG("Depth and IR usb tproc granularity and TRB threshold updated.");
                 } catch (...)
                 {
                     LOG_WARNING("FAILED TO UPDATE depth usb tproc granularity and TRB threshold. performance and stability maybe impacted on certain platforms.");
