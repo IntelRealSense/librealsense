@@ -3226,7 +3226,7 @@ namespace rs2
         ux_window& window, int devices, std::string& error_message, 
         std::shared_ptr<texture_buffer> texture, points points)
     {
-        updates->draw(window, error_message);
+        updates->draw(*this, window, error_message);
 
         static bool first = true;
         if (first)

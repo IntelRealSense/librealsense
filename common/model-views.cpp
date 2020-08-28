@@ -1033,13 +1033,17 @@ namespace rs2
             reverse(begin(sensor_profiles), end(sensor_profiles));
             rs2_format def_format{ RS2_FORMAT_ANY };
             auto default_resolution = std::make_pair(1280, 720);
+            auto default_fps = 30;
             for (auto&& profile : sensor_profiles)
             {
                 std::stringstream res;
                 if (auto vid_prof = profile.as<video_stream_profile>())
                 {
                     if (profile.is_default())
+                    {
                         default_resolution = std::pair<int, int>(vid_prof.width(), vid_prof.height());
+                        default_fps = profile.fps();
+                    }
                     res << vid_prof.width() << " x " << vid_prof.height();
                     push_back_if_not_exists(res_values, std::pair<int, int>(vid_prof.width(), vid_prof.height()));
                     push_back_if_not_exists(resolutions, res.str());
@@ -1082,36 +1086,13 @@ namespace rs2
 
             show_single_fps_list = is_there_common_fps();
 
-            // set default selections. USB2 configuration requires low-res resolution/fps.
             int selection_index{};
-            bool usb2 = false;
-            if (dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
-            {
-                std::string dev_usb_type(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
-                usb2 = (std::string::npos != dev_usb_type.find("2."));
-            }
-
-            int fps_constrain = usb2 ? 15 : 30;
-            auto resolution_constrain = usb2 ? std::make_pair(640, 480) : default_resolution;
-
-            // TODO: Once GLSL parts are properly optimised
-            // and tested on all types of hardware
-            // make sure we use Full-HD YUY overriding the default
-            // This will lower CPU utilisation and generally be faster
-            // if (!usb2 && std::string(s->get_info(RS2_CAMERA_INFO_NAME)) == "RGB Camera")
-            // {
-            //     if (config_file::instance().get(configurations::performance::glsl_for_rendering))
-            //     {
-            //         resolution_constrain = std::make_pair(1920, 1080);
-            //         def_format = RS2_FORMAT_YUYV;
-            //     }
-            // }
 
             if (!show_single_fps_list)
             {
                 for (auto fps_array : fps_values_per_stream)
                 {
-                    if (get_default_selection_index(fps_array.second, fps_constrain, &selection_index))
+                    if (get_default_selection_index(fps_array.second, default_fps, &selection_index))
                     {
                         ui.selected_fps_id[fps_array.first] = selection_index;
                         break;
@@ -1120,7 +1101,7 @@ namespace rs2
             }
             else
             {
-                if (get_default_selection_index(shared_fps_values, fps_constrain, &selection_index))
+                if (get_default_selection_index(shared_fps_values, default_fps, &selection_index))
                     ui.selected_shared_fps_id = selection_index;
             }
 
@@ -1133,7 +1114,7 @@ namespace rs2
                 }
             }
 
-            get_default_selection_index(res_values, resolution_constrain, &selection_index);
+            get_default_selection_index(res_values, default_resolution, &selection_index);
             ui.selected_res_id = selection_index;
 
             // Have the various preset options automatically update based on the resolution of the
@@ -3304,7 +3285,7 @@ namespace rs2
 
                         static auto table = create_default_fw_table();
 
-                        manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, table[product_line], true);
+                        manager = std::make_shared<firmware_update_manager>(viewer, *this, dev, viewer.ctx, table[product_line], true);
                     }
 
                     if (is_upgradeable(fw, recommended))
@@ -3820,7 +3801,10 @@ namespace rs2
             }
             auto curr_frame = p.get_position();
             uint64_t step = uint64_t(1000.0 / (float)fps * 1e6);
-            p.seek(std::chrono::nanoseconds(curr_frame - step));
+            if (curr_frame >= step)
+            {
+                p.seek(std::chrono::nanoseconds(curr_frame - step));
+            }
         }
         if (ImGui::IsItemHovered())
         {
@@ -4368,7 +4352,7 @@ namespace rs2
 
             else return; // Aborted by the user
 
-            auto manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, data, false);
+            auto manager = std::make_shared<firmware_update_manager>(viewer, *this, dev, viewer.ctx, data, false);
 
             auto n = std::make_shared<fw_update_notification_model>(
                 "Manual Update requested", manager, true);
@@ -4418,7 +4402,7 @@ namespace rs2
                 else return; // Aborted by the user
             }
 
-            auto manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, data, true);
+            auto manager = std::make_shared<firmware_update_manager>(viewer, *this, dev, viewer.ctx, data, true);
 
             auto n = std::make_shared<fw_update_notification_model>(
                 "Manual Update requested", manager, true);
@@ -4744,18 +4728,25 @@ namespace rs2
                     }
                 }
 
+                // fw update disabled when any sensor is streaming
+                ImGuiSelectableFlags updateFwFlags = (is_streaming) ? ImGuiSelectableFlags_Disabled : 0;
+
                 if (dev.is<rs2::updatable>() || dev.is<rs2::update_device>())
                 {
-                    if (ImGui::Selectable("Update Firmware..."))
+                    if (ImGui::Selectable("Update Firmware...", false, updateFwFlags))
                     {
                         begin_update({}, viewer, error_message);
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Install official signed firmware from file to the device");
+                    {
+                        std::string tooltip = to_string() << "Install official signed firmware from file to the device" << (is_streaming ? " (Disabled while streaming)" : "");
+                        ImGui::SetTooltip("%s", tooltip.c_str());
+                    }
 
                     if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && is_recommended_fw_available(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)))
                     {
-                        if (ImGui::Selectable("Install Recommended Firmware "))
+                        
+                        if (ImGui::Selectable("Install Recommended Firmware ", false, updateFwFlags))
                         {
                             auto sensors = dev.query_sensors();
                             auto product_line_str = "";
@@ -4772,7 +4763,10 @@ namespace rs2
                     }
 
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Install default recommended firmware for this device");
+                    {
+                        std::string tooltip = to_string() <<"Install default recommended firmware for this device" << (is_streaming ? " (Disabled while streaming)" : "");
+                        ImGui::SetTooltip("%s", tooltip.c_str());
+                    }
                 }
 
                 bool is_locked = true;
@@ -4781,12 +4775,15 @@ namespace rs2
 
                 if (dev.is<rs2::updatable>() && !is_locked)
                 {
-                    if (ImGui::Selectable("Update Unsigned Firmware..."))
+                    if (ImGui::Selectable("Update Unsigned Firmware...", false, updateFwFlags))
                     {
                         begin_update_unsigned(viewer, error_message);
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Install non official unsigned firmware from file to the device");
+                    {
+                        std::string tooltip = to_string() << "Install non official unsigned firmware from file to the device" << (is_streaming ? " (Disabled while streaming)" : "");
+                        ImGui::SetTooltip("%s", tooltip.c_str());
+                    }
                 }
             }
 
@@ -5448,7 +5445,12 @@ namespace rs2
         if (advanced_dev)
         {
             is_advanced_device = true;
-            is_advanced_mode_enabled = advanced_dev.is_enabled();
+            try
+            {
+                // Prevent intermittent errors in polling mode to keep imgui in sync
+                is_advanced_mode_enabled = advanced_dev.is_enabled();
+            }
+            catch (...){}
         }
 
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 3);

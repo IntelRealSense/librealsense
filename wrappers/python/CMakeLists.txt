@@ -53,8 +53,6 @@ set(RAW_RS
     ../../src/types.h
     ../../src/types.cpp
     ../../src/log.cpp
-    ../../third-party/easyloggingpp/src/easylogging++.h
-    ../../third-party/easyloggingpp/src/easylogging++.cc
     ../../src/backend.h
     ../../src/backend.cpp
 )
@@ -105,6 +103,13 @@ if(${FORCE_RSUSB_BACKEND})
         ../../src/uvc/uvc-parser.cpp
         ../../src/uvc/uvc-streamer.cpp
         ../../src/hid/hid-device.cpp
+    )
+endif()
+
+if(${BUILD_EASYLOGGINGPP})
+    list(APPEND RAW_RS
+        ../../third-party/easyloggingpp/src/easylogging++.h
+        ../../third-party/easyloggingpp/src/easylogging++.cc
     )
 endif()
 

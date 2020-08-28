@@ -52,8 +52,8 @@ void init_algo( algo::optimizer & cal,
     if( profiler )
         profiler->section( "Preprocessing YUY" );
     cal.set_yuy_data(
-        read_image_file< algo::yuy_t >( dir + yuy, camera.rgb.width, camera.rgb.height ),
-        read_image_file< algo::yuy_t >( dir + yuy_prev, camera.rgb.width, camera.rgb.height ),
+        read_image_file< algo::yuy_t >( join( dir, yuy ), camera.rgb.width, camera.rgb.height ),
+        read_image_file< algo::yuy_t >( join( dir, yuy_prev ), camera.rgb.width, camera.rgb.height ),
         std::move(yuy_last_successful_frame),
         calibration
     );
@@ -63,7 +63,7 @@ void init_algo( algo::optimizer & cal,
     if( profiler )
         profiler->section( "Preprocessing IR" );
     cal.set_ir_data(
-        read_image_file< algo::ir_t >( dir + ir, camera.z.width, camera.z.height ),
+        read_image_file< algo::ir_t >( join( dir, ir ), camera.z.width, camera.z.height ),
         camera.z.width, camera.z.height
     );
     if( profiler )
@@ -72,7 +72,7 @@ void init_algo( algo::optimizer & cal,
     if( profiler )
         profiler->section( "Preprocessing DEPTH" );
     cal.set_z_data(
-        read_image_file< algo::z_t >( dir + z, camera.z.width, camera.z.height ),
+        read_image_file< algo::z_t >( join( dir, z ), camera.z.width, camera.z.height ),
         camera.z, camera.dsm_params, camera.cal_info, camera.cal_regs, camera.z_units
     );
     if( profiler )

@@ -566,7 +566,14 @@ namespace librealsense
     {
         std::vector<tagged_profile> tags;
 
-        tags.push_back({ RS2_STREAM_COLOR, -1, 1280, 720, RS2_FORMAT_RGB8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+        auto usb_spec = get_usb_spec();
+        bool usb3mode = (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined);
+
+        uint32_t width = usb3mode ? 1280 : 960;
+        uint32_t height = usb3mode ? 720 : 540;
+
+        tags.push_back({ RS2_STREAM_COLOR, -1, width, height, RS2_FORMAT_RGB8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+
         return tags;
     }
 
