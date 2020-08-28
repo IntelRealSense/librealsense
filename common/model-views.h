@@ -749,7 +749,7 @@ namespace rs2
         typedef std::function<void(std::function<void()> load)> json_loading_func;
 
         void reset();
-        explicit device_model(device& dev, std::string& error_message, viewer_model& viewer);
+        explicit device_model(device& dev, std::string& error_message, viewer_model& viewer, bool allow_remove=true);
         ~device_model();
         void start_recording(const std::string& path, std::string& error_message);
         void stop_recording(viewer_model& viewer);
@@ -793,7 +793,7 @@ namespace rs2
         bool _playback_repeat = true;
         bool _should_replay = false;
         bool show_device_info = false;
-        bool allow_remove = true;
+        bool _allow_remove = true;
         bool show_depth_only = false;
         bool show_stream_selection = true;
         std::vector<std::pair<std::string, std::string>> infos;

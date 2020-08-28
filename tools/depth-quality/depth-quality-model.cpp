@@ -790,8 +790,7 @@ namespace rs2
 
             auto dev = _pipe.get_active_profile().get_device();
             auto dpt_sensor = std::make_shared<sensor>(dev.first<depth_sensor>());
-            _device_model = std::shared_ptr<rs2::device_model>(new device_model(dev, _error_message, _viewer_model));
-            _device_model->allow_remove = false;
+            _device_model = std::shared_ptr<rs2::device_model>(new device_model(dev, _error_message, _viewer_model,false));
             _device_model->show_depth_only = true;
             _device_model->show_stream_selection = false;
             std::shared_ptr< atomic_objects_in_frame > no_detected_objects;
