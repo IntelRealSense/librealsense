@@ -414,7 +414,6 @@ namespace librealsense
             CASE(HDR_ENABLED)
             CASE(HDR_SEQUENCE_SIZE)
             CASE(HDR_SEQUENCE_ID)
-            CASE(HDR_RELATIVE_MODE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
