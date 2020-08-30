@@ -6,8 +6,17 @@
 namespace librealsense
 {
     split_filter::split_filter()
-        : generic_processing_block("Split Filter")
-    { }
+        : generic_processing_block("Split Filter"),
+        _selected_stream_id(0.f)
+    {
+        auto selected_stream_id = std::make_shared<ptr_option<float>>(0.f, 3.f, 1.f, 1.f, 
+            &_selected_stream_id, "Selected stream id for display");
+        register_option(RS2_OPTION_SELECT_ID, selected_stream_id);
+
+        _last_frame[0] = nullptr;
+        _last_frame[1] = nullptr;
+        _last_frame[2] = nullptr;
+    }
 
     // processing only simple frames (not framesets)
     // only depth frames
@@ -41,7 +50,7 @@ namespace librealsense
     {
         // steps:
         // only for depth: 
-        // 1. check hdr seq id in metadata  
+        // 1. check hdr seq id in metadata - if not as the option selected id, return last frame
         // 2. create new profile with stream index so that:
         //    - stream with seq_id 1 will have index 1  
         //    - stream with seq_id 2 will have index 2
@@ -56,6 +65,16 @@ namespace librealsense
         if (depth_exposure == 1.f)
         {
             hdr_seq_id = 2;
+        }
+
+        if (!is_selected_id(hdr_seq_id))
+        {
+            if (_last_frame[hdr_seq_id])
+            {
+                auto lf_exposure = _last_frame[hdr_seq_id].get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
+                return _last_frame[hdr_seq_id];
+            }
+            return f;
         }
 
         // 2. create new profile with stream index so that:
@@ -82,9 +101,18 @@ namespace librealsense
 
             ptr->set_sensor(orig->get_sensor());
 
+            _last_frame[hdr_seq_id] = split_frame;
+
             return split_frame;
         }
 
         return f;
+    }
+
+    bool split::is_selected_id(int sequence_id)
+    {
+        if (_selected_stream_id != 0 && sequence_id != _selected_stream_id)
+            return false;
+        return true;
     }
 }
