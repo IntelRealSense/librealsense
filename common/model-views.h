@@ -758,7 +758,7 @@ namespace rs2
 
         void refresh_notifications(viewer_model& viewer);
 
-        void check_for_bundled_fw_update(const rs2::context& ctx, std::shared_ptr<notifications_model> not_model);
+        void check_for_bundled_fw_update(viewer_model& viewer, std::shared_ptr<notifications_model> not_model);
 
         int draw_playback_panel(ux_window& window, ImFont* font, viewer_model& view);
         bool draw_advanced_controls(viewer_model& view, ux_window& window, std::string& error_message);
@@ -775,7 +775,7 @@ namespace rs2
         void begin_update(std::vector<uint8_t> data,
             viewer_model& viewer, std::string& error_message);
         void begin_update_unsigned(viewer_model& viewer, std::string& error_message);
-        void check_for_device_updates(const rs2::context& ctx, std::shared_ptr<updates_model> updates, std::shared_ptr<notifications_model> not_model);
+        void check_for_device_updates(viewer_model& viewer);
 
 
         std::shared_ptr< atomic_objects_in_frame > get_detected_objects() const { return _detected_objects; }

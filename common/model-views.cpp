@@ -3251,7 +3251,7 @@ namespace rs2
     }
 
 
-    void device_model::check_for_bundled_fw_update(const rs2::context& ctx, std::shared_ptr<notifications_model> not_model)
+    void device_model::check_for_bundled_fw_update(viewer_model& viewer, std::shared_ptr<notifications_model> not_model)
     {
         if ((bool)config_file::instance().get(configurations::update::recommend_updates))
         {
@@ -3278,8 +3278,7 @@ namespace rs2
                         recommended = available;
 
                         static auto table = create_default_fw_table();
-
-                        manager = std::make_shared<firmware_update_manager>(*this, dev, ctx, table[product_line], true);
+                        manager = std::make_shared<firmware_update_manager>(viewer, *this, dev, viewer.ctx, table[product_line], true);
                     }
 
                     if (is_upgradeable(fw, recommended))
@@ -3323,7 +3322,7 @@ namespace rs2
 
         auto name = get_device_name(dev);
 
-        check_for_device_updates(viewer.ctx, viewer.updates, viewer.not_model);
+        check_for_device_updates(viewer);
 
         if ((bool)config_file::instance().get(configurations::update::recommend_calibration))
         {
@@ -4433,11 +4432,11 @@ namespace rs2
             error_message = e.what();
         }
     }
-    void device_model::check_for_device_updates(const rs2::context& ctx, std::shared_ptr<updates_model> updates , std::shared_ptr<notifications_model> not_model)
+    void device_model::check_for_device_updates(viewer_model& viewer)
     {
-        std::weak_ptr<updates_model> updates_model_protected(updates);
-        std::weak_ptr<notifications_model> notification_model_protected(not_model);
-        std::thread check_for_device_updates_thread([ctx, updates_model_protected, notification_model_protected, this]()
+        std::weak_ptr<updates_model> updates_model_protected(viewer.updates);
+        std::weak_ptr<notifications_model> notification_model_protected(viewer.not_model);
+        std::thread check_for_device_updates_thread([&, updates_model_protected, notification_model_protected, this]()
         {
             try
             {
@@ -4450,7 +4449,7 @@ namespace rs2
                 bool fw_update_required = updates_profile.retrieve_updates(versions_db_manager::FIRMWARE, fw_recommended_version_available);
 
                 _updates_profile = updates_profile.get_update_profile();
-                updates_model::update_profile_model updates_profile_model(_updates_profile, ctx, this);
+                updates_model::update_profile_model updates_profile_model(_updates_profile, viewer.ctx, this);
 
                 // If Essential update, add update profile
                 if (sw_update_required || fw_update_required)
@@ -4500,7 +4499,7 @@ namespace rs2
                 {
                     if (auto nm = notification_model_protected.lock())
                     {
-                        check_for_bundled_fw_update(ctx, nm);
+                        check_for_bundled_fw_update(viewer, nm);
                     }
                 }
             
