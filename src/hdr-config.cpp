@@ -18,7 +18,6 @@ namespace librealsense
 
     void hdr_config::reset_to_default()
     {
-        _relative_mode = false;
         _is_enabled = false;
         _is_config_in_process = false;
         _has_config_changed = false;
@@ -46,9 +45,6 @@ namespace librealsense
         {
         case RS2_OPTION_HDR_SEQUENCE_SIZE:
             rv = static_cast<float>(_sequence_size);
-            break;
-        case RS2_OPTION_HDR_RELATIVE_MODE:
-            rv = static_cast<float>(_relative_mode);
             break;
         case RS2_OPTION_HDR_SEQUENCE_ID:
             rv = static_cast<float>(_current_hdr_sequence_index + 1);
@@ -92,9 +88,6 @@ namespace librealsense
         {
         case RS2_OPTION_HDR_SEQUENCE_SIZE:
             set_sequence_size(value);
-            break;
-        case RS2_OPTION_HDR_RELATIVE_MODE:
-            set_relative_mode(value);
             break;
         case RS2_OPTION_HDR_SEQUENCE_ID:
             set_sequence_index(value);
@@ -291,12 +284,6 @@ namespace librealsense
             _hdr_sequence_params.resize(new_size);
             _sequence_size = new_size;
         }       
-    }
-
-    void hdr_config::set_relative_mode(float value)
-    {
-        _relative_mode = static_cast<bool>(value);
-        _has_config_changed = true;
     }
 
     void hdr_config::set_sequence_index(float value)

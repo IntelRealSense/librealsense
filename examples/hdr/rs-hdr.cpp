@@ -28,7 +28,6 @@ int main(int argc, char * argv[]) try
     
     
     depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_SIZE, 2);
-    depth_sensor.set_option(RS2_OPTION_HDR_RELATIVE_MODE, 0);
 
     depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 1);
     depth_sensor.set_option(RS2_OPTION_EXPOSURE, 1.f);

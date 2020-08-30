@@ -51,7 +51,6 @@ namespace librealsense
         void send_sub_preset_to_fw();
         void disable();
         void set_sequence_size(float value);
-        void set_relative_mode(float value);
         void set_sequence_index(float value);
         void set_enable_status(float value);
         void set_exposure(float value, option_range range);
@@ -61,7 +60,6 @@ namespace librealsense
         size_t _sequence_size;
         std::vector<hdr_params> _hdr_sequence_params;
         int _current_hdr_sequence_index;
-        bool _relative_mode;
         bool _is_enabled;
         bool _is_config_in_process;
         bool _has_config_changed;

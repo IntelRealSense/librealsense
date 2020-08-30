@@ -820,10 +820,6 @@ namespace librealsense
             option_range hdr_sequence_size_range = { 1.f /*min*/, 3.f /*max*/, 1.f /*step*/, 1.f /*default*/ };
             auto hdr_sequence_size_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_HDR_SEQUENCE_SIZE, hdr_sequence_size_range);
             depth_sensor.register_option(RS2_OPTION_HDR_SEQUENCE_SIZE, hdr_sequence_size_option);
-
-            option_range hdr_relative_mode_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
-            auto hdr_relative_mode_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_HDR_RELATIVE_MODE, hdr_relative_mode_range);
-            depth_sensor.register_option(RS2_OPTION_HDR_RELATIVE_MODE, hdr_relative_mode_option);
             
             option_range hdr_enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/};
             auto hdr_enabled_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_HDR_ENABLED, hdr_enable_range);
