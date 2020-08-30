@@ -177,6 +177,7 @@ PYBIND11_MODULE(NAME, m) {
         .value("hdr_enabled", RS2_OPTION_HDR_ENABLED)
         .value("hdr_sequence_size", RS2_OPTION_HDR_SEQUENCE_SIZE)
         .value("hdr_sequence_id", RS2_OPTION_HDR_SEQUENCE_ID)
+        .value("select_id", RS2_OPTION_SELECT_ID)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");
