@@ -7,7 +7,7 @@ namespace librealsense
 {
     split_filter::split_filter()
         : generic_processing_block("Split Filter"),
-        _selected_stream_id(0.f)
+        _selected_stream_id(1.f)
     {
         auto selected_stream_id = std::make_shared<ptr_option<float>>(0.f, 3.f, 1.f, 1.f, 
             &_selected_stream_id, "Selected stream id for display");
@@ -69,11 +69,8 @@ namespace librealsense
 
         if (!is_selected_id(hdr_seq_id))
         {
-            if (_last_frame[hdr_seq_id])
-            {
-                auto lf_exposure = _last_frame[hdr_seq_id].get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
-                return _last_frame[hdr_seq_id];
-            }
+            if (_last_frame[static_cast<int>(_selected_stream_id)])
+                return _last_frame[static_cast<int>(_selected_stream_id)];
             return f;
         }
 
@@ -111,7 +108,8 @@ namespace librealsense
 
     bool split::is_selected_id(int sequence_id)
     {
-        if (_selected_stream_id != 0 && sequence_id != _selected_stream_id)
+        if ( 0 != static_cast<int>(_selected_stream_id) && 
+            sequence_id != static_cast<int>(_selected_stream_id))
             return false;
         return true;
     }
