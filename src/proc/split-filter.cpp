@@ -1,18 +1,18 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#include "split.h"
+#include "split-filter.h"
 
 namespace librealsense
 {
-    split::split()
-        : generic_processing_block("split")
+    split_filter::split_filter()
+        : generic_processing_block("Split Filter")
     { }
 
     // processing only simple frames (not framesets)
     // only depth frames
     // only index 0
-    bool split::should_process(const rs2::frame& frame)
+    bool split_filter::should_process(const rs2::frame& frame)
     {
         if (!frame)
             return false;
@@ -37,7 +37,7 @@ namespace librealsense
         return true;
     }
 
-    rs2::frame split::process_frame(const rs2::frame_source& source, const rs2::frame& f)
+    rs2::frame split_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
         // steps:
         // only for depth: 

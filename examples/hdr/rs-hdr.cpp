@@ -3,7 +3,7 @@
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include "example.hpp"          // Include short list of convenience functions for rendering
-#include <proc/merge.h>
+#include <proc/merge-filter.h>
 
 // Capture Example demonstrates how to
 // capture depth and color video streams and render them to the screen
@@ -61,7 +61,7 @@ int main(int argc, char * argv[]) try
     cfg.enable_stream(RS2_STREAM_INFRARED, 1);
     pipe.start(cfg);
 
-    rs2::merge merging_processor;
+    rs2::merge_filter merging_processor;
 
     bool is_merge_required = false;
 

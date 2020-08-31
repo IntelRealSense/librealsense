@@ -3,7 +3,7 @@
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include "example.hpp"          // Include short list of convenience functions for rendering
-#include <proc/merge.h>
+#include <proc/split-filter.h>
 
 // Capture Example demonstrates how to
 // capture depth and color video streams and render them to the screen
@@ -49,7 +49,7 @@ int main(int argc, char * argv[]) try
     cfg.enable_stream(RS2_STREAM_DEPTH);
     pipe.start(cfg);
 
-    rs2::split spliting_processor;
+    rs2::split_filter spliting_processor;
 
 
     while (app1 && app2) // Application still alive?
