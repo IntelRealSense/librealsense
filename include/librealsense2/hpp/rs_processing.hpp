@@ -1101,14 +1101,24 @@ namespace rs2
         }
     };
 
-    class merge : public filter
+    class merge_filter : public filter
     {
     public:
         /**
-        * Create merge processing block
+        * Create merge_filter processing block
         * the processing perform the hole filling base on different hole filling mode.
         */
-        merge() : filter(init()) {}
+        merge_filter() : filter(init()) {}
+
+        merge_filter(filter f) :filter(f)
+        {
+            rs2_error* e = nullptr;
+            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_MERGE_FILTER, &e) && !e)
+            {
+                _block.reset();
+            }
+            error::handle(e);
+        }
 
     private:
         friend class context;
@@ -1125,14 +1135,24 @@ namespace rs2
         }
     };
 
-    class split : public filter
+    class split_filter : public filter
     {
     public:
         /**
-        * Create split processing block
+        * Create split_filter processing block
         * the processing perform the hole filling base on different hole filling mode.
         */
-        split() : filter(init()) {}
+        split_filter() : filter(init()) {}
+
+        split_filter(filter f) :filter(f)
+        {
+            rs2_error* e = nullptr;
+            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_SPLIT_FILTER, &e) && !e)
+            {
+                _block.reset();
+            }
+            error::handle(e);
+        }
 
     private:
         friend class context;

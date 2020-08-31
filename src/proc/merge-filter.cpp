@@ -1,20 +1,16 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#include "merge.h"
+#include "merge-filter.h"
 
 namespace librealsense
 {
-	merge::merge()
-		: generic_processing_block("merge"),
-        _first_exp(0.f),
-        _second_exp(0.f)
-	{
-
-	}
+    merge_filter::merge_filter()
+        : generic_processing_block("Merge Filter")
+    {}
 
     // processing only framesets
-	bool merge::should_process(const rs2::frame & frame)
+	bool merge_filter::should_process(const rs2::frame & frame)
 	{
         if (!frame)
             return false;
@@ -31,7 +27,7 @@ namespace librealsense
 	}
 
 
-	rs2::frame merge::process_frame(const rs2::frame_source& source, const rs2::frame& f)
+	rs2::frame merge_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)
 	{
         // steps:
         // 1. get depth frame from incoming frameset
@@ -49,7 +45,7 @@ namespace librealsense
         // 2. add the frameset to vector of framesets
         int depth_sequ_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_SIZE);
         if (depth_sequ_size > 2)
-            LOG_WARNING("merge::process_frame(...) failed! sequence size must be 2 for merging pb.");
+            LOG_WARNING("merge_filter::process_frame(...) failed! sequence size must be 2 for merging pb.");
         int depth_sequ_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
 
         _framesets[depth_sequ_id] = fs;
@@ -79,7 +75,7 @@ namespace librealsense
 	}
 
 
-    rs2::frame merge::merging_algorithm(const rs2::frame_source& source, const rs2::frameset first_fs, const rs2::frameset second_fs)
+    rs2::frame merge_filter::merging_algorithm(const rs2::frame_source& source, const rs2::frameset first_fs, const rs2::frameset second_fs)
     {
         auto first = first_fs;
         auto second = second_fs;
@@ -153,7 +149,7 @@ namespace librealsense
         return first_fs;
     }
 
-    bool merge::should_ir_be_used_for_merging(const rs2::depth_frame& first_depth, const rs2::video_frame& first_ir, 
+    bool merge_filter::should_ir_be_used_for_merging(const rs2::depth_frame& first_depth, const rs2::video_frame& first_ir, 
         const rs2::depth_frame& second_depth, const rs2::video_frame& second_ir) const
     {
         // checking ir frames are not null

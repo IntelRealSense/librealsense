@@ -35,8 +35,8 @@
 #include "proc/hole-filling-filter.h"
 #include "proc/depth-formats-converter.h"
 #include "proc/depth-decompress.h"
-#include "proc/merge.h"
-#include "proc/split.h"
+#include "proc/merge-filter.h"
+#include "proc/split-filter.h"
 #include "hdr-config.h"
 #include "../common/fw/firmware-version.h"
 #include "fw-update/fw-update-unsigned.h"
@@ -1115,8 +1115,8 @@ namespace librealsense
     processing_blocks get_ds5_depth_recommended_proccesing_blocks()
     {
         auto res = get_depth_recommended_proccesing_blocks();
-        res.push_back(std::make_shared<merge>());
-        res.push_back(std::make_shared<split>());
+        res.push_back(std::make_shared<merge_filter>());
+        res.push_back(std::make_shared<split_filter>());
         res.push_back(std::make_shared<threshold>());
         res.push_back(std::make_shared<disparity_transform>(true));
         res.push_back(std::make_shared<spatial_filter>());
