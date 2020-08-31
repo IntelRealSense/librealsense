@@ -108,7 +108,8 @@ namespace librealsense
         roi_attribute                   = (1u << 5),
         preset_attribute                = (1u << 6),
         emitter_mode_attribute          = (1u << 7),
-        led_power_attribute             = (1u << 8)
+        led_power_attribute             = (1u << 8),
+        hdr_sequence_data_attribute     = (1u << 9)
     };
 
     /**\brief md_depth_control_attributes - bit mask to find active attributes,
@@ -161,7 +162,6 @@ namespace librealsense
         trigger_attribute               = (1u << 7),
         calibration_count_attribute     = (1u << 8),
         gpio_input_data_attribute       = (1u << 9),
-        hdr_sequence_data_attribute     = (1u << 10),
     };
 
     /**\brief md_stat_attributes - bit mask to find active attributes,
@@ -385,7 +385,7 @@ namespace librealsense
         uint32_t    exposure_roi_bottom;
         uint32_t    preset;
         uint8_t     emitterMode;
-        uint8_t     reserved;
+        uint8_t     hdr_sequence_data;    // HDR sequence - 4 MSB: sequence size, 4 LSB: sequence id 
         uint16_t    ledPower;
     };
 
@@ -463,8 +463,7 @@ namespace librealsense
                                     Byte <1>  configured delay (depth only)*/
         uint16_t    calibration_count;
         uint8_t     gpioInputData;
-        uint8_t     hdr_sequence_data;    // HDR sequence - 4 MSB: sequence size, 4 LSB: sequence id 
-        uint8_t     reserved[4];
+        uint8_t     reserved[5];
     };
 
     REGISTER_MD_TYPE(md_configuration, md_type::META_DATA_INTEL_CONFIGURATION_ID)

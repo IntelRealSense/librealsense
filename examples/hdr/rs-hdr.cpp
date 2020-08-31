@@ -71,6 +71,11 @@ int main(int argc, char * argv[]) try
             apply_filter(printer).     // Print each enabled stream frame rate
             apply_filter(color_map);   // Find and colorize the depth data
 
+        auto depth_frame = data.get_depth_frame();
+        auto hdr_seq_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_SIZE);
+        auto hdr_seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
+
+        std::cout << "frame hdr metadata: hdr seq size = " << hdr_seq_size << ",  hdr seq id = " << hdr_seq_id << std::endl;
 // The show method, when applied on frameset, break it to frames and upload each frame into a gl textures
 // Each texture is displayed on different viewport according to it's stream unique id
         if (is_merge_required)

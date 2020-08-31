@@ -23,6 +23,10 @@ namespace librealsense
         if (!set)
             return false;
 
+        auto depth_frame = set.get_depth_frame();
+        if (!depth_frame)
+            return false;
+
         return true;
 	}
 
@@ -30,7 +34,7 @@ namespace librealsense
 	rs2::frame merge::process_frame(const rs2::frame_source& source, const rs2::frame& f)
 	{
         // steps:
-        // 1. check that depth and infrared frames are in arriving frameset (if not - return latest merge frame)
+        // 1. get depth frame from incoming frameset
         // 2. add the frameset to vector of framesets
         // 3. check if size of this vector is at least 2 (if not - return latest merge frame)
         // 4. pop out both framesets from the vector
@@ -38,72 +42,25 @@ namespace librealsense
         // 6. save merge frame as latest merge frame
         // 7. return the merge frame
 
-        // 1. check that depth and infrared frames are in arriving frameset (if not - return latest merge frame)
+        // 1. get depth frame from incoming frameset
         auto fs = f.as<rs2::frameset>();
-        if (!fs)
-        {
-            LOG_DEBUG("Merging PB - frame receive not a frameset");
-            return f;
-        }
-        auto depth_frame = fs.get_depth_frame();
-        if (!depth_frame)
-        {
-            LOG_DEBUG("Merging PB - no depth frame in frameset");
-            return f;
-        }
+        auto depth_frame = fs.get_depth_frame();        
 
         // 2. add the frameset to vector of framesets
-        /*int depth_sequ_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_SIZE);
-        if (depth_sequ_size != 2)
-            throw invalid_value_exception(to_string() << "merge::process_frame(...) failed! sequence size must be 2 for merging pb.");
+        int depth_sequ_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_SIZE);
+        if (depth_sequ_size > 2)
+            LOG_WARNING("merge::process_frame(...) failed! sequence size must be 2 for merging pb.");
         int depth_sequ_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
 
-        // hdr sequ id shall be the same in the ir and the depth frames to save the frameset
-        int ir_sequ_size = ir_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_SIZE);
-        if (ir_sequ_size != 2)
-            throw invalid_value_exception(to_string() << "merge::process_frame(...) failed! sequence size must be 2 for merging pb.");
-        int ir_sequ_id = ir_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
-
-        if ((depth_sequ_size != ir_sequ_size) || (depth_sequ_id != ir_sequ_id))
-        {
-            // timestamp to be also compared???
-            // solution to be found...
-            int a = 1;
-        }*/
-
-        //_framesets[depth_sequ_id] = fs;
-
-        //to be used only till metadata is available
-        float depth_exposure = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
-        if (_first_exp == depth_exposure)
-            return f;
-        if (_first_exp == 0.f)
-        {
-            _first_exp = depth_exposure;
-        }
-        else
-        {
-            _second_exp = depth_exposure;
-        }
-        _framesets_without_md[depth_exposure] = fs;
-        //till here
-
+        _framesets[depth_sequ_id] = fs;
 
         // 3. check if size of this vector is at least 2 (if not - return latest merge frame)
-        //if (_framesets.size() < 2)
-        if (_framesets_without_md.size() >= 2)
+        if (_framesets.size() >= 2)
         {
             // 4. pop out both framesets from the vector
-        //rs2::frameset fs_0 = _framesets[0];
-        //rs2::frameset fs_1 = _framesets[1];
-        //_framesets.clear();
-            float min_exp = std::min(_first_exp, _second_exp);
-            float max_exp = std::max(_first_exp, _second_exp);
-            rs2::frameset fs_0 = _framesets_without_md[min_exp];
-            rs2::frameset fs_1 = _framesets_without_md[max_exp];
-            _first_exp = 0.f;
-            _second_exp = 0.f;
-            _framesets_without_md.clear();
+            rs2::frameset fs_0 = _framesets[0];
+            rs2::frameset fs_1 = _framesets[1];
+            _framesets.clear();
 
             // 5. apply merge algo
             rs2::frame new_frame = merging_algorithm(source, fs_0, fs_1);
@@ -132,12 +89,6 @@ namespace librealsense
         auto first_ir = first.get_infrared_frame();
         auto second_ir = second.get_infrared_frame();
 
-        // for now it happens that the exposures are the same
-        // or that their order change
-        // this should be corrected when getting the sequ id from frame metadata
-        auto first_depth_exposure = first_depth.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
-        auto second_depth_exposure = second_depth.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
-
         // new frame allocation
         auto vf = first_depth.as<rs2::depth_frame>();
         auto width = vf.get_width();
@@ -145,20 +96,7 @@ namespace librealsense
         auto new_f = source.allocate_video_frame(first_depth.get_profile(), first_depth,
             vf.get_bytes_per_pixel(), width, height, vf.get_stride_in_bytes(), RS2_EXTENSION_DEPTH_FRAME);
 
-        bool use_ir = (first_ir && second_ir);
-        if (use_ir)
-        {
-            int depth_frame_counter = static_cast<int>(first_depth.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER));
-            int ir_frame_counter = static_cast<int>(first_ir.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER));
-            use_ir = (depth_frame_counter == ir_frame_counter);
-
-            if (use_ir)
-            {
-                int depth_frame_counter = static_cast<int>(second_depth.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER));
-                int ir_frame_counter = static_cast<int>(second_ir.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER));
-                use_ir = (depth_frame_counter == ir_frame_counter);
-            }
-        }
+        bool use_ir = should_ir_be_used_for_merging(first_depth, first_ir, second_depth, second_ir);
 
         if (new_f)
         {
@@ -213,5 +151,46 @@ namespace librealsense
             return new_f;
         }
         return first_fs;
+    }
+
+    bool merge::should_ir_be_used_for_merging(const rs2::depth_frame& first_depth, const rs2::video_frame& first_ir, 
+        const rs2::depth_frame& second_depth, const rs2::video_frame& second_ir) const
+    {
+        // checking ir frames are not null
+        bool use_ir = (first_ir && second_ir);
+
+        // checking frame counter of first depth and ir are the same
+        if (use_ir)
+        {
+            int depth_frame_counter = static_cast<int>(first_depth.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER));
+            int ir_frame_counter = static_cast<int>(first_ir.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER));
+            use_ir = (depth_frame_counter == ir_frame_counter);
+
+            // checking frame counter of second depth and ir are the same
+            if (use_ir)
+            {
+                depth_frame_counter = static_cast<int>(second_depth.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER));
+                ir_frame_counter = static_cast<int>(second_ir.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER));
+                use_ir = (depth_frame_counter == ir_frame_counter);
+
+                // checking sequence id of first depth and ir are the same
+                if (use_ir)
+                {
+                    auto depth_seq_id = first_depth.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
+                    auto ir_seq_id = first_ir.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
+                    use_ir = (depth_seq_id == ir_seq_id);
+
+                    // checking sequence id of second depth and ir are the same
+                    if (use_ir)
+                    {
+                        depth_seq_id = second_depth.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
+                        ir_seq_id = second_ir.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
+                        use_ir = (depth_seq_id == ir_seq_id);
+                    }
+                }
+            }
+        }
+
+        return use_ir;
     }
 }
