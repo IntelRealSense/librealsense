@@ -789,7 +789,7 @@ namespace librealsense
         }
 
         manual_reset_event::manual_reset_event()
-            :event_base(CreateEvent(nullptr, FALSE, FALSE, nullptr))
+            :event_base(CreateEvent(nullptr, TRUE, FALSE, nullptr))
         {}
 
         auto_reset_event::auto_reset_event()
