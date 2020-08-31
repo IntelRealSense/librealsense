@@ -9,10 +9,10 @@ Copyright(c) 2020 Intel Corporation. All Rights Reserved. */
 
 namespace librealsense
 {
-    class merge : public generic_processing_block
+    class merge_filter : public generic_processing_block
     {
     public:
-        merge();
+        merge_filter();
 
     protected:
         bool should_process(const rs2::frame& frame) override;
@@ -27,8 +27,6 @@ namespace librealsense
 
         std::map<int, rs2::frameset> _framesets;
         rs2::frame _depth_merged_frame;
-        std::map<float, rs2::frameset> _framesets_without_md;
-        float _first_exp;
-        float _second_exp;
     };
+    MAP_EXTENSION(RS2_EXTENSION_MERGE_FILTER, librealsense::merge_filter);
 }
