@@ -194,22 +194,30 @@ namespace rs2
         {
             log("Backing-up camera flash memory");
 
-            auto flash = upd.create_flash_backup([&](const float progress)
+            std::string log_backup_status;
+            try
             {
-                _progress = int((ceil(progress * 5) / 5) * (30 - next_progress)) + next_progress;
-            });
+                auto flash = upd.create_flash_backup([&](const float progress)
+                {
+                    _progress = int((ceil(progress * 5) / 5) * (30 - next_progress)) + next_progress;
+                });
 
-            auto temp = get_folder_path(special_folder::app_data);
-            temp += serial + "." + get_timestamped_file_name() + ".bin";
+                auto temp = get_folder_path(special_folder::app_data);
+                temp += serial + "." + get_timestamped_file_name() + ".bin";
 
+                {
+                    std::ofstream file(temp.c_str(), std::ios::binary);
+                    file.write((const char*)flash.data(), flash.size());
+                    log_backup_status = "Backup completed and saved as '"  + temp + "'";
+
+                }
+            }
+            catch (...)
             {
-                std::ofstream file(temp.c_str(), std::ios::binary);
-                file.write((const char*)flash.data(), flash.size());
+                log_backup_status = "Warning! - Backup step encountered an issue, continue update without it.";
             }
 
-            std::string log_line = "Backup completed and saved as '";
-            log_line += temp + "'";
-            log(log_line);
+            log(log_backup_status);
 
             next_progress = 40;
 
