@@ -209,12 +209,20 @@ namespace rs2
                     std::ofstream file(temp.c_str(), std::ios::binary);
                     file.write((const char*)flash.data(), flash.size());
                     log_backup_status = "Backup completed and saved as '"  + temp + "'";
-
                 }
             }
-            catch (...)
+            catch (const std::exception& e)
             {
-                log_backup_status = "Warning! - Backup step encountered an issue, continue update without it.";
+                log_backup_status = "WARNING: backup failed; continuing without it...";
+                _viewer.not_model->output.add_log(RS2_LOG_SEVERITY_WARN,
+                    __FILE__,
+                    __LINE__,
+                    log_backup_status + ", Error: " + e.what());
+            }
+            catch ( ... )
+            {
+                log_backup_status = "WARNING: backup failed; continuing without it...";
+                _viewer.not_model->add_log(log_backup_status + ", Unknown error occurred");
             }
 
             log(log_backup_status);
