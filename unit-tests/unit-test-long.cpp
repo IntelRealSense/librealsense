@@ -414,3 +414,106 @@ TEST_CASE("global-time-start", "[live]") {
     }
 }
 
+std::shared_ptr<std::map<rs2_stream, int>> count_streams_frames(const context& ctx, const sensor& sub, int num_of_frames)
+{
+    std::shared_ptr<std::condition_variable> cv = std::make_shared<std::condition_variable>();
+    std::shared_ptr<std::mutex> m = std::make_shared<std::mutex>();
+    std::shared_ptr<std::map<rs2_stream, int>> streams_frames = std::make_shared<std::map<rs2_stream, int>>();
+
+    std::shared_ptr<std::function<void(rs2::frame fref)>>  func;
+
+    std::vector<rs2::stream_profile> modes;
+    REQUIRE_NOTHROW(modes = sub.get_stream_profiles());
+
+    auto streaming = false;
+
+    for (auto p : modes)
+    {
+        if (auto video = p.as<video_stream_profile>())
+        {
+            {
+                if ((video.stream_type() == RS2_STREAM_DEPTH && video.format() == RS2_FORMAT_Z16))
+                {
+                    streaming = true;
+
+                    REQUIRE_NOTHROW(sub.open(p));
+
+                    func = std::make_shared< std::function<void(frame fref)>>([m, streams_frames, cv](frame fref) mutable
+                    {
+                        std::unique_lock<std::mutex> lock(*m);
+                        auto stream = fref.get_profile().stream_type();
+                        if (streams_frames->find(stream) == streams_frames->end())
+                            (*streams_frames)[stream] = 0;
+                        else
+                            (*streams_frames)[stream]++;
+                            
+                        cv->notify_one();
+                    });
+                    REQUIRE_NOTHROW(sub.start(*func));
+                    break;
+                }
+            }
+        }
+    }
+    REQUIRE(streaming);
+
+
+    std::unique_lock<std::mutex> lock(*m);
+    cv->wait_for(lock, std::chrono::seconds(30), [&]
+    {
+        for (auto f : (*streams_frames))
+        {
+            if (f.second > num_of_frames)
+            {
+                return true;
+            }
+        }
+        return false;
+    });
+
+    lock.unlock();
+    if (streaming)
+    {
+        REQUIRE_NOTHROW(sub.stop());
+        REQUIRE_NOTHROW(sub.close());
+
+    }
+
+    return streams_frames;
+}
+
+TEST_CASE("test-depth-only", "[live]") {
+    //Require at least one device to be plugged in
+    // This test checks if once depth is the only profile we ask, it's the only type of frames we get.
+
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        std::vector<rs2::device> list;
+        REQUIRE_NOTHROW(list = ctx.query_devices());
+        REQUIRE(list.size() > 0);
+
+        auto dev = std::make_shared<device>(list.front());
+        auto sensors = dev->query_sensors();
+
+        sensor d_sensor;
+        for (sensor& elem : sensors)
+        {
+            if (elem.is<depth_sensor>())
+            {
+                d_sensor = elem;                
+                break;
+            }
+        }
+        REQUIRE(d_sensor);
+
+        std::shared_ptr<std::map<rs2_stream, int>> streams_frames = count_streams_frames(ctx, d_sensor, 10);
+        std::cout << "streams_frames.size: " << streams_frames->size() << std::endl;
+        for (auto stream_num : (*streams_frames))
+        {
+            std::cout << "For stream " << stream_num.first << " got " << stream_num.second << " frames." << std::endl;
+        }
+        REQUIRE(streams_frames->find(RS2_STREAM_DEPTH) != streams_frames->end());
+        REQUIRE(streams_frames->size() == 1);
+    }
+}
