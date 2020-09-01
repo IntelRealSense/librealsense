@@ -34,6 +34,7 @@ namespace librealsense
         void set(rs2_option option, float value, option_range range);
         bool is_config_in_process() const;
 
+        bool is_enabled() const { return _is_enabled; }
 
     private:
         command prepare_hdr_sub_preset_command() const;
@@ -56,6 +57,7 @@ namespace librealsense
         void set_exposure(float value, option_range range);
         void set_gain(float value);
         void reset_to_default();
+        
 
         size_t _sequence_size;
         std::vector<hdr_params> _hdr_sequence_params;
