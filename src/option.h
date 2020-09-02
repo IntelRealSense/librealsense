@@ -9,7 +9,7 @@
 #include "sensor.h"
 #include "core/streaming.h"
 #include "command_transfer.h"
-
+#include "error-handling.h"
 #include <chrono>
 #include <memory>
 #include <vector>
@@ -452,9 +452,11 @@ namespace librealsense
     class polling_errors_disable : public option
     {
     public:
-        polling_errors_disable(polling_error_handler* handler)
-            : _polling_error_handler(handler), _value(1)
+        polling_errors_disable(std::unique_ptr<polling_error_handler>& handler)
+            : _polling_error_handler(std::move(handler)), _value(1)
         {}
+
+        ~polling_errors_disable();
 
         void set(float value) override;
 
@@ -473,7 +475,8 @@ namespace librealsense
             _recording_function = record_action;
         }
     private:
-        polling_error_handler*          _polling_error_handler;
+        std::unique_ptr<polling_error_handler> _polling_error_handler;
+        //polling_error_handler*          _polling_error_handler;
         float                           _value;
         std::function<void(const option&)> _recording_function = [](const option&) {};
     };

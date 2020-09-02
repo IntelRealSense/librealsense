@@ -216,7 +216,7 @@ namespace librealsense
         void keep() override
         {
             auto frames = get_frames();
-            for (int i = 0; i < get_embedded_frames_count(); i++)
+            for (size_t i = 0; i < get_embedded_frames_count(); i++)
                 if (frames[i]) frames[i]->keep();
             frame::keep();
         }
