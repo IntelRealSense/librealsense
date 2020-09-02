@@ -26,8 +26,7 @@ namespace librealsense
         if (!frame)
             return false;
 
-        auto set = frame.as<rs2::frameset>();
-        if (set)
+        if (frame.is<rs2::frameset>())
             return false;
 
         auto depth_frame = frame.as<rs2::depth_frame>();
@@ -59,13 +58,9 @@ namespace librealsense
 
         // 1. check hdr seq id in metadata
         auto depth_frame = f.as<rs2::depth_frame>();
-        auto depth_exposure = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
-        //int hdr_seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
-        int hdr_seq_id = 1;
-        if (depth_exposure == 1.f)
-        {
-            hdr_seq_id = 2;
-        }
+        int seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
+        int hdr_seq_id = seq_id + 1;
+        auto exp = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
 
         if (!is_selected_id(hdr_seq_id))
         {
@@ -100,13 +95,22 @@ namespace librealsense
 
             _last_frame[hdr_seq_id] = split_frame;
 
+            if (split_frame.is<rs2::depth_frame>())
+            {
+                auto index = split_frame.get_profile().stream_index();
+                auto exposure = split_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
+                auto seq_id = split_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
+                 int a = 1;
+
+            }
+
             return split_frame;
         }
 
         return f;
     }
 
-    bool split::is_selected_id(int sequence_id)
+    bool split_filter::is_selected_id(int sequence_id)
     {
         if ( 0 != static_cast<int>(_selected_stream_id) && 
             sequence_id != static_cast<int>(_selected_stream_id))

@@ -26,9 +26,9 @@ int main(int argc, char * argv[]) try
 
     if (depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
         depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
-    
-    
-    depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_SIZE, 2);
+
+
+    /*depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_SIZE, 2);
 
     depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 1);
     depth_sensor.set_option(RS2_OPTION_EXPOSURE, 8500.f);
@@ -39,9 +39,10 @@ int main(int argc, char * argv[]) try
     depth_sensor.set_option(RS2_OPTION_EXPOSURE, 1.f);
     depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
 
-    depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 0);
+    depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 0);*/
 
     depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
+
 
     // Create a simple OpenGL window for rendering:
     window app(1280, 720, "RealSense Capture Example");
