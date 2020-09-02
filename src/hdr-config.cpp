@@ -124,6 +124,7 @@ namespace librealsense
             {
                 send_sub_preset_to_fw();
                 _is_enabled = true;
+                _has_config_changed = false;
             }
             else
                 // msg to user to be improved later on
