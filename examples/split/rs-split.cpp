@@ -58,6 +58,11 @@ int main(int argc, char * argv[]) try
         data = data.apply_filter(printer);     
         data = data.apply_filter(color_map);   
 
+        auto depth_frame = data.get_depth_frame();
+        int seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
+        int hdr_seq_id = seq_id + 1;
+        auto exp = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
+
 // The show method, when applied on frameset, break it to frames and upload each frame into a gl textures
 // Each texture is displayed on different viewport according to it's stream unique id
         data = spliting_processor.process(data);
