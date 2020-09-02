@@ -90,15 +90,6 @@ int main(int argc, char * argv[]) try
         {
             app.show(data);
         }
-
-        if (GetKeyState(VK_NUMPAD4) & 0x8000)
-        {
-            is_merge_required = true;
-        }
-        if (GetKeyState(VK_NUMPAD5) & 0x8000)
-        {
-            is_merge_required = false;
-        }
     }
 
     return EXIT_SUCCESS;
