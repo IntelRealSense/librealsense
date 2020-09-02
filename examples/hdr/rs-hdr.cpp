@@ -24,18 +24,19 @@ int main(int argc, char * argv[]) try
 
     rs2::depth_sensor depth_sensor= dev.query_sensors().front();
 
-    depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+    if (depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+        depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
     
     
     depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_SIZE, 2);
 
     depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 1);
-    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 1.f);
+    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 8500.f);
     depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
 
 
     depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 2);
-    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 8500.f);
+    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 1.f);
     depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
 
     depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 0);
@@ -74,8 +75,9 @@ int main(int argc, char * argv[]) try
         auto depth_frame = data.get_depth_frame();
         auto hdr_seq_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_SIZE);
         auto hdr_seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
+        auto exp = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
 
-        std::cout << "frame hdr metadata: hdr seq size = " << hdr_seq_size << ",  hdr seq id = " << hdr_seq_id << std::endl;
+        std::cout << "frame hdr metadata: hdr_seq_id = "<< hdr_seq_id << ", exposure = " << exp << std::endl;
 // The show method, when applied on frameset, break it to frames and upload each frame into a gl textures
 // Each texture is displayed on different viewport according to it's stream unique id
         if (is_merge_required)
