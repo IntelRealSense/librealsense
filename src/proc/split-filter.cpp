@@ -59,10 +59,10 @@ namespace librealsense
         // 1. check hdr seq id in metadata
         auto depth_frame = f.as<rs2::depth_frame>();
         int seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
-        int hdr_seq_id = seq_id + 1;
+        int hdr_stream_index = seq_id + 1;
         auto exp = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
 
-        if (!is_selected_id(hdr_seq_id))
+        if (!is_selected_id(hdr_stream_index))
         {
             if (_last_frame[static_cast<int>(_selected_stream_id)])
                 return _last_frame[static_cast<int>(_selected_stream_id)];
@@ -73,7 +73,7 @@ namespace librealsense
         //    - stream with seq_id 1 will have index 1  
         //    - stream with seq_id 2 will have index 2
         rs2::stream_profile new_profile = depth_frame.get_profile().
-            clone(depth_frame.get_profile().stream_type(), hdr_seq_id, depth_frame.get_profile().format());
+            clone(depth_frame.get_profile().stream_type(), hdr_stream_index, depth_frame.get_profile().format());
 
         // 3. allocate new frame
         auto width = depth_frame.get_width();
@@ -93,7 +93,7 @@ namespace librealsense
 
             ptr->set_sensor(orig->get_sensor());
 
-            _last_frame[hdr_seq_id] = split_frame;
+            _last_frame[hdr_stream_index] = split_frame;
 
             if (split_frame.is<rs2::depth_frame>())
             {
@@ -110,10 +110,63 @@ namespace librealsense
         return f;
     }
 
-    bool split_filter::is_selected_id(int sequence_id)
+    // this method had to be overriden so that the checking of the condition to copy the input frame into the output
+    // would check the profile without the stream index (because it is changed in this filter)
+    rs2::frame split_filter::prepare_output(const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results)
     {
-        if ( 0 != static_cast<int>(_selected_stream_id) && 
-            sequence_id != static_cast<int>(_selected_stream_id))
+        if (results.empty())
+        {
+            return input;
+        }
+
+        bool disparity_result_frame = false;
+        bool depth_result_frame = false;
+
+        for (auto f : results)
+        {
+            auto format = f.get_profile().format();
+            if (format == RS2_FORMAT_DISPARITY32 || format == RS2_FORMAT_DISPARITY16)
+                disparity_result_frame = true;
+            if (format == RS2_FORMAT_Z16)
+                depth_result_frame = true;
+        }
+
+        std::vector<rs2::frame> original_set;
+        if (auto composite = input.as<rs2::frameset>())
+            composite.foreach_rs([&](const rs2::frame& frame)
+                {
+                    auto format = frame.get_profile().format();
+                    if (depth_result_frame && val_in_range(format, { RS2_FORMAT_DISPARITY32, RS2_FORMAT_DISPARITY16, RS2_FORMAT_Z16H }))
+                        return;
+                    if (disparity_result_frame && format == RS2_FORMAT_Z16)
+                        return;
+                    original_set.push_back(frame);
+                });
+        else
+        {
+            return results[0];
+        }
+
+        for (auto s : original_set)
+        {
+            auto curr_profile = s.get_profile();
+            //if the processed frames doesn't match any of the original frames add the original frame to the results queue
+            if (find_if(results.begin(), results.end(), [&curr_profile](rs2::frame& frame) {
+                auto processed_profile = frame.get_profile();
+                return curr_profile.stream_type() == processed_profile.stream_type() &&
+                    curr_profile.format() == processed_profile.format(); }) == results.end())
+            {
+                results.push_back(s);
+            }
+        }
+
+        return source.allocate_composite_frame(results);
+    }
+
+    bool split_filter::is_selected_id(int stream_index)
+    {
+        if (static_cast<int>(_selected_stream_id) != 0 && 
+            stream_index != static_cast<int>(_selected_stream_id))
             return false;
         return true;
     }
