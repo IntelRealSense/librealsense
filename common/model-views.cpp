@@ -4916,6 +4916,63 @@ namespace rs2
                     }
 
                     has_autocalib = true;
+
+                    if (ImGui::Selectable("Focal Length (1-pt)"))
+                    {
+                        try
+                        {
+                            auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
+                            auto n = std::make_shared<autocalib_notification_model>("", manager, false);
+
+                            viewer.not_model->add_notification(n);
+                            n->forced = true;
+                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_FOCAL_LENGTH_1PT_INPUT;
+
+                            for (auto&& n : related_notifications)
+                                if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                    n->dismiss(false);
+                        }
+                        catch (const error& e)
+                        {
+                            error_message = error_to_string(e);
+                        }
+                        catch (const std::exception& e)
+                        {
+                            error_message = e.what();
+                        }
+                    }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Focal length is used to calculate focal length for left and right cameras with a specific target.\n"
+                            "User needs to input Z distance for focal length.\n" 
+                            "Left and Right calculated Z distance ratio is calculated using existed camera focal length.");
+                    
+                    if (ImGui::Selectable("Focal Length (2-pt)"))
+                    {
+                        try
+                        {
+                            auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
+                            auto n = std::make_shared<autocalib_notification_model>("", manager, false);
+
+                            viewer.not_model->add_notification(n);
+                            n->forced = true;
+                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_FOCAL_LENGTH_2PT_INPUT;
+
+                            for (auto&& n : related_notifications)
+                                if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                    n->dismiss(false);
+                        }
+                        catch (const error& e)
+                        {
+                            error_message = error_to_string(e);
+                        }
+                        catch (const std::exception& e)
+                        {
+                            error_message = e.what();
+                        }
+                    }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Focal length is used to calculate focal length for left and right cameras with a specific target.\n"
+                            "User needs to move the camera along Z direction in a distance.");
                 }
             }
             if (!has_autocalib)

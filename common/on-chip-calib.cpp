@@ -12,10 +12,18 @@
 #include <model-views.h>
 #include <viewer.h>
 
+#include "calibration-model.h"
 #include "../tools/depth-quality/depth-metrics.h"
+#include "../src/ds5/ds5-private.h"
 
 namespace rs2
 {
+    on_chip_calib_manager::~on_chip_calib_manager()
+    {
+        if (fl_viewer_status == 3)
+            _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, laser_status_prev);
+    }
+
     void on_chip_calib_manager::stop_viewer(invoker invoke)
     {
         try
@@ -75,6 +83,110 @@ namespace rs2
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
         return res;
+    }
+
+    void on_chip_calib_manager::start_fl_viewer()
+    {
+        if (fl_viewer_status == 3)
+            return;
+
+        try
+        {
+            // stop
+            if (fl_viewer_status == 0)
+            {
+                auto invoke = [this](std::function<void()> a) { a(); };
+                if (!_sub->streaming)
+                    start_viewer(0, 0, 0, invoke);
+
+                stop_viewer(invoke);
+
+                if (_ui.get())
+                {
+                    _sub->ui = *_ui;
+                    _ui.reset();
+                }
+
+                reset();
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+                ++fl_viewer_status;
+            }
+            else if (fl_viewer_status == 1)
+                ++fl_viewer_status;
+            else if (fl_viewer_status == 2)
+            {
+                // Configuration
+                int w = 256;
+                int h = 144;
+                int fps = 90;
+
+                _sub->stream_enabled[0] = false;
+                _sub->stream_enabled[1] = true;
+                _sub->stream_enabled[2] = true;
+
+                _viewer.is_3d_view = false;
+                _viewer.synchronization_enable = false;
+
+                laser_status_prev = _sub->s->get_option(RS2_OPTION_EMITTER_ENABLED);
+                _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
+
+                // Select only left infrared Y8 stream
+                _sub->ui.selected_format_id.clear();
+                for (int i = 0; i < _sub->format_values[1].size(); i++)
+                {
+                    if (_sub->format_values[1][i] == RS2_FORMAT_Y8)
+                    {
+                        _sub->ui.selected_format_id[1] = i;
+                        _sub->ui.selected_format_id[2] = i;
+                        break;
+                    }
+                }
+
+                // Select FPS value
+                for (int i = 0; i < _sub->shared_fps_values.size(); i++)
+                {
+                    if (_sub->shared_fps_values[i] == fps)
+                        _sub->ui.selected_shared_fps_id = i;
+                }
+
+                // Select Resolution
+                for (int i = 0; i < _sub->res_values.size(); i++)
+                {
+                    auto kvp = _sub->res_values[i];
+                    if (kvp.first == w && kvp.second == h)
+                        _sub->ui.selected_res_id = i;
+                }
+
+                auto profiles = _sub->get_selected_profiles();
+
+                // Start streaming
+                _sub->play(profiles, _viewer, _model.dev_syncer);
+                for (auto&& profile : profiles)
+                    _viewer.begin_stream(_sub, profile);
+
+                // Wait for frames to arrive
+                bool frame_arrived = false;
+                int count = 0;
+                while (!frame_arrived && count++ < 100)
+                {
+                    for (auto&& stream : _viewer.streams)
+                    {
+                        if (std::find(profiles.begin(), profiles.end(),
+                            stream.second.original_profile) != profiles.end())
+                        {
+                            auto now = std::chrono::high_resolution_clock::now();
+                            if (now - stream.second.last_frame < std::chrono::milliseconds(100))
+                                frame_arrived = true;
+                        }
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                }
+
+                ++fl_viewer_status;
+            }
+        }
+        catch (...) {}
     }
 
     void on_chip_calib_manager::start_viewer(int w, int h, int fps, invoker invoke)
@@ -399,70 +511,269 @@ namespace rs2
         }
     }
 
-    void on_chip_calib_manager::process_flow(std::function<void()> cleanup, 
-        invoker invoke)
+    void on_chip_calib_manager::calculate_rect(bool first)
     {
-        update_last_used();
-
-        log(to_string() << "Starting calibration at speed " << speed);
-
-        _in_3d_view = _viewer.is_3d_view;
-        _viewer.is_3d_view = (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH ? false : true);
-
-        config_file::instance().set(configurations::viewer::ground_truth_r, ground_truth);
-
-        auto calib_dev = _dev.as<auto_calibrated_device>();
-        _old_calib = calib_dev.get_calibration_table();
-
-        _was_streaming = _sub->streaming;
-        _synchronized = _viewer.synchronization_enable.load();
-        _post_processing = _sub->post_processing_enabled;
-        _sub->post_processing_enabled = false;
-        _viewer.synchronization_enable = false;
-
-        _restored = false;
-
-        if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
+        try
         {
-            if (!_was_streaming)
+            std::shared_ptr<tare_ground_truth_calculator> gt_calculator_l;
+            std::shared_ptr<tare_ground_truth_calculator> gt_calculator_r;
+            bool created_l = false;
+            bool created_r = false;
+
+            int counter = 0;
+            int limit = tare_ground_truth_calculator::_frame_num << 2;
+            int step = 50 / tare_ground_truth_calculator::_frame_num;
+
+            int ret = 0;
+            rs2::frame f;
+            int done = 0;
+            while (counter < limit && (done != 3))
             {
-                start_viewer(0, 0, 0, invoke);
+                f = _viewer.ppf.frames_queue[1].wait_for_frame();
+                if (f && !(done & 1))
+                {
+                    if (!created_l)
+                    {
+                        stream_profile profile = f.get_profile();
+                        auto vsp = profile.as<video_stream_profile>();
+
+                        _focal_length_left_x = vsp.get_intrinsics().fx;
+                        _focal_length_left_y = vsp.get_intrinsics().fy;
+                        gt_calculator_l = std::make_shared<tare_ground_truth_calculator>(vsp.width(), vsp.height(), vsp.get_intrinsics().fx,
+                            config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f),
+                            config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f));
+
+                        created_l = true;
+                    }
+
+                    ret = gt_calculator_l->calculate_rect(reinterpret_cast<const uint8_t*> (f.get_data()), (first ? left_rect_1 : left_rect_2));
+                    if (ret == 0)
+                        ++counter;
+                    else if (ret == 1)
+                        _progress += step;
+                    else if (ret == 2)
+                    {
+                        _progress += step;
+                        done |= 1;
+                    }
+                }
+
+                f = _viewer.ppf.frames_queue[2].wait_for_frame();
+                if (f)
+                {
+                    if (!created_r)
+                    {
+                        stream_profile profile = f.get_profile();
+                        auto vsp = profile.as<video_stream_profile>();
+
+                        _focal_length_right_x = vsp.get_intrinsics().fx;
+                        _focal_length_right_y = vsp.get_intrinsics().fy;
+                        gt_calculator_r = std::make_shared<tare_ground_truth_calculator>(vsp.width(), vsp.height(), vsp.get_intrinsics().fx,
+                            config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f),
+                            config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f));
+                        created_r = true;
+                    }
+
+                    ret = gt_calculator_r->calculate_rect(reinterpret_cast<const uint8_t*> (f.get_data()), (first ? right_rect_1 : right_rect_2));
+                    if (ret == 0)
+                        ++counter;
+                    else if (ret == 1)
+                        _progress += step;
+                    else if (ret == 2 && !(done & 2))
+                    {
+                        _progress += step;
+                        done |= 2;
+                    }
+                }
             }
 
-            // Capture metrics before
-            auto metrics_before = get_depth_metrics(invoke);
-            _metrics.push_back(metrics_before);
+            if (done != 3)
+                fail("Please adjust the camera position \nand make sure the specific target is \nalmost in the middle of both camera images!");
+        }
+        catch (const std::runtime_error& error)
+        {
+            fail(error.what());
+        }
+        catch (...)
+        {
+            fail("Calculatign target rectangle side length failed!");
+        }
+    }
+
+    void on_chip_calib_manager::calculate_focal_length()
+    {
+        float target_width = config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f);
+        float target_height = config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f);
+        float delta_z = config_file::instance().get_or_default(configurations::viewer::delta_z_r, 200.0f);
+
+        float s[4] = { 0 };
+        for (int i = 0; i < 2; ++i)
+            s[i] = target_width * abs(left_rect_1[i] - left_rect_2[i]);
+
+        for (int i = 2; i < 4; ++i)
+            s[i] = target_height * abs(left_rect_1[i] - left_rect_2[i]);
+
+        float fl = 0.0f;
+        if (s[0] > 0.1f && s[1] > 0.1f && s[2] > 0.1f && s[3] > 0.1f)
+        {
+            for (int i = 0; i < 4; ++i)
+                fl += delta_z * left_rect_1[i] * left_rect_2[i] / s[i];
+
+            focal_length_left = fl / 4;
         }
 
-        stop_viewer(invoke);
+        for (int i = 0; i < 2; ++i)
+            s[i] = target_width * abs(right_rect_1[i] - right_rect_2[i]);
 
-        _ui = std::make_shared<subdevice_ui_selection>(_sub->ui);
-        
-        // Switch into special Auto-Calibration mode
-        start_viewer(256, 144, 90, invoke);
+        for (int i = 2; i < 4; ++i)
+            s[i] = target_height * abs(right_rect_1[i] - right_rect_2[i]);
 
-        if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
-            get_ground_truth();
-        else
-            calibrate();
-
-        if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
-            log(to_string() << "Tare ground truth is got: " << ground_truth);
-        else
-            log(to_string() << "Calibration completed, health factor = " << _health);
-
-        stop_viewer(invoke);
-
-        if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
+        fl = 0.0f;
+        if (s[0] > 0.1f && s[1] > 0.1f && s[2] > 0.1f && s[3] > 0.1f)
         {
-            start_viewer(0, 0, 0, invoke); // Start with default settings
+            for (int i = 0; i < 4; ++i)
+                fl += delta_z * right_rect_1[i] * right_rect_2[i] / s[i];
 
-            // Make new calibration active
-            apply_calib(true);
+            focal_length_right = fl / 4;
+        }
+    }
 
-            // Capture metrics after
-            auto metrics_after = get_depth_metrics(invoke);
-            _metrics.push_back(metrics_after);
+    void on_chip_calib_manager::calculate_focal_length_ratio()
+    {
+        float target_width = config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f);
+        float target_height = config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f);
+
+        float focal_length[4] = { 0 };
+        focal_length[0] = ground_truth * left_rect_1[0] / target_width;
+        focal_length[1] = ground_truth * left_rect_1[1] / target_width;
+        focal_length[2] = ground_truth * left_rect_1[2] / target_height;
+        focal_length[3] = ground_truth * left_rect_1[3] / target_height;
+
+        focal_length_left = 0.0;
+        for (int i = 0; i < 4; ++i)
+            focal_length_left += focal_length[i];
+
+        focal_length_left /= 4;
+
+        focal_length[0] = ground_truth * right_rect_1[0] / target_width;
+        focal_length[1] = ground_truth * right_rect_1[1] / target_width;
+        focal_length[2] = ground_truth * right_rect_1[2] / target_height;
+        focal_length[3] = ground_truth * right_rect_1[3] / target_height;
+
+        focal_length_right = 0.0;
+        for (int i = 0; i < 4; ++i)
+            focal_length_right += focal_length[i];
+
+        focal_length_right /= 4;
+
+        float gt[4] = { 0 };
+        gt[0] = _focal_length_left_x * target_width / left_rect_1[0];
+        gt[1] = _focal_length_left_x * target_width / left_rect_1[1];
+        gt[2] = _focal_length_left_y * target_height / left_rect_1[2];
+        gt[3] = _focal_length_left_y * target_height / left_rect_1[3];
+
+        float gt_left = 0.0;
+        for (int i = 0; i < 4; ++i)
+            gt_left += gt[i];
+
+        gt_left /= 4;
+
+        gt[0] = _focal_length_right_x * target_width / right_rect_1[0];
+        gt[1] = _focal_length_right_x * target_width / right_rect_1[1];
+        gt[2] = _focal_length_right_x * target_height / right_rect_1[2];
+        gt[3] = _focal_length_right_x * target_height / right_rect_1[3];
+
+        float gt_right = 0.0;
+        for (int i = 0; i < 4; ++i)
+            gt_right += gt[i];
+
+        gt_right /= 4;
+
+        if (gt_right > 0.1f)
+            ratio = gt_left / gt_right;
+    }
+
+    void on_chip_calib_manager::process_flow(std::function<void()> cleanup,
+        invoker invoke)
+    {
+        if (action == RS2_CALIB_ACTION_FOCAL_LENGTH_1PT)
+        {
+            calculate_rect(true);
+            calculate_focal_length_ratio();
+        }
+        else if (action == RS2_CALIB_ACTION_FOCAL_LENGTH_2PT_1)
+        {
+            calculate_rect(true);
+        }
+        else if (action == RS2_CALIB_ACTION_FOCAL_LENGTH_2PT_2)
+        {
+            calculate_rect(false);
+            calculate_focal_length();
+        }
+        else
+        {
+            update_last_used();
+
+            log(to_string() << "Starting calibration at speed " << speed);
+
+            _in_3d_view = _viewer.is_3d_view;
+            _viewer.is_3d_view = (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH ? false : true);
+
+            config_file::instance().set(configurations::viewer::ground_truth_r, ground_truth);
+
+            auto calib_dev = _dev.as<auto_calibrated_device>();
+            _old_calib = calib_dev.get_calibration_table();
+
+            _was_streaming = _sub->streaming;
+            _synchronized = _viewer.synchronization_enable.load();
+            _post_processing = _sub->post_processing_enabled;
+            _sub->post_processing_enabled = false;
+            _viewer.synchronization_enable = false;
+
+            _restored = false;
+
+            if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
+            {
+                if (!_was_streaming)
+                {
+                    start_viewer(0, 0, 0, invoke);
+                }
+
+                // Capture metrics before
+                auto metrics_before = get_depth_metrics(invoke);
+                _metrics.push_back(metrics_before);
+            }
+
+            stop_viewer(invoke);
+
+            _ui = std::make_shared<subdevice_ui_selection>(_sub->ui);
+
+            // Switch into special Auto-Calibration mode
+            start_viewer(256, 144, 90, invoke);
+
+            if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
+                get_ground_truth();
+            else
+                calibrate();
+
+            if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
+                log(to_string() << "Tare ground truth is got: " << ground_truth);
+            else
+                log(to_string() << "Calibration completed, health factor = " << _health);
+
+            stop_viewer(invoke);
+
+            if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
+            {
+                start_viewer(0, 0, 0, invoke); // Start with default settings
+
+                // Make new calibration active
+                apply_calib(true);
+
+                // Capture metrics after
+                auto metrics_after = get_depth_metrics(invoke);
+                _metrics.push_back(metrics_after);
+            }
         }
 
         _progress = 100;
@@ -514,6 +825,37 @@ namespace rs2
     {
         auto calib_dev = _dev.as<auto_calibrated_device>();
         calib_dev.set_calibration_table(use_new ? _new_calib : _old_calib);
+    }
+
+    void on_chip_calib_manager::apply_ratio()
+    {
+        if (ratio > 0.01f)
+        {
+            auto calib_dev = _dev.as<auto_calibrated_device>();
+            calibration_table table_data = calib_dev.get_calibration_table();
+            auto table = (librealsense::ds::coefficients_table*)table_data.data();
+            table->intrinsic_right.x.x *= ratio;
+            table->intrinsic_right.x.y *= ratio;
+            auto actual_data = table_data.data() + sizeof(librealsense::ds::table_header);
+            auto actual_data_size = table_data.size() - sizeof(librealsense::ds::table_header);
+            auto crc = helpers::calc_crc32(actual_data, actual_data_size);
+            table->header.crc32 = crc;
+            calib_dev.set_calibration_table(table_data);
+            ratio = 1.0f;
+            applied = true;
+        }
+    }
+
+    bool on_chip_calib_manager::keep_ratio()
+    {
+        if (applied)
+        {
+            auto calib_dev = _dev.as<auto_calibrated_device>();
+            calib_dev.write_calibration();
+            return true;
+        }
+
+        return false;
     }
 
     void autocalib_notification_model::draw_dismiss(ux_window& win, int x, int y)
@@ -593,6 +935,15 @@ namespace rs2
                 ImGui::Text("%s", "Tare Calibration");
             else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH)
                 ImGui::Text("%s", "Get Tare Calibration Ground Truth");
+            else if (update_state == RS2_CALIB_STATE_FOCAL_LENGTH_1PT_INPUT ||
+                update_state == RS2_CALIB_STATE_FOCAL_LENGTH_1PT_IN_PROCESS ||
+                update_state == RS2_CALIB_STATE_FOCAL_LENGTH_1PT_COMPLETE)
+                ImGui::Text("%s", "Calculate FL and Ratio with Specific Target");
+            else if (update_state == RS2_CALIB_STATE_FOCAL_LENGTH_2PT_INPUT ||
+                     update_state == RS2_CALIB_STATE_FOCAL_LENGTH_2PT_IN_PROCESS ||
+                     update_state == RS2_CALIB_STATE_FOCAL_LENGTH_2PT_COMPLETE)
+                ImGui::Text("%s", "Calculate Focal Length with Specific Target");
+
             if (update_state == RS2_CALIB_STATE_FAILED)
                 ImGui::Text("%s", "Calibration Failed");
 
@@ -638,7 +989,7 @@ namespace rs2
 
                 ImGui::SetCursorScreenPos({ float(x + 135), float(y + 30) });
                 std::string id = to_string() << "##target_width_" << index;
-                ImGui::PushItemWidth(width - 145);
+                ImGui::PushItemWidth(float(width - 145));
                 float target_width = config_file::instance().get_or_default(configurations::viewer::target_width_r, 112.0f);
                 std::string tw = to_string() << target_width;
                 memcpy(buff, tw.c_str(), tw.size() + 1);
@@ -660,7 +1011,7 @@ namespace rs2
                     
                 ImGui::SetCursorScreenPos({ float(x + 135), float(y + 35 + ImGui::GetTextLineHeightWithSpacing()) });
                 id = to_string() << "##target_height_" << index;
-                ImGui::PushItemWidth(width - 145);
+                ImGui::PushItemWidth(float(width - 145));
                 float target_height = config_file::instance().get_or_default(configurations::viewer::target_height_r, 112.0f);
                 std::string th = to_string() << target_height;
                 memcpy(buff, th.c_str(), th.size() + 1);
@@ -866,7 +1217,7 @@ namespace rs2
                 char buff[MAX_SIZE];
                 memcpy(buff, gt.c_str(), gt.size() + 1);
 
-                ImGui::PushItemWidth(width - 196);
+                ImGui::PushItemWidth(float(width - 196));
                 if (ImGui::InputText(id.c_str(), buff, std::max((int)gt.size() + 1, 10)))
                 {
                     std::stringstream ss;
@@ -926,6 +1277,415 @@ namespace rs2
                 {
                     ImGui::SetTooltip("%s", "Begin Tare Calibration");
                 }
+            }
+            else if (update_state == RS2_CALIB_STATE_FOCAL_LENGTH_1PT_INPUT)
+            {
+                get_manager().start_fl_viewer();
+
+                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 33) });
+                ImGui::Text("%s", "Ground Truth(mm):");
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("%s", "Z gropund truth distance in millemeter.");
+                }
+
+                ImGui::SetCursorScreenPos({ float(x + 135), float(y + 30) });
+                std::string id = to_string() << "##ground_truth_for_tare" << index;
+                get_manager().ground_truth = config_file::instance().get_or_default(configurations::viewer::ground_truth_r, 1000.0f);
+                std::string gt = to_string() << get_manager().ground_truth;
+                const int MAX_SIZE = 256;
+                char buff[MAX_SIZE];
+                memcpy(buff, gt.c_str(), gt.size() + 1);
+                ImGui::PushItemWidth(float(width - 196));
+                if (ImGui::InputText(id.c_str(), buff, std::max((int)gt.size() + 1, 10)))
+                {
+                    std::stringstream ss;
+                    ss << buff;
+                    ss >> get_manager().ground_truth;
+                    config_file::instance().set(configurations::viewer::ground_truth_r, get_manager().ground_truth);
+                }
+                ImGui::PopItemWidth();
+
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 38 + ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("%s", "Target Width:");
+
+                ImGui::SetCursorScreenPos({ float(x + 99), float(y + 36 + ImGui::GetTextLineHeightWithSpacing()) });
+                id = to_string() << "##target_width_" << index;
+                ImGui::PushItemWidth(float(40));
+                float target_width = config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f);
+                std::string tw = to_string() << target_width;
+                memcpy(buff, tw.c_str(), tw.size() + 1);
+                if (ImGui::InputText(id.c_str(), buff, std::max((int)tw.size() + 1, 10)))
+                {
+                    std::stringstream ss;
+                    ss << buff;
+                    ss >> target_width;
+                    config_file::instance().set(configurations::viewer::target_width_r, target_width);
+                }
+
+                ImGui::SetCursorScreenPos({ float(x + 178), float(y + 38 + ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("%s", "Target Height:");
+
+                ImGui::SetCursorScreenPos({ float(x + width - 48), float(y + 36 + ImGui::GetTextLineHeightWithSpacing()) });
+                id = to_string() << "##target_height_" << index;
+                float target_height = config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f);
+                std::string th = to_string() << target_height;
+                memcpy(buff, th.c_str(), th.size() + 1);
+                if (ImGui::InputText(id.c_str(), buff, std::max((int)th.size() + 1, 10)))
+                {
+                    std::stringstream ss;
+                    ss << buff;
+                    ss >> target_height;
+                    config_file::instance().set(configurations::viewer::target_height_r, target_height);
+                }
+                ImGui::PopItemWidth();
+
+                ImGui::SetCursorScreenPos({ float(x + width - 216), float(y + 46 + 2 * ImGui::GetTextLineHeightWithSpacing()) });
+                auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
+                ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
+                std::string calc_button_1_name = to_string() << "Calculate" << "##tare" << index;
+                if (ImGui::Button(calc_button_1_name.c_str(), { 208.0f, 20.f }))
+                {
+                    get_manager().reset();
+                    get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_FOCAL_LENGTH_1PT;
+                    auto _this = shared_from_this();
+                    auto invoke = [_this](std::function<void()> action) {
+                        _this->invoke(action);
+                    };
+                    get_manager().start(invoke);
+                    update_state = RS2_CALIB_STATE_FOCAL_LENGTH_1PT_IN_PROCESS;
+                    enable_dismiss = false;
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "Calculate the target rectangle size, focal length, and relative ratio");
+                ImGui::PopStyleColor(2);
+
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 54 + 3 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("%s", "Rectangle size:");
+
+                ImGui::PopStyleColor(2);
+                ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
+
+                ImGui::SetCursorScreenPos({ float(x + 19), float(y + 57 + 4 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("Left Rect:    %.2f; %.2f; %.2f; %.2f", get_manager().left_rect_1[0], get_manager().left_rect_1[1], get_manager().left_rect_1[2], get_manager().left_rect_1[3]);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "Calculation result for left camera's position.");
+
+                ImGui::SetCursorScreenPos({ float(x + 19), float(y + 60 + 5 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("Right Rect: %.2f; %.2f; %.2f; %.2f", get_manager().right_rect_1[0], get_manager().right_rect_1[1], get_manager().right_rect_1[2], get_manager().right_rect_1[3]);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "Calculation result for right camera's position.");
+
+                ImGui::PopStyleColor(2);
+                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 65 + 6 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("%s", "Focal Length:");
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "The focal length calculated using the ground truth.");
+
+                ImGui::PopStyleColor(2);
+                ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
+
+                ImGui::SetCursorScreenPos({ float(x + 19), float(y + 68 + 7 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("Left Focal Length:    %.4f", get_manager().focal_length_left);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "The focal length calculated for left camera.");
+
+                ImGui::SetCursorScreenPos({ float(x + 19), float(y + 71 + 8 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("Right Focal Length: %.4f", get_manager().focal_length_right);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "The focal length calculated for right camera.");
+
+                ImGui::PopStyleColor(2);
+                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 76 + 9 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("Ratio:");
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "The left calculated ground truth diveded by the right calculated ground truth.");
+
+                ImGui::PopStyleColor(2);
+                ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
+
+                ImGui::SetCursorScreenPos({ float(x + 50), float(y + 76 + 9 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("%.4f", get_manager().ratio);
+                ImGui::PopStyleColor(2);
+
+                ImGui::SetCursorScreenPos({ float(x + width - 216), float(y + 75 + 9 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
+                std::string apply_button_name = to_string() << "Apply" << "##tare" << index;
+                if (ImGui::Button(apply_button_name.c_str(), { 100.0f, 20.f }))
+                {
+                    get_manager().apply_ratio();
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "Apply the ratio to the camera calibration table but not keep it permananently yet. You can redo calculatation to check the changes.");
+                
+                ImGui::SetCursorScreenPos({ float(x + width - 108), float(y + 75 + 9 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
+                std::string keep_button_name = to_string() << "Keep" << "##tare" << index;
+                if (ImGui::Button(keep_button_name.c_str(), { 100.0f, 20.f }))
+                {
+                    if (get_manager().keep_ratio())
+                        update_state = RS2_CALIB_STATE_FOCAL_LENGTH_1PT_COMPLETE;
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "Make the camera calibration table change permananently after \"Apply\" is triggered.");
+
+                ImGui::PopStyleColor(2);
+            }
+            else if (update_state == RS2_CALIB_STATE_FOCAL_LENGTH_1PT_IN_PROCESS)
+            {
+                enable_dismiss = false;
+                ImGui::Text("%s", "Calculation is in process...\nKeep camera stationary pointing at the target");
+            }
+            else if (update_state == RS2_CALIB_STATE_FOCAL_LENGTH_1PT_FAILED)
+            {
+                ImGui::Text("%s", _error_message.c_str());
+
+                auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
+                ImGui::PushStyleColor(ImGuiCol_Button, saturate(redish, sat));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(redish, 1.5f));
+
+                std::string button_name = to_string() << "Retry" << "##retry" << index;
+
+                ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
+                if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
+                    update_state = RS2_CALIB_STATE_FOCAL_LENGTH_1PT_INPUT;
+
+                ImGui::PopStyleColor(2);
+
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("%s", "Retry calculation");
+                }
+            }
+            else if (update_state == RS2_CALIB_STATE_FOCAL_LENGTH_1PT_COMPLETE)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 33) });
+                ImGui::Text("%s", "Focal length is updated sucessfully!");
+                ImGui::PopStyleColor(2);
+            }
+            else if (update_state == RS2_CALIB_STATE_FOCAL_LENGTH_2PT_INPUT)
+            {
+                get_manager().start_fl_viewer();
+
+                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+            
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 33) });
+                ImGui::Text("%s", "First Position:");
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "Make sure the four dots are in almost middle of both left and right images");
+
+                ImGui::PopStyleColor(2);
+                auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
+                ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
+
+                ImGui::SetCursorScreenPos({ float(x + width - 188), float(y + 30) });
+                std::string calc_button_1_name = to_string() << "Get first rectangle size" << "##tare" << index;
+                if (ImGui::Button(calc_button_1_name.c_str(), { 180.0f, 20.f }))
+                {
+                    get_manager().reset();
+                    get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_FOCAL_LENGTH_2PT_1;
+                    auto _this = shared_from_this();
+                    auto invoke = [_this](std::function<void()> action) {
+                        _this->invoke(action);
+                    };
+                    get_manager().start(invoke);
+                    update_state = RS2_CALIB_STATE_FOCAL_LENGTH_2PT_IN_PROCESS;
+                    enable_dismiss = false;
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "Calculate the target rectangle size at the first position");
+
+                ImGui::PopStyleColor(2);
+                ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
+                
+                ImGui::SetCursorScreenPos({ float(x + 19), float(y + 36 + ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("Left Rect:    %.2f; %.2f; %.2f; %.2f", get_manager().left_rect_1[0], get_manager().left_rect_1[1], get_manager().left_rect_1[2], get_manager().left_rect_1[3]);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "Calculation result for left camera's first position.");
+
+                ImGui::SetCursorScreenPos({ float(x + 19), float(y + 39 + 2 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("Right Rect: %.2f; %.2f; %.2f; %.2f", get_manager().right_rect_1[0], get_manager().right_rect_1[1], get_manager().right_rect_1[2], get_manager().right_rect_1[3]);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "Calculation result for right camera's the first position.");
+
+                ImGui::PopStyleColor(2);
+                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 47 + 3 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("%s", "Delta Z:");
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "The two positions differs along Z direction only!");
+
+                ImGui::SetCursorScreenPos({ float(x + width - 98), float(y + 45 + 3 * ImGui::GetTextLineHeightWithSpacing()) });
+                std::string deltaZ = to_string() << "##deltaZ" << index;
+                const int MAX_SIZE = 256;
+                char buff[MAX_SIZE];
+                float delta_z = config_file::instance().get_or_default(configurations::viewer::delta_z_r, 200.0f);
+                std::string dz = to_string() << delta_z;
+                memcpy(buff, dz.c_str(), dz.size() + 1);
+                ImGui::PushItemWidth(90.0f);
+                if (ImGui::InputText(deltaZ.c_str(), buff, strlen(buff) + 1))
+                {
+                    std::stringstream ss;
+                    ss << buff;
+                    ss >> delta_z;
+                    config_file::instance().set(configurations::viewer::delta_z_r, delta_z);
+                }
+                ImGui::PopItemWidth();
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "Input the distance between two positions in millimeter.");
+
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 55 + 4 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("%s", "Target Width:");
+
+                ImGui::SetCursorScreenPos({ float(x + 99), float(y + 53 + 4 * ImGui::GetTextLineHeightWithSpacing()) });
+                std::string id = to_string() << "##target_width_" << index;
+                ImGui::PushItemWidth(float(40));
+                float target_width = config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f);
+                std::string tw = to_string() << target_width;
+                memcpy(buff, tw.c_str(), tw.size() + 1);
+                if (ImGui::InputText(id.c_str(), buff, std::max((int)tw.size() + 1, 10)))
+                {
+                    std::stringstream ss;
+                    ss << buff;
+                    ss >> target_width;
+                    config_file::instance().set(configurations::viewer::target_width_r, target_width);
+                }
+
+                ImGui::SetCursorScreenPos({ float(x + 178), float(y + 55 + 4 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("%s", "Target Height:");
+
+                ImGui::SetCursorScreenPos({ float(x + width - 48), float(y + 53 + 4 * ImGui::GetTextLineHeightWithSpacing()) });
+                id = to_string() << "##target_height_" << index;
+                float target_height = config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f);
+                std::string th = to_string() << target_height;
+                memcpy(buff, th.c_str(), th.size() + 1);
+                if (ImGui::InputText(id.c_str(), buff, std::max((int)th.size() + 1, 10)))
+                {
+                    std::stringstream ss;
+                    ss << buff;
+                    ss >> target_height;
+                    config_file::instance().set(configurations::viewer::target_height_r, target_height);
+                }
+                ImGui::PopItemWidth();
+
+                ImGui::PopStyleColor(2);
+
+                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 63 + 5 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("%s", "Second Position:");
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "Make sure the four dots are in almost middle of both left and right images");
+
+                ImGui::PopStyleColor(2);
+                ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
+
+                ImGui::SetCursorScreenPos({ float(x + width - 188), float(y + 60 + 5 * ImGui::GetTextLineHeightWithSpacing()) });
+                std::string calc_button_2_name = to_string() << "Get second rectangle size" << "##tare" << index;
+                if (ImGui::Button(calc_button_2_name.c_str(), { 180.0f, 20.f }))
+                {
+                    get_manager().reset();
+                    get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_FOCAL_LENGTH_2PT_2;
+                    auto _this = shared_from_this();
+                    auto invoke = [_this](std::function<void()> action) {
+                        _this->invoke(action);
+                    };
+                    get_manager().start(invoke);
+                    update_state = RS2_CALIB_STATE_FOCAL_LENGTH_2PT_IN_PROCESS;
+                    enable_dismiss = false;
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "Calculate the target rectangle size at the second position");
+
+                ImGui::PopStyleColor(2);
+                ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
+
+                ImGui::SetCursorScreenPos({ float(x + 19), float(y + 66 + 6 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("Left Rect:    %.2f; %.2f; %.2f; %.2f", get_manager().left_rect_2[0], get_manager().left_rect_2[1], get_manager().left_rect_2[2], get_manager().left_rect_2[3]);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "Calculation result for left camera's second position.");
+
+                ImGui::SetCursorScreenPos({ float(x + 19), float(y + 69 + 7 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("Right Rect: %.2f; %.2f; %.2f; %.2f", get_manager().right_rect_2[0], get_manager().right_rect_2[1], get_manager().right_rect_2[2], get_manager().right_rect_2[3]);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "Calculation result for right camera's the second position.");
+
+                ImGui::PopStyleColor(2);
+                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 77 + 8 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("%s", "Focal Length:");
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "The focal length will be calculated automatically after the two position calculations.");
+
+                ImGui::SetCursorScreenPos({ float(x + 19), float(y + 80 + 9 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("Left Focal Length:    %.4f", get_manager().focal_length_left);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "The focal length calculated for left camera.");
+
+                ImGui::SetCursorScreenPos({ float(x + 19), float(y + 83 + 10 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("Right Focal Length: %.4f", get_manager().focal_length_right);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "The focal length calculated for right camera.");
+
+                ImGui::PopStyleColor(2);
+            }
+            else if (update_state == RS2_CALIB_STATE_FOCAL_LENGTH_2PT_IN_PROCESS)
+            {
+                enable_dismiss = false;
+                ImGui::Text("%s", "Calculating target rectangle sides is in process...\nKeep camera stationary pointing at the target");
+            }
+            else if (update_state == RS2_CALIB_STATE_FOCAL_LENGTH_2PT_FAILED)
+            {
+                ImGui::Text("%s", _error_message.c_str());
+
+                auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
+
+                ImGui::PushStyleColor(ImGuiCol_Button, saturate(redish, sat));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(redish, 1.5f));
+
+                std::string button_name = to_string() << "Retry" << "##retry" << index;
+
+                ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
+                if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
+                    update_state = RS2_CALIB_STATE_FOCAL_LENGTH_2PT_INPUT;
+
+                ImGui::PopStyleColor(2);
+
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("%s", "Retry calculating rectangle sides");
+                }
+            }
+            else if (update_state == RS2_CALIB_STATE_FOCAL_LENGTH_2PT_COMPLETE)
+            {
+                update_state = RS2_CALIB_STATE_FOCAL_LENGTH_2PT_INPUT;
             }
             else if (update_state == RS2_CALIB_STATE_SELF_INPUT)
             {
@@ -1309,6 +2069,40 @@ namespace rs2
 
                 draw_progress_bar(win, bar_width);
             }
+            else if (update_state == RS2_CALIB_STATE_FOCAL_LENGTH_1PT_IN_PROCESS)
+            {
+                if (update_manager->done())
+                {
+                    update_state = RS2_CALIB_STATE_FOCAL_LENGTH_1PT_INPUT;
+                    enable_dismiss = true;
+                }
+
+                if (update_manager->failed())
+                {
+                    update_manager->check_error(_error_message);
+                    update_state = RS2_CALIB_STATE_FOCAL_LENGTH_1PT_FAILED;
+                    enable_dismiss = true;
+                }
+
+                draw_progress_bar(win, bar_width);
+            }
+            else if (update_state == RS2_CALIB_STATE_FOCAL_LENGTH_2PT_IN_PROCESS)
+            {
+                if (update_manager->done())
+                {
+                    update_state = RS2_CALIB_STATE_FOCAL_LENGTH_2PT_COMPLETE;
+                    enable_dismiss = true;
+                }
+
+                if (update_manager->failed())
+                {
+                    update_manager->check_error(_error_message);
+                    update_state = RS2_CALIB_STATE_FOCAL_LENGTH_2PT_FAILED;
+                    enable_dismiss = true;
+                }
+
+                draw_progress_bar(win, bar_width);
+            }
         }
     }
 
@@ -1415,6 +2209,11 @@ namespace rs2
         else if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED) return 210;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH) return 110;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED) return 115;
+        else if (update_state == RS2_CALIB_STATE_FOCAL_LENGTH_1PT_INPUT) return 310;
+        else if (update_state == RS2_CALIB_STATE_FOCAL_LENGTH_1PT_COMPLETE) return 115;
+        else if (update_state == RS2_CALIB_STATE_FOCAL_LENGTH_1PT_FAILED) return 115;
+        else if (update_state == RS2_CALIB_STATE_FOCAL_LENGTH_2PT_INPUT) return 315;
+        else if (update_state == RS2_CALIB_STATE_FOCAL_LENGTH_2PT_FAILED) return 115;
         else if (update_state == RS2_CALIB_STATE_FAILED) return 110;
         else return 100;
     }
@@ -1493,7 +2292,13 @@ namespace rs2
     {
     }
 
-    int tare_ground_truth_calculator::calculate(const uint8_t* img, float & ground_truth)
+    int tare_ground_truth_calculator::calculate_rect(const uint8_t* img, float rect_sides[4])
+    {
+        pre_calculate(img, _thresh, _patch_size);
+        return run(rect_sides);
+    }
+
+    int tare_ground_truth_calculator::calculate(const uint8_t* img, float& ground_truth)
     {
         pre_calculate(img, _thresh, _patch_size);
         return run(ground_truth);
@@ -1805,6 +2610,38 @@ namespace rs2
         return ret;
     }
 
+    int tare_ground_truth_calculator::run(float rect_sides[4])
+    {
+        static int reset_counter = 0;
+        if (reset_counter > _reset_limit)
+        {
+            reset_counter = 0;
+            _corners_idx = 0;
+            _corners_num = 0;
+        }
+
+        int ret = 0;
+        if (_corners_found[0] && _corners_found[1] && _corners_found[2] && _corners_found[3])
+        {
+            ret = 1;
+            reset_counter = 0;
+            _corners_idx = ++_corners_idx % _frame_num;
+            ++_corners_num;
+
+            if (_corners_num == _frame_num)
+            {
+                ret = 2;
+                calculate_rect(rect_sides);
+                --_corners_num;
+            }
+
+        }
+        else
+            ++reset_counter;
+
+        return ret;
+    }
+
     float tare_ground_truth_calculator::calculate_depth()
     {
         point<float> corners_avg[4];
@@ -1846,6 +2683,47 @@ namespace rs2
         float d4 = _target_fh / sqrtf(lx * lx + ly * ly);
 
         return (d1 + d2 + d3 + d4) / 4;
+    }
+
+    void tare_ground_truth_calculator::calculate_rect(float rect_sides[4])
+    {
+        point<float> corners_avg[4];
+        for (int i = 0; i < 4; ++i)
+        {
+            corners_avg[i].x = _corners[0][i].x;
+            corners_avg[i].y = _corners[0][i].y;
+        }
+
+        for (int j = 1; j < _frame_num; ++j)
+        {
+            for (int i = 0; i < 4; ++i)
+            {
+                corners_avg[i].x += _corners[j][i].x;
+                corners_avg[i].y += _corners[j][i].y;
+            }
+        }
+
+        for (int i = 0; i < 4; ++i)
+        {
+            corners_avg[i].x /= _frame_num;
+            corners_avg[i].y /= _frame_num;
+        }
+
+        float lx = corners_avg[1].x - corners_avg[0].x;
+        float ly = corners_avg[1].y - corners_avg[0].y;
+        rect_sides[0] = sqrtf(lx * lx + ly * ly);
+
+        lx = corners_avg[3].x - corners_avg[2].x;
+        ly = corners_avg[3].y - corners_avg[2].y;
+        rect_sides[1] = sqrtf(lx * lx + ly * ly);
+
+        lx = corners_avg[2].x - corners_avg[0].x;
+        ly = corners_avg[2].y - corners_avg[0].y;
+        rect_sides[2] = sqrtf(lx * lx + ly * ly);
+
+        lx = corners_avg[3].x - corners_avg[1].x;
+        ly = corners_avg[3].y - corners_avg[1].y;
+        rect_sides[3] = sqrtf(lx * lx + ly * ly);
     }
 
     void tare_ground_truth_calculator::minimize_x(const float* p, int s, float* f, float& x)

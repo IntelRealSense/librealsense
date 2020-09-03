@@ -31,6 +31,8 @@ namespace rs2
                 if (!strcmp(dev_name, "Intel RealSense D415")) { speed = 4; }
         }
 
+        ~on_chip_calib_manager();
+
         bool allow_calib_keep() const { return true; }
 
         // Get health number from the calibration summary
@@ -50,6 +52,19 @@ namespace rs2
 
         void update_last_used();
 
+        float _focal_length_left_x = 0.0f; // from camera
+        float _focal_length_left_y = 0.0f; // from camera
+        float _focal_length_right_x = 0.0f; // fram camera
+        float _focal_length_right_y = 0.0f; // fram camera
+
+        float ratio = 0.0f;
+        float focal_length_left = 0.0f; // calculated
+        float focal_length_right = 0.0f; // calculated
+        float left_rect_1[4] = { 0 };
+        float right_rect_1[4] = { 0 };
+        float left_rect_2[4] = { 0 };
+        float right_rect_2[4] = { 0 };
+
         float ground_truth = 2500.0f;
         int average_step_count = 20;
         int step_count = 20;
@@ -60,6 +75,9 @@ namespace rs2
             RS2_CALIB_ACTION_ON_CHIP_CALIB,  // On-Chip calibration
             RS2_CALIB_ACTION_TARE_CALIB,    // Tare calibration
             RS2_CALIB_ACTION_TARE_GROUND_TRUTH, // Tare ground truth
+            RS2_CALIB_ACTION_FOCAL_LENGTH_2PT_1, // Calculation for the first position
+            RS2_CALIB_ACTION_FOCAL_LENGTH_2PT_2, // Calculation for the second position
+            RS2_CALIB_ACTION_FOCAL_LENGTH_1PT, // Calculation for the second position
         };
         auto_calib_action action = RS2_CALIB_ACTION_ON_CHIP_CALIB;
         bool intrinsic_scan = true;
@@ -67,9 +85,16 @@ namespace rs2
 
         void calibrate();
         void get_ground_truth();
+        void calculate_rect(bool first);
+        void calculate_focal_length();
+        void calculate_focal_length_ratio();
 
         std::shared_ptr<subdevice_model> _sub;
         float laser_status_prev = 0.0f;
+
+        void start_fl_viewer();
+        void apply_ratio();
+        bool keep_ratio();
 
     private:
 
@@ -100,6 +125,9 @@ namespace rs2
 
         void stop_viewer(invoker invoke);
         void start_viewer(int w, int h, int fps, invoker invoke);
+
+        int fl_viewer_status = 0;
+        bool applied = false;
     };
 
     // Auto-calib notification model is managing the UI state-machine
@@ -120,6 +148,14 @@ namespace rs2
             RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_IN_PROCESS, // Calculating ground truth in process... Shows progressbar
             RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_COMPLETE,   // Calculating ground truth complete, show succeeded or failed
             RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED,     // Failed to calculating the ground truth
+            RS2_CALIB_STATE_FOCAL_LENGTH_2PT_INPUT,      // Collect input parameters for focal length calculation
+            RS2_CALIB_STATE_FOCAL_LENGTH_2PT_IN_PROCESS, // Focal length calculation is in progress... Shows progressbar
+            RS2_CALIB_STATE_FOCAL_LENGTH_2PT_COMPLETE,   // Focal length calculation complete, <--- not really used yet, update camera calibration table???
+            RS2_CALIB_STATE_FOCAL_LENGTH_2PT_FAILED,     // Focal length calculation failed, show error message
+            RS2_CALIB_STATE_FOCAL_LENGTH_1PT_INPUT,      // Collect input parameters for focal length calculation
+            RS2_CALIB_STATE_FOCAL_LENGTH_1PT_IN_PROCESS, // Focal length calculation is in progress... Shows progressbar
+            RS2_CALIB_STATE_FOCAL_LENGTH_1PT_COMPLETE,   // Focal length calculation complete, <--- not really used yet, update camera calibration table???
+            RS2_CALIB_STATE_FOCAL_LENGTH_1PT_FAILED,     // Focal length calculation failed, show error message
         };
 
         autocalib_notification_model(std::string name,
@@ -149,6 +185,7 @@ namespace rs2
         virtual ~tare_ground_truth_calculator();
 
         int calculate(const uint8_t* img, float & ground_truth); // return 0 if the target is not in the center, 1 if found, 2 if found and ground truth updated
+        int calculate_rect(const uint8_t* img, float rect_sides[4]); // return 0 if the target is not in the center, 1 if found, 2 if found and ground truth updated
 
         tare_ground_truth_calculator(const tare_ground_truth_calculator&) = delete;
         tare_ground_truth_calculator& operator=(const tare_ground_truth_calculator&) = delete;
@@ -164,8 +201,12 @@ namespace rs2
         void find_corner(float thresh, int q, int patch_size);
 
         void pre_calculate(const uint8_t* img, float thresh, int patch_size);
+       
         int run(float& ground_truth);
+        int run(float rect_sides[4]);
+        
         float calculate_depth();
+        void calculate_rect(float rect_sides[4]);
 
         void minimize_x(const float* p, int s, float* f, float& x);
         void minimize_y(const float* p, int s, float* f, float& y);
@@ -228,8 +269,8 @@ namespace rs2
         int _hwt = 0;
         int _hht = 0;
 
-        float _target_fw = 0;
-        float _target_fh = 0;
+        float _target_fw = 0.0f;
+        float _target_fh = 0.0f;
 
         template <typename T>
         struct point
