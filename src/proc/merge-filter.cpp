@@ -10,8 +10,8 @@ namespace librealsense
     {}
 
     // processing only framesets
-	bool merge_filter::should_process(const rs2::frame & frame)
-	{
+    bool merge_filter::should_process(const rs2::frame & frame)
+    {
         if (!frame)
             return false;
 
@@ -24,11 +24,11 @@ namespace librealsense
             return false;
 
         return true;
-	}
+    }
 
 
-	rs2::frame merge_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)
-	{
+    rs2::frame merge_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)
+    {
         // steps:
         // 1. get depth frame from incoming frameset
         // 2. add the frameset to vector of framesets
@@ -72,7 +72,7 @@ namespace librealsense
             return _depth_merged_frame;
 
         return f;
-	}
+    }
 
 
     rs2::frame merge_filter::merging_algorithm(const rs2::frame_source& source, const rs2::frameset first_fs, const rs2::frameset second_fs)

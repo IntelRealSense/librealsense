@@ -1,68 +1,109 @@
-# rs-capture Sample
+# rs-hdr Sample
 
 ## Overview
 
-This sample demonstrates how to configure the camera for streaming and rendering Depth & RGB data to the screen.  
-We use OpenGL for cross-platform rendering and GLFW for window management.  
-If you are using OpenCV, `imshow` is a good alternative. 
-
-## Expected Output
-![expected output](https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/capture-expected.png)
+This sample demonstrates how to configure the camera for streaming and rendering Depth & Infrared data to the screen, using the High Dynamic Range (HDR) feature.  
+For explanations on the streaming and rendering, please refer to the rs-capture sample.
 
 ## Code Overview 
 
-First, we include the Intel® RealSense™ Cross-Platform API.  
-All but advanced functionality is provided through a single header:
+### Finidng device
+The HDR feature is available only for D400 Product line Devices. Finiding this device and getting its depth sensor:
 ```cpp
-#include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
+// finding a device of D400 product line for working with HDR feature
+if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && 
+            std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D400")
+{
+    device = dev;
+}
+rs2::depth_sensor depth_sensor = device.query_sensors().front();
+ ```
+
+
+### HDR Configuration
+Before starting the configuration, we need to disable the Auto Exposure option:
+```cpp
+// disable auto exposure before sending HDR configuration
+if (depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+    depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
 ```
 
-Next, we include a [very short helper library](../example.hpp) to encapsulate OpenGL rendering and window management:
+Next, we start to configure the HDR, by setting the size of the HDR sequence:
 ```cpp
-#include "example.hpp"          // Include a short list of convenience functions for rendering
+// setting the HDR sequence size to 2 frames
+depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_SIZE, 2);
 ```
 
-This header lets us easily open a new window and prepare textures for rendering.  
+Configuring the first HDR sequence ID: 
 ```cpp
-// Create a simple OpenGL window for rendering:
-window app(1280, 720, "RealSense Capture Example");
+// configuration for the first HDR sequence ID
+depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 1);
+depth_sensor.set_option(RS2_OPTION_EXPOSURE, 8500.f);
+depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
+```
+Configuring the second HDR sequence ID:
+```cpp
+// configuration for the second HDR sequence ID
+depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 2);
+depth_sensor.set_option(RS2_OPTION_EXPOSURE, 1.f);
+depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
 ```
 
-Depth data is usually provided on a 12-bit grayscale which is not very useful for visualization.  
-To enhance visualization, we provide an API that converts the grayscale image to RGB:
+Resetting the sequence ID to 0. This action permits the next setting of the exposure and gain option to be targetted to the normal UVC option, instead of being targetted to the HDR configuration (this call could have been omitted in this specific example):
 ```cpp
-// Declare depth colorizer for enhanced color visualization of depth data
-rs2::colorizer color_map; 
+// after setting the HDR sequence ID opotion to 0, setting exposure or gain
+// will be targetted to the normal (UVC) exposure and gain options (not HDR configuration)
+depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 0);
 ```
 
-The sample prints frame rates of each enabled stream, this is done by rates_printer filter._
+Activating the HDR configuration in order to get the resulting streaming:
 ```cpp
-// Declare rates printer for showing streaming rates of the enabled streams.
-rs2::rates_printer printer;
+// turning ON the HDR with the above configuration 
+depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
 ```
 
-The SDK API entry point is the `pipeline` class:
+Then, the pipe is configured with depth and infrared streams. 
+The infrared is used in the HDR streaming merging. The merging algorithm can also work without the infrared stream (if it is not activated by the user), but it workds better with the infrared.
 ```cpp
-// Declare the RealSense pipeline, encapsulating the actual device and sensors
-rs2::pipeline pipe;
-
-// Start streaming with default recommended configuration
-// The default video configuration contains Depth and Color streams
-// If a device is capable to stream IMU data, both Gyro and Accelerometer are enabled by default 
-pipe.start(); 
+// Start streaming with depth and infrared configuration
+// The HDR merging algorithm can work with both depth and infrared,or only with depth, 
+// but the resulting stream is better when both depth and infrared are used.
+rs2::config cfg;
+cfg.enable_stream(RS2_STREAM_DEPTH);
+cfg.enable_stream(RS2_STREAM_INFRARED, 1);
+pipe.start(cfg);
 ```
 
-Next, we wait for the next set of frames, effectively blocking the program.
-Once a frameset arrives, apply both the colorizer and the rates_printer filters._
+### Using Merging Filter
+Initializing the merging filter - will be further used in order to merge frames from both HDR sequence IDs that have been configured:
 ```cpp
-rs2::frameset data = pipe.wait_for_frames().    // Wait for next set of frames from the camera
-                     apply_filter(printer).     // Print each enabled stream frame rate
-                     apply_filter(color_map);   // Find and colorize the depth data
+// initializing the merging filter
+rs2::merge_filter merging_filter;
+```
+After getting the frames, by using the wait_for_frames method, the merging filter is used:
+```cpp
+// merging the frames from the different HDR sequence IDs
+auto merged_frameset = merging_filter.process(data). 
+        apply_filter(color_map);   // Find and colorize the depth data;
+app.show(merged_frameset);
+
 ```
 
-Finally, render the images by the `window` class from [example.hpp](../example.hpp)
+### Using Spliting Filter 
+Initializing also the spliting filter, with the requested sequence ID as 2:
 ```cpp
-// Show method, when applied on frameset, break it to frames and upload each frame into a gl textures
-// Each texture is displayed on different viewport according to it's stream unique id
-app.show(data);
+// initializing the spliting filter
+rs2::split_filter spliting_filter;
+// setting the required sequence ID to be shown
+spliting_filter.set_option(RS2_OPTION_SELECT_ID, 2);
 ```
+
+After getting the frames, by using the wait_for_frames method, the spliting filter is used:
+```cpp
+// getting frames only with the requested sequence ID
+auto split_frameset = spliting_filter.process(data) . 
+        apply_filter(color_map);   // Find and colorize the depth data;
+app.show(split_frameset);
+
+```
+

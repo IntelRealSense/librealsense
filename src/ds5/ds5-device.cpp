@@ -329,7 +329,7 @@ namespace librealsense
             _depth_units = get_option(RS2_OPTION_DEPTH_UNITS).query();
             synthetic_sensor::open(requests);
 
-			// needed in order to restore the HDR sub-preset when streaming is turned off and on
+            // needed in order to restore the HDR sub-preset when streaming is turned off and on
             if (_owner->is_hdr_enabled())
                 get_option(RS2_OPTION_HDR_ENABLED).set(1.f);
         }

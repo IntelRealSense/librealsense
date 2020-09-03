@@ -154,7 +154,9 @@ namespace librealsense
             if (find_if(results.begin(), results.end(), [&curr_profile](rs2::frame& frame) {
                 auto processed_profile = frame.get_profile();
                 return curr_profile.stream_type() == processed_profile.stream_type() &&
-                    curr_profile.format() == processed_profile.format(); }) == results.end())
+                        curr_profile.format() == processed_profile.format() &&
+                        (curr_profile.stream_type() == RS2_STREAM_DEPTH || 
+                        (curr_profile.stream_index() == processed_profile.stream_index())); }) == results.end() )
             {
                 results.push_back(s);
             }
