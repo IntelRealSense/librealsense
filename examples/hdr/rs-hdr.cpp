@@ -49,8 +49,8 @@ int main(int argc, char * argv[]) try
         depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
 
     // setting the HDR sequence size to 2 frames
-    if (depth_sensor.supports(RS2_OPTION_HDR_SEQUENCE_SIZE))
-        depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_SIZE, 2);
+    if (depth_sensor.supports(RS2_OPTION_SUBPRESET_SEQUENCE_SIZE))
+        depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_SIZE, 2);
     else
     {
         std::cout << "Firmware and/or SDK versions must be updated for the HDR feature to be supported.\n";
@@ -58,21 +58,21 @@ int main(int argc, char * argv[]) try
     }
 
     // configuration for the first HDR sequence ID
-    depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 1);
+    depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 1);
     depth_sensor.set_option(RS2_OPTION_EXPOSURE, 8500.f);
     depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
 
     // configuration for the second HDR sequence ID
-    depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 2);
+    depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 2);
     depth_sensor.set_option(RS2_OPTION_EXPOSURE, 1.f);
     depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
 
     // after setting the HDR sequence ID opotion to 0, setting exposure or gain
     // will be targetted to the normal (UVC) exposure and gain options (not HDR configuration)
-    depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 0);
+    depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 0);
 
     // turning ON the HDR with the above configuration 
-    depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
+    depth_sensor.set_option(RS2_OPTION_HDR_MODE, 1);
 
     // Create a simple OpenGL window for rendering:
     window app(1280, 720, "RealSense Capture Example");

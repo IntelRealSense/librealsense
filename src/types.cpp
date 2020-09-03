@@ -427,9 +427,9 @@ namespace librealsense
             CASE(TRIGGER_CAMERA_ACCURACY_HEALTH)
             CASE(RESET_CAMERA_ACCURACY_HEALTH)
             CASE(HOST_PERFORMANCE)
-            CASE(HDR_ENABLED)
-            CASE(HDR_SEQUENCE_SIZE)
-            CASE(HDR_SEQUENCE_ID)
+            CASE(HDR_MODE)
+            CASE(SUBPRESET_SEQUENCE_SIZE)
+            CASE(SUBPRESET_SEQUENCE_ID)
             CASE(SELECT_ID)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }

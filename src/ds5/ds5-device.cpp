@@ -331,7 +331,7 @@ namespace librealsense
 
             // needed in order to restore the HDR sub-preset when streaming is turned off and on
             if (_owner->is_hdr_enabled())
-                get_option(RS2_OPTION_HDR_ENABLED).set(1.f);
+                get_option(RS2_OPTION_HDR_MODE).set(1.f);
         }
 
         /*
@@ -822,16 +822,16 @@ namespace librealsense
                 hdr_exposure_range, hdr_gain_range);
 
             option_range hdr_sequence_size_range = { 1.f /*min*/, 3.f /*max*/, 1.f /*step*/, 1.f /*default*/ };
-            auto hdr_sequence_size_option = std::make_shared<hdr_option>(_hdr_cfg, RS2_OPTION_HDR_SEQUENCE_SIZE, hdr_sequence_size_range);
-            depth_sensor.register_option(RS2_OPTION_HDR_SEQUENCE_SIZE, hdr_sequence_size_option);
+            auto hdr_sequence_size_option = std::make_shared<hdr_option>(_hdr_cfg, RS2_OPTION_SUBPRESET_SEQUENCE_SIZE, hdr_sequence_size_range);
+            depth_sensor.register_option(RS2_OPTION_SUBPRESET_SEQUENCE_SIZE, hdr_sequence_size_option);
             
             option_range hdr_enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/};
-            auto hdr_enabled_option = std::make_shared<hdr_option>(_hdr_cfg, RS2_OPTION_HDR_ENABLED, hdr_enable_range);
-            depth_sensor.register_option(RS2_OPTION_HDR_ENABLED, hdr_enabled_option);
+            auto hdr_enabled_option = std::make_shared<hdr_option>(_hdr_cfg, RS2_OPTION_HDR_MODE, hdr_enable_range);
+            depth_sensor.register_option(RS2_OPTION_HDR_MODE, hdr_enabled_option);
             
             option_range hdr_sequ_id_range = { 0.f /*min*/, 3.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
-            auto hdr_sequ_id_option = std::make_shared<hdr_option>(_hdr_cfg, RS2_OPTION_HDR_SEQUENCE_ID, hdr_sequ_id_range);
-            depth_sensor.register_option(RS2_OPTION_HDR_SEQUENCE_ID, hdr_sequ_id_option);
+            auto hdr_sequ_id_option = std::make_shared<hdr_option>(_hdr_cfg, RS2_OPTION_SUBPRESET_SEQUENCE_ID, hdr_sequ_id_range);
+            depth_sensor.register_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, hdr_sequ_id_option);
             
             // options that change behavior during HDR configuration
             //EXPOSURE

@@ -260,7 +260,7 @@ rs2_processing_block* rs2_create_merge_processing_block(rs2_error** error);
 
 /**
 * Creates a split_filter processing block.
-* The block splits the depth streaming to two streams depth frames with different exposure values
+* The block reassigns separate profiles for the frames produced with sub-presets
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 rs2_processing_block* rs2_create_split_processing_block(rs2_error** error);

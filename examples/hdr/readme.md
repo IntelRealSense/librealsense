@@ -31,35 +31,35 @@ if (depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
 Next, we start to configure the HDR, by setting the size of the HDR sequence:
 ```cpp
 // setting the HDR sequence size to 2 frames
-depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_SIZE, 2);
+depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_SIZE, 2);
 ```
 
 Configuring the first HDR sequence ID: 
 ```cpp
 // configuration for the first HDR sequence ID
-depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 1);
+depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 1);
 depth_sensor.set_option(RS2_OPTION_EXPOSURE, 8500.f);
 depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
 ```
 Configuring the second HDR sequence ID:
 ```cpp
 // configuration for the second HDR sequence ID
-depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 2);
+depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 2);
 depth_sensor.set_option(RS2_OPTION_EXPOSURE, 1.f);
 depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
 ```
 
 Resetting the sequence ID to 0. This action permits the next setting of the exposure and gain option to be targetted to the normal UVC option, instead of being targetted to the HDR configuration (this call could have been omitted in this specific example):
 ```cpp
-// after setting the HDR sequence ID opotion to 0, setting exposure or gain
+// after setting the HDR sequence ID option to 0, setting exposure or gain
 // will be targetted to the normal (UVC) exposure and gain options (not HDR configuration)
-depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 0);
+depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 0);
 ```
 
 Activating the HDR configuration in order to get the resulting streaming:
 ```cpp
 // turning ON the HDR with the above configuration 
-depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
+depth_sensor.set_option(RS2_OPTION_HDR_MODE, 1);
 ```
 
 Then, the pipe is configured with depth and infrared streams. 

@@ -43,13 +43,13 @@ namespace librealsense
         float rv = 0.f;
         switch (option)
         {
-        case RS2_OPTION_HDR_SEQUENCE_SIZE:
+        case RS2_OPTION_SUBPRESET_SEQUENCE_SIZE:
             rv = static_cast<float>(_sequence_size);
             break;
-        case RS2_OPTION_HDR_SEQUENCE_ID:
+        case RS2_OPTION_SUBPRESET_SEQUENCE_ID:
             rv = static_cast<float>(_current_hdr_sequence_index + 1);
             break;
-        case RS2_OPTION_HDR_ENABLED:
+        case RS2_OPTION_HDR_MODE:
             rv = static_cast<float>(_is_enabled);
             break;
         case RS2_OPTION_EXPOSURE:
@@ -86,13 +86,13 @@ namespace librealsense
 
         switch (option)
         {
-        case RS2_OPTION_HDR_SEQUENCE_SIZE:
+        case RS2_OPTION_SUBPRESET_SEQUENCE_SIZE:
             set_sequence_size(value);
             break;
-        case RS2_OPTION_HDR_SEQUENCE_ID:
+        case RS2_OPTION_SUBPRESET_SEQUENCE_ID:
             set_sequence_index(value);
             break;
-        case RS2_OPTION_HDR_ENABLED:
+        case RS2_OPTION_HDR_MODE:
             set_enable_status(value);
             break;
         case RS2_OPTION_EXPOSURE:
