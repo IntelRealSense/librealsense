@@ -9,7 +9,7 @@ namespace librealsense
         : generic_processing_block("Split Filter"),
         _selected_stream_id(1.f)
     {
-        auto selected_stream_id = std::make_shared<ptr_option<float>>(0.f, 3.f, 1.f, 1.f, 
+        auto selected_stream_id = std::make_shared<ptr_option<float>>(0.f, 2.f, 1.f, 1.f, 
             &_selected_stream_id, "Selected stream id for display");
         register_option(RS2_OPTION_SELECT_ID, selected_stream_id);
 
