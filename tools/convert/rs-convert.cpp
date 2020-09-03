@@ -93,10 +93,10 @@ int main(int argc, char** argv) try
         throw runtime_error("output not defined");
     }
 
-    auto first_frame = 0;
-    auto last_frame = 0;
-    auto start_time = 0;
-    auto end_time = 0;
+    unsigned long long first_frame = 0;
+    unsigned long long last_frame = 0;
+    uint64_t start_time = 0;
+    uint64_t end_time = 0;
 
     if (frameNumberStart.isSet()) {
         first_frame = stoi(frameNumberStart.getValue());
