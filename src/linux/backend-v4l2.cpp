@@ -116,14 +116,6 @@ namespace librealsense
         std::map<std::string, std::recursive_mutex> named_mutex::_dev_mutex;
         std::map<std::string, int> named_mutex::_dev_mutex_cnt;
 
-        // named_mutex usage note:
-        // ----------------------
-        // acquire() (or the encapsulating lock() ) function throws exception if fails.
-        // It increase its counters count non the less.
-        // Therefor, a lock() must be surrounded by try-catch section and a call to 
-        // release() (or unlock() or destructor) must be performed, in case of failure,
-        // to decrease the counters count.
-        // 
         named_mutex::named_mutex(const std::string& device_path, unsigned timeout)
             : _device_path(device_path),
               _timeout(timeout), // TODO: try to lock with timeout
@@ -184,12 +176,18 @@ namespace librealsense
                 {
                     _fildes = open(_device_path.c_str(), O_RDWR, 0); //TODO: check
                     if(0 > _fildes)
-                        throw linux_backend_exception(to_string() << "Cannot open '" << _device_path);
+                    {
+                        release();
+                        throw linux_backend_exception(to_string() << __FUNCTION__ << ": Cannot open '" << _device_path);
+                    }
                 }
 
                 auto ret = lockf(_fildes, F_LOCK, 0);
                 if (0 != ret)
-                    throw linux_backend_exception(to_string() << "Acquire failed");
+                {
+                    release();
+                    throw linux_backend_exception(to_string() <<  __FUNCTION__ << ": Acquire failed");
+                }
             }
         }
 

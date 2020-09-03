@@ -38,6 +38,8 @@ bool stream(std::string serial_number, sem_t* sem2, bool do_query)
     rs2::config cfg;
     cfg.enable_device(serial_number);
     std::cout << "pipe starting: " << serial_number << std::endl;
+    cfg.disable_all_streams();
+    cfg.enable_stream(RS2_STREAM_DEPTH, -1, 0, 0, RS2_FORMAT_Z16, 0);
     pipe.start(cfg);
     std::cout << "pipe started: " << serial_number << std::endl;
 
