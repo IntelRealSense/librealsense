@@ -10,6 +10,7 @@
 #include "../../../src/algo/depth-to-rgb-calibration/utils.h"
 #include "../../../src/algo/depth-to-rgb-calibration/uvmap.h"
 
+#include "../../../src/algo/thermal-loop/l500-thermal-loop.h"
 
 #include "ac-logger.h"
 #if ! defined( DISABLE_LOG_TO_STDOUT )
@@ -21,6 +22,8 @@ ac_logger LOG_TO_STDOUT;
 
 
 namespace algo = librealsense::algo::depth_to_rgb_calibration;
+namespace thermal = librealsense::algo::thermal_loop;
+
 using librealsense::to_string;
 
 

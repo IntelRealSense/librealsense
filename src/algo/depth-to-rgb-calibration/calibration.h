@@ -144,6 +144,7 @@ namespace depth_to_rgb_calibration {
         calib( calib const & ) = default;
         explicit calib( rs2_intrinsics_double const & rgb_intrinsics, rs2_extrinsics_double const & depth_to_rgb_extrinsics);
         explicit calib( rs2_intrinsics const & rgb_intrinsics, rs2_extrinsics const & depth_to_rgb_extrinsics);
+        explicit calib( rs2_intrinsics_double const & rgb_intrinsics, rs2_extrinsics const & depth_to_rgb_extrinsics );
 
         rs2_intrinsics_double get_intrinsics() const;
         rs2_extrinsics_double get_extrinsics() const;

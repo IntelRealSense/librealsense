@@ -545,6 +545,21 @@ void compare_scene( std::string const & scene_dir,
     algo::optimizer::settings settings;
     read_data_from( bin_dir( scene_dir ) + "settings", &settings );
 
+    //read_data_from( bin_dir( scene_dir ) + "rgb_thermal", &thermal_table );
+    try
+    {
+        auto vec = read_vector_from< byte >( bin_dir( scene_dir ) + "rgb_thermal" );
+        auto thermal_table = thermal::parse_thermal_table( vec );
+        auto scale = thermal::get_rgb_current_thermal_scale( thermal_table, settings.hum_temp );
+        auto res = thermal::correct_thermal_scale( {ci.rgb.fx,ci.rgb.fy} , scale );
+        ci.rgb.fx = res.first;
+        ci.rgb.fy = res.second;
+    }
+    catch( ... )
+    {
+        TRACE( "No thermal data found" );
+    }
+
     algo::optimizer cal( settings, debug_mode );
     init_algo( cal,
                scene_dir,

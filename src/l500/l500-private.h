@@ -232,6 +232,22 @@ namespace librealsense
             { L515_PID_PRE_PRQ,     "Intel RealSense L515 (pre-PRQ)"},
             { L515_PID,             "Intel RealSense L515"},
         };
+static std::vector< byte > read_fw_table_raw( hw_monitor & hwm, int table_id)
+{
+    std::vector< byte > res;
+    command cmd( fw_cmd::READ_TABLE, table_id );
+    auto data = hwm.send( cmd);
+
+    if (data.size() <= sizeof(table_header))
+    {
+        LOG_DEBUG( "Failed to read FW table 0x" << std::hex << table_id );
+        throw invalid_value_exception( hwmon_error_string( cmd, hwm_IllegalSize ) );
+    }
+        
+    res.assign( data.data() + sizeof( table_header ), data.data() + data.size() );
+   
+    return res;
+}
 
         enum l500_notifications_types
         {

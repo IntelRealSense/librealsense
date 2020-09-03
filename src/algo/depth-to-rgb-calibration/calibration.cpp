@@ -52,6 +52,26 @@ calib::calib( rs2_intrinsics const & intrin, rs2_extrinsics const & extrin )
     model = intrin.model;
 }
 
+librealsense::algo::depth_to_rgb_calibration::calib::calib( rs2_intrinsics_double const & intrin,
+                                                            rs2_extrinsics const & extrin )
+{
+    auto const & r = extrin.rotation;
+    auto const & t = extrin.translation;
+    auto const & c = intrin.coeffs;
+
+    height = intrin.height;
+    width = intrin.width;
+    rot = { r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8] };
+    trans = { t[0], t[1], t[2] };
+    k_mat = matrix_3x3{ intrin.fx, 0, intrin.ppx, 0, intrin.fy, intrin.ppy, 0, 0, 1 };
+    coeffs[0] = c[0];
+    coeffs[1] = c[1];
+    coeffs[2] = c[2];
+    coeffs[3] = c[3];
+    coeffs[4] = c[4];
+    model = intrin.model;
+}
+
 rs2_intrinsics_double calib::get_intrinsics() const
 {
     return {

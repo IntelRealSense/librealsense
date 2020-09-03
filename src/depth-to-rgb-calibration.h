@@ -40,6 +40,7 @@ namespace librealsense
             std::vector< algo::depth_to_rgb_calibration::yuy_t > const & last_yuy_data,
             algo::depth_to_rgb_calibration::algo_calibration_info const & cal_info,
             algo::depth_to_rgb_calibration::algo_calibration_registers const & cal_regs,
+            double scale,
             std::function<void()> should_continue = nullptr
         );
 

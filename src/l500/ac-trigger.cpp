@@ -7,7 +7,9 @@
 #include "l500-color.h"
 #include "l500-depth.h"
 #include "algo/depth-to-rgb-calibration/debug.h"
+#include "algo/thermal-loop/l500-thermal-loop.h"
 #include "log.h"
+
 
 #ifdef _WIN32
 #include <windows.h>
@@ -954,6 +956,7 @@ namespace ivcam2 {
                     // hold up the thread that the frame callbacks are on!
                     float dsm_x_scale, dsm_y_scale, dsm_x_offset, dsm_y_offset;
                     algo::depth_to_rgb_calibration::algo_calibration_info cal_info;
+                    //algo::thermal_loop::thermal_table_data thermal_table;
                     {
                         auto hwm = _hwm.lock();
                         if( ! hwm )
@@ -965,7 +968,9 @@ namespace ivcam2 {
                         ivcam2::read_fw_register( *hwm, &dsm_y_offset, 0xfffe382c );
 
                         ivcam2::read_fw_table( *hwm, cal_info.table_id, &cal_info );
-
+                        auto data = read_fw_table_raw( *hwm, 0x317 );
+                        auto t = algo::thermal_loop::parse_thermal_table( data );
+                        auto scale = algo::thermal_loop::get_rgb_current_thermal_scale( t, _temp );
                         // If the above throw (and they can!) then we catch below and stop...
                     }
 
@@ -999,6 +1004,7 @@ namespace ivcam2 {
                                                    df, irf,
                                                    _cf, _pcf, _last_yuy_data,
                                                    cal_info, cal_regs,
+                        0,
                                                    should_continue );
 
                     std::string debug_dir = get_ac_logger().get_active_dir();

@@ -24,6 +24,7 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     std::vector< impl::yuy_t > const & last_yuy_data,
     impl::algo_calibration_info const & cal_info,
     impl::algo_calibration_registers const & cal_regs,
+    double scale,
     std::function<void()> should_continue
 )
     : _algo( settings )
