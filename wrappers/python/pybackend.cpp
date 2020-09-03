@@ -174,9 +174,9 @@ PYBIND11_MODULE(NAME, m) {
         .value("thermal_compensation", RS2_OPTION_THERMAL_COMPENSATION)
         .value("trigger_camera_accuracy_health", RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH)
         .value("reset_camera_accuracy_health", RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH)
-        .value("hdr_enabled", RS2_OPTION_HDR_ENABLED)
-        .value("hdr_sequence_size", RS2_OPTION_HDR_SEQUENCE_SIZE)
-        .value("hdr_sequence_id", RS2_OPTION_HDR_SEQUENCE_ID)
+        .value("hdr_mode", RS2_OPTION_HDR_MODE)
+        .value("subpreset_sequence_size", RS2_OPTION_SUBPRESET_SEQUENCE_SIZE)
+        .value("subpreset_sequence_id", RS2_OPTION_SUBPRESET_SEQUENCE_ID)
         .value("select_id", RS2_OPTION_SELECT_ID)
         .value("count", RS2_OPTION_COUNT);
 
