@@ -46,9 +46,18 @@ namespace librealsense
         int depth_sequ_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_SIZE);
         if (depth_sequ_size > 2)
             LOG_WARNING("merge_filter::process_frame(...) failed! sequence size must be 2 for merging pb.");
-        int depth_sequ_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
 
-        _framesets[depth_sequ_id] = fs;
+        int depth_sequ_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
+		
+		// condition added to ensure that frames are saved in the right order
+		// to prevent for example the saving of frame with sequence id 1 before
+		// saving frame of sequence id 0
+		// so that the merging with be deterministic - always done with frame n and n+1
+		// with frame n as basis
+        if (_framesets.size() == depth_sequ_id)
+        {
+            _framesets[depth_sequ_id] = fs;
+        }
 
         // 3. check if size of this vector is at least 2 (if not - return latest merge frame)
         if (_framesets.size() >= 2)
@@ -58,12 +67,16 @@ namespace librealsense
             rs2::frameset fs_1 = _framesets[1];
             _framesets.clear();
 
-            // 5. apply merge algo
-            rs2::frame new_frame = merging_algorithm(source, fs_0, fs_1);
-            if (new_frame)
+            bool use_ir = false;
+            if (check_frames_mergeability(fs_0, fs_1, use_ir))
             {
-                // 6. save merge frame as latest merge frame
-                _depth_merged_frame = new_frame;
+                // 5. apply merge algo
+                rs2::frame new_frame = merging_algorithm(source, fs_0, fs_1, use_ir);
+                if (new_frame)
+                {
+                    // 6. save merge frame as latest merge frame
+                    _depth_merged_frame = new_frame;
+                }
             }
         }
 
@@ -74,8 +87,27 @@ namespace librealsense
         return f;
     }
 
+    bool merge_filter::check_frames_mergeability(const rs2::frameset first_fs, const rs2::frameset second_fs, bool& use_ir)
+    {
+        auto first_depth = first_fs.get_depth_frame();
+        auto second_depth = second_fs.get_depth_frame();
+        auto first_ir = first_fs.get_infrared_frame();
+        auto second_ir = second_fs.get_infrared_frame();
 
-    rs2::frame merge_filter::merging_algorithm(const rs2::frame_source& source, const rs2::frameset first_fs, const rs2::frameset second_fs)
+        auto first_fs_frame_counter = first_depth.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+        auto second_fs_frame_counter = second_depth.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+
+        // The aim is that the output merged frame will have frame counter n and
+        // will be created by frames n and n+1
+        if (first_fs_frame_counter + 1 != second_fs_frame_counter)
+            return false;
+        
+        use_ir = should_ir_be_used_for_merging(first_depth, first_ir, second_depth, second_ir);
+        
+        return true;
+    }
+
+    rs2::frame merge_filter::merging_algorithm(const rs2::frame_source& source, const rs2::frameset first_fs, const rs2::frameset second_fs, const bool use_ir)
     {
         auto first = first_fs;
         auto second = second_fs;
@@ -91,8 +123,6 @@ namespace librealsense
         auto height = vf.get_height();
         auto new_f = source.allocate_video_frame(first_depth.get_profile(), first_depth,
             vf.get_bytes_per_pixel(), width, height, vf.get_stride_in_bytes(), RS2_EXTENSION_DEPTH_FRAME);
-
-        bool use_ir = should_ir_be_used_for_merging(first_depth, first_ir, second_depth, second_ir);
 
         if (new_f)
         {
