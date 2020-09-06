@@ -58,7 +58,7 @@ namespace librealsense
 
         // 1. check hdr seq id in metadata
         auto depth_frame = f.as<rs2::depth_frame>();
-        int seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
+        int seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
         int hdr_stream_index = seq_id + 1;
         auto exp = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
 
@@ -99,7 +99,7 @@ namespace librealsense
             {
                 auto index = split_frame.get_profile().stream_index();
                 auto exposure = split_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
-                auto seq_id = split_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
+                auto seq_id = split_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
                  int a = 1;
 
             }

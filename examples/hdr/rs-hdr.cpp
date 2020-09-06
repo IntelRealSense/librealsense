@@ -111,8 +111,8 @@ int main(int argc, char * argv[]) try
             apply_filter(printer);     // Print each enabled stream frame rate
 
         auto depth_frame = data.get_depth_frame();
-        auto hdr_seq_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_SIZE);
-        auto hdr_seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
+        auto hdr_seq_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE);
+        auto hdr_seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
         auto exp = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
 
         std::cout << "frame hdr metadata: hdr_seq_id = "<< hdr_seq_id << ", exposure = " << exp << std::endl;

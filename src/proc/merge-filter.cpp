@@ -43,11 +43,11 @@ namespace librealsense
         auto depth_frame = fs.get_depth_frame();        
 
         // 2. add the frameset to vector of framesets
-        int depth_sequ_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_SIZE);
+        int depth_sequ_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE);
         if (depth_sequ_size > 2)
             LOG_WARNING("merge_filter::process_frame(...) failed! sequence size must be 2 for merging pb.");
 
-        int depth_sequ_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
+        int depth_sequ_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
         
         // condition added to ensure that frames are saved in the right order
         // to prevent for example the saving of frame with sequence id 1 before
@@ -202,15 +202,15 @@ namespace librealsense
                 // checking sequence id of first depth and ir are the same
                 if (use_ir)
                 {
-                    auto depth_seq_id = first_depth.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
-                    auto ir_seq_id = first_ir.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
+                    auto depth_seq_id = first_depth.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
+                    auto ir_seq_id = first_ir.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
                     use_ir = (depth_seq_id == ir_seq_id);
 
                     // checking sequence id of second depth and ir are the same
                     if (use_ir)
                     {
-                        depth_seq_id = second_depth.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
-                        ir_seq_id = second_ir.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
+                        depth_seq_id = second_depth.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
+                        ir_seq_id = second_ir.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
                         use_ir = (depth_seq_id == ir_seq_id);
                     }
                 }

@@ -21,7 +21,7 @@ namespace librealsense
 
     // Metadata tables version
     const int META_DATA_INTEL_DEPTH_CONTROL_VERSION   = 0x1;
-    const int META_DATA_INTEL_CONFIGURATION_VERSION   = 0x1;
+    const int META_DATA_INTEL_CONFIGURATION_VERSION   = 0x3;
     const int META_DATA_INTEL_STAT_VERSION            = 0x1;
     const int META_DATA_INTEL_CAPTURE_TIMING_VERSION  = 0x1;
 
@@ -108,8 +108,7 @@ namespace librealsense
         roi_attribute                   = (1u << 5),
         preset_attribute                = (1u << 6),
         emitter_mode_attribute          = (1u << 7),
-        led_power_attribute             = (1u << 8),
-        hdr_sequence_data_attribute     = (1u << 9)
+        led_power_attribute             = (1u << 8) 
     };
 
     /**\brief md_depth_control_attributes - bit mask to find active attributes,
@@ -162,6 +161,7 @@ namespace librealsense
         trigger_attribute               = (1u << 7),
         calibration_count_attribute     = (1u << 8),
         gpio_input_data_attribute       = (1u << 9),
+        sub_preset_info_attribute       = (1u << 10)
     };
 
     /**\brief md_stat_attributes - bit mask to find active attributes,
@@ -385,7 +385,7 @@ namespace librealsense
         uint32_t    exposure_roi_bottom;
         uint32_t    preset;
         uint8_t     emitterMode;
-        uint8_t     hdr_sequence_data;    // HDR sequence - 4 MSB: sequence size, 4 LSB: sequence id 
+        uint8_t     reserved;
         uint16_t    ledPower;
     };
 
@@ -442,28 +442,44 @@ namespace librealsense
 
     REGISTER_MD_TYPE(md_rgb_control, md_type::META_DATA_INTEL_RGB_CONTROL_ID)
 
+    /*struct md_sub_preset_info_fields
+    {
+        uint32_t  id : 4;
+        uint32_t  num_of_items : 6;
+        uint32_t  item_index : 6;
+        uint32_t  iteration : 8;
+        uint32_t  item_iteration : 8;
+    };
+
+    union md_sub_preset_info
+    {
+        uint32_t value;
+        md_sub_preset_info_fields fields;
+    };*/
+
     /**\brief md_configuration - device/stream configuration.
      *  Corresponds to FW's STMetaDataIntelConfiguration object*/
     struct md_configuration
     {
-        md_header   header;
-        uint32_t    version;
-        uint32_t    flags;
-        uint8_t     hw_type;    //  IVCAM2 , RS4xx, etc'
-        uint8_t     sku_id;
-        uint32_t    cookie;     /*  Place Holder enable FW to bundle cookie
-                                    with control state and configuration.*/
-        uint16_t    format;
-        uint16_t    width;      //  Requested resolution
-        uint16_t    height;
-        uint16_t    fps;        //  Requested FPS
-        uint16_t    trigger;    /*  Byte <0>  0 free-running
-                                              1 in sync
-                                              2 external trigger (depth only)
-                                    Byte <1>  configured delay (depth only)*/
-        uint16_t    calibration_count;
-        uint8_t     gpioInputData;
-        uint8_t     reserved[5];
+        md_header           header;
+        uint32_t            version;
+        uint32_t            flags;
+        uint8_t             hw_type;    //  IVCAM2 , RS4xx, etc'
+        uint8_t             sku_id;
+        uint32_t            cookie;     /*  Place Holder enable FW to bundle cookie
+                                            with control state and configuration.*/
+        uint16_t            format;
+        uint16_t            width;      //  Requested resolution
+        uint16_t            height;
+        uint16_t            fps;        //  Requested FPS
+        uint16_t            trigger;    /*  Byte <0>  0 free-running
+                                                      1 in sync
+                                                      2 external trigger (depth only)
+                                            Byte <1>  configured delay (depth only)*/
+        uint16_t            calibration_count;
+        uint8_t             gpioInputData;
+        uint32_t            sub_preset_info;
+        uint8_t             reserved[1];
     };
 
     REGISTER_MD_TYPE(md_configuration, md_type::META_DATA_INTEL_CONFIGURATION_ID)

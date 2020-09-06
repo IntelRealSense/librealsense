@@ -924,17 +924,6 @@ namespace librealsense
         depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_EMITTER_MODE, make_attribute_parser(&md_depth_control::emitterMode, md_depth_control_attributes::emitter_mode_attribute, md_prop_offset));
         depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_LED_POWER, make_attribute_parser(&md_depth_control::ledPower, md_depth_control_attributes::led_power_attribute, md_prop_offset));
 
-        if (_fw_version >= hdr_firmware_version)
-        {
-            //TODO - Remi - use the correct flag when enabled by FW
-            depth_sensor.register_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_SIZE, make_attribute_parser(&md_depth_control::hdr_sequence_data,
-                md_depth_control_attributes::emitter_mode_attribute, md_prop_offset,
-                [](const rs2_metadata_type& param) {return param & 0xF; }));
-            depth_sensor.register_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID, make_attribute_parser(&md_depth_control::hdr_sequence_data,
-                md_depth_control_attributes::emitter_mode_attribute, md_prop_offset,
-                [](const rs2_metadata_type& param) {return param >> 4; }));
-        }
-
         // md_configuration - will be used for internal validation only
         md_prop_offset = offsetof(metadata_raw, mode) + offsetof(md_depth_mode, depth_y_mode) + offsetof(md_depth_y_normal_mode, intel_configuration);
 
@@ -948,6 +937,30 @@ namespace librealsense
         if (_fw_version >= firmware_version("5.12.7.0"))
         {
             depth_sensor.register_metadata(RS2_FRAME_METADATA_GPIO_INPUT_DATA, make_attribute_parser(&md_configuration::gpioInputData, md_configuration_attributes::gpio_input_data_attribute, md_prop_offset));
+        }
+
+        if (_fw_version >= hdr_firmware_version)
+        {
+            // attributes of md_capture_timing
+            auto md_prop_offset = offsetof(metadata_raw, mode) + offsetof(md_depth_mode, depth_y_mode) + offsetof(md_depth_y_normal_mode, intel_configuration);
+            
+            depth_sensor.register_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE,
+                make_attribute_parser(&md_configuration::sub_preset_info,
+                    md_configuration_attributes::sub_preset_info_attribute, md_prop_offset ,
+                [](const rs2_metadata_type& param) {
+                        //int id = param & 0xF;
+                        //int num_of_items = (param & 0x3F0) >> 4;
+                        //int item_index = (param & 0xFC00) >> 10;
+                        //int iteration = (param & 0xFF0000) >> 16;
+                        //int item_iteration = (param & 0xFF000000) >> 24;
+                        return (param & 0x3F0) >> 4; // num_of_items
+                    }));
+            depth_sensor.register_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID,
+                make_attribute_parser(&md_configuration::sub_preset_info,
+                    md_configuration_attributes::sub_preset_info_attribute, md_prop_offset ,
+                [](const rs2_metadata_type& param) {
+                        return (param & 0xFC00) >> 10; // item_index
+                    }));
         }
 
 

@@ -553,8 +553,8 @@ namespace librealsense
             CASE(FRAME_LED_POWER)
             CASE(RAW_FRAME_SIZE)
             CASE(GPIO_INPUT_DATA)
-            CASE(HDR_SEQUENCE_ID)
-            CASE(HDR_SEQUENCE_SIZE)
+            CASE(SUBPRESET_SEQUENCE_ID)
+            CASE(SUBPRESET_SEQUENCE_SIZE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
