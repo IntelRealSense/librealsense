@@ -33,6 +33,10 @@ namespace librealsense
         if (!depth_frame)
             return false;
 
+        int depth_sequ_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE);
+        if (depth_sequ_size == 0)
+            return false;
+
         auto profile = frame.get_profile();
         rs2_stream stream = profile.stream_type();
         if (stream != RS2_STREAM_DEPTH)
