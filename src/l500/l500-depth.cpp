@@ -163,6 +163,60 @@ namespace librealsense
         return std::make_shared<timestamp_composite_matcher>(matchers);
     }
 
+
+    // If the user did not ask for IR, The open function will add it anyway. 
+    // This class filters the IR frames is this case so they will not get to the user callback function
+    class frame_filter : public rs2_frame_callback
+    {
+    public:
+        explicit frame_filter(frame_callback_ptr user_callback, stream_profiles user_requests) :
+            _user_callback(user_callback),
+            _user_requests(user_requests) {}
+
+        virtual ~frame_filter() override {};
+
+        void on_frame( rs2_frame * f ) override
+        {
+            if( is_user_requested_frame( (frame_interface *)f ) )
+            {
+                _user_callback->on_frame( f );
+            }
+            else
+            {
+                // No RAII - explicit release is required
+                ( (frame_interface *)f )->release();
+            }
+        }
+
+        void release() override {};
+
+    private:
+        bool is_user_requested_frame(frame_interface* frame)
+        {
+            return std::find_if(_user_requests.begin(), _user_requests.end(), [&](std::shared_ptr<stream_profile_interface> sp)
+            {
+                return stream_profiles_equal(frame->get_stream().get(), sp.get());
+            }) != _user_requests.end();
+        }
+
+        bool stream_profiles_equal(stream_profile_interface* l, stream_profile_interface* r)
+        {
+            auto vl = dynamic_cast<video_stream_profile_interface*>(l);
+            auto vr = dynamic_cast<video_stream_profile_interface*>(r);
+
+            if (!vl || !vr)
+                return false;
+
+            return  l->get_framerate() == r->get_framerate() &&
+                vl->get_width() == vr->get_width() &&
+                vl->get_height() == vr->get_height() &&
+                vl->get_stream_type() == vr->get_stream_type();
+        }
+
+        frame_callback_ptr _user_callback;
+        stream_profiles _user_requests;
+    };
+
     l500_depth_sensor::l500_depth_sensor(
         l500_device* owner,
         std::shared_ptr<uvc_sensor> uvc_sensor,
@@ -355,7 +409,8 @@ namespace librealsense
     {
         // The delay is here as a work around to a firmware bug [RS5-5453]
         _action_delayer.do_after_delay( [&]() {
-            synthetic_sensor::start( callback );
+            synthetic_sensor::start(std::make_shared< frame_filter >( callback, _user_requests));
+
             if( _owner->_autocal )
                 _owner->_autocal->start();
         } );
@@ -467,7 +522,8 @@ namespace librealsense
 
             _validator_requests = requests;
 
-            //enable ir if user didn't asked ir in order to validate the ir frame
+            // Enable IR stream if user didn't asked for IR
+            // IR stream improves depth frames
             if (!is_ir_requested)
             {
                 auto user_request = std::find_if(requests.begin(), requests.end(), [](std::shared_ptr<stream_profile_interface> sp)

@@ -188,7 +188,7 @@ namespace librealsense
         bool should_process( const rs2::frame & f ) override {
             auto fs = f.as< rs2::frameset >();
             if( fs )
-                return false;  // we'll get the ndividual frames back by themselves:
+                return false;  // we'll get the individual frames back by themselves:
             auto it = std::find( _streams.begin(), _streams.end(), f.get_profile().stream_type() );
             return ( it != _streams.end() );  // keep the frame only if one of those we got
         }
