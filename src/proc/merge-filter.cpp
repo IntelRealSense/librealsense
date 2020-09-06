@@ -48,12 +48,12 @@ namespace librealsense
             LOG_WARNING("merge_filter::process_frame(...) failed! sequence size must be 2 for merging pb.");
 
         int depth_sequ_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_HDR_SEQUENCE_ID);
-		
-		// condition added to ensure that frames are saved in the right order
-		// to prevent for example the saving of frame with sequence id 1 before
-		// saving frame of sequence id 0
-		// so that the merging with be deterministic - always done with frame n and n+1
-		// with frame n as basis
+        
+        // condition added to ensure that frames are saved in the right order
+        // to prevent for example the saving of frame with sequence id 1 before
+        // saving frame of sequence id 0
+        // so that the merging with be deterministic - always done with frame n and n+1
+        // with frame n as basis
         if (_framesets.size() == depth_sequ_id)
         {
             _framesets[depth_sequ_id] = fs;
