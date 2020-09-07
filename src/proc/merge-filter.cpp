@@ -23,6 +23,10 @@ namespace librealsense
         if (!depth_frame)
             return false;
 
+        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE))
+            return false;
+        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID))
+            return false;
         int depth_sequ_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE);
         if (depth_sequ_size == 0)
             return false;

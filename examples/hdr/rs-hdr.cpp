@@ -111,6 +111,14 @@ int main(int argc, char * argv[]) try
             apply_filter(printer);     // Print each enabled stream frame rate
 
         auto depth_frame = data.get_depth_frame();
+
+        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE) ||
+            !depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID))
+        {
+            std::cout << "Firmware and/or SDK versions must be updated for the HDR feature to be supported.\n";
+            return EXIT_SUCCESS;
+        }
+
         auto hdr_seq_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE);
         auto hdr_seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
         auto exp = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
