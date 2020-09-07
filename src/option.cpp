@@ -143,7 +143,6 @@ std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const 
 
 librealsense::polling_errors_disable::~polling_errors_disable()
 {
-    LOG_ERROR(__FUNCTION__);
     if (_polling_error_handler)
         _polling_error_handler->stop();
 }

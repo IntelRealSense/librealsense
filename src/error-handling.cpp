@@ -22,7 +22,6 @@ namespace librealsense
 
     polling_error_handler::~polling_error_handler()
     {
-        LOG_ERROR(__FUNCTION__);
         stop();
     }
 
@@ -32,7 +31,6 @@ namespace librealsense
     }
     void polling_error_handler::stop()
     {
-        LOG_ERROR(__FUNCTION__);
         _active_object.stop();
     }
 

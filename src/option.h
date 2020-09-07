@@ -476,7 +476,6 @@ namespace librealsense
         }
     private:
         std::unique_ptr<polling_error_handler> _polling_error_handler;
-        //polling_error_handler*          _polling_error_handler;
         float                           _value;
         std::function<void(const option&)> _recording_function = [](const option&) {};
     };
