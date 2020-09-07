@@ -8,7 +8,7 @@
 #include "context.h"
 #include "api.h"  // VALIDATE_INTERFACE_NO_THROW
 #include "algo/depth-to-rgb-calibration/debug.h"
-
+#include "algo/thermal-loop/l500-thermal-loop.h"
 
 using namespace librealsense;
 namespace impl = librealsense::algo::depth_to_rgb_calibration;
@@ -24,11 +24,13 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     std::vector< impl::yuy_t > const & last_yuy_data,
     impl::algo_calibration_info const & cal_info,
     impl::algo_calibration_registers const & cal_regs,
+    rs2_intrinsics yuy_intrinsics,
     double scale,
     std::function<void()> should_continue
 )
     : _algo( settings )
-    , _intr( yuy.get_profile().as< rs2::video_stream_profile >().get_intrinsics() )
+    , _intr( yuy_intrinsics )
+    , _intr_with_k_thermal( _intr )
     , _extr(to_raw_extrinsics( depth.get_profile().get_extrinsics_to( yuy.get_profile() )))
     , _from( depth.get_profile().get()->profile )
     , _to( yuy.get_profile().get()->profile )
@@ -42,7 +44,11 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
         _last_successful_frame_data = last_yuy_data;  // copy -- will be moved to algo
     else if( ! last_yuy_data.empty() )
         AC_LOG( DEBUG, "Not using last successfully-calibrated scene: it's of a different resolution" );
-    impl::calib calibration( _intr, _extr );
+
+    auto fx_fy = algo::thermal_loop::correct_thermal_scale( { _intr.fx, _intr.fy }, scale );
+    _intr_with_k_thermal.fx = fx_fy.first;
+    _intr_with_k_thermal.fy = fx_fy.second;
+    impl::calib calibration( _intr_with_k_thermal, _extr );
 
     CHECK_IF_NEEDS_TO_STOP();
 
@@ -160,7 +166,9 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
         // cost= " << params_curr.cost );
 
         AC_LOG( DEBUG, "Optimization successful!" );
-        _intr = _algo.get_calibration().get_intrinsics();
+        _intr_with_k_thermal = _algo.get_calibration().get_intrinsics();
+        _intr.ppx = _intr_with_k_thermal.ppx;
+        _intr.ppy = _intr_with_k_thermal.ppy;
         _intr.model = RS2_DISTORTION_INVERSE_BROWN_CONRADY; //restore LRS model 
         _extr = from_raw_extrinsics( _algo.get_calibration().get_extrinsics() );
         _dsm_params = _algo.get_dsm_params();
@@ -178,8 +186,9 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
 
 void depth_to_rgb_calibration::debug_calibration( char const * prefix )
 {
-    AC_LOG( DEBUG, AC_F_PREC << "    " << prefix << " intr" << _intr );
-    AC_LOG( DEBUG, AC_F_PREC << "    " << prefix << " extr" << _extr );
-    AC_LOG( DEBUG, AC_F_PREC << "    " << prefix << "  dsm" << _dsm_params );
+    AC_LOG( INFO, AC_F_PREC << "    " << prefix << " intr with k-thermal" << _intr_with_k_thermal );
+    AC_LOG( INFO, AC_F_PREC << "    " << prefix << " intr" << _intr );
+    AC_LOG( INFO, AC_F_PREC << "    " << prefix << " extr" << _extr );
+    AC_LOG( INFO, AC_F_PREC << "    " << prefix << "  dsm" << _dsm_params );
 }
 

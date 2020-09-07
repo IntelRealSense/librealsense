@@ -186,7 +186,78 @@ namespace librealsense
     }
 
 
-    rs2_intrinsics l500_color_sensor::get_intrinsics( const stream_profile& profile ) const
+   rs2_intrinsics l500_color_sensor::get_orig_intrinsics( l500_device & dev,
+                                                           uint32_t width,
+                                                           uint32_t height ) const
+    {
+        using namespace ivcam2;
+
+        auto & intrinsic = *_owner->_color_intrinsics_table;
+
+        auto num_of_res = intrinsic.resolution.num_of_resolutions;
+
+        for( auto i = 0; i < num_of_res; i++ )
+        {
+            auto model = intrinsic.resolution.intrinsic_resolution[i];
+            if( model.height == height && model.width == width )
+            {
+                rs2_intrinsics intrinsics;
+                intrinsics.width = model.width;
+                intrinsics.height = model.height;
+                intrinsics.fx = model.ipm.focal_length.x;
+                intrinsics.fy = model.ipm.focal_length.y;
+                intrinsics.ppx = model.ipm.principal_point.x;
+                intrinsics.ppy = model.ipm.principal_point.y;
+
+                if( model.distort.radial_k1 || model.distort.radial_k2
+                    || model.distort.tangential_p1 || model.distort.tangential_p2
+                    || model.distort.radial_k3 )
+                {
+                    intrinsics.coeffs[0] = model.distort.radial_k1;
+                    intrinsics.coeffs[1] = model.distort.radial_k2;
+                    intrinsics.coeffs[2] = model.distort.tangential_p1;
+                    intrinsics.coeffs[3] = model.distort.tangential_p2;
+                    intrinsics.coeffs[4] = model.distort.radial_k3;
+
+                    intrinsics.model = RS2_DISTORTION_INVERSE_BROWN_CONRADY;
+                }
+
+                return intrinsics;
+            }
+        }
+        throw std::runtime_error( to_string() << "intrinsics for resolution " << width << ","
+                                              << height << " don't exist" );
+    }
+
+    double l500_color_sensor::read_temperature() const
+    {
+        auto hwm = *_owner->_hw_monitor;
+
+        std::vector< byte > res;
+
+        try
+        {
+            res = hwm.send( command{ TEMPERATURES_GET } );
+        }
+        catch( std::exception const & e )
+        {
+            LOG_ERROR(
+                "Failed to get temperatures; hardware monitor in inaccessible: " << e.what() );
+            return 0.;
+        }
+
+        if( res.size() < sizeof( temperatures ) )  // New temperatures may get added by FW...
+        {
+            LOG_ERROR( "Failed to get temperatures; result size= "
+                       << res.size() << "; expecting at least " << sizeof( temperatures ) );
+            return 0.;
+        }
+        auto const & ts = *( reinterpret_cast< temperatures * >( res.data() ) );
+        LOG_DEBUG( "HUM temperture is currently " << ts.HUM_temperature << " degrees Celsius" );
+        return ts.HUM_temperature;
+    }
+
+    rs2_intrinsics l500_color_sensor::get_intrinsics( const stream_profile & profile ) const
     {
         using namespace ivcam2;
 
@@ -207,7 +278,9 @@ namespace librealsense
                 intrinsics.ppx = model.ipm.principal_point.x;
                 intrinsics.ppy = model.ipm.principal_point.y;
 
-                if( model.distort.radial_k1 || model.distort.radial_k2 || model.distort.tangential_p1 || model.distort.tangential_p2 || model.distort.radial_k3 )
+                if( model.distort.radial_k1 || model.distort.radial_k2
+                    || model.distort.tangential_p1 || model.distort.tangential_p2
+                    || model.distort.radial_k3 )
                 {
                     intrinsics.coeffs[0] = model.distort.radial_k1;
                     intrinsics.coeffs[1] = model.distort.radial_k2;
@@ -218,11 +291,34 @@ namespace librealsense
                     intrinsics.model = RS2_DISTORTION_INVERSE_BROWN_CONRADY;
                 }
 
+                auto temp = read_temperature();
+                auto scale
+                    = algo::thermal_loop::get_rgb_current_thermal_scale( *_owner->_thermal_table,
+                                                                         (double)temp );
+                auto fx_fy
+                    = algo::thermal_loop::correct_thermal_scale( { intrinsics.fx, intrinsics.fy },
+                                                                 scale );
+
+                LOG_DEBUG( "original intr"
+                           << "[ " << intrinsics.width << "x" << intrinsics.height << "  p["
+                           << intrinsics.ppx << " " << intrinsics.ppy << "]"
+                           << "  f[" << intrinsics.fx << " " << intrinsics.fy << "]" );
+
+                intrinsics.fx = fx_fy.first;
+                intrinsics.fy = fx_fy.second;
+                LOG_DEBUG( "Humidity temp is " << temp << " scaling krgb by " << scale );
+                LOG_DEBUG( "user intr"
+                           << "[ " << intrinsics.width << "x" << intrinsics.height << "  p["
+                           << intrinsics.ppx << " " << intrinsics.ppy << "]"
+                           << "  f[" << intrinsics.fx << " " << intrinsics.fy << "]" );
+
                 return intrinsics;
             }
         }
-        throw std::runtime_error( to_string() << "intrinsics for resolution " << profile.width << "," << profile.height << " don't exist" );
+        throw std::runtime_error( to_string() << "intrinsics for resolution " << profile.width
+                                              << "," << profile.height << " don't exist" );
     }
+
 
 
     rs2_intrinsics ivcam2::rgb_calibration_table::get_intrinsics() const

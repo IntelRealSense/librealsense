@@ -24,6 +24,7 @@ namespace librealsense
         // input/output
         rs2_extrinsics _extr;
         rs2_intrinsics _intr;
+        rs2_intrinsics _intr_with_k_thermal;
         rs2_dsm_params _dsm_params;
         std::vector< algo::depth_to_rgb_calibration::yuy_t > _last_successful_frame_data;
 
@@ -40,6 +41,7 @@ namespace librealsense
             std::vector< algo::depth_to_rgb_calibration::yuy_t > const & last_yuy_data,
             algo::depth_to_rgb_calibration::algo_calibration_info const & cal_info,
             algo::depth_to_rgb_calibration::algo_calibration_registers const & cal_regs,
+            rs2_intrinsics yuy_intrinsics,
             double scale,
             std::function<void()> should_continue = nullptr
         );

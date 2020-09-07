@@ -929,6 +929,14 @@ namespace ivcam2 {
         return true;
     }
 
+     rs2_intrinsics get_orig_intrinsics( l500_device & dev,
+                                                      const rs2::stream_profile & profile )
+    {
+
+        auto vp = profile.as< rs2::video_stream_profile >(); 
+        return dev.get_color_sensor()->get_orig_intrinsics( dev, vp.width(), vp.height() );
+        
+    }
 
     void ac_trigger::run_algo()
     {
@@ -955,8 +963,10 @@ namespace ivcam2 {
                     // cannot do it from set_special_frame() because it takes time and we should not
                     // hold up the thread that the frame callbacks are on!
                     float dsm_x_scale, dsm_y_scale, dsm_x_offset, dsm_y_offset;
+                    double scale;
                     algo::depth_to_rgb_calibration::algo_calibration_info cal_info;
                     //algo::thermal_loop::thermal_table_data thermal_table;
+
                     {
                         auto hwm = _hwm.lock();
                         if( ! hwm )
@@ -970,7 +980,10 @@ namespace ivcam2 {
                         ivcam2::read_fw_table( *hwm, cal_info.table_id, &cal_info );
                         auto data = read_fw_table_raw( *hwm, 0x317 );
                         auto t = algo::thermal_loop::parse_thermal_table( data );
-                        auto scale = algo::thermal_loop::get_rgb_current_thermal_scale( t, _temp );
+                        scale = algo::thermal_loop::get_rgb_current_thermal_scale( t, _temp );
+                        AC_LOG( INFO,
+                                "Humidity temp is " << _temp << " scaling krgb by " << scale );
+
                         // If the above throw (and they can!) then we catch below and stop...
                     }
 
@@ -1004,7 +1017,8 @@ namespace ivcam2 {
                                                    df, irf,
                                                    _cf, _pcf, _last_yuy_data,
                                                    cal_info, cal_regs,
-                        0,
+                                                   get_orig_intrinsics( _dev, _cf.get_profile()) ,
+                                                   scale,
                                                    should_continue );
 
                     std::string debug_dir = get_ac_logger().get_active_dir();
@@ -1215,36 +1229,7 @@ namespace ivcam2 {
 
     double ac_trigger::read_temperature()
     {
-        auto hwm = _hwm.lock();
-        if( ! hwm )
-        {
-            AC_LOG( ERROR, "Hardware monitor is inaccessible; cannot read temperature" );
-            return 0.;
-        }
-        // The temperature may depend on streaming?
-        std::vector<byte> res;
-
-        try
-        {
-            res = hwm->send(command{ TEMPERATURES_GET });
-        }
-        catch (std::exception const & e)
-        {
-            AC_LOG(ERROR,
-                "Failed to get temperatures; hardware monitor in inaccessible: " << e.what());
-            return 0.;
-        }
-
-        if( res.size() < sizeof( temperatures ) )  // New temperatures may get added by FW...
-        {
-            AC_LOG( ERROR,
-                    "Failed to get temperatures; result size= "
-                        << res.size() << "; expecting at least " << sizeof( temperatures ) );
-            return 0.;
-        }
-        auto const & ts = *( reinterpret_cast< temperatures * >( res.data() ) );
-        AC_LOG( DEBUG, "HUM temperture is currently " << ts.HUM_temperature << " degrees Celsius" );
-        return ts.HUM_temperature;
+        return _dev.get_color_sensor()->read_temperature();
     }
 
 

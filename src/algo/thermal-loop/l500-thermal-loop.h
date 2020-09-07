@@ -32,7 +32,7 @@ struct thermal_table_data
     std::vector< table_data > vals;
 };
 
-thermal_table_data parse_thermal_table( std::vector< byte > data )
+static thermal_table_data parse_thermal_table( std::vector< byte > data )
 {
     thermal_table_data res;
     std::vector< float > float_vac;
@@ -60,14 +60,14 @@ thermal_table_data parse_thermal_table( std::vector< byte > data )
     return res;
 }
 
-double get_rgb_current_thermal_scale( const thermal_table_data & table, double hum_temp )
+static double get_rgb_current_thermal_scale( const thermal_table_data & table, double hum_temp )
 {
 
     if( hum_temp <= table.md.min_temp )
-        return (double)table.vals[0].x_y_scale;
+        return 1 / (double)table.vals[0].x_y_scale;
 
     if( hum_temp >= table.md.max_temp )
-        return (double)table.vals[num_of_records - 1].x_y_scale;
+        return 1 / (double)table.vals[num_of_records - 1].x_y_scale;
 
     auto temp_range = table.md.max_temp - table.md.min_temp;
     auto temp_step = temp_range / ( num_of_records + 1 );
@@ -77,20 +77,17 @@ double get_rgb_current_thermal_scale( const thermal_table_data & table, double h
     {
         if( hum_temp <= i )
         {
-            return (double)table.vals[ind].x_y_scale;
+            return 1 / (double)table.vals[ind].x_y_scale;
         }
         i += temp_step;
     }
+    throw std::runtime_error( librealsense::to_string() << hum_temp << "is not valid " );
 }
 
-algo::depth_to_rgb_calibration::rs2_intrinsics_double
-correct_thermal_scale( algo::depth_to_rgb_calibration::rs2_intrinsics_double in_calib,
+static std::pair < double, double > correct_thermal_scale( std::pair< double, double > in_calib,
                        double scale )
 {
-    auto res = in_calib;
-    res.fx /= scale;
-    res.fy /= scale;
-    return res;
+    return { in_calib.first * scale, in_calib.second * scale };
 } 
 }  // namespace thermal_loop
 }  // namespace algo

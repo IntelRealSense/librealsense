@@ -11,9 +11,11 @@
 #include "stream.h"
 #include "l500-depth.h"
 #include "calibrated-sensor.h"
+#include "algo/thermal-loop/l500-thermal-loop.h"
 
 namespace librealsense
 {
+
     class l500_color
         : public virtual l500_device
     {
@@ -39,6 +41,7 @@ namespace librealsense
         lazy<ivcam2::intrinsic_rgb> _color_intrinsics_table;
         lazy<std::vector<uint8_t>> _color_extrinsics_table_raw;
         std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
+        lazy< algo::thermal_loop::thermal_table_data > _thermal_table;
 
         ivcam2::intrinsic_rgb read_intrinsics_table() const;
         std::vector<uint8_t> get_raw_extrinsics_table() const;
@@ -61,9 +64,13 @@ namespace librealsense
             _state(sensor_state::CLOSED)
         {
         }
+        rs2_intrinsics get_orig_intrinsics( l500_device & dev, uint32_t width, uint32_t height ) const;
+        double read_temperature() const;
 
         rs2_intrinsics get_intrinsics( const stream_profile& profile ) const override;
-        
+
+
+
         // calibrated_sensor
         void override_intrinsics( rs2_intrinsics const& intr ) override;
         void override_extrinsics( rs2_extrinsics const& extr ) override;

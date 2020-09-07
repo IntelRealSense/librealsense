@@ -12,7 +12,7 @@
 
 inline std::string bin_dir( std::string const & scene_dir )
 {
-    return join( join( scene_dir, "binFiles" ), "ac2" );
+    return join( join( scene_dir, "binFiles\\" ), "ac2\\" );
 }
 
 
@@ -181,8 +181,8 @@ struct scene_metadata
 
     scene_metadata( std::string const &scene_dir )
     {
-        std::ifstream(bin_dir(scene_dir) + "yuy_prev_z_i.files") >> rgb_file >>
-            rgb_prev_file >> rgb_prev_valid_file >> z_file >> ir_file;
+        std::ifstream(bin_dir(scene_dir) + "yuy_prev_z_i.files") >> rgb_file >> rgb_prev_file
+            >> z_file >> ir_file >> rgb_prev_valid_file;
         if( rgb_file.empty() )
             throw std::runtime_error( "failed to read file:\n" + bin_dir( scene_dir ) + "yuy_prev_z_i.files" );
         if( ir_file.empty() )
