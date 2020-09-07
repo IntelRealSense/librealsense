@@ -25,29 +25,26 @@ TEST_CASE( "HDR Config - changing only exposure", "[HDR]" ) {
     depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE) == 0.f);
 
-    depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_SIZE, 2);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_SEQUENCE_SIZE) == 2.f);
-    
-    depth_sensor.set_option(RS2_OPTION_HDR_RELATIVE_MODE, 0);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_RELATIVE_MODE) == 0.f);
+    depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_SIZE, 2);
+    REQUIRE(depth_sensor.get_option(RS2_OPTION_SUBPRESET_SEQUENCE_SIZE) == 2.f);
 
     float first_exposure = 120.f;
-    depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 1);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_SEQUENCE_ID) == 1.f);
+    depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 1);
+    REQUIRE(depth_sensor.get_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID) == 1.f);
     depth_sensor.set_option(RS2_OPTION_EXPOSURE, first_exposure);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_EXPOSURE) == first_exposure);
 
     float second_exposure = 1200.f;
-    depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 2);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_SEQUENCE_ID) == 2.f);
+    depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 2);
+    REQUIRE(depth_sensor.get_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID) == 2.f);
     depth_sensor.set_option(RS2_OPTION_EXPOSURE, second_exposure);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_EXPOSURE) == second_exposure);
 
-    depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 0);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_SEQUENCE_ID) == 0.f);
+    depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 0);
+    REQUIRE(depth_sensor.get_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID) == 0.f);
 
-    depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 1.f);
+    depth_sensor.set_option(RS2_OPTION_HDR_MODE, 1);
+    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_MODE) == 1.f);
 
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_DEPTH);
@@ -72,8 +69,8 @@ TEST_CASE( "HDR Config - changing only exposure", "[HDR]" ) {
         ++iterations;
         if (iterations == 100)
         {
-            depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 0);
-            REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 0.f);
+            depth_sensor.set_option(RS2_OPTION_HDR_MODE, 0);
+            REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_MODE) == 0.f);
 
             previous_exposure = frame_exposure;
         }

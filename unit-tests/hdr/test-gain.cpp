@@ -21,29 +21,26 @@ TEST_CASE( "HDR Config - changing only exposure", "[HDR]" ) {
     //depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
     //REQUIRE(depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE) == 0.f);
 
-    depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_SIZE, 2);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_SEQUENCE_SIZE) == 2.f);
-    
-    depth_sensor.set_option(RS2_OPTION_HDR_RELATIVE_MODE, 0);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_RELATIVE_MODE) == 0.f);
+    depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_SIZE, 2);
+    REQUIRE(depth_sensor.get_option(RS2_OPTION_SUBPRESET_SEQUENCE_SIZE) == 2.f);
 
     float first_gain = 90.f;
-    depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 1);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_SEQUENCE_ID) == 1.f);
+    depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 1);
+    REQUIRE(depth_sensor.get_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID) == 1.f);
     depth_sensor.set_option(RS2_OPTION_GAIN, first_gain);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_GAIN) == first_gain);
 
     float second_gain = 20.f;
-    depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 2);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_SEQUENCE_ID) == 2.f);
+    depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 2);
+    REQUIRE(depth_sensor.get_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID) == 2.f);
     depth_sensor.set_option(RS2_OPTION_GAIN, second_gain);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_GAIN) == second_gain);
 
-    depth_sensor.set_option(RS2_OPTION_HDR_SEQUENCE_ID, 0);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_SEQUENCE_ID) == 0.f);
+    depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 0);
+    REQUIRE(depth_sensor.get_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID) == 0.f);
 
-    depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 1.f);
+    depth_sensor.set_option(RS2_OPTION_HDR_MODE, 1);
+    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_MODE) == 1.f);
 
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_DEPTH);
