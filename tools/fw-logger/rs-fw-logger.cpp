@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
                         bool parsing_result = fw_log_device.parse_log(log_message, parsed_log);
                         
                         stringstream sstr;
-                        sstr << parsed_log.timestamp() << " " << parsed_log.severity() << " " << parsed_log.message()
+                        sstr << datetime_string() << " " << parsed_log.timestamp() << " " << parsed_log.severity() << " " << parsed_log.message()
                             << " " << parsed_log.thread_name() << " " << parsed_log.file_name()
                             << " " << parsed_log.line();
 
