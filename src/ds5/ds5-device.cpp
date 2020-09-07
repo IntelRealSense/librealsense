@@ -941,18 +941,16 @@ namespace librealsense
                 make_attribute_parser(&md_configuration::sub_preset_info,
                     md_configuration_attributes::sub_preset_info_attribute, md_prop_offset ,
                 [](const rs2_metadata_type& param) {
-                        //int id = param & 0xF;
-                        //int num_of_items = (param & 0x3F0) >> 4;
-                        //int item_index = (param & 0xFC00) >> 10;
-                        //int iteration = (param & 0xFF0000) >> 16;
-                        //int item_iteration = (param & 0xFF000000) >> 24;
-                        return (param & 0x3F0) >> 4; // num_of_items
+                        return 0(param & md_configuration::SUB_PRESET_BIT_MASK_SEQUENCE_SIZE)
+                            >> md_configuration::SUB_PRESET_BIT_OFFSET_SEQUENCE_SIZE;
                     }));
+
             depth_sensor.register_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID,
                 make_attribute_parser(&md_configuration::sub_preset_info,
                     md_configuration_attributes::sub_preset_info_attribute, md_prop_offset ,
                 [](const rs2_metadata_type& param) {
-                        return (param & 0xFC00) >> 10; // item_index
+                        return (param & md_configuration::SUB_PRESET_BIT_MASK_SEQUENCE_ID) 
+                            >> md_configuration::SUB_PRESET_BIT_OFFSET_SEQUENCE_ID; // item_index
                     }));
         }
 

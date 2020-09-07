@@ -480,6 +480,24 @@ namespace librealsense
         uint8_t             gpioInputData;
         uint32_t            sub_preset_info;
         uint8_t             reserved[1];
+
+        typedef enum sub_preset_bit_mask
+        {
+            SUB_PRESET_BIT_MASK_ID                      = 0xF,
+            SUB_PRESET_BIT_MASK_SEQUENCE_SIZE           = 0x3F0,
+            SUB_PRESET_BIT_MASK_SEQUENCE_ID             = 0xFC00,
+            SUB_PRESET_BIT_MASK_SEQUENCE_ITERATION      = 0xFF0000,
+            SUB_PRESET_BIT_MASK_SEQUENCE_ITEM_ITERATION = 0xFF000000
+        }sub_preset_bit_mask;
+
+        typedef enum sub_preset_bit_offset
+        {
+            SUB_PRESET_BIT_OFFSET_ID               = 0,
+            SUB_PRESET_BIT_OFFSET_SEQUENCE_SIZE    = 4,
+            SUB_PRESET_BIT_OFFSET_SEQUENCE_ID      = 10,
+            SUB_PRESET_BIT_OFFSET_ITERATION        = 16,
+            SUB_PRESET_BIT_OFFSET_ITEM_ITERATION   = 24
+        }sub_preset_bit_offset;
     };
 
     REGISTER_MD_TYPE(md_configuration, md_type::META_DATA_INTEL_CONFIGURATION_ID)
