@@ -23,6 +23,9 @@ namespace librealsense
         _has_config_changed = false;
         _current_hdr_sequence_index = -1;
 
+        _auto_exposure_to_be_restored = false;
+        _emitter_on_off_to_be_restored = false;
+
         _sequence_size = 2;
         _hdr_sequence_params.clear();
         _hdr_sequence_params.resize(2);
@@ -122,6 +125,10 @@ namespace librealsense
         {
             if (validate_config())
             {
+                // saving status of options that are not compatible with hdr,
+                // so that they could be reenabled after hdr disable
+                set_options_to_be_restored_after_disable();
+
                 send_sub_preset_to_fw();
                 _is_enabled = true;
                 _has_config_changed = false;
@@ -134,6 +141,43 @@ namespace librealsense
         {
             disable(); 
             _is_enabled = false;
+
+            // re-enabling options that were disabled in order to permit the hdr
+            restore_options_after_disable();
+        }
+    }
+
+    void hdr_config::set_options_to_be_restored_after_disable()
+    {
+        // AUTO EXPOSURE
+        if (_sensor->get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE).query())
+        {
+            _sensor->get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE).set(0.f);
+            _auto_exposure_to_be_restored = true;
+        }
+
+        // EMITTER ON OFF
+        if (_sensor->get_option(RS2_OPTION_EMITTER_ON_OFF).query())
+        {
+            //_sensor->get_option(RS2_OPTION_EMITTER_ON_OFF).set(0.f);
+            _emitter_on_off_to_be_restored = true;
+        }
+    }
+
+    void hdr_config::restore_options_after_disable()
+    {
+        // AUTO EXPOSURE
+        if (_auto_exposure_to_be_restored)
+        {
+            _sensor->get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE).set(1.f);
+            _auto_exposure_to_be_restored = false;
+        }
+
+        // EMITTER ON OFF
+        if (_emitter_on_off_to_be_restored)
+        {
+            _sensor->get_option(RS2_OPTION_EMITTER_ON_OFF).set(1.f);
+            _emitter_on_off_to_be_restored = false;
         }
     }
 

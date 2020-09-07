@@ -48,6 +48,9 @@ namespace librealsense
             depth_gain = 2
         }control_id;
 
+        void set_options_to_be_restored_after_disable();
+        void restore_options_after_disable();
+
         bool validate_config() const;
         void send_sub_preset_to_fw();
         void disable();
@@ -65,6 +68,8 @@ namespace librealsense
         bool _is_enabled;
         bool _is_config_in_process;
         bool _has_config_changed;
+        bool _auto_exposure_to_be_restored;
+        bool _emitter_on_off_to_be_restored;
         hw_monitor& _hwm;
         sensor_base* _sensor;
         option_range _exposure_range;

@@ -851,7 +851,7 @@ namespace librealsense
                 "Enable Auto Exposure");
             depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
 
-            /*depth_sensor.register_option(RS2_OPTION_EXPOSURE,
+            depth_sensor.register_option(RS2_OPTION_EXPOSURE,
                 std::make_shared<auto_disabling_control>(
                     uvc_xu_exposure_option,
                     enable_auto_exposure));
@@ -859,7 +859,7 @@ namespace librealsense
             depth_sensor.register_option(RS2_OPTION_GAIN,
                 std::make_shared<auto_disabling_control>(
                     uvc_pu_gain_option,
-                    enable_auto_exposure));*/
+                    enable_auto_exposure));
         }
 
         roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);
