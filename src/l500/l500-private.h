@@ -212,12 +212,14 @@ namespace librealsense
         };
 #pragma pack(pop)
 
+        // <Command Name="GVD" Opcode="0x10" Description="Get Version and Date">
+        // See CommandsIVCAM2.xml for complete up-to-date fields
         enum gvd_fields
         {
-            fw_version_offset = 12,         // FunctionalPayloadVersion
-            is_camera_locked_offset = 6,    // eyeSafety: encompasses eeprom, flash, & registers
+            is_camera_locked_offset = 6,    // "eyeSafety": encompasses eeprom, flash, & registers
+            fw_version_offset = 12,         // "FunctionalPayloadVersion"
             module_serial_offset = 60,      // "OpticalHeadModuleSN" -> RS2_CAMERA_INFO_SERIAL_NUMBER
-            module_asic_serial_offset = 74  // RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER & RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID
+            module_asic_serial_offset = 74  // "AsicModuleSerial" -> RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER & RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID
         };
 
         enum gvd_fields_size
