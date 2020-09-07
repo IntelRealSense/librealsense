@@ -979,8 +979,8 @@ namespace ivcam2 {
 
                         ivcam2::read_fw_table( *hwm, cal_info.table_id, &cal_info );
                         auto data = read_fw_table_raw( *hwm, 0x317 );
-                        auto t = algo::thermal_loop::parse_thermal_table( data );
-                        scale = algo::thermal_loop::get_rgb_current_thermal_scale( t, _temp );
+                        auto t = algo::thermal_loop::l500::parse_thermal_table( data );
+                        scale = algo::thermal_loop::l500::get_rgb_current_thermal_scale( t, _temp );
                         AC_LOG( INFO,
                                 "Humidity temp is " << _temp << " scaling krgb by " << scale );
 

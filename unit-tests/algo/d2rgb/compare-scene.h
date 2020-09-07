@@ -549,9 +549,10 @@ void compare_scene( std::string const & scene_dir,
     try
     {
         auto vec = read_vector_from< byte >( bin_dir( scene_dir ) + "rgb_thermal" );
-        auto thermal_table = thermal::parse_thermal_table( vec );
-        auto scale = thermal::get_rgb_current_thermal_scale( thermal_table, settings.hum_temp );
-        auto res = thermal::correct_thermal_scale( {ci.rgb.fx,ci.rgb.fy} , scale );
+        auto thermal_table = thermal::l500::parse_thermal_table( vec );
+        auto scale
+            = thermal::l500::get_rgb_current_thermal_scale( thermal_table, settings.hum_temp );
+        auto res = thermal::l500::correct_thermal_scale( { ci.rgb.fx, ci.rgb.fy }, scale );
         ci.rgb.fx = res.first;
         ci.rgb.fy = res.second;
     }

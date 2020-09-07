@@ -293,10 +293,10 @@ namespace librealsense
 
                 auto temp = read_temperature();
                 auto scale
-                    = algo::thermal_loop::get_rgb_current_thermal_scale( *_owner->_thermal_table,
+                    = algo::thermal_loop::l500::get_rgb_current_thermal_scale( *_owner->_thermal_table,
                                                                          (double)temp );
-                auto fx_fy
-                    = algo::thermal_loop::correct_thermal_scale( { intrinsics.fx, intrinsics.fy },
+                auto fx_fy = algo::thermal_loop::l500::correct_thermal_scale(
+                    { intrinsics.fx, intrinsics.fy },
                                                                  scale );
 
                 LOG_DEBUG( "original intr"
