@@ -81,7 +81,8 @@ void output_model::thread_loop()
                         to_string() << "Failed to fetch firmware logs: " << ex.what());
                 }
             }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        // FW Limitation
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }
 
