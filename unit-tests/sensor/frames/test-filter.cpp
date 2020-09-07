@@ -16,47 +16,101 @@ INITIALIZE_EASYLOGGINGPP
 #endif
 
 #include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
+#include <chrono>
+#include <atomic>
+
+using namespace std::chrono;
 
 
+// Test description:
+// This test verify that if the user ask for depth stream only, the incoming frames will be depth frames only.
+// L515 device has a frame filter that filters IR frames when depth only is requested
+// Note: * L515 specific test
+//       * Test will pass if no L515 device is connected
+//       * Test will be performed on the first L515 device detected.
 TEST_CASE( "Sensor", "[frames-filter]" )
 {
     try
     {
-        // Create a Pipeline - this serves as a top-level API for streaming and processing frames
-        rs2::pipeline p;
+        static const int FRAMES_TO_CHECK = 100;
+        static const int TEST_TIMEOUT_MS = 10000;
+        rs2::context ctx;
+        rs2::config cfg;
+        rs2::device_list devices;
 
-        // Configure and start the pipeline
-        p.start();
+        devices = ctx.query_devices();
+        bool l515_found = false;
+        std::atomic<int>  depth_frames_count{ 0 };
+        std::atomic<int>  non_depth_frames_count{ 0 };
 
-        while( true )
+        for (auto &&dev : devices)
         {
-            // Block program until frames arrive
-            rs2::frameset frames = p.wait_for_frames();
+            bool dev_is_l515 = dev.supports(RS2_CAMERA_INFO_NAME) ?
+                std::string(dev.get_info(RS2_CAMERA_INFO_NAME)).find("L515") != std::string::npos : false;
 
-            // Try to get a frame of a depth image
-            rs2::depth_frame depth = frames.get_depth_frame();
+            if (dev_is_l515) // First L515 device found
+            {
+                l515_found = true;
 
-            // Get the depth frame's dimensions
-            float width = depth.get_width();
-            float height = depth.get_height();
+                auto depth = devices[0].first<rs2::depth_sensor>();
 
-            // Query the distance from the camera to the object in the center of the image
-            float dist_to_center = depth.get_distance( width / 2, height / 2 );
+                auto stream_profiles = depth.get_stream_profiles();
+                // Find depth stream
+                auto depth_stream = std::find_if(
+                    stream_profiles.begin(),
+                    stream_profiles.end(),
+                    [](rs2::stream_profile sp) { return sp.stream_type() == RS2_STREAM_DEPTH; });
 
-            // Print the distance
-            std::cout << "The camera is facing an object " << dist_to_center << " meters away \r";
+                if (depth_stream != stream_profiles.end())
+                {
+                    depth.open(*depth_stream);
+
+                    depth.start([&](rs2::frame f)
+                    {
+                        static int cnt = 0;
+                        cnt++;
+                        if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
+                            ++depth_frames_count;
+                        else
+                            ++non_depth_frames_count;
+                    });
+
+                    auto start_time_ms = duration_cast<milliseconds>(high_resolution_clock::now().time_since_epoch()).count();
+                    auto timeout_delay_ms = TEST_TIMEOUT_MS;
+                    auto curr_time = start_time_ms;
+
+                    // Test will continue until stop raised or a timeout has been reached.
+                    while ((depth_frames_count < FRAMES_TO_CHECK) && curr_time - start_time_ms < timeout_delay_ms)
+                    {
+                        curr_time = duration_cast<milliseconds>(high_resolution_clock::now().time_since_epoch()).count(); // Update time
+                        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Sleep for 10 ms
+                    }
+
+                    // We expect only 'FRAMES_TO_CHECK' depth frames during the test time
+                    CHECK(curr_time - start_time_ms < timeout_delay_ms); // Test ended with timeout
+                    CHECK(depth_frames_count >= FRAMES_TO_CHECK);
+                    CHECK(non_depth_frames_count == 0);
+                }
+
+                break;
+            }
         }
 
-        // return EXIT_SUCCESS;
+        if (!l515_found)
+        {
+            std::cout << "No L515 camera has been detected, skipping this test with success indication\n";
+            return;
+        }
     }
     catch( const rs2::error & e )
     {
-        std::cerr << "RealSense error calling " << e.get_failed_function() << "("
-                  << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+        UNSCOPED_INFO("RealSense error calling " << e.get_failed_function() << "("+ e.get_failed_args() << "):\n    " << e.what());
+        FAIL();
     }
     catch( const std::exception & e )
     {
         std::cerr << e.what() << std::endl;
-        return;
+        UNSCOPED_INFO("RealSense error: " << e.what());
+        FAIL();
     }
 }
