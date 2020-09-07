@@ -6,13 +6,11 @@
 
 namespace librealsense
 {
-    hdr_config::hdr_config(hw_monitor& hwm, sensor_base* depth_ep,
-        option_range exposure_range, option_range gain_range) :
+    hdr_config::hdr_config(hw_monitor& hwm, std::shared_ptr<sensor_base> depth_ep) :
         _hwm(hwm),
         _sensor(depth_ep),
-        _exposure_range(exposure_range),
-        _gain_range(gain_range)
-    { 
+        _options_ranges_initialized(false)
+    {  
         reset_to_default();
     }
 
@@ -30,15 +28,18 @@ namespace librealsense
         _hdr_sequence_params.clear();
         _hdr_sequence_params.resize(2);
         
-        float exposure_default_value = _exposure_range.def;
-        float gain_default_value = _gain_range.def;
-        hdr_params params_0(0, exposure_default_value, gain_default_value);
-        _hdr_sequence_params[0] = params_0;
+        if (_options_ranges_initialized)
+        {
+            float exposure_default_value = _exposure_range.def;
+            float gain_default_value = _gain_range.def;
+            hdr_params params_0(0, exposure_default_value, gain_default_value);
+            _hdr_sequence_params[0] = params_0;
 
-        float exposure_min_value = _exposure_range.min;
-        float gain_min_value = _gain_range.min;
-        hdr_params params_1(1, exposure_min_value, gain_min_value);
-        _hdr_sequence_params[1] = params_1;
+            float exposure_min_value = _exposure_range.min;
+            float gain_min_value = _gain_range.min;
+            hdr_params params_1(1, exposure_min_value, gain_min_value);
+            _hdr_sequence_params[1] = params_1;
+        }
     }
 
     float hdr_config::get(rs2_option option) const
@@ -125,6 +126,13 @@ namespace librealsense
         {
             if (validate_config())
             {
+                if (!_options_ranges_initialized)
+                {
+                    initialize_options_ranges();
+                    _options_ranges_initialized = true;
+                    reset_to_default();
+                }
+
                 // saving status of options that are not compatible with hdr,
                 // so that they could be reenabled after hdr disable
                 set_options_to_be_restored_after_disable();
@@ -145,6 +153,12 @@ namespace librealsense
             // re-enabling options that were disabled in order to permit the hdr
             restore_options_after_disable();
         }
+    }
+
+    void hdr_config::initialize_options_ranges()
+    {
+        _exposure_range = _sensor->get_option(RS2_OPTION_EXPOSURE).get_range();
+        _gain_range = _sensor->get_option(RS2_OPTION_GAIN).get_range();
     }
 
     void hdr_config::set_options_to_be_restored_after_disable()

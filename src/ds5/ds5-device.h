@@ -55,9 +55,6 @@ namespace librealsense
 
         void hardware_reset() override;
 
-
-       
-
         void create_snapshot(std::shared_ptr<debug_interface>& snapshot) const override;
         void enable_recording(std::function<void(const debug_interface&)> record_action) override;
         platform::usb_spec get_usb_spec() const;
@@ -84,8 +81,6 @@ namespace librealsense
         void init(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
 
-        bool is_hdr_enabled() const;
-
         friend class ds5_depth_sensor;
 
         std::shared_ptr<hw_monitor> _hw_monitor;
@@ -105,8 +100,6 @@ namespace librealsense
         std::unique_ptr<polling_error_handler> _polling_error_handler;
         std::shared_ptr<lazy<rs2_extrinsics>> _left_right_extrinsics;
         bool _is_locked = true;
-
-        std::shared_ptr<hdr_config> _hdr_cfg;
     };
 
     class ds5u_device : public ds5_device

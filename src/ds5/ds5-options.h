@@ -304,6 +304,9 @@ namespace librealsense
     class hdr_option : public option
     {
     public:
+        hdr_option(std::shared_ptr<hdr_config> hdr_cfg, rs2_option option) :
+            _hdr_cfg(hdr_cfg), _option(option){}
+
         hdr_option(std::shared_ptr<hdr_config> hdr_cfg, rs2_option option, option_range range) :
             _hdr_cfg(hdr_cfg), _option(option), _range(range) {}
 
