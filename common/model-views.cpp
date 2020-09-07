@@ -3259,7 +3259,8 @@ namespace rs2
 
         check_for_device_updates(viewer.ctx, viewer.updates);
 
-        if ((bool)config_file::instance().get(configurations::update::recommend_updates))
+        // Inhibit for DQT
+        if ((bool)config_file::instance().get(configurations::update::recommend_updates) && _allow_remove)
         {
             bool fw_update_required = false;
             for (auto&& sub : dev.query_sensors())
@@ -3352,13 +3353,14 @@ namespace rs2
         }
     }
 
-    device_model::device_model(device& dev, std::string& error_message, viewer_model& viewer)
+    device_model::device_model(device& dev, std::string& error_message, viewer_model& viewer, bool remove)
         : dev(dev),
         _calib_model(dev),
         syncer(viewer.syncer),
         _update_readonly_options_timer(std::chrono::seconds(6))
         , _detected_objects(std::make_shared< atomic_objects_in_frame >()),
-        _updates(viewer.updates)
+        _updates(viewer.updates),
+        _allow_remove(remove)
     {
         if( dev.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) && dev.is< device_calibration >() )
         {
@@ -4695,7 +4697,7 @@ namespace rs2
             }
 
 
-            if (allow_remove)
+            if (_allow_remove)
             {
                 something_to_show = true;
 
@@ -5671,7 +5673,7 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, light_blue);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
-        if (allow_remove)
+        if (_allow_remove)
         {
             ImGui::Columns(1);
             float horizontal_distance_from_right_side_of_panel = 47;
