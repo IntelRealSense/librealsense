@@ -802,7 +802,7 @@ namespace librealsense
             ds5_depth->init_hdr_config();
             auto&& hdr_cfg = ds5_depth->get_hdr_config();
 
-            option_range hdr_sequence_size_range = { 1.f /*min*/, 3.f /*max*/, 1.f /*step*/, 1.f /*default*/ };
+            option_range hdr_sequence_size_range = { 2.f /*min*/, 2.f /*max*/, 1.f /*step*/, 2.f /*default*/ };
             auto hdr_sequence_size_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_SUBPRESET_SEQUENCE_SIZE, hdr_sequence_size_range);
             depth_sensor.register_option(RS2_OPTION_SUBPRESET_SEQUENCE_SIZE, hdr_sequence_size_option);
             
