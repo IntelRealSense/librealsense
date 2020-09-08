@@ -932,10 +932,8 @@ namespace ivcam2 {
      rs2_intrinsics get_orig_intrinsics( l500_device & dev,
                                                       const rs2::stream_profile & profile )
     {
-
         auto vp = profile.as< rs2::video_stream_profile >(); 
-        return dev.get_color_sensor()->get_orig_intrinsics( dev, vp.width(), vp.height() );
-        
+        return dev.get_color_sensor()->get_orig_intrinsics(vp.width(), vp.height() );
     }
 
     void ac_trigger::run_algo()
@@ -1049,6 +1047,7 @@ namespace ivcam2 {
                     case RS2_CALIBRATION_SUCCESSFUL:
                         _extr = algo.get_extrinsics();
                         _intr = algo.get_intrinsics();
+                        _intr_with_k_thermal = algo.get_k_thermal_intrinsics();
                         _dsm_params = algo.get_dsm_params();
                         call_back( status );  // if this throws, we don't want to do the below:
                         _last_temp = _temp;

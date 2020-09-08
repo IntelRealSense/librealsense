@@ -228,6 +228,7 @@ namespace librealsense
                         auto & color_sensor = *get_color_sensor();
                         color_sensor.override_intrinsics( _autocal->get_intrinsics() );
                         color_sensor.override_extrinsics( _autocal->get_extrinsics() );
+                        color_sensor.set_k_thermal_intrinsics(_autocal->get_k_thermal_intrinsics());
                     }
                     notify_of_calibration_change( status );
                 } );

@@ -41,7 +41,6 @@ namespace librealsense
         lazy<ivcam2::intrinsic_rgb> _color_intrinsics_table;
         lazy<std::vector<uint8_t>> _color_extrinsics_table_raw;
         std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
-        lazy< algo::thermal_loop::l500::rgb_thermal_calib_info > _thermal_table;
 
         ivcam2::intrinsic_rgb read_intrinsics_table() const;
         std::vector<uint8_t> get_raw_extrinsics_table() const;
@@ -64,7 +63,7 @@ namespace librealsense
             _state(sensor_state::CLOSED)
         {
         }
-        rs2_intrinsics get_orig_intrinsics( l500_device & dev, uint32_t width, uint32_t height ) const;
+        rs2_intrinsics get_orig_intrinsics( const uint32_t & width, const uint32_t & height ) const;
         double read_temperature() const;
 
         rs2_intrinsics get_intrinsics( const stream_profile& profile ) const override;
@@ -77,6 +76,8 @@ namespace librealsense
         rs2_dsm_params get_dsm_params() const override;
         void override_dsm_params( rs2_dsm_params const & dsm_params ) override;
         void reset_calibration() override;
+        void set_k_thermal_intrinsics( rs2_intrinsics const & intr );
+        void reset_k_thermal_intrinsics(); 
 
         stream_profiles init_stream_profiles() override
         {
@@ -145,6 +146,10 @@ namespace librealsense
         l500_color* const _owner;
         action_delayer _action_delayer;
         std::mutex _state_mutex;
+
+        // Intrinsics from the the last successful AC( if one was ) with k - thermal correction,
+        // We save it normalized such that it can be applied to each resolution
+        std::shared_ptr< rs2_intrinsics > _k_thermal_intrinsics;
 
         enum class sensor_state 
         {
