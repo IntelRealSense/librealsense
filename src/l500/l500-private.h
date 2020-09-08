@@ -244,7 +244,8 @@ namespace librealsense
             depth_stream_soft_error,
             temp_warning,
             temp_critical,
-            DFU_error
+            DFU_error,
+            fall_detected = 12
         };
 
         // Elaborate FW XU report.
@@ -254,11 +255,12 @@ namespace librealsense
             { overflow_infrared,            "Overflow occur on infrared stream" },
             { overflow_depth,               "Overflow occur on depth stream" },
             { overflow_confidence,          "Overflow occur on confidence stream" },
-            { depth_stream_hard_error,      "Stream stoped. \nNon recoverable. power reset may help" },
+            { depth_stream_hard_error,      "receiver light saturation, Stream Stopped for 1 sec" },
             { depth_stream_soft_error,      "Error that may be overcome in few sec. \nStream stoped. May be recoverable" },
             { temp_warning,                 "Warning, temperature close to critical" },
             { temp_critical,                "Critical temperature reached" },
             { DFU_error,                    "DFU error" },
+            { fall_detected,                "Fall Detected Stream Stopped"  },
         };
 
 #pragma pack(push, 1)
