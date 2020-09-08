@@ -941,7 +941,7 @@ namespace librealsense
                 make_attribute_parser(&md_configuration::sub_preset_info,
                     md_configuration_attributes::sub_preset_info_attribute, md_prop_offset ,
                 [](const rs2_metadata_type& param) {
-                        return 0(param & md_configuration::SUB_PRESET_BIT_MASK_SEQUENCE_SIZE)
+                        return (param & md_configuration::SUB_PRESET_BIT_MASK_SEQUENCE_SIZE)
                             >> md_configuration::SUB_PRESET_BIT_OFFSET_SEQUENCE_SIZE;
                     }));
 
