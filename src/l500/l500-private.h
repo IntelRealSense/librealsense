@@ -245,7 +245,11 @@ namespace librealsense
             temp_warning,
             temp_critical,
             DFU_error,
-            fall_detected = 12
+            fall_detected = 12,
+            ld_alarm = 14,
+            hard_error = 15,
+            ld_alarm_hard_error = 16,
+            pzr_vbias_exceed_limit = 17
         };
 
         // Elaborate FW XU report.
@@ -255,12 +259,16 @@ namespace librealsense
             { overflow_infrared,            "Overflow occur on infrared stream" },
             { overflow_depth,               "Overflow occur on depth stream" },
             { overflow_confidence,          "Overflow occur on confidence stream" },
-            { depth_stream_hard_error,      "receiver light saturation, Stream Stopped for 1 sec" },
+            { depth_stream_hard_error,      "Receiver light saturation, stream stopped for 1 sec" },
             { depth_stream_soft_error,      "Error that may be overcome in few sec. \nStream stoped. May be recoverable" },
             { temp_warning,                 "Warning, temperature close to critical" },
             { temp_critical,                "Critical temperature reached" },
             { DFU_error,                    "DFU error" },
-            { fall_detected,                "Fall Detected Stream Stopped"  },
+            { fall_detected,                "Fall detected stream stopped"  },
+            { ld_alarm,                     "Fatal error accrue (14)" },
+            { hard_error,                   "Fatal error accrue (15)" },
+            { ld_alarm_hard_error,          "Fatal error accrue (16)" },
+            { pzr_vbias_exceed_limit,       "Fatal error accrue (17)" },
         };
 
 #pragma pack(push, 1)
