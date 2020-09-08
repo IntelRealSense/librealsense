@@ -166,14 +166,14 @@ namespace librealsense
 
     // If the user did not ask for IR, The open function will add it anyway. 
     // This class filters the IR frames is this case so they will not get to the user callback function
+    // Note: This is a workaround , theoretically we did not need to add manually the IR profile to the "open" function,
+    // The processing block should take care of it, this caused a syncer bug to pop-up so we avoid this solution for now.
     class frame_filter : public rs2_frame_callback
     {
     public:
-        explicit frame_filter(frame_callback_ptr user_callback, stream_profiles user_requests) :
+        explicit frame_filter(frame_callback_ptr user_callback, const stream_profiles &user_requests) :
             _user_callback(user_callback),
             _user_requests(user_requests) {}
-
-        virtual ~frame_filter() override {};
 
         void on_frame( rs2_frame * f ) override
         {
@@ -188,7 +188,7 @@ namespace librealsense
             }
         }
 
-        void release() override {};
+        void release() override {}
 
     private:
         bool is_user_requested_frame(frame_interface* frame)
