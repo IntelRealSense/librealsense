@@ -304,11 +304,16 @@ namespace librealsense
     class hdr_option : public option
     {
     public:
-        hdr_option(std::shared_ptr<hdr_config> hdr_cfg, rs2_option option) :
-            _hdr_cfg(hdr_cfg), _option(option){}
+        hdr_option(std::shared_ptr<hdr_config> hdr_cfg, rs2_option option) 
+            : _hdr_cfg(hdr_cfg), _option(option){}
 
-        hdr_option(std::shared_ptr<hdr_config> hdr_cfg, rs2_option option, option_range range) :
-            _hdr_cfg(hdr_cfg), _option(option), _range(range) {}
+        hdr_option(std::shared_ptr<hdr_config> hdr_cfg, rs2_option option, option_range range) 
+            : _hdr_cfg(hdr_cfg), _option(option), _range(range) {}
+
+        hdr_option(std::shared_ptr<hdr_config> hdr_cfg, rs2_option option, option_range range, const std::map<float, std::string>& description_per_value)
+            : _hdr_cfg(hdr_cfg), _option(option), _range(range), _description_per_value(description_per_value)
+        {
+        }
 
         virtual ~hdr_option() = default;
         virtual void set(float value) override;
@@ -317,13 +322,14 @@ namespace librealsense
         virtual bool is_enabled() const override { return true; }
         virtual const char* get_description() const override { return "HDR Option"; }
         virtual void enable_recording(std::function<void(const option&)> record_action) override { _record_action = record_action; }
+        virtual const char* get_value_description(float) const override;
 
     private:
         std::function<void(const option&)> _record_action = [](const option&) {};
         std::shared_ptr<hdr_config> _hdr_cfg;
         rs2_option _option;
         option_range _range;
-
+        const std::map<float, std::string> _description_per_value;
     };
 
     // used for options that change their behavior when hdr configuration is in process

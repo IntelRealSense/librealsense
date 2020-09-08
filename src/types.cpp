@@ -428,8 +428,8 @@ namespace librealsense
             CASE(RESET_CAMERA_ACCURACY_HEALTH)
             CASE(HOST_PERFORMANCE)
             CASE(HDR_MODE)
-            CASE(SUBPRESET_SEQUENCE_SIZE)
-            CASE(SUBPRESET_SEQUENCE_ID)
+            case RS2_OPTION_SUBPRESET_SEQUENCE_SIZE: return "Subpreset Sequ Size";
+            case RS2_OPTION_SUBPRESET_SEQUENCE_ID: return "Subpreset Sequ Id";
             CASE(SELECT_ID)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }

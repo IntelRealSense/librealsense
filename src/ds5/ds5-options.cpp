@@ -575,6 +575,13 @@ namespace librealsense
         return _range;
     }
 
+    const char* hdr_option::get_value_description(float val) const
+    {
+        if (_description_per_value.find(val) != _description_per_value.end())
+            return _description_per_value.at(val).c_str();
+        return nullptr;
+    }
+
 
     void hdr_conditional_option::set(float value)
     {
@@ -615,4 +622,5 @@ namespace librealsense
         else
             return _uvc_option->is_enabled();
     }
+
 }
