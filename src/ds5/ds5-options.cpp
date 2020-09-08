@@ -678,4 +678,5 @@ namespace librealsense
         else
             return _uvc_option->is_enabled();
     }
+
 }
