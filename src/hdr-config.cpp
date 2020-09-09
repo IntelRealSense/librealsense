@@ -24,6 +24,7 @@ namespace librealsense
         _auto_exposure_to_be_restored = false;
         _emitter_on_off_to_be_restored = false;
 
+        _id = DEFAULT_HDR_ID;
         _sequence_size = DEFAULT_HDR_SEQUENCE_SIZE;
         _hdr_sequence_params.clear();
         _hdr_sequence_params.resize(DEFAULT_HDR_SEQUENCE_SIZE);
@@ -47,6 +48,9 @@ namespace librealsense
         float rv = 0.f;
         switch (option)
         {
+        case RS2_OPTION_SUBPRESET_ID:
+            rv = static_cast<float>(_id);
+            break;
         case RS2_OPTION_SUBPRESET_SEQUENCE_SIZE:
             rv = static_cast<float>(_sequence_size);
             break;
@@ -90,6 +94,9 @@ namespace librealsense
 
         switch (option)
         {
+        case RS2_OPTION_SUBPRESET_ID:
+            set_id(value);
+            break;
         case RS2_OPTION_SUBPRESET_SEQUENCE_SIZE:
             set_sequence_size(value);
             break;
@@ -330,6 +337,16 @@ namespace librealsense
     {
         // to be elaborated or deleted
         return true;
+    }
+
+    void hdr_config::set_id(float value)
+    {
+        int new_id = static_cast<int>(value);
+        
+        if (new_id != _id)
+        {
+            _id = new_id;
+        }
     }
 
     void hdr_config::set_sequence_size(float value)
