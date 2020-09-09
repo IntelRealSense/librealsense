@@ -126,8 +126,7 @@ namespace librealsense
     {
         std::vector<tagged_profile> tags;
 
-        auto usb_spec = get_usb_spec();
-        bool usb3mode = (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined);
+        bool usb3mode = (_usb_mode >= platform::usb3_type || _usb_mode == platform::usb_undefined);
 
         uint32_t width = usb3mode ? 640 : 320;
         uint32_t height = usb3mode ? 480 : 240;

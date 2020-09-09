@@ -79,9 +79,9 @@ namespace librealsense
         void update_flash_internal(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, std::vector<uint8_t>& flash_backup,
             update_progress_callback_ptr callback, int update_mode);
 
-        platform::usb_spec get_usb_spec() const;
 
     protected:
+
         friend class l500_depth_sensor;
 
         std::shared_ptr<hw_monitor> _hw_monitor;
@@ -107,6 +107,7 @@ namespace librealsense
         std::vector<rs2_option> _advanced_options;
 
         std::vector< calibration_change_callback_ptr > _calibration_change_callbacks;
+        platform::usb_spec _usb_mode;
     };
 
     class l500_notification_decoder : public notification_decoder

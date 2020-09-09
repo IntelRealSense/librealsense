@@ -30,7 +30,7 @@ namespace librealsense
         void create_snapshot(std::shared_ptr<info_interface>& snapshot) const override;
         void enable_recording(std::function<void(const info_interface&)> record_action) override;
         void update(std::shared_ptr<extension_snapshot> ext) override;
-    protected:
+    private:
         std::map<rs2_camera_info, std::string> _camera_info;
     };
 

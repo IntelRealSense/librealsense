@@ -95,8 +95,7 @@ namespace librealsense
         else
         {
             // On USB2 we have only QVGA sensor mode
-            auto usb_spec = get_usb_spec();
-            bool usb3mode = (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined);
+            bool usb3mode = (_usb_mode >= platform::usb3_type || _usb_mode == platform::usb_undefined);
 
             auto default_sensor_mode = static_cast<float>(usb3mode ? RS2_SENSOR_MODE_VGA : RS2_SENSOR_MODE_QVGA);
 
