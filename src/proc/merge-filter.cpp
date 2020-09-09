@@ -148,8 +148,8 @@ namespace librealsense
             auto ptr = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)new_f.get());
             auto orig = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)first_depth.get());
 
-            auto d1 = (uint16_t*)first_depth.get_data();
-            auto d0 = (uint16_t*)second_depth.get_data();
+            auto d0 = (uint16_t*)first_depth.get_data();
+            auto d1 = (uint16_t*)second_depth.get_data();
 
             auto new_data = (uint16_t*)ptr->get_frame_data();
 
@@ -159,21 +159,21 @@ namespace librealsense
 
             if (use_ir)
             {
-                auto i1 = (uint8_t*)first_ir.get_data();
-                auto i0 = (uint8_t*)second_ir.get_data();
+                auto i0 = (uint8_t*)first_ir.get_data();
+                auto i1 = (uint8_t*)second_ir.get_data();
 
                 for (int i = 0; i < width * height; i++)
                 {
-                    if (i1[i] > 0x10 && i1[i] < 0xf0 && d1[i])
-                        new_data[i] = d1[i];
-                    else if (i0[i] > 0x10 && i0[i] < 0xf0 && d0[i])
+                    if (i0[i] > 0x10 && i0[i] < 0xf0 && d0[i])
                         new_data[i] = d0[i];
-                    else if (d1[i] && d0[i])
-                        new_data[i] = std::min(d0[i], d1[i]);
-                    else if (d1[i])
+                    else if (i1[i] > 0x10 && i1[i] < 0xf0 && d1[i])
                         new_data[i] = d1[i];
+                    else if (d0[i] && d1[i])
+                        new_data[i] = std::min(d0[i], d1[i]);
                     else if (d0[i])
                         new_data[i] = d0[i];
+                    else if (d1[i])
+                        new_data[i] = d1[i];
                     else
                         new_data[i] = 0;
                 }
@@ -182,10 +182,10 @@ namespace librealsense
             {
                 for (int i = 0; i < width * height; i++)
                 {
-                    if (d1[i])
-                        new_data[i] = d1[i];
-                    else if (d0[i])
+                    if (d0[i])
                         new_data[i] = d0[i];
+                    else if (d1[i])
+                        new_data[i] = d1[i];
                     else if (new_data[i] == 0xffff)
                         new_data[i] = 0;
                     else
