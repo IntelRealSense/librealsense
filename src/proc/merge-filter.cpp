@@ -164,9 +164,9 @@ namespace librealsense
 
                 for (int i = 0; i < width * height; i++)
                 {
-                    if (i0[i] > 0x10 && i0[i] < 0xf0 && d0[i])
+                    if (is_infrared_valid(i0[i]) && d0[i])
                         new_data[i] = d0[i];
-                    else if (i1[i] > 0x10 && i1[i] < 0xf0 && d1[i])
+                    else if (is_infrared_valid(i1[i]) && d1[i])
                         new_data[i] = d1[i];
                     else if (d0[i] && d1[i])
                         new_data[i] = std::min(d0[i], d1[i]);
@@ -196,6 +196,11 @@ namespace librealsense
             return new_f;
         }
         return first_fs;
+    }
+
+    bool merge_filter::is_infrared_valid(uint8_t ir_value) const
+    {
+        return ir_value > IR_UNDER_SATURATED_VALUE && ir_value < IR_OVER_SATURATED_VALUE;
     }
 
     bool merge_filter::should_ir_be_used_for_merging(const rs2::depth_frame& first_depth, const rs2::video_frame& first_ir, 
