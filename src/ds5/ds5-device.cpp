@@ -796,7 +796,8 @@ namespace librealsense
         auto uvc_pu_gain_option = std::make_shared<uvc_pu_option>(raw_depth_sensor, RS2_OPTION_GAIN);
 
         // register HDR options
-        if (_fw_version >= hdr_firmware_version) 
+        auto global_shutter_mask = d400_caps::CAP_GLOBAL_SHUTTER;
+        if ( (_fw_version >= hdr_firmware_version) && ((_device_capabilities & global_shutter_mask) == global_shutter_mask) )
         {
             auto ds5_depth = As<ds5_depth_sensor, synthetic_sensor>(&get_depth_sensor());
             ds5_depth->init_hdr_config();
