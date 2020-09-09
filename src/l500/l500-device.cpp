@@ -643,10 +643,14 @@ namespace librealsense
     }
 
     platform::usb_spec l500_device::get_usb_spec() const
-    {
-        if (!supports_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+    {   
+        auto it = _camera_info.find(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+        if (it == _camera_info.end())
+        {
             return platform::usb_undefined;
-        auto str = get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+        }
+            
+        auto str = it->second;
         for (auto u : platform::usb_spec_names)
         {
             if (u.second.compare(str) == 0)
