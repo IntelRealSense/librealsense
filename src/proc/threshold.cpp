@@ -23,6 +23,16 @@ namespace librealsense
 
         auto max_opt = std::make_shared<ptr_option<float>>(0.f, 16.f, 0.1f, 4.f, &_max, "Max range in meters");
         register_option(RS2_OPTION_MAX_DISTANCE, max_opt);
+
+        register_option(RS2_OPTION_MAX_DISTANCE,
+            std::make_shared<max_distance_control>(
+                max_opt,
+                min_opt));
+
+        register_option(RS2_OPTION_MIN_DISTANCE,
+            std::make_shared<min_distance_control>(
+                min_opt,
+                max_opt));
     }
 
     rs2::frame threshold::process_frame(const rs2::frame_source& source, const rs2::frame& f)

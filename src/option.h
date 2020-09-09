@@ -554,6 +554,131 @@ namespace librealsense
        std::function<void(const option&)> _recording_function = [](const option&) {};
    };
 
+   /** \brief class provided a control
+* that changes min distance when changing the max distance value */
+   class max_distance_control : public option
+   {
+   public:
+       const char* get_value_description(float val) const override
+       {
+           return _changed_control->get_value_description(val);
+       }
+       const char* get_description() const override
+       {
+           return _changed_control->get_description();
+       }
+       void set(float value) override
+       {
+           auto strong = _affected_control.lock();
+           assert(strong);
+
+           auto affected_val = strong->query();
+           auto min = strong->get_range().min;
+
+           if (strong && affected_val > value) {
+               strong->set(min);
+           }
+           _changed_control->set(value);
+           _recording_function(*this);
+       }
+
+       float query() const override
+       {
+           return _changed_control->query();
+       }
+
+       option_range get_range() const override
+       {
+           return _changed_control->get_range();
+       }
+
+       bool is_enabled() const override
+       {
+           return  _changed_control->is_enabled();
+       }
+
+       bool is_read_only() const override
+       {
+           return  _changed_control->is_read_only();
+       }
+
+       explicit max_distance_control(std::shared_ptr<option> changd_option,
+           std::shared_ptr<option> affected_option)
+           : _changed_control(changd_option), _affected_control(affected_option)
+       {}
+       void enable_recording(std::function<void(const option &)> record_action) override
+       {
+           _recording_function = record_action;
+       }
+   private:
+       std::shared_ptr<option> _changed_control;
+       std::weak_ptr<option>   _affected_control;
+       std::function<void(const option&)> _recording_function = [](const option&) {};
+   };
+
+   /** \brief class provided a control
+* that changes max distance when changing the min distance value */
+   class min_distance_control : public option
+   {
+   public:
+       const char* get_value_description(float val) const override
+       {
+           return _changed_control->get_value_description(val);
+       }
+       const char* get_description() const override
+       {
+           return _changed_control->get_description();
+       }
+       void set(float value) override
+       {
+            auto strong = _affected_control.lock();
+            assert(strong);
+
+            auto affected_val = strong->query();
+            auto max=strong->get_range().max;
+
+            if (strong && affected_val < value) {
+                strong->set(max);
+            }
+            _changed_control->set(value);
+           _recording_function(*this);
+       }
+
+       float query() const override
+       {
+           return _changed_control->query();
+       }
+
+       option_range get_range() const override
+       {
+           return _changed_control->get_range();
+       }
+
+       bool is_enabled() const override
+       {
+           return  _changed_control->is_enabled();
+       }
+
+       bool is_read_only() const override
+       {
+           return  _changed_control->is_read_only();
+       }
+
+       explicit min_distance_control(std::shared_ptr<option> changd_option,
+           std::shared_ptr<option> affected_option)
+
+           : _changed_control(changd_option), _affected_control(affected_option)
+       {}
+       void enable_recording(std::function<void(const option &)> record_action) override
+       {
+           _recording_function = record_action;
+       }
+   private:
+       std::shared_ptr<option> _changed_control;
+       std::weak_ptr<option>   _affected_control;
+       std::function<void(const option&)> _recording_function = [](const option&) {};
+   };
+
    class enable_motion_correction : public option_base
    {
    public:

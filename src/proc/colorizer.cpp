@@ -156,6 +156,16 @@ namespace librealsense
         auto max_opt = std::make_shared<ptr_option<float>>(0.f, 16.f, 0.1f, 6.f, &_max, "Max range in meters");
         register_option(RS2_OPTION_MAX_DISTANCE, max_opt);
 
+        register_option(RS2_OPTION_MAX_DISTANCE,
+            std::make_shared<max_distance_control>(
+                max_opt,
+                min_opt));
+
+        register_option(RS2_OPTION_MIN_DISTANCE,
+            std::make_shared<min_distance_control>(
+                min_opt,
+                max_opt));
+
         auto color_map = std::make_shared<ptr_option<int>>(0, (int)_maps.size() - 1, 1, 0, &_map_index, "Color map");
         color_map->set_description(0.f, "Jet");
         color_map->set_description(1.f, "Classic");
