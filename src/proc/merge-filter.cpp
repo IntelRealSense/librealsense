@@ -168,12 +168,6 @@ namespace librealsense
                         new_data[i] = d0[i];
                     else if (is_infrared_valid(i1[i]) && d1[i])
                         new_data[i] = d1[i];
-                    else if (d0[i] && d1[i])
-                        new_data[i] = std::min(d0[i], d1[i]);
-                    else if (d0[i])
-                        new_data[i] = d0[i];
-                    else if (d1[i])
-                        new_data[i] = d1[i];
                     else
                         new_data[i] = 0;
                 }
@@ -186,8 +180,6 @@ namespace librealsense
                         new_data[i] = d0[i];
                     else if (d1[i])
                         new_data[i] = d1[i];
-                    else if (new_data[i] == 0xffff)
-                        new_data[i] = 0;
                     else
                         new_data[i] = 0;
                 }
