@@ -41,6 +41,9 @@ namespace librealsense
         std::vector<uint8_t> prepare_sub_preset_header() const;
         std::vector<uint8_t> prepare_sub_preset_frames_config() const;
 
+        const int DEFAULT_CURRENT_HDR_SEQUENCE_INDEX = -1;
+        const int DEFAULT_HDR_SEQUENCE_SIZE = 2;
+
         typedef enum control_id
         {
             depth_laser_mode = 0,

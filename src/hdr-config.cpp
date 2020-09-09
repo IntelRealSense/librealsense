@@ -19,14 +19,14 @@ namespace librealsense
         _is_enabled = false;
         _is_config_in_process = false;
         _has_config_changed = false;
-        _current_hdr_sequence_index = -1;
+        _current_hdr_sequence_index = DEFAULT_CURRENT_HDR_SEQUENCE_INDEX;
 
         _auto_exposure_to_be_restored = false;
         _emitter_on_off_to_be_restored = false;
 
-        _sequence_size = 2;
+        _sequence_size = DEFAULT_HDR_SEQUENCE_SIZE;
         _hdr_sequence_params.clear();
-        _hdr_sequence_params.resize(2);
+        _hdr_sequence_params.resize(DEFAULT_HDR_SEQUENCE_SIZE);
         
         if (_options_ranges_initialized)
         {
