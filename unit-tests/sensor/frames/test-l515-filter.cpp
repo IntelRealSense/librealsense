@@ -1,7 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-// We have our own main
 #define CATCH_CONFIG_MAIN
 #define CATCH_CONFIG_RUNNER
 
@@ -32,8 +31,8 @@ TEST_CASE( "Sensor", "[frames-filter]" )
 {
     try
     {
-        static const int FRAMES_TO_CHECK = 100;
-        static const int TEST_TIMEOUT_MS = 10000;
+        const int FRAMES_TO_CHECK = 100;
+        const auto TEST_TIMEOUT = duration_cast<milliseconds>(std::chrono::seconds(10)).count();
         rs2::context ctx;
         rs2::config cfg;
         rs2::device_list devices;
@@ -52,7 +51,7 @@ TEST_CASE( "Sensor", "[frames-filter]" )
             {
                 l515_found = true;
 
-                auto depth = devices[0].first<rs2::depth_sensor>();
+                auto depth = dev.first<rs2::depth_sensor>();
 
                 auto stream_profiles = depth.get_stream_profiles();
                 // Find depth stream
@@ -61,36 +60,43 @@ TEST_CASE( "Sensor", "[frames-filter]" )
                     stream_profiles.end(),
                     [](rs2::stream_profile sp) { return sp.stream_type() == RS2_STREAM_DEPTH; });
 
-                if (depth_stream != stream_profiles.end())
+                REQUIRE(depth_stream != stream_profiles.end());
+
+                depth.open( *depth_stream );
+
+                depth.start( [&]( rs2::frame f ) 
                 {
-                    depth.open(*depth_stream);
+                    if( f.get_profile().stream_type() == RS2_STREAM_DEPTH )
+                        ++depth_frames_count;
+                    else
+                        ++non_depth_frames_count;
+                } );
 
-                    depth.start([&](rs2::frame f)
-                    {
-                        static int cnt = 0;
-                        cnt++;
-                        if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
-                            ++depth_frames_count;
-                        else
-                            ++non_depth_frames_count;
-                    });
+                auto start_time_ms = duration_cast< milliseconds >(
+                                         high_resolution_clock::now().time_since_epoch() )
+                                         .count();
+                ;
+                auto curr_time = start_time_ms;
 
-                    auto start_time_ms = duration_cast<milliseconds>(high_resolution_clock::now().time_since_epoch()).count();
-                    auto timeout_delay_ms = TEST_TIMEOUT_MS;
-                    auto curr_time = start_time_ms;
-
-                    // Test will continue until stop raised or a timeout has been reached.
-                    while ((depth_frames_count < FRAMES_TO_CHECK) && curr_time - start_time_ms < timeout_delay_ms)
-                    {
-                        curr_time = duration_cast<milliseconds>(high_resolution_clock::now().time_since_epoch()).count(); // Update time
-                        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Sleep for 10 ms
-                    }
-
-                    // We expect only 'FRAMES_TO_CHECK' depth frames during the test time
-                    CHECK(curr_time - start_time_ms < timeout_delay_ms); // Test ended with timeout
-                    CHECK(depth_frames_count >= FRAMES_TO_CHECK);
-                    CHECK(non_depth_frames_count == 0);
+                // Test will continue until stop raised or a timeout has been reached.
+                while( ( depth_frames_count < FRAMES_TO_CHECK )
+                       && (curr_time - start_time_ms < TEST_TIMEOUT))
+                {
+                    curr_time = duration_cast< milliseconds >(
+                                    high_resolution_clock::now().time_since_epoch() )
+                                    .count();  // Update time
+                    std::this_thread::sleep_for(
+                        std::chrono::milliseconds( 100 ) );  // Sleep for 10 ms
                 }
+
+                // We expect only 'FRAMES_TO_CHECK' depth frames during the test time
+                {
+                    UNSCOPED_INFO("Test ended with timeout!"); // Will be printed if the next 'CHECK' fails
+                    CHECK(curr_time - start_time_ms < TEST_TIMEOUT);  // Test ended with timeout
+                }
+                CHECK( depth_frames_count >= FRAMES_TO_CHECK );
+                CHECK( non_depth_frames_count == 0 );
+                
 
                 break;
             }
