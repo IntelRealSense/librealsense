@@ -89,8 +89,19 @@ namespace librealsense
         }
 
         // 7. return the merge frame
-        if(_depth_merged_frame)
-            return _depth_merged_frame;
+        if (_depth_merged_frame)
+        {
+            // discard saved merged frame if it is too old
+            auto fps = _depth_merged_frame.get_profile().fps();
+
+            auto input_frame_ts = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
+            auto depth_merged_frame_ts = _depth_merged_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
+            auto delta_ts = input_frame_ts - depth_merged_frame_ts; // equal to 0 if frame created at this iteration, else it is positive
+            if (delta_ts > 2 * 1000000 / fps)
+                _depth_merged_frame = nullptr;
+            else
+                return _depth_merged_frame;
+        }
 
         return f;
     }
@@ -105,8 +116,8 @@ namespace librealsense
         auto first_fs_frame_counter = first_depth.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
         auto second_fs_frame_counter = second_depth.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
 
-        // The aim is that the output merged frame will have frame counter n and
-        // will be created by frames n and n+1
+        // The aim of this checking is that the output merged frame will have frame counter n and
+        // frame counter n and will be created by frames n and n+1
         if (first_fs_frame_counter + 1 != second_fs_frame_counter)
             return false;
         
