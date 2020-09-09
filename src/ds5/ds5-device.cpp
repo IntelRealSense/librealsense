@@ -714,10 +714,6 @@ namespace librealsense
         //            "Toggle Depth Sensor Thermal Compensation"));
         //}
 
-        // HDR fw version to be checked
-        //firmware_version hdr_firmware_version("5.12.7.1");
-        firmware_version hdr_firmware_version("5.12.7.111");
-
         if (_fw_version >= firmware_version("5.6.3.0"))
         {
             _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
@@ -796,6 +792,8 @@ namespace librealsense
         auto uvc_pu_gain_option = std::make_shared<uvc_pu_option>(raw_depth_sensor, RS2_OPTION_GAIN);
 
         // register HDR options
+
+        firmware_version hdr_firmware_version("5.12.7.111");
         auto global_shutter_mask = d400_caps::CAP_GLOBAL_SHUTTER;
         if ( (_fw_version >= hdr_firmware_version) && ((_device_capabilities & global_shutter_mask) == global_shutter_mask) )
         {
