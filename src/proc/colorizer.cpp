@@ -157,12 +157,12 @@ namespace librealsense
         register_option(RS2_OPTION_MAX_DISTANCE, max_opt);
 
         register_option(RS2_OPTION_MAX_DISTANCE,
-            std::make_shared<max_distance_control>(
+            std::make_shared<max_distance_option>(
                 max_opt,
                 min_opt));
 
         register_option(RS2_OPTION_MIN_DISTANCE,
-            std::make_shared<min_distance_control>(
+            std::make_shared<min_distance_option>(
                 min_opt,
                 max_opt));
 

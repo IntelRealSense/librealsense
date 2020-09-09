@@ -478,6 +478,8 @@ namespace librealsense
         std::function<void(const option&)> _recording_function = [](const option&) {};
     };
 
+    /** \general class for an option provided a control
+    * that affects other options when changing its value */
     class proxy_option : public option
     {
     public:
@@ -489,7 +491,7 @@ namespace librealsense
         {
             return _proxy->get_description();
         }
-        virtual void set(float value) {}
+        virtual void set(float value) = 0;
 
         float query() const override
         {
@@ -531,7 +533,8 @@ namespace librealsense
        void set(float value) override
        {
           auto strong = _affected_control.lock();
-          assert(strong);
+          if (!strong)
+              return;
 
           auto move_to_manual = false;
           auto val = strong->query();
@@ -542,7 +545,7 @@ namespace librealsense
               move_to_manual = true;
           }
 
-          if (strong && move_to_manual)
+          if (move_to_manual)
           {
               LOG_DEBUG("Move option to manual mode in order to set a value");
               strong->set(_manual_value);
@@ -567,58 +570,64 @@ namespace librealsense
    };
 
    /** \brief class provided a control
-* that changes min distance when changing the max distance value */
-   class max_distance_control : public proxy_option
+   * that changes min distance value when changing max distance value */
+   class max_distance_option : public proxy_option
    {
    public:
        void set(float value) override
        {
-           auto strong = _affected_control.lock();
+           auto strong = _min_option.lock();
+           if (!strong)
+               return;
 
-           auto affected_val = strong->query();
-           auto min = strong->get_range().min;
+           auto min_value = strong->query();
 
-           if (strong && affected_val > value) {
+           if (min_value > value)
+           {
+               auto min = strong->get_range().min;
                strong->set(min);
            }
            _proxy->set(value);
            _recording_function(*this);
        }
 
-       explicit max_distance_control(std::shared_ptr<option> changd_option,
-           std::shared_ptr<option> affected_option)
-           : proxy_option(changd_option), _affected_control(affected_option)
+       explicit max_distance_option(std::shared_ptr<option> max_option,
+           std::shared_ptr<option> min_option)
+           : proxy_option(max_option), _min_option(min_option)
        {}
    private: 
-       std::weak_ptr<option>   _affected_control;
+       std::weak_ptr<option>   _min_option;
    };
 
    /** \brief class provided a control
-* that changes max distance when changing the min distance value */
-   class min_distance_control : public proxy_option
+   * that changes max distance value when changing min distance value */
+   class min_distance_option : public proxy_option
    {
    public:
        void set(float value) override
        {
-            auto strong = _affected_control.lock();
+            auto strong = _max_option.lock();
+            if (!strong)
+                return;
 
-            auto affected_val = strong->query();
-            auto max=strong->get_range().max;
+            auto max_value = strong->query();
 
-            if (strong && affected_val < value) {
+            if (max_value < value)
+            {
+                auto max = strong->get_range().max;
                 strong->set(max);
             }
             _proxy->set(value);
            _recording_function(*this);
        }
 
-       explicit min_distance_control(std::shared_ptr<option> changd_option,
-           std::shared_ptr<option> affected_option)
-           : proxy_option(changd_option), _affected_control(affected_option)
+       explicit min_distance_option(std::shared_ptr<option> min_option,
+           std::shared_ptr<option> max_option)
+           : proxy_option(min_option), _max_option(max_option)
        {}
 
    private: 
-       std::weak_ptr<option>   _affected_control;
+       std::weak_ptr<option>   _max_option;
    };
 
    class enable_motion_correction : public option_base
