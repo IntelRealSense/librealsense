@@ -478,19 +478,56 @@ namespace librealsense
         std::function<void(const option&)> _recording_function = [](const option&) {};
     };
 
+    class proxy_option : public option
+    {
+    public:
+        const char* get_value_description(float val) const override
+        {
+            return _proxy->get_value_description(val);
+        }
+        const char* get_description() const override
+        {
+            return _proxy->get_description();
+        }
+        virtual void set(float value) {}
+
+        float query() const override
+        {
+            return _proxy->query();
+        }
+
+        option_range get_range() const override
+        {
+            return _proxy->get_range();
+        }
+
+        bool is_enabled() const override
+        {
+            return  _proxy->is_enabled();
+        }
+
+        bool is_read_only() const override
+        {
+            return  _proxy->is_read_only();
+        }
+
+        explicit proxy_option(std::shared_ptr<option> proxy_option)
+            : _proxy(proxy_option)
+        {}
+        void enable_recording(std::function<void(const option &)> record_action) override
+        {
+            _recording_function = record_action;
+        }
+    protected:
+        std::shared_ptr<option> _proxy;
+        std::function<void(const option&)> _recording_function = [](const option&) {};
+    };
+
     /** \brief auto_disabling_control class provided a control
     * that disable auto-control when changing the auto disabling control value */
-   class auto_disabling_control : public option
+   class auto_disabling_control : public proxy_option
    {
    public:
-       const char* get_value_description(float val) const override
-       {
-           return _auto_disabling_control->get_value_description(val);
-       }
-       const char* get_description() const override
-       {
-            return _auto_disabling_control->get_description();
-       }
        void set(float value) override
        {
           auto strong = _affected_control.lock();
@@ -510,28 +547,8 @@ namespace librealsense
               LOG_DEBUG("Move option to manual mode in order to set a value");
               strong->set(_manual_value);
           }
-          _auto_disabling_control->set(value);
+          _proxy->set(value);
           _recording_function(*this);
-       }
-
-       float query() const override
-       {
-           return _auto_disabling_control->query();
-       }
-
-       option_range get_range() const override
-       {
-           return _auto_disabling_control->get_range();
-       }
-
-       bool is_enabled() const override
-       {
-           return  _auto_disabling_control->is_enabled();
-       }
-
-       bool is_read_only() const override
-       {
-           return  _auto_disabling_control->is_read_only();
        }
 
        explicit auto_disabling_control(std::shared_ptr<option> auto_disabling,
@@ -539,38 +556,24 @@ namespace librealsense
                                        std::vector<float> move_to_manual_values = {1.f},
                                        float manual_value = 0.f)
 
-           : _auto_disabling_control(auto_disabling), _affected_control(affected_option),
-             _move_to_manual_values(move_to_manual_values), _manual_value(manual_value)
+           : proxy_option(auto_disabling), _affected_control(affected_option)
+           ,_move_to_manual_values(move_to_manual_values), _manual_value(manual_value)
        {}
-       void enable_recording(std::function<void(const option &)> record_action) override
-       {
-           _recording_function = record_action;
-       }
+
    private:
-       std::shared_ptr<option> _auto_disabling_control;
        std::weak_ptr<option>   _affected_control;
        std::vector<float>      _move_to_manual_values;
        float                   _manual_value;
-       std::function<void(const option&)> _recording_function = [](const option&) {};
    };
 
    /** \brief class provided a control
 * that changes min distance when changing the max distance value */
-   class max_distance_control : public option
+   class max_distance_control : public proxy_option
    {
    public:
-       const char* get_value_description(float val) const override
-       {
-           return _changed_control->get_value_description(val);
-       }
-       const char* get_description() const override
-       {
-           return _changed_control->get_description();
-       }
        void set(float value) override
        {
            auto strong = _affected_control.lock();
-           assert(strong);
 
            auto affected_val = strong->query();
            auto min = strong->get_range().min;
@@ -578,61 +581,26 @@ namespace librealsense
            if (strong && affected_val > value) {
                strong->set(min);
            }
-           _changed_control->set(value);
+           _proxy->set(value);
            _recording_function(*this);
-       }
-
-       float query() const override
-       {
-           return _changed_control->query();
-       }
-
-       option_range get_range() const override
-       {
-           return _changed_control->get_range();
-       }
-
-       bool is_enabled() const override
-       {
-           return  _changed_control->is_enabled();
-       }
-
-       bool is_read_only() const override
-       {
-           return  _changed_control->is_read_only();
        }
 
        explicit max_distance_control(std::shared_ptr<option> changd_option,
            std::shared_ptr<option> affected_option)
-           : _changed_control(changd_option), _affected_control(affected_option)
+           : proxy_option(changd_option), _affected_control(affected_option)
        {}
-       void enable_recording(std::function<void(const option &)> record_action) override
-       {
-           _recording_function = record_action;
-       }
-   private:
-       std::shared_ptr<option> _changed_control;
+   private: 
        std::weak_ptr<option>   _affected_control;
-       std::function<void(const option&)> _recording_function = [](const option&) {};
    };
 
    /** \brief class provided a control
 * that changes max distance when changing the min distance value */
-   class min_distance_control : public option
+   class min_distance_control : public proxy_option
    {
    public:
-       const char* get_value_description(float val) const override
-       {
-           return _changed_control->get_value_description(val);
-       }
-       const char* get_description() const override
-       {
-           return _changed_control->get_description();
-       }
        void set(float value) override
        {
             auto strong = _affected_control.lock();
-            assert(strong);
 
             auto affected_val = strong->query();
             auto max=strong->get_range().max;
@@ -640,43 +608,17 @@ namespace librealsense
             if (strong && affected_val < value) {
                 strong->set(max);
             }
-            _changed_control->set(value);
+            _proxy->set(value);
            _recording_function(*this);
-       }
-
-       float query() const override
-       {
-           return _changed_control->query();
-       }
-
-       option_range get_range() const override
-       {
-           return _changed_control->get_range();
-       }
-
-       bool is_enabled() const override
-       {
-           return  _changed_control->is_enabled();
-       }
-
-       bool is_read_only() const override
-       {
-           return  _changed_control->is_read_only();
        }
 
        explicit min_distance_control(std::shared_ptr<option> changd_option,
            std::shared_ptr<option> affected_option)
-
-           : _changed_control(changd_option), _affected_control(affected_option)
+           : proxy_option(changd_option), _affected_control(affected_option)
        {}
-       void enable_recording(std::function<void(const option &)> record_action) override
-       {
-           _recording_function = record_action;
-       }
-   private:
-       std::shared_ptr<option> _changed_control;
+
+   private: 
        std::weak_ptr<option>   _affected_control;
-       std::function<void(const option&)> _recording_function = [](const option&) {};
    };
 
    class enable_motion_correction : public option_base
