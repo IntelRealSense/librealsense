@@ -554,6 +554,7 @@ namespace librealsense
             CASE(FRAME_LED_POWER)
             CASE(RAW_FRAME_SIZE)
             CASE(GPIO_INPUT_DATA)
+            CASE(SUBPRESET_ID)
             CASE(SUBPRESET_SEQUENCE_ID)
             CASE(SUBPRESET_SEQUENCE_SIZE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
