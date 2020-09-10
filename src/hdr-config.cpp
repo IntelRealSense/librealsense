@@ -30,9 +30,9 @@ namespace librealsense
         hdr_params params_0(0, exposure_default_value, gain_default_value);
         _hdr_sequence_params[0] = params_0;
 
-        float exposure_min_value = _exposure_range.min;
+        float exposure_low_value = DEFAULT_CONFIG_LOW_EXPOSURE;
         float gain_min_value = _gain_range.min;
-        hdr_params params_1(1, exposure_min_value, gain_min_value);
+        hdr_params params_1(1, exposure_low_value, gain_min_value);
         _hdr_sequence_params[1] = params_1;
     }
 

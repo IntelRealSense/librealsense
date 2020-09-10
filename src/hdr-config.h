@@ -45,6 +45,8 @@ namespace librealsense
         const int DEFAULT_CURRENT_HDR_SEQUENCE_INDEX = -1;
         const int DEFAULT_HDR_SEQUENCE_SIZE = 2;
 
+        const float DEFAULT_CONFIG_LOW_EXPOSURE = 150.f;
+
         const uint8_t CONTROL_ID_LASER = 0;
         const uint8_t CONTROL_ID_EXPOSURE = 1;
         const uint8_t CONTROL_ID_GAIN = 2;
