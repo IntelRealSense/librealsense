@@ -545,18 +545,20 @@ void compare_scene( std::string const & scene_dir,
     algo::optimizer::settings settings;
     read_data_from( bin_dir( scene_dir ) + "settings", &settings );
 
-    //read_data_from( bin_dir( scene_dir ) + "rgb_thermal", &thermal_table );
-    try
+    std::pair< double, double > res_fx_fy;
+    if( try_to_get_thermal_data( scene_dir,
+                                 settings.hum_temp,
+                                 { ci.rgb.fx, ci.rgb.fy },
+                                 res_fx_fy ) )
     {
-        auto vec = read_vector_from< byte >( bin_dir( scene_dir ) + "rgb_thermal" );
-        auto thermal_table = thermal::l500::parse_thermal_table( vec );
-        auto scale
-            = thermal::l500::get_rgb_current_thermal_scale( thermal_table, settings.hum_temp );
-        auto res = thermal::l500::correct_thermal_scale( { ci.rgb.fx, ci.rgb.fy }, scale );
-        ci.rgb.fx = res.first;
-        ci.rgb.fy = res.second;
+        ci.rgb.fx = res_fx_fy.first;
+        ci.rgb.fy = res_fx_fy.second;
+
+        auto filename = bin_file( "Kthermal_rgb", 9, 1, "double_00" ) + ".bin";
+        TRACE( "Comparing " << filename << " ..." );
+        CHECK( compare_to_bin_file( algo::k_matrix( ci.rgb ), scene_dir, filename ) );
     }
-    catch( ... )
+    else
     {
         TRACE( "No thermal data found" );
     }
@@ -1297,7 +1299,7 @@ void compare_scene( std::string const & scene_dir,
     TRACE( "Comparing " << filename << " ..." );
     algo::calib matlab_calib;
     double matlab_cost = 0;
-    CHECK( get_calib_from_raw_data( matlab_calib, matlab_cost, scene_dir, filename ) );
+    CHECK( get_calib_and_cost_from_raw_data( matlab_calib, matlab_cost, scene_dir, filename ) );
     CHECK( compare_calib( new_calibration, cost, matlab_calib, matlab_cost ) );
     new_calibration.copy_coefs( matlab_calib );
     if( stats )

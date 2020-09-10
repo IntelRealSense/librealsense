@@ -176,6 +176,12 @@ namespace librealsense
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_color_stream, _color_extrinsic);
         register_stream_to_extrinsic_group(*_color_stream, 0);
 
+        _thermal_table =
+            [this]() {
+                auto data = read_fw_table_raw( *_hw_monitor,
+                algo::thermal_loop::l500::l500_thermal_loop::rgb_thermal_calib_info::table_id );
+            return algo::thermal_loop::l500::l500_thermal_loop::parse_thermal_table( data );
+            };
 
         _color_device_idx = add_sensor(create_color_device(ctx, color_devs_info));
     }
@@ -389,6 +395,12 @@ namespace librealsense
     void l500_color_sensor::reset_k_thermal_intrinsics() 
     {
         _k_thermal_intrinsics.reset();
+    }
+
+    algo::thermal_loop::l500::l500_thermal_loop::rgb_thermal_calib_info
+    l500_color_sensor::get_thermal_table()
+    {
+        return *_owner->_thermal_table;
     }
 
     void ivcam2::rgb_calibration_table::update_write_fields()

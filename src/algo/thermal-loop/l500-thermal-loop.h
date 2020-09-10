@@ -11,38 +11,68 @@ namespace algo {
 namespace thermal_loop {
 namespace l500 {
 
-#pragma pack (push,1)
+using fx_fy = std::pair< double, double >;
 
-// this struct based on RGB_Thermal_Info_CalibInfo table 
-struct rgb_thermal_calib_info
+#pragma pack( push, 1 )
+
+class l500_thermal_loop
 {
-    static const int resolution = 29;
-
-    struct table_meta_data
+public:
+    struct rgb_thermal_calib_info
     {
-        float min_temp;
-        float max_temp;
-        float reference_temp; // not used
-        float valid;  // not used
-    };
+        static const int table_id = 0x317;
+        static const int resolution = 29;
 
-    struct table_data
-    {
-        float scale;
-        float p[3];  // parameters which effects offset that are not in use
-    };
+        struct table_meta_data
+        {
+            float min_temp;
+            float max_temp;
+            float reference_temp;  // not used
+            float valid;           // not used
+        };
 
-    table_meta_data md;
-    std::vector< table_data > vals;
+        struct table_data
+        {
+            float scale;
+            float p[3];  // parameters which effects offset that are not in use
+        };
+
+        table_meta_data md;
+        std::vector< table_data > vals;
+
+        std::vector< byte > get_raw_data()
+        {
+            std::vector< byte > res;
+            std::vector< float > data;
+            data.push_back( md.min_temp );
+            data.push_back( md.max_temp );
+            data.push_back( md.reference_temp );
+            data.push_back( md.valid );
+
+            for( auto i = 0; i < vals.size(); i++ )
+            {
+                data.push_back( vals[i].scale );
+                data.push_back( vals[i].p[0] );
+                data.push_back( vals[i].p[1] );
+                data.push_back( vals[i].p[2] );
+            }
+
+            res.assign( (byte *)( data.data() ), (byte *)( data.data() + data.size() ) );
+            return res;
+        }
+    };
+#pragma pack( pop )
+
+    static rgb_thermal_calib_info parse_thermal_table( const std::vector< byte > & data );
+
+    static double get_rgb_current_thermal_scale( const rgb_thermal_calib_info & table,
+                                                 double hum_temp );
+
+    static fx_fy correct_thermal_scale( std::pair< double, double > in_calib,
+                                                              double scale );
 };
-#pragma pack(pop)
+// this struct based on RGB_Thermal_Info_CalibInfo table
 
-rgb_thermal_calib_info parse_thermal_table( std::vector< byte > data );
-
-double get_rgb_current_thermal_scale( const rgb_thermal_calib_info & table, double hum_temp );
-
-std::pair< double, double > correct_thermal_scale( std::pair< double, double > in_calib,
-                                                   double scale );
 
 }  // namespace l500
 }  // namespace thermal_loop

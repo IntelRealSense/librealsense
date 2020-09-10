@@ -2,7 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 //#cmake:add-file ../../../src/algo/depth-to-rgb-calibration/*.cpp
-
+//#cmake:add-file ../../../src/algo/thermal-loop/*.cpp
 
 // We have our own main
 #define NO_CATCH_CONFIG_MAIN
@@ -129,6 +129,34 @@ protected:
     }
 };
 
+
+bool try_to_get_thermal_data( std::string dir,
+                              double hum_temp,
+                              const std::pair< double, double > & in_fx_fy,
+                              std::pair< double, double > & out_fx_fy )
+{
+    try
+    {
+        rs2_intrinsics raw_rgb_calib;
+        read_binary_file( dir.c_str(), "raw_rgb.calib", &raw_rgb_calib );
+        auto vec = read_vector_from< byte >( join( dir, "rgb_thermal_table" ) );
+        auto thermal_table = thermal::l500::l500_thermal_loop::parse_thermal_table( vec );
+        auto scale
+            = thermal::l500::l500_thermal_loop::get_rgb_current_thermal_scale( thermal_table,
+                                                                               hum_temp );
+        out_fx_fy = thermal::l500::l500_thermal_loop::correct_thermal_scale(
+            { in_fx_fy.first, in_fx_fy.second },
+            scale );
+
+        return true;
+        
+    }
+    catch( std::exception const & e )
+    {
+        return false;
+    }
+}
+
 int main( int argc, char * argv[] )
 {
     custom_ac_logger logger;
@@ -193,6 +221,17 @@ int main( int argc, char * argv[] )
             try
             {
                 read_binary_file( dir, "settings", &settings );
+
+                std::pair< double, double > res_fx_fy;
+                if( try_to_get_thermal_data(
+                        dir,
+                        settings.hum_temp,
+                        { calibration.k_mat.get_fx(), calibration.k_mat.get_fy() },
+                        res_fx_fy ) )
+                {
+                    calibration.k_mat.k_mat.rot[0] = res_fx_fy.first;
+                    calibration.k_mat.k_mat.rot[4] = res_fx_fy.second;
+                }
             }
             catch( std::exception const & e )
             {

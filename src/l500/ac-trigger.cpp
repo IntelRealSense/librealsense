@@ -976,11 +976,45 @@ namespace ivcam2 {
                         ivcam2::read_fw_register( *hwm, &dsm_y_offset, 0xfffe382c );
 
                         ivcam2::read_fw_table( *hwm, cal_info.table_id, &cal_info );
-                        auto data = read_fw_table_raw( *hwm, 0x317 );
-                        auto t = algo::thermal_loop::l500::parse_thermal_table( data );
-                        scale = algo::thermal_loop::l500::get_rgb_current_thermal_scale( t, _temp );
-                        AC_LOG( INFO,
-                                "Humidity temp is " << _temp << " scaling krgb by " << scale );
+
+                        try
+                        {
+                            auto t = _dev.get_color_sensor()->get_thermal_table();
+                            
+                            scale = algo::thermal_loop::l500::l500_thermal_loop::
+                                get_rgb_current_thermal_scale( t, _temp );
+
+                            AC_LOG( INFO,
+                                    "Humidity temp is " << _temp << " scaling krgb by " << scale );
+                            
+                            std::string debug_dir = get_ac_logger().get_active_dir();
+                            if (!debug_dir.empty())
+                            {
+                                auto orig_intrinsics
+                                    = get_orig_intrinsics( _dev, _cf.get_profile() );
+
+                                algo::depth_to_rgb_calibration::write_to_file(
+                                    &orig_intrinsics,
+                                    sizeof( orig_intrinsics ),
+                                    debug_dir,
+                                    "raw_rgb.calib" );
+
+                                algo::depth_to_rgb_calibration::write_vector_to_file(
+                                    t.get_raw_data(),
+                                    debug_dir,
+                                    "rgb_thermal_table" );
+                               
+                            }
+                               
+                        }
+                        catch (...)
+                        {
+                            scale = 1;
+
+                            AC_LOG( WARNING,
+                                    "Could not read thermal_table" << _temp << " scaling krgb by " << scale );
+                            
+                        }
 
                         // If the above throw (and they can!) then we catch below and stop...
                     }
@@ -1253,20 +1287,35 @@ namespace ivcam2 {
 
         std::string invalid_reason;
 
-        // Temperature must be within range or algo may not work right
         _temp = read_temperature();
-        if( _temp < 32. )
+        // If from some reasone there is no thermal_table or its not valid
+        // Temperature must be within range or algo may not work right
+        auto thermal_table_valid = true;
+        try
         {
-            if( ! invalid_reason.empty() )
-                invalid_reason += ", ";
-            invalid_reason += to_string() << "temperature (" << _temp << ") too low (<32)";
+            _dev.get_color_sensor()->get_thermal_table();
         }
-        else if( _temp > 46. )
+        catch (...)
         {
-            if( ! invalid_reason.empty() )
-                invalid_reason += ", ";
-            invalid_reason += to_string() << "temperature (" << _temp << ") too high (>46)";
+            thermal_table_valid = false;
         }
+
+        if (!thermal_table_valid)
+        {
+            if( _temp < 32. )
+            {
+                if( ! invalid_reason.empty() )
+                    invalid_reason += ", ";
+                invalid_reason += to_string() << "temperature (" << _temp << ") too low (<32)";
+            }
+            else if( _temp > 46. )
+            {
+                if( ! invalid_reason.empty() )
+                    invalid_reason += ", ";
+                invalid_reason += to_string() << "temperature (" << _temp << ") too high (>46)";
+            }
+        }
+       
 
         // Algo was written with specific receiver gain (APD) in mind, depending on
         // the FW preset (ambient light)

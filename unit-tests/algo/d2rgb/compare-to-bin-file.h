@@ -315,7 +315,7 @@ bool compare_to_bin_file(
 }
 
 
-bool get_calib_from_raw_data(
+bool get_calib_and_cost_from_raw_data(
     algo::calib& calib,
     double& cost,
     std::string const & scene_dir,
@@ -350,6 +350,7 @@ bool get_calib_from_raw_data(
     
     return true;
 }
+
 
 bool compare_calib( algo::calib const & calib,
                     double cost,
@@ -416,4 +417,28 @@ bool compare_to_bin_file(
     auto obj_matlab = read_from< D >(bin_dir(scene_dir) + filename);
 
     return compare_t(obj_matlab, obj_cpp);
+}
+
+bool try_to_get_thermal_data( std::string dir,
+                              double hum_temp,
+                              const std::pair< double, double > & in_fx_fy,
+                              std::pair< double, double > & out_fx_fy )
+{
+    try
+    {
+        auto vec = read_vector_from< byte >(
+            join( bin_dir( dir ), "rgb_thermal_table" ) );
+        auto thermal_table = thermal::l500::l500_thermal_loop::parse_thermal_table( vec );
+        auto scale = thermal::l500::l500_thermal_loop::get_rgb_current_thermal_scale( thermal_table,
+                                                                                      hum_temp );
+        out_fx_fy = thermal::l500::l500_thermal_loop::correct_thermal_scale(
+            { in_fx_fy.first, in_fx_fy.second },
+            scale );
+
+        return true;
+    }
+    catch( std::exception const & e )
+    {
+        return false;
+    }
 }
