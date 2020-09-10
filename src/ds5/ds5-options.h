@@ -260,7 +260,7 @@ namespace librealsense
     class alternating_emitter_option : public option
     {
     public:
-        alternating_emitter_option(hw_monitor& hwm, sensor_base* depth_ep);
+        alternating_emitter_option(hw_monitor& hwm, sensor_base* depth_ep, bool is_fw_version_using_id);
         virtual ~alternating_emitter_option() = default;
         virtual void set(float value) override;
         virtual float query() const override;
@@ -277,6 +277,7 @@ namespace librealsense
         lazy<option_range> _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
+        bool _is_fw_version_using_id;
     };
 
     class emitter_always_on_option : public option

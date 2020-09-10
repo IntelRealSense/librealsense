@@ -491,8 +491,8 @@ namespace librealsense
         return *_range;
     }
 
-    alternating_emitter_option::alternating_emitter_option(hw_monitor& hwm, sensor_base* ep)
-        : _hwm(hwm), _sensor(ep)
+    alternating_emitter_option::alternating_emitter_option(hw_monitor& hwm, sensor_base* ep, bool is_fw_version_using_id)
+        : _hwm(hwm), _sensor(ep), _is_fw_version_using_id(is_fw_version_using_id)
     {
         _range = [this]()
         {
@@ -503,8 +503,12 @@ namespace librealsense
     void alternating_emitter_option::set(float value)
     {
         std::vector<uint8_t> pattern{};
+
         if (static_cast<int>(value))
-            pattern = ds::alternating_emitter_pattern;
+            if (_is_fw_version_using_id)
+                pattern = ds::alternating_emitter_pattern;
+            else
+                pattern = ds::alternating_emitter_pattern_with_name;
 
         command cmd(ds::SETSUBPRESET, static_cast<int>(pattern.size()));
         cmd.data = pattern;
@@ -514,20 +518,33 @@ namespace librealsense
 
     float alternating_emitter_option::query() const
     {
-        float rv = 0.f;
-        command cmd(ds::GETSUBPRESETID);
-        // if no subpreset is streaming, the firmware returns "ON_DATA_TO_RETURN" error
-        try {
-            auto res = _hwm.send(cmd);
-            // if a subpreset is streaming, checking this is the alternating emitter sub preset
-            rv = (res[0] == ds::ALTERNATING_EMITTER_SUBPRESET_ID) ? 1.0f : 0.f;
-        }
-        catch (...)
+        if (_is_fw_version_using_id)
         {
-            rv = 0.f;
+            float rv = 0.f;
+            command cmd(ds::GETSUBPRESETID);
+            // if no subpreset is streaming, the firmware returns "ON_DATA_TO_RETURN" error
+            try {
+                auto res = _hwm.send(cmd);
+                // if a subpreset is streaming, checking this is the alternating emitter sub preset
+                rv = (res[0] == ds::ALTERNATING_EMITTER_SUBPRESET_ID) ? 1.0f : 0.f;
+            }
+            catch (...)
+            {
+                rv = 0.f;
+            }
+
+            return rv;
         }
-            
-        return rv;
+        else
+        {
+            command cmd(ds::GETSUBPRESETID);
+            auto res = _hwm.send(cmd);
+            if (res.size() > 20)
+                throw invalid_value_exception("HWMON::GETSUBPRESETID invalid size");
+
+            static std::vector<uint8_t> alt_emitter_name(ds::alternating_emitter_pattern_with_name.begin() + 2, ds::alternating_emitter_pattern_with_name.begin() + 22);
+            return (alt_emitter_name == res);
+        }
     }
 
     emitter_always_on_option::emitter_always_on_option(hw_monitor& hwm, sensor_base* ep)

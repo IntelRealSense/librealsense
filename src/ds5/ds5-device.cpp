@@ -753,11 +753,16 @@ namespace librealsense
                     RS2_OPTION_ASIC_TEMPERATURE));
         }
 
+		// minimal firmware version in which hdr feature is supported
+        firmware_version hdr_firmware_version("5.12.7.120");
+
         // Alternating laser pattern is applicable for global shutter/active SKUs
         auto mask = d400_caps::CAP_GLOBAL_SHUTTER | d400_caps::CAP_ACTIVE_PROJECTOR;
+		// Alternating laser pattern should be set and query in a different way according to the firmware version 
+        bool is_fw_version_using_id = (_fw_version >= hdr_firmware_version);
         if ((_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
         {
-            depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor));
+            depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor, is_fw_version_using_id));
         }
         else if (_fw_version >= firmware_version("5.10.9.0") &&
             _fw_version.experimental()) // Not yet available in production firmware
@@ -792,8 +797,6 @@ namespace librealsense
         auto uvc_pu_gain_option = std::make_shared<uvc_pu_option>(raw_depth_sensor, RS2_OPTION_GAIN);
 
         // register HDR options
-
-        firmware_version hdr_firmware_version("5.12.7.111");
         //auto global_shutter_mask = d400_caps::CAP_GLOBAL_SHUTTER;
         if ( (_fw_version >= hdr_firmware_version))// && ((_device_capabilities & global_shutter_mask) == global_shutter_mask) )
         {
