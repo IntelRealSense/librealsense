@@ -185,17 +185,24 @@ namespace librealsense
     void hdr_config::set_options_to_be_restored_after_disable()
     {
         // AUTO EXPOSURE
-        if (_sensor->get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE).query())
+        if (_sensor->supports_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
         {
-            _sensor->get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE).set(0.f);
-            _auto_exposure_to_be_restored = true;
+            if (_sensor->get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE).query())
+            {
+                _sensor->get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE).set(0.f);
+                _auto_exposure_to_be_restored = true;
+            }
         }
+        
 
         // EMITTER ON OFF
-        if (_sensor->get_option(RS2_OPTION_EMITTER_ON_OFF).query())
+        if (_sensor->supports_option(RS2_OPTION_EMITTER_ON_OFF))
         {
-            //_sensor->get_option(RS2_OPTION_EMITTER_ON_OFF).set(0.f);
-            _emitter_on_off_to_be_restored = true;
+            if (_sensor->get_option(RS2_OPTION_EMITTER_ON_OFF).query())
+            {
+                //_sensor->get_option(RS2_OPTION_EMITTER_ON_OFF).set(0.f);
+                _emitter_on_off_to_be_restored = true;
+            }
         }
     }
 
