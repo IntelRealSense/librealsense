@@ -794,8 +794,8 @@ namespace librealsense
         // register HDR options
 
         firmware_version hdr_firmware_version("5.12.7.111");
-        auto global_shutter_mask = d400_caps::CAP_GLOBAL_SHUTTER;
-        if ( (_fw_version >= hdr_firmware_version) && ((_device_capabilities & global_shutter_mask) == global_shutter_mask) )
+        //auto global_shutter_mask = d400_caps::CAP_GLOBAL_SHUTTER;
+        if ( (_fw_version >= hdr_firmware_version))// && ((_device_capabilities & global_shutter_mask) == global_shutter_mask) )
         {
             auto ds5_depth = As<ds5_depth_sensor, synthetic_sensor>(&get_depth_sensor());
             ds5_depth->init_hdr_config();
