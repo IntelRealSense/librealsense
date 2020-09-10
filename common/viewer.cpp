@@ -2798,6 +2798,11 @@ namespace rs2
                     {
                         official_url = false;
                     }
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("%s", "Add file:// prefix to use a local DB file ");
+                    }
+
                     if (!official_url)
                     {
                         if (ImGui::InputText("##custom_server_url", custom_url, 255))

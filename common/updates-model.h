@@ -100,7 +100,6 @@ namespace rs2
         std::shared_ptr<texture_buffer> _icon = nullptr;
         std::mutex _lock;
         bool emphasize_dismiss_text = false;
-        bool popup_opened = false;
 
         std::shared_ptr<firmware_update_manager> _fw_update = nullptr;
 

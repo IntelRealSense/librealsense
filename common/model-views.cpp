@@ -4437,8 +4437,17 @@ namespace rs2
             try
             {
 
-                auto server_url = config_file::instance().get(configurations::update::sw_updates_url);
-                sw_update::dev_updates_profile updates_profile(dev, server_url);
+                std::string server_url = config_file::instance().get(configurations::update::sw_updates_url);
+                bool use_local_file = false;
+                const std::string local_file_prefix = "file://";
+
+                // If URL contain a "file://"  prefix, we open it as local file and not downloading it from a server
+                if( server_url.find( local_file_prefix ) == 0 )
+                {
+                    use_local_file = true;
+                    server_url.erase( 0, local_file_prefix.length() );
+                }
+                sw_update::dev_updates_profile updates_profile(dev, server_url, use_local_file);
 
                 bool sw_update_required = updates_profile.retrieve_updates(versions_db_manager::LIBREALSENSE);
                 bool fw_update_required = updates_profile.retrieve_updates(versions_db_manager::FIRMWARE);
