@@ -57,6 +57,9 @@ int main(int argc, char * argv[]) try
         return EXIT_SUCCESS;
     }
 
+    // configuring id for this hdr config (value must be in range [0,3])
+    depth_sensor.set_option(RS2_OPTION_SUBPRESET_ID, 1);
+
     // configuration for the first HDR sequence ID
     depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 1);
     depth_sensor.set_option(RS2_OPTION_EXPOSURE, 8500.f);
@@ -119,6 +122,7 @@ int main(int argc, char * argv[]) try
             return EXIT_SUCCESS;
         }
 
+        auto hdr_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_ID);
         auto hdr_seq_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE);
         auto hdr_seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
         auto exp = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);

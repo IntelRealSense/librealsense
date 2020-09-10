@@ -33,6 +33,11 @@ Next, we start to configure the HDR, by setting the size of the HDR sequence:
 // setting the HDR sequence size to 2 frames
 depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_SIZE, 2);
 ```
+Choosing an ID for this HDR configuration. The configuration will not be saved in the firmware, but this ID can help users that configure another HDR configuration to know when the new HDR is streaming, by checking this value via the metadata:
+```cpp
+// configuring id for this hdr config (value must be in range [0,3])
+depth_sensor.set_option(RS2_OPTION_SUBPRESET_ID, 1);
+```
 
 Configuring the first HDR sequence ID: 
 ```cpp
