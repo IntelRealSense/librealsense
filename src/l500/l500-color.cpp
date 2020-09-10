@@ -192,7 +192,7 @@ namespace librealsense
     }
 
 
-   rs2_intrinsics l500_color_sensor::get_orig_intrinsics( const uint32_t& width,
+   rs2_intrinsics l500_color_sensor::get_raw_intrinsics( const uint32_t& width,
                                                           const uint32_t& height ) const
     {
         using namespace ivcam2;
@@ -290,7 +290,7 @@ namespace librealsense
     {
         if (!_k_thermal_intrinsics )
         {
-                return get_orig_intrinsics( profile.width, profile.height );
+                return get_raw_intrinsics( profile.width, profile.height );
         }
 
        return unnormalize( *_k_thermal_intrinsics, profile.width, profile.height );

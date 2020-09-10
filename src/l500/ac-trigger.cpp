@@ -929,11 +929,11 @@ namespace ivcam2 {
         return true;
     }
 
-     rs2_intrinsics get_orig_intrinsics( l500_device & dev,
+     rs2_intrinsics get_raw_intrinsics( l500_device & dev,
                                                       const rs2::stream_profile & profile )
     {
         auto vp = profile.as< rs2::video_stream_profile >(); 
-        return dev.get_color_sensor()->get_orig_intrinsics(vp.width(), vp.height() );
+        return dev.get_color_sensor()->get_raw_intrinsics(vp.width(), vp.height() );
     }
 
     void ac_trigger::run_algo()
@@ -991,7 +991,7 @@ namespace ivcam2 {
                             if (!debug_dir.empty())
                             {
                                 auto orig_intrinsics
-                                    = get_orig_intrinsics( _dev, _cf.get_profile() );
+                                    = get_raw_intrinsics( _dev, _cf.get_profile() );
 
                                 algo::depth_to_rgb_calibration::write_to_file(
                                     &orig_intrinsics,
@@ -1049,7 +1049,7 @@ namespace ivcam2 {
                                                    df, irf,
                                                    _cf, _pcf, _last_yuy_data,
                                                    cal_info, cal_regs,
-                                                   get_orig_intrinsics( _dev, _cf.get_profile()) ,
+                                                   get_raw_intrinsics( _dev, _cf.get_profile()) ,
                                                    scale,
                                                    should_continue );
 
