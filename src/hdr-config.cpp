@@ -79,7 +79,6 @@ namespace librealsense
         return rv;
     }
 
-
     void hdr_config::set(rs2_option option, float value, option_range range)
     {
         if (!_options_ranges_initialized)
@@ -107,7 +106,7 @@ namespace librealsense
             set_enable_status(value);
             break;
         case RS2_OPTION_EXPOSURE:
-            set_exposure(value, range);
+            set_exposure(value);
             break;
         case RS2_OPTION_GAIN:
             set_gain(value);
@@ -387,7 +386,7 @@ namespace librealsense
             throw invalid_value_exception(to_string() << "hdr_config::set_sequence_index(...) failed! Index above sequence size.");
     }
 
-    void hdr_config::set_exposure(float value, option_range range)
+    void hdr_config::set_exposure(float value)
     {
         /* TODO - add limitation on max exposure to be below frame interval - is range really needed for this?*/
         _hdr_sequence_params[_current_hdr_sequence_index]._exposure = value;

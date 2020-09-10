@@ -305,16 +305,11 @@ namespace librealsense
     class hdr_option : public option
     {
     public:
-        hdr_option(std::shared_ptr<hdr_config> hdr_cfg, rs2_option option) 
-            : _hdr_cfg(hdr_cfg), _option(option){}
-
         hdr_option(std::shared_ptr<hdr_config> hdr_cfg, rs2_option option, option_range range) 
             : _hdr_cfg(hdr_cfg), _option(option), _range(range) {}
 
         hdr_option(std::shared_ptr<hdr_config> hdr_cfg, rs2_option option, option_range range, const std::map<float, std::string>& description_per_value)
-            : _hdr_cfg(hdr_cfg), _option(option), _range(range), _description_per_value(description_per_value)
-        {
-        }
+            : _hdr_cfg(hdr_cfg), _option(option), _range(range), _description_per_value(description_per_value) {}
 
         virtual ~hdr_option() = default;
         virtual void set(float value) override;

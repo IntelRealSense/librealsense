@@ -794,7 +794,9 @@ namespace librealsense
             depth_xu,
             DS5_EXPOSURE,
             "Depth Exposure (usec)");
+        option_range exposure_range = uvc_xu_exposure_option->get_range();
         auto uvc_pu_gain_option = std::make_shared<uvc_pu_option>(raw_depth_sensor, RS2_OPTION_GAIN);
+        option_range gain_range = uvc_pu_gain_option->get_range();
 
         // register HDR options
         //auto global_shutter_mask = d400_caps::CAP_GLOBAL_SHUTTER;
@@ -826,8 +828,8 @@ namespace librealsense
             depth_sensor.register_option(RS2_OPTION_HDR_MODE, hdr_enabled_option);
 
             //EXPOSURE AND GAIN - preparing hdr options
-            auto hdr_exposure_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_EXPOSURE);
-            auto hdr_gain_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_GAIN);
+            auto hdr_exposure_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_EXPOSURE, exposure_range);
+            auto hdr_gain_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_GAIN, gain_range);
 
             //EXPOSURE AND GAIN - preparing hybrid options
             auto hdr_conditional_exposure_option = std::make_shared<hdr_conditional_option>(hdr_cfg, uvc_xu_exposure_option, hdr_exposure_option);
@@ -855,7 +857,7 @@ namespace librealsense
             "Enable Auto Exposure");
         depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
 
-        depth_sensor.register_option(RS2_OPTION_EXPOSURE,
+        /*depth_sensor.register_option(RS2_OPTION_EXPOSURE,
             std::make_shared<auto_disabling_control>(
                 uvc_xu_exposure_option,
                 enable_auto_exposure));
@@ -863,7 +865,7 @@ namespace librealsense
         depth_sensor.register_option(RS2_OPTION_GAIN,
             std::make_shared<auto_disabling_control>(
                 uvc_pu_gain_option,
-                enable_auto_exposure));
+                enable_auto_exposure));*/
 
 
         roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);

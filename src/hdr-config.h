@@ -62,7 +62,7 @@ namespace librealsense
         void set_sequence_size(float value);
         void set_sequence_index(float value);
         void set_enable_status(float value);
-        void set_exposure(float value, option_range range);
+        void set_exposure(float value);
         void set_gain(float value);
         void initialize_options_ranges();
         

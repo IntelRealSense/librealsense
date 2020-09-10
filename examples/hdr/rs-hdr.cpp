@@ -62,12 +62,12 @@ int main(int argc, char * argv[]) try
 
     // configuration for the first HDR sequence ID
     depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 1);
-    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 8500.f);
+    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 9000.f);
     depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
 
     // configuration for the second HDR sequence ID
     depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 2);
-    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 1.f);
+    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 400.f);
     depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
 
     // after setting the HDR sequence ID opotion to 0, setting exposure or gain
