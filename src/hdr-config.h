@@ -45,12 +45,9 @@ namespace librealsense
         const int DEFAULT_CURRENT_HDR_SEQUENCE_INDEX = -1;
         const int DEFAULT_HDR_SEQUENCE_SIZE = 2;
 
-        typedef enum control_id
-        {
-            depth_laser_mode = 0,
-            depth_manual_exposure = 1,
-            depth_gain = 2
-        }control_id;
+        const uint8_t CONTROL_ID_LASER = 0;
+        const uint8_t CONTROL_ID_EXPOSURE = 1;
+        const uint8_t CONTROL_ID_GAIN = 2;
 
         void set_options_to_be_restored_after_disable();
         void restore_options_after_disable();

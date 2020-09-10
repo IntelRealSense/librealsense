@@ -514,13 +514,20 @@ namespace librealsense
 
     float alternating_emitter_option::query() const
     {
-        command cmd(ds::GETSUBPRESETNAME);
-        auto res = _hwm.send(cmd);
-        if (res.size()>20)
-            throw invalid_value_exception("HWMON::GETSUBPRESETNAME invalid size");
-
-        static std::vector<uint8_t> alt_emitter_name(ds::alternating_emitter_pattern.begin()+2,ds::alternating_emitter_pattern.begin()+22);
-        return (alt_emitter_name == res);
+        float rv = 0.f;
+        command cmd(ds::GETSUBPRESETID);
+        // if no subpreset is streaming, the firmware returns "ON_DATA_TO_RETURN" error
+        try {
+            auto res = _hwm.send(cmd);
+            // if a subpreset is streaming, checking tis is the alternating emitter sub preset
+            rv = (res[0] == ds::ALTERNATING_EMITTER_SUBPRESET_ID) ? 1.0f : 0.f;
+        }
+        catch (...)
+        {
+            rv = 0.f;
+        }
+            
+        return rv;
     }
 
     emitter_always_on_option::emitter_always_on_option(hw_monitor& hwm, sensor_base* ep)

@@ -275,27 +275,18 @@ namespace librealsense
     std::vector<uint8_t> hdr_config::prepare_sub_preset_header() const
     {
         //size
-        uint16_t header_size = 25;
-        //name
-        static const int SUB_PRESET_NAME_LENGTH = 20;
-        uint8_t sub_preset_name[SUB_PRESET_NAME_LENGTH];
-        memset(sub_preset_name, 0, SUB_PRESET_NAME_LENGTH);
-        const char* name = "HDRSubPreset";
-        const int lim = std::min(static_cast<const int>(strlen(name)), SUB_PRESET_NAME_LENGTH);
-        for (int i = 0; i < lim ; ++i)
-        {
-            sub_preset_name[i] = name[i];
-        }
+        uint8_t header_size = 5;
+        //id - from member (uint8_t)
         //iterations - always 0 so that it will be continuous until stopped
-        uint8_t iterations = 0;
+        uint16_t iterations = 0;
         //sequence size
-        uint16_t num_of_items = static_cast<uint16_t>(_sequence_size);
+        uint8_t num_of_items = static_cast<uint8_t>(_sequence_size);
         
         std::vector<uint8_t> header;
-        header.insert(header.end(), (uint8_t*)&header_size, (uint8_t*)&header_size + 2);
-        header.insert(header.end(), &sub_preset_name[0], &sub_preset_name[0] + SUB_PRESET_NAME_LENGTH);
-        header.insert(header.end(), &iterations, &iterations + 1);
-        header.insert(header.end(), (uint8_t*)&num_of_items, (uint8_t*)&num_of_items + 2);
+        header.insert(header.end(), &header_size, &header_size + 1);
+        header.insert(header.end(), &_id, &_id + 1);
+        header.insert(header.end(), (uint8_t*)&iterations, (uint8_t*)&iterations + 2);
+        header.insert(header.end(), &num_of_items, &num_of_items + 1);
 
         return header;
     }
@@ -303,30 +294,28 @@ namespace librealsense
     std::vector<uint8_t> hdr_config::prepare_sub_preset_frames_config() const
     {
         //size for each frame header
-        uint16_t frame_header_size = 5;
+        uint8_t frame_header_size = 4;
         //number of iterations for each frame
-        uint8_t iterations = 1;
+        uint16_t iterations = 1;
         // number of Controls for current frame
-        uint16_t num_of_controls = 2;
+        uint8_t num_of_controls = 2;
 
         std::vector<uint8_t> frame_header;
-        frame_header.insert(frame_header.end(), (uint8_t*)&frame_header_size, (uint8_t*)&frame_header_size + 2);
-        frame_header.insert(frame_header.end(), &iterations, &iterations + 1);
-        frame_header.insert(frame_header.end(), (uint8_t*)&num_of_controls, (uint8_t*)&num_of_controls + 2);
+        frame_header.insert(frame_header.end(), &frame_header_size, &frame_header_size + 1);
+        frame_header.insert(frame_header.end(), (uint8_t*)&iterations, (uint8_t*)&iterations + 2);
+        frame_header.insert(frame_header.end(), &num_of_controls, &num_of_controls + 1);
 
         std::vector<uint8_t> frames_config;
         for (int i = 0; i < _sequence_size; ++i)
         {
             frames_config.insert(frames_config.end(), &frame_header[0], &frame_header[0] + frame_header.size());
 
-            uint16_t exposure_id = static_cast<uint16_t>(depth_manual_exposure);
             uint32_t exposure_value = static_cast<uint32_t>(_hdr_sequence_params[i]._exposure);
-            frames_config.insert(frames_config.end(), (uint8_t*)&exposure_id, (uint8_t*)&exposure_id + 2);
+            frames_config.insert(frames_config.end(), &CONTROL_ID_EXPOSURE, &CONTROL_ID_EXPOSURE + 1);
             frames_config.insert(frames_config.end(), (uint8_t*)&exposure_value, (uint8_t*)&exposure_value + 4);
             
-            uint16_t gain_id = static_cast<uint16_t>(depth_gain);
             uint32_t gain_value = static_cast<uint32_t>(_hdr_sequence_params[i]._gain);
-            frames_config.insert(frames_config.end(), (uint8_t*)&gain_id, (uint8_t*)&gain_id + 2);
+            frames_config.insert(frames_config.end(), &CONTROL_ID_GAIN, &CONTROL_ID_GAIN + 1);
             frames_config.insert(frames_config.end(), (uint8_t*)&gain_value, (uint8_t*)&gain_value + 4);
         }
 
@@ -417,32 +406,29 @@ namespace librealsense
     // explanation for the sub-preset:
     /* the structure is:
     
+    #define SUB_PRESET_BUFFER_SIZE 0x400
     #pragma pack(push, 1)
-    typedef uint8_t SubPresetName[SUB_PRESET_NAME_LEN];
-
     typedef struct SubPresetHeader
     {
-        uint16_t      headerSize;
-        SubPresetName name;
-        uint8_t       iterations;
-        uint16_t      numOfItems;
+        uint8_t  headerSize;
+        uint8_t  id;
+        uint16_t iterations;
+        uint8_t  numOfItems;
     }SubPresetHeader;
 
     typedef struct SubPresetItemHeader
     {
-        uint16_t headerSize;
-        uint8_t  iterations;
-        uint16_t numOfControls;
+        uint8_t  headerSize;
+        uint16_t iterations;
+        uint8_t  numOfControls;
     }SubPresetItemHeader;
 
     typedef struct SubPresetControl
     {
-        uint16_t controlId;
+        uint8_t  controlId;
         uint32_t controlValue;
     }SubPresetControl;
     #pragma pack(pop) 
-    #define SUB_PRESET_BUFFER_SIZE 1000
-    #define SUB_PRESET_NAME_LEN    20 
      */
 
 

@@ -445,10 +445,10 @@ namespace librealsense
     /*struct md_sub_preset_info_fields
     {
         uint32_t  id : 4;
-        uint32_t  num_of_items : 6;
-        uint32_t  item_index : 6;
-        uint32_t  iteration : 8;
-        uint32_t  item_iteration : 8;
+        uint32_t  num_of_items : 8;
+        uint32_t  item_index : 8;
+        uint32_t  iteration : 6;
+        uint32_t  item_iteration : 6;
     };
 
     union md_sub_preset_info
@@ -484,19 +484,19 @@ namespace librealsense
         typedef enum sub_preset_bit_mask
         {
             SUB_PRESET_BIT_MASK_ID                      = 0xF,
-            SUB_PRESET_BIT_MASK_SEQUENCE_SIZE           = 0x3F0,
-            SUB_PRESET_BIT_MASK_SEQUENCE_ID             = 0xFC00,
-            SUB_PRESET_BIT_MASK_SEQUENCE_ITERATION      = 0xFF0000,
-            SUB_PRESET_BIT_MASK_SEQUENCE_ITEM_ITERATION = 0xFF000000
+            SUB_PRESET_BIT_MASK_SEQUENCE_SIZE           = 0xFF0,
+            SUB_PRESET_BIT_MASK_SEQUENCE_ID             = 0xFF000,
+            SUB_PRESET_BIT_MASK_SEQUENCE_ITERATION      = 0x3F00000,
+            SUB_PRESET_BIT_MASK_SEQUENCE_ITEM_ITERATION = 0xFC000000
         }sub_preset_bit_mask;
 
         typedef enum sub_preset_bit_offset
         {
             SUB_PRESET_BIT_OFFSET_ID               = 0,
             SUB_PRESET_BIT_OFFSET_SEQUENCE_SIZE    = 4,
-            SUB_PRESET_BIT_OFFSET_SEQUENCE_ID      = 10,
-            SUB_PRESET_BIT_OFFSET_ITERATION        = 16,
-            SUB_PRESET_BIT_OFFSET_ITEM_ITERATION   = 24
+            SUB_PRESET_BIT_OFFSET_SEQUENCE_ID      = 12,
+            SUB_PRESET_BIT_OFFSET_ITERATION        = 20,
+            SUB_PRESET_BIT_OFFSET_ITEM_ITERATION   = 26
         }sub_preset_bit_offset;
     };
 
