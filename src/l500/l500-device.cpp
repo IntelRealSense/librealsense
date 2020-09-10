@@ -93,17 +93,12 @@ namespace librealsense
         _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
 
         auto optic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset, module_serial_size);
-        auto asic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_asic_serial_offset, module_serial_size);
+        auto asic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_asic_serial_offset, module_asic_serial_size);
         auto fwv = _hw_monitor->get_firmware_version_string(gvd_buff, fw_version_offset);
         _fw_version = firmware_version(fwv);
         firmware_version recommended_fw_version(L5XX_RECOMMENDED_FIRMWARE_VERSION);
 
         _is_locked = _hw_monitor->get_gvd_field<bool>(gvd_buff, is_camera_locked_offset);
-
-        // TODO: flash lock is not suuported yet.
-        // reporting lock to the application blocks flash FW update.
-        // remove when flash update support is required.
-        _is_locked = true; 
 
         auto pid_hex_str = hexify(group.uvc_devices.front().pid);
 
