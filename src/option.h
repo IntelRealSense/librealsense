@@ -478,11 +478,15 @@ namespace librealsense
         std::function<void(const option&)> _recording_function = [](const option&) {};
     };
 
-    /** \general class for an option provided a control
-    * that affects other options when changing its value */
+    /** Wrapper for another option -- forwards all API calls to the proxied option
+    *such that specific functionality can be easily overriden */
     class proxy_option : public option
     {
     public:
+        explicit proxy_option(std::shared_ptr<option> proxy_option)
+            : _proxy(proxy_option)
+        {}
+
         const char* get_value_description(float val) const override
         {
             return _proxy->get_value_description(val);
@@ -491,8 +495,10 @@ namespace librealsense
         {
             return _proxy->get_description();
         }
-        virtual void set(float value) = 0;
-
+        virtual void set(float value) override 
+        {
+            return _proxy->set(value);
+        }
         float query() const override
         {
             return _proxy->query();
@@ -513,9 +519,6 @@ namespace librealsense
             return  _proxy->is_read_only();
         }
 
-        explicit proxy_option(std::shared_ptr<option> proxy_option)
-            : _proxy(proxy_option)
-        {}
         void enable_recording(std::function<void(const option &)> record_action) override
         {
             _recording_function = record_action;
@@ -530,6 +533,14 @@ namespace librealsense
    class auto_disabling_control : public proxy_option
    {
    public:
+       explicit auto_disabling_control(std::shared_ptr<option> auto_disabling,
+           std::shared_ptr<option> affected_option,
+           std::vector<float> move_to_manual_values = { 1.f },
+           float manual_value = 0.f)
+           : proxy_option(auto_disabling), _affected_control(affected_option)
+           , _move_to_manual_values(move_to_manual_values), _manual_value(manual_value)
+       {}
+
        void set(float value) override
        {
           auto strong = _affected_control.lock();
@@ -554,15 +565,6 @@ namespace librealsense
           _recording_function(*this);
        }
 
-       explicit auto_disabling_control(std::shared_ptr<option> auto_disabling,
-                                       std::shared_ptr<option> affected_option,
-                                       std::vector<float> move_to_manual_values = {1.f},
-                                       float manual_value = 0.f)
-
-           : proxy_option(auto_disabling), _affected_control(affected_option)
-           ,_move_to_manual_values(move_to_manual_values), _manual_value(manual_value)
-       {}
-
    private:
        std::weak_ptr<option>   _affected_control;
        std::vector<float>      _move_to_manual_values;
@@ -574,6 +576,11 @@ namespace librealsense
    class max_distance_option : public proxy_option
    {
    public:
+       explicit max_distance_option(std::shared_ptr<option> max_option,
+           std::shared_ptr<option> min_option)
+           : proxy_option(max_option), _min_option(min_option)
+       {}
+
        void set(float value) override
        {
            auto strong = _min_option.lock();
@@ -591,10 +598,6 @@ namespace librealsense
            _recording_function(*this);
        }
 
-       explicit max_distance_option(std::shared_ptr<option> max_option,
-           std::shared_ptr<option> min_option)
-           : proxy_option(max_option), _min_option(min_option)
-       {}
    private: 
        std::weak_ptr<option>   _min_option;
    };
@@ -604,6 +607,11 @@ namespace librealsense
    class min_distance_option : public proxy_option
    {
    public:
+       explicit min_distance_option(std::shared_ptr<option> min_option,
+           std::shared_ptr<option> max_option)
+           : proxy_option(min_option), _max_option(max_option)
+       {}
+
        void set(float value) override
        {
             auto strong = _max_option.lock();
@@ -620,11 +628,6 @@ namespace librealsense
             _proxy->set(value);
            _recording_function(*this);
        }
-
-       explicit min_distance_option(std::shared_ptr<option> min_option,
-           std::shared_ptr<option> max_option)
-           : proxy_option(min_option), _max_option(max_option)
-       {}
 
    private: 
        std::weak_ptr<option>   _max_option;
