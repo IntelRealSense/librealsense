@@ -519,7 +519,7 @@ namespace librealsense
         // if no subpreset is streaming, the firmware returns "ON_DATA_TO_RETURN" error
         try {
             auto res = _hwm.send(cmd);
-            // if a subpreset is streaming, checking tis is the alternating emitter sub preset
+            // if a subpreset is streaming, checking this is the alternating emitter sub preset
             rv = (res[0] == ds::ALTERNATING_EMITTER_SUBPRESET_ID) ? 1.0f : 0.f;
         }
         catch (...)

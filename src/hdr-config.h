@@ -34,7 +34,7 @@ namespace librealsense
         void set(rs2_option option, float value, option_range range);
         bool is_config_in_process() const;
 
-        bool is_enabled() const { return _is_enabled; }
+        bool is_enabled() const;
 
     private:
         command prepare_hdr_sub_preset_command() const;
@@ -71,7 +71,7 @@ namespace librealsense
         std::vector<hdr_params> _hdr_sequence_params;
         int _current_hdr_sequence_index;
         bool _options_ranges_initialized;
-        bool _is_enabled;
+        mutable bool _is_enabled;
         bool _is_config_in_process;
         bool _has_config_changed;
         bool _auto_exposure_to_be_restored;

@@ -51,7 +51,7 @@ namespace librealsense
             rv = static_cast<float>(_current_hdr_sequence_index + 1);
             break;
         case RS2_OPTION_HDR_MODE:
-            rv = static_cast<float>(_is_enabled);
+            rv = static_cast<float>(is_enabled());
             break;
         case RS2_OPTION_EXPOSURE:
             try {
@@ -116,6 +116,7 @@ namespace librealsense
             throw invalid_value_exception("option is not an HDR option");
         }
 
+        // subpreset configuration change is immediately sent to firmware if HDR is already running
         if (_is_enabled && _has_config_changed)
         {
             send_sub_preset_to_fw();
@@ -125,6 +126,26 @@ namespace librealsense
     bool hdr_config::is_config_in_process() const
     {
         return _is_config_in_process;
+    }
+
+    bool hdr_config::is_enabled() const
+    {
+        float rv = 0.f;
+        command cmd(ds::GETSUBPRESETID);
+        // if no subpreset is streaming, the firmware returns "ON_DATA_TO_RETURN" error
+        try {
+            auto res = _hwm.send(cmd);
+            // if a subpreset is streaming, checking this is the current HDR sub preset
+            rv = (res[0] == _id) ? 1.0f : 0.f;
+        }
+        catch (...)
+        {
+            rv = 0.f;
+        }
+
+        _is_enabled = (rv == 1.f);
+
+        return rv;
     }
 
     void hdr_config::set_enable_status(float value)
