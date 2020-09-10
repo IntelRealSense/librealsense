@@ -175,6 +175,7 @@ PYBIND11_MODULE(NAME, m) {
         .value("trigger_camera_accuracy_health", RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH)
         .value("reset_camera_accuracy_health", RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH)
         .value("hdr_mode", RS2_OPTION_HDR_MODE)
+        .value("subpreset_id", RS2_OPTION_SUBPRESET_ID)
         .value("subpreset_sequence_size", RS2_OPTION_SUBPRESET_SEQUENCE_SIZE)
         .value("subpreset_sequence_id", RS2_OPTION_SUBPRESET_SEQUENCE_ID)
         .value("select_id", RS2_OPTION_SELECT_ID)
