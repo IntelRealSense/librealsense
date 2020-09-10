@@ -109,10 +109,10 @@ namespace librealsense
 
         using namespace platform;
 
-        auto usb_mode = raw_depth_sensor.get_usb_specification();
-        if (usb_spec_names.count(usb_mode) && (usb_undefined != usb_mode))
+        _usb_mode = raw_depth_sensor.get_usb_specification();
+        if (usb_spec_names.count(_usb_mode) && (usb_undefined != _usb_mode))
         {
-            auto usb_type_str = usb_spec_names.at(usb_mode);
+            auto usb_type_str = usb_spec_names.at(_usb_mode);
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
         }
 
@@ -640,19 +640,6 @@ namespace librealsense
         }
 
         return _hw_monitor->send(input);
-    }
-
-    platform::usb_spec l500_device::get_usb_spec() const
-    {
-        if (!supports_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
-            return platform::usb_undefined;
-        auto str = get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
-        for (auto u : platform::usb_spec_names)
-        {
-            if (u.second.compare(str) == 0)
-                return u.first;
-        }
-        return platform::usb_undefined;
     }
 
     notification l500_notification_decoder::decode(int value)
