@@ -96,7 +96,7 @@ extern "C" {
         RS2_OPTION_THERMAL_COMPENSATION, /**< Depth Thermal Compensation for selected D400 SKUs */
         RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, /**< Enable depth & color frame sync with periodic calibration for proper alignment */
         RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH,
-        RS2_OPTION_HOST_PERFORMANCE, /**< Set host performance mode, optimize device settings for USB TRB granularity, larger TRB legth may improve performance and stability on low performance hosts */
+        RS2_OPTION_HOST_PERFORMANCE, /**< Set host performance mode to optimize device settings so host can keep up with workload, for example, USB transaction granularity, setting option to low performance host leads to larger USB transaction size and reduced number of transactions which improves performance and stability if host is relatively weak as compared to workload */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
@@ -180,8 +180,8 @@ extern "C" {
     typedef enum rs2_host_perf_mode
     {
         RS2_HOST_PERF_DEFAULT = 0,  /**< no change in settings, use device defaults */
-        RS2_HOST_PERF_LOW = 1,      /**< low power low performance hosts, larger USB TRB granularity reduces number of transactions and improve performance and stability on weak hosts */
-        RS2_HOST_PERF_HIGH = 2,     /**< high power high performance hosts, smaller USB TRB granularity and  larger number of transactions */
+        RS2_HOST_PERF_LOW = 1,      /**< low performance host mode, if host cannot keep up with workload, this option may improve stability, for example, it sets larger USB transaction granularity, reduces number of transactions and improve performance and stability on relatively weak hosts as compared to the workload */
+        RS2_HOST_PERF_HIGH = 2,     /**< high performance host mode, if host is strong as compared to the work and can handle workload without delay, this option sets smaller USB transactions granularity and as result larger number of transactions and workload on host, but reduces chance in device frame drops */
         RS2_HOST_PERF_COUNT         /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_host_perf_mode;
     const char* rs2_host_perf_mode_to_string( rs2_host_perf_mode perf );
