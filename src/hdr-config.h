@@ -49,6 +49,7 @@ namespace librealsense
         const uint8_t CONTROL_ID_EXPOSURE = 1;
         const uint8_t CONTROL_ID_GAIN = 2;
 
+        void set_default_config();
         void set_options_to_be_restored_after_disable();
         void restore_options_after_disable();
 
@@ -61,7 +62,6 @@ namespace librealsense
         void set_enable_status(float value);
         void set_exposure(float value, option_range range);
         void set_gain(float value);
-        void reset_to_default();
         void initialize_options_ranges();
         
         int _id;

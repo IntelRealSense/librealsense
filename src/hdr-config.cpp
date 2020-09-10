@@ -9,38 +9,31 @@ namespace librealsense
     hdr_config::hdr_config(hw_monitor& hwm, std::shared_ptr<sensor_base> depth_ep) :
         _hwm(hwm),
         _sensor(depth_ep),
-        _options_ranges_initialized(false)
+        _options_ranges_initialized(false),
+        _is_enabled(false),
+        _is_config_in_process(false),
+        _has_config_changed(false),
+        _current_hdr_sequence_index(DEFAULT_CURRENT_HDR_SEQUENCE_INDEX),
+        _auto_exposure_to_be_restored(false),
+        _emitter_on_off_to_be_restored(false),
+        _id(DEFAULT_HDR_ID),
+        _sequence_size(DEFAULT_HDR_SEQUENCE_SIZE)
     {  
-        reset_to_default();
-    }
-
-    void hdr_config::reset_to_default()
-    {
-        _is_enabled = false;
-        _is_config_in_process = false;
-        _has_config_changed = false;
-        _current_hdr_sequence_index = DEFAULT_CURRENT_HDR_SEQUENCE_INDEX;
-
-        _auto_exposure_to_be_restored = false;
-        _emitter_on_off_to_be_restored = false;
-
-        _id = DEFAULT_HDR_ID;
-        _sequence_size = DEFAULT_HDR_SEQUENCE_SIZE;
         _hdr_sequence_params.clear();
         _hdr_sequence_params.resize(DEFAULT_HDR_SEQUENCE_SIZE);
-        
-        if (_options_ranges_initialized)
-        {
-            float exposure_default_value = _exposure_range.def;
-            float gain_default_value = _gain_range.def;
-            hdr_params params_0(0, exposure_default_value, gain_default_value);
-            _hdr_sequence_params[0] = params_0;
+    }
 
-            float exposure_min_value = _exposure_range.min;
-            float gain_min_value = _gain_range.min;
-            hdr_params params_1(1, exposure_min_value, gain_min_value);
-            _hdr_sequence_params[1] = params_1;
-        }
+    void hdr_config::set_default_config()
+    {
+        float exposure_default_value = _exposure_range.def;
+        float gain_default_value = _gain_range.def;
+        hdr_params params_0(0, exposure_default_value, gain_default_value);
+        _hdr_sequence_params[0] = params_0;
+
+        float exposure_min_value = _exposure_range.min;
+        float gain_min_value = _gain_range.min;
+        hdr_params params_1(1, exposure_min_value, gain_min_value);
+        _hdr_sequence_params[1] = params_1;
     }
 
     float hdr_config::get(rs2_option option) const
@@ -89,6 +82,13 @@ namespace librealsense
 
     void hdr_config::set(rs2_option option, float value, option_range range)
     {
+        if (!_options_ranges_initialized)
+        {
+            initialize_options_ranges();
+            _options_ranges_initialized = true;
+            set_default_config();
+        }
+
         if (value < range.min || value > range.max)
             throw invalid_value_exception(to_string() << "hdr_config::set(...) failed! value is out of the option range.");
 
@@ -133,13 +133,6 @@ namespace librealsense
         {
             if (validate_config())
             {
-                if (!_options_ranges_initialized)
-                {
-                    initialize_options_ranges();
-                    _options_ranges_initialized = true;
-                    reset_to_default();
-                }
-
                 // saving status of options that are not compatible with hdr,
                 // so that they could be reenabled after hdr disable
                 set_options_to_be_restored_after_disable();
