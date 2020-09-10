@@ -96,7 +96,7 @@ extern "C" {
         RS2_OPTION_THERMAL_COMPENSATION, /**< Depth Thermal Compensation for selected D400 SKUs */
         RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, /**< Enable depth & color frame sync with periodic calibration for proper alignment */
         RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH,
-        RS2_OPTION_ENABLE_WEAK_USB_HOST_WA, /**< Enable workaround for weak USB hosts to improve performance and stability */
+        RS2_OPTION_HOST_PERFORMANCE, /**< Set host performance mode, optimize device settings for USB TRB granularity, larger TRB legth may improve performance and stability on low performance hosts */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
@@ -175,6 +175,16 @@ extern "C" {
         RS2_CAH_TRIGGER_COUNT        /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_cah_trigger;
     const char* rs2_cah_trigger_to_string( rs2_cah_trigger preset );
+
+    /** \brief values for RS2_OPTION_HOST_PERFORMANCE option. */
+    typedef enum rs2_host_perf_mode
+    {
+        RS2_HOST_PERF_DEFAULT = 0,  /**< no change in settings, use device defaults */
+        RS2_HOST_PERF_LOW = 1,      /**< low power low performance hosts, larger USB TRB granularity reduces number of transactions and improve performance and stability on weak hosts */
+        RS2_HOST_PERF_HIGH = 2,     /**< high power high performance hosts, smaller USB TRB granularity and  larger number of transactions */
+        RS2_HOST_PERF_COUNT         /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+    } rs2_host_perf_mode;
+    const char* rs2_host_perf_mode_to_string( rs2_host_perf_mode perf );
 
     /**
     * check if an option is read-only

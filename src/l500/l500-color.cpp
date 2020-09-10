@@ -106,14 +106,22 @@ namespace librealsense
                 { 3.f, "Auto" }, }));
 
 
-#ifdef __ANDROID__
         // option to enable workaround for help weak usb hosts to support L515 devices
         // with improved performance and stability
         if(_fw_version >= firmware_version( "1.5.1.0" ) )
         {
-            color_ep->register_option(RS2_OPTION_ENABLE_WEAK_USB_HOST_WA, std::make_shared<librealsense::float_option>(option_range{ 0, 1, 1, 1 }));
-        }
+            rs2_host_perf_mode launch_perf_mode = RS2_HOST_PERF_DEFAULT;
+
+#ifdef __ANDROID__
+            // android devices most likely low power low performance host
+            launch_perf_mode = RS2_HOST_PERF_LOW;
+#else
+            // other hosts use default settings from firmware, user still have the option to change later after launch
+            launch_perf_mode = RS2_HOST_PERF_DEFAULT;
 #endif
+
+            color_ep->register_option(RS2_OPTION_HOST_PERFORMANCE, std::make_shared<librealsense::float_option_with_description<rs2_host_perf_mode>>(option_range{ RS2_HOST_PERF_DEFAULT, RS2_HOST_PERF_COUNT - 1, 1, (float) launch_perf_mode }, "Optimize based on host performance, low power low performance host or high power high performance host"));
+        }
 
         // metadata
         // attributes of md_capture_timing
@@ -368,23 +376,32 @@ namespace librealsense
         if (_state != sensor_state::OWNED_BY_USER)
             throw wrong_api_call_sequence_exception("tried to start an unopened sensor");
 
-#ifdef __ANDROID__
-        if (supports_option(RS2_OPTION_ENABLE_WEAK_USB_HOST_WA))
+        if (supports_option(RS2_OPTION_HOST_PERFORMANCE))
         {
             // option to improve performance and stability on weak android hosts
             // please refer to following bug report for details
             // RS5-8011 [Android-L500 Hard failure] Device detach and disappear from system during stream
 
-            auto usb_perf_enabled = get_option(RS2_OPTION_ENABLE_WEAK_USB_HOST_WA).query();
+            auto host_perf = get_option(RS2_OPTION_HOST_PERFORMANCE).query();
 
-            if (usb_perf_enabled)
+            if (host_perf == RS2_HOST_PERF_LOW || host_perf == RS2_HOST_PERF_HIGH)
             {
                 // TPROC USB Granularity and TRB threshold settings for improved performance and stability
                 // on hosts with weak cpu and system performance
                 // settings values are validated through many experiments, do not change
+
+                // on low power low performance host, usb trb set to larger granularity to reduce number of transactions
+                // and improve performance
+                int usb_trb = 7;       // 7 KB
+
+                if (host_perf == RS2_HOST_PERF_LOW)
+                {
+                    usb_trb = 32;      // 32 KB
+                }
+
                 try {
                     // endpoint 5 - 32KB
-                    command cmdTprocGranEp5(ivcam2::TPROC_USB_GRAN_SET, 5, 32);
+                    command cmdTprocGranEp5(ivcam2::TPROC_USB_GRAN_SET, 5, usb_trb);
                     _owner->_hw_monitor->send(cmdTprocGranEp5);
 
                     command cmdTprocThresholdEp5(ivcam2::TPROC_TRB_THRSLD_SET, 5, 1);
@@ -396,8 +413,11 @@ namespace librealsense
                     LOG_WARNING("Failed to update color usb tproc granularity and TRB threshold. performance and stability maybe impacted on certain platforms.");
                 }
             }
+            else if (host_perf == RS2_HOST_PERF_DEFAULT)
+            {
+                    LOG_DEBUG("Default host performance mode, color usb tproc granularity and TRB threshold not changed");
+            }
         }
-#endif
 
         delayed_start(callback);
     }

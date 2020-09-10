@@ -107,12 +107,21 @@ namespace librealsense
 
         // option to enable workaround for help weak usb hosts to support L515 devices
         // with improved performance and stability
-#ifdef __ANDROID__
         if(_fw_version >= firmware_version( "1.5.1.0" ) )
         {
-            depth_sensor.register_option(RS2_OPTION_ENABLE_WEAK_USB_HOST_WA, std::make_shared<librealsense::float_option>(option_range{ 0, 1, 1, 1 }));
-        }
+            rs2_host_perf_mode launch_perf_mode = RS2_HOST_PERF_DEFAULT;
+
+#ifdef __ANDROID__
+            // android devices most likely low power low performance host
+            launch_perf_mode = RS2_HOST_PERF_LOW;
+#else
+            // other hosts use default settings from firmware, user still have the option to change later after launch
+            launch_perf_mode = RS2_HOST_PERF_DEFAULT;
 #endif
+
+            depth_sensor.register_option(RS2_OPTION_HOST_PERFORMANCE, std::make_shared<librealsense::float_option_with_description<rs2_host_perf_mode>>(option_range{ RS2_HOST_PERF_DEFAULT, RS2_HOST_PERF_COUNT - 1, 1, (float) launch_perf_mode }, "Optimize based on host performance, low power low performance host or high power high performance host"));
+
+        }
 
         // attributes of md_capture_timing
         auto md_prop_offset = offsetof(metadata_raw, mode) +
@@ -383,34 +392,54 @@ namespace librealsense
 
     void l500_depth_sensor::start(frame_callback_ptr callback)
     {
-#ifdef __ANDROID__
-        if (supports_option(RS2_OPTION_ENABLE_WEAK_USB_HOST_WA))
+        if (supports_option(RS2_OPTION_HOST_PERFORMANCE))
         {
             // option to improve performance and stability on weak android hosts
             // please refer to following bug report for details
             // RS5-8011 [Android-L500 Hard failure] Device detach and disappear from system during stream
 
-            auto usb_perf_enabled = get_option(RS2_OPTION_ENABLE_WEAK_USB_HOST_WA).query();
+            auto host_perf = get_option(RS2_OPTION_HOST_PERFORMANCE).query();
 
-            if (usb_perf_enabled)
+            if (host_perf == RS2_HOST_PERF_LOW || host_perf == RS2_HOST_PERF_HIGH)
             {
                 // TPROC USB Granularity and TRB threshold settings for improved performance and stability
                 // on hosts with weak cpu and system performance
                 // settings values are validated through many experiments, do not change
+
+                // on low power low performance host, usb trb set to larger granularity to reduce number of transactions
+                // and improve performance
+                int ep2_usb_trb = 7;           // 7 KB
+                int ep3_usb_trb = 3;           // 3 KB
+                int ep4_usb_trb = 3;           // 3 KB
+
+                if (host_perf == RS2_HOST_PERF_LOW)
+                {
+                    ep2_usb_trb = 16;          // 16 KB
+                    ep3_usb_trb = 12;          // 12 KB
+                    ep4_usb_trb = 6;           //  6 KB
+                }
+
                 try {
-                    // endpoint 2 - 16KB
-                    command cmdTprocGranEp2(ivcam2::TPROC_USB_GRAN_SET, 2, 16);
+                    // endpoint 2 (depth)
+                    command cmdTprocGranEp2(ivcam2::TPROC_USB_GRAN_SET, 2, ep2_usb_trb);
                     _owner->_hw_monitor->send(cmdTprocGranEp2);
 
                     command cmdTprocThresholdEp2(ivcam2::TPROC_TRB_THRSLD_SET, 2, 1);
                     _owner->_hw_monitor->send(cmdTprocThresholdEp2);
 
-                    // endpoint 3 - 16 KB
-                    command cmdTprocGranEp3(ivcam2::TPROC_USB_GRAN_SET, 3, 16);
+                    // endpoint 3 (IR)
+                    command cmdTprocGranEp3(ivcam2::TPROC_USB_GRAN_SET, 3, ep3_usb_trb);
                     _owner->_hw_monitor->send(cmdTprocGranEp3);
 
                     command cmdTprocThresholdEp3(ivcam2::TPROC_TRB_THRSLD_SET, 3, 1);
                     _owner->_hw_monitor->send(cmdTprocThresholdEp3);
+
+                    // endpoint 4 (confidence)
+                    command cmdTprocGranEp4(ivcam2::TPROC_USB_GRAN_SET, 4, ep4_usb_trb);
+                    _owner->_hw_monitor->send(cmdTprocGranEp4);
+
+                    command cmdTprocThresholdEp4(ivcam2::TPROC_TRB_THRSLD_SET, 4, 1);
+                    _owner->_hw_monitor->send(cmdTprocThresholdEp4);
 
                     LOG_DEBUG("Depth and IR usb tproc granularity and TRB threshold updated.");
                 } catch (...)
@@ -418,8 +447,11 @@ namespace librealsense
                     LOG_WARNING("FAILED TO UPDATE depth usb tproc granularity and TRB threshold. performance and stability maybe impacted on certain platforms.");
                 }
             }
+            else if (host_perf == RS2_HOST_PERF_DEFAULT)
+            {
+                LOG_DEBUG("Default host performance mode, Depth/IR/Confidence usb tproc granularity and TRB threshold not changed");
+            }
         }
-#endif
 
         // The delay is here as a work around to a firmware bug [RS5-5453]
         _action_delayer.do_after_delay( [&]() {
