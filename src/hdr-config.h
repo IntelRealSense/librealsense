@@ -31,6 +31,7 @@ namespace librealsense
         hdr_config(hw_monitor& hwm, std::shared_ptr<sensor_base> depth_ep, 
 		const option_range& exposure_range, const option_range& gain_range);
 
+
         float get(rs2_option option) const;
         void set(rs2_option option, float value, option_range range);
         bool is_config_in_process() const;
@@ -38,6 +39,8 @@ namespace librealsense
         bool is_enabled() const;
 
     private:
+        bool is_current_subpreset_hdr(const std::vector<byte>& current_subpreset) const;
+        bool configure_hdr_as_in_fw(const std::vector<byte>& current_subpreset);
         command prepare_hdr_sub_preset_command() const;
         std::vector<uint8_t> prepare_sub_preset_header() const;
         std::vector<uint8_t> prepare_sub_preset_frames_config() const;

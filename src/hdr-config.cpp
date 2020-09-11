@@ -24,16 +24,94 @@ namespace librealsense
         _hdr_sequence_params.clear();
         _hdr_sequence_params.resize(DEFAULT_HDR_SEQUENCE_SIZE);
 
-        // setting default config
-        float exposure_default_value = _exposure_range.def;
-        float gain_default_value = _gain_range.def;
-        hdr_params params_0(0, exposure_default_value, gain_default_value);
-        _hdr_sequence_params[0] = params_0;
+		// restoring current HDR configuration if such subpreset is active
+        command cmd(ds::GETSUBPRESET);
+        auto res = _hwm.send(cmd);
 
-        float exposure_low_value = DEFAULT_CONFIG_LOW_EXPOSURE;
-        float gain_min_value = _gain_range.min;
-        hdr_params params_1(1, exposure_low_value, gain_min_value);
-        _hdr_sequence_params[1] = params_1;
+        bool existing_subpreset_restored = false;
+        if (res.size() && is_current_subpreset_hdr(res))
+        {
+            existing_subpreset_restored = configure_hdr_as_in_fw(res);
+        }
+
+        if (!existing_subpreset_restored)
+        {
+            // setting default config
+            float exposure_default_value = _exposure_range.def;
+            float gain_default_value = _gain_range.def;
+            hdr_params params_0(0, exposure_default_value, gain_default_value);
+            _hdr_sequence_params[0] = params_0;
+
+            float exposure_low_value = DEFAULT_CONFIG_LOW_EXPOSURE;
+            float gain_min_value = _gain_range.min;
+            hdr_params params_1(1, exposure_low_value, gain_min_value);
+            _hdr_sequence_params[1] = params_1;
+        }
+    }
+
+    bool hdr_config::is_current_subpreset_hdr(const std::vector<byte>& current_subpreset) const
+    {
+        int current_subpreset_id = current_subpreset[1];
+        return current_subpreset_id >= 0 && current_subpreset_id <= 3;
+    }
+
+    int int_from_4_bytes_little_endian(const std::vector<byte>& vec, int start_offset)
+    {
+        int result = int((unsigned char)(vec[start_offset]) |
+            (unsigned char)(vec[start_offset + 1]) << 8 |
+            (unsigned char)(vec[start_offset + 2]) << 16 |
+            (unsigned char)(vec[start_offset + 3]) << 24);
+
+        return result;
+    }
+
+    bool hdr_config::configure_hdr_as_in_fw(const std::vector<byte>& current_subpreset)
+    {
+        // parsing subpreset pattern, considering:
+        // SubPresetHeader::iterations always equals 0 (continuous subpreset)
+        // SubPresetHeader::numOfItems always equals 2 - for gain and exposure
+        // SubPresetItemHeader::iterations always equals 1 - only one frame on each sequence ID in the sequence
+        const int size_of_subpreset_header = 5;
+        const int size_of_subpreset_item_header = 4;
+        const int size_of_control_id = 1;
+        const int size_of_control_value = 4;
+
+        int offset = 0;
+        offset += size_of_subpreset_header;
+        offset += size_of_subpreset_item_header;
+
+        if (current_subpreset[offset] != CONTROL_ID_EXPOSURE)
+            return false;
+        offset += size_of_control_id;
+        float exposure_0 = int_from_4_bytes_little_endian(current_subpreset, offset);
+        offset += size_of_control_value;
+
+        if (current_subpreset[offset] != CONTROL_ID_GAIN)
+            return false;
+        offset += size_of_control_id;
+        float gain_0 = int_from_4_bytes_little_endian(current_subpreset, offset);
+        offset += size_of_control_value;
+
+        offset += size_of_subpreset_item_header;
+
+        if (current_subpreset[offset] != CONTROL_ID_EXPOSURE)
+            return false;
+        offset += size_of_control_id;
+        float exposure_1 = int_from_4_bytes_little_endian(current_subpreset, offset);
+        offset += size_of_control_value;
+
+        if (current_subpreset[offset] != CONTROL_ID_GAIN)
+            return false;
+        offset += size_of_control_id;
+        float gain_1 = int_from_4_bytes_little_endian(current_subpreset, offset);
+        offset += size_of_control_value;
+
+        _hdr_sequence_params[0]._exposure = exposure_0;
+        _hdr_sequence_params[0]._gain = gain_0;
+        _hdr_sequence_params[1]._exposure = exposure_1;
+        _hdr_sequence_params[1]._gain = gain_1;
+
+        return true;
     }
 
     float hdr_config::get(rs2_option option) const

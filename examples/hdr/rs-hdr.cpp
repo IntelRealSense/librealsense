@@ -58,7 +58,7 @@ int main(int argc, char * argv[]) try
     }
 
     // configuring id for this hdr config (value must be in range [0,3])
-    depth_sensor.set_option(RS2_OPTION_SUBPRESET_ID, 1);
+    depth_sensor.set_option(RS2_OPTION_SUBPRESET_ID, 0);
 
     // configuration for the first HDR sequence ID
     depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 1);
