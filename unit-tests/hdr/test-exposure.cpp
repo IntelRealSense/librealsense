@@ -21,6 +21,11 @@ TEST_CASE("HDR Config - changing only exposure", "[HDR]") {
     depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_SIZE, 2);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_SUBPRESET_SEQUENCE_SIZE) == 2.f);
 
+    // configuring id for this hdr config (value must be in range [0,3])
+    float subpreset_id = 0;
+    depth_sensor.set_option(RS2_OPTION_SUBPRESET_ID, subpreset_id);
+    REQUIRE(depth_sensor.get_option(RS2_OPTION_SUBPRESET_ID) == subpreset_id);
+
     float first_exposure = 9000.f;
     depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 1);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID) == 1.f);
@@ -42,18 +47,22 @@ TEST_CASE("HDR Config - changing only exposure", "[HDR]") {
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_DEPTH);
     cfg.enable_stream(RS2_STREAM_INFRARED, 1);
-    cfg.enable_stream(RS2_STREAM_INFRARED, 2);
     rs2::pipeline pipe;
+    std::cout << "starting pipe..." << std::endl;
     pipe.start(cfg);
+    std::cout << "pipe started" << std::endl;
 
-    int iterations = 0;
+    /*int iterations = 0;
     float pair_fc_exposure = first_exposure;
-    float odd_fc_exposure = second_exposure;
+    float odd_fc_exposure = second_exposure;*/
     while (dev) // Application still alive?
     {
         rs2::frameset data = pipe.wait_for_frames();
-
         rs2::depth_frame out_depth_frame = data.get_depth_frame();
+
+        REQUIRE(out_depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE));
+        REQUIRE(out_depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID));
+
         long long frame_counter = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
         long long frame_exposure = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
         auto seq_id = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
