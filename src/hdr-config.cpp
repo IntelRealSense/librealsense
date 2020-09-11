@@ -6,10 +6,10 @@
 
 namespace librealsense
 {
-    hdr_config::hdr_config(hw_monitor& hwm, std::shared_ptr<sensor_base> depth_ep) :
+    hdr_config::hdr_config(hw_monitor& hwm, std::shared_ptr<sensor_base> depth_ep, 
+        const option_range& exposure_range, const option_range& gain_range) :
         _hwm(hwm),
         _sensor(depth_ep),
-        _options_ranges_initialized(false),
         _is_enabled(false),
         _is_config_in_process(false),
         _has_config_changed(false),
@@ -17,14 +17,14 @@ namespace librealsense
         _auto_exposure_to_be_restored(false),
         _emitter_on_off_to_be_restored(false),
         _id(DEFAULT_HDR_ID),
-        _sequence_size(DEFAULT_HDR_SEQUENCE_SIZE)
+        _sequence_size(DEFAULT_HDR_SEQUENCE_SIZE),
+        _exposure_range(exposure_range),
+        _gain_range(gain_range)
     {  
         _hdr_sequence_params.clear();
         _hdr_sequence_params.resize(DEFAULT_HDR_SEQUENCE_SIZE);
-    }
 
-    void hdr_config::set_default_config()
-    {
+        // setting default config
         float exposure_default_value = _exposure_range.def;
         float gain_default_value = _gain_range.def;
         hdr_params params_0(0, exposure_default_value, gain_default_value);
@@ -81,13 +81,6 @@ namespace librealsense
 
     void hdr_config::set(rs2_option option, float value, option_range range)
     {
-        if (!_options_ranges_initialized)
-        {
-            initialize_options_ranges();
-            _options_ranges_initialized = true;
-            set_default_config();
-        }
-
         if (value < range.min || value > range.max)
             throw invalid_value_exception(to_string() << "hdr_config::set(...) failed! value is out of the option range.");
 
@@ -175,11 +168,6 @@ namespace librealsense
         }
     }
 
-    void hdr_config::initialize_options_ranges()
-    {
-        _exposure_range = _sensor->get_option(RS2_OPTION_EXPOSURE).get_range();
-        _gain_range = _sensor->get_option(RS2_OPTION_GAIN).get_range();
-    }
 
     void hdr_config::set_options_to_be_restored_after_disable()
     {

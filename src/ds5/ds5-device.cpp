@@ -394,9 +394,10 @@ namespace librealsense
 
         void set_depth_scale(float val){ _depth_units = val; }
 
-        void init_hdr_config()
+        void init_hdr_config(const option_range& exposure_range, const option_range& gain_range)
         {
-            _hdr_cfg = std::make_shared<hdr_config>(*(_owner->_hw_monitor), get_raw_sensor());
+            _hdr_cfg = std::make_shared<hdr_config>(*(_owner->_hw_monitor), get_raw_sensor(),
+                exposure_range, gain_range);
         }
 
         std::shared_ptr<hdr_config> get_hdr_config() { return _hdr_cfg; }
@@ -803,7 +804,7 @@ namespace librealsense
         if ( (_fw_version >= hdr_firmware_version))// && ((_device_capabilities & global_shutter_mask) == global_shutter_mask) )
         {
             auto ds5_depth = As<ds5_depth_sensor, synthetic_sensor>(&get_depth_sensor());
-            ds5_depth->init_hdr_config();
+            ds5_depth->init_hdr_config(exposure_range, gain_range);
             auto&& hdr_cfg = ds5_depth->get_hdr_config();
 
             // values from 4 to 14 - for internal use
