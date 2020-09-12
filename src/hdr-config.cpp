@@ -52,10 +52,15 @@ namespace librealsense
     bool hdr_config::is_current_subpreset_hdr(const std::vector<byte>& current_subpreset) const
     {
         int current_subpreset_id = current_subpreset[1];
-        return current_subpreset_id >= 0 && current_subpreset_id <= 3;
+        return is_hdr_id(current_subpreset_id);
     }
 
-    int int_from_4_bytes_little_endian(const std::vector<byte>& vec, int start_offset)
+    bool hdr_config::is_hdr_id(int id) const
+    {
+        return id >= 0 && id <= 3;
+    }
+
+    int int_from_4_bytes_big_endian(const std::vector<byte>& vec, int start_offset)
     {
         int result = int((unsigned char)(vec[start_offset]) |
             (unsigned char)(vec[start_offset + 1]) << 8 |
@@ -83,13 +88,13 @@ namespace librealsense
         if (current_subpreset[offset] != CONTROL_ID_EXPOSURE)
             return false;
         offset += size_of_control_id;
-        float exposure_0 = int_from_4_bytes_little_endian(current_subpreset, offset);
+        float exposure_0 = int_from_4_bytes_big_endian(current_subpreset, offset);
         offset += size_of_control_value;
 
         if (current_subpreset[offset] != CONTROL_ID_GAIN)
             return false;
         offset += size_of_control_id;
-        float gain_0 = int_from_4_bytes_little_endian(current_subpreset, offset);
+        float gain_0 = int_from_4_bytes_big_endian(current_subpreset, offset);
         offset += size_of_control_value;
 
         offset += size_of_subpreset_item_header;
@@ -97,13 +102,13 @@ namespace librealsense
         if (current_subpreset[offset] != CONTROL_ID_EXPOSURE)
             return false;
         offset += size_of_control_id;
-        float exposure_1 = int_from_4_bytes_little_endian(current_subpreset, offset);
+        float exposure_1 = int_from_4_bytes_big_endian(current_subpreset, offset);
         offset += size_of_control_value;
 
         if (current_subpreset[offset] != CONTROL_ID_GAIN)
             return false;
         offset += size_of_control_id;
-        float gain_1 = int_from_4_bytes_little_endian(current_subpreset, offset);
+        float gain_1 = int_from_4_bytes_big_endian(current_subpreset, offset);
         offset += size_of_control_value;
 
         _hdr_sequence_params[0]._exposure = exposure_0;
@@ -206,7 +211,7 @@ namespace librealsense
         try {
             auto res = _hwm.send(cmd);
             // if a subpreset is streaming, checking this is the current HDR sub preset
-            rv = (res[0] == _id) ? 1.0f : 0.f;
+            rv = (is_hdr_id(res[0])) ? 1.0f : 0.f;
         }
         catch (...)
         {
