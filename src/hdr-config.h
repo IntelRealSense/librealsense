@@ -24,12 +24,12 @@ namespace librealsense
     {
         return (first._exposure == second._exposure) && (first._gain == second._gain);
     }
-    
+
     class hdr_config
     {
     public:
-        hdr_config(hw_monitor& hwm, std::shared_ptr<sensor_base> depth_ep, 
-		const option_range& exposure_range, const option_range& gain_range);
+        hdr_config(hw_monitor& hwm, std::shared_ptr<sensor_base> depth_ep,
+        const option_range& exposure_range, const option_range& gain_range);
 
 
         float get(rs2_option option) const;
@@ -68,7 +68,7 @@ namespace librealsense
         void set_enable_status(float value);
         void set_exposure(float value);
         void set_gain(float value);
-        
+
         int _id;
         size_t _sequence_size;
         std::vector<hdr_params> _hdr_sequence_params;
@@ -83,9 +83,5 @@ namespace librealsense
         option_range _exposure_range;
         option_range _gain_range;
     };
-
-    
-
-    
 
 }

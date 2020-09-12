@@ -6,7 +6,7 @@
 
 namespace librealsense
 {
-    hdr_config::hdr_config(hw_monitor& hwm, std::shared_ptr<sensor_base> depth_ep, 
+    hdr_config::hdr_config(hw_monitor& hwm, std::shared_ptr<sensor_base> depth_ep,
         const option_range& exposure_range, const option_range& gain_range) :
         _hwm(hwm),
         _sensor(depth_ep),
@@ -20,11 +20,11 @@ namespace librealsense
         _sequence_size(DEFAULT_HDR_SEQUENCE_SIZE),
         _exposure_range(exposure_range),
         _gain_range(gain_range)
-    {  
+    {
         _hdr_sequence_params.clear();
         _hdr_sequence_params.resize(DEFAULT_HDR_SEQUENCE_SIZE);
 
-		// restoring current HDR configuration if such subpreset is active
+        // restoring current HDR configuration if such subpreset is active
         command cmd(ds::GETSUBPRESET);
         auto res = _hwm.send(cmd);
 
@@ -244,7 +244,7 @@ namespace librealsense
         }
         else
         {
-            disable(); 
+            disable();
             _is_enabled = false;
 
             // re-enabling options that were disabled in order to permit the hdr
@@ -264,7 +264,7 @@ namespace librealsense
                 _auto_exposure_to_be_restored = true;
             }
         }
-        
+
 
         // EMITTER ON OFF
         if (_sensor->supports_option(RS2_OPTION_EMITTER_ON_OFF))
@@ -345,7 +345,7 @@ namespace librealsense
             pattern.insert(pattern.end(), &subpreset_header[0], &subpreset_header[0] + subpreset_header.size());
             pattern.insert(pattern.end(), &subpreset_frames_config[0], &subpreset_frames_config[0] + subpreset_frames_config.size());
         }
-        
+
         /*std::cout << "pattern for hdr sub-preset: ";
         for (int i = 0; i < pattern.size(); ++i)
             std::cout << hdrchar2hex(pattern[i]) << " ";
@@ -373,7 +373,7 @@ namespace librealsense
         uint16_t iterations = 0;
         //sequence size
         uint8_t num_of_items = static_cast<uint8_t>(_sequence_size);
-        
+
         std::vector<uint8_t> header;
         header.insert(header.end(), &header_size, &header_size + 1);
         header.insert(header.end(), &_id, &_id + 1);
@@ -405,7 +405,7 @@ namespace librealsense
             uint32_t exposure_value = static_cast<uint32_t>(_hdr_sequence_params[i]._exposure);
             frames_config.insert(frames_config.end(), &CONTROL_ID_EXPOSURE, &CONTROL_ID_EXPOSURE + 1);
             frames_config.insert(frames_config.end(), (uint8_t*)&exposure_value, (uint8_t*)&exposure_value + 4);
-            
+
             uint32_t gain_value = static_cast<uint32_t>(_hdr_sequence_params[i]._gain);
             frames_config.insert(frames_config.end(), &CONTROL_ID_GAIN, &CONTROL_ID_GAIN + 1);
             frames_config.insert(frames_config.end(), (uint8_t*)&gain_value, (uint8_t*)&gain_value + 4);
@@ -423,7 +423,7 @@ namespace librealsense
     void hdr_config::set_id(float value)
     {
         int new_id = static_cast<int>(value);
-        
+
         if (new_id != _id)
         {
             _id = new_id;
@@ -440,13 +440,13 @@ namespace librealsense
         {
             _hdr_sequence_params.resize(new_size);
             _sequence_size = new_size;
-        }       
+        }
     }
 
     void hdr_config::set_sequence_index(float value)
     {
         size_t new_index = static_cast<size_t>(value);
-        
+
         _is_config_in_process = (new_index != 0);
 
         if (new_index <= _hdr_sequence_params.size())
@@ -477,7 +477,7 @@ namespace librealsense
         _exposure(0.f),
         _gain(0.f)
     {}
-    
+
     hdr_params::hdr_params(int sequence_id, float exposure, float gain) :
         _sequence_id(sequence_id),
         _exposure(exposure),
@@ -493,11 +493,10 @@ namespace librealsense
         return *this;
     }
 
-    
 
     // explanation for the sub-preset:
     /* the structure is:
-    
+
     #define SUB_PRESET_BUFFER_SIZE 0x400
     #pragma pack(push, 1)
     typedef struct SubPresetHeader
@@ -520,7 +519,7 @@ namespace librealsense
         uint8_t  controlId;
         uint32_t controlValue;
     }SubPresetControl;
-    #pragma pack(pop) 
+    #pragma pack(pop)
      */
 
 

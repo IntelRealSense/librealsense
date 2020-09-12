@@ -754,12 +754,12 @@ namespace librealsense
                     RS2_OPTION_ASIC_TEMPERATURE));
         }
 
-		// minimal firmware version in which hdr feature is supported
+        // minimal firmware version in which hdr feature is supported
         firmware_version hdr_firmware_version("5.12.7.120");
 
         // Alternating laser pattern is applicable for global shutter/active SKUs
         auto mask = d400_caps::CAP_GLOBAL_SHUTTER | d400_caps::CAP_ACTIVE_PROJECTOR;
-		// Alternating laser pattern should be set and query in a different way according to the firmware version 
+        // Alternating laser pattern should be set and query in a different way according to the firmware version 
         bool is_fw_version_using_id = (_fw_version >= hdr_firmware_version);
         if ((_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
         {
@@ -847,7 +847,7 @@ namespace librealsense
 
         //EXPOSURE
         depth_sensor.register_option(RS2_OPTION_EXPOSURE, exposure_option);
-        
+
         //GAIN
         depth_sensor.register_option(RS2_OPTION_GAIN, gain_option);
 

@@ -769,7 +769,7 @@ namespace librealsense
 
         std::vector<platform::uvc_device_info> filter_device_by_capability(const std::vector<platform::uvc_device_info>& devices, d400_caps caps);
 
-		// subpreset pattern used in firmware versions that do not support subpreset ID
+        // subpreset pattern used in firmware versions that do not support subpreset ID
         const std::vector<uint8_t> alternating_emitter_pattern_with_name{ 0x19, 0,
             0x41, 0x6c, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x74, 0x69, 0x6e, 0x67, 0x5f, 0x45, 0x6d, 0x69, 0x74, 0x74, 0x65, 0x72, 0,
             0, 0x2, 0, 0x5, 0, 0x1, 0x1, 0, 0, 0, 0, 0, 0, 0, 0x5, 0, 0x1, 0x1, 0, 0, 0, 0x1, 0, 0, 0 };
@@ -779,7 +779,7 @@ namespace librealsense
         // is the alternating emitter ID
         const uint8_t ALTERNATING_EMITTER_SUBPRESET_ID = 0x0f;
 
-        const std::vector<uint8_t> alternating_emitter_pattern { 0x5, ALTERNATING_EMITTER_SUBPRESET_ID, 0, 0, 0x2, 
+        const std::vector<uint8_t> alternating_emitter_pattern { 0x5, ALTERNATING_EMITTER_SUBPRESET_ID, 0, 0, 0x2,
             0x4, 0x1, 0, 0x1, 0, 0, 0, 0, 0,
             0x4, 0x1, 0, 0x1, 0, 0x1, 0, 0, 0 };
 

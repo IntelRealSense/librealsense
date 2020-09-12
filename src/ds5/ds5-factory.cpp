@@ -118,7 +118,7 @@ namespace librealsense
 
     // ASR (D460)
     class rs410_device : public ds5_nonmonochrome,
-                         public ds5_active, 
+                         public ds5_active,
                          public ds5_advanced_mode_base,
                          public firmware_logger_device
     {
@@ -430,7 +430,7 @@ namespace librealsense
     };
 
     class rs430i_device : public ds5_active, 
-                          public ds5_advanced_mode_base, 
+                          public ds5_advanced_mode_base,
                           public ds5_motion,
                           public firmware_logger_device
     {
@@ -625,7 +625,7 @@ namespace librealsense
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
               firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
                 get_firmware_logs_command(),
-                get_flash_logs_command()) 
+                get_flash_logs_command())
         {
             check_and_restore_rgb_stream_extrinsic();
         }
@@ -698,7 +698,7 @@ namespace librealsense
                             LOG_WARNING("RGB extrinsic - translation is corrupted: " << trans_vector);
                             return false;
                         }
-                        // Translation must be assigned for at least one axis 
+                        // Translation must be assigned for at least one axis
                         if (std::fabs(trans_vector[i]) > std::numeric_limits<float>::epsilon())
                             found = true;
                     }
@@ -961,7 +961,7 @@ namespace librealsense
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
               firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
                 get_firmware_logs_command(),
-                get_flash_logs_command()) 
+                get_flash_logs_command())
         {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;

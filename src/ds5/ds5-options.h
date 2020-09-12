@@ -305,7 +305,7 @@ namespace librealsense
     class hdr_option : public option
     {
     public:
-        hdr_option(std::shared_ptr<hdr_config> hdr_cfg, rs2_option option, option_range range) 
+        hdr_option(std::shared_ptr<hdr_config> hdr_cfg, rs2_option option, option_range range)
             : _hdr_cfg(hdr_cfg), _option(option), _range(range) {}
 
         hdr_option(std::shared_ptr<hdr_config> hdr_cfg, rs2_option option, option_range range, const std::map<float, std::string>& description_per_value)
@@ -332,9 +332,9 @@ namespace librealsense
     class hdr_conditional_option : public option
     {
     public:
-        hdr_conditional_option(std::shared_ptr<hdr_config> hdr_cfg, 
-            std::shared_ptr<option> uvc_option, 
-            std::shared_ptr<option> hdr_option) :
+        hdr_conditional_option(std::shared_ptr<hdr_config> hdr_cfg,
+            std::shared_ptr<option> uvc_option,
+            std::shared_ptr<option> hdr_option):
             _hdr_cfg(hdr_cfg),
             _uvc_option(uvc_option),
             _hdr_option(hdr_option) {}
