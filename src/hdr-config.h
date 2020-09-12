@@ -39,7 +39,7 @@ namespace librealsense
         bool is_enabled() const;
 
     private:
-        bool hdr_config::is_hdr_id(int id) const;
+        bool is_hdr_id(int id) const;
         bool is_current_subpreset_hdr(const std::vector<byte>& current_subpreset) const;
         bool configure_hdr_as_in_fw(const std::vector<byte>& current_subpreset);
         command prepare_hdr_sub_preset_command() const;

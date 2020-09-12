@@ -211,7 +211,8 @@ namespace librealsense
         try {
             auto res = _hwm.send(cmd);
             // if a subpreset is streaming, checking this is the current HDR sub preset
-            rv = (is_hdr_id(res[0])) ? 1.0f : 0.f;
+            if (res.size())
+                rv = (is_hdr_id(res[0])) ? 1.0f : 0.f;
         }
         catch (...)
         {

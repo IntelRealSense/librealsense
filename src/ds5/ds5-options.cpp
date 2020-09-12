@@ -526,7 +526,8 @@ namespace librealsense
             try {
                 auto res = _hwm.send(cmd);
                 // if a subpreset is streaming, checking this is the alternating emitter sub preset
-                rv = (res[0] == ds::ALTERNATING_EMITTER_SUBPRESET_ID) ? 1.0f : 0.f;
+                if (res.size())
+                    rv = (res[0] == ds::ALTERNATING_EMITTER_SUBPRESET_ID) ? 1.0f : 0.f;
             }
             catch (...)
             {
