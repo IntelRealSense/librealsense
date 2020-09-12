@@ -3,8 +3,6 @@
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include "example.hpp"          // Include short list of convenience functions for rendering
-#include <proc/merge-filter.h>
-#include <proc/split-filter.h>
 #include <iostream>
 
 // HDR Example demonstrates how to
@@ -62,12 +60,12 @@ int main(int argc, char * argv[]) try
 
     // configuration for the first HDR sequence ID
     depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 1);
-    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 9000.f);
+    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 8500);
     depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
 
     // configuration for the second HDR sequence ID
     depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 2);
-    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 400.f);
+    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 150);
     depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
 
     // after setting the HDR sequence ID opotion to 0, setting exposure or gain
@@ -107,7 +105,7 @@ int main(int argc, char * argv[]) try
 
     // flag used to see the original stream or the merged one
     bool true_for_merge_false_for_split = true;
-
+    int frames_without_hdr_metadata_params = 0;
     while (app) // Application still alive?
     {
         rs2::frameset data = pipe.wait_for_frames() .    // Wait for next set of frames from the camera
@@ -118,8 +116,15 @@ int main(int argc, char * argv[]) try
         if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE) ||
             !depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID))
         {
-            std::cout << "Firmware and/or SDK versions must be updated for the HDR feature to be supported.\n";
-            return EXIT_SUCCESS;
+            ++frames_without_hdr_metadata_params;
+            if (frames_without_hdr_metadata_params > 20)
+            {
+                std::cout << "Firmware and/or SDK versions must be updated for the HDR feature to be supported.\n";
+                return EXIT_SUCCESS;
+            }
+            data = data.apply_filter(color_map);
+            app.show(data);
+            continue;
         }
 
         auto hdr_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_ID);

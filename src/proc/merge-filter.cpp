@@ -192,7 +192,7 @@ namespace librealsense
 
     bool merge_filter::is_infrared_valid(uint8_t ir_value) const
     {
-        return ir_value > IR_UNDER_SATURATED_VALUE && ir_value < IR_OVER_SATURATED_VALUE;
+        return (ir_value > IR_UNDER_SATURATED_VALUE) && (ir_value < IR_OVER_SATURATED_VALUE);
     }
 
     bool merge_filter::should_ir_be_used_for_merging(const rs2::depth_frame& first_depth, const rs2::video_frame& first_ir, 

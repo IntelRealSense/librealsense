@@ -50,7 +50,7 @@ Configuring the second HDR sequence ID:
 ```cpp
 // configuration for the second HDR sequence ID
 depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 2);
-depth_sensor.set_option(RS2_OPTION_EXPOSURE, 1.f);
+depth_sensor.set_option(RS2_OPTION_EXPOSURE, 150.f);
 depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
 ```
 
@@ -68,7 +68,7 @@ depth_sensor.set_option(RS2_OPTION_HDR_MODE, 1);
 ```
 
 Then, the pipe is configured with depth and infrared streams. 
-The infrared is used in the HDR streaming merging. The merging algorithm can also work without the infrared stream (if it is not activated by the user), but it workds better with the infrared.
+In HDR mode the Infrared stream is used as an auxiliary invalidation filter to handle outlier Depth pixels and therefore, to enhance the outcome. The merging algorithm can also work without the infrared stream (if it is not activated by the user), but it workds better with the infrared.
 ```cpp
 // Start streaming with depth and infrared configuration
 // The HDR merging algorithm can work with both depth and infrared,or only with depth, 
@@ -106,8 +106,8 @@ spliting_filter.set_option(RS2_OPTION_SELECT_ID, 2);
 After getting the frames, by using the wait_for_frames method, the spliting filter is used:
 ```cpp
 // getting frames only with the requested sequence ID
-auto split_frameset = spliting_filter.process(data) . 
-        apply_filter(color_map);   // Find and colorize the depth data;
+auto split_frameset = spliting_filter.process(data). 
+apply_filter(color_map);   // Find and colorize the depth data;
 app.show(split_frameset);
 
 ```
