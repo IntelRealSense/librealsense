@@ -239,6 +239,7 @@ EXPORTS
     rs2_rs400_visual_preset_to_string
     rs2_l500_visual_preset_to_string
     rs2_sensor_mode_to_string
+    rs2_host_perf_mode_to_string
     rs2_is_enabled
     rs2_toggle_advanced_mode
     rs2_load_json
