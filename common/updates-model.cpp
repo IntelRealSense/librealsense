@@ -37,10 +37,9 @@ void updates_model::draw(viewer_model& viewer, ux_window& window, std::string& e
     const auto window_name = "Updates Window";
      
     //Main window pop up only if essential updates exists
-    if (!popup_opened && updates_copy.size() && !ignore)
+    if (updates_copy.size() && !ignore)
     {
         ImGui::OpenPopup(window_name);
-        popup_opened = true;
     }
 
     position_params positions;
@@ -198,11 +197,9 @@ void updates_model::draw(viewer_model& viewer, ux_window& window, std::string& e
                     }
 
                     ImGui::CloseCurrentPopup();
-                    popup_opened = false;
                     emphasize_dismiss_text = false;
                     ignore = false;
                     _fw_update_state = fw_update_states::ready;
-                    ignore = false;
                     _fw_download_progress = 0;
                 }
             }
