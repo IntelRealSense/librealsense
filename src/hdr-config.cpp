@@ -452,7 +452,6 @@ namespace librealsense
         if (new_index <= _hdr_sequence_params.size())
         {
             _current_hdr_sequence_index = new_index - 1;
-            _has_config_changed = true;
         }
         else
             throw invalid_value_exception(to_string() << "hdr_config::set_sequence_index(...) failed! Index above sequence size.");
