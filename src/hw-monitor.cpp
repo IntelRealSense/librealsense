@@ -140,39 +140,37 @@ namespace librealsense
         {
             return _locked_transfer->send_receive({ details.sendCommandData.begin(),details.sendCommandData.end()});
         }
-        else
+
+        send_hw_monitor_command(details);
+
+        // Error/exit conditions
+        if( p_response )
+            *p_response = hwm_Success;
+        if( newCommand.oneDirection )
+            return std::vector<uint8_t>();
+
+        librealsense::copy(newCommand.receivedOpcode, details.receivedOpcode.data(), 4);
+        librealsense::copy(newCommand.receivedCommandData, details.receivedCommandData.data(), details.receivedCommandDataLength);
+        newCommand.receivedCommandDataLength = details.receivedCommandDataLength;
+
+        // endian?
+        auto opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2],
+                                    details.receivedOpcode[1], details.receivedOpcode[0]);
+        if (opCodeAsUint32 != opCodeXmit)
         {
-            send_hw_monitor_command(details);
-
-            // Error/exit conditions
+            auto err_type = static_cast<hwmon_response>(opCodeAsUint32);
+            std::string err = hwmon_error_string( cmd, err_type );
+            LOG_DEBUG( err );
             if( p_response )
-                *p_response = hwm_Success;
-            if( newCommand.oneDirection )
-                return std::vector<uint8_t>();
-
-            librealsense::copy(newCommand.receivedOpcode, details.receivedOpcode.data(), 4);
-            librealsense::copy(newCommand.receivedCommandData, details.receivedCommandData.data(), details.receivedCommandDataLength);
-            newCommand.receivedCommandDataLength = details.receivedCommandDataLength;
-
-            // endian?
-            auto opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2],
-                                       details.receivedOpcode[1], details.receivedOpcode[0]);
-            if (opCodeAsUint32 != opCodeXmit)
             {
-                auto err_type = static_cast<hwmon_response>(opCodeAsUint32);
-                std::string err = hwmon_error_string( cmd, err_type );
-                LOG_DEBUG( err );
-                if( p_response )
-                {
-                    *p_response = err_type;
-                    return std::vector<uint8_t>();
-                }
-                throw invalid_value_exception( err );
+                *p_response = err_type;
+                return std::vector<uint8_t>();
             }
-
-            return std::vector<uint8_t>(newCommand.receivedCommandData,
-                newCommand.receivedCommandData + newCommand.receivedCommandDataLength);
+            throw invalid_value_exception( err );
         }
+
+        return std::vector<uint8_t>(newCommand.receivedCommandData,
+            newCommand.receivedCommandData + newCommand.receivedCommandDataLength);
     }
 
     std::string hwmon_error_string( command const & cmd, hwmon_response e )

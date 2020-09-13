@@ -81,7 +81,8 @@ void output_model::thread_loop()
                         to_string() << "Failed to fetch firmware logs: " << ex.what());
                 }
             }
-        // FW Limitation
+        // FW define the logs polling intervals to be no less than 100msec to cope with limited resources.
+        // At the same time 100 msec should guarantee no log drops
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }
