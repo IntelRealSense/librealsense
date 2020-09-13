@@ -9,10 +9,10 @@ Copyright(c) 2020 Intel Corporation. All Rights Reserved. */
 
 namespace librealsense
 {
-    class merge_filter : public generic_processing_block
+    class depth_merge : public generic_processing_block
     {
     public:
-        merge_filter();
+        depth_merge();
 
     protected:
         bool should_process(const rs2::frame& frame) override;
@@ -24,7 +24,7 @@ namespace librealsense
         const int IR_OVER_SATURATED_VALUE = 0xf0; // 240
         bool is_infrared_valid(uint8_t ir_value) const;
 
-        bool check_frames_mergeability(const rs2::frameset first_fs, const rs2::frameset second_fs, bool& use_ir);
+        bool check_frames_mergeability(const rs2::frameset first_fs, const rs2::frameset second_fs, bool& use_ir) const;
         rs2::frame merging_algorithm(const rs2::frame_source& source, const rs2::frameset first_fs, 
             const rs2::frameset second_fs, const bool use_ir);
 
@@ -34,5 +34,5 @@ namespace librealsense
         std::map<int, rs2::frameset> _framesets;
         rs2::frame _depth_merged_frame;
     };
-    MAP_EXTENSION(RS2_EXTENSION_MERGE_FILTER, librealsense::merge_filter);
+    MAP_EXTENSION(RS2_EXTENSION_DEPTH_MERGE, librealsense::depth_merge);
 }

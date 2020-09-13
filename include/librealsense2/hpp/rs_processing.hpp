@@ -1101,19 +1101,20 @@ namespace rs2
         }
     };
 
-    class merge_filter : public filter
+    class depth_merge : public filter
     {
     public:
         /**
-        * Create merge_filter processing block
-        * Merge sequential depth frames. Applicable with with HDR sub-preset mode
+        * Create depth_merge processing block
+        * the processing merges between depth frames with 
+        * different sub-preset sequence ids.
         */
-        merge_filter() : filter(init()) {}
+        depth_merge() : filter(init()) {}
 
-        merge_filter(filter f) :filter(f)
+        depth_merge(filter f) :filter(f)
         {
             rs2_error* e = nullptr;
-            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_MERGE_FILTER, &e) && !e)
+            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_DEPTH_MERGE, &e) && !e)
             {
                 _block.reset();
             }
@@ -1135,19 +1136,19 @@ namespace rs2
         }
     };
 
-    class split_filter : public filter
+    class depth_split : public filter
     {
     public:
         /**
-        * Create split_filter processing block
+        * Create depth_split processing block
         * the processing perform the hole filling base on different hole filling mode.
         */
-        split_filter() : filter(init()) {}
+        depth_split() : filter(init()) {}
 
-        split_filter(filter f) :filter(f)
+        depth_split(filter f) :filter(f)
         {
             rs2_error* e = nullptr;
-            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_SPLIT_FILTER, &e) && !e)
+            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_DEPTH_SPLIT, &e) && !e)
             {
                 _block.reset();
             }

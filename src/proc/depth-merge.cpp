@@ -1,16 +1,16 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#include "merge-filter.h"
+#include "depth-merge.h"
 
 namespace librealsense
 {
-    merge_filter::merge_filter()
-        : generic_processing_block("Merge Filter")
+    depth_merge::depth_merge()
+        : generic_processing_block("Merge Depth")
     {}
 
     // processing only framesets
-    bool merge_filter::should_process(const rs2::frame & frame)
+    bool depth_merge::should_process(const rs2::frame & frame)
     {
         if (!frame)
             return false;
@@ -28,14 +28,14 @@ namespace librealsense
         if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID))
             return false;
         int depth_sequ_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE);
-        if (depth_sequ_size == 0)
+        if (depth_sequ_size != 2)
             return false;
 
         return true;
     }
 
 
-    rs2::frame merge_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)
+    rs2::frame depth_merge::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
         // steps:
         // 1. get depth frame from incoming frameset
@@ -51,10 +51,6 @@ namespace librealsense
         auto depth_frame = fs.get_depth_frame();        
 
         // 2. add the frameset to vector of framesets
-        int depth_sequ_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE);
-        if (depth_sequ_size > 2)
-            LOG_WARNING("merge_filter::process_frame(...) failed! sequence size must be 2 for merging pb.");
-
         int depth_sequ_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
         
         // condition added to ensure that frames are saved in the right order
@@ -106,7 +102,8 @@ namespace librealsense
         return f;
     }
 
-    bool merge_filter::check_frames_mergeability(const rs2::frameset first_fs, const rs2::frameset second_fs, bool& use_ir)
+    bool depth_merge::check_frames_mergeability(const rs2::frameset first_fs, const rs2::frameset second_fs, 
+        bool& use_ir) const
     {
         auto first_depth = first_fs.get_depth_frame();
         auto second_depth = second_fs.get_depth_frame();
@@ -126,7 +123,7 @@ namespace librealsense
         return true;
     }
 
-    rs2::frame merge_filter::merging_algorithm(const rs2::frame_source& source, const rs2::frameset first_fs, const rs2::frameset second_fs, const bool use_ir)
+    rs2::frame depth_merge::merging_algorithm(const rs2::frame_source& source, const rs2::frameset first_fs, const rs2::frameset second_fs, const bool use_ir)
     {
         auto first = first_fs;
         auto second = second_fs;
@@ -190,12 +187,12 @@ namespace librealsense
         return first_fs;
     }
 
-    bool merge_filter::is_infrared_valid(uint8_t ir_value) const
+    bool depth_merge::is_infrared_valid(uint8_t ir_value) const
     {
         return (ir_value > IR_UNDER_SATURATED_VALUE) && (ir_value < IR_OVER_SATURATED_VALUE);
     }
 
-    bool merge_filter::should_ir_be_used_for_merging(const rs2::depth_frame& first_depth, const rs2::video_frame& first_ir, 
+    bool depth_merge::should_ir_be_used_for_merging(const rs2::depth_frame& first_depth, const rs2::video_frame& first_ir, 
         const rs2::depth_frame& second_depth, const rs2::video_frame& second_ir) const
     {
         // checking ir frames are not null

@@ -83,7 +83,7 @@ pipe.start(cfg);
 Initializing the merging filter - will be further used in order to merge frames from both HDR sequence IDs that have been configured:
 ```cpp
 // initializing the merging filter
-rs2::merge_filter merging_filter;
+rs2::depth_merge merging_filter;
 ```
 After getting the frames, by using the wait_for_frames method, the merging filter is used:
 ```cpp
@@ -98,7 +98,7 @@ app.show(merged_frameset);
 Initializing also the spliting filter, with the requested sequence ID as 2:
 ```cpp
 // initializing the spliting filter
-rs2::split_filter spliting_filter;
+rs2::depth_split spliting_filter;
 // setting the required sequence ID to be shown
 spliting_filter.set_option(RS2_OPTION_SELECT_ID, 2);
 ```

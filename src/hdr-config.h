@@ -22,7 +22,9 @@ namespace librealsense
 
     inline bool operator==(const hdr_params& first, const hdr_params& second)
     {
-        return (first._exposure == second._exposure) && (first._gain == second._gain);
+        return (first._sequence_id == second._sequence_id) &&
+            (first._exposure == second._exposure) && 
+            (first._gain == second._gain);
     }
 
     class hdr_config
@@ -60,7 +62,7 @@ namespace librealsense
         void restore_options_after_disable();
 
         bool validate_config() const;
-        void send_sub_preset_to_fw();
+        bool send_sub_preset_to_fw();
         void disable();
         void set_id(float value);
         void set_sequence_size(float value);

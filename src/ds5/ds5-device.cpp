@@ -35,8 +35,8 @@
 #include "proc/hole-filling-filter.h"
 #include "proc/depth-formats-converter.h"
 #include "proc/depth-decompress.h"
-#include "proc/merge-filter.h"
-#include "proc/split-filter.h"
+#include "proc/depth-merge.h"
+#include "proc/depth-split.h"
 #include "hdr-config.h"
 #include "../common/fw/firmware-version.h"
 #include "fw-update/fw-update-unsigned.h"
@@ -954,6 +954,7 @@ namespace librealsense
                 make_attribute_parser(&md_configuration::sub_preset_info,
                     md_configuration_attributes::sub_preset_info_attribute, md_prop_offset ,
                 [](const rs2_metadata_type& param) {
+                        // bit mask and offset used to get data from bitfield
                         return (param & md_configuration::SUB_PRESET_BIT_MASK_SEQUENCE_SIZE)
                             >> md_configuration::SUB_PRESET_BIT_OFFSET_SEQUENCE_SIZE;
                     }));
@@ -962,6 +963,7 @@ namespace librealsense
                 make_attribute_parser(&md_configuration::sub_preset_info,
                     md_configuration_attributes::sub_preset_info_attribute, md_prop_offset ,
                 [](const rs2_metadata_type& param) {
+                        // bit mask and offset used to get data from bitfield
                         return (param & md_configuration::SUB_PRESET_BIT_MASK_SEQUENCE_ID) 
                             >> md_configuration::SUB_PRESET_BIT_OFFSET_SEQUENCE_ID;
                     })); 
@@ -970,6 +972,7 @@ namespace librealsense
                 make_attribute_parser(&md_configuration::sub_preset_info,
                     md_configuration_attributes::sub_preset_info_attribute, md_prop_offset,
                     [](const rs2_metadata_type& param) {
+                        // bit mask and offset used to get data from bitfield
                         return (param & md_configuration::SUB_PRESET_BIT_MASK_ID)
                             >> md_configuration::SUB_PRESET_BIT_OFFSET_ID;
                     }));
@@ -1144,8 +1147,8 @@ namespace librealsense
     processing_blocks get_ds5_depth_recommended_proccesing_blocks()
     {
         auto res = get_depth_recommended_proccesing_blocks();
-        res.push_back(std::make_shared<merge_filter>());
-        res.push_back(std::make_shared<split_filter>());
+        res.push_back(std::make_shared<depth_merge>());
+        res.push_back(std::make_shared<depth_split>());
         res.push_back(std::make_shared<threshold>());
         res.push_back(std::make_shared<disparity_transform>(true));
         res.push_back(std::make_shared<spatial_filter>());

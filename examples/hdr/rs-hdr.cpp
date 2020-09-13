@@ -95,10 +95,10 @@ int main(int argc, char * argv[]) try
     pipe.start(cfg);
 
     // initializing the merging filter
-    rs2::merge_filter merging_filter;
+    rs2::depth_merge merging_filter;
 
     // initializing the spliting filter
-    rs2::split_filter spliting_filter;
+    rs2::depth_split spliting_filter;
 
     // setting the required sequence ID to be shown
     spliting_filter.set_option(RS2_OPTION_SELECT_ID, 2);

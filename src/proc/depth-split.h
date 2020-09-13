@@ -9,10 +9,10 @@ Copyright(c) 2020 Intel Corporation. All Rights Reserved. */
 
 namespace librealsense
 {
-    class split_filter : public generic_processing_block
+    class depth_split : public generic_processing_block
     {
     public:
-        split_filter();
+        depth_split();
 
     protected:
         bool should_process(const rs2::frame& frame) override;
@@ -26,5 +26,5 @@ namespace librealsense
         float _selected_stream_id;
         rs2::frame _last_frame[3];
     };
-    MAP_EXTENSION(RS2_EXTENSION_SPLIT_FILTER, librealsense::split_filter);
+    MAP_EXTENSION(RS2_EXTENSION_DEPTH_SPLIT, librealsense::depth_split);
 }

@@ -252,14 +252,14 @@ rs2_processing_block* rs2_create_zero_order_invalidation_block(rs2_error** error
 rs2_processing_block* rs2_create_huffman_depth_decompress_block(rs2_error** error);
 
 /**
-* Creates a merge_filter processing block. 
+* Creates a depth_merge processing block. 
 * The block merges between two depth frames with different exposure values
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 rs2_processing_block* rs2_create_merge_processing_block(rs2_error** error);
 
 /**
-* Creates a split_filter processing block.
+* Creates a depth_split processing block.
 * The block reassigns separate profiles for the frames produced with sub-presets
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */

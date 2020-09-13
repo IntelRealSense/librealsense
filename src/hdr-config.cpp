@@ -26,13 +26,17 @@ namespace librealsense
 
         // restoring current HDR configuration if such subpreset is active
         command cmd(ds::GETSUBPRESET);
-        auto res = _hwm.send(cmd);
-
         bool existing_subpreset_restored = false;
-        if (res.size() && is_current_subpreset_hdr(res))
-        {
-            existing_subpreset_restored = configure_hdr_as_in_fw(res);
+        try {
+            auto res = _hwm.send(cmd);
+            if (res.size() && is_current_subpreset_hdr(res))
+            {
+                existing_subpreset_restored = configure_hdr_as_in_fw(res);
+            }
         }
+        catch (std::exception ex) {
+            LOG_WARNING("In hdr_config::hdr_config() - hw command failed: " << ex.what());
+        }        
 
         if (!existing_subpreset_restored)
         {
@@ -51,28 +55,18 @@ namespace librealsense
 
     bool hdr_config::is_current_subpreset_hdr(const std::vector<byte>& current_subpreset) const
     {
-        if (current_subpreset.size())
+        bool result = false;
+        if (current_subpreset.size() > 0)
         {
             int current_subpreset_id = current_subpreset[1];
-            return is_hdr_id(current_subpreset_id);
+            result = is_hdr_id(current_subpreset_id);
         }
-
-        return false;
+        return result;
     }
 
     bool hdr_config::is_hdr_id(int id) const
     {
         return id >= 0 && id <= 3;
-    }
-
-    int int_from_4_bytes_big_endian(const std::vector<byte>& vec, int start_offset)
-    {
-        int result = int((unsigned char)(vec[start_offset]) |
-            (unsigned char)(vec[start_offset + 1]) << 8 |
-            (unsigned char)(vec[start_offset + 2]) << 16 |
-            (unsigned char)(vec[start_offset + 3]) << 24);
-
-        return result;
     }
 
     bool hdr_config::configure_hdr_as_in_fw(const std::vector<byte>& current_subpreset)
@@ -86,6 +80,12 @@ namespace librealsense
         const int size_of_control_id = 1;
         const int size_of_control_value = 4;
 
+        int subpreset_size = size_of_subpreset_header + 2 * (size_of_subpreset_item_header +
+            2 * (size_of_control_id + size_of_control_value));
+
+        if (current_subpreset.size() != subpreset_size)
+            return false;
+
         int offset = 0;
         offset += size_of_subpreset_header;
         offset += size_of_subpreset_item_header;
@@ -93,13 +93,13 @@ namespace librealsense
         if (current_subpreset[offset] != CONTROL_ID_EXPOSURE)
             return false;
         offset += size_of_control_id;
-        float exposure_0 = int_from_4_bytes_big_endian(current_subpreset, offset);
+        float exposure_0 = *reinterpret_cast<const uint32_t*>(&(current_subpreset[offset]));
         offset += size_of_control_value;
 
         if (current_subpreset[offset] != CONTROL_ID_GAIN)
             return false;
         offset += size_of_control_id;
-        float gain_0 = int_from_4_bytes_big_endian(current_subpreset, offset);
+        float gain_0 = *reinterpret_cast<const uint32_t*>(&(current_subpreset[offset]));
         offset += size_of_control_value;
 
         offset += size_of_subpreset_item_header;
@@ -107,13 +107,13 @@ namespace librealsense
         if (current_subpreset[offset] != CONTROL_ID_EXPOSURE)
             return false;
         offset += size_of_control_id;
-        float exposure_1 = int_from_4_bytes_big_endian(current_subpreset, offset);
+        float exposure_1 = *reinterpret_cast<const uint32_t*>(&(current_subpreset[offset]));
         offset += size_of_control_value;
 
         if (current_subpreset[offset] != CONTROL_ID_GAIN)
             return false;
         offset += size_of_control_id;
-        float gain_1 = int_from_4_bytes_big_endian(current_subpreset, offset);
+        float gain_1 = *reinterpret_cast<const uint32_t*>(&(current_subpreset[offset]));
         offset += size_of_control_value;
 
         _hdr_sequence_params[0]._exposure = exposure_0;
@@ -162,7 +162,7 @@ namespace librealsense
             }
             break;
         default:
-            throw invalid_value_exception("option is not an HDR option");
+            throw invalid_value_exception(to_string() << "option: " << rs2_option_to_string(option) << " is not an HDR option");
         }
         return rv;
     }
@@ -170,7 +170,7 @@ namespace librealsense
     void hdr_config::set(rs2_option option, float value, option_range range)
     {
         if (value < range.min || value > range.max)
-            throw invalid_value_exception(to_string() << "hdr_config::set(...) failed! value is out of the option range.");
+            throw invalid_value_exception(to_string() << "hdr_config::set(...) failed! value: "<< value << " is out of the option range: [" << range.min << ", " << range.max << "].");
 
         switch (option)
         {
@@ -238,9 +238,8 @@ namespace librealsense
                 // saving status of options that are not compatible with hdr,
                 // so that they could be reenabled after hdr disable
                 set_options_to_be_restored_after_disable();
-
-                send_sub_preset_to_fw();
-                _is_enabled = true;
+                
+                _is_enabled = send_sub_preset_to_fw();
                 _has_config_changed = false;
             }
             else
@@ -299,11 +298,19 @@ namespace librealsense
         }
     }
 
-    void hdr_config::send_sub_preset_to_fw()
+    bool hdr_config::send_sub_preset_to_fw()
     {
+        bool result = false;
         // prepare sub-preset command
         command cmd = prepare_hdr_sub_preset_command();
-        auto res = _hwm.send(cmd);
+        try {
+            auto res = _hwm.send(cmd);
+            result = true;
+        }
+        catch (std::exception ex) {
+            LOG_WARNING("In hdr_config::send_sub_preset_to_fw() - hw command failed: " << ex.what());
+        }
+        return result;
     }
 
     void hdr_config::disable()
@@ -314,30 +321,14 @@ namespace librealsense
         // TODO - make it usable not only for ds - use _sensor
         command cmd(ds::SETSUBPRESET, static_cast<int>(pattern.size()));
         cmd.data = pattern;
-        auto res = _hwm.send(cmd);
-    }
-
-    //helper method - for debug only - to be deleted
-    std::string hdrchar2hex(unsigned char n)
-    {
-        std::string res;
-
-        do
-        {
-            res += "0123456789ABCDEF"[n % 16];
-            n >>= 4;
-        } while (n);
-
-        reverse(res.begin(), res.end());
-
-        if (res.size() == 1)
-        {
-            res.insert(0, "0");
+        try {
+            auto res = _hwm.send(cmd);
         }
-
-        return res;
+        catch (std::exception ex) {
+            LOG_WARNING("In hdr_config::disable() - hw command failed: " << ex.what());
+        }
+        
     }
-
 
     command hdr_config::prepare_hdr_sub_preset_command() const
     {
@@ -351,19 +342,6 @@ namespace librealsense
             pattern.insert(pattern.end(), &subpreset_frames_config[0], &subpreset_frames_config[0] + subpreset_frames_config.size());
         }
 
-        /*std::cout << "pattern for hdr sub-preset: ";
-        for (int i = 0; i < pattern.size(); ++i)
-            std::cout << hdrchar2hex(pattern[i]) << " ";
-        std::cout << std::endl;
-
-        std::ofstream outFile("subpreset_bytes.txt", std::ofstream::out);
-        outFile << "pattern for hdr sub-preset: ";
-        for (int i = 0; i < pattern.size(); ++i)
-            outFile << hdrchar2hex(pattern[i]) << " ";
-        outFile << std::endl;*/
-
-        //uint8_t sub_preset_opcode = _sensor->get_set_sub_preset_opcode();
-        // TODO - make it usable not only for ds - use _sensor
         command cmd(ds::SETSUBPRESET, static_cast<int>(pattern.size()));
         cmd.data = pattern;
         return cmd;
@@ -464,7 +442,6 @@ namespace librealsense
 
     void hdr_config::set_exposure(float value)
     {
-        /* TODO - add limitation on max exposure to be below frame interval - is range really needed for this?*/
         _hdr_sequence_params[_current_hdr_sequence_index]._exposure = value;
         _has_config_changed = true;
     }

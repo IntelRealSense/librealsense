@@ -309,8 +309,8 @@ namespace librealsense
             CASE(AUTO_CALIBRATION_FILTER)
             CASE(DEVICE_CALIBRATION)
             CASE(CALIBRATED_SENSOR)
-            CASE(SPLIT_FILTER)
-            CASE(MERGE_FILTER)
+            CASE(DEPTH_SPLIT)
+            CASE(DEPTH_MERGE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
