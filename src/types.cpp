@@ -240,6 +240,19 @@ namespace librealsense
 #undef CASE
     }
 
+    const char* get_string(rs2_host_perf_mode value)
+    {
+#define CASE(X) STRCASE(HOST_PERF, X)
+        switch (value)
+        {
+            CASE(DEFAULT)
+            CASE(LOW)
+            CASE(HIGH)
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
+        }
+#undef CASE
+    }
+
     const char* get_string(rs2_extension value)
     {
 #define CASE(X) STRCASE(EXTENSION, X)
@@ -411,6 +424,7 @@ namespace librealsense
             CASE(THERMAL_COMPENSATION)
             CASE(TRIGGER_CAMERA_ACCURACY_HEALTH)
             CASE(RESET_CAMERA_ACCURACY_HEALTH)
+            CASE(HOST_PERFORMANCE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -600,6 +614,7 @@ namespace librealsense
         }
 #undef CASE
     }
+
     std::string firmware_version::to_string() const
     {
         if (is_any) return "any";

@@ -75,7 +75,8 @@ public enum Option {
     EMITTER_ALWAYS_ON(71),
     THERMAL_COMPENSATION(72),
     TRIGGER_CAMERA_ACCURACY_HEALTH(73),
-    RESET_CAMERA_ACCURACY_HEALTH(74);
+    RESET_CAMERA_ACCURACY_HEALTH(74),
+    HOST_PERFORMANCE(75);
     private final int mValue;
 
     private Option(int value) { mValue = value; }
