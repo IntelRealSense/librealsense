@@ -3247,7 +3247,7 @@ namespace rs2
     {
         for (auto&& n : related_notifications) n->dismiss(false);
 
-        _updates->set_device_status(_updates_profile, false);
+        _updates->set_device_status(*_updates_profile, false);
     }
 
 
@@ -3357,11 +3357,13 @@ namespace rs2
         : dev(dev),
         _calib_model(dev),
         syncer(viewer.syncer),
-        _update_readonly_options_timer(std::chrono::seconds(6))
-        , _detected_objects(std::make_shared< atomic_objects_in_frame >()),
+        _update_readonly_options_timer(std::chrono::seconds(6)),
+        _detected_objects(std::make_shared< atomic_objects_in_frame >()),
         _updates(viewer.updates),
+        _updates_profile(std::make_shared<dev_updates_profile::update_profile>()),
         _allow_remove(remove)
     {
+
         if( dev.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) && dev.is< device_calibration >() )
         {
             _accuracy_health_model = std::unique_ptr< cah_model >( new cah_model( *this, viewer ) );
@@ -4432,7 +4434,8 @@ namespace rs2
     void device_model::check_for_device_updates(rs2::context& ctx, std::shared_ptr<updates_model> updates)
     {
         std::weak_ptr<updates_model> updates_model_protected(updates);
-        std::thread check_for_device_updates_thread([ctx, updates_model_protected, this]()
+        std::weak_ptr<dev_updates_profile::update_profile >update_profile_protected(_updates_profile);
+        std::thread check_for_device_updates_thread([ctx, updates_model_protected, this, update_profile_protected]()
         {
             try
             {
@@ -4452,21 +4455,25 @@ namespace rs2
                 bool sw_update_required = updates_profile.retrieve_updates(versions_db_manager::LIBREALSENSE);
                 bool fw_update_required = updates_profile.retrieve_updates(versions_db_manager::FIRMWARE);
 
-                _updates_profile = updates_profile.get_update_profile();
-                updates_model::update_profile_model updates_profile_model(_updates_profile, ctx, this);
-
-                if (sw_update_required || fw_update_required)
+                if (auto update_profile = update_profile_protected.lock())
                 {
-                    if (auto viewer_updates = updates_model_protected.lock())
+                    *update_profile = updates_profile.get_update_profile();
+                    updates_model::update_profile_model updates_profile_model(*update_profile, ctx, this);
+
+
+                    if (sw_update_required || fw_update_required)
                     {
-                        viewer_updates->add_profile(updates_profile_model);
+                        if (auto viewer_updates = updates_model_protected.lock())
+                        {
+                            viewer_updates->add_profile(updates_profile_model);
+                        }
                     }
-                }
-                else
-                {   // For updating current device profile if exists (Could update firmware version)
-                    if (auto viewer_updates = updates_model_protected.lock())
-                    {
-                        viewer_updates->update_profile(updates_profile_model);
+                    else
+                    {   // For updating current device profile if exists (Could update firmware version)
+                        if (auto viewer_updates = updates_model_protected.lock())
+                        {
+                            viewer_updates->update_profile(updates_profile_model);
+                        }
                     }
                 }
             }
