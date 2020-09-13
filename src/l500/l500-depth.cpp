@@ -103,7 +103,7 @@ namespace librealsense
                 raw_depth_sensor.get_notifications_processor(),
                 std::unique_ptr<notification_decoder>(new l500_notification_decoder())));
 
-        depth_sensor.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler.get()));
+        depth_sensor.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler));
 
         // option to enable workaround for help weak usb hosts to support L515 devices
         // with improved performance and stability

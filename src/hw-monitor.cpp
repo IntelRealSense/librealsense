@@ -117,7 +117,7 @@ namespace librealsense
         return _locked_transfer->send_receive(data);
     }
 
-    std::vector<uint8_t> hw_monitor::send( command cmd, hwmon_response * p_response ) const
+    std::vector<uint8_t> hw_monitor::send( command cmd, hwmon_response * p_response , bool locked_transfer) const
     {
         hwmon_cmd newCommand(cmd);
         auto opCodeXmit = static_cast<uint32_t>(newCommand.cmd);
@@ -136,6 +136,11 @@ namespace librealsense
             details.sendCommandData.data(),
             details.sizeOfSendCommandData);
 
+        if (locked_transfer)
+        {
+            return _locked_transfer->send_receive({ details.sendCommandData.begin(),details.sendCommandData.end()});
+        }
+
         send_hw_monitor_command(details);
 
         // Error/exit conditions
@@ -150,7 +155,7 @@ namespace librealsense
 
         // endian?
         auto opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2],
-                                   details.receivedOpcode[1], details.receivedOpcode[0]);
+                                    details.receivedOpcode[1], details.receivedOpcode[0]);
         if (opCodeAsUint32 != opCodeXmit)
         {
             auto err_type = static_cast<hwmon_response>(opCodeAsUint32);

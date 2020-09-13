@@ -755,7 +755,7 @@ namespace librealsense
                     raw_depth_sensor.get_notifications_processor(),
                     std::unique_ptr<notification_decoder>(new ds5_notification_decoder())));
 
-            depth_sensor.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler.get()));
+            depth_sensor.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler));
 
             depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
                 std::make_shared<asic_and_projector_temperature_options>(raw_depth_sensor,

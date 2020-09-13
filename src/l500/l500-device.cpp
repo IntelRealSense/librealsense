@@ -399,7 +399,8 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("_hw_monitor is not initialized yet");
 
         command cmd(ivcam2::fw_cmd::MRD, ivcam2::REGISTER_CLOCK_0, ivcam2::REGISTER_CLOCK_0 + 4);
-        auto res = _hw_monitor->send(cmd);
+        // Redirect HW Monitor commands to used atomic (UVC) transfers for faster transactions and transfer integrity
+        auto res = _hw_monitor->send(cmd, nullptr, true);
 
         if (res.size() < sizeof(uint32_t))
         {

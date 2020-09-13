@@ -220,7 +220,7 @@ namespace librealsense
                 // will only read from the currently selected
                 // block, setting an option will propogate
                 // to all blocks in the group
-                for (int i = 0; i < _parent->_processing_blocks.size(); i++)
+                for (size_t i = 0; i < _parent->_processing_blocks.size(); i++)
                 {
                     if (_parent->_processing_blocks[i]->supports_option(_opt))
                     {

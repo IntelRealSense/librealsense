@@ -1,9 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-
 #include "option.h"
 #include "sensor.h"
-#include "error-handling.h"
+
 
 bool librealsense::option_base::is_valid(float value) const
 {
@@ -140,6 +139,12 @@ std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const 
             }
             return result;
         });
+}
+
+librealsense::polling_errors_disable::~polling_errors_disable()
+{
+    if (_polling_error_handler)
+        _polling_error_handler->stop();
 }
 
 void librealsense::polling_errors_disable::set(float value)
