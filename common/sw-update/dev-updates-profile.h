@@ -64,6 +64,7 @@ namespace rs2
 
             versions_db_manager _versions_db;
             update_profile _update_profile;
+            bool _keep_trying;
         };
     }
 }

@@ -85,13 +85,14 @@ namespace rs2
             enum update_policy_type { EXPERIMENTAL, RECOMMENDED, ESSENTIAL };
             enum component_part_type { LIBREALSENSE, VIEWER, DEPTH_QUALITY_TOOL, FIRMWARE };
             enum update_source_type { FROM_FILE, FROM_SERVER };
+            enum query_status_type { VERSION_FOUND, NO_VERSION_FOUND, DB_LOAD_FAILURE };
 
             explicit versions_db_manager(const std::string &url, const bool use_url_as_local_path = false, http::user_callback_func_type download_callback = http::user_callback_func_type())
                 : _dev_info_url(url), _local_source_file(use_url_as_local_path), _server_versions_vec(), _server_versions_loaded(false), _download_cb_func(download_callback) {};
 
             ~versions_db_manager() {};
 
-            bool query_versions(const std::string &device_name, component_part_type component, const update_policy_type policy, version& out_version);
+            query_status_type query_versions(const std::string &device_name, component_part_type component, const update_policy_type policy, version& out_version);
             bool get_version_download_link(const component_part_type component, const version& version, std::string& dl_link) { return get_version_data_common(component, version, "link", dl_link); };
             bool get_version_release_notes(const component_part_type component, const version& version, std::string& version_release_notes_link) { return get_version_data_common(component, version, "release_notes_link", version_release_notes_link); };
             bool get_version_description(const component_part_type component, const version& version, std::string& version_description) { return get_version_data_common(component, version, "description", version_description); };

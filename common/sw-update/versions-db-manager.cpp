@@ -38,13 +38,13 @@ namespace rs2
             "";
 #endif
 
-        bool versions_db_manager::query_versions(const std::string &device_name, component_part_type component, const update_policy_type policy, version& out_version)
+        versions_db_manager::query_status_type versions_db_manager::query_versions(const std::string &device_name, component_part_type component, const update_policy_type policy, version& out_version)
         {
             // Load server versions info on first access
             if (!init())
             {
                 out_version = 0;
-                return false;
+                return DB_LOAD_FAILURE;
             }
 
             std::string platform(PLATFORM);
@@ -52,7 +52,7 @@ namespace rs2
             std::string up_str(to_string(policy));
             std::string comp_str(to_string(component));
 
-            if (up_str.empty() || comp_str.empty()) return false;
+            if (up_str.empty() || comp_str.empty()) return NO_VERSION_FOUND;
 
             // Look for the required version
             auto res = std::find_if(_server_versions_vec.begin(), _server_versions_vec.end(),
@@ -65,17 +65,17 @@ namespace rs2
             {
                 auto version_str = (*res)["version"];
                 out_version = version(version_str);
-                return true;
+                return VERSION_FOUND;
             }
 
             out_version = 0;
-            return false; // Nothing found
+            return NO_VERSION_FOUND; // Nothing found
         }
 
         bool versions_db_manager::get_version_data_common(const component_part_type component, const version& version, const std::string& req_field, std::string& out)
         {
-            // Load server versions info on first access
-            if (!init()) return false;
+            // Check if server versions are loaded
+            if (!_server_versions_loaded) return false;
 
             std::string platform = PLATFORM;
 
