@@ -546,7 +546,7 @@ void compare_scene( std::string const & scene_dir,
     read_data_from( bin_dir( scene_dir ) + "settings", &settings );
 
     std::pair< double, double > res_fx_fy;
-    if( try_to_get_thermal_data( scene_dir,
+    if( read_thermal_data( scene_dir,
                                  settings.hum_temp,
                                  { ci.rgb.fx, ci.rgb.fy },
                                  res_fx_fy ) )

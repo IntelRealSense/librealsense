@@ -419,7 +419,7 @@ bool compare_to_bin_file(
     return compare_t(obj_matlab, obj_cpp);
 }
 
-bool try_to_get_thermal_data( std::string dir,
+bool read_thermal_data( std::string dir,
                               double hum_temp,
                               const std::pair< double, double > & in_fx_fy,
                               std::pair< double, double > & out_fx_fy )

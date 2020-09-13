@@ -41,7 +41,7 @@ namespace librealsense
         lazy<ivcam2::intrinsic_rgb> _color_intrinsics_table;
         lazy<std::vector<uint8_t>> _color_extrinsics_table_raw;
         std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
-        lazy< algo::thermal_loop::l500::l500_thermal_loop::rgb_thermal_calib_info > _thermal_table;
+        lazy< algo::thermal_loop::l500::thermal_calibration_table > _thermal_table;
 
         ivcam2::intrinsic_rgb read_intrinsics_table() const;
         std::vector<uint8_t> get_raw_extrinsics_table() const;
@@ -79,7 +79,7 @@ namespace librealsense
         void reset_calibration() override;
         void set_k_thermal_intrinsics( rs2_intrinsics const & intr );
         void reset_k_thermal_intrinsics(); 
-        algo::thermal_loop::l500::l500_thermal_loop::l500_thermal_loop::rgb_thermal_calib_info get_thermal_table();
+        algo::thermal_loop::l500::thermal_calibration_table get_thermal_table();
 
         stream_profiles init_stream_profiles() override
         {

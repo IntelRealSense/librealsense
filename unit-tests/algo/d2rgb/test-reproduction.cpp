@@ -130,7 +130,7 @@ protected:
 };
 
 
-bool try_to_get_thermal_data( std::string dir,
+bool read_thermal_data( std::string dir,
                               double hum_temp,
                               const std::pair< double, double > & in_fx_fy,
                               std::pair< double, double > & out_fx_fy )
@@ -222,16 +222,6 @@ int main( int argc, char * argv[] )
             {
                 read_binary_file( dir, "settings", &settings );
 
-                std::pair< double, double > res_fx_fy;
-                if( try_to_get_thermal_data(
-                        dir,
-                        settings.hum_temp,
-                        { calibration.k_mat.get_fx(), calibration.k_mat.get_fy() },
-                        res_fx_fy ) )
-                {
-                    calibration.k_mat.k_mat.rot[0] = res_fx_fy.first;
-                    calibration.k_mat.k_mat.rot[4] = res_fx_fy.second;
-                }
             }
             catch( std::exception const & e )
             {
@@ -240,6 +230,16 @@ int main( int argc, char * argv[] )
                 settings.hum_temp = 40;
                 settings.is_manual_trigger = true;
                 settings.receiver_gain = 9;
+            }
+
+             std::pair< double, double > res_fx_fy;
+            if( read_thermal_data( dir,
+                                         settings.hum_temp,
+                                         { calibration.k_mat.get_fx(), calibration.k_mat.get_fy() },
+                                         res_fx_fy ) )
+            {
+                calibration.k_mat.k_mat.rot[0] = res_fx_fy.first;
+                calibration.k_mat.k_mat.rot[4] = res_fx_fy.second;
             }
 
             algo::optimizer cal( settings, debug_mode );

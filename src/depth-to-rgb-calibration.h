@@ -23,8 +23,8 @@ namespace librealsense
 
         // input/output
         rs2_extrinsics _extr;
-        rs2_intrinsics _intr; //raw intrinsics for overriding the fw intrinsics
-        rs2_intrinsics _intr_with_k_thermal; // intrinsics with k_thermal for user
+        rs2_intrinsics _raw_intrinsics;      // raw intrinsics for overriding the fw intrinsics
+        rs2_intrinsics _thermal_intr; // intrinsics with k_thermal for user
         rs2_dsm_params _dsm_params;
         std::vector< algo::depth_to_rgb_calibration::yuy_t > _last_successful_frame_data;
 
@@ -47,8 +47,8 @@ namespace librealsense
         );
 
         rs2_extrinsics const & get_extrinsics() const { return _extr; }
-        rs2_intrinsics const & get_intrinsics() const { return _intr; }
-        rs2_intrinsics const & get_k_thermal_intrinsics() const { return _intr_with_k_thermal; }
+        rs2_intrinsics const & get_raw_intrinsics() const { return _raw_intrinsics; }
+        rs2_intrinsics const & get_thermal_intrinsics() const { return _thermal_intr; }
         stream_profile_interface * get_from_profile() const { return _from; }
         stream_profile_interface * get_to_profile() const { return _to; }
         rs2_dsm_params const & get_dsm_params() const { return _dsm_params; }

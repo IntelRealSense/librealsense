@@ -179,7 +179,7 @@ namespace librealsense
         _thermal_table =
             [this]() {
                 auto data = read_fw_table_raw( *_hw_monitor,
-                algo::thermal_loop::l500::l500_thermal_loop::rgb_thermal_calib_info::table_id );
+                algo::thermal_loop::l500::thermal_calibration_table::id );
             return algo::thermal_loop::l500::l500_thermal_loop::parse_thermal_table( data );
             };
 
@@ -397,7 +397,7 @@ namespace librealsense
         _k_thermal_intrinsics.reset();
     }
 
-    algo::thermal_loop::l500::l500_thermal_loop::rgb_thermal_calib_info
+    algo::thermal_loop::l500::thermal_calibration_table
     l500_color_sensor::get_thermal_table()
     {
         return *_owner->_thermal_table;

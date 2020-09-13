@@ -29,8 +29,8 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     std::function<void()> should_continue
 )
     : _algo( settings )
-    , _intr( yuy_intrinsics )
-    , _intr_with_k_thermal( _intr )
+    , _raw_intrinsics( yuy_intrinsics )
+    , _thermal_intr( _raw_intrinsics )
     , _extr(to_raw_extrinsics( depth.get_profile().get_extrinsics_to( yuy.get_profile() )))
     , _from( depth.get_profile().get()->profile )
     , _to( yuy.get_profile().get()->profile )
@@ -46,11 +46,11 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
         AC_LOG( DEBUG, "Not using last successfully-calibrated scene: it's of a different resolution" );
 
     auto fx_fy = algo::thermal_loop::l500::l500_thermal_loop::correct_thermal_scale(
-        { _intr.fx, _intr.fy },
+        { _raw_intrinsics.fx, _raw_intrinsics.fy },
         scale );
-    _intr_with_k_thermal.fx = fx_fy.first;
-    _intr_with_k_thermal.fy = fx_fy.second;
-    impl::calib calibration( _intr_with_k_thermal, _extr );
+    _thermal_intr.fx = fx_fy.first;
+    _thermal_intr.fy = fx_fy.second;
+    impl::calib calibration( _thermal_intr, _extr );
 
     CHECK_IF_NEEDS_TO_STOP();
 
@@ -168,12 +168,13 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
         // cost= " << params_curr.cost );
 
         AC_LOG( DEBUG, "Optimization successful!" );
-        _intr_with_k_thermal = _algo.get_calibration().get_intrinsics();
+        _thermal_intr = _algo.get_calibration().get_intrinsics();
 
         // override only the ppx and ppy the fx and fy are the original
-        _intr.ppx = _intr_with_k_thermal.ppx; 
-        _intr.ppy = _intr_with_k_thermal.ppy;
-        _intr.model = _intr_with_k_thermal.model = RS2_DISTORTION_INVERSE_BROWN_CONRADY;  // restore LRS model 
+        _raw_intrinsics.ppx = _thermal_intr.ppx; 
+        _raw_intrinsics.ppy = _thermal_intr.ppy;
+        _raw_intrinsics.model = _thermal_intr.model
+            = RS2_DISTORTION_INVERSE_BROWN_CONRADY;  // restore LRS model 
         _extr = from_raw_extrinsics( _algo.get_calibration().get_extrinsics() );
         _dsm_params = _algo.get_dsm_params();
         _last_successful_frame_data = _algo.get_yuy_data().orig_frame;  // copy -- will be moved to ac_trigger
@@ -190,8 +191,8 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
 
 void depth_to_rgb_calibration::debug_calibration( char const * prefix )
 {
-    AC_LOG( INFO, AC_F_PREC << "    " << prefix << " intr with k-thermal" << _intr_with_k_thermal );
-    AC_LOG( INFO, AC_F_PREC << "    " << prefix << " intr" << _intr );
+    AC_LOG( INFO, AC_F_PREC << "    " << prefix << " intr with k-thermal" << _thermal_intr );
+    AC_LOG( INFO, AC_F_PREC << "    " << prefix << " raw intr" << _raw_intrinsics );
     AC_LOG( INFO, AC_F_PREC << "    " << prefix << " extr" << _extr );
     AC_LOG( INFO, AC_F_PREC << "    " << prefix << "  dsm" << _dsm_params );
 }

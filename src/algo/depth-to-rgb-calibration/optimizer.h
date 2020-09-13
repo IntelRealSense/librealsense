@@ -26,16 +26,6 @@ namespace depth_to_rgb_calibration {
         double step_size = 0;
     };
 
-template < typename T >
-    void write_vector_to_file( std::vector< T > const & v,
-                               std::string const & dir,
-                               char const * filename )
-    {
-        write_to_file( v.data(), v.size() * sizeof( T ), dir, filename );
-    }
-
-    void
-write_to_file( void const * data, size_t cb, std::string const & dir, char const * filename );
 
     struct params
     {

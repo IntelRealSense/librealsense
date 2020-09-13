@@ -32,7 +32,17 @@ namespace depth_to_rgb_calibration {
     // throw invalid_value_exception if they do.
     void validate_dsm_params( struct rs2_dsm_params const & dsm_params );
 
-}
+    template < typename T >
+    void write_vector_to_file( std::vector< T > const & v,
+                               std::string const & dir,
+                               char const * filename )
+    {
+        write_to_file( v.data(), v.size() * sizeof( T ), dir, filename );
+    }
+
+    void
+    write_to_file( void const * data, size_t cb, std::string const & dir, char const * filename );
+    }
 }
 }
 

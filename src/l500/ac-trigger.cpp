@@ -8,6 +8,7 @@
 #include "l500-depth.h"
 #include "algo/depth-to-rgb-calibration/debug.h"
 #include "algo/thermal-loop/l500-thermal-loop.h"
+#include "algo/depth-to-rgb-calibration/utils.h"
 #include "log.h"
 
 
@@ -929,7 +930,7 @@ namespace ivcam2 {
         return true;
     }
 
-     rs2_intrinsics get_raw_intrinsics( l500_device & dev,
+     rs2_intrinsics read_intrinsics_from_camera( l500_device & dev,
                                                       const rs2::stream_profile & profile )
     {
         auto vp = profile.as< rs2::video_stream_profile >(); 
@@ -991,7 +992,7 @@ namespace ivcam2 {
                             if (!debug_dir.empty())
                             {
                                 auto orig_intrinsics
-                                    = get_raw_intrinsics( _dev, _cf.get_profile() );
+                                    = read_intrinsics_from_camera( _dev, _cf.get_profile() );
 
                                 algo::depth_to_rgb_calibration::write_to_file(
                                     &orig_intrinsics,
@@ -1000,7 +1001,7 @@ namespace ivcam2 {
                                     "raw_rgb.calib" );
 
                                 algo::depth_to_rgb_calibration::write_vector_to_file(
-                                    t.get_raw_data(),
+                                    t.build_raw_data(),
                                     debug_dir,
                                     "rgb_thermal_table" );
                                
@@ -1049,7 +1050,7 @@ namespace ivcam2 {
                                                    df, irf,
                                                    _cf, _pcf, _last_yuy_data,
                                                    cal_info, cal_regs,
-                                                   get_raw_intrinsics( _dev, _cf.get_profile()) ,
+                                                   read_intrinsics_from_camera( _dev, _cf.get_profile() ),
                                                    scale,
                                                    should_continue );
 
@@ -1080,8 +1081,8 @@ namespace ivcam2 {
                     {
                     case RS2_CALIBRATION_SUCCESSFUL:
                         _extr = algo.get_extrinsics();
-                        _intr = algo.get_intrinsics();
-                        _intr_with_k_thermal = algo.get_k_thermal_intrinsics();
+                        _raw_intr = algo.get_raw_intrinsics();
+                        _thermal_intr = algo.get_thermal_intrinsics();
                         _dsm_params = algo.get_dsm_params();
                         call_back( status );  // if this throws, we don't want to do the below:
                         _last_temp = _temp;

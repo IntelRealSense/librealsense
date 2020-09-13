@@ -226,9 +226,9 @@ namespace librealsense
                         get_depth_sensor().override_dsm_params( _autocal->get_dsm_params() );
                      
                         auto & color_sensor = *get_color_sensor();
-                        color_sensor.override_intrinsics( _autocal->get_intrinsics() );
+                        color_sensor.override_intrinsics( _autocal->get_raw_intrinsics() );
                         color_sensor.override_extrinsics( _autocal->get_extrinsics() );
-                        color_sensor.set_k_thermal_intrinsics(_autocal->get_k_thermal_intrinsics());
+                        color_sensor.set_k_thermal_intrinsics(_autocal->get_thermal_intrinsics());
                     }
                     notify_of_calibration_change( status );
                 } );
