@@ -172,6 +172,7 @@ PYBIND11_MODULE(NAME, m) {
         .value("sensor_resolution_mode", RS2_OPTION_SENSOR_MODE)
         .value("emitter_always_on", RS2_OPTION_EMITTER_ALWAYS_ON)
         .value("thermal_compensation", RS2_OPTION_THERMAL_COMPENSATION)
+        .value("host_performance", RS2_OPTION_HOST_PERFORMANCE)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");
