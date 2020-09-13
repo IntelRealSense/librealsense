@@ -47,12 +47,6 @@ namespace librealsense
         auto max_value = float(*(reinterpret_cast<int32_t*>(max.data())));
         auto min_value = float(*(reinterpret_cast<int32_t*>(min.data())));
 
-        if (type == noise_filtering) 
-        {
-            // Hack until addressed in firmware
-            min_value = std::min(max_value, std::max(min_value, 2.f));
-        }
-
         _range = option_range{ min_value,
             max_value,
             float(*(reinterpret_cast<int32_t*>(step.data()))),
