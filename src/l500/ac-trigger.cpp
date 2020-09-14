@@ -982,8 +982,7 @@ namespace ivcam2 {
                         {
                             auto t = _dev.get_color_sensor()->get_thermal_table();
                             
-                            scale = algo::thermal_loop::l500::l500_thermal_loop::
-                                get_rgb_current_thermal_scale( t, _temp );
+                            scale = t.get_current_thermal_scale( _temp );
 
                             AC_LOG( INFO,
                                     "Humidity temp is " << _temp << " scaling krgb by " << scale );

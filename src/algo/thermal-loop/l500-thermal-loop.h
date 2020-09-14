@@ -24,7 +24,6 @@ using fx_fy = std::pair< double, double >;
 // https://rsconf.intel.com/display/L500/RGB+Thermal+Dependency
 
 
-
 struct thermal_calibration_table
 {
     static const int id = 0x317;
@@ -46,6 +45,11 @@ struct thermal_calibration_table
 
     table_meta_data md;
     std::vector< temp_data > vals;
+
+    static thermal_calibration_table parse_thermal_table ( const std::vector< byte > & data );
+
+    double get_current_thermal_scale( double hum_temp );
+
 
     std::vector< byte > build_raw_data() const
     {
@@ -69,20 +73,25 @@ struct thermal_calibration_table
     }
 };
 #pragma pack( pop )
-
-
-class l500_thermal_loop
+inline bool operator==( const thermal_calibration_table & lhs, const thermal_calibration_table & rhs )
 {
-public:
-    static thermal_calibration_table parse_thermal_table( const std::vector< byte > & data );
+    if(lhs.vals.size()!=rhs.vals.size())
+        return false;
 
-    static double get_rgb_current_thermal_scale( const thermal_calibration_table & table,
-                                                 double hum_temp );
+    if( lhs.md.max_temp != rhs.md.max_temp || lhs.md.min_temp != rhs.md.min_temp
+        || lhs.md.reference_temp != rhs.md.reference_temp || lhs.md.valid != rhs.md.valid )
+        return false;
 
-    static fx_fy correct_thermal_scale( std::pair< double, double > in_calib,
-                                                              double scale );
-};
+    for( auto i = 0; i < rhs.vals.size(); i++ )
+    {
+        if( lhs.vals[i].scale != rhs.vals[i].scale || lhs.vals[i].p[0] != rhs.vals[i].p[0]
+            || lhs.vals[i].p[1] != rhs.vals[i].p[1] || lhs.vals[i].p[2] != rhs.vals[i].p[2] )
+            return false;
+    }
+    return true;
+}
 
+fx_fy correct_thermal_scale( std::pair< double, double > in_calib, double scale );
 
 
 }  // namespace l500

@@ -9,7 +9,7 @@ namespace thermal_loop {
 namespace l500 {
 
 
-thermal_calibration_table l500_thermal_loop::parse_thermal_table( const std::vector< byte > & data )
+thermal_calibration_table thermal_calibration_table::parse_thermal_table( const std::vector< byte > & data )
 {
     thermal_calibration_table res;
     float const * float_data = (float *)data.data();
@@ -29,57 +29,67 @@ thermal_calibration_table l500_thermal_loop::parse_thermal_table( const std::vec
 
     res.vals.assign( (thermal_calibration_table::temp_data *)( &float_data[meta_data_size] ),
                      (thermal_calibration_table::temp_data *)( &float_data[meta_data_size] )
-                         + thermal_calibration_table::resolution + 1 );
+                         + thermal_calibration_table::resolution );
 
     return res;
 }
 
-double l500_thermal_loop::get_rgb_current_thermal_scale( const thermal_calibration_table & table,
-                                                         double hum_temp )
+double
+thermal_calibration_table::get_current_thermal_scale(double hum_temp )
 {
     // curr temp is under minimum
-    if (hum_temp <= table.md.min_temp)
+    if (hum_temp <= md.min_temp)
     {
-        if( table.vals[0].scale == 0)
+        if( vals[0].scale == 0)
             throw std::runtime_error( "Scale value in index 0 is 0 " );
 
-        return 1. / table.vals[0].scale;
+        return 1. / vals[0].scale;
     }
-       
 
     // curr temp is above maximum
-    if (hum_temp >= table.md.max_temp)
+    if (hum_temp >= md.max_temp)
     {
-        if( table.vals[thermal_calibration_table::resolution - 1].scale == 0 )
+        if( vals[thermal_calibration_table::resolution - 1].scale == 0 )
             throw std::runtime_error( to_string()
                                       << "Scale value in index "
                                       << thermal_calibration_table::resolution - 1 << " is 0 " );
 
-        return 1. / table.vals[thermal_calibration_table::resolution - 1].scale;
+        return 1. / vals[thermal_calibration_table::resolution - 1].scale;
     }
        
 
-    auto temp_range = table.md.max_temp - table.md.min_temp;
+    auto temp_range = md.max_temp - md.min_temp;
     // there are 29 bins between min and max temps so its divides to 30 equals intervals
     auto temp_interval = temp_range / ( thermal_calibration_table::resolution + 1 );
 
-   for( double temp = temp_interval, ind = 0;
-         temp <= table.md.max_temp, ind < thermal_calibration_table::resolution;
+    for( double temp = temp_interval, ind = 0;
+         temp <= md.max_temp, ind < thermal_calibration_table::resolution;
          temp += temp_interval, ind++ )
     {
-        if( hum_temp <= temp )
+        if( hum_temp <= temp && ind < thermal_calibration_table::resolution )
         {
-            if( table.vals[(int)ind].scale == 0 )
+            if( vals[(int)ind].scale == 0 )
                 throw std::runtime_error( to_string()
                                           << "Scale value in index " << ind << " is 0 " );
 
-            return 1. / table.vals[ind].scale;
+            return 1. / vals[ind].scale;
         }
     }
-    throw std::runtime_error( librealsense::to_string() << hum_temp << "is not valid " );
+
+     // the loop does not cover the last range [resolution-max_temp]
+    if( hum_temp < md.max_temp )
+    {
+        if( vals[thermal_calibration_table::resolution - 1].scale == 0 )
+            throw std::runtime_error( to_string()
+                                      << "Scale value in index "
+                                      << thermal_calibration_table::resolution - 1 << " is 0 " );
+
+        return 1. / vals[thermal_calibration_table::resolution - 1].scale;
+    }
+    throw std::runtime_error( librealsense::to_string() << hum_temp << " is not valid " );
 }
 
-fx_fy l500_thermal_loop::correct_thermal_scale( std::pair< double, double > in_calib,
+fx_fy correct_thermal_scale( std::pair< double, double > in_calib,
                                                    double scale )
 {
     return { in_calib.first * scale, in_calib.second * scale };

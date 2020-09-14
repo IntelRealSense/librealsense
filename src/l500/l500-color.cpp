@@ -180,7 +180,7 @@ namespace librealsense
             [this]() {
                 auto data = read_fw_table_raw( *_hw_monitor,
                 algo::thermal_loop::l500::thermal_calibration_table::id );
-            return algo::thermal_loop::l500::l500_thermal_loop::parse_thermal_table( data );
+            return algo::thermal_loop::l500::thermal_calibration_table::parse_thermal_table( data );
             };
 
         _color_device_idx = add_sensor(create_color_device(ctx, color_devs_info));

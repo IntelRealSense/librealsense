@@ -2,6 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 //#cmake:add-file ../../../src/algo/depth-to-rgb-calibration/*.cpp
+//#cmake:add-file ../../../src/algo/thermal-loop/*.cpp
 
 #include "d2rgb-common.h"
 #include "compare-to-bin-file.h"
