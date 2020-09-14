@@ -228,7 +228,7 @@ namespace librealsense
                         command cmdTprocThresholdEp(ivcam2::TPROC_TRB_THRSLD_SET, ep, 1);
                         _hwm->send(cmdTprocThresholdEp);
 
-                        LOG_INFO("Endpoint " << ep << " usb tproc granularity updated to " << trb);
+                        LOG_DEBUG("Endpoint " << ep << " usb tproc granularity updated to " << trb);
                     }
                 }
                 catch (...)
@@ -238,11 +238,11 @@ namespace librealsense
             }
             else if (mode == RS2_HOST_PERF_DEFAULT)
             {
-                LOG_INFO("Default host performance mode, usb tproc granularity and TRB threshold not changed");
+                LOG_DEBUG("Default host performance mode, usb tproc granularity and TRB threshold not changed");
             }
             else
             {
-                LOG_INFO("Unsupported host performance mode: " << (int) mode);
+                LOG_DEBUG("Unsupported host performance mode: " << (int) mode);
             }
         }
 

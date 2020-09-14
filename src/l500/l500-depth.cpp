@@ -448,7 +448,7 @@ namespace librealsense
 
             auto&& perf_opt = get_option(RS2_OPTION_HOST_PERFORMANCE);
             auto perf_mode = perf_opt.query();
-            LOG_INFO("Depth and IR host performance mode:" << perf_mode);
+            LOG_DEBUG("Depth and IR host performance mode:" << perf_mode);
             perf_opt.set(perf_mode);
         }
 
