@@ -27,8 +27,8 @@ namespace librealsense
             return false;
         if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID))
             return false;
-        int depth_sequ_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE);
-        if (depth_sequ_size != 2)
+        auto depth_seq_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE);
+        if (depth_seq_size != 2)
             return false;
 
         return true;
@@ -51,16 +51,16 @@ namespace librealsense
         auto depth_frame = fs.get_depth_frame();
 
         // 2. add the frameset to vector of framesets
-        int depth_sequ_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
+        auto depth_seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
 
         // condition added to ensure that frames are saved in the right order
         // to prevent for example the saving of frame with sequence id 1 before
         // saving frame of sequence id 0
         // so that the merging with be deterministic - always done with frame n and n+1
         // with frame n as basis
-        if (_framesets.size() == depth_sequ_id)
+        if (_framesets.size() == depth_seq_id)
         {
-            _framesets[depth_sequ_id] = fs;
+            _framesets[depth_seq_id] = fs;
         }
 
         // 3. check if size of this vector is at least 2 (if not - return latest merge frame)
@@ -97,13 +97,23 @@ namespace librealsense
 
     void hdr_merge::discard_depth_merged_frame_if_needed(const rs2::frame& f)
     {
-        // criteria for discarding saved merged_depth_frame:
-        // if its frame counter is greater than the input frame
-        auto depth_merged_frame_counter = _depth_merged_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
-        auto input_frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
-        if (depth_merged_frame_counter > input_frame_counter)
+        if (_depth_merged_frame)
         {
-            _depth_merged_frame = nullptr;
+            // criteria for discarding saved merged_depth_frame:
+            // 1 - frame counter for merged depth is greater than the input frame
+            // 2 - resolution change
+            auto depth_merged_frame_counter = _depth_merged_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+            auto input_frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+
+            auto merged_d_profile = _depth_merged_frame.get_profile().as<rs2::video_stream_profile>();
+            auto new_d_profile = f.get_profile().as<rs2::video_stream_profile>();
+
+            if ((depth_merged_frame_counter > input_frame_counter) ||
+                (merged_d_profile.width() != new_d_profile.width()) ||
+                (merged_d_profile.height() != new_d_profile.height()))
+            {
+                _depth_merged_frame = nullptr;
+            }
         }
     }
 
@@ -121,6 +131,10 @@ namespace librealsense
         // The aim of this checking is that the output merged frame will have frame counter n and
         // frame counter n and will be created by frames n and n+1
         if (first_fs_frame_counter + 1 != second_fs_frame_counter)
+            return false;
+        // Depth dimensions must align
+        if ((first_depth.get_height() != second_depth.get_height()) ||
+            (first_depth.get_width() != second_depth.get_width()))
             return false;
 
         use_ir = should_ir_be_used_for_merging(first_depth, first_ir, second_depth, second_ir);
@@ -202,6 +216,13 @@ namespace librealsense
     {
         // checking ir frames are not null
         bool use_ir = (first_ir && second_ir);
+
+        // IR and Depth dimensions must be aligned
+        if ((first_depth.get_height() != first_ir.get_height()) ||
+            (first_depth.get_width() != first_ir.get_width()) ||
+            (second_ir.get_height() != first_ir.get_height()) ||
+            (second_ir.get_width() != first_ir.get_width()))
+            use_ir =  false;
 
         // checking frame counter of first depth and ir are the same
         if (use_ir)
