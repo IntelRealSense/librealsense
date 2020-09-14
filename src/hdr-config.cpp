@@ -51,8 +51,13 @@ namespace librealsense
 
     bool hdr_config::is_current_subpreset_hdr(const std::vector<byte>& current_subpreset) const
     {
-        int current_subpreset_id = current_subpreset[1];
-        return is_hdr_id(current_subpreset_id);
+        if (current_subpreset.size())
+        {
+            int current_subpreset_id = current_subpreset[1];
+            return is_hdr_id(current_subpreset_id);
+        }
+
+        return false;
     }
 
     bool hdr_config::is_hdr_id(int id) const

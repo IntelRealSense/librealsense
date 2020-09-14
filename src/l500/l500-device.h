@@ -87,7 +87,7 @@ namespace librealsense
         std::shared_ptr<hw_monitor> _hw_monitor;
         uint8_t _depth_device_idx;
 
-        std::unique_ptr<polling_error_handler> _polling_error_handler;
+        std::shared_ptr<polling_error_handler> _polling_error_handler;
 
         lazy<ivcam2::intrinsic_depth> _calib_table;
         firmware_version _fw_version;

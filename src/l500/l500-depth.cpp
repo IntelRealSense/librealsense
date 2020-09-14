@@ -95,13 +95,12 @@ namespace librealsense
         register_stream_to_extrinsic_group(*_ir_stream, 0);
         register_stream_to_extrinsic_group(*_confidence_stream, 0);
 
-        auto error_control = std::unique_ptr<uvc_xu_option<int>>(new uvc_xu_option<int>(raw_depth_sensor, ivcam2::depth_xu, L500_ERROR_REPORTING, "Error reporting"));
+        auto error_control = std::make_shared<uvc_xu_option<int>>(raw_depth_sensor, ivcam2::depth_xu, L500_ERROR_REPORTING, "Error reporting");
 
-        _polling_error_handler = std::unique_ptr<polling_error_handler>(
-            new polling_error_handler(1000,
-                std::move(error_control),
-                raw_depth_sensor.get_notifications_processor(),
-                std::unique_ptr<notification_decoder>(new l500_notification_decoder())));
+        _polling_error_handler = std::make_shared<polling_error_handler>(1000,
+            error_control,
+            raw_depth_sensor.get_notifications_processor(),
+            std::make_shared<l500_notification_decoder>());
 
         depth_sensor.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler));
 

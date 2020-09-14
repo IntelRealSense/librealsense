@@ -739,13 +739,12 @@ namespace librealsense
                 std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_EXT_TRIGGER,
                     "Generate trigger from the camera to external device once per frame"));
 
-            auto error_control = std::unique_ptr<uvc_xu_option<uint8_t>>(new uvc_xu_option<uint8_t>(raw_depth_sensor, depth_xu, DS5_ERROR_REPORTING, "Error reporting"));
+            auto error_control = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_ERROR_REPORTING, "Error reporting");
 
-            _polling_error_handler = std::unique_ptr<polling_error_handler>(
-                new polling_error_handler(1000,
-                    std::move(error_control),
-                    raw_depth_sensor.get_notifications_processor(),
-                    std::unique_ptr<notification_decoder>(new ds5_notification_decoder())));
+            _polling_error_handler = std::make_shared<polling_error_handler>(1000,
+                error_control,
+                raw_depth_sensor.get_notifications_processor(),
+                std::make_shared<ds5_notification_decoder>());
 
             depth_sensor.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler));
 
