@@ -101,7 +101,6 @@ extern "C" {
         RS2_OPTION_SUBPRESET_ID, /**< HDR Sequence size */
         RS2_OPTION_SUBPRESET_SEQUENCE_SIZE, /**< HDR Sequence size */
         RS2_OPTION_SUBPRESET_SEQUENCE_ID, /**< HDR Sequence ID - 0 is not HDR; sequence ID for HDR configuartion starts from 1 */
-        RS2_OPTION_SELECT_ID, /**< Select which ID to be streamed when split is enabled - 0 used for all */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 

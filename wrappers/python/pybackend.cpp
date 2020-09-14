@@ -178,7 +178,7 @@ PYBIND11_MODULE(NAME, m) {
         .value("subpreset_id", RS2_OPTION_SUBPRESET_ID)
         .value("subpreset_sequence_size", RS2_OPTION_SUBPRESET_SEQUENCE_SIZE)
         .value("subpreset_sequence_id", RS2_OPTION_SUBPRESET_SEQUENCE_ID)
-        .value("select_id", RS2_OPTION_SELECT_ID)
+        .value("select_id", RS2_OPTION_SUBPRESET_SEQUENCE_ID)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");

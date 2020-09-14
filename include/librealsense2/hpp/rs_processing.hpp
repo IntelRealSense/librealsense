@@ -1145,6 +1145,16 @@ namespace rs2
         */
         filter_by_sequence_id() : filter(init()) {}
 
+        /**
+        * Create filter_by_sequence_id processing block
+        * the processing perform the hole filling base on different hole filling mode.
+        * \param[in] sequence_id - sequence id to pass the filter.
+        */
+        filter_by_sequence_id(float sequence_id) : filter(init(), 1)
+        {
+            set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, sequence_id);
+        }
+
         filter_by_sequence_id(filter f) :filter(f)
         {
             rs2_error* e = nullptr;
