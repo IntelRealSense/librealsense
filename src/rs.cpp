@@ -32,7 +32,7 @@
 #include "proc/color-formats-converter.h"
 #include "proc/rates-printer.h"
 #include "proc/hdr-merge.h"
-#include "proc/filter-by-sequence-id.h"
+#include "proc/sequence_id_filter.h"
 #include "media/playback/playback_device.h"
 #include "stream.h"
 #include "../include/librealsense2/h/rs_types.h"
