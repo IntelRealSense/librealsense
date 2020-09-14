@@ -21,7 +21,10 @@ namespace librealsense
 
     // Metadata tables version
     const int META_DATA_INTEL_DEPTH_CONTROL_VERSION   = 0x1;
-    const int META_DATA_INTEL_CONFIGURATION_VERSION   = 0x3;
+    // Intel Configuration:
+    // version 2: gpioInputData added to md_configuration (with its flag)
+    // version 3: sub_preset_info added to md_configuration (with its flag)
+    const int META_DATA_INTEL_CONFIGURATION_VERSION   = 0x3; 
     const int META_DATA_INTEL_STAT_VERSION            = 0x1;
     const int META_DATA_INTEL_CAPTURE_TIMING_VERSION  = 0x1;
 

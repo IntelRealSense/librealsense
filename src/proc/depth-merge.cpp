@@ -90,9 +90,9 @@ namespace librealsense
             // discard saved merged frame if it is too old
             auto fps = _depth_merged_frame.get_profile().fps();
 
-            auto input_frame_ts = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
-            auto depth_merged_frame_ts = _depth_merged_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
-            auto delta_ts = input_frame_ts - depth_merged_frame_ts; // equal to 0 if frame created at this iteration, else it is positive
+            uint64_t input_frame_ts = static_cast<uint64_t>(f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP));
+            uint64_t depth_merged_frame_ts = static_cast<uint64_t>(_depth_merged_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP));
+            uint64_t delta_ts = input_frame_ts - depth_merged_frame_ts; // equal to 0 if frame created at this iteration, else it is positive
             if (delta_ts > 2 * 1000000 / fps)
                 _depth_merged_frame = nullptr;
             else
