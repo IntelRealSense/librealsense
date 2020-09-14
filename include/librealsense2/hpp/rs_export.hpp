@@ -30,7 +30,7 @@ namespace rs2
     inline vec3d operator + (const vec3d & a, const vec3d & b) { return{ a.x + b.x, a.y + b.y, a.z + b.z }; }
     inline vec3d operator - (const vec3d & a, const vec3d & b) { return{ a.x - b.x, a.y - b.y, a.z - b.z }; }
     inline vec3d cross(const vec3d & a, const vec3d & b) { return { a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x }; }
-    
+
     class save_to_ply : public filter
     {
     public:
@@ -331,7 +331,7 @@ namespace rs2
                         assert(false);
                     }
                     sensors.emplace_back(s, software_profile, i);
-                    
+
                     bool found_extrin = false;
                     for (auto& root : extrinsics) {
                         try {
@@ -347,7 +347,6 @@ namespace rs2
                     }
                 }
 
-                
 
                 // Recorder needs sensors to already exist when its created
                 std::stringstream name;

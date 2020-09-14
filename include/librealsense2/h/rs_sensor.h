@@ -484,7 +484,7 @@ void rs2_override_extrinsics( const rs2_sensor* sensor, const rs2_extrinsics* ex
 void rs2_get_video_stream_intrinsics(const rs2_stream_profile* mode, rs2_intrinsics* intrinsics, rs2_error** error);
 
 /**
- * Returns the list of recommended processing blocks for a specific sensor. 
+ * Returns the list of recommended processing blocks for a specific sensor.
  * Order and configuration of the blocks are decided by the sensor
  * \param[in] sensor          input sensor
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored

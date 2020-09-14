@@ -523,8 +523,6 @@ namespace rs2
             rs2_set_calibration_table(_dev.get(), calibration.data(), static_cast< int >( calibration.size() ), &e);
             error::handle(e);
         }
-
- 
     };
 
     /*

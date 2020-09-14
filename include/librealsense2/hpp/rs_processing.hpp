@@ -507,7 +507,7 @@ namespace rs2
             return block;
         }
     };
-  
+
   class threshold_filter : public filter
     {
     public:
@@ -516,9 +516,9 @@ namespace rs2
         * By controlling min and max options on the block, one could filter out depth values
         * that are either too large or too small, as a software post-processing step
         */
-        threshold_filter(float min_dist = 0.15f, float max_dist = 4.f) 
-            : filter(init(), 1) 
-        { 
+        threshold_filter(float min_dist = 0.15f, float max_dist = 4.f)
+            : filter(init(), 1)
+        {
             set_option(RS2_OPTION_MIN_DISTANCE, min_dist);
             set_option(RS2_OPTION_MAX_DISTANCE, max_dist);
         }
@@ -535,7 +535,7 @@ namespace rs2
 
     protected:
         threshold_filter(std::shared_ptr<rs2_processing_block> block) : filter(block, 1) {}
-        
+
     private:
         std::shared_ptr<rs2_processing_block> init()
         {
@@ -559,7 +559,7 @@ namespace rs2
 
     protected:
         units_transform(std::shared_ptr<rs2_processing_block> block) : filter(block, 1) {}
-        
+
     private:
         std::shared_ptr<rs2_processing_block> init()
         {
@@ -788,7 +788,7 @@ namespace rs2
              }
              error::handle(e);
         }
-       
+
     private:
         friend class context;
 
@@ -958,7 +958,7 @@ namespace rs2
             return block;
         }
     };
-    
+
     class zero_order_invalidation : public filter
     {
     public:

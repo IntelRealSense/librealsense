@@ -147,7 +147,7 @@ void rs2_connect_tm2_controller(const rs2_device* device, const unsigned char* m
 void rs2_disconnect_tm2_controller(const rs2_device* device, int id, rs2_error** error);
 
 
-/** 
+/**
 * Reset device to factory calibration
 * \param[in] device       The RealSense device
 * \param[out] error       If non-null, receives any error that occurs during this call, otherwise, errors are ignored

@@ -23,7 +23,7 @@ namespace librealsense
     inline bool operator==(const hdr_params& first, const hdr_params& second)
     {
         return (first._sequence_id == second._sequence_id) &&
-            (first._exposure == second._exposure) && 
+            (first._exposure == second._exposure) &&
             (first._gain == second._gain);
     }
 

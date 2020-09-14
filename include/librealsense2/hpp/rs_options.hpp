@@ -141,7 +141,7 @@ namespace rs2
 
         virtual ~options() = default;
     protected:
-        explicit options(rs2_options* o = nullptr) : _options(o) 
+        explicit options(rs2_options* o = nullptr) : _options(o)
         {
         }
 

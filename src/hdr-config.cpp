@@ -36,7 +36,7 @@ namespace librealsense
         }
         catch (std::exception ex) {
             LOG_WARNING("In hdr_config::hdr_config() - hw command failed: " << ex.what());
-        }        
+        }
 
         if (!existing_subpreset_restored)
         {
@@ -210,7 +210,7 @@ namespace librealsense
 
     bool hdr_config::is_enabled() const
     {
-		// status in the firmware must be checked in case this is a new instance but the HDR in enabled in firmware
+        // status in the firmware must be checked in case this is a new instance but the HDR in enabled in firmware
         if (!_is_enabled)
         {
             float rv = 0.f;
@@ -242,7 +242,7 @@ namespace librealsense
                 // saving status of options that are not compatible with hdr,
                 // so that they could be reenabled after hdr disable
                 set_options_to_be_restored_after_disable();
-                
+
                 _is_enabled = send_sub_preset_to_fw();
                 _has_config_changed = false;
             }
@@ -331,7 +331,6 @@ namespace librealsense
         catch (std::exception ex) {
             LOG_WARNING("In hdr_config::disable() - hw command failed: " << ex.what());
         }
-        
     }
 
     command hdr_config::prepare_hdr_sub_preset_command() const

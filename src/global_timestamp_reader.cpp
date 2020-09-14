@@ -59,7 +59,7 @@ namespace librealsense
     void CLinearCoefficients::calc_linear_coefs()
     {
         // Calculate linear coefficients, based on calculus described in: https://www.statisticshowto.datasciencecentral.com/probability-and-statistics/regression-analysis/find-a-linear-regression-equation/
-        // Calculate Std 
+        // Calculate Std
         double n(static_cast<double>(_last_values.size()));
         double a(1);
         double b(0);
@@ -265,11 +265,11 @@ namespace librealsense
             _coefs.update_last_sample_time(crnt_hw_time);
             return _coefs.calc_value(crnt_hw_time);
         }
-        else        
+        else
             return crnt_hw_time;
     }
 
-    global_timestamp_reader::global_timestamp_reader(std::unique_ptr<frame_timestamp_reader> device_timestamp_reader, 
+    global_timestamp_reader::global_timestamp_reader(std::unique_ptr<frame_timestamp_reader> device_timestamp_reader,
                                                      std::shared_ptr<time_diff_keeper> timediff,
                                                      std::shared_ptr<global_time_option> enable_option) :
         _device_timestamp_reader(std::move(device_timestamp_reader)),

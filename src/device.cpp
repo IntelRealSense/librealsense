@@ -309,7 +309,7 @@ void librealsense::device::tag_profiles(stream_profiles profiles) const
     }
 }
 
-bool librealsense::device::contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const 
+bool librealsense::device::contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const
 {
     if (auto vid_a = dynamic_cast<const video_stream_profile_interface*>(a))
     {

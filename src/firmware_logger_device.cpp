@@ -6,7 +6,7 @@
 
 namespace librealsense
 {
-    firmware_logger_device::firmware_logger_device(std::shared_ptr<context> ctx, 
+    firmware_logger_device::firmware_logger_device(std::shared_ptr<context> ctx,
         const platform::backend_device_group group,
         std::shared_ptr<hw_monitor> hardware_monitor,
         const command& fw_logs_command, const command& flash_logs_command) :
@@ -15,7 +15,7 @@ namespace librealsense
         _fw_logs(),
         _flash_logs(),
         _flash_logs_initialized(false),
-        _parser(nullptr), 
+        _parser(nullptr),
         _fw_logs_command(fw_logs_command),
         _flash_logs_command(flash_logs_command) { }
 
@@ -115,7 +115,7 @@ namespace librealsense
         return (_parser != nullptr);
     }
 
-    bool firmware_logger_device::parse_log(const fw_logs::fw_logs_binary_data* fw_log_msg, 
+    bool firmware_logger_device::parse_log(const fw_logs::fw_logs_binary_data* fw_log_msg,
         fw_logs::fw_log_data* parsed_msg)
     {
         bool result = false;
@@ -124,7 +124,7 @@ namespace librealsense
             *parsed_msg = _parser->parse_fw_log(fw_log_msg);
             result = true;
         }
-            
+
         return result;
     }
 

@@ -9,7 +9,7 @@ namespace librealsense
         : generic_processing_block("Filter By Sequence id"),
         _selected_stream_id(1.f)
     {
-        auto selected_stream_id = std::make_shared<ptr_option<float>>(0.f, 2.f, 1.f, 1.f, 
+        auto selected_stream_id = std::make_shared<ptr_option<float>>(0.f, 2.f, 1.f, 1.f,
             &_selected_stream_id, "Selected stream id for display",
             std::map<float, std::string>{ {0.f, "all"}, { 1.f, "1" }, { 2.f, "2" }});
         register_option(RS2_OPTION_SEQUENCE_ID, selected_stream_id);
@@ -57,8 +57,8 @@ namespace librealsense
     rs2::frame sequence_id_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
         // steps:
-        // only for depth: 
-        // 1. check hdr seq id in metadata - 
+        // only for depth:
+        // 1. check hdr seq id in metadata -
         //   if not as the option selected id, return last frame with the selected id
         //   else return current frame
 
@@ -82,7 +82,7 @@ namespace librealsense
 
     bool sequence_id_filter::is_selected_id(int stream_index)
     {
-        if (static_cast<int>(_selected_stream_id) != 0 && 
+        if (static_cast<int>(_selected_stream_id) != 0 &&
             stream_index != static_cast<int>(_selected_stream_id))
             return false;
         return true;
