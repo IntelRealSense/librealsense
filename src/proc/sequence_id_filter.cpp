@@ -58,67 +58,29 @@ namespace librealsense
     {
         // steps:
         // only for depth: 
-        // 1. check hdr seq id in metadata - if not as the option selected id, return last frame
-        // 2. create new profile with stream index so that:
-        //    - stream with seq_id 1 will have index 1  
-        //    - stream with seq_id 2 will have index 2
-        // 3. allocate new frame
-        // 4. memcpy src to target for data
+        // 1. check hdr seq id in metadata - 
+        //   if not as the option selected id, return last frame with the selected id
+        //   else return current frame
 
         // 1. check hdr seq id in metadata
         auto depth_frame = f.as<rs2::depth_frame>();
         int seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
-        int hdr_stream_index = seq_id + 1;
-        auto exp = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
 
-        if (!is_selected_id(hdr_stream_index))
+
+        if (is_selected_id(seq_id + 1))
+        {
+            _last_frame[static_cast<int>(_selected_stream_id)] = f;
+            return f;
+        }
+        else
         {
             if (_last_frame[static_cast<int>(_selected_stream_id)])
                 return _last_frame[static_cast<int>(_selected_stream_id)];
             return f;
         }
-
-        // 2. create new profile with stream index so that:
-        //    - stream with seq_id 1 will have index 1  
-        //    - stream with seq_id 2 will have index 2
-        rs2::stream_profile new_profile = depth_frame.get_profile().
-            clone(depth_frame.get_profile().stream_type(), hdr_stream_index, depth_frame.get_profile().format());
-
-        // 3. allocate new frame
-        auto width = depth_frame.get_width();
-        auto height = depth_frame.get_height();
-        auto split_frame = source.allocate_video_frame(new_profile, f, depth_frame.get_bytes_per_pixel(),
-            width, height, depth_frame.get_stride_in_bytes(), RS2_EXTENSION_DEPTH_FRAME);
-
-        // 4. memcpy src to target for data
-        if (split_frame)
-        {
-            auto ptr = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)split_frame.get());
-            auto orig = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)f.get());
-
-            auto new_data = (uint16_t*)(ptr->get_frame_data());
-            auto orig_data = (uint16_t*)(orig->get_frame_data());
-            memcpy(new_data, orig_data, width * height * sizeof(uint16_t));
-
-            ptr->set_sensor(orig->get_sensor());
-
-            _last_frame[hdr_stream_index] = split_frame;
-
-            if (split_frame.is<rs2::depth_frame>())
-            {
-                auto index = split_frame.get_profile().stream_index();
-                auto exposure = split_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
-                auto seq_id = split_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
-                 int a = 1;
-
-            }
-
-            return split_frame;
-        }
-
-        return f;
     }
 
+    /*
     // this method had to be overriden so that the checking of the condition to copy the input frame into the output
     // would check the profile without the stream index (because it is changed in this filter)
     rs2::frame sequence_id_filter::prepare_output(const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results)
@@ -172,7 +134,7 @@ namespace librealsense
         }
 
         return source.allocate_composite_frame(results);
-    }
+    }*/
 
     bool sequence_id_filter::is_selected_id(int stream_index)
     {
