@@ -9,10 +9,10 @@ Copyright(c) 2020 Intel Corporation. All Rights Reserved. */
 
 namespace librealsense
 {
-    class depth_merge : public generic_processing_block
+    class hdr_merge : public generic_processing_block
     {
     public:
-        depth_merge();
+        hdr_merge();
 
     protected:
         bool should_process(const rs2::frame& frame) override;
@@ -34,5 +34,5 @@ namespace librealsense
         std::map<int, rs2::frameset> _framesets;
         rs2::frame _depth_merged_frame;
     };
-    MAP_EXTENSION(RS2_EXTENSION_DEPTH_MERGE, librealsense::depth_merge);
+    MAP_EXTENSION(RS2_EXTENSION_HDR_MERGE, librealsense::hdr_merge);
 }

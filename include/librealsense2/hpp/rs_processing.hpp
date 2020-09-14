@@ -1101,20 +1101,20 @@ namespace rs2
         }
     };
 
-    class depth_merge : public filter
+    class hdr_merge : public filter
     {
     public:
         /**
-        * Create depth_merge processing block
+        * Create hdr_merge processing block
         * the processing merges between depth frames with 
         * different sub-preset sequence ids.
         */
-        depth_merge() : filter(init()) {}
+        hdr_merge() : filter(init()) {}
 
-        depth_merge(filter f) :filter(f)
+        hdr_merge(filter f) :filter(f)
         {
             rs2_error* e = nullptr;
-            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_DEPTH_MERGE, &e) && !e)
+            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_HDR_MERGE, &e) && !e)
             {
                 _block.reset();
             }
@@ -1136,19 +1136,19 @@ namespace rs2
         }
     };
 
-    class depth_split : public filter
+    class filter_by_sequence_id : public filter
     {
     public:
         /**
-        * Create depth_split processing block
+        * Create filter_by_sequence_id processing block
         * the processing perform the hole filling base on different hole filling mode.
         */
-        depth_split() : filter(init()) {}
+        filter_by_sequence_id() : filter(init()) {}
 
-        depth_split(filter f) :filter(f)
+        filter_by_sequence_id(filter f) :filter(f)
         {
             rs2_error* e = nullptr;
-            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_DEPTH_SPLIT, &e) && !e)
+            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_FILTER_BY_SEQUENCE_ID, &e) && !e)
             {
                 _block.reset();
             }

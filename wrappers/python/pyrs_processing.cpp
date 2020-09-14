@@ -71,8 +71,8 @@ void init_processing(py::module &m) {
         .def(BIND_DOWNCAST(filter, threshold_filter))
         .def(BIND_DOWNCAST(filter, zero_order_invalidation))
         .def(BIND_DOWNCAST(filter, depth_huffman_decoder))
-        .def(BIND_DOWNCAST(filter, depth_merge))
-        .def(BIND_DOWNCAST(filter, depth_split))
+        .def(BIND_DOWNCAST(filter, hdr_merge))
+        .def(BIND_DOWNCAST(filter, filter_by_sequence_id))
         .def("__nonzero__", &rs2::filter::operator bool); // No docstring in C++
         // get_queue?
         // is/as?
@@ -177,11 +177,11 @@ void init_processing(py::module &m) {
     py::class_<rs2::depth_huffman_decoder, rs2::filter> depth_huffman_decoder(m, "depth_huffman_decoder", "Decompresses Huffman-encoded Depth frame to standartized Z16 format");
     depth_huffman_decoder.def(py::init<>());
 
-    py::class_<rs2::depth_merge, rs2::filter> depth_merge(m, "depth_merge", "Merges depth frames with different sequence ID");
-    depth_merge.def(py::init<>());
+    py::class_<rs2::hdr_merge, rs2::filter> hdr_merge(m, "hdr_merge", "Merges depth frames with different sequence ID");
+    hdr_merge.def(py::init<>());
 
-    py::class_<rs2::depth_split, rs2::filter> depth_split(m, "depth_split", "Splits depth frames with different sequence ID");
-    depth_split.def(py::init<>());
+    py::class_<rs2::filter_by_sequence_id, rs2::filter> filter_by_sequence_id(m, "filter_by_sequence_id", "Splits depth frames with different sequence ID");
+    filter_by_sequence_id.def(py::init<>());
     // rs2::rates_printer
     /** end rs_processing.hpp **/
 }

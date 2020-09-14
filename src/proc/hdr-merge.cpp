@@ -1,16 +1,16 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#include "depth-merge.h"
+#include "hdr-merge.h"
 
 namespace librealsense
 {
-    depth_merge::depth_merge()
-        : generic_processing_block("Merge Depth")
+    hdr_merge::hdr_merge()
+        : generic_processing_block("HDR Merge")
     {}
 
     // processing only framesets
-    bool depth_merge::should_process(const rs2::frame & frame)
+    bool hdr_merge::should_process(const rs2::frame & frame)
     {
         if (!frame)
             return false;
@@ -35,7 +35,7 @@ namespace librealsense
     }
 
 
-    rs2::frame depth_merge::process_frame(const rs2::frame_source& source, const rs2::frame& f)
+    rs2::frame hdr_merge::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
         // steps:
         // 1. get depth frame from incoming frameset
@@ -102,7 +102,7 @@ namespace librealsense
         return f;
     }
 
-    bool depth_merge::check_frames_mergeability(const rs2::frameset first_fs, const rs2::frameset second_fs, 
+    bool hdr_merge::check_frames_mergeability(const rs2::frameset first_fs, const rs2::frameset second_fs, 
         bool& use_ir) const
     {
         auto first_depth = first_fs.get_depth_frame();
@@ -123,7 +123,7 @@ namespace librealsense
         return true;
     }
 
-    rs2::frame depth_merge::merging_algorithm(const rs2::frame_source& source, const rs2::frameset first_fs, const rs2::frameset second_fs, const bool use_ir)
+    rs2::frame hdr_merge::merging_algorithm(const rs2::frame_source& source, const rs2::frameset first_fs, const rs2::frameset second_fs, const bool use_ir)
     {
         auto first = first_fs;
         auto second = second_fs;
@@ -187,12 +187,12 @@ namespace librealsense
         return first_fs;
     }
 
-    bool depth_merge::is_infrared_valid(uint8_t ir_value) const
+    bool hdr_merge::is_infrared_valid(uint8_t ir_value) const
     {
         return (ir_value > IR_UNDER_SATURATED_VALUE) && (ir_value < IR_OVER_SATURATED_VALUE);
     }
 
-    bool depth_merge::should_ir_be_used_for_merging(const rs2::depth_frame& first_depth, const rs2::video_frame& first_ir, 
+    bool hdr_merge::should_ir_be_used_for_merging(const rs2::depth_frame& first_depth, const rs2::video_frame& first_ir, 
         const rs2::depth_frame& second_depth, const rs2::video_frame& second_ir) const
     {
         // checking ir frames are not null
