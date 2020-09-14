@@ -847,7 +847,7 @@ namespace rs2
         bool pause_required = false;
         std::shared_ptr< atomic_objects_in_frame > _detected_objects;
         std::shared_ptr<updates_model> _updates;
-        sw_update::dev_updates_profile::update_profile _updates_profile;
+        std::shared_ptr<sw_update::dev_updates_profile::update_profile >_updates_profile;
         calibration_model _calib_model;
     };
 

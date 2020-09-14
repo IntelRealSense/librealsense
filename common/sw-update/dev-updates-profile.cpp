@@ -11,7 +11,7 @@ namespace rs2
         using namespace http;
 
         dev_updates_profile::dev_updates_profile(const device& dev, const std::string &url, const bool use_url_as_local_path, user_callback_func_type download_callback)
-            : _versions_db(url, use_url_as_local_path, download_callback)
+            : _versions_db(url, use_url_as_local_path, download_callback), _keep_trying(true)
         {
 
             std::string dev_name = (dev.supports(RS2_CAMERA_INFO_NAME)) ? dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
@@ -67,20 +67,29 @@ namespace rs2
             versions_db_manager::component_part_type part,
             dev_updates_profile::update_description& result)
         {
-            versions_db_manager::version required_version;
-            bool query_ok = up_handler.query_versions(dev_name, part, policy, required_version);
-            if (query_ok)
+            if (_keep_trying)
             {
-                up_handler.get_version_download_link(part, required_version, result.download_link);
-                up_handler.get_version_release_notes(part, required_version, result.release_page);
-                up_handler.get_version_description(part, required_version, result.description);
-                result.ver = required_version;
+                versions_db_manager::version required_version;
+                auto query_status = up_handler.query_versions(dev_name, part, policy, required_version);
+                if (query_status == versions_db_manager::VERSION_FOUND)
+                {
+                    up_handler.get_version_download_link(part, required_version, result.download_link);
+                    up_handler.get_version_release_notes(part, required_version, result.release_page);
+                    up_handler.get_version_description(part, required_version, result.description);
+                    result.ver = required_version;
 
-                std::stringstream ss;
-                ss << std::string(result.ver) << " (" << up_handler.to_string(policy) << ")";
-                result.name = ss.str();
+                    std::stringstream ss;
+                    ss << std::string(result.ver) << " (" << up_handler.to_string(policy) << ")";
+                    result.name = ss.str();
+                    return true;
+                }
+                else if (query_status == versions_db_manager::DB_LOAD_FAILURE)
+                {
+                    _keep_trying = false;
+                }
+
             }
-            return query_ok;
+            return false;
         }
     }
 }
