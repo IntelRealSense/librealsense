@@ -143,8 +143,8 @@ std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const 
 
 librealsense::polling_errors_disable::~polling_errors_disable()
 {
-    if (_polling_error_handler)
-        _polling_error_handler->stop();
+    if (auto handler = _polling_error_handler.lock())
+        handler->stop();
 }
 
 void librealsense::polling_errors_disable::set(float value)
@@ -154,13 +154,19 @@ void librealsense::polling_errors_disable::set(float value)
 
     if (value == 0)
     {
-        _polling_error_handler->stop();
-        _value = 0;
+        if (auto handler = _polling_error_handler.lock())
+        {
+            handler->stop();
+            _value = 0;
+        }
     }
     else
     {
-        _polling_error_handler->start();
-        _value = 1;
+        if (auto handler = _polling_error_handler.lock())
+        {
+            handler->start();
+            _value = 1;
+        }
     }
     _recording_function(*this);
 }
