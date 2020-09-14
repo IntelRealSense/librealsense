@@ -120,7 +120,22 @@ namespace librealsense
             launch_perf_mode = RS2_HOST_PERF_DEFAULT;
 #endif
 
-            color_ep->register_option(RS2_OPTION_HOST_PERFORMANCE, std::make_shared<librealsense::float_option_with_description<rs2_host_perf_mode>>(option_range{ RS2_HOST_PERF_DEFAULT, RS2_HOST_PERF_COUNT - 1, 1, (float) launch_perf_mode }, "Optimize based on host performance, low power low performance host or high power high performance host"));
+            //
+            // Registering RS2_OPTION_HOST_PERFORMANCE with initial host performance mode
+            // also define the TPROC USB granularity settings for each endpoint on the depth sensor at each performance mode
+            // host performance mode defined in rs2_host_perf_mode
+            // settings values are validated through many experiments, change with care
+            //
+            // Endpoint           RS2_HOST_PERF_DEFAULT    RS2_HOST_PERF_LOW     RS2_HOST_PERF_HIGH
+            //   5 (color)                7 KB                32 KB                  7 KB
+            //
+            // on low performance host, usb trb set to larger granularity to reduce number of transactions and improve performance
+            //
+            color_ep->register_option(RS2_OPTION_HOST_PERFORMANCE, std::make_shared<librealsense::host_perf_option>(
+                    _hw_monitor.get(),
+                    std::map<uint8_t, std::vector<uint8_t>>{ { 5, { 7, 32, 7 } } },
+                    option_range{ RS2_HOST_PERF_DEFAULT, RS2_HOST_PERF_COUNT - 1, 1, (float)launch_perf_mode },
+                    "Optimize color sensor based on host performance, low performance host mode or high performance host mode"));
         }
 
         // metadata
@@ -382,41 +397,10 @@ namespace librealsense
             // please refer to following bug report for details
             // RS5-8011 [Android-L500 Hard failure] Device detach and disappear from system during stream
 
-            auto host_perf = get_option(RS2_OPTION_HOST_PERFORMANCE).query();
-
-            if (host_perf == RS2_HOST_PERF_LOW || host_perf == RS2_HOST_PERF_HIGH)
-            {
-                // TPROC USB Granularity and TRB threshold settings for improved performance and stability
-                // on hosts with weak cpu and system performance
-                // settings values are validated through many experiments, do not change
-
-                // on low power low performance host, usb trb set to larger granularity to reduce number of transactions
-                // and improve performance
-                int usb_trb = 7;       // 7 KB
-
-                if (host_perf == RS2_HOST_PERF_LOW)
-                {
-                    usb_trb = 32;      // 32 KB
-                }
-
-                try {
-                    // endpoint 5 - 32KB
-                    command cmdTprocGranEp5(ivcam2::TPROC_USB_GRAN_SET, 5, usb_trb);
-                    _owner->_hw_monitor->send(cmdTprocGranEp5);
-
-                    command cmdTprocThresholdEp5(ivcam2::TPROC_TRB_THRSLD_SET, 5, 1);
-                    _owner->_hw_monitor->send(cmdTprocThresholdEp5);
-
-                    LOG_DEBUG("Color usb tproc granularity and TRB threshold updated.");
-                } catch (...)
-                {
-                    LOG_WARNING("Failed to update color usb tproc granularity and TRB threshold. performance and stability maybe impacted on certain platforms.");
-                }
-            }
-            else if (host_perf == RS2_HOST_PERF_DEFAULT)
-            {
-                    LOG_DEBUG("Default host performance mode, color usb tproc granularity and TRB threshold not changed");
-            }
+            auto&& perf_opt = get_option(RS2_OPTION_HOST_PERFORMANCE);
+            auto perf_mode = perf_opt.query();
+            LOG_INFO("Color host performance mode:" << perf_mode);
+            perf_opt.set(perf_mode);
         }
 
         delayed_start(callback);

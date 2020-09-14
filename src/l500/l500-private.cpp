@@ -198,6 +198,53 @@ namespace librealsense
             _record_action( *this );
         }
 
+        void host_perf_option::set(float value)
+        {
+            float_option_with_description::set(value);
+
+            rs2_host_perf_mode mode = (rs2_host_perf_mode) ((uint8_t) value);
+            apply(mode);
+        }
+
+        // apply actual changes to device settings per host performance mode
+        void host_perf_option::apply(rs2_host_perf_mode mode)
+        {
+            if (_hwm == NULL) return;
+
+            if (mode == RS2_HOST_PERF_LOW || mode == RS2_HOST_PERF_HIGH)
+            {
+                // TPROC USB Granularity and TRB threshold settings for improved performance and stability
+                // on hosts with weak cpu and system performance
+
+                try {
+                    for (auto&& ep_trb : _ep_trb_map)
+                    {
+                        int ep = (int) ep_trb.first;           // first element in the map is endpoint number
+                        int trb = (int) ep_trb.second[mode];   // second element in the map is trb setting for each host performance mode
+
+                        command cmdTprocGranEp(ivcam2::TPROC_USB_GRAN_SET, ep, trb);
+                        _hwm->send(cmdTprocGranEp);
+
+                        command cmdTprocThresholdEp(ivcam2::TPROC_TRB_THRSLD_SET, ep, 1);
+                        _hwm->send(cmdTprocThresholdEp);
+
+                        LOG_INFO("Endpoint " << ep << " usb tproc granularity updated to " << trb);
+                    }
+                }
+                catch (...)
+                {
+                    LOG_WARNING("Failed to update usb tproc granularity and TRB threshold. performance and stability maybe impacted on certain platforms.");
+                }
+            }
+            else if (mode == RS2_HOST_PERF_DEFAULT)
+            {
+                LOG_INFO("Default host performance mode, usb tproc granularity and TRB threshold not changed");
+            }
+            else
+            {
+                LOG_INFO("Unsupported host performance mode: " << (int) mode);
+            }
+        }
 
     } // librealsense::ivcam2
 } // namespace librealsense

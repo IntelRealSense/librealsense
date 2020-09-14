@@ -532,6 +532,19 @@ namespace librealsense
             std::shared_ptr< freefall_option > _freefall_opt;
         };
 
+        /* For RS2_OPTION_HOST_PERFORMANCE */
+        class host_perf_option : public float_option_with_description<rs2_host_perf_mode>
+        {
+        public:
+            host_perf_option(hw_monitor* hwm, const std::map<uint8_t, std::vector<uint8_t>> ep_trb_map, option_range range, std::string description) : _hwm(hwm), _ep_trb_map(ep_trb_map), float_option_with_description<rs2_host_perf_mode>(range, description) {};
+
+            void set(float value) override;
+            void apply(rs2_host_perf_mode mode);
+        private:
+            hw_monitor * _hwm;
+            const std::map<uint8_t, std::vector<uint8_t>> _ep_trb_map;
+        };
+
         class ac_trigger;
     } // librealsense::ivcam2
 } // namespace librealsense
