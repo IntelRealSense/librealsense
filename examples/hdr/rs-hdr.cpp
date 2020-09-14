@@ -98,7 +98,7 @@ int main(int argc, char * argv[]) try
     rs2::hdr_merge merging_filter;
 
     // initializing the spliting filter
-    rs2::filter_by_sequence_id spliting_filter;
+    rs2::sequence_id_filter spliting_filter;
 
     // setting the required sequence ID to be shown
     spliting_filter.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 2);

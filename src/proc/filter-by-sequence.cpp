@@ -1,11 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#include "filter-by-sequence-id.h"
+#include "filter-by-sequence.h"
 
 namespace librealsense
 {
-    filter_by_sequence_id::filter_by_sequence_id()
+    sequence_id_filter::sequence_id_filter()
         : generic_processing_block("Filter By Sequence id"),
         _selected_stream_id(1.f)
     {
@@ -22,7 +22,7 @@ namespace librealsense
     // processing only simple frames (not framesets)
     // only depth frames
     // only index 0
-    bool filter_by_sequence_id::should_process(const rs2::frame& frame)
+    bool sequence_id_filter::should_process(const rs2::frame& frame)
     {
         if (!frame)
             return false;
@@ -54,7 +54,7 @@ namespace librealsense
         return true;
     }
 
-    rs2::frame filter_by_sequence_id::process_frame(const rs2::frame_source& source, const rs2::frame& f)
+    rs2::frame sequence_id_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
         // steps:
         // only for depth: 
@@ -121,7 +121,7 @@ namespace librealsense
 
     // this method had to be overriden so that the checking of the condition to copy the input frame into the output
     // would check the profile without the stream index (because it is changed in this filter)
-    rs2::frame filter_by_sequence_id::prepare_output(const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results)
+    rs2::frame sequence_id_filter::prepare_output(const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results)
     {
         if (results.empty())
         {
@@ -174,7 +174,7 @@ namespace librealsense
         return source.allocate_composite_frame(results);
     }
 
-    bool filter_by_sequence_id::is_selected_id(int stream_index)
+    bool sequence_id_filter::is_selected_id(int stream_index)
     {
         if (static_cast<int>(_selected_stream_id) != 0 && 
             stream_index != static_cast<int>(_selected_stream_id))

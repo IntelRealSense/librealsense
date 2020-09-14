@@ -309,7 +309,7 @@ namespace librealsense
             CASE(AUTO_CALIBRATION_FILTER)
             CASE(DEVICE_CALIBRATION)
             CASE(CALIBRATED_SENSOR)
-            CASE(FILTER_BY_SEQUENCE_ID)
+            CASE(SEQUENCE_ID_FILTER)
             CASE(HDR_MERGE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }

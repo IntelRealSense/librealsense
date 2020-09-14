@@ -1136,29 +1136,29 @@ namespace rs2
         }
     };
 
-    class filter_by_sequence_id : public filter
+    class sequence_id_filter : public filter
     {
     public:
         /**
-        * Create filter_by_sequence_id processing block
+        * Create sequence_id_filter processing block
         * the processing perform the hole filling base on different hole filling mode.
         */
-        filter_by_sequence_id() : filter(init()) {}
+        sequence_id_filter() : filter(init()) {}
 
         /**
-        * Create filter_by_sequence_id processing block
+        * Create sequence_id_filter processing block
         * the processing perform the hole filling base on different hole filling mode.
         * \param[in] sequence_id - sequence id to pass the filter.
         */
-        filter_by_sequence_id(float sequence_id) : filter(init(), 1)
+        sequence_id_filter(float sequence_id) : filter(init(), 1)
         {
             set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, sequence_id);
         }
 
-        filter_by_sequence_id(filter f) :filter(f)
+        sequence_id_filter(filter f) :filter(f)
         {
             rs2_error* e = nullptr;
-            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_FILTER_BY_SEQUENCE_ID, &e) && !e)
+            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_SEQUENCE_ID_FILTER, &e) && !e)
             {
                 _block.reset();
             }

@@ -259,7 +259,7 @@ rs2_processing_block* rs2_create_huffman_depth_decompress_block(rs2_error** erro
 rs2_processing_block* rs2_create_merge_processing_block(rs2_error** error);
 
 /**
-* Creates a filter_by_sequence_id processing block.
+* Creates a sequence_id_filter processing block.
 * The block reassigns separate profiles for the frames produced with sub-presets
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */

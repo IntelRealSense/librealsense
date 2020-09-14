@@ -9,10 +9,10 @@ Copyright(c) 2020 Intel Corporation. All Rights Reserved. */
 
 namespace librealsense
 {
-    class filter_by_sequence_id : public generic_processing_block
+    class sequence_id_filter : public generic_processing_block
     {
     public:
-        filter_by_sequence_id();
+        sequence_id_filter();
 
     protected:
         bool should_process(const rs2::frame& frame) override;
@@ -26,5 +26,5 @@ namespace librealsense
         float _selected_stream_id;
         rs2::frame _last_frame[3];
     };
-    MAP_EXTENSION(RS2_EXTENSION_FILTER_BY_SEQUENCE_ID, librealsense::filter_by_sequence_id);
+    MAP_EXTENSION(RS2_EXTENSION_SEQUENCE_ID_FILTER, librealsense::sequence_id_filter);
 }
