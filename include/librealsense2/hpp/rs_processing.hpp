@@ -1106,7 +1106,7 @@ namespace rs2
     public:
         /**
         * Create merge_filter processing block
-        * the processing perform the hole filling base on different hole filling mode.
+        * Merge sequential depth frames. Applicable with with HDR sub-preset mode
         */
         merge_filter() : filter(init()) {}
 
