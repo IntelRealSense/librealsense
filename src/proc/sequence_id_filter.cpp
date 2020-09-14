@@ -80,62 +80,6 @@ namespace librealsense
         }
     }
 
-    /*
-    // this method had to be overriden so that the checking of the condition to copy the input frame into the output
-    // would check the profile without the stream index (because it is changed in this filter)
-    rs2::frame sequence_id_filter::prepare_output(const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results)
-    {
-        if (results.empty())
-        {
-            return input;
-        }
-
-        bool disparity_result_frame = false;
-        bool depth_result_frame = false;
-
-        for (auto f : results)
-        {
-            auto format = f.get_profile().format();
-            if (format == RS2_FORMAT_DISPARITY32 || format == RS2_FORMAT_DISPARITY16)
-                disparity_result_frame = true;
-            if (format == RS2_FORMAT_Z16)
-                depth_result_frame = true;
-        }
-
-        std::vector<rs2::frame> original_set;
-        if (auto composite = input.as<rs2::frameset>())
-            composite.foreach_rs([&](const rs2::frame& frame)
-                {
-                    auto format = frame.get_profile().format();
-                    if (depth_result_frame && val_in_range(format, { RS2_FORMAT_DISPARITY32, RS2_FORMAT_DISPARITY16, RS2_FORMAT_Z16H }))
-                        return;
-                    if (disparity_result_frame && format == RS2_FORMAT_Z16)
-                        return;
-                    original_set.push_back(frame);
-                });
-        else
-        {
-            return results[0];
-        }
-
-        for (auto s : original_set)
-        {
-            auto curr_profile = s.get_profile();
-            //if the processed frames doesn't match any of the original frames add the original frame to the results queue
-            if (find_if(results.begin(), results.end(), [&curr_profile](rs2::frame& frame) {
-                auto processed_profile = frame.get_profile();
-                return curr_profile.stream_type() == processed_profile.stream_type() &&
-                        curr_profile.format() == processed_profile.format() &&
-                        (curr_profile.stream_type() == RS2_STREAM_DEPTH || 
-                        (curr_profile.stream_index() == processed_profile.stream_index())); }) == results.end() )
-            {
-                results.push_back(s);
-            }
-        }
-
-        return source.allocate_composite_frame(results);
-    }*/
-
     bool sequence_id_filter::is_selected_id(int stream_index)
     {
         if (static_cast<int>(_selected_stream_id) != 0 && 

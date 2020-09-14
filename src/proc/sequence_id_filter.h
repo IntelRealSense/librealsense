@@ -17,8 +17,6 @@ namespace librealsense
     protected:
         bool should_process(const rs2::frame& frame) override;
         rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
-        //rs2::frame prepare_output(const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results) override;
-
 
     private:
         bool is_selected_id(int stream_index);
