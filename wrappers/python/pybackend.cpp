@@ -175,10 +175,9 @@ PYBIND11_MODULE(NAME, m) {
         .value("trigger_camera_accuracy_health", RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH)
         .value("reset_camera_accuracy_health", RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH)
         .value("hdr_mode", RS2_OPTION_HDR_MODE)
-        .value("subpreset_id", RS2_OPTION_SUBPRESET_ID)
-        .value("subpreset_sequence_size", RS2_OPTION_SUBPRESET_SEQUENCE_SIZE)
-        .value("subpreset_sequence_id", RS2_OPTION_SUBPRESET_SEQUENCE_ID)
-        .value("select_id", RS2_OPTION_SUBPRESET_SEQUENCE_ID)
+        .value("sequence_name", RS2_OPTION_SEQUENCE_NAME)
+        .value("sequence_size", RS2_OPTION_SEQUENCE_SIZE)
+        .value("sequence_id", RS2_OPTION_SEQUENCE_ID)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");

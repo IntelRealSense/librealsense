@@ -1152,7 +1152,7 @@ namespace rs2
         */
         sequence_id_filter(float sequence_id) : filter(init(), 1)
         {
-            set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, sequence_id);
+            set_option(RS2_OPTION_SEQUENCE_ID, sequence_id);
         }
 
         sequence_id_filter(filter f) :filter(f)

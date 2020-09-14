@@ -12,7 +12,7 @@ namespace librealsense
         auto selected_stream_id = std::make_shared<ptr_option<float>>(0.f, 2.f, 1.f, 1.f, 
             &_selected_stream_id, "Selected stream id for display",
             std::map<float, std::string>{ {0.f, "all"}, { 1.f, "1" }, { 2.f, "2" }});
-        register_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, selected_stream_id);
+        register_option(RS2_OPTION_SEQUENCE_ID, selected_stream_id);
 
         _last_frame[0] = nullptr;
         _last_frame[1] = nullptr;

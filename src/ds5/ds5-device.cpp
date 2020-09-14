@@ -809,19 +809,19 @@ namespace librealsense
             // values from 4 to 14 - for internal use
             // value 15 - saved for emiter on off subpreset
             option_range hdr_id_range = { 0.f /*min*/, 3.f /*max*/, 1.f /*step*/, 1.f /*default*/ };
-            auto hdr_id_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_SUBPRESET_ID, hdr_id_range,
+            auto hdr_id_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_SEQUENCE_NAME, hdr_id_range,
                 std::map<float, std::string>{ {0.f, "0"}, { 1.f, "1" }, { 2.f, "2" }, { 3.f, "3" } });
-            depth_sensor.register_option(RS2_OPTION_SUBPRESET_ID, hdr_id_option);
+            depth_sensor.register_option(RS2_OPTION_SEQUENCE_NAME, hdr_id_option);
 
             option_range hdr_sequence_size_range = { 2.f /*min*/, 2.f /*max*/, 1.f /*step*/, 2.f /*default*/ };
-            auto hdr_sequence_size_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_SUBPRESET_SEQUENCE_SIZE, hdr_sequence_size_range,
+            auto hdr_sequence_size_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_SEQUENCE_SIZE, hdr_sequence_size_range,
                 std::map<float, std::string>{ { 2.f, "2" } });
-            depth_sensor.register_option(RS2_OPTION_SUBPRESET_SEQUENCE_SIZE, hdr_sequence_size_option);
+            depth_sensor.register_option(RS2_OPTION_SEQUENCE_SIZE, hdr_sequence_size_option);
             
             option_range hdr_sequ_id_range = { 0.f /*min*/, 2.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
-            auto hdr_sequ_id_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_SUBPRESET_SEQUENCE_ID, hdr_sequ_id_range, 
+            auto hdr_sequ_id_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_SEQUENCE_ID, hdr_sequ_id_range, 
                 std::map<float, std::string>{ {0.f, "0"}, { 1.f, "1"}, {2.f, "2"} });
-            depth_sensor.register_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, hdr_sequ_id_option);
+            depth_sensor.register_option(RS2_OPTION_SEQUENCE_ID, hdr_sequ_id_option);
             
             option_range hdr_enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/};
             auto hdr_enabled_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_HDR_MODE, hdr_enable_range);
