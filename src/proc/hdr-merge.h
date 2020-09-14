@@ -23,7 +23,7 @@ namespace librealsense
         const int IR_UNDER_SATURATED_VALUE = 0x10; // 16
         const int IR_OVER_SATURATED_VALUE = 0xf0; // 240
         bool is_infrared_valid(uint8_t ir_value) const;
-
+        void discard_depth_merged_frame_if_needed(const rs2::frame& f);
         bool check_frames_mergeability(const rs2::frameset first_fs, const rs2::frameset second_fs, bool& use_ir) const;
         rs2::frame merging_algorithm(const rs2::frame_source& source, const rs2::frameset first_fs, 
             const rs2::frameset second_fs, const bool use_ir);

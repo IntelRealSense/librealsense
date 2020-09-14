@@ -10,7 +10,7 @@ namespace librealsense
     {}
 
     // processing only framesets
-    bool hdr_merge::should_process(const rs2::frame & frame)
+    bool hdr_merge::should_process(const rs2::frame& frame)
     {
         if (!frame)
             return false;
@@ -48,11 +48,11 @@ namespace librealsense
 
         // 1. get depth frame from incoming frameset
         auto fs = f.as<rs2::frameset>();
-        auto depth_frame = fs.get_depth_frame();        
+        auto depth_frame = fs.get_depth_frame();
 
         // 2. add the frameset to vector of framesets
         int depth_sequ_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
-        
+
         // condition added to ensure that frames are saved in the right order
         // to prevent for example the saving of frame with sequence id 1 before
         // saving frame of sequence id 0
@@ -82,27 +82,32 @@ namespace librealsense
                     _depth_merged_frame = new_frame;
                 }
             }
+            else
+            {
+                discard_depth_merged_frame_if_needed(f);
+            }
         }
 
         // 7. return the merge frame
         if (_depth_merged_frame)
-        {
-            // discard saved merged frame if it is too old
-            auto fps = _depth_merged_frame.get_profile().fps();
-
-            uint64_t input_frame_ts = static_cast<uint64_t>(f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP));
-            uint64_t depth_merged_frame_ts = static_cast<uint64_t>(_depth_merged_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP));
-            uint64_t delta_ts = input_frame_ts - depth_merged_frame_ts; // equal to 0 if frame created at this iteration, else it is positive
-            if (delta_ts > 2 * 1000000 / fps)
-                _depth_merged_frame = nullptr;
-            else
-                return _depth_merged_frame;
-        }
+            return _depth_merged_frame;
 
         return f;
     }
 
-    bool hdr_merge::check_frames_mergeability(const rs2::frameset first_fs, const rs2::frameset second_fs, 
+    void hdr_merge::discard_depth_merged_frame_if_needed(const rs2::frame& f)
+    {
+        // criteria for discarding saved merged_depth_frame:
+        // if its frame counter is greater than the input frame
+        auto depth_merged_frame_counter = _depth_merged_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+        auto input_frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+        if (depth_merged_frame_counter > input_frame_counter)
+        {
+            _depth_merged_frame = nullptr;
+        }
+    }
+
+    bool hdr_merge::check_frames_mergeability(const rs2::frameset first_fs, const rs2::frameset second_fs,
         bool& use_ir) const
     {
         auto first_depth = first_fs.get_depth_frame();
@@ -117,9 +122,9 @@ namespace librealsense
         // frame counter n and will be created by frames n and n+1
         if (first_fs_frame_counter + 1 != second_fs_frame_counter)
             return false;
-        
+
         use_ir = should_ir_be_used_for_merging(first_depth, first_ir, second_depth, second_ir);
-        
+
         return true;
     }
 
@@ -180,7 +185,7 @@ namespace librealsense
                     else
                         new_data[i] = 0;
                 }
-            }        
+            }
 
             return new_f;
         }
@@ -192,7 +197,7 @@ namespace librealsense
         return (ir_value > IR_UNDER_SATURATED_VALUE) && (ir_value < IR_OVER_SATURATED_VALUE);
     }
 
-    bool hdr_merge::should_ir_be_used_for_merging(const rs2::depth_frame& first_depth, const rs2::video_frame& first_ir, 
+    bool hdr_merge::should_ir_be_used_for_merging(const rs2::depth_frame& first_depth, const rs2::video_frame& first_ir,
         const rs2::depth_frame& second_depth, const rs2::video_frame& second_ir) const
     {
         // checking ir frames are not null
