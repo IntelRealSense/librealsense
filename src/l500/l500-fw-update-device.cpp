@@ -21,14 +21,15 @@ namespace librealsense
 
     std::string l500_update_device::parse_serial_number(const std::vector<uint8_t>& buffer) const
     {
-        if (buffer.size() != sizeof(serial_number_data))
+        // Note that we are using a specific serial_number_data struct then the generic one.
+        // See comment in the struct definition for more details
+        if (buffer.size() != sizeof(l500_update_device::serial_number_data))
             throw std::runtime_error("DFU - failed to parse serial number!");
 
-        auto rev = buffer;
-
+        const auto serial_num_data = (l500_update_device::serial_number_data *)buffer.data();
         std::stringstream rv;
-        for (auto i = 0; i < ivcam2::module_serial_size; i++)
-            rv << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(rev[i]);
+        for (auto i = 0; i < ivcam2::module_asic_serial_size; i++)
+            rv << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(serial_num_data->serial[i]);
 
         return rv.str();
     }

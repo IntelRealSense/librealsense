@@ -10,6 +10,14 @@ namespace librealsense
     class l500_update_device : public update_device
     {
     public:
+        // The L515 device EEPROM has different bytes order then D4xx device.
+        // this struct overrides the generic serial_number_data struct at fw-update-device.h
+        struct serial_number_data
+        {
+            uint8_t spare[2];
+            uint8_t serial[6];
+        };
+
         l500_update_device(std::shared_ptr<context> ctx, bool register_device_notifications, std::shared_ptr<platform::usb_device> usb_device);
         virtual ~l500_update_device() = default;
 
