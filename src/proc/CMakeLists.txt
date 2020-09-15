@@ -35,7 +35,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/motion-transform.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/auto-exposure-processor.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/depth-decompress.cpp"
-
+        "${CMAKE_CURRENT_LIST_DIR}/reproject.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/processing-blocks-factory.h"
         "${CMAKE_CURRENT_LIST_DIR}/align.h"
         "${CMAKE_CURRENT_LIST_DIR}/colorizer.h"

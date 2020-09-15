@@ -38,6 +38,7 @@
 #include "environment.h"
 #include "proc/temporal-filter.h"
 #include "proc/depth-decompress.h"
+#include "proc/reproject.h"
 #include "software-device.h"
 #include "global_timestamp_reader.h"
 #include "auto-calibrated-device.h"
@@ -1466,7 +1467,6 @@ int rs2_is_processing_block_extendable_to(const rs2_processing_block* f, rs2_ext
     case RS2_EXTENSION_HOLE_FILLING_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::hole_filling_filter) != nullptr;
     case RS2_EXTENSION_ZERO_ORDER_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::zero_order) != nullptr;
     case RS2_EXTENSION_DEPTH_HUFFMAN_DECODER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::depth_decompression_huffman) != nullptr;
-  
     default:
         return false;
     }
@@ -2189,6 +2189,14 @@ rs2_processing_block* rs2_create_align(rs2_stream align_to, rs2_error** error) B
     return new rs2_processing_block{ block };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, align_to)
+
+rs2_processing_block* rs2_create_reproject(rs2_intrinsics intrinsics, rs2_extrinsics extrinsics, rs2_error** error) BEGIN_API_CALL
+{
+    auto block = create_reproject(intrinsics,extrinsics);
+
+    return new rs2_processing_block{ block };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, intrinsics,extrinsics)
 
 rs2_processing_block* rs2_create_colorizer(rs2_error** error) BEGIN_API_CALL
 {

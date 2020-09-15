@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "align.h"
+#include "reproject.h"
 #include "types.h"
 
 #include "proc/identity-processing-block.h"
@@ -13,6 +14,7 @@
 namespace librealsense
 {
     std::shared_ptr<librealsense::align> create_align(rs2_stream align_to);
+    std::shared_ptr<librealsense::reproject> create_reproject(rs2_intrinsics intrinisics, rs2_extrinsics extrinsics);
 
     class processing_block_factory
     {

@@ -2,7 +2,7 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include "processing-blocks-factory.h"
-
+#include "reproject.h"
 #include "sse/sse-align.h"
 #include "cuda/cuda-align.h"
 
@@ -26,8 +26,13 @@ namespace librealsense
     {
         return std::make_shared<librealsense::align>(align_to);
     }
+
 #endif // __SSSE3__
 #endif // RS2_USE_CUDA
+    std::shared_ptr<librealsense::reproject> create_reproject(rs2_intrinsics intrinisics, rs2_extrinsics extrinsics)
+    {
+        return std::make_shared<librealsense::reproject>(intrinisics,extrinsics);
+    }
 
     processing_block_factory::processing_block_factory(const std::vector<stream_profile>& from, const std::vector<stream_profile>& to, std::function<std::shared_ptr<processing_block>(void)> generate_func) :
         _source_info(from), _target_info(to), generate_processing_block(generate_func)

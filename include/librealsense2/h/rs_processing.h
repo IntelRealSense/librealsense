@@ -197,6 +197,15 @@ void rs2_enqueue_frame(rs2_frame* frame, void* queue);
 */
 rs2_processing_block* rs2_create_align(rs2_stream align_to, rs2_error** error);
 
+
+/**
+* Creates Reproject processing block.
+* \param[in] intrinsics - the rs2_intrinsics parameters of the new perspective
+* \param[in] extrinsics - the rs2_extrinsics transformation between the original depth input and the new perspective
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_reproject(rs2_intrinsics intrinsics, rs2_extrinsics extrinsics, rs2_error** error);
+
 /**
 * Creates Depth post-processing filter block. This block accepts depth frames, applies decimation filter and plots modified prames
 * Note that due to the modifiedframe size, the decimated frame repaces the original one

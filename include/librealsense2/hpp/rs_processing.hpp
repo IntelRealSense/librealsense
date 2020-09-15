@@ -705,6 +705,51 @@ namespace rs2
         }
     };
 
+	class reproject : public filter
+	{
+	/**
+	* Create reproject filter
+	* Reproject generate a depth image from a different camera perspective based on input depth frame and extrinsics info
+	*/
+	public:
+		/**
+		* Create reproject processing block
+		* Reproject generate a depth image from a different camera perspective based on input depth frame and extrinsics info
+		* \param[in] intrinsics - the rs2_intrinsics parameters of the new perspective
+		* \param[in] extrinsics - the rs2_extrinsics transformation between the original depth input and the new perspective
+		*/
+		reproject(rs2_intrinsics intrinsics, rs2_extrinsics extrinsics) : filter(init(intrinsics, extrinsics), 1) {}
+
+		using filter::process;
+		/**
+		* Run the alignment process on the given depth frame to get a reprojected depth frame
+		*
+		* \param[in] frame - frame to be processed to generate the reprojected depth image
+		* \return depth_frame - generated reprojected depth image
+		
+		*/
+		frame process(frame frame)
+		{
+			return filter::process(frame);
+		}
+
+	protected:
+		reproject(std::shared_ptr<rs2_processing_block> block) : filter(block, 1) {}
+
+	private:
+		friend class context;
+		std::shared_ptr<rs2_processing_block> init(rs2_intrinsics intrinsics, rs2_extrinsics extrinsics)
+		{
+			rs2_error* e = nullptr;
+			auto block = std::shared_ptr<rs2_processing_block>(
+				rs2_create_reproject(intrinsics, extrinsics, &e),
+				rs2_delete_processing_block);
+			error::handle(e);
+
+			return block;
+		}
+	};
+
     class colorizer : public filter
     {
     public:
