@@ -256,14 +256,14 @@ rs2_processing_block* rs2_create_huffman_depth_decompress_block(rs2_error** erro
 * The block merges between two depth frames with different exposure values
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-rs2_processing_block* rs2_create_merge_processing_block(rs2_error** error);
+rs2_processing_block* rs2_create_hdr_merge_processing_block(rs2_error** error);
 
 /**
 * Creates a sequence_id_filter processing block.
-* The block reassigns separate profiles for the frames produced with sub-presets
+* The block lets frames with the selected sequence id pass and blocks frames with other values
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-rs2_processing_block* rs2_create_split_processing_block(rs2_error** error);
+rs2_processing_block* rs2_create_sequence_id_filter(rs2_error** error);
 
 /**
 * Retrieve processing block specific information, like name.

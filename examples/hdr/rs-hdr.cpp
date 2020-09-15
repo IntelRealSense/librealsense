@@ -73,7 +73,7 @@ int main(int argc, char * argv[]) try
     depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, 0);
 
     // turning ON the HDR with the above configuration 
-    depth_sensor.set_option(RS2_OPTION_HDR_MODE, 1);
+    depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
 
     // Create a simple OpenGL window for rendering:
     window app(1280, 720, "RealSense Capture Example");

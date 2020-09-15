@@ -138,7 +138,7 @@ namespace librealsense
         case RS2_OPTION_SEQUENCE_ID:
             rv = static_cast<float>(_current_hdr_sequence_index + 1);
             break;
-        case RS2_OPTION_HDR_MODE:
+        case RS2_OPTION_HDR_ENABLED:
             rv = static_cast<float>(is_enabled());
             break;
         case RS2_OPTION_EXPOSURE:
@@ -183,7 +183,7 @@ namespace librealsense
         case RS2_OPTION_SEQUENCE_ID:
             set_sequence_index(value);
             break;
-        case RS2_OPTION_HDR_MODE:
+        case RS2_OPTION_HDR_ENABLED:
             set_enable_status(value);
             break;
         case RS2_OPTION_EXPOSURE:

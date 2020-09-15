@@ -228,6 +228,27 @@ namespace Intel.RealSense
         EmitterAlwaysOn = 71,
 
         /// <summary>Depth Thermal Compensation for selected D400 SKUs</summary>
-        ThermalCompensation = 72
+        ThermalCompensation = 72,
+
+        /// <summary>Camera Accuracy Health</summary>
+        TriggerCameraAccuracyHealth = 73,
+
+        /// <summary>Reset Camera Accuracy Health</summary>
+        ResetCameraAccuracyHealth = 74,
+
+        /// <summary>Host Performance</summary>
+        HostPerformance = 75,
+
+        /// <summary>HDR Enabled (ON = 1, OFF = 0) - for D400 SKUs</summary>
+        HdrEnabled = 76,
+
+        /// <summary>Subpreset sequence Name - for D400 SKUs</summary>
+        SequenceName = 77,
+
+        /// <summary>Subpreset sequence size - for D400 SKUs</summary>
+        SequenceSize = 78,
+
+        /// <summary>Subpreset sequence id - for D400 SKUs</summary>
+        SequenceId = 79
     }
 }

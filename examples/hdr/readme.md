@@ -31,25 +31,25 @@ if (depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
 Next, we start to configure the HDR, by setting the size of the HDR sequence:
 ```cpp
 // setting the HDR sequence size to 2 frames
-depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_SIZE, 2);
+depth_sensor.set_option(RS2_OPTION_SEQUENCE_SIZE, 2);
 ```
 Choosing an ID for this HDR configuration. The configuration will not be saved in the firmware, but this ID can help users that configure another HDR configuration to know when the new HDR is streaming, by checking this value via the metadata:
 ```cpp
-// configuring id for this hdr config (value must be in range [0,3])
-depth_sensor.set_option(RS2_OPTION_SUBPRESET_ID, 1);
+// configuring identifier for this hdr config (value must be in range [0,3])
+depth_sensor.set_option(RS2_OPTION_SEQUENCE_NAME, 1);
 ```
 
 Configuring the first HDR sequence ID: 
 ```cpp
 // configuration for the first HDR sequence ID
-depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 1);
+depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, 1);
 depth_sensor.set_option(RS2_OPTION_EXPOSURE, 8500.f);
 depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
 ```
 Configuring the second HDR sequence ID:
 ```cpp
 // configuration for the second HDR sequence ID
-depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 2);
+depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, 2);
 depth_sensor.set_option(RS2_OPTION_EXPOSURE, 150.f);
 depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
 ```
@@ -58,13 +58,13 @@ Resetting the sequence ID to 0. This action permits the next setting of the expo
 ```cpp
 // after setting the HDR sequence ID option to 0, setting exposure or gain
 // will be targetted to the normal (UVC) exposure and gain options (not HDR configuration)
-depth_sensor.set_option(RS2_OPTION_SUBPRESET_SEQUENCE_ID, 0);
+depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, 0);
 ```
 
 Activating the HDR configuration in order to get the resulting streaming:
 ```cpp
 // turning ON the HDR with the above configuration 
-depth_sensor.set_option(RS2_OPTION_HDR_MODE, 1);
+depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
 ```
 
 Then, the pipe is configured with depth and infrared streams. 

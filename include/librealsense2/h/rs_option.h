@@ -97,7 +97,7 @@ extern "C" {
         RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, /**< Enable depth & color frame sync with periodic calibration for proper alignment */
         RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH,
         RS2_OPTION_HOST_PERFORMANCE, /**< Set host performance mode to optimize device settings so host can keep up with workload, for example, USB transaction granularity, setting option to low performance host leads to larger USB transaction size and reduced number of transactions which improves performance and stability if host is relatively weak as compared to workload */
-        RS2_OPTION_HDR_MODE,  /**< Enable / disable HDR */
+        RS2_OPTION_HDR_ENABLED,  /**< Enable / disable HDR */
         RS2_OPTION_SEQUENCE_NAME, /**< HDR Sequence size */
         RS2_OPTION_SEQUENCE_SIZE, /**< HDR Sequence size */
         RS2_OPTION_SEQUENCE_ID, /**< HDR Sequence ID - 0 is not HDR; sequence ID for HDR configuartion starts from 1 */

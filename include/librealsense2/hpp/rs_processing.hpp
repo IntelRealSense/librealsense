@@ -1128,7 +1128,7 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             auto block = std::shared_ptr<rs2_processing_block>(
-                rs2_create_merge_processing_block(&e),
+                rs2_create_hdr_merge_processing_block(&e),
                 rs2_delete_processing_block);
             error::handle(e);
 
@@ -1172,7 +1172,7 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             auto block = std::shared_ptr<rs2_processing_block>(
-                rs2_create_split_processing_block(&e),
+                rs2_create_sequence_id_filter(&e),
                 rs2_delete_processing_block);
             error::handle(e);
 

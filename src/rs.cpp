@@ -2265,7 +2265,7 @@ rs2_processing_block* rs2_create_huffman_depth_decompress_block(rs2_error** erro
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
-rs2_processing_block* rs2_create_merge_processing_block(rs2_error** error) BEGIN_API_CALL
+rs2_processing_block* rs2_create_hdr_merge_processing_block(rs2_error** error) BEGIN_API_CALL
 {
     auto block = std::make_shared<librealsense::hdr_merge>();
 
@@ -2273,7 +2273,7 @@ rs2_processing_block* rs2_create_merge_processing_block(rs2_error** error) BEGIN
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
-rs2_processing_block* rs2_create_split_processing_block(rs2_error** error) BEGIN_API_CALL
+rs2_processing_block* rs2_create_sequence_id_filter(rs2_error** error) BEGIN_API_CALL
 {
     auto block = std::make_shared<librealsense::sequence_id_filter>();
 

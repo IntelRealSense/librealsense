@@ -332,7 +332,7 @@ namespace librealsense
 
             // needed in order to restore the HDR sub-preset when streaming is turned off and on
             if (_hdr_cfg && _hdr_cfg->is_enabled())
-                get_option(RS2_OPTION_HDR_MODE).set(1.f);
+                get_option(RS2_OPTION_HDR_ENABLED).set(1.f);
         }
 
         /*
@@ -824,8 +824,8 @@ namespace librealsense
             depth_sensor.register_option(RS2_OPTION_SEQUENCE_ID, hdr_sequ_id_option);
 
             option_range hdr_enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/};
-            auto hdr_enabled_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_HDR_MODE, hdr_enable_range);
-            depth_sensor.register_option(RS2_OPTION_HDR_MODE, hdr_enabled_option);
+            auto hdr_enabled_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_HDR_ENABLED, hdr_enable_range);
+            depth_sensor.register_option(RS2_OPTION_HDR_ENABLED, hdr_enabled_option);
 
             //EXPOSURE AND GAIN - preparing hdr options
             auto hdr_exposure_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_EXPOSURE, exposure_range);
