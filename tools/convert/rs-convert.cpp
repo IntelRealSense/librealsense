@@ -35,10 +35,10 @@ int main(int argc, char** argv) try
     ValueArg<string> outputFilenameBin("b", "output-bin", "output BIN (depth matrix) file(s) path", false, "", "bin-path");
     SwitchArg switchDepth("d", "depth", "convert depth frames (default - all supported)", false);
     SwitchArg switchColor("c", "color", "convert color frames (default - all supported)", false);
-    ValueArg <string> frameNumberStart("f", "first-frame", "convert frame number range - start point", false, "", "first-framenumber");
-    ValueArg <string> frameNumberEnd("t", "last-frame", "convert frame number range - end point", false, "", "last-framenumber");
-    ValueArg <string> StartTime("s", "start-time", "convert time range - start point (in seconds)", false, "", "start-time");
-    ValueArg <string> EndTime("e", "end-time", "convert time range - end point (in seconds)", false, "", "end-time");
+    ValueArg <string> frameNumberStart("f", "first-framenumber", "convert frames in specific frame number range - start point", false, "", "first-framenumber");
+    ValueArg <string> frameNumberEnd("t", "last-framenumber", "convert frames in specific frame number range - end point", false, "", "last-framenumber");
+    ValueArg <string> StartTime("s", "start-time", "convert frames in specific time range - start point (in seconds)", false, "", "start-time");
+    ValueArg <string> EndTime("e", "end-time", "convert frames in specific time range - end point (in seconds)", false, "", "end-time");
 
 
     cmd.add(inputFilename);
@@ -62,34 +62,39 @@ int main(int argc, char** argv) try
         : switchColor.isSet() ? rs2_stream::RS2_STREAM_COLOR
         : rs2_stream::RS2_STREAM_ANY;
 
-    if (outputFilenameCsv.isSet()) {
+    if (outputFilenameCsv.isSet())
+    {
         converters.push_back(
             make_shared<rs2::tools::converter::converter_csv>(
                 outputFilenameCsv.getValue()
                 , streamType));
     }
 
-    if (outputFilenamePng.isSet()) {
+    if (outputFilenamePng.isSet())
+    {
         converters.push_back(
             make_shared<rs2::tools::converter::converter_png>(
                 outputFilenamePng.getValue()
                 , streamType));
     }
 
-    if (outputFilenameRaw.isSet()) {
+    if (outputFilenameRaw.isSet())
+    {
         converters.push_back(
             make_shared<rs2::tools::converter::converter_raw>(
                 outputFilenameRaw.getValue()
                 , streamType));
     }
 
-    if (outputFilenameBin.isSet()) {
+    if (outputFilenameBin.isSet())
+    {
         converters.push_back(
             make_shared<rs2::tools::converter::converter_bin>(
                 outputFilenameBin.getValue()));
     }
 
-    if (converters.empty() && !outputFilenamePly.isSet()) {
+    if (converters.empty() && !outputFilenamePly.isSet())
+    {
         throw runtime_error("output not defined");
     }
 
@@ -98,19 +103,21 @@ int main(int argc, char** argv) try
     uint64_t start_time = 0;
     uint64_t end_time = 0;
 
-    if (frameNumberStart.isSet()) {
+    if (frameNumberStart.isSet())
+    {
         first_frame = stoi(frameNumberStart.getValue());
     }
-    if (frameNumberEnd.isSet()) {
+    if (frameNumberEnd.isSet())
+    {
         last_frame = stoi(frameNumberEnd.getValue());
     }
-    if (StartTime.isSet()) {
-        start_time = SECTONSEC *(atoi(StartTime.getValue().c_str())); //seconds to nanoseconds 
-        std::cout << start_time << endl;
+    if (StartTime.isSet())
+    {
+        start_time = SECTONSEC *(atof(StartTime.getValue().c_str())); //seconds to nanoseconds 
     }
-    if (EndTime.isSet()) {
-        end_time = SECTONSEC *(atoi(EndTime.getValue().c_str())); //seconds to nanoseconds
-        std::cout << end_time << endl;
+    if (EndTime.isSet())
+    {
+        end_time = SECTONSEC *(atof(EndTime.getValue().c_str())); //seconds to nanoseconds
     }
 
     //in order to convert frames into ply we need synced depth and color frames, 
@@ -145,7 +152,8 @@ int main(int argc, char** argv) try
         {
             int posP = static_cast<int>(posLast * 100. / duration.count());
 
-            if (posP > progress) {
+            if (posP > progress)
+            {
                 progress = posP;
                 cout << posP << "%" << "\r" << flush;
             }
@@ -153,24 +161,29 @@ int main(int argc, char** argv) try
             frameNumber = frameset[0].get_frame_number();
             auto frame_position = playback.get_position();
 
-            if (frameNumberStart.isSet() && frameNumber < first_frame) {
-                break;
+            if (frameNumberStart.isSet() && frameNumber < first_frame)
+            {
+                continue;
             }
-            if (frameNumberEnd.isSet() && frameNumber > last_frame) {
-                break;
+            if (frameNumberEnd.isSet() && frameNumber > last_frame)
+            {
+                continue;
             }
-            if (StartTime.isSet() && frame_position < start_time) {
-                break;
+            if (StartTime.isSet() && frame_position < start_time)
+            {
+                continue;
             }
-            if (EndTime.isSet() && frame_position > end_time) {
-                break;
+            if (EndTime.isSet() && frame_position > end_time)
+            {
+                continue;
             }
 
             plyconverter->convert(frameset);
             plyconverter->wait();
 
             const uint64_t posCurr = playback.get_position();
-            if (static_cast<int64_t>(posCurr - posLast) < 0) {
+            if (static_cast<int64_t>(posCurr - posLast) < 0)
+            {
                 break;
             }
             posLast = posCurr;
@@ -191,7 +204,8 @@ int main(int argc, char** argv) try
         int progress = 0;
         uint64_t posLast = playback.get_position();
 
-        for (auto sensor : sensors) {
+        for (auto sensor : sensors)
+        {
             if (!sensor.get_stream_profiles().size())
             {
                 continue;
@@ -205,19 +219,23 @@ int main(int argc, char** argv) try
                 auto frameNumber = frame.get_frame_number();
                 auto frame_position = playback.get_position();
 
-                if (frameNumberStart.isSet() && frameNumber < first_frame) {
+                if (frameNumberStart.isSet() && frameNumber < first_frame)
+                {
                     return;
                 }
-                if (frameNumberEnd.isSet() && frameNumber > last_frame) {
+                if (frameNumberEnd.isSet() && frameNumber > last_frame)
+                {
                     return;
                 }
-                if (StartTime.isSet() && frame_position < start_time) {
+                if (StartTime.isSet() && frame_position < start_time)
+                {
                     return;
                 }
-                if (EndTime.isSet() && frame_position > end_time) {
+                if (EndTime.isSet() && frame_position > end_time)
+                {
                     return;
                 }
-                    
+
                 for_each(converters.begin(), converters.end(),
                     [&frame](shared_ptr<rs2::tools::converter::converter_base>& converter) {
                     converter->convert(frame);
@@ -239,19 +257,22 @@ int main(int argc, char** argv) try
         {
             int posP = static_cast<int>(posLast * 100. / duration.count());
 
-            if (posP > progress) {
+            if (posP > progress)
+            {
                 progress = posP;
                 cout << posP << "%" << "\r" << flush;
             }
 
             const uint64_t posCurr = playback.get_position();
-            if (static_cast<int64_t>(posCurr - posLast) < 0) {
+            if (static_cast<int64_t>(posCurr - posLast) < 0)
+            {
                 break;
             }
             posLast = posCurr;
         }
 
-        for (auto sensor : sensors) {
+        for (auto sensor : sensors)
+        {
             if (!sensor.get_stream_profiles().size())
             {
                 continue;
