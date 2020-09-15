@@ -160,6 +160,19 @@ namespace librealsense
             _on_set = [](float x) {};
         }
 
+        ptr_option(T min, T max, T step, T def, T* value, const std::string& desc, 
+            const std::map<float, std::string>& description_per_value)
+            : option_base({ static_cast<float>(min),
+                            static_cast<float>(max),
+                            static_cast<float>(step),
+                            static_cast<float>(def), }),
+            _min(min), _max(max), _step(step), _def(def), _value(value), _desc(desc), _item_desc(description_per_value)
+        {
+            static_assert((std::is_arithmetic<T>::value), "ptr_option class supports arithmetic built-in types only");
+            _on_set = [](float x) {};
+        }
+
+
         void set(float value) override
         {
             T val = static_cast<T>(value);

@@ -34,7 +34,7 @@ namespace librealsense
                 const std::vector<uint8_t>& data,
                 int timeout_ms,
                 bool) override
-            { 
+            {
                 auto intfs = _device->get_interfaces();
                 auto it = std::find_if(intfs.begin(), intfs.end(),
                     [](const rs_usb_interface& i) { return i->get_class() == RS2_USB_CLASS_VENDOR_SPECIFIC; });

@@ -150,7 +150,7 @@ extern "C" {
     * Start the pipeline streaming with its default configuration.
     * The pipeline captures samples from the device, and delivers them to the through the provided frame callback.
     * Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.
-    * When starting the pipeline with a callback both \c wait_for_frames() or \c poll_for_frames() will throw exception. 
+    * When starting the pipeline with a callback both \c wait_for_frames() or \c poll_for_frames() will throw exception.
     *
     * \param[in] pipe     A pointer to an instance of the pipeline
     * \param[in] callback callback object created from c++ application. ownership over the callback object is moved into the relevant streaming lock

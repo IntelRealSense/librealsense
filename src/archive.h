@@ -488,5 +488,4 @@ namespace librealsense
     };
 
     MAP_EXTENSION(RS2_EXTENSION_POSE_FRAME, librealsense::pose_frame);
- 
 }

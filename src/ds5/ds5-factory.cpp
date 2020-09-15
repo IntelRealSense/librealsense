@@ -27,7 +27,7 @@
 namespace librealsense
 {
     // PSR
-    class rs400_device : public ds5_nonmonochrome, 
+    class rs400_device : public ds5_nonmonochrome,
         public ds5_advanced_mode_base,
         public firmware_logger_device
     {
@@ -118,7 +118,7 @@ namespace librealsense
 
     // ASR (D460)
     class rs410_device : public ds5_nonmonochrome,
-                         public ds5_active, 
+                         public ds5_active,
                          public ds5_advanced_mode_base,
                          public firmware_logger_device
     {
@@ -198,7 +198,7 @@ namespace librealsense
     };
 
     class rs416_device : public ds5_nonmonochrome,
-        public ds5_active, 
+        public ds5_active,
         public ds5_advanced_mode_base,
         public firmware_logger_device
     {
@@ -306,7 +306,7 @@ namespace librealsense
     };
 
     // PWGT
-    class rs420_mm_device : public ds5_motion, 
+    class rs420_mm_device : public ds5_motion,
                             public ds5_advanced_mode_base,
                             public firmware_logger_device
     {
@@ -353,7 +353,7 @@ namespace librealsense
     };
 
     // PWG
-    class rs420_device : public ds5_device, 
+    class rs420_device : public ds5_device,
                          public ds5_advanced_mode_base,
                          public firmware_logger_device
     {
@@ -391,7 +391,7 @@ namespace librealsense
     };
 
     // AWG
-    class rs430_device : public ds5_active, 
+    class rs430_device : public ds5_active,
                          public ds5_advanced_mode_base,
                          public firmware_logger_device
     {
@@ -429,8 +429,8 @@ namespace librealsense
         };
     };
 
-    class rs430i_device : public ds5_active, 
-                          public ds5_advanced_mode_base, 
+    class rs430i_device : public ds5_active,
+                          public ds5_advanced_mode_base,
                           public ds5_motion,
                           public firmware_logger_device
     {
@@ -445,7 +445,7 @@ namespace librealsense
               ds5_motion(ctx, group),
               firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
                 get_firmware_logs_command(),
-                get_flash_logs_command()) 
+                get_flash_logs_command())
         {}
 
         std::vector<tagged_profile> get_profiles_tags() const override
@@ -536,7 +536,7 @@ namespace librealsense
               ds5_device(ctx, group),
               ds5_active(ctx, group),
               ds5_color(ctx,  group),
-              ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()), 
+              ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
               firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command()) {}
@@ -625,7 +625,7 @@ namespace librealsense
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
               firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
                 get_firmware_logs_command(),
-                get_flash_logs_command()) 
+                get_flash_logs_command())
         {
             check_and_restore_rgb_stream_extrinsic();
         }
@@ -698,7 +698,7 @@ namespace librealsense
                             LOG_WARNING("RGB extrinsic - translation is corrupted: " << trans_vector);
                             return false;
                         }
-                        // Translation must be assigned for at least one axis 
+                        // Translation must be assigned for at least one axis
                         if (std::fabs(trans_vector[i]) > std::numeric_limits<float>::epsilon())
                             found = true;
                     }
@@ -961,7 +961,7 @@ namespace librealsense
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
               firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
                 get_firmware_logs_command(),
-                get_flash_logs_command()) 
+                get_flash_logs_command())
         {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;

@@ -156,7 +156,7 @@ namespace librealsense
             case ds::RS400_PID:
             case ds::RS410_PID:
             case ds::RS415_PID:
-            case ds::RS465_PID://TODO: verify 
+            case ds::RS465_PID://TODO: verify
                 d415_remove_ir(p);
                 break;
             case ds::RS460_PID:

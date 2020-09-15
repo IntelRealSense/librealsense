@@ -389,22 +389,22 @@ namespace librealsense
 
             return true;
         }
-        
-        
+
+
         std::string get_id( DEVINST devinst )
         {
             std::string id;
             get_id( devinst, &id );
             return id;
         }
-        
-        
+
+
         std::string cm_node::get_id() const
         {
             return librealsense::platform::get_id( get() );
         }
-        
-        
+
+
         std::string cm_node::get_uid() const
         {
             uint16_t vid, pid, mi;
@@ -452,8 +452,8 @@ namespace librealsense
                 return cm_node();
             return cm_node( devinst );
         }
-        
-        
+
+
         /* static */ cm_node cm_node::from_instance_id( std::wstring const & inst_id )
         {
             DEVINST devinst;
@@ -461,8 +461,8 @@ namespace librealsense
                 return cm_node();
             return cm_node( devinst );
         }
-        
-        
+
+
         cm_node cm_node::get_parent() const
         {
             DEVINST parent;
@@ -470,8 +470,8 @@ namespace librealsense
                 return cm_node();
             return cm_node( parent );
         }
-        
-        
+
+
         cm_node cm_node::get_child() const
         {
             DEVINST child;
@@ -479,8 +479,8 @@ namespace librealsense
                 return cm_node();
             return cm_node( child );
         }
-        
-        
+
+
         cm_node cm_node::get_sibling() const
         {
             DEVINST sibling;
@@ -488,8 +488,8 @@ namespace librealsense
                 return cm_node();
             return cm_node( sibling );
         }
-        
-        
+
+
         std::string cm_node::get_property( DEVPROPKEY const & property ) const
         {
             DEVPROPTYPE type;
