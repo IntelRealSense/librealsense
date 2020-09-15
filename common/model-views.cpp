@@ -973,6 +973,9 @@ namespace rs2
             if (shared_filter->is<hole_filling_filter>())
                 model->enable(false);
 
+            if (shared_filter->is<sequence_id_filter>())
+                model->enable(false);
+
             if (shared_filter->is<decimation_filter>())
             {
                 if (is_rgb_camera)
