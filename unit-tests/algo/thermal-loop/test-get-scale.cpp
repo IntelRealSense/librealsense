@@ -3,7 +3,7 @@
 
 //#cmake:add-file ../../../src/algo/thermal-loop/*.cpp
 #include "../algo-common.h"
-#include "./create-syntetic-data .h"
+#include "./create-syntetic-data.h"
 #include "algo/thermal-loop/l500-thermal-loop.h"
 
 using namespace librealsense::algo::thermal_loop::l500;
@@ -50,4 +50,5 @@ TEST_CASE( "correct_thermal_scale", "[thermal-loop]" )
     res = correct_thermal_scale( { 50, 100 }, 3.555 );
     REQUIRE( res.first == 177.75 );
     REQUIRE( res.second == 355.5 );
+
 }

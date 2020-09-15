@@ -34,8 +34,7 @@ thermal_calibration_table thermal_calibration_table::parse_thermal_table( const 
     return res;
 }
 
-double
-thermal_calibration_table::get_current_thermal_scale(double hum_temp )
+double thermal_calibration_table::get_current_thermal_scale( const double& hum_temp ) const
 {
     // curr temp is under minimum
     if (hum_temp <= md.min_temp)

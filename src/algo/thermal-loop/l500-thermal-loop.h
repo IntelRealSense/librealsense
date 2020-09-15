@@ -48,8 +48,7 @@ struct thermal_calibration_table
 
     static thermal_calibration_table parse_thermal_table ( const std::vector< byte > & data );
 
-    double get_current_thermal_scale( double hum_temp );
-
+    double get_current_thermal_scale( const double& hum_temp ) const;
 
     std::vector< byte > build_raw_data() const
     {
