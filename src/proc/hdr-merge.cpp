@@ -63,6 +63,9 @@ namespace librealsense
             _framesets[depth_seq_id] = fs;
         }
 
+        // discard merged frame if not relevant
+        discard_depth_merged_frame_if_needed(f);
+
         // 3. check if size of this vector is at least 2 (if not - return latest merge frame)
         if (_framesets.size() >= 2)
         {
@@ -81,10 +84,6 @@ namespace librealsense
                     // 6. save merge frame as latest merge frame
                     _depth_merged_frame = new_frame;
                 }
-            }
-            else
-            {
-                discard_depth_merged_frame_if_needed(f);
             }
         }
 
