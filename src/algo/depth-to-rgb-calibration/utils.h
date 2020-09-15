@@ -4,7 +4,7 @@
 #pragma once
 
 #include "calibration-types.h"
-
+#include <string>
 
 namespace librealsense {
 namespace algo {

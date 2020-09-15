@@ -88,6 +88,27 @@ double thermal_calibration_table::get_current_thermal_scale( const double& hum_t
     throw std::runtime_error( librealsense::to_string() << hum_temp << " is not valid " );
 }
 
+std::vector< byte > thermal_calibration_table::build_raw_data() const
+{
+    std::vector< byte > res;
+    std::vector< float > data;
+    data.push_back( md.min_temp );
+    data.push_back( md.max_temp );
+    data.push_back( md.reference_temp );
+    data.push_back( md.valid );
+
+    for( auto i = 0; i < vals.size(); i++ )
+    {
+        data.push_back( vals[i].scale );
+        data.push_back( vals[i].p[0] );
+        data.push_back( vals[i].p[1] );
+        data.push_back( vals[i].p[2] );
+    }
+
+    res.assign( (byte *)( data.data() ), (byte *)( data.data() + data.size() ) );
+    return res;
+}
+
 fx_fy correct_thermal_scale( std::pair< double, double > in_calib,
                                                    double scale )
 {

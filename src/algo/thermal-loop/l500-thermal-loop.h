@@ -50,26 +50,7 @@ struct thermal_calibration_table
 
     double get_current_thermal_scale( const double& hum_temp ) const;
 
-    std::vector< byte > build_raw_data() const
-    {
-        std::vector< byte > res;
-        std::vector< float > data;
-        data.push_back( md.min_temp );
-        data.push_back( md.max_temp );
-        data.push_back( md.reference_temp );
-        data.push_back( md.valid );
-
-        for( auto i = 0; i < vals.size(); i++ )
-        {
-            data.push_back( vals[i].scale );
-            data.push_back( vals[i].p[0] );
-            data.push_back( vals[i].p[1] );
-            data.push_back( vals[i].p[2] );
-        }
-
-        res.assign( (byte *)( data.data() ), (byte *)( data.data() + data.size() ) );
-        return res;
-    }
+    std::vector< byte > build_raw_data() const;
 };
 #pragma pack( pop )
 inline bool operator==( const thermal_calibration_table & lhs, const thermal_calibration_table & rhs )

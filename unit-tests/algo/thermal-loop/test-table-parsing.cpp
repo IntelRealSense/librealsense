@@ -3,7 +3,7 @@
 
 //#cmake:add-file ../../../src/algo/thermal-loop/*.cpp
 #include "../algo-common.h"
-#include "./create-syntetic-data .h"
+#include "./create-syntetic-data.h"
 #include "algo/thermal-loop/l500-thermal-loop.h"
 
 
