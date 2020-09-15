@@ -217,12 +217,15 @@ namespace librealsense
         // checking ir frames are not null
         bool use_ir = (first_ir && second_ir);
 
-        // IR and Depth dimensions must be aligned
-        if ((first_depth.get_height() != first_ir.get_height()) ||
-            (first_depth.get_width() != first_ir.get_width()) ||
-            (second_ir.get_height() != first_ir.get_height()) ||
-            (second_ir.get_width() != first_ir.get_width()))
-            use_ir =  false;
+        if (use_ir)
+        {
+            // IR and Depth dimensions must be aligned
+            if ((first_depth.get_height() != first_ir.get_height()) ||
+                (first_depth.get_width() != first_ir.get_width()) ||
+                (second_ir.get_height() != first_ir.get_height()) ||
+                (second_ir.get_width() != first_ir.get_width()))
+                use_ir = false;
+        }
 
         // checking frame counter of first depth and ir are the same
         if (use_ir)
