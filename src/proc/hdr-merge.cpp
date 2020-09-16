@@ -141,7 +141,7 @@ namespace librealsense
         return true;
     }
 
-    rs2::frame hdr_merge::merging_algorithm(const rs2::frame_source& source, const rs2::frameset first_fs, const rs2::frameset second_fs, const bool use_ir)
+    rs2::frame hdr_merge::merging_algorithm(const rs2::frame_source& source, const rs2::frameset first_fs, const rs2::frameset second_fs, const bool use_ir) const
     {
         auto first = first_fs;
         auto second = second_fs;
@@ -172,32 +172,26 @@ namespace librealsense
 
             memset(new_data, 0, width * height * sizeof(uint16_t));
 
+            int width_height_product = width * height;
+
             if (use_ir)
             {
-                auto i0 = (uint8_t*)first_ir.get_data();
-                auto i1 = (uint8_t*)second_ir.get_data();
-
-                for (int i = 0; i < width * height; i++)
+                if (first_ir.get_profile().format() == RS2_FORMAT_Y8)
                 {
-                    if (is_infrared_valid(i0[i]) && d0[i])
-                        new_data[i] = d0[i];
-                    else if (is_infrared_valid(i1[i]) && d1[i])
-                        new_data[i] = d1[i];
-                    else
-                        new_data[i] = 0;
+                    merge_frames_using_ir<uint8_t>(new_data, d0, d1, first_ir, second_ir, width_height_product);
+                }
+                else if (first_ir.get_profile().format() == RS2_FORMAT_Y16)
+                {
+                    merge_frames_using_ir<uint16_t>(new_data, d0, d1, first_ir, second_ir, width_height_product);
+                }
+                else
+                {
+                    merge_frames_using_only_depth(new_data, d0, d1, width_height_product);
                 }
             }
             else
             {
-                for (int i = 0; i < width * height; i++)
-                {
-                    if (d0[i])
-                        new_data[i] = d0[i];
-                    else if (d1[i])
-                        new_data[i] = d1[i];
-                    else
-                        new_data[i] = 0;
-                }
+                merge_frames_using_only_depth(new_data, d0, d1, width_height_product);
             }
 
             return new_f;
@@ -205,9 +199,17 @@ namespace librealsense
         return first_fs;
     }
 
-    bool hdr_merge::is_infrared_valid(uint8_t ir_value) const
+    void hdr_merge::merge_frames_using_only_depth(uint16_t* new_data, uint16_t* d0, uint16_t* d1, int width_height_prod) const
     {
-        return (ir_value > IR_UNDER_SATURATED_VALUE) && (ir_value < IR_OVER_SATURATED_VALUE);
+        for (int i = 0; i < width_height_prod; i++)
+        {
+            if (d0[i])
+                new_data[i] = d0[i];
+            else if (d1[i])
+                new_data[i] = d1[i];
+            else
+                new_data[i] = 0;
+        }
     }
 
     bool hdr_merge::should_ir_be_used_for_merging(const rs2::depth_frame& first_depth, const rs2::video_frame& first_ir,
@@ -253,6 +255,12 @@ namespace librealsense
                         depth_seq_id = second_depth.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
                         ir_seq_id = second_ir.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
                         use_ir = (depth_seq_id == ir_seq_id);
+
+                        // checking both ir have the same format
+                        if (use_ir)
+                        {
+                            use_ir = (first_ir.get_profile().format() == second_ir.get_profile().format());
+                        }
                     }
                 }
             }
