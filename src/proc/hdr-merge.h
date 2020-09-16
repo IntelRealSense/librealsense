@@ -42,4 +42,37 @@ namespace librealsense
         rs2::frame _depth_merged_frame;
     };
     MAP_EXTENSION(RS2_EXTENSION_HDR_MERGE, librealsense::hdr_merge);
+
+    template <typename T>
+    void hdr_merge::merge_frames_using_ir(uint16_t* new_data, uint16_t* d0, uint16_t* d1,
+        const rs2::video_frame& first_ir, const rs2::video_frame& second_ir, int width_height_prod) const
+    {
+        auto i0 = (T*)first_ir.get_data();
+        auto i1 = (T*)second_ir.get_data();
+
+        auto format = first_ir.get_profile().format();
+
+        for (int i = 0; i < width_height_prod; i++)
+        {
+            if (is_infrared_valid<T>(i0[i], format) && d0[i])
+                new_data[i] = d0[i];
+            else if (is_infrared_valid<T>(i1[i], format) && d1[i])
+                new_data[i] = d1[i];
+            else
+                new_data[i] = 0;
+        }
+    }
+
+    template <typename T>
+    bool hdr_merge::is_infrared_valid(T ir_value, rs2_format ir_format) const
+    {
+        bool result = (ir_value > IR_UNDER_SATURATED_VALUE);
+        if (ir_format == RS2_FORMAT_Y8)
+            result &= (ir_value < IR_OVER_SATURATED_VALUE_Y8);
+        else if (ir_format == RS2_FORMAT_Y16)
+            result &= (ir_value < IR_OVER_SATURATED_VALUE_Y16);
+        else
+            result = false;
+        return result;
+    }
 }
