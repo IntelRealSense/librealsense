@@ -24,15 +24,15 @@ TEST_CASE( "HDR Running - restart hdr at restream", "[HDR]" ) {
     rs2::pipeline pipe;
     pipe.start(cfg);
 
-    depth_sensor.set_option(RS2_OPTION_HDR_MODE, 1);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_MODE) == 1.f);
+    depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
+    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 1.f);
 
     for (int i = 0; i < 100; ++i)
     {
         if (i == 50)
         {
-            depth_sensor.set_option(RS2_OPTION_HDR_MODE, 0);
-            REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_MODE) == 0.f);
+            depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 0);
+            REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 0.f);
             auto startTime = std::chrono::high_resolution_clock::now();
             rs2::frameset data = pipe.wait_for_frames();
             auto get_frame_after_hdr_disabled = std::chrono::high_resolution_clock::now();

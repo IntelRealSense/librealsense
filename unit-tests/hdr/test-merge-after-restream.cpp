@@ -18,8 +18,8 @@ TEST_CASE( "HDR Running - restart hdr at restream", "[HDR]" ) {
     rs2::device dev = devices_list[0];  //1
     rs2::depth_sensor depth_sensor = dev.query_sensors().front();
 
-    depth_sensor.set_option(RS2_OPTION_HDR_MODE, 1);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_MODE) == 1.f);
+    depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
+    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 1.f);
 
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_DEPTH);
@@ -27,7 +27,7 @@ TEST_CASE( "HDR Running - restart hdr at restream", "[HDR]" ) {
     pipe.start(cfg);
 
     // initializing the merging filter
-    rs2::merge_filter merging_filter;
+    rs2::hdr_merge merging_filter;
 
     for (int i = 0; i < 10; ++i)
     {
@@ -57,8 +57,8 @@ TEST_CASE( "HDR Running - restart hdr at restream", "[HDR]" ) {
 
     std::cout << "------------------stop - start again ---------------" << std::endl;
 
-    depth_sensor.set_option(RS2_OPTION_HDR_MODE, 1);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_MODE) == 1.f);
+    depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
+    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 1.f);
 
     pipe.start(cfg);
 
