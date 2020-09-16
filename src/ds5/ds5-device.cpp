@@ -754,12 +754,12 @@ namespace librealsense
         }
 
         // minimal firmware version in which hdr feature is supported
-        firmware_version hdr_firmware_version("5.12.7.220");
+        firmware_version hdr_firmware_version("5.12.8.200");
 
         // Alternating laser pattern is applicable for global shutter/active SKUs
         auto mask = d400_caps::CAP_GLOBAL_SHUTTER | d400_caps::CAP_ACTIVE_PROJECTOR;
         // Alternating laser pattern should be set and query in a different way according to the firmware version
-        bool is_fw_version_using_id = (_fw_version >= hdr_firmware_version); //firmware_version("5.12.8.100")
+        bool is_fw_version_using_id = (_fw_version >= firmware_version("5.12.8.100")); 
         if ((_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
         {
             depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor, is_fw_version_using_id));
