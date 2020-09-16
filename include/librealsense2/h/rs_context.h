@@ -54,7 +54,7 @@ void rs2_set_devices_changed_callback(const rs2_context* context, rs2_devices_ch
  * @return  A pointer to a device that plays data from the file, or null in case of failure
  */
 rs2_device* rs2_context_add_device(rs2_context* ctx, const char* file, rs2_error** error);
-    
+
 /**
  * Add an instance of software device to the context
  * \param ctx   The context to which the new device will be added
@@ -73,9 +73,9 @@ void rs2_context_remove_device(rs2_context* ctx, const char* file, rs2_error** e
 
 /**
  * Removes tracking module.
- * function query_devices() locks the tracking module in the tm_context object. 
+ * function query_devices() locks the tracking module in the tm_context object.
  * If the tracking module device is not used it should be removed using this function, so that other applications could find it.
- * This function can be used both before the call to query_device() to prevent enabling tracking modules or afterwards to 
+ * This function can be used both before the call to query_device() to prevent enabling tracking modules or afterwards to
  * release them.
  */
 void rs2_context_unload_tracking_module(rs2_context* ctx, rs2_error** error);

@@ -98,7 +98,7 @@ namespace librealsense
                 {
                     res = dev;
                 }
-            } 
+            }
             catch (const std::exception& ex)
             {
                 LOG_WARNING("Could not open device " << ex.what());

@@ -191,12 +191,12 @@ namespace librealsense
         {
             return _blocks;
         }
-         
+
         void update(std::shared_ptr<extension_snapshot> ext) override {}
 
         processing_blocks _blocks;
     };
-   
+
 
     class recommended_proccesing_blocks_base : public virtual recommended_proccesing_blocks_interface, public virtual recordable<recommended_proccesing_blocks_interface>
     {
@@ -204,7 +204,7 @@ namespace librealsense
         recommended_proccesing_blocks_base(recommended_proccesing_blocks_interface* owner)
             :_owner(owner)
         {}
-        
+
         virtual processing_blocks get_recommended_processing_blocks() const override { return _owner->get_recommended_processing_blocks(); };
 
         virtual void create_snapshot(std::shared_ptr<recommended_proccesing_blocks_interface>& snapshot) const override

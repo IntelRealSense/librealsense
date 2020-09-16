@@ -25,7 +25,7 @@ namespace librealsense
     class firmware_logger_device : public virtual device, public firmware_logger_extensions
     {
     public:
-        firmware_logger_device(std::shared_ptr<context> ctx, const platform::backend_device_group group, 
+        firmware_logger_device(std::shared_ptr<context> ctx, const platform::backend_device_group group,
             std::shared_ptr<hw_monitor> hardware_monitor,
             const command& fw_logs_command, const command& flash_logs_command);
 

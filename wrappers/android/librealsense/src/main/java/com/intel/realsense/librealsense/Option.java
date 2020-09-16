@@ -76,7 +76,11 @@ public enum Option {
     THERMAL_COMPENSATION(72),
     TRIGGER_CAMERA_ACCURACY_HEALTH(73),
     RESET_CAMERA_ACCURACY_HEALTH(74),
-    HOST_PERFORMANCE(75);
+    HOST_PERFORMANCE(75),
+    HDR_ENABLED(76),
+    SEQUENCE_NAME(77),
+    SEQUENCE_SIZE(78),
+    SEQUENCE_ID(79);
     private final int mValue;
 
     private Option(int value) { mValue = value; }

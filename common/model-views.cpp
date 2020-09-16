@@ -973,6 +973,9 @@ namespace rs2
             if (shared_filter->is<hole_filling_filter>())
                 model->enable(false);
 
+            if (shared_filter->is<sequence_id_filter>())
+                model->enable(false);
+
             if (shared_filter->is<decimation_filter>())
             {
                 if (is_rgb_camera)
@@ -4793,14 +4796,28 @@ namespace rs2
 
                 if (dev.is<rs2::updatable>() && !is_locked)
                 {
-                    if (ImGui::Selectable("Update Unsigned Firmware...", false, updateFwFlags))
+                    // L515 do not support update unsigned image currently
+                    bool is_l515_device = false;
+                    if (dev.supports(RS2_CAMERA_INFO_NAME))
                     {
-                        begin_update_unsigned(viewer, error_message);
+                        std::string dev_name = dev.get_info(RS2_CAMERA_INFO_NAME);
+                        if (dev_name.find("L515") != std::string::npos)
+                        {
+                            is_l515_device = true;
+                        }
                     }
-                    if (ImGui::IsItemHovered())
+
+                    if (!is_l515_device)
                     {
-                        std::string tooltip = to_string() << "Install non official unsigned firmware from file to the device" << (is_streaming ? " (Disabled while streaming)" : "");
-                        ImGui::SetTooltip("%s", tooltip.c_str());
+                        if (ImGui::Selectable("Update Unsigned Firmware...", false, updateFwFlags))
+                        {
+                            begin_update_unsigned(viewer, error_message);
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            std::string tooltip = to_string() << "Install non official unsigned firmware from file to the device" << (is_streaming ? " (Disabled while streaming)" : "");
+                            ImGui::SetTooltip("%s", tooltip.c_str());
+                        }
                     }
                 }
             }
@@ -6073,6 +6090,15 @@ namespace rs2
                                 pb->get_option(opt).draw_option(
                                     dev.is<playback>() || update_read_only_options,
                                     false, error_message, *viewer.not_model);
+
+                                if (opt == RS2_OPTION_MIN_DISTANCE)
+                                {
+                                    pb->get_option(RS2_OPTION_MAX_DISTANCE).update_all_fields(error_message, *viewer.not_model);
+                                }
+                                else if (opt == RS2_OPTION_MAX_DISTANCE)
+                                {
+                                    pb->get_option(RS2_OPTION_MIN_DISTANCE).update_all_fields(error_message, *viewer.not_model);
+                                }
                             }
 
                             ImGui::TreePop();
@@ -6267,6 +6293,15 @@ namespace rs2
                                     pb->get_option(opt).draw_option(
                                         dev.is<playback>() || update_read_only_options,
                                         false, error_message, *viewer.not_model);
+
+                                    if (opt == RS2_OPTION_MIN_DISTANCE)
+                                    {
+                                        pb->get_option(RS2_OPTION_MAX_DISTANCE).update_all_fields(error_message, *viewer.not_model);
+                                    }
+                                    else if (opt == RS2_OPTION_MAX_DISTANCE)
+                                    {
+                                        pb->get_option(RS2_OPTION_MIN_DISTANCE).update_all_fields(error_message, *viewer.not_model);
+                                    }
                                 }
 
                                 ImGui::TreePop();

@@ -109,7 +109,7 @@ namespace librealsense
                     intrinsics.ppx = rect_params[2] * width / resolutions_list[resolution].x;
                     intrinsics.ppy = rect_params[3] * height / resolutions_list[resolution].y;
                 }
-                
+
                 intrinsics.model = RS2_DISTORTION_BROWN_CONRADY;
                 memset(intrinsics.coeffs, 0, sizeof(intrinsics.coeffs));  // All coefficients are zeroed since rectified depth is defined as CS origin
 

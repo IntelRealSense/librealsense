@@ -18,7 +18,7 @@ namespace librealsense
             ~fw_logs_parser(void);
 
             fw_log_data parse_fw_log(const fw_logs_binary_data* fw_log_msg);
-            
+
 
         private:
             fw_log_data fill_log_data(const fw_logs_binary_data* fw_log_msg);

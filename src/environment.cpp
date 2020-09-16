@@ -74,7 +74,7 @@ namespace librealsense
         auto sp = weak_ptr.lock();
         if( !sp )
             throw std::runtime_error( "override_extrinsics called for out-of-date stream" );
-        
+
         auto & lazy_extr = *sp;
         lazy_extr = [=]() { return extr; };
     }

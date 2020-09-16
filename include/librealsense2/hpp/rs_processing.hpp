@@ -507,7 +507,7 @@ namespace rs2
             return block;
         }
     };
-  
+
   class threshold_filter : public filter
     {
     public:
@@ -516,9 +516,9 @@ namespace rs2
         * By controlling min and max options on the block, one could filter out depth values
         * that are either too large or too small, as a software post-processing step
         */
-        threshold_filter(float min_dist = 0.15f, float max_dist = 4.f) 
-            : filter(init(), 1) 
-        { 
+        threshold_filter(float min_dist = 0.15f, float max_dist = 4.f)
+            : filter(init(), 1)
+        {
             set_option(RS2_OPTION_MIN_DISTANCE, min_dist);
             set_option(RS2_OPTION_MAX_DISTANCE, max_dist);
         }
@@ -535,7 +535,7 @@ namespace rs2
 
     protected:
         threshold_filter(std::shared_ptr<rs2_processing_block> block) : filter(block, 1) {}
-        
+
     private:
         std::shared_ptr<rs2_processing_block> init()
         {
@@ -559,7 +559,7 @@ namespace rs2
 
     protected:
         units_transform(std::shared_ptr<rs2_processing_block> block) : filter(block, 1) {}
-        
+
     private:
         std::shared_ptr<rs2_processing_block> init()
         {
@@ -788,7 +788,7 @@ namespace rs2
              }
              error::handle(e);
         }
-       
+
     private:
         friend class context;
 
@@ -958,7 +958,7 @@ namespace rs2
             return block;
         }
     };
-    
+
     class zero_order_invalidation : public filter
     {
     public:
@@ -1094,6 +1094,85 @@ namespace rs2
             rs2_error* e = nullptr;
             auto block = std::shared_ptr<rs2_processing_block>(
                 rs2_create_rates_printer_block(&e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return block;
+        }
+    };
+
+    class hdr_merge : public filter
+    {
+    public:
+        /**
+        * Create hdr_merge processing block
+        * the processing merges between depth frames with 
+        * different sub-preset sequence ids.
+        */
+        hdr_merge() : filter(init()) {}
+
+        hdr_merge(filter f) :filter(f)
+        {
+            rs2_error* e = nullptr;
+            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_HDR_MERGE, &e) && !e)
+            {
+                _block.reset();
+            }
+            error::handle(e);
+        }
+
+    private:
+        friend class context;
+
+        std::shared_ptr<rs2_processing_block> init()
+        {
+            rs2_error* e = nullptr;
+            auto block = std::shared_ptr<rs2_processing_block>(
+                rs2_create_hdr_merge_processing_block(&e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return block;
+        }
+    };
+
+    class sequence_id_filter : public filter
+    {
+    public:
+        /**
+        * Create sequence_id_filter processing block
+        * the processing perform the hole filling base on different hole filling mode.
+        */
+        sequence_id_filter() : filter(init()) {}
+
+        /**
+        * Create sequence_id_filter processing block
+        * the processing perform the hole filling base on different hole filling mode.
+        * \param[in] sequence_id - sequence id to pass the filter.
+        */
+        sequence_id_filter(float sequence_id) : filter(init(), 1)
+        {
+            set_option(RS2_OPTION_SEQUENCE_ID, sequence_id);
+        }
+
+        sequence_id_filter(filter f) :filter(f)
+        {
+            rs2_error* e = nullptr;
+            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_SEQUENCE_ID_FILTER, &e) && !e)
+            {
+                _block.reset();
+            }
+            error::handle(e);
+        }
+
+    private:
+        friend class context;
+
+        std::shared_ptr<rs2_processing_block> init()
+        {
+            rs2_error* e = nullptr;
+            auto block = std::shared_ptr<rs2_processing_block>(
+                rs2_create_sequence_id_filter(&e),
                 rs2_delete_processing_block);
             error::handle(e);
 

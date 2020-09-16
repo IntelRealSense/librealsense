@@ -81,7 +81,7 @@ namespace librealsense
 
             log_data._delta = (_last_timestamp == 0) ? 
                 0 :(log_data._timestamp - _last_timestamp) * _timestamp_factor;
-            
+
             _last_timestamp = log_data._timestamp;
 
             return log_data;

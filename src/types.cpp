@@ -309,6 +309,8 @@ namespace librealsense
             CASE(AUTO_CALIBRATION_FILTER)
             CASE(DEVICE_CALIBRATION)
             CASE(CALIBRATED_SENSOR)
+            CASE(SEQUENCE_ID_FILTER)
+            CASE(HDR_MERGE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -425,6 +427,10 @@ namespace librealsense
             CASE(TRIGGER_CAMERA_ACCURACY_HEALTH)
             CASE(RESET_CAMERA_ACCURACY_HEALTH)
             CASE(HOST_PERFORMANCE)
+            CASE(HDR_ENABLED)
+            CASE(SEQUENCE_NAME)
+            CASE(SEQUENCE_SIZE)
+            CASE(SEQUENCE_ID)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -547,6 +553,9 @@ namespace librealsense
             CASE(FRAME_LED_POWER)
             CASE(RAW_FRAME_SIZE)
             CASE(GPIO_INPUT_DATA)
+            CASE(SUBPRESET_ID)
+            CASE(SUBPRESET_SEQUENCE_ID)
+            CASE(SUBPRESET_SEQUENCE_SIZE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
