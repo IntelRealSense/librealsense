@@ -431,6 +431,10 @@ namespace librealsense
             CASE(SEQUENCE_NAME)
             CASE(SEQUENCE_SIZE)
             CASE(SEQUENCE_ID)
+            CASE(IR_UNDER_SATURATED_Y8)
+            CASE(IR_OVER_SATURATED_Y8)
+            CASE(IR_UNDER_SATURATED_Y16)
+            CASE(IR_OVER_SATURATED_Y16)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

@@ -178,6 +178,10 @@ PYBIND11_MODULE(NAME, m) {
         .value("sequence_name", RS2_OPTION_SEQUENCE_NAME)
         .value("sequence_size", RS2_OPTION_SEQUENCE_SIZE)
         .value("sequence_id", RS2_OPTION_SEQUENCE_ID)
+        .value("ir_under_sat_y8", RS2_OPTION_IR_UNDER_SATURATED_Y8)
+        .value("ir_over_sat_y8", RS2_OPTION_IR_OVER_SATURATED_Y8)
+        .value("ir_under_sat_y16", RS2_OPTION_IR_UNDER_SATURATED_Y16)
+        .value("ir_over_sat_y16", RS2_OPTION_IR_OVER_SATURATED_Y16)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");

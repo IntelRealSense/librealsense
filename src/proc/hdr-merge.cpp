@@ -7,7 +7,23 @@ namespace librealsense
 {
     hdr_merge::hdr_merge()
         : generic_processing_block("HDR Merge")
-    {}
+    {
+        auto under_ir_saturated_Y8 = std::make_shared<ptr_option<float>>(0.f, 0xff, 1.f, IR_UNDER_SATURATED_VALUE_Y8,
+            &_under_ir_saturated_Y8, "IR under-sat Y8");
+        register_option(RS2_OPTION_IR_UNDER_SATURATED_Y8, under_ir_saturated_Y8);
+
+        auto over_ir_saturated_Y8 = std::make_shared<ptr_option<float>>(0.f, 0xff, 1.f, IR_OVER_SATURATED_VALUE_Y8,
+            &_over_ir_saturated_Y8, "IR over-sat Y8");
+        register_option(RS2_OPTION_IR_OVER_SATURATED_Y8, over_ir_saturated_Y8);
+
+        auto under_ir_saturated_Y16 = std::make_shared<ptr_option<float>>(0.f, 0x3ff, 1.f, IR_UNDER_SATURATED_VALUE_Y16,
+            &_under_ir_saturated_Y16, "IR under-sat Y16");
+        register_option(RS2_OPTION_IR_UNDER_SATURATED_Y16, under_ir_saturated_Y16);
+
+        auto over_ir_saturated_Y16 = std::make_shared<ptr_option<float>>(0.f, 0x3ff, 1.f, IR_OVER_SATURATED_VALUE_Y16,
+            &_under_ir_saturated_Y16, "IR over-sat Y16");
+        register_option(RS2_OPTION_IR_OVER_SATURATED_Y16, over_ir_saturated_Y16);
+    }
 
     // processing only framesets
     bool hdr_merge::should_process(const rs2::frame& frame)

@@ -101,6 +101,10 @@ extern "C" {
         RS2_OPTION_SEQUENCE_NAME, /**< HDR Sequence size */
         RS2_OPTION_SEQUENCE_SIZE, /**< HDR Sequence size */
         RS2_OPTION_SEQUENCE_ID, /**< HDR Sequence ID - 0 is not HDR; sequence ID for HDR configuartion starts from 1 */
+        RS2_OPTION_IR_UNDER_SATURATED_Y8,
+        RS2_OPTION_IR_OVER_SATURATED_Y8,
+        RS2_OPTION_IR_UNDER_SATURATED_Y16,
+        RS2_OPTION_IR_OVER_SATURATED_Y16,
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 

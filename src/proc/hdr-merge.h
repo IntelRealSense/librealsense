@@ -20,9 +20,10 @@ namespace librealsense
 
 
     private:
-        const int IR_UNDER_SATURATED_VALUE = 0x05; // 5
+        const int IR_UNDER_SATURATED_VALUE_Y8 = 0x05; // 5
         const int IR_OVER_SATURATED_VALUE_Y8 = 0xfa; // 250
-        const int IR_OVER_SATURATED_VALUE_Y16 = 0xfffa; // 65530
+        const int IR_UNDER_SATURATED_VALUE_Y16 = 0x14; // 20 (4*5)
+        const int IR_OVER_SATURATED_VALUE_Y16 = 0x3eb; // 1003 (1023 - (4*5))
 
         void discard_depth_merged_frame_if_needed(const rs2::frame& f);
         
@@ -40,6 +41,10 @@ namespace librealsense
 
         std::map<int, rs2::frameset> _framesets;
         rs2::frame _depth_merged_frame;
+        float _under_ir_saturated_Y8;
+        float _over_ir_saturated_Y8;
+        float _under_ir_saturated_Y16;
+        float _over_ir_saturated_Y16;
     };
     MAP_EXTENSION(RS2_EXTENSION_HDR_MERGE, librealsense::hdr_merge);
 
@@ -66,11 +71,11 @@ namespace librealsense
     template <typename T>
     bool hdr_merge::is_infrared_valid(T ir_value, rs2_format ir_format) const
     {
-        bool result = (ir_value > IR_UNDER_SATURATED_VALUE);
+        bool result = false;
         if (ir_format == RS2_FORMAT_Y8)
-            result &= (ir_value < IR_OVER_SATURATED_VALUE_Y8);
+            result = (ir_value > _under_ir_saturated_Y8) && (ir_value < _over_ir_saturated_Y8);
         else if (ir_format == RS2_FORMAT_Y16)
-            result &= (ir_value < IR_OVER_SATURATED_VALUE_Y16);
+            result = (ir_value > _under_ir_saturated_Y16) && (ir_value < _over_ir_saturated_Y16);
         else
             result = false;
         return result;
