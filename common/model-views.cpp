@@ -6090,6 +6090,15 @@ namespace rs2
                                 pb->get_option(opt).draw_option(
                                     dev.is<playback>() || update_read_only_options,
                                     false, error_message, *viewer.not_model);
+
+                                if (opt == RS2_OPTION_MIN_DISTANCE)
+                                {
+                                    pb->get_option(RS2_OPTION_MAX_DISTANCE).update_all_fields(error_message, *viewer.not_model);
+                                }
+                                else if (opt == RS2_OPTION_MAX_DISTANCE)
+                                {
+                                    pb->get_option(RS2_OPTION_MIN_DISTANCE).update_all_fields(error_message, *viewer.not_model);
+                                }
                             }
 
                             ImGui::TreePop();
@@ -6284,6 +6293,15 @@ namespace rs2
                                     pb->get_option(opt).draw_option(
                                         dev.is<playback>() || update_read_only_options,
                                         false, error_message, *viewer.not_model);
+
+                                    if (opt == RS2_OPTION_MIN_DISTANCE)
+                                    {
+                                        pb->get_option(RS2_OPTION_MAX_DISTANCE).update_all_fields(error_message, *viewer.not_model);
+                                    }
+                                    else if (opt == RS2_OPTION_MAX_DISTANCE)
+                                    {
+                                        pb->get_option(RS2_OPTION_MIN_DISTANCE).update_all_fields(error_message, *viewer.not_model);
+                                    }
                                 }
 
                                 ImGui::TreePop();
