@@ -754,7 +754,7 @@ namespace librealsense
         }
 
         // minimal firmware version in which hdr feature is supported
-        firmware_version hdr_firmware_version("5.12.8.200");
+        firmware_version hdr_firmware_version("5.12.8.100");
 
         // Alternating laser pattern is applicable for global shutter/active SKUs
         auto mask = d400_caps::CAP_GLOBAL_SHUTTER | d400_caps::CAP_ACTIVE_PROJECTOR;
