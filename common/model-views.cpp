@@ -4796,14 +4796,28 @@ namespace rs2
 
                 if (dev.is<rs2::updatable>() && !is_locked)
                 {
-                    if (ImGui::Selectable("Update Unsigned Firmware...", false, updateFwFlags))
+                    // L515 do not support update unsigned image currently
+                    bool is_l515_device = false;
+                    if (dev.supports(RS2_CAMERA_INFO_NAME))
                     {
-                        begin_update_unsigned(viewer, error_message);
+                        std::string dev_name = dev.get_info(RS2_CAMERA_INFO_NAME);
+                        if (dev_name.find("L515") != std::string::npos)
+                        {
+                            is_l515_device = true;
+                        }
                     }
-                    if (ImGui::IsItemHovered())
+
+                    if (!is_l515_device)
                     {
-                        std::string tooltip = to_string() << "Install non official unsigned firmware from file to the device" << (is_streaming ? " (Disabled while streaming)" : "");
-                        ImGui::SetTooltip("%s", tooltip.c_str());
+                        if (ImGui::Selectable("Update Unsigned Firmware...", false, updateFwFlags))
+                        {
+                            begin_update_unsigned(viewer, error_message);
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            std::string tooltip = to_string() << "Install non official unsigned firmware from file to the device" << (is_streaming ? " (Disabled while streaming)" : "");
+                            ImGui::SetTooltip("%s", tooltip.c_str());
+                        }
                     }
                 }
             }
