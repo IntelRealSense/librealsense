@@ -139,7 +139,7 @@ bool read_thermal_data( std::string dir,
         rs2_intrinsics raw_rgb_calib;
         read_binary_file( dir.c_str(), "raw_rgb.calib", &raw_rgb_calib );
         auto vec = read_vector_from< byte >( join( dir, "rgb_thermal_table" ) );
-        auto thermal_table = thermal::l500::thermal_calibration_table::parse_thermal_table( vec );
+        thermal::l500::thermal_calibration_table thermal_table( vec );
         auto scale = thermal_table.get_current_thermal_scale( hum_temp );
         out_fx_fy = { raw_rgb_calib.fx, raw_rgb_calib.fy };
         out_fx_fy.first *= scale;

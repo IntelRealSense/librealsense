@@ -26,8 +26,7 @@ class thermal_calibration_table
 {
 public:
     static const int id = 0x317;
-    static const int resolution = 29;
-
+    
     struct thermal_table_header
     {
         float min_temp;
@@ -44,27 +43,27 @@ public:
         float ty;
     };
 
-    thermal_table_header header;
+    int _resolution;
+    thermal_table_header _header;
     std::vector< temp_data > vals;
-    thermal_calibration_table() = default;
 
-    thermal_calibration_table( const std::vector< byte > & data );
-   
-    //static thermal_calibration_table parse_thermal_table ( const std::vector< byte > & data );
+    thermal_calibration_table() = default;
+    thermal_calibration_table( const std::vector< byte > & data, int resolution = 29);
 
     double get_current_thermal_scale( const double& hum_temp ) const;
 
     std::vector< byte > build_raw_data() const;
 };
+
 #pragma pack( pop )
 inline bool operator==( const thermal_calibration_table & lhs, const thermal_calibration_table & rhs )
 {
     if(lhs.vals.size()!=rhs.vals.size())
         return false;
 
-    if( lhs.header.max_temp != rhs.header.max_temp || lhs.header.min_temp != rhs.header.min_temp
-        || lhs.header.reference_temp != rhs.header.reference_temp
-        || lhs.header.valid != rhs.header.valid )
+    if( lhs._header.max_temp != rhs._header.max_temp || lhs._header.min_temp != rhs._header.min_temp
+        || lhs._header.reference_temp != rhs._header.reference_temp
+        || lhs._header.valid != rhs._header.valid )
         return false;
 
     for( auto i = 0; i < rhs.vals.size(); i++ )

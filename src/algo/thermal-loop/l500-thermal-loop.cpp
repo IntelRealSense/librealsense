@@ -10,7 +10,9 @@ namespace thermal_loop {
 namespace l500 {
 
 
-thermal_calibration_table::thermal_calibration_table( const std::vector< byte > & data ) 
+thermal_calibration_table::thermal_calibration_table( const std::vector< byte > & data,
+                                                      int resolution )
+    : _resolution( resolution )
 {
     float const * header_ptr = (float *)( data.data() + sizeof( ivcam2::table_header ) );
 
@@ -22,7 +24,7 @@ thermal_calibration_table::thermal_calibration_table( const std::vector< byte > 
                                   << "data size (" << data.size()
                                   << ") does not meet expected size " << expected_size );
 
-    header = *(thermal_table_header *)( header_ptr );
+    _header = *(thermal_table_header *)( header_ptr );
 
     auto data_ptr = (temp_data *)( data.data() + sizeof( ivcam2::table_header )
                                    + sizeof( thermal_table_header ) );
@@ -31,20 +33,20 @@ thermal_calibration_table::thermal_calibration_table( const std::vector< byte > 
 
 double thermal_calibration_table::get_current_thermal_scale( const double & hum_temp ) const
 {
-    auto scale = vals[resolution - 1].scale;
+    auto scale = vals[_resolution - 1].scale;
 
     // curr temp is under minimum
-    if( hum_temp <= header.min_temp )
+    if( hum_temp <= _header.min_temp )
     {
         scale = vals[0].scale;
     }
     else
     {
-        auto temp_range = header.max_temp - header.min_temp;
+        auto temp_range = _header.max_temp - _header.min_temp;
         // there are 29 bins between min and max temps so its divides to 30 equals intervals
-        auto interval = temp_range / ( thermal_calibration_table::resolution + 1 );
+        auto interval = temp_range / ( thermal_calibration_table::_resolution + 1 );
 
-        for( double temp = header.min_temp, index = 0; index < resolution;
+        for( double temp = _header.min_temp, index = 0; index < _resolution;
              ++index, temp += interval )
         {
             auto interval_max = temp + interval;
@@ -64,11 +66,11 @@ double thermal_calibration_table::get_current_thermal_scale( const double & hum_
 std::vector< byte > thermal_calibration_table::build_raw_data() const
 {
     std::vector< float > data;
-    data.resize( sizeof( ivcam2::table_header ) / sizeof(float) );
-    data.push_back( header.min_temp );
-    data.push_back( header.max_temp );
-    data.push_back( header.reference_temp );
-    data.push_back( header.valid );
+    data.resize( sizeof( ivcam2::table_header ) / sizeof( float ), 0 );
+    data.push_back( _header.min_temp );
+    data.push_back( _header.max_temp );
+    data.push_back( _header.reference_temp );
+    data.push_back( _header.valid );
 
     for( auto i = 0; i < vals.size(); i++ )
     {

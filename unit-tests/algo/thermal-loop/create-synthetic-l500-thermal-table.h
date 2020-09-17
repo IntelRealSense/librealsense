@@ -7,15 +7,14 @@
 using namespace librealsense::algo::thermal_loop::l500;
 
 
-thermal_calibration_table create_synthetic_table( const int table_size
-                                                 = thermal_calibration_table::resolution )
+thermal_calibration_table create_synthetic_table( const int table_size = 29)
 {
     thermal_calibration_table res;
-    res.header.min_temp = 0;
-    res.header.max_temp = 75;
-    res.header.reference_temp = 100;
-    res.header.valid = 1;
-
+    res._header.min_temp = 0;
+    res._header.max_temp = 75;
+    res._header.reference_temp = 100;
+    res._header.valid = 1;
+    res._resolution = table_size;
     res.vals.resize( table_size );
 
     // [0   - 2.5]  --> 0.5 
