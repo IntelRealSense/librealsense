@@ -59,43 +59,8 @@ TEST_CASE( "HDR Config - changing only exposure", "[HDR]" ) {
         rs2::depth_frame out_depth_frame = data.get_depth_frame();
         long long frame_counter = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
         long long frame_gain = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_GAIN_LEVEL);
-
-        static long long frame_counter_s = frame_counter;
-        if (iterations++ == 0)
-        {
-            if (frame_counter % 2 == 0)
-            {
-                if (frame_gain == first_gain)
-                    continue;
-                else
-                {
-                    pair_fc_gain = second_gain;
-                    odd_fc_gain = first_gain;
-                }
-            }
-            else
-            {
-                if (frame_gain == second_gain)
-                    continue;
-                else
-                {
-                    pair_fc_gain = second_gain;
-                    odd_fc_gain = first_gain;
-                }
-            }
-        }
-        else
-        {
-            if (!(frame_counter % 2))
-            {
-                REQUIRE(frame_gain == pair_fc_gain);
-            }
-            else {
-                REQUIRE(frame_gain == odd_fc_gain);
-            }
-        }
-        if (iterations == 100)
-            break;
+        auto seq_id = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
+        std::cout << "seq id = " << seq_id << ", gain" << frame_gain << std::endl;
     }
 
 }

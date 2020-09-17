@@ -23,8 +23,8 @@ TEST_CASE( "HDR Running - restart hdr at restream", "[HDR]" ) {
     rs2::pipeline pipe;
     pipe.start(cfg);
 
-    depth_sensor.set_option(RS2_OPTION_HDR_MODE, 1);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_MODE) == 1.f);
+    depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
+    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 1.f);
 
     for (int i = 0; i < 10; ++i)
     {
