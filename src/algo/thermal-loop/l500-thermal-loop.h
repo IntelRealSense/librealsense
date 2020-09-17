@@ -28,7 +28,7 @@ public:
     static const int id = 0x317;
     static const int resolution = 29;
 
-    struct header
+    struct thermal_table_header
     {
         float min_temp;
         float max_temp;
@@ -44,10 +44,13 @@ public:
         float ty;
     };
 
-    table_meta_data md;
+    thermal_table_header header;
     std::vector< temp_data > vals;
+    thermal_calibration_table() = default;
 
-    static thermal_calibration_table parse_thermal_table ( const std::vector< byte > & data );
+    thermal_calibration_table( const std::vector< byte > & data );
+   
+    //static thermal_calibration_table parse_thermal_table ( const std::vector< byte > & data );
 
     double get_current_thermal_scale( const double& hum_temp ) const;
 
@@ -60,7 +63,8 @@ inline bool operator==( const thermal_calibration_table & lhs, const thermal_cal
         return false;
 
     if( lhs.header.max_temp != rhs.header.max_temp || lhs.header.min_temp != rhs.header.min_temp
-        || lhs.header.reference_temp != rhs.header.reference_temp || lhs.header.valid != rhs.header.valid )
+        || lhs.header.reference_temp != rhs.header.reference_temp
+        || lhs.header.valid != rhs.header.valid )
         return false;
 
     for( auto i = 0; i < rhs.vals.size(); i++ )

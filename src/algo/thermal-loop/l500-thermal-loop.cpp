@@ -10,43 +10,42 @@ namespace thermal_loop {
 namespace l500 {
 
 
-thermal_calibration_table thermal_calibration_table::parse_thermal_table( const std::vector< byte > & data )
+thermal_calibration_table::thermal_calibration_table( const std::vector< byte > & data ) 
 {
-    thermal_calibration_table res;
-    float const * header_ptr = (float *)(data.data() + sizeof( ivcam2::table_header ));
-  
-    auto expected_size
-        = sizeof( ivcam2::table_header ) + sizeof( header ) + sizeof( temp_data ) * resolution;
+    float const * header_ptr = (float *)( data.data() + sizeof( ivcam2::table_header ) );
+
+    auto expected_size = sizeof( ivcam2::table_header ) + sizeof( thermal_table_header )
+                       + sizeof( temp_data ) * resolution;
 
     if( data.size() != expected_size )
-        throw std::runtime_error( librealsense::to_string() << "data size (" << data.size()
+        throw std::runtime_error( librealsense::to_string()
+                                  << "data size (" << data.size()
                                   << ") does not meet expected size " << expected_size );
 
-    res.md = *(header *)( header_ptr );
+    header = *(thermal_table_header *)( header_ptr );
 
-    auto data_ptr
-        = (temp_data *)( data.data() + sizeof( ivcam2::table_header ) + sizeof( header ) );
-    res.vals.assign( data_ptr, data_ptr + resolution );
-
-    return res;
+    auto data_ptr = (temp_data *)( data.data() + sizeof( ivcam2::table_header )
+                                   + sizeof( thermal_table_header ) );
+    vals.assign( data_ptr, data_ptr + resolution );
 }
 
-double thermal_calibration_table::get_current_thermal_scale( const double& hum_temp ) const
+double thermal_calibration_table::get_current_thermal_scale( const double & hum_temp ) const
 {
     auto scale = vals[resolution - 1].scale;
 
     // curr temp is under minimum
-    if (hum_temp <= md.min_temp)
+    if( hum_temp <= header.min_temp )
     {
         scale = vals[0].scale;
     }
     else
     {
-        auto temp_range = md.max_temp - md.min_temp;
+        auto temp_range = header.max_temp - header.min_temp;
         // there are 29 bins between min and max temps so its divides to 30 equals intervals
         auto interval = temp_range / ( thermal_calibration_table::resolution + 1 );
 
-        for( double temp = md.min_temp, index = 0; index < resolution; ++index, temp += interval )
+        for( double temp = header.min_temp, index = 0; index < resolution;
+             ++index, temp += interval )
         {
             auto interval_max = temp + interval;
             if (hum_temp <= interval_max)
@@ -65,6 +64,7 @@ double thermal_calibration_table::get_current_thermal_scale( const double& hum_t
 std::vector< byte > thermal_calibration_table::build_raw_data() const
 {
     std::vector< float > data;
+    data.resize( sizeof( ivcam2::table_header ) / sizeof(float) );
     data.push_back( header.min_temp );
     data.push_back( header.max_temp );
     data.push_back( header.reference_temp );

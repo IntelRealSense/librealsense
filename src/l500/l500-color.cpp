@@ -194,7 +194,7 @@ namespace librealsense
                                 << algo::thermal_loop::l500::thermal_calibration_table::id );
             }
 
-            return algo::thermal_loop::l500::thermal_calibration_table::parse_thermal_table( data );
+            return algo::thermal_loop::l500::thermal_calibration_table{ data };
             };
 
         _color_device_idx = add_sensor(create_color_device(ctx, color_devs_info));
