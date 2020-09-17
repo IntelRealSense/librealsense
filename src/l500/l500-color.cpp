@@ -184,9 +184,10 @@ namespace librealsense
                                            algo::thermal_loop::l500::thermal_calibration_table::id,
                                            response );
 
-             if( response != hwm_Success )
+            if( response != hwm_Success )
             {
-                 LOG_DEBUG( "Failed to read FW table 0x"
+                AC_LOG( WARNING,
+                        "Failed to read FW table 0x"
                             << std::hex
                             << algo::thermal_loop::l500::thermal_calibration_table::id );
 
@@ -251,31 +252,31 @@ namespace librealsense
 
     double l500_color_sensor::read_temperature() const
     {
-            auto hwm = *_owner->_hw_monitor;
+        auto & hwm = *_owner->_hw_monitor;
 
-            std::vector< byte > res;
+        std::vector< byte > res;
 
-            try
-            {
-                res = hwm.send( command{ TEMPERATURES_GET } );
-            }
-            catch( std::exception const & e )
-            {
-                LOG_ERROR(
-                    "Failed to get temperatures; hardware monitor in inaccessible: " << e.what() );
-                return 0.;
-            }
-
-            if( res.size() < sizeof( temperatures ) )  // New temperatures may get added by FW...
-            {
-                LOG_ERROR( "Failed to get temperatures; result size= "
-                           << res.size() << "; expecting at least " << sizeof( temperatures ) );
-                return 0.;
-            }
-            auto const & ts = *( reinterpret_cast< temperatures * >( res.data() ) );
-            LOG_DEBUG( "HUM temperture is currently " << ts.HUM_temperature << " degrees Celsius" );
-            return ts.HUM_temperature;
+        try
+        {
+            res = hwm.send( command{ TEMPERATURES_GET } );
         }
+        catch( std::exception const & e )
+        {
+            LOG_ERROR(
+                "Failed to get temperatures; hardware monitor in inaccessible: " << e.what() );
+            return 0.;
+        }
+
+        if( res.size() < sizeof( temperatures ) )  // New temperatures may get added by FW...
+        {
+            LOG_ERROR( "Failed to get temperatures; result size= "
+                       << res.size() << "; expecting at least " << sizeof( temperatures ) );
+            return 0.;
+        }
+        auto const & ts = *( reinterpret_cast< temperatures * >( res.data() ) );
+        LOG_DEBUG( "HUM temperture is currently " << ts.HUM_temperature << " degrees Celsius" );
+        return ts.HUM_temperature;
+    }
 
      rs2_intrinsics normalize( const rs2_intrinsics & intr )
     {

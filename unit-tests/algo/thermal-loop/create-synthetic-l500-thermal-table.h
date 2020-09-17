@@ -4,12 +4,11 @@
 #include "../algo-common.h"
 #include "algo/thermal-loop/l500-thermal-loop.h"
 
-using namespace librealsense::algo::thermal_loop::l500;
+namespace thermal = librealsense::algo::thermal_loop::l500;
 
-
-thermal_calibration_table create_synthetic_table( const int table_size = 29)
+thermal::thermal_calibration_table create_synthetic_table( const int table_size = 29 )
 {
-    thermal_calibration_table res;
+    thermal::thermal_calibration_table res;
     res._header.min_temp = 0;
     res._header.max_temp = 75;
     res._header.reference_temp = 100;

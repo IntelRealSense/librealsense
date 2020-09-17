@@ -45,7 +45,6 @@ class l500_device;
             algo::depth_to_rgb_calibration::algo_calibration_info const & cal_info,
             algo::depth_to_rgb_calibration::algo_calibration_registers const & cal_regs,
             rs2_intrinsics yuy_intrinsics,
-            double temp,
             algo::thermal_loop::l500::thermal_calibration_table,
             std::function<void()> should_continue = nullptr
         );

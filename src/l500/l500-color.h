@@ -149,7 +149,7 @@ namespace librealsense
         action_delayer _action_delayer;
         std::mutex _state_mutex;
 
-        // Intrinsics from the the last successful AC( if one was ) with k - thermal correction,
+        // Intrinsics from the the last successful AC( if there was one ) with k - thermal correction,
         // We save it normalized such that it can be applied to each resolution
         std::shared_ptr< rs2_intrinsics > _k_thermal_intrinsics;
 

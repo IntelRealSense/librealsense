@@ -546,9 +546,8 @@ void compare_scene( std::string const & scene_dir,
     read_data_from( join( bin_dir( scene_dir ), "settings" ), &settings );
 
     auto scale = 1.;
-    if( read_thermal_data( scene_dir,
-                                 settings.hum_temp,
-                                 { ci.rgb.fx, ci.rgb.fy }, scale ) )
+    if (read_thermal_data(scene_dir,
+        settings.hum_temp, scale))
     {
         ci.rgb.fx *= scale;
         ci.rgb.fy *= scale;

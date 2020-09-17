@@ -29,7 +29,6 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     impl::algo_calibration_info const & cal_info,
     impl::algo_calibration_registers const & cal_regs,
     rs2_intrinsics yuy_intrinsics,
-    double temp,
     thermal_l500::thermal_calibration_table thermal_table,
     std::function<void()> should_continue
 )
@@ -52,9 +51,9 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
         AC_LOG( DEBUG, "Not using last successfully-calibrated scene: it's of a different resolution" );
 
 
-    auto scale = thermal_table.get_current_thermal_scale( temp );
+    auto scale = thermal_table.get_current_thermal_scale( settings.hum_temp );
 
-    AC_LOG( INFO, "Humidity temp is " << temp << " scaling krgb by " << scale );
+    AC_LOG( INFO, "Humidity temp is " << settings.hum_temp << " scaling krgb by " << scale );
 
     _thermal_intr.fx *= scale;
     _thermal_intr.fy *= scale;

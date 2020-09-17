@@ -421,7 +421,6 @@ bool compare_to_bin_file(
 
 bool read_thermal_data( std::string dir,
                               double hum_temp,
-                              const std::pair< double, double > & in_fx_fy,
                               double & scale )
 {
     try

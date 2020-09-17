@@ -1022,7 +1022,6 @@ namespace ivcam2 {
                         cal_info,
                         cal_regs,
                         read_intrinsics_from_camera( _dev, _cf.get_profile() ),
-                        _temp,
                         t,
                         should_continue );
 
@@ -1265,8 +1264,7 @@ namespace ivcam2 {
         std::string invalid_reason;
 
         _temp = read_temperature();
-        // If from some reason there is no thermal_table or its not valid
-        // Temperature must be within range or algo may not work right
+
         auto thermal_table_valid = true;
         try
         {
@@ -1281,6 +1279,8 @@ namespace ivcam2 {
         {
             if( _temp < 32. )
             {
+                // If from some reason there is no thermal_table or its not valid
+                // Temperature must be within range or algo may not work right
                 if( ! invalid_reason.empty() )
                     invalid_reason += ", ";
                 invalid_reason += to_string() << "temperature (" << _temp << ") too low (<32)";

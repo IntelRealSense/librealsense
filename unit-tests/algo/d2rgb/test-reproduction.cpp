@@ -130,28 +130,23 @@ protected:
 };
 
 
-bool read_thermal_data( std::string dir,
-                              double hum_temp,
-                              std::pair< double, double > & out_fx_fy )
+double get_thermal_scale(std::string dir, double hum_temp)
 {
+    auto scale = 1.;
     try
     {
         rs2_intrinsics raw_rgb_calib;
         read_binary_file( dir.c_str(), "raw_rgb.calib", &raw_rgb_calib );
         auto vec = read_vector_from< byte >( join( dir, "rgb_thermal_table" ) );
         thermal::l500::thermal_calibration_table thermal_table( vec );
-        auto scale = thermal_table.get_current_thermal_scale( hum_temp );
-        out_fx_fy = { raw_rgb_calib.fx, raw_rgb_calib.fy };
-        out_fx_fy.first *= scale;
-        out_fx_fy.second *= scale;
-
-        return true;
-        
+        scale = thermal_table.get_current_thermal_scale( hum_temp );
     }
     catch( std::exception const & e )
     {
-        return false;
+        TRACE( "No thermal data. Scale is 1" );
     }
+
+    return scale;
 }
 
 int main( int argc, char * argv[] )
@@ -229,14 +224,10 @@ int main( int argc, char * argv[] )
                 settings.receiver_gain = 9;
             }
 
-             std::pair< double, double > res_fx_fy;
-            if( read_thermal_data( dir,
-                                         settings.hum_temp,
-                                         res_fx_fy ) )
-            {
-                calibration.k_mat.k_mat.rot[0] = res_fx_fy.first;
-                calibration.k_mat.k_mat.rot[4] = res_fx_fy.second;
-            }
+
+            auto scale = get_thermal_scale( dir, settings.hum_temp );
+            calibration.k_mat.k_mat.rot[0] *= scale;
+            calibration.k_mat.k_mat.rot[4] *= scale;
 
             algo::optimizer cal( settings, debug_mode );
             std::string status;
