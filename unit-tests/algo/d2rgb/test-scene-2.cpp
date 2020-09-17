@@ -16,7 +16,7 @@ TEST_CASE("Scene 2", "[d2rgb]")
     std::string scene_dir( "C:\\work\\autocal" );
     scene_dir += "\\F9440687\\LongRange_D_768x1024_RGB_1920x1080\\2\\";
 
-    std::ifstream f( bin_dir( scene_dir ) + "camera_params" );
+    std::ifstream f( join( bin_dir( scene_dir ), "camera_params" ) );
     if( f.good() )
         compare_scene( scene_dir );
     else

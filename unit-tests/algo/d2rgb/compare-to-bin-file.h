@@ -264,7 +264,7 @@ bool compare_to_bin_file(
 {
     TRACE( "Comparing " << filename << " ..." );
     bool ok = true;
-    auto bin = read_vector_from< F >(bin_dir(scene_dir) + filename, width, height);
+    auto bin = read_vector_from< F >( join( bin_dir( scene_dir ), filename ), width, height );
     if( bin.size() != size)
         TRACE( filename << ": {matlab size}" << bin.size() << " != {width}" << width << "x" << height << "{height}" ), ok = false;
     if( vec.size() != bin.size() )
@@ -327,7 +327,7 @@ bool get_calib_and_cost_from_raw_data(
         sizeof( algo::matrix_3x3 ) +
         sizeof( double ); // cost
 
-    auto bin = read_vector_from< double >( bin_dir( scene_dir ) + filename );
+    auto bin = read_vector_from< double >( join( bin_dir( scene_dir ), filename ) );
     if( bin.size() * sizeof( double ) != data_size )
     {
         AC_LOG( DEBUG, "... " << filename << ": {matlab size}" << bin.size() * sizeof(double) << " != " << data_size );
@@ -414,7 +414,7 @@ bool compare_to_bin_file(
 {
     TRACE("Comparing " << filename << " ...");
     bool ok = true;
-    auto obj_matlab = read_from< D >(bin_dir(scene_dir) + filename);
+    auto obj_matlab = read_from< D >( join( bin_dir( scene_dir ), filename ) );
 
     return compare_t(obj_matlab, obj_cpp);
 }
@@ -429,11 +429,10 @@ bool read_thermal_data( std::string dir,
         auto vec = read_vector_from< byte >(
             join( bin_dir( dir ), "rgb_thermal_table" ) );
         auto thermal_table = thermal::l500::thermal_calibration_table::parse_thermal_table( vec );
-        auto scale = thermal::l500::l500_thermal_loop::get_current_thermal_scale( thermal_table,
-                                                                                      hum_temp );
-        out_fx_fy = thermal::l500::l500_thermal_loop::correct_thermal_scale(
-            { in_fx_fy.first, in_fx_fy.second },
-            scale );
+        auto scale = thermal_table.get_current_thermal_scale( hum_temp );
+        out_fx_fy = in_fx_fy;
+        out_fx_fy.first *= scale;
+        out_fx_fy.second *= scale;
 
         return true;
     }

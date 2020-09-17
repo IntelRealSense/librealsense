@@ -45,7 +45,10 @@ void init_algo( algo::optimizer & cal,
 
     try
     {
-        yuy_last_successful_frame = read_image_file< algo::yuy_t >(dir + yuy_last_successful, camera.rgb.width, camera.rgb.height);
+        yuy_last_successful_frame
+            = read_image_file< algo::yuy_t >( join( dir, yuy_last_successful ),
+                                              camera.rgb.width,
+                                              camera.rgb.height );
     }
     catch (...) 
     {
