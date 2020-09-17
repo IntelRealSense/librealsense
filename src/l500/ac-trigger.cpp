@@ -8,7 +8,6 @@
 #include "l500-depth.h"
 #include "algo/depth-to-rgb-calibration/debug.h"
 #include "algo/thermal-loop/l500-thermal-loop.h"
-#include "algo/depth-to-rgb-calibration/utils.h"
 #include "log.h"
 
 

@@ -9,6 +9,7 @@ namespace algo {
 namespace thermal_loop {
 namespace l500 {
 
+const int thermal_calibration_table::id = 0x317;
 
 thermal_calibration_table::thermal_calibration_table( const std::vector< byte > & data,
                                                       int resolution )

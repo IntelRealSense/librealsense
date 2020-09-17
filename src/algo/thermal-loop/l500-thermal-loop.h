@@ -25,7 +25,7 @@ namespace l500 {
 class thermal_calibration_table
 {
 public:
-    static const int id = 0x317;
+    static const int id;
     
     struct thermal_table_header
     {
