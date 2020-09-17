@@ -3,7 +3,7 @@
 
 //#cmake:add-file ../../../src/algo/thermal-loop/*.cpp
 #include "../algo-common.h"
-#include "./create-syntetic-data.h"
+#include "./create-synthetic-l500-thermal-table.h"
 #include "algo/thermal-loop/l500-thermal-loop.h"
 
 using namespace librealsense::algo::thermal_loop::l500;
@@ -26,7 +26,7 @@ TEST_CASE("get_scale", "[thermal-loop]")
     };
     
 
-    auto syntetic_table = create_syntetic_table();
+    auto syntetic_table = create_synthetic_table();
     // [0   - 2.5]  --> 0.5
     // (2.5 - 5]    --> 1
     // (5   - 7.5]  --> 1.5
@@ -41,14 +41,9 @@ TEST_CASE("get_scale", "[thermal-loop]")
     }
 }
 
-TEST_CASE( "correct_thermal_scale", "[thermal-loop]" )
+TEST_CASE( "scale_is_zerro", "[thermal-loop]" )
 {
-    auto res = correct_thermal_scale( { 50, 100 }, 2.5 );
-    REQUIRE( res.first == 125 );
-    REQUIRE( res.second == 250 );
-
-    res = correct_thermal_scale( { 50, 100 }, 3.555 );
-    REQUIRE( res.first == 177.75 );
-    REQUIRE( res.second == 355.5 );
-
+    auto syntetic_table = create_synthetic_table();
+    syntetic_table.vals[0].scale = 0;
+    REQUIRE_THROWS( syntetic_table.get_current_thermal_scale( 0 ) );
 }

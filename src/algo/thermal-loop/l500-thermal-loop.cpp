@@ -15,21 +15,19 @@ thermal_calibration_table thermal_calibration_table::parse_thermal_table( const 
     float const * float_data = (float *)data.data();
   
 
-    const int meta_data_size
-        = sizeof( thermal_calibration_table::table_meta_data ) / sizeof( float );
-    const int temp_data_size = sizeof( thermal_calibration_table::temp_data ) / sizeof( float );
+    const int meta_data_size = sizeof( thermal_header ) / sizeof( float );
+    const int temp_data_size = sizeof( temp_data ) / sizeof( float );
 
-    if( ( data.size() / sizeof(float) - meta_data_size ) / temp_data_size
-        != thermal_calibration_table::resolution )
-        throw std::runtime_error( librealsense::to_string() << "data size (" << data.size()
-                                                            << ") does not expected size " );
+    if( ( data.size() / sizeof( float ) - meta_data_size ) / temp_data_size != resolution )
+        throw std::runtime_error( librealsense::to_string()
+                                  << "data size (" << data.size() << ") does not expected size " );
 
 
-    res.md = *(thermal_calibration_table::table_meta_data *)( &float_data[0] );
+    res.header = *(thermal_header *)( &float_data[0] );
 
-    res.vals.assign( (thermal_calibration_table::temp_data *)( &float_data[meta_data_size] ),
-                     (thermal_calibration_table::temp_data *)( &float_data[meta_data_size] )
-                         + thermal_calibration_table::resolution );
+    res.vals.assign( (temp_data *)( &float_data[meta_data_size] ),
+                     (temp_data *)( &float_data[meta_data_size] )
+                         + resolution );
 
     return res;
 }
@@ -37,7 +35,7 @@ thermal_calibration_table thermal_calibration_table::parse_thermal_table( const 
 double thermal_calibration_table::get_current_thermal_scale( const double& hum_temp ) const
 {
     // curr temp is under minimum
-    if (hum_temp <= md.min_temp)
+    if (hum_temp <= header.min_temp)
     {
         if( vals[0].scale == 0)
             throw std::runtime_error( "Scale value in index 0 is 0 " );
@@ -46,7 +44,7 @@ double thermal_calibration_table::get_current_thermal_scale( const double& hum_t
     }
 
     // curr temp is above maximum
-    if (hum_temp >= md.max_temp)
+    if (hum_temp >= header.max_temp)
     {
         if( vals[thermal_calibration_table::resolution - 1].scale == 0 )
             throw std::runtime_error( to_string()
@@ -57,12 +55,12 @@ double thermal_calibration_table::get_current_thermal_scale( const double& hum_t
     }
        
 
-    auto temp_range = md.max_temp - md.min_temp;
+    auto temp_range = header.max_temp - header.min_temp;
     // there are 29 bins between min and max temps so its divides to 30 equals intervals
     auto temp_interval = temp_range / ( thermal_calibration_table::resolution + 1 );
 
     for( double temp = temp_interval, ind = 0;
-         temp <= md.max_temp, ind < thermal_calibration_table::resolution;
+         temp <= header.max_temp, ind < thermal_calibration_table::resolution;
          temp += temp_interval, ind++ )
     {
         if( hum_temp <= temp && ind < thermal_calibration_table::resolution )
@@ -76,7 +74,7 @@ double thermal_calibration_table::get_current_thermal_scale( const double& hum_t
     }
 
      // the loop does not cover the last range [resolution-max_temp]
-    if( hum_temp < md.max_temp )
+    if( hum_temp < header.max_temp )
     {
         if( vals[thermal_calibration_table::resolution - 1].scale == 0 )
             throw std::runtime_error( to_string()
@@ -92,10 +90,10 @@ std::vector< byte > thermal_calibration_table::build_raw_data() const
 {
     std::vector< byte > res;
     std::vector< float > data;
-    data.push_back( md.min_temp );
-    data.push_back( md.max_temp );
-    data.push_back( md.reference_temp );
-    data.push_back( md.valid );
+    data.push_back( header.min_temp );
+    data.push_back( header.max_temp );
+    data.push_back( header.reference_temp );
+    data.push_back( header.valid );
 
     for( auto i = 0; i < vals.size(); i++ )
     {
@@ -109,11 +107,6 @@ std::vector< byte > thermal_calibration_table::build_raw_data() const
     return res;
 }
 
-fx_fy correct_thermal_scale( std::pair< double, double > in_calib,
-                                                   double scale )
-{
-    return { in_calib.first * scale, in_calib.second * scale };
-}
 }
 }
 }

@@ -45,11 +45,8 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     else if( ! last_yuy_data.empty() )
         AC_LOG( DEBUG, "Not using last successfully-calibrated scene: it's of a different resolution" );
 
-    auto fx_fy = algo::thermal_loop::l500::correct_thermal_scale(
-        { _raw_intrinsics.fx, _raw_intrinsics.fy },
-        scale );
-    _thermal_intr.fx = fx_fy.first;
-    _thermal_intr.fy = fx_fy.second;
+    _thermal_intr.fx *= scale;
+    _thermal_intr.fy *= scale;
     impl::calib calibration( _thermal_intr, _extr );
 
     CHECK_IF_NEEDS_TO_STOP();

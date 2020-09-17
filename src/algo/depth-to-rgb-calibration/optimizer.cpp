@@ -1560,6 +1560,12 @@ void params::set_depth_resolution( size_t width, size_t height, rs2_ambient_ligh
     bool const XGA = (width == 1024 && height == 768);
     bool const VGA = (width == 640 && height == 480);
 
+    if (!XGA && !VGA)
+    {
+        throw std::runtime_error( to_string()
+                                  << width << "x" << height << " this resolution is not supported" );
+    }
+
     if( XGA )
     {
         AC_LOG( DEBUG, "    changing IR threshold: " << grad_ir_threshold << " -> " << 2.5 << "  (because of resolution)" );

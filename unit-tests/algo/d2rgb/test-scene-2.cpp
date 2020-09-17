@@ -13,8 +13,8 @@ TEST_CASE("Scene 2", "[d2rgb]")
 {
     // TODO so Travis passes, until we fix the test-case
     //std::string scene_dir("..\\unit-tests\\algo\\depth-to-rgb-calibration\\19.2.20");
-    std::string scene_dir( "C:\\work\\autocal" );
-    scene_dir += "\\F9440687\\LongRange_D_768x1024_RGB_1920x1080\\2\\";
+    std::string scene_dir( "C:\\work\\autocal\\New\\A\\20_05_2020-Ashrafon-cubic2-4\\ac_4" );
+    scene_dir += "\\1\\";
 
     std::ifstream f( join( bin_dir( scene_dir ), "camera_params" ) );
     if( f.good() )

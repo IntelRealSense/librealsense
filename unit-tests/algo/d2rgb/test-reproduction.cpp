@@ -132,7 +132,6 @@ protected:
 
 bool read_thermal_data( std::string dir,
                               double hum_temp,
-                              const std::pair< double, double > & in_fx_fy,
                               std::pair< double, double > & out_fx_fy )
 {
     try
@@ -142,9 +141,9 @@ bool read_thermal_data( std::string dir,
         auto vec = read_vector_from< byte >( join( dir, "rgb_thermal_table" ) );
         auto thermal_table = thermal::l500::thermal_calibration_table::parse_thermal_table( vec );
         auto scale = thermal_table.get_current_thermal_scale( hum_temp );
-        out_fx_fy = thermal::l500::correct_thermal_scale(
-            { in_fx_fy.first, in_fx_fy.second },
-            scale );
+        out_fx_fy = { raw_rgb_calib.fx, raw_rgb_calib.fy };
+        out_fx_fy.first *= scale;
+        out_fx_fy.second *= scale;
 
         return true;
         
@@ -233,7 +232,6 @@ int main( int argc, char * argv[] )
              std::pair< double, double > res_fx_fy;
             if( read_thermal_data( dir,
                                          settings.hum_temp,
-                                         { calibration.k_mat.get_fx(), calibration.k_mat.get_fy() },
                                          res_fx_fy ) )
             {
                 calibration.k_mat.k_mat.rot[0] = res_fx_fy.first;
