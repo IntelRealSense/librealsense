@@ -12,6 +12,7 @@
 #include "proc/color-formats-converter.h"
 #include "ac-trigger.h"
 #include "algo/depth-to-rgb-calibration/debug.h"
+#include "algo/thermal-loop/l500-thermal-loop.h"
 
 
 namespace librealsense
