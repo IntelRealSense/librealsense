@@ -4,6 +4,7 @@
 #pragma once
 
 #include "algo/depth-to-rgb-calibration/optimizer.h"
+#include "algo/thermal-loop/l500-thermal-loop.h"
 #include "types.h"
 #include <vector>
 
@@ -15,6 +16,8 @@ namespace librealsense
         vectors. Also translates the various stages in algo to actual RS2_CALIBRATION_
         return values.
     */
+class l500_device;
+
     class depth_to_rgb_calibration
     {
         // inputs
@@ -27,7 +30,7 @@ namespace librealsense
         rs2_intrinsics _thermal_intr; // intrinsics with k_thermal for user
         rs2_dsm_params _dsm_params;
         std::vector< algo::depth_to_rgb_calibration::yuy_t > _last_successful_frame_data;
-
+        algo::thermal_loop::l500::thermal_calibration_table _thermal_table;
         algo::depth_to_rgb_calibration::optimizer _algo;
         std::function<void()> _should_continue;
 
@@ -42,7 +45,8 @@ namespace librealsense
             algo::depth_to_rgb_calibration::algo_calibration_info const & cal_info,
             algo::depth_to_rgb_calibration::algo_calibration_registers const & cal_regs,
             rs2_intrinsics yuy_intrinsics,
-            double scale,
+            double temp,
+            algo::thermal_loop::l500::thermal_calibration_table,
             std::function<void()> should_continue = nullptr
         );
 

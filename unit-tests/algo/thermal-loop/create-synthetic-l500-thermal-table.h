@@ -27,9 +27,9 @@ thermal_calibration_table create_synthetic_table( const int table_size
     for( auto i = 0; i < table_size; i++ )
     {
         res.vals[i].scale = ( i + 1 ) * 0.5;
-        res.vals[i].p[0] = 0;
-        res.vals[i].p[1] = 0;
-        res.vals[i].p[2] = 0;
+        res.vals[i].sheer = 0;
+        res.vals[i].tx = 0;
+        res.vals[i].ty = 0;
     }
     return res;
 }

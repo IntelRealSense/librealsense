@@ -9,9 +9,13 @@
 #include "api.h"  // VALIDATE_INTERFACE_NO_THROW
 #include "algo/depth-to-rgb-calibration/debug.h"
 #include "algo/thermal-loop/l500-thermal-loop.h"
+#include "l500/l500-device.h"
+#include "l500/l500-color.h"
+#include "algo/depth-to-rgb-calibration/utils.h"
 
 using namespace librealsense;
 namespace impl = librealsense::algo::depth_to_rgb_calibration;
+namespace thermal_l500 = librealsense::algo::thermal_loop::l500;
 
 #define CHECK_IF_NEEDS_TO_STOP() if (_should_continue) _should_continue()
 
@@ -25,7 +29,8 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     impl::algo_calibration_info const & cal_info,
     impl::algo_calibration_registers const & cal_regs,
     rs2_intrinsics yuy_intrinsics,
-    double scale,
+    double temp,
+    thermal_l500::thermal_calibration_table thermal_table,
     std::function<void()> should_continue
 )
     : _algo( settings )
@@ -35,6 +40,7 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     , _from( depth.get_profile().get()->profile )
     , _to( yuy.get_profile().get()->profile )
     , _should_continue( should_continue )
+    , _thermal_table( thermal_table )
 {
     AC_LOG( DEBUG, "Setting YUY data" );
     auto color_profile = yuy.get_profile().as< rs2::video_stream_profile >();
@@ -45,8 +51,14 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     else if( ! last_yuy_data.empty() )
         AC_LOG( DEBUG, "Not using last successfully-calibrated scene: it's of a different resolution" );
 
+
+    auto scale = thermal_table.get_current_thermal_scale( temp );
+
+    AC_LOG( INFO, "Humidity temp is " << temp << " scaling krgb by " << scale );
+
     _thermal_intr.fx *= scale;
     _thermal_intr.fy *= scale;
+
     impl::calib calibration( _thermal_intr, _extr );
 
     CHECK_IF_NEEDS_TO_STOP();
@@ -99,6 +111,10 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
 void depth_to_rgb_calibration::write_data_to( std::string const & dir )
 {
     _algo.write_data_to( dir );
+
+     impl::write_to_file( &_raw_intrinsics, sizeof( _raw_intrinsics ), dir, "raw_rgb.calib" );
+
+     impl::write_vector_to_file( _thermal_table.build_raw_data(), dir, "rgb_thermal_table" );
 }
 
 

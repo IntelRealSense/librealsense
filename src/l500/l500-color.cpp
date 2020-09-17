@@ -178,8 +178,22 @@ namespace librealsense
 
         _thermal_table =
             [this]() {
-                auto data = read_fw_table_raw( *_hw_monitor,
-                algo::thermal_loop::l500::thermal_calibration_table::id );
+            hwmon_response response;
+            auto data = read_fw_table_raw( *_hw_monitor,
+                                           algo::thermal_loop::l500::thermal_calibration_table::id,
+                                           response );
+
+             if( response != hwm_Success )
+            {
+                 LOG_DEBUG( "Failed to read FW table 0x"
+                            << std::hex
+                            << algo::thermal_loop::l500::thermal_calibration_table::id );
+
+                throw invalid_value_exception(
+                    to_string() << "Failed to read FW table 0x" << std::hex
+                                << algo::thermal_loop::l500::thermal_calibration_table::id );
+            }
+
             return algo::thermal_loop::l500::thermal_calibration_table::parse_thermal_table( data );
             };
 
@@ -236,31 +250,31 @@ namespace librealsense
 
     double l500_color_sensor::read_temperature() const
     {
-        auto hwm = *_owner->_hw_monitor;
+            auto hwm = *_owner->_hw_monitor;
 
-        std::vector< byte > res;
+            std::vector< byte > res;
 
-        try
-        {
-            res = hwm.send( command{ TEMPERATURES_GET } );
-        }
-        catch( std::exception const & e )
-        {
-            LOG_ERROR(
-                "Failed to get temperatures; hardware monitor in inaccessible: " << e.what() );
-            return 0.;
-        }
+            try
+            {
+                res = hwm.send( command{ TEMPERATURES_GET } );
+            }
+            catch( std::exception const & e )
+            {
+                LOG_ERROR(
+                    "Failed to get temperatures; hardware monitor in inaccessible: " << e.what() );
+                return 0.;
+            }
 
-        if( res.size() < sizeof( temperatures ) )  // New temperatures may get added by FW...
-        {
-            LOG_ERROR( "Failed to get temperatures; result size= "
-                       << res.size() << "; expecting at least " << sizeof( temperatures ) );
-            return 0.;
+            if( res.size() < sizeof( temperatures ) )  // New temperatures may get added by FW...
+            {
+                LOG_ERROR( "Failed to get temperatures; result size= "
+                           << res.size() << "; expecting at least " << sizeof( temperatures ) );
+                return 0.;
+            }
+            auto const & ts = *( reinterpret_cast< temperatures * >( res.data() ) );
+            LOG_DEBUG( "HUM temperture is currently " << ts.HUM_temperature << " degrees Celsius" );
+            return ts.HUM_temperature;
         }
-        auto const & ts = *( reinterpret_cast< temperatures * >( res.data() ) );
-        LOG_DEBUG( "HUM temperture is currently " << ts.HUM_temperature << " degrees Celsius" );
-        return ts.HUM_temperature;
-    }
 
      rs2_intrinsics normalize( const rs2_intrinsics & intr )
     {
@@ -274,7 +288,7 @@ namespace librealsense
     }
 
     rs2_intrinsics
-    unnormalize( const rs2_intrinsics & intr, const uint32_t & width, const uint32_t & height )
+    denormalize( const rs2_intrinsics & intr, const uint32_t & width, const uint32_t & height )
     {
         auto res = intr;
 
@@ -283,17 +297,22 @@ namespace librealsense
         res.ppx = ( intr.ppx + 1 ) * width / 2;
         res.ppy = ( intr.ppy + 1 ) * height / 2;
 
+        res.width = width;
+        res.height = height;
+
         return res;
     }
 
     rs2_intrinsics l500_color_sensor::get_intrinsics( const stream_profile & profile ) const
     {
-        if (!_k_thermal_intrinsics )
+        if( ! _k_thermal_intrinsics)
         {
-                return get_raw_intrinsics( profile.width, profile.height );
+            // Until we've calculated temp-based intrinsics, simply use the camera-specified
+            // intrinsics
+            return get_raw_intrinsics( profile.width, profile.height );
         }
 
-       return unnormalize( *_k_thermal_intrinsics, profile.width, profile.height );
+        return denormalize( *_k_thermal_intrinsics, profile.width, profile.height );
     }
 
 
@@ -397,8 +416,7 @@ namespace librealsense
         _k_thermal_intrinsics.reset();
     }
 
-    algo::thermal_loop::l500::thermal_calibration_table
-    l500_color_sensor::get_thermal_table()
+    algo::thermal_loop::l500::thermal_calibration_table l500_color_sensor::get_thermal_table() const
     {
         return *_owner->_thermal_table;
     }
@@ -439,7 +457,7 @@ namespace librealsense
          environment::get_instance().get_extrinsics_graph().override_extrinsics(
             *_owner->_depth_stream,
             *_owner->_color_stream,
-             from_raw_extrinsics(table.get_extrinsics()));
+            from_raw_extrinsics( table.get_extrinsics() ) );
         AC_LOG( INFO, "Color sensor calibration has been reset" );
     }
 

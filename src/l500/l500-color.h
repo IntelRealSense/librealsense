@@ -79,7 +79,7 @@ namespace librealsense
         void reset_calibration() override;
         void set_k_thermal_intrinsics( rs2_intrinsics const & intr );
         void reset_k_thermal_intrinsics(); 
-        algo::thermal_loop::l500::thermal_calibration_table get_thermal_table();
+        algo::thermal_loop::l500::thermal_calibration_table get_thermal_table() const;
 
         stream_profiles init_stream_profiles() override
         {

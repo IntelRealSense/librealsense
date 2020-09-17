@@ -36,6 +36,7 @@ TEST_CASE("get_scale", "[thermal-loop]")
 
     for (auto temp_scale : temp_to_expected_scale)
     {
+        TRACE( "checking temp = " << temp_scale.first );
         REQUIRE( syntetic_table.get_current_thermal_scale( temp_scale.first )
                  == 1. / temp_scale.second );
     }

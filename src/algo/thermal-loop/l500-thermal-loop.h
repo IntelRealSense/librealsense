@@ -19,15 +19,16 @@ namespace l500 {
 // The transformation maps a point in the RGB image in a given temperature to its expected
 // Location in the temperature in which the RGB module was calibrated.
 // Reference on:
-// https://rsconf.intel.com/display/L500/RGB+Thermal+Dependency
+// https://rsconf.intel.com/display/L500/0x317+RGB+Thermal+Table
 
 
-struct thermal_calibration_table
+class thermal_calibration_table
 {
+public:
     static const int id = 0x317;
     static const int resolution = 29;
 
-    struct thermal_header
+    struct header
     {
         float min_temp;
         float max_temp;
@@ -38,10 +39,12 @@ struct thermal_calibration_table
     struct temp_data
     {
         float scale;
-        float p[3];  // parameters which effect offset that are not in use
+        float sheer; // parameters which affect offset that are not in use
+        float tx;
+        float ty;
     };
 
-    thermal_header header;
+    table_meta_data md;
     std::vector< temp_data > vals;
 
     static thermal_calibration_table parse_thermal_table ( const std::vector< byte > & data );
@@ -62,13 +65,12 @@ inline bool operator==( const thermal_calibration_table & lhs, const thermal_cal
 
     for( auto i = 0; i < rhs.vals.size(); i++ )
     {
-        if( lhs.vals[i].scale != rhs.vals[i].scale || lhs.vals[i].p[0] != rhs.vals[i].p[0]
-            || lhs.vals[i].p[1] != rhs.vals[i].p[1] || lhs.vals[i].p[2] != rhs.vals[i].p[2] )
+        if( lhs.vals[i].scale != rhs.vals[i].scale || lhs.vals[i].sheer != rhs.vals[i].sheer
+            || lhs.vals[i].tx != rhs.vals[i].tx || lhs.vals[i].ty != rhs.vals[i].ty )
             return false;
     }
     return true;
 }
-
 
 }  // namespace l500
 }  // namespace thermal_loop

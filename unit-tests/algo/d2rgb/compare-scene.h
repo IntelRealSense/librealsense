@@ -545,14 +545,13 @@ void compare_scene( std::string const & scene_dir,
     algo::optimizer::settings settings;
     read_data_from( join( bin_dir( scene_dir ), "settings" ), &settings );
 
-    std::pair< double, double > res_fx_fy;
+    auto scale = 1.;
     if( read_thermal_data( scene_dir,
                                  settings.hum_temp,
-                                 { ci.rgb.fx, ci.rgb.fy },
-                                 res_fx_fy ) )
+                                 { ci.rgb.fx, ci.rgb.fy }, scale ) )
     {
-        ci.rgb.fx = res_fx_fy.first;
-        ci.rgb.fy = res_fx_fy.second;
+        ci.rgb.fx *= scale;
+        ci.rgb.fy *= scale;
 
         auto filename = bin_file( "Kthermal_rgb", 9, 1, "double_00" ) + ".bin";
         TRACE( "Comparing " << filename << " ..." );

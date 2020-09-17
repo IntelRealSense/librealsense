@@ -422,18 +422,14 @@ bool compare_to_bin_file(
 bool read_thermal_data( std::string dir,
                               double hum_temp,
                               const std::pair< double, double > & in_fx_fy,
-                              std::pair< double, double > & out_fx_fy )
+                              double & scale )
 {
     try
     {
         auto vec = read_vector_from< byte >(
             join( bin_dir( dir ), "rgb_thermal_table" ) );
         auto thermal_table = thermal::l500::thermal_calibration_table::parse_thermal_table( vec );
-        auto scale = thermal_table.get_current_thermal_scale( hum_temp );
-        out_fx_fy = in_fx_fy;
-        out_fx_fy.first *= scale;
-        out_fx_fy.second *= scale;
-
+        scale = thermal_table.get_current_thermal_scale( hum_temp );
         return true;
     }
     catch( std::exception const & e )

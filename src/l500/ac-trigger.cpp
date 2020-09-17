@@ -962,10 +962,8 @@ namespace ivcam2 {
                     // cannot do it from set_special_frame() because it takes time and we should not
                     // hold up the thread that the frame callbacks are on!
                     float dsm_x_scale, dsm_y_scale, dsm_x_offset, dsm_y_offset;
-                    double scale;
                     algo::depth_to_rgb_calibration::algo_calibration_info cal_info;
-                    //algo::thermal_loop::thermal_table_data thermal_table;
-
+                    algo::thermal_loop::l500::thermal_calibration_table t;
                     {
                         auto hwm = _hwm.lock();
                         if( ! hwm )
@@ -980,42 +978,12 @@ namespace ivcam2 {
 
                         try
                         {
-                            auto t = _dev.get_color_sensor()->get_thermal_table();
-                            
-                            scale = t.get_current_thermal_scale( _temp );
-
-                            AC_LOG( INFO,
-                                    "Humidity temp is " << _temp << " scaling krgb by " << scale );
-                            
-                            std::string debug_dir = get_ac_logger().get_active_dir();
-                            if (!debug_dir.empty())
-                            {
-                                auto orig_intrinsics
-                                    = read_intrinsics_from_camera( _dev, _cf.get_profile() );
-
-                                algo::depth_to_rgb_calibration::write_to_file(
-                                    &orig_intrinsics,
-                                    sizeof( orig_intrinsics ),
-                                    debug_dir,
-                                    "raw_rgb.calib" );
-
-                                algo::depth_to_rgb_calibration::write_vector_to_file(
-                                    t.build_raw_data(),
-                                    debug_dir,
-                                    "rgb_thermal_table" );
-                               
-                            }
-                               
+                            t = _dev.get_color_sensor()->get_thermal_table();
                         }
-                        catch (...)
+                        catch( ... )
                         {
-                            scale = 1;
-
-                            AC_LOG( WARNING,
-                                    "Could not read thermal_table" << _temp << " scaling krgb by " << scale );
-                            
+                            AC_LOG( WARNING, "Could not read thermal_table" );
                         }
-
                         // If the above throw (and they can!) then we catch below and stop...
                     }
 
@@ -1045,13 +1013,19 @@ namespace ivcam2 {
                     settings.hum_temp = _temp;
                     settings.ambient = _ambient;
                     settings.receiver_gain = _receiver_gain;
-                    depth_to_rgb_calibration algo( settings,
-                                                   df, irf,
-                                                   _cf, _pcf, _last_yuy_data,
-                                                   cal_info, cal_regs,
-                                                   read_intrinsics_from_camera( _dev, _cf.get_profile() ),
-                                                   scale,
-                                                   should_continue );
+                    depth_to_rgb_calibration algo(
+                        settings,
+                        df,
+                        irf,
+                        _cf,
+                        _pcf,
+                        _last_yuy_data,
+                        cal_info,
+                        cal_regs,
+                        read_intrinsics_from_camera( _dev, _cf.get_profile() ),
+                        _temp,
+                        t,
+                        should_continue );
 
                     std::string debug_dir = get_ac_logger().get_active_dir();
                     if( ! debug_dir.empty() )
@@ -1262,6 +1236,10 @@ namespace ivcam2 {
 
     double ac_trigger::read_temperature()
     {
+        auto hwm = _hwm.lock();
+        if( ! hwm )
+            throw std::runtime_error( "HW monitor is inaccessible - stopping algo" );
+
         return _dev.get_color_sensor()->read_temperature();
     }
 
@@ -1288,7 +1266,7 @@ namespace ivcam2 {
         std::string invalid_reason;
 
         _temp = read_temperature();
-        // If from some reasone there is no thermal_table or its not valid
+        // If from some reason there is no thermal_table or its not valid
         // Temperature must be within range or algo may not work right
         auto thermal_table_valid = true;
         try
