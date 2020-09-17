@@ -18,6 +18,9 @@ TEST_CASE( "HDR Config - changing only exposure", "[HDR]" ) {
     rs2::device dev = devices_list[0];
     rs2::depth_sensor depth_sensor = dev.query_sensors().front();
 
+    depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 0);
+    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 0.f);
+
     float exposure_before_hdr = 50.f;
     depth_sensor.set_option(RS2_OPTION_EXPOSURE, exposure_before_hdr);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_EXPOSURE) == exposure_before_hdr);
@@ -69,8 +72,8 @@ TEST_CASE( "HDR Config - changing only exposure", "[HDR]" ) {
         ++iterations;
         if (iterations == 100)
         {
-            depth_sensor.set_option(RS2_OPTION_HDR_MODE, 0);
-            REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_MODE) == 0.f);
+            depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 0);
+            REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 0.f);
 
             previous_exposure = frame_exposure;
         }
