@@ -23,7 +23,7 @@ fi
 source ./scripts/patch-utils.sh
 
 # Get the required tools and headers to build the kernel
-sudo apt-get install linux-headers-generic build-essential git -y
+sudo apt-get install build-essential git -y
 #Packages to build the patched modules
 #require_package libusb-1.0-0-dev
 #require_package libssl-dev
@@ -87,13 +87,16 @@ popd
 #Download kernel and peripheral sources as the L4T github repo is not self-contained to build kernel modules
 sdk_dir=$(pwd)
 echo -e "\e[32mCreate the sandbox - NVidia L4T source tree(s)\e[0m"
-sudo ./Tegra/source_sync.sh -k ${TEGRA_TAG}
-KBASE=./sources/kernel/kernel-4.9
+mkdir -p ${sdk_dir}/Tegra
+cp ./scripts/Tegra/source_sync.sh ${sdk_dir}/Tegra
+#Download NVidia source, disregard errors on module tag sync
+sudo ./Tegra/source_sync.sh -k ${TEGRA_TAG} || true
+KBASE=./Tegra/sources/kernel/kernel-4.9
 echo ${KBASE}
 pushd ${KBASE}
 
 echo -e "\e[32mCopy LibRealSense patches to the sandbox\e[0m"
-L4T_Patches_Dir=${sdk_dir}/Tegra/LRS_Patches/
+L4T_Patches_Dir=${sdk_dir}/scripts/Tegra/LRS_Patches/
 if [ ! -d ${L4T_Patches_Dir} ]; then
 	echo -e "\e[41mThe L4T kernel patches directory  ${L4T_Patches_Dir} was not found, aborting\e[0m"
 	exit 1
@@ -135,7 +138,7 @@ sudo -s make -j$(($(nproc)-1)) ARCH=arm64  M=drivers/media/v4l2-core modules
 echo -e "\e[32mCompiling accelerometer and gyro modules\e[0m"
 sudo -s make -j$(($(nproc)-1)) ARCH=arm64  M=drivers/iio modules
 
-echo -e "\e[32mCopying the patched modules to `~/` \e[0m"
+echo -e "\e[32mCopying the patched modules to (~/) \e[0m"
 sudo cp drivers/media/usb/uvc/uvcvideo.ko ~/${TEGRA_TAG}-uvcvideo.ko
 sudo cp drivers/media/v4l2-core/videobuf-vmalloc.ko ~/${TEGRA_TAG}-videobuf-vmalloc.ko
 sudo cp drivers/media/v4l2-core/videobuf-core.ko ~/${TEGRA_TAG}-videobuf-core.ko
