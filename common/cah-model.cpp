@@ -16,7 +16,7 @@ cah_model::cah_model(device_model & dev_model, viewer_model& viewer) :
     _viewer(viewer),
     _state(model_state_type::TRIGGER_MODAL),
     _process_started(false), 
-    _process_timeout()
+    _process_timeout(std::chrono::seconds(30))
 {
     global_calib_status = RS2_CALIBRATION_NOT_NEEDED;
 
@@ -106,7 +106,7 @@ bool cah_model::prompt_trigger_popup(ux_window& window, std::string& error_messa
                     _state = model_state_type::PROCESS_MODAL;
                     // We switch to process state without a guarantee that the process really started,
                     // Set a timeout to make sure if it is not started we will allow closing the window.
-                    _process_timeout.start( std::chrono::seconds( 30 ) );
+                    _process_timeout.start();
 
                 }
             }

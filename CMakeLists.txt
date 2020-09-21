@@ -55,6 +55,7 @@ set_target_properties(${LRS_TARGET} PROPERTIES VERSION ${REALSENSE_VERSION_STRIN
 include(include/CMakeLists.txt)
 include(src/CMakeLists.txt)
 include(third-party/CMakeLists.txt)
+include(common/utilities/CMakeLists.txt)
 
 # configure the project according to OS specific requirments
 # macro definition located at "CMake/<OS>_config.cmake"

@@ -5,7 +5,6 @@
 
 #include "model-views.h"
 #include "notifications.h"
-#include "viewer.h"
 #include "skybox.h"
 #include "measurement.h"
 #include "updates-model.h"

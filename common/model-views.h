@@ -843,7 +843,7 @@ namespace rs2
 
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
-        periodic_timer      _update_readonly_options_timer;
+        time_utilities::periodic_timer      _update_readonly_options_timer;
         bool pause_required = false;
         std::shared_ptr< atomic_objects_in_frame > _detected_objects;
         std::shared_ptr<updates_model> _updates;
