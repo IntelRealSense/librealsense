@@ -34,11 +34,11 @@ namespace librealsense
         if (!depth_frame)
             return false;
 
-        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE))
+        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE))
             return false;
-        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID))
+        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID))
             return false;
-        int depth_sequ_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE);
+        int depth_sequ_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE);
         if (depth_sequ_size == 0)
             return false;
 
@@ -64,7 +64,7 @@ namespace librealsense
 
         // 1. check hdr seq id in metadata
         auto depth_frame = f.as<rs2::depth_frame>();
-        int seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
+        int seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
 
 
         if (is_selected_id(seq_id + 1))
