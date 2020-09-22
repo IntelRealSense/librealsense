@@ -586,6 +586,36 @@ namespace librealsense
        float                   _manual_value;
    };
 
+   /** \brief read_only_option class will permit the user to 
+   *  perform only read (query) of the read_only option when its affecting_option is set */
+   class read_only_option : public proxy_option
+   {
+   public:
+       explicit read_only_option(std::shared_ptr<option> leading_to_read_only,
+           std::shared_ptr<option> affecting_option, std::string reason = "This option cannot be set right now")
+           : proxy_option(leading_to_read_only), _affecting_option(affecting_option), _reason(reason)
+       {}
+
+       void set(float value) override
+       {
+           auto strong = _affecting_option.lock();
+           if (!strong)
+               return;
+           auto val = strong->query();
+
+           if (val)
+               LOG_WARNING(_reason.c_str());
+           else
+               _proxy->set(value);          
+           
+           _recording_function(*this);
+       }
+
+   private:
+       std::weak_ptr<option>  _affecting_option;
+       std::string _reason;
+   };
+
    /** \brief class provided a control
    * that changes min distance value when changing max distance value */
    class max_distance_option : public proxy_option
