@@ -17,6 +17,14 @@ Example 2: like 1, for each object from RGB (ex 1 - bounding box) take its depth
 Example 3: like #1 but with opencv
 Example 4: 
 		4.1: Introduction to autoencoder (Unet Network)
+		-> Unet is a deep learning Archetecture used for image segmentation problems
+		It was particularly released as a solution for biomedical segmentation tasks
+		but it became used for any segmentation problem
+		Unlike classification problems that use hundred of layers, Unet represent a very compact architecture
+		with limited number of parameters.
+		self-driving cars for example use image segmentation for awareness about the environment.
+		In this project, image segmentation is needed to know the exact depth of each object. 
+		Unet network is the ideal architecture that serves our goal.
 		4.2 Downloading dataset and explanation about images
 		4.3 explain about data preparation (augmentation, file tree, ..)
 		4.4 training: epchs, strides, etc
