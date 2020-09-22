@@ -139,7 +139,17 @@ Example 4:
 		
 
 		4.6 monitoring tensorboard 
-How to use the tools: RMSE, conver to bag
+		
+Tools:
+- RMSE:
+	Used to show surface smoothness by showing RMSE of pixels inside a selected rectangle on image.
+	The Whiter the pixels, the more far they are.
+	Smooth surface will result in homogeneous pixels color in the selected rectangle
+ TODO :: add image
+ 
+- Convert to Bag
+	
+
 Example 5: model from #4 or download, run on real data
 
 3D (not a priority): "C:\work\git\denoise\wrappers\python\examples\pyglet_pointcloud_viewer.py"
