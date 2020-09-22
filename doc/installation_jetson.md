@@ -80,8 +80,8 @@ Note that this method provides binary installation compiled using the `-DFORCE_R
 
   5. **Building from source**  
 
-    1. In order to build the SDK using the `RSUSB` method and avoid the kernel patching procedure See  [libuvc_installation.sh](https://github.com/IntelRealSense/librealsense/blob/master/scripts/libuvc_installation.sh) script for details. If you have CUDA dev-kit installed, don't forget to add `-DBUILD_WITH_CUDA=true` for better performance.
-    2. Use the native kernel with patches.  
+   1. In order to build the SDK using the `RSUSB` method and avoid the kernel patching procedure See  [libuvc_installation.sh](https://github.com/IntelRealSense/librealsense/blob/master/scripts/libuvc_installation.sh) script for details. If you have CUDA dev-kit installed, don't forget to add `-DBUILD_WITH_CUDA=true` for better performance.
+   2. Use the native kernel with patches.  
       a. The method was verified with **Jetson AGX** boards running L4T version 4.2.3, 4.3 and 4.4, but may also apply to **Jetson Nano**  
       b. Verify the board type and L4T versions compatibility.  
       c. Verify internet connection.
@@ -89,18 +89,18 @@ Note that this method provides binary installation compiled using the `-DFORCE_R
         >df -h
 
       e. Configure the Jetson Board into Max power mode (desktop -> see the upper right corner)
-      c. Disconnect attached USB/UVC cameras (if any).  
-      c. Navigate to the root of Libreansense2 directory.  
-      d. Run the script (note the ending characters - `L4T`)
+      f. Disconnect attached USB/UVC cameras (if any).  
+      g. Navigate to the root of Libreansense2 directory.  
+      h. Run the script (note the ending characters - `L4T`)
         >./scripts/patch-realsense-ubuntu-L4T.sh  
 
-      e. The script will run for about 30 minutes (depends on Internet speed) and do the following
+      The script will run for about 30 minutes (depends on Internet speed) and do the following
         i. Fetch the kernel source trees required to build the kernel and its modules.  
         ii. Apply Librealsense-specific kernel patches and build the modified kernel modules.  
         iii. Try to insert the modules into the kernel.  
-          ![d400](./img/Jetson_L4T_Kernel_Patches.png)
+        ![d400](./img/jetson_l4t_kernel_patches.png)
 
-    3. Compile Librealsense2.  
+   3. Compile Librealsense2.  
         Navigate to the SDK's root directory.  
         Follow the [Ubuntu installation guide](./installation.md) to install the missing components and configuration items:  
         >sudo apt-get install git libssl-dev libusb-1.0-0-dev pkg-config libgtk-3-dev -y
@@ -108,8 +108,7 @@ Note that this method provides binary installation compiled using the `-DFORCE_R
         >mkdir build && cd build  
         cmake .. -DBUILD_EXAMPLES=true -DCMAKE_BUILD_TYPE=release -DFORCE_RSUSB_BACKEND=false -DBUILD_WITH_CUDA=true && make -j$(($(nproc)-1)) && sudo make install
 
-          The Cmake `-DBUILD_WITH_CUDA=true` flag assumes the CUDA modules are installed. If not - reconnect the board to the Ubuntu Host PC and use NVIDIA `SDK Manager` tool to install the missing components.
+         The Cmake `-DBUILD_WITH_CUDA=true` flag assumes the CUDA modules are installed. If not - reconnect the board to the Ubuntu Host PC and use NVIDIA `SDK Manager` tool to install the missing components.
 
-    4. Connect Realsense Device, run `realsense-viewer` and inspect the results:  
-
-          ![d400](./img/Jetson_L4T_Sensors_MD.png)
+   4. Connect Realsense Device, run `realsense-viewer` and inspect the results:  
+       ![d400](./img/jetson_l4t_sensors_md.png)
