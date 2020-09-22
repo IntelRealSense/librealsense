@@ -820,7 +820,7 @@ namespace librealsense
 
             option_range hdr_sequ_id_range = { 0.f /*min*/, 2.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
             auto hdr_sequ_id_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_SEQUENCE_ID, hdr_sequ_id_range,
-                std::map<float, std::string>{ {0.f, "0"}, { 1.f, "1"}, {2.f, "2"} });
+                std::map<float, std::string>{ {0.f, "UVC"}, { 1.f, "1"}, {2.f, "2"} });
             depth_sensor.register_option(RS2_OPTION_SEQUENCE_ID, hdr_sequ_id_option);
 
             option_range hdr_enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/};
