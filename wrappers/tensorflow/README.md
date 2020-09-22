@@ -1,26 +1,34 @@
-# Introduction (Sergey)
+# Introduction
 # Installation
 To install all relevant python packages, run the following command by using the package manager pip :
 
-pip install -r "...\requirements.txt"
+	pip install -r "...\requirements.txt"
+
 Find requirements.txt in installation folder. If you have GPU, install Tensorflow with GPU:
 
-pip install tensorflow-gpu
-pip install keras
-Versions
-Tensorflow-gpu - 2.2.0
-Keras - 2.4.3
+	pip install tensorflow-gpu
+	pip install keras
+### Versions
+	Tensorflow-gpu - 2.2.0
+	Keras - 2.4.3
 
-================================================================================================
 # Examples
-## Example 1 : 
+Set of example showing the use of Tensorflow.
+
+## Example 1 
 explain how to download cocoset etc
-## Example 2: 
+
+
+## Example 2
 like 1, for each object from RGB (ex 1 - bounding box) take its depth (take example from sergey)
-## Example 3: 
+
+
+## Example 3
 like #1 but with opencv
-## Example 4:
-#### Unet Network
+
+
+## Example 4
+#### Unet Network Introduction
 Unet is a deep learning Architecture used for image segmentation problems
 It was particularly released as a solution for biomedical segmentation tasks
 but it became used for any segmentation problem. Unlike classification problems that use hundred of layers, Unet represent a very compact architecture
@@ -47,7 +55,7 @@ instead of just directly upsampling, it has another pathway which it gradually b
 procedure, so it serves as directly up sampling via learning the best way that this compressed image should
 be up sampled and using convolution filters for that.
 		
-###### Architecture: 
+#### Unet Network Architecture: 
 Input image goes through some convolutions, then it is downsampled by using
 max pooling then it goes through more convolutions, downsampled again, and so on until it reaches the deepest layer
 after that it is upsampled by half so we get back the sizes (see image below), then we concatenate the features of each connection 
@@ -69,23 +77,23 @@ so we can see last-layer features in the perspective of the layer above them.
 
 TODO :: PUT IMAGE HERE OF CONV NETWORK <conv networks then FC networks> and UNET
 		
-#### Downloading dataset and explanation about images
+#### Training Dataset
 The dataset is located here: https://drive.google.com/file/d/1cXJRD4GjsGnfXtjFzmtLdMTgFXUujrRw/view?usp=drivesdk
 It containes 3 types of 484x480 png images : 
 - ground truth : 
-				- clean depth images that Neural Network should learn to predict. 
-				- 1-channel image of 16 bits depth
-				- name : gt-*.png
+		- clean depth images that Neural Network should learn to predict. 
+		- 1-channel image of 16 bits depth
+		- name : gt-*.png
 - depth images : 
-				- noisy depth images as captured by ds5.
-				- 1-channel image of 16 bits depth
-				- name : res-*.png
+		- noisy depth images as captured by ds5.
+		- 1-channel image of 16 bits depth
+		- name : res-*.png
 - infra red images : 
-				- used to help Unet learning the exact depth of each object
-				- 3-channel image of 8 bits depth for each channel. 
-				- name : left-*.png
+		- used to help Unet learning the exact depth of each object
+		- 3-channel image of 8 bits depth for each channel. 
+		- name : left-*.png
 		
-#### explain about data preparation (augmentation, ..)
+#### Data Augmentation
 To help the neural network learning images features, the images should be cropped to optimal size.
 Large images contain many features, it requires adding more layers to detect all the features, this will impact the learning process negatively.
 On the other hand, very small images may not contain any explicit feature, because most likely each feature would be splitted to several number of images.
@@ -104,14 +112,14 @@ Eventually, the data that is fed to Unet network contains:
 - Pure images: consistes of 2 channels: first channel is a ground truth image and second channel is the corressponding IR image. 
 Each channel in both pure and noisy is a 16-bits depth.
 
-#### training: epochs, strides, files tree, etc
+#### Training Process
 In order to start a training process, the following is required:
 - Unet Network Implementation : choosing the sizes of convolutions, max pools, filters and strides, along downsampling and upsampling.
 - Data Augmentation: preparing dataset that contains noisy and pure images as explained above.
 - Old model (optional): there is an option of training the network starting from a previously-trained model. 
 - Epochs : epoch is one cycle through the full training dataset (forth and back). The default value of epochs number is 100, it could be contolled by an argument passed to the application.
 
-###### File Tree 
+#### Files Tree 
 the application will create automatically a file tree:
 - images folder: contains original and cropped images for training and testing, also the predicted images
 - logs folder: all tensorflow outputs throughout the training are stored in txt file that has same name as the created model. It contains also a separate log for testing statistics.
@@ -132,7 +140,7 @@ the application will create automatically a file tree:
 				├───assets
 				└───variables
 		
-####  testing:
+####  Testing Process
 The tested images should be augmented as trained images, except the cropping size should be 480x480 (each image is cropped to 2 images), considering performance improvement.
 For testing, there is no need to ground truth data, only depth and IR images are required.
 The relevant folders in file tree are: 
@@ -144,8 +152,8 @@ The relevant folders in file tree are:
 
 #### monitoring tensorboard 
 		
-# Tools:
-##  RMSE:
+# Tools
+##  RMSE
 Used to show surface smoothness by showing RMSE of pixels inside a selected rectangle on image.
 The Whiter the pixels, the more far they are.
 Smooth surface will result in homogeneous pixels color in the selected rectangle
@@ -154,14 +162,14 @@ Smooth surface will result in homogeneous pixels color in the selected rectangle
 ## Convert to Bag
 	
 
-## Example 5: 
+## Example 5:
 model from #4 or download, run on real data
 
 3D (not a priority): "C:\work\git\denoise\wrappers\python\examples\pyglet_pointcloud_viewer.py"
 3D : "C:\work\git\denoise\wrappers\python\examples\pyglet_pointcloud_viewer.py"
 3D : "C:\work\git\denoise\wrappers\python\examples\opencv_pointcloud_viewer.py"
 
-## Example 6: 
+## Example 6
 How covert keras to frozen graph --> camera simulation as #5 but use only opencv
 
 
