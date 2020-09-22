@@ -34,7 +34,7 @@ TEST_CASE( "HDR Running - restart hdr at restream", "[HDR]" ) {
         rs2::frameset data = pipe.wait_for_frames();
         rs2::depth_frame out_depth_frame = data.get_depth_frame();
 
-        auto seq_id = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
+        auto seq_id = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
         long long frame_counter = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
         long long frame_exposure = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
         long long frame_ts = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
@@ -45,7 +45,7 @@ TEST_CASE( "HDR Running - restart hdr at restream", "[HDR]" ) {
         auto merged_frameset = merging_filter.process(data);
         auto merged_depth_frame = merged_frameset.as<rs2::frameset>().get_depth_frame();
 
-        seq_id = merged_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
+        seq_id = merged_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
         frame_counter = merged_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
         frame_exposure = merged_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
         frame_ts = merged_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
@@ -67,7 +67,7 @@ TEST_CASE( "HDR Running - restart hdr at restream", "[HDR]" ) {
         rs2::frameset data = pipe.wait_for_frames();
         rs2::depth_frame out_depth_frame = data.get_depth_frame();
 
-        auto seq_id = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
+        auto seq_id = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
         long long frame_counter = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
         long long frame_exposure = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
         long long frame_ts = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
@@ -78,7 +78,7 @@ TEST_CASE( "HDR Running - restart hdr at restream", "[HDR]" ) {
         auto merged_frameset = merging_filter.process(data);
         auto merged_depth_frame = merged_frameset.as<rs2::frameset>().get_depth_frame();
 
-        seq_id = merged_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
+        seq_id = merged_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
         frame_counter = merged_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
         frame_exposure = merged_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
         frame_ts = merged_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);

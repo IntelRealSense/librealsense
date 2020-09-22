@@ -61,11 +61,11 @@ TEST_CASE("HDR Config - changing only exposure", "[HDR]") {
         rs2::depth_frame out_depth_frame = data.get_depth_frame();
 
         REQUIRE(out_depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE));
-        REQUIRE(out_depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID));
+        REQUIRE(out_depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID));
 
         long long frame_counter = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
         long long frame_exposure = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
-        auto seq_id = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
+        auto seq_id = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
         std::cout << "seq id = " << seq_id << ", exposure = " << frame_exposure << std::endl;
         /*if (iterations++ == 0)
             continue;

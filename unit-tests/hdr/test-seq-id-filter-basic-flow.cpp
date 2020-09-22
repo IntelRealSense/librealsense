@@ -32,10 +32,13 @@ TEST_CASE("HDR Config - changing only exposure", "[HDR]") {
     depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1.f);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 1.f);
 
+    rs2::sequence_id_filter split(1);
+
     int iteration = 0;
     while (++iteration < 50) // Application still alive?
     {
         rs2::frameset data = pipe.wait_for_frames();
+        data = split.process(data);
         auto depth_frame = data.get_depth_frame();
 
         auto seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
