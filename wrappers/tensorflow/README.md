@@ -40,11 +40,25 @@ Example 4:
 		instead of just directly upsampling, it has another pathway which it gradually builds upon the up sampling
 		procedure, so it serves as directly up sampling via learning the best way that this compressed image should
 		be up sampled and using convolution filters for that.
-		Unet Architecture: input image which goes through some convolutions, then it is downsampled by using
+		
+		Unet Architecture: 
+		input image which goes through some convolutions, then it is downsampled by using
 		max pooling then it goes through more convolutions downsampled again, and so on until it reaches the deepest layer
 		after that it is upsampled by half so we get H and W back, then we concatenate the features of each connection 
 		then these concatenated features go through some more convolutions, then upsampled then it is joined (concatenated) back 
-		with the paraller layer
+		with the paraller layer, but we lose information as we go down through the max pooling mostly,
+		also through convolution because convolution throw away information from raw input to repupose them int
+		meaningful features(?), that what happens also in classification networks, where a lot of information is 
+		thrown away by the last layer. But in segmentation we cannot want those low-level features because those
+		are essential to deconstructing the image. 
+		in Unet, when we upsample we get the lost information back (by the concatination process)
+		so we can see last-layer features in the perspective of the layer above them
+		the first few layers of a convolution network capture a very small semantic information and lower level
+		features, as you go down these features become larger and larger, but when we throw away information the CNN
+		knows only approximate location about where those features are 
+		
+		in the left pathway, the number of filters (features) increasing as we go down, it means that it becomes
+		very good at detecting more and more features 
 		TODO :: PUT IMAGE HERE OF CONV NETWORK <conv networks then FC networks>
 		
 		4.2 Downloading dataset and explanation about images
