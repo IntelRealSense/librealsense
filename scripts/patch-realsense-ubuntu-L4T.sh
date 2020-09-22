@@ -22,11 +22,13 @@ fi
 #Include usability functions
 source ./scripts/patch-utils.sh
 
-# Get the required tools and headers to build the kernel
+# Get the required tools to build the patched modules
 sudo apt-get install build-essential git -y
-#Packages to build the patched modules
-#require_package libusb-1.0-0-dev
-#require_package libssl-dev
+
+#Activate fan to prevent overheat during KM compilation
+if [ -f /sys/devices/pwm-fan/target_pwm ]; then
+	echo 200 | sudo tee /sys/devices/pwm-fan/target_pwm || true
+fi
 
 #Tegra-specific
 KERNEL_RELEASE="4.9"
@@ -35,7 +37,6 @@ JETSON_BOARD=$(tr -d '\0' </proc/device-tree/model)
 echo -e "\e[32mJetson Board (proc/device-tree/model): ${JETSON_BOARD}\e[0m"
 
 JETSON_L4T=""
-
 # With L4T 32.3.1, NVIDIA added back /etc/nv_tegra_release
 if [ -f /etc/nv_tegra_release ]; then
 	JETSON_L4T_STRING=$(head -n 1 /etc/nv_tegra_release)
@@ -49,7 +50,7 @@ else
 fi
 
 # Get the linux kernel repo, extract the L4T tag
-echo -e "\e[32mObtain the correspondig L4T git tag for the kernel source tree\e[0m"
+echo -e "\e[32mRetrieve the corresponding L4T git tag the kernel source tree\e[0m"
 l4t_gh_dir=../linux-${KERNEL_RELEASE}-source-tree
 if [ ! -d ${l4t_gh_dir} ]; then
 	mkdir ${l4t_gh_dir}
@@ -63,18 +64,6 @@ else
 	echo -e "Directory ${l4t_gh_dir} is present, skipping initialization...\e[0m"
 fi
 
-
-##Distribution-specific packages
-#if [ ${ubuntu_codename} == "bionic" ];
-#then
-#	require_package libelf-dev
-#	require_package elfutils
-#	#Ubuntu 18.04 kernel 4.18
-#	require_package bison
-#	require_package flex
-#fi
-
-
 #Search the repository for the tag that matches the maj.min for L4T
 pushd ${l4t_gh_dir}
 TEGRA_TAG=$(git ls-remote --tags origin | grep ${JETSON_L4T_VERSION} | grep '[^^{}]$' | tail -n 1 | awk -F/ '{print $NF}')
@@ -82,7 +71,7 @@ echo -e "\e[32mThe matching L4T source tree tag is \e[47m${TEGRA_TAG}\e[0m"
 popd
 
 
-#retrieve tegra tag version for sync, required for get and sync kernel source with Jetson:
+#Retrieve tegra tag version for sync, required for get and sync kernel source with Jetson:
 #https://forums.developer.nvidia.com/t/r32-1-tx2-how-can-i-build-extra-module-in-the-tegra-device/72942/9
 #Download kernel and peripheral sources as the L4T github repo is not self-contained to build kernel modules
 sdk_dir=$(pwd)
@@ -123,11 +112,6 @@ sudo -s patch -p1 < ./LRS_Patches/02-realsense-metadata-L4T-4.9.patch
 sudo -s patch -p1 < ./LRS_Patches/03-realsense-hid-L4T-4.9.patch
 sudo -s patch -p1 < ./LRS_Patches/04-media-uvcvideo-mark-buffer-error-where-overflow.patch
 sudo -s patch -p1 < ./LRS_Patches/05-realsense-powerlinefrequency-control-fix.patch
-
-# sudo apt-get install module-assistant
-# from https://forums.developer.nvidia.com/t/solved-l4t-compiling-simple-kernel-module-fails/36955/6
-#to handle ./scripts/recordmcount: not found
-#sudo make ARCH=arm64 scripts
 
 echo -e "\e[32mCompiling uvc module\e[0m"
 #sudo -s make -j -C $KBASE M=$KBASE/drivers/media/usb/uvc/ modules
