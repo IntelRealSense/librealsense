@@ -18,16 +18,16 @@ For **Jetson Nano™** we strongly recommend enabling the Barrel Jack connector 
 
   ![Jetson Nano](./img/jetson.jpg)
 
-3. **Choose LibRealSense SDK Backend**
+3. **Choose LibRealSense SDK Backend**  
 Librealsense2 SDK supports two API for communication with RealSense device on Linux platforms:
-  1. Linux native kernel drivers for UVC, USB and HID (Video4Linux and IIO respectively)
-  2. Using `RSUSB` - an user-space implementation of the UVC and HID data protocols, encapsulated and activated by selecting the SDK's `-DFORCE_RSUSB_BACKEND` flag (a.k.a. `-DFORCE_LIBUVC` with SDK versions prior to v.2.30).  
+    1. Linux native kernel drivers for UVC, USB and HID (Video4Linux and IIO respectively)
+    2. Using `RSUSB` - user-space implementation of the UVC and HID data protocols, encapsulated and activated by selecting the SDK's `-DFORCE_RSUSB_BACKEND` flag (a.k.a. `-DFORCE_LIBUVC` with SDK versions prior to v.2.30).  
 
   When the second method is selected Librealsense2 communicates with the devices using the standard USB driver, while the higher-level protocols  (UVC/HID) stacks are compiled directly into the SDK.
-  Currently the two interfaces are mutually-exclusive, thus so the choice taken during the SDK configuration stage (CMakes) predefines the selected backend API.
+  Currently the two interfaces are mutually-exclusive, thus the choice taken during the SDK configuration stage (CMakes) predefines the selected backend API.
 
-  As a general rule it is recommended to use the native kernel drivers, especially in production.
-The second method augments the native installation and allows for a fully-functional SDK deployment at the expense of certain performance and functional limitations (e.g. multi-cam).
+  As a general rule it is recommended to use the native kernel drivers, especially in production environment.
+The second method augments the native installation and allows for a ully-functional SDK deployment at the expense of certain performance and functional limitations (e.g. multi-cam).
 The list of requirements for the second method comprise of a basic USB driver and GCC compiler, thus making it attractive for prototyping and demos in new/previously-unsupported environments.
 
   If that's the case, what is the dilemma?
