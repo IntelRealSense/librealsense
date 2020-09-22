@@ -613,7 +613,14 @@ namespace librealsense
         if (_hdr_cfg->is_config_in_process())
             _hdr_option->set(value);
         else
-            _uvc_option->set(value);
+        {
+            if (_hdr_cfg->is_enabled())
+                throw wrong_api_call_sequence_exception(to_string() << "This option cannot be set while HDR is enabled.\n" <<
+                    "In order to modify the HDR configuration, please change the sequence ID\n" << 
+                    "option to 1 or 2. Sequence ID 0 is targetted to the UVC option.");
+            else
+                _uvc_option->set(value);
+        }
     }
 
     float hdr_conditional_option::query() const
