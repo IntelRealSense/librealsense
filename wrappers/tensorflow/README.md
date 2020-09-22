@@ -16,7 +16,8 @@ Example 1 : explain how to download cocoset etc
 Example 2: like 1, for each object from RGB (ex 1 - bounding box) take its depth (take example from sergey)
 Example 3: like #1 but with opencv
 Example 4: 
-		4.1: Introduction to autoencoder (Unet Network)
+		4.1: 
+		## Introduction to autoencoder (Unet Network):
 		Unet is a deep learning Architecture used for image segmentation problems
 		It was particularly released as a solution for biomedical segmentation tasks
 		but it became used for any segmentation problem. Unlike classification problems that use hundred of layers, Unet represent a very compact architecture
@@ -43,9 +44,9 @@ Example 4:
 		procedure, so it serves as directly up sampling via learning the best way that this compressed image should
 		be up sampled and using convolution filters for that.
 		
-		Unet Architecture: 
+		## Unet Architecture: 
 		Input image goes through some convolutions, then it is downsampled by using
-		max pooling then it goes through more convolutions downsampled again, and so on until it reaches the deepest layer
+		max pooling then it goes through more convolutions, downsampled again, and so on until it reaches the deepest layer
 		after that it is upsampled by half so we get back the sizes (see image below), then we concatenate the features of each connection 
 		and these concatenated features go through some more convolutions, then upsampled then it is joined (concatenated) back 
 		with the parallel layer, but we lose information as we go down through max pooling (mostly because it reduces the dimention by half), and
@@ -53,16 +54,17 @@ Example 4:
 		meaningful features. That what happens also in classification networks, where a lot of information is 
 		thrown away by the last layer. But in segmentation we want those low-level features because those
 		are essential to deconstructing the image. 
-		in Unet, when we upsample we get the lost information back (by the concatination process)
-		so we can see last-layer features in the perspective of the layer above them.
 		
 		In the left pathway of Unet, the number of filters (features) increase as we go down, it means that it becomes
 		very good at detecting more and more features, the first few layers of a convolution network capture a very small semantic information and lower level
 		features, as you go down these features become larger and larger, but when we throw away information the CNN
-		knows only approximate location about where those features are 
+		knows only approximate location about where those features are.
+		When we upsample we get the lost information back (by the concatination process)
+		so we can see last-layer features in the perspective of the layer above them.
 		
+
 		
-		TODO :: PUT IMAGE HERE OF CONV NETWORK <conv networks then FC networks>
+		TODO :: PUT IMAGE HERE OF CONV NETWORK <conv networks then FC networks> and UNET
 		
 		4.2 Downloading dataset and explanation about images
 		4.3 explain about data preparation (augmentation, file tree, ..)
