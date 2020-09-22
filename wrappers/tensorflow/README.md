@@ -67,7 +67,23 @@ Example 4:
 		TODO :: PUT IMAGE HERE OF CONV NETWORK <conv networks then FC networks> and UNET
 		
 		4.2 Downloading dataset and explanation about images
+		The dataset I used is located here: https://drive.google.com/file/d/1cXJRD4GjsGnfXtjFzmtLdMTgFXUujrRw/view?usp=drivesdk
+		It containes 3 types of 484x480 png images : 
+		- ground truth : 
+						- clean depth images that Neural Network should learn to predict. 
+						- 1-channel image of 16 bits depth
+						- name : gt-*.png
+		- depth images : 
+						- noisy depth images as captured by ds5.
+						- 1-channel image of 16 bits depth
+						- name : res-*.png
+		- infra red images : 
+						- used to help Unet learning the exact depth of each object
+						- 3-channel image of 8 bits depth for each channel. 
+						- name : left-*.png
+		
 		4.3 explain about data preparation (augmentation, file tree, ..)
+		optimal sizes
 		4.4 training: epchs, strides, etc
 		4.5 monitoring tensorboard 
 How to use the tools: RMSE, conver to bag
