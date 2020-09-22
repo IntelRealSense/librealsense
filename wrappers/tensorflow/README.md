@@ -80,18 +80,18 @@ TODO :: PUT IMAGE HERE OF CONV NETWORK <conv networks then FC networks> and UNET
 #### Training Dataset
 The dataset is located here: https://drive.google.com/file/d/1cXJRD4GjsGnfXtjFzmtLdMTgFXUujrRw/view?usp=drivesdk
 It containes 3 types of 484x480 png images : 
-- ground truth : 
-		- clean depth images that Neural Network should learn to predict. 
-		- 1-channel image of 16 bits depth
-		- name : gt-*.png
-- depth images : 
-		- noisy depth images as captured by ds5.
-		- 1-channel image of 16 bits depth
-		- name : res-*.png
-- infra red images : 
-		- used to help Unet learning the exact depth of each object
-		- 3-channel image of 8 bits depth for each channel. 
-		- name : left-*.png
+##### Ground Truth Images
+- clean depth images that Neural Network should learn to predict. 
+- 1-channel image of 16 bits depth
+- name : gt-*.png
+##### Depth Images : 
+- noisy depth images as captured by ds5.
+- 1-channel image of 16 bits depth
+- name : res-*.png
+##### Infra Red (IR) Images 
+- used to help Unet learning the exact depth of each object
+- 3-channel image of 8 bits depth for each channel. 
+- name : left-*.png
 		
 #### Data Augmentation
 To help the neural network learning images features, the images should be cropped to optimal size.
@@ -102,14 +102,17 @@ In the set of experiments we did, image size of 128x128 found to be optimal.
 
 Each ground truth image has a corressponding depth and infra red (IR) image. Given that, the dataset is augmented as following:
 IR images are converted to 1-channel image of 16-bits depth.
-1. Cropping : each image in the dataset is padded to get a size of 896x512 then each of them is cropped to 128x128. In total, each image is cropped to 28 images of size 128x128.  
-			  Each cropped image is saved with the original image name, adding to it information about the column and row the image was cropped from. It helps corresponding to each ground-truth cropped-image, 
-			  the IR and depth image from the cropped set.
-2. Channeling : IR (infra red) image is added as a second channel to both ground truth and depth image, to add more information about the depth of each object in the image.
+##### Cropping 
+Each image in the dataset is padded to get a size of 896x512 then each of them is cropped to 128x128. In total, each image is cropped to 28 images of size 128x128.  
+Each cropped image is saved with the original image name, adding to it information about the column and row the image was cropped from. It helps corresponding to each ground-truth cropped-image, the IR and depth image from the cropped set.
+##### Channeling
+IR (infra red) image is added as a second channel to both ground truth and depth image, to add more information about the depth of each object in the image.
 
 Eventually, the data that is fed to Unet network contains:
-- Noisy images: consistes of 2 channels: first channel is a depth image and second channel is the corressponding IR image
-- Pure images: consistes of 2 channels: first channel is a ground truth image and second channel is the corressponding IR image. 
+- Noisy images: 
+consistes of 2 channels: first channel is a depth image and second channel is the corressponding IR image
+- Pure images: 
+consistes of 2 channels: first channel is a ground truth image and second channel is the corressponding IR image. 
 Each channel in both pure and noisy is a 16-bits depth.
 
 #### Training Process
