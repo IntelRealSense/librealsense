@@ -30,7 +30,7 @@ TEST_CASE( "HDR Running - restart hdr at restream", "[HDR]" ) {
     {
         rs2::frameset data = pipe.wait_for_frames();
         rs2::depth_frame out_depth_frame = data.get_depth_frame();
-        auto seq_id = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
+        auto seq_id = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
         long long frame_counter = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
         long long frame_exposure = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
 
@@ -47,7 +47,7 @@ TEST_CASE( "HDR Running - restart hdr at restream", "[HDR]" ) {
     {
         rs2::frameset data = pipe.wait_for_frames();
         rs2::depth_frame out_depth_frame = data.get_depth_frame();
-        auto seq_id = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
+        auto seq_id = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
         long long frame_counter = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
         long long frame_exposure = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
 
