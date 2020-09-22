@@ -83,7 +83,19 @@ Example 4:
 						- name : left-*.png
 		
 		4.3 explain about data preparation (augmentation, file tree, ..)
-		optimal sizes
+		To help the neural network learning images features, the images should be cropped to optimal size.
+		Large images contain many features, it requires adding more layers to detect all the features, this will impact the learning process negatively.
+		On the other hand, very small images may not contain any explicit feature, because most likely each feature would be splitted to several number of images.
+		It is very essential to choose the cropped images size optimally, considering the original size the average size of features inside the image.
+		In the set of experiments we did, image size of 128x128 found to be optimal.
+		
+		Each ground truth image has a corressponding depth and infra red (IR) image. Given that, the dataset was augmented as following before feeding it to Unet network:
+		1. Cropping : each image in the dataset is padded to get a size of 896x512 then each of them is cropped to 128x128. In total, each image is cropped to 28 images of size 128x128.  
+					  Each cropped image is saved with the original image name, adding to it information about the column and row the image was cropped from. It helps corresponding to each ground-truth cropped-image, 
+					  the IR and depth image from the cropped set.
+		2. Channeling : 
+		
+		
 		4.4 training: epchs, strides, etc
 		4.5 monitoring tensorboard 
 How to use the tools: RMSE, conver to bag
