@@ -93,7 +93,12 @@ Example 4:
 		1. Cropping : each image in the dataset is padded to get a size of 896x512 then each of them is cropped to 128x128. In total, each image is cropped to 28 images of size 128x128.  
 					  Each cropped image is saved with the original image name, adding to it information about the column and row the image was cropped from. It helps corresponding to each ground-truth cropped-image, 
 					  the IR and depth image from the cropped set.
-		2. Channeling : 
+		2. Channeling : IR (infra red) image is added as a second channel to both ground truth and depth image, to add more information about the depth of each object in the image.
+		
+		Eventually, the fed data to Unet network contains:
+		- Noisy images: consistes of 2 channels: first channel is a depth image and second channel is the corressponding IR image
+		- Pure images: consistes of 2 channels: first channel is a ground truth image and second channel is the corressponding IR image. 
+		Each channel in both pure and noisy is a 16-bits depth.
 		
 		
 		4.4 training: epchs, strides, etc
