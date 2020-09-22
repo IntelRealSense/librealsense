@@ -982,6 +982,14 @@ namespace rs2
                     model->enable(false);
             }
 
+            if (shared_filter->is<hdr_merge>())
+            {
+                // filter not to be added if the needed option is not supported
+                auto supported_options = s->get_supported_options();
+                if (std::find(supported_options.begin(), supported_options.end(), RS2_OPTION_SEQUENCE_ID) == supported_options.end())
+                    continue;
+            }
+
             post_processing.push_back(model);
         }
 
