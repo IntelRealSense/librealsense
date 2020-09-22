@@ -95,7 +95,8 @@ int main(int argc, char * argv[]) try
 
         // Render the UI:
         ImGui_ImplGlfw_NewFrame(1);
-        auto changed=ImGui::SliderFloat3("t (m)", extr.translation, -3.0, 3.0f);
+        auto changed=ImGui::SliderFloat2("XYt (m)", extr.translation, -3.0, 3.0f);
+        changed |= ImGui::SliderFloat("Zt (m)", &extr.translation[2], 0, 3.0f);
         changed |= ImGui::SliderFloat3("Rot (rad)", R, -PI/2, PI/2);
         
         //if changes were made to the perspective recreate the reproject filter object
@@ -106,6 +107,7 @@ int main(int argc, char * argv[]) try
         if (ImGui::Button("Reset"))
         {
             extr = { {1,0,0,0,1,0,0,0,1},{0,0,0} };
+            memset(R, 0,sizeof(float)*3);
             reproject_depth = rs2::reproject(intr, extr);  
         }
 
