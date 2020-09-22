@@ -798,6 +798,13 @@ namespace librealsense
         auto uvc_pu_gain_option = std::make_shared<uvc_pu_option>(raw_depth_sensor, RS2_OPTION_GAIN);
         option_range gain_range = uvc_pu_gain_option->get_range();
 
+        //AUTO EXPOSURE
+        auto enable_auto_exposure = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor,
+            depth_xu,
+            DS5_ENABLE_AUTO_EXPOSURE,
+            "Enable Auto Exposure");
+        depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
+
         // register HDR options
         //auto global_shutter_mask = d400_caps::CAP_GLOBAL_SHUTTER;
         if ( (_fw_version >= hdr_firmware_version))// && ((_device_capabilities & global_shutter_mask) == global_shutter_mask) )
@@ -837,6 +844,12 @@ namespace librealsense
 
             exposure_option = hdr_conditional_exposure_option;
             gain_option = hdr_conditional_gain_option;
+
+            depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,
+                std::make_shared<read_only_option>(
+                    enable_auto_exposure,
+                    hdr_enabled_option,
+                    "Auto Exposure cannot be set while HDR is enabled"));
         }
         else
         {
@@ -849,13 +862,6 @@ namespace librealsense
 
         //GAIN
         depth_sensor.register_option(RS2_OPTION_GAIN, gain_option);
-
-        //AUTO EXPOSURE
-        auto enable_auto_exposure = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor,
-            depth_xu,
-            DS5_ENABLE_AUTO_EXPOSURE,
-            "Enable Auto Exposure");
-        depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
 
         depth_sensor.register_option(RS2_OPTION_EXPOSURE,
             std::make_shared<auto_disabling_control>(
