@@ -615,9 +615,8 @@ namespace librealsense
         else
         {
             if (_hdr_cfg->is_enabled())
-                throw wrong_api_call_sequence_exception(to_string() << "This option cannot be set while HDR is enabled.\n" <<
-                    "In order to modify the HDR configuration, please change the sequence ID\n" << 
-                    "option to 1 or 2. Sequence ID 0 is targetted to the UVC option.");
+                LOG_WARNING("The control - " << _uvc_option->get_description()
+                     << " - is locked while HDR mode is active.\n"); 
             else
                 _uvc_option->set(value);
         }
