@@ -6,7 +6,9 @@
 namespace librealsense
 {
     hdr_merge::hdr_merge()
-        : generic_processing_block("HDR Merge")
+        : generic_processing_block("HDR Merge"),
+        _previous_depth_frame_counter(0),
+        _frames_without_requested_metadata_counter(0)
     {}
 
     // processing only framesets
@@ -23,15 +25,37 @@ namespace librealsense
         if (!depth_frame)
             return false;
 
-        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE))
+        reset_warning_counter_on_pipe_restart(depth_frame);
+
+        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE) ||
+            !depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID))
+        {
+            // warning message will be sent to user if more than NUMBER_OF_FRAMES_WITHOUT_METADATA_FOR_WARNING
+            // frames are received without the needed metadata params
+            if (_frames_without_requested_metadata_counter < NUMBER_OF_FRAMES_WITHOUT_METADATA_FOR_WARNING)
+            {
+                if (++_frames_without_requested_metadata_counter == NUMBER_OF_FRAMES_WITHOUT_METADATA_FOR_WARNING)
+                    LOG_WARNING("HDR Merge filter cannot process frames because relevant metadata params are missing");
+            }
+
             return false;
-        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID))
-            return false;
+        }
+
         auto depth_seq_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE);
         if (depth_seq_size != 2)
             return false;
 
         return true;
+    }
+
+    void hdr_merge::reset_warning_counter_on_pipe_restart(const rs2::depth_frame& depth_frame)
+    {
+        auto depth_frame_counter = depth_frame.get_frame_number();
+
+        if (depth_frame_counter < _previous_depth_frame_counter)
+            _frames_without_requested_metadata_counter = 0;
+
+        _previous_depth_frame_counter = depth_frame_counter;
     }
 
 
@@ -107,9 +131,11 @@ namespace librealsense
             auto merged_d_profile = _depth_merged_frame.get_profile().as<rs2::video_stream_profile>();
             auto new_d_profile = f.get_profile().as<rs2::video_stream_profile>();
 
-            if ((depth_merged_frame_counter > input_frame_counter) ||
-                (merged_d_profile.width() != new_d_profile.width()) ||
-                (merged_d_profile.height() != new_d_profile.height()))
+            bool restart_pipe_detected = (depth_merged_frame_counter > input_frame_counter);
+            bool resolution_change_detected = (merged_d_profile.width() != new_d_profile.width()) ||
+                (merged_d_profile.height() != new_d_profile.height());
+
+            if (restart_pipe_detected || resolution_change_detected)
             {
                 _depth_merged_frame = nullptr;
             }
