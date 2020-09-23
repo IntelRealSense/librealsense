@@ -60,50 +60,13 @@ TEST_CASE("HDR Config - changing only exposure", "[HDR]") {
         rs2::frameset data = pipe.wait_for_frames();
         rs2::depth_frame out_depth_frame = data.get_depth_frame();
 
-        REQUIRE(out_depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE));
+        REQUIRE(out_depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE));
         REQUIRE(out_depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID));
 
         long long frame_counter = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
         long long frame_exposure = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
         auto seq_id = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
         std::cout << "seq id = " << seq_id << ", exposure = " << frame_exposure << std::endl;
-        /*if (iterations++ == 0)
-            continue;
-        else if(iterations++ == 1)
-        {
-            if (frame_counter % 2 == 0)
-            {
-                if (frame_exposure == first_exposure)
-                    continue;
-                else
-                {
-                    pair_fc_exposure = second_exposure;
-                    odd_fc_exposure = first_exposure;
-                }
-            }
-            else
-            {
-                if (frame_exposure == second_exposure)
-                    continue;
-                else
-                {
-                    odd_fc_exposure = second_exposure;
-                    pair_fc_exposure = first_exposure;
-                }
-            }
-        }
-        else
-        {
-            if (!(frame_counter % 2))
-            {
-                REQUIRE(frame_exposure == pair_fc_exposure);
-            }
-            else {
-                REQUIRE(frame_exposure == odd_fc_exposure);
-            }
-        }
-        if (iterations == 100)
-            break;*/
     }
 }
 
