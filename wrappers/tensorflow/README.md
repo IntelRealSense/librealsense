@@ -108,7 +108,7 @@ Each ground truth image has a corressponding depth and infra red (IR) image. Giv
 Each image in the dataset is padded to get a size of 896x512 then each of them is cropped to 128x128. In total, each image is cropped to 28 images of size 128x128.  
 Each cropped image is saved with the original image name, adding to it information about the column and row the image was cropped from. It helps corresponding to each ground-truth cropped-image, the IR and depth image from the cropped set.
 
-![foxdemo](https://github.com/nohayassin/RealSense-ML/blob/master/images/cropping.PNG)
+![foxdemo](images/cropping.PNG)
 
 ###### 2. Channeling
 Before channeling, IR images are converted to 1-channel image of 16-bits depth.
@@ -121,7 +121,7 @@ consistes of 2 channels: first channel is a depth image and second channel is th
 consistes of 2 channels: first channel is a ground truth image and second channel is the corressponding IR image. 
 Each channel in both pure and noisy is a 16-bits depth.
 
-![foxdemo](https://github.com/nohayassin/RealSense-ML/blob/master/images/channeling.PNG)
+![foxdemo](images/channeling.PNG)
 
 #### Training Process
 In order to start a training process, the following is required:
@@ -172,7 +172,7 @@ Used to show surface smoothness by showing RMSE of pixels inside a selected rect
 The Whiter the pixels, the more far they are.
 Smooth surface will result in homogeneous pixels color in the selected rectangle
 
-![foxdemo](https://github.com/nohayassin/RealSense-ML/blob/master/images/rmse_image.PNG)
+![foxdemo](images/rmse_image.PNG)
  
 ## Convert to Bag
 This tool runs on a folder that contains:
@@ -187,7 +187,7 @@ This tool runs on a folder that contains:
 	
 The output is a bag file that could be opened by RealSense viewer.
 
-![foxdemo](https://github.com/nohayassin/RealSense-ML/blob/master/images/conver_to_bag.PNG)
+![foxdemo](images/conver_to_bag.PNG)
 
 
 ## Example 5:
@@ -202,11 +202,11 @@ Pass the selected model as argument to the tool:
 It will display original frame captured by the camera, and right to it a frame as predicted by the selected model.
 
 
-![foxdemo](https://github.com/nohayassin/RealSense-ML/blob/master/images/simulation.PNG)
+![foxdemo](images/simulation.PNG)
 
 It shows also time statistics for each frame :
 
-![foxdemo](https://github.com/nohayassin/RealSense-ML/blob/master/images/camera_simulation_performance.PNG)
+![foxdemo](images/camera_simulation_performance.PNG)
 
 ## Example 6
 How covert keras to frozen graph --> camera simulation as #5 but use only opencv
