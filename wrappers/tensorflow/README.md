@@ -186,11 +186,17 @@ The output is a bag file that could be opened by RealSense viewer.
 
 
 ## Example 5:
-model from #4 or download, run on real data
+In this example, we show a prediction of live scense captured by ds5 camera.
 
-3D (not a priority): "C:\work\git\denoise\wrappers\python\examples\pyglet_pointcloud_viewer.py"
-3D : "C:\work\git\denoise\wrappers\python\examples\pyglet_pointcloud_viewer.py"
-3D : "C:\work\git\denoise\wrappers\python\examples\opencv_pointcloud_viewer.py"
+To make it work, connect a ds5 camera and prepare a trained Tensorflow model. 
+It could be the trained model from example #4 or any model from this path: \\ger\ec\proj\ha\RSG\SA_3DCam\Noha\Tensorflow\models
+Pass the selected model as argument to the tool:
+	
+	python camera_simulation.py --model <path to the model>
+
+It will display original frame captured by the camera, and right to it a frame as predicted by the selected model.
+
+TODO:: ADD photo
 
 ## Example 6
 How covert keras to frozen graph --> camera simulation as #5 but use only opencv
