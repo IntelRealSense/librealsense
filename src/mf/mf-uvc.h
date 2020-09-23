@@ -134,7 +134,7 @@ namespace librealsense
             CComPtr<IAMVideoProcAmp>                _video_proc = nullptr;
             std::unordered_map<int, CComPtr<IKsControl>>      _ks_controls;
 
-            manual_reset_event                      _is_flushed;
+            auto_reset_event                        _is_flushed;
             manual_reset_event                      _has_started;
             HRESULT                                 _readsample_result = S_OK;
 
