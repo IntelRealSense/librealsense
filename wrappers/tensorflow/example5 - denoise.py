@@ -1,9 +1,9 @@
 import pyrealsense2 as rs
 import numpy as np
 import cv2
-import keras
+from tensorflow import keras
 from skimage import img_as_uint
-import time
+import time, sys
 
 # Configure depth and color streams
 pipeline = rs.pipeline()
@@ -15,7 +15,11 @@ pipeline.start(config)
 
 channels = 2
 cropped_w, cropped_h = 480, 480
-test_model_name = r"C:\work\ML_git\clean_env_autoencoder\tmp\DEPTH_20200903-132536.model_new" #"..\models\DEPTH_20200903-132536.model"
+
+test_model_name = ""
+if (len(sys.argv) > 1):
+    test_model_name = str(sys.argv[1])
+
 t1 = time.perf_counter()
 model = keras.models.load_model(test_model_name)
 t2 = time.perf_counter()
