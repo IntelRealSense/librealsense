@@ -1,8 +1,8 @@
+#import bpy
 import numpy as np
 import cv2
 import pyrealsense2 as rs
-import time
-
+import time, sys, glob
 
 focal = 0.0021
 baseline = 0.08
@@ -58,16 +58,17 @@ sd.register_info(rs.camera_info.name, name)
 ctx = rs.context()
 sd.add_to(ctx)
 
-#pp = rs.pipeline(ctx)
-#cfg = rs.config()
-#fg.enable_record_to_file("/home/dorodnic/Documents/test2/1.bag")
-#res = pp.start(cfg)
 dev = ctx.query_devices()[0]
 for d in ctx.query_devices():
     if d.get_info(rs.camera_info.name) == name:
         dev = d
 
-rec = rs.recorder("1.bag", dev)
+
+images_path = "."
+if (len(sys.argv) > 1):
+    images_path = str(sys.argv[1])
+
+rec = rs.recorder(images_path + "/1.bag", dev)
 sensor = rec.query_sensors()[0]
 
 q = rs.frame_queue()
@@ -75,11 +76,13 @@ sensor.open(sensor.get_stream_profiles())
 sensor.start(q)
 
 
-for i in range(200):
-    left_name = "left-" + str(i) + ".png"
-    depth_name = "gt-" + str(i) + ".png"
-    result_name = "res-" + str(i) + ".png"
-    denoised_name = "res_denoised-" + str(i) + ".png"
+png_counter = len(glob.glob1(images_path,"*.png"))
+frames_counter = png_counter // 4
+for i in range(frames_counter):
+    left_name = images_path + "/left-" + str(i) + ".png"
+    depth_name = images_path + "/gt-" + str(i) + ".png"
+    result_name = images_path + "/res-" + str(i) + ".png"
+    denoised_name = images_path + "/res_denoised-" + str(i) + ".png"
 
     img = cv2.imread(left_name)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
