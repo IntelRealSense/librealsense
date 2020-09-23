@@ -172,7 +172,7 @@ Used to show surface smoothness by showing RMSE of pixels inside a selected rect
 The Whiter the pixels, the more far they are.
 Smooth surface will result in homogeneous pixels color in the selected rectangle
 
-![foxdemo](images/rmse_image.PNG)
+![foxdemo](images/rmse_image.png)
  
 ## Convert to Bag
 This tool runs on a folder that contains:
