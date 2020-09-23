@@ -248,8 +248,12 @@ namespace librealsense
 
                 if (_use_workaround)
                 {
-                    _pre_hdr_exposure = _sensor->get_option(RS2_OPTION_EXPOSURE).query();
-                    _sensor->get_option(RS2_OPTION_EXPOSURE).set(PRE_ENABLE_HDR_EXPOSURE);
+                    try {
+                        _pre_hdr_exposure = _sensor->get_option(RS2_OPTION_EXPOSURE).query();
+                        _sensor->get_option(RS2_OPTION_EXPOSURE).set(PRE_ENABLE_HDR_EXPOSURE);
+                    } catch (...) {
+                        LOG_WARNING("HDR: enforced exposure failed");
+                    }
                 }
 
                 _is_enabled = send_sub_preset_to_fw();
@@ -267,10 +271,15 @@ namespace librealsense
             if (_use_workaround)
             {
                 // this sleep is needed to let the fw restore the manual exposure
-                std::this_thread::sleep_for(std::chrono::milliseconds(40));
-                auto exp = _sensor->get_option(RS2_OPTION_EXPOSURE).query();
+                std::this_thread::sleep_for(std::chrono::milliseconds(70));
                 if (_pre_hdr_exposure >= _exposure_range.min && _pre_hdr_exposure <= _exposure_range.max)
-                    _sensor->get_option(RS2_OPTION_EXPOSURE).set(_pre_hdr_exposure);
+                {
+                    try {
+                        _sensor->get_option(RS2_OPTION_EXPOSURE).set(_pre_hdr_exposure);
+                    } catch (...) {
+                        LOG_WARNING("HDR failed to restore manual exposure");
+                    }
+                }
             }
 
             // re-enabling options that were disabled in order to permit the hdr
@@ -297,7 +306,7 @@ namespace librealsense
         {
             if (_sensor->get_option(RS2_OPTION_EMITTER_ON_OFF).query())
             {
-                //_sensor->get_option(RS2_OPTION_EMITTER_ON_OFF).set(0.f);
+                _sensor->get_option(RS2_OPTION_EMITTER_ON_OFF).set(0.f);
                 _emitter_on_off_to_be_restored = true;
             }
         }
