@@ -27,7 +27,7 @@ Librealsense2 SDK supports two API for communication with RealSense device on Li
   Currently the two interfaces are mutually-exclusive, thus the choice taken during the SDK configuration stage (CMakes) predefines the selected backend API.
 
   As a general rule it is recommended to use the native kernel drivers, especially in production environment.
-The second method augments the native installation and allows for a ully-functional SDK deployment at the expense of certain performance and functional limitations (e.g. multi-cam).
+The second method augments the native installation and allows for a fully-functional SDK deployment at the expense of certain performance and functional limitations (e.g. multi-cam).
 The list of requirements for the second method comprise of a basic USB driver and GCC compiler, thus making it attractive for prototyping and demos in new/previously-unsupported environments.
 
   If that's the case, what is the dilemma?
