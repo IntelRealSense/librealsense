@@ -192,7 +192,7 @@ To make it work, connect a ds5 camera and prepare a trained Tensorflow model.
 It could be the trained model from example #4 or any model from this path: \\ger\ec\proj\ha\RSG\SA_3DCam\Noha\Tensorflow\models
 Pass the selected model as argument to the tool:
 	
-	python camera_simulation.py --model <path to the model>
+	python camera_simulation.py <path to the model>
 
 It will display original frame captured by the camera, and right to it a frame as predicted by the selected model.
 
