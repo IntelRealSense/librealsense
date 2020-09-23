@@ -107,6 +107,9 @@ Each ground truth image has a corressponding depth and infra red (IR) image. Giv
 
 Each image in the dataset is padded to get a size of 896x512 then each of them is cropped to 128x128. In total, each image is cropped to 28 images of size 128x128.  
 Each cropped image is saved with the original image name, adding to it information about the column and row the image was cropped from. It helps corresponding to each ground-truth cropped-image, the IR and depth image from the cropped set.
+
+![foxdemo](https://github.com/nohayassin/RealSense-ML/blob/master/images/cropping.PNG)
+
 ###### 2. Channeling
 Before channeling, IR images are converted to 1-channel image of 16-bits depth.
 IR (infra red) image is added as a second channel to both ground truth and depth image, to add more information about the depth of each object in the image.
