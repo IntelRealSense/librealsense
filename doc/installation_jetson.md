@@ -84,11 +84,11 @@ Note that this method provides binary installation compiled using the `-DFORCE_R
    2. Use the native kernel with patches.  
       The method was verified with **Jetson AGX** boards running L4T version 4.2.3, 4.3 and 4.4, but may also apply to **Jetson Nano**  
       a. Verify the board type and L4T versions compatibility.  
-      b. Verify internet connection.
-      c. Verify the available space on flash, the patching process requires ~2.5Gb free space
+      b. Verify internet connection.  
+      c. Verify the available space on flash, the patching process requires ~2.5Gb free space  
         >df -h
 
-      d. Configure the Jetson Board into Max power mode (desktop -> see the upper right corner)
+      d. Configure the Jetson Board into Max power mode (desktop -> see the upper right corner)  
       e. Disconnect attached USB/UVC cameras (if any).  
       f. Navigate to the root of Libreansense2 directory.  
       g. Run the script (note the ending characters - `L4T`)  
