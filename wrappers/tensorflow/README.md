@@ -196,7 +196,12 @@ Pass the selected model as argument to the tool:
 
 It will display original frame captured by the camera, and right to it a frame as predicted by the selected model.
 
-TODO:: ADD photo
+
+![foxdemo](https://github.com/nohayassin/RealSense-ML/blob/master/images/simulation.PNG)
+
+It shows also time statistics for each frame :
+
+![foxdemo](https://github.com/nohayassin/RealSense-ML/blob/master/images/camera_simulation_performance.PNG)
 
 ## Example 6
 How covert keras to frozen graph --> camera simulation as #5 but use only opencv
