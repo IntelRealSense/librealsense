@@ -13,10 +13,6 @@ namespace librealsense
             &_selected_stream_id, "Selected stream id for display",
             std::map<float, std::string>{ {0.f, "all"}, { 1.f, "1" }, { 2.f, "2" }});
         register_option(RS2_OPTION_SEQUENCE_ID, selected_stream_id);
-
-        _last_frame[0] = nullptr;
-        _last_frame[1] = nullptr;
-        _last_frame[2] = nullptr;
     }
 
     // processing only simple frames (not framesets)
@@ -30,57 +26,43 @@ namespace librealsense
         if (frame.is<rs2::frameset>())
             return false;
 
-        auto depth_frame = frame.as<rs2::depth_frame>();
-        if (!depth_frame)
+        if (!frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE))
             return false;
-
-        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE))
+        if (!frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID))
             return false;
-        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID))
+        int seq_size = frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE);
+        if (seq_size == 0)
             return false;
-        int depth_sequ_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE);
-        if (depth_sequ_size == 0)
-            return false;
-
-        auto profile = frame.get_profile();
-        rs2_stream stream = profile.stream_type();
-        if (stream != RS2_STREAM_DEPTH)
-            return false;
-
-        int index = profile.stream_index();
-        if (index != 0)
-            return false;
-
         return true;
     }
 
     rs2::frame sequence_id_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
         // steps:
-        // only for depth:
-        // 1. check hdr seq id in metadata -
-        //   if not as the option selected id, return last frame with the selected id
-        //   else return current frame
+        // check hdr seq id in metadata -
+        // if not as the option selected id, return last frame with the selected id
+        // else return current frame
 
-        // 1. check hdr seq id in metadata
-        auto depth_frame = f.as<rs2::depth_frame>();
-        int seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
-
+        int seq_id = f.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
+        auto unique_id = f.get_profile().unique_id();
+        auto current_key = std::make_pair(seq_id, unique_id);
 
         if (is_selected_id(seq_id + 1))
         {
-            _last_frame[static_cast<int>(_selected_stream_id)] = f;
+            _last_frames[current_key] = f;
             return f;
         }
         else
         {
-            if (_last_frame[static_cast<int>(_selected_stream_id)])
-                return _last_frame[static_cast<int>(_selected_stream_id)];
+            int seq_id_selected = (seq_id == 0) ? 1 : 0;
+            auto key_with_selected_id = std::make_pair(seq_id_selected, unique_id);
+            if (_last_frames[key_with_selected_id])
+                return _last_frames[key_with_selected_id];
             return f;
         }
     }
 
-    bool sequence_id_filter::is_selected_id(int stream_index)
+    bool sequence_id_filter::is_selected_id(int stream_index) const
     {
         if (static_cast<int>(_selected_stream_id) != 0 &&
             stream_index != static_cast<int>(_selected_stream_id))
