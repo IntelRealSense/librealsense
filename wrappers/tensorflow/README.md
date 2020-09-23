@@ -159,6 +159,9 @@ The relevant folders in file tree are:
 #### monitoring tensorboard 
 		
 # Tools
+The tools RMSE and convert to bag, are used to track improvement and accuracy of a trained model.
+
+
 ##  RMSE
 Used to show surface smoothness by showing RMSE of pixels inside a selected rectangle on image.
 The Whiter the pixels, the more far they are.
