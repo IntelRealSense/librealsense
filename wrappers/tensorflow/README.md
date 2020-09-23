@@ -121,6 +121,8 @@ consistes of 2 channels: first channel is a depth image and second channel is th
 consistes of 2 channels: first channel is a ground truth image and second channel is the corressponding IR image. 
 Each channel in both pure and noisy is a 16-bits depth.
 
+![foxdemo](https://github.com/nohayassin/RealSense-ML/blob/master/images/channeling.PNG)
+
 #### Training Process
 In order to start a training process, the following is required:
 - Unet Network Implementation : choosing the sizes of convolutions, max pools, filters and strides, along downsampling and upsampling.
