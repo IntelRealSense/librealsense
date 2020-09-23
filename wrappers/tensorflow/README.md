@@ -163,7 +163,8 @@ The relevant folders in file tree are:
 Used to show surface smoothness by showing RMSE of pixels inside a selected rectangle on image.
 The Whiter the pixels, the more far they are.
 Smooth surface will result in homogeneous pixels color in the selected rectangle
- TODO :: add image
+
+![foxdemo](https://github.com/nohayassin/RealSense-ML/blob/master/images/rmse_image.PNG)
  
 ## Convert to Bag
 This tool runs on a folder that contains:
@@ -178,7 +179,8 @@ This tool runs on a folder that contains:
 	
 The output is a bag file that could be opened by RealSense viewer.
 
-TODO :: ADD IMAGE
+![foxdemo](https://github.com/nohayassin/RealSense-ML/blob/master/images/conver_to_bag.PNG)
+
 
 ## Example 5:
 model from #4 or download, run on real data
