@@ -846,7 +846,7 @@ namespace librealsense
             gain_option = hdr_conditional_gain_option;
 
             depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,
-                std::make_shared<read_only_option>(
+                std::make_shared<gated_option>(
                     enable_auto_exposure,
                     hdr_enabled_option,
                     "Auto Exposure cannot be set while HDR is enabled"));

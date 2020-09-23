@@ -586,19 +586,19 @@ namespace librealsense
        float                   _manual_value;
    };
 
-   /** \brief read_only_option class will permit the user to 
+   /** \brief gated_option class will permit the user to 
    *  perform only read (query) of the read_only option when its affecting_option is set */
-   class read_only_option : public proxy_option
+   class gated_option : public proxy_option
    {
    public:
-       explicit read_only_option(std::shared_ptr<option> leading_to_read_only,
-           std::shared_ptr<option> affecting_option, std::string reason = "This option cannot be set right now")
-           : proxy_option(leading_to_read_only), _affecting_option(affecting_option), _reason(reason)
+       explicit gated_option(std::shared_ptr<option> leading_to_read_only,
+           std::shared_ptr<option> gated_option, std::string reason = "This option cannot be set right now")
+           : proxy_option(leading_to_read_only), _gated_option(gated_option), _reason(reason)
        {}
 
        void set(float value) override
        {
-           auto strong = _affecting_option.lock();
+           auto strong = _gated_option.lock();
            if (!strong)
                return;
            auto val = strong->query();
@@ -612,7 +612,7 @@ namespace librealsense
        }
 
    private:
-       std::weak_ptr<option>  _affecting_option;
+       std::weak_ptr<option>  _gated_option;
        std::string _reason;
    };
 
