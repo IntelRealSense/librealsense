@@ -43,7 +43,7 @@ namespace librealsense
         if (!existing_subpreset_restored)
         {
             // setting default config
-            float exposure_default_value = _exposure_range.def;
+            float exposure_default_value = _exposure_range.def-1000.f; // D455 W/A
             float gain_default_value = _gain_range.def;
             hdr_params params_0(0, exposure_default_value, gain_default_value);
             _hdr_sequence_params[0] = params_0;
