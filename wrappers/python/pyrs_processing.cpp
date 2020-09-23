@@ -181,7 +181,8 @@ void init_processing(py::module &m) {
     hdr_merge.def(py::init<>());
 
     py::class_<rs2::sequence_id_filter, rs2::filter> sequence_id_filter(m, "sequence_id_filter", "Splits depth frames with different sequence ID");
-    sequence_id_filter.def(py::init<>());
+    sequence_id_filter.def(py::init<>())
+        .def(py::init<float>(), "sequence_id"_a);
     // rs2::rates_printer
     /** end rs_processing.hpp **/
 }

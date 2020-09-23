@@ -23,11 +23,11 @@ namespace librealsense
         if (!depth_frame)
             return false;
 
-        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE))
+        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE))
             return false;
-        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID))
+        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID))
             return false;
-        auto depth_seq_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE);
+        auto depth_seq_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE);
         if (depth_seq_size != 2)
             return false;
 
@@ -51,7 +51,7 @@ namespace librealsense
         auto depth_frame = fs.get_depth_frame();
 
         // 2. add the frameset to vector of framesets
-        auto depth_seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
+        auto depth_seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
 
         // condition added to ensure that frames are saved in the right order
         // to prevent for example the saving of frame with sequence id 1 before
@@ -245,15 +245,15 @@ namespace librealsense
                 // checking sequence id of first depth and ir are the same
                 if (use_ir)
                 {
-                    auto depth_seq_id = first_depth.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
-                    auto ir_seq_id = first_ir.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
+                    auto depth_seq_id = first_depth.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
+                    auto ir_seq_id = first_ir.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
                     use_ir = (depth_seq_id == ir_seq_id);
 
                     // checking sequence id of second depth and ir are the same
                     if (use_ir)
                     {
-                        depth_seq_id = second_depth.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
-                        ir_seq_id = second_ir.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
+                        depth_seq_id = second_depth.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
+                        ir_seq_id = second_ir.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
                         use_ir = (depth_seq_id == ir_seq_id);
 
                         // checking both ir have the same format

@@ -113,8 +113,8 @@ int main(int argc, char * argv[]) try
 
         auto depth_frame = data.get_depth_frame();
 
-        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE) ||
-            !depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID))
+        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE) ||
+            !depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID))
         {
             ++frames_without_hdr_metadata_params;
             if (frames_without_hdr_metadata_params > 20)
@@ -127,9 +127,9 @@ int main(int argc, char * argv[]) try
             continue;
         }
 
-        auto hdr_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_ID);
-        auto hdr_seq_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE);
-        auto hdr_seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
+        auto hdr_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_NAME);
+        auto hdr_seq_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE);
+        auto hdr_seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
         auto exp = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
 
         std::cout << "frame hdr metadata: hdr_seq_id = "<< hdr_seq_id << ", exposure = " << exp << std::endl;
