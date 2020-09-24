@@ -15,6 +15,7 @@ namespace librealsense
     {
     public:
         const char* get_value_description(float val) const override;
+        void set(float val) override;
         explicit emitter_option(uvc_sensor& ep);
     };
 

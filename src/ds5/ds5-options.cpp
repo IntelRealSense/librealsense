@@ -30,6 +30,14 @@ namespace librealsense
         }
     }
 
+    void emitter_option::set(float value)
+    {
+        if (_ep.supports_option(RS2_OPTION_HDR_ENABLED) && _ep.get_option(RS2_OPTION_HDR_ENABLED).query())
+            LOG_WARNING("Emitter state cannot be changed while HDR is active");
+        else
+            uvc_xu_option<uint8_t>::set(value);
+    }
+
     emitter_option::emitter_option(uvc_sensor& ep)
         : uvc_xu_option(ep, ds::depth_xu, ds::DS5_DEPTH_EMITTER_ENABLED,
                         "Emitter select, 0-disable all emitters, 1-enable laser, 2-enable laser auto (opt), 3-enable LED (opt)")
