@@ -111,7 +111,13 @@ std::string RsSensor::getSensorName()
 {
     if(m_sensor.supports(RS2_CAMERA_INFO_NAME))
     {
-        return std::string(m_sensor.get_info(RS2_CAMERA_INFO_NAME));
+        // W/A for L515 sensor name
+        std::string str = m_sensor.get_info(RS2_CAMERA_INFO_NAME);
+        if (str.compare(L500_SENSOR_NAME) == 0 )
+        {
+            str = STEREO_SENSOR_NAME;
+        }
+        return str;        
     }
     else
     {

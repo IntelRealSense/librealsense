@@ -142,7 +142,6 @@ struct server
                          }
                     }
                 }
-                // Is thid Z and Y8?
                 if (stream.format() == RS2_FORMAT_Z16 || stream.format() == RS2_FORMAT_Y8 )
                 {
                     if(stream.fps() == 6 || stream.fps() == 15 || stream.fps() == 30)
