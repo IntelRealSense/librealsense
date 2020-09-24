@@ -8,9 +8,15 @@
 #include <types.h>
 
 std::string last_option_set;
+std::string last_warning_received;
 
 TEST_CASE( "HDR ON - set locked options", "[HDR]" ) {
     try {
+        auto callback = [&](rs2_log_severity severity, rs2::log_message const& msg)
+        {
+            last_warning_received = msg.raw();
+        };
+        rs2::log_to_callback(RS2_LOG_SEVERITY_WARN, callback);
         rs2::context ctx;
         rs2::device_list devices_list = ctx.query_devices();
         size_t device_count = devices_list.size();
@@ -34,18 +40,22 @@ TEST_CASE( "HDR ON - set locked options", "[HDR]" ) {
         last_option_set = "RS2_OPTION_ENABLE_AUTO_EXPOSURE";
         depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.f);
         REQUIRE(depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE) == 0.f);
+        REQUIRE(last_warning_received == "Auto Exposure cannot be set while HDR is enabled");
 
         last_option_set = "RS2_OPTION_EMITTER_ENABLED";
         depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
         REQUIRE(depth_sensor.get_option(RS2_OPTION_EMITTER_ENABLED) == 1.f);
+        REQUIRE(last_warning_received == "Emitter state cannot be changed while HDR is active");
 
         last_option_set = "RS2_OPTION_EMITTER_ON_OFF";
         depth_sensor.set_option(RS2_OPTION_EMITTER_ON_OFF, 1.f);
         REQUIRE(depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF) == 0.f);
+        REQUIRE(last_warning_received == "Emitter ON/OFF state cannot be changed while HDR is active");
 
         last_option_set = "RS2_OPTION_LASER_POWER";
         depth_sensor.set_option(RS2_OPTION_LASER_POWER, laser_power_before_hdr - 30.f);
         REQUIRE(depth_sensor.get_option(RS2_OPTION_LASER_POWER) == laser_power_before_hdr);
+        REQUIRE(last_warning_received == "Laser power cannot be changed while HDR is active");
 
 
     }
