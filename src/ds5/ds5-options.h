@@ -19,6 +19,13 @@ namespace librealsense
         explicit emitter_option(uvc_sensor& ep);
     };
 
+    class laser_power_option : public uvc_xu_option<uint16_t>
+    {
+    public:
+        void set(float val) override;
+        explicit laser_power_option(uvc_sensor& ep, platform::extension_unit xu, uint8_t id, std::string description);
+    };
+
     class asic_and_projector_temperature_options : public readonly_option
     {
     public:

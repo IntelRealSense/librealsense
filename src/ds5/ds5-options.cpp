@@ -43,6 +43,17 @@ namespace librealsense
                         "Emitter select, 0-disable all emitters, 1-enable laser, 2-enable laser auto (opt), 3-enable LED (opt)")
     {}
 
+    void laser_power_option::set(float value)
+    {
+        if (_ep.supports_option(RS2_OPTION_HDR_ENABLED) && _ep.get_option(RS2_OPTION_HDR_ENABLED).query())
+            LOG_WARNING("Laser power cannot be changed while HDR is active");
+        else
+            uvc_xu_option<uint16_t>::set(value);
+    }
+
+    laser_power_option::laser_power_option(uvc_sensor& ep, platform::extension_unit xu, uint8_t id, std::string description)
+        : uvc_xu_option<uint16_t>(ep, xu, id, description) {}
+
     float asic_and_projector_temperature_options::query() const
     {
         if (!is_enabled())
@@ -667,5 +678,4 @@ namespace librealsense
         else
             return _uvc_option->is_enabled();
     }
-
 }
