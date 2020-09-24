@@ -133,7 +133,6 @@ struct server
                     }
                     else if(stream.fps() == 10)
                     {
-                        // is YUYV like YUY2?
                          if(stream.format() == RS2_FORMAT_YUYV && stream.width() == 1280 && stream.height() == 720)
                          {
                             sms->addSubsession(RsServerMediaSubsession::createNew(*env, stream, rsDevice));
@@ -163,7 +162,6 @@ struct server
                         }
                     }
                 }
-                // is this YUY2?
                 if (stream.format() == RS2_FORMAT_YUYV)
                 {
                     if(stream.fps() == 6 || stream.fps() == 15 || stream.fps() == 30 || stream.fps() == 60)
