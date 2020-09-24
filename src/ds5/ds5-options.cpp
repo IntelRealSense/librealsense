@@ -523,7 +523,7 @@ namespace librealsense
     {
         if (_sensor && _sensor->supports_option(RS2_OPTION_HDR_ENABLED) && 
             _sensor->get_option(RS2_OPTION_HDR_ENABLED).query())
-            LOG_WARNING("Emitter state cannot be changed while HDR is active");
+            LOG_WARNING("Emitter ON/OFF state cannot be changed while HDR is active");
         else
         {
             std::vector<uint8_t> pattern{};
