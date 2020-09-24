@@ -19,7 +19,7 @@ pipeline.start(config)
 a = rs.align(rs.stream.color) # align between color and depth
 pc = rs.pointcloud()
 
-net = cv2.dnn.readNetFromTensorflow("./frozen_inference_graph.pb", "./faster_rcnn_inception_v2_coco_2018_01_28.pbtxt")
+net = cv2.dnn.readNetFromTensorflow(r"C:\work\git\tensorflow\model\frozen_inference_graph.pb", r"C:\work\git\tensorflow\model\faster_rcnn_inception_v2_coco_2018_01_28.pbtxt.txt")
 while True:
     frames = pipeline.wait_for_frames()
     frames = a.process(frames)
@@ -35,11 +35,11 @@ while True:
 
     color_image = np.asanyarray(color_frame.get_data())
     scaled_size = (int(W), int(H))
-    #color_image_small = cv2.resize(color_image, scaled_size) # needed to improve performance
+    color_image_small = cv2.resize(color_image, scaled_size) # needed to improve performance
     net.setInput(cv2.dnn.blobFromImage(color_image, size=scaled_size, swapRB=True, crop=False))
     detections = net.forward()
 
-    for detection in detections:
+    for detection in detections[0,0]:
         score = float(detection[2])
         idx = int(detection[1])
 
