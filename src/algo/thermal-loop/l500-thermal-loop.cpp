@@ -32,7 +32,7 @@ thermal_calibration_table::thermal_calibration_table( const std::vector< byte > 
     vals.assign( data_ptr, data_ptr + resolution );
 }
 
-double thermal_calibration_table::get_current_thermal_scale( const double & hum_temp ) const
+double thermal_calibration_table::get_current_thermal_scale( double hum_temp ) const
 {
     auto scale = vals[_resolution - 1].scale;
 
@@ -45,8 +45,10 @@ double thermal_calibration_table::get_current_thermal_scale( const double & hum_
     {
         auto temp_range = _header.max_temp - _header.min_temp;
         // there are 29 bins between min and max temps so its divides to 30 equals intervals
-        auto interval = temp_range / ( thermal_calibration_table::_resolution + 1 );
+        auto interval = temp_range / ( _resolution + 1 );
 
+        //      |--|--|--|...|--|
+        //     min 0  1  2...29 max
         for( double temp = _header.min_temp, index = 0; index < _resolution;
              ++index, temp += interval )
         {

@@ -43,14 +43,14 @@ public:
         float ty;
     };
 
-    int _resolution;
+    int _resolution; // number of bins *between* min and max, i.e.bin - size = ( max - min ) / ( resolution + 1 )
     thermal_table_header _header;
     std::vector< temp_data > vals;
 
     thermal_calibration_table() = default;
     thermal_calibration_table( const std::vector< byte > & data, int resolution = 29);
 
-    double get_current_thermal_scale( const double& hum_temp ) const;
+    double get_current_thermal_scale( double hum_temp ) const;
 
     std::vector< byte > build_raw_data() const;
 };

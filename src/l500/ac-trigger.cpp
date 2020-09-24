@@ -962,7 +962,7 @@ namespace ivcam2 {
                     // hold up the thread that the frame callbacks are on!
                     float dsm_x_scale, dsm_y_scale, dsm_x_offset, dsm_y_offset;
                     algo::depth_to_rgb_calibration::algo_calibration_info cal_info;
-                    algo::thermal_loop::l500::thermal_calibration_table t;
+                    algo::thermal_loop::l500::thermal_calibration_table thermal_table;
                     {
                         auto hwm = _hwm.lock();
                         if( ! hwm )
@@ -977,7 +977,7 @@ namespace ivcam2 {
 
                         try
                         {
-                            t = _dev.get_color_sensor()->get_thermal_table();
+                            thermal_table = _dev.get_color_sensor()->get_thermal_table();
                         }
                         catch( ... )
                         {
@@ -1022,7 +1022,7 @@ namespace ivcam2 {
                         cal_info,
                         cal_regs,
                         read_intrinsics_from_camera( _dev, _cf.get_profile() ),
-                        t,
+                        thermal_table,
                         should_continue );
 
                     std::string debug_dir = get_ac_logger().get_active_dir();

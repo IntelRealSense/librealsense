@@ -183,10 +183,11 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
         _thermal_intr = _algo.get_calibration().get_intrinsics();
 
         // override only the ppx and ppy the fx and fy are the original
-        _raw_intrinsics.ppx = _thermal_intr.ppx; 
-        _raw_intrinsics.ppy = _thermal_intr.ppy;
-        _raw_intrinsics.model = _thermal_intr.model
-            = RS2_DISTORTION_INVERSE_BROWN_CONRADY;  // restore LRS model 
+        double original_fx = _raw_intrinsics.fx, original_fy = _raw_intrinsics.fy;
+        _raw_intrinsics = _thermal_intr; 
+        _raw_intrinsics.fx = original_fx;
+        _raw_intrinsics.fy = original_fy;
+
         _extr = from_raw_extrinsics( _algo.get_calibration().get_extrinsics() );
         _dsm_params = _algo.get_dsm_params();
         _last_successful_frame_data = _algo.get_yuy_data().orig_frame;  // copy -- will be moved to ac_trigger
