@@ -12,8 +12,7 @@ config.enable_stream(rs.stream.depth, W, H, rs.format.z16, 30)
 config.enable_stream(rs.stream.color, W, H, rs.format.bgr8, 30)
 
 
-# Start streaming
-# add prints ..
+print("[INFO] start streaming...")
 pipeline.start(config)
 
 aligned_stream = rs.align(rs.stream.color) # alignment between color and depth
