@@ -16,6 +16,7 @@ TEST_CASE( "HDR Config - changing only exposure", "[HDR]" ) {
     REQUIRE(device_count > 0);
 
     rs2::device dev = devices_list[0];
+    dev.hardware_reset();
     rs2::depth_sensor depth_sensor = dev.query_sensors().front();
 
     depth_sensor.set_option(RS2_OPTION_SEQUENCE_SIZE, 2);
