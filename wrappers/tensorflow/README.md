@@ -28,43 +28,22 @@ like #1 but with opencv
 
 
 ## Example 4
-#### Unet Network Introduction
-Unet is a deep learning Architecture used for image segmentation problems
-It was particularly released as a solution for biomedical segmentation tasks
-but it became used for any segmentation problem. Unlike classification problems that use hundred of layers, Unet represent a very compact architecture
-with limited number of parameters.
-self-driving cars for example use image segmentation for awareness about the environment.
-In this project, image segmentation is needed to know the exact depth of each object. 
-Unet network is the ideal architecture that serves our goal.
 
-Unlike image classification that classify the entire image, image segmentation classify every single pixel
-and to what class it belongs to.
-It is not enough to see if some feature is present or not, we need to know the exact shape and all the entricate 
-properities: how each object behaves, the shapes and forms it takes to exactly know which pixels belong to that object.
+#### Problem Statement
+TODO
 
-This kind of task requires the network to have considerably more in-depth understanding about the object.
-Before Unet, segmentation tasks were approched using a modified convolution networks by replacing
-fully connected with fully convolutional layers then they were just upsample it to the same
-resolution of the image and try to use it as a segmentation mask, but because the image was compressed
-so much and it gone through so much processing (e.g max pooling and convolutions) a lot of information have thrown away.
+#### Unet Network Architecture
+Unet is a deep learning architecture commonly used in image segmentation, denoising and inpainting applications. For original paper please refer to [U-Net: Convolutional Networks for Biomedical Image Segmentation](https://arxiv.org/pdf/1505.04597.pdf).
+For the problem of depth post-processing, we are looking to solve a combination of denoising and inpaiting (hole-filling) problems making Unet architecture very appropriate. 
 
-Just doing upsampling will not really give us the fine resolution that we want. It is very
-coarse and not very accurate. so regular upsampling doesn't work very well.
-What Unet does, the first (left) pathway of it looks very similar to classic convolutional network
-instead of just directly upsampling, it has another pathway which it gradually builds upon the up sampling
-procedure, so it serves as directly up sampling via learning the best way that this compressed image should
-be up sampled and using convolution filters for that.
+Additional information on Unet:
+
+- [github.com/zhixuhao/unet](https://github.com/zhixuhao/unet) - Open-source implementation of Unet architecture with Keras 
+- [Introduction to image segmentation with Unet](https://towardsdatascience.com/understanding-semantic-segmentation-with-unet-6be4f42d4b47)
+
+Unet offers significant advantages compared to classic autoencoder architecture, improving edge fidelity. (TODO: picture comparison?)
 		
-#### Unet Network Architecture: 
-Input image goes through some convolutions, then it is downsampled by using
-max pooling then it goes through more convolutions, downsampled again, and so on until it reaches the deepest layer
-after that it is upsampled by half so we get back the sizes (see image below), then we concatenate the features of each connection 
-and these concatenated features go through some more convolutions, then upsampled then it is joined (concatenated) back 
-with the parallel layer, but we lose information as we go down through max pooling (mostly because it reduces the dimention by half), and
-also through convolution because convolution throw away information from raw input to repupose them into
-meaningful features. That what happens also in classification networks, where a lot of information is 
-thrown away by the last layer. But in segmentation we want those low-level features because those
-are essential to deconstructing the image. 
+(TODO: Replace with an illustration with map of layers)
 
 In the left pathway of Unet, the number of filters (features) increase as we go down, it means that it becomes
 very good at detecting more and more features, the first few layers of a convolution network capture a very small semantic information and lower level
@@ -72,36 +51,32 @@ features, as you go down these features become larger and larger, but when we th
 knows only approximate location about where those features are.
 When we upsample we get the lost information back (by the concatination process)
 so we can see last-layer features in the perspective of the layer above them.
-
-
-
-TODO :: PUT IMAGE HERE OF CONV NETWORK <conv networks then FC networks> and UNET
 		
 #### Training Dataset
 The dataset is located here: https://drive.google.com/file/d/1cXJRD4GjsGnfXtjFzmtLdMTgFXUujrRw/view?usp=drivesdk
-It containes 3 types of 484x480 png images : 
-###### 1. Ground Truth Images
-- clean depth images that Neural Network should learn to predict. 
-- 1-channel image of 16 bits depth
-- name : gt-*.png
-###### 2. Depth Images : 
-- noisy depth images as captured by ds5.
-- 1-channel image of 16 bits depth
-- name : res-*.png
-###### 3. Infra Red (IR) Images 
-- used to help Unet learning the exact depth of each object
-- 3-channel image of 8 bits depth for each channel. 
-- name : left-*.png
+It containes 4 types of 848x480 images in uncompressed PNG format: 
+
+###### 1. Simulated Left Infrared:
+- Syntethic view from left infrared sensor of the virtual camera, including inrared projection pattern
+- 3-channel grayscale image of 8 bits per channel
+- Name Filter: left-*.png
+###### 2. Simulated Right Infrared:
+- Syntethic view from right infrared sensor of the virtual camera, including inrared projection pattern
+- 3-channel grayscale image of 8 bits per channel
+- Name Filter: right-*.png
+###### 3. Ground Truth Depth:
+- Ground truth depth images 
+- Single channel 16-bits per pixel values in units of 1mm
+- Name filter : gt-*.png
+###### 4. Generated Depth: 
+- Depth images generated from Left and Right pairs using D400 stereomatching algorithm configured with parameters similar to the D435 camera
+- Single channel 16-bits per pixel values in units of 1mm
+- Name filter: res-*.png
 		
 #### Data Augmentation
-To help the neural network learning images features, the images should be cropped to optimal size.
-Large images contain many features, it requires adding more layers to detect all the features, this will impact the learning process negatively.
-On the other hand, very small images may not contain any explicit feature, because most likely each feature would be splitted to several number of images.
-It is very essential to choose the cropped images size optimally, considering the original size the average size of features inside the image.
-In the set of experiments we did, image size of 128x128 found to be optimal.
+To help the neural network learning image features we decide to crop input images into tiles of 128x128 pixels. 
 
-
-Each ground truth image has a corressponding depth and infra red (IR) image. Given that, the dataset is augmented as following:
+Each ground truth image has a corressponding depth and infrared image. Given that, the dataset is augmented as following:
 
 ###### 1. Cropping 
 
@@ -111,30 +86,28 @@ Each cropped image is saved with the original image name, adding to it informati
 ![foxdemo](images/cropping.PNG)
 
 ###### 2. Channeling
-Before channeling, IR images are converted to 1-channel image of 16-bits depth.
-IR (infra red) image is added as a second channel to both ground truth and depth image, to add more information about the depth of each object in the image.
+We expand left infrared image to 16-bits and attach it as second channel to network input and output. This gives the network additional visual features to learn from. 
 
 Eventually, the data that is fed to Unet network contains:
 - Noisy images: 
-consistes of 2 channels: first channel is a depth image and second channel is the corressponding IR image
+2 channels: first channel is a depth image and second channel is the corressponding IR image
 - Pure images: 
-consistes of 2 channels: first channel is a ground truth image and second channel is the corressponding IR image. 
-Each channel in both pure and noisy is a 16-bits depth.
+2 channels: first channel is a ground truth image and second channel is the corressponding IR image
 
 ![foxdemo](images/channeling.PNG)
 
 #### Training Process
 In order to start a training process, the following is required:
-- Unet Network Implementation : choosing the sizes of convolutions, max pools, filters and strides, along downsampling and upsampling.
+- Unet Network Implementation: choosing the sizes of convolutions, max pools, filters and strides, along downsampling and upsampling.
 - Data Augmentation: preparing dataset that contains noisy and pure images as explained above.
 - Old model (optional): there is an option of training the network starting from a previously-trained model. 
-- Epochs : epoch is one cycle through the full training dataset (forth and back). The default value of epochs number is 100, it could be contolled by an argument passed to the application.
+- Epochs: epoch is one cycle through the full training dataset (forth and back). The default value of epochs number is 100, it could be contolled by an argument passed to the application.
 
-#### Files Tree 
-the application will create automatically a file tree:
-- images folder: contains original and cropped images for training and testing, also the predicted images
-- logs folder: all tensorflow outputs throughout the training are stored in txt file that has same name as the created model. It contains also a separate log for testing statistics.
-- models folder: each time a training process starts, it creates a new folder for a model inside models folder. If the traing starts with old model, 
+#### File Tree 
+The application will create automatically a file tree:
+- `images` folder: contains original and cropped images for training and testing, and also the predicted images
+- `logs` folder: all tensorflow outputs throughout the training are stored in txt file that has same name as the created model. It contains also a separate log for testing statistics.
+- `models` folder: each time a training process starts, it creates a new folder for a model inside models folder. If the traing starts with old model, 
 				 it will create a folder with same name as old model adding to it the string "_new"
 		
 		.
@@ -152,25 +125,25 @@ the application will create automatically a file tree:
 				└───variables
 		
 ####  Testing Process
-The tested images should be augmented as trained images, except the cropping size should be 480x480 (each image is cropped to 2 images), considering performance improvement.
+The tested images should be augmented like trained images, except the cropping size should be 480x480 (each image is cropped to 2 images) (TODO:Why??), considering performance improvement.
 For testing, there is no need to ground truth data, only depth and IR images are required.
 The relevant folders in file tree are: 
-- test: original images to test of sizes 848x480
-- test_cropped: cropped testing images, size: 480x480
-- denoised: the application stores predicted images in this folder.
+- `test`: original images to test of sizes 848x480
+- `test_cropped`: cropped testing images, size: 480x480
+- `denoised`: the application stores predicted images in this folder.
 		
-		
-
-#### monitoring tensorboard 
+#### Monitoring with Tensorboard 
 		
 # Tools
-The tools RMSE and convert to bag, are used to track improvement and accuracy of a trained model.
+There are several helper tools located under `tools` folder: 
 
 
 ##  RMSE
-Used to show surface smoothness by showing RMSE of pixels inside a selected rectangle on image.
-The Whiter the pixels, the more far they are.
-Smooth surface will result in homogeneous pixels color in the selected rectangle
+
+RMSE tool can be use to show surface smoothness by showing plane-fit RMS of pixels inside a selected rectangle inside the image.
+The tools is approximating best fit plane passing through selected points, ignoring zero depth and calculates how far on average points are from that plane. 
+When evaluated on planar surface, this gives good metric for surface smoothness. In addition, noise distribution within the selected bounding box is color coded: 
+Black pixels correspond to low deviation from predicted plane-fit with white pixels corresponding to points further aways from the plane, normalized by standard deviation. 
 
 ![foxdemo](images/rmse_image.png)
  
@@ -185,7 +158,7 @@ This tool runs on a folder that contains:
 	
 	4. denoised images : Unet network model prediction of noisy images from #1
 	
-The output is a bag file that could be opened by RealSense viewer.
+The output is a BAG file that could be opened by RealSense viewer.
 
 ![foxdemo](images/conver_to_bag.PNG)
 
