@@ -641,7 +641,7 @@ namespace librealsense
                     if (preset_option.query() == RS2_L500_VISUAL_PRESET_CUSTOM)
                     {
                         if(sensor_mode_option.query() != get_resolution_from_width_height(vs->get_width(), vs->get_height()))
-                            throw  std::runtime_error(to_string() << "sensor mode option ("<< sensor_mode_option.query()<<") is incompatible with requested resolution ("
+                            throw  std::runtime_error(to_string() << "sensor mode ("<< rs2_sensor_mode((int)sensor_mode_option.query())<<") with RS2_L500_VISUAL_PRESET_CUSTOM is incompatible with the requested profile resolution ("
                                 << get_resolution_from_width_height(vs->get_width(), vs->get_height())<<")");
                     }
                 }
