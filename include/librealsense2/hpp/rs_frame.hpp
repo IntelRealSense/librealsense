@@ -978,23 +978,11 @@ namespace rs2
 
         /**
         * Retrieve the first depth frame, if no frame is found, return an empty frame instance.
-        * \param[in] size_t index
         * \return depth_frame - first found depth frame.
         */
-        depth_frame get_depth_frame(const size_t index = 0) const
+        depth_frame get_depth_frame() const
         {
-            frame f;
-            if (!index)
-            {
-                f = first_or_default(RS2_STREAM_DEPTH, RS2_FORMAT_Z16);
-            }
-            else
-            {
-                foreach_rs([&f, index](const frame& frm) {
-                    if (frm.get_profile().stream_type() == RS2_STREAM_DEPTH &&
-                        frm.get_profile().stream_index() == index) f = frm;
-                    });
-            }
+            auto f = first_or_default(RS2_STREAM_DEPTH, RS2_FORMAT_Z16);
             return f.as<depth_frame>();
         }
         /**
