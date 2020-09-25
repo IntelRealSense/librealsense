@@ -72,7 +72,9 @@ It containes 4 types of 848x480 images in uncompressed PNG format:
 - Depth images generated from Left and Right pairs using D400 stereomatching algorithm configured with parameters similar to the D435 camera
 - Single channel 16-bits per pixel values in units of 1mm
 - Name filter: res-*.png
-		
+
+![foxdemo](images/dataset.PNG)
+
 #### Data Augmentation
 To help the neural network learning image features we decide to crop input images into tiles of 128x128 pixels. 
 
