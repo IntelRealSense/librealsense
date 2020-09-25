@@ -287,5 +287,7 @@ namespace rs2
         point<int> _pts[4];
         std::vector<float> _buf[4];
         bool _corners_found[4];
+
+        point<float> _corners_avg[4];
     };
 }
