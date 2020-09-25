@@ -183,7 +183,7 @@ Pass the selected model as argument to the tool:
 It will display original frame captured by the camera, and right to it a frame as predicted by the selected model.
 
 
-![foxdemo](images/simulation.PNG)
+![foxdemo](images/camera_simulation.PNG)
 
 It shows also time statistics for each frame :
 
