@@ -94,7 +94,7 @@ There are no software-imposed constraints that mandate the order in which the fi
 At the same time the recommended scheme used in librealsense tools and demos is elaborated below:  <br/>
 **Depth Frame** >>  **Decimation Filter** >> **Depth2Disparity Transform**<span style="color:blue">\*\*</span> -> **Spatial Filter** >> **Temporal Filter** >> **Disparity2Depth Transform**<span style="color:blue">\*\*</span> >> **Hole Filling Filter** >>  **Filtered Depth**.  <br/>
 <span style="color:blue">\*\*</span> Applicable for stereo-based depth cameras (D4XX).  
-Note that even though the order of the filter in the demos is predefined, each filter is controlled individually and can be toggled on/off at run-time.
+Note that even though the filter order in the demos is predefined, each filter is controlled individually and can be toggled on/off at run-time.
 
 Demos and tools that have the post-processing code blocks embedded:
 1. [RealSense-Viewer](https://github.com/IntelRealSense/librealsense/tree/master/tools/realsense-viewer)
