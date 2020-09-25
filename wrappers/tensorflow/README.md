@@ -43,7 +43,7 @@ Additional information on Unet:
 
 Unet offers significant advantages compared to classic autoencoder architecture, improving edge fidelity. (TODO: picture comparison?)
 		
-(TODO: Replace with an illustration with map of layers)
+![foxdemo](images/Unet.PNG)
 
 In the left pathway of Unet, the number of filters (features) increase as we go down, it means that it becomes
 very good at detecting more and more features, the first few layers of a convolution network capture a very small semantic information and lower level
