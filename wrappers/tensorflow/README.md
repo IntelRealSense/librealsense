@@ -44,6 +44,8 @@ Additional information on Unet:
 Unet offers significant advantages compared to classic autoencoder architecture, improving edge fidelity. (TODO: picture comparison?)
 		
 ![foxdemo](images/Unet.PNG)
+###### The image is taken from the article reffered above.
+
 
 In the left pathway of Unet, the number of filters (features) increase as we go down, it means that it becomes
 very good at detecting more and more features, the first few layers of a convolution network capture a very small semantic information and lower level
@@ -104,6 +106,10 @@ In order to start a training process, the following is required:
 - Data Augmentation: preparing dataset that contains noisy and pure images as explained above.
 - Old model (optional): there is an option of training the network starting from a previously-trained model. 
 - Epochs: epoch is one cycle through the full training dataset (forth and back). The default value of epochs number is 100, it could be contolled by an argument passed to the application.
+
+###### console output
+![foxdemo](images/training.PNG)
+
 
 #### File Tree 
 The application will create automatically a file tree:
