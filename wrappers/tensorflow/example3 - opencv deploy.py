@@ -95,5 +95,4 @@ while True:
     cv2.waitKey(1)
 
 # Stop streaming
-print("[INFO] stop streaming ...")
 pipeline.stop()

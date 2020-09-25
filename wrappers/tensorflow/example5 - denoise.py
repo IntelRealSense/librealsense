@@ -79,7 +79,7 @@ def predict(noisy_image, ir_image):
             denoised_col = abs(col - col_end)
         # combine tested images
         whole_image[row:row_end, col:col_end] = denoised_image[:, 0:denoised_row, 0:denoised_col, :]
-    return  img_as_uint(whole_image[:, :, 0])
+    return whole_image[:, :, 0]
 
 #=============================================================================================================
 def convert_image(i):
