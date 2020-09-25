@@ -16,7 +16,7 @@ Librealsense implementation includes post-processing filters to enhance the qual
 
 ### Decimation filter
 Effectively reduces the depth scene complexity.
-The filter run on kernel sizes [2x2] to [8x8] pixels. For patches sized 2 and 3 the median depth value is selected. For larger kernels, 4-8 pixels, the mean depth is used due to performance considerations.
+The filter runs on kernel sizes [2x2] to [8x8] pixels. For patches sized 2 and 3 the median depth value is selected. For larger kernels, 4-8 pixels, the mean depth is used due to performance considerations.
 
 The image size is scaled down proportionally in both dimensions to preserve the aspect ratio.
 Internally, the filter imposes 4-pixel block alignment for the output frame size width and height. E.g. for input size (1280X720) and scale factor 3 the output size calculation is:  
@@ -45,26 +45,26 @@ The filter performs a series of 1D horizontal and vertical passes or iterations,
 Controls | Operation |  Range | Default
 :-------:|:----------| :---- | :-----:
 Filter Magnitude | Number of filter iterations | [1-5] | 2
-Smooth Alpha | The Alpha factor in an exponential moving average with Alpha=1 - no filter . Alpha = 0 - infinite filter | [0.25-1] | 0.5
+Smooth Alpha | The Alpha factor in an exponential moving average with Alpha=1 - no filter. Alpha = 0 - infinite filter | [0.25-1] | 0.5
 Smooth Delta | Step-size boundary. Establishes the threshold used to preserve "edges" | Discrete [1-50] | 20
 Hole Filling | An in-place heuristic symmetric hole-filling mode applied horizontally during the filter passes. Intended to rectify minor artefacts with minimal performance impact | [0-5] range mapped to [none,2,4,8,16,unlimited] pixels. | 0 (none)
 
 
 ### Temporal filter
 The temporal filter is intended to improve the depth data persistency by manipulating per-pixel values based on previous frames.
-The filter performs a single pass on the data, adjusting the depth values while also updating the tracking history. In cases where the pixel data is missing or invalid the filter uses a user-defined persistency mode to decide whether the missing value should be rectified with stored data.
-Note that due to its reliance on historic data the filter may introduce visible blurring/smearing artefacts, and therefore is best-suited for static scenes.
+The filter performs a single pass on the data, adjusting the depth values while also updating the tracking history. In cases where the pixel data is missing or invalid, the filter uses a user-defined persistency mode to decide whether the missing value should be rectified with stored data.
+Note that due to its reliance on historic data the filter may introduce visible blurring/smearing artifacts, and therefore is best-suited for static scenes.
 
 Controls | Operation |  Range | Default
 :------: | :-------- | :---- | :----:
-Smooth Alpha | The Alpha factor in an exponential moving average with Alpha=1 - no filter . Alpha = 0 - infinite filter | [0-1] | 0.4
+Smooth Alpha | The Alpha factor in an exponential moving average with Alpha=1 - no filter. Alpha = 0 - infinite filter | [0-1] | 0.4
 Smooth Delta |  Step-size boundary. Establishes the threshold used to preserve surfaces (edges) | Discrete [1-100] | 20
-Persistency index | A set of predefined rules (masks) that govern when missing pixels will be replace with the last valid value so that the data will remain persistent over time:<br/> __*Disabled*__ - Persistency filter is not activated and no hole filling occurs.<br/> __*Valid in 8/8*__ - Persistency activated if the pixel was valid in 8 out of the last 8 frames<br/> __*Valid in 2/last 3*__ - Activated if the pixel was valid in two out of the last 3 frames<br/> __*Valid in 2/last 4*__ - Activated if the pixel was valid in two out of the last 4 frames<br/> __*Valid in 2/8*__ - Activated if the pixel was valid in two out of the last 8 frames<br/> __*Valid in 1/last 2*__ - Activated if the pixel was valid in one of the last two frames<br/> __*Valid in 1/last 5*__ - Activated if the pixel was valid in one out of the last 5 frames<br/> __*Valid in 1/last 8*__ - Activated if the pixel was valid in one out of the last 8 frames<br/> __*Persist Indefinitely*__ - Persistency will be imposed regardless of the stored history (most aggressive filtering) | [0-8] enumerated  | 3 (__*Valid in 2/last 4*__)  
+Persistency index | A set of predefined rules (masks) that govern when missing pixels will be replaced with the last valid value so that the data will remain persistent over time:<br/> __*Disabled*__ - The Persistency filter is not activated and no hole filling occurs.<br/> __*Valid in 8/8*__ - Persistency activated if the pixel was valid in 8 out of the last 8 frames<br/> __*Valid in 2/last 3*__ - Activated if the pixel was valid in two out of the last 3 frames<br/> __*Valid in 2/last 4*__ - Activated if the pixel was valid in two out of the last 4 frames<br/> __*Valid in 2/8*__ - Activated if the pixel was valid in two out of the last 8 frames<br/> __*Valid in 1/last 2*__ - Activated if the pixel was valid in one of the last two frames<br/> __*Valid in 1/last 5*__ - Activated if the pixel was valid in one out of the last 5 frames<br/> __*Valid in 1/last 8*__ - Activated if the pixel was valid in one out of the last 8 frames<br/> __*Persist Indefinitely*__ - Persistency will be imposed regardless of the stored history (most aggressive filtering) | [0-8] enumerated  | 3 (__*Valid in 2/last 4*__)  
 
 ### Holes Filling filter
 
 The filter implements several methods to rectify missing data in the resulting image.
-The filter obtains the four immediate pixel "neighbors" (up, down ,left, right), and selects one of them according to a user-defined rule.
+The filter obtains the four immediate pixel "neighbors" (up, down, left, right), and selects one of them according to a user-defined rule.
 
 Controls | Operation |  Range | Default
 :------: | :-------- | :---- | :----:
@@ -76,8 +76,8 @@ Post-processing modules are encapsulated into self-contained processing blocks, 
 2. Internal frames memory/lifetime management
 
 The filters are capable to receive and process frames from different sources, though in the general case it is not practical for the following reasons:
-- Performance overhead as each time a new type/source of the frame is recognized, some filter require re-initialization.
-- The Temporal filter effectiveness relies on the frames history being preserved. Switching the frame sources invalidates the preserved history and incapacitates the filter.
+- Performance overhead as each time a new type/source of the frame is recognized, some filters require re-initialization.
+- The Temporal filter effectiveness relies on the frame's history being preserved. Switching the frame sources invalidates the preserved history and incapacitates the filter.
 Therefore establishing and maintaining a filter pipe per camera source is strongly recommended.
 
 The filters preserve the original data and always generate a new (filtered) frame to pass on. The re-generation of new frames allows to share frame among different consumers (thread) without the risk of the data being overwritten by another user.
@@ -90,11 +90,11 @@ can be applied to D400 devices (though not recommended)
 
 ## Using Filters in application code
 The post-processing blocks are designed and built for concatenation into processing pipes.
-There are no software-imposed constrains that mandate the order in which the filters shall be applied.
+There are no software-imposed constraints that mandate the order in which the filters shall be applied.
 At the same time the recommended scheme used in librealsense tools and demos is elaborated below:  <br/>
 **Depth Frame** >>  **Decimation Filter** >> **Depth2Disparity Transform**<span style="color:blue">\*\*</span> -> **Spatial Filter** >> **Temporal Filter** >> **Disparity2Depth Transform**<span style="color:blue">\*\*</span> >> **Hole Filling Filter** >>  **Filtered Depth**.  <br/>
 <span style="color:blue">\*\*</span> Applicable for stereo-based depth cameras (D4XX).  
-Note that even though the filters order in the demos is predefined, each filter is controlled individually and can be toggled on/off at run-time.
+Note that even though the filter order in the demos is predefined, each filter is controlled individually and can be toggled on/off at run-time.
 
 Demos and tools that have the post-processing code blocks embedded:
 1. [RealSense-Viewer](https://github.com/IntelRealSense/librealsense/tree/master/tools/realsense-viewer)
