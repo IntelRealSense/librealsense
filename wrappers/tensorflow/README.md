@@ -30,7 +30,7 @@ like #1 but with opencv
 ## Example 4
 
 #### Problem Statement
-TODO
+To improve the functionality of robots and drones it is essential knowing the accurate depth of objects. In ds5 cameras, infrared is used to measure objects depth, and it is interrupted by environment noises created by waves (e.g electromagnetic, sound, heat, etc), which eventually impacts negatively the measured distance of objects. To eliminate those noise, we built denoise autoencoder using Unet network architecture. 
 
 #### Unet Network Architecture
 Unet is a deep learning architecture commonly used in image segmentation, denoising and inpainting applications. For original paper please refer to [U-Net: Convolutional Networks for Biomedical Image Segmentation](https://arxiv.org/pdf/1505.04597.pdf).
