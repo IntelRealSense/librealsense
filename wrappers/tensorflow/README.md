@@ -153,7 +153,7 @@ The tools is approximating best fit plane passing through selected points, ignor
 When evaluated on planar surface, this gives good metric for surface smoothness. In addition, noise distribution within the selected bounding box is color coded: 
 Black pixels correspond to low deviation from predicted plane-fit with white pixels corresponding to points further aways from the plane, normalized by standard deviation. 
 
-![foxdemo](images/rmse_image.png)
+![foxdemo](images/rmse.PNG)
  
 ## Convert to Bag
 This tool runs on a folder that contains:
