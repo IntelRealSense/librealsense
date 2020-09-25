@@ -2295,13 +2295,49 @@ namespace rs2
     int tare_ground_truth_calculator::calculate_rect(const uint8_t* img, float rect_sides[4])
     {
         pre_calculate(img, _thresh, _patch_size);
-        return run(rect_sides);
+        int ret = run(rect_sides);
+
+        if (ret == 1)
+        {
+            int pos = 0;
+            float tmp = 0.0f;
+            uint8_t* p = const_cast<uint8_t*>(img);
+            for (int i = 0; i < 4; ++i)
+            {
+                tmp = _corners_avg[i].y * _height + _corners_avg[i].x;
+                p[static_cast<int>(0.5f + tmp - _height)] = 0;
+                p[static_cast<int>(0.5f + tmp - 1)] = 0;
+                p[static_cast<int>(0.5f + tmp)] = 0;
+                p[static_cast<int>(0.5f + tmp + 1)] = 0;
+                p[static_cast<int>(0.5f + tmp + _height)] = 0;
+            }
+        }
+
+        return ret;
     }
 
     int tare_ground_truth_calculator::calculate(const uint8_t* img, float& ground_truth)
     {
         pre_calculate(img, _thresh, _patch_size);
-        return run(ground_truth);
+        int ret = run(ground_truth);
+
+        if (ret == 1)
+        {
+            int pos = 0;
+            float tmp = 0.0f;
+            uint8_t* p = const_cast<uint8_t*>(img);
+            for (int i = 0; i < 4; ++i)
+            {
+                tmp = _corners_avg[i].y * _height + _corners_avg[i].x;
+                p[static_cast<int>(0.5f + tmp - _height)] = 0;
+                p[static_cast<int>(0.5f + tmp - 1)] = 0;
+                p[static_cast<int>(0.5f + tmp)] = 0;
+                p[static_cast<int>(0.5f + tmp + 1)] = 0;
+                p[static_cast<int>(0.5f + tmp + _height)] = 0;
+            }
+        }
+
+        return ret;
     }
 
     void tare_ground_truth_calculator::normalize_0(const uint8_t* img)
@@ -2644,42 +2680,41 @@ namespace rs2
 
     float tare_ground_truth_calculator::calculate_depth()
     {
-        point<float> corners_avg[4];
         for (int i = 0; i < 4; ++i)
         {
-            corners_avg[i].x = _corners[0][i].x;
-            corners_avg[i].y = _corners[0][i].y;
+            _corners_avg[i].x = _corners[0][i].x;
+            _corners_avg[i].y = _corners[0][i].y;
         }
 
         for (int j = 1; j < _frame_num; ++j)
         {
             for (int i = 0; i < 4; ++i)
             {
-                corners_avg[i].x += _corners[j][i].x;
-                corners_avg[i].y += _corners[j][i].y;
+                _corners_avg[i].x += _corners[j][i].x;
+                _corners_avg[i].y += _corners[j][i].y;
             }
         }
 
         for (int i = 0; i < 4; ++i)
         {
-            corners_avg[i].x /= _frame_num;
-            corners_avg[i].y /= _frame_num;
+            _corners_avg[i].x /= _frame_num;
+            _corners_avg[i].y /= _frame_num;
         }
 
-        float lx = corners_avg[1].x - corners_avg[0].x;
-        float ly = corners_avg[1].y - corners_avg[0].y;
+        float lx = _corners_avg[1].x - _corners_avg[0].x;
+        float ly = _corners_avg[1].y - _corners_avg[0].y;
         float d1 = _target_fw / sqrtf(lx * lx + ly * ly);
 
-        lx = corners_avg[3].x - corners_avg[2].x;
-        ly = corners_avg[3].y - corners_avg[2].y;
+        lx = _corners_avg[3].x - _corners_avg[2].x;
+        ly = _corners_avg[3].y - _corners_avg[2].y;
         float d2 = _target_fw / sqrtf(lx * lx + ly * ly);
 
-        lx = corners_avg[2].x - corners_avg[0].x;
-        ly = corners_avg[2].y - corners_avg[0].y;
+        lx = _corners_avg[2].x - _corners_avg[0].x;
+        ly = _corners_avg[2].y - _corners_avg[0].y;
         float d3 = _target_fh / sqrtf(lx * lx + ly * ly);
 
-        lx = corners_avg[3].x - corners_avg[1].x;
-        ly = corners_avg[3].y - corners_avg[1].y;
+        lx = _corners_avg[3].x - _corners_avg[1].x;
+        ly = _corners_avg[3].y - _corners_avg[1].y;
         float d4 = _target_fh / sqrtf(lx * lx + ly * ly);
 
         return (d1 + d2 + d3 + d4) / 4;
@@ -2687,42 +2722,41 @@ namespace rs2
 
     void tare_ground_truth_calculator::calculate_rect(float rect_sides[4])
     {
-        point<float> corners_avg[4];
         for (int i = 0; i < 4; ++i)
         {
-            corners_avg[i].x = _corners[0][i].x;
-            corners_avg[i].y = _corners[0][i].y;
+            _corners_avg[i].x = _corners[0][i].x;
+            _corners_avg[i].y = _corners[0][i].y;
         }
 
         for (int j = 1; j < _frame_num; ++j)
         {
             for (int i = 0; i < 4; ++i)
             {
-                corners_avg[i].x += _corners[j][i].x;
-                corners_avg[i].y += _corners[j][i].y;
+                _corners_avg[i].x += _corners[j][i].x;
+                _corners_avg[i].y += _corners[j][i].y;
             }
         }
 
         for (int i = 0; i < 4; ++i)
         {
-            corners_avg[i].x /= _frame_num;
-            corners_avg[i].y /= _frame_num;
+            _corners_avg[i].x /= _frame_num;
+            _corners_avg[i].y /= _frame_num;
         }
 
-        float lx = corners_avg[1].x - corners_avg[0].x;
-        float ly = corners_avg[1].y - corners_avg[0].y;
+        float lx = _corners_avg[1].x - _corners_avg[0].x;
+        float ly = _corners_avg[1].y - _corners_avg[0].y;
         rect_sides[0] = sqrtf(lx * lx + ly * ly);
 
-        lx = corners_avg[3].x - corners_avg[2].x;
-        ly = corners_avg[3].y - corners_avg[2].y;
+        lx = _corners_avg[3].x - _corners_avg[2].x;
+        ly = _corners_avg[3].y - _corners_avg[2].y;
         rect_sides[1] = sqrtf(lx * lx + ly * ly);
 
-        lx = corners_avg[2].x - corners_avg[0].x;
-        ly = corners_avg[2].y - corners_avg[0].y;
+        lx = _corners_avg[2].x - _corners_avg[0].x;
+        ly = _corners_avg[2].y - _corners_avg[0].y;
         rect_sides[2] = sqrtf(lx * lx + ly * ly);
 
-        lx = corners_avg[3].x - corners_avg[1].x;
-        ly = corners_avg[3].y - corners_avg[1].y;
+        lx = _corners_avg[3].x - _corners_avg[1].x;
+        ly = _corners_avg[3].y - _corners_avg[1].y;
         rect_sides[3] = sqrtf(lx * lx + ly * ly);
     }
 
