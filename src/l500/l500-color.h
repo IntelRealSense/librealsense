@@ -64,7 +64,7 @@ namespace librealsense
             _state(sensor_state::CLOSED)
         {
         }
-        rs2_intrinsics get_raw_intrinsics( const uint32_t & width, const uint32_t & height ) const;
+        rs2_intrinsics get_raw_intrinsics( uint32_t width, uint32_t height ) const;
         double read_temperature() const;
 
         rs2_intrinsics get_intrinsics( const stream_profile& profile ) const override;

@@ -177,27 +177,24 @@ namespace librealsense
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_color_stream, _color_extrinsic);
         register_stream_to_extrinsic_group(*_color_stream, 0);
 
-        _thermal_table =
-            [this]() {
+        _thermal_table = [this]() {
             hwmon_response response;
             auto data = read_fw_table_raw( *_hw_monitor,
                                            algo::thermal_loop::l500::thermal_calibration_table::id,
                                            response );
-
             if( response != hwm_Success )
             {
                 AC_LOG( WARNING,
                         "Failed to read FW table 0x"
                             << std::hex
                             << algo::thermal_loop::l500::thermal_calibration_table::id );
-
                 throw invalid_value_exception(
                     to_string() << "Failed to read FW table 0x" << std::hex
                                 << algo::thermal_loop::l500::thermal_calibration_table::id );
             }
 
             return algo::thermal_loop::l500::thermal_calibration_table{ data };
-            };
+        };
 
         _color_device_idx = add_sensor(create_color_device(ctx, color_devs_info));
     }
@@ -208,8 +205,8 @@ namespace librealsense
     }
 
 
-   rs2_intrinsics l500_color_sensor::get_raw_intrinsics( const uint32_t& width,
-                                                          const uint32_t& height ) const
+    rs2_intrinsics l500_color_sensor::get_raw_intrinsics( uint32_t const width,
+                                                          uint32_t const height ) const
     {
         using namespace ivcam2;
 
@@ -262,23 +259,24 @@ namespace librealsense
         }
         catch( std::exception const & e )
         {
-            LOG_ERROR(
-                "Failed to get temperatures; hardware monitor in inaccessible: " << e.what() );
+            AC_LOG( ERROR,
+                    "Failed to get temperatures; hardware monitor in inaccessible: " << e.what() );
             return 0.;
         }
 
         if( res.size() < sizeof( temperatures ) )  // New temperatures may get added by FW...
         {
-            LOG_ERROR( "Failed to get temperatures; result size= "
-                       << res.size() << "; expecting at least " << sizeof( temperatures ) );
+            AC_LOG( ERROR,
+                    "Failed to get temperatures; result size= "
+                        << res.size() << "; expecting at least " << sizeof( temperatures ) );
             return 0.;
         }
         auto const & ts = *( reinterpret_cast< temperatures * >( res.data() ) );
-        LOG_DEBUG( "HUM temperture is currently " << ts.HUM_temperature << " degrees Celsius" );
+        AC_LOG( DEBUG, "HUM temperture is currently " << ts.HUM_temperature << " degrees Celsius" );
         return ts.HUM_temperature;
     }
 
-     rs2_intrinsics normalize( const rs2_intrinsics & intr )
+    rs2_intrinsics normalize( const rs2_intrinsics & intr )
     {
         auto res = intr;
         res.fx = 2 * intr.fx / intr.width;
@@ -304,6 +302,7 @@ namespace librealsense
 
         return res;
     }
+
 
     rs2_intrinsics l500_color_sensor::get_intrinsics( const stream_profile & profile ) const
     {
