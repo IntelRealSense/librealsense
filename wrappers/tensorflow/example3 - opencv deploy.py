@@ -26,6 +26,7 @@ while True:
     depth_frame = frames.get_depth_frame()
     color_frame = frames.get_color_frame()
     points = point_cloud.calculate(depth_frame)
+
     verts = np.asanyarray(points.get_vertices()).view(np.float32).reshape(-1, W, 3)  # xyz
 
     # Convert images to numpy arrays
