@@ -1,7 +1,8 @@
 import pyrealsense2 as rs
 import numpy as np
 import cv2
-
+from tensorflow import keras
+import tensorflow as tf
 W = 848
 H = 480
 
@@ -19,7 +20,10 @@ aligned_stream = rs.align(rs.stream.color) # alignment between color and depth
 point_cloud = rs.pointcloud()
 
 print("[INFO] loading model...")
-net = cv2.dnn.readNetFromTensorflow(r"C:\work\git\tensorflow\model\frozen_inference_graph.pb", r"C:\work\git\tensorflow\model\faster_rcnn_inception_v2_coco_2018_01_28.pbtxt.txt")
+#net = cv2.dnn.readNetFromTensorflow(r"C:\work\git\tensorflow\model\frozen_inference_graph.pb", r"C:\work\git\tensorflow\model\faster_rcnn_inception_v2_coco_2018_01_28.pbtxt.txt")
+test_model_name = r"C:\work\git\tensorflow\model\faster_rcnn_inception_v2_coco_2018_01_28\saved_model"
+#net = keras.models.load_model(test_model_name)
+#net=tf.saved_model.load(export_dir=test_model_name)
 while True:
     frames = pipeline.wait_for_frames()
     frames = aligned_stream.process(frames)
@@ -35,8 +39,24 @@ while True:
 
     color_image = np.asanyarray(color_frame.get_data())
     scaled_size = (int(W), int(H))
-    net.setInput(cv2.dnn.blobFromImage(color_image, size=scaled_size, swapRB=True, crop=False))
-    detections = net.forward()
+    #net.setInput(cv2.dnn.blobFromImage(color_image, size=scaled_size, swapRB=True, crop=False))
+    #detections = net.forward()
+
+    flag, bts = cv2.imencode('.jpg', color_image)
+    inp = [bts[:, 0].tobytes()]
+
+    with tf.compat.v1.Session(graph=tf.Graph()) as sess:
+        tf.compat.v1.saved_model.loader.load(sess, ['serve'], test_model_name)
+        graph = tf.compat.v1.get_default_graph()
+        out = sess.run([sess.graph.get_tensor_by_name('num_detections:0'),
+                        sess.graph.get_tensor_by_name('detection_scores:0'),
+                        sess.graph.get_tensor_by_name('detection_boxes:0'),
+                        sess.graph.get_tensor_by_name('detection_classes:0')],
+                       #feed_dict={'encoded_image_string_tensor:0': inp})
+                       feed_dict={'map/TensorArrayStack/TensorArrayGatherV3:0': inp})
+
+        #sample = cv2.dnn.blobFromImage(color_image, size=scaled_size, swapRB=True, crop=False)
+    #detections = net.predict(sample)
 
     colors_list = []
     for i in range(61):
