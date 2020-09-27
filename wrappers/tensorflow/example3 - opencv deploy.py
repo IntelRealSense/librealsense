@@ -17,24 +17,31 @@ pipeline.start(config)
 
 aligned_stream = rs.align(rs.stream.color) # alignment between color and depth
 point_cloud = rs.pointcloud()
+filters = [rs.disparity_transform(),
+           rs.spatial_filter(),
+           rs.temporal_filter(),
+           rs.disparity_transform(False)]
+#decimate.set_option(rs.option.filter_magnitude, 2 ** state.decimate)
 
 print("[INFO] loading model...")
 net = cv2.dnn.readNetFromTensorflow(r"C:\work\git\tensorflow\model\frozen_inference_graph.pb", r"C:\work\git\tensorflow\model\faster_rcnn_inception_v2_coco_2018_01_28.pbtxt.txt")
 while True:
     frames = pipeline.wait_for_frames()
     frames = aligned_stream.process(frames)
-    depth_frame = frames.get_depth_frame()
     color_frame = frames.get_color_frame()
-    points = point_cloud.calculate(depth_frame)
+    depth_frame = frames.get_depth_frame().as_depth_frame()
 
+    points = point_cloud.calculate(depth_frame)
     verts = np.asanyarray(points.get_vertices()).view(np.float32).reshape(-1, W, 3)  # xyz
 
     # Convert images to numpy arrays
     depth_image = np.asanyarray(depth_frame.get_data())
+    # skip empty frames
+    if not np.any(depth_image):
+        continue
+    print("[INFO] found a valid depth frame")
     color_image = np.asanyarray(color_frame.get_data())
 
-
-    color_image = np.asanyarray(color_frame.get_data())
     scaled_size = (int(W), int(H))
     net.setInput(cv2.dnn.blobFromImage(color_image, size=scaled_size, swapRB=True, crop=False))
     detections = net.forward()
@@ -48,7 +55,7 @@ while True:
         score = float(detection[2])
         idx = int(detection[1])
 
-        if score > 0.4 and idx == 0:
+        if score > 0.8 and idx == 0:
             left = detection[3] * W
             top = detection[4] * H
             right = detection[5] * W
@@ -68,22 +75,24 @@ while True:
 
             z = np.median(zs)
 
-            ys = obj_points[:,1]
+            ys = obj_points[:,1] * H
             ys = np.delete(ys, np.where((zs < z - 1) | (zs > z + 1))) # take only y for close z to prevent including background
 
             my = np.amin(ys, initial=1)
             My = np.amax(ys, initial=-1)
 
-            height = My - my # add next to rectangle print of height using cv library
-            print("[INFO] object height is: ", height)
+            height = (My - my)/float(H) # add next to rectangle print of height using cv library
+            height = float("{:.2f}".format(height))
+            print("[INFO] object height is: ", height, "[m]")
+            height_txt = str(height)+"[m]"
 
             # Write some Text
             font = cv2.FONT_HERSHEY_SIMPLEX
-            bottomLeftCornerOfText = (p1[0], p1[1]-10)
+            bottomLeftCornerOfText = (p1[0], p1[1]+20)
             fontScale = 1
             fontColor = (255, 255, 255)
             lineType = 2
-            cv2.putText(color_image, str(height),
+            cv2.putText(color_image, height_txt,
                         bottomLeftCornerOfText,
                         font,
                         fontScale,

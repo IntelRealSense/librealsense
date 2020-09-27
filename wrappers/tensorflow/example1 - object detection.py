@@ -59,9 +59,9 @@ while True:
     # Convert images to numpy arrays
     color_image = np.asanyarray(color_frame.get_data())
     scaled_size = (int(W), int(H))
-
+    # expand image dimensions to have shape: [1, None, None, 3]
+    # i.e. a single-column array, where each item in the column has the pixel RGB value
     image_expanded = np.expand_dims(color_image, axis=0)
-
     # Perform the actual detection by running the model with the image as input
     (boxes, scores, classes, num) = sess.run([detection_boxes, detection_scores, detection_classes, num_detections],
                                                 feed_dict={image_tensor: image_expanded})
@@ -81,7 +81,7 @@ while True:
         box = boxes[idx]
         if class_ not in colors_hash:
             colors_hash[class_] = tuple(np.random.choice(range(256), size=3))
-        if score > 0.4:
+        if score > 0.8:
             left = box[0] * W
             top = box[1] * H
             right = box[2] * W
