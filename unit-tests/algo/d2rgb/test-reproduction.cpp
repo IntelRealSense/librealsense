@@ -130,25 +130,6 @@ protected:
 };
 
 
-double get_thermal_scale(std::string dir, double hum_temp)
-{
-    auto scale = 1.;
-    try
-    {
-        rs2_intrinsics raw_rgb_calib;
-        read_binary_file( dir.c_str(), "raw_rgb.calib", &raw_rgb_calib );
-        auto vec = read_vector_from< byte >( join( dir, "rgb_thermal_table" ) );
-        thermal::l500::thermal_calibration_table thermal_table( vec );
-        scale = thermal_table.get_current_thermal_scale( hum_temp );
-    }
-    catch( std::exception const & e )
-    {
-        TRACE( "No thermal data. Scale is 1" );
-    }
-
-    return scale;
-}
-
 int main( int argc, char * argv[] )
 {
     custom_ac_logger logger;
@@ -213,7 +194,6 @@ int main( int argc, char * argv[] )
             try
             {
                 read_binary_file( dir, "settings", &settings );
-
             }
             catch( std::exception const & e )
             {
@@ -224,10 +204,26 @@ int main( int argc, char * argv[] )
                 settings.receiver_gain = 9;
             }
 
+            // If both the raw intrinsics (pre-thermal) and the thermal table exist, apply a thermal
+            // manipulation. Otherwise just take the final intrinsics from rgb.calib.
+            try
+            {
+                rs2_intrinsics raw_rgb_intr;
+                read_binary_file( dir, "raw_rgb.intrinsics", &raw_rgb_intr );
 
-            auto scale = get_thermal_scale( dir, settings.hum_temp );
-            calibration.k_mat.k_mat.rot[0] *= scale;
-            calibration.k_mat.k_mat.rot[4] *= scale;
+                auto vec = read_vector_from< byte >( join( dir, "rgb_thermal_table" ) );
+                thermal::l500::thermal_calibration_table thermal_table( vec );
+                
+                auto scale = thermal_table.get_thermal_scale( settings.hum_temp );
+                AC_LOG( DEBUG, "Thermal {scale}" << scale << " [TH]" );
+                raw_rgb_intr.fx = float( raw_rgb_intr.fx * scale );
+                raw_rgb_intr.fy = float( raw_rgb_intr.fy * scale );
+                camera.rgb = raw_rgb_intr;
+            }
+            catch( std::exception const & )
+            {
+                AC_LOG( ERROR, "Could not read raw_rgb.intrinsics or rgb_thermal_table; using rgb.calib [NO-THERMAL]" );
+            }
 
             algo::optimizer cal( settings, debug_mode );
             std::string status;
@@ -289,15 +285,10 @@ int main( int argc, char * argv[] )
             TRACE( "\n___\nRESULTS:  (" << RS2_API_VERSION_STR << " build 2158)" );
 
             auto intr = cal.get_calibration().get_intrinsics();
+            intr.model = RS2_DISTORTION_INVERSE_BROWN_CONRADY;  // restore LRS model
             auto extr = cal.get_calibration().get_extrinsics();
-            AC_LOG( DEBUG, AC_D_PREC
-                << "intr[ "
-                << intr.width << "x" << intr.height
-                << "  ppx: " << intr.ppx << ", ppy: " << intr.ppy << ", fx: " << intr.fx
-                << ", fy: " << intr.fy << ", model: " << int( intr.model ) << " coeffs["
-                << intr.coeffs[0] << ", " << intr.coeffs[1] << ", " << intr.coeffs[2]
-                << ", " << intr.coeffs[3] << ", " << intr.coeffs[4] << "] ]" );
-            AC_LOG( DEBUG, AC_D_PREC << "extr" << (rs2_extrinsics) extr );
+            AC_LOG( DEBUG, AC_D_PREC << "intr" << (rs2_intrinsics)intr );
+            AC_LOG( DEBUG, AC_D_PREC << "extr" << (rs2_extrinsics)extr );
             AC_LOG( DEBUG, AC_D_PREC << "dsm" << cal.get_dsm_params() );
 
             try
@@ -314,6 +305,8 @@ int main( int argc, char * argv[] )
             }
 
             TRACE( "\n___\nVS:" );
+            AC_LOG( DEBUG, AC_D_PREC << "intr" << (rs2_intrinsics)calibration.get_intrinsics() );
+            AC_LOG( DEBUG, AC_D_PREC << "extr" << (rs2_extrinsics)calibration.get_extrinsics() );
             AC_LOG( DEBUG, AC_D_PREC << "dsm" << camera.dsm_params );
          
             TRACE( "\n___\nSTATUS: " + status );

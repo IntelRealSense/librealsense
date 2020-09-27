@@ -5,28 +5,33 @@
 
 #include <vector>
 #include "../../types.h"
+#include "thermal-calibration-table-interface.h"
 
 namespace librealsense {
 namespace algo {
 namespace thermal_loop {
 namespace l500 {
 
-#pragma pack( push, 1 )
 
-// This struct based on RGB_Thermal_Info_CalibInfo table.
-// The table contains 29 equally spaced bins between min & max temperature.
-// Center of each bin has a set of 4 transformation parameters.
-// The transformation maps a point in the RGB image in a given temperature to its expected
-// Location in the temperature in which the RGB module was calibrated.
-// Reference on:
+// RGB_Thermal_Info_CalibInfo table
+// -----------------------------------
+//
+// The table contains equally spaced bins between min & max temperature.
+//
+// Each bin has a set of 4 transformation parameters. The transformation maps a point in the RGB
+// image in a given temperature to its expected location in the temperature in which the RGB module
+// was calibrated.
+//
+// Reference at:
 // https://rsconf.intel.com/display/L500/0x317+RGB+Thermal+Table
-
-
-class thermal_calibration_table
+//
+#pragma pack( push, 1 )
+class thermal_calibration_table : public thermal_calibration_table_interface
 {
 public:
     static const int id;
     
+    // The header as it's written raw
     struct thermal_table_header
     {
         float min_temp;
@@ -35,7 +40,8 @@ public:
         float valid;           // not used
     };
 
-    struct temp_data
+    // Each bin data, as it's written in the actual raw table
+    struct thermal_bin
     {
         float scale;
         float sheer; // parameters which affect offset that are not in use
@@ -43,37 +49,24 @@ public:
         float ty;
     };
 
-    int _resolution; // number of bins *between* min and max, i.e.bin - size = ( max - min ) / ( resolution + 1 )
+    // Number of bins *between* min and max:
+    //     bin - size = ( max - min ) / ( resolution + 1 )
+    // In the raw calibration table, 29 is implicitly used.
+    size_t _resolution; 
+    
     thermal_table_header _header;
-    std::vector< temp_data > vals;
+    std::vector< thermal_bin > bins;
 
     thermal_calibration_table() = default;
-    thermal_calibration_table( const std::vector< byte > & data, int resolution = 29);
+    thermal_calibration_table( const std::vector< byte > & data, int resolution = 29 );
 
-    double get_current_thermal_scale( double hum_temp ) const;
+    double get_thermal_scale( double hum_temp ) const override;
 
-    std::vector< byte > build_raw_data() const;
+    std::vector< byte > build_raw_data() const override;
 };
-
 #pragma pack( pop )
-inline bool operator==( const thermal_calibration_table & lhs, const thermal_calibration_table & rhs )
-{
-    if(lhs.vals.size()!=rhs.vals.size())
-        return false;
 
-    if( lhs._header.max_temp != rhs._header.max_temp || lhs._header.min_temp != rhs._header.min_temp
-        || lhs._header.reference_temp != rhs._header.reference_temp
-        || lhs._header.valid != rhs._header.valid )
-        return false;
-
-    for( auto i = 0; i < rhs.vals.size(); i++ )
-    {
-        if( lhs.vals[i].scale != rhs.vals[i].scale || lhs.vals[i].sheer != rhs.vals[i].sheer
-            || lhs.vals[i].tx != rhs.vals[i].tx || lhs.vals[i].ty != rhs.vals[i].ty )
-            return false;
-    }
-    return true;
-}
+bool operator==( const thermal_calibration_table & lhs, const thermal_calibration_table & rhs );
 
 }  // namespace l500
 }  // namespace thermal_loop

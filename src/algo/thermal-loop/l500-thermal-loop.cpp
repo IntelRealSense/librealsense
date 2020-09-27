@@ -9,7 +9,9 @@ namespace algo {
 namespace thermal_loop {
 namespace l500 {
 
+
 const int thermal_calibration_table::id = 0x317;
+
 
 thermal_calibration_table::thermal_calibration_table( const std::vector< byte > & data,
                                                       int resolution )
@@ -18,7 +20,7 @@ thermal_calibration_table::thermal_calibration_table( const std::vector< byte > 
     float const * header_ptr = (float *)( data.data() + sizeof( ivcam2::table_header ) );
 
     auto expected_size = sizeof( ivcam2::table_header ) + sizeof( thermal_table_header )
-                       + sizeof( temp_data ) * resolution;
+                       + sizeof( thermal_bin ) * resolution;
 
     if( data.size() != expected_size )
         throw std::runtime_error( librealsense::to_string()
@@ -27,44 +29,59 @@ thermal_calibration_table::thermal_calibration_table( const std::vector< byte > 
 
     _header = *(thermal_table_header *)( header_ptr );
 
-    auto data_ptr = (temp_data *)( data.data() + sizeof( ivcam2::table_header )
+    auto data_ptr = (thermal_bin *)( data.data() + sizeof( ivcam2::table_header )
                                    + sizeof( thermal_table_header ) );
-    vals.assign( data_ptr, data_ptr + resolution );
+    bins.assign( data_ptr, data_ptr + resolution );
 }
 
-double thermal_calibration_table::get_current_thermal_scale( double hum_temp ) const
+
+bool operator==( const thermal_calibration_table & lhs, const thermal_calibration_table & rhs )
 {
-    auto scale = vals[_resolution - 1].scale;
+    if( lhs.bins.size() != rhs.bins.size() )
+        return false;
 
-    // curr temp is under minimum
-    if( hum_temp <= _header.min_temp )
+    if( lhs._header.max_temp != rhs._header.max_temp || lhs._header.min_temp != rhs._header.min_temp
+        || lhs._header.reference_temp != rhs._header.reference_temp
+        || lhs._header.valid != rhs._header.valid )
+        return false;
+
+    for( auto i = 0; i < rhs.bins.size(); i++ )
     {
-        scale = vals[0].scale;
+        if( lhs.bins[i].scale != rhs.bins[i].scale || lhs.bins[i].sheer != rhs.bins[i].sheer
+            || lhs.bins[i].tx != rhs.bins[i].tx || lhs.bins[i].ty != rhs.bins[i].ty )
+            return false;
     }
-    else
-    {
-        auto temp_range = _header.max_temp - _header.min_temp;
-        // there are 29 bins between min and max temps so its divides to 30 equals intervals
-        auto interval = temp_range / ( _resolution + 1 );
+    return true;
+}
 
-        //      |--|--|--|...|--|
-        //     min 0  1  2...29 max
-        for( double temp = _header.min_temp, index = 0; index < _resolution;
-             ++index, temp += interval )
+
+double thermal_calibration_table::get_thermal_scale( double hum_temp ) const
+{
+    auto scale = bins[_resolution - 1].scale;
+
+    auto temp_range = _header.max_temp - _header.min_temp;
+    // there are 29 bins between min and max temps so 30 equal intervals
+    auto const interval = temp_range / ( _resolution + 1 );
+    // T:   |---|---|---| ... |---|
+    //    min   0   1   2 ... 28  max
+    size_t index = 0;
+    for( double temp = _header.min_temp; index < _resolution;
+            ++index, temp += interval )
+    {
+        auto interval_max = temp + interval;
+        if( hum_temp <= interval_max )
         {
-            auto interval_max = temp + interval;
-            if (hum_temp <= interval_max)
-            {
-                scale = vals[index].scale;
-                break;
-            }
+            scale = bins[index].scale;
+            break;
         }
     }
 
+    // The "scale" is meant to be divided by, but we want something to multiply with!
     if( scale == 0 )
-        throw std::runtime_error( "Scale value in index 0 is 0 " );
+        throw std::runtime_error( "invalid 0 scale in thermal table" );
     return 1. / scale;
 }
+
 
 std::vector< byte > thermal_calibration_table::build_raw_data() const
 {
@@ -75,18 +92,19 @@ std::vector< byte > thermal_calibration_table::build_raw_data() const
     data.push_back( _header.reference_temp );
     data.push_back( _header.valid );
 
-    for( auto i = 0; i < vals.size(); i++ )
+    for( auto i = 0; i < bins.size(); i++ )
     {
-        data.push_back( vals[i].scale );
-        data.push_back( vals[i].sheer );
-        data.push_back( vals[i].tx );
-        data.push_back( vals[i].ty );
+        data.push_back( bins[i].scale );
+        data.push_back( bins[i].sheer );
+        data.push_back( bins[i].tx );
+        data.push_back( bins[i].ty );
     }
 
     std::vector< byte > res;
     res.assign( (byte *)( data.data() ), (byte *)( data.data() + data.size() ) );
     return res;
 }
+
 
 }
 }

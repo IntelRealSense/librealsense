@@ -1557,13 +1557,13 @@ void params::set_depth_resolution( size_t width, size_t height, rs2_ambient_ligh
 {
     AC_LOG( DEBUG, "    depth resolution= " << width << "x" << height );
     // Some parameters are resolution-dependent
-    bool const XGA = (width == 1024 && height == 768);
-    bool const VGA = (width == 640 && height == 480);
+    bool const XGA = ( width == 1024 && height == 768 );
+    bool const VGA = ( width == 640 && height == 480 );
 
-    if (!XGA && !VGA)
+    if( ! XGA && ! VGA )
     {
-        throw std::runtime_error( to_string()
-                                  << width << "x" << height << " this resolution is not supported" );
+        throw std::runtime_error( to_string() << width << "x" << height
+                                              << " this resolution is not supported" );
     }
 
     if( XGA )

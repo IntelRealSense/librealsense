@@ -12,20 +12,6 @@ using namespace librealsense::algo::thermal_loop::l500;
 
 TEST_CASE("get_scale", "[thermal-loop]")
 {
-    std::map < double, double> temp_to_expected_scale= { 
-            { -1, 0.5 }, // under minimum temp
-            { 0, 0.5},
-            { 2.5, 0.5 },
-            { 3.56756, 1 },
-            { 5, 1 },
-            { 7.5, 1.5 },
-            { 7.6, 2 },
-            { 73, 14.5 },
-            { 75, 14.5 }, // maximum temp
-            { 78, 14.5 }, // above maximum temp
-    };
-    
-
     auto syntetic_table = create_synthetic_table();
     // [0   - 2.5]  --> 0.5
     // (2.5 - 5]    --> 1
@@ -34,17 +20,30 @@ TEST_CASE("get_scale", "[thermal-loop]")
     // ...
     // (72.5 - 75]  --> 15
 
+    std::map< double, double > temp_to_expected_scale = {
+        { -1, 0.5 },  // under minimum temp
+        { 0, 0.5 },
+        { 2.5, 0.5 },
+        { 3.56756, 1 },
+        { 5, 1 },
+        { 7.5, 1.5 },
+        { 7.6, 2 },
+        { 73, 14.5 },
+        { 75, 14.5 },  // maximum temp
+        { 78, 14.5 },  // above maximum temp
+    };
+
     for (auto temp_scale : temp_to_expected_scale)
     {
         TRACE( "checking temp = " << temp_scale.first );
-        REQUIRE( syntetic_table.get_current_thermal_scale( temp_scale.first )
+        REQUIRE( syntetic_table.get_thermal_scale( temp_scale.first )
                  == 1. / temp_scale.second );
     }
 }
 
-TEST_CASE( "scale_is_zerro", "[thermal-loop]" )
+TEST_CASE( "scale_is_zero", "[thermal-loop]" )
 {
     auto syntetic_table = create_synthetic_table();
-    syntetic_table.vals[0].scale = 0;
-    REQUIRE_THROWS( syntetic_table.get_current_thermal_scale( 0 ) );
+    syntetic_table.bins[0].scale = 0;
+    REQUIRE_THROWS( syntetic_table.get_thermal_scale( 0 ) );
 }

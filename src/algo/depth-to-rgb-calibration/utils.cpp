@@ -10,11 +10,7 @@ namespace librealsense {
 namespace algo {
 namespace depth_to_rgb_calibration {
 
-    void write_to_file( void const * data,
-                            size_t cb,
-                            std::string const & dir,
-                            char const * filename )
-
+    void write_to_file( void const * data, size_t cb, std::string const & dir, char const * filename )
     {
         std::string path = dir + filename;
         std::fstream f( path, std::ios::out | std::ios::binary );
@@ -24,7 +20,7 @@ namespace depth_to_rgb_calibration {
         f.close();
     }
 
-    double get_norma(const std::vector<double3>& vec)
+    double get_norma( const std::vector< double3 > & vec )
     {
         double sum = 0;
         std::for_each( vec.begin(), vec.end(), [&]( double3 const & v ) { sum += v.get_norm(); } );

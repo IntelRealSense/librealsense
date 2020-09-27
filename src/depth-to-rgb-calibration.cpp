@@ -8,14 +8,13 @@
 #include "context.h"
 #include "api.h"  // VALIDATE_INTERFACE_NO_THROW
 #include "algo/depth-to-rgb-calibration/debug.h"
-#include "algo/thermal-loop/l500-thermal-loop.h"
 #include "l500/l500-device.h"
 #include "l500/l500-color.h"
 #include "algo/depth-to-rgb-calibration/utils.h"
 
 using namespace librealsense;
 namespace impl = librealsense::algo::depth_to_rgb_calibration;
-namespace thermal_l500 = librealsense::algo::thermal_loop::l500;
+namespace thermal = librealsense::algo::thermal_loop;
 
 #define CHECK_IF_NEEDS_TO_STOP() if (_should_continue) _should_continue()
 
@@ -29,12 +28,12 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     impl::algo_calibration_info const & cal_info,
     impl::algo_calibration_registers const & cal_regs,
     rs2_intrinsics yuy_intrinsics,
-    thermal_l500::thermal_calibration_table thermal_table,
+    thermal::thermal_calibration_table_interface const & thermal_table,
     std::function<void()> should_continue
 )
     : _algo( settings )
-    , _raw_intrinsics( yuy_intrinsics )
-    , _thermal_intr( _raw_intrinsics )
+    , _raw_intr( yuy_intrinsics )
+    , _thermal_intr( _raw_intr )
     , _extr(to_raw_extrinsics( depth.get_profile().get_extrinsics_to( yuy.get_profile() )))
     , _from( depth.get_profile().get()->profile )
     , _to( yuy.get_profile().get()->profile )
@@ -50,13 +49,10 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     else if( ! last_yuy_data.empty() )
         AC_LOG( DEBUG, "Not using last successfully-calibrated scene: it's of a different resolution" );
 
-
-    auto scale = thermal_table.get_current_thermal_scale( settings.hum_temp );
-
-    AC_LOG( INFO, "Humidity temp is " << settings.hum_temp << " scaling krgb by " << scale );
-
-    _thermal_intr.fx *= scale;
-    _thermal_intr.fy *= scale;
+    auto scale = thermal_table.get_thermal_scale( settings.hum_temp );
+    AC_LOG( DEBUG, "    scaling K_rgb by " << scale );
+    _thermal_intr.fx = float( _thermal_intr.fx * scale );
+    _thermal_intr.fy = float( _thermal_intr.fy * scale );
 
     impl::calib calibration( _thermal_intr, _extr );
 
@@ -111,9 +107,9 @@ void depth_to_rgb_calibration::write_data_to( std::string const & dir )
 {
     _algo.write_data_to( dir );
 
-     impl::write_to_file( &_raw_intrinsics, sizeof( _raw_intrinsics ), dir, "raw_rgb.calib" );
+    impl::write_to_file( &_raw_intr, sizeof( _raw_intr ), dir, "raw_rgb.intrinsics" );
 
-     impl::write_vector_to_file( _thermal_table.build_raw_data(), dir, "rgb_thermal_table" );
+    impl::write_vector_to_file( _thermal_table.build_raw_data(), dir, "rgb_thermal_table" );
 }
 
 
@@ -181,12 +177,14 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
 
         AC_LOG( DEBUG, "Optimization successful!" );
         _thermal_intr = _algo.get_calibration().get_intrinsics();
+        _thermal_intr.model = RS2_DISTORTION_INVERSE_BROWN_CONRADY;  // restore LRS model
 
-        // override only the ppx and ppy the fx and fy are the original
-        double original_fx = _raw_intrinsics.fx, original_fy = _raw_intrinsics.fy;
-        _raw_intrinsics = _thermal_intr; 
-        _raw_intrinsics.fx = original_fx;
-        _raw_intrinsics.fy = original_fy;
+        // Override everything in the raw intrinsics except the focal length (fx and fy)
+        // TODO: why? need explanation why we're not simply descaling back to raw...
+        auto original_fx = _raw_intr.fx, original_fy = _raw_intr.fy;
+        _raw_intr = _thermal_intr; 
+        _raw_intr.fx = original_fx;
+        _raw_intr.fy = original_fy;
 
         _extr = from_raw_extrinsics( _algo.get_calibration().get_extrinsics() );
         _dsm_params = _algo.get_dsm_params();
@@ -204,8 +202,8 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
 
 void depth_to_rgb_calibration::debug_calibration( char const * prefix )
 {
-    AC_LOG( INFO, AC_F_PREC << "    " << prefix << " intr with k-thermal" << _thermal_intr );
-    AC_LOG( INFO, AC_F_PREC << "    " << prefix << " raw intr" << _raw_intrinsics );
+    AC_LOG( INFO, AC_F_PREC << "    " << prefix << "   th" << _thermal_intr );
+    AC_LOG( INFO, AC_F_PREC << "    " << prefix << "  raw" << _raw_intr );
     AC_LOG( INFO, AC_F_PREC << "    " << prefix << " extr" << _extr );
     AC_LOG( INFO, AC_F_PREC << "    " << prefix << "  dsm" << _dsm_params );
 }

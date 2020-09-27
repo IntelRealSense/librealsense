@@ -12,16 +12,15 @@ using namespace librealsense::algo::thermal_loop::l500;
 
 TEST_CASE("parse_thermal_table", "[thermal-loop]")
 {
-    auto syntetic_table = create_synthetic_table();
-    auto raw_data = syntetic_table.build_raw_data();
-    thermal_calibration_table table( raw_data );
-    REQUIRE( syntetic_table == table );
+    auto original_table = create_synthetic_table();
+    auto raw_data = original_table.build_raw_data();
+    thermal_calibration_table table_from_raw( raw_data );
+    REQUIRE( original_table == table_from_raw );
 }
 
 TEST_CASE( "data_size_too_small", "[thermal-loop]" )
 {
-    auto syntetic_table
-        = create_synthetic_table();
+    auto syntetic_table = create_synthetic_table();
     auto raw_data = syntetic_table.build_raw_data();
     raw_data.pop_back();
     REQUIRE_THROWS( thermal_calibration_table( raw_data ) );
@@ -29,8 +28,7 @@ TEST_CASE( "data_size_too_small", "[thermal-loop]" )
 
 TEST_CASE( "data_size_too_large", "[thermal-loop]" )
 {
-    auto syntetic_table
-        = create_synthetic_table();
+    auto syntetic_table = create_synthetic_table();
     auto raw_data = syntetic_table.build_raw_data();
     raw_data.push_back( 1 );
     REQUIRE_THROWS( thermal_calibration_table( raw_data ) );
@@ -60,7 +58,7 @@ TEST_CASE( "build_raw_data", "[thermal-loop]" )
                  (byte *)&( syntetic_table._header.valid ),
                  (byte *)&( syntetic_table._header.valid ) + 4 );
 
-    for (auto v : syntetic_table.vals)
+    for (auto v : syntetic_table.bins)
     {
         raw.insert( raw.end(),
                     (byte *)&( v.scale ),
@@ -82,5 +80,5 @@ TEST_CASE( "build_raw_data_no_data", "[thermal-loop]" )
 
     thermal_calibration_table t( raw_data, 0 );
 
-    CHECK( t.vals.size() == 0 );
+    CHECK( t.bins.size() == 0 );
 }
