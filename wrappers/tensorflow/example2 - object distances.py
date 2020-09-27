@@ -21,6 +21,7 @@ point_cloud = rs.pointcloud()
 
 print("[INFO] loading model...")
 PATH_TO_CKPT = r"C:\work\git\tensorflow\model\frozen_inference_graph.pb"
+# download model from: https://github.com/opencv/opencv/wiki/TensorFlow-Object-Detection-API#run-network-in-opencv
 
 # Load the Tensorflow model into memory.
 detection_graph = tf.Graph()
@@ -75,11 +76,12 @@ while True:
         box = boxes[idx]
         print(" [DEBUG] class : ", class_, "idx : ", idx, "num : ", num)
 
-        if score > 0.4 and class_ == 1: # 1 for human
-            left = box[0] * W
-            top = box[1] * H
-            right = box[2] * W
-            bottom = box[3] * H
+        if score > 0.8 and class_ == 1: # 1 for human
+            left = box[1] * W
+            top = box[0] * H
+            right = box[3] * W
+            bottom = box[2] * H
+
             width = right - left
             height = bottom - top
             bbox = (int(left), int(top), int(width), int(height))
