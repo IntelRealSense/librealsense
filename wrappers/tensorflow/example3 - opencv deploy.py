@@ -17,11 +17,6 @@ pipeline.start(config)
 
 aligned_stream = rs.align(rs.stream.color) # alignment between color and depth
 point_cloud = rs.pointcloud()
-filters = [rs.disparity_transform(),
-           rs.spatial_filter(),
-           rs.temporal_filter(),
-           rs.disparity_transform(False)]
-#decimate.set_option(rs.option.filter_magnitude, 2 ** state.decimate)
 
 print("[INFO] loading model...")
 net = cv2.dnn.readNetFromTensorflow(r"C:\work\git\tensorflow\model\frozen_inference_graph.pb", r"C:\work\git\tensorflow\model\faster_rcnn_inception_v2_coco_2018_01_28.pbtxt.txt")
@@ -46,14 +41,12 @@ while True:
     net.setInput(cv2.dnn.blobFromImage(color_image, size=scaled_size, swapRB=True, crop=False))
     detections = net.forward()
 
-    colors_list = []
-    for i in range(61):
-        colors_list.append(tuple(np.random.choice(range(256), size=3)))
-
     print("[INFO] drawing bounding box on detected objects...")
+
     for detection in detections[0,0]:
         score = float(detection[2])
         idx = int(detection[1])
+        print(" [DEBUG] classe : ",idx)
 
         if score > 0.8 and idx == 0:
             left = detection[3] * W

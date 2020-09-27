@@ -2,9 +2,6 @@ import pyrealsense2 as rs
 import numpy as np
 import cv2
 import tensorflow as tf
-from tensorflow import keras
-#from object_detection.utils import label_map_util
-#from object_detection.utils import visualization_utils as vis_util
 
 W = 848
 H = 480
@@ -69,13 +66,11 @@ while True:
     boxes = np.squeeze(boxes)
     classes = np.squeeze(classes).astype(np.int32)
     scores = np.squeeze(scores)
-    index_array = list(np.where(scores > 0))
     colors_hash = {}
 
     print("[INFO] drawing bounding box on detected objects...")
     print("[INFO] each detected object has a unique color")
-    for i in range(int(num)):
-        idx = index_array[0][i]
+    for idx in range(int(num)):
         class_ = classes[idx]
         score = scores[idx]
         box = boxes[idx]
