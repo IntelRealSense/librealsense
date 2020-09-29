@@ -431,7 +431,7 @@ bool read_thermal_data( std::string dir,
         scale = thermal_table.get_thermal_scale( hum_temp );
         return true;
     }
-    catch( std::exception const & e )
+    catch( std::exception const & )
     {
         return false;
     }
