@@ -21,7 +21,7 @@ We assume you are already familiar with the basics of operating Intel RealSense 
 ## Part 1 - Object Detection and Classification
 Intel RealSense Camera can be used for object detection and classification with TensorFlow like any other video source. [Example 1](example1%20-%20object%20detection.py) is showing standard object detection using TensorFlow and data from the RGB sensor. 
 
-In order to run this example, you will need model file. Please download and extract one of the models from [TensorFlow-Object-Detection-API](https://github.com/opencv/opencv/wiki/TensorFlow-Object-Detection-API#use-existing-config-file-for-your-model) page. We are using [Faster-RCNN Inception v2](https://arxiv.org/pdf/1611.10012.pdf) for this example (TODO: Check), but other networks can be easily swapped-in. Extracted `frozen_inference_graph.pb` is expected to be in the working directory when running the script. 
+In order to run this example, you will need model file. Please download and extract one of the models from [TensorFlow-Object-Detection-API](https://github.com/opencv/opencv/wiki/TensorFlow-Object-Detection-API#use-existing-config-file-for-your-model) page. We are using [Faster-RCNN Inception v2](https://arxiv.org/pdf/1611.10012.pdf) for this example, but other networks can be easily swapped-in. Extracted `frozen_inference_graph.pb` is expected to be in the working directory when running the script. 
 
 The code should be familiar with anyone who worked with TensorFlow before. We start by creating Graph object and loading it from file:
 
@@ -328,6 +328,7 @@ The output is a BAG file that could be opened by RealSense viewer.
 ```py
 python camera_simulation.py <path to the model>
 ```
+For prediction, both IR and depth frames are streamed.
 
 Expected output is the original frame and model prediction given it as an input. 
 
