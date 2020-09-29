@@ -7,83 +7,106 @@
 #include <chrono>
 namespace time_utilities
 {
+    using clock = std::chrono::steady_clock;
+
     class stopwatch
     {
     public:
-        using clock = std::chrono::steady_clock;
         stopwatch()
         {
             _start = clock::now();
         }
 
-        void reset() const { _start = clock::now(); }
+        // Reset the stopwatch time
+        void reset(clock::time_point start_time = clock::now()) const 
+        { 
+            _start = start_time; 
+        }
 
-        // Get elapsed milliseconds since timer creation
+        // Get elapsed in milliseconds since timer creation
         double elapsed_ms() const
         {
             return std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(elapsed()).count();
         }
 
+        // Get elapsed since timer creation
         clock::duration elapsed() const
         {
             return clock::now() - _start;
         }
 
+        // Get current absolute time
         clock::time_point now() const
         {
             return clock::now();
+        }
+
+        // Get stopwatch start time
+        clock::time_point get_start_time() const
+        {
+            return _start;
         }
 
     protected:
         mutable clock::time_point _start;
     };
 
-    class timer : public stopwatch
+    class timer
     {
     public:
-        timer(clock::duration timeout) : stopwatch()
+        timer(clock::duration timeout) : _delta(timeout) , sw()
         {
-            _delta = timeout;
         }
 
+        // Start timer
         void start() const
         {
-            reset();
+            sw.reset();
         }
 
+        // Check if timer time expired
         bool has_expired() const
         {
-            return _start + _delta < now();
+            return sw.get_start_time() + _delta <= sw.now();
+        }
+
+        // Force time expiration
+        void signal() 
+        {
+            sw.reset(sw.now() - (_delta + std::chrono::nanoseconds(100)));
         }
     protected:
         clock::duration _delta;
+        stopwatch sw;
     };
 
-    class periodic_timer : public timer
+    class periodic_timer
     {
     public:
         using clock = std::chrono::steady_clock;
 
         periodic_timer(clock::duration delta)
-            : timer(delta)
+            : t(delta)
         {
-           
         }
 
+        // Allow use of bool operator for checking time expiration and re trigger when time expired
         operator bool() const
         {
-            if (this->has_expired())
+            if (t.has_expired())
             {
-                this->start();
+                t.start();
                 return true;
             }
             return false;
         }
 
-        void signal() const
+        // Force time expiration
+        void signal() 
         {
-            _start = now() - _delta;
+            t.signal();
         }
-
+    protected:
+        timer t;
     };
 }
