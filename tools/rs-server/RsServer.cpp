@@ -2,6 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include <iostream>
+#include <map>
 
 #include <liveMedia.hh>
 #include <GroupsockHelper.hh>
@@ -20,6 +21,8 @@
 
 using namespace TCLAP;
 
+typedef std::pair<int, int> res_pair;
+
 struct server
 {
     rs2::device selected_device;
@@ -30,6 +33,48 @@ struct server
     std::vector<RsSensor> sensors;
     TaskScheduler* scheduler;
     unsigned int port = 8554;
+    std::map<rs2_format, std::map<res_pair, std::vector<int>>> formats_map;
+
+    void create_formats_map()
+    {
+        std::map<res_pair, std::vector<int>> z16_map =
+        {
+            { std::make_pair(1280,720), {6,15} },
+            { std::make_pair(848,480), {6,15,30} },
+            { std::make_pair(640,480), {6,15,30,60} },
+            { std::make_pair(640,360), {30,60} },
+            { std::make_pair(480,270), {6,15,30,60,90} },
+        };
+        std::map<res_pair, std::vector<int>> y8_map =
+        {
+            { std::make_pair(1280,720), {6,15} },
+            { std::make_pair(848,480), {6,15,30} },
+            { std::make_pair(640,480), {6,15,30,60} },
+            { std::make_pair(640,360), {30,60} },
+            { std::make_pair(480,270), {6,15,30,60,90} },
+        };
+        std::map<res_pair, std::vector<int>> uyvy_map =
+        {
+            { std::make_pair(1280,720), {6,15} },
+            { std::make_pair(640,480), {6,15,30,60} },
+            { std::make_pair(480,270), {6,15,30,60,90} },
+        };
+        std::map<res_pair, std::vector<int>> yuy2_map =
+        {
+            { std::make_pair(1280,720), {6,10,15} },
+            { std::make_pair(640,480), {6,15,30,60} },
+            { std::make_pair(424,240), {6,15,30,60} },
+        };
+        
+        formats_map.insert(std::make_pair(RS2_FORMAT_Z16, z16_map));
+        formats_map.insert(std::make_pair(RS2_FORMAT_Y8, y8_map));
+        formats_map.insert(std::make_pair(RS2_FORMAT_UYVY, uyvy_map));
+        formats_map.insert(std::make_pair(RS2_FORMAT_YUYV, yuy2_map));
+
+        // DOTO: what about these formats?
+        //RS2_FORMAT_BGR8 
+        //RS2_FORMAT_RGB8      
+    }
 
     void main(int argc, char** argv)
     {
@@ -80,6 +125,8 @@ struct server
             exit(1);
         }
 
+        create_formats_map();
+
         sensors = rsDevice.get()->getSensors();
         for(auto sensor : sensors)
         {
@@ -96,97 +143,24 @@ struct server
             for(auto stream_profile : sensor.getStreamProfiles())
             {
                 rs2::video_stream_profile stream = stream_profile.second;
-                if(stream.format() == RS2_FORMAT_BGR8 
-                || stream.format() == RS2_FORMAT_RGB8 
-                || stream.format() == RS2_FORMAT_Z16 
-                || stream.format() == RS2_FORMAT_Y8 
-                || stream.format() == RS2_FORMAT_YUYV 
-                || stream.format() == RS2_FORMAT_UYVY)
-                {
-                    if(stream.fps() == 6)
-                    {
-                        if((stream.width() == 1280 && stream.height() == 720) || (stream.width() == 640 && stream.height() == 480)) 
-                        {
-                            sms->addSubsession(RsServerMediaSubsession::createNew(*env, stream, rsDevice));
 
-                            supported_stream_profiles.push_back(stream);
-                            continue;
-                        }
-                    }
-                    else if(stream.fps() == 15 || stream.fps() == 30)
-                    {
-                        if((stream.width() == 1280 && stream.height() == 720) || (stream.width() == 640 && stream.height() == 480))
-                        {
-                            sms->addSubsession(RsServerMediaSubsession::createNew(*env, stream, rsDevice));
-                            supported_stream_profiles.push_back(stream);
-                            continue;
-                        }
-                    }
-                    else if(stream.fps() == 60)
-                    {
-                        if((stream.width() == 640 && stream.height() == 480))
-                        {
-                            sms->addSubsession(RsServerMediaSubsession::createNew(*env, stream, rsDevice));
-                            supported_stream_profiles.push_back(stream);
-                            continue;
-                        }
-                    }
-                    else if(stream.fps() == 10)
-                    {
-                         if(stream.format() == RS2_FORMAT_YUYV && stream.width() == 1280 && stream.height() == 720)
-                         {
-                            sms->addSubsession(RsServerMediaSubsession::createNew(*env, stream, rsDevice));
-                            supported_stream_profiles.push_back(stream);
-                            continue;
-                         }
-                    }
-                }
-                if (stream.format() == RS2_FORMAT_Z16 || stream.format() == RS2_FORMAT_Y8 )
+                std::map<rs2_format, std::map<res_pair, std::vector<int>>>::iterator formats_it;
+                formats_it = formats_map.find(stream.format());
+                if (formats_it != formats_map.end())
                 {
-                    if(stream.fps() == 6 || stream.fps() == 15 || stream.fps() == 30)
+                    res_pair resolution = std::make_pair(stream.width(), stream.height());
+                    std::map<res_pair, std::vector<int>>::iterator res_it;
+                    res_it = formats_it->second.find(resolution);
+                    if (res_it != formats_it->second.end())
                     {
-                        if(stream.width() == 848 && stream.height() == 480)
+                        if(std::find(res_it->second.begin(), res_it->second.end(), stream.fps()) != res_it->second.end())
                         {
                             sms->addSubsession(RsServerMediaSubsession::createNew(*env, stream, rsDevice));
                             supported_stream_profiles.push_back(stream);
                             continue;
                         }
-                    }
-                    if(stream.fps() == 30 || stream.fps() == 60)
-                    {
-                        if(stream.width() == 640 && stream.height() == 360)
-                        {
-                            sms->addSubsession(RsServerMediaSubsession::createNew(*env, stream, rsDevice));
-                            supported_stream_profiles.push_back(stream);
-                            continue;
-                        }
-                    }
+                    }   
                 }
-                if (stream.format() == RS2_FORMAT_YUYV)
-                {
-                    if(stream.fps() == 6 || stream.fps() == 15 || stream.fps() == 30 || stream.fps() == 60)
-                    {
-                        if(stream.width() == 424 && stream.height() == 240)
-                        {
-                            sms->addSubsession(RsServerMediaSubsession::createNew(*env, stream, rsDevice));
-                            supported_stream_profiles.push_back(stream);
-                            continue;
-                        }
-                    }
-                }
-            if (stream.format() == RS2_FORMAT_Z16 || stream.format() == RS2_FORMAT_Y8 || stream.format() == RS2_FORMAT_UYVY)
-            {
-                if(stream.fps() == 6 || stream.fps() == 15 || stream.fps() == 30 || stream.fps() == 60 ||  stream.fps() == 90)
-                    {
-                        if(stream.width() == 480 && stream.height() == 270)
-                        {
-                            sms->addSubsession(RsServerMediaSubsession::createNew(*env, stream, rsDevice));
-                            supported_stream_profiles.push_back(stream);
-                            continue;
-                        }
-                    }
-            }
-
                 *env << "Ignoring stream: format: " << stream.format() << " width: " << stream.width() << " height: " << stream.height() << " fps: " << stream.fps() << "\n";
             }
 
