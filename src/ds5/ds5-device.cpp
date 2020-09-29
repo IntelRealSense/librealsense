@@ -756,38 +756,9 @@ namespace librealsense
         // minimal firmware version in which hdr feature is supported
         firmware_version hdr_firmware_version("5.12.8.100");
 
-        // Alternating laser pattern is applicable for global shutter/active SKUs
-        auto mask = d400_caps::CAP_GLOBAL_SHUTTER | d400_caps::CAP_ACTIVE_PROJECTOR;
-        // Alternating laser pattern should be set and query in a different way according to the firmware version
-        bool is_fw_version_using_id = (_fw_version >= firmware_version("5.12.8.100")); 
-        if ((_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
-        {
-            depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor, is_fw_version_using_id));
-        }
-        else if (_fw_version >= firmware_version("5.10.9.0") &&
-            _fw_version.experimental()) // Not yet available in production firmware
-        {
-            depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &raw_depth_sensor));
-        }
-
-        if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER))
-        {
-            depth_sensor.register_option(RS2_OPTION_EMITTER_ALWAYS_ON, std::make_shared<emitter_always_on_option>(*_hw_monitor, &depth_sensor));
-        }
-
-        if (_fw_version >= firmware_version("5.12.4.0") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
-        {
-            depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                std::make_shared<external_sync_mode2>(*_hw_monitor, &raw_depth_sensor));
-        }
-        else if (_fw_version >= firmware_version("5.9.15.1"))
-        {
-            depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                std::make_shared<external_sync_mode>(*_hw_monitor));
-        }
-
         std::shared_ptr<option> exposure_option = nullptr;
         std::shared_ptr<option> gain_option = nullptr;
+        std::shared_ptr<hdr_option> hdr_enabled_option = nullptr;
 
         //EXPOSURE AND GAIN - preparing uvc options
         auto uvc_xu_exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(raw_depth_sensor,
@@ -807,7 +778,7 @@ namespace librealsense
 
         // register HDR options
         //auto global_shutter_mask = d400_caps::CAP_GLOBAL_SHUTTER;
-        if ( (_fw_version >= hdr_firmware_version))// && ((_device_capabilities & global_shutter_mask) == global_shutter_mask) )
+        if ((_fw_version >= hdr_firmware_version))// && ((_device_capabilities & global_shutter_mask) == global_shutter_mask) )
         {
             auto ds5_depth = As<ds5_depth_sensor, synthetic_sensor>(&get_depth_sensor());
             ds5_depth->init_hdr_config(exposure_range, gain_range);
@@ -827,11 +798,11 @@ namespace librealsense
 
             option_range hdr_sequ_id_range = { 0.f /*min*/, 2.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
             auto hdr_sequ_id_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_SEQUENCE_ID, hdr_sequ_id_range,
-                std::map<float, std::string>{ {0.f, "UVC"}, { 1.f, "1"}, {2.f, "2"} });
+                std::map<float, std::string>{ {0.f, "UVC"}, { 1.f, "1" }, { 2.f, "2" } });
             depth_sensor.register_option(RS2_OPTION_SEQUENCE_ID, hdr_sequ_id_option);
 
-            option_range hdr_enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/};
-            auto hdr_enabled_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_HDR_ENABLED, hdr_enable_range);
+            option_range hdr_enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
+            hdr_enabled_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_HDR_ENABLED, hdr_enable_range);
             depth_sensor.register_option(RS2_OPTION_HDR_ENABLED, hdr_enabled_option);
 
             //EXPOSURE AND GAIN - preparing hdr options
@@ -858,22 +829,60 @@ namespace librealsense
         }
 
         //EXPOSURE
-        depth_sensor.register_option(RS2_OPTION_EXPOSURE, exposure_option);
-
-        //GAIN
-        depth_sensor.register_option(RS2_OPTION_GAIN, gain_option);
-
         depth_sensor.register_option(RS2_OPTION_EXPOSURE,
             std::make_shared<auto_disabling_control>(
                 exposure_option,
                 enable_auto_exposure));
 
+        //GAIN
         depth_sensor.register_option(RS2_OPTION_GAIN,
             std::make_shared<auto_disabling_control>(
                 gain_option,
                 enable_auto_exposure));
 
+        // Alternating laser pattern is applicable for global shutter/active SKUs
+        auto mask = d400_caps::CAP_GLOBAL_SHUTTER | d400_caps::CAP_ACTIVE_PROJECTOR;
+        // Alternating laser pattern should be set and query in a different way according to the firmware version
+        bool is_fw_version_using_id = (_fw_version >= firmware_version("5.12.8.100")); 
+        if ((_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
+        {
+            auto alternating_emitter_opt = std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor, is_fw_version_using_id);
+            if (_fw_version >= hdr_firmware_version)
+            {
+                depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF,
+                    std::make_shared<gated_option>(
+                        alternating_emitter_opt,
+                        hdr_enabled_option,
+                        "Emitter ON/OFF cannot be set while HDR is enabled"));
+            }
+            else
+            {
+                depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, alternating_emitter_opt);
+            }
+        }
+        else if (_fw_version >= firmware_version("5.10.9.0") &&
+            _fw_version.experimental()) // Not yet available in production firmware
+        {
+            depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &raw_depth_sensor));
+        }
 
+        if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER))
+        {
+            depth_sensor.register_option(RS2_OPTION_EMITTER_ALWAYS_ON, std::make_shared<emitter_always_on_option>(*_hw_monitor, &depth_sensor));
+        }
+
+        if (_fw_version >= firmware_version("5.12.4.0") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
+        {
+            depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
+                std::make_shared<external_sync_mode2>(*_hw_monitor, &raw_depth_sensor));
+        }
+        else if (_fw_version >= firmware_version("5.9.15.1"))
+        {
+            depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
+                std::make_shared<external_sync_mode>(*_hw_monitor));
+        }
+
+        
         roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);
         if (roi_sensor)
             roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
