@@ -16,8 +16,6 @@ if(NOT IMPORT_DEPTH_CAM_FW)
     message(SEND_ERROR "BUILD_WITH_TM2 requires IMPORT_DEPTH_CAM_FW")
 endif()
 
-if(IMPORT_DEPTH_CAM_FW)
-    target_link_libraries(${LRS_TARGET} PRIVATE fw) # for T265 FW
-endif()
+target_link_libraries(${LRS_TARGET} PRIVATE fw) # for T265 FW
 target_include_directories(${LRS_TARGET} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 set_target_properties (${LRS_TARGET} PROPERTIES FOLDER Resources)
