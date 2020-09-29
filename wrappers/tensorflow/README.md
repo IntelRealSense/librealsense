@@ -332,9 +332,8 @@ For prediction, both IR and depth frames are streamed.
 
 Expected output is the original frame and model prediction given it as an input. 
 
-(TODO: Better image, also what about IR??)
 
-![foxdemo](images/camera_simulation.PNG)
+![foxdemo](images/real_camera_simulation.PNG)
 
 ## Conclusions
 
