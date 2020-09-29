@@ -104,7 +104,7 @@ for idx in range(int(num)):
 
 Expected output: 
 
-TODO
+![foxdemo](images/example_1.PNG)
 
 ## Part 2 - Augmenting output using Depth data
 
@@ -153,7 +153,8 @@ My = np.amax(ys, initial=-1)
 height = (My - my)
 ```
 
-Expected output: TODO
+Expected output: 
+![foxdemo](images/example_2.PNG)
 
 ## Part 3 - Deploying TensorFlow model using OpenCV
 
