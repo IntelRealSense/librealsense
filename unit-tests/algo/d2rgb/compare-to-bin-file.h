@@ -427,7 +427,10 @@ bool read_thermal_data( std::string dir,
     {
         auto vec = read_vector_from< byte >(
             join( bin_dir( dir ), "rgb_thermal_table" ) );
-        thermal::l500::thermal_calibration_table thermal_table( vec );
+
+        std::vector<byte> thermal_vec( 16, 0 );  // table header
+        thermal_vec.insert( thermal_vec.end(), vec.begin(), vec.end() );
+        thermal::l500::thermal_calibration_table thermal_table( thermal_vec );
         scale = thermal_table.get_thermal_scale( hum_temp );
         return true;
     }
