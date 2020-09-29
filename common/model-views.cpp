@@ -398,6 +398,11 @@ namespace rs2
         bool ret = false;
         if( auto motion = frame.as< motion_frame >() )
         {
+            std::string units;
+            if( motion.get_profile().stream_type() == RS2_STREAM_GYRO )
+                units = "( deg/sec )";
+            else
+                units = "( m/sec^2 )";
             auto axes = motion.get_motion_data();
             std::ofstream csv( filename );
 
@@ -407,9 +412,7 @@ namespace rs2
             csv << "Frame Number," << frame.get_frame_number() << std::endl;
             csv << "Timestamp (ms)," << std::fixed << std::setprecision( 2 )
                 << frame.get_timestamp() << std::endl;
-            csv << std::setprecision( 7 ) << "x," << axes.x << std::endl;
-            csv << std::setprecision( 7 ) << "y," << axes.y << std::endl;
-            csv << std::setprecision( 7 ) << "z," << axes.z << std::endl;
+            csv << std::setprecision( 7 ) << "Axes" << units << ", " << axes << std::endl;
 
             ret = true;
         }
@@ -431,14 +434,25 @@ namespace rs2
             csv << "Frame Number," << frame.get_frame_number() << std::endl;
             csv << "Timestamp (ms)," << std::fixed << std::setprecision( 2 )
                 << frame.get_timestamp() << std::endl;
-            csv << std::setprecision( 7 ) << "acceleration," << pose_data.acceleration << std::endl;
-            csv << std::setprecision( 7 ) << "angular_acceleration," << pose_data.angular_acceleration << std::endl;
-            csv << std::setprecision( 7 ) << "angular_velocity," << pose_data.angular_velocity << std::endl;
-            csv << std::setprecision( 7 ) << "mapper_confidence," << pose_data.mapper_confidence << std::endl;
-            csv << std::setprecision( 7 ) << "rotation," << pose_data.rotation << std::endl;
-            csv << std::setprecision( 7 ) << "tracker_confidence," << pose_data.tracker_confidence << std::endl;
-            csv << std::setprecision( 7 ) << "translation," << pose_data.translation << std::endl;
-            csv << std::setprecision( 7 ) << "velocity," << pose_data.velocity << std::endl;
+            csv << std::setprecision( 7 ) << "Acceleration( meters/sec^2 ), "
+                << pose_data.acceleration << std::endl;
+            csv << std::setprecision( 7 ) << "Angular_acceleration( radians/sec^2 ), "
+                << pose_data.angular_acceleration << std::endl;
+            csv << std::setprecision( 7 ) << "Angular_velocity( radians/sec ), "
+                << pose_data.angular_velocity << std::endl;
+            csv << std::setprecision( 7 )
+                << "Mapper_confidence( 0x0 - Failed 0x1 - Low 0x2 - Medium 0x3 - High ), "
+                << pose_data.mapper_confidence << std::endl;
+            csv << std::setprecision( 7 )
+                << "Rotation( quaternion rotation (relative to initial position) ), "
+                << pose_data.rotation << std::endl;
+            csv << std::setprecision( 7 )
+                << "Tracker_confidence( 0x0 - Failed 0x1 - Low 0x2 - Medium 0x3 - High ), "
+                << pose_data.tracker_confidence << std::endl;
+            csv << std::setprecision( 7 ) << "Translation( meters ), " << pose_data.translation
+                << std::endl;
+            csv << std::setprecision( 7 ) << "Velocity( meters/sec ), " << pose_data.velocity
+                << std::endl;
 
             ret = true;
         }
@@ -3180,9 +3194,7 @@ namespace rs2
         }
 
         auto motion = last_frame.as< motion_frame >();
-        if( motion
-            && val_in_range( motion.get_profile().stream_type(),
-                             { RS2_STREAM_GYRO, RS2_STREAM_ACCEL } ) )
+        if( motion )
         {
             stream_desc = rs2_stream_to_string( motion.get_profile().stream_type() );
 
@@ -3195,7 +3207,7 @@ namespace rs2
                     ss << "The frame attributes are saved into\n" << filename;
                 else
                     viewer.not_model->add_notification(
-                        { to_string() << "Failed to save frame metadata file " << filename,
+                        { to_string() << "Failed to save frame file " << filename,
                           RS2_LOG_SEVERITY_INFO,
                           RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR } );
             }
@@ -3208,7 +3220,7 @@ namespace rs2
         }
 
         auto pose = last_frame.as< pose_frame >();
-        if (pose && pose.get_profile().stream_type() == RS2_STREAM_POSE)
+        if( pose )
         {
             stream_desc = rs2_stream_to_string( pose.get_profile().stream_type() );
 
@@ -3221,7 +3233,7 @@ namespace rs2
                     ss << "The frame attributes are saved into\n" << filename;
                 else
                     viewer.not_model->add_notification(
-                        { to_string() << "Failed to save frame metadata file " << filename,
+                        { to_string() << "Failed to save frame file " << filename,
                           RS2_LOG_SEVERITY_INFO,
                           RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR } );
             }
