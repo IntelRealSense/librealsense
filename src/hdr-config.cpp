@@ -250,6 +250,7 @@ namespace librealsense
                 {
                     try {
                         _pre_hdr_exposure = _sensor->get_option(RS2_OPTION_EXPOSURE).query();
+                        set_sequence_index(0.f);
                         _sensor->get_option(RS2_OPTION_EXPOSURE).set(PRE_ENABLE_HDR_EXPOSURE);
                     } catch (...) {
                         LOG_WARNING("HDR: enforced exposure failed");
@@ -275,6 +276,7 @@ namespace librealsense
                 if (_pre_hdr_exposure >= _exposure_range.min && _pre_hdr_exposure <= _exposure_range.max)
                 {
                     try {
+                        set_sequence_index(0.f);
                         _sensor->get_option(RS2_OPTION_EXPOSURE).set(_pre_hdr_exposure);
                     } catch (...) {
                         LOG_WARNING("HDR failed to restore manual exposure");
