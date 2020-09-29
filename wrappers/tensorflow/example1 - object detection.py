@@ -46,7 +46,7 @@ while True:
 
     # Convert images to numpy arrays
     color_image = np.asanyarray(color_frame.get_data())
-    scaled_size = (color_frame.width(), color_frame.height())
+    scaled_size = (color_frame.width, color_frame.height)
     # expand image dimensions to have shape: [1, None, None, 3]
     # i.e. a single-column array, where each item in the column has the pixel RGB value
     image_expanded = np.expand_dims(color_image, axis=0)
@@ -67,10 +67,10 @@ while True:
             colors_hash[class_] = tuple(np.random.choice(range(256), size=3))
         
         if score > 0.6:
-            left = box[1] * color_frame.width()
-            top = box[0] * color_frame.height()
-            right = box[3] * color_frame.width()
-            bottom = box[2] * color_frame.height()
+            left = int(box[1] * color_frame.width)
+            top = int(box[0] * color_frame.height)
+            right = int(box[3] * color_frame.width)
+            bottom = int(box[2] * color_frame.height)
             
             p1 = (left, top)
             p2 = (right, bottom)

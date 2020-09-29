@@ -20,7 +20,7 @@ point_cloud = rs.pointcloud()
 
 print("[INFO] loading model...")
 # download model from: https://github.com/opencv/opencv/wiki/TensorFlow-Object-Detection-API#run-network-in-opencv
-net = cv2.dnn.readNetFromTensorflow(r"C:\work\git\tensorflow\model\frozen_inference_graph.pb", r"C:\work\git\tensorflow\model\faster_rcnn_inception_v2_coco_2018_01_28.pbtxt.txt")
+net = cv2.dnn.readNetFromTensorflow("frozen_inference_graph.pb", "faster_rcnn_inception_v2_coco_2018_01_28.pbtxt")
 while True:
     frames = pipeline.wait_for_frames()
     frames = aligned_stream.process(frames)
@@ -69,13 +69,13 @@ while True:
 
             z = np.median(zs)
 
-            ys = obj_points[:,1] * H
+            ys = obj_points[:,1]
             ys = np.delete(ys, np.where((zs < z - 1) | (zs > z + 1))) # take only y for close z to prevent including background
 
             my = np.amin(ys, initial=1)
             My = np.amax(ys, initial=-1)
 
-            height = (My - my)/float(H) # add next to rectangle print of height using cv library
+            height = (My - my) # add next to rectangle print of height using cv library
             height = float("{:.2f}".format(height))
             print("[INFO] object height is: ", height, "[m]")
             height_txt = str(height)+"[m]"
