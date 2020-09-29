@@ -180,7 +180,9 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
         _thermal_intr.model = RS2_DISTORTION_INVERSE_BROWN_CONRADY;  // restore LRS model
 
         // Override everything in the raw intrinsics except the focal length (fx and fy)
-        // TODO: why? need explanation why we're not simply descaling back to raw...
+        // TODO: AC is not "supposed" to change focal length, but we shouldn't assume this! The
+        // proper way to do the following is not by restoring the original, but rather by DEscaling
+        // the results from AC.
         auto original_fx = _raw_intr.fx, original_fy = _raw_intr.fy;
         _raw_intr = _thermal_intr; 
         _raw_intr.fx = original_fx;
