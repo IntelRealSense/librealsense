@@ -12,7 +12,7 @@ We'll need the following components:
 2. `pyrealsense2` - on x86 Linux and Windows platforms can be installed by running `pip install pyrealsense2`. For additional installation instructions please see [official documentation](https://github.com/IntelRealSense/librealsense/tree/master/wrappers/python#installation). We'll be using `pyrealsense2` to communicate with the camera and fetch frames from the device.
 3. `numpy` - We'll be using Numpy for image storage and manipulation. Install via `pip install numpy`
 4. `opencv` - We'll be using OpenCV for loading and saving images, basic image processing, and inference in some examples. OpenCV can be installed via `pip install opencv-python`
-5. `tensorflow` - TensorFlow is the main focus of this set of tutorials. We'll be using TensorFlow version TODO, or TensorFlow-GPU version 2.2.0. We'll also be using a version of Keras library bundled inside TensorFlow installation. Keras is offering set of declarative APIs simplifying network declaration and improving readability. 
+5. `tensorflow` - TensorFlow is the main focus of this set of tutorials. We'll be using TensorFlow version 2.3.0, or TensorFlow-GPU version 2.2.0. We'll also be using a version of Keras library bundled inside TensorFlow installation. Keras is offering set of declarative APIs simplifying network declaration and improving readability. 
 
 > **Note on GPU Support**: In order to run TensorFlow with GPU acceleration on NVidia GPUs you need to install `tensorflow-gpu` python package and compatible versions of CUDA and cuDNN libraries. [List of compatible combinations](https://www.tensorflow.org/install/source_windows#gpu)
 
@@ -108,7 +108,7 @@ Expected output:
 
 ## Part 2 - Augmenting output using Depth data
 
-Since Intel RealSense Cameras also offer per-pixel depth information, we can use this extra data to solve additional problems related to our detection and classification example. In [Example 2](example2%20-%20object%20distances.py) (TODO: Rename) we'll use color data to detect people and depth data to quickly estimate the height of each person.
+Since Intel RealSense Cameras also offer per-pixel depth information, we can use this extra data to solve additional problems related to our detection and classification example. In [Example 2](example2%20-%20person%20height.py) we'll use color data to detect people and depth data to quickly estimate the height of each person.
 
 In this example we will configure depth stream in addition to color:
 ```py
@@ -284,7 +284,7 @@ The application will create automatically a file tree:
 				└───variables
 		
 ####  Testing Process
-The tested images should be augmented like trained images, except the cropping size should be 480x480 (each image is cropped to 2 images) (TODO:Why??), considering performance improvement.
+The tested images should be augmented like trained images, except the cropping size should be as big as possible in order to improve prediction performance. The cropped image size should be squared, because Unet is trained on squared images, so rectangled images don't get good prediction. Also, the cropped size shouldn't exceed original image limits, that's why tested image is cropped to 480x480 (each image is cropped to 2 images).
 For testing, there is no need to ground truth data, only depth and IR images are required.
 The relevant folders in file tree are: 
 - `test`: original images to test of sizes 848x480
