@@ -396,8 +396,7 @@ namespace rs2
     bool motion_data_to_csv( const std::string & filename, rs2::frame frame )
     {
         bool ret = false;
-        auto motion = frame.as< motion_frame >();
-        if( frame )
+        if( auto motion = frame.as< motion_frame >() )
         {
             auto axes = motion.get_motion_data();
             std::ofstream csv( filename );
@@ -421,8 +420,7 @@ namespace rs2
     bool pose_data_to_csv( const std::string & filename, rs2::frame frame )
     {
         bool ret = false;
-        auto pose = frame.as< pose_frame >();
-        if( frame )
+        if( auto pose = frame.as< pose_frame >() )
         {
             auto pose_data = pose.get_pose_data();
             std::ofstream csv( filename );
