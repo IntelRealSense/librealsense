@@ -35,12 +35,11 @@ detection_boxes = detection_graph.get_tensor_by_name('detection_boxes:0')
 # The score is shown on the result image, together with the class label.
 detection_scores = detection_graph.get_tensor_by_name('detection_scores:0')
 detection_classes = detection_graph.get_tensor_by_name('detection_classes:0')
-# TODO: Reference???
-
 # Number of objects detected
 num_detections = detection_graph.get_tensor_by_name('num_detections:0')
+# code source of tensorflow model loading: https://www.geeksforgeeks.org/ml-training-image-classifier-using-tensorflow-object-detection-api/
 print("[INFO] Model loaded.")
-
+colors_hash = {}
 while True:
     frames = pipeline.wait_for_frames()
     color_frame = frames.get_color_frame()
@@ -58,7 +57,6 @@ while True:
     boxes = np.squeeze(boxes)
     classes = np.squeeze(classes).astype(np.int32)
     scores = np.squeeze(scores)
-    colors_hash = {} # TODO: Shouldn't it be outside the loop???
 
     for idx in range(int(num)):
         class_ = classes[idx]

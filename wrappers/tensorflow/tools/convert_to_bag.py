@@ -1,4 +1,3 @@
-#import bpy
 import numpy as np
 import cv2
 import pyrealsense2 as rs
@@ -63,7 +62,6 @@ for d in ctx.query_devices():
     if d.get_info(rs.camera_info.name) == name:
         dev = d
 
-
 images_path = "."
 if (len(sys.argv) > 1):
     images_path = str(sys.argv[1])
@@ -75,10 +73,13 @@ q = rs.frame_queue()
 sensor.open(sensor.get_stream_profiles())
 sensor.start(q)
 
+files = glob.glob1(images_path, "gt*")
+index = []
+for f in files:
+    idx = (f.split('-')[1]).split('.')[0]
+    index.append(int(idx))
 
-png_counter = len(glob.glob1(images_path,"*.png"))
-frames_counter = png_counter // 4
-for i in range(frames_counter):
+for i in index:
     left_name = images_path + "/left-" + str(i) + ".png"
     depth_name = images_path + "/gt-" + str(i) + ".png"
     result_name = images_path + "/res-" + str(i) + ".png"
@@ -90,7 +91,7 @@ for i in range(frames_counter):
     f = rs.software_video_frame()
     f.stride = intr.width
     f.bpp = 1
-    f.pixels = np.asarray( img, dtype="byte" )
+    f.pixels = np.asarray(img, dtype="byte")
     f.timestamp = i * 0.01
     f.frame_number = i
     f.profile = sensor.get_stream_profiles()[0].as_video_stream_profile()
@@ -102,7 +103,7 @@ for i in range(frames_counter):
     img = cv2.imread(result_name, cv2.IMREAD_ANYDEPTH)
     f3.stride = 2 * intr.width
     f3.bpp = 2
-    px = np.asarray( img, dtype="ushort" )
+    px = np.asarray(img, dtype="ushort")
     f3.pixels = px
     f3.timestamp = i * 0.01
     f3.frame_number = i
@@ -115,7 +116,7 @@ for i in range(frames_counter):
     img = cv2.imread(depth_name, cv2.IMREAD_ANYDEPTH)
     f4.stride = 2 * intr.width
     f4.bpp = 2
-    px = np.asarray( img, dtype="ushort" )
+    px = np.asarray(img, dtype="ushort")
     f4.pixels = px
     f4.timestamp = i * 0.01
     f4.frame_number = i
@@ -127,14 +128,14 @@ for i in range(frames_counter):
     img = cv2.imread(denoised_name, cv2.IMREAD_ANYDEPTH)
     f5.stride = 2 * intr.width
     f5.bpp = 2
-    px = np.asarray( img, dtype="ushort" )
+    px = np.asarray(img, dtype="ushort")
     f5.pixels = px
     f5.timestamp = i * 0.01
     f5.frame_number = i
     f5.profile = sensor.get_stream_profiles()[3].as_video_stream_profile()
     depth_sensor.on_video_frame(f5)
     time.sleep(0.01)
-    
+
     time.sleep(1)
 
 print("a")
