@@ -10,6 +10,12 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/t265-messages.h"
 )
 
+# TM2 is FW-less device, i.e. it receives its FW each time the device’s power is turned on.
+# Therefore it is dependent on FW library that is created only when IMPORT_DEPTH_CAM_FW is on
+if(NOT IMPORT_DEPTH_CAM_FW)
+    message(SEND_ERROR "BUILD_WITH_TM2 requires IMPORT_DEPTH_CAM_FW")
+endif()
+
 if(IMPORT_DEPTH_CAM_FW)
     target_link_libraries(${LRS_TARGET} PRIVATE fw) # for T265 FW
 endif()
