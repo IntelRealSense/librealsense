@@ -12,6 +12,7 @@
 #include "proc/color-formats-converter.h"
 #include "ac-trigger.h"
 #include "algo/depth-to-rgb-calibration/debug.h"
+#include "algo/thermal-loop/l500-thermal-loop.h"
 
 
 namespace librealsense
@@ -194,6 +195,24 @@ namespace librealsense
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_color_stream, _color_extrinsic);
         register_stream_to_extrinsic_group(*_color_stream, 0);
 
+        _thermal_table = [this]() {
+            hwmon_response response;
+            auto data = read_fw_table_raw( *_hw_monitor,
+                                           algo::thermal_loop::l500::thermal_calibration_table::id,
+                                           response );
+            if( response != hwm_Success )
+            {
+                AC_LOG( WARNING,
+                        "Failed to read FW table 0x"
+                            << std::hex
+                            << algo::thermal_loop::l500::thermal_calibration_table::id );
+                throw invalid_value_exception(
+                    to_string() << "Failed to read FW table 0x" << std::hex
+                                << algo::thermal_loop::l500::thermal_calibration_table::id );
+            }
+
+            return algo::thermal_loop::l500::thermal_calibration_table{ data };
+        };
 
         _color_device_idx = add_sensor(create_color_device(ctx, color_devs_info));
     }
@@ -204,7 +223,8 @@ namespace librealsense
     }
 
 
-    rs2_intrinsics l500_color_sensor::get_intrinsics( const stream_profile& profile ) const
+    rs2_intrinsics l500_color_sensor::get_raw_intrinsics( uint32_t const width,
+                                                          uint32_t const height ) const
     {
         using namespace ivcam2;
 
@@ -215,7 +235,7 @@ namespace librealsense
         for( auto i = 0; i < num_of_res; i++ )
         {
             auto model = intrinsic.resolution.intrinsic_resolution[i];
-            if( model.height == profile.height && model.width == profile.width )
+            if( model.height == height && model.width == width )
             {
                 rs2_intrinsics intrinsics;
                 intrinsics.width = model.width;
@@ -225,7 +245,9 @@ namespace librealsense
                 intrinsics.ppx = model.ipm.principal_point.x;
                 intrinsics.ppy = model.ipm.principal_point.y;
 
-                if( model.distort.radial_k1 || model.distort.radial_k2 || model.distort.tangential_p1 || model.distort.tangential_p2 || model.distort.radial_k3 )
+                if( model.distort.radial_k1 || model.distort.radial_k2
+                    || model.distort.tangential_p1 || model.distort.tangential_p2
+                    || model.distort.radial_k3 )
                 {
                     intrinsics.coeffs[0] = model.distort.radial_k1;
                     intrinsics.coeffs[1] = model.distort.radial_k2;
@@ -239,7 +261,77 @@ namespace librealsense
                 return intrinsics;
             }
         }
-        throw std::runtime_error( to_string() << "intrinsics for resolution " << profile.width << "," << profile.height << " don't exist" );
+        throw std::runtime_error( to_string() << "intrinsics for resolution " << width << ","
+                                              << height << " don't exist" );
+    }
+
+    double l500_color_sensor::read_temperature() const
+    {
+        auto & hwm = *_owner->_hw_monitor;
+
+        std::vector< byte > res;
+
+        try
+        {
+            res = hwm.send( command{ TEMPERATURES_GET } );
+        }
+        catch( std::exception const & e )
+        {
+            AC_LOG( ERROR,
+                    "Failed to get temperatures; hardware monitor in inaccessible: " << e.what() );
+            return 0.;
+        }
+
+        if( res.size() < sizeof( temperatures ) )  // New temperatures may get added by FW...
+        {
+            AC_LOG( ERROR,
+                    "Failed to get temperatures; result size= "
+                        << res.size() << "; expecting at least " << sizeof( temperatures ) );
+            return 0.;
+        }
+        auto const & ts = *( reinterpret_cast< temperatures * >( res.data() ) );
+        AC_LOG( DEBUG, "HUM temperture is currently " << ts.HUM_temperature << " degrees Celsius" );
+        return ts.HUM_temperature;
+    }
+
+    rs2_intrinsics normalize( const rs2_intrinsics & intr )
+    {
+        auto res = intr;
+        res.fx = 2 * intr.fx / intr.width;
+        res.fy = 2 * intr.fy / intr.height;
+        res.ppx = 2 * intr.ppx / intr.width - 1;
+        res.ppy = 2 * intr.ppy / intr.height - 1;
+
+        return res;
+    }
+
+    rs2_intrinsics
+    denormalize( const rs2_intrinsics & intr, const uint32_t & width, const uint32_t & height )
+    {
+        auto res = intr;
+
+        res.fx = intr.fx * width / 2;
+        res.fy = intr.fy * height / 2;
+        res.ppx = ( intr.ppx + 1 ) * width / 2;
+        res.ppy = ( intr.ppy + 1 ) * height / 2;
+
+        res.width = width;
+        res.height = height;
+
+        return res;
+    }
+
+
+    rs2_intrinsics l500_color_sensor::get_intrinsics( const stream_profile & profile ) const
+    {
+        if( ! _k_thermal_intrinsics)
+        {
+            // Until we've calculated temp-based intrinsics, simply use the camera-specified
+            // intrinsics
+            return get_raw_intrinsics( profile.width, profile.height );
+        }
+
+        return denormalize( *_k_thermal_intrinsics, profile.width, profile.height );
     }
 
 
@@ -254,17 +346,18 @@ namespace librealsense
                  { intr.d[0], intr.d[1], intr.d[2], intr.d[3], intr.d[4] } };
     }
 
-
     void ivcam2::rgb_calibration_table::set_intrinsics( rs2_intrinsics const & i )
     {
         // The table in FW is resolution-agnostic; it can apply to ALL resolutions. To
         // do this, the focal length and principal point are normalized:
+        auto norm = normalize( i );
+
         width = i.width;
         height = i.height;
-        intr.fx = 2 * i.fx / i.width;
-        intr.fy = 2 * i.fy / i.height;
-        intr.px = 2 * i.ppx / i.width - 1;
-        intr.py = 2 * i.ppy / i.height - 1;
+        intr.fx = norm.fx;
+        intr.fy = norm.fy;
+        intr.px = norm.ppx;
+        intr.py = norm.ppy;
         intr.d[0] = i.coeffs[0];
         intr.d[1] = i.coeffs[1];
         intr.d[2] = i.coeffs[2];
@@ -298,6 +391,7 @@ namespace librealsense
         // Intrinsics are resolution-specific, so all the rest of the profile info is not
         // important
         _owner->_color_intrinsics_table.reset();
+        reset_k_thermal_intrinsics();
     }
 
     void l500_color_sensor::override_extrinsics( rs2_extrinsics const& extr )
@@ -328,6 +422,22 @@ namespace librealsense
     void l500_color_sensor::override_dsm_params( rs2_dsm_params const & dsm )
     {
         throw std::logic_error( "color sensor does not support DSM parameters" );
+    }
+
+    void l500_color_sensor::set_k_thermal_intrinsics( rs2_intrinsics const & intr )
+    {
+
+        _k_thermal_intrinsics = std::make_shared< rs2_intrinsics >( normalize(intr) );
+    }
+
+    void l500_color_sensor::reset_k_thermal_intrinsics() 
+    {
+        _k_thermal_intrinsics.reset();
+    }
+
+    algo::thermal_loop::l500::thermal_calibration_table l500_color_sensor::get_thermal_table() const
+    {
+        return *_owner->_thermal_table;
     }
 
     void ivcam2::rgb_calibration_table::update_write_fields()
@@ -361,11 +471,12 @@ namespace librealsense
         AC_LOG( DEBUG, "    done" );
 
         _owner->_color_intrinsics_table.reset();
+        reset_k_thermal_intrinsics();
 
          environment::get_instance().get_extrinsics_graph().override_extrinsics(
             *_owner->_depth_stream,
             *_owner->_color_stream,
-             from_raw_extrinsics(table.get_extrinsics()));
+            from_raw_extrinsics( table.get_extrinsics() ) );
         AC_LOG( INFO, "Color sensor calibration has been reset" );
     }
 

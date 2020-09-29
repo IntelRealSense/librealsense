@@ -264,7 +264,7 @@ bool compare_to_bin_file(
 {
     TRACE( "Comparing " << filename << " ..." );
     bool ok = true;
-    auto bin = read_vector_from< F >(bin_dir(scene_dir) + filename, width, height);
+    auto bin = read_vector_from< F >( join( bin_dir( scene_dir ), filename ), width, height );
     if( bin.size() != size)
         TRACE( filename << ": {matlab size}" << bin.size() << " != {width}" << width << "x" << height << "{height}" ), ok = false;
     if( vec.size() != bin.size() )
@@ -315,7 +315,7 @@ bool compare_to_bin_file(
 }
 
 
-bool get_calib_from_raw_data(
+bool get_calib_and_cost_from_raw_data(
     algo::calib& calib,
     double& cost,
     std::string const & scene_dir,
@@ -327,7 +327,7 @@ bool get_calib_from_raw_data(
         sizeof( algo::matrix_3x3 ) +
         sizeof( double ); // cost
 
-    auto bin = read_vector_from< double >( bin_dir( scene_dir ) + filename );
+    auto bin = read_vector_from< double >( join( bin_dir( scene_dir ), filename ) );
     if( bin.size() * sizeof( double ) != data_size )
     {
         AC_LOG( DEBUG, "... " << filename << ": {matlab size}" << bin.size() * sizeof(double) << " != " << data_size );
@@ -350,6 +350,7 @@ bool get_calib_from_raw_data(
     
     return true;
 }
+
 
 bool compare_calib( algo::calib const & calib,
                     double cost,
@@ -413,7 +414,28 @@ bool compare_to_bin_file(
 {
     TRACE("Comparing " << filename << " ...");
     bool ok = true;
-    auto obj_matlab = read_from< D >(bin_dir(scene_dir) + filename);
+    auto obj_matlab = read_from< D >( join( bin_dir( scene_dir ), filename ) );
 
     return compare_t(obj_matlab, obj_cpp);
+}
+
+bool read_thermal_data( std::string dir,
+                              double hum_temp,
+                              double & scale )
+{
+    try
+    {
+        auto vec = read_vector_from< byte >(
+            join( bin_dir( dir ), "rgb_thermal_table" ) );
+
+        std::vector<byte> thermal_vec( 16, 0 );  // table header
+        thermal_vec.insert( thermal_vec.end(), vec.begin(), vec.end() );
+        thermal::l500::thermal_calibration_table thermal_table( thermal_vec );
+        scale = thermal_table.get_thermal_scale( hum_temp );
+        return true;
+    }
+    catch( std::exception const & )
+    {
+        return false;
+    }
 }

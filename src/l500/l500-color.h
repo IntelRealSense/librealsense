@@ -11,9 +11,11 @@
 #include "stream.h"
 #include "l500-depth.h"
 #include "calibrated-sensor.h"
+#include "algo/thermal-loop/l500-thermal-loop.h"
 
 namespace librealsense
 {
+
     class l500_color
         : public virtual l500_device
     {
@@ -39,6 +41,7 @@ namespace librealsense
         lazy<ivcam2::intrinsic_rgb> _color_intrinsics_table;
         lazy<std::vector<uint8_t>> _color_extrinsics_table_raw;
         std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
+        lazy< algo::thermal_loop::l500::thermal_calibration_table > _thermal_table;
 
         ivcam2::intrinsic_rgb read_intrinsics_table() const;
         std::vector<uint8_t> get_raw_extrinsics_table() const;
@@ -61,15 +64,22 @@ namespace librealsense
             _state(sensor_state::CLOSED)
         {
         }
+        rs2_intrinsics get_raw_intrinsics( uint32_t width, uint32_t height ) const;
+        double read_temperature() const;
 
         rs2_intrinsics get_intrinsics( const stream_profile& profile ) const override;
-        
+
+
+
         // calibrated_sensor
         void override_intrinsics( rs2_intrinsics const& intr ) override;
         void override_extrinsics( rs2_extrinsics const& extr ) override;
         rs2_dsm_params get_dsm_params() const override;
         void override_dsm_params( rs2_dsm_params const & dsm_params ) override;
         void reset_calibration() override;
+        void set_k_thermal_intrinsics( rs2_intrinsics const & intr );
+        void reset_k_thermal_intrinsics(); 
+        algo::thermal_loop::l500::thermal_calibration_table get_thermal_table() const;
 
         stream_profiles init_stream_profiles() override
         {
@@ -138,6 +148,10 @@ namespace librealsense
         l500_color* const _owner;
         action_delayer _action_delayer;
         std::mutex _state_mutex;
+
+        // Intrinsics from the the last successful AC( if there was one ) with k - thermal correction,
+        // We save it normalized such that it can be applied to each resolution
+        std::shared_ptr< rs2_intrinsics > _k_thermal_intrinsics;
 
         enum class sensor_state 
         {

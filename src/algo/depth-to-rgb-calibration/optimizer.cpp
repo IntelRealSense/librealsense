@@ -1557,8 +1557,15 @@ void params::set_depth_resolution( size_t width, size_t height, rs2_ambient_ligh
 {
     AC_LOG( DEBUG, "    depth resolution= " << width << "x" << height );
     // Some parameters are resolution-dependent
-    bool const XGA = (width == 1024 && height == 768);
-    bool const VGA = (width == 640 && height == 480);
+    bool const XGA = ( width == 1024 && height == 768 );
+    bool const VGA = ( width == 640 && height == 480 );
+
+    if( ! XGA && ! VGA )
+    {
+        throw std::runtime_error( to_string() << width << "x" << height
+                                              << " this resolution is not supported" );
+    }
+
     if( XGA )
     {
         AC_LOG( DEBUG, "    changing IR threshold: " << grad_ir_threshold << " -> " << 2.5 << "  (because of resolution)" );
@@ -1601,6 +1608,7 @@ void params::set_depth_resolution( size_t width, size_t height, rs2_ambient_ligh
             }
         }
     }
+
     min_weighted_edge_per_section_depth = 50. * ( 480 * 640 ) / ( width * height );
 }
 
@@ -1615,6 +1623,7 @@ void params::set_rgb_resolution( size_t width, size_t height )
     max_xy_movement_per_calibration[1] = max_xy_movement_per_calibration[2] = 2. * area / hd_area;
     max_xy_movement_from_origin = 20. * area / hd_area;
     min_weighted_edge_per_section_rgb = 0.05 * hd_area / area;
+
 }
 
 calib const & optimizer::get_calibration() const
@@ -1632,33 +1641,12 @@ double optimizer::get_cost() const
     return _params_curr.cost;
 }
 
-static
-void write_to_file( void const * data, size_t cb,
-    std::string const & dir,
-    char const * filename
-)
-{
-    std::string path = dir + filename;
-    std::fstream f( path, std::ios::out | std::ios::binary );
-    if( !f )
-        throw std::runtime_error( "failed to open file:\n" + path );
-    f.write( (char const *) data, cb );
-    f.close();
-}
+
 
 template< typename T >
 void write_obj( std::fstream & f, T const & o )
 {
     f.write( (char const *)&o, sizeof( o ) );
-}
-
-template< typename T >
-void write_vector_to_file( std::vector< T > const & v,
-    std::string const & dir,
-    char const * filename
-)
-{
-    write_to_file( v.data(), v.size() * sizeof( T ), dir, filename );
 }
 
 void write_matlab_camera_params_file(

@@ -26,6 +26,7 @@ namespace depth_to_rgb_calibration {
         double step_size = 0;
     };
 
+
     struct params
     {
         params();

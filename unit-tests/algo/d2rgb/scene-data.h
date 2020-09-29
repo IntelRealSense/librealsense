@@ -181,14 +181,14 @@ struct scene_metadata
 
     scene_metadata( std::string const &scene_dir )
     {
-        std::ifstream(bin_dir(scene_dir) + "yuy_prev_z_i.files") >> rgb_file >>
-            rgb_prev_file >> rgb_prev_valid_file >> z_file >> ir_file;
+        std::ifstream( join( bin_dir( scene_dir ), "yuy_prev_z_i.files" ) ) >> rgb_file
+            >> rgb_prev_file >> z_file >> ir_file >> rgb_prev_valid_file;
         if( rgb_file.empty() )
             throw std::runtime_error( "failed to read file:\n" + bin_dir( scene_dir ) + "yuy_prev_z_i.files" );
         if( ir_file.empty() )
             throw std::runtime_error( "not enough files in:\n" + bin_dir( scene_dir ) + "yuy_prev_z_i.files" );
 
-        std::string metadata = bin_dir( scene_dir ) + "metadata";
+        std::string metadata = join( bin_dir( scene_dir ), "metadata" );
         std::fstream f = std::fstream( metadata, std::ios::in | std::ios::binary );
         if( !f )
             throw std::runtime_error( "failed to read file:\n" + metadata );
@@ -241,7 +241,7 @@ camera_params read_camera_params( std::string const &scene_dir, std::string cons
     };
 
     params_bin param;
-    read_data_from( bin_dir( scene_dir ) + filename, &param );
+    read_data_from( join( bin_dir( scene_dir ), filename ), &param );
 
     double coeffs[5] = { 0 };
     camera_params ci;
@@ -299,7 +299,7 @@ dsm_params read_dsm_params(std::string const &scene_dir, std::string const &file
     librealsense::algo::depth_to_rgb_calibration::algo_calibration_registers algo_calibration_registers;
     algo_calibration algo_calib;
 
-    std::string dsmparams = bin_dir( scene_dir ) + filename;
+    std::string dsmparams = join( bin_dir( scene_dir ), filename );
     std::fstream f = std::fstream(dsmparams, std::ios::in | std::ios::binary );
     if( !f )
         throw std::runtime_error( "failed to read file:\n" + dsmparams);

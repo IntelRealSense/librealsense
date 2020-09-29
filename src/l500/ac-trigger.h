@@ -39,7 +39,8 @@ namespace ivcam2 {
         unsigned _n_cycles = 0;  // how many times we've run algo
 
         rs2_extrinsics _extr;
-        rs2_intrinsics _intr;
+        rs2_intrinsics _raw_intr;
+        rs2_intrinsics _thermal_intr;
         rs2_dsm_params _dsm_params;
         stream_profile_interface* _from_profile = nullptr;
         stream_profile_interface* _to_profile = nullptr;
@@ -172,7 +173,8 @@ namespace ivcam2 {
         void trigger_calibration( calibration_type type );
 
         rs2_extrinsics const & get_extrinsics() const { return _extr; }
-        rs2_intrinsics const & get_intrinsics() const { return _intr; }
+        rs2_intrinsics const & get_raw_intrinsics() const { return _raw_intr; }
+        rs2_intrinsics const & get_thermal_intrinsics() const { return _thermal_intr; }
         rs2_dsm_params const & get_dsm_params() const { return _dsm_params; }
         stream_profile_interface * get_from_profile() const { return _from_profile; }
         stream_profile_interface * get_to_profile() const { return _to_profile; }

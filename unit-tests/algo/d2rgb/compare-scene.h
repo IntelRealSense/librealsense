@@ -543,7 +543,23 @@ void compare_scene( std::string const & scene_dir,
     scene_metadata md( scene_dir );
 
     algo::optimizer::settings settings;
-    read_data_from( bin_dir( scene_dir ) + "settings", &settings );
+    read_data_from( join( bin_dir( scene_dir ), "settings" ), &settings );
+
+    auto scale = 1.;
+    if (read_thermal_data(scene_dir,
+        settings.hum_temp, scale))
+    {
+        ci.rgb.fx *= scale;
+        ci.rgb.fy *= scale;
+
+        auto filename = bin_file( "Kthermal_rgb", 9, 1, "double_00" ) + ".bin";
+        TRACE( "Comparing " << filename << " ..." );
+        CHECK( compare_to_bin_file( algo::k_matrix( ci.rgb ), scene_dir, filename ) );
+    }
+    else
+    {
+        TRACE( "No thermal data found" );
+    }
 
     algo::optimizer cal( settings, debug_mode );
     init_algo( cal,
@@ -585,16 +601,17 @@ void compare_scene( std::string const & scene_dir,
     CHECK( is_scene_valid == matlab_scene_valid );
     if( debug_mode )
     {
-        bool spread = read_from< uint8_t >( bin_dir( scene_dir ) + "DirSpread_1x1_uint8_00.bin" );
+        bool spread
+            = read_from< uint8_t >( join( bin_dir( scene_dir ), "DirSpread_1x1_uint8_00.bin" ) );
         CHECK( data.edges_dir_spread == spread );
-        bool rgbEdgesSpread
-            = read_from< uint8_t >( bin_dir( scene_dir ) + "rgbEdgesSpread_1x1_uint8_00.bin" );
+        bool rgbEdgesSpread = read_from< uint8_t >(
+            join( bin_dir( scene_dir ), "rgbEdgesSpread_1x1_uint8_00.bin" ) );
         CHECK( data.rgb_spatial_spread == rgbEdgesSpread );
-        bool depthEdgesSpread
-            = read_from< uint8_t >( bin_dir( scene_dir ) + "depthEdgesSpread_1x1_uint8_00.bin" );
+        bool depthEdgesSpread = read_from< uint8_t >(
+            join( bin_dir( scene_dir ), "depthEdgesSpread_1x1_uint8_00.bin" ) );
         CHECK( data.depth_spatial_spread == depthEdgesSpread );
         bool isMovementFromLastSuccess = read_from< uint8_t >(
-            bin_dir( scene_dir ) + "isMovementFromLastSuccess_1x1_uint8_00.bin" );
+            join( bin_dir( scene_dir ), "isMovementFromLastSuccess_1x1_uint8_00.bin" ) );
         CHECK( data.is_movement_from_last_success == isMovementFromLastSuccess );
     }
     if( stats )
@@ -1281,7 +1298,7 @@ void compare_scene( std::string const & scene_dir,
     TRACE( "Comparing " << filename << " ..." );
     algo::calib matlab_calib;
     double matlab_cost = 0;
-    CHECK( get_calib_from_raw_data( matlab_calib, matlab_cost, scene_dir, filename ) );
+    CHECK( get_calib_and_cost_from_raw_data( matlab_calib, matlab_cost, scene_dir, filename ) );
     CHECK( compare_calib( new_calibration, cost, matlab_calib, matlab_cost ) );
     new_calibration.copy_coefs( matlab_calib );
     if( stats )
@@ -1293,7 +1310,7 @@ void compare_scene( std::string const & scene_dir,
 
 #if 1
     auto vertices = read_vector_from< algo::double3 >(
-        bin_file( bin_dir( scene_dir ) + "end_vertices", 3, md.n_edges, "double_00.bin" ) );
+        bin_file( join( bin_dir( scene_dir ), "end_vertices" ), 3, md.n_edges, "double_00.bin" ) );
 
     if( stats )
     {
@@ -1313,7 +1330,7 @@ void compare_scene( std::string const & scene_dir,
 
     algo::p_matrix p_mat;
 
-    auto p_vec = read_vector_from< double >( bin_file( bin_dir( scene_dir ) + "end_p_matrix",
+    auto p_vec = read_vector_from< double >( bin_file( join( bin_dir( scene_dir ), "end_p_matrix" ),
                                                        num_of_p_matrix_elements,
                                                        1,
                                                        "double_00.bin" ) );
@@ -1323,7 +1340,7 @@ void compare_scene( std::string const & scene_dir,
     algo::p_matrix p_mat_opt;
 
     auto p_vec_opt
-        = read_vector_from< double >( bin_file( bin_dir( scene_dir ) + "end_p_matrix_opt",
+        = read_vector_from< double >( bin_file( join( bin_dir( scene_dir ), "end_p_matrix_opt" ),
                                                 num_of_p_matrix_elements,
                                                 1,
                                                 "double_00.bin" ) );
@@ -1370,7 +1387,7 @@ void compare_scene( std::string const & scene_dir,
 
     // svm - remove xyMovementFromOrigin because its still not implemented
     auto svm_features_mat = read_vector_from< double >(
-        bin_file( bin_dir( scene_dir ) + "svm_featuresMat", 10, 1, "double_00.bin" ) );
+        bin_file( join( bin_dir( scene_dir ), "svm_featuresMat" ), 10, 1, "double_00.bin" ) );
 
     svm_features_mat.erase( svm_features_mat.begin() + 7 );
     auto svm_mat = svm_features;

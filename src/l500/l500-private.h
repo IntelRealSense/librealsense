@@ -87,6 +87,18 @@ namespace librealsense
         };
 #pragma pack(pop)
 
+        static std::vector< byte >
+        read_fw_table_raw( const hw_monitor & hwm, int table_id, hwmon_response & response )
+        {
+            std::vector< byte > res;
+            command cmd( fw_cmd::READ_TABLE, table_id );
+            auto data = hwm.send( cmd, &response );
+
+            res.assign( data.data(), data.data() + data.size() );
+
+            return res;
+        }
+
         // Read a table from firmware and, if FW says the table is empty, optionally initialize it
         // using your own code...
         template< typename T >
@@ -95,9 +107,8 @@ namespace librealsense
                             table_header * pheader = nullptr,
                             std::function< void() > init = nullptr )
         {
-            command cmd( fw_cmd::READ_TABLE, table_id );
             hwmon_response response;
-            std::vector<byte> data = hwm.send( cmd, &response );
+            std::vector< byte > data = read_fw_table_raw( hwm, table_id, response );
             size_t expected_size = sizeof( table_header ) + sizeof( T );
             switch( response )
             {
@@ -124,6 +135,7 @@ namespace librealsense
                 
             default:
                 LOG_DEBUG( "Failed to read FW table 0x" << std::hex << table_id );
+                command cmd( fw_cmd::READ_TABLE, table_id );
                 throw invalid_value_exception( hwmon_error_string( cmd, response ) );
             }
         }
