@@ -13,14 +13,13 @@ config.enable_stream(rs.stream.depth, W, H, rs.format.z16, 30)
 config.enable_stream(rs.stream.color, W, H, rs.format.bgr8, 30)
 
 
-print("[INFO] Starting streaming...")
+print("[INFO] start streaming...")
 pipeline.start(config)
-print("[INFO] Camera ready.")
 
 aligned_stream = rs.align(rs.stream.color) # alignment between color and depth
 point_cloud = rs.pointcloud()
 
-print("[INFO] Loading model...")
+print("[INFO] loading model...")
 PATH_TO_CKPT = r"frozen_inference_graph.pb"
 # download model from: https://github.com/opencv/opencv/wiki/TensorFlow-Object-Detection-API#run-network-in-opencv
 
@@ -45,8 +44,6 @@ detection_scores = detection_graph.get_tensor_by_name('detection_scores:0')
 detection_classes = detection_graph.get_tensor_by_name('detection_classes:0')
 # Number of objects detected
 num_detections = detection_graph.get_tensor_by_name('num_detections:0')
-# code source of tensorflow model loading: https://www.geeksforgeeks.org/ml-training-image-classifier-using-tensorflow-object-detection-api/
-print("[INFO] Model loaded")
 
 while True:
     frames = pipeline.wait_for_frames()
@@ -69,39 +66,51 @@ while True:
     boxes = np.squeeze(boxes)
     classes = np.squeeze(classes).astype(np.int32)
     scores = np.squeeze(scores)
-    
+
+    print("[INFO] drawing bounding box on detected objects...")
+    print("[INFO] each detected object has a unique color")
+
     for idx in range(int(num)):
         class_ = classes[idx]
         score = scores[idx]
         box = boxes[idx]
+        print(" [DEBUG] class : ", class_, "idx : ", idx, "num : ", num)
 
         if score > 0.8 and class_ == 1: # 1 for human
             left = box[1] * W
             top = box[0] * H
             right = box[3] * W
             bottom = box[2] * H
-            p1 = (int(left), int(top))
-            p2 = (int(right), int(bottom))
+
+            width = right - left
+            height = bottom - top
+            bbox = (int(left), int(top), int(width), int(height))
+            p1 = (int(bbox[0]), int(bbox[1]))
+            p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
             # draw box
             cv2.rectangle(color_image, p1, p2, (255,0,0), 2, 1)
 
             # x,y,z of bounding box
-            obj_points = verts[int(left):int(top), int(right):int(bottom)].reshape(-1, 3)
+            obj_points = verts[int(bbox[1]):int(bbox[1] + bbox[3]), int(bbox[0]):int(bbox[0] + bbox[2])].reshape(-1, 3)
             zs = obj_points[:, 2]
-            ys = obj_points[:, 1]
 
             z = np.median(zs)
 
-            ys = np.delete(ys, np.where((zs < z - 1) | (zs > z + 1)))  # take only y for close z to prevent including background
+            ys = obj_points[:, 1]
+            ys = np.delete(ys, np.where(
+                (zs < z - 1) | (zs > z + 1)))  # take only y for close z to prevent including background
 
             my = np.amin(ys, initial=1)
             My = np.amax(ys, initial=-1)
 
-            height = (My - my)
-            height_txt = "{:.2f}[m]".format(height)
+            height = (My - my)  # add next to rectangle print of height using cv library
+            height = float("{:.2f}".format(height))
+            print("[INFO] object height is: ", height, "[m]")
+            height_txt = str(height) + "[m]"
 
+            # Write some Text
             font = cv2.FONT_HERSHEY_SIMPLEX
-            bottomLeftCornerOfText = (left, top + 20)
+            bottomLeftCornerOfText = (p1[0], p1[1] + 20)
             fontScale = 1
             fontColor = (255, 255, 255)
             lineType = 2
