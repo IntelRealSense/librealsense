@@ -30,29 +30,10 @@ namespace librealsense
         }
     }
 
-    void emitter_option::set(float value)
-    {
-        if (_ep.supports_option(RS2_OPTION_HDR_ENABLED) && _ep.get_option(RS2_OPTION_HDR_ENABLED).query())
-            LOG_WARNING("Emitter state cannot be changed while HDR is active");
-        else
-            uvc_xu_option<uint8_t>::set(value);
-    }
-
     emitter_option::emitter_option(uvc_sensor& ep)
         : uvc_xu_option(ep, ds::depth_xu, ds::DS5_DEPTH_EMITTER_ENABLED,
                         "Emitter select, 0-disable all emitters, 1-enable laser, 2-enable laser auto (opt), 3-enable LED (opt)")
     {}
-
-    void laser_power_option::set(float value)
-    {
-        if (_ep.supports_option(RS2_OPTION_HDR_ENABLED) && _ep.get_option(RS2_OPTION_HDR_ENABLED).query())
-            LOG_WARNING("Laser power cannot be changed while HDR is active");
-        else
-            uvc_xu_option<uint16_t>::set(value);
-    }
-
-    laser_power_option::laser_power_option(uvc_sensor& ep, platform::extension_unit xu, uint8_t id, std::string description)
-        : uvc_xu_option<uint16_t>(ep, xu, id, description) {}
 
     float asic_and_projector_temperature_options::query() const
     {
@@ -521,24 +502,18 @@ namespace librealsense
 
     void alternating_emitter_option::set(float value)
     {
-        if (_sensor && _sensor->supports_option(RS2_OPTION_HDR_ENABLED) && 
-            _sensor->get_option(RS2_OPTION_HDR_ENABLED).query())
-            LOG_WARNING("Emitter ON/OFF state cannot be changed while HDR is active");
-        else
-        {
-            std::vector<uint8_t> pattern{};
+        std::vector<uint8_t> pattern{};
 
-            if (static_cast<int>(value))
-                if (_is_fw_version_using_id)
-                    pattern = ds::alternating_emitter_pattern;
-                else
-                    pattern = ds::alternating_emitter_pattern_with_name;
+        if (static_cast<int>(value))
+            if (_is_fw_version_using_id)
+                pattern = ds::alternating_emitter_pattern;
+            else
+                pattern = ds::alternating_emitter_pattern_with_name;
 
-            command cmd(ds::SETSUBPRESET, static_cast<int>(pattern.size()));
-            cmd.data = pattern;
-            auto res = _hwm.send(cmd);
-            _record_action(*this);
-        }
+        command cmd(ds::SETSUBPRESET, static_cast<int>(pattern.size()));
+        cmd.data = pattern;
+        auto res = _hwm.send(cmd);
+        _record_action(*this);
     }
 
     float alternating_emitter_option::query() const
