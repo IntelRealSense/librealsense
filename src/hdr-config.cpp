@@ -249,6 +249,9 @@ namespace librealsense
                 if (_use_workaround)
                 {
                     try {
+                        // the following statement is needed in order to get/set the UVC exposure 
+                        // instead of one of the hdr's configuration exposure
+                        set_sequence_index(0.f);
                         _pre_hdr_exposure = _sensor->get_option(RS2_OPTION_EXPOSURE).query();
                         _sensor->get_option(RS2_OPTION_EXPOSURE).set(PRE_ENABLE_HDR_EXPOSURE);
                     } catch (...) {
@@ -275,6 +278,9 @@ namespace librealsense
                 if (_pre_hdr_exposure >= _exposure_range.min && _pre_hdr_exposure <= _exposure_range.max)
                 {
                     try {
+                        // the following statement is needed in order to get the UVC exposure 
+                        // instead of one of the hdr's configuration exposure
+                        set_sequence_index(0.f);
                         _sensor->get_option(RS2_OPTION_EXPOSURE).set(_pre_hdr_exposure);
                     } catch (...) {
                         LOG_WARNING("HDR failed to restore manual exposure");
