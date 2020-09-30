@@ -204,9 +204,9 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
 
 void depth_to_rgb_calibration::debug_calibration( char const * prefix )
 {
-    AC_LOG( INFO, AC_F_PREC << "    " << prefix << "   th" << _thermal_intr );
-    AC_LOG( INFO, AC_F_PREC << "    " << prefix << "  raw" << _raw_intr );
-    AC_LOG( INFO, AC_F_PREC << "    " << prefix << " extr" << _extr );
-    AC_LOG( INFO, AC_F_PREC << "    " << prefix << "  dsm" << _dsm_params );
+    AC_LOG( DEBUG, AC_F_PREC << "    " << prefix << "   th" << _thermal_intr );
+    AC_LOG( DEBUG, AC_F_PREC << "    " << prefix << "  raw" << _raw_intr );
+    AC_LOG( DEBUG, AC_F_PREC << "    " << prefix << " extr" << _extr );
+    AC_LOG( DEBUG, AC_F_PREC << "    " << prefix << "  dsm" << _dsm_params );
 }
 
