@@ -18,9 +18,6 @@ TEST_CASE( "HDR Config - changing only exposure", "[HDR]" ) {
     rs2::device dev = devices_list[0];
     rs2::depth_sensor depth_sensor = dev.query_sensors().front();
 
-    //depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
-    //REQUIRE(depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE) == 0.f);
-
     depth_sensor.set_option(RS2_OPTION_SEQUENCE_SIZE, 2);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_SEQUENCE_SIZE) == 2.f);
 
@@ -36,9 +33,6 @@ TEST_CASE( "HDR Config - changing only exposure", "[HDR]" ) {
     depth_sensor.set_option(RS2_OPTION_GAIN, second_gain);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_GAIN) == second_gain);
 
-    depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, 0);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_SEQUENCE_ID) == 0.f);
-
     depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 1.f);
 
@@ -49,18 +43,27 @@ TEST_CASE( "HDR Config - changing only exposure", "[HDR]" ) {
     rs2::pipeline pipe;
     pipe.start(cfg);
 
-    int iterations = 0;
-    float pair_fc_gain = first_gain;
-    float odd_fc_gain = second_gain;
-    while (dev) // Application still alive?
+    int iteration = 0;
+    while (dev && ++iteration < 100) // Application still alive?
     {
         rs2::frameset data = pipe.wait_for_frames();
-
         rs2::depth_frame out_depth_frame = data.get_depth_frame();
+
+        if (iteration < 3)
+            continue;
+
+        REQUIRE(out_depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE));
+        REQUIRE(out_depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID));
+
         long long frame_counter = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
         long long frame_gain = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_GAIN_LEVEL);
         auto seq_id = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
-        std::cout << "seq id = " << seq_id << ", gain" << frame_gain << std::endl;
+        std::cout << "seq id = " << seq_id << ", gain = " << frame_gain << std::endl;
+
+        if (seq_id == 0)
+            REQUIRE(frame_gain == first_gain);
+        else
+            REQUIRE(frame_gain == second_gain);
     }
 
 }

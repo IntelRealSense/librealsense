@@ -38,9 +38,6 @@ TEST_CASE("HDR Config - changing only exposure", "[HDR]") {
     depth_sensor.set_option(RS2_OPTION_EXPOSURE, second_exposure);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_EXPOSURE) == second_exposure);
 
-    depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, 0);
-    REQUIRE(depth_sensor.get_option(RS2_OPTION_SEQUENCE_ID) == 0.f);
-
     depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
     REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 1.f);
 
@@ -52,13 +49,14 @@ TEST_CASE("HDR Config - changing only exposure", "[HDR]") {
     pipe.start(cfg);
     std::cout << "pipe started" << std::endl;
 
-    /*int iterations = 0;
-    float pair_fc_exposure = first_exposure;
-    float odd_fc_exposure = second_exposure;*/
-    while (dev) // Application still alive?
+    int iteration = 0;
+    while (dev && ++iteration < 100) // Application still alive?
     {
         rs2::frameset data = pipe.wait_for_frames();
         rs2::depth_frame out_depth_frame = data.get_depth_frame();
+
+        if (iteration < 3)
+            continue;
 
         REQUIRE(out_depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE));
         REQUIRE(out_depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID));
@@ -67,6 +65,11 @@ TEST_CASE("HDR Config - changing only exposure", "[HDR]") {
         long long frame_exposure = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
         auto seq_id = out_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
         std::cout << "seq id = " << seq_id << ", exposure = " << frame_exposure << std::endl;
+
+        if (seq_id == 0)
+            REQUIRE(frame_exposure == first_exposure);
+        else
+            REQUIRE(frame_exposure == second_exposure);
     }
 }
 
