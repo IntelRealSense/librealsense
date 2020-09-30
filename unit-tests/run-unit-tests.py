@@ -160,44 +160,7 @@ def cat( filename ):
         for line in remove_newlines( file ):
             out( line )
 
-
-logdir = dir + '/unit-tests'
-os.makedirs( logdir, exist_ok = True );
-n_tests = 0
-
-# In Linux, the build targets are located elsewhere than on Windows
-# NOTE: WSL will read as 'Linux' but the build is Windows-based!
-system = platform.system()
-if system == 'Linux'  and  "microsoft" not in platform.uname()[3].lower():
-    linux = True
-else:
-    linux = False
-
-# Go over all the tests from a "manifest" we take from the result of the last CMake
-# run (rather than, for example, looking for test-* in the build-directory):
-if linux:
-    manifestfile = dir + '/CMakeFiles/TargetDirectories.txt'
-else:
-    manifestfile = dir + '/../CMakeFiles/TargetDirectories.txt'
-for manifest_ctx in grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir$)', manifestfile ):
-
-    testdir = manifest_ctx['match'].group(0)                    # "log/internal/test-all"
-    testparent = os.path.dirname(testdir)                       # "log/internal"
-    testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename(testdir)[5:]   # "test-log-internal-all"
-    if linux:
-        exe = dir + '/unit-tests/build/' + testdir + '/' + testname
-    else:
-        exe = dir + '/' + testname + '.exe'
-    log = logdir + '/' + testname + '.log'
-
-    progress( testname, '>', log, '...' )
-    n_tests += 1
-    try:
-        run( [exe], stdout=log )
-    except FileNotFoundError:
-        error( red + testname + reset + ': executable not found! (' + exe + ')' )
-        continue
-
+def check_log(log):
     # Normal logs are expected to have in last line:
     #     "All tests passed (11 assertions in 1 test case)"
     # Tests that have failures, however, will show:
@@ -225,6 +188,79 @@ for manifest_ctx in grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir
                 out( '<<<' )
             else:
                 error( red + testname + reset + ': ' + desc + '; see ' + log )
+
+logdir = dir + '/unit-tests'
+os.makedirs( logdir, exist_ok = True );
+n_tests = 0
+
+# In Linux, the build targets are located elsewhere than on Windows
+# NOTE: WSL will read as 'Linux' but the build is Windows-based!
+system = platform.system()
+if system == 'Linux'  and  "microsoft" not in platform.uname()[3].lower():
+    linux = True
+else:
+    linux = False
+
+# Go over all the tests from a "manifest" we take from the result of the last CMake
+# run (rather than, for example, looking for test-* in the build-directory):
+if linux:
+    manifestfile = dir + '/CMakeFiles/TargetDirectories.txt'
+else:
+    manifestfile = dir + '/../CMakeFiles/TargetDirectories.txt'
+for manifest_ctx in grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir$)', manifestfile ):
+    testdir = manifest_ctx['match'].group(0)                    # "log/internal/test-all"
+    testparent = os.path.dirname(testdir)                       # "log/internal"
+    if testparent != "":
+        testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename(testdir)[5:]    # "test-log-internal-all"
+    else:
+        testname = 'test-' + os.path.basename(testdir)[5:] # no parent folder so we get test-all
+    if linux:
+        exe = dir + '/unit-tests/build/' + testdir + '/' + testname
+    else:
+        exe = dir + '/' + testname + '.exe'
+    log = logdir + '/' + testname + '.log'
+
+    progress( testname, '>', log, '...' )
+    n_tests += 1
+    try:
+        run( [exe], stdout=log )
+    except FileNotFoundError:
+        error( red + testname + reset + ': executable not found! (' + exe + ')' )
+        continue
+    
+    check_log(log)
+    
+
+# adding current directory (librealsense/build/RelWithDebInfo) to python search path
+# so that python tests can find pyrealsense2.pyd
+abs = os.path.abspath(dir)
+abs = abs.replace('\\' , '/')
+os.environ["PYTHONPATH"] = abs
+
+#relative location of unit-test folder containing python tests
+unit_tests_dir = "../../unit-tests"
+
+for py_test in find(unit_tests_dir, '(^|/)test-.*\.py'):
+    
+    testdir = py_test[:-3] # "log/internal/test-all"  <-  "log/internal/test-all.py"
+    testparent = os.path.dirname(testdir) # same as for cpp files
+    if testparent != "":
+        testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename(testdir)[5:]
+    else:
+        testname = 'test-' + os.path.basename(testdir)[5:]
+    
+    log = logdir + '/' + testname + '.log'
+
+    progress( testname, '>', log, '...' )
+    n_tests += 1
+    cmd = "python " + unit_tests_dir + '/' + py_test
+    try:
+        run( cmd, stdout=log )
+    except FileNotFoundError:
+        error( red + testname + reset + ': file not found! (' + py_test + ')' )
+        continue
+     
+    check_log(log)
 
 progress()
 if n_errors:
