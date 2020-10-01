@@ -843,6 +843,21 @@ inline std::shared_ptr<rs2::device> do_with_waiting_for_camera_connection(rs2::c
     return result;
 }
 
+inline rs2::depth_sensor restart_first_device_and_return_depth_sensor(const rs2::context& ctx, const rs2::device_list& devices_list)
+{
+    rs2::device dev = devices_list[0];
+    std::string serial;
+    REQUIRE_NOTHROW(serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+    //forcing hardware reset to simulate device disconnection
+    auto shared_dev = std::make_shared<rs2::device>(devices_list.front());
+    shared_dev = do_with_waiting_for_camera_connection(ctx, shared_dev, serial, [&]()
+        {
+            shared_dev->hardware_reset();
+        });
+    rs2::depth_sensor depth_sensor = dev.query_sensors().front();
+    return depth_sensor;
+}
+
 
 enum special_folder
 {
