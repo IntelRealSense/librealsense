@@ -196,6 +196,7 @@ namespace librealsense
         register_stream_to_extrinsic_group(*_color_stream, 0);
 
         _thermal_table = [this]() {
+
             hwmon_response response;
             auto data = read_fw_table_raw( *_hw_monitor,
                                            algo::thermal_loop::l500::thermal_calibration_table::id,
@@ -211,6 +212,8 @@ namespace librealsense
                                 << algo::thermal_loop::l500::thermal_calibration_table::id );
             }
 
+            if( data.size() > sizeof( table_header ))
+                data.erase( data.begin(), data.begin() + sizeof( table_header ) );
             return algo::thermal_loop::l500::thermal_calibration_table{ data };
         };
 

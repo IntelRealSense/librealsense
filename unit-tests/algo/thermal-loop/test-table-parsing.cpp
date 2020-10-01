@@ -40,7 +40,6 @@ TEST_CASE( "build_raw_data", "[thermal-loop]" )
     auto raw_data = syntetic_table.build_raw_data();
    
     std::vector< byte > raw;
-    raw.resize( sizeof( thermal_calibration_table::thermal_table_header ), 0 );
     
     raw.insert( raw.end(),
                 (byte *)&( syntetic_table._header.min_temp ),
