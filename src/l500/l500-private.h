@@ -402,7 +402,7 @@ namespace librealsense
 
             explicit l500_temperature_options( hw_monitor * hw_monitor,
                                                rs2_option opt,
-                                               std::string description );
+                                               const std::string& description );
 
         private:
             rs2_option _option;

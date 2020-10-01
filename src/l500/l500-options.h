@@ -39,13 +39,14 @@ namespace librealsense
         bool is_enabled() const override { return true; }
 
 
-    const char * get_description() const override { return _description.c_str(); }
+        const char * get_description() const override { return _description.c_str(); }
 
         void enable_recording(std::function<void(const option&)> recording_action) override;
-    l500_hw_options( hw_monitor * hw_monitor,
-                     l500_control type,
-                     option * resolution,
-                     std::string description );
+
+        l500_hw_options( hw_monitor * hw_monitor,
+                         l500_control type,
+                         option * resolution,
+                         const std::string& description );
 
 
     private:

@@ -29,7 +29,7 @@ namespace librealsense
     l500_hw_options::l500_hw_options( hw_monitor * hw_monitor,
                                       l500_control type,
                                       option * resolution,
-                                      std::string description )
+                                      const std::string & description )
         :_hw_monitor(hw_monitor),
         _type(type), _resolution( resolution )
         , _description( description )
@@ -153,8 +153,7 @@ namespace librealsense
                 _hw_monitor.get(),
                 confidence,
                 resolution_option.get(),
-                "The confidence level threshold used by the Depth algorithm pipe to set whether a "
-                "pixel will get a valid range or will be marked with invalid range" );
+                "The confidence level threshold use to mark a pixel as valid by the depth algorithm" );
 
             _hw_options[RS2_OPTION_LASER_POWER] = register_option< l500_hw_options,
                                                                    hw_monitor *,
@@ -176,7 +175,7 @@ namespace librealsense
                                                   _hw_monitor.get(),
                                                   min_distance,
                                                   resolution_option.get(),
-                                                  "Minimal distance to the target" );
+                                                  "Minimal distance to the target (mm)" );
 
             _hw_options[RS2_OPTION_INVALIDATION_BYPASS]
                 = register_option< l500_hw_options,
@@ -187,7 +186,7 @@ namespace librealsense
                                                   _hw_monitor.get(),
                                                   invalidation_bypass,
                                                   resolution_option.get(),
-                                                  "Enable\disable pixel invalidation" );
+                                                  "Enable/disable pixel invalidation" );
 
             _ambient_light = register_option<uvc_xu_option<int>, uvc_sensor&, platform::extension_unit, uint8_t, std::string, const std::map<float, std::string>& >
                 (RS2_OPTION_AMBIENT_LIGHT, raw_depth_sensor, ivcam2::depth_xu, ivcam2::L500_AMBIENT,
