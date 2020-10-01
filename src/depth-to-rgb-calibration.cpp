@@ -50,7 +50,7 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
         AC_LOG( DEBUG, "Not using last successfully-calibrated scene: it's of a different resolution" );
 
     auto scale = thermal_table.get_thermal_scale( settings.hum_temp );
-    AC_LOG( DEBUG, "    scaling K_rgb by " << scale );
+    AC_LOG( DEBUG, "    scaling K_rgb by {scale}" << scale << " [TH]" );
     _thermal_intr.fx = float( _thermal_intr.fx * scale );
     _thermal_intr.fy = float( _thermal_intr.fy * scale );
 
