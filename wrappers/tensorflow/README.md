@@ -194,10 +194,14 @@ Additional information on Unet:
 - [github.com/zhixuhao/unet](https://github.com/zhixuhao/unet) - Open-source implementation of Unet architecture with Keras 
 - [Introduction to image segmentation with Unet](https://towardsdatascience.com/understanding-semantic-segmentation-with-unet-6be4f42d4b47)
 
-Unet offers significant advantages compared to classic autoencoder architecture, improving edge fidelity. (TODO: picture comparison?)
+Unet offers significant advantages compared to classic autoencoder architecture, improving edge fidelity (see image below).
 		
 ![foxdemo](images/Unet.PNG)
 ###### The image is taken from the article reffered above.
+
+Edge comparison between Unet and basic convolution network:
+
+![foxdemo](images/Unet_vs_Basic.PNG)
 
 In the left pathway of Unet, the number of filters (features) increase as we go down, it means that it becomes
 very good at detecting more and more features, the first few layers of a convolution network capture a very small semantic information and lower level
