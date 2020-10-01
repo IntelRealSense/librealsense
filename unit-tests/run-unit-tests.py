@@ -213,7 +213,7 @@ for manifest_ctx in grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir
     if testparent != "":
         testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename(testdir)[5:]    # "test-log-internal-all"
     else:
-        testname = 'test-' + os.path.basename(testdir)[5:] # no parent folder so we get test-all
+        testname = 'test-' + os.path.basename(testdir)[5:]      # no parent folder so we get "test-all"
     if linux:
         exe = dir + '/unit-tests/build/' + testdir + '/' + testname
     else:
@@ -231,19 +231,18 @@ for manifest_ctx in grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir
     check_log(log)
     
 
-# adding current directory (librealsense/build/RelWithDebInfo) to python search path
-# so that python tests can find pyrealsense2.pyd
+# adding given directory to python search path so that python tests can find pyrealsense2.pyd
 abs = os.path.abspath(dir)
 abs = abs.replace('\\' , '/')
 os.environ["PYTHONPATH"] = abs
 
-#relative location of unit-test folder containing python tests
+# relative path to unit-test folder containing python tests
 unit_tests_dir = "../../unit-tests"
 
 for py_test in find(unit_tests_dir, '(^|/)test-.*\.py'):
     
-    testdir = py_test[:-3] # "log/internal/test-all"  <-  "log/internal/test-all.py"
-    testparent = os.path.dirname(testdir) # same as for cpp files
+    testdir = py_test[:-3]                         # "log/internal/test-all"  <-  "log/internal/test-all.py"
+    testparent = os.path.dirname(testdir)          # same as for cpp files
     if testparent != "":
         testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename(testdir)[5:]
     else:
