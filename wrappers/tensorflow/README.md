@@ -154,6 +154,7 @@ height = (My - my)
 ```
 
 Expected output: 
+
 ![foxdemo](images/example_2.PNG)
 
 ## Part 3 - Deploying TensorFlow model using OpenCV
@@ -333,7 +334,7 @@ For prediction, both IR and depth frames are streamed.
 Expected output is the original frame and model prediction given it as an input. 
 
 
-![foxdemo](images/camera_simulation_01.PNG)
+![foxdemo](images/camera_simulation_06.PNG)
 
 ## Conclusions
 
