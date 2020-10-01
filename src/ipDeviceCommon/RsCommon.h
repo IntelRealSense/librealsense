@@ -42,6 +42,7 @@ struct IpDeviceControlData
 
 const std::string STEREO_SENSOR_NAME("Stereo Module");
 const std::string RGB_SENSOR_NAME("RGB Camera");
+const std::string L500_SENSOR_NAME("L500 Depth Sensor");
 const std::string RS_MEDIA_TYPE("RS_VIDEO");
 const std::string RS_PAYLOAD_FORMAT("RS_FORMAT");
 const int MAX_WIDTH = 1280;

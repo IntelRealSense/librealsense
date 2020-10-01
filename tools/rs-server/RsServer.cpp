@@ -96,11 +96,16 @@ struct server
             for(auto stream_profile : sensor.getStreamProfiles())
             {
                 rs2::video_stream_profile stream = stream_profile.second;
-                if(stream.format() == RS2_FORMAT_BGR8 || stream.format() == RS2_FORMAT_RGB8 || stream.format() == RS2_FORMAT_Z16 || stream.format() == RS2_FORMAT_Y8 || stream.format() == RS2_FORMAT_YUYV || stream.format() == RS2_FORMAT_UYVY)
+                if(stream.format() == RS2_FORMAT_BGR8 
+                || stream.format() == RS2_FORMAT_RGB8 
+                || stream.format() == RS2_FORMAT_Z16 
+                || stream.format() == RS2_FORMAT_Y8 
+                || stream.format() == RS2_FORMAT_YUYV 
+                || stream.format() == RS2_FORMAT_UYVY)
                 {
                     if(stream.fps() == 6)
                     {
-                        if((stream.width() == 1280 && stream.height() == 720) || (stream.width() == 640 && stream.height() == 480) || (stream.width() == 480 && stream.height() == 270) || (stream.width() == 424 && stream.height() == 240))
+                        if((stream.width() == 1280 && stream.height() == 720) || (stream.width() == 640 && stream.height() == 480)) 
                         {
                             sms->addSubsession(RsServerMediaSubsession::createNew(*env, stream, rsDevice));
 
@@ -110,7 +115,7 @@ struct server
                     }
                     else if(stream.fps() == 15 || stream.fps() == 30)
                     {
-                        if((stream.width() == 640 && stream.height() == 480) || (stream.width() == 480 && stream.height() == 270) || (stream.width() == 424 && stream.height() == 240))
+                        if((stream.width() == 1280 && stream.height() == 720) || (stream.width() == 640 && stream.height() == 480))
                         {
                             sms->addSubsession(RsServerMediaSubsession::createNew(*env, stream, rsDevice));
                             supported_stream_profiles.push_back(stream);
@@ -119,7 +124,37 @@ struct server
                     }
                     else if(stream.fps() == 60)
                     {
-                        if((stream.width() == 480 && stream.height() == 270) || (stream.width() == 424 && stream.height() == 240))
+                        if((stream.width() == 640 && stream.height() == 480))
+                        {
+                            sms->addSubsession(RsServerMediaSubsession::createNew(*env, stream, rsDevice));
+                            supported_stream_profiles.push_back(stream);
+                            continue;
+                        }
+                    }
+                    else if(stream.fps() == 10)
+                    {
+                         if(stream.format() == RS2_FORMAT_YUYV && stream.width() == 1280 && stream.height() == 720)
+                         {
+                            sms->addSubsession(RsServerMediaSubsession::createNew(*env, stream, rsDevice));
+                            supported_stream_profiles.push_back(stream);
+                            continue;
+                         }
+                    }
+                }
+                if (stream.format() == RS2_FORMAT_Z16 || stream.format() == RS2_FORMAT_Y8 )
+                {
+                    if(stream.fps() == 6 || stream.fps() == 15 || stream.fps() == 30)
+                    {
+                        if(stream.width() == 848 && stream.height() == 480)
+                        {
+                            sms->addSubsession(RsServerMediaSubsession::createNew(*env, stream, rsDevice));
+                            supported_stream_profiles.push_back(stream);
+                            continue;
+                        }
+                    }
+                    if(stream.fps() == 30 || stream.fps() == 60)
+                    {
+                        if(stream.width() == 640 && stream.height() == 360)
                         {
                             sms->addSubsession(RsServerMediaSubsession::createNew(*env, stream, rsDevice));
                             supported_stream_profiles.push_back(stream);
@@ -127,6 +162,31 @@ struct server
                         }
                     }
                 }
+                if (stream.format() == RS2_FORMAT_YUYV)
+                {
+                    if(stream.fps() == 6 || stream.fps() == 15 || stream.fps() == 30 || stream.fps() == 60)
+                    {
+                        if(stream.width() == 424 && stream.height() == 240)
+                        {
+                            sms->addSubsession(RsServerMediaSubsession::createNew(*env, stream, rsDevice));
+                            supported_stream_profiles.push_back(stream);
+                            continue;
+                        }
+                    }
+                }
+            if (stream.format() == RS2_FORMAT_Z16 || stream.format() == RS2_FORMAT_Y8 || stream.format() == RS2_FORMAT_UYVY)
+            {
+                if(stream.fps() == 6 || stream.fps() == 15 || stream.fps() == 30 || stream.fps() == 60 ||  stream.fps() == 90)
+                    {
+                        if(stream.width() == 480 && stream.height() == 270)
+                        {
+                            sms->addSubsession(RsServerMediaSubsession::createNew(*env, stream, rsDevice));
+                            supported_stream_profiles.push_back(stream);
+                            continue;
+                        }
+                    }
+            }
+
                 *env << "Ignoring stream: format: " << stream.format() << " width: " << stream.width() << " height: " << stream.height() << " fps: " << stream.fps() << "\n";
             }
 
