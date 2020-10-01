@@ -207,7 +207,9 @@ if linux:
     manifestfile = dir + '/CMakeFiles/TargetDirectories.txt'
 else:
     manifestfile = dir + '/../CMakeFiles/TargetDirectories.txt'
+
 for manifest_ctx in grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir$)', manifestfile ):
+    
     testdir = manifest_ctx['match'].group(0)                    # "log/internal/test-all"
     testparent = os.path.dirname(testdir)                       # "log/internal"
     if testparent != "":
