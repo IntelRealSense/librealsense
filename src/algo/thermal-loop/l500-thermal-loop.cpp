@@ -26,6 +26,10 @@ thermal_calibration_table::thermal_calibration_table( const std::vector< byte > 
                                   << ") does not meet expected size " << expected_size );
 
     _header = *(thermal_table_header *)data.data();
+    
+    // The table may be invalid if the unit has not gone thru calibration
+    if( ! _header.valid )
+        throw std::runtime_error( "thermal calibration table is not valid" );
 
     auto data_ptr = (thermal_bin *)( data.data() + sizeof( thermal_table_header ));
     bins.assign( data_ptr, data_ptr + resolution );

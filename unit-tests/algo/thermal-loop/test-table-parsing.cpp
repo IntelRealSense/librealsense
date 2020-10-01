@@ -18,6 +18,15 @@ TEST_CASE("parse_thermal_table", "[thermal-loop]")
     REQUIRE( original_table == table_from_raw );
 }
 
+TEST_CASE( "invalid thermal table", "[thermal-loop]" )
+{
+    auto table = create_synthetic_table();
+    table._header.valid = 0.f;
+
+    auto raw_data = table.build_raw_data();
+    REQUIRE_THROWS( thermal_calibration_table( raw_data ));
+}
+
 TEST_CASE( "data_size_too_small", "[thermal-loop]" )
 {
     auto syntetic_table = create_synthetic_table();

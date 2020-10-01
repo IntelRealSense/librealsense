@@ -49,10 +49,13 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     else if( ! last_yuy_data.empty() )
         AC_LOG( DEBUG, "Not using last successfully-calibrated scene: it's of a different resolution" );
 
-    auto scale = thermal_table.get_thermal_scale( settings.hum_temp );
-    AC_LOG( DEBUG, "    scaling K_rgb by {scale}" << scale << " [TH]" );
-    _thermal_intr.fx = float( _thermal_intr.fx * scale );
-    _thermal_intr.fy = float( _thermal_intr.fy * scale );
+    if( thermal_table.is_valid() )
+    {
+        auto scale = thermal_table.get_thermal_scale( settings.hum_temp );
+        AC_LOG( DEBUG, "    scaling K_rgb by {scale}" << scale << " [TH]" );
+        _thermal_intr.fx = float( _thermal_intr.fx * scale );
+        _thermal_intr.fy = float( _thermal_intr.fy * scale );
+    }
 
     impl::calib calibration( _thermal_intr, _extr );
 
@@ -107,9 +110,11 @@ void depth_to_rgb_calibration::write_data_to( std::string const & dir )
 {
     _algo.write_data_to( dir );
 
-    impl::write_to_file( &_raw_intr, sizeof( _raw_intr ), dir, "raw_rgb.intrinsics" );
-
-    impl::write_vector_to_file( _thermal_table.build_raw_data(), dir, "rgb_thermal_table" );
+    if( _thermal_table.is_valid() )
+    {
+        impl::write_to_file( &_raw_intr, sizeof( _raw_intr ), dir, "raw_rgb.intrinsics" );
+        impl::write_vector_to_file( _thermal_table.build_raw_data(), dir, "rgb_thermal_table" );
+    }
 }
 
 

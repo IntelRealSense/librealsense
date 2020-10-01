@@ -13,8 +13,8 @@ create_synthetic_table( const int table_size = 29, float min_temp = 0, float max
     thermal::thermal_calibration_table res;
     res._header.min_temp = min_temp;
     res._header.max_temp = max_temp;
-    res._header.reference_temp = 100;  // not used
-    res._header.valid = 1;             // not used
+    res._header.reference_temp = 35.f;
+    res._header.valid = 1.f;
     res._resolution = table_size;
     res.bins.resize( table_size );
 

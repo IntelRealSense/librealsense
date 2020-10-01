@@ -36,8 +36,8 @@ public:
     {
         float min_temp;
         float max_temp;
-        float reference_temp;  // not used
-        float valid;           // not used
+        float reference_temp;  // Reference calibration temperature (humidity sensor)
+        float valid;           // Valid table (Created in ATC && Updated in ACC)
     };
 
     // Each bin data, as it's written in the actual raw table
@@ -63,6 +63,8 @@ public:
     double get_thermal_scale( double hum_temp ) const override;
 
     std::vector< byte > build_raw_data() const override;
+
+    bool is_valid() const override { return ( bool ) _header.valid; }
 };
 #pragma pack( pop )
 
