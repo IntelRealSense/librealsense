@@ -282,10 +282,10 @@ namespace librealsense
             { temp_critical,                "Critical temperature reached" },
             { DFU_error,                    "DFU error" },
             { fall_detected,                "Fall detected stream stopped"  },
-            { ld_alarm,                     "Fatal error accrue (14)" },
-            { hard_error,                   "Fatal error accrue (15)" },
-            { ld_alarm_hard_error,          "Fatal error accrue (16)" },
-            { pzr_vbias_exceed_limit,       "Fatal error accrue (17)" },
+            { ld_alarm,                     "Fatal error occurred (14)" },
+            { hard_error,                   "Fatal error occurred (15)" },
+            { ld_alarm_hard_error,          "Fatal error occurred (16)" },
+            { pzr_vbias_exceed_limit,       "Fatal error occurred (17)" },
         };
 
 #pragma pack(push, 1)

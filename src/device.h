@@ -78,6 +78,8 @@ namespace librealsense
 
         virtual bool contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const override;
 
+        virtual void stop_activity() const;
+
     protected:
         int add_sensor(const std::shared_ptr<sensor_interface>& sensor_base);
         int assign_sensor(const std::shared_ptr<sensor_interface>& sensor_base, uint8_t idx);

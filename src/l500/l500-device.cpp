@@ -415,6 +415,9 @@ namespace librealsense
 
     void l500_device::enter_update_state() const
     {
+        // Stop all data streaming/exchange pipes with HW
+        stop_activity();
+
         try {
             LOG_INFO("entering to update state, device disconnect is expected");
             command cmd(ivcam2::DFU);

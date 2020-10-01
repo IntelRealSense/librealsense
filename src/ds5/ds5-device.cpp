@@ -121,6 +121,9 @@ namespace librealsense
 
     void ds5_device::enter_update_state() const
     {
+        // Stop all data streaming/exchange pipes with HW
+        stop_activity();
+
         try {
             LOG_INFO("entering to update state, device disconnect is expected");
             command cmd(ds::DFU);

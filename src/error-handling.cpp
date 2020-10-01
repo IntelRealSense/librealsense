@@ -47,31 +47,27 @@ namespace librealsense
          {
              try
              {
-                 auto option = _option.lock();
-                 if (option)
+
+                 auto val = static_cast<uint8_t>(_option->query());
+
+                 if (val != 0 && !_silenced)
                  {
+                     auto strong = _notifications_processor.lock();
+                     if (strong) strong->raise_notification(_decoder->decode(val));
 
-                     auto val = static_cast<uint8_t>(option->query());
-
-                     if (val != 0 && !_silenced)
+                     val = static_cast<uint8_t>(_option->query());
+                     if (val != 0)
                      {
-                         auto strong = _notifications_processor.lock();
-                         if (strong) strong->raise_notification(_decoder->decode(val));
-
-                         val = static_cast<int>(option->query());
-                         if (val != 0)
-                         {
-                             // Reading from last-error control is supposed to set it to zero in the firmware
-                             // If this is not happening there is some issue
-                             notification postcondition_failed{
-                                 RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,
-                                 0,
-                                 RS2_LOG_SEVERITY_WARN,
-                                 "Error polling loop is not behaving as expected!\nThis can indicate an issue with camera firmware or the underlying OS..."
-                             };
-                             if (strong) strong->raise_notification(postcondition_failed);
-                             _silenced = true;
-                         }
+                         // Reading from last-error control is supposed to set it to zero in the firmware
+                         // If this is not happening there is some issue
+                         notification postcondition_failed{
+                             RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,
+                             0,
+                             RS2_LOG_SEVERITY_WARN,
+                             "Error polling loop is not behaving as expected!\nThis can indicate an issue with camera firmware or the underlying OS..."
+                         };
+                         if (strong) strong->raise_notification(postcondition_failed);
+                         _silenced = true;
                      }
                  }
              }

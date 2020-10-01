@@ -224,13 +224,13 @@ void device::hardware_reset()
     throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
 }
 
-std::shared_ptr<matcher> librealsense::device::create_matcher(const frame_holder& frame) const
+std::shared_ptr<matcher> device::create_matcher(const frame_holder& frame) const
 {
 
     return std::make_shared<identity_matcher>( frame.frame->get_stream()->get_unique_id(), frame.frame->get_stream()->get_stream_type());
 }
 
-std::pair<uint32_t, rs2_extrinsics> librealsense::device::get_extrinsics(const stream_interface& stream) const
+std::pair<uint32_t, rs2_extrinsics> device::get_extrinsics(const stream_interface& stream) const
 {
     auto stream_index = stream.get_unique_id();
     auto pair = _extrinsics.at(stream_index);
@@ -243,7 +243,7 @@ std::pair<uint32_t, rs2_extrinsics> librealsense::device::get_extrinsics(const s
     return std::make_pair(pair.first, ext);
 }
 
-void librealsense::device::register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index)
+void device::register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index)
 {
     auto iter = std::find_if(_extrinsics.begin(),
                            _extrinsics.end(),
@@ -260,7 +260,7 @@ void librealsense::device::register_stream_to_extrinsic_group(const stream_inter
     }
 }
 
-std::vector<rs2_format> librealsense::device::map_supported_color_formats(rs2_format source_format)
+std::vector<rs2_format> device::map_supported_color_formats(rs2_format source_format)
 {
     // Mapping from source color format to all of the compatible target color formats.
 
@@ -280,7 +280,7 @@ std::vector<rs2_format> librealsense::device::map_supported_color_formats(rs2_fo
     return target_formats;
 }
 
-void librealsense::device::tag_profiles(stream_profiles profiles) const
+void device::tag_profiles(stream_profiles profiles) const
 {
     for (auto profile : profiles)
     {
@@ -309,7 +309,7 @@ void librealsense::device::tag_profiles(stream_profiles profiles) const
     }
 }
 
-bool librealsense::device::contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const
+bool device::contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const
 {
     if (auto vid_a = dynamic_cast<const video_stream_profile_interface*>(a))
     {
@@ -324,4 +324,49 @@ bool librealsense::device::contradicts(const stream_profile_interface* a, const 
         }
     }
     return false;
+}
+
+void device::stop_activity() const
+{
+    for (auto& sensor : _sensors)
+    {
+        auto snr_name = (sensor->supports_info(RS2_CAMERA_INFO_NAME)) ? sensor->get_info(RS2_CAMERA_INFO_NAME) : "";
+
+        // Disable asynchronous services
+        for (auto& opt : sensor->get_supported_options())
+        {
+            if (val_in_range(opt, { RS2_OPTION_GLOBAL_TIME_ENABLED, RS2_OPTION_ERROR_POLLING_ENABLED }))
+            {
+                try
+                {
+                    // enumerated options use zero or positive values
+                    if (sensor->get_option(opt).query() > 0.f)
+                        sensor->get_option(opt).set(false);
+                }
+                catch (...)
+                {
+                    LOG_ERROR("Failed to toggle off " << opt << " [" << snr_name << "]");
+                }
+            }
+        }
+
+        // Stop UVC/HID streaming
+        try
+        {
+            if (sensor->is_streaming())
+            {
+                sensor->stop();
+                sensor->close();
+            }
+        }
+        catch (const wrong_api_call_sequence_exception& exc)
+        {
+            LOG_WARNING("Out of order stop/close invocation for " << snr_name << ": " << exc.what());
+        }
+        catch (...)
+        {
+            auto snr_name = (sensor->supports_info(RS2_CAMERA_INFO_NAME)) ? sensor->get_info(RS2_CAMERA_INFO_NAME) : "";
+            LOG_ERROR("Failed to deactivate " << snr_name);
+        }
+    }
 }
