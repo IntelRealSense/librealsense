@@ -100,8 +100,12 @@ namespace librealsense
             }
         }
 
-        l500_temperature_options::l500_temperature_options(hw_monitor* hw_monitor, rs2_option opt)
-            :_hw_monitor(hw_monitor), _option(opt)
+        l500_temperature_options::l500_temperature_options( hw_monitor * hw_monitor,
+                                                            rs2_option opt,
+                                                            std::string description )
+            : _hw_monitor( hw_monitor )
+            , _option( opt )
+            , _description( description )
         {
         }
 
