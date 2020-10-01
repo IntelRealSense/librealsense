@@ -86,14 +86,16 @@ def convert_image(i):
     M = np.max(i)
     i = np.divide(i, np.array([M - m], dtype=np.float)).astype(np.float)
     i = (i - m).astype(np.float)
-    i8 = (255.0 - i * 255.0).astype(np.uint8)
+    i8 = (i * 255.0).astype(np.uint8)
     if i8.ndim == 3:
         i8 = cv2.cvtColor(i8, cv2.COLOR_BGRA2GRAY)
     i8 = cv2.equalizeHist(i8)
     colorized = cv2.applyColorMap(i8, cv2.COLORMAP_JET)
     colorized[i8 == int(m)] = 0
     font = cv2.FONT_HERSHEY_SIMPLEX
-    colorized = cv2.putText(colorized, str(m) + " .. " + str(M), (20, 50), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+    m = float("{:.2f}".format(m))
+    M = float("{:.2f}".format(M))
+    colorized = cv2.putText(colorized, str(m) + " .. " + str(M) + "[m]", (20, 50), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
     return colorized
 
 
@@ -130,6 +132,11 @@ try:
         t1 = time.perf_counter()
         depth_image = np.asanyarray(c.process(depth_frame).get_data())
         predicted_image = convert_image(predicted_image)
+
+        red = depth_image[:, :, 2].copy()
+        blue = depth_image[:, :, 0].copy()
+        depth_image[:, :, 0] = red
+        depth_image[:, :, 2] = blue
         images = np.hstack((depth_image, predicted_image))
 
         # Show images
@@ -144,3 +151,4 @@ finally:
 
     # Stop streaming
     pipeline.stop()
+    
