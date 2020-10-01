@@ -1298,7 +1298,8 @@ namespace rs2
             size_t index = 0;
             while (ppf.resulting_queue.poll_for_frame(&f) && ++index < ppf.resulting_queue_max_size)
             {
-                if(streams.find( f.get_profile().unique_id() ) != streams.end())
+                if (streams.find(f.get_profile().unique_id()) != streams.end() ||
+                    streams.find(streams_origin[f.get_profile().unique_id()]) != streams.end())
                     last_frames[f.get_profile().unique_id()] = f;
             }
 
