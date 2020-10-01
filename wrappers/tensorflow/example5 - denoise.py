@@ -151,4 +151,3 @@ finally:
 
     # Stop streaming
     pipeline.stop()
-    
