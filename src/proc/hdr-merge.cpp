@@ -6,7 +6,9 @@
 namespace librealsense
 {
     hdr_merge::hdr_merge()
-        : generic_processing_block("HDR Merge")
+        : generic_processing_block("HDR Merge"),
+        _previous_depth_frame_counter(0),
+        _frames_without_requested_metadata_counter(0)
     {}
 
     // processing only framesets
@@ -23,15 +25,37 @@ namespace librealsense
         if (!depth_frame)
             return false;
 
-        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE))
+        reset_warning_counter_on_pipe_restart(depth_frame);
+
+        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE) ||
+            !depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID))
+        {
+            // warning message will be sent to user if more than NUMBER_OF_FRAMES_WITHOUT_METADATA_FOR_WARNING
+            // frames are received without the needed metadata params
+            if (_frames_without_requested_metadata_counter < NUMBER_OF_FRAMES_WITHOUT_METADATA_FOR_WARNING)
+            {
+                if (++_frames_without_requested_metadata_counter == NUMBER_OF_FRAMES_WITHOUT_METADATA_FOR_WARNING)
+                    LOG_WARNING("HDR Merge filter cannot process frames because relevant metadata params are missing");
+            }
+
             return false;
-        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID))
-            return false;
-        auto depth_seq_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE);
+        }
+
+        auto depth_seq_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE);
         if (depth_seq_size != 2)
             return false;
 
         return true;
+    }
+
+    void hdr_merge::reset_warning_counter_on_pipe_restart(const rs2::depth_frame& depth_frame)
+    {
+        auto depth_frame_counter = depth_frame.get_frame_number();
+
+        if (depth_frame_counter < _previous_depth_frame_counter)
+            _frames_without_requested_metadata_counter = 0;
+
+        _previous_depth_frame_counter = depth_frame_counter;
     }
 
 
@@ -51,7 +75,7 @@ namespace librealsense
         auto depth_frame = fs.get_depth_frame();
 
         // 2. add the frameset to vector of framesets
-        auto depth_seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
+        auto depth_seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
 
         // condition added to ensure that frames are saved in the right order
         // to prevent for example the saving of frame with sequence id 1 before
@@ -107,9 +131,11 @@ namespace librealsense
             auto merged_d_profile = _depth_merged_frame.get_profile().as<rs2::video_stream_profile>();
             auto new_d_profile = f.get_profile().as<rs2::video_stream_profile>();
 
-            if ((depth_merged_frame_counter > input_frame_counter) ||
-                (merged_d_profile.width() != new_d_profile.width()) ||
-                (merged_d_profile.height() != new_d_profile.height()))
+            bool restart_pipe_detected = (depth_merged_frame_counter > input_frame_counter);
+            bool resolution_change_detected = (merged_d_profile.width() != new_d_profile.width()) ||
+                (merged_d_profile.height() != new_d_profile.height());
+
+            if (restart_pipe_detected || resolution_change_detected)
             {
                 _depth_merged_frame = nullptr;
             }
@@ -141,7 +167,7 @@ namespace librealsense
         return true;
     }
 
-    rs2::frame hdr_merge::merging_algorithm(const rs2::frame_source& source, const rs2::frameset first_fs, const rs2::frameset second_fs, const bool use_ir)
+    rs2::frame hdr_merge::merging_algorithm(const rs2::frame_source& source, const rs2::frameset first_fs, const rs2::frameset second_fs, const bool use_ir) const
     {
         auto first = first_fs;
         auto second = second_fs;
@@ -172,32 +198,26 @@ namespace librealsense
 
             memset(new_data, 0, width * height * sizeof(uint16_t));
 
+            int width_height_product = width * height;
+
             if (use_ir)
             {
-                auto i0 = (uint8_t*)first_ir.get_data();
-                auto i1 = (uint8_t*)second_ir.get_data();
-
-                for (int i = 0; i < width * height; i++)
+                if (first_ir.get_profile().format() == RS2_FORMAT_Y8)
                 {
-                    if (is_infrared_valid(i0[i]) && d0[i])
-                        new_data[i] = d0[i];
-                    else if (is_infrared_valid(i1[i]) && d1[i])
-                        new_data[i] = d1[i];
-                    else
-                        new_data[i] = 0;
+                    merge_frames_using_ir<uint8_t>(new_data, d0, d1, first_ir, second_ir, width_height_product);
+                }
+                else if (first_ir.get_profile().format() == RS2_FORMAT_Y16)
+                {
+                    merge_frames_using_ir<uint16_t>(new_data, d0, d1, first_ir, second_ir, width_height_product);
+                }
+                else
+                {
+                    merge_frames_using_only_depth(new_data, d0, d1, width_height_product);
                 }
             }
             else
             {
-                for (int i = 0; i < width * height; i++)
-                {
-                    if (d0[i])
-                        new_data[i] = d0[i];
-                    else if (d1[i])
-                        new_data[i] = d1[i];
-                    else
-                        new_data[i] = 0;
-                }
+                merge_frames_using_only_depth(new_data, d0, d1, width_height_product);
             }
 
             return new_f;
@@ -205,9 +225,17 @@ namespace librealsense
         return first_fs;
     }
 
-    bool hdr_merge::is_infrared_valid(uint8_t ir_value) const
+    void hdr_merge::merge_frames_using_only_depth(uint16_t* new_data, uint16_t* d0, uint16_t* d1, int width_height_prod) const
     {
-        return (ir_value > IR_UNDER_SATURATED_VALUE) && (ir_value < IR_OVER_SATURATED_VALUE);
+        for (int i = 0; i < width_height_prod; i++)
+        {
+            if (d0[i])
+                new_data[i] = d0[i];
+            else if (d1[i])
+                new_data[i] = d1[i];
+            else
+                new_data[i] = 0;
+        }
     }
 
     bool hdr_merge::should_ir_be_used_for_merging(const rs2::depth_frame& first_depth, const rs2::video_frame& first_ir,
@@ -243,16 +271,22 @@ namespace librealsense
                 // checking sequence id of first depth and ir are the same
                 if (use_ir)
                 {
-                    auto depth_seq_id = first_depth.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
-                    auto ir_seq_id = first_ir.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
+                    auto depth_seq_id = first_depth.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
+                    auto ir_seq_id = first_ir.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
                     use_ir = (depth_seq_id == ir_seq_id);
 
                     // checking sequence id of second depth and ir are the same
                     if (use_ir)
                     {
-                        depth_seq_id = second_depth.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
-                        ir_seq_id = second_ir.get_frame_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID);
+                        depth_seq_id = second_depth.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
+                        ir_seq_id = second_ir.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
                         use_ir = (depth_seq_id == ir_seq_id);
+
+                        // checking both ir have the same format
+                        if (use_ir)
+                        {
+                            use_ir = (first_ir.get_profile().format() == second_ir.get_profile().format());
+                        }
                     }
                 }
             }

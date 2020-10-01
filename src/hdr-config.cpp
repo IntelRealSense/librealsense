@@ -19,7 +19,9 @@ namespace librealsense
         _id(DEFAULT_HDR_ID),
         _sequence_size(DEFAULT_HDR_SEQUENCE_SIZE),
         _exposure_range(exposure_range),
-        _gain_range(gain_range)
+        _gain_range(gain_range),
+        _use_workaround(true),
+        _pre_hdr_exposure(0.f)
     {
         _hdr_sequence_params.clear();
         _hdr_sequence_params.resize(DEFAULT_HDR_SEQUENCE_SIZE);
@@ -41,12 +43,12 @@ namespace librealsense
         if (!existing_subpreset_restored)
         {
             // setting default config
-            float exposure_default_value = _exposure_range.def;
+            float exposure_default_value = _exposure_range.def-1000.f; // D455 W/A
             float gain_default_value = _gain_range.def;
             hdr_params params_0(0, exposure_default_value, gain_default_value);
             _hdr_sequence_params[0] = params_0;
 
-            float exposure_low_value = DEFAULT_CONFIG_LOW_EXPOSURE;
+            float exposure_low_value = _exposure_range.min;
             float gain_min_value = _gain_range.min;
             hdr_params params_1(1, exposure_low_value, gain_min_value);
             _hdr_sequence_params[1] = params_1;
@@ -170,7 +172,8 @@ namespace librealsense
     void hdr_config::set(rs2_option option, float value, option_range range)
     {
         if (value < range.min || value > range.max)
-            throw invalid_value_exception(to_string() << "hdr_config::set(...) failed! value: "<< value << " is out of the option range: [" << range.min << ", " << range.max << "].");
+            throw invalid_value_exception(to_string() << "hdr_config::set(...) failed! value: " << value <<
+                " is out of the option range: [" << range.min << ", " << range.max << "].");
 
         switch (option)
         {
@@ -243,6 +246,19 @@ namespace librealsense
                 // so that they could be reenabled after hdr disable
                 set_options_to_be_restored_after_disable();
 
+                if (_use_workaround)
+                {
+                    try {
+                        // the following statement is needed in order to get/set the UVC exposure 
+                        // instead of one of the hdr's configuration exposure
+                        set_sequence_index(0.f);
+                        _pre_hdr_exposure = _sensor->get_option(RS2_OPTION_EXPOSURE).query();
+                        _sensor->get_option(RS2_OPTION_EXPOSURE).set(PRE_ENABLE_HDR_EXPOSURE);
+                    } catch (...) {
+                        LOG_WARNING("HDR: enforced exposure failed");
+                    }
+                }
+
                 _is_enabled = send_sub_preset_to_fw();
                 _has_config_changed = false;
             }
@@ -254,6 +270,23 @@ namespace librealsense
         {
             disable();
             _is_enabled = false;
+
+            if (_use_workaround)
+            {
+                // this sleep is needed to let the fw restore the manual exposure
+                std::this_thread::sleep_for(std::chrono::milliseconds(70));
+                if (_pre_hdr_exposure >= _exposure_range.min && _pre_hdr_exposure <= _exposure_range.max)
+                {
+                    try {
+                        // the following statement is needed in order to get the UVC exposure 
+                        // instead of one of the hdr's configuration exposure
+                        set_sequence_index(0.f);
+                        _sensor->get_option(RS2_OPTION_EXPOSURE).set(_pre_hdr_exposure);
+                    } catch (...) {
+                        LOG_WARNING("HDR failed to restore manual exposure");
+                    }
+                }
+            }
 
             // re-enabling options that were disabled in order to permit the hdr
             restore_options_after_disable();
@@ -279,7 +312,7 @@ namespace librealsense
         {
             if (_sensor->get_option(RS2_OPTION_EMITTER_ON_OFF).query())
             {
-                //_sensor->get_option(RS2_OPTION_EMITTER_ON_OFF).set(0.f);
+                _sensor->get_option(RS2_OPTION_EMITTER_ON_OFF).set(0.f);
                 _emitter_on_off_to_be_restored = true;
             }
         }

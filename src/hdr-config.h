@@ -31,7 +31,7 @@ namespace librealsense
     {
     public:
         hdr_config(hw_monitor& hwm, std::shared_ptr<sensor_base> depth_ep,
-        const option_range& exposure_range, const option_range& gain_range);
+            const option_range& exposure_range, const option_range& gain_range);
 
 
         float get(rs2_option option) const;
@@ -52,7 +52,8 @@ namespace librealsense
         const int DEFAULT_CURRENT_HDR_SEQUENCE_INDEX = -1;
         const int DEFAULT_HDR_SEQUENCE_SIZE = 2;
 
-        const float DEFAULT_CONFIG_LOW_EXPOSURE = 150.f;
+        // exposure value has been set to fit the 30 fps (default fps)
+        const float PRE_ENABLE_HDR_EXPOSURE = 30000.f;
 
         const uint8_t CONTROL_ID_LASER = 0;
         const uint8_t CONTROL_ID_EXPOSURE = 1;
@@ -84,6 +85,8 @@ namespace librealsense
         std::shared_ptr<sensor_base> _sensor;
         option_range _exposure_range;
         option_range _gain_range;
+        bool _use_workaround;
+        float _pre_hdr_exposure;
     };
 
 }
