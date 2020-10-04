@@ -160,7 +160,7 @@ def cat( filename ):
         for line in remove_newlines( file ):
             out( line )
 
-def check_log(log):
+def check_log(log, testname, exe):
     # Normal logs are expected to have in last line:
     #     "All tests passed (11 assertions in 1 test case)"
     # Tests that have failures, however, will show:
@@ -212,10 +212,10 @@ for manifest_ctx in grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir
     
     testdir = manifest_ctx['match'].group(0)                    # "log/internal/test-all"
     testparent = os.path.dirname(testdir)                       # "log/internal"
-    if testparent != "":
+    if testparent:
         testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename(testdir)[5:]    # "test-log-internal-all"
     else:
-        testname = 'test-' + os.path.basename(testdir)[5:]      # no parent folder so we get "test-all"
+        testname = testdir                                      # no parent folder so we get "test-all"
     if linux:
         exe = dir + '/unit-tests/build/' + testdir + '/' + testname
     else:
@@ -230,38 +230,41 @@ for manifest_ctx in grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir
         error( red + testname + reset + ': executable not found! (' + exe + ')' )
         continue
     
-    check_log(log)
+    check_log(log, testname, exe)
     
 
-# adding given directory to python search path so that python tests can find pyrealsense2.pyd
+# Python scripts should be able to find the pyrealsense2 .pyd or else they won't work. We don't know
+# if the user (Travis included) has pyrealsense2 installed but even if so, we want to use the one we compiled.
+# in the build directory that was passed to us
 abs = os.path.abspath(dir)
 abs = abs.replace('\\' , '/')
 os.environ["PYTHONPATH"] = abs
+# We can simply change `sys.path` but any child python scripts won't see it. We change the environment instead.
 
 # relative path to unit-test folder containing python tests
-unit_tests_dir = "../../unit-tests"
+unit_tests_dir = dir + "/../../unit-tests"
 
 for py_test in find(unit_tests_dir, '(^|/)test-.*\.py'):
     
     testdir = py_test[:-3]                         # "log/internal/test-all"  <-  "log/internal/test-all.py"
     testparent = os.path.dirname(testdir)          # same as for cpp files
-    if testparent != "":
+    if testparent:
         testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename(testdir)[5:]
     else:
-        testname = 'test-' + os.path.basename(testdir)[5:]
+        testname = testdir
     
     log = logdir + '/' + testname + '.log'
 
     progress( testname, '>', log, '...' )
     n_tests += 1
-    cmd = "python " + unit_tests_dir + '/' + py_test
+    cmd = "py -3 " + unit_tests_dir + '/' + py_test
     try:
         run( cmd, stdout=log )
     except FileNotFoundError:
         error( red + testname + reset + ': file not found! (' + py_test + ')' )
         continue
      
-    check_log(log)
+    check_log(log, testname, py_test)
 
 progress()
 if n_errors:
