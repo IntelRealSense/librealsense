@@ -73,6 +73,14 @@ classdef option < int64
         sensor_mode                     (70)
         emitter_always_on               (71)
         thermal_compensation            (72)
-        count                           (73)
+        trigger_camera_accuracy_health  (73)
+        reset_camera_accuracy_health    (74)
+        host_performance                (75)
+        hdr_enabled                     (76)
+        sequence_name                   (77)
+        sequence_size                   (78)
+        sequence_id                     (79)
+        humidity_temperature            (80)
+        count                           (81)
     end
 end
