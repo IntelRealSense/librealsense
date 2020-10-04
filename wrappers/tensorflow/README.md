@@ -327,11 +327,12 @@ The output is a BAG file that could be opened by RealSense viewer.
 
 
 ## Part 5 - Applying trained network to real data:
-[Example 5](https://github.com/nohayassin/librealsense/blob/tensorflow/wrappers/tensorflow/example5%20-%20denoise.py) is showing how to use trained network from Part 4 on live data from Intel RealSense Camera. It can be invoke as follows: 
+[Example 5](https://github.com/nohayassin/librealsense/blob/tensorflow/wrappers/tensorflow/example5%20-%20denoise.py) is showing how to use trained network from Part 4 ([Keras Unet model](http://realsense-hw-public.s3.eu-west-1.amazonaws.com/rs-tests/ML/Depth_Learning/DEPTH_Keras_Unet.model.zip)) on live data from Intel RealSense Camera. It can be invoke as follows: 
 
 ```py
 python camera_simulation.py <path to the model>
 ```
+
 For prediction, both IR and depth frames are streamed.
 
 Expected output is the original frame and model prediction given it as an input. 
