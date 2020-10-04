@@ -754,12 +754,12 @@ namespace librealsense
         }
 
         // minimal firmware version in which hdr feature is supported
-        firmware_version hdr_firmware_version("5.12.8.200");
+        firmware_version hdr_firmware_version("5.12.8.100");
 
         // Alternating laser pattern is applicable for global shutter/active SKUs
         auto mask = d400_caps::CAP_GLOBAL_SHUTTER | d400_caps::CAP_ACTIVE_PROJECTOR;
         // Alternating laser pattern should be set and query in a different way according to the firmware version
-        bool is_fw_version_using_id = (_fw_version >= firmware_version("5.12.8.100"));
+        bool is_fw_version_using_id = (_fw_version >= firmware_version("5.12.8.100")); 
         if ((_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
         {
             depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor, is_fw_version_using_id));
@@ -950,7 +950,7 @@ namespace librealsense
             // attributes of md_capture_timing
             auto md_prop_offset = offsetof(metadata_raw, mode) + offsetof(md_depth_mode, depth_y_mode) + offsetof(md_depth_y_normal_mode, intel_configuration);
 
-            depth_sensor.register_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_SIZE,
+            depth_sensor.register_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE,
                 make_attribute_parser(&md_configuration::sub_preset_info,
                     md_configuration_attributes::sub_preset_info_attribute, md_prop_offset ,
                 [](const rs2_metadata_type& param) {
@@ -959,7 +959,7 @@ namespace librealsense
                             >> md_configuration::SUB_PRESET_BIT_OFFSET_SEQUENCE_SIZE;
                     }));
 
-            depth_sensor.register_metadata(RS2_FRAME_METADATA_SUBPRESET_SEQUENCE_ID,
+            depth_sensor.register_metadata(RS2_FRAME_METADATA_SEQUENCE_ID,
                 make_attribute_parser(&md_configuration::sub_preset_info,
                     md_configuration_attributes::sub_preset_info_attribute, md_prop_offset ,
                 [](const rs2_metadata_type& param) {
@@ -968,7 +968,7 @@ namespace librealsense
                             >> md_configuration::SUB_PRESET_BIT_OFFSET_SEQUENCE_ID;
                     }));
 
-            depth_sensor.register_metadata(RS2_FRAME_METADATA_SUBPRESET_ID,
+            depth_sensor.register_metadata(RS2_FRAME_METADATA_SEQUENCE_NAME,
                 make_attribute_parser(&md_configuration::sub_preset_info,
                     md_configuration_attributes::sub_preset_info_attribute, md_prop_offset,
                     [](const rs2_metadata_type& param) {
@@ -1147,8 +1147,8 @@ namespace librealsense
     processing_blocks get_ds5_depth_recommended_proccesing_blocks()
     {
         auto res = get_depth_recommended_proccesing_blocks();
-        //res.push_back(std::make_shared<hdr_merge>()); // Requires HDR
-        //res.push_back(std::make_shared<sequence_id_filter>());
+        res.push_back(std::make_shared<hdr_merge>()); // Requires HDR
+        res.push_back(std::make_shared<sequence_id_filter>());
         res.push_back(std::make_shared<threshold>());
         res.push_back(std::make_shared<disparity_transform>(true));
         res.push_back(std::make_shared<spatial_filter>());

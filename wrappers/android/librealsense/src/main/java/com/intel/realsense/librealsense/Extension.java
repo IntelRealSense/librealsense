@@ -48,7 +48,12 @@ public enum Extension {
     FISHEYE_SENSOR(44),
     DEPTH_HUFFMAN_DECODER(45),
     SERIALIZABLE(46),
-    FW_LOGGER(47);
+    FW_LOGGER(47),
+    AUTO_CALIBRATION_FILTER(48),
+    DEVICE_CALIBRATION(49),
+    CALIBRATED_SENSOR(50),
+    HDR_MERGE(51),
+    SEQUENCE_ID_FILTER(52);
 
 
     private final int mValue;

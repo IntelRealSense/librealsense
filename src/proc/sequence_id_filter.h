@@ -19,10 +19,11 @@ namespace librealsense
         rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
     private:
-        bool is_selected_id(int stream_index);
+        bool is_selected_id(int stream_index) const;
 
         float _selected_stream_id;
-        rs2::frame _last_frame[3];
+        // key is pair of sequence id and unique id
+        std::map<std::pair<int, int>, rs2::frame> _last_frames;
     };
     MAP_EXTENSION(RS2_EXTENSION_SEQUENCE_ID_FILTER, librealsense::sequence_id_filter);
 }
