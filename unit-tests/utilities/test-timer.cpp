@@ -10,44 +10,6 @@
 using namespace time_utilities;
 
 // Test description:
-// Test the stopwatch main functions
-TEST_CASE( "stopwatch", "[Timer]" )
-{
-    stopwatch sw;
-
-    // Verify constructor set the time.
-    CHECK(sw.get_start_time().time_since_epoch().count() > 0);
-
-    auto current_time = sw.now();
-
-    // Verify now() function set the time
-    CHECK(current_time.time_since_epoch().count() > 0);
-
-    // Verify calling order force time count order
-    CHECK(sw.get_start_time() <= current_time);
-
-    // Test elapsed() function
-    CHECK(sw.elapsed() < std::chrono::milliseconds(200));
-
-    // Sleep for verifying progress of time
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-    // Check elapsed() function
-    CHECK(sw.elapsed() > std::chrono::milliseconds(200));
-
-    // Check elapsed_ms() function
-    CHECK(sw.elapsed_ms() > 200);
-    
-    // Check reset() function
-    sw.reset();
-
-    // Verify reset cause the elapsed time to be smaller
-    CHECK(sw.elapsed() < std::chrono::milliseconds(200));
-    CHECK(sw.elapsed_ms() < 200);
-
-}
-
-// Test description:
 // > Test the timer main functions
 // > Verify the timer expired only when the timeout is reached.
 // > Verify restart process 
@@ -82,27 +44,7 @@ TEST_CASE( "timer", "[Timer]" )
     // Check signal function
     t.start();
     CHECK_FALSE(t.has_expired());
-    t.signal();
+    t.set_expired();
     CHECK(t.has_expired());
 
-}
-
-// Test description:
-// Test the periodic_timer main functions
-// Verify the timer expired and restart itself
-
-TEST_CASE( "periodic_timer", "[Timer]" )
-{
-    periodic_timer pt(std::chrono::milliseconds(200));
-    for (auto i = 0; i < 5; ++i)
-    {
-        CHECK_FALSE(pt);
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-        CHECK(pt);
-    }
-
-    // Check signal function
-    CHECK_FALSE(pt);
-    pt.signal();
-    CHECK(pt);
 }

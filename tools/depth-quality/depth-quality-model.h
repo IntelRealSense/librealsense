@@ -59,7 +59,7 @@ namespace rs2
                     record_frames(frames);
 
                     if (sample.size())
-                        _samples.push_back({ sample, _model_timer.elapsed_ms(), frames.get_frame_number() });
+                        _samples.push_back({ sample, _model_timer.get_elapsed_ms(), frames.get_frame_number() });
                 }
             }
             void start_record(metrics_model* metrics)
@@ -169,7 +169,7 @@ namespace rs2
             {
                 std::lock_guard<std::mutex> lock(_m);
                 _vals[_idx]         = val;
-                _timestamps[_idx]   = _model_timer.elapsed_ms();
+                _timestamps[_idx]   = _model_timer.get_elapsed_ms();
                 _idx = (_idx + 1) % SIZE;
                 if (_first_idx== _idx)
                     _first_idx = (_first_idx + 1) % SIZE;

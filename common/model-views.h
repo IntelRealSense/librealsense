@@ -28,6 +28,7 @@
 #include "updates-model.h"
 #include "calibration-model.h"
 #include "cah-model.h"
+#include "../common/utilities/periodic_timer.h"
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);

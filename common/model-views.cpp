@@ -5939,7 +5939,7 @@ namespace rs2
                                     {
                                         viewer.synchronization_enable = false;
                                     }
-                                    _update_readonly_options_timer.signal();
+                                    _update_readonly_options_timer.set_expired();
                                     sub->play(profiles, viewer, dev_syncer);
                                 }
                                 catch (const error& e)
@@ -5980,7 +5980,7 @@ namespace rs2
                             }))
                             {
                                 stop_recording = true;
-                                _update_readonly_options_timer.signal();
+                                _update_readonly_options_timer.set_expired();
                             }
                         }
                         if (ImGui::IsItemHovered())

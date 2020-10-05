@@ -821,7 +821,7 @@ namespace rs2
         {
             std::lock_guard<std::mutex> lock(_m);
 
-            if (_t.elapsed() < _window) return false; // Ensure no false alarms in the warm-up time
+            if (_t.get_elapsed() < _window) return false; // Ensure no false alarms in the warm-up time
 
             _measurements.erase(std::remove_if(_measurements.begin(), _measurements.end(),
                 [this](std::pair<clock::time_point, bool> pair) {

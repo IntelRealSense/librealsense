@@ -3,5 +3,7 @@
 
 target_sources(${LRS_TARGET}
     PRIVATE
-		"${CMAKE_CURRENT_LIST_DIR}/timer.h"
+        "${CMAKE_CURRENT_LIST_DIR}/stopwatch.h"
+        "${CMAKE_CURRENT_LIST_DIR}/timer.h"
+        "${CMAKE_CURRENT_LIST_DIR}/periodic_timer.h"
 )
