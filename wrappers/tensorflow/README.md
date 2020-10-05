@@ -77,7 +77,7 @@ Next we can perform inference using our TensorFlow session:
                                          feed_dict={image_tensor: image_expanded})
 ```
 
-Finally we will assign random persistent color to each detection class and draw a bounding box around the object. We filter out low confidence predictions using `score` output. 
+Finally, we will assign random persistent color to each detection class and draw a bounding box around the object. We filter out low confidence predictions using `score` output. 
 
 ```py
 for idx in range(int(num)):
@@ -130,7 +130,7 @@ points = point_cloud.calculate(depth_frame)
 verts = np.asanyarray(points.get_vertices()).view(np.float32).reshape(-1, W, 3)  # xyz
 ```
 
-This allows us to query XYZ coordinates of each detected object and to seperate individual coordinates (in meters):
+This allows us to query XYZ coordinates of each detected object and to separate individual coordinates (in meters):
 
 ```py
 obj_points = verts[int(bbox[1]):int(bbox[1] + bbox[3]), int(bbox[0]):int(bbox[0] + bbox[2])].reshape(-1, 3)
@@ -159,7 +159,7 @@ Expected output:
 
 ## Part 3 - Deploying TensorFlow model using OpenCV
 
-While TensorFlow is convinient to install and use, it is not as convinient as OpenCV. OpenCV is ported to most platforms and is well optimised for various types of CPUs. It also comes with built-in DNN module capable of loading and using TensorFlow models without having TensorFlow (or its dependencies) installed.
+While TensorFlow is convenient to install and use, it is not as convinient as OpenCV. OpenCV is ported to most platforms and is well optimised for various types of CPUs. It also comes with built-in DNN module capable of loading and using TensorFlow models without having TensorFlow (or its dependencies) installed.
 
 [Example 3](example3%20-%20opencv%20deploy.py) is functionally equal to Example 2, but instead of using TensorFlow APIs directly it is loading and running inference using OpenCV.
 
@@ -197,7 +197,7 @@ Additional information on Unet:
 Unet offers significant advantages compared to classic autoencoder architecture, improving edge fidelity (see image below).
 		
 ![foxdemo](images/Unet.PNG)
-###### The image is taken from the article reffered above.
+###### The image is taken from the article referred above.
 
 Edge comparison between Unet and basic convolution network:
 
@@ -207,7 +207,7 @@ In the left pathway of Unet, the number of filters (features) increase as we go 
 very good at detecting more and more features, the first few layers of a convolution network capture a very small semantic information and lower level
 features, as you go down these features become larger and larger, but when we throw away information the CNN
 knows only approximate location about where those features are.
-When we upsample we get the lost information back (by the concatination process)
+When we upsample we get the lost information back (by the concatenation process)
 so we can see last-layer features in the perspective of the layer above them.
 		
 #### Training Dataset
@@ -235,7 +235,7 @@ Download [part 1](http://realsense-hw-public.s3.eu-west-1.amazonaws.com/rs-tests
 #### Data Augmentation
 To help the neural network learning image features we decide to crop input images into tiles of 128x128 pixels. 
 
-Each ground truth image has a corressponding depth and infrared image. Given that, the dataset is augmented as following:
+Each ground truth image has a corresponding depth and infrared image. Given that, the dataset is augmented as following:
 
 ###### 1. Cropping 
 
@@ -249,9 +249,9 @@ We expand left infrared image to 16-bits and attach it as second channel to netw
 
 Eventually, the data that is fed to Unet network contains:
 - Noisy images: 
-2 channels: first channel is a depth image and second channel is the corressponding IR image
+2 channels: first channel is a depth image and second channel is the corresponding IR image
 - Pure images: 
-2 channels: first channel is a ground truth image and second channel is the corressponding IR image
+2 channels: first channel is a ground truth image and second channel is the corresponding IR image
 
 ![foxdemo](images/channeling.PNG)
 
@@ -260,7 +260,7 @@ In order to start a training process, the following is required:
 - Unet Network Implementation: choosing the sizes of convolutions, max pools, filters and strides, along downsampling and upsampling.
 - Data Augmentation: preparing dataset that contains noisy and pure images as explained above.
 - Old model (optional): there is an option of training the network starting from a previously-trained model. 
-- Epochs: epoch is one cycle through the full training dataset (forth and back). The default value of epochs number is 100, it could be contolled by an argument passed to the application.
+- Epochs: epoch is one cycle through the full training dataset (forth and back). The default value of epochs number is 100, it could be controlled by an argument passed to the application.
 
 ###### console output
 ![foxdemo](images/training.PNG)
@@ -270,7 +270,7 @@ In order to start a training process, the following is required:
 The application will create automatically a file tree:
 - `images` folder: contains original and cropped images for training and testing, and also the predicted images
 - `logs` folder: all tensorflow outputs throughout the training are stored in txt file that has same name as the created model. It contains also a separate log for testing statistics.
-- `models` folder: each time a training process starts, it creates a new folder for a model inside models folder. If the traing starts with old model, 
+- `models` folder: each time a training process starts, it creates a new folder for a model inside models folder. If the training starts with old model, 
 				 it will create a folder with same name as old model adding to it the string "_new"
 		
 		.
@@ -306,7 +306,7 @@ There are several helper tools located under `tools` folder:
 RMSE tool can be use to show surface smoothness by showing plane-fit RMS of pixels inside a selected rectangle inside the image.
 The tools is approximating best fit plane passing through selected points, ignoring zero depth and calculates how far on average points are from that plane. 
 When evaluated on planar surface, this gives good metric for surface smoothness. In addition, noise distribution within the selected bounding box is color coded: 
-Black pixels correspond to low deviation from predicted plane-fit with white pixels corresponding to points further aways from the plane, normalized by standard deviation. 
+Black pixels correspond to low deviation from predicted plane-fit with white pixels corresponding to points further always from the plane, normalized by standard deviation. 
 
 ![foxdemo](images/rmse.PNG)
  
