@@ -82,7 +82,11 @@ namespace rs2
     
     void prepare_config_file();
 
-    bool frame_metadata_to_csv(const std::string& filename, rs2::frame frame);
+    bool frame_metadata_to_csv( const std::string & filename, rs2::frame frame );
+
+    bool motion_data_to_csv( const std::string & filename, rs2::frame frame );
+
+    bool pose_data_to_csv( const std::string & filename, rs2::frame frame );
 
     void open_issue(std::string body);
 
