@@ -211,14 +211,14 @@ When we upsample we get the lost information back (by the concatenation process)
 so we can see last-layer features in the perspective of the layer above them.
 		
 #### Training Dataset
-Download [part 1](http://realsense-hw-public.s3.eu-west-1.amazonaws.com/rs-tests/ML/Depth_Learning/Dataset/part1_1_4000.zip) and [part 2](http://realsense-hw-public.s3.eu-west-1.amazonaws.com/rs-tests/ML/Depth_Learning/Dataset/part2_4001_8375.zip) of the dataset. It containes 4 types of 848x480 images in uncompressed PNG format: 
+Download [part 1](http://realsense-hw-public.s3.eu-west-1.amazonaws.com/rs-tests/ML/Depth_Learning/Dataset/part1_1_4000.zip) and [part 2](http://realsense-hw-public.s3.eu-west-1.amazonaws.com/rs-tests/ML/Depth_Learning/Dataset/part2_4001_8375.zip) of the dataset. It contains 4 types of 848x480 images in uncompressed PNG format: 
 
 ###### 1. Simulated Left Infrared:
-- Syntethic view from left infrared sensor of the virtual camera, including inrared projection pattern
+- Synthetic view from left infrared sensor of the virtual camera, including infrared projection pattern
 - 3-channel grayscale image of 8 bits per channel
 - Name Filter: left-*.png
 ###### 2. Simulated Right Infrared:
-- Syntethic view from right infrared sensor of the virtual camera, including inrared projection pattern
+- Synthetic view from right infrared sensor of the virtual camera, including infrared projection pattern
 - 3-channel grayscale image of 8 bits per channel
 - Name Filter: right-*.png
 ###### 3. Ground Truth Depth:
@@ -226,7 +226,7 @@ Download [part 1](http://realsense-hw-public.s3.eu-west-1.amazonaws.com/rs-tests
 - Single channel 16-bits per pixel values in units of 1mm
 - Name filter : gt-*.png
 ###### 4. Generated Depth: 
-- Depth images generated from Left and Right pairs using D400 stereomatching algorithm configured with parameters similar to the D435 camera
+- Depth images generated from Left and Right pairs using D400 stereo matching algorithm configured with parameters similar to the D435 camera
 - Single channel 16-bits per pixel values in units of 1mm
 - Name filter: res-*.png
 
