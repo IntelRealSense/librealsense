@@ -80,7 +80,8 @@ public enum Option {
     HDR_ENABLED(76),
     SEQUENCE_NAME(77),
     SEQUENCE_SIZE(78),
-    SEQUENCE_ID(79);
+    SEQUENCE_ID(79),
+    HUMIDITY_TEMPERATURE(80);
     private final int mValue;
 
     private Option(int value) { mValue = value; }

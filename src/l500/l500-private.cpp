@@ -95,6 +95,8 @@ namespace librealsense
                 return float(temperature_data.MA_temperature);
             case RS2_OPTION_APD_TEMPERATURE:
                 return float(temperature_data.APD_temperature);
+            case RS2_OPTION_HUMIDITY_TEMPERATURE:
+                return float(temperature_data.HUM_temperature);
             default:
                 throw invalid_value_exception(to_string() << _option << " is not temperature option!");
             }
