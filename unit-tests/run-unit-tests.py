@@ -236,15 +236,25 @@ for manifest_ctx in grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir
 # Python scripts should be able to find the pyrealsense2 .pyd or else they won't work. We don't know
 # if the user (Travis included) has pyrealsense2 installed but even if so, we want to use the one we compiled.
 # in the build directory that was passed to us
-abs = os.path.abspath(dir)
-abs = abs.replace('\\' , '/')
-os.environ["PYTHONPATH"] = abs
+current_dir = os.path.dirname(os.path.abspath(__file__))
+librealsense = os.path.dirname(current_dir)
+
+pyrs = ""
+if linux:
+    pyrs = ""
+else:
+    for pyd in find(librealsense, '(^|/)pyrealsense2.*\.pyd$'):
+        pyrs = pyd
+
+pyrs = os.path.basename(pyrs)
+pyrs_path = os.path.abspath(pyrs)
+pyrs_path = os.path.dirname(pyrs_path)
+pyrs_path = pyrs_path.replace('\\' , '/')
+os.environ["PYTHONPATH"] = pyrs_path
 # We can simply change `sys.path` but any child python scripts won't see it. We change the environment instead.
 
-# relative path to unit-test folder containing python tests
-unit_tests_dir = dir + "/../../unit-tests"
-
-for py_test in find(unit_tests_dir, '(^|/)test-.*\.py'):
+# unit-test scripts are in the same directory as this script
+for py_test in find(current_dir, '(^|/)test-.*\.py'):
     
     testdir = py_test[:-3]                         # "log/internal/test-all"  <-  "log/internal/test-all.py"
     testparent = os.path.dirname(testdir)          # same as for cpp files
