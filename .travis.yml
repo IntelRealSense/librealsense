@@ -55,7 +55,7 @@ matrix:
       dist: xenial
       script:
         - cd ../scripts && ./pr_check.sh && cd ../build
-        - cmake .. -DBUILD_PYTHON_BINDINGS=true -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true
+        - cmake .. -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
         - python3 ../unit-tests/run-unit-tests.py --verbose .
 
