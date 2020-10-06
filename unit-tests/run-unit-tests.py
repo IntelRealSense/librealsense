@@ -232,49 +232,58 @@ for manifest_ctx in grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir
     
     check_log(log, testname, exe)
     
+current_dir = os.path.dirname(os.path.abspath(__file__))
+current_dir = current_dir.replace('\\' , '/')
+# this script is located in librealsense/unit-tests, so one directory up is the main repository
+librealsense = os.path.dirname(current_dir)
 
 # Python scripts should be able to find the pyrealsense2 .pyd or else they won't work. We don't know
 # if the user (Travis included) has pyrealsense2 installed but even if so, we want to use the one we compiled.
-# in the build directory that was passed to us
-current_dir = os.path.dirname(os.path.abspath(__file__))
-librealsense = os.path.dirname(current_dir)
-
+# we search the librealsense repository for the .pyd file (.so file in linux)
 pyrs = ""
 if linux:
-    pyrs = ""
+    for so in find(librealsense, '(^|/)pyrealsense2.*\.so$'):
+        pyrs = so
 else:
     for pyd in find(librealsense, '(^|/)pyrealsense2.*\.pyd$'):
         pyrs = pyd
+print("found pyrs as " + pyrs)
+# if we run python tests with no .pyd/.so file they will crash. Therefore we only run them if such a file is found
+if pyrs:
+    pyrs = os.path.basename(pyrs)
+    pyrs_path = os.path.abspath(pyrs)
+    pyrs_path = os.path.dirname(pyrs_path)
+    pyrs_path = pyrs_path.replace('\\' , '/')
+    os.environ["PYTHONPATH"] = pyrs_path
+    # We can simply change `sys.path` but any child python scripts won't see it. We change the environment instead.
 
-pyrs = os.path.basename(pyrs)
-pyrs_path = os.path.abspath(pyrs)
-pyrs_path = os.path.dirname(pyrs_path)
-pyrs_path = pyrs_path.replace('\\' , '/')
-os.environ["PYTHONPATH"] = pyrs_path
-# We can simply change `sys.path` but any child python scripts won't see it. We change the environment instead.
-
-# unit-test scripts are in the same directory as this script
-for py_test in find(current_dir, '(^|/)test-.*\.py'):
+    # unit-test scripts are in the same directory as this script
+    for py_test in find(current_dir, '(^|/)test-.*\.py'):
     
-    testdir = py_test[:-3]                         # "log/internal/test-all"  <-  "log/internal/test-all.py"
-    testparent = os.path.dirname(testdir)          # same as for cpp files
-    if testparent:
-        testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename(testdir)[5:]
-    else:
-        testname = testdir
+        testdir = py_test[:-3]                         # "log/internal/test-all"  <-  "log/internal/test-all.py"
+        testparent = os.path.dirname(testdir)          # same as for cpp files
+        if testparent:
+            testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename(testdir)[5:]
+        else:
+            testname = testdir
     
-    log = logdir + '/' + testname + '.log'
-
-    progress( testname, '>', log, '...' )
-    n_tests += 1
-    cmd = "py -3 " + unit_tests_dir + '/' + py_test
-    try:
-        run( cmd, stdout=log )
-    except FileNotFoundError:
-        error( red + testname + reset + ': file not found! (' + py_test + ')' )
-        continue
+        log = logdir + '/' + testname + '.log'
+        
+        progress( testname, '>', log, '...' )
+        n_tests += 1
+        test_path = current_dir + '/' + py_test
+        if linux:
+            cmd = "python3 " + test_path
+        else:
+            cmd = "py -3 " + test_path
+        print(cmd)
+        try:
+            run( cmd, stdout=log )
+        except FileNotFoundError:
+            error( red + testname + reset + ': file not found! (' + test_path + ')' )
+            continue
      
-    check_log(log, testname, py_test)
+        check_log(log, testname, py_test)
 
 progress()
 if n_errors:
