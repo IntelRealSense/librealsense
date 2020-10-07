@@ -64,7 +64,7 @@ typedef struct rs2_intrinsics
     float         fx;        /**< Focal length of the image plane, as a multiple of pixel width */
     float         fy;        /**< Focal length of the image plane, as a multiple of pixel height */
     rs2_distortion model;    /**< Distortion model of the image */
-    float         coeffs[5]; /**< Distortion coefficients */
+    float         coeffs[5]; /**< Distortion coefficients. Order for Brown-Conrady: [k1, k2, p1, p2, k3]. Order for F-Theta Fish-eye: [k1, k2, k3, k4, 0]. Other models are subject to their own interpretations */
 } rs2_intrinsics;
 
 /** \brief Video DSM (Digital Sync Module) parameters for calibration (same layout as in FW ac_depth_params)
