@@ -3605,19 +3605,6 @@ namespace rs2
                     res = pp->invoke(res);
         }
 
-        // Override the zero pixel in texture frame with black color for occlusion invalidation
-        // TODO - this is a temporal solution to be refactored from the app level into the core library
-        if (auto set = res.as<frameset>())
-        {
-            for (auto f : set)
-            {
-                zero_first_pixel(f);
-            }
-        }
-        else
-        {
-            zero_first_pixel(f);
-        }
         return res;
     }
 
