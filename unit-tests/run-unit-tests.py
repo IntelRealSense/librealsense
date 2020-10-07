@@ -247,11 +247,9 @@ if linux:
 else:
     for pyd in find(librealsense, '(^|/)pyrealsense2.*\.pyd$'):
         pyrs = pyd
-print("found pyrs as " + pyrs)
 # if we run python tests with no .pyd/.so file they will crash. Therefore we only run them if such a file is found
 if pyrs:
-    pyrs = os.path.basename(pyrs)
-    pyrs_path = os.path.abspath(pyrs)
+    pyrs_path = librealsense + '/' + pyrs
     pyrs_path = os.path.dirname(pyrs_path)
     pyrs_path = pyrs_path.replace('\\' , '/')
     os.environ["PYTHONPATH"] = pyrs_path
@@ -273,10 +271,11 @@ if pyrs:
         n_tests += 1
         test_path = current_dir + '/' + py_test
         if linux:
-            cmd = "python3 " + test_path
+            cmd = ["python3", test_path]
+            # cmd = "python3 " + test_path
         else:
-            cmd = "py -3 " + test_path
-        print(cmd)
+            cmd = ["py","-3",test_path]
+            # cmd = "py -3 " + test_path
         try:
             run( cmd, stdout=log )
         except FileNotFoundError:
