@@ -231,7 +231,8 @@ for manifest_ctx in grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir
         continue
     
     check_log(log, testname, exe)
-    
+
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
 current_dir = current_dir.replace('\\' , '/')
 # this script is located in librealsense/unit-tests, so one directory up is the main repository
@@ -247,7 +248,7 @@ if linux:
 else:
     for pyd in find(librealsense, '(^|/)pyrealsense2.*\.pyd$'):
         pyrs = pyd
-# if we run python tests with no .pyd/.so file they will crash. Therefore we only run them if such a file is found
+# if we run python tests with no .pyd/.so file they will crash. Therefore we only run them if such a file was found
 if pyrs:
     pyrs_path = librealsense + '/' + pyrs
     pyrs_path = os.path.dirname(pyrs_path)
@@ -272,10 +273,8 @@ if pyrs:
         test_path = current_dir + '/' + py_test
         if linux:
             cmd = ["python3", test_path]
-            # cmd = "python3 " + test_path
         else:
             cmd = ["py","-3",test_path]
-            # cmd = "py -3 " + test_path
         try:
             run( cmd, stdout=log )
         except FileNotFoundError:
