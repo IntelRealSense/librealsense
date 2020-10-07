@@ -1066,15 +1066,13 @@ namespace rs2
                                 if (!colorized_frame.is<gl::gpu_frame>())
                                 {
                                     data = colorized_frame.get_data();
-                                    // Override the first pixel in the colorized image for occlusion invalidation.
-                                    memset((void*)data, 0, colorized_frame.get_bytes_per_pixel());
-                                    {
-                                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
-                                            colorized_frame.get_width(),
-                                            colorized_frame.get_height(),
-                                            0, GL_RGB, GL_UNSIGNED_BYTE,
-                                            data);
-                                    }
+                                    
+                                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+                                        colorized_frame.get_width(),
+                                        colorized_frame.get_height(),
+                                        0, GL_RGB, GL_UNSIGNED_BYTE,
+                                        data);
+                                    
                                 }
                                 rendered_frame = colorized_frame;
                             }
@@ -1095,8 +1093,6 @@ namespace rs2
                                 glBindTexture(GL_TEXTURE_2D, texture);
                                 data = colorized_frame.get_data();
 
-                                // Override the first pixel in the colorized image for occlusion invalidation.
-                                memset((void*)data, 0, colorized_frame.get_bytes_per_pixel());
                                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
                                     colorized_frame.get_width(),
                                     colorized_frame.get_height(),
