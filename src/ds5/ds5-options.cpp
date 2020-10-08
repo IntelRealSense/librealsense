@@ -613,7 +613,13 @@ namespace librealsense
         if (_hdr_cfg->is_config_in_process())
             _hdr_option->set(value);
         else
-            _uvc_option->set(value);
+        {
+            if (_hdr_cfg->is_enabled())
+                LOG_WARNING("The control - " << _uvc_option->get_description()
+                     << " - is locked while HDR mode is active.\n"); 
+            else
+                _uvc_option->set(value);
+        }
     }
 
     float hdr_conditional_option::query() const

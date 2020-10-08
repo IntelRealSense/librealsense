@@ -692,52 +692,6 @@ TEST_CASE("Extrinsic transformations are transitive", "[live]")
     }
 }
 
-std::shared_ptr<device> do_with_waiting_for_camera_connection(rs2::context ctx, std::shared_ptr<device> dev, std::string serial, std::function<void()> operation)
-{
-    std::mutex m;
-    bool disconnected = false;
-    bool connected = false;
-    std::shared_ptr<device> result;
-    std::condition_variable cv;
-
-    ctx.set_devices_changed_callback([&result, dev, &disconnected, &connected, &m, &cv, &serial](rs2::event_information info) mutable
-    {
-        if (info.was_removed(*dev))
-        {
-            std::unique_lock<std::mutex> lock(m);
-            disconnected = true;
-            cv.notify_all();
-        }
-        auto list = info.get_new_devices();
-        if (list.size() > 0)
-        {
-            for (auto cam : list)
-            {
-                if (serial == cam.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER))
-                {
-                    std::unique_lock<std::mutex> lock(m);
-                    connected = true;
-                    result = std::make_shared<device>(cam);
-
-                    disable_sensitive_options_for(*result);
-                    cv.notify_all();
-                    break;
-                }
-            }
-        }
-    });
-
-    operation();
-
-    std::unique_lock<std::mutex> lock(m);
-    REQUIRE(wait_for_reset([&]() {
-        return cv.wait_for(lock, std::chrono::seconds(20), [&]() { return disconnected; });
-    }, dev));
-    REQUIRE(cv.wait_for(lock, std::chrono::seconds(20), [&]() { return connected; }));
-    REQUIRE(result);
-    return result;
-}
-
 TEST_CASE("Toggle Advanced Mode", "[live][AdvMd]") {
     for (int i = 0; i < 3; ++i)
     {
