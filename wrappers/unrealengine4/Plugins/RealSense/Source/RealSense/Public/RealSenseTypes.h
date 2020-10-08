@@ -132,8 +132,8 @@ enum class ERealSenseOptionType : uint8
     HDR_ENABLED                                , /**< Enable / disable HDR */
     SEQUENCE_NAME                              , /**< HDR Sequence name */
     SEQUENCE_SIZE                              , /**< HDR Sequence size */
-    SEQUENCE_ID                                , /**< HDR Sequence ID - 0 is not HDR; sequence ID for HDR configuartion starts from 1 */
-    HUMIDITY_TEMPERATURE                       , /**< Humidity temperature*/
+    SEQUENCE_ID                                , /**< HDR Sequence ID - 0 is not HDR; sequence ID for HDR configuration starts from 1 */
+    HUMIDITY_TEMPERATURE                       , /**< < Humidity temperature [Deg Celsius]*/
 };
 
 UENUM(Blueprintable)

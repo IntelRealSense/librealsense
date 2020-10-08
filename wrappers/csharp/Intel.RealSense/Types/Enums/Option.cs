@@ -249,6 +249,9 @@ namespace Intel.RealSense
         SequenceSize = 78,
 
         /// <summary>Subpreset sequence id - for D400 SKUs</summary>
-        SequenceId = 79
-    }
+        SequenceId = 79,
+
+        /// <summary>Humidity temperature [Deg Celsius]</summary>
+        HumidityTemperature = 80
+  }
 }

@@ -5539,7 +5539,7 @@ namespace rs2
                                     //Known preset was chosen
                                     auto new_val = opt_model.range.min + opt_model.range.step * selected;
                                     model.add_log(to_string() << "Setting " << opt_model.opt << " to "
-                                        << opt_model.value << " (" << labels[selected] << ")");
+                                        << new_val << " (" << labels[selected] << ")");
 
                                     opt_model.endpoint->set_option(opt_model.opt, new_val);
 
