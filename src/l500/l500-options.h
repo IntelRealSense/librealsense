@@ -77,7 +77,7 @@ namespace librealsense
         void set_max_laser();
 
         std::map<rs2_option, std::shared_ptr<cascade_option<l500_hw_options>>> _hw_options;
-        std::shared_ptr< cascade_option<uvc_xu_option<int>>> _ambient_light;
+        std::shared_ptr< cascade_option<uvc_xu_option<int>>> _digital_gain;
         std::shared_ptr< cascade_option<float_option_with_description<rs2_l500_visual_preset>>> _preset;
 
         template<typename T, class ... Args>

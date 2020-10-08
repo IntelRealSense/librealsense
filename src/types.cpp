@@ -227,6 +227,18 @@ namespace librealsense
 #undef CASE
     }
 
+    const char* get_string(rs2_digital_gain value)
+    {
+#define CASE(X) STRCASE(DIGITAL_GAIN, X)
+        switch (value)
+        {
+            CASE(LOW_GAIN)
+            CASE(HIGH_GAIN)
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
+        }
+#undef CASE
+    }
+
     const char* get_string( rs2_cah_trigger value )
     {
 #define CASE(X) STRCASE(CAH_TRIGGER, X)
@@ -420,7 +432,8 @@ namespace librealsense
             CASE(PRE_PROCESSING_SHARPENING)
             CASE(NOISE_FILTERING)
             CASE(INVALIDATION_BYPASS)
-            CASE(AMBIENT_LIGHT)
+            //CASE(AMBIENT_LIGHT) // Depracated - replaced by "DIGITAL_GAIN" option
+            CASE(DIGITAL_GAIN)
             CASE(SENSOR_MODE)
             CASE(EMITTER_ALWAYS_ON)
             CASE(THERMAL_COMPENSATION)

@@ -121,11 +121,11 @@ std::string optimizer::settings::to_string() const
 {
     return librealsense::to_string()
         << '[' << ( is_manual_trigger ? "MANUAL" : "AUTO" ) << ' ' << hum_temp << "degC"
-        << " ambience="
-        << ( ambient == RS2_AMBIENT_LIGHT_NO_AMBIENT    ? "none/long"
-             : ambient == RS2_AMBIENT_LIGHT_LOW_AMBIENT ? "low/short"
+        << " digital gain="
+        << (digital_gain == RS2_DIGITAL_GAIN_LOW_GAIN ? "low"
+            : digital_gain == RS2_DIGITAL_GAIN_HIGH_GAIN ? "high"
                                                         : "??" )
-        << " gain=" << receiver_gain << ']';
+        << " receiver gain=" << receiver_gain << ']';
 }
 
 
@@ -464,7 +464,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     /*[zEdge,Zx,Zy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.z),2); % Added the second input - margin to zero out
     [iEdge,Ix,Iy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.i),2); % Added the second input - margin to zero out
     validEdgePixelsByIR = iEdge>params.gradITh; */
-    _params.set_depth_resolution(depth_intrinsics.width, depth_intrinsics.height, _settings.ambient);
+    _params.set_depth_resolution(depth_intrinsics.width, depth_intrinsics.height, _settings.digital_gain);
     _z.width = depth_intrinsics.width;
     _z.height = depth_intrinsics.height;
     _z.orig_intrinsics = depth_intrinsics;
@@ -1553,7 +1553,7 @@ svm_model_linear::svm_model_linear()
 svm_model_gaussian::svm_model_gaussian()
 {
 }
-void params::set_depth_resolution( size_t width, size_t height, rs2_ambient_light ambient)
+void params::set_depth_resolution( size_t width, size_t height, rs2_digital_gain digital_gain)
 {
     AC_LOG( DEBUG, "    depth resolution= " << width << "x" << height );
     // Some parameters are resolution-dependent
@@ -1573,7 +1573,7 @@ void params::set_depth_resolution( size_t width, size_t height, rs2_ambient_ligh
     }
     if (use_enhanced_preprocessing)
     {
-        if (ambient == RS2_AMBIENT_LIGHT_NO_AMBIENT)
+        if (digital_gain == RS2_DIGITAL_GAIN_LOW_GAIN)
         {
             if (VGA)
             {
@@ -1849,12 +1849,12 @@ void optimizer::set_cycle_data(const std::vector<double3>& vertices,
 
 void optimizer::adjust_params_to_apd_gain()
 {
-    if(_settings.ambient == RS2_AMBIENT_LIGHT_NO_AMBIENT) // long preset
+    if(_settings.digital_gain == RS2_DIGITAL_GAIN_LOW_GAIN)
         _params.saturation_value = 230;
-    else if(_settings.ambient == RS2_AMBIENT_LIGHT_LOW_AMBIENT) // short preset
+    else if(_settings.digital_gain == RS2_DIGITAL_GAIN_HIGH_GAIN)
         _params.saturation_value = 250;
     else
-        throw std::runtime_error( to_string() <<_settings.ambient <<" invalid ambient value");
+        throw std::runtime_error(to_string() << _settings.digital_gain << " invalid digital gain value");
 }
 
 void optimizer::adjust_params_to_manual_mode()

@@ -198,7 +198,7 @@ int main( int argc, char * argv[] )
             catch( std::exception const & e )
             {
                 std::cout << "!! failed: " << e.what() << " -> assuming [MANUAL LONG 9 @40degC]" << std::endl;
-                settings.ambient = RS2_AMBIENT_LIGHT_NO_AMBIENT;
+                settings.digital_gain = RS2_DIGITAL_GAIN_LOW_GAIN;
                 settings.hum_temp = 40;
                 settings.is_manual_trigger = true;
                 settings.receiver_gain = 9;
