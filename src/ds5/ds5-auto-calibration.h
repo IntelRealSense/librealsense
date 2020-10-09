@@ -15,17 +15,20 @@ namespace librealsense
         void write_calibration() const override;
         std::vector<uint8_t> run_on_chip_calibration(int timeout_ms, std::string json, float* health, update_progress_callback_ptr progress_callback) override;
         std::vector<uint8_t> run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, update_progress_callback_ptr progress_callback) override;
+        std::vector<uint8_t> run_on_chip_focal_length_calibration(int timeout_ms, std::string json, float* health, update_progress_callback_ptr progress_callback) override;
         std::vector<uint8_t> get_calibration_table() const override;
         void set_calibration_table(const std::vector<uint8_t>& calibration) override;
         void reset_to_factory_calibration() const override;
 
     private:
         std::vector<uint8_t> get_calibration_results(float* health = nullptr) const;
+        std::vector<uint8_t> get_focal_length_calibration_results(float* health = nullptr) const;
         void handle_calibration_error(int status) const;
         std::map<std::string, int> parse_json(std::string json);
         std::shared_ptr< ds5_advanced_mode_base> change_preset();
         void check_params(int speed, int scan_parameter, int data_sampling) const;
         void check_tare_params(int speed, int scan_parameter, int data_sampling, int average_step_count, int step_count, int accuracy);
+        void check_focal_length_params(int step_count, int fy_scan_range, int keep_new_value_after_sucessful_scan, int interrrupt_data_samling, int adjust_both_sides) const;
 
         std::vector<uint8_t> _curr_calibration;
         std::shared_ptr<hw_monitor>& _hw_monitor;

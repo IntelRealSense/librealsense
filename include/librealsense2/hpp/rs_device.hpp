@@ -523,6 +523,93 @@ namespace rs2
             rs2_set_calibration_table(_dev.get(), calibration.data(), static_cast< int >( calibration.size() ), &e);
             error::handle(e);
         }
+
+        /**
+        * This will improve the depth noise.
+        * \param[in] json_content       Json string to configure on chip focal length calibration parameters:
+                                            {
+                                                "step count fl": 100,
+                                                "fy scan range": 40,
+                                                "keep new value after sucessful scan": 1,
+                                                "interrrupt data sampling": 1,
+                                                "adjust both sides": 0
+                                            }
+                                            step_count - value can be an integer from 8 to 256
+                                            fy_scan_range - value can be an integer from 1 to 60000.
+                                            keep_new_value_after_sucessful_scan - value can be one of: 0 = restore Fy & Fx to original value after scanning, 1 = keep new value after a successful scan
+                                            interrrupt_data_samling - value can one of: 0 = polling data sampling, 1 = interrupt data sampling
+                                            adjust_both_sides - value can be one of: 0 = adjust right only, 1 = adjust both sides
+                                            if json is nullptr it will be ignored and calibration will use the default parameters
+        * \param[out] health            Calibration Health-Check captures how far camera calibration is from the optimal one
+                                        [0, 0.15) - Good
+                                        [0.15, 0.75) - Can be Improved
+                                        [0.75, ) - Requires Calibration
+        * \param[in] callback           Optional callback to get progress notifications
+        * \param[in] timeout_ms         Timeout in ms
+        * \return                       New calibration table
+        */
+        template<class T>
+        calibration_table run_on_chip_focal_length_calibration(std::string json_content, float* health, T callback, int timeout_ms = 5000) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_run_on_chip_focal_length_calibration_cpp(_dev.get(), json_content.data(), int(json_content.size()), health, new update_progress_callback<T>(std::move(callback)), timeout_ms, &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
+         * This will improve the depth noise.
+         * \param[in] json_content       Json string to configure on chip focal length calibration parameters:
+                                            {
+                                                "step count fl": 100,
+                                                "fy scan range": 40,
+                                                "keep new value after sucessful scan": 1,
+                                                "interrrupt data sampling": 1,
+                                                "adjust both sides": 0
+                                            }
+                                            step_count - value can be an integer from 8 to 256
+                                            fy_scan_range - value can be an integer from 1 to 60000.
+                                            keep_new_value_after_sucessful_scan - value can be one of: 0 = restore Fy & Fx to original value after scanning, 1 = keep new value after a successful scan
+                                            interrrupt_data_samling - value can one of: 0 = polling data sampling, 1 = interrupt data sampling
+                                            adjust_both_sides - value can be one of: 0 = adjust right only, 1 = adjust both sides
+                                            if json is nullptr it will be ignored and calibration will use the default parameters
+         * \param[out] health            Calibration Health-Check captures how far camera calibration is from the optimal one
+                                         [0, 0.15) - Good
+                                         [0.15, 0.75) - Can be Improved
+                                         [0.75, ) - Requires Calibration
+         * \param[in] timeout_ms         Timeout in ms
+         * \return                       New calibration table
+         */
+        calibration_table run_on_chip_focal_length_calibration(std::string json_content, float* health, int timeout_ms = 5000) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_run_on_chip_focal_length_calibration_cpp(_dev.get(), json_content.data(), static_cast<int>(json_content.size()), health, nullptr, timeout_ms, &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
     };
 
     /*

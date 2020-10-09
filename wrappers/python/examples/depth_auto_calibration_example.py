@@ -52,6 +52,12 @@ def main(argv):
                 print("Calibration completed")
                 print("health factor = ", health)
 
+            if input == 'f':
+                print("Starting on chip focal length calibration")
+                new_calib, health = calib_dev.run_on_focal_length_chip_calibration(5000, file_cnt, on_chip_calib_cb)
+                print("Calibration completed")
+                print("health factor = ", health)
+
             if input == 'g':
                 calib = calib_dev.get_calibration_table()
                 print("Calibration", calib)

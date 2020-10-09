@@ -418,6 +418,59 @@ rs2_raw_data_buffer* rs2_serialize_json(rs2_device* dev, rs2_error** error);
 /* Load JSON and apply advanced-mode controls */
 void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_size, rs2_error** error);
 
+/**
+* This will improve the depth noise.
+* \param[in] json_content       Json string to configure on chip focal length calibration parameters:
+                                    {
+                                      "step count fl": 100,
+                                      "fy scan range": 40,
+                                      "keep new value after sucessful scan": 1,
+                                      "interrrupt data sampling": 1,
+                                      "adjust both sides": 0
+                                    }
+                                    step_count - value can be an integer from 8 to 256
+                                    fy_scan_range - value can be an integer from 1 to 60000.
+                                    keep_new_value_after_sucessful_scan - value can be one of: 0 = restore Fy & Fx to original value after scanning, 1 = keep new value after a successful scan
+                                    interrrupt_data_samling - value can one of: 0 = polling data sampling, 1 = interrupt data sampling
+                                    adjust_both_sides - value can be one of: 0 = adjust right only, 1 = adjust both sides
+                                    if json is nullptr it will be ignored and calibration will use the default parameters
+* \param[out] health            Calibration Health-Check captures how far camera calibration is from the optimal one
+                                [0, 0.15) - Good
+                                [0.15, 0.75) - Can be Improved
+                                [0.75, ) - Requires Calibration
+* \param[in] callback           Optional callback to get progress notifications
+* \param[in] timeout_ms         Timeout in ms (use 5000 msec unless instructed otherwise)
+* \return                       New calibration table
+*/
+const rs2_raw_data_buffer* rs2_run_on_chip_focal_length_calibration_cpp(rs2_device* device, const void* json_content, int content_size, float* health, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error);
+
+/**
+* This will improve the depth noise.
+* \param[in] json_content       Json string to configure on chip focal length calibration parameters:
+                                    {
+                                      "step count fl": 100,
+                                      "fy scan range": 40,
+                                      "keep new value after sucessful scan": 1,
+                                      "interrrupt data sampling": 1,
+                                      "adjust both sides": 0
+                                    }
+                                    step_count - value can be an integer from 8 to 256
+                                    fy_scan_range - value can be an integer from 1 to 60000.
+                                    keep_new_value_after_sucessful_scan - value can be one of: 0 = restore Fy & Fx to original value after scanning, 1 = keep new value after a successful scan
+                                    interrrupt_data_samling - value can one of: 0 = polling data sampling, 1 = interrupt data sampling
+                                    adjust_both_sides - value can be one of: 0 = adjust right only, 1 = adjust both sides 
+                                    if json is nullptr it will be ignored and calibration will use the default parameters
+* \param[out] health            Calibration Health-Check captures how far camera calibration is from the optimal one
+                                [0, 0.15) - Good
+                                [0.15, 0.75) - Can be Improved
+                                [0.75, ) - Requires Calibration
+* \param[in]  callback          Optional callback for update progress notifications, the progress value is normailzed to 1
+* \param[in]  client_data       Optional client data for the callback
+* \param[in] timeout_ms         Timeout in ms (use 5000 msec unless instructed otherwise)
+* \return                       New calibration table
+*/
+const rs2_raw_data_buffer* rs2_run_on_chip_focal_length_calibration(rs2_device* device, const void* json_content, int content_size, float* health, rs2_update_progress_callback_ptr callback, void* client_data, int timeout_ms, rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

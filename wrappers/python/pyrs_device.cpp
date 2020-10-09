@@ -93,6 +93,16 @@ void init_device(py::module &m) {
         .def("get_calibration_table", &rs2::auto_calibrated_device::get_calibration_table, "Read current calibration table from flash.")
         .def("set_calibration_table", &rs2::auto_calibrated_device::set_calibration_table, "Set current table to dynamic area.")
         .def("reset_to_factory_calibration", &rs2::auto_calibrated_device::reset_to_factory_calibration, "Reset device to factory calibration.");
+        .def("run_on_chip_focal_length_calibration", [](rs2::auto_calibrated_device& self, std::string json_content, int timeout_ms)
+        {
+            float health;
+            return py::make_tuple(self.run_on_chip_focal_length_calibration(json_content, &health, timeout_ms), health);
+        }, "This will improve the depth noise (plane fit RMS). This call is executed on the caller's thread.", "json_content"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
+        .def("run_on_chip_focal_length_calibration", [](rs2::auto_calibrated_device& self, std::string json_content, std::function<void(float)> f, int timeout_ms)
+        {
+            float health;
+            return py::make_tuple(self.run_on_chip_focal_length_calibration(json_content, &health, f, timeout_ms), health);
+        }, "This will improve the depth noise (plane fit RMS). This call is executed on the caller's thread and it supports progress notifications via the callback.", "json_content"_a, "callback"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
 
     py::class_<rs2::device_calibration, rs2::device> device_calibration( m, "device_calibration" );
     device_calibration.def( py::init<rs2::device>(), "device"_a )
