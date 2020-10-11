@@ -4926,6 +4926,7 @@ const option = {
   OPTION_ZERO_ORDER_ENABLED: RS2.RS2_OPTION_ZERO_ORDER_ENABLED,
   OPTION_ENABLE_MAP_PRESERVATION: RS2.RS2_OPTION_ENABLE_MAP_PRESERVATION,
   OPTION_FREEFALL_DETECTION_ENABLED: RS2.RS2_OPTION_FREEFALL_DETECTION_ENABLED,
+  OPTION_DIGITAL_GAIN: RS2.RS2_OPTION_DIGITAL_GAIN,
   /**
    * Enable Laser On constantly (GS SKU Only)
    * <br>Equivalent to its lowercase counterpart
@@ -5085,6 +5086,8 @@ const option = {
         return this.option_enable_map_preservation;
       case this.OPTION_FREEFALL_DETECTION_ENABLED:
         return this.option_freefall_detection_enabled;
+      case this.OPTION_DIGITAL_GAIN:
+        return this.option_digital_gain;
       case this.OPTION_EMITTER_ALWAYS_ON:
         return this.option_emitter_always_on;
       case this.OPTION_THERMAL_COMPENSATION:

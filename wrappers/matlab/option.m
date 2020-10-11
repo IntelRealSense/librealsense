@@ -69,7 +69,8 @@ classdef option < int64
         pre_processing_sharpening       (66)
         noise_filter_level              (67)
         invalidation_bypass             (68)
-        ambient_light_env_level         (69)
+        ambient_light_env_level         (69) % Deprecated - Use DIGITAL_GAIN instead
+        digital_gain                    (69)
         sensor_mode                     (70)
         emitter_always_on               (71)
         thermal_compensation            (72)

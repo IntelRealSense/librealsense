@@ -432,7 +432,7 @@ namespace librealsense
             CASE(PRE_PROCESSING_SHARPENING)
             CASE(NOISE_FILTERING)
             CASE(INVALIDATION_BYPASS)
-            //CASE(AMBIENT_LIGHT) // Depracated - replaced by "DIGITAL_GAIN" option
+            //CASE(AMBIENT_LIGHT) // Deprecated - replaced by "DIGITAL_GAIN" option
             CASE(DIGITAL_GAIN)
             CASE(SENSOR_MODE)
             CASE(EMITTER_ALWAYS_ON)
