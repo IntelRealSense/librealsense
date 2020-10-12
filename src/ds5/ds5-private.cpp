@@ -147,7 +147,6 @@ namespace librealsense
              float3x3 intrin = table->intrinsic;
              float calib_aspect_ratio = 9.f / 16.f; // shall be overwritten with the actual calib resolution
 
-             LOG_WARNING("RGB Calibration recalculated.  Fx,Fy = " << intrin.x.x << "," << intrin.y.y);
              if (table->calib_width && table->calib_height)
                  calib_aspect_ratio = float(table->calib_height) / float(table->calib_width);
              else
@@ -181,6 +180,16 @@ namespace librealsense
             librealsense::copy(calc_intrinsic.coeffs, table->distortion, sizeof(table->distortion));
             LOG_DEBUG(endl << array2str((float_4&)(calc_intrinsic.fx, calc_intrinsic.fy, calc_intrinsic.ppx, calc_intrinsic.ppy)) << endl);
 
+            static rs2_intrinsics prev;
+            if (memcmp(&calc_intrinsic,&prev,sizeof(rs2_intrinsics)))
+            {
+                LOG_WARNING("RGB Calibration recalculated. ScaleX, ScaleY = " 
+                    << intrin(0, 0) << ", " << intrin(1, 1)  
+                    << ". Fx,Fy = " << calc_intrinsic.fx << "," << calc_intrinsic.fy);
+                prev = calc_intrinsic;
+            }
+
+            LOG_INFO("RGB Fx, Fy are " << calc_intrinsic.fx << ", " << calc_intrinsic.fy);
             return calc_intrinsic;
         }
 

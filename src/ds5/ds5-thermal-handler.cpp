@@ -80,6 +80,7 @@ namespace librealsense
 
     void ds5_thermal_handler::trigger_device_calibration(rs2_calibration_type type)
     {
+        LOG_WARNING("Thermal compensation polling request for  " << type );
         bool change_required = false;
         bool activate = (RS2_CALIBRATION_THERMAL == type);
         if (_streaming_on != activate)
@@ -91,6 +92,7 @@ namespace librealsense
             }
             if (change_required)
             {
+                LOG_WARNING("Thermal compensation polling was changed from " << (int)_streaming_on << " to " << (int)activate);
                 _streaming_on = activate;
                 update_mode(true);
             }
@@ -144,10 +146,13 @@ namespace librealsense
                     if (_temp_records.empty() || fabs(_temp_base - val) >= 2.f)
                     {
                         if (auto recalib_p = _recalib_sensor.lock())
+                        {
+                            LOG_WARNING("RGB Calibration reset sent");
                             recalib_p->reset_calibration();
+                        }
 
                         auto interval_sec = (_temp_records.size()) ? (ts - _temp_records.back().timestamp_ns) / 1000000000 : 0;
-                        LOG_INFO("Thermal compensation was triggered on change from " << std::dec << " to " << val
+                        LOG_WARNING("Thermal compensation was triggered on change from " << std::dec << _temp_base << " to " << val
                             << " deg (C) after " << interval_sec << " seconds");
 
                         notify_of_calibration_change(RS2_CALIBRATION_SUCCESSFUL);
@@ -171,7 +176,7 @@ namespace librealsense
         }
         else
         {
-            LOG_DEBUG("Thermal loop polling is being shut-down");
+            LOG_WARNING("Thermal loop polling is being shut-down");
         }
     }
 

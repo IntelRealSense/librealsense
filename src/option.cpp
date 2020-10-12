@@ -216,6 +216,7 @@ std::vector<rs2_option> librealsense::options_container::get_supported_options()
 float librealsense::thermal_compensation::query(void) const
 {
     auto val = _thermal_handler->query();
+    LOG_INFO("Thermal compensation option query = " << val);
     _recording_function(*this);
     return val;
 }
@@ -225,6 +226,7 @@ void librealsense::thermal_compensation::set(float value)
     if (value < 0)
         throw invalid_value_exception("Invalid input for thermal compensation toggle: " + std::to_string(value));
 
+    LOG_INFO("Thermal compensation option set = " << value);
     _thermal_handler->set_feature(value);
     _recording_function(*this);
 }

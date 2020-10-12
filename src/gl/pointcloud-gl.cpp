@@ -494,7 +494,6 @@ void pointcloud_gl::get_texture_map(
             (std::fabs(tt.fy - other_intrinsics.fy) > std::numeric_limits<float>::epsilon()))
         {
             tt = other_intrinsics;
-            std::cout << __FUNCTION__ << ": RGB instrinsic is updated, new Fx,Fy are  " << tt.fx << "," << tt.fy << std::endl;
             LOG_WARNING(__FUNCTION__ << ": RGB instrinsic is updated, new Fx,Fy are  " << tt.fx << "," << tt.fy);
         }
 
