@@ -1373,7 +1373,7 @@ namespace rs2
 
         draw_viewport(viewer_rect, window, devices, error_message, texture_frame, p);
 
-        not_model->draw(window, 
+        modal_notification_on = not_model->draw(window,
             static_cast<int>(window.width()), static_cast<int>(window.height()),
             error_message);
 
@@ -3241,7 +3241,8 @@ namespace rs2
         ux_window& window, int devices, std::string& error_message, 
         std::shared_ptr<texture_buffer> texture, points points)
     {
-        updates->draw(*this, window, error_message);
+        if (!modal_notification_on)
+            updates->draw(*this, window, error_message);
 
         static bool first = true;
         if (first)

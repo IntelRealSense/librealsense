@@ -194,7 +194,7 @@ namespace rs2
                               std::function<void()> custom_action, 
                               bool use_custom_action = true);
         void add_notification(std::shared_ptr<notification_model> model);
-        void draw(ux_window& win, int w, int h, std::string& error_message);
+        bool draw(ux_window& win, int w, int h, std::string& error_message);
 
         notifications_model() {}
 
