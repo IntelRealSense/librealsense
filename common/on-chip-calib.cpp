@@ -328,11 +328,17 @@ namespace rs2
         std::stringstream ss;
         if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
         {
-            ss << "{\n \"adjust both sides\":" << adjust_both_sides << "}";
+            ss << "{\n \"calib type\":" << 1 <<
+                  ",\n \"fl step count\":" << fl_step_count <<
+                  ",\n \"fy scan range\":" << fy_scan_range <<
+                  ",\n \"keep new value after sucessful scan\":" << keep_new_value_after_sucessful_scan <<
+                  ",\n \"fl data sampling\":" << fl_data_sampling <<
+                  ",\n \"adjust both sides\":" << adjust_both_sides << "}";
         }
         else
         {
-            ss << "{\n \"speed\":" << speed <<
+            ss << "{\n \"calib type\":" << 0 <<
+                  ",\n \"speed\":" << speed <<
                   ",\n \"average step count\":" << average_step_count <<
                   ",\n \"scan parameter\":" << (intrinsic_scan ? 0 : 1) <<
                   ",\n \"step count\":" << step_count <<
@@ -344,10 +350,8 @@ namespace rs2
         auto calib_dev = _dev.as<auto_calibrated_device>();
         if (action == RS2_CALIB_ACTION_TARE_CALIB)
             _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = int(progress);}, 5000);
-        else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB)
+        else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
             _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = int(progress);}, 5000);
-        else if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
-            _new_calib = calib_dev.run_on_chip_focal_length_calibration(json, &_health, [&](const float progress) {_progress = int(progress); }, 5000);
     }
 
     void on_chip_calib_manager::get_ground_truth()

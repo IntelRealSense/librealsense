@@ -3088,56 +3088,6 @@ const rs2_raw_data_buffer* rs2_run_tare_calibration(rs2_device* device, float gr
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
-const rs2_raw_data_buffer* rs2_run_on_chip_focal_length_calibration_cpp(rs2_device* device, const void* json_content, int content_size, float* health, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(health);
-
-    if (content_size > 0)
-        VALIDATE_NOT_NULL(json_content);
-
-    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
-
-    std::vector<uint8_t> buffer;
-
-    std::string json((char*)json_content, (char*)json_content + content_size);
-    if (progress_callback == nullptr)
-        buffer = auto_calib->run_on_chip_focal_length_calibration(timeout_ms, json, health, nullptr);
-    else
-        buffer = auto_calib->run_on_chip_focal_length_calibration(timeout_ms, json, health, { progress_callback, [](rs2_update_progress_callback* p) { p->release(); } });
-
-    return new rs2_raw_data_buffer{ buffer };
-}
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
-
-const rs2_raw_data_buffer* rs2_run_on_chip_focal_length_calibration(rs2_device* device, const void* json_content, int content_size, float* health, rs2_update_progress_callback_ptr progress_callback, void* user, int timeout_ms, rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(health);
-
-    if (content_size > 0)
-        VALIDATE_NOT_NULL(json_content);
-
-    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
-
-    std::vector<uint8_t> buffer;
-
-    std::string json((char*)json_content, (char*)json_content + content_size);
-
-    if (progress_callback == nullptr)
-        buffer = auto_calib->run_on_chip_focal_length_calibration(timeout_ms, json, health, nullptr);
-    else
-    {
-        librealsense::update_progress_callback_ptr cb(new librealsense::update_progress_callback(progress_callback, user),
-            [](update_progress_callback* p) { delete p; });
-
-        buffer = auto_calib->run_on_chip_focal_length_calibration(timeout_ms, json, health, cb);
-    }
-
-    return new rs2_raw_data_buffer{ buffer };
-}
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
-
 const rs2_raw_data_buffer* rs2_get_calibration_table(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);

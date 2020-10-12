@@ -68,6 +68,11 @@ namespace rs2
 
         auto_calib_action action = RS2_CALIB_ACTION_ON_CHIP_CALIB;
         float laser_status_prev = 0.0f;
+
+        int fl_step_count = 100;
+        int fy_scan_range = 40;
+        int keep_new_value_after_sucessful_scan = 1;
+        int fl_data_sampling = 1;
         int adjust_both_sides = 0;
 
         std::shared_ptr<subdevice_model> _sub;
