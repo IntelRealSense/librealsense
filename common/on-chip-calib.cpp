@@ -378,8 +378,8 @@ namespace rs2
                         auto vsp = profile.as<video_stream_profile>();
 
                         gt_calculator = std::make_shared<tare_ground_truth_calculator>(vsp.width(), vsp.height(), vsp.get_intrinsics().fx,
-                            config_file::instance().get_or_default(configurations::viewer::target_width_r, 112.0f),
-                            config_file::instance().get_or_default(configurations::viewer::target_height_r, 112.0f));
+                            config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f),
+                            config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f));
                         created = true;
                     }
 
@@ -656,7 +656,7 @@ namespace rs2
                 ImGui::SetCursorScreenPos({ float(x + 135), float(y + 30) });
                 std::string id = to_string() << "##target_width_" << index;
                 ImGui::PushItemWidth(width - 145.0f);
-                float target_width = config_file::instance().get_or_default(configurations::viewer::target_width_r, 112.0f);
+                float target_width = config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f);
                 std::string tw = to_string() << target_width;
                 memcpy(buff, tw.c_str(), tw.size() + 1);
                 if (ImGui::InputText(id.c_str(), buff, std::max((int)tw.size() + 1, 10)))
@@ -678,7 +678,7 @@ namespace rs2
                 ImGui::SetCursorScreenPos({ float(x + 135), float(y + 35 + ImGui::GetTextLineHeightWithSpacing()) });
                 id = to_string() << "##target_height_" << index;
                 ImGui::PushItemWidth(width - 145.0f);
-                float target_height = config_file::instance().get_or_default(configurations::viewer::target_height_r, 112.0f);
+                float target_height = config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f);
                 std::string th = to_string() << target_height;
                 memcpy(buff, th.c_str(), th.size() + 1);
                 if (ImGui::InputText(id.c_str(), buff, std::max((int)th.size() + 1, 10)))
