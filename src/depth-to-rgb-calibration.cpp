@@ -1,5 +1,5 @@
-//// License: Apache 2.0. See LICENSE file in root directory.
-//// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "depth-to-rgb-calibration.h"
 #include <librealsense2/rs.hpp>
@@ -27,7 +27,7 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     std::vector< impl::yuy_t > const & last_yuy_data,
     impl::algo_calibration_info const & cal_info,
     impl::algo_calibration_registers const & cal_regs,
-    rs2_intrinsics yuy_intrinsics,
+    rs2_intrinsics const & yuy_intrinsics,
     thermal::thermal_calibration_table_interface const & thermal_table,
     std::function<void()> should_continue
 )
@@ -110,9 +110,11 @@ void depth_to_rgb_calibration::write_data_to( std::string const & dir )
 {
     _algo.write_data_to( dir );
 
+    // VAL asked that we write this file even with no thermal table, so they can just make up
+    // something fictitious...
+    impl::write_to_file( &_raw_intr, sizeof( _raw_intr ), dir, "raw_rgb.intrinsics" );
     if( _thermal_table.is_valid() )
     {
-        impl::write_to_file( &_raw_intr, sizeof( _raw_intr ), dir, "raw_rgb.intrinsics" );
         impl::write_vector_to_file( _thermal_table.build_raw_data(), dir, "rgb_thermal_table" );
     }
 }
