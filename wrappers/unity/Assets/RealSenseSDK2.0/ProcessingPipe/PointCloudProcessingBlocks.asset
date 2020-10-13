@@ -1,0 +1,154 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 475d71c97716db644863efe7bddfbd70, type: 3}
+  m_Name: PointCloudProcessingBlocks
+  m_EditorClassIdentifier: 
+  _processingBlocks:
+  - {fileID: 114476060953143426}
+  - {fileID: 114613456056826128}
+  - {fileID: 114544001719900210}
+  - {fileID: 114401103692956310}
+  - {fileID: 114093195037715096}
+  - {fileID: 114340648865021418}
+  - {fileID: 114947088938950326}
+  - {fileID: 114189879441361140}
+  - {fileID: 114894276943703578}
+--- !u!114 &114093195037715096
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bec95ba2af23efd408d33138086f1c65, type: 3}
+  m_Name: RsTemporalFilter
+  m_EditorClassIdentifier: 
+  enabled: 0
+  _filterSmoothAlpha: 0.4
+  _filterSmoothDelta: 20
+  _temporalPersistence: 3
+--- !u!114 &114189879441361140
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 70a93f62582029d4aab3757e6e2fcaf2, type: 3}
+  m_Name: RsColorizer
+  m_EditorClassIdentifier: 
+  enabled: 1
+  visualPreset: 0
+  colorScheme: 0
+  histogramEqualization: 1
+  minDist: 0
+  maxDist: 6
+--- !u!114 &114340648865021418
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 18bce048bd313fc40b6eb0a08d7f83ab, type: 3}
+  m_Name: RsDisparityTransform
+  m_EditorClassIdentifier: 
+  enabled: 1
+  Mode: 0
+--- !u!114 &114401103692956310
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48f1a4dc738fa514aa5e5d4cc3665aae, type: 3}
+  m_Name: RsSpatialFilter
+  m_EditorClassIdentifier: 
+  enabled: 0
+  _filterMagnitude: 2
+  _filterSmoothAlpha: 0.5
+  _filterSmoothDelta: 20
+  _holeFillingMode: 0
+--- !u!114 &114476060953143426
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab8658da5fac1924385546d4cfccbea4, type: 3}
+  m_Name: RsDecimationFilter
+  m_EditorClassIdentifier: 
+  enabled: 0
+  _streamFilter: 1
+  _formatFilter: 1
+  _filterMagnitude: 4
+--- !u!114 &114544001719900210
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 18bce048bd313fc40b6eb0a08d7f83ab, type: 3}
+  m_Name: RsDisparityTransform
+  m_EditorClassIdentifier: 
+  enabled: 1
+  Mode: 1
+--- !u!114 &114613456056826128
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7dffddaeb99d79644b99b1d8d18bad86, type: 3}
+  m_Name: RsThresholdFilter
+  m_EditorClassIdentifier: 
+  enabled: 0
+  MinDistance: 0
+  MaxDistance: 4
+--- !u!114 &114894276943703578
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 949c0815228b7334a89a9b09ff0c7fdb, type: 3}
+  m_Name: RsPointCloud
+  m_EditorClassIdentifier: 
+  enabled: 1
+  TextureStream: 1
+  TextureFormat: 5
+  _occlusionRemoval: 1
+--- !u!114 &114947088938950326
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a370b019fb25fbe4384bc45033197fcd, type: 3}
+  m_Name: RsHoleFillingFilter
+  m_EditorClassIdentifier: 
+  enabled: 0
+  _holesFill: 2

@@ -15,7 +15,9 @@ namespace librealsense
     class device_hub
     {
     public:
-        explicit device_hub(std::shared_ptr<librealsense::context> ctx, int vid = 0, bool register_device_notifications = true);
+        explicit device_hub(std::shared_ptr<librealsense::context> ctx, int mask = RS2_PRODUCT_LINE_ANY, int vid = 0, bool register_device_notifications = true);
+
+        ~device_hub();
 
         /**
          * The function implements both blocking and non-blocking device generation functionality based on the input parameters:
@@ -41,10 +43,7 @@ namespace librealsense
         */
         bool is_connected(const device_interface& dev);
 
-        ~device_hub()
-        {
-            _ctx->stop();
-        }
+        std::shared_ptr<librealsense::context> get_context();
 
     private:
         std::shared_ptr<device_interface> create_device(const std::string& serial, bool cycle_devices = true);
@@ -54,6 +53,7 @@ namespace librealsense
         std::vector<std::shared_ptr<device_info>> _device_list;
         int _camera_index = 0;
         int _vid = 0;
+        uint64_t _device_changes_callback_id;
         bool _register_device_notifications;
     };
 }

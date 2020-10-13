@@ -8,7 +8,6 @@
 #include "archive.h"
 #include "metadata.h"
 #include <cmath>
-using namespace librealsense;
 
 namespace librealsense
 {
@@ -33,6 +32,58 @@ namespace librealsense
 
         virtual ~md_attribute_parser_base() = default;
     };
+
+    /**\brief metadata parser class - support metadata in format: rs2_frame_metadata_value, rs2_metadata_type */
+    class md_constant_parser : public md_attribute_parser_base
+    {
+    public:
+        md_constant_parser(rs2_frame_metadata_value type) : _type(type) {}
+        rs2_metadata_type get(const frame& frm) const override
+        {
+            rs2_metadata_type v;
+            if (try_get(frm, v) == false)
+            {
+                throw invalid_value_exception("Frame does not support this type of metadata");
+            }
+            return v;
+        }
+        bool supports(const frame& frm) const override
+        {
+            rs2_metadata_type v;
+            return try_get(frm, v);
+        }
+
+        static std::shared_ptr<metadata_parser_map> create_metadata_parser_map()
+        {
+            auto md_parser_map = std::make_shared<metadata_parser_map>();
+            for (int i = 0; i < static_cast<int>(rs2_frame_metadata_value::RS2_FRAME_METADATA_COUNT); ++i)
+            {
+                auto frame_md_type = static_cast<rs2_frame_metadata_value>(i);
+                md_parser_map->insert(std::make_pair(frame_md_type, std::make_shared<md_constant_parser>(frame_md_type)));
+            }
+            return md_parser_map;
+        }
+    private:
+        bool try_get(const frame& frm, rs2_metadata_type& result) const
+        {
+            const uint8_t* pos = frm.additional_data.metadata_blob.data();
+            while (pos <= frm.additional_data.metadata_blob.data() + frm.additional_data.metadata_blob.size())
+            {
+                const rs2_frame_metadata_value* type = reinterpret_cast<const rs2_frame_metadata_value*>(pos);
+                pos += sizeof(rs2_frame_metadata_value);
+                if (_type == *type)
+                {
+                    const rs2_metadata_type* value = reinterpret_cast<const rs2_metadata_type*>(pos);
+                    memcpy((void*)&result, (const void*)value, sizeof(*value));
+                    return true;
+                }
+                pos += sizeof(rs2_metadata_type);
+            }
+            return false;
+        }
+        rs2_frame_metadata_value _type;
+    };
+
 
     /**\brief Post-processing adjustment of the metadata attribute
      *  e.g change auto_exposure enum to boolean, change units from nano->ms,etc'*/
@@ -63,7 +114,7 @@ namespace librealsense
         md_attribute_parser(Attribute S::* attribute_name, Flag flag, unsigned long long offset, attrib_modifyer mod) :
             _md_attribute(attribute_name), _md_flag(flag), _offset(offset), _modifyer(mod) {};
 
-        rs2_metadata_type get(const frame & frm) const override
+        rs2_metadata_type get(const librealsense::frame & frm) const override
         {
             auto s = reinterpret_cast<const S*>(((const uint8_t*)frm.additional_data.metadata_blob.data()) + _offset);
 
@@ -76,7 +127,7 @@ namespace librealsense
         }
 
         // Verifies that the parameter is both supported and available
-        bool supports(const frame & frm) const override
+        bool supports(const librealsense::frame & frm) const override
         {
             auto s = reinterpret_cast<const S*>(((const uint8_t*)frm.additional_data.metadata_blob.data()) + _offset);
 
@@ -92,12 +143,13 @@ namespace librealsense
                 // Note that this heurisic is not deterministic and may validate false frames! TODO - requires review
                 md_type expected_type = md_type_trait<S>::type;
 
-                if ((s->header.md_type_id != expected_type) || (s->header.md_size !=sizeof(*s)))
+                if ((s->header.md_type_id != expected_type) || (s->header.md_size < sizeof(*s)))
                 {
                     std::string type = (md_type_desc.count(s->header.md_type_id) > 0) ?
-                                md_type_desc.at(s->header.md_type_id) : (to_string() << "0x" << static_cast<uint32_t>(s->header.md_type_id));
+                                md_type_desc.at(s->header.md_type_id) : (to_string()
+                                << "0x" << std::hex << static_cast<uint32_t>(s->header.md_type_id) << std::dec);
                     LOG_DEBUG("Metadata mismatch - actual: " << type
-                        << ", expected: " << md_type_desc.at(expected_type) << "(0x" << std::hex << (uint32_t)expected_type << std::dec << ")");
+                        << ", expected: 0x"  << std::hex << (uint32_t)expected_type << std::dec << " (" << md_type_desc.at(expected_type) << ")");
                     return false;
                 }
 
@@ -136,7 +188,7 @@ namespace librealsense
         md_uvc_header_parser(Attribute St::* attribute_name, attrib_modifyer mod) :
             _md_attribute(attribute_name), _modifyer(mod){};
 
-        rs2_metadata_type get(const frame & frm) const override
+        rs2_metadata_type get(const librealsense::frame & frm) const override
         {
             if (!supports(frm))
                 throw invalid_value_exception("UVC header is not available");
@@ -146,7 +198,7 @@ namespace librealsense
             return attrib;
         }
 
-        bool supports(const frame & frm) const override
+        bool supports(const librealsense::frame & frm) const override
         { return (frm.additional_data.metadata_size >= platform::uvc_header_size); }
 
     private:
@@ -165,6 +217,46 @@ namespace librealsense
         return parser;
     }
 
+    /**\brief A HID-Header metadata parser class*/
+    template<class St, class Attribute>
+    class md_hid_header_parser : public md_attribute_parser_base
+    {
+    public:
+        md_hid_header_parser(Attribute St::* attribute_name, attrib_modifyer mod) :
+            _md_attribute(attribute_name), _modifyer(mod) {};
+
+        rs2_metadata_type get(const librealsense::frame & frm) const override
+        {
+            if (!supports(frm))
+                throw invalid_value_exception("HID header is not available");
+
+            auto attrib = static_cast<rs2_metadata_type>((*reinterpret_cast<const St*>((const uint8_t*)frm.additional_data.metadata_blob.data())).*_md_attribute);
+            attrib &= 0x00000000ffffffff;
+            if (_modifyer) attrib = _modifyer(attrib);
+            return attrib;
+        }
+
+        bool supports(const librealsense::frame & frm) const override
+        {
+            return (frm.additional_data.metadata_size >= platform::hid_header_size);
+        }
+
+    private:
+        md_hid_header_parser() = delete;
+        md_hid_header_parser(const md_hid_header_parser&) = delete;
+
+        Attribute St::*     _md_attribute;  // Pointer to the attribute within uvc header that provides the relevant data
+        attrib_modifyer     _modifyer;      // Post-processing on received attribute
+    };
+
+    /**\brief A utility function to create HID metadata header parser*/
+    template<class St, class Attribute>
+    std::shared_ptr<md_attribute_parser_base> make_hid_header_parser(Attribute St::* attribute, attrib_modifyer mod = nullptr)
+    {
+        std::shared_ptr<md_hid_header_parser<St, Attribute>> parser(new md_hid_header_parser<St, Attribute>(attribute, mod));
+        return parser;
+    }
+
     /**\brief provide attributes generated and stored internally by the library*/
     template<class St, class Attribute>
     class md_additional_parser : public md_attribute_parser_base
@@ -173,12 +265,12 @@ namespace librealsense
         md_additional_parser(Attribute St::* attribute_name) :
             _md_attribute(attribute_name) {};
 
-        rs2_metadata_type get(const frame & frm) const override
+        rs2_metadata_type get(const librealsense::frame & frm) const override
         {
             return static_cast<rs2_metadata_type>(frm.additional_data.*_md_attribute);
         }
 
-        bool supports(const frame & frm) const override
+        bool supports(const librealsense::frame & frm) const override
         { return true; }
 
     private:
@@ -211,12 +303,12 @@ namespace librealsense
 
         // The sensor's timestamp is defined as the middle of exposure time. Sensor_ts= Frame_ts - (Actual_Exposure/2)
         // For RS4xx the metadata payload holds only the (Actual_Exposure/2) offset, and the actual value needs to be calculated
-        rs2_metadata_type get(const frame & frm) const override
+        rs2_metadata_type get(const librealsense::frame & frm) const override
         {
             return _frame_ts_parser->get(frm) - _sensor_ts_parser->get(frm);
         };
 
-        bool supports(const frame & frm) const override
+        bool supports(const librealsense::frame & frm) const override
         {
             return (_sensor_ts_parser->supports(frm) && _frame_ts_parser->supports(frm));
         };
@@ -226,14 +318,15 @@ namespace librealsense
     class actual_fps_calculator
     {
     public:
-        double get_fps(const frame & frm)
+        double get_fps(const librealsense::frame & frm)
         {
-            // A computation involving unsigned operands can never overflow (ISO/IEC 9899:1999 (E) §6.2.5/9)
-            auto num_of_frames = frm.additional_data.frame_number - frm.additional_data.last_frame_number;
+            // A computation involving unsigned operands can never overflow (ISO/IEC 9899:1999 (E) \A76.2.5/9)
+            // In case of frame counter reset fallback use fps from the stream configuration
+            auto num_of_frames = (frm.additional_data.frame_number) ? frm.additional_data.frame_number - frm.additional_data.last_frame_number : 0;
 
             if (num_of_frames == 0)
             {
-                LOG_INFO("frame_number - last_frame_number " << num_of_frames);
+                LOG_INFO("Frame counter reset");
             }
 
             auto diff = num_of_frames ? (double)(frm.additional_data.timestamp - frm.additional_data.last_timestamp) / (double)num_of_frames : 0;
@@ -246,10 +339,10 @@ namespace librealsense
     {
     public:
         ds5_md_attribute_actual_fps(bool discrete = true, attrib_modifyer  exposure_mod = [](const rs2_metadata_type& param) {return param; })
-            :_exposure_modifyer(exposure_mod), _discrete(discrete), _fps_values{ 6, 15, 30, 60, 90 }
+            : _fps_values{ 6, 15, 30, 60, 90 } , _exposure_modifyer(exposure_mod), _discrete(discrete)
         {}
 
-        rs2_metadata_type get(const frame & frm) const override
+        rs2_metadata_type get(const librealsense::frame & frm) const override
         {
             if (frm.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE))
             {
@@ -297,7 +390,7 @@ namespace librealsense
 
         }
 
-        bool supports(const frame & frm) const override
+        bool supports(const librealsense::frame & frm) const override
         {
             return true;
         }
@@ -325,7 +418,7 @@ namespace librealsense
         md_sr300_attribute_parser(Attribute S::* attribute_name, unsigned long long offset, attrib_modifyer mod) :
             _md_attribute(attribute_name), _offset(offset), _modifyer(mod){};
 
-        rs2_metadata_type get(const frame & frm) const override
+        rs2_metadata_type get(const librealsense::frame & frm) const override
         {
             if (!supports(frm))
                 throw invalid_value_exception("Metadata is not available");
@@ -339,7 +432,7 @@ namespace librealsense
             return param;
         }
 
-        bool supports(const frame & frm) const override
+        bool supports(const librealsense::frame & frm) const override
         {
             return (frm.additional_data.metadata_size >= (sizeof(S) + platform::uvc_header_size));
         }

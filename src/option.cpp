@@ -1,14 +1,43 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-
 #include "option.h"
 #include "sensor.h"
-#include "error-handling.h"
 
 
-void option::create_snapshot(std::shared_ptr<option>& snapshot) const
+bool librealsense::option_base::is_valid(float value) const
+{
+    if (!std::isnormal(_opt_range.step) && _opt_range.step != 0)
+        throw invalid_value_exception(to_string() << "is_valid(...) failed! step is not properly defined. (" << _opt_range.step << ")");
+
+    if ((value < _opt_range.min) || (value > _opt_range.max))
+        return false;
+
+    if (_opt_range.step == 0)
+        return true;
+
+    auto n = (value - _opt_range.min) / _opt_range.step;
+    return (fabs(fmod(n, 1)) < std::numeric_limits<float>::min());
+}
+
+librealsense::option_range librealsense::option_base::get_range() const
+{
+    return _opt_range;
+}
+void librealsense::option_base::enable_recording(std::function<void(const option&)> recording_action)
+{
+    _recording_function = recording_action;
+}
+
+void librealsense::option::create_snapshot(std::shared_ptr<option>& snapshot) const
 {
     snapshot = std::make_shared<const_value_option>(get_description(), query());
+}
+
+void librealsense::float_option::set(float value)
+{
+    if (!is_valid(value))
+        throw invalid_value_exception(to_string() << "set(...) failed! " << value << " is not a valid value");
+    _value = value;
 }
 
 void librealsense::uvc_pu_option::set(float value)
@@ -72,8 +101,8 @@ const char* librealsense::uvc_pu_option::get_description() const
     case RS2_OPTION_ENABLE_AUTO_EXPOSURE: return "Enable / disable auto-exposure";
     case RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE: return "Enable / disable auto-white-balance";
     case RS2_OPTION_POWER_LINE_FREQUENCY: return "Power Line Frequency";
-    case RS2_OPTION_AUTO_EXPOSURE_PRIORITY: return "Limit exposure time when auto-exposure is ON to preserve constant fps rate";
-    default: return rs2_option_to_string(_id);
+    case RS2_OPTION_AUTO_EXPOSURE_PRIORITY: return "Restrict Auto-Exposure to enforce constant FPS rate. Turn ON to remove the restrictions (may result in FPS drop)";
+    default: return _ep.get_option_name(_id);
     }
 }
 
@@ -112,6 +141,12 @@ std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const 
         });
 }
 
+librealsense::polling_errors_disable::~polling_errors_disable()
+{
+    if (auto handler = _polling_error_handler.lock())
+        handler->stop();
+}
+
 void librealsense::polling_errors_disable::set(float value)
 {
     if (value < 0)
@@ -119,13 +154,19 @@ void librealsense::polling_errors_disable::set(float value)
 
     if (value == 0)
     {
-        _polling_error_handler->stop();
-        _value = 0;
+        if (auto handler = _polling_error_handler.lock())
+        {
+            handler->stop();
+            _value = 0;
+        }
     }
     else
     {
-        _polling_error_handler->start();
-        _value = 1;
+        if (auto handler = _polling_error_handler.lock())
+        {
+            handler->start();
+            _value = 1;
+        }
     }
     _recording_function(*this);
 }
@@ -160,4 +201,13 @@ const char * librealsense::polling_errors_disable::get_value_description(float v
     {
         return "Enable error polling";
     }
+}
+
+std::vector<rs2_option> librealsense::options_container::get_supported_options() const
+{
+    std::vector<rs2_option> options;
+    for (auto option : _options)
+        options.push_back(option.first);
+
+    return options;
 }

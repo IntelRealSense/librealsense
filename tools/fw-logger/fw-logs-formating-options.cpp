@@ -1,3 +1,5 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 #include "fw-logs-formating-options.h"
 #include "fw-logs-xml-helper.h"
 #include <sstream>
@@ -75,6 +77,11 @@ namespace fw_logger
             *thread_name = "Unknown";
             return false;
         }
+    }
+
+    std::unordered_map<string, std::vector<kvp>> fw_logs_formating_options::get_enums() const
+    {
+        return _fw_logs_enum_names_list;
     }
 
     bool fw_logs_formating_options::initialize_from_xml()

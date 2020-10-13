@@ -7,6 +7,7 @@
 
 int main(int argc, char * argv[]) try
 {
+    using namespace cv;
     using namespace rs2;
 
     // Define colorizer and align processing-blocks
@@ -17,16 +18,15 @@ int main(int argc, char * argv[]) try
     pipeline pipe;
     pipe.start();
 
-    using namespace cv;
     const auto window_name = "Display Image";
     namedWindow(window_name, WINDOW_AUTOSIZE);
 
     // We are using StructuringElement for erode / dilate operations
     auto gen_element = [](int erosion_size)
     {
-        return getStructuringElement(cv::MORPH_RECT,
-            cv::Size(erosion_size + 1, erosion_size + 1),
-            cv::Point(erosion_size, erosion_size));
+        return getStructuringElement(MORPH_RECT,
+            Size(erosion_size + 1, erosion_size + 1),
+            Point(erosion_size, erosion_size));
     };
 
     const int erosion_size = 3;
@@ -35,7 +35,7 @@ int main(int argc, char * argv[]) try
 
     // The following operation is taking grayscale image,
     // performs threashold on it, closes small holes and erodes the white area
-    auto create_mask_from_depth = [&](cv::Mat& depth, int thresh, ThresholdTypes type)
+    auto create_mask_from_depth = [&](Mat& depth, int thresh, ThresholdTypes type)
     {
         threshold(depth, depth, thresh, 255, type);
         dilate(depth, depth, erode_less);
@@ -45,7 +45,7 @@ int main(int argc, char * argv[]) try
     // Skips some frames to allow for auto-exposure stabilization
     for (int i = 0; i < 10; i++) pipe.wait_for_frames();
 
-    while (waitKey(1) < 0 && cvGetWindowHandle(window_name))
+    while (waitKey(1) < 0 && getWindowProperty(window_name, WND_PROP_AUTOSIZE) >= 0)
     {
         frameset data = pipe.wait_for_frames();
         // Make sure the frameset is spatialy aligned 
@@ -57,18 +57,18 @@ int main(int argc, char * argv[]) try
         // Colorize depth image with white being near and black being far
         // This will take advantage of histogram equalization done by the colorizer
         colorize.set_option(RS2_OPTION_COLOR_SCHEME, 2);
-        frame bw_depth = colorize(depth);
+        frame bw_depth = depth.apply_filter(colorize);
 
         // Generate "near" mask image:
         auto near = frame_to_mat(bw_depth);
-        cvtColor(near, near, CV_BGR2GRAY);
+        cvtColor(near, near, COLOR_BGR2GRAY);
         // Take just values within range [180-255]
         // These will roughly correspond to near objects due to histogram equalization
         create_mask_from_depth(near, 180, THRESH_BINARY);
 
         // Generate "far" mask image:
         auto far = frame_to_mat(bw_depth);
-        cvtColor(far, far, CV_BGR2GRAY);
+        cvtColor(far, far, COLOR_BGR2GRAY);
         far.setTo(255, far == 0); // Note: 0 value does not indicate pixel near the camera, and requires special attention 
         create_mask_from_depth(far, 100, THRESH_BINARY_INV);
 
@@ -82,12 +82,12 @@ int main(int argc, char * argv[]) try
 
         // Run Grab-Cut algorithm:
         Mat bgModel, fgModel; 
-        cv::grabCut(color_mat, mask, Rect(), bgModel, fgModel, 1, cv::GC_INIT_WITH_MASK);
+        grabCut(color_mat, mask, Rect(), bgModel, fgModel, 1, GC_INIT_WITH_MASK);
 
         // Extract foreground pixels based on refined mask from the algorithm
-        cv::Mat3b foreground = cv::Mat3b::zeros(color_mat.rows, color_mat.cols);
-        color_mat.copyTo(foreground, (mask == cv::GC_FGD) | (mask == cv::GC_PR_FGD));
-        cv::imshow(window_name, foreground);
+        Mat3b foreground = Mat3b::zeros(color_mat.rows, color_mat.cols);
+        color_mat.copyTo(foreground, (mask == GC_FGD) | (mask == GC_PR_FGD));
+        imshow(window_name, foreground);
     }
 
     return EXIT_SUCCESS;

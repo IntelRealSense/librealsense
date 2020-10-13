@@ -30,7 +30,7 @@
 #include "ros/message_event.h"
 
 using std::string;
-using ros::Time;
+using rs2rosinternal::Time;
 using std::shared_ptr;
 
 namespace rosbag {
@@ -46,15 +46,15 @@ string const& MessageInstance::getDataType()          const { return connection_
 string const& MessageInstance::getMD5Sum()            const { return connection_info_->md5sum;   }
 string const& MessageInstance::getMessageDefinition() const { return connection_info_->msg_def;  }
 
-shared_ptr<ros::M_string> MessageInstance::getConnectionHeader() const { return connection_info_->header; }
+shared_ptr<rs2rosinternal::M_string> MessageInstance::getConnectionHeader() const { return connection_info_->header; }
 
 string MessageInstance::getCallerId() const {
-    ros::M_string::const_iterator header_iter = connection_info_->header->find("callerid");
+    rs2rosinternal::M_string::const_iterator header_iter = connection_info_->header->find("callerid");
     return header_iter != connection_info_->header->end() ? header_iter->second : string("");
 }
 
 bool MessageInstance::isLatching() const {
-    ros::M_string::const_iterator header_iter = connection_info_->header->find("latching");
+    rs2rosinternal::M_string::const_iterator header_iter = connection_info_->header->find("latching");
     return header_iter != connection_info_->header->end() && header_iter->second == "1";
 }
 

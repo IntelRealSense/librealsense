@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="@drawable/fragment_template"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <TextView
+        android:id="@+id/controls_list_title"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#ffffff"
+        android:text="Controls"
+        android:textSize="20dp"
+        android:textStyle="bold"
+        android:layout_marginBottom="5dp"/>
+
+    <ListView
+        android:id="@+id/controls_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/controls_list_title"
+        tools:layout_height="150dip">
+        <!-- items added within code -->
+    </ListView>
+
+
+
+    //Close button
+    <Button
+        android:id="@+id/controls_close_button"
+        android:layout_below="@id/controls_list"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="14dp"
+        android:text="Close"
+        android:layout_alignParentEnd="true"
+        android:textAllCaps="false"
+        android:textStyle="bold"/>
+</RelativeLayout>

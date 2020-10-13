@@ -8,13 +8,14 @@ namespace librealsense
 {
     const size_t PRESISTENCY_LUT_SIZE = 256;
 
-    class temporal_filter : public processing_block
+    class temporal_filter : public depth_processing_block
     {
     public:
         temporal_filter();
 
     protected:
         void    update_configuration(const rs2::frame& f);
+        rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
         rs2::frame prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source);
 
@@ -25,10 +26,7 @@ namespace librealsense
 
             const bool fp = (std::is_floating_point<T>::value);
 
-            // In disparity domain 0.001 stands for 5cm at 5 m
-            const T noise = fp ? static_cast<T>(0.001f) : static_cast<T>(3);
-            // For disparity mode the gradient threshold is strictly bounded to avoid visual artefacts
-            T max_radius = static_cast<T>(fp ? _delta_param/250.f : _delta_param);
+            T delta_z = static_cast<T>(_delta_param);
 
             auto frame          = reinterpret_cast<T*>(frame_data);
             auto _last_frame    = reinterpret_cast<T*>(_last_frame_data);
@@ -52,7 +50,7 @@ namespace librealsense
                     {  // old and new val
                         T diff = static_cast<T>(fabs(cur_val - prev_val));
 
-                        if (diff > noise && (diff/cur_val) < max_radius)
+                        if (diff < delta_z)
                         {  // old and new val agree
                             history[i] |= mask;
                             float filtered = _alpha_param * cur_val + _one_minus_alpha * prev_val;
@@ -91,7 +89,6 @@ namespace librealsense
         void on_set_delta(float val);
 
         void recalc_persistence_map();
-        std::mutex _mutex;
         uint8_t                 _persistence_param;
 
         float                   _alpha_param;               // The normalized weight of the current pixel
@@ -109,4 +106,5 @@ namespace librealsense
         // encodes whether a particular 8 bit history is good enough for all 8 phases of storage
         std::array<uint8_t, PRESISTENCY_LUT_SIZE> _persistence_map;
     };
+    MAP_EXTENSION(RS2_EXTENSION_TEMPORAL_FILTER, librealsense::temporal_filter);
 }

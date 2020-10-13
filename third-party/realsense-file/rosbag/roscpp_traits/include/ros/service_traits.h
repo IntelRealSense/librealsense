@@ -31,7 +31,7 @@
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/type_traits/remove_const.hpp>
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace service_traits
 {
@@ -107,6 +107,6 @@ inline const char* datatype(const M& m)
 }
 
 } // namespace service_traits
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // ROSCPP_SERVICE_TRAITS_H

@@ -2,9 +2,15 @@ bin/
 lib/
 
 ubuntu-xenial/
+ubuntu-xenial-hwe/
+
+# Docs
+doc/doxygen/html/
+*.html.lnk
 
 # CMake
-build/
+build*/
+connectivity_check
 
 # XCode
 .DS_Store
@@ -24,6 +30,7 @@ DerivedData
 librealsense.xc/build
 
 *~
+*.TMP
 *.a
 *.o
 *.so
@@ -82,3 +89,4 @@ librealsense-log.txt
 *.ini
 *.cxx
 
+.vscode/*

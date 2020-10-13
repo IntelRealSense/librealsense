@@ -5,43 +5,15 @@
 #include "backend.h"
 #include "types.h"
 
-#include <cassert>
-#include <cstdlib>
-#include <cstdio>
-#include <cstring>
-
-#include <algorithm>
-#include <functional>
-#include <string>
-#include <sstream>
-#include <fstream>
-#include <regex>
-#include <thread>
-#include <utility> // for pair
-#include <chrono>
-#include <thread>
-#include <atomic>
-
-#include <dirent.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <limits.h>
-#include <cmath>
-#include <errno.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <sys/ioctl.h>
-#include <linux/usb/video.h>
-#include <linux/uvcvideo.h>
-#include <linux/videodev2.h>
-#include <fts.h>
-#include <regex>
 #include <list>
 
 namespace librealsense
 {
     namespace platform
     {
+        const uint32_t hid_buf_len = 128;
+
         struct hid_input_info
         {
             std::string input = "";
@@ -58,6 +30,51 @@ namespace librealsense
             uint64_t mask;
             // TODO: parse 'offset' and 'scale'
         };
+
+        // SYSFS or HAL for (IIO) device drivers differs requires a non-standard std::fstream operation mode:
+        // The first in/out operation selects the mode exclusively.
+        // Switching from read to write or vice versa requires fstream's close/open sequence.
+        // Writing/appending to the fstream requires flush synchronization
+        template<typename T>
+        inline bool write_fs_attribute(const std::string& path, const T& val)
+        {
+            static_assert(((std::is_arithmetic<T>::value)||(std::is_same<T,std::string>::value)),
+                "write_fs_attribute supports arithmetic and std::string types only");
+
+            bool res = false;
+            std::fstream fs_handle(path);
+            if (!fs_handle.good())
+            {
+                LOG_WARNING(__FUNCTION__ <<" with " << val << " failed. The specified path "  << path << " is not valid");
+                return res;
+            }
+
+            try // Read/Modify/Confirm
+            {
+                T cval{};
+                fs_handle >> cval;
+
+                if (cval!=val)
+                {
+                    fs_handle.close();
+                    fs_handle.open(path);
+                    fs_handle << val;
+                    fs_handle.flush();
+                    std::ifstream vnv_handle(path);
+                    vnv_handle >> cval;
+                    fs_handle >> cval;
+                    res = (cval==val);
+                    if (!res)
+                        LOG_WARNING(__FUNCTION__ << " Could not change " << cval << " to " << val << " : path " << path);
+                }
+            }
+            catch (const std::exception& exc)
+            {
+                LOG_WARNING(__FUNCTION__ << " with  " << path << " failed: " << exc.what());
+            }
+
+            return res;
+        }
 
         // manage an IIO input. or what is called a scan.
         class hid_input
@@ -101,8 +118,8 @@ namespace librealsense
 
             void signal_stop();
 
-            int _stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]
             int _fd;
+            int _stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]
             std::map<std::string, std::string> _reports;
             std::string _custom_device_path;
             std::string _custom_sensor_name;
@@ -130,6 +147,7 @@ namespace librealsense
             void clear_buffer();
 
             void set_frequency(uint32_t frequency);
+            void set_power(bool on);
 
             void signal_stop();
 
@@ -153,10 +171,6 @@ namespace librealsense
             // read the IIO device inputs.
             void read_device_inputs();
 
-            // configure hid device via fd
-            void write_integer_to_param(const std::string& param,int value);
-
-            static const uint32_t buf_len = 128; // TODO
             int _stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]
             int _fd;
             int _iio_device_number;
@@ -168,6 +182,8 @@ namespace librealsense
             hid_callback _callback;
             std::atomic<bool> _is_capturing;
             std::unique_ptr<std::thread> _hid_thread;
+            std::unique_ptr<std::thread> _pm_thread;    // Delayed initialization due to power-up sequence
+            dispatcher                  _pm_dispatcher; // Asynchronous power management
         };
 
         class v4l_hid_device : public hid_device
@@ -176,6 +192,8 @@ namespace librealsense
             v4l_hid_device(const hid_device_info& info);
 
             ~v4l_hid_device();
+
+            void register_profiles(const std::vector<hid_profile>& hid_profiles) override { _hid_profiles = hid_profiles;}
 
             void open(const std::vector<hid_profile>& hid_profiles);
 

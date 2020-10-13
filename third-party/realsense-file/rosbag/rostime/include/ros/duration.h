@@ -59,7 +59,7 @@ namespace boost {
   }
 }
 
-namespace ros
+namespace rs2rosinternal
 {
 ROSTIME_DECL void normalizeSecNSecSigned(int64_t& sec, int64_t& nsec);
 ROSTIME_DECL void normalizeSecNSecSigned(int32_t& sec, int32_t& nsec);
@@ -103,7 +103,7 @@ class Rate;
 /**
  * \brief Duration representation for use with the Time class.
  *
- * ros::DurationBase provides most of its functionality.
+ * rs2rosinternal::DurationBase provides most of its functionality.
  */
 class ROSTIME_DECL Duration : public DurationBase<Duration>
 {
@@ -131,7 +131,7 @@ extern ROSTIME_DECL const Duration DURATION_MIN;
 /**
  * \brief Duration representation for use with the WallTime class.
  *
- * ros::DurationBase provides most of its functionality.
+ * rs2rosinternal::DurationBase provides most of its functionality.
  */
 class ROSTIME_DECL WallDuration : public DurationBase<WallDuration>
 {

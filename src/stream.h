@@ -60,8 +60,8 @@ namespace librealsense
         uint32_t get_framerate() const override;
         void set_framerate(uint32_t val) override;
 
-        bool is_default() const override;
-        void make_default() override;
+        int get_tag() const override;
+        void tag_profile(int tag) override;
 
         int get_unique_id() const override { return _uid; }
         void set_unique_id(int uid) override
@@ -83,7 +83,7 @@ namespace librealsense
         rs2_stream _type = RS2_STREAM_ANY;
         rs2_format _format = RS2_FORMAT_ANY;
         uint32_t _framerate = 0;
-        bool _is_default = false;
+        int _tag = profile_tag::PROFILE_TAG_ANY;
         rs2_stream_profile _c_wrapper;
         rs2_stream_profile* _c_ptr = nullptr;
     };
@@ -92,7 +92,7 @@ namespace librealsense
     {
     public:
         explicit video_stream_profile(platform::stream_profile sp)
-            : stream_profile_base( std::move(sp)),
+            : stream_profile_base(std::move(sp)),
               _calc_intrinsics([]() -> rs2_intrinsics { throw not_implemented_exception("No intrinsics are available for this stream profile!"); }),
               _width(0), _height(0)
         {
@@ -112,11 +112,14 @@ namespace librealsense
         std::shared_ptr<stream_profile_interface> clone() const override
         {
             auto res = std::make_shared<video_stream_profile>(platform::stream_profile{});
-            res->set_unique_id(environment::get_instance().generate_stream_id());
+            auto id = environment::get_instance().generate_stream_id();
+            res->set_unique_id( id );
+            LOG_DEBUG( "video_stream_profile::clone, id= " << id );
             res->set_dims(get_width(), get_height());
             std::function<rs2_intrinsics()> int_func = _calc_intrinsics;
             res->set_intrinsics([int_func]() { return int_func(); });
             res->set_framerate(get_framerate());
+            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*res, *this);
             return res;
         }
 
@@ -147,15 +150,27 @@ namespace librealsense
         explicit motion_stream_profile(platform::stream_profile sp)
             : stream_profile_base(std::move(sp)),
             _calc_intrinsics([]() -> rs2_motion_device_intrinsic { throw not_implemented_exception("No intrinsics are available for this stream profile!"); })
-            {
-            }
-            rs2_motion_device_intrinsic get_intrinsics() const override { return _calc_intrinsics(); }
-            void set_intrinsics(std::function<rs2_motion_device_intrinsic()> calc) override { _calc_intrinsics = calc; }
+        {}
 
-            void update(std::shared_ptr<extension_snapshot> ext) override
-            {
-                return; //TODO: apply changes here
-            }
+        rs2_motion_device_intrinsic get_intrinsics() const override { return _calc_intrinsics(); }
+        void set_intrinsics(std::function<rs2_motion_device_intrinsic()> calc) override { _calc_intrinsics = calc; }
+
+        void update(std::shared_ptr<extension_snapshot> ext) override
+        {
+            return; //TODO: apply changes here
+        }
+
+        std::shared_ptr<stream_profile_interface> clone() const override
+        {
+            auto res = std::make_shared<motion_stream_profile>(platform::stream_profile{});
+            res->set_unique_id(environment::get_instance().generate_stream_id());
+            std::function<rs2_motion_device_intrinsic()> init_func = _calc_intrinsics;
+            res->set_intrinsics([init_func]() { return init_func(); });
+            res->set_framerate(get_framerate());
+            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*res, *this);
+            return res;
+        }
+
     private:
         std::function<rs2_motion_device_intrinsic()> _calc_intrinsics;
     };
@@ -172,9 +187,10 @@ namespace librealsense
         auto fps = static_cast<uint32_t>(sp->get_framerate());
         if (auto vid = dynamic_cast<const video_stream_profile*>(sp))
         {
-            return{ sp->get_stream_type(), sp->get_stream_index(), vid->get_width(), vid->get_height(), fps, sp->get_format() };
+            return { sp->get_format(), sp->get_stream_type(), sp->get_stream_index(), vid->get_width(), vid->get_height(), fps };
         }
-        return{ sp->get_stream_type(), sp->get_stream_index(), 0, 0, fps, sp->get_format() };
+        
+        return { sp->get_format(), sp->get_stream_type(), sp->get_stream_index(), 0, 0, fps };
     }
 
     inline std::vector<stream_profile> to_profiles(const std::vector<std::shared_ptr<stream_profile_interface>>& vec)

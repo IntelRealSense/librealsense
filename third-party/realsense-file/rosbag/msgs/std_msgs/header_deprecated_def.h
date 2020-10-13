@@ -108,28 +108,28 @@ public:
 
    virtual uint8_t *serialize(uint8_t *write_ptr, uint32_t seq) const
   {
-    ros::serialization::OStream stream(write_ptr, 1000000000);
-    ros::serialization::serialize(stream, this->seq);
-    ros::serialization::serialize(stream, this->stamp);
-    ros::serialization::serialize(stream, this->frame_id);
+    rs2rosinternal::serialization::OStream stream(write_ptr, 1000000000);
+    rs2rosinternal::serialization::serialize(stream, this->seq);
+    rs2rosinternal::serialization::serialize(stream, this->stamp);
+    rs2rosinternal::serialization::serialize(stream, this->frame_id);
     return stream.getData();
   }
 
    virtual uint8_t *deserialize(uint8_t *read_ptr)
   {
-    ros::serialization::IStream stream(read_ptr, 1000000000);
-    ros::serialization::deserialize(stream, this->seq);
-    ros::serialization::deserialize(stream, this->stamp);
-    ros::serialization::deserialize(stream, this->frame_id);
+    rs2rosinternal::serialization::IStream stream(read_ptr, 1000000000);
+    rs2rosinternal::serialization::deserialize(stream, this->seq);
+    rs2rosinternal::serialization::deserialize(stream, this->stamp);
+    rs2rosinternal::serialization::deserialize(stream, this->frame_id);
     return stream.getData();
   }
 
    virtual uint32_t serializationLength() const
   {
     uint32_t size = 0;
-    size += ros::serialization::serializationLength(this->seq);
-    size += ros::serialization::serializationLength(this->stamp);
-    size += ros::serialization::serializationLength(this->frame_id);
+    size += rs2rosinternal::serialization::serializationLength(this->seq);
+    size += rs2rosinternal::serialization::serializationLength(this->stamp);
+    size += rs2rosinternal::serialization::serializationLength(this->frame_id);
     return size;
   }
 
@@ -145,12 +145,12 @@ typedef boost::shared_ptr< ::roslib::Header const> HeaderConstPtr;
 template<typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s, const  ::roslib::Header_<ContainerAllocator> & v)
 {
-  ros::message_operations::Printer< ::roslib::Header_<ContainerAllocator> >::stream(s, "", v);
+  rs2rosinternal::message_operations::Printer< ::roslib::Header_<ContainerAllocator> >::stream(s, "", v);
   return s;}
 
 } // namespace roslib
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_traits
 {
@@ -203,9 +203,9 @@ string frame_id\n\
 };
 
 } // namespace message_traits
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace serialization
 {
@@ -222,9 +222,9 @@ template<class ContainerAllocator> struct Serializer< ::roslib::Header_<Containe
   ROS_DECLARE_ALLINONE_SERIALIZER
 }; // struct Header_
 } // namespace serialization
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_operations
 {
@@ -237,7 +237,7 @@ struct Printer< ::roslib::Header_<ContainerAllocator> >
     s << indent << "seq: ";
     Printer<uint32_t>::stream(s, indent + "  ", v.seq);
     s << indent << "stamp: ";
-    Printer<ros::Time>::stream(s, indent + "  ", v.stamp);
+    Printer<rs2rosinternal::Time>::stream(s, indent + "  ", v.stamp);
     s << indent << "frame_id: ";
     Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.frame_id);
   }
@@ -245,5 +245,5 @@ struct Printer< ::roslib::Header_<ContainerAllocator> >
 
 
 } // namespace message_operations
-} // namespace ros
+} // namespace rs2rosinternal
 

@@ -3,27 +3,15 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(RealSenseDNNExample)
 
-# Save the command line compile commands in the build output
-set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
-
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-endif()
-
 add_executable(rs-dnn rs-dnn.cpp ../cv-helpers.hpp)
+set_property(TARGET rs-dnn PROPERTY CXX_STANDARD 11)
 target_link_libraries(rs-dnn ${DEPENDENCIES})
 set_target_properties (rs-dnn PROPERTIES
 	FOLDER "Examples/OpenCV"
 )
 
 set(PROTOTEXT_FILE "MobileNetSSD_deploy.prototxt")
-set(PROTOTEXT_URL "https://raw.githubusercontent.com/chuanqi305/MobileNet-SSD/master/MobileNetSSD_deploy.prototxt")
+set(PROTOTEXT_URL "https://raw.githubusercontent.com/chuanqi305/MobileNet-SSD/f5d072ccc7e3dcddaa830e9805da4bf1000b2836/MobileNetSSD_deploy.prototxt")
 set(PROTOTEXT_PATH "${CMAKE_CURRENT_BINARY_DIR}/${PROTOTEXT_FILE}")
 
 set(MODEL_FILE "MobileNetSSD_deploy.caffemodel")

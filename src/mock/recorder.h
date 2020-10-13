@@ -6,6 +6,7 @@
 #include "../../include/librealsense2/h/rs_internal.h"
 #include "backend.h"
 #include "context.h"
+#include "command_transfer.h"
 #include <vector>
 #include <mutex>
 #include <chrono>
@@ -45,6 +46,7 @@ namespace librealsense
             uvc_frame,
             create_hid_device,
             query_hid_devices,
+            hid_register_profiles,
             hid_open,
             hid_close,
             hid_stop_capture,
@@ -54,7 +56,8 @@ namespace librealsense
             hid_get_custom_report_data,
             device_watcher_start,
             device_watcher_event,
-            device_watcher_stop
+            device_watcher_stop,
+            uvc_get_usb_specification
         };
 
         class compression_algorithm
@@ -110,7 +113,7 @@ namespace librealsense
 
             double get_time();
             void save(const char* filename, const char* section, bool append = false) const;
-            static std::shared_ptr<recording> load(const char* filename, const char* section, std::shared_ptr<playback_device_watcher> watcher = nullptr);
+            static std::shared_ptr<recording> load(const char* filename, const char* section, std::shared_ptr<playback_device_watcher> watcher = nullptr, std::string min_api_version = "");
 
             int save_blob(const void* ptr, size_t size);
 
@@ -342,6 +345,7 @@ namespace librealsense
             void lock() const override;
             void unlock() const override;
             std::string get_device_location() const override;
+            usb_spec get_usb_specification() const override;
 
             explicit record_uvc_device(
                 std::shared_ptr<uvc_device> source,
@@ -360,6 +364,7 @@ namespace librealsense
         class record_hid_device : public hid_device
         {
         public:
+            void register_profiles(const std::vector<hid_profile>& hid_profiles) override;
             void open(const std::vector<hid_profile>& hid_profiles) override;
             void close() override;
             void stop_capture() override;
@@ -379,17 +384,17 @@ namespace librealsense
             const record_backend* _owner;
         };
 
-        class record_usb_device : public usb_device
+        class record_usb_device : public command_transfer
         {
         public:
             std::vector<uint8_t> send_receive(const std::vector<uint8_t>& data, int timeout_ms, bool require_response) override;
 
-            record_usb_device(std::shared_ptr<usb_device> source,
+            record_usb_device(std::shared_ptr<command_transfer> source,
                 int id, const record_backend* owner)
                 : _source(source), _entity_id(id), _owner(owner) {}
 
         private:
-            std::shared_ptr<usb_device> _source;
+            std::shared_ptr<command_transfer> _source;
             int _entity_id;
             const record_backend* _owner;
         };
@@ -423,7 +428,7 @@ namespace librealsense
             std::vector<hid_device_info> query_hid_devices() const override;
             std::shared_ptr<uvc_device> create_uvc_device(uvc_device_info info) const override;
             std::vector<uvc_device_info> query_uvc_devices() const override;
-            std::shared_ptr<usb_device> create_usb_device(usb_device_info info) const override;
+            std::shared_ptr<command_transfer> create_usb_device(usb_device_info info) const override;
             std::vector<usb_device_info> query_usb_devices() const override;
             std::shared_ptr<time_service> create_time_service() const override;
             std::shared_ptr<device_watcher> create_device_watcher() const override;
@@ -520,6 +525,7 @@ namespace librealsense
             void lock() const override;
             void unlock() const override;
             std::string get_device_location() const override;
+            usb_spec get_usb_specification() const override;
 
             explicit playback_uvc_device(std::shared_ptr<recording> rec, int id);
 
@@ -540,13 +546,14 @@ namespace librealsense
         };
 
 
-        class playback_usb_device : public usb_device
+        class playback_usb_device : public command_transfer
         {
         public:
             std::vector<uint8_t> send_receive(const std::vector<uint8_t>& data, int timeout_ms, bool require_response) override;
 
             explicit playback_usb_device(std::shared_ptr<recording> rec,
-                int id) : _rec(rec), _entity_id(id) {}
+                int id) : _rec(rec), _entity_id(id) 
+            {}
 
         private:
             std::shared_ptr<recording> _rec;
@@ -556,6 +563,7 @@ namespace librealsense
         class playback_hid_device : public hid_device
         {
         public:
+            void register_profiles(const std::vector<hid_profile>& hid_profiles) override;
             void open(const std::vector<hid_profile>& hid_profiles) override;
             void close() override;
             void stop_capture() override;
@@ -585,12 +593,12 @@ namespace librealsense
             std::vector<hid_device_info> query_hid_devices() const override;
             std::shared_ptr<uvc_device> create_uvc_device(uvc_device_info info) const override;
             std::vector<uvc_device_info> query_uvc_devices() const override;
-            std::shared_ptr<usb_device> create_usb_device(usb_device_info info) const override;
+            std::shared_ptr<command_transfer> create_usb_device(usb_device_info info) const override;
             std::vector<usb_device_info> query_usb_devices() const override;
             std::shared_ptr<time_service> create_time_service() const override;
             std::shared_ptr<device_watcher> create_device_watcher() const override;
 
-            explicit playback_backend(const char* filename, const char* section);
+            explicit playback_backend(const char* filename, const char* section, std::string min_api_version);
         private:
 
             std::shared_ptr<playback_device_watcher> _device_watcher;

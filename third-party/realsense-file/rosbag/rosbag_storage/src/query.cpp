@@ -41,7 +41,7 @@ namespace rosbag {
 
 // Query
 
-Query::Query(boost::function<bool(ConnectionInfo const*)>& query, ros::Time const& start_time, ros::Time const& end_time)
+Query::Query(boost::function<bool(ConnectionInfo const*)>& query, rs2rosinternal::Time const& start_time, rs2rosinternal::Time const& end_time)
 	: query_(query), start_time_(start_time), end_time_(end_time)
 {
 }
@@ -50,8 +50,8 @@ boost::function<bool(ConnectionInfo const*)> const& Query::getQuery() const {
 	return query_;
 }
 
-ros::Time const& Query::getStartTime() const { return start_time_; }
-ros::Time const& Query::getEndTime()   const { return end_time_;   }
+rs2rosinternal::Time const& Query::getStartTime() const { return start_time_; }
+rs2rosinternal::Time const& Query::getEndTime()   const { return end_time_;   }
 
 // TopicQuery
 

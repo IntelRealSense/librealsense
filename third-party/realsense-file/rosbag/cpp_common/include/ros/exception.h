@@ -30,7 +30,7 @@
 
 #include <stdexcept>
 
-namespace ros
+namespace rs2rosinternal
 {
 
 /**
@@ -44,7 +44,7 @@ public:
   {}
 };
 
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif
 

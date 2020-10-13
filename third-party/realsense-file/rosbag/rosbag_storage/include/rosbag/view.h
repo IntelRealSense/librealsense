@@ -109,7 +109,7 @@ public:
      * param end_time        The end of the time range for the query
      * param reduce_overlap  If multiple views return the same messages, reduce them to a single message
      */
-    View(Bag const& bag, ros::Time const& start_time = ros::TIME_MIN, ros::Time const& end_time = ros::TIME_MAX, bool const& reduce_overlap = false);
+    View(Bag const& bag, rs2rosinternal::Time const& start_time = rs2rosinternal::TIME_MIN, rs2rosinternal::Time const& end_time = rs2rosinternal::TIME_MAX, bool const& reduce_overlap = false);
 
     //! Create a view and add a query
     /*!
@@ -120,7 +120,7 @@ public:
      * param reduce_overlap  If multiple views return the same messages, reduce them to a single message
      */
     View(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query,
-         ros::Time const& start_time = ros::TIME_MIN, ros::Time const& end_time = ros::TIME_MAX, bool const& reduce_overlap = false);
+         rs2rosinternal::Time const& start_time = rs2rosinternal::TIME_MIN, rs2rosinternal::Time const& end_time = rs2rosinternal::TIME_MAX, bool const& reduce_overlap = false);
 
     ~View();
 
@@ -134,7 +134,7 @@ public:
      * param start_time The beginning of the time range for the query
      * param end_time   The end of the time range for the query
      */
-    void addQuery(Bag const& bag, ros::Time const& start_time = ros::TIME_MIN, ros::Time const& end_time = ros::TIME_MAX);
+    void addQuery(Bag const& bag, rs2rosinternal::Time const& start_time = rs2rosinternal::TIME_MIN, rs2rosinternal::Time const& end_time = rs2rosinternal::TIME_MAX);
 
     //! Add a query to a view
     /*!
@@ -144,12 +144,12 @@ public:
      * param end_time   The end of the time range for the query
      */
     void addQuery(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query,
-    		      ros::Time const& start_time = ros::TIME_MIN, ros::Time const& end_time = ros::TIME_MAX);
+    		      rs2rosinternal::Time const& start_time = rs2rosinternal::TIME_MIN, rs2rosinternal::Time const& end_time = rs2rosinternal::TIME_MAX);
 
     std::vector<const ConnectionInfo*> getConnections();
 
-    ros::Time getBeginTime();
-    ros::Time getEndTime();
+    rs2rosinternal::Time getBeginTime();
+    rs2rosinternal::Time getEndTime();
   
 protected:
     friend class iterator;

@@ -42,6 +42,7 @@ namespace librealsense
         param_group<STDepthTableControl>            depth_table;
         param_group<STAEControl>                    ae;
         param_group<STCensusRadius>                 census;
+        param_group<STAFactor>                      a_factor;
         param_group<laser_state_control>            laser_state;
         param_group<laser_power_control>            laser_power;
         param_group<exposure_control>               depth_exposure;
@@ -87,6 +88,7 @@ namespace librealsense
             depth_table.vals[0] = other.depth_table;
             ae.vals[0] = other.ae;
             census.vals[0] = other.census;
+            a_factor.vals[0] = other.amplitude_factor;
             laser_state.vals[0] = other.laser_state;
             laser_power.vals[0] = other.laser_power;
             depth_exposure.vals[0] = other.depth_exposure;
@@ -391,6 +393,9 @@ namespace librealsense
             { "param-censususize", make_field(p.census, &STCensusRadius::uDiameter) },
             { "param-censusvsize", make_field(p.census, &STCensusRadius::vDiameter) },
 
+            // Depth Linearity
+            { "param-amplitude-factor", make_field(p.a_factor, &STAFactor::amplitude) },
+
             // Ignored fields
             { "param-regionspatialthresholdu", make_ignored_field() },
             { "param-regionspatialthresholdv", make_ignored_field() },
@@ -506,6 +511,7 @@ namespace librealsense
         update_preset_control(in_preset.depth_table                         , p.depth_table);
         update_preset_control(in_preset.ae                                  , p.ae);
         update_preset_control(in_preset.census                              , p.census);
+        update_preset_control(in_preset.amplitude_factor                    , p.a_factor);
         update_preset_camera_control(in_preset.laser_power                  , p.laser_power);
         update_preset_camera_control(in_preset.laser_state                  , p.laser_state);
         update_preset_camera_control(in_preset.depth_exposure               , p.depth_exposure);

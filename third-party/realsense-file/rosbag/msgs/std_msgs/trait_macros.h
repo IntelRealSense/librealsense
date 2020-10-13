@@ -30,7 +30,7 @@
 #define STD_MSGS_TRAIT_MACROS_H
 
 #define STD_MSGS_DEFINE_BUILTIN_TRAITS(builtin, msg, static_md5sum1, static_md5sum2) \
-  namespace ros \
+  namespace rs2rosinternal \
   { \
   namespace message_traits \
   { \

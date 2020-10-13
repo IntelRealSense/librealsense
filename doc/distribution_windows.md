@@ -9,7 +9,7 @@ After plugging the camera into a USB3 port, you should be able to see the newly 
 
 ## Intel RealSense Viewer
 
-- Go to the [latest stable release](https://github.com/IntelRealSense/librealsense/releases/latest), navigate to the **Downloads** section, download and run **Intel.RealSense.Viewer.Portable.exe**:
+- Go to the [latest stable release](https://github.com/IntelRealSense/librealsense/releases/latest), navigate to the **Assets** section, download and run **Intel.RealSense.Viewer.exe**:
 ![GitHub Downloads](./img/win_deploy_downloads.PNG)
 
 - Explore the depth data:
@@ -18,7 +18,7 @@ After plugging the camera into a USB3 port, you should be able to see the newly 
 
 ## Installing the SDK
 
-* Go to the [latest stable release](https://github.com/IntelRealSense/librealsense/releases/latest), navigate to the **Downloads** section, download and run **Intel.RealSense.SDK.exe**:
+* Go to the [latest stable release](https://github.com/IntelRealSense/librealsense/releases/latest), navigate to the **Assets** section, download and run **Intel.RealSense.SDK.exe**:
 
 * Click through several simple steps of the installer:
 1. Intel® RealSense™ SDK 2.0 is distributed under the [Apache 2.0](../LICENSE) permissive open-source license:

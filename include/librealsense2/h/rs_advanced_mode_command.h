@@ -2,7 +2,7 @@
    Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 /**
- * @file   advanced_mode_command.h
+ * @file   rs_advanced_mode_command.h
  * @brief  Advanced Mode Commands header file
  */
 
@@ -121,6 +121,11 @@ typedef struct
     uint32_t uDiameter;
     uint32_t vDiameter;
 }STCensusRadius;
+
+typedef struct
+{
+    float   amplitude;
+}STAFactor;
 
 #ifdef __cplusplus
 extern "C"{

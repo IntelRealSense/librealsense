@@ -5,6 +5,11 @@
 
 ## Usage
 After installing `librealsense` run `rs-terminal` to launch the tool in HEX mode. 
-`-l <filename>` - load commands specification file.
+
+* `-l <filename>` - load commands specification file.
+* `-d <number>` - choose device by device number
+* `-n <serial>` - choose device by serial number
+* `-a` - broadcast to all connected devices
+
 
 

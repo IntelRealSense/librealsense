@@ -57,7 +57,7 @@ int main()
 Compile and run the application from terminal using the following command line:
 
 ```shell
-g++ -std=c++11 BGR_sample.cpp -lrealsense2 –lopencv_core -lopencv_highgui -o BGR && ./BGR
+g++ -std=c++11 BGR_sample.cpp -lrealsense2 -lopencv_core -lopencv_highgui -o BGR && ./BGR
 ```
 
 **Result:**
@@ -127,7 +127,7 @@ int main()
 Compile and run the program from the terminal, with the following command:
 
 ```shell
-g++ -std=c++11 IR_sample.cpp -lrealsense2 -lopencv_core -lopencv_imgproc -o ir && ./ir
+g++ -std=c++11 IR_sample.cpp -lrealsense2 -lopencv_core -lopencv_imgproc -lopencv_highgui -o ir && ./ir
 ```
 
 **Result :**

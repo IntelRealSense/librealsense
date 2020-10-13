@@ -16,8 +16,8 @@ namespace librealsense
         void register_same_extrinsics(const stream_interface& from, const stream_interface& to);
         void register_extrinsics(const stream_interface& from, const stream_interface& to, std::weak_ptr<lazy<rs2_extrinsics>> extr);
         void register_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics extr);
+        void override_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics const & extr);
         bool try_fetch_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics* extr);
-
 
         struct extrinsics_lock
         {
@@ -45,18 +45,20 @@ namespace librealsense
         extrinsics_lock lock();
 
     private:
+        std::mutex _mutex;
+        std::shared_ptr<lazy<rs2_extrinsics>> _id;
+        // Required by current implementation to hold the reference instead of the device for certain types. TODO
+        std::vector<std::shared_ptr<lazy<rs2_extrinsics>>> _external_extrinsics;
+
+    PRIVATE_TESTABLE:
         std::shared_ptr<lazy<rs2_extrinsics>> fetch_edge(int from, int to);
         bool try_fetch_extrinsics(int from, int to, std::set<int>& visited, rs2_extrinsics* extr);
         void cleanup_extrinsics();
-        int find_stream_profile(const stream_interface& p);
+        int find_stream_profile(const stream_interface& p, bool add_if_not_there = true);
 
         std::atomic<int> _locks_count;
-        std::mutex _mutex;
         std::map<int, std::map<int, std::weak_ptr<lazy<rs2_extrinsics>>>> _extrinsics;
 
-        std::vector<std::shared_ptr<lazy<rs2_extrinsics>>> _external_extrinsics;
-
-        std::shared_ptr<lazy<rs2_extrinsics>> _id;
         std::map<int, std::weak_ptr<const stream_interface>> _streams;
 
     };

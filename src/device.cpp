@@ -2,6 +2,8 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "environment.h"
+#include "core/video.h"
+#include "core/motion.h"
 #include "device.h"
 
 using namespace librealsense;
@@ -127,6 +129,8 @@ device::device(std::shared_ptr<context> ctx,
     : _context(ctx), _group(group), _is_valid(true),
       _device_changed_notifications(device_changed_notifications)
 {
+    _profiles_tags = lazy<std::vector<tagged_profile>>([this]() { return get_profiles_tags(); });
+
     if (_device_changed_notifications)
     {
         auto cb = new devices_changed_callback_internal([this](rs2_device_list* removed, rs2_device_list* added)
@@ -156,13 +160,13 @@ device::~device()
     _sensors.clear();
 }
 
-int device::add_sensor(std::shared_ptr<sensor_interface> sensor_base)
+int device::add_sensor(const std::shared_ptr<sensor_interface>& sensor_base)
 {
     _sensors.push_back(sensor_base);
     return (int)_sensors.size() - 1;
 }
 
-int device::assign_sensor(std::shared_ptr<sensor_interface> sensor_base, uint8_t idx)
+int device::assign_sensor(const std::shared_ptr<sensor_interface>& sensor_base, uint8_t idx)
 {
     try
     {
@@ -173,11 +177,6 @@ int device::assign_sensor(std::shared_ptr<sensor_interface> sensor_base, uint8_t
     {
         throw invalid_value_exception(to_string() << "Cannot assign sensor - invalid subdevice value" << idx);
     }
-}
-
-uvc_sensor& device::get_uvc_sensor(int sub)
-{
-    return dynamic_cast<uvc_sensor&>(*_sensors[sub]);
 }
 
 size_t device::get_sensors_count() const
@@ -225,13 +224,13 @@ void device::hardware_reset()
     throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
 }
 
-std::shared_ptr<matcher> librealsense::device::create_matcher(const frame_holder& frame) const
+std::shared_ptr<matcher> device::create_matcher(const frame_holder& frame) const
 {
 
     return std::make_shared<identity_matcher>( frame.frame->get_stream()->get_unique_id(), frame.frame->get_stream()->get_stream_type());
 }
 
-std::pair<uint32_t, rs2_extrinsics> librealsense::device::get_extrinsics(const stream_interface& stream) const
+std::pair<uint32_t, rs2_extrinsics> device::get_extrinsics(const stream_interface& stream) const
 {
     auto stream_index = stream.get_unique_id();
     auto pair = _extrinsics.at(stream_index);
@@ -244,15 +243,15 @@ std::pair<uint32_t, rs2_extrinsics> librealsense::device::get_extrinsics(const s
     return std::make_pair(pair.first, ext);
 }
 
-void librealsense::device::register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t groupd_index)
+void device::register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index)
 {
     auto iter = std::find_if(_extrinsics.begin(),
                            _extrinsics.end(),
-                           [groupd_index](const std::pair<int, std::pair<uint32_t, std::shared_ptr<const stream_interface>>>& p) { return p.second.first == groupd_index; });
+                           [group_index](const std::pair<int, std::pair<uint32_t, std::shared_ptr<const stream_interface>>>& p) { return p.second.first == group_index; });
     if (iter == _extrinsics.end())
     {
         //First stream to register for this group
-        _extrinsics[stream.get_unique_id()] = std::make_pair(groupd_index, stream.shared_from_this());
+        _extrinsics[stream.get_unique_id()] = std::make_pair(group_index, stream.shared_from_this());
     }
     else
     {
@@ -261,4 +260,113 @@ void librealsense::device::register_stream_to_extrinsic_group(const stream_inter
     }
 }
 
+std::vector<rs2_format> device::map_supported_color_formats(rs2_format source_format)
+{
+    // Mapping from source color format to all of the compatible target color formats.
 
+    std::vector<rs2_format> target_formats = { RS2_FORMAT_RGB8, RS2_FORMAT_RGBA8, RS2_FORMAT_BGR8, RS2_FORMAT_BGRA8 };
+    switch (source_format)
+    {
+    case RS2_FORMAT_YUYV:
+        target_formats.push_back(RS2_FORMAT_YUYV);
+        target_formats.push_back(RS2_FORMAT_Y16);
+        break;
+    case RS2_FORMAT_UYVY:
+        target_formats.push_back(RS2_FORMAT_UYVY);
+        break;
+    default:
+        LOG_ERROR("Format is not supported for mapping");
+    }
+    return target_formats;
+}
+
+void device::tag_profiles(stream_profiles profiles) const
+{
+    for (auto profile : profiles)
+    {
+        for (auto tag : *_profiles_tags)
+        {
+            if (auto vp = dynamic_cast<video_stream_profile_interface*>(profile.get()))
+            {
+                if ((tag.stream == RS2_STREAM_ANY || vp->get_stream_type() == tag.stream) &&
+                    (tag.format == RS2_FORMAT_ANY || vp->get_format() == tag.format) &&
+                    (tag.width == -1 || vp->get_width() == tag.width) &&
+                    (tag.height == -1 || vp->get_height() == tag.height) &&
+                    (tag.fps == -1 || vp->get_framerate() == tag.fps) &&
+                    (tag.stream_index == -1 || vp->get_stream_index() == tag.stream_index))
+                    profile->tag_profile(tag.tag);
+            }
+            else
+            if (auto mp = dynamic_cast<motion_stream_profile_interface*>(profile.get()))
+            {
+                if ((tag.stream == RS2_STREAM_ANY || mp->get_stream_type() == tag.stream) &&
+                    (tag.format == RS2_FORMAT_ANY || mp->get_format() == tag.format) &&
+                    (tag.fps == -1 || mp->get_framerate() == tag.fps) &&
+                    (tag.stream_index == -1 || mp->get_stream_index() == tag.stream_index))
+                    profile->tag_profile(tag.tag);
+            }
+        }
+    }
+}
+
+bool device::contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const
+{
+    if (auto vid_a = dynamic_cast<const video_stream_profile_interface*>(a))
+    {
+        for (auto request : others)
+        {
+            if (a->get_framerate() != 0 && request.fps != 0 && (a->get_framerate() != request.fps))
+                return true;
+            if (vid_a->get_width() != 0 && request.width != 0 && (vid_a->get_width() != request.width))
+                return true;
+            if (vid_a->get_height() != 0 && request.height != 0 && (vid_a->get_height() != request.height))
+                return true;
+        }
+    }
+    return false;
+}
+
+void device::stop_activity() const
+{
+    for (auto& sensor : _sensors)
+    {
+        auto snr_name = (sensor->supports_info(RS2_CAMERA_INFO_NAME)) ? sensor->get_info(RS2_CAMERA_INFO_NAME) : "";
+
+        // Disable asynchronous services
+        for (auto& opt : sensor->get_supported_options())
+        {
+            if (val_in_range(opt, { RS2_OPTION_GLOBAL_TIME_ENABLED, RS2_OPTION_ERROR_POLLING_ENABLED }))
+            {
+                try
+                {
+                    // enumerated options use zero or positive values
+                    if (sensor->get_option(opt).query() > 0.f)
+                        sensor->get_option(opt).set(false);
+                }
+                catch (...)
+                {
+                    LOG_ERROR("Failed to toggle off " << opt << " [" << snr_name << "]");
+                }
+            }
+        }
+
+        // Stop UVC/HID streaming
+        try
+        {
+            if (sensor->is_streaming())
+            {
+                sensor->stop();
+                sensor->close();
+            }
+        }
+        catch (const wrong_api_call_sequence_exception& exc)
+        {
+            LOG_WARNING("Out of order stop/close invocation for " << snr_name << ": " << exc.what());
+        }
+        catch (...)
+        {
+            auto snr_name = (sensor->supports_info(RS2_CAMERA_INFO_NAME)) ? sensor->get_info(RS2_CAMERA_INFO_NAME) : "";
+            LOG_ERROR("Failed to deactivate " << snr_name);
+        }
+    }
+}

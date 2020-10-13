@@ -58,18 +58,18 @@ public:
      * param end_time   the end of the time_range for the query
      */
     Query(boost::function<bool(ConnectionInfo const*)>& query,
-    	  ros::Time const& start_time = ros::TIME_MIN,
-          ros::Time const& end_time   = ros::TIME_MAX);
+    	  rs2rosinternal::Time const& start_time = rs2rosinternal::TIME_MIN,
+          rs2rosinternal::Time const& end_time   = rs2rosinternal::TIME_MAX);
 
     boost::function<bool(ConnectionInfo const*)> const& getQuery() const;  //!< Get the query functor
 
-    ros::Time const& getStartTime() const; //!< Get the start-time
-    ros::Time const& getEndTime()   const; //!< Get the end-time
+    rs2rosinternal::Time const& getStartTime() const; //!< Get the start-time
+    rs2rosinternal::Time const& getEndTime()   const; //!< Get the end-time
 
 private:
     boost::function<bool(ConnectionInfo const*)> query_;
-    ros::Time start_time_;
-    ros::Time end_time_;
+    rs2rosinternal::Time start_time_;
+    rs2rosinternal::Time end_time_;
 };
 
 class ROSBAG_DECL TopicQuery

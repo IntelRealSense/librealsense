@@ -4,8 +4,6 @@
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include <librealsense2/hpp/rs_internal.hpp>
 #include "example.hpp"
-#include "example.hpp"          // Include short list of convenience functions for rendering
-
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
@@ -154,6 +152,9 @@ int main(int argc, char * argv[]) try
     dev.create_matcher(RS2_MATCHER_DLR_C);
     rs2::syncer sync;
 
+    depth_sensor.open(depth_stream);
+    color_sensor.open(color_stream);
+
     depth_sensor.start(sync);
     color_sensor.start(sync);
 
@@ -161,7 +162,7 @@ int main(int argc, char * argv[]) try
 
     while (app) // Application still alive?
     {
-        synthetic_frame depth_frame = app_data.get_synthetic_depth(app_state);
+        synthetic_frame& depth_frame = app_data.get_synthetic_depth(app_state);
 
         depth_sensor.on_video_frame({ depth_frame.frame.data(), // Frame pixels from capture API
             [](void*) {}, // Custom deleter (if required)

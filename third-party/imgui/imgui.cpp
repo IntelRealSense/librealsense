@@ -2041,6 +2041,8 @@ void ImGui::NewFrame()
 {
     ImGuiContext& g = *GImGui;
 
+    if (g.IO.DeltaTime < 0.0f) g.IO.DeltaTime = 0.0f;
+
     // Check user data
     IM_ASSERT(g.IO.DeltaTime >= 0.0f);               // Need a positive DeltaTime (zero is tolerated but will cause some timing issues)
     IM_ASSERT(g.IO.DisplaySize.x >= 0.0f && g.IO.DisplaySize.y >= 0.0f);
@@ -5621,11 +5623,11 @@ bool ImGui::CloseButton(ImGuiID id, const ImVec2& pos, float radius)
     window->DrawList->AddCircleFilled(center, ImMax(2.0f, radius), col, 12);
 
     const float cross_extent = (radius * 0.7071f) - 1.0f;
-    if (hovered)
-    {
-        window->DrawList->AddLine(center + ImVec2(+cross_extent,+cross_extent), center + ImVec2(-cross_extent,-cross_extent), GetColorU32(ImGuiCol_Text));
-        window->DrawList->AddLine(center + ImVec2(+cross_extent,-cross_extent), center + ImVec2(-cross_extent,+cross_extent), GetColorU32(ImGuiCol_Text));
-    }
+  //  if (hovered)
+  //  {
+    window->DrawList->AddLine(center + ImVec2(+cross_extent,+cross_extent), center + ImVec2(-cross_extent,-cross_extent), GetColorU32(ImGuiCol_Text));
+    window->DrawList->AddLine(center + ImVec2(+cross_extent,-cross_extent), center + ImVec2(-cross_extent,+cross_extent), GetColorU32(ImGuiCol_Text));
+//    }
 
     return pressed;
 }
@@ -6518,10 +6520,10 @@ bool ImGui::SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v
                 bb.Min.y -= 0.5;
                 bb.Max.y += 0.5;
             }
-            float grab_padding = 2.0f;
+            float grab_paddingl = 2.0f;
             //Horizontal fills from left to right
             fill_br.Min = bb.Min;
-            fill_br.Max = ImVec2(ImLerp(bb.Min.x, bb.Max.x - grab_padding, *v / 100), bb.Max.y);
+            fill_br.Max = ImVec2(ImLerp(bb.Min.x, bb.Max.x - grab_paddingl, *v / 100), bb.Max.y);
             graber_size = { grab_bb.Max.x - (width / 2.0f) , grab_bb.Max.y - (height / 2.0f) };
             radius = height / 2.5f;
         }
@@ -6534,7 +6536,6 @@ bool ImGui::SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v
                 bb.Min.x -= 0.5;
                 bb.Max.x += 0.5;
             }
-            float grab_padding = 2.0f;
             //Vertical fills from down upwards
             fill_br.Min = bb.Min;
             fill_br.Min.y = grab_bb.Min.y;

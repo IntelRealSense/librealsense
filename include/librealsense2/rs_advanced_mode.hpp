@@ -4,19 +4,21 @@
 #ifndef R4XX_ADVANCED_MODE_HPP
 #define R4XX_ADVANCED_MODE_HPP
 
+#include <cmath>
 #include "rs.hpp"
 #include "rs_advanced_mode.h"
+#include "hpp/rs_serializable_device.hpp"
 
 namespace rs400
 {
-    class advanced_mode : public rs2::device
+    class advanced_mode : public rs2::serializable_device
     {
     public:
         advanced_mode(rs2::device d)
-                : rs2::device(d.get())
+                : rs2::serializable_device(d)
         {
             rs2_error* e = nullptr;
-            if(rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_ADVANCED_MODE, &e) == 0 && !e)
+            if(_dev && rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_ADVANCED_MODE, &e) == 0 && !e)
             {
                 _dev = nullptr;
             }
@@ -244,35 +246,21 @@ namespace rs400
             return group;
         }
 
-        std::string serialize_json() const
+        void set_amp_factor(const STAFactor& group)
         {
-            std::string results;
-
             rs2_error* e = nullptr;
-            std::shared_ptr<rs2_raw_data_buffer> json_data(
-                    rs2_serialize_json(_dev.get(), &e),
-                    rs2_delete_raw_data);
+            rs2_set_amp_factor(_dev.get(), &group, &e);
             rs2::error::handle(e);
-
-            auto size = rs2_get_raw_data_size(json_data.get(), &e);
-            rs2::error::handle(e);
-
-            auto start = rs2_get_raw_data(json_data.get(), &e);
-            rs2::error::handle(e);
-
-            results.insert(results.begin(), start, start + size);
-
-            return results;
         }
 
-        void load_json(const std::string& json_content)
+        STAFactor get_amp_factor(int mode = 0) const
         {
             rs2_error* e = nullptr;
-            rs2_load_json(_dev.get(),
-                          json_content.data(),
-                          (unsigned int)json_content.size(),
-                          &e);
+            STAFactor group{};
+            rs2_get_amp_factor(_dev.get(), &group, mode, &e);
             rs2::error::handle(e);
+
+            return group;
         }
     };
 }
@@ -387,6 +375,11 @@ inline bool operator==(const STCensusRadius& a, const STCensusRadius& b)
 {
     return (a.uDiameter == b.uDiameter &&
         a.vDiameter == b.vDiameter);
+}
+
+inline bool operator==(const STAFactor& a, const STAFactor& b)
+{
+    return (fabs(a.amplitude - b.amplitude) < std::numeric_limits<float>::epsilon());
 }
 
 

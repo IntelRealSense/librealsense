@@ -41,7 +41,7 @@
 
 using std::string;
 using boost::format;
-using ros::Exception;
+using rs2rosinternal::Exception;
 
 namespace rosbag {
 

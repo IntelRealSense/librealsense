@@ -4,7 +4,9 @@ timeCreated: 1517217083
 licenseType: Pro
 ShaderImporter:
   externalObjects: {}
-  defaultTextures: []
+  defaultTextures:
+  - _MainTex: {instanceID: 0}
+  - _Colormaps: {fileID: 2800000, guid: e79aa3df081152e4c9d99bcef47e9474, type: 3}
   userData: 
   assetBundleName: 
   assetBundleVariant: 

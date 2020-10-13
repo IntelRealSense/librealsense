@@ -1,0 +1,16 @@
+{
+  "name": "realsense_viewer",
+  "version": "1.0.0",
+  "description": "A webbased realsense viewer",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ting Shao <ting.shao@intel.com>",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "express": "^4.16.3",
+    "sharp": "^0.20.5",
+    "ws": "^5.2.0"
+  }
+}

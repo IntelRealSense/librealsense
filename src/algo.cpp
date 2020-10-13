@@ -21,6 +21,11 @@ unsigned auto_exposure_state::get_auto_exposure_antiflicker_rate() const
     return rate;
 }
 
+float auto_exposure_state::get_auto_exposure_step() const
+{
+    return step;
+}
+
 void auto_exposure_state::set_enable_auto_exposure(bool value)
 {
     is_auto_exposure = value;
@@ -36,12 +41,16 @@ void auto_exposure_state::set_auto_exposure_antiflicker_rate(unsigned value)
     rate = value;
 }
 
+void auto_exposure_state::set_auto_exposure_step(float value)
+{
+    step = value;
+}
 
 auto_exposure_mechanism::auto_exposure_mechanism(option& gain_option, option& exposure_option, const auto_exposure_state& auto_exposure_state)
-    : _auto_exposure_algo(auto_exposure_state),
-      _keep_alive(true), _frames_counter(0),
-      _skip_frames(auto_exposure_state.skip_frames), _data_queue(queue_size),
-      _gain_option(gain_option), _exposure_option(exposure_option)
+    : _gain_option(gain_option), _exposure_option(exposure_option),
+      _auto_exposure_algo(auto_exposure_state),
+      _keep_alive(true), _data_queue(queue_size), _frames_counter(0),
+      _skip_frames(auto_exposure_state.skip_frames)
 {
     _exposure_thread = std::make_shared<std::thread>(
                 [this]()
@@ -54,8 +63,8 @@ auto_exposure_mechanism::auto_exposure_mechanism(option& gain_option, option& ex
             if (!_keep_alive)
                 return;
 
-            frame_and_callback frame_callback;
-            auto frame_sts = _data_queue.dequeue(&frame_callback);
+            frame_holder f_holder;
+            auto frame_sts = _data_queue.dequeue(&f_holder, RS2_DEFAULT_TIMEOUT);
 
             lk.unlock();
 
@@ -66,7 +75,7 @@ auto_exposure_mechanism::auto_exposure_mechanism(option& gain_option, option& ex
             }
             try
             {
-                auto frame = std::move(frame_callback.f_holder);
+                auto frame = std::move(f_holder);
 
                 double values[2] = {};
 
@@ -138,7 +147,7 @@ void auto_exposure_mechanism::update_auto_exposure_roi(const region_of_interest&
     _auto_exposure_algo.update_roi(roi);
 }
 
-void auto_exposure_mechanism::add_frame(frame_holder frame, callback_invocation_holder callback)
+void auto_exposure_mechanism::add_frame(frame_holder frame)
 {
 
     if (!_keep_alive || (_skip_frames && (_frames_counter++) != _skip_frames))
@@ -150,12 +159,13 @@ void auto_exposure_mechanism::add_frame(frame_holder frame, callback_invocation_
 
     {
         std::lock_guard<std::mutex> lk(_queue_mtx);
-        _data_queue.enqueue({std::move(frame), std::move(callback)});
+        _data_queue.enqueue(std::move(frame));
     }
     _cv.notify_one();
 }
 
 auto_exposure_algorithm::auto_exposure_algorithm(const auto_exposure_state& auto_exposure_state)
+    : exposure_step(ae_step_default_value)
 {
     update_options(auto_exposure_state);
 }
@@ -274,6 +284,7 @@ void auto_exposure_algorithm::update_options(const auto_exposure_state& options)
 
     state = options;
     flicker_cycle = 1000.0f / (state.get_auto_exposure_antiflicker_rate() * 2.0f);
+    exposure_step = state.get_auto_exposure_step();
 }
 
 void auto_exposure_algorithm::update_roi(const region_of_interest& ae_roi)

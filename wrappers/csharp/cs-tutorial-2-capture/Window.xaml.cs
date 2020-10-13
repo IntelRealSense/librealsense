@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace Intel.RealSense
 {
@@ -25,68 +26,88 @@ namespace Intel.RealSense
         private Colorizer colorizer;
         private CancellationTokenSource tokenSource = new CancellationTokenSource();
 
-        private void UploadImage(Image img, VideoFrame frame)
+        static Action<VideoFrame> UpdateImage(Image img)
         {
-            Dispatcher.Invoke(new Action(() =>
+            var wbmp = img.Source as WriteableBitmap;
+            return new Action<VideoFrame>(frame =>
             {
-                if (frame.Width == 0) return;
-
-                var bytes = new byte[frame.Stride * frame.Height];
-                frame.CopyTo(bytes);
-
-                var bs = BitmapSource.Create(frame.Width, frame.Height,
-                                  300, 300,
-                                  PixelFormats.Rgb24,
-                                  null,
-                                  bytes,
-                                  frame.Stride);
-
-                var imgSrc = bs as ImageSource;
-
-                img.Source = imgSrc;
-            }));
+                var rect = new Int32Rect(0, 0, frame.Width, frame.Height);
+                wbmp.WritePixels(rect, frame.Data, frame.Stride * frame.Height, frame.Stride);
+            });
         }
 
         public CaptureWindow()
         {
+            InitializeComponent();
+
             try
             {
-                pipeline = new Pipeline();
+                Action<VideoFrame> updateDepth;
+                Action<VideoFrame> updateColor;
+
+                // The colorizer processing block will be used to visualize the depth frames.
                 colorizer = new Colorizer();
+
+                // Create and config the pipeline to strem color and depth frames.
+                pipeline = new Pipeline();
 
                 var cfg = new Config();
                 cfg.EnableStream(Stream.Depth, 640, 480);
                 cfg.EnableStream(Stream.Color, Format.Rgb8);
 
-                pipeline.Start(cfg);
+                var pp = pipeline.Start(cfg);
 
-                var token = tokenSource.Token;
+                SetupWindow(pp, out updateDepth, out updateColor);
 
-                var t = Task.Factory.StartNew(() =>
+                Task.Factory.StartNew(() =>
                 {
-                    while (!token.IsCancellationRequested)
+                    while (!tokenSource.Token.IsCancellationRequested)
                     {
-                        var frames = pipeline.WaitForFrames();
+                        // We wait for the next available FrameSet and using it as a releaser object that would track
+                        // all newly allocated .NET frames, and ensure deterministic finalization
+                        // at the end of scope. 
+                        using (var frames = pipeline.WaitForFrames())
+                        {
+                            var colorFrame = frames.ColorFrame.DisposeWith(frames);
+                            var depthFrame = frames.DepthFrame.DisposeWith(frames);
 
-                        var colorized_depth = colorizer.Colorize(frames.DepthFrame);
-                        UploadImage(imgDepth, colorized_depth);
+                            // We colorize the depth frame for visualization purposes
+                            var colorizedDepth = colorizer.Process<VideoFrame>(depthFrame).DisposeWith(frames);
 
-                        UploadImage(imgColor, frames.ColorFrame);
+                            // Render the frames.
+                            Dispatcher.Invoke(DispatcherPriority.Render, updateDepth, colorizedDepth);
+                            Dispatcher.Invoke(DispatcherPriority.Render, updateColor, colorFrame);
+
+                            Dispatcher.Invoke(new Action(() =>
+                            {
+                                String depth_dev_sn = depthFrame.Sensor.Info[CameraInfo.SerialNumber];
+                                txtTimeStamp.Text = depth_dev_sn + " : " + String.Format("{0,-20:0.00}", depthFrame.Timestamp) + "(" + depthFrame.TimestampDomain.ToString() + ")";
+                            }));
+                        }
                     }
-                }, token);
+                }, tokenSource.Token);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
                 Application.Current.Shutdown();
             }
-
-            InitializeComponent();
         }
 
         private void control_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             tokenSource.Cancel();
+        }
+
+        private void SetupWindow(PipelineProfile pipelineProfile, out Action<VideoFrame> depth, out Action<VideoFrame> color)
+        {
+            using (var p = pipelineProfile.GetStream(Stream.Depth).As<VideoStreamProfile>())
+                imgDepth.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
+            depth = UpdateImage(imgDepth);
+
+            using (var p = pipelineProfile.GetStream(Stream.Color).As<VideoStreamProfile>())
+                imgColor.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
+            color = UpdateImage(imgColor);
         }
     }
 }

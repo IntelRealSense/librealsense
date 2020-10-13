@@ -4,7 +4,7 @@
 
 'use strict';
 
-/* global describe, it, before, after */
+/* global describe, it, before, after, beforeEach, afterEach */
 const assert = require('assert');
 let rs2;
 try {
@@ -14,6 +14,7 @@ try {
 }
 
 let ctx;
+let pipeline;
 describe('Pipeline test', function() {
   before(function() {
     ctx = new rs2.Context();
@@ -48,23 +49,53 @@ describe('Pipeline test', function() {
       new rs2.Pipeline(ctx);
     });
   });
+});
+
+describe('Pipeline method test', () => {
+  beforeEach(() => {
+    ctx = new rs2.Context();
+    const devices = ctx.queryDevices().devices;
+    assert(devices.length > 0); // Device must be connected
+    pipeline = new rs2.Pipeline();
+  });
+  afterEach(() => {
+    rs2.cleanup();
+    pipeline.stop();
+    pipeline.destroy();
+  });
 
   it('Testing method destroy', () => {
-    let pipeline;
     assert.doesNotThrow(() => {
-      pipeline = new rs2.Pipeline();
       pipeline.start();
       pipeline.waitForFrames();
       pipeline.stop();
     });
   });
 
+  it('Testing method destroy w/o start', () => {
+    assert.doesNotThrow(() => {
+      pipeline.destroy();
+    });
+    assert.equal(pipeline.ctx, undefined);
+    assert.equal(pipeline.cxxPipeline, undefined);
+    assert.equal(pipeline.started, false);
+    assert.equal(pipeline.frameSet, undefined);
+  });
+
+  it('Testing method destroy after restart pipeline', () => {
+    pipeline.start();
+    pipeline.waitForFrames();
+    assert.doesNotThrow(() => {
+      pipeline.destroy();
+    });
+    assert.throws(() => {
+      pipeline.start();
+    });
+  });
 
   it('Testing method waitForFrames', () => {
-    let pipeline;
     let frameSet;
     assert.doesNotThrow(() => {
-      pipeline = new rs2.Pipeline();
       pipeline.start();
       frameSet = pipeline.waitForFrames();
     });
@@ -88,11 +119,10 @@ describe('Pipeline test', function() {
   });
 
   it('Testing method start', () => {
-    let pipeline;
     assert.doesNotThrow(() => {
-      pipeline = new rs2.Pipeline();
-      pipeline.start();
+      let res = pipeline.start();
       pipeline.waitForFrames();
+      assert(res instanceof rs2.PipelineProfile);
     });
     assert.notEqual(pipeline, undefined);
     assert.doesNotThrow(() => {
@@ -100,16 +130,143 @@ describe('Pipeline test', function() {
       pipeline.waitForFrames();
       pipeline.stop();
     });
+    assert.equal(pipeline.started, false);
+  });
+
+  it('Testing method start w/ invalid args', () => {
+    assert.throws(() => {
+      pipeline.start('dummy');
+    });
+    pipeline.stop();
+  });
+
+  it('Testing method start after stop', () => {
+    assert.doesNotThrow(() => {
+      pipeline.start();
+      assert.equal(pipeline.started, true);
+    });
+    assert.doesNotThrow(() => {
+      pipeline.stop();
+      assert.equal(pipeline.started, false);
+    });
+    assert.doesNotThrow(() => {
+      pipeline.start();
+      assert.equal(pipeline.started, true);
+    });
+  });
+
+  it('Testing method start after destroy', () => {
+    assert.doesNotThrow(() => {
+      pipeline.start();
+      assert.equal(pipeline.started, true);
+    });
+    assert.doesNotThrow(() => {
+      pipeline.destroy();
+      assert.equal(pipeline.started, false);
+    });
+    assert.throws(() => {
+      pipeline.start();
+      assert.equal(pipeline.started, false);
+    });
+  });
+
+  it('Testing method start w/ config', () => {
+    let config = new rs2.Config();
+    assert.doesNotThrow(() => {
+      let res = pipeline.start(config);
+      assert(res instanceof rs2.PipelineProfile);
+    });
+    assert.equal(pipeline.started, true);
+    pipeline.stop();
+  });
+
+  it('Testing method start after started', () => {
+    assert.doesNotThrow(() => {
+      pipeline.start();
+      assert.equal(pipeline.started, true);
+      let res = pipeline.start();
+      assert.equal(typeof res, 'undefined');
+      assert.equal(pipeline.started, true);
+    });
   });
 
   it('Testing method stop', () => {
-    let pipeline;
-    pipeline = new rs2.Pipeline();
     assert.notEqual(pipeline, undefined);
     assert.doesNotThrow(() => {
       pipeline.start();
       pipeline.waitForFrames();
       pipeline.stop();
    });
+  });
+
+  it('Testing method stop and restart pipeline', () => {
+    assert.notEqual(pipeline, undefined);
+    assert.doesNotThrow(() => {
+      pipeline.start();
+      pipeline.waitForFrames();
+      pipeline.stop();
+    });
+    assert.equal(pipeline.started, false);
+    assert.doesNotThrow(() => {
+      pipeline.start();
+    });
+    assert.equal(pipeline.started, true);
+    pipeline.stop();
+  });
+
+  it('Testing method stop when not start', () => {
+    assert.notEqual(pipeline, undefined);
+    assert.doesNotThrow(() => {
+      let res = pipeline.stop();
+      assert(typeof res, 'undefined');
+    });
+    assert.equal(pipeline.started, false);
+  });
+
+  it('Testing method getActiveProfile', () => {
+    pipeline.start();
+    assert.doesNotThrow(() => {
+      let res = pipeline.getActiveProfile();
+      assert(typeof res, 'object');
+    });
+    pipeline.stop();
+  });
+
+  it('Testing method getActiveProfile before pipe start', () => {
+    assert.doesNotThrow(() => {
+      let res = pipeline.getActiveProfile();
+      assert(typeof res, 'undefined');
+      pipeline.start();
+      pipeline.waitForFrames();
+      pipeline.stop();
+    });
+  });
+
+  it('Testing method getActiveProfile after pipe stop', () => {
+    assert.doesNotThrow(() => {
+      pipeline.start();
+      pipeline.waitForFrames();
+      pipeline.stop();
+      let res = pipeline.getActiveProfile();
+      assert(typeof res, 'undefined');
+    });
+  });
+
+  it('Testing method pollForFrames', () => {
+    let then = Date.now();
+    pipeline.start();
+    pipeline.waitForFrames();
+    let res;
+    assert.doesNotThrow(() => {
+      while (Date.now() < then + 2000) {
+        res = pipeline.pollForFrames();
+        if (res) {
+          assert(typeof res.size, 'number');
+          assert(typeof res.depthFrame, 'object');
+          assert(typeof res.colorFrame, 'object');
+          break;
+        }
+      }
+    });
   });
 });

@@ -1,8 +1,8 @@
 # Unity Wrapper for RealSense SDK 2.0
 
-<p align="center"><img src="https://user-images.githubusercontent.com/22654243/35569320-93610f10-05d4-11e8-9237-23432532ad87.png" height="400" /></p>
+<p align="center"><img src="http://realsense-hw-public.s3.amazonaws.com/rs-tests/unity_screenshot.PNG" height="400" /></p>
 
-> Screen capture of the `RealSenseTextures` scene
+> [Download **realsense.unitypackage**](https://github.com/IntelRealSense/librealsense/releases/download/v2.20.0/realsense.unitypackage) and go to `Assets > Scenes > Start Here` to see the home screen above
 
 ## Overview
 
@@ -20,17 +20,19 @@ Using this wrapper, Unity developers can get a live stream of Color, Depth and I
 
 ## Getting Started
 
-### Step 1 - Import Plugins
+### Step 1 - Build Dependencies And Open The Unity Project
 
 The Unity wrapper depends on the C# wrapper provided by the RealSense SDK 2.0.
-At the end of this step, the following files are expected to be available under their respective folders:
+At the end of this step, the Unity project will be available in the CMake output folder:
 
-* `unity/Assets/Plugin.Managed/Intel.RealSense.dll` - The .NET wrapper assembly (for .NET 3.5)
-* `unity/Assets/RealSenseSDK2.0/Plugins/realsense2.dll` - The SDK's library (that was used to build the .NET wrapper)
-
-In order to get these files, either:
-1. download and install [RealSense SDK 2.0](https://github.com/IntelRealSense/librealsense/releases), then copy the files from the installation location to their respective folders in the project. Or,
-2. Follow [.NET wrapper instructions for building the wrapper](https://github.com/IntelRealSense/librealsense/tree/master/wrappers/csharp#getting-started) and copy the file to their respective folders in the project.
+- Generate the VS solution using cmake (run from librealsense root dir):
+  - `mkdir build`
+  - `cd build`
+  - `cmake .. -DBUILD_CSHARP_BINDINGS=ON -DBUILD_UNITY_BINDINGS=ON -DBUILD_SHARED_LIBS=ON -DDOTNET_VERSION_LIBRARY=3.5 -DCMAKE_GENERATOR_PLATFORM=x64`
+- The file 'realsense2.sln' should be created in 'build' folder, open the file with Visual Studio, C# examples and library will be available in the solution under 'Wrappers/csharp'.
+- Build Intel.RealSense project, this step will build both the native library and the .NET wrapper and will copy both DLLs to the Unity project Plugins folder.
+- In case Unity is installed and activated, a Unity package should be created at build/\<configuration\>/realsense.unitypackage. This file can be imported by the Unity editor.
+  If Unity is not installed or activated a Unity project folder will still be avilable at 'build/wrappers/unity'.
 
   > NOTE: Unity requires that manage assemblies (such as the C# wrapper) are targeted to .NET Framework 3.5 and lower. The .NET wrapper provides assemblies for multiple targets, one of which is .NET 3.5 (net35).
 
@@ -38,8 +40,13 @@ In order to get these files, either:
 
 The Unity wrapper provides several example scenes to help you get started with RealSense in Unity. Open one of the following scenes under `unity/Assets/RealSenseSDK2.0/Scenes` (Sorted from basic to advanced):
 
-1. RealSense Textures - Basic 2D scene demonstrating how to bind textures to a RealSense device stream. The Scene provides 3 live streams and 5 different textures: Depth, Infrared, Color, Colorized Depth and Color with background segmentation.
-
+1. Start Here - A menu that concentrate all the sample scenes into one place.
+2. Textures Depth and Infrared - Basic 2D scene demonstrating how to bind textures to a RealSense device stream. The Scene provides 2 live streams and 2 different textures: Depth and Infrared.
+3. Textures Depth and Color (Only cameras with RGB sensor are supported) - Basic 2D scene demonstrating how to bind textures to a RealSense device stream. The Scene provides 2 live streams and 3 different textures: Depth, Color and Color with background segmentation.
+4. PointCloud Processing Blocks - 3D scene demonstrating both processing block usage and capabilities and binding a [PointCloud](#PointCloud) prefab to RealSense device depth stream.
+5. PointCloud Depth and Color - 3D scene demonstrating how to bind a [PointCloud](#PointCloud) prefab to RealSense device depth and color streams.
+6. Alignment - 2D scene demonstrating the usage of the alignment processing block.
+7. AR Background - 2D scene demonstrating augmented reality capabilities.
 
 ## Prefabs
 
@@ -47,8 +54,7 @@ The Unity wrapper provides several example scenes to help you get started with R
 
 The RealSenseDevice provides an encapsulation of a single device connected to the system. The following image displays the RealSenseDevice script:
 
-
-![image](https://user-images.githubusercontent.com/22654243/36370418-77bf062a-1567-11e8-98ee-c2489aeb1208.png)
+![device_inspeector](https://user-images.githubusercontent.com/18511514/55072419-b9da0b00-5093-11e9-9f11-a40d263183a0.PNG)
 
 ##### Process Mode
 This option indicates which threading model the user expects to use.
@@ -59,13 +65,11 @@ This option indicates which threading model the user expects to use.
 Note that this option affects all other scripts that do any sort of frame processing.
 
 ##### Configuration
-The device is configured the same way that a `Pipeline` is, i.e. with a `Config`. In order to make it available via Unity Inspector, a `Configuration` object is exposed for each RealSenseDevice. When Starting the scene, the device will try to start streaming the requested configuration (`Pipeline.Start(config)` is called).
-Upon starting the device, the device will begin raising frames via its `OnNewSample` and `OnNewSampleSet` public events. These frames are raised either from a separate thread or from the Unity thread, depending on the user's choice of Process Mode.
+The device is configured the same way that a `Pipeline` is, i.e. with a `Config`. In order to make it available via Unity Inspector, a `Profiles` object is exposed for each RealSenseDevice. When Starting the scene, the device will try to start streaming the requested profiles (`Pipeline.Start(config)` is called).
+Upon starting the device, the device will begin raising frames via its `OnNewSample`public event. These frames are raised either from a separate thread or from the Unity thread, depending on the user's choice of Process Mode.
 
 In addition to stream configuration, the panel also allows users to select a specific device by providing its serial number.
-
-![image](https://user-images.githubusercontent.com/22654243/36370385-5dbddb2a-1567-11e8-9c52-aa7ee988f19f.png)
-
+Setting the profile count to 0 will fall to the default configuration of the device.
 
 ##### RealSense Device Inspector
 
@@ -76,47 +80,50 @@ Once the device is streaming, Unity Inspector will show the device's sensors and
 
 ##### Texture Streams
 
-Under the `RealSenseDeivce` object in Unity's Hierarchy view, you can find a number of textures that bind to the device's frame callback and allow user to bind a texture to be updated upon frame arrival.
-
-
-![image](https://user-images.githubusercontent.com/22654243/36472152-90796e10-16f9-11e8-9b24-5d0abe159fbe.png)
-
-
+Under the `RsDeivce` object in Unity's Hierarchy view, you can find a number of textures that are binded to a 'RsFrameProvider' (RsDevice or RsProcessingPipe) frame callbacks and allow a texture to be updated upon frame arrival.
 Each texture stream is associated with the `RealSenseStreamTexture` script which allows user to bind their textures so that they will be updated with each new frame. The following screenshot displays the configurations available for users when using a texture stream:
 
-![image](https://user-images.githubusercontent.com/22654243/35589395-5d7dd314-060c-11e8-8909-073b662df0c0.png)
+![textures](https://user-images.githubusercontent.com/18511514/55073767-3de1c200-5097-11e9-9f6e-60df2cd036ba.PNG)
 
-* Source Stream Type - Indicates to the script from which stream of the device it should take frames.
-* Texture Format - Indicates which texture should be created from the input frame.
+* Source - Select the requested RsFrameProvider
+* Stream / Format / Index - Filter out frames that doesn't match the requested profile. Stream and Format must be provided, the index field can be set to 0 to accept any value.
 * Texture Binding - Allows the user to bind textures to the script. Multiple textures can be bound to a single script.
-* Fetch Frames From Device - Toggle whether the script should fetch the frames from the device, or should wait for the user to pass frame to is using its `OnFrame` method.
 
-The `Alignment` object is a special case of texture stream which uses the `AlignImages` script. This script takes `FrameSet`s from the device, performs image alignment between the frames of the frame set, and passes them to each of the scripts stream texture: `from` and `to` which will provide textures that are aligned to one another.
+##### Processing Pipe
 
-![image](https://user-images.githubusercontent.com/22654243/35590061-5f9a9108-060e-11e8-9018-8c9f1db991ad.png)
+The 'RsProcessingPipe' prefab use the 'RsProcessingProfile' asset to attach a set of processing blocks to a 'RsFrameProvider' (RsDevice or RsProcessingPipe).
+Each processing block has its own properties that can be modified on run time.
 
-An example usage of this script is to perform background segmentation between depth and color images by turning each colored pixel that is not within the given range into a grayscale pixel. The scene presents this example in the bottom right image labeled "Background Segmentation".
-Segmentation is performed using the `BGSeg` shader.
+A processing profile can be created as shown below:
 
-##### PointCloud
+>Create a new processing profile
+>
+>![processingprofile](https://user-images.githubusercontent.com/18511514/47161646-1ffb7e80-d2fb-11e8-9793-4acf96191903.PNG)
 
-Also under the `RealSenseDeivce` object in Unity's Hierarchy view, you can find PointCloud object that provides a 3D point cloud of the depth data in the form of Unity Particles (Using the Particle System).
+>Attach the processing profile to the RsProcessingPipe prefab
+>
+>![processingprofile2](https://user-images.githubusercontent.com/18511514/47161647-1ffb7e80-d2fb-11e8-948c-6ca57afe9375.PNG)
 
-The PointCloud object uses the `PointCloudGenerator.cs` script which allows some user control over the output:
+>Add and configure processing blocks
+> 
+>![processingprofile3](https://user-images.githubusercontent.com/18511514/47161650-20941500-d2fb-11e8-8994-f7b8452e254a.PNG)
+ 
+An example for the usage of the processing blocks can be found in "PointCloudProcessingBlocks" scene and "AlignmentSample" scense.
+![processingblocks](https://user-images.githubusercontent.com/18511514/47161644-1ffb7e80-d2fb-11e8-9dc2-80c897aa2544.PNG)
 
-![image](https://user-images.githubusercontent.com/22654243/36472070-43c9e13a-16f9-11e8-9607-3aadf97c7bb4.png)
+##### Point Cloud
 
+Under the `RealSenseDeivce` object in each of the point cloud sample scenes, you can find PointCloud object that provides a 3D point cloud of the depth data.
 
-* Gradient - is a color gradient used to color the particles
-* Points Size - Controls the size of the Particles
-* Skip Particles - A factor >= 1 meaning how many points to skip when creating the particles.
+The PointCloud object uses the `PointCloudGenerator.cs` script.
+A texture for the point cloud can be provided using `RealSenseStreamTexture.cs` by binding it to PointCloudMat.
+
+![pointcloudtexture](https://user-images.githubusercontent.com/18511514/47161642-1ffb7e80-d2fb-11e8-957f-7d34e3f88532.PNG)
+
+![pointcloudprefab](https://user-images.githubusercontent.com/18511514/47161641-1f62e800-d2fb-11e8-9318-b96b0e7cc020.PNG)
 
 ### Images
 
-The Unity wrapper comes with a set of Unity Materials alongside matching Shaders to provide users with textures created from the device's frames.
-
-To get a texture, we provide several Image objects under the `Images` prefab:
+The Unity wrapper comes with a set of Unity Materials alongside matching Shaders to provide users with textures created from the device's frames:
 
 ![image](https://user-images.githubusercontent.com/22654243/35591778-cc043fce-0613-11e8-8138-3aa440e54513.png)
-
-> The above image shows the `ColorizedDepthImage`

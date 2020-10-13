@@ -17,7 +17,7 @@ namespace rs2
             :_removed(removed), _added(added) {}
 
         /**
-        * check if specific device was disconnected
+        * check if a specific device was disconnected
         * \return            true if device disconnected, false if device connected
         */
         bool was_removed(const rs2::device& dev) const
@@ -28,6 +28,23 @@ namespace rs2
                 return false;
 
             auto res = rs2_device_list_contains(_removed.get_list(), dev.get().get(), &e);
+            error::handle(e);
+
+            return res > 0;
+        }
+
+        /**
+        * check if a specific device was added
+        * \return            true if device added, false otherwise
+        */
+        bool was_added(const rs2::device& dev) const
+        {
+            rs2_error* e = nullptr;
+
+            if (!dev)
+                return false;
+
+            auto res = rs2_device_list_contains(_added.get_list(), dev.get().get(), &e);
             error::handle(e);
 
             return res > 0;
@@ -70,6 +87,7 @@ namespace rs2
 
     class pipeline;
     class device_hub;
+    class software_device;
 
     /**
     * default librealsense context class
@@ -96,6 +114,21 @@ namespace rs2
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_device_list> list(
                 rs2_query_devices(_context.get(), &e),
+                rs2_delete_device_list);
+            error::handle(e);
+
+            return device_list(list);
+        }
+
+        /**
+        * create a static snapshot of all connected devices at the time of the call
+        * \return            the list of devices connected devices at the time of the call
+        */
+        device_list query_devices(int mask) const
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_device_list> list(
+                rs2_query_devices_ex(_context.get(), mask, &e),
                 rs2_delete_device_list);
             error::handle(e);
 
@@ -166,13 +199,22 @@ namespace rs2
             rs2::error::handle(e);
         }
 
-protected:
-        friend class rs2::pipeline;
-        friend class rs2::device_hub;
+        void unload_tracking_module()
+        {
+            rs2_error* e = nullptr;
+            rs2_context_unload_tracking_module(_context.get(), &e);
+            rs2::error::handle(e);
+        }
 
         context(std::shared_ptr<rs2_context> ctx)
             : _context(ctx)
         {}
+        explicit operator std::shared_ptr<rs2_context>() { return _context; };
+    protected:
+        friend class rs2::pipeline;
+        friend class rs2::device_hub;
+        friend class rs2::software_device;
+
         std::shared_ptr<rs2_context> _context;
     };
 
@@ -183,11 +225,10 @@ protected:
     {
     public:
         explicit device_hub(context ctx)
-            : _ctx(std::move(ctx))
         {
             rs2_error* e = nullptr;
             _device_hub = std::shared_ptr<rs2_device_hub>(
-                rs2_create_device_hub(_ctx._context.get(), &e),
+                rs2_create_device_hub(ctx._context.get(), &e),
                 rs2_delete_device_hub);
             error::handle(e);
         }
@@ -200,7 +241,7 @@ protected:
         {
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_device> dev(
-                rs2_device_hub_wait_for_device(_ctx._context.get(), _device_hub.get(), &e),
+                rs2_device_hub_wait_for_device(_device_hub.get(), &e),
                 rs2_delete_device);
 
             error::handle(e);
@@ -221,8 +262,10 @@ protected:
             return res > 0 ? true : false;
 
         }
+
+        explicit operator std::shared_ptr<rs2_device_hub>() { return _device_hub; }
+        explicit device_hub(std::shared_ptr<rs2_device_hub> hub) : _device_hub(std::move(hub)) {}
     private:
-        context _ctx;
         std::shared_ptr<rs2_device_hub> _device_hub;
     };
 

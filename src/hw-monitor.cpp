@@ -6,27 +6,48 @@
 
 namespace librealsense
 {
+    std::string hw_monitor::get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length)
+    {
+        std::stringstream formattedBuffer;
+        std::string s = "";
+        for (auto i = 1; i <= length; i++)
+        {
+            formattedBuffer << s << static_cast<int>(buff[index + (length - i)]);
+            s = ".";
+        }
+
+        return formattedBuffer.str();
+    }
+
+    std::string hw_monitor::get_module_serial_string(const std::vector<uint8_t>& buff, size_t index, size_t length)
+    {
+        std::stringstream formattedBuffer;
+        for (auto i = 0; i < length; i++)
+            formattedBuffer << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(buff[index + i]);
+
+        return formattedBuffer.str();
+    }
 
     void hw_monitor::fill_usb_buffer(int opCodeNumber, int p1, int p2, int p3, int p4,
         uint8_t* data, int dataLength, uint8_t* bufferToSend, int& length)
     {
         auto preHeaderData = IVCAM_MONITOR_MAGIC_NUMBER;
 
-        auto writePtr = bufferToSend;
+        uint8_t* writePtr = bufferToSend;
         auto header_size = 4;
 
         auto cur_index = 2;
-        *(reinterpret_cast<uint16_t *>(writePtr + cur_index)) = preHeaderData;
+        memcpy(writePtr + cur_index, &preHeaderData, sizeof(uint16_t));
         cur_index += sizeof(uint16_t);
-        *(reinterpret_cast<uint32_t *>(writePtr + cur_index)) = opCodeNumber;
+        memcpy(writePtr + cur_index, &opCodeNumber, sizeof(uint32_t));
         cur_index += sizeof(uint32_t);
-        *(reinterpret_cast<uint32_t *>(writePtr + cur_index)) = p1;
+        memcpy(writePtr + cur_index, &p1, sizeof(uint32_t));
         cur_index += sizeof(uint32_t);
-        *(reinterpret_cast<uint32_t *>(writePtr + cur_index)) = p2;
+        memcpy(writePtr + cur_index, &p2, sizeof(uint32_t));
         cur_index += sizeof(uint32_t);
-        *(reinterpret_cast<uint32_t *>(writePtr + cur_index)) = p3;
+        memcpy(writePtr + cur_index, &p3, sizeof(uint32_t));
         cur_index += sizeof(uint32_t);
-        *(reinterpret_cast<uint32_t *>(writePtr + cur_index)) = p4;
+        memcpy(writePtr + cur_index, &p4, sizeof(uint32_t));
         cur_index += sizeof(uint32_t);
 
         if (dataLength)
@@ -36,7 +57,8 @@ namespace librealsense
         }
 
         length = cur_index;
-        *(reinterpret_cast<uint16_t *>(bufferToSend)) = static_cast<uint16_t>(length - header_size); // Length doesn't include header
+        uint16_t tmp_size = length - header_size;
+        memcpy(bufferToSend, &tmp_size, sizeof(uint16_t)); // Length doesn't include header
     }
 
 
@@ -95,7 +117,7 @@ namespace librealsense
         return _locked_transfer->send_receive(data);
     }
 
-    std::vector<uint8_t> hw_monitor::send(command cmd) const
+    std::vector<uint8_t> hw_monitor::send( command cmd, hwmon_response * p_response , bool locked_transfer) const
     {
         hwmon_cmd newCommand(cmd);
         auto opCodeXmit = static_cast<uint32_t>(newCommand.cmd);
@@ -114,10 +136,17 @@ namespace librealsense
             details.sendCommandData.data(),
             details.sizeOfSendCommandData);
 
+        if (locked_transfer)
+        {
+            return _locked_transfer->send_receive({ details.sendCommandData.begin(),details.sendCommandData.end()});
+        }
+
         send_hw_monitor_command(details);
 
         // Error/exit conditions
-        if (newCommand.oneDirection)
+        if( p_response )
+            *p_response = hwm_Success;
+        if( newCommand.oneDirection )
             return std::vector<uint8_t>();
 
         librealsense::copy(newCommand.receivedOpcode, details.receivedOpcode.data(), 4);
@@ -126,16 +155,37 @@ namespace librealsense
 
         // endian?
         auto opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2],
-                                   details.receivedOpcode[1], details.receivedOpcode[0]);
+                                    details.receivedOpcode[1], details.receivedOpcode[0]);
         if (opCodeAsUint32 != opCodeXmit)
         {
-            throw invalid_value_exception(to_string() << "OpCodes do not match! Sent "
-                << opCodeXmit << " but received " << static_cast<int>(opCodeAsUint32) << "!");
+            auto err_type = static_cast<hwmon_response>(opCodeAsUint32);
+            std::string err = hwmon_error_string( cmd, err_type );
+            LOG_DEBUG( err );
+            if( p_response )
+            {
+                *p_response = err_type;
+                return std::vector<uint8_t>();
+            }
+            throw invalid_value_exception( err );
         }
 
         return std::vector<uint8_t>(newCommand.receivedCommandData,
             newCommand.receivedCommandData + newCommand.receivedCommandDataLength);
     }
+
+    std::string hwmon_error_string( command const & cmd, hwmon_response e )
+    {
+        auto str = hwmon_error2str( e );
+        to_string err;
+        err << "hwmon command 0x" << std::hex << unsigned(cmd.cmd) << '(';
+        err << ' ' << cmd.param1;
+        err << ' ' << cmd.param2;
+        err << ' ' << cmd.param3;
+        err << ' ' << cmd.param4 << std::dec;
+        err << " ) failed (response " << e << "= " << ( str.empty() ? "unknown" : str ) << ")";
+        return err;
+    }
+
 
     void hw_monitor::get_gvd(size_t sz, unsigned char* gvd, uint8_t gvd_cmd) const
     {
@@ -143,33 +193,6 @@ namespace librealsense
         auto data = send(command);
         auto minSize = std::min(sz, data.size());
         librealsense::copy(gvd, data.data(), minSize);
-    }
-
-    std::string hw_monitor::get_firmware_version_string(int gvd_cmd, uint32_t offset) const
-    {
-        std::vector<unsigned char> gvd(HW_MONITOR_BUFFER_SIZE);
-        get_gvd(gvd.size(), gvd.data(), gvd_cmd);
-        uint8_t fws[8];
-        librealsense::copy(fws, gvd.data() + offset, 8);
-        return to_string() << static_cast<int>(fws[3]) << "." << static_cast<int>(fws[2])
-            << "." << static_cast<int>(fws[1]) << "." << static_cast<int>(fws[0]);
-    }
-
-    std::string hw_monitor::get_module_serial_string(uint8_t gvd_cmd, uint32_t offset) const
-    {
-        std::vector<unsigned char> gvd(HW_MONITOR_BUFFER_SIZE);
-        get_gvd(gvd.size(), gvd.data(), gvd_cmd);
-        unsigned char ss[8];
-        librealsense::copy(ss, gvd.data() + offset, 8);
-        std::stringstream formattedBuffer;
-        formattedBuffer << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[0]) <<
-            std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[1]) <<
-            std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[2]) <<
-            std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[3]) <<
-            std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[4]) <<
-            std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[5]);
-
-        return formattedBuffer.str();
     }
 
     bool hw_monitor::is_camera_locked(uint8_t gvd_cmd, uint32_t offset) const

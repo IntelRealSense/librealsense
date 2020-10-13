@@ -63,6 +63,8 @@ namespace librealsense
         {
             _archive[type] = make_archive(type, &_max_publish_list_size, _ts, metadata_parsers);
         }
+
+        _metadata_parsers = metadata_parsers;
     }
 
     callback_invocation_holder frame_source::begin_callback()
@@ -79,6 +81,7 @@ namespace librealsense
         {
             kvp.second.reset();
         }
+        _metadata_parsers.reset();
     }
 
     frame_interface* frame_source::alloc_frame(rs2_extension type, size_t size, frame_additional_data additional_data, bool requires_memory) const
@@ -88,7 +91,7 @@ namespace librealsense
         return it->second->alloc_and_track(size, additional_data, requires_memory);
     }
 
-    void frame_source::set_sensor(std::shared_ptr<sensor_interface> s)
+    void frame_source::set_sensor(const std::shared_ptr<sensor_interface>& s)
     {
         for (auto&& a : _archive)
         {
@@ -121,6 +124,10 @@ namespace librealsense
                     std::swap(frame.frame, ref);
                     _callback->on_frame((rs2_frame*)ref);
                 }
+            }
+            catch( const std::exception & e )
+            {
+                LOG_ERROR( "Exception was thrown during user callback: " + std::string( e.what() ));
             }
             catch(...)
             {

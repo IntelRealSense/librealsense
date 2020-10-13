@@ -25,8 +25,8 @@
 
 	        half4 frag (v2f_img pix) : SV_Target
 	        {
-				float Y = pow(tex2D(_MainTex, pix.uv).aaa, _Gamma);
-				return float4(Y, Y, Y, 1);
+				float Y = pow(tex2D(_MainTex, pix.uv).a, _Gamma);
+				return float4(Y.rrr, 1);
 	        }
 	        ENDCG
 

@@ -34,7 +34,7 @@
  #include <ros/duration.h>
 #include <ros/impl/duration.h>
 
-namespace ros {
+namespace rs2rosinternal {
 
   Duration::Duration(const Rate& rate)
     : DurationBase<Duration>(rate.expectedCycleTime().sec, rate.expectedCycleTime().nsec)

@@ -15,11 +15,15 @@ namespace librealsense
             }
             case 1:
             {
-                return "On";
+                return "Laser";
             }
             case 2:
             {
-                return "Auto";
+                return "Laser Auto";
+            }
+            case 3:
+            {
+                return "LED";
             }
             default:
                 throw invalid_value_exception("value not found");
@@ -28,7 +32,7 @@ namespace librealsense
 
     emitter_option::emitter_option(uvc_sensor& ep)
         : uvc_xu_option(ep, ds::depth_xu, ds::DS5_DEPTH_EMITTER_ENABLED,
-                        "Power of the DS5 projector, 0 meaning projector off, 1 meaning projector on, 2 meaning projector in auto mode")
+                        "Emitter select, 0-disable all emitters, 1-enable laser, 2-enable laser auto (opt), 3-enable LED (opt)")
     {}
 
     float asic_and_projector_temperature_options::query() const
@@ -75,11 +79,11 @@ namespace librealsense
             is_valid_field = &temperature::is_projector_valid;
             break;
         default:
-            throw invalid_value_exception(to_string() << rs2_option_to_string(_option) << " is not temperature option!");
+            throw invalid_value_exception(to_string() << _ep.get_option_name(_option) << " is not temperature option!");
         }
 
         if (0 == temperature_data.*is_valid_field)
-            LOG_ERROR(rs2_option_to_string(_option) << " value is not valid!");
+            LOG_ERROR(_ep.get_option_name(_option) << " value is not valid!");
 
         return temperature_data.*field;
     }
@@ -99,11 +103,11 @@ namespace librealsense
         switch (_option)
         {
         case RS2_OPTION_ASIC_TEMPERATURE:
-            return "Current Asic Temperature";
+            return "Current Asic Temperature (degree celsius)";
         case RS2_OPTION_PROJECTOR_TEMPERATURE:
-            return "Current Projector Temperature";
+            return "Current Projector Temperature (degree celsius)";
         default:
-            throw invalid_value_exception(to_string() << rs2_option_to_string(_option) << " is not temperature option!");
+            throw invalid_value_exception(to_string() << _ep.get_option_name(_option) << " is not temperature option!");
         }
     }
 
@@ -152,7 +156,7 @@ namespace librealsense
 
     const char* motion_module_temperature_option::get_description() const
     {
-        return "Current Motion-Module Temperature";
+        return "Current Motion-Module Temperature (degree celsius)";
     }
 
     motion_module_temperature_option::motion_module_temperature_option(hid_sensor& ep)
@@ -164,43 +168,20 @@ namespace librealsense
         if (!is_valid(value))
             throw invalid_value_exception(to_string() << "set(enable_motion_correction) failed! Given value " << value << " is out of range.");
 
-        _is_enabled = value > _opt_range.min;
+        _is_active = value > _opt_range.min;
         _recording_function(*this);
     }
 
     float enable_motion_correction::query() const
     {
-        auto is_enabled = _is_enabled.load();
-        return is_enabled ? _opt_range.max : _opt_range.min;
+        auto is_active = _is_active.load();
+        return is_active ? _opt_range.max : _opt_range.min;
     }
 
     enable_motion_correction::enable_motion_correction(sensor_base* mm_ep,
-                                                       const ds::imu_intrinsics& accel,
-                                                       const ds::imu_intrinsics& gyro,
                                                        const option_range& opt_range)
-        : option_base(opt_range), _is_enabled(true), _accel(accel), _gyro(gyro)
-    {
-        mm_ep->register_on_before_frame_callback(
-                    [this](rs2_stream stream, frame_interface* fr, callback_invocation_holder callback)
-        {
-            if (_is_enabled.load() && fr->get_stream()->get_format() == RS2_FORMAT_MOTION_XYZ32F)
-            {
-                auto xyz = (float*)(fr->get_frame_data());
-
-                if (stream == RS2_STREAM_ACCEL)
-                {
-                    for (int i = 0; i < 3; i++)
-                        xyz[i] = xyz[i] * _accel.scale[i] - _accel.bias[i];
-                }
-
-                if (stream == RS2_STREAM_GYRO)
-                {
-                    for (int i = 0; i < 3; i++)
-                        xyz[i] = xyz[i] * _gyro.scale[i] - _gyro.bias[i];
-                }
-            }
-        });
-    }
+        : option_base(opt_range), _is_active(true)
+    {}
 
     void enable_auto_exposure_option::set(float value)
     {
@@ -232,7 +213,7 @@ namespace librealsense
         return _auto_exposure_state->get_enable_auto_exposure();
     }
 
-    enable_auto_exposure_option::enable_auto_exposure_option(uvc_sensor* fisheye_ep,
+    enable_auto_exposure_option::enable_auto_exposure_option(synthetic_sensor* fisheye_ep,
                                                              std::shared_ptr<auto_exposure_mechanism> auto_exposure,
                                                              std::shared_ptr<auto_exposure_state> auto_exposure_state,
                                                              const option_range& opt_range)
@@ -240,19 +221,7 @@ namespace librealsense
           _auto_exposure_state(auto_exposure_state),
           _to_add_frames((_auto_exposure_state->get_enable_auto_exposure())),
           _auto_exposure(auto_exposure)
-    {
-        fisheye_ep->register_on_before_frame_callback(
-                    [this](rs2_stream stream, frame_interface* f, callback_invocation_holder callback)
-        {
-            if (!_to_add_frames || stream != RS2_STREAM_FISHEYE)
-                return;
-
-            ((frame*)f)->additional_data.fisheye_ae_mode = true;
-
-            f->acquire();
-            _auto_exposure->add_frame(f, std::move(callback));
-        });
-    }
+    {}
 
     auto_exposure_mode_option::auto_exposure_mode_option(std::shared_ptr<auto_exposure_mechanism> auto_exposure,
                                                          std::shared_ptr<auto_exposure_state> auto_exposure_state,
@@ -290,14 +259,37 @@ namespace librealsense
         }
     }
 
+    auto_exposure_step_option::auto_exposure_step_option(std::shared_ptr<auto_exposure_mechanism> auto_exposure,
+        std::shared_ptr<auto_exposure_state> auto_exposure_state,
+        const option_range& opt_range)
+        : option_base(opt_range),
+        _auto_exposure_state(auto_exposure_state),
+        _auto_exposure(auto_exposure)
+    {}
+
+    void auto_exposure_step_option::set(float value)
+    {
+        if (!std::isnormal(_opt_range.step) || ((value < _opt_range.min) || (value > _opt_range.max)))
+            throw invalid_value_exception(to_string() << "set(auto_exposure_step_option) failed! Given value " << value << " is out of range.");
+
+        _auto_exposure_state->set_auto_exposure_step(value);
+        _auto_exposure->update_auto_exposure_state(*_auto_exposure_state);
+        _recording_function(*this);
+    }
+
+    float auto_exposure_step_option::query() const
+    {
+        return static_cast<float>(_auto_exposure_state->get_auto_exposure_step());
+    }
+
     auto_exposure_antiflicker_rate_option::auto_exposure_antiflicker_rate_option(std::shared_ptr<auto_exposure_mechanism> auto_exposure,
                                                                                  std::shared_ptr<auto_exposure_state> auto_exposure_state,
                                                                                  const option_range& opt_range,
                                                                                  const std::map<float, std::string>& description_per_value)
         : option_base(opt_range),
+          _description_per_value(description_per_value),
           _auto_exposure_state(auto_exposure_state),
-          _auto_exposure(auto_exposure),
-          _description_per_value(description_per_value)
+          _auto_exposure(auto_exposure)
     {}
 
     void auto_exposure_antiflicker_rate_option::set(float value)
@@ -365,6 +357,7 @@ namespace librealsense
 
         _hwm.send(cmd);
         _record_action(*this);
+        notify(value);
     }
 
     float depth_scale_option::query() const
@@ -377,4 +370,288 @@ namespace librealsense
     {
         return *_range;
     }
+
+    external_sync_mode::external_sync_mode(hw_monitor& hwm)
+        : _hwm(hwm)
+    {
+        _range = [this]()
+        {
+            return option_range{ ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT,
+                                 2,
+                                 1,
+                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT};
+        };
+    }
+
+    void external_sync_mode::set(float value)
+    {
+        command cmd(ds::SET_CAM_SYNC);
+        cmd.param1 = static_cast<int>(value);
+
+        _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float external_sync_mode::query() const
+    {
+        command cmd(ds::GET_CAM_SYNC);
+        auto res = _hwm.send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("external_sync_mode::query result is empty!");
+
+        return (res.front());
+    }
+
+    option_range external_sync_mode::get_range() const
+    {
+        return *_range;
+    }
+
+    external_sync_mode2::external_sync_mode2(hw_monitor& hwm, sensor_base* ep)
+        : _hwm(hwm), _sensor(ep)
+    {
+        _range = [this]()
+        {
+            return option_range{ ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT,
+                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_MAX,
+                                 1,
+                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT };
+        };
+    }
+
+    void external_sync_mode2::set(float value)
+    {
+        if (_sensor->is_streaming())
+            throw std::runtime_error("Cannot change Inter-camera HW synchronization mode while streaming!");
+
+        command cmd(ds::SET_CAM_SYNC);
+        if (value < 4)
+            cmd.param1 = static_cast<int>(value);
+        else
+        {
+            cmd.param1 = 4;
+            cmd.param1 |= (static_cast<int>(value - 3)) << 8;
+        }
+
+        _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float external_sync_mode2::query() const
+    {
+        command cmd(ds::GET_CAM_SYNC);
+        auto res = _hwm.send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("external_sync_mode::query result is empty!");
+
+        if (res.front() < 4)
+            return (res.front());
+        else
+            return (static_cast<float>(res[1]) + 3.0f);
+    }
+
+    option_range external_sync_mode2::get_range() const
+    {
+        return *_range;
+    }
+
+    emitter_on_and_off_option::emitter_on_and_off_option(hw_monitor& hwm, sensor_base* ep)
+        : _hwm(hwm), _sensor(ep)
+    {
+        _range = [this]()
+        {
+            return option_range{ 0, 1, 1, 0 };
+        };
+    }
+
+    void emitter_on_and_off_option::set(float value)
+    {
+        if (_sensor->is_streaming())
+            throw std::runtime_error("Cannot change Emitter On/Off option while streaming!");
+
+        command cmd(ds::SET_PWM_ON_OFF);
+        cmd.param1 = static_cast<int>(value);
+
+        _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float emitter_on_and_off_option::query() const
+    {
+        command cmd(ds::GET_PWM_ON_OFF);
+        auto res = _hwm.send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("emitter_on_and_off_option::query result is empty!");
+
+        return (res.front());
+    }
+
+    option_range emitter_on_and_off_option::get_range() const
+    {
+        return *_range;
+    }
+
+    alternating_emitter_option::alternating_emitter_option(hw_monitor& hwm, sensor_base* ep, bool is_fw_version_using_id)
+        : _hwm(hwm), _sensor(ep), _is_fw_version_using_id(is_fw_version_using_id)
+    {
+        _range = [this]()
+        {
+            return option_range{ 0, 1, 1, 0 };
+        };
+    }
+
+    void alternating_emitter_option::set(float value)
+    {
+        std::vector<uint8_t> pattern{};
+
+        if (static_cast<int>(value))
+            if (_is_fw_version_using_id)
+                pattern = ds::alternating_emitter_pattern;
+            else
+                pattern = ds::alternating_emitter_pattern_with_name;
+
+        command cmd(ds::SETSUBPRESET, static_cast<int>(pattern.size()));
+        cmd.data = pattern;
+        auto res = _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float alternating_emitter_option::query() const
+    {
+        if (_is_fw_version_using_id)
+        {
+            float rv = 0.f;
+            command cmd(ds::GETSUBPRESETID);
+            // if no subpreset is streaming, the firmware returns "ON_DATA_TO_RETURN" error
+            try {
+                auto res = _hwm.send(cmd);
+                // if a subpreset is streaming, checking this is the alternating emitter sub preset
+                if (res.size())
+                    rv = (res[0] == ds::ALTERNATING_EMITTER_SUBPRESET_ID) ? 1.0f : 0.f;
+            }
+            catch (...)
+            {
+                rv = 0.f;
+            }
+
+            return rv;
+        }
+        else
+        {
+            command cmd(ds::GETSUBPRESETID);
+            auto res = _hwm.send(cmd);
+            if (res.size() > 20)
+                throw invalid_value_exception("HWMON::GETSUBPRESETID invalid size");
+
+            static std::vector<uint8_t> alt_emitter_name(ds::alternating_emitter_pattern_with_name.begin() + 2, ds::alternating_emitter_pattern_with_name.begin() + 22);
+            return (alt_emitter_name == res);
+        }
+    }
+
+    emitter_always_on_option::emitter_always_on_option(hw_monitor& hwm, sensor_base* ep)
+        : _hwm(hwm), _sensor(ep)
+    {
+        _range = [this]()
+        {
+            return option_range{ 0, 1, 1, 0 };
+        };
+    }
+
+    void emitter_always_on_option::set(float value)
+    {
+        command cmd(ds::LASERONCONST);
+        cmd.param1 = static_cast<int>(value);
+
+        _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float emitter_always_on_option::query() const
+    {
+        command cmd(ds::LASERONCONST);
+        cmd.param1 = 2;
+
+        auto res = _hwm.send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("emitter_always_on_option::query result is empty!");
+
+        return (res.front());
+    }
+
+    option_range emitter_always_on_option::get_range() const
+    {
+        return *_range;
+    }
+
+
+    void hdr_option::set(float value)
+    {
+        _hdr_cfg->set(_option, value, _range);
+        _record_action(*this);
+    }
+
+    float hdr_option::query() const
+    {
+        return _hdr_cfg->get(_option);
+    }
+
+    option_range hdr_option::get_range() const
+    {
+        return _range;
+    }
+
+    const char* hdr_option::get_value_description(float val) const
+    {
+        if (_description_per_value.find(val) != _description_per_value.end())
+            return _description_per_value.at(val).c_str();
+        return nullptr;
+    }
+
+
+    void hdr_conditional_option::set(float value)
+    {
+        if (_hdr_cfg->is_config_in_process())
+            _hdr_option->set(value);
+        else
+        {
+            if (_hdr_cfg->is_enabled())
+                LOG_WARNING("The control - " << _uvc_option->get_description()
+                     << " - is locked while HDR mode is active.\n"); 
+            else
+                _uvc_option->set(value);
+        }
+    }
+
+    float hdr_conditional_option::query() const
+    {
+        if (_hdr_cfg->is_config_in_process())
+            return _hdr_option->query();
+        else
+            return _uvc_option->query();
+    }
+
+    option_range hdr_conditional_option::get_range() const
+    {
+        if (_hdr_cfg->is_config_in_process())
+            return _hdr_option->get_range();
+        else
+            return _uvc_option->get_range();
+    }
+
+    const char* hdr_conditional_option::get_description() const
+    {
+        if (_hdr_cfg->is_config_in_process())
+            return _hdr_option->get_description();
+        else
+            return _uvc_option->get_description();
+    }
+
+    bool hdr_conditional_option::is_enabled() const
+    {
+        if (_hdr_cfg->is_config_in_process())
+            return _hdr_option->is_enabled();
+        else
+            return _uvc_option->is_enabled();
+    }
+
 }

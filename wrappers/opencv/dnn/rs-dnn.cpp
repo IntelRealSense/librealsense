@@ -20,9 +20,9 @@ const char* classNames[]  = {"background",
 
 int main(int argc, char** argv) try
 {
-    using namespace rs2;
     using namespace cv;
     using namespace cv::dnn;
+    using namespace rs2;
 
     Net net = readNetFromCaffe("MobileNetSSD_deploy.prototxt", 
                                "MobileNetSSD_deploy.caffemodel");
@@ -53,7 +53,7 @@ int main(int argc, char** argv) try
     const auto window_name = "Display Image";
     namedWindow(window_name, WINDOW_AUTOSIZE);
 
-    while (cvGetWindowHandle(window_name))
+    while (getWindowProperty(window_name, WND_PROP_AUTOSIZE) >= 0)
     {
         // Wait for the next set of frames
         auto data = pipe.wait_for_frames();
@@ -71,7 +71,7 @@ int main(int argc, char** argv) try
 
         // Convert RealSense frame to OpenCV matrix:
         auto color_mat = frame_to_mat(color_frame);
-        auto depth_mat = depth_frame_to_meters(pipe, depth_frame);
+        auto depth_mat = depth_frame_to_meters(depth_frame);
 
         Mat inputBlob = blobFromImage(color_mat, inScaleFactor,
                                       Size(inWidth, inHeight), meanVal, false); //Convert Mat to batch of images
@@ -102,12 +102,12 @@ int main(int argc, char** argv) try
                             (int)(xRightTop - xLeftBottom),
                             (int)(yRightTop - yLeftBottom));
 
-                object = object  & cv::Rect(0, 0, depth_mat.cols, depth_mat.rows);
+                object = object  & Rect(0, 0, depth_mat.cols, depth_mat.rows);
 
                 // Calculate mean depth inside the detection region
                 // This is a very naive way to estimate objects depth
                 // but it is intended to demonstrate how one might 
-                // use depht data in general
+                // use depth data in general
                 Scalar m = mean(depth_mat(object));
 
                 std::ostringstream ss;
@@ -124,7 +124,7 @@ int main(int argc, char** argv) try
 
                 rectangle(color_mat, Rect(Point(center.x, center.y - labelSize.height),
                     Size(labelSize.width, labelSize.height + baseLine)),
-                    Scalar(255, 255, 255), CV_FILLED);
+                    Scalar(255, 255, 255), FILLED);
                 putText(color_mat, ss.str(), center,
                         FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,0,0));
             }

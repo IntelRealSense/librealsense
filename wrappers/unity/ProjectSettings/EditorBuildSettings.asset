@@ -4,4 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/RealSenseSDK2.0/Scenes/StartHere.unity
+    guid: b58b736dcdf5e6d4dbe73d67853a2ace
+  m_configObjects: {}

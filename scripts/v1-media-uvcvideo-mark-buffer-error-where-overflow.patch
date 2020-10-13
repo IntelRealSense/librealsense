@@ -1,0 +1,104 @@
+From patchwork Fri Aug 18 07:17:56 2017
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Baoyou Xie <baoyou.xie@linaro.org>
+X-Patchwork-Id: 9907707
+Return-Path: <linux-media-owner@kernel.org>
+Received: from mail.wl.linuxfoundation.org (pdx-wl-mail.web.codeaurora.org
+	[172.30.200.125])
+	by pdx-korg-patchwork.web.codeaurora.org (Postfix) with ESMTP id
+	645E5600CC for <patchwork-linux-media@patchwork.kernel.org>;
+	Fri, 18 Aug 2017 07:19:03 +0000 (UTC)
+Received: from mail.wl.linuxfoundation.org (localhost [127.0.0.1])
+	by mail.wl.linuxfoundation.org (Postfix) with ESMTP id 5630F28C5C
+	for <patchwork-linux-media@patchwork.kernel.org>;
+	Fri, 18 Aug 2017 07:19:03 +0000 (UTC)
+Received: by mail.wl.linuxfoundation.org (Postfix, from userid 486)
+	id 4A6AC28C60; Fri, 18 Aug 2017 07:19:03 +0000 (UTC)
+X-Spam-Checker-Version: SpamAssassin 3.3.1 (2010-03-16) on
+	pdx-wl-mail.web.codeaurora.org
+X-Spam-Level: 
+X-Spam-Status: No, score=-7.0 required=2.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID, DKIM_VALID_AU, HK_RANDOM_FROM,
+	RCVD_IN_DNSWL_HI autolearn=ham version=3.3.1
+Received: from vger.kernel.org (vger.kernel.org [209.132.180.67])
+	by mail.wl.linuxfoundation.org (Postfix) with ESMTP id D7C2928C5C
+	for <patchwork-linux-media@patchwork.kernel.org>;
+	Fri, 18 Aug 2017 07:19:02 +0000 (UTC)
+Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
+	id S1750927AbdHRHTB (ORCPT
+	<rfc822;patchwork-linux-media@patchwork.kernel.org>);
+	Fri, 18 Aug 2017 03:19:01 -0400
+Received: from mail-pg0-f50.google.com ([74.125.83.50]:36934 "EHLO
+	mail-pg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709AbdHRHTA (ORCPT
+	<rfc822;linux-media@vger.kernel.org>);
+	Fri, 18 Aug 2017 03:19:00 -0400
+Received: by mail-pg0-f50.google.com with SMTP id y129so58821257pgy.4
+	for <linux-media@vger.kernel.org>;
+	Fri, 18 Aug 2017 00:19:00 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=linaro.org; s=google;
+	h=from:to:cc:subject:date:message-id;
+	bh=WZma9/FVx+4ujRq49xwt1lLa1OfmilkWR60UbzRTIL0=;
+	b=YoRZ76KVuuXVQrMuA/vhxIiw2HvI8Vy6Txb8afLSbiuMh/fWMnydcN7xJm6NDagD4z
+	VkNuaw2xDs8U5l08+XTUevzDQzHIJqap3bDHqEnVjmStkIw10QaI7u52p5sMliGx0LBI
+	2MYF5Z/cpAIzZg+XvITM3Za8ijI4wWkscBvro=
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+	d=1e100.net; s=20161025;
+	h=x-gm-message-state:from:to:cc:subject:date:message-id;
+	bh=WZma9/FVx+4ujRq49xwt1lLa1OfmilkWR60UbzRTIL0=;
+	b=R6efZM1vaCo0t1KFMAykCBppRIE8EHIccZtKsUHtzwMWKQ0S2Sc+dFh3M1fzKXV8yz
+	gtbSToIHs2B7mJapngaOSxdaHfov1hmQGgxtpY0PAhtW5HSIJ+tAdM65727Oza+NPdGb
+	GoTlqMFBgsoCxtAvnxIV9KAq+zzTDzBL7PaddxPgrqpoaPAoBbSMJUXsZTuQhbtKN92c
+	PCLWU73WEf2oEfeLSPX/6PcnHMvi8BpZpvgsqa2FX81FiqedSEEd8BNR1HezWR0brQ3P
+	cNZ4M6GKV0PcQ0iUsjT3YLKDQlXP4qbngiChXvtlsR24Z/L9crOM8UzQEr+lAhxN0y1w
+	zyYA==
+X-Gm-Message-State: AHYfb5hJAfDErEeU6B2CbkOin/j1+YvYrUVNp8mq4THFLkn7Ps4fCTDj
+	2u2MR44dWdjM3DUnHGlVcg==
+X-Received: by 10.99.174.11 with SMTP id q11mr5932467pgf.111.1503040739992;
+	Fri, 18 Aug 2017 00:18:59 -0700 (PDT)
+Received: from localhost.localdomain ([104.237.91.15])
+	by smtp.gmail.com with ESMTPSA id
+	v9sm1359746pgb.30.2017.08.18.00.18.53
+	(version=TLS1_2 cipher=ECDHE-RSA-AES128-SHA bits=128/128);
+	Fri, 18 Aug 2017 00:18:59 -0700 (PDT)
+From: Baoyou Xie <baoyou.xie@linaro.org>
+To: laurent.pinchart@ideasonboard.com, mchehab@kernel.org
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+	shawnguo@kernel.org, baoyou.xie@gmail.com, baoyou.xie@zte.com.cn,
+	jun.nie@linaro.org, broonie@kernel.org, arnd@arndb.de,
+	Baoyou Xie <baoyou.xie@linaro.org>
+Subject: [PATCH v1] [media] uvcvideo: mark buffer error where overflow
+Date: Fri, 18 Aug 2017 15:17:56 +0800
+Message-Id: <1503040676-28802-1-git-send-email-baoyou.xie@linaro.org>
+X-Mailer: git-send-email 2.7.4
+Sender: linux-media-owner@vger.kernel.org
+Precedence: bulk
+List-ID: <linux-media.vger.kernel.org>
+X-Mailing-List: linux-media@vger.kernel.org
+X-Virus-Scanned: ClamAV using ClamSMTP
+
+Some cameras post inaccurate frame where next frame data overlap
+it. this results in screen flicker, and it need to be prevented.
+
+So this patch marks the buffer error to discard the frame where
+buffer overflow.
+
+Signed-off-by: Baoyou Xie <baoyou.xie@linaro.org>
+---
+ drivers/media/usb/uvc/uvc_video.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/media/usb/uvc/uvc_video.c b/drivers/media/usb/uvc/uvc_video.c
+index fb86d6a..81a3530 100644
+--- a/drivers/media/usb/uvc/uvc_video.c
++++ b/drivers/media/usb/uvc/uvc_video.c
+@@ -1077,6 +1077,7 @@ static void uvc_video_decode_data(struct uvc_streaming *stream,
+ 	/* Complete the current frame if the buffer size was exceeded. */
+ 	if (len > maxlen) {
+ 		uvc_trace(UVC_TRACE_FRAME, "Frame complete (overflow).\n");
++		buf->error = 1;
+ 		buf->state = UVC_BUF_STATE_READY;
+ 	}
+ }

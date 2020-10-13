@@ -1,9 +1,15 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
+
 #include <librealsense2/rs.hpp>
-#include "model-views.h"
+#ifdef NETWORK_DEVICE
+#include <librealsense2-net/rs_net.hpp>
+#endif
+#include "viewer.h"
+#include "os.h"
 #include "ux-window.h"
+#include "fw-update-helper.h"
 
 #include <cstdarg>
 #include <thread>
@@ -15,16 +21,48 @@
 #include <array>
 #include <mutex>
 #include <set>
+#include <regex>
 
 #include <imgui_internal.h>
 
-// We use NOC file helper function for cross-platform file dialogs
-#include <noc_file_dialog.h>
+#ifdef INTERNAL_FW
+#include "common/fw/D4XX_FW_Image.h"
+#include "common/fw/SR3XX_FW_Image.h"
+#include "common/fw/L5XX_FW_Image.h"
+#else
+#define FW_D4XX_FW_IMAGE_VERSION ""
+#define FW_SR3XX_FW_IMAGE_VERSION ""
+#define FW_L5XX_FW_IMAGE_VERSION ""
+#endif // INTERNAL_FW
+
+#ifdef BUILD_EASYLOGGINGPP
+#include <easylogging++.h>
+#ifdef BUILD_SHARED_LIBS
+// With static linkage, ELPP is initialized by librealsense, so doing it here will
+// create errors. When we're using the shared .so/.dll, the two are separate and we have
+// to initialize ours if we want to use the APIs!
+INITIALIZE_EASYLOGGINGPP
+#endif
+#endif
 
 using namespace rs2;
 using namespace rs400;
 
-void add_playback_device(context& ctx, std::vector<device_model>& device_models, std::string& error_message, viewer_model& viewer_model, const std::string& file)
+#define MIN_IP_SIZE 7 //TODO: Ester - update size when host name is supported
+
+bool add_remote_device(context& ctx, std::string address)
+{
+#ifdef NETWORK_DEVICE
+    rs2::net_device dev(address);
+    dev.add_to(ctx);
+    return true; // NEtwork device exists
+#else
+    return false;
+#endif
+}
+
+void add_playback_device(context& ctx, device_models_list& device_models,
+    std::string& error_message, viewer_model& viewer_model, const std::string& file)
 {
     bool was_loaded = false;
     bool failed = false;
@@ -32,7 +70,7 @@ void add_playback_device(context& ctx, std::vector<device_model>& device_models,
     {
         auto dev = ctx.load_device(file);
         was_loaded = true;
-        device_models.emplace_back(dev, error_message, viewer_model); //Will cause the new device to appear in the left panel
+        device_models.emplace_back(new device_model(dev, error_message, viewer_model)); //Will cause the new device to appear in the left panel
         if (auto p = dev.as<playback>())
         {
             auto filename = p.file_name();
@@ -41,25 +79,29 @@ void add_playback_device(context& ctx, std::vector<device_model>& device_models,
                 if (status == RS2_PLAYBACK_STATUS_STOPPED)
                 {
                     auto it = std::find_if(device_models.begin(), device_models.end(),
-                        [&](const device_model& dm) {
-                        if (auto p = dm.dev.as<playback>())
+                        [&](const std::unique_ptr<device_model>& dm) {
+                        if (auto p = dm->dev.as<playback>())
                             return p.file_name() == filename;
                         return false;
                     });
                     if (it != device_models.end())
                     {
-                        auto subs = it->subdevices;
-                        if (it->_playback_repeat)
+                        auto subs = (*it)->subdevices;
+                        if ((*it)->_playback_repeat)
                         {
                             //Calling from different since playback callback is from reading thread
-                            std::thread{ [subs, &viewer_model]()
+                            std::thread{ [subs, &viewer_model, it]()
                             {
+                                if (!(*it)->dev_syncer)
+                                    (*it)->dev_syncer = viewer_model.syncer->create_syncer();
+
                                 for (auto&& sub : subs)
                                 {
                                     if (sub->streaming)
                                     {
                                         auto profiles = sub->get_selected_profiles();
-                                        sub->play(profiles, viewer_model);
+
+                                        sub->play(profiles, viewer_model, (*it)->dev_syncer);
                                     }
                                 }
                             } }.detach();
@@ -99,157 +141,195 @@ void add_playback_device(context& ctx, std::vector<device_model>& device_models,
 // This function is called every frame
 // If between the frames there was an asyncronous connect/disconnect event
 // the function will pick up on this and add the device to the viewer
-void refresh_devices(std::mutex& m,
+bool refresh_devices(std::mutex& m,
     context& ctx,
     device_changes& devices_connection_changes,
     std::vector<device>& current_connected_devices,
     std::vector<std::pair<std::string, std::string>>& device_names,
-    std::vector<device_model>& device_models,
+    device_models_list& device_models,
     viewer_model& viewer_model,
     std::string& error_message)
 {
     event_information info({}, {});
-    if (devices_connection_changes.try_get_next_changes(info))
+    if (!devices_connection_changes.try_get_next_changes(info))
+        return false;
+    try
     {
-        try
+        //Remove disconnected
+        auto dev_itr = begin(current_connected_devices);
+        while (dev_itr != end(current_connected_devices))
         {
-            auto prev_size = current_connected_devices.size();
-
-            //Remove disconnected
-            auto dev_itr = begin(current_connected_devices);
-            while (dev_itr != end(current_connected_devices))
+            auto dev = *dev_itr;
+            if (info.was_removed(dev))
             {
-                auto dev = *dev_itr;
-                if (info.was_removed(dev))
+                //Notify change
+                viewer_model.not_model->add_notification({ get_device_name(dev).first + " Disconnected\n",
+                    RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+
+                //Remove from devices
+                auto dev_model_itr = std::find_if(begin(device_models), end(device_models),
+                    [&](const std::unique_ptr<device_model>& other) { return get_device_name(other->dev) == get_device_name(dev); });
+
+                if (dev_model_itr != end(device_models))
                 {
-                    //Notify change
-                    viewer_model.not_model.add_notification({ get_device_name(dev).first + " Disconnected\n",
-                        0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                    for (auto&& s : (*dev_model_itr)->subdevices)
+                        s->streaming = false;
 
-                    viewer_model.ppf.depth_stream_active = false;
+                    dev_model_itr->reset();
+                    device_models.erase(dev_model_itr);
 
-                    //Remove from devices
-                    auto dev_model_itr = std::find_if(begin(device_models), end(device_models),
-                        [&](const device_model& other) { return get_device_name(other.dev) == get_device_name(dev); });
-
-                    if (dev_model_itr != end(device_models))
+                    if (device_models.size() == 0)
                     {
-                        for (auto&& s : dev_model_itr->subdevices)
-                            s->streaming = false;
+                        viewer_model.ppf.depth_stream_active = false;
 
-                        device_models.erase(dev_model_itr);
+                        // Stopping post processing filter rendering thread in case of disconnection
+                        viewer_model.ppf.stop();
                     }
-                    auto dev_name_itr = std::find(begin(device_names), end(device_names), get_device_name(dev));
-                    if (dev_name_itr != end(device_names))
-                        device_names.erase(dev_name_itr);
-
-                    dev_itr = current_connected_devices.erase(dev_itr);
-                    continue;
                 }
-                ++dev_itr;
-            }
+                auto dev_name_itr = std::find(begin(device_names), end(device_names), get_device_name(dev));
+                if (dev_name_itr != end(device_names))
+                    device_names.erase(dev_name_itr);
 
-            //Add connected
-            static bool initial_refresh = true;
-            for (auto dev : info.get_new_devices())
+                dev_itr = current_connected_devices.erase(dev_itr);
+                continue;
+            }
+            ++dev_itr;
+        }
+
+        //Add connected
+        static bool initial_refresh = true;
+        for (auto dev : info.get_new_devices())
+        {
+            auto dev_descriptor = get_device_name(dev);
+            device_names.push_back(dev_descriptor);
+
+            bool added = false;
+            if (device_models.size() == 0 &&
+                dev.supports(RS2_CAMERA_INFO_NAME) && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)) != "Platform Camera" && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)).find("IP Device") == std::string::npos)
             {
-                auto dev_descriptor = get_device_name(dev);
-                device_names.push_back(dev_descriptor);
-                if (!initial_refresh)
-                    viewer_model.not_model.add_notification({ dev_descriptor.first + " Connected\n",
-                        0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
-
-                current_connected_devices.push_back(dev);
-                for (auto&& s : dev.query_sensors())
-                {
-                    s.set_notifications_callback([&, dev_descriptor](const notification& n)
-                    {
-                        if (n.get_category() == RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT)
-                        {
-                            auto data = n.get_serialized_data();
-                            if (!data.empty())
-                            {
-                                auto dev_model_itr = std::find_if(begin(device_models), end(device_models),
-                                    [&](const device_model& other) { return get_device_name(other.dev) == dev_descriptor; });
-
-                                if (dev_model_itr == end(device_models))
-                                    return;
-
-                                dev_model_itr->handle_harware_events(data);
-                            }
-                        }
-                        viewer_model.not_model.add_notification({ n.get_description(), n.get_timestamp(), n.get_severity(), n.get_category() });
-                    });
-                }
-
-                if (device_models.size() == 0 &&
-                    dev.supports(RS2_CAMERA_INFO_NAME) && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)) != "Platform Camera")
-                {
-                    device_models.emplace_back(dev, error_message, viewer_model);
-                    viewer_model.not_model.add_log(to_string() << device_models.rbegin()->dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
-                }
+                device_models.emplace_back(new device_model(dev, error_message, viewer_model));
+                viewer_model.not_model->add_log(to_string() << (*device_models.rbegin())->dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
+                added = true;
             }
-            initial_refresh = false;
+
+            if (!initial_refresh)
+            {
+                if (added || dev.is<playback>())
+                    viewer_model.not_model->add_notification({ dev_descriptor.first + " Connected\n",
+                        RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                else if (added || dev.supports(RS2_CAMERA_INFO_IP_ADDRESS))
+                    viewer_model.not_model->add_notification({ dev_descriptor.first + " Connected\n",
+                        RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                else
+                    viewer_model.not_model->add_notification({ dev_descriptor.first + " Connected\n",
+                        RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR },
+                        [&device_models, &viewer_model, &error_message, dev] {
+                    auto device = dev;
+                    device_models.emplace_back(
+                        new device_model(device, error_message, viewer_model));
+                });
+            }
+
+            current_connected_devices.push_back(dev);
+            for (auto&& s : dev.query_sensors())
+            {
+                s.set_notifications_callback([&, dev_descriptor](const notification& n)
+                {
+                    if (n.get_category() == RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT)
+                    {
+                        auto data = n.get_serialized_data();
+                        if (!data.empty())
+                        {
+                            auto dev_model_itr = std::find_if(begin(device_models), end(device_models),
+                                [&](const std::unique_ptr<device_model>& other)
+                            { return get_device_name(other->dev) == dev_descriptor; });
+
+                            if (dev_model_itr == end(device_models))
+                                return;
+
+                            (*dev_model_itr)->handle_hardware_events(data);
+                        }
+                    }
+                    viewer_model.not_model->add_notification({ n.get_description(), n.get_severity(), n.get_category() });
+                });
+            }
+
+
         }
-        catch (const error& e)
-        {
-            error_message = error_to_string(e);
-        }
-        catch (const std::exception& e)
-        {
-            error_message = e.what();
-        }
-        catch (...)
-        {
-            error_message = "Unknown error";
-        }
+        initial_refresh = false;
     }
+    catch (const error& e)
+    {
+        error_message = error_to_string(e);
+    }
+    catch (const std::exception& e)
+    {
+        error_message = e.what();
+    }
+    catch (...)
+    {
+        error_message = "Unknown error";
+    }
+    return true;
 }
 
-int main(int argv, const char** argc) try
+
+int main(int argc, const char** argv) try
 {
     rs2::log_to_console(RS2_LOG_SEVERITY_WARN);
 
-    ux_window window("Intel RealSense Viewer");
+    context ctx;
+    ux_window window("Intel RealSense Viewer", ctx);
 
     // Create RealSense Context
-    context ctx;
     device_changes devices_connection_changes(ctx);
     std::vector<std::pair<std::string, std::string>> device_names;
 
     std::string error_message{ "" };
     std::string label{ "" };
 
-    std::vector<device_model> device_models;
+    std::shared_ptr<device_models_list> device_models = std::make_shared<device_models_list>();
     device_model* device_to_remove = nullptr;
+    bool is_ip_device_connected = false;
+    std::string ip_address;
 
-    viewer_model viewer_model;
+    viewer_model viewer_model(ctx);
+
     std::vector<device> connected_devs;
     std::mutex m;
 
-    periodic_timer update_readonly_options_timer(std::chrono::seconds(6));
+#ifdef BUILD_EASYLOGGINGPP
+    std::weak_ptr<notifications_model> notifications = viewer_model.not_model;
+    rs2::log_to_callback( RS2_LOG_SEVERITY_INFO,
+        [notifications]( rs2_log_severity severity, rs2::log_message const& msg )
+        {
+            if (auto not_model = notifications.lock())
+            {
+                not_model->output.add_log(severity, msg.filename(), msg.line_number(), msg.raw());
+            }
+        });
+#endif 
 
     window.on_file_drop = [&](std::string filename)
     {
-        std::string error_message{};
-        add_playback_device(ctx, device_models, error_message, viewer_model, filename);
+        add_playback_device(ctx, *device_models, error_message, viewer_model, filename);
         if (!error_message.empty())
         {
-            viewer_model.not_model.add_notification({ error_message,
-                0, RS2_LOG_SEVERITY_ERROR, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+            viewer_model.not_model->add_notification({ error_message,
+                RS2_LOG_SEVERITY_ERROR, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
         }
     };
 
-    for (int i = 1; i < argv; i++)
+    for (int i = 1; i < argc; i++)
     {
         try
         {
-            const char* arg = argc[i];
+            const char* arg = argv[i];
             std::ifstream file(arg);
             if (!file.good())
                 continue;
 
-            add_playback_device(ctx, device_models, error_message, viewer_model, arg);
+            add_playback_device(ctx, *device_models, error_message, viewer_model, arg);
         }
         catch (const rs2::error& e)
         {
@@ -263,16 +343,28 @@ int main(int argv, const char** argc) try
 
     window.on_load = [&]()
     {
-        refresh_devices(m, ctx, devices_connection_changes, connected_devs, device_names, device_models, viewer_model, error_message);
+        refresh_devices(m, ctx, devices_connection_changes, connected_devs,
+            device_names, *device_models, viewer_model, error_message);
         return true;
     };
+
+    if (argc == 2)
+    {
+        try
+        {
+            is_ip_device_connected = add_remote_device(ctx, argv[1]);;
+        }
+        catch (std::runtime_error e)
+        {
+            error_message = e.what();
+        }
+    }
 
     // Closing the window
     while (window)
     {
-        refresh_devices(m, ctx, devices_connection_changes, connected_devs, device_names, device_models, viewer_model, error_message);
-
-        bool update_read_only_options = update_readonly_options_timer;
+        auto device_changed = refresh_devices(m, ctx, devices_connection_changes, connected_devs,
+            device_names, *device_models, viewer_model, error_message);
 
         auto output_height = viewer_model.get_output_height();
 
@@ -284,7 +376,7 @@ int main(int argv, const char** argc) try
         // Flags for pop-up window - no window resize, move or collaps
         auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
-            ImGuiWindowFlags_NoSavedSettings;
+            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus;
 
         ImGui::SetNextWindowPos({ 0, 0 });
         ImGui::SetNextWindowSize({ viewer_model.panel_width, viewer_model.panel_y });
@@ -304,18 +396,41 @@ int main(int argv, const char** argc) try
             ImGui::OpenPopup("select");
 
         auto new_devices_count = device_names.size() + 1;
-        for (auto&& dev_model : device_models)
+
+        for (auto&& dev_model : *device_models)
         {
             auto connected_devs_itr = std::find_if(begin(connected_devs), end(connected_devs),
-                [&](const device& d) { return get_device_name(d) == get_device_name(dev_model.dev); });
+                [&](const device& d) { return get_device_name(d) == get_device_name(dev_model->dev); });
 
-            if (connected_devs_itr != end(connected_devs) || dev_model.dev.is<playback>())
+            if (connected_devs_itr != end(connected_devs) || dev_model->dev.is<playback>())
                 new_devices_count--;
         }
 
 
         ImGui::PushFont(window.get_font());
-        ImGui::SetNextWindowSize({ viewer_model.panel_width, 20.f * new_devices_count + 8 });
+
+        int multiline_devices_names = 0;
+        for (size_t i = 0; i < device_names.size(); i++)
+        {
+            if (device_names[i].first.find("\n") != std::string::npos)
+            {
+                bool show_device_in_list = true;
+                for (auto&& dev_model : *device_models)
+                {
+                    if (get_device_name(dev_model->dev) == device_names[i])
+                    {
+                        show_device_in_list = false;
+                        break;
+                    }
+                }
+                if (show_device_in_list)
+                {
+                    multiline_devices_names++;
+                }
+            }
+        }
+
+        ImGui::SetNextWindowSize({ viewer_model.panel_width, 20.f * (new_devices_count + multiline_devices_names) + 8 + (is_ip_device_connected ? 0 : 20) });
         if (ImGui::BeginPopup("select"))
         {
             ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
@@ -323,8 +438,8 @@ int main(int argv, const char** argc) try
             for (size_t i = 0; i < device_names.size(); i++)
             {
                 bool skip = false;
-                for (auto&& dev_model : device_models)
-                    if (get_device_name(dev_model.dev) == device_names[i]) skip = true;
+                for (auto&& dev_model : *device_models)
+                    if (get_device_name(dev_model->dev) == device_names[i]) skip = true;
                 if (skip) continue;
 
                 if (ImGui::Selectable(device_names[i].first.c_str(), false, ImGuiSelectableFlags_SpanAllColumns)/* || switch_to_newly_loaded_device*/)
@@ -332,7 +447,7 @@ int main(int argv, const char** argc) try
                     try
                     {
                         auto dev = connected_devs[i];
-                        device_models.emplace_back(dev, error_message, viewer_model);
+                        device_models->emplace_back(new device_model(dev, error_message, viewer_model));
                     }
                     catch (const error& e)
                     {
@@ -367,16 +482,118 @@ int main(int argv, const char** argc) try
             {
                 if (auto ret = file_dialog_open(open_file, "ROS-bag\0*.bag\0", NULL, NULL))
                 {
-                    add_playback_device(ctx, device_models, error_message, viewer_model, ret);
+                    add_playback_device(ctx, *device_models, error_message, viewer_model, ret);
                 }
             }
             ImGui::NextColumn();
             ImGui::Text("%s", "");
             ImGui::NextColumn();
 
+            bool close_ip_popup = false;
+
+            if (!is_ip_device_connected)
+            {
+                //ImGui::Separator();
+                if (ImGui::Selectable("Add Network Device", false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_DontClosePopups))
+                {
+#ifdef NETWORK_DEVICE
+                    ip_address = config_file::instance().get_or_default(configurations::viewer::last_ip, std::string{});
+                    ImGui::OpenPopup("Network Device");
+#else
+                    error_message = "To enable RealSense device over network, please build the SDK with CMake flag -DBUILD_NETWORK_DEVICE=ON.\nThis binary distribution was built with network features disabled.";
+#endif
+                }
+
+                float width = 300;
+                float height = 125;
+                float posx = window.width() * 0.5f - width * 0.5f;
+                float posy = window.height() * 0.5f - height * 0.5f;
+                ImGui::SetNextWindowPos({ posx, posy });
+                ImGui::SetNextWindowSize({ width, height });
+                ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+                ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
+
+                if (ImGui::BeginPopupModal("Network Device", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove))
+                {
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 3);
+                    ImGui::SetCursorPosX(10);
+                    ImGui::Text("Connect to a Linux system running rs-server");
+
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+
+                    static char ip_input[255];
+                    std::copy(ip_address.begin(), ip_address.end(), ip_input);
+                    ip_input[ip_address.size()] = '\0';
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+                    ImGui::SetCursorPosX(10);
+                    ImGui::Text("Device IP: ");
+                    ImGui::SameLine();
+                    //ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 1);
+                    ImGui::PushItemWidth(width - ImGui::GetCursorPosX() - 10);
+                    if (ImGui::GetWindowIsFocused() && !ImGui::IsAnyItemActive())
+                    {
+                        ImGui::SetKeyboardFocusHere();
+                    }
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 3);
+                    if (ImGui::InputText("##ip", ip_input, 255))
+                    {
+                        ip_address = ip_input;
+                    }
+                    ImGui::PopStyleColor();
+
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 6);
+
+                    ImGui::PopItemWidth();
+                    ImGui::SetCursorPosX(width / 2 - 105);
+
+                    if (ImGui::ButtonEx("OK", { 100.f, 25.f }) || ImGui::IsKeyDown(GLFW_KEY_ENTER) || ImGui::IsKeyDown(GLFW_KEY_KP_ENTER))
+                    {
+                        try
+                        {
+                            is_ip_device_connected = add_remote_device(ctx, ip_address);;
+                            refresh_devices(m, ctx, devices_connection_changes, connected_devs, device_names, *device_models, viewer_model, error_message);
+                            auto dev = connected_devs[connected_devs.size() - 1];
+                            device_models->emplace_back(new device_model(dev, error_message, viewer_model));
+                            config_file::instance().set(configurations::viewer::last_ip, ip_address);
+                        }
+                        catch (std::runtime_error e)
+                        {
+                            error_message = e.what();
+                        }
+                        ip_address = "";
+                        close_ip_popup = true;
+                        ImGui::CloseCurrentPopup();
+                    }
+                    ImGui::SameLine();
+                    ImGui::SetCursorPosX(width / 2 + 5);
+                    if (ImGui::Button("Cancel", { 100.f, 25.f }) || ImGui::IsKeyDown(GLFW_KEY_ESCAPE))
+                    {
+                        ip_address = "";
+                        close_ip_popup = true;
+                        ImGui::CloseCurrentPopup();
+                    }
+                    ImGui::EndPopup();
+                }
+                ImGui::PopStyleColor(3);
+                ImGui::PopStyleVar(1);
+
+                ImGui::NextColumn();
+                ImGui::Text("%s", "");
+                ImGui::NextColumn();
+            }
+
+            if (close_ip_popup)
+            {
+                ImGui::CloseCurrentPopup();
+                close_ip_popup = false;
+            }
             ImGui::PopStyleColor();
             ImGui::EndPopup();
-        }
+            }
         ImGui::PopFont();
         ImGui::PopStyleVar();
         ImGui::PopStyleColor();
@@ -388,11 +605,13 @@ int main(int argv, const char** argc) try
         ImGui::PopStyleVar();
 
 
-        viewer_model.show_top_bar(window, viewer_rect);
+        viewer_model.show_top_bar(window, viewer_rect, *device_models);
 
-        viewer_model.show_event_log(window.get_font(), viewer_model.panel_width,
-            window.height() - (viewer_model.is_output_collapsed ? viewer_model.default_log_h : 20),
-            window.width() - viewer_model.panel_width, viewer_model.default_log_h);
+        auto output_rect = rect{ viewer_model.panel_width,
+            window.height() - viewer_model.get_output_height(),
+            window.width() - viewer_model.panel_width, viewer_model.get_output_height() };
+
+        viewer_model.not_model->output.draw(window, output_rect, *device_models);
 
         // Set window position and size
         ImGui::SetNextWindowPos({ 0, viewer_model.panel_y });
@@ -405,30 +624,27 @@ int main(int argv, const char** argc) try
         // *********************
         ImGui::Begin("Control Panel", nullptr, flags | ImGuiWindowFlags_AlwaysVerticalScrollbar);
 
-        if (device_models.size() > 0)
+        if (device_models->size() > 0)
         {
             std::vector<std::function<void()>> draw_later;
             auto windows_width = ImGui::GetContentRegionMax().x;
 
-            for (auto&& dev_model : device_models)
+            for (auto&& dev_model : *device_models)
             {
-                dev_model.draw_controls(viewer_model.panel_width, viewer_model.panel_y,
-                    window,
-                    error_message, device_to_remove, viewer_model, windows_width,
-                    update_read_only_options,
-                    draw_later);
+                dev_model->draw_controls(viewer_model.panel_width, viewer_model.panel_y,
+                    window, error_message, device_to_remove, viewer_model, windows_width, draw_later);
             }
-
-            if (device_to_remove)
+            if (viewer_model.ppf.is_rendering())
             {
-                if (auto p = device_to_remove->dev.as<playback>())
+                if (!std::any_of(device_models->begin(), device_models->end(),
+                    [](const std::unique_ptr<device_model>& dm)
                 {
-                    ctx.unload_device(p.file_name());
+                    return dm->is_streaming();
+                }))
+                {
+                    // Stopping post processing filter rendering thread
+                    viewer_model.ppf.stop();
                 }
-
-                device_models.erase(std::find_if(begin(device_models), end(device_models),
-                    [&](const device_model& other) { return get_device_name(other.dev) == get_device_name(device_to_remove->dev); }));
-                device_to_remove = nullptr;
             }
 
             ImGui::SetContentRegionWidth(windows_width);
@@ -457,6 +673,26 @@ int main(int argv, const char** argc) try
                     error_message = e.what();
                 }
             }
+
+            if (device_to_remove)
+            {
+                if (auto p = device_to_remove->dev.as<playback>())
+                {
+                    ctx.unload_device(p.file_name());
+                }
+                viewer_model.syncer->remove_syncer(device_to_remove->dev_syncer);
+                auto it = std::find_if(begin(*device_models), end(*device_models),
+                    [&](const std::unique_ptr<device_model>& other)
+                { return get_device_name(other->dev) == get_device_name(device_to_remove->dev); });
+
+                if (it != device_models->end())
+                {
+                    it->reset();
+                    device_models->erase(it);
+                }
+
+                device_to_remove = nullptr;
+            }
         }
         else
         {
@@ -472,15 +708,15 @@ int main(int argv, const char** argc) try
         ImGui::PopStyleColor();
 
         // Fetch and process frames from queue
-        viewer_model.handle_ready_frames(viewer_rect, window, static_cast<int>(device_models.size()), error_message);
-    }
+        viewer_model.handle_ready_frames(viewer_rect, window, static_cast<int>(device_models->size()), error_message);
+        }
 
-    // Stop calculating 3D model
+    // Stopping post processing filter rendering thread
     viewer_model.ppf.stop();
 
     // Stop all subdevices
-    for (auto&& device_model : device_models)
-        for (auto&& sub : device_model.subdevices)
+    for (auto&& device_model : *device_models)
+        for (auto&& sub : device_model->subdevices)
         {
             if (sub->streaming)
                 sub->stop(viewer_model);

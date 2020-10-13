@@ -10,7 +10,7 @@ import pyrealsense2 as rs
 import time
 import json
 
-DS5_product_ids = ["0AD1", "0AD2", "0AD3", "0AD4", "0AD5", "0AF6", "0AFE", "0AFF", "0B00", "0B01", "0B03", "0B07"]
+DS5_product_ids = ["0AD1", "0AD2", "0AD3", "0AD4", "0AD5", "0AF6", "0AFE", "0AFF", "0B00", "0B01", "0B03", "0B07", "0B3A", "0B5C"]
 
 def find_device_that_supports_advanced_mode() :
     ctx = rs.context()
@@ -74,8 +74,11 @@ try:
     as_json_object = json.loads(serialized_string)
 
     # We can also load controls from a json string
+    # For Python 2, the values in 'as_json_object' dict need to be converted from unicode object to utf-8
+    if type(next(iter(as_json_object))) != str:
+        as_json_object = {k.encode('utf-8'): v.encode("utf-8") for k, v in as_json_object.items()}
     # The C++ JSON parser requires double-quotes for the json object so we need
-    #  to replace the single quote of the pythonic json to double-quotes
+    # to replace the single quote of the pythonic json to double-quotes
     json_string = str(as_json_object).replace("'", '\"')
     advnc_mode.load_json(json_string)
 

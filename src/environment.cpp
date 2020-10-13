@@ -52,6 +52,33 @@ namespace librealsense
         register_extrinsics(from, to, lazy_extr);
     }
 
+    void extrinsics_graph::override_extrinsics( const stream_interface& from, const stream_interface& to, rs2_extrinsics const & extr )
+    {
+        std::lock_guard<std::mutex> lock( _mutex );
+
+        // First, trim any dead stream, to make sure we are not keep gaining memory
+        cleanup_extrinsics();
+
+        // The extrinsics must already exist!
+        auto from_idx = find_stream_profile( from, false );  // do not add if not there
+        auto from_it = _extrinsics.find( from_idx );
+        if( from_it == _extrinsics.end() )
+            throw std::runtime_error( "override_extrinsics called for invalid <from> stream" );
+        auto& from_map = from_it->second;
+
+        auto to_idx = find_stream_profile( to, false );  // do not add if not there
+        auto to_it = from_map.find( to_idx );
+        if( to_it == from_map.end() )
+            throw std::runtime_error( "override_extrinsics called for invalid <to> stream" );
+        auto& weak_ptr = to_it->second;
+        auto sp = weak_ptr.lock();
+        if( !sp )
+            throw std::runtime_error( "override_extrinsics called for out-of-date stream" );
+
+        auto & lazy_extr = *sp;
+        lazy_extr = [=]() { return extr; };
+    }
+
     void extrinsics_graph::cleanup_extrinsics()
     {
         if (_locks_count.load()) return;
@@ -62,39 +89,41 @@ namespace librealsense
         {
             if (!kvp.second.lock())
             {
-                auto dead_id = kvp.first;
+                auto invalid_id = kvp.first;
                 // Delete all extrinsics going out of this stream
-                _extrinsics.erase(dead_id);
+                _extrinsics.erase(invalid_id);
                 ++counter;
-                invalid_ids.push_back(dead_id);
+                invalid_ids.push_back(invalid_id);
             }
         }
 
-        for (auto dead_id : invalid_ids)
+        for (auto removed_id : invalid_ids)
         {
-            _streams.erase(dead_id);
+            _streams.erase(removed_id);
             for (auto&& elem : _extrinsics)
             {
                 // Delete any extrinsics going into the stream
-                elem.second.erase(dead_id);
+                elem.second.erase(removed_id);
                 ++counter;
             }
         }
 
         if (!invalid_ids.empty())
-            LOG_INFO("Found " << invalid_ids.size() << " unreachable streams, " << counter << " extrinsics deleted");
+            LOG_INFO("Found " << invalid_ids.size() << " unreachable streams, " << std::dec << counter << " extrinsics deleted");
     }
 
-    int extrinsics_graph::find_stream_profile(const stream_interface& p)
+    int extrinsics_graph::find_stream_profile(const stream_interface& p, bool add_if_not_there)
     {
         auto sp = p.shared_from_this();
         auto max = 0;
         for (auto&& kvp : _streams)
         {
-            max = std::max(max, kvp.first);
             if (kvp.second.lock().get() == sp.get())
                 return kvp.first;
+            max = std::max( max, kvp.first );
         }
+        if( !add_if_not_there )
+            return -1;
         _streams[max + 1] = sp;
         return max + 1;
 
@@ -159,7 +188,7 @@ namespace librealsense
                                 return inverse(back_edge->operator*());
                         }();
 
-                        auto pose = to_pose(local) * to_pose(*extr);
+                        auto pose = to_pose(*extr) * to_pose(local);
                         *extr = from_pose(pose);
                         return true;
                     }

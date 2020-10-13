@@ -1,0 +1,12 @@
+*.pyd
+*.so
+*.dll
+
+pyrealsense2/*
+pyrealsense2.egg-info
+build
+dist
+
+_version.py
+
+!pyrealsense2/__init__.py

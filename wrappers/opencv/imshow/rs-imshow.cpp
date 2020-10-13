@@ -18,10 +18,10 @@ int main(int argc, char * argv[]) try
     const auto window_name = "Display Image";
     namedWindow(window_name, WINDOW_AUTOSIZE);
 
-    while (waitKey(1) < 0 && cvGetWindowHandle(window_name))
+    while (waitKey(1) < 0 && getWindowProperty(window_name, WND_PROP_AUTOSIZE) >= 0)
     {
         rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
-        rs2::frame depth = color_map(data.get_depth_frame());
+        rs2::frame depth = data.get_depth_frame().apply_filter(color_map);
 
         // Query frame size (width and height)
         const int w = depth.as<rs2::video_frame>().get_width();

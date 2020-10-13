@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Intel Corporation. All rights reserved.
+// Copyright (c) 2018 Intel Corporation. All rights reserved.
 // Use of this source code is governed by an Apache 2.0 license
 // that can be found in the LICENSE file.
 
@@ -116,5 +116,15 @@ describe('FrameSet test', function() {
     assert(d instanceof rs2.VideoFrame);
     let D = frameset.getFrame(rs2.stream['STREAM_COLOR']); // jshint ignore:line
     assert(D instanceof rs2.VideoFrame);
+  });
+
+  it('Testing method forEach', () => {
+    let counter = 0;
+    function callback(frame) {
+      counter++;
+      assert.equal(frame instanceof rs2.Frame, true);
+    }
+    frameset.forEach(callback);
+    assert.equal(counter, frameset.size);
   });
 });

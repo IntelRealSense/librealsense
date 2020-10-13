@@ -1,11 +1,9 @@
 #define CATCH_CONFIG_RUNNER
-#include "catch/catch.hpp"
 #include "unit-tests-common.h"
 #include <iostream>
 
 int main(int argc, char* const argv[])
 {
-
     command_line_params::instance(argc, argv);
 
     std::vector<char*> new_argvs;

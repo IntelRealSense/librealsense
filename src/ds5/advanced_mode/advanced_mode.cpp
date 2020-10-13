@@ -3,14 +3,14 @@
 
 #include "core/advanced_mode.h"
 #include "ds5/ds5-active.h"
-#include "ds5/ds5-rolling-shutter.h"
+#include "ds5/ds5-nonmonochrome.h"
 #include "json_loader.hpp"
 #include "ds5/ds5-color.h"
 
 namespace librealsense
 {
     ds5_advanced_mode_base::ds5_advanced_mode_base(std::shared_ptr<hw_monitor> hwm,
-                                                   uvc_sensor& depth_sensor)
+        synthetic_sensor& depth_sensor)
         : _hw_monitor(hwm),
           _depth_sensor(depth_sensor),
           _color_sensor(nullptr)
@@ -38,6 +38,14 @@ namespace librealsense
             }
             return (ds5_color_sensor*)nullptr;
         };
+        _amplitude_factor_support = [this]() {
+            auto fw_ver = firmware_version(_depth_sensor.get_device().get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION));
+            return (fw_ver >= firmware_version("5.11.9.0"));
+        };
+        _rgb_exposure_gain_bind = [this]() {
+            auto fw_ver = firmware_version(_depth_sensor.get_device().get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION));
+            return (fw_ver >= firmware_version("5.11.9.0"));
+        };
     }
 
     bool ds5_advanced_mode_base::is_enabled() const
@@ -52,7 +60,8 @@ namespace librealsense
     }
 
     void ds5_advanced_mode_base::apply_preset(const std::vector<platform::stream_profile>& configuration,
-                                              rs2_rs400_visual_preset preset, uint16_t device_pid)
+                                              rs2_rs400_visual_preset preset, uint16_t device_pid,
+                                              const firmware_version& fw_version)
     {
         auto p = get_all();
         auto res = get_res_type(configuration.front().width, configuration.front().height);
@@ -67,10 +76,15 @@ namespace librealsense
                 default_410(p);
                 break;
             case ds::RS430_PID:
+            case ds::RS430I_PID:
             case ds::RS435_RGB_PID:
+            case ds::RS435I_PID:
+            case ds::RS465_PID:
+            case ds::RS405_PID:
+            case ds::RS455_PID:
                 default_430(p);
                 break;
-            case ds::RS405_PID:
+            case ds::RS405U_PID:
                 default_405(p);
                 break;
             case ds::RS400_PID:
@@ -80,7 +94,8 @@ namespace librealsense
                 default_420(p);
                 break;
             default:
-                throw invalid_value_exception(to_string() << "apply_preset(...) failed! Invalid product ID (" << device_pid << ")");
+                throw invalid_value_exception(to_string() << "apply_preset(...) failed! Given device doesn't support Default Preset (pid=0x" <<
+                                              std::hex << device_pid << ")");
                 break;
             }
             break;
@@ -128,6 +143,31 @@ namespace librealsense
                 high_res_mid_density(p);
                 break;
             }
+            break;
+        case RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN:
+        {
+            static const firmware_version remove_ir_pattern_fw_ver{ "5.9.10.0" };
+            if (fw_version < remove_ir_pattern_fw_ver)
+                throw invalid_value_exception(to_string() << "apply_preset(...) failed! FW version doesn't support Remove IR Pattern Preset (curr_fw_ver=" <<
+                    fw_version << " ; required_fw_ver=" << remove_ir_pattern_fw_ver << ")");
+
+            switch (device_pid)
+            {
+            case ds::RS400_PID:
+            case ds::RS410_PID:
+            case ds::RS415_PID:
+            case ds::RS465_PID://TODO: verify
+                d415_remove_ir(p);
+                break;
+            case ds::RS460_PID:
+                d460_remove_ir(p);
+                break;
+            default:
+                throw invalid_value_exception(to_string() << "apply_preset(...) failed! Given device doesn't support Remove IR Pattern Preset (pid=0x" <<
+                    std::hex << device_pid << ")");
+                break;
+            }
+        }
             break;
         default:
             throw invalid_value_exception(to_string() << "apply_preset(...) failed! Invalid preset! (" << preset << ")");
@@ -195,7 +235,13 @@ namespace librealsense
         *ptr = get<STCensusRadius>(advanced_mode_traits<STCensusRadius>::group, nullptr, mode);
     }
 
-    bool ds5_advanced_mode_base::supports_option(const uvc_sensor& sensor, rs2_option opt) const
+    void ds5_advanced_mode_base::get_amp_factor(STAFactor* ptr, int mode) const
+    {
+        *ptr = *_amplitude_factor_support ? get<STAFactor>(advanced_mode_traits<STAFactor>::group, nullptr, mode) :
+            []() { STAFactor af; af.amplitude = 0.f; return af; }();
+    }
+
+    bool ds5_advanced_mode_base::supports_option(const synthetic_sensor& sensor, rs2_option opt) const
     {
         return sensor.supports_option(opt);
     }
@@ -218,7 +264,7 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::get_exposure(uvc_sensor& sensor, exposure_control* ptr) const
+    void ds5_advanced_mode_base::get_exposure(synthetic_sensor& sensor, exposure_control* ptr) const
     {
         if (supports_option(sensor, RS2_OPTION_EXPOSURE))
         {
@@ -227,7 +273,7 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::get_auto_exposure(uvc_sensor& sensor, auto_exposure_control* ptr) const
+    void ds5_advanced_mode_base::get_auto_exposure(synthetic_sensor& sensor, auto_exposure_control* ptr) const
     {
         if (supports_option(sensor, RS2_OPTION_ENABLE_AUTO_EXPOSURE))
         {
@@ -268,7 +314,7 @@ namespace librealsense
     {
         if (*_color_sensor)
         {
-            get_exposure(*(*_color_sensor), ptr);
+            get_exposure(**_color_sensor, ptr);
         }
     }
 
@@ -282,7 +328,7 @@ namespace librealsense
 
     void ds5_advanced_mode_base::get_color_backlight_compensation(backlight_compensation_control* ptr) const
     {
-        if (*_color_sensor && supports_option(*(*_color_sensor), RS2_OPTION_BACKLIGHT_COMPENSATION))
+        if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_BACKLIGHT_COMPENSATION))
         {
             ptr->backlight_compensation = static_cast<int>((*_color_sensor)->get_option(RS2_OPTION_BACKLIGHT_COMPENSATION).query());
             ptr->was_set = true;
@@ -291,7 +337,7 @@ namespace librealsense
 
     void ds5_advanced_mode_base::get_color_brightness(brightness_control* ptr) const
     {
-        if (*_color_sensor && supports_option(*(*_color_sensor), RS2_OPTION_BRIGHTNESS))
+        if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_BRIGHTNESS))
         {
             ptr->brightness = (*_color_sensor)->get_option(RS2_OPTION_BRIGHTNESS).query();
             ptr->was_set = true;
@@ -300,7 +346,7 @@ namespace librealsense
 
     void ds5_advanced_mode_base::get_color_contrast(contrast_control* ptr) const
     {
-        if (*_color_sensor && supports_option(*(*_color_sensor), RS2_OPTION_CONTRAST))
+        if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_CONTRAST))
         {
             ptr->contrast = (*_color_sensor)->get_option(RS2_OPTION_CONTRAST).query();
             ptr->was_set = true;
@@ -309,7 +355,7 @@ namespace librealsense
 
     void ds5_advanced_mode_base::get_color_gain(gain_control* ptr) const
     {
-        if (*_color_sensor && supports_option(*(*_color_sensor), RS2_OPTION_GAIN))
+        if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_GAIN))
         {
             ptr->gain = (*_color_sensor)->get_option(RS2_OPTION_GAIN).query();
             ptr->was_set = true;
@@ -318,7 +364,7 @@ namespace librealsense
 
     void ds5_advanced_mode_base::get_color_gamma(gamma_control* ptr) const
     {
-        if (*_color_sensor && supports_option(*(*_color_sensor), RS2_OPTION_GAMMA))
+        if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_GAMMA))
         {
             ptr->gamma = (*_color_sensor)->get_option(RS2_OPTION_GAMMA).query();
             ptr->was_set = true;
@@ -327,7 +373,7 @@ namespace librealsense
 
     void ds5_advanced_mode_base::get_color_hue(hue_control* ptr) const
     {
-        if (*_color_sensor && supports_option(*(*_color_sensor), RS2_OPTION_HUE))
+        if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_HUE))
         {
             ptr->hue = (*_color_sensor)->get_option(RS2_OPTION_HUE).query();
             ptr->was_set = true;
@@ -336,7 +382,7 @@ namespace librealsense
 
     void ds5_advanced_mode_base::get_color_saturation(saturation_control* ptr) const
     {
-        if (*_color_sensor && supports_option(*(*_color_sensor), RS2_OPTION_SATURATION))
+        if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_SATURATION))
         {
             ptr->saturation = (*_color_sensor)->get_option(RS2_OPTION_SATURATION).query();
             ptr->was_set = true;
@@ -345,7 +391,7 @@ namespace librealsense
 
     void ds5_advanced_mode_base::get_color_sharpness(sharpness_control* ptr) const
     {
-        if (*_color_sensor && supports_option(*(*_color_sensor), RS2_OPTION_SHARPNESS))
+        if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_SHARPNESS))
         {
             ptr->sharpness = (*_color_sensor)->get_option(RS2_OPTION_SHARPNESS).query();
             ptr->was_set = true;
@@ -354,7 +400,7 @@ namespace librealsense
 
     void ds5_advanced_mode_base::get_color_white_balance(white_balance_control* ptr) const
     {
-        if (*_color_sensor && supports_option(*(*_color_sensor), RS2_OPTION_WHITE_BALANCE))
+        if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_WHITE_BALANCE))
         {
             ptr->white_balance = (*_color_sensor)->get_option(RS2_OPTION_WHITE_BALANCE).query();
             ptr->was_set = true;
@@ -363,7 +409,7 @@ namespace librealsense
 
     void ds5_advanced_mode_base::get_color_auto_white_balance(auto_white_balance_control* ptr) const
     {
-        if (*_color_sensor && supports_option(*(*_color_sensor), RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE))
+        if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE))
         {
             ptr->auto_white_balance = static_cast<int>((*_color_sensor)->get_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE).query());
             ptr->was_set = true;
@@ -372,7 +418,7 @@ namespace librealsense
 
     void ds5_advanced_mode_base::get_color_power_line_frequency(power_line_frequency_control* ptr) const
     {
-        if (*_color_sensor && supports_option(*(*_color_sensor), RS2_OPTION_POWER_LINE_FREQUENCY))
+        if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_POWER_LINE_FREQUENCY))
         {
             ptr->power_line_frequency = static_cast<int>((*_color_sensor)->get_option(RS2_OPTION_POWER_LINE_FREQUENCY).query());
             ptr->was_set = true;
@@ -451,6 +497,15 @@ namespace librealsense
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
+    void ds5_advanced_mode_base::set_amp_factor(const STAFactor& val)
+    {
+        if (*_amplitude_factor_support)
+        {
+            set(val, advanced_mode_traits<STAFactor>::group);
+            _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
+        }
+    }
+
     void ds5_advanced_mode_base::set_laser_power(const laser_power_control& val)
     {
         if (val.was_set)
@@ -463,12 +518,12 @@ namespace librealsense
             _depth_sensor.get_option(RS2_OPTION_EMITTER_ENABLED).set((float)val.laser_state);
     }
 
-    void ds5_advanced_mode_base::set_exposure(uvc_sensor& sensor, const exposure_control& val)
+    void ds5_advanced_mode_base::set_exposure(synthetic_sensor& sensor, const exposure_control& val)
     {
         sensor.get_option(RS2_OPTION_EXPOSURE).set(val.exposure);
     }
 
-    void ds5_advanced_mode_base::set_auto_exposure(uvc_sensor& sensor, const auto_exposure_control& val)
+    void ds5_advanced_mode_base::set_auto_exposure(synthetic_sensor& sensor, const auto_exposure_control& val)
     {
         sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE).set(float(val.auto_exposure));
     }
@@ -649,6 +704,7 @@ namespace librealsense
         get_depth_table_control(&p.depth_table);
         get_ae_control(&p.ae);
         get_census_radius(&p.census);
+        get_amp_factor(&p.amplitude_factor);
         get_laser_power(&p.laser_power);
         get_laser_state(&p.laser_state);
         get_depth_exposure(&p.depth_exposure);
@@ -689,6 +745,8 @@ namespace librealsense
         set(p.depth_table   , advanced_mode_traits<STDepthTableControl>::group);
         set(p.ae            , advanced_mode_traits<STAEControl>::group);
         set(p.census        , advanced_mode_traits<STCensusRadius>::group);
+        if (*_amplitude_factor_support)
+            set(p.amplitude_factor, advanced_mode_traits<STAFactor>::group);
 
         set_laser_state(p.laser_state);
         if (p.laser_state.was_set && p.laser_state.laser_state == 1) // 1 - on
@@ -703,12 +761,14 @@ namespace librealsense
 
         set_color_auto_exposure(p.color_auto_exposure);
         if (p.color_auto_exposure.was_set && p.color_auto_exposure.auto_exposure == 0)
+        {
             set_color_exposure(p.color_exposure);
+            set_color_gain(p.color_gain);
+        }
 
         set_color_backlight_compensation(p.color_backlight_compensation);
         set_color_brightness(p.color_brightness);
         set_color_contrast(p.color_contrast);
-        set_color_gain(p.color_gain);
         set_color_gamma(p.color_gamma);
         set_color_hue(p.color_hue);
         set_color_saturation(p.color_saturation);
@@ -795,7 +855,7 @@ namespace librealsense
     }
 
     advanced_mode_preset_option::advanced_mode_preset_option(ds5_advanced_mode_base& advanced,
-        uvc_sensor& ep, const option_range& opt_range)
+        synthetic_sensor& ep, const option_range& opt_range)
         : option_base(opt_range),
         _ep(ep),
         _advanced(advanced),
@@ -803,8 +863,9 @@ namespace librealsense
     {
         _ep.register_on_open([this](std::vector<platform::stream_profile> configurations) {
             std::lock_guard<std::mutex> lock(_mtx);
+            auto uvc_sen = As<uvc_sensor, sensor_base>(_ep.get_raw_sensor());
             if (_last_preset != RS2_RS400_VISUAL_PRESET_CUSTOM)
-                _advanced.apply_preset(configurations, _last_preset, get_device_pid(_ep));
+                _advanced.apply_preset(configurations, _last_preset, get_device_pid(*uvc_sen), get_firmware_version(*uvc_sen));
         });
     }
 
@@ -829,9 +890,9 @@ namespace librealsense
             return;
         }
 
-        auto uvc_sensor = dynamic_cast<librealsense::uvc_sensor*>(&_ep);
-        auto configurations = uvc_sensor->get_configuration();
-        _advanced.apply_preset(configurations, preset, get_device_pid(_ep));
+        auto uvc_sen = As<uvc_sensor, sensor_base>(_ep.get_raw_sensor());
+        auto configurations = uvc_sen->get_configuration();
+        _advanced.apply_preset(configurations, preset, get_device_pid(*uvc_sen), get_firmware_version(*uvc_sen));
         _last_preset = preset;
         _recording_function(*this);
     }
@@ -870,5 +931,10 @@ namespace librealsense
         ss << std::hex << str_pid;
         ss >> device_pid;
         return device_pid;
+    }
+
+    firmware_version advanced_mode_preset_option::get_firmware_version(const uvc_sensor& sensor) const
+    {
+        return firmware_version(_ep.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION));
     }
 }

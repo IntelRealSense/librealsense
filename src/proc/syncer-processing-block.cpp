@@ -10,12 +10,12 @@
 
 namespace librealsense
 {
-    syncer_process_unit::syncer_process_unit()
-        : _matcher((new timestamp_composite_matcher({})))
+    syncer_process_unit::syncer_process_unit( std::initializer_list< bool_option::ptr > enable_opts )
+        : processing_block("syncer"), _matcher((new timestamp_composite_matcher({})))
+        , _enable_opts( enable_opts.begin(), enable_opts.end() )
     {
         _matcher->set_callback([this](frame_holder f, syncronization_environment env)
         {
-
             std::stringstream ss;
             ss << "SYNCED: ";
             auto composite = dynamic_cast<composite_frame*>(f.frame);
@@ -31,7 +31,29 @@ namespace librealsense
 
         auto f = [&](frame_holder frame, synthetic_source_interface* source)
         {
-            single_consumer_queue<frame_holder> matches;
+            // if the syncer is disabled passthrough the frame
+            bool enabled = false;
+            size_t n_opts = 0;
+            for( auto& wopt : _enable_opts )
+            {
+                auto opt = wopt.lock();
+                if( opt )
+                {
+                    ++n_opts;
+                    if( opt->is_true() )
+                    {
+                        enabled = true;
+                        break;
+                    }
+                }
+            }
+            if( n_opts  &&  ! enabled )
+            {
+                get_source().frame_ready( std::move( frame ) );
+                return;
+            }
+
+            single_consumer_frame_queue<frame_holder> matches;
 
             {
                 std::lock_guard<std::mutex> lock(_mutex);
@@ -41,7 +63,9 @@ namespace librealsense
             frame_holder f;
             while (matches.try_dequeue(&f))
                 get_source().frame_ready(std::move(f));
+
         };
+
         set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
             new internal_frame_processor_callback<decltype(f)>(f)));
     }

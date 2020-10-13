@@ -186,7 +186,7 @@ The following table depicts the Topics that are supported by RealSense file form
   </tr>
   <tr>
     <td>Sensor Information</td>
-    <td>/device_&lt;device_id&gt;/info</td>
+    <td>/source_&lt;source_id&gt;/info</td>
     <td><a href="http://docs.ros.org/api/diagnostic_msgs/html/msg/KeyValue.html">diagnostic_msgs/KeyValue</a></td>
     <td>Sensor information.<br>Many messages to a single topic</td>
   </tr>

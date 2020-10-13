@@ -364,7 +364,25 @@ namespace librealsense
             });
         }
 
-        shared_ptr<recording> recording::load(const char* filename, const char* section, std::shared_ptr<playback_device_watcher> watcher)
+        static bool is_heighr_or_equel_to_min_version(std::string api_version, std::string min_api_version)
+        {
+            const int ver_size = 3;
+            int section_version[ver_size] = { -1, -1, -1 };
+            int min_version[ver_size] = { -1 ,-1 , -1 };
+            std::sscanf(api_version.c_str(), "%d.%d.%d", &section_version[0], &section_version[1], &section_version[2]);
+            std::sscanf(min_api_version.c_str(), "%d.%d.%d", &min_version[0], &min_version[1], &min_version[2]);
+            for (int i = 0; i < ver_size; i++)
+            {
+                if(min_version[i] < 0)
+                    throw runtime_error(to_string() << "Minimum provided version is in wrong format, expexted format: 0.0.0, actual string: " << min_api_version);
+                if (section_version[i] == min_version[i]) continue;
+                if (section_version[i] > min_version[i]) continue;
+                if (section_version[i] < min_version[i]) return false;
+            }
+            return true;
+        }
+
+        shared_ptr<recording> recording::load(const char* filename, const char* section, std::shared_ptr<playback_device_watcher> watcher, std::string min_api_version)
         {
             if (!file_exists(filename))
             {
@@ -403,6 +421,9 @@ namespace librealsense
                 select_api_version.bind(1, section_id);
                 select_api_version.bind(2, API_VERSION_KEY);
                 auto api_version = select_api_version()[0].get_string();
+                if(is_heighr_or_equel_to_min_version(api_version, min_api_version) == false)
+                    throw runtime_error(to_string() << "File version is lower than the minimum required version that was defind by the test, file version: " <<
+                        api_version << " min version: " << min_api_version);
                 LOG_WARNING("Loaded recording from API version " << api_version);
             }
 
@@ -864,6 +885,16 @@ namespace librealsense
             }, _entity_id, call_type::uvc_unlock);
         }
 
+        void record_hid_device::register_profiles(const std::vector<hid_profile>& hid_profiles)
+        {
+            _owner->try_record([&](recording* rec, lookup_key k)
+            {
+                _source->register_profiles(hid_profiles);
+                auto&& c = rec->add_call(k);
+                c.param1 = rec->save_blob(hid_profiles.data(), hid_profiles.size() * sizeof(hid_profile));
+            }, _entity_id, call_type::hid_register_profiles);
+        }
+
         void record_hid_device::open(const std::vector<hid_profile>& hid_profiles)
         {
             _owner->try_record([&](recording* rec, lookup_key k)
@@ -955,6 +986,19 @@ namespace librealsense
             }, _entity_id, call_type::uvc_get_location);
         }
 
+        usb_spec record_uvc_device::get_usb_specification() const
+        {
+            return _owner->try_record([&](recording* rec, lookup_key k)
+            {
+                auto result = _source->get_usb_specification();
+
+                auto&& c = rec->add_call(k);
+                c.param1 = result;
+
+                return result;
+            }, _entity_id, call_type::uvc_get_usb_specification);
+        }
+
         vector<uint8_t> record_usb_device::send_receive(const vector<uint8_t>& data, int timeout_ms, bool require_response)
         {
             return _owner->try_record([&](recording* rec, lookup_key k)
@@ -1020,7 +1064,7 @@ namespace librealsense
             }, 0, call_type::query_uvc_devices);
         }
 
-        shared_ptr<usb_device> record_backend::create_usb_device(usb_device_info info) const
+        shared_ptr<command_transfer> record_backend::create_usb_device(usb_device_info info) const
         {
             return try_record([&](recording* rec, lookup_key k)
             {
@@ -1102,7 +1146,7 @@ namespace librealsense
             return _rec->load_uvc_device_info_list();
         }
 
-        shared_ptr<usb_device> playback_backend::create_usb_device(usb_device_info info) const
+        shared_ptr<command_transfer> playback_backend::create_usb_device(usb_device_info info) const
         {
             auto&& c = _rec->find_call(call_type::create_usb_device, 0);
 
@@ -1124,11 +1168,10 @@ namespace librealsense
             return _device_watcher;
         }
 
-        playback_backend::playback_backend(const char* filename, const char* section)
+        playback_backend::playback_backend(const char* filename, const char* section, std::string min_api_version)
             : _device_watcher(new playback_device_watcher(0)),
-            _rec(platform::recording::load(filename, section, _device_watcher))
+            _rec(platform::recording::load(filename, section, _device_watcher, min_api_version))
         {
-
             LOG_DEBUG("Starting section " << section);
         }
 
@@ -1182,11 +1225,6 @@ namespace librealsense
 
         void playback_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int buffers)
         {
-            auto stored = _rec->load_stream_profiles(_entity_id, call_type::uvc_probe_commit);
-            vector<stream_profile> input{ profile };
-            if (input != stored)
-                throw playback_backend_exception("Recording history mismatch!", call_type::uvc_probe_commit, _entity_id);
-
             lock_guard<mutex> lock(_callback_mutex);
 
             auto it = std::remove_if(begin(_callbacks), end(_callbacks),
@@ -1352,10 +1390,23 @@ namespace librealsense
             return c.inline_string;
         }
 
+        usb_spec playback_uvc_device::get_usb_specification() const
+        {
+            auto&& c = _rec->find_call(call_type::uvc_get_usb_specification, _entity_id);
+            return static_cast<usb_spec>(c.param1);
+        }
+
         playback_uvc_device::playback_uvc_device(shared_ptr<recording> rec, int id)
             : _rec(rec), _entity_id(id), _alive(true)
         {
             _callback_thread = std::thread([this]() { callback_thread(); });
+        }
+
+        void playback_hid_device::register_profiles(const std::vector<hid_profile>& hid_profiles)
+        {
+            auto stored = _rec->find_call(call_type::hid_register_profiles, _entity_id);
+            auto stored_iios = _rec->load_blob(stored.param1);
+            // TODO: Verify sensor_iio
         }
 
         void playback_hid_device::open(const std::vector<hid_profile>& hid_profiles)

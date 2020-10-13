@@ -1,0 +1,23 @@
+//library
+include ':librealsense'
+project(':librealsense').projectDir = new File('librealsense')
+
+//tools
+include ':camera'
+project(':camera').projectDir = new File('tools/camera')
+
+//examples
+include ':capture'
+project(':capture').projectDir = new File('examples/capture')
+
+include ':playback'
+project(':playback').projectDir = new File('examples/playback')
+
+include ':recording'
+project(':recording').projectDir = new File('examples/recording')
+
+include ':processing'
+project(':processing').projectDir = new File('examples/processing')
+
+include ':multicam'
+project(':multicam').projectDir = new File('examples/multicam')

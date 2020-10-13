@@ -819,4 +819,36 @@ namespace librealsense
         p.census.uDiameter = 9;
         p.census.vDiameter = 3;
     }
+
+    void d415_remove_ir(preset& p)
+    {
+        p.cc.colorCorrection1 = 0.5205079913139f;
+        p.cc.colorCorrection2 = 1.990234017372f;
+        p.cc.colorCorrection3 = 1.506836056709f;
+        p.cc.colorCorrection4 = -2.f;
+        p.cc.colorCorrection5 = -2.f;
+        p.cc.colorCorrection6 = -0.08203099668026f;
+        p.cc.colorCorrection7 = 1.123046994209f;
+        p.cc.colorCorrection8 = 1.013671994209f;
+        p.cc.colorCorrection9 = 1.698241949081f;
+        p.cc.colorCorrection10 = -2.f;
+        p.cc.colorCorrection11 = 0.5751950144768f;
+        p.cc.colorCorrection12 = -0.4111329913139f;
+    }
+
+    void d460_remove_ir(preset& p)
+    {
+        p.cc.colorCorrection1 = 1.917968988419f;
+        p.cc.colorCorrection2 = 1.990234017372f;
+        p.cc.colorCorrection3 = -2.f;
+        p.cc.colorCorrection4 = -2.f;
+        p.cc.colorCorrection5 = -1.041015982628f;
+        p.cc.colorCorrection6 = 0.0546870008111f;
+        p.cc.colorCorrection7 = -0.21875f;
+        p.cc.colorCorrection8 = 0.9042969942093f;
+        p.cc.colorCorrection9 = 0.9042969942093f;
+        p.cc.colorCorrection10 = -0.5478519797325f;
+        p.cc.colorCorrection11 = -0.1367190033197f;
+        p.cc.colorCorrection12 = -0.1914059966803f;
+    }
 }

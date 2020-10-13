@@ -71,13 +71,13 @@ typedef boost::shared_ptr< ::std_msgs::ColorRGBA const> ColorRGBAConstPtr;
 template<typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s, const ::std_msgs::ColorRGBA_<ContainerAllocator> & v)
 {
-ros::message_operations::Printer< ::std_msgs::ColorRGBA_<ContainerAllocator> >::stream(s, "", v);
+rs2rosinternal::message_operations::Printer< ::std_msgs::ColorRGBA_<ContainerAllocator> >::stream(s, "", v);
 return s;
 }
 
 } // namespace std_msgs
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_traits
 {
@@ -163,9 +163,9 @@ float32 a\n\
 };
 
 } // namespace message_traits
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace serialization
 {
@@ -184,9 +184,9 @@ namespace serialization
   }; // struct ColorRGBA_
 
 } // namespace serialization
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_operations
 {
@@ -208,6 +208,6 @@ struct Printer< ::std_msgs::ColorRGBA_<ContainerAllocator> >
 };
 
 } // namespace message_operations
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // STD_MSGS_MESSAGE_COLORRGBA_H

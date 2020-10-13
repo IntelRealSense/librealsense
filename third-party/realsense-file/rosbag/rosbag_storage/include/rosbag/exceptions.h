@@ -40,10 +40,10 @@
 namespace rosbag {
 
 //! Base class for rosbag exceptions
-class BagException : public ros::Exception
+class BagException : public rs2rosinternal::Exception
 {
 public:
-    BagException(std::string const& msg) : ros::Exception(msg) { }
+    BagException(std::string const& msg) : rs2rosinternal::Exception(msg) { }
 };
 
 //! Exception thrown when on IO problems

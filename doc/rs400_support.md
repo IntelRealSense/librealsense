@@ -4,7 +4,7 @@
 
 With the release of the D400 series of Intel® RealSense™ devices, Intel RealSense Group is introducing a number of changes to the **librealsense** support.
 
-Software support for Intel® RealSense™ technology will be split into two coexisting release lineups: **librealsense 1.x** and **librealsense 2+**.</br/>
+Software support for Intel® RealSense™ technology will be split into two coexisting release lineups: **librealsense 1.x** and **librealsense 2+**.
 
  * **librealsense 1.x** will continue to provide support for RealSense™ devices: F200, R200 and ZR300.
 
@@ -16,7 +16,7 @@ Software support for Intel® RealSense™ technology will be split into two coex
 **librealsense2** brings the following improvements and new capabilities (which are incompatible with older RealSense devices):
 
 ### Streaming API
-* **librealsense2** provides a more flexible interface for frames acquisition.  
+* **librealsense2** provides a more flexible interface for frame acquisition.  
 Instead of a single `wait_for_frames` loop, the API is based on callbacks and queues:
 ```cpp
 // Configure queue of size one and start streaming frames into it
@@ -34,7 +34,7 @@ dev.start([](rs2::frame frame){
 });
 // The application will be notified as soon as new frames become available.
 ```
-**Note:** This approach allows users to bypass buffering and synchronization that was done by `wait_for_frames`.
+**Note:** This approach allows users to bypass the buffering and synchronization that was done by `wait_for_frames`.
 
 *  Users who do need to synchronize between different streams can take advantage of the `rs2::syncer` class:
 ```cpp
@@ -56,9 +56,9 @@ for (auto&& frame : frames)
 * Multiple applications can use librealsense2 simultaneously, as long as no two users try to stream from the same camera endpoint.  
 In practice, this means that you can:
   * Stream multiple cameras within a single process
-  * Stream camera A from one process and camera B from another process
-  * Stream depth from camera A from one process while streaming fisheye / motion from the same camera from another process
-  * Stream camera A from one process while issuing controls to camera A from another process
+  * Stream from camera A in one process and from camera B in another process
+  * Stream depth from camera A in one process while streaming fisheye / motion from the same camera in another process
+  * Stream from camera A in one process while issuing controls to camera A from another process
 * The following streams of the RS400 act as independent endpoints: Depth, Fisheye, Motion-tracking, Color
 * Each endpoint can be exclusively locked using `open/close` methods:
 ```cpp
@@ -72,15 +72,15 @@ dev.close(); // Release device ownership
 rs2::util::config config;
 // Declare your preferences
 config.enable_all(rs2::preset::best_quality);
-// The config object resolves it into concrete camera capabilities
+// The config object resolves them into concrete capabilities for the supplied camera
 auto stream = config.open(dev);
 stream.start([](rs2::frame) {});
 ```
 
 ## New Functionality
 
-* **librealsense2** will be shipped with built-in [Python Wrapper](../wrappers/python/) for easier integration.
-* New [troubleshooting tools](../tools/) are now part of the package, including a tool for hardware-log collection.
+* **librealsense2** will be shipped with a built-in [Python Wrapper](../wrappers/python/) for easier integration.
+* New [troubleshooting tools](../tools/) are now part of the package, including a tool for hardware log collection.
 * **librealsense2** is capable of handling device disconnects and the discovery of new devices at runtime.
 * [Playback & Record](../src/media/readme.md) functionality is available out-of-the-box. 
 
