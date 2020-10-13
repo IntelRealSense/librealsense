@@ -9,6 +9,8 @@
 #include "proc/hole-filling-filter.h"
 #include "proc/zero-order.h"
 #include "proc/depth-decompress.h"
+#include "proc/hdr-merge.h"
+#include "proc/sequence-id-filter.h"
 #include "ros_writer.h"
 #include "l500/l500-motion.h"
 #include "l500/l500-depth.h"
@@ -540,7 +542,6 @@ namespace librealsense
     return T;\
  
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_DECIMATION_FILTER);
-        RETURN_IF_EXTENSION(block, RS2_EXTENSION_DECIMATION_FILTER);
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_THRESHOLD_FILTER);
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_DISPARITY_FILTER);
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_SPATIAL_FILTER);
@@ -548,6 +549,8 @@ namespace librealsense
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_HOLE_FILLING_FILTER);
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_ZERO_ORDER_FILTER);
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_DEPTH_HUFFMAN_DECODER);
+        RETURN_IF_EXTENSION(block, RS2_EXTENSION_HDR_MERGE);
+        RETURN_IF_EXTENSION(block, RS2_EXTENSION_SEQUENCE_ID_FILTER);
 
 #undef RETURN_IF_EXTENSION
 
