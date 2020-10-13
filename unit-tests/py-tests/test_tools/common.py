@@ -20,7 +20,7 @@ def require(exp):
     if not exp:
         n_failed_assertions += 1
         case_failed = True
-        print("require failed", flush = True)
+        print("require failed")
 
 # This function should never be reached, it receives the number of assertion that were 
 # skipped if it was reached
@@ -29,7 +29,7 @@ def require_no_reach(skipped):
     n_assertions += skipped
     n_failed_assertions += skipped
     case_failed = True
-    print("require_no_reach was reached", flush = True)
+    print("require_no_reach was reached")
 
 # Functions for formating test cases
 def start_case(msg):
@@ -42,17 +42,17 @@ def finish_case():
     global case_failed, n_failed_cases
     if case_failed:
         n_failed_cases += 1
-        print("Test-Case failed", flush = True)
+        print("Test-Case failed")
     else:
-        print("Test passed")
+        print("Test-Case passed")
 
 def print_results():
     global n_assertions, n_cases, n_failed_assertions, n_failed_cases
     if n_failed_assertions:
         passed = str(n_assertions - n_failed_assertions)
         print("test cases: " + str(n_failed_cases) + " | " + str(n_cases) + " failed")
-        print("assertions: " + str(n_assertions) + " | " + passed + " passed | " + str(n_failed_assertions) + " failed", flush=True)
+        print("assertions: " + str(n_assertions) + " | " + passed + " passed | " + str(n_failed_assertions) + " failed")
         exit(1)
     else:
-        print("All tests passed (" + str(n_assertions) + " assertions in " + str(n_cases) + " test cases)", flush=True)
+        print("All tests passed (" + str(n_assertions) + " assertions in " + str(n_cases) + " test cases)")
         exit(0)
