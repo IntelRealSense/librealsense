@@ -14,6 +14,7 @@
 #include <direct.h>
 #else 
 #include <sys/stat.h>  // mkdir
+#include <iostream>  // std::cout
 #endif
 
 
