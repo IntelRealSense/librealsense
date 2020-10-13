@@ -14,6 +14,8 @@ struct thermal_calibration_table_interface
 {
     virtual ~thermal_calibration_table_interface() {}
 
+    virtual bool is_valid() const = 0;
+
     virtual double get_thermal_scale( double hum_temp ) const = 0;
 
     virtual std::vector< byte > build_raw_data() const = 0;

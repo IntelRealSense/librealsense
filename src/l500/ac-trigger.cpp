@@ -975,15 +975,16 @@ namespace ivcam2 {
 
                         ivcam2::read_fw_table( *hwm, cal_info.table_id, &cal_info );
 
+                        // If the above throw (and they can!) then we catch below and stop...
+
                         try
                         {
                             thermal_table = _dev.get_color_sensor()->get_thermal_table();
                         }
-                        catch( ... )
+                        catch( std::exception const & e )
                         {
-                            AC_LOG( WARNING, "Could not read thermal_table" );
+                            AC_LOG( WARNING, std::string( to_string() << "Disabling thermal correction: " << e.what() << " [NO-THERMAL]" ));
                         }
-                        // If the above throw (and they can!) then we catch below and stop...
                     }
 
                     AC_LOG( DEBUG,
@@ -1270,12 +1271,13 @@ namespace ivcam2 {
         {
             _dev.get_color_sensor()->get_thermal_table();
         }
-        catch (...)
+        catch( std::exception const & e )
         {
+            AC_LOG( DEBUG, std::string( to_string() << "Disabling thermal correction: " << e.what() << " [NO-THERMAL]" ));
             thermal_table_valid = false;
         }
 
-        if (!thermal_table_valid)
+        if( ! thermal_table_valid )
         {
             if( _temp < 32. )
             {
