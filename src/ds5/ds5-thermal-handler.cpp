@@ -61,14 +61,14 @@ namespace librealsense
     void ds5_thermal_handler::start()
     {
         _active_object.start();
-        LOG_DEBUG("Thermal compensation is activated");
+        LOG_WARNING("Thermal compensation is activated");
     }
     void ds5_thermal_handler::stop()
     {
         _active_object.stop();
         _temp_records.clear();
         _temp_base = 0;
-        LOG_DEBUG("Thermal compensation is deactivated");
+        LOG_WARNING("Thermal compensation is deactivated");
 
         // Enforce calibration reread on deactivation
         if (auto sp = _recalib_sensor.lock())
@@ -102,6 +102,7 @@ namespace librealsense
     void ds5_thermal_handler::set_feature(bool state)
     {
         bool change_required = false;
+        LOG_WARNING(__FUNCTION__ << " state = " << state << " _control_on = " << _control_on);
         if (state != _control_on)
         {
             _tl_activation->set(state);
@@ -113,6 +114,7 @@ namespace librealsense
     float ds5_thermal_handler::query()
     {
         auto ctrl_state = static_cast<bool>(_tl_activation->query());
+        LOG_WARNING(__FUNCTION__ << " _control_on = " << _control_on << " ctrl_state = " << ctrl_state);
         if (_control_on != ctrl_state)
         {
             _control_on = ctrl_state;
@@ -125,11 +127,22 @@ namespace librealsense
     void ds5_thermal_handler::update_mode(bool on_streaming)
     {
         if (_streaming_on && _control_on)
+        {
+            LOG_WARNING("Thermal compensation polling was turned on");
             start();
+            return;
+        }
         // Deactivate when toggling off streaming or control
         if ((!_streaming_on && _control_on && on_streaming) ||
             (_streaming_on && !_control_on && !on_streaming))
+        {
+            LOG_WARNING("Thermal compensation polling was turned off");
             stop();
+            return;
+        }
+
+        LOG_WARNING("Thermal compensation update_mode was not changed: on_streaming =" << on_streaming
+                    << ", _streaming_on=" << _streaming_on << ", _control_on=" << _control_on);
     }
 
     void ds5_thermal_handler::polling(dispatcher::cancellable_timer cancellable_timer)
@@ -142,6 +155,7 @@ namespace librealsense
                 if (auto sp = _dpt_sensor.lock())
                 {
                     auto val = static_cast<int16_t>(sp->get_option(RS2_OPTION_ASIC_TEMPERATURE).query());
+                    LOG_WARNING("TL: polling temperature at time  " << ts << ", temp = " << val);
 
                     if (_temp_records.empty() || fabs(_temp_base - val) >= 2.f)
                     {
@@ -163,6 +177,10 @@ namespace librealsense
                         if (_temp_records.size() > 10)
                             _temp_records.pop_front();
                     }
+                }
+                else
+                {
+                    LOG_ERROR("auto sp = _dpt_sensor.lock() failed ");
                 }
             }
             catch (const std::exception& ex)
