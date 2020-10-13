@@ -300,7 +300,7 @@ const rs2_raw_data_buffer* rs2_run_on_chip_calibration(rs2_device* device, const
 
 /**
 * This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
-* \param[in] ground_truth_mm     Ground truth in mm must be between 2500 - 2000000
+* \param[in] ground_truth_mm     Ground truth in mm must be between 60 and 10000
 * \param[in] json_content        Json string to configure tare calibration parameters:
                                     {
                                       "average step count": 20,
@@ -389,7 +389,7 @@ void rs2_trigger_device_calibration( rs2_device* dev, rs2_calibration_type type,
 
 /**
 * This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
-* \param[in] ground_truth_mm     Ground truth in mm must be between 2500 - 2000000
+* \param[in] ground_truth_mm     Ground truth in mm must be between 60 and 10000
 * \param[in] json_content        Json string to configure tare calibration parameters:
                                     {
                                       "average_step_count": 20,

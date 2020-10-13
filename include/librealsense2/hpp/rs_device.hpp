@@ -419,7 +419,7 @@ namespace rs2
 
         /**
         * This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
-        * \param[in] ground_truth_mm     Ground truth in mm must be between 2500 - 2000000
+        * \param[in] ground_truth_mm     Ground truth in mm must be between 60 and 10000
         * \param[in] json_content        Json string to configure tare calibration parameters:
                                             {
                                               "average step count": 20,
@@ -462,7 +462,7 @@ namespace rs2
 
         /**
          * This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
-         * \param[in] ground_truth_mm     Ground truth in mm must be between 2500 - 2000000
+         * \param[in] ground_truth_mm     Ground truth in mm must be between 60 and 10000
          * \param[in] json_content        Json string to configure tare calibration parameters:
                                              {
                                                "average step count": 20,

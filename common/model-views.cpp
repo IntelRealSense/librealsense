@@ -4944,95 +4944,102 @@ namespace rs2
                 if (sub->supports_on_chip_calib() && !has_autocalib)
                 {
                     something_to_show = true;
-                    if (ImGui::Selectable("On-Chip Calibration"))
+
+                    if (ImGui::BeginMenu("Self Calibration"))
                     {
-                        try
+                        if (ImGui::MenuItem("On-Chip Calibration"))
                         {
-                            auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
-                            auto n = std::make_shared<autocalib_notification_model>(
-                                "", manager, false);
+                            try
+                            {
+                                auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
+                                auto n = std::make_shared<autocalib_notification_model>(
+                                    "", manager, false);
 
-                            viewer.not_model->add_notification(n);
-                            n->forced = true;
-                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_SELF_INPUT;
+                                viewer.not_model->add_notification(n);
+                                n->forced = true;
+                                n->update_state = autocalib_notification_model::RS2_CALIB_STATE_SELF_INPUT;
 
-                            for (auto&& n : related_notifications)
-                                if (dynamic_cast<autocalib_notification_model*>(n.get()))
-                                    n->dismiss(false);
+                                for (auto&& n : related_notifications)
+                                    if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                        n->dismiss(false);
+                            }
+                            catch (const error& e)
+                            {
+                                error_message = error_to_string(e);
+                            }
+                            catch (const std::exception& e)
+                            {
+                                error_message = e.what();
+                            }
                         }
-                        catch (const error& e)
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("This will improve the depth noise.\n"
+                                "Point at a scene that normally would have > 50 %% valid depth pixels,\n"
+                                "then press calibrate."
+                                "The health-check will be calculated.\n"
+                                "If >0.25 we recommend applying the new calibration.\n"
+                                "\"White wall\" mode should only be used when pointing at a flat white wall with projector on");
+
+                        if (ImGui::MenuItem("On-Chip Focal Length Calibration"))
                         {
-                            error_message = error_to_string(e);
+                            try
+                            {
+                                auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
+                                auto n = std::make_shared<autocalib_notification_model>(
+                                    "", manager, false);
+
+                                viewer.not_model->add_notification(n);
+                                n->forced = true;
+                                n->update_state = autocalib_notification_model::RS2_CALIB_STATE_FL_SELF_INPUT;
+
+                                for (auto&& n : related_notifications)
+                                    if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                        n->dismiss(false);
+                            }
+                            catch (const error& e)
+                            {
+                                error_message = error_to_string(e);
+                            }
+                            catch (const std::exception& e)
+                            {
+                                error_message = e.what();
+                            }
                         }
-                        catch (const std::exception& e)
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("On-Chip focal length calibration is used to adjust camera focal length and improve the depth.");
+
+                        if (ImGui::MenuItem("Tare Calibration"))
                         {
-                            error_message = e.what();
+                            try
+                            {
+                                auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
+                                auto n = std::make_shared<autocalib_notification_model>(
+                                    "", manager, false);
+
+                                viewer.not_model->add_notification(n);
+                                n->forced = true;
+                                n->update_state = autocalib_notification_model::RS2_CALIB_STATE_TARE_INPUT;
+
+                                for (auto&& n : related_notifications)
+                                    if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                        n->dismiss(false);
+                            }
+                            catch (const error& e)
+                            {
+                                error_message = error_to_string(e);
+                            }
+                            catch (const std::exception& e)
+                            {
+                                error_message = e.what();
+                            }
                         }
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Tare calibration is used to adjust camera absolute distance to flat target.\n"
+                                              "User needs either to enter the known ground truth or use the get button\n"
+                                              "with specific target to get the ground truth.");
+
+                        ImGui::EndMenu();
                     }
-                    if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("This will improve the depth noise.\n"
-                            "Point at a scene that normally would have > 50 %% valid depth pixels,\n"
-                            "then press calibrate."
-                            "The health-check will be calculated.\n"
-                            "If >0.25 we recommend applying the new calibration.\n"
-                            "\"White wall\" mode should only be used when pointing at a flat white wall with projector on");
-
-                    if (ImGui::Selectable("On-Chip Focal Length Calibration"))
-                    {
-                        try
-                        {
-                            auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
-                            auto n = std::make_shared<autocalib_notification_model>(
-                                "", manager, false);
-
-                            viewer.not_model->add_notification(n);
-                            n->forced = true;
-                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_FL_SELF_INPUT;
-
-                            for (auto&& n : related_notifications)
-                                if (dynamic_cast<autocalib_notification_model*>(n.get()))
-                                    n->dismiss(false);
-                        }
-                        catch (const error& e)
-                        {
-                            error_message = error_to_string(e);
-                        }
-                        catch (const std::exception& e)
-                        {
-                            error_message = e.what();
-                        }
-                    }
-                    if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("On-Chip focal length calibration is used to adjust camera focal length and improve the depth.");
-
-                    if (ImGui::Selectable("Tare Calibration"))
-                    {
-                        try
-                        {
-                            auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
-                            auto n = std::make_shared<autocalib_notification_model>(
-                                "", manager, false);
-
-                            viewer.not_model->add_notification(n);
-                            n->forced = true;
-                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_TARE_INPUT;
-
-                            for (auto&& n : related_notifications)
-                                if (dynamic_cast<autocalib_notification_model*>(n.get()))
-                                    n->dismiss(false);
-                        }
-                        catch (const error& e)
-                        {
-                            error_message = error_to_string(e);
-                        }
-                        catch (const std::exception& e)
-                        {
-                            error_message = e.what();
-                        }
-                    }
-                    if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Tare calibration is used to adjust camera absolute distance to flat target.\n"
-                            "User needs to enter the known ground truth");
 
                     if (_calib_model.supports())
                     {

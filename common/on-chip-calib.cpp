@@ -868,15 +868,15 @@ namespace rs2
                 else
                 {
                     ImGui::SetCursorScreenPos({ float(x + 9), float(y + 33) });
-                    ImGui::Text("%s", "Ground Truth(mm):");
+                    ImGui::Text("%s", "Ground Truth (mm):");
                     ImGui::SetCursorScreenPos({ float(x + 135), float(y + 30) });
                 }
 
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", "Tare depth in 1 / 100 of depth unit, Min = 2500, Max = 2000000");
+                    ImGui::SetTooltip("%s", "Distance in millimeter to the flat wall, between 60 and 10000.");
                 
                 std::string id = to_string() << "##ground_truth_for_tare" << index;
-                get_manager().ground_truth = config_file::instance().get_or_default(configurations::viewer::ground_truth_r, 2500.0f);
+                get_manager().ground_truth = config_file::instance().get_or_default(configurations::viewer::ground_truth_r, 1200.0f);
 
                 std::string gt = to_string() << get_manager().ground_truth;
                 const int MAX_SIZE = 256;
