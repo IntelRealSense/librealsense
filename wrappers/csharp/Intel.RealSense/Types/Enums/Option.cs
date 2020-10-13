@@ -218,8 +218,11 @@ namespace Intel.RealSense
         /// <summary>Enable\disable pixel invalidation</summary>
         InvalidationBypass = 68,
 
-        /// <summary>Change the depth ambient light see rs2_ambient_light for values</summary>
+        /// <summary>Deprecated - Use digital gain option, Change the depth ambient light see rs2_ambient_light for values</summary>
         AmbientLightEnvLevel = 69,
+
+        /// <summary>Change the depth digital gain see rs2_digital_gain for values</summary>
+        DigitalGain = 69,
 
         /// <summary>The resolution mode: see rs2_sensor_mode for values</summary>
         SensorMode = 70,
