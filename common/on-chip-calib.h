@@ -98,6 +98,7 @@ namespace rs2
         bool _post_processing = false;
         std::shared_ptr<subdevice_ui_selection> _ui { nullptr };
         bool _in_3d_view = false;
+        int _uid = 0;
 
         viewer_model& _viewer;
 

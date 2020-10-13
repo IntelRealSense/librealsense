@@ -83,32 +83,37 @@ namespace rs2
         {
             if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
             {
-                _sub->stream_enabled[0] = false;
-                _sub->stream_enabled[1] = true;
-                _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
-
-                // Select only left infrared Y8 stream
-                _sub->ui.selected_format_id.clear();
-                for (int i = 0; i < _sub->format_values[1].size(); i++)
+                _uid = 1;
+                for (const auto& format : _sub->formats)
                 {
-                    if (_sub->format_values[1][i] == RS2_FORMAT_Y8)
+                    if (format.second[0] == "Y8")
                     {
-                        _sub->ui.selected_format_id[1] = i;
+                        _uid = format.first;
+                        break;
+                    }
+                }
+
+                _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
+            }
+            else
+            {
+                _uid = 0;
+                for (const auto & format : _sub->formats)
+                {
+                    if (format.second[0] == "Z16")
+                    {
+                        _uid = format.first;
                         break;
                     }
                 }
             }
-            else
-            {
-                _sub->stream_enabled[0] = true;
-                _sub->stream_enabled[1] = false;
 
-                if (_ui) _sub->ui = *_ui; // Save previous configuration
+            // Select stream
+            _sub->stream_enabled.clear();
+            _sub->stream_enabled[_uid] = true;
 
-                // Select only depth stream
-                _sub->ui.selected_format_id.clear();
-                _sub->ui.selected_format_id[RS2_STREAM_DEPTH] = 0;
-            }
+            _sub->ui.selected_format_id.clear();
+            _sub->ui.selected_format_id[_uid] = 0;
 
             // Select FPS value
             for (int i = 0; i < _sub->shared_fps_values.size(); i++)
@@ -164,7 +169,7 @@ namespace rs2
             // Wait for frames to arrive
             bool frame_arrived = false;
             int count = 0;
-            while (!frame_arrived && count++ < 100)
+            while (!frame_arrived && count++ < 200)
             {
                 for (auto&& stream : _viewer.streams)
                 {
@@ -369,7 +374,7 @@ namespace rs2
             rs2::frame f;
             while (counter < limit)
             {
-                f = _viewer.ppf.frames_queue[1].wait_for_frame();
+                f = _viewer.ppf.frames_queue[_uid].wait_for_frame();
                 if (f)
                 {
                     if (!created)
@@ -464,6 +469,7 @@ namespace rs2
             log(to_string() << "Calibration completed, health factor = " << _health);
 
         stop_viewer(invoke);
+        _sub->ui = *_ui;
 
         if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
         {
