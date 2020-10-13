@@ -175,8 +175,8 @@ extern "C" {
     /** \brief digital gain for RS2_OPTION_DIGITAL_GAIN option. */
     typedef enum rs2_digital_gain
     {
-        RS2_DIGITAL_GAIN_LOW_GAIN = 1,
-        RS2_DIGITAL_GAIN_HIGH_GAIN = 2,
+        RS2_DIGITAL_GAIN_HIGH_GAIN = 1,
+        RS2_DIGITAL_GAIN_LOW_GAIN = 2,
     } rs2_digital_gain;
     const char* rs2_digital_gain_to_string(rs2_digital_gain preset);
 

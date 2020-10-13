@@ -232,8 +232,8 @@ namespace librealsense
 #define CASE(X) STRCASE(DIGITAL_GAIN, X)
         switch (value)
         {
-            CASE(LOW_GAIN)
             CASE(HIGH_GAIN)
+            CASE(LOW_GAIN)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

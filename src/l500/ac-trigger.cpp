@@ -1308,23 +1308,23 @@ namespace ivcam2 {
         _digital_gain = ( rs2_digital_gain ) int(raw_digital_gain);
         switch(_digital_gain)
         {
-        case RS2_DIGITAL_GAIN_HIGH_GAIN:
+        case RS2_DIGITAL_GAIN_LOW_GAIN:
             if( _receiver_gain != 18 )
             {
                 if( ! invalid_reason.empty() )
                     invalid_reason += ", ";
                 invalid_reason += to_string()
-                               << "high digital gain - receiver gain (" << raw_apd << ") != 18";
+                               << "low digital gain - receiver gain (" << raw_apd << ") != 18";
             }
             break;
 
-        case RS2_DIGITAL_GAIN_LOW_GAIN:  
+        case RS2_DIGITAL_GAIN_HIGH_GAIN:  
             if( _receiver_gain != 9 )
             {
                 if( ! invalid_reason.empty() )
                     invalid_reason += ", ";
                 invalid_reason += to_string()
-                               << "low digital gain - receiver gain (" << raw_apd << ") != 9";
+                               << "high digital gain - receiver gain (" << raw_apd << ") != 9";
             }
             break;
 

@@ -122,8 +122,8 @@ std::string optimizer::settings::to_string() const
     return librealsense::to_string()
         << '[' << ( is_manual_trigger ? "MANUAL" : "AUTO" ) << ' ' << hum_temp << "degC"
         << " digital gain="
-        << (digital_gain == RS2_DIGITAL_GAIN_LOW_GAIN ? "low"
-            : digital_gain == RS2_DIGITAL_GAIN_HIGH_GAIN ? "high"
+        << (digital_gain == RS2_DIGITAL_GAIN_HIGH_GAIN ? "high"
+            : digital_gain == RS2_DIGITAL_GAIN_LOW_GAIN ? "low"
                                                         : "??" )
         << " receiver gain=" << receiver_gain << ']';
 }
@@ -1573,7 +1573,7 @@ void params::set_depth_resolution( size_t width, size_t height, rs2_digital_gain
     }
     if (use_enhanced_preprocessing)
     {
-        if (digital_gain == RS2_DIGITAL_GAIN_LOW_GAIN)
+        if (digital_gain == RS2_DIGITAL_GAIN_HIGH_GAIN)
         {
             if (VGA)
             {
@@ -1849,9 +1849,9 @@ void optimizer::set_cycle_data(const std::vector<double3>& vertices,
 
 void optimizer::adjust_params_to_apd_gain()
 {
-    if(_settings.digital_gain == RS2_DIGITAL_GAIN_LOW_GAIN)
+    if(_settings.digital_gain == RS2_DIGITAL_GAIN_HIGH_GAIN)
         _params.saturation_value = 230;
-    else if(_settings.digital_gain == RS2_DIGITAL_GAIN_HIGH_GAIN)
+    else if(_settings.digital_gain == RS2_DIGITAL_GAIN_LOW_GAIN)
         _params.saturation_value = 250;
     else
         throw std::runtime_error(to_string() << _settings.digital_gain << " invalid digital gain value");
