@@ -10,7 +10,7 @@
 
 #include <librealsense2/rs.hpp>
 #include <librealsense2-gl/rs_processing_gl.hpp>
-#include <utilities/timer.h>
+#include <utilities/time/timer.h>
 
 
 #include <vector>
@@ -846,7 +846,7 @@ namespace rs2
         std::mutex _m;
         clock::duration _window;
         std::vector<std::pair<clock::time_point, bool>> _measurements;
-        time_utilities::stopwatch _t;
+        utilities::time::stopwatch _t;
     };
 
     class texture_buffer

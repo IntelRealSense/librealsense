@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <utilities/timer.h>
+#include <utilities/time/timer.h>
 #include <string>
 #include <atomic>
 
@@ -27,6 +27,6 @@ namespace rs2
         enum class model_state_type { TRIGGER_MODAL, PROCESS_MODAL };
         std::atomic<model_state_type> _state; // will be set from a different thread callback function
         bool _process_started;
-        time_utilities::timer _process_timeout;
+        utilities::time::timer _process_timeout;
     };
 }

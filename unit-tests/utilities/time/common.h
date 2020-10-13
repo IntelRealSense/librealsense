@@ -3,7 +3,7 @@
 
 #define CATCH_CONFIG_MAIN
 
-#include "catch.h"
+#include "../../catch.h"
 
 #include <easylogging++.h>
 #ifdef BUILD_SHARED_LIBS
@@ -12,3 +12,6 @@
 // to initialize ours if we want to use the APIs!
 INITIALIZE_EASYLOGGINGPP
 #endif
+
+const auto TEST_DELTA_TIME_MS = 500;
+const auto TEST_DELTA_TIME = std::chrono::milliseconds(TEST_DELTA_TIME_MS);

@@ -4,25 +4,28 @@
 // Unit Test Goals:
 // Test the timer utility classes: stopwatch, timer, periodic_timer.
 
-#include "../common_unit_tests_header.h"
-#include "../common/utilities/timer.h"
+//#cmake:add-file ../../../common/utilities/time/timer.h
 
-using namespace time_utilities;
+
+#include "common.h"
+#include "../common/utilities/time/timer.h"
+
+using namespace utilities::time;
 
 // Test description:
 // > Test the timer main functions
 // > Verify the timer expired only when the timeout is reached.
 // > Verify restart process 
-TEST_CASE( "timer", "[Timer]" )
+TEST_CASE( "test timer", "[timer]" )
 {
-    timer t(std::chrono::seconds(1));
+    timer t(TEST_DELTA_TIME);
 
     CHECK_FALSE(t.has_expired());
 
     t.start();
     CHECK_FALSE(t.has_expired());
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(1100));
+    std::this_thread::sleep_for(TEST_DELTA_TIME + std::chrono::milliseconds(100));
 
     // test has_expired() function - expect time expiration
     CHECK(t.has_expired());
@@ -31,20 +34,25 @@ TEST_CASE( "timer", "[Timer]" )
     t.start();
     CHECK_FALSE(t.has_expired());
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::this_thread::sleep_for(TEST_DELTA_TIME - std::chrono::milliseconds(400));
     
     // Verify time has not expired yet
     CHECK_FALSE(t.has_expired());
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(600));
+    std::this_thread::sleep_for(TEST_DELTA_TIME);
 
     // Verify time expired
     CHECK(t.has_expired());
 
-    // Check signal function
-    t.start();
+}
+
+// Test description:
+// Verify the we can force the time expiration
+TEST_CASE("Test force time expiration", "[timer]")
+{
+    timer t(TEST_DELTA_TIME);
+
     CHECK_FALSE(t.has_expired());
     t.set_expired();
     CHECK(t.has_expired());
-
 }

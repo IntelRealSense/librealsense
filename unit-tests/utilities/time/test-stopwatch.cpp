@@ -4,45 +4,45 @@
 // Unit Test Goals:
 // Test the timer utility classes: stopwatch, timer, periodic_timer.
 
-#include "../common_unit_tests_header.h"
-#include "../common/utilities/stopwatch.h"
+//#cmake:add-file ../../../common/utilities/time/stopwatch.h
 
-using namespace time_utilities;
+
+#include "common.h"
+#include "../common/utilities/time/stopwatch.h"
+
+using namespace utilities::time;
 
 // Test description:
 // Test the stopwatch main functions
-TEST_CASE( "stopwatch", "[Timer]" )
+TEST_CASE( "test stopwatch", "[stopwatch]" )
 {
     stopwatch sw;
 
     // Verify constructor set the time.
     CHECK(sw.get_start().time_since_epoch().count() > 0);
 
-    auto current_time = stopwatch::clock::now();
-
-    // Verify now() function set the time
-    CHECK(current_time.time_since_epoch().count() > 0);
+    auto current_time = clock::now();
 
     // Verify calling order force time count order
     CHECK(sw.get_start() <= current_time);
 
     // Test elapsed() function
-    CHECK(sw.get_elapsed() < std::chrono::milliseconds(200));
+    CHECK(sw.get_elapsed() < TEST_DELTA_TIME);
 
     // Sleep for verifying progress of time
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    std::this_thread::sleep_for(TEST_DELTA_TIME);
 
     // Check elapsed() function
-    CHECK(sw.get_elapsed() > std::chrono::milliseconds(200));
+    CHECK(sw.get_elapsed() > TEST_DELTA_TIME);
 
     // Check elapsed_ms() function
-    CHECK(sw.get_elapsed_ms() > 200);
+    CHECK(sw.get_elapsed_ms() > TEST_DELTA_TIME_MS);
     
     // Check reset() function
     sw.reset();
 
     // Verify reset cause the elapsed time to be smaller
-    CHECK(sw.get_elapsed() < std::chrono::milliseconds(200));
-    CHECK(sw.get_elapsed_ms() < 200);
+    CHECK(sw.get_elapsed() < TEST_DELTA_TIME);
+    CHECK(sw.get_elapsed_ms() < TEST_DELTA_TIME_MS);
 
 }

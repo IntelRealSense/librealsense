@@ -479,7 +479,7 @@ namespace rs2
         }
 
         std::string hourglass = u8"\uf251";
-        static time_utilities::periodic_timer every_200ms(std::chrono::milliseconds(200));
+        static utilities::time::periodic_timer every_200ms(std::chrono::milliseconds(200));
         bool do_200ms = every_200ms;
         if (_query_devices && do_200ms)
         {

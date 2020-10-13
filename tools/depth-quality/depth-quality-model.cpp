@@ -259,7 +259,7 @@ namespace rs2
         void tool_model::draw_guides(ux_window& win, const rect& viewer_rect, bool distance_guide, bool orientation_guide)
         {
             static const float fade_factor = 0.6f;
-            static time_utilities::stopwatch animation_clock;
+            static utilities::time::stopwatch animation_clock;
 
             auto flags = ImGuiWindowFlags_NoResize |
                 ImGuiWindowFlags_NoScrollbar |
