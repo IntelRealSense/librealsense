@@ -32,8 +32,7 @@ else:
     def wait():
         global status_list
         while (status_list[-1] != rs.calibration_status.successful and status_list[-1] != rs.calibration_status.failed):
-            print("waiting")
-            sleep(1)
+            sleep(10)
 
     d2r = rs.device_calibration(dev)
     d2r.register_calibration_change_callback( status_cb )
@@ -60,8 +59,10 @@ else:
     # Test-Case #1
     test.start_case("Failing check_conditions function")
     status_list = []
-    depth_sensor.set_option(rs.option.ambient_light, 2)
-    depth_sensor.set_option(rs.option.avalanche_photo_diode, 0)
+    if depth_sensor.get_option(rs.option.ambient_light) != 2:
+        depth_sensor.set_option(rs.option.ambient_light, 2)
+    else:
+        depth_sensor.set_option(rs.option.ambient_light, 1)
     try:
         d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
         wait()
