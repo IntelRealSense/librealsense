@@ -60,14 +60,14 @@ namespace rs2
 
         enum auto_calib_action
         {
+            RS2_CALIB_ACTION_ON_CHIP_OB_CALIB,  // One button On-Chip calibration for both
             RS2_CALIB_ACTION_ON_CHIP_CALIB,     // On-Chip calibration
+            RS2_CALIB_ACTION_ON_CHIP_FL_CALIB,  // On-Chip focal length calibration
             RS2_CALIB_ACTION_TARE_CALIB,        // Tare calibration
             RS2_CALIB_ACTION_TARE_GROUND_TRUTH, // Tare ground truth
-            RS2_CALIB_ACTION_ON_CHIP_FL_CALIB,  // On-Chip calibration
-            RS2_CALIB_ACTION_ON_CHIP_OB_CALIB,  // One button On-Chip calibration
         };
 
-        auto_calib_action action = RS2_CALIB_ACTION_ON_CHIP_CALIB;
+        auto_calib_action action = RS2_CALIB_ACTION_ON_CHIP_OB_CALIB;
         float laser_status_prev = 0.0f;
 
         int fl_step_count = 100;
@@ -131,12 +131,6 @@ namespace rs2
             RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_IN_PROCESS, // Calculating ground truth in process... Shows progressbar
             RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_COMPLETE,   // Calculating ground truth complete, show succeeded or failed
             RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED,     // Failed to calculating the ground truth
-            RS2_CALIB_STATE_FL_SELF_INPUT,       // Collect input parameters for focal length on-chip self calibration
-            RS2_CALIB_STATE_FL_CALIB_IN_PROCESS, // Focal length calibration in process... Shows progressbar
-            RS2_CALIB_STATE_FL_CALIB_COMPLETE,   // Focal length calibration, show before/after toggle and metrics
-            RS2_CALIB_STATE_OB_SELF_INPUT,       // Collect input parameters for one button on-chip calibration
-            RS2_CALIB_STATE_OB_CALIB_IN_PROCESS, // One button on-chip calibration in process... Shows progressbar
-            RS2_CALIB_STATE_OB_CALIB_COMPLETE,   // One button on-chip length calibration, show before/after toggle and metrics
         };
 
         autocalib_notification_model(std::string name,
