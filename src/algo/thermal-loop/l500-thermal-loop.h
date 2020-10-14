@@ -57,7 +57,7 @@ public:
     thermal_table_header _header;
     std::vector< thermal_bin > bins;
 
-    thermal_calibration_table() = default;
+    thermal_calibration_table();
     thermal_calibration_table( const std::vector< byte > & data, int resolution = 29 );
 
     double get_thermal_scale( double hum_temp ) const override;

@@ -12,6 +12,13 @@ namespace l500 {
 
 const int thermal_calibration_table::id = 0x317;
 
+thermal_calibration_table::thermal_calibration_table() : _resolution(0)
+{
+    _header.max_temp = 0;
+    _header.min_temp = 0;
+    _header.reference_temp = 0;
+    _header.valid = 0;
+}
 
 thermal_calibration_table::thermal_calibration_table( const std::vector< byte > & data,
                                                       int resolution )
@@ -19,6 +26,8 @@ thermal_calibration_table::thermal_calibration_table( const std::vector< byte > 
 {
     auto expected_size = sizeof( thermal_table_header )
                        + sizeof( thermal_bin ) * resolution;
+
+    _header.valid = 0;
 
     if( data.size() != expected_size )
         throw std::runtime_error( librealsense::to_string()
