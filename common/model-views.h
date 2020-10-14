@@ -28,6 +28,7 @@
 #include "updates-model.h"
 #include "calibration-model.h"
 #include "cah-model.h"
+#include "../common/utilities/time/periodic_timer.h"
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);
@@ -847,7 +848,7 @@ namespace rs2
 
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
-        periodic_timer      _update_readonly_options_timer;
+        utilities::time::periodic_timer      _update_readonly_options_timer;
         bool pause_required = false;
         std::shared_ptr< atomic_objects_in_frame > _detected_objects;
         std::shared_ptr<updates_model> _updates;

@@ -459,10 +459,10 @@ namespace rs2
         glOrtho(0, _width, _height, 0, -1, +1);
 
         // Fade-in the logo
-        auto opacity = smoothstep(float(_splash_timer.elapsed_ms()), 100.f, 2500.f);
-        auto ox = 0.7f - smoothstep(float(_splash_timer.elapsed_ms()), 200.f, 1900.f) * 0.4f;
+        auto opacity = smoothstep(float(_splash_timer.get_elapsed_ms()), 100.f, 2500.f);
+        auto ox = 0.7f - smoothstep(float(_splash_timer.get_elapsed_ms()), 200.f, 1900.f) * 0.4f;
         auto oy = 0.5f;
-        auto power = std::sin(smoothstep(float(_splash_timer.elapsed_ms()), 150.f, 2200.f) * 3.14f) * 0.96f;
+        auto power = std::sin(smoothstep(float(_splash_timer.get_elapsed_ms()), 150.f, 2200.f) * 3.14f) * 0.96f;
 
         if (_use_glsl_render)
         {
@@ -479,7 +479,7 @@ namespace rs2
         }
 
         std::string hourglass = u8"\uf251";
-        static periodic_timer every_200ms(std::chrono::milliseconds(200));
+        static utilities::time::periodic_timer every_200ms(std::chrono::milliseconds(200));
         bool do_200ms = every_200ms;
         if (_query_devices && do_200ms)
         {
@@ -567,7 +567,7 @@ namespace rs2
         }
 
         // If we are just getting started, render the Splash Screen instead of normal UI
-        while (res && (!_app_ready || _splash_timer.elapsed_ms() < 2000.f))
+        while (res && (!_app_ready || _splash_timer.get_elapsed_ms() < 2000.f))
         {
             res = !glfwWindowShouldClose(_win);
             glfwPollEvents();

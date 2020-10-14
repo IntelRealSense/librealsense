@@ -259,7 +259,7 @@ namespace rs2
         void tool_model::draw_guides(ux_window& win, const rect& viewer_rect, bool distance_guide, bool orientation_guide)
         {
             static const float fade_factor = 0.6f;
-            static timer animation_clock;
+            static utilities::time::stopwatch animation_clock;
 
             auto flags = ImGuiWindowFlags_NoResize |
                 ImGuiWindowFlags_NoScrollbar |
@@ -322,7 +322,7 @@ namespace rs2
 
             for (int i = 2; i < 7; i += 1)
             {
-                auto t = (animation_clock.elapsed_ms() / 500) * M_PI - i * (M_PI / 5);
+                auto t = (animation_clock.get_elapsed_ms() / 500) * M_PI - i * (M_PI / 5);
                 float alpha = (1.f + float(sin(t))) / 2.f;
 
                 auto c = blend(grey, (1.f - float(i)/7.f)*fade_factor);
@@ -405,7 +405,7 @@ namespace rs2
                             {
                                 for (int j = 1; j < 5; j++)
                                 {
-                                    auto t = (animation_clock.elapsed_ms() / 500) * M_PI - j * (M_PI / 5);
+                                    auto t = (animation_clock.get_elapsed_ms() / 500) * M_PI - j * (M_PI / 5);
                                     auto alpha = (1 + float(sin(t))) / 2.f;
 
                                     ImGui::SetCursorPos({ pos.x + 57, pos.y + bar_spacing * (i - j) + 14 });
@@ -420,7 +420,7 @@ namespace rs2
                             {
                                 for (int j = 1; j < 5; j++)
                                 {
-                                    auto t = (animation_clock.elapsed_ms() / 500) * M_PI - j * (M_PI / 5);
+                                    auto t = (animation_clock.get_elapsed_ms() / 500) * M_PI - j * (M_PI / 5);
                                     auto alpha = (1.f + float(sin(t))) / 2.f;
 
                                     ImGui::SetCursorPos({ pos.x + 57, pos.y + bar_spacing * (i + j) + 14 });
@@ -1055,7 +1055,7 @@ namespace rs2
 
             const auto left_x = 295.f;
             const auto indicator_flicker_rate = 200;
-            auto alpha_value = static_cast<float>(fabs(sin(_model_timer.elapsed_ms() / indicator_flicker_rate)));
+            auto alpha_value = static_cast<float>(fabs(sin(_model_timer.get_elapsed_ms() / indicator_flicker_rate)));
 
             _trending_up.add_value(has_trend(true));
             _trending_down.add_value(has_trend(false));
