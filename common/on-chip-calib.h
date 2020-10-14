@@ -43,7 +43,7 @@ namespace rs2
         void restore_workspace(invoker invoke);
         
         // Ask the firmware to use one of the before/after calibration tables
-        void apply_calib(bool old);
+        void apply_calib(bool use_new);
 
         // Get depth metrics for before/after calibration tables
         std::pair<float, float> get_metric(bool use_new);
@@ -64,6 +64,7 @@ namespace rs2
             RS2_CALIB_ACTION_TARE_CALIB,        // Tare calibration
             RS2_CALIB_ACTION_TARE_GROUND_TRUTH, // Tare ground truth
             RS2_CALIB_ACTION_ON_CHIP_FL_CALIB,  // On-Chip calibration
+            RS2_CALIB_ACTION_ON_CHIP_OB_CALIB,  // One button On-Chip calibration
         };
 
         auto_calib_action action = RS2_CALIB_ACTION_ON_CHIP_CALIB;
@@ -133,6 +134,9 @@ namespace rs2
             RS2_CALIB_STATE_FL_SELF_INPUT,       // Collect input parameters for focal length on-chip self calibration
             RS2_CALIB_STATE_FL_CALIB_IN_PROCESS, // Focal length calibration in process... Shows progressbar
             RS2_CALIB_STATE_FL_CALIB_COMPLETE,   // Focal length calibration, show before/after toggle and metrics
+            RS2_CALIB_STATE_OB_SELF_INPUT,       // Collect input parameters for one button on-chip calibration
+            RS2_CALIB_STATE_OB_CALIB_IN_PROCESS, // One button on-chip calibration in process... Shows progressbar
+            RS2_CALIB_STATE_OB_CALIB_COMPLETE,   // One button on-chip length calibration, show before/after toggle and metrics
         };
 
         autocalib_notification_model(std::string name,

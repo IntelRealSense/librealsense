@@ -191,6 +191,9 @@ namespace librealsense
         int fl_data_sampling = DEFAULT_FL_SAMPLING;
         int adjust_both_sides = DEFAULT_ADJUST_BOTH_SIDES;
         
+        float h_1 = 0.0f;
+        float h_2 = 0.0f;
+
         if (json.size() > 0)
         {
             auto jsn = parse_json(json);
@@ -208,7 +211,79 @@ namespace librealsense
             try_fetch(jsn, "adjust both sides", &adjust_both_sides);
         }
 
-        if (calib_type)
+        std::vector<uint8_t> res;
+        if (calib_type == 0)
+        {
+            LOG_INFO("run_on_chip_calibration with parameters: speed = " << speed << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
+            check_params(speed, scan_parameter, data_sampling);
+
+            param4 param{ (byte)scan_parameter, 0, (byte)data_sampling };
+
+            std::shared_ptr<ds5_advanced_mode_base> preset_recover;
+            if (speed == speed_white_wall && apply_preset)
+                preset_recover = change_preset();
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+            // Begin auto-calibration
+            _hw_monitor->send(command{ ds::AUTO_CALIB, auto_calib_begin, speed, 0, param.param_4 });
+
+            DirectSearchCalibrationResult result{};
+
+            int count = 0;
+            bool done = false;
+
+            auto start = std::chrono::high_resolution_clock::now();
+            auto now = start;
+
+            // While not ready...
+            do
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+                // Check calibration status
+                try
+                {
+                    auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, auto_calib_check_status });
+
+                    if (res.size() < sizeof(DirectSearchCalibrationResult))
+                        throw std::runtime_error("Not enough data from CALIB_STATUS!");
+
+                    result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
+                    done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
+                }
+                catch (const std::exception& ex)
+                {
+                    LOG_WARNING(ex.what());
+                }
+                if (progress_callback)
+                    progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
+
+                now = std::chrono::high_resolution_clock::now();
+
+            } while (now - start < std::chrono::milliseconds(timeout_ms) && !done);
+
+
+            // If we exit due to timeout, report timeout
+            if (!done)
+            {
+                throw std::runtime_error("Operation timed-out!\n"
+                    "Calibration state did not converged in time");
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+            auto status = (rs2_dsc_status)result.status;
+
+            // Handle errors from firmware
+            if (status != RS2_DSC_STATUS_SUCCESS)
+            {
+                handle_calibration_error(status);
+            }
+
+            res = get_calibration_results(health);
+        }
+        else if (calib_type == 1)
         {
             LOG_INFO("run_on_chip_focal_length_calibration with parameters: step count = " << fl_step_count
                 << ", fy scan range = " << fy_scan_range << ", keep new value after sucessful scan = " << keep_new_value_after_sucessful_scan
@@ -278,6 +353,8 @@ namespace librealsense
             {
                 handle_calibration_error(status);
             }
+
+            res = get_calibration_results(health);
         }
         else
         {
@@ -295,13 +372,14 @@ namespace librealsense
             // Begin auto-calibration
             _hw_monitor->send(command{ ds::AUTO_CALIB, auto_calib_begin, speed, 0, param.param_4 });
 
-            DirectSearchCalibrationResult result{};
+            DirectSearchCalibrationResult result_1{};
 
             int count = 0;
             bool done = false;
 
             auto start = std::chrono::high_resolution_clock::now();
             auto now = start;
+            float progress = 0.0f;
 
             // While not ready...
             do
@@ -316,15 +394,96 @@ namespace librealsense
                     if (res.size() < sizeof(DirectSearchCalibrationResult))
                         throw std::runtime_error("Not enough data from CALIB_STATUS!");
 
-                    result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
-                    done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
+                    result_1 = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
+                    done = result_1.status != RS2_DSC_STATUS_RESULT_NOT_READY;
                 }
                 catch (const std::exception& ex)
                 {
                     LOG_WARNING(ex.what());
                 }
                 if (progress_callback)
-                    progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
+                {
+                    progress = count++ * (1.f * speed);
+                    if (progress > 50.f)
+                        progress = 50.f;
+                    progress_callback->on_update_progress(progress); //curently this number does not reflect the actual progress
+                }
+
+                now = std::chrono::high_resolution_clock::now();
+
+            } while (now - start < std::chrono::milliseconds(timeout_ms) && !done);
+
+            // If we exit due to timeout, report timeout
+            if (!done)
+            {
+                throw std::runtime_error("Operation timed-out!\n"
+                    "Calibration state did not converged in time");
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+            auto status = (rs2_dsc_status)result_1.status;
+
+            // Handle errors from firmware
+            if (status != RS2_DSC_STATUS_SUCCESS)
+                handle_calibration_error(status);
+
+            res = get_calibration_results(&h_1);
+
+            // apply and keep
+            set_calibration_table(res);
+
+            LOG_INFO("run_on_chip_focal_length_calibration with parameters: step count = " << fl_step_count
+                << ", fy scan range = " << fy_scan_range << ", keep new value after sucessful scan = " << keep_new_value_after_sucessful_scan
+                << ", interrrupt data sampling " << fl_data_sampling << ", adjust both sides = " << adjust_both_sides);
+            check_focal_length_params(fl_step_count, fy_scan_range, keep_new_value_after_sucessful_scan, fl_data_sampling, adjust_both_sides);
+
+            // Begin auto-calibration
+            int p4 = 0;
+            if (keep_new_value_after_sucessful_scan)
+                p4 |= (1 << 1);
+            if (fl_data_sampling)
+                p4 |= (1 << 3);
+            if (adjust_both_sides)
+                p4 |= (1 << 4);
+            _hw_monitor->send(command{ ds::AUTO_CALIB, focal_length_calib_begin, fl_step_count, fy_scan_range, p4 });
+
+            FocalLengthCalibrationResult result_2{};
+
+            count = 0;
+            done = false;
+
+            start = std::chrono::high_resolution_clock::now();
+            now = start;
+
+            // While not ready...
+            do
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+                // Check calibration status
+                try
+                {
+                    auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, get_focal_legth_calib_result });
+
+                    if (res.size() < sizeof(FocalLengthCalibrationResult))
+                        throw std::runtime_error("Not enough data from CALIB_STATUS!");
+
+                    result_2 = *reinterpret_cast<FocalLengthCalibrationResult*>(res.data());
+                    done = result_2.status != RS2_DSC_STATUS_RESULT_NOT_READY;
+                }
+                catch (const std::exception& ex)
+                {
+                    LOG_WARNING(ex.what());
+                }
+
+                if (progress_callback)
+                {
+                    progress = 50.0f + count++ * (1.f * 3);
+                    if (progress > 100.0f)
+                        progress = 100.0f;
+                    progress_callback->on_update_progress(progress); //curently this number does not reflect the actual progress
+                }
 
                 now = std::chrono::high_resolution_clock::now();
 
@@ -340,16 +499,32 @@ namespace librealsense
 
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-            auto status = (rs2_dsc_status)result.status;
+            status = (rs2_dsc_status)result_2.status;
 
             // Handle errors from firmware
             if (status != RS2_DSC_STATUS_SUCCESS)
-            {
                 handle_calibration_error(status);
-            }
-        }
 
-        auto res = get_calibration_results(health);
+            res = get_calibration_results(&h_2);
+            
+            int health_1 = static_cast<int>(abs(h_1) * 1000.0f + 0.5f);
+            health_1 &= 0xFFF;
+
+            int health_2 = static_cast<int>(abs(h_2) * 1000.0f + 0.5f);
+            health_2 &= 0xFFF;
+
+            int sign = 0;
+            if (h_1 < 0.0f)
+                sign = 1;
+            if (h_2 < 0.0f)
+                sign |= 2;
+
+            int h = health_1;
+            h |= health_2 << 12;
+            h |= sign << 24;
+            *health = static_cast<float>(h);
+        }
+        
         return res;
     }
 

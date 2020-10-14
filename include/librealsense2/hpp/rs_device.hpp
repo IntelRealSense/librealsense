@@ -335,7 +335,7 @@ namespace rs2
                                               "scan parameter": 0,
                                               "adjust both sides": 0
                                             }
-                                            calib_type - calibraton type: 0 = regular, 1 = focal length
+                                            calib_type - calibraton type: 0 = regular, 1 = focal length, 2 = both regular and focal length in order
                                             speed - for regular calibration. value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is  Slow
                                             scan_parameter - for regular calibration. value can be one of: Py scan (default) = 0, Rx scan = 1
                                             adjust_both_sides - for focal length calibration. value can be one of: 0 = adjust right only, 1 = adjust both sides
@@ -348,6 +348,11 @@ namespace rs2
                                             [0, 0.15) - Good
                                             [0.15, 0.75) - Can be Improved
                                             [0.75, ) - Requires Calibration
+                                        The two health numbers are encoded in one integer as follows for calib_type 2:
+                                            Regular health number times 1000 are bits 0 to 11
+                                            Regular health number is negative if bit 24 is 1
+                                            Focal length health number times 1000 are bits 12 to 23
+                                            Focal length health number is negative if bit 25 is 1
          * \param[in] callback          Optional callback to get progress notifications
          * \param[in] timeout_ms        Timeout in ms
          * \return                      New calibration table
@@ -382,7 +387,7 @@ namespace rs2
                                               "scan parameter": 0,
                                               "adjust both sides": 0
                                             }
-                                            focal_length - calibraton type: 0 = regular, 1 = focal length
+                                            focal_length - calibraton type: 0 = regular, 1 = focal length, 2 = both regular and focal length in order
                                             speed - for regular calibration. value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is  Slow
                                             scan_parameter - for regular calibration. value can be one of: Py scan (default) = 0, Rx scan = 1
                                             adjust_both_sides - for focal length calibration. value can be one of: 0 = adjust right only, 1 = adjust both sides
@@ -395,6 +400,11 @@ namespace rs2
                                             [0, 0.15) - Good
                                             [0.15, 0.75) - Can be Improved
                                             [0.75, ) - Requires Calibration
+                                        The two health numbers are encoded in one integer as follows for calib_type 2:
+                                            Regular health number times 1000 are bits 0 to 11
+                                            Regular health number is negative if bit 24 is 1
+                                            Focal length health number times 1000 are bits 12 to 23
+                                            Focal length health number is negative if bit 25 is 1
          * \param[in] timeout_ms        Timeout in ms
          * \return                      New calibration table
          */

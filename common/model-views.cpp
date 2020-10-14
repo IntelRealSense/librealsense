@@ -4829,7 +4829,6 @@ namespace rs2
                 }
             }
 
-
             if (_allow_remove)
             {
                 something_to_show = true;
@@ -4935,15 +4934,43 @@ namespace rs2
                     }
                 }
             }
-
-
-                
+            
             bool has_autocalib = false;
             for (auto&& sub : subdevices)
             {
                 if (sub->supports_on_chip_calib() && !has_autocalib)
                 {
                     something_to_show = true;
+                    if (ImGui::Selectable("One Button On-Chip Calibration"))
+                    {
+                        try
+                        {
+                            auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
+                            auto n = std::make_shared<autocalib_notification_model>("", manager, false);
+
+                            viewer.not_model->add_notification(n);
+                            n->forced = true;
+                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_OB_SELF_INPUT;
+
+                            for (auto&& n : related_notifications)
+                                if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                    n->dismiss(false);
+                        }
+                        catch (const error& e)
+                        {
+                            error_message = error_to_string(e);
+                        }
+                        catch (const std::exception& e)
+                        {
+                            error_message = e.what();
+                        }
+                    }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("This will improve the depth noise.\n"
+                            "Point at a scene that normally would have > 50 %% valid depth pixels,\n"
+                            "then press calibrate."
+                            "The health-check will be calculated.\n"
+                            "\"White wall\" mode should only be used when pointing at a flat white wall with projector on");
 
                     if (ImGui::BeginMenu("Self Calibration"))
                     {
@@ -4952,8 +4979,7 @@ namespace rs2
                             try
                             {
                                 auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
-                                auto n = std::make_shared<autocalib_notification_model>(
-                                    "", manager, false);
+                                auto n = std::make_shared<autocalib_notification_model>("", manager, false);
 
                                 viewer.not_model->add_notification(n);
                                 n->forced = true;
@@ -4985,8 +5011,7 @@ namespace rs2
                             try
                             {
                                 auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
-                                auto n = std::make_shared<autocalib_notification_model>(
-                                    "", manager, false);
+                                auto n = std::make_shared<autocalib_notification_model>("", manager, false);
 
                                 viewer.not_model->add_notification(n);
                                 n->forced = true;
