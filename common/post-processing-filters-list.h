@@ -39,11 +39,11 @@ struct post_processing_filters_list
                 }
                 catch( std::exception const& e )
                 {
-                    LOG( ERROR ) << "Failed to start " << name << ": " << e.what();
+                    LOG_ERROR( "Failed to start " << name << ": " << e.what());
                 }
                 catch( ... )
                 {
-                    LOG( ERROR ) << "Failed to start " << name << ": unknown exception";
+                    LOG_ERROR( "Failed to start " << name << ": unknown exception");
                 }
                 return std::shared_ptr< T >();
             }
