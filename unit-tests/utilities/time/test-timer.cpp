@@ -34,7 +34,7 @@ TEST_CASE( "test timer", "[timer]" )
     t.start();
     CHECK_FALSE(t.has_expired());
 
-    std::this_thread::sleep_for(TEST_DELTA_TIME - std::chrono::milliseconds(400));
+    std::this_thread::sleep_for(TEST_DELTA_TIME / 2);
     
     // Verify time has not expired yet
     CHECK_FALSE(t.has_expired());
