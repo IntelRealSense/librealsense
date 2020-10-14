@@ -20,7 +20,7 @@ def require(exp):
     if not exp:
         n_failed_assertions += 1
         case_failed = True
-        print("require failed")
+        print("require number " + str(n_assertions) + " failed")
 
 # This function should never be reached, it receives the number of assertion that were 
 # skipped if it was reached
@@ -48,6 +48,7 @@ def finish_case():
 
 def print_results():
     global n_assertions, n_cases, n_failed_assertions, n_failed_cases
+    print("\n\n")
     if n_failed_assertions:
         passed = str(n_assertions - n_failed_assertions)
         print("test cases: " + str(n_failed_cases) + " | " + str(n_cases) + " failed")
