@@ -25,6 +25,8 @@
 #include "../common/fw/firmware-version.h"
 #include "ac-trigger.h"
 #include "algo/depth-to-rgb-calibration/debug.h"
+#include "../common/utilities/time/periodic_timer.h"
+
 
 
 namespace librealsense
@@ -50,7 +52,8 @@ namespace librealsense
         :device(ctx, group), global_time_interface(), 
         _depth_stream(new stream(RS2_STREAM_DEPTH)),
         _ir_stream(new stream(RS2_STREAM_INFRARED)),
-        _confidence_stream(new stream(RS2_STREAM_CONFIDENCE))
+        _confidence_stream(new stream(RS2_STREAM_CONFIDENCE)),
+        _temperatures(std::make_shared<extended_temperatures>())
     {
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         auto pid = group.uvc_devices.front().pid;
@@ -615,17 +618,7 @@ namespace librealsense
         if (command_str == "GET-NEST")
         {
             // Handle extended temperature command
-            auto nest_response = _hw_monitor->send(command{ ivcam2::TEMPERATURES_GET });
-            if (nest_response.size() < sizeof(extended_temperatures))
-            {
-                throw invalid_value_exception(to_string() <<
-                    "Extended temperatures get FW command failed, size expected: " << sizeof(extended_temperatures )
-                    << " , size received: " << nest_response.size() );
-            }
-
-            auto const & ext_temp
-                = *(reinterpret_cast<extended_temperatures *>(nest_response.data()));
-            LOG_INFO("Nest AVG: " << ext_temp.nest_avg);
+            LOG_INFO("Nest AVG: " << get_temperatures().nest_avg);
 
             // Handle other commands (all results log the first byte)
             log_FW_response_first_byte(*_hw_monitor, "Gain trim",
@@ -641,6 +634,124 @@ namespace librealsense
         }
 
         return _hw_monitor->send(input);
+    }
+
+
+    ivcam2::extended_temperatures l500_device::get_temperatures()
+    {
+        ivcam2::extended_temperatures rv;
+        if (_temperature_from_fetcher)
+        {
+            std::lock_guard<std::mutex> lock(_temperature_mutex);
+            rv = *_temperatures;
+        }
+        else
+        {
+            auto fw_version_support_nest = (_fw_version >= firmware_version("1.5.0.0")) ? true : false;
+            auto expected_size = fw_version_support_nest ? sizeof(extended_temperatures)
+                : sizeof(temperatures);
+
+
+            const auto res = _hw_monitor->send(command{ TEMPERATURES_GET });
+            // Verify read
+            if (res.size() < expected_size)
+            {
+                throw std::runtime_error(
+                    to_string() << "TEMPERATURES_GET - Invalid result size!, expected: "
+                    << expected_size << " bytes, "
+                    "got: " << res.size() << " bytes");
+            }
+
+            auto t = reinterpret_cast<temperatures*>((void*)res.data());
+            rv.LDD_temperature = t->LDD_temperature;
+            rv.MC_temperature = t->MC_temperature;
+            rv.MA_temperature = t->MA_temperature;
+            rv.APD_temperature = t->APD_temperature;
+            rv.HUM_temperature = t->HUM_temperature;
+            rv.AlgoTermalLddAvg_temperature = t->AlgoTermalLddAvg_temperature;
+
+            if (fw_version_support_nest)
+            {
+                extended_temperatures *t_ex = reinterpret_cast<extended_temperatures*>((void*)res.data());
+                rv.nest_avg = t_ex->nest_avg;
+            }
+
+        }
+        return rv;
+    }
+
+    void l500_device::start_temperatures_fetcher()
+    {
+        LOG_DEBUG("Starting temperature fetcher thread");
+        _temperature_fetcher = std::thread( [&]() {
+            try
+            {
+                auto fw_version_support_nest = ( _fw_version >= firmware_version( "1.5.0.0" ) ) ? true : false;
+                auto expected_size = fw_version_support_nest ? sizeof( extended_temperatures )
+                                                             : sizeof( temperatures );
+
+                utilities::time::periodic_timer pt(std::chrono::seconds(1));
+                pt.set_expired(); // Force condition true on start
+
+                _temperature_fetcher_on = true;
+
+                while (_temperature_fetcher_on)
+                {
+                    if (pt) // Update temperatures every second
+                    {
+                        const auto res = _hw_monitor->send(command{ TEMPERATURES_GET });
+                        // Verify read
+                        if (res.size() < expected_size)
+                        {
+                            throw std::runtime_error(
+                                to_string() << "TEMPERATURES_GET - Invalid result size!, expected: "
+                                << expected_size << " bytes, "
+                                "got: " << res.size() << " bytes");
+                        }
+               
+                        std::lock_guard<std::mutex> lock(_temperature_mutex);
+                        auto t = reinterpret_cast<temperatures*>((void*)res.data());
+                        _temperatures->LDD_temperature = t->LDD_temperature;
+                        _temperatures->MC_temperature = t->MC_temperature;
+                        _temperatures->MA_temperature = t->MA_temperature;
+                        _temperatures->APD_temperature = t->APD_temperature;
+                        _temperatures->HUM_temperature = t->HUM_temperature;
+                        _temperatures->AlgoTermalLddAvg_temperature = t->AlgoTermalLddAvg_temperature;
+               
+                        if (fw_version_support_nest)
+                        {
+                            extended_temperatures *t_ex = reinterpret_cast<extended_temperatures*>((void*)res.data());
+                            _temperatures->nest_avg = t_ex->nest_avg;
+                        }
+
+                        _temperature_from_fetcher = true;
+                    }
+               
+                    // Do not hold the thread alive too long if fetcher were turned off
+                    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                }
+             }
+             catch (std::exception e)
+             {
+                 LOG_ERROR("error on temperature fetcher thread: " << e.what());
+             }
+             _temperature_from_fetcher = false;
+         });
+     }
+    
+    void l500_device::stop_temperatures_fetcher()
+    {
+        if (_temperature_fetcher_on)
+        {
+            LOG_DEBUG("Stopping temperature fetcher thread");
+            _temperature_fetcher_on = false;
+            _temperature_from_fetcher = false;
+        }
+
+        if (_temperature_fetcher.joinable())
+        {
+            _temperature_fetcher.join();
+        }
     }
 
     notification l500_notification_decoder::decode(int value)

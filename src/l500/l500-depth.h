@@ -98,6 +98,8 @@ namespace librealsense
             std::map< uint32_t, rs2_format > l500_depth_sourcc_to_rs2_format_map,
             std::map< uint32_t, rs2_stream > l500_depth_sourcc_to_rs2_stream_map
         );
+        
+        ~l500_depth_sensor();
 
         std::vector<rs2_option> get_supported_options() const override
         {

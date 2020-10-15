@@ -1236,11 +1236,7 @@ namespace ivcam2 {
 
     double ac_trigger::read_temperature()
     {
-        auto hwm = _hwm.lock();
-        if( ! hwm )
-            throw std::runtime_error( "HW monitor is inaccessible - stopping algo" );
-
-        return _dev.get_color_sensor()->read_temperature();
+        return _dev.get_temperatures().HUM_temperature;
     }
 
 

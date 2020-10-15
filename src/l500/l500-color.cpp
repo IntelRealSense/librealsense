@@ -268,35 +268,6 @@ namespace librealsense
                                               << height << " don't exist" );
     }
 
-    double l500_color_sensor::read_temperature() const
-    {
-        auto & hwm = *_owner->_hw_monitor;
-
-        std::vector< byte > res;
-
-        try
-        {
-            res = hwm.send( command{ TEMPERATURES_GET } );
-        }
-        catch( std::exception const & e )
-        {
-            AC_LOG( ERROR,
-                    "Failed to get temperatures; hardware monitor in inaccessible: " << e.what() );
-            return 0.;
-        }
-
-        if( res.size() < sizeof( temperatures ) )  // New temperatures may get added by FW...
-        {
-            AC_LOG( ERROR,
-                    "Failed to get temperatures; result size= "
-                        << res.size() << "; expecting at least " << sizeof( temperatures ) );
-            return 0.;
-        }
-        auto const & ts = *( reinterpret_cast< temperatures * >( res.data() ) );
-        AC_LOG( DEBUG, "HUM temperture is currently " << ts.HUM_temperature << " degrees Celsius" );
-        return ts.HUM_temperature;
-    }
-
     rs2_intrinsics normalize( const rs2_intrinsics & intr )
     {
         auto res = intr;

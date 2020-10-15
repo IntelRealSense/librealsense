@@ -79,6 +79,10 @@ namespace librealsense
         void update_flash_internal(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, std::vector<uint8_t>& flash_backup,
             update_progress_callback_ptr callback, int update_mode);
 
+        ivcam2::extended_temperatures get_temperatures();
+        void start_temperatures_fetcher();
+        void stop_temperatures_fetcher();
+
 
     protected:
 
@@ -108,6 +112,12 @@ namespace librealsense
 
         std::vector< calibration_change_callback_ptr > _calibration_change_callbacks;
         platform::usb_spec _usb_mode;
+
+        std::mutex _temperature_mutex;
+        std::atomic_bool _temperature_fetcher_on { false };  // Indicates if the temperature thread is working
+        std::atomic_bool _temperature_from_fetcher{ false }; // Indicates it the temperature value should be taking from the fetcher or by FW command
+        std::thread _temperature_fetcher;
+        std::shared_ptr<ivcam2::extended_temperatures> _temperatures;
     };
 
     class l500_notification_decoder : public notification_decoder
