@@ -340,7 +340,7 @@ namespace rs2
                   ",\n \"fl data sampling\":" << fl_data_sampling <<
                   ",\n \"adjust both sides\":" << adjust_both_sides << "}";
         }
-        else if(action == RS2_CALIB_ACTION_ON_CHIP_CALIB)
+        else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB)
         {
             ss << "{\n \"calib type\":" << 0 <<
                   ",\n \"speed\":" << speed <<
@@ -449,69 +449,59 @@ namespace rs2
         auto calib_dev = _dev.as<auto_calibrated_device>();
         _old_calib = calib_dev.get_calibration_table();
 
-        try
+        _was_streaming = _sub->streaming;
+        _synchronized = _viewer.synchronization_enable.load();
+        _post_processing = _sub->post_processing_enabled;
+        _sub->post_processing_enabled = false;
+        _viewer.synchronization_enable = false;
+
+        _restored = false;
+
+        if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
         {
-            _was_streaming = _sub->streaming;
-            _synchronized = _viewer.synchronization_enable.load();
-            _post_processing = _sub->post_processing_enabled;
-            _sub->post_processing_enabled = false;
-            _viewer.synchronization_enable = false;
+            if (!_was_streaming)
+                start_viewer(0, 0, 0, invoke);
 
-            _restored = false;
-
-            if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
-            {
-                if (!_was_streaming)
-                    start_viewer(0, 0, 0, invoke);
-
-                // Capture metrics before
-                auto metrics_before = get_depth_metrics(invoke);
-                _metrics.push_back(metrics_before);
-            }
-
-            stop_viewer(invoke);
-
-            _ui = std::make_shared<subdevice_ui_selection>(_sub->ui);
-
-            // Switch into special Auto-Calibration mode
-            start_viewer(256, 144, 90, invoke);
-
-            if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
-                get_ground_truth();
-            else
-                calibrate();
-
-            if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
-                log(to_string() << "Tare ground truth is got: " << ground_truth);
-            else
-                log(to_string() << "Calibration completed, health factor = " << _health);
-
-            stop_viewer(invoke);
-            _sub->ui = *_ui;
-
-            if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
-            {
-                start_viewer(0, 0, 0, invoke); // Start with default settings
-
-                // Make new calibration active
-                apply_calib(true);
-
-                // Capture metrics after
-                auto metrics_after = get_depth_metrics(invoke);
-                _metrics.push_back(metrics_after);
-            }
-
-            _progress = 100;
-
-            _done = true;
+            // Capture metrics before
+            auto metrics_before = get_depth_metrics(invoke);
+            _metrics.push_back(metrics_before);
         }
-        catch (...)
+
+        stop_viewer(invoke);
+
+        _ui = std::make_shared<subdevice_ui_selection>(_sub->ui);
+
+        // Switch into special Auto-Calibration mode
+        start_viewer(256, 144, 90, invoke);
+
+        if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
+            get_ground_truth();
+        else
+            calibrate();
+
+        if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
+            log(to_string() << "Tare ground truth is got: " << ground_truth);
+        else
+            log(to_string() << "Calibration completed, health factor = " << _health);
+
+        stop_viewer(invoke);
+        _sub->ui = *_ui;
+
+        if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
         {
-            if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
-                apply_calib(false);
+            start_viewer(0, 0, 0, invoke); // Start with default settings
 
-            throw;
+            // Make new calibration active
+            apply_calib(true);
+
+            // Capture metrics after
+            auto metrics_after = get_depth_metrics(invoke);
+            _metrics.push_back(metrics_after);
         }
+
+        _progress = 100;
+
+        _done = true;
     }
 
     void on_chip_calib_manager::restore_workspace(invoker invoke)
@@ -1062,8 +1052,7 @@ namespace rs2
                         _this->invoke(action);
                     };
                     get_manager().start(invoke);
-                    if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
-                        update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
+                    update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
                     enable_dismiss = false;
                 }
 

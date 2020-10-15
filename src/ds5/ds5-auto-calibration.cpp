@@ -38,6 +38,15 @@ namespace librealsense
         uint16_t fillFactor0; // first of the setCount number of fill factor, 1/100 of a percent
     };
 
+    struct DscOneButtonCalibrationTableResult
+    {
+        uint16_t headerSize; // 10 bytes for status & health numbers
+        uint16_t status;      // DscStatus
+        float healthCheck;
+        float FL_heathCheck;
+        uint16_t tableSize;  // 512 bytes
+    };
+
     struct DscResultParams
     {
         uint16_t m_status;
@@ -74,6 +83,8 @@ namespace librealsense
         get_calibration_result = 0x0d,
         focal_length_calib_begin = 0x11,
         get_focal_legth_calib_result = 0x12,
+        one_button_calib_begin = 0x13,
+        get_one_button_calib_result = 0x14,
         set_coefficients = 0x19
     };
 
@@ -358,7 +369,107 @@ namespace librealsense
         }
         else
         {
-            LOG_INFO("run_on_chip_calibration with parameters: speed = " << speed << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
+#if 1
+            LOG_INFO("run_on_chip_calibration with parameters: speed = " << speed 
+                << ", keep new value after sucessful scan = " << keep_new_value_after_sucessful_scan 
+                << " data_sampling = " << data_sampling << ", adjust both sides = " << adjust_both_sides);
+            check_one_button_params(speed, keep_new_value_after_sucessful_scan, data_sampling, adjust_both_sides);
+
+            int p4 = 0;
+            if (keep_new_value_after_sucessful_scan)
+                p4 |= (1 << 1);
+            if (fl_data_sampling)
+                p4 |= (1 << 3);
+            if (adjust_both_sides)
+                p4 |= (1 << 4);
+
+            std::shared_ptr<ds5_advanced_mode_base> preset_recover;
+            if (speed == speed_white_wall && apply_preset)
+                preset_recover = change_preset();
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+            // Begin auto-calibration
+            _hw_monitor->send(command{ ds::AUTO_CALIB, one_button_calib_begin, speed, 0, p4 });
+
+            DscOneButtonCalibrationTableResult result{};
+
+            int count = 0;
+            bool done = false;
+
+            auto start = std::chrono::high_resolution_clock::now();
+            auto now = start;
+            float progress = 0.0f;
+
+            // While not ready...
+            do
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+                // Check calibration status
+                try
+                {
+                    auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, get_one_button_calib_result });
+
+                    if (res.size() < sizeof(DscOneButtonCalibrationTableResult))
+                        throw std::runtime_error("Not enough data from CALIB_STATUS!");
+
+                    result = *reinterpret_cast<DscOneButtonCalibrationTableResult*>(res.data());
+                    done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
+                }
+                catch (const std::exception& ex)
+                {
+                    LOG_WARNING(ex.what());
+                }
+
+                if (progress_callback)
+                {
+                    progress = count++ * (2.f * speed);
+                    progress_callback->on_update_progress(progress); //curently this number does not reflect the actual progress
+                }
+
+                now = std::chrono::high_resolution_clock::now();
+
+            } while (now - start < std::chrono::milliseconds(timeout_ms) && !done);
+
+            // If we exit due to timeout, report timeout
+            if (!done)
+            {
+                throw std::runtime_error("Operation timed-out!\n"
+                    "Calibration state did not converged in time");
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+            auto status = (rs2_dsc_status)result.status;
+
+            // Handle errors from firmware
+            if (status != RS2_DSC_STATUS_SUCCESS)
+                handle_calibration_error(status);
+
+            res = get_one_button_calibration_results(&h_1 , &h_2);
+
+            int health_1 = static_cast<int>(abs(h_1) * 1000.0f + 0.5f);
+            health_1 &= 0xFFF;
+
+            int health_2 = static_cast<int>(abs(h_2) * 1000.0f + 0.5f);
+            health_2 &= 0xFFF;
+
+            int sign = 0;
+            if (h_1 < 0.0f)
+                sign = 1;
+            if (h_2 < 0.0f)
+                sign |= 2;
+
+            int h = health_1;
+            h |= health_2 << 12;
+            h |= sign << 24;
+            *health = static_cast<float>(h);
+#else
+            LOG_INFO("run_on_chip_calibration with parameters: speed = " << speed << " scan_parameter = " 
+                << scan_parameter << " data_sampling = " << data_sampling << ", fl step count = " << fl_step_count
+                << ", fy scan range = " << fy_scan_range << ", keep new value after sucessful scan = " << keep_new_value_after_sucessful_scan
+                << ", interrrupt data sampling " << fl_data_sampling << ", adjust both sides = " << adjust_both_sides);
             check_params(speed, scan_parameter, data_sampling);
 
             param4 param{ (byte)scan_parameter, 0, (byte)data_sampling };
@@ -523,6 +634,7 @@ namespace librealsense
             h |= health_2 << 12;
             h |= sign << 24;
             *health = static_cast<float>(h);
+#endif
         }
         
         return res;
@@ -657,7 +769,6 @@ namespace librealsense
             throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'scan parameter' " << scan_parameter << " is out of range (0 - 1).");
         if (data_sampling != polling && data_sampling != interrupt)
             throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'data sampling' " << data_sampling << " is out of range (0 - 1).");
-
     }
 
     void auto_calibrated::check_tare_params(int speed, int scan_parameter, int data_sampling, int average_step_count, int step_count, int accuracy)
@@ -682,6 +793,18 @@ namespace librealsense
             throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'keep_new_value_after_sucessful_scan' " << keep_new_value_after_sucessful_scan << " is out of range (0 - 1).");
         if (interrrupt_data_samling < 0 || interrrupt_data_samling >  1)
             throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'interrrupt_data_samling' " << interrrupt_data_samling << " is out of range (0 - 1).");
+        if (adjust_both_sides < 0 || adjust_both_sides >  1)
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'adjust_both_sides' " << adjust_both_sides << " is out of range (0 - 1).");
+    }
+
+    void auto_calibrated::check_one_button_params(int speed, int keep_new_value_after_sucessful_scan, int data_sampling, int adjust_both_sides) const
+    {
+        if (speed < speed_very_fast || speed >  speed_white_wall)
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'speed' " << speed << " is out of range (0 - 4).");
+        if (keep_new_value_after_sucessful_scan < 0 || keep_new_value_after_sucessful_scan >  1)
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'keep_new_value_after_sucessful_scan' " << keep_new_value_after_sucessful_scan << " is out of range (0 - 1).");
+        if (data_sampling != polling && data_sampling != interrupt)
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'data sampling' " << data_sampling << " is out of range (0 - 1).");
         if (adjust_both_sides < 0 || adjust_both_sides >  1)
             throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'adjust_both_sides' " << adjust_both_sides << " is out of range (0 - 1).");
     }
@@ -734,6 +857,35 @@ namespace librealsense
 
         if(health)
             *health = reslt->m_dscResultParams.m_healthCheck;
+
+        return calib;
+    }
+
+    std::vector<uint8_t> auto_calibrated::get_one_button_calibration_results(float* health, float* health_fl) const
+    {
+        using namespace ds;
+
+        // Get new calibration from the firmware
+        auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, get_one_button_calib_result });
+        if (res.size() < sizeof(DscOneButtonCalibrationTableResult))
+            throw std::runtime_error("Not enough data from CALIB_STATUS!");
+
+        auto reslt = (DscOneButtonCalibrationTableResult*)(res.data());
+
+        table_header* header = reinterpret_cast<table_header*>(res.data() + sizeof(DscOneButtonCalibrationTableResult));
+
+        if (res.size() < sizeof(DscOneButtonCalibrationTableResult) + sizeof(table_header) + header->table_size)
+            throw std::runtime_error("Table truncated in CALIB_STATUS!");
+
+        std::vector<uint8_t> calib;
+        calib.resize(sizeof(table_header) + header->table_size, 0);
+        memcpy(calib.data(), header, calib.size()); // Copy to new_calib
+
+        if (health_fl)
+            *health_fl = reslt->FL_heathCheck;
+
+        if (health)
+            *health = reslt->healthCheck;
 
         return calib;
     }
