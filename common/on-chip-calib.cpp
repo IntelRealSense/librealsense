@@ -1233,7 +1233,7 @@ namespace rs2
 
                     if (ImGui::IsItemHovered())
                     {
-                        if (update_state == RS2_CALIB_STATE_CALIB_COMPLETE)
+                        if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB)
                         {
                             ImGui::SetTooltip("%s", "Calibration Health-Check captures how far camera calibration is from the optimal one\n"
                                 "[0, 0.25) - Good\n"
