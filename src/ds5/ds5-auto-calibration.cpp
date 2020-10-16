@@ -374,6 +374,8 @@ namespace librealsense
             check_one_button_params(speed, keep_new_value_after_sucessful_scan, data_sampling, adjust_both_sides);
 
             int p4 = 0;
+            if (scan_parameter)
+                p4 |= 1;
             if (keep_new_value_after_sucessful_scan)
                 p4 |= (1 << 1);
             if (fl_data_sampling)
