@@ -372,6 +372,22 @@ namespace rs2
             _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = int(progress);}, 5000);
         else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
             _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = int(progress);}, 10000);
+
+        if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
+        {
+            int h_both = static_cast<int>(_health);
+            int h_1 = (h_both & 0x00000FFF);
+            int h_2 = (h_both & 0x00FFF000) >> 12;
+            int sign = (h_both & 0x0F000000) >> 24;
+
+            _health_1 = h_1 / 1000.0f;
+            if (sign & 1)
+                _health_1 = -_health_1;
+
+            _health_2 = h_2 / 1000.0f;
+            if (sign & 2)
+                _health_2 = -_health_2;
+        }
     }
 
     void on_chip_calib_manager::get_ground_truth()
@@ -554,9 +570,21 @@ namespace rs2
         using namespace std;
         using namespace chrono;
 
-        auto health = get_manager().get_health();
-        auto recommend_keep = fabs(health) > 0.25f;  
-        if (!recommend_keep && update_state == RS2_CALIB_STATE_CALIB_COMPLETE && get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB)
+        auto recommend_keep = false;  
+        if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
+        {
+            float health_1 = get_manager().get_health_1();
+            float health_2 = get_manager().get_health_2();
+            bool recommend_keep_1 = fabs(health_1) < 0.25f;
+            bool recommend_keep_2 = fabs(health_2) < 0.15f;
+            recommend_keep = (recommend_keep_1 && recommend_keep_2);
+        }
+        else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
+            recommend_keep = fabs(get_manager().get_health()) < 0.15f;
+        else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB)
+            recommend_keep = fabs(get_manager().get_health()) < 0.25f;
+
+        if (recommend_keep && update_state == RS2_CALIB_STATE_CALIB_COMPLETE && (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB))
         {
             auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
 
@@ -1065,9 +1093,9 @@ namespace rs2
             {
                 auto health = get_manager().get_health();
 
-                auto recommend_keep = fabs(health) > 0.25f;
+                auto recommend_keep = fabs(health) < 0.25f;
                 if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
-                    recommend_keep = fabs(health) > 0.15f;
+                    recommend_keep = fabs(health) < 0.15f;
 
                 float health_1 = -1.0f;
                 float health_2 = -1.0f;
@@ -1075,26 +1103,14 @@ namespace rs2
                 bool recommend_keep_2 = false;
                 if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
                 {
-                    int h_both = static_cast<int>(health);
-                    int h_1 =  (h_both & 0x00000FFF);
-                    int h_2 =  (h_both & 0x00FFF000) >> 12;
-                    int sign = (h_both & 0x0F000000) >> 24;
-
-                    health_1 = h_1 / 1000.0f;
-                    if (sign & 1)
-                        health_1 = -health_1;
-
-                    health_2 = h_2 / 1000.0f;
-                    if (sign & 2)
-                        health_2 = -health_2;
-
-                    recommend_keep_1 = fabs(h_1) > 0.25f;
-                    recommend_keep_2 = fabs(h_2) > 0.15f;
-
-                    recommend_keep = recommend_keep_1 || recommend_keep_2;
+                    health_1 = get_manager().get_health_1();
+                    health_2 = get_manager().get_health_2();
+                    recommend_keep_1 = fabs(health_1) < 0.25f;
+                    recommend_keep_2 = fabs(health_2) < 0.15f;
+                    recommend_keep = (recommend_keep_1 && recommend_keep_2);
                 }
 
-                ImGui::SetCursorScreenPos({ float(x + 15), float(y + 33) });
+                ImGui::SetCursorScreenPos({ float(x + 10), float(y + 33) });
 
                 if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB)
                 {
@@ -1110,7 +1126,7 @@ namespace rs2
 
                     std::string text_name = to_string() << "##notification_text_1_" << index;
 
-                    ImGui::SetCursorScreenPos({ float(x + 120), float(y + 30) });
+                    ImGui::SetCursorScreenPos({ float(x + 125), float(y + 30) });
                     ImGui::PushStyleColor(ImGuiCol_Text, white);
                     ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
                     ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
@@ -1121,9 +1137,9 @@ namespace rs2
                     ImGui::InputTextMultiline(text_name.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 66, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
                     ImGui::PopStyleColor(7);
 
-                    ImGui::SetCursorScreenPos({ float(x + 172), float(y + 33) });
+                    ImGui::SetCursorScreenPos({ float(x + 177), float(y + 33) });
 
-                    if (!recommend_keep_1)
+                    if (recommend_keep_1)
                     {
                         ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                         ImGui::Text("%s", "(Good)");
@@ -1148,13 +1164,16 @@ namespace rs2
                             "[0.75, ) - Requires Calibration");
                     }
 
+                    ImGui::SetCursorScreenPos({ float(x + 10), float(y + 38) + ImGui::GetTextLineHeightWithSpacing() });
+                    ImGui::Text("%s", "FL Health-Check: ");
+
                     std::stringstream ss_2;
                     ss_2 << std::fixed << std::setprecision(2) << health_2;
                     health_str = ss_2.str();
 
                     text_name = to_string() << "##notification_text_2_" << index;
 
-                    ImGui::SetCursorScreenPos({ float(x + 120), float(y + 35) + ImGui::GetTextLineHeightWithSpacing() });
+                    ImGui::SetCursorScreenPos({ float(x + 125), float(y + 35) + ImGui::GetTextLineHeightWithSpacing() });
                     ImGui::PushStyleColor(ImGuiCol_Text, white);
                     ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
                     ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
@@ -1165,9 +1184,9 @@ namespace rs2
                     ImGui::InputTextMultiline(text_name.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 66, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
                     ImGui::PopStyleColor(7);
 
-                    ImGui::SetCursorScreenPos({ float(x + 172), float(y + 38) + ImGui::GetTextLineHeightWithSpacing() });
+                    ImGui::SetCursorScreenPos({ float(x + 175), float(y + 38) + ImGui::GetTextLineHeightWithSpacing() });
 
-                    if (!recommend_keep_2)
+                    if (recommend_keep_2)
                     {
                         ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                         ImGui::Text("%s", "(Good)");
@@ -1194,14 +1213,14 @@ namespace rs2
                 }
                 else
                 {
-                    ImGui::Text("%s", "Health-Check: ");
+                    ImGui::Text("%s", (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB ? "Health-Check: " : "FL Health-Check: "));
 
                     std::stringstream ss; ss << std::fixed << std::setprecision(2) << health;
                     auto health_str = ss.str();
 
                     std::string text_name = to_string() << "##notification_text_" << index;
 
-                    ImGui::SetCursorScreenPos({ float(x + 120), float(y + 30) });
+                    ImGui::SetCursorScreenPos({ float(x + 125), float(y + 30) });
                     ImGui::PushStyleColor(ImGuiCol_Text, white);
                     ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
                     ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
@@ -1212,9 +1231,9 @@ namespace rs2
                     ImGui::InputTextMultiline(text_name.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 66, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
                     ImGui::PopStyleColor(7);
 
-                    ImGui::SetCursorScreenPos({ float(x + 172), float(y + 33) });
+                    ImGui::SetCursorScreenPos({ float(x + 177), float(y + 33) });
 
-                    if (!recommend_keep)
+                    if (recommend_keep)
                     {
                         ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                         ImGui::Text("%s", "(Good)");
@@ -1331,11 +1350,11 @@ namespace rs2
                 }
                 else
                 {
-                    ImGui::SetCursorScreenPos({ float(x + 12), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? float(y + 105) + ImGui::GetTextLineHeightWithSpacing() : float(y + 100)) });
+                    ImGui::SetCursorScreenPos({ float(x + 7), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? float(y + 105) + ImGui::GetTextLineHeightWithSpacing() : float(y + 100)) });
                     ImGui::Text("%s", "Please compare new vs old calibration\nand decide if to keep or discard the result...");
                 }
 
-                ImGui::SetCursorScreenPos({ float(x + 9), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? float(y + 70) + ImGui::GetTextLineHeightWithSpacing() : float(y + 60)) });
+                ImGui::SetCursorScreenPos({ float(x + 20), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? float(y + 70) + ImGui::GetTextLineHeightWithSpacing() : float(y + 60)) });
 
                 if (ImGui::RadioButton("New", use_new_calib))
                 {
@@ -1352,7 +1371,7 @@ namespace rs2
 
                 auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
 
-                if (recommend_keep || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB)
+                if (!recommend_keep || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB)
                 {
                     ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
                     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
@@ -1380,11 +1399,11 @@ namespace rs2
                     get_manager().restore_workspace([](std::function<void()> a) { a(); });
                 }
 
-                if (recommend_keep || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB)
+                if (!recommend_keep || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB)
                     ImGui::PopStyleColor(2);
 
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", "New calibration values will be saved in device memory");
+                    ImGui::SetTooltip("%s", "New calibration values will be saved in device");
             }
 
             ImGui::PopStyleColor();

@@ -35,6 +35,8 @@ namespace rs2
 
         // Get health number from the calibration summary
         float get_health() const { return _health; }
+        float get_health_1() const { return _health_1; }
+        float get_health_2() const { return _health_2; }
 
         // Write new calibration to the device
         void keep();
@@ -92,6 +94,8 @@ namespace rs2
         void process_flow(std::function<void()> cleanup, invoker invoke) override;
 
         float _health = -1.0f;
+        float _health_1 = -1.0f;
+        float _health_2 = -1.0f;
         device _dev;
 
         bool _was_streaming = false;
