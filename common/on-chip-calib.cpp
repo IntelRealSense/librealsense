@@ -1199,7 +1199,7 @@ namespace rs2
                         ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                         ImGui::Text("%s", "(Good)");
                     }
-                    else if (fabs(health_1) < 0.75f)
+                    else if (fabs(health_2) < 0.75f)
                     {
                         ImGui::PushStyleColor(ImGuiCol_Text, yellowish);
                         ImGui::Text("%s", "(Can be Improved)");
