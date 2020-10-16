@@ -1006,29 +1006,37 @@ namespace rs2
                 ImGui::Combo(id.c_str(), &get_manager().speed, vals_cstr.data(), int(vals.size()));
                 ImGui::PopItemWidth();
 
-                draw_intrinsic_extrinsic(x, y);
+                if (get_manager().action != on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
+                    draw_intrinsic_extrinsic(x, y);
 
-                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 40 + 2 * ImGui::GetTextLineHeightWithSpacing()) });
-                id = to_string() << "##restore_" << index;
-                bool restore = (get_manager().adjust_both_sides == 1);
-                if (ImGui::Checkbox("Adjust both sides focal length", &restore))
-                    get_manager().adjust_both_sides = (restore ? 1 : 0);
-                if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", "check = adjust both sides, uncheck = adjust right side only");
+                if (get_manager().action != on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB)
+                {
+                    float tmp_y = (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ?
+                        float(y + 40 + 2 * ImGui::GetTextLineHeightWithSpacing()) : float(y + 35 + ImGui::GetTextLineHeightWithSpacing()));
+                    ImGui::SetCursorScreenPos({ float(x + 9), tmp_y });
+                    id = to_string() << "##restore_" << index;
+                    bool restore = (get_manager().adjust_both_sides == 1);
+                    if (ImGui::Checkbox("Adjust both sides focal length", &restore))
+                        get_manager().adjust_both_sides = (restore ? 1 : 0);
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("%s", "check = adjust both sides, uncheck = adjust right side only");
+                }
 
-                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 45 + 3 * ImGui::GetTextLineHeightWithSpacing()) });
+                float tmp_y = (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 
+                    float(y + 45 + 3 * ImGui::GetTextLineHeightWithSpacing()) : float(y + 40 + 2 * ImGui::GetTextLineHeightWithSpacing()));
+                ImGui::SetCursorScreenPos({ float(x + 9),  tmp_y });
                 if (ImGui::RadioButton("OCC+", (int *)&(get_manager().action), 0))
                     get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB;
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("%s", "Both OCC and OCC-FL in order");
 
-                ImGui::SetCursorScreenPos({ float(x + 6 + width / 3), float(y + 45 + 3 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::SetCursorScreenPos({ float(x + 6 + width / 3), tmp_y });
                 if (ImGui::RadioButton("OCC", (int*)&(get_manager().action), 1))
                     get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB;
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("%s", "Regular on-chip calibration without focal length");
 
-                ImGui::SetCursorScreenPos({ float(x + 3 + 2 * width / 3), float(y + 45 + 3 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::SetCursorScreenPos({ float(x + 3 + 2 * width / 3), tmp_y });
                 if (ImGui::RadioButton("OCC-FL", (int*)&(get_manager().action), 2))
                     get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB;
                 if (ImGui::IsItemHovered())
@@ -1610,7 +1618,7 @@ namespace rs2
             if (get_manager().allow_calib_keep()) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 190 : 170);
             else return 80;
         }
-        else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return 160;
+        else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 160 : 140);
         else if (update_state == RS2_CALIB_STATE_TARE_INPUT) return 85;
         else if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED) return 210;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH) return 110;
