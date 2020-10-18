@@ -164,7 +164,7 @@ extern "C" {
     } rs2_sensor_mode;
     const char* rs2_sensor_mode_to_string(rs2_sensor_mode preset);
 
-    /** \brief ambient light for RS2_OPTION_AMBIENT_LIGHT option. */
+    /** \brief  DEPRECATED! - Use RS2_OPTION_DIGITAL_GAIN instead. */
     typedef enum rs2_ambient_light
     {
         RS2_AMBIENT_LIGHT_NO_AMBIENT = 1,
@@ -175,8 +175,8 @@ extern "C" {
     /** \brief digital gain for RS2_OPTION_DIGITAL_GAIN option. */
     typedef enum rs2_digital_gain
     {
-        RS2_DIGITAL_GAIN_HIGH_GAIN = 1,
-        RS2_DIGITAL_GAIN_LOW_GAIN = 2,
+        RS2_DIGITAL_GAIN_HIGH = 1,
+        RS2_DIGITAL_GAIN_LOW = 2,
     } rs2_digital_gain;
     const char* rs2_digital_gain_to_string(rs2_digital_gain preset);
 

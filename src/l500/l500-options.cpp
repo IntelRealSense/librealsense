@@ -86,8 +86,8 @@ namespace librealsense
             depth_sensor.register_option
             (RS2_OPTION_VISUAL_PRESET, std::make_shared<uvc_xu_option<int >>(raw_depth_sensor, ivcam2::depth_xu, ivcam2::L500_DIGITAL_GAIN,
                 "Change the depth digital gain to: 1 for high gain and 2 for low gain",
-                std::map<float, std::string>{ { float(RS2_DIGITAL_GAIN_HIGH_GAIN), "High Gain"},
-                { float(RS2_DIGITAL_GAIN_LOW_GAIN), "Low Gain" }}));
+                std::map<float, std::string>{ { float(RS2_DIGITAL_GAIN_HIGH), "High Gain"},
+                { float(RS2_DIGITAL_GAIN_LOW), "Low Gain" }}));
         }
         else
         {
@@ -190,9 +190,9 @@ namespace librealsense
 
             _digital_gain = register_option<uvc_xu_option<int>, uvc_sensor&, platform::extension_unit, uint8_t, std::string, const std::map<float, std::string>& >
                 (RS2_OPTION_DIGITAL_GAIN, raw_depth_sensor, ivcam2::depth_xu, ivcam2::L500_DIGITAL_GAIN,
-                    "Change the depth digital gain to values: 1 for high gain and 2 for low gain",
-                    std::map<float, std::string>{ { RS2_DIGITAL_GAIN_HIGH_GAIN, "High Gain"},
-                    { RS2_DIGITAL_GAIN_LOW_GAIN, "Low Gain" }});
+                    "Change the depth digital gain to: 1 for high gain and 2 for low gain",
+                    std::map<float, std::string>{ { RS2_DIGITAL_GAIN_HIGH, "High Gain"},
+                    { RS2_DIGITAL_GAIN_LOW, "Low Gain" }});
 
 
             _preset = register_option <float_option_with_description<rs2_l500_visual_preset>, option_range>
@@ -239,18 +239,18 @@ namespace librealsense
         switch (preset)
         {
         case RS2_L500_VISUAL_PRESET_NO_AMBIENT:
-            _digital_gain->set_with_no_signal(RS2_DIGITAL_GAIN_HIGH_GAIN);
+            _digital_gain->set_with_no_signal(RS2_DIGITAL_GAIN_HIGH);
             break;
         case RS2_L500_VISUAL_PRESET_LOW_AMBIENT:
-            _digital_gain->set_with_no_signal(RS2_DIGITAL_GAIN_LOW_GAIN);
+            _digital_gain->set_with_no_signal(RS2_DIGITAL_GAIN_LOW);
             set_max_laser();
             break;
         case RS2_L500_VISUAL_PRESET_MAX_RANGE:
-            _digital_gain->set_with_no_signal(RS2_DIGITAL_GAIN_HIGH_GAIN);
+            _digital_gain->set_with_no_signal(RS2_DIGITAL_GAIN_HIGH);
             set_max_laser();
             break;
         case RS2_L500_VISUAL_PRESET_SHORT_RANGE:
-            _digital_gain->set_with_no_signal(RS2_DIGITAL_GAIN_LOW_GAIN);
+            _digital_gain->set_with_no_signal(RS2_DIGITAL_GAIN_LOW);
             break;
         case RS2_L500_VISUAL_PRESET_CUSTOM:
             move_to_custom();

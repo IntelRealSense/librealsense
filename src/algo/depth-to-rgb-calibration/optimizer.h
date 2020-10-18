@@ -283,7 +283,7 @@ namespace depth_to_rgb_calibration {
         {
             bool is_manual_trigger = false;
             double hum_temp = 0.;
-            rs2_digital_gain digital_gain = RS2_DIGITAL_GAIN_HIGH_GAIN;
+            rs2_digital_gain digital_gain = RS2_DIGITAL_GAIN_HIGH;
             int receiver_gain = 0;  // aka APD
 
             std::string to_string() const;

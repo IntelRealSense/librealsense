@@ -5871,10 +5871,10 @@ TEST_CASE("l500_presets_set_preset", "[live]")
 
         std::map<int, int> expected_ambient_per_preset =
         {
-            {RS2_L500_VISUAL_PRESET_NO_AMBIENT, RS2_DIGITAL_GAIN_HIGH_GAIN},
-            {RS2_L500_VISUAL_PRESET_LOW_AMBIENT, RS2_DIGITAL_GAIN_LOW_GAIN},
-            {RS2_L500_VISUAL_PRESET_MAX_RANGE, RS2_DIGITAL_GAIN_HIGH_GAIN},
-            {RS2_L500_VISUAL_PRESET_SHORT_RANGE, RS2_DIGITAL_GAIN_LOW_GAIN}
+            {RS2_L500_VISUAL_PRESET_NO_AMBIENT, RS2_DIGITAL_GAIN_HIGH},
+            {RS2_L500_VISUAL_PRESET_LOW_AMBIENT, RS2_DIGITAL_GAIN_LOW},
+            {RS2_L500_VISUAL_PRESET_MAX_RANGE, RS2_DIGITAL_GAIN_HIGH},
+            {RS2_L500_VISUAL_PRESET_SHORT_RANGE, RS2_DIGITAL_GAIN_LOW}
         };
 
         std::map<int, int> expected_laser_power_per_preset =
