@@ -153,7 +153,7 @@ namespace librealsense
                 _hw_monitor.get(),
                 confidence,
                 resolution_option.get(),
-                "The confidence level threshold use to mark a pixel as valid by the depth algorithm" );
+                "The confidence level threshold to use to mark a pixel as valid by the depth algorithm" );
 
             _hw_options[RS2_OPTION_LASER_POWER] = register_option< l500_hw_options,
                                                                    hw_monitor *,
@@ -175,7 +175,7 @@ namespace librealsense
                                                   _hw_monitor.get(),
                                                   min_distance,
                                                   resolution_option.get(),
-                                                  "Minimal distance to the target (mm)" );
+                                                  "Minimal distance to the target (in mm)" );
 
             _hw_options[RS2_OPTION_INVALIDATION_BYPASS]
                 = register_option< l500_hw_options,
