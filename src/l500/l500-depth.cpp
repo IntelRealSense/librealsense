@@ -100,8 +100,11 @@ namespace librealsense
                                                           RS2_OPTION_APD_TEMPERATURE,
                                                           "Avalanche Photo Diode temperature" ) );
 
-        depth_sensor.register_option(RS2_OPTION_HUMIDITY_TEMPERATURE,
-            std::make_shared <l500_temperature_options>(_hw_monitor.get(), RS2_OPTION_HUMIDITY_TEMPERATURE));
+        depth_sensor.register_option(
+            RS2_OPTION_HUMIDITY_TEMPERATURE,
+            std::make_shared< l500_temperature_options >( _hw_monitor.get(),
+                                                          RS2_OPTION_HUMIDITY_TEMPERATURE,
+                                                          "Humidity temperature" ) );
 
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_ir_stream);
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_confidence_stream);
