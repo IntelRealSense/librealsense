@@ -16,13 +16,11 @@ namespace librealsense
             }),
         _poll_intervals_ms(2000),
         _temp_base(0),
-        _streaming_on(false),
-        _control_on(false)
+        _streaming_on(false)
      {
         _dpt_sensor = std::dynamic_pointer_cast<synthetic_sensor>(activation_sensor.shared_from_this());
 
         auto& dev = activation_sensor.get_device();
-        //auto nn = std::dynamic_pointer_cast<ds5_device>(dev.shared_from_this());
 
         for (size_t i = 0; i < dev.get_sensors_count(); ++i)
         {
@@ -33,8 +31,18 @@ namespace librealsense
             }
         }
 
-        _tl_activation = std::make_shared<uvc_xu_option<uint8_t>>(dynamic_cast<uvc_sensor&>(*activation_sensor.get_raw_sensor()), 
+        _tl_activation = std::make_shared<uvc_xu_option<uint8_t>>(dynamic_cast<uvc_sensor&>(*activation_sensor.get_raw_sensor()),
             ds::depth_xu, ds::DS5_THERMAL_COMPENSATION, "Toggle Thermal Compensation Mechanism");
+
+        try {
+            _control_on = static_cast<bool>(_tl_activation->query());
+            LOG_INFO("Initial TL Control state is " << (int)_control_on);
+        }
+        catch (...)
+        {
+            _control_on = true;
+            LOG_ERROR("Initial TL Control state could not be verified, assume on ");
+        }
 
         activation_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION, std::make_shared<thermal_compensation>(this));
         /*if (dev.supports_info(RS2_CAMERA_INFO_FIRMWARE_VERSION))
