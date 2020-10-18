@@ -26,10 +26,13 @@ namespace librealsense
         return _range;
     }
 
-    l500_hw_options::l500_hw_options(hw_monitor* hw_monitor, l500_control type, option* resolution)
+    l500_hw_options::l500_hw_options( hw_monitor * hw_monitor,
+                                      l500_control type,
+                                      option * resolution,
+                                      const std::string & description )
         :_hw_monitor(hw_monitor),
-        _type(type),
-        _resolution(resolution)
+        _type(type), _resolution( resolution )
+        , _description( description )
     {
         auto min = _hw_monitor->send(command{ AMCGET, _type, get_min });
         auto max = _hw_monitor->send(command{ AMCGET, _type, get_max });
@@ -97,14 +100,93 @@ namespace librealsense
 
             depth_sensor.register_option(RS2_OPTION_SENSOR_MODE, resolution_option);
 
-            _hw_options[RS2_OPTION_POST_PROCESSING_SHARPENING] = register_option<l500_hw_options, hw_monitor*, l500_control, option*>(RS2_OPTION_POST_PROCESSING_SHARPENING, _hw_monitor.get(), post_processing_sharpness, resolution_option.get());
-            _hw_options[RS2_OPTION_PRE_PROCESSING_SHARPENING] = register_option<l500_hw_options, hw_monitor*, l500_control, option*>(RS2_OPTION_PRE_PROCESSING_SHARPENING, _hw_monitor.get(), pre_processing_sharpness, resolution_option.get());
-            _hw_options[RS2_OPTION_NOISE_FILTERING] = register_option<l500_hw_options, hw_monitor*, l500_control, option*>(RS2_OPTION_NOISE_FILTERING, _hw_monitor.get(), noise_filtering, resolution_option.get());
-            _hw_options[RS2_OPTION_AVALANCHE_PHOTO_DIODE] = register_option<l500_hw_options, hw_monitor*, l500_control, option*>(RS2_OPTION_AVALANCHE_PHOTO_DIODE, _hw_monitor.get(), apd, resolution_option.get());
-            _hw_options[RS2_OPTION_CONFIDENCE_THRESHOLD] = register_option<l500_hw_options, hw_monitor*, l500_control, option*>(RS2_OPTION_CONFIDENCE_THRESHOLD, _hw_monitor.get(), confidence, resolution_option.get());
-            _hw_options[RS2_OPTION_LASER_POWER] = register_option<l500_hw_options, hw_monitor*, l500_control, option*>(RS2_OPTION_LASER_POWER, _hw_monitor.get(), laser_gain, resolution_option.get());
-            _hw_options[RS2_OPTION_MIN_DISTANCE] = register_option<l500_hw_options, hw_monitor*, l500_control, option*>(RS2_OPTION_MIN_DISTANCE, _hw_monitor.get(), min_distance, resolution_option.get());
-            _hw_options[RS2_OPTION_INVALIDATION_BYPASS] = register_option<l500_hw_options, hw_monitor*, l500_control, option*>(RS2_OPTION_INVALIDATION_BYPASS, _hw_monitor.get(), invalidation_bypass, resolution_option.get());
+            _hw_options[RS2_OPTION_POST_PROCESSING_SHARPENING] = register_option< l500_hw_options,
+                                                                                  hw_monitor *,
+                                                                                  l500_control,
+                                                                                  option *,
+                                                                                  std::string >(
+                RS2_OPTION_POST_PROCESSING_SHARPENING,
+                _hw_monitor.get(),
+                post_processing_sharpness,
+                resolution_option.get(),
+                "Changes the amount of sharpening in the post-processed image" );
+
+            _hw_options[RS2_OPTION_PRE_PROCESSING_SHARPENING] = register_option< l500_hw_options,
+                                                                                 hw_monitor *,
+                                                                                 l500_control,
+                                                                                 option *,
+                                                                                 std::string >(
+                RS2_OPTION_PRE_PROCESSING_SHARPENING,
+                _hw_monitor.get(),
+                pre_processing_sharpness,
+                resolution_option.get(),
+                "Changes the amount of sharpening in the pre-processed image" );
+
+            _hw_options[RS2_OPTION_NOISE_FILTERING]
+                = register_option< l500_hw_options,
+                                   hw_monitor *,
+                                   l500_control,
+                                   option *,
+                                   std::string >( RS2_OPTION_NOISE_FILTERING,
+                                                  _hw_monitor.get(),
+                                                  noise_filtering,
+                                                  resolution_option.get(),
+                                                  "Control edges and background noise" );
+
+            _hw_options[RS2_OPTION_AVALANCHE_PHOTO_DIODE] = register_option< l500_hw_options,
+                                                                             hw_monitor *,
+                                                                             l500_control,
+                                                                             option *,
+                                                                             std::string >(
+                RS2_OPTION_AVALANCHE_PHOTO_DIODE,
+                _hw_monitor.get(),
+                apd,
+                resolution_option.get(),
+                "Changes the exposure time of Avalanche Photo Diode in the receiver" );
+
+            _hw_options[RS2_OPTION_CONFIDENCE_THRESHOLD] = register_option< l500_hw_options,
+                                                                            hw_monitor *,
+                                                                            l500_control,
+                                                                            option *,
+                                                                            std::string >(
+                RS2_OPTION_CONFIDENCE_THRESHOLD,
+                _hw_monitor.get(),
+                confidence,
+                resolution_option.get(),
+                "The confidence level threshold to use to mark a pixel as valid by the depth algorithm" );
+
+            _hw_options[RS2_OPTION_LASER_POWER] = register_option< l500_hw_options,
+                                                                   hw_monitor *,
+                                                                   l500_control,
+                                                                   option *,
+                                                                   std::string >(
+                RS2_OPTION_LASER_POWER,
+                _hw_monitor.get(),
+                laser_gain,
+                resolution_option.get(),
+                "Power of the laser emitter, with 0 meaning projector off" );
+
+            _hw_options[RS2_OPTION_MIN_DISTANCE]
+                = register_option< l500_hw_options,
+                                   hw_monitor *,
+                                   l500_control,
+                                   option *,
+                                   std::string >( RS2_OPTION_MIN_DISTANCE,
+                                                  _hw_monitor.get(),
+                                                  min_distance,
+                                                  resolution_option.get(),
+                                                  "Minimal distance to the target (in mm)" );
+
+            _hw_options[RS2_OPTION_INVALIDATION_BYPASS]
+                = register_option< l500_hw_options,
+                                   hw_monitor *,
+                                   l500_control,
+                                   option *,
+                                   std::string >( RS2_OPTION_INVALIDATION_BYPASS,
+                                                  _hw_monitor.get(),
+                                                  invalidation_bypass,
+                                                  resolution_option.get(),
+                                                  "Enable/disable pixel invalidation" );
 
             _ambient_light = register_option<uvc_xu_option<int>, uvc_sensor&, platform::extension_unit, uint8_t, std::string, const std::map<float, std::string>& >
                 (RS2_OPTION_AMBIENT_LIGHT, raw_depth_sensor, ivcam2::depth_xu, ivcam2::L500_AMBIENT,

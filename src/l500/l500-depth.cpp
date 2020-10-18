@@ -76,17 +76,29 @@ namespace librealsense
         auto& depth_sensor = get_depth_sensor();
         auto& raw_depth_sensor = get_raw_depth_sensor();
 
-        depth_sensor.register_option(RS2_OPTION_LLD_TEMPERATURE,
-            std::make_shared <l500_temperature_options>(_hw_monitor.get(), RS2_OPTION_LLD_TEMPERATURE));
+        depth_sensor.register_option(
+            RS2_OPTION_LLD_TEMPERATURE,
+            std::make_shared< l500_temperature_options >( _hw_monitor.get(),
+                                                          RS2_OPTION_LLD_TEMPERATURE,
+                                                          "Laser Driver temperature" ) );
 
-        depth_sensor.register_option(RS2_OPTION_MC_TEMPERATURE,
-            std::make_shared <l500_temperature_options>(_hw_monitor.get(), RS2_OPTION_MC_TEMPERATURE));
+        depth_sensor.register_option(
+            RS2_OPTION_MC_TEMPERATURE,
+            std::make_shared< l500_temperature_options >( _hw_monitor.get(),
+                                                          RS2_OPTION_MC_TEMPERATURE,
+                                                          "Mems Controller temperature" ) );
 
-        depth_sensor.register_option(RS2_OPTION_MA_TEMPERATURE,
-            std::make_shared <l500_temperature_options>(_hw_monitor.get(), RS2_OPTION_MA_TEMPERATURE));
+        depth_sensor.register_option(
+            RS2_OPTION_MA_TEMPERATURE,
+            std::make_shared< l500_temperature_options >( _hw_monitor.get(),
+                                                          RS2_OPTION_MA_TEMPERATURE,
+                                                          "DSP controller temperature" ) );
 
-        depth_sensor.register_option(RS2_OPTION_APD_TEMPERATURE,
-            std::make_shared <l500_temperature_options>(_hw_monitor.get(), RS2_OPTION_APD_TEMPERATURE));
+        depth_sensor.register_option(
+            RS2_OPTION_APD_TEMPERATURE,
+            std::make_shared< l500_temperature_options >( _hw_monitor.get(),
+                                                          RS2_OPTION_APD_TEMPERATURE,
+                                                          "Avalanche Photo Diode temperature" ) );
 
         depth_sensor.register_option(RS2_OPTION_HUMIDITY_TEMPERATURE,
             std::make_shared <l500_temperature_options>(_hw_monitor.get(), RS2_OPTION_HUMIDITY_TEMPERATURE));

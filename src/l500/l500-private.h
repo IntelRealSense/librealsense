@@ -400,13 +400,16 @@ namespace librealsense
 
             bool is_enabled() const override { return true; }
 
-            const char* get_description() const override { return ""; }
+            const char * get_description() const override { return _description.c_str(); }
 
-            explicit l500_temperature_options(hw_monitor* hw_monitor, rs2_option opt);
+            explicit l500_temperature_options( hw_monitor * hw_monitor,
+                                               rs2_option opt,
+                                               const std::string& description );
 
         private:
             rs2_option _option;
             hw_monitor* _hw_monitor;
+            std::string _description;
         };
 
         class l500_timestamp_reader : public frame_timestamp_reader
