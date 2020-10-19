@@ -500,8 +500,18 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_power_lock);
         if (_user_count.fetch_add(1) == 0)
         {
-            _device->set_power_state(platform::D0);
-            for (auto&& xu : _xus) _device->init_xu(xu);
+            try
+            {
+                _device->set_power_state( platform::D0 );
+                for( auto && xu : _xus )
+                    _device->init_xu( xu );
+            }
+            catch (...)
+            {
+                _user_count.fetch_add( -1 );
+                LOG_ERROR( "acquire_power failed " );
+                throw;
+            }
         }
     }
 
