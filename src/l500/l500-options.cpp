@@ -84,10 +84,10 @@ namespace librealsense
         if (_fw_version < firmware_version(MIN_CONTROLS_FW_VERSION))
         {
             depth_sensor.register_option
-            (RS2_OPTION_VISUAL_PRESET, std::make_shared<uvc_xu_option<int >>(raw_depth_sensor, ivcam2::depth_xu, ivcam2::L500_AMBIENT,
-                "Change the depth ambient light to ambient: 1 for no ambient and 2 for low ambient",
-                std::map<float, std::string>{ { float(RS2_AMBIENT_LIGHT_NO_AMBIENT), "No Ambient"},
-                { float(RS2_AMBIENT_LIGHT_LOW_AMBIENT), "Low Ambient" }}));
+            (RS2_OPTION_VISUAL_PRESET, std::make_shared<uvc_xu_option<int >>(raw_depth_sensor, ivcam2::depth_xu, ivcam2::L500_DIGITAL_GAIN,
+                "Change the depth digital gain to: 1 for high gain and 2 for low gain",
+                std::map<float, std::string>{ { float(RS2_DIGITAL_GAIN_HIGH), "High Gain"},
+                { float(RS2_DIGITAL_GAIN_LOW), "Low Gain" }}));
         }
         else
         {
@@ -188,16 +188,16 @@ namespace librealsense
                                                   resolution_option.get(),
                                                   "Enable/disable pixel invalidation" );
 
-            _ambient_light = register_option<uvc_xu_option<int>, uvc_sensor&, platform::extension_unit, uint8_t, std::string, const std::map<float, std::string>& >
-                (RS2_OPTION_AMBIENT_LIGHT, raw_depth_sensor, ivcam2::depth_xu, ivcam2::L500_AMBIENT,
-                    "Change the depth ambient light to ambient: 1 for no ambient and 2 for low ambient",
-                    std::map<float, std::string>{ { RS2_AMBIENT_LIGHT_NO_AMBIENT, "No Ambient"},
-                    { RS2_AMBIENT_LIGHT_LOW_AMBIENT, "Low Ambient" }});
+            _digital_gain = register_option<uvc_xu_option<int>, uvc_sensor&, platform::extension_unit, uint8_t, std::string, const std::map<float, std::string>& >
+                (RS2_OPTION_DIGITAL_GAIN, raw_depth_sensor, ivcam2::depth_xu, ivcam2::L500_DIGITAL_GAIN,
+                    "Change the depth digital gain to: 1 for high gain and 2 for low gain",
+                    std::map<float, std::string>{ { RS2_DIGITAL_GAIN_HIGH, "High Gain"},
+                    { RS2_DIGITAL_GAIN_LOW, "Low Gain" }});
 
 
             _preset = register_option <float_option_with_description<rs2_l500_visual_preset>, option_range>
                 (RS2_OPTION_VISUAL_PRESET, option_range{ RS2_L500_VISUAL_PRESET_CUSTOM , RS2_L500_VISUAL_PRESET_SHORT_RANGE, 1, RS2_L500_VISUAL_PRESET_DEFAULT },
-                    "Preset to calibrate the camera to environment ambient, no ambient or low ambient. 1 is no ambient and 2 is low ambient");
+                    "Preset to calibrate the camera to environment ambient, no ambient or low ambient.");
 
             _advanced_options = get_advanced_controls();
         }
@@ -207,7 +207,7 @@ namespace librealsense
     {
         std::vector<rs2_option> res;
 
-        res.push_back(RS2_OPTION_AMBIENT_LIGHT);
+        res.push_back(RS2_OPTION_DIGITAL_GAIN);
         for (auto&& o : _hw_options)
             res.push_back(o.first);
 
@@ -239,18 +239,18 @@ namespace librealsense
         switch (preset)
         {
         case RS2_L500_VISUAL_PRESET_NO_AMBIENT:
-            _ambient_light->set_with_no_signal(RS2_AMBIENT_LIGHT_NO_AMBIENT);
+            _digital_gain->set_with_no_signal(RS2_DIGITAL_GAIN_HIGH);
             break;
         case RS2_L500_VISUAL_PRESET_LOW_AMBIENT:
-            _ambient_light->set_with_no_signal(RS2_AMBIENT_LIGHT_LOW_AMBIENT);
+            _digital_gain->set_with_no_signal(RS2_DIGITAL_GAIN_LOW);
             set_max_laser();
             break;
         case RS2_L500_VISUAL_PRESET_MAX_RANGE:
-            _ambient_light->set_with_no_signal(RS2_AMBIENT_LIGHT_NO_AMBIENT);
+            _digital_gain->set_with_no_signal(RS2_DIGITAL_GAIN_HIGH);
             set_max_laser();
             break;
         case RS2_L500_VISUAL_PRESET_SHORT_RANGE:
-            _ambient_light->set_with_no_signal(RS2_AMBIENT_LIGHT_LOW_AMBIENT);
+            _digital_gain->set_with_no_signal(RS2_DIGITAL_GAIN_LOW);
             break;
         case RS2_L500_VISUAL_PRESET_CUSTOM:
             move_to_custom();

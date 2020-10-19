@@ -26,7 +26,7 @@ namespace librealsense
     {
         // L500 depth XU identifiers
         const uint8_t L500_HWMONITOR = 1;
-        const uint8_t L500_AMBIENT = 2;
+        const uint8_t L500_DIGITAL_GAIN = 2; // Renamed from L500_AMBIENT
         const uint8_t L500_ERROR_REPORTING = 3;
 
         const uint32_t FLASH_SIZE = 0x00200000;

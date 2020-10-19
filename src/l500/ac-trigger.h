@@ -24,7 +24,7 @@ namespace ivcam2 {
         rs2::frameset _sf;
         rs2::frame _cf, _pcf;  // Keep the last and previous frame!
 
-        rs2_ambient_light _ambient;
+        rs2_digital_gain _digital_gain;
         int _receiver_gain;
         double _temp;
 
