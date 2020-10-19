@@ -24,7 +24,12 @@ namespace librealsense
     {
         wmf_backend::wmf_backend()
         {
+#ifdef COM_MULTITHREADED
             CoInitializeEx(nullptr, COINIT_MULTITHREADED); // when using COINIT_APARTMENTTHREADED, calling _pISensor->SetEventSink(NULL) to stop sensor can take several seconds
+#else
+            CoInitializeEx( nullptr, COINIT_APARTMENTTHREADED ); // Apartment model
+#endif
+
             MFStartup(MF_VERSION, MFSTARTUP_NOSOCKET);
         }
 
