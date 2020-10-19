@@ -49,7 +49,7 @@ def require_equal(result, expected):
     if not result == expected:
         n_failed_assertions += 1
         test_failed = True
-        print("Result was " + result + " but we expected " + expected)
+        print("Result was: " + result + "\nBut we expected: " + expected)
         for line in traceback.format_stack():
             print(line.strip())
 
