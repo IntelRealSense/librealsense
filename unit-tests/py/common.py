@@ -77,7 +77,7 @@ def require_equal_lists(result, expected):
             test_failed = True
             failed = True
             print("Require equal lists failed due to unequal elements:")
-            print("The element of index " + i + " in both lists was not equal")
+            print("The element of index " + str(i) + " in both lists was not equal")
     if failed:
         print("Result list:", end = ' ')
         print(result)
@@ -103,9 +103,9 @@ def finish():
     global test_failed, n_failed_tests
     if test_failed:
         n_failed_tests += 1
-        print("Test-Case failed")
+        print("Test failed")
     else:
-        print("Test-Case passed")
+        print("Test passed")
 
 def print_results_and_exit():
     global n_assertions, n_tests, n_failed_assertions, n_failed_tests

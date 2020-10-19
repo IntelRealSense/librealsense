@@ -61,7 +61,7 @@ test.finish()
 #############################################################################################
 # Test #2
 test.start("Color sensor is off, calibration should succeed")
-ac.reset_status_list() # Deleting previous test-case
+ac.reset_status_list() # Deleting previous test
 depth_sensor.open( dp )
 depth_sensor.start( lambda f: None )
 try:

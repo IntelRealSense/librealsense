@@ -18,7 +18,7 @@ def reset_status_list():
     status_list = []
 
 # Call back funtion for testing status sequences
-def status_list_cb( status ):
+def list_status_cb( status ):
     global status_list
     status_list.append(status)
 
