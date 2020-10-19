@@ -198,63 +198,69 @@ bool refresh_devices(std::mutex& m,
 
         //Add connected
         static bool initial_refresh = true;
-        for (auto dev : info.get_new_devices())
+        try
         {
-            auto dev_descriptor = get_device_name(dev);
-            device_names.push_back(dev_descriptor);
-
-            bool added = false;
-            if (device_models.size() == 0 &&
-                dev.supports(RS2_CAMERA_INFO_NAME) && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)) != "Platform Camera" && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)).find("IP Device") == std::string::npos)
+            for (auto dev : info.get_new_devices())
             {
-                device_models.emplace_back(new device_model(dev, error_message, viewer_model));
-                viewer_model.not_model->add_log(to_string() << (*device_models.rbegin())->dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
-                added = true;
-            }
+                auto dev_descriptor = get_device_name(dev);
+                device_names.push_back(dev_descriptor);
 
-            if (!initial_refresh)
-            {
-                if (added || dev.is<playback>())
-                    viewer_model.not_model->add_notification({ dev_descriptor.first + " Connected\n",
-                        RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
-                else if (added || dev.supports(RS2_CAMERA_INFO_IP_ADDRESS))
-                    viewer_model.not_model->add_notification({ dev_descriptor.first + " Connected\n",
-                        RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
-                else
-                    viewer_model.not_model->add_notification({ dev_descriptor.first + " Connected\n",
-                        RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR },
-                        [&device_models, &viewer_model, &error_message, dev] {
-                    auto device = dev;
-                    device_models.emplace_back(
-                        new device_model(device, error_message, viewer_model));
-                });
-            }
-
-            current_connected_devices.push_back(dev);
-            for (auto&& s : dev.query_sensors())
-            {
-                s.set_notifications_callback([&, dev_descriptor](const notification& n)
+                bool added = false;
+                if (device_models.size() == 0 &&
+                    dev.supports(RS2_CAMERA_INFO_NAME) && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)) != "Platform Camera" && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)).find("IP Device") == std::string::npos)
                 {
-                    if (n.get_category() == RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT)
-                    {
-                        auto data = n.get_serialized_data();
-                        if (!data.empty())
+                    device_models.emplace_back(new device_model(dev, error_message, viewer_model));
+                    viewer_model.not_model->add_log(to_string() << (*device_models.rbegin())->dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
+                    added = true;
+                }
+
+                if (!initial_refresh)
+                {
+                    if (added || dev.is<playback>())
+                        viewer_model.not_model->add_notification({ dev_descriptor.first + " Connected\n",
+                            RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                    else if (added || dev.supports(RS2_CAMERA_INFO_IP_ADDRESS))
+                        viewer_model.not_model->add_notification({ dev_descriptor.first + " Connected\n",
+                            RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                    else
+                        viewer_model.not_model->add_notification({ dev_descriptor.first + " Connected\n",
+                            RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR },
+                            [&device_models, &viewer_model, &error_message, dev] {
+                                auto device = dev;
+                                device_models.emplace_back(
+                                    new device_model(device, error_message, viewer_model));
+                            });
+                }
+
+                current_connected_devices.push_back(dev);
+                for (auto&& s : dev.query_sensors())
+                {
+                    s.set_notifications_callback([&, dev_descriptor](const notification& n)
                         {
-                            auto dev_model_itr = std::find_if(begin(device_models), end(device_models),
-                                [&](const std::unique_ptr<device_model>& other)
-                            { return get_device_name(other->dev) == dev_descriptor; });
+                            if (n.get_category() == RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT)
+                            {
+                                auto data = n.get_serialized_data();
+                                if (!data.empty())
+                                {
+                                    auto dev_model_itr = std::find_if(begin(device_models), end(device_models),
+                                        [&](const std::unique_ptr<device_model>& other)
+                                        { return get_device_name(other->dev) == dev_descriptor; });
 
-                            if (dev_model_itr == end(device_models))
-                                return;
+                                    if (dev_model_itr == end(device_models))
+                                        return;
 
-                            (*dev_model_itr)->handle_hardware_events(data);
-                        }
-                    }
-                    viewer_model.not_model->add_notification({ n.get_description(), n.get_severity(), n.get_category() });
-                });
+                                    (*dev_model_itr)->handle_hardware_events(data);
+                                }
+                            }
+                            viewer_model.not_model->add_notification({ n.get_description(), n.get_severity(), n.get_category() });
+                        });
+                }
+
+
             }
-
-
+        }
+        catch (std::exception& e) {
+            std::cout << "Exception caught in FW Update process-flow : " << e.what() << std::endl;
         }
         initial_refresh = false;
     }
