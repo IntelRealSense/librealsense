@@ -234,6 +234,7 @@ for manifest_ctx in grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
+# Change back-slash to slash so the path is both windows and linux compatible
 current_dir = current_dir.replace('\\' , '/')
 # this script is located in librealsense/unit-tests, so one directory up is the main repository
 librealsense = os.path.dirname(current_dir)
@@ -250,8 +251,12 @@ else:
         pyrs = pyd
 # if we run python tests with no .pyd/.so file they will crash. Therefore we only run them if such a file was found
 if pyrs:
+    # After use of find pyrs contains the path from librealsense to the pyrealsense that was found
+    # We append it to the librealsense path to get an absolute path to the file to add to PYTHONPATH so it can be found by the tests
     pyrs_path = librealsense + '/' + pyrs
+    # We need to add the directory not the file itself
     pyrs_path = os.path.dirname(pyrs_path)
+    # Change back-slash to slash so the path is both windows and linux compatible
     pyrs_path = pyrs_path.replace('\\' , '/')
     os.environ["PYTHONPATH"] = pyrs_path
     # We can simply change `sys.path` but any child python scripts won't see it. We change the environment instead.
