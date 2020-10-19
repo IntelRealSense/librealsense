@@ -255,11 +255,11 @@ void rs2_enter_update_state(const rs2_device* device, rs2_error** error);
                                     scan_parameter - for regular calibration. value can be one of: Py scan (default) = 0, Rx scan = 1
                                     adjust_both_sides - for focal length calibration. value can be one of: 0 = adjust right only, 1 = adjust both sides
                                     if json is nullptr it will be ignored and calibration will use the default parameters
-* \param[out] health            Regular calibration Health-Check captures how far camera calibration is from the optimal one
+* \param[out] health            The absolute value of regular calibration Health-Check captures how far camera calibration is from the optimal one
                                     [0, 0.25) - Good
                                     [0.25, 0.75) - Can be Improved
                                     [0.75, ) - Requires Calibration
-                                Focal length calibration Health-Check captures how far camera calibration is from the optimal one
+                                The absolute value of focal length calibration Health-Check captures how far camera calibration is from the optimal one
                                     [0, 0.15) - Good
                                     [0.15, 0.75) - Can be Improved
                                     [0.75, ) - Requires Calibration
@@ -288,11 +288,11 @@ const rs2_raw_data_buffer* rs2_run_on_chip_calibration_cpp(rs2_device* device, c
                                     scan_parameter - for regular calibration. value can be one of: Py scan (default) = 0, Rx scan = 1
                                     adjust_both_sides - for focal length calibration. value can be one of: 0 = adjust right only, 1 = adjust both sides
                                     if json is nullptr it will be ignored and calibration will use the default parameters
-* \param[out] health            Regular calibration Health-Check captures how far camera calibration is from the optimal one
+* \param[out] health            The absolute value of regular calibration Health-Check captures how far camera calibration is from the optimal one
                                     [0, 0.25) - Good
                                     [0.25, 0.75) - Can be Improved
                                     [0.75, ) - Requires Calibration
-                                Focal length calibration Health-Check captures how far camera calibration is from the optimal one
+                                The absolute value of focal length calibration Health-Check captures how far camera calibration is from the optimal one
                                     [0, 0.15) - Good
                                     [0.15, 0.75) - Can be Improved
                                     [0.75, ) - Requires Calibration

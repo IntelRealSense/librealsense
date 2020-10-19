@@ -1025,10 +1025,10 @@ namespace rs2
                 float tmp_y = (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 
                     float(y + 45 + 3 * ImGui::GetTextLineHeightWithSpacing()) : float(y + 40 + 2 * ImGui::GetTextLineHeightWithSpacing()));
                 ImGui::SetCursorScreenPos({ float(x + 9),  tmp_y });
-                if (ImGui::RadioButton("OCC+", (int *)&(get_manager().action), 0))
+                if (ImGui::RadioButton("OCC+FL", (int *)&(get_manager().action), 0))
                     get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB;
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", "Both OCC and OCC-FL in order");
+                    ImGui::SetTooltip("%s", "Both OCC and OCC FL in order");
 
                 ImGui::SetCursorScreenPos({ float(x + 6 + width / 3), tmp_y });
                 if (ImGui::RadioButton("OCC", (int*)&(get_manager().action), 1))
@@ -1037,7 +1037,7 @@ namespace rs2
                     ImGui::SetTooltip("%s", "Regular on-chip calibration without focal length");
 
                 ImGui::SetCursorScreenPos({ float(x + 3 + 2 * width / 3), tmp_y });
-                if (ImGui::RadioButton("OCC-FL", (int*)&(get_manager().action), 2))
+                if (ImGui::RadioButton("OCC FL", (int*)&(get_manager().action), 2))
                     get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB;
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("%s", "On-chip focal length calibration");
