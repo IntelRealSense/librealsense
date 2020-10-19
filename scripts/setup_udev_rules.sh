@@ -25,7 +25,7 @@ if [ "$install" = true ]; then
     echo "Setting-up permissions for RealSense devices"
     if [ "$auto_power_off" = true ]; then
         echo "Setting-up RealSense Device auto power off."
-        sudo apt install -q=3 at || echo "Failed to install package 'at'. Remove flag --auto_power_off and run again." && exit 1
+        sudo apt install -q=3 at || (echo "Failed to install package 'at'. Remove flag --auto_power_off and run again." && exit 1)
     fi
 else
     echo "Remove permissions for RealSense devices"
@@ -45,7 +45,8 @@ if [ "$install" = true ]; then
     fi
     sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/
     if [ "$auto_power_off" = true ]; then
-        echo "KERNEL==\"iio*\", ATTRS{idVendor}==\"8086\", ATTRS{idProduct}==\"0ad5|0afe|0aff|0b00|0b01|0b3a|0b3d\", RUN+=\"/bin/sh -c 'echo \\\"sleep 0.1 && echo 0 > /sys/%p/buffer/enable\\\" | at now'\"" | sudo tee -a /etc/udev/rules.d/99-realsense-libusb.rules > /dev/null
+        echo | sudo tee -a /etc/udev/rules.d/99-realsense-libusb.rules > /dev/null
+        echo "KERNEL==\"iio*\", ATTRS{idVendor}==\"8086\", ATTRS{idProduct}==\"0ad5|0afe|0aff|0b00|0b01|0b3a|0b3d\", RUN+=\"/bin/sh -c 'enfile=/sys/%p/buffer/enable && echo \\\"while grep -q 0 \$enfile; do sleep 0.01; done && echo 0 > \$enfile\\\" | at now'\"" | sudo tee -a /etc/udev/rules.d/99-realsense-libusb.rules > /dev/null
     fi
 else
     sudo rm /etc/udev/rules.d/99-realsense-libusb.rules
