@@ -1,6 +1,3 @@
-
-# add these 2 lines to run independently and not through run-unit-tests.py
-path = "C:/Users/mmirbach/git/librealsense/build/RelWithDebInfo"
 import sys
 pyrs = "C:/Users/mmirbach/git/librealsense/build/Debug"
 py = "C:/Users/mmirbach/git/librealsense/unit-tests/py"
@@ -10,9 +7,7 @@ sys.path.append(py)
 import pyrealsense2 as rs, common as test, ac
 
 # We set the enviroment variables to suit this test
-test.set_env_vars({"RS2_AC_DISABLE_CONDITIONS":"1",
-                   "RS2_AC_DISABLE_RETRIES":"1",
-                   "RS2_AC_FORCE_BAD_RESULT":"1"
+test.set_env_vars({"RS2_AC_DISABLE_CONDITIONS":"0",
                    })
 
 # rs.log_to_file( rs.log_severity.debug, "rs.log" )
@@ -45,7 +40,7 @@ color_sensor.start( lambda f: None )
 #############################################################################################
 test.start("Failing check_conditions function")
 depth_sensor.set_option(rs.option.ambient_light, 2)
-depth_sensor.set_option(rs.option.receiver_gain, 0)
+depth_sensor.set_option(rs.option.receiver_gain, 15)
 try:
     d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
     ac.wait_for_calibration()
@@ -54,6 +49,6 @@ except Exception as e:
 else:
     test.require_no_reach()
 test.require_equal_lists(ac.status_list, [rs.calibration_status.bad_conditions])
-test.finish_case()
+test.finish()
 #############################################################################################
 test.print_results_and_exit()

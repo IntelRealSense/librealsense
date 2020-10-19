@@ -55,7 +55,7 @@ def require_equal(result, expected):
 
 # This function should never be reached, it receives the number of assertion that were 
 # skipped if it was reached
-def require_no_reach(skipped): 
+def require_no_reach(skipped):
     require(False)
 
 # Receives 2 lists and asserts they are identical
