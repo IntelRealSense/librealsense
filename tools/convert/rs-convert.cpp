@@ -113,12 +113,12 @@ int main(int argc, char** argv) try
     }
     if (startTime.isSet())
     {
-        start_time = (uint64_t) (SECONDS_TO_NANOSECONDS *(std::strtod(startTime.getValue().c_str(),NULL))); //seconds to nanoseconds 
+        start_time = (uint64_t) (SECONDS_TO_NANOSECONDS * (std::strtod( startTime.getValue().c_str(), nullptr )));
         cout << start_time << endl;
     }
     if (endTime.isSet())
     {
-        end_time = (uint64_t) (SECONDS_TO_NANOSECONDS *(std::strtod(endTime.getValue().c_str(),NULL))); //seconds to nanoseconds
+        end_time = (uint64_t) (SECONDS_TO_NANOSECONDS * (std::strtod( endTime.getValue().c_str(), nullptr )));
         cout << end_time << endl;
     }
 
@@ -164,29 +164,20 @@ int main(int argc, char** argv) try
             auto frame_time = playback.get_position();
 
             if (frameNumberStart.isSet() && frameNumber < first_frame)
-            {
                 continue;
-            }
             if (frameNumberEnd.isSet() && frameNumber > last_frame)
-            {
                 continue;
-            }
             if (startTime.isSet() && frame_time < start_time)
-            {
                 continue;
-            }
             if (endTime.isSet() && frame_time > end_time)
-            {
                 continue;
-            }
 
             plyconverter->convert(frameset);
             plyconverter->wait();
 
             if (static_cast<int64_t>(frame_time - posLast) < 0)
-            {
                 break;
-            }
+
             posLast = frame_time;
         }
     }
@@ -194,7 +185,8 @@ int main(int argc, char** argv) try
     // for every converter other than ply,
     // we get the frames from playback sensors 
     // and convert them one by one
-    if (!converters.empty()) {
+    if( ! converters.empty() )
+    {
         rs2::context ctx;
         auto playback = ctx.load_device(inputFilename.getValue());
         playback.set_real_time(false);
