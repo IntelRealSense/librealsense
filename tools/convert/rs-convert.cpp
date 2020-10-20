@@ -15,7 +15,7 @@
 
 #include <mutex>
 
-#define SECTONSEC 1000000000
+#define SECONDS_TO_NANOSECONDS 1000000000
  
 using namespace std;
 using namespace TCLAP;
@@ -35,17 +35,17 @@ int main(int argc, char** argv) try
     ValueArg<string> outputFilenameBin("b", "output-bin", "output BIN (depth matrix) file(s) path", false, "", "bin-path");
     SwitchArg switchDepth("d", "depth", "convert depth frames (default - all supported)", false);
     SwitchArg switchColor("c", "color", "convert color frames (default - all supported)", false);
-    ValueArg <string> frameNumberStart("f", "first-framenumber", "convert frames in specific frame number range - start point", false, "", "first-framenumber");
-    ValueArg <string> frameNumberEnd("t", "last-framenumber", "convert frames in specific frame number range - end point", false, "", "last-framenumber");
-    ValueArg <string> StartTime("s", "start-time", "convert frames in specific time range - start point (in seconds)", false, "", "start-time");
-    ValueArg <string> EndTime("e", "end-time", "convert frames in specific time range - end point (in seconds)", false, "", "end-time");
+    ValueArg <string> frameNumberStart("f", "first-framenumber", "ignore frames whose frame number is less than this value", false, "", "first-framenumber");
+    ValueArg <string> frameNumberEnd("t", "last-framenumber", "ignore frames whose frame number is greater than this value", false, "", "last-framenumber");
+    ValueArg <string> startTime("s", "start-time", "ignore frames whose timestamp is less than this value (the first frame is at time 0)", false, "", "start-time");
+    ValueArg <string> endTime("e", "end-time", "ignore frames whose timestamp is greater than this value (the first frame is at time 0)", false, "", "end-time");
 
 
     cmd.add(inputFilename);
     cmd.add(frameNumberEnd);
     cmd.add(frameNumberStart);
-    cmd.add(EndTime);
-    cmd.add(StartTime);
+    cmd.add(endTime);
+    cmd.add(startTime);
     cmd.add(outputFilenamePng);
     cmd.add(outputFilenameCsv);
     cmd.add(outputFilenameRaw);
@@ -111,13 +111,15 @@ int main(int argc, char** argv) try
     {
         last_frame = stoi(frameNumberEnd.getValue());
     }
-    if (StartTime.isSet())
+    if (startTime.isSet())
     {
-        start_time = SECTONSEC *(atof(StartTime.getValue().c_str())); //seconds to nanoseconds 
+        start_time = (uint64_t) (SECONDS_TO_NANOSECONDS *(std::strtod(startTime.getValue().c_str(),NULL))); //seconds to nanoseconds 
+        cout << start_time << endl;
     }
-    if (EndTime.isSet())
+    if (endTime.isSet())
     {
-        end_time = SECTONSEC *(atof(EndTime.getValue().c_str())); //seconds to nanoseconds
+        end_time = (uint64_t) (SECONDS_TO_NANOSECONDS *(std::strtod(endTime.getValue().c_str(),NULL))); //seconds to nanoseconds
+        cout << end_time << endl;
     }
 
     //in order to convert frames into ply we need synced depth and color frames, 
@@ -159,7 +161,7 @@ int main(int argc, char** argv) try
             }
 
             frameNumber = frameset[0].get_frame_number();
-            auto frame_position = playback.get_position();
+            auto frame_time = playback.get_position();
 
             if (frameNumberStart.isSet() && frameNumber < first_frame)
             {
@@ -169,11 +171,11 @@ int main(int argc, char** argv) try
             {
                 continue;
             }
-            if (StartTime.isSet() && frame_position < start_time)
+            if (startTime.isSet() && frame_time < start_time)
             {
                 continue;
             }
-            if (EndTime.isSet() && frame_position > end_time)
+            if (endTime.isSet() && frame_time > end_time)
             {
                 continue;
             }
@@ -181,12 +183,11 @@ int main(int argc, char** argv) try
             plyconverter->convert(frameset);
             plyconverter->wait();
 
-            const uint64_t posCurr = playback.get_position();
-            if (static_cast<int64_t>(posCurr - posLast) < 0)
+            if (static_cast<int64_t>(frame_time - posLast) < 0)
             {
                 break;
             }
-            posLast = posCurr;
+            posLast = frame_time;
         }
     }
 
@@ -217,7 +218,7 @@ int main(int argc, char** argv) try
                 std::lock_guard<std::mutex> lock(mutex);
 
                 auto frameNumber = frame.get_frame_number();
-                auto frame_position = playback.get_position();
+                auto frame_time = playback.get_position();
 
                 if (frameNumberStart.isSet() && frameNumber < first_frame)
                 {
@@ -227,11 +228,11 @@ int main(int argc, char** argv) try
                 {
                     return;
                 }
-                if (StartTime.isSet() && frame_position < start_time)
+                if (startTime.isSet() && frame_time < start_time)
                 {
                     return;
                 }
-                if (EndTime.isSet() && frame_position > end_time)
+                if (endTime.isSet() && frame_time > end_time)
                 {
                     return;
                 }
