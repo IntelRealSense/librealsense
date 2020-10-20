@@ -9,6 +9,7 @@ In order to run this, ensure that your camera is streaming. This can be done usi
 |Flag   |Description   |Default|
 |---|---|---|
 |`-l <xml-path>`|xml file ful path, used to parse the logs||
+|`-s <sleep-duration-in-ms>`|sleep duration between each log message polling| 25 ||
 |`-f`|collect flash logs instead of firmware logs||
 
 ## Usage
