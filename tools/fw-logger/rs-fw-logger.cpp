@@ -94,6 +94,8 @@ int main(int argc, char* argv[])
 
             while (hub.is_connected(dev))
             {
+                this_thread::sleep_for(chrono::milliseconds(25));
+
                 if (are_flash_logs_requested && !are_there_remaining_flash_logs_to_pull)
                 {
                     should_loop_end = true;
