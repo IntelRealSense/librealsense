@@ -286,4 +286,23 @@ namespace librealsense
         auto range = _hw_options[RS2_OPTION_LASER_POWER]->get_range();
         _hw_options[RS2_OPTION_LASER_POWER]->set_with_no_signal(range.max);
     }
-}
+
+    void max_usable_range_option::set(float value)
+    {
+        // TODO if conditions are not meet throw exception!
+        bool_option::set(value);
+    }
+
+
+
+    const char * max_usable_range_option::get_description() const
+    {
+
+        return "Max Usable Range calculates the maximum range of the camera given the amount of "
+               "ambient light in the scene.\n"
+               "For example, if Max Usable Range returns 5m, this means that the ambient light in "
+               "the scene is reducing the maximum range from 9m down to 5m.\n"
+               "Values are rounded to whole meter values and are between 3 meters and 9 meters. "
+               "Max range refers to the center 10% of the frame.";
+    }
+}  // namespace librealsense

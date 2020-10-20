@@ -61,6 +61,17 @@ namespace librealsense
         std::string _description;
     };
 
+
+    class max_usable_range_option : public bool_option
+    {
+    public:
+        max_usable_range_option() : bool_option( false ){};
+
+        void set(float value) override;
+
+        const char * get_description() const override;
+    };
+
     class l500_options: public virtual l500_device
     {
     public:

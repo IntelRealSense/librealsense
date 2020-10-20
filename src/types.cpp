@@ -323,6 +323,7 @@ namespace librealsense
             CASE(CALIBRATED_SENSOR)
             CASE(SEQUENCE_ID_FILTER)
             CASE(HDR_MERGE)
+            CASE(MAX_USABLE_RANGE_SENSOR)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -445,6 +446,7 @@ namespace librealsense
             CASE(SEQUENCE_SIZE)
             CASE(SEQUENCE_ID)
             CASE(HUMIDITY_TEMPERATURE)
+            CASE(MAX_USABLE_RANGE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

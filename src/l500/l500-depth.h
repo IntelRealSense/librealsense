@@ -18,6 +18,7 @@
 #include "error-handling.h"
 #include "l500-options.h"
 #include "calibrated-sensor.h"
+#include "max-usable-range-sensor.h"
 
 namespace librealsense
 {
@@ -92,6 +93,7 @@ namespace librealsense
         , public virtual depth_sensor
         , public virtual l500_depth_sensor_interface
         , public calibrated_sensor
+        , public max_usable_range_sensor
     {
     public:
         explicit l500_depth_sensor(
@@ -217,6 +219,8 @@ namespace librealsense
             using namespace ivcam2;
             return *_owner->_calib_table;
         }
+
+        float get_max_usable_range() override;
 
         void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const override
         {
