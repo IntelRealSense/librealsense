@@ -260,7 +260,9 @@ bool refresh_devices(std::mutex& m,
             }
         }
         catch (std::exception& e) {
-            std::cout << "Exception caught in FW Update process-flow : " << e.what() << std::endl;
+            std::stringstream s;
+            s << "Device is busy. Access denied: " << e.what();
+            log(RS2_LOG_SEVERITY_WARN, s.str().c_str());
         }
         initial_refresh = false;
     }
