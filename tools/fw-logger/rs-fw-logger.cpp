@@ -46,10 +46,13 @@ string datetime_string()
 
 int main(int argc, char* argv[])
 {
+    int default_sleep_ms = 25;
     CmdLine cmd("librealsense rs-fw-logger example tool", ' ', RS2_API_VERSION_STR);
     ValueArg<string> xml_arg("l", "load", "Full file path of HW Logger Events XML file", false, "", "Load HW Logger Events XML file");
+    ValueArg<int> sleep_arg("s", "sleep", "Sleep between each log message pulling (in milliseconds)", false, default_sleep_ms, "");
     SwitchArg flash_logs_arg("f", "flash", "Flash Logs Request", false);
     cmd.add(xml_arg); 
+    cmd.add(sleep_arg);
     cmd.add(flash_logs_arg);
     cmd.parse(argc, argv);
 
@@ -57,6 +60,9 @@ int main(int argc, char* argv[])
 
     auto use_xml_file = false;
     auto xml_full_file_path = xml_arg.getValue();
+    auto sleep_ms = sleep_arg.getValue();
+    if (sleep_ms < 0 || sleep_ms > 200)
+        sleep_ms = default_sleep_ms;
 
     bool are_flash_logs_requested = flash_logs_arg.isSet();
 
@@ -94,7 +100,7 @@ int main(int argc, char* argv[])
 
             while (hub.is_connected(dev))
             {
-                this_thread::sleep_for(chrono::milliseconds(25));
+                this_thread::sleep_for(chrono::milliseconds(sleep_ms));
 
                 if (are_flash_logs_requested && !are_there_remaining_flash_logs_to_pull)
                 {
