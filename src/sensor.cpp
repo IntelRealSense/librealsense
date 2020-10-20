@@ -506,6 +506,12 @@ namespace librealsense
                 for( auto && xu : _xus )
                     _device->init_xu( xu );
             }
+            catch( std::exception const & e )
+            {
+                _user_count.fetch_add( -1 );
+                LOG_ERROR( "acquire_power failed " << e.what() );
+                throw;
+            }
             catch (...)
             {
                 _user_count.fetch_add( -1 );
