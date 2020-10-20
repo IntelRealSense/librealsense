@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
     auto use_xml_file = false;
     auto xml_full_file_path = xml_arg.getValue();
     auto sleep_ms = sleep_arg.getValue();
-    if (sleep_ms < 0 || sleep_ms > 200)
+    if (sleep_ms < 1 || sleep_ms > 200)
         sleep_ms = default_sleep_ms;
 
     bool are_flash_logs_requested = flash_logs_arg.isSet();
