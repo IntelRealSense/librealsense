@@ -53,7 +53,7 @@ namespace librealsense
         _depth_stream(new stream(RS2_STREAM_DEPTH)),
         _ir_stream(new stream(RS2_STREAM_INFRARED)),
         _confidence_stream(new stream(RS2_STREAM_CONFIDENCE)),
-        _temperatures(std::make_shared<extended_temperatures>())
+        _temperatures()
     {
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         auto pid = group.uvc_devices.front().pid;
@@ -617,33 +617,41 @@ namespace librealsense
 
         if (command_str == "GET-NEST")
         {
-            // Handle extended temperature command
-            LOG_INFO("Nest AVG: " << get_temperatures().nest_avg);
+            auto minimal_fw_ver = firmware_version("1.5.0.0");
+            if (_fw_version >= minimal_fw_ver)
+            {
+                // Handle extended temperature command
+                LOG_INFO("Nest AVG: " << get_temperatures().nest_avg);
 
-            // Handle other commands (all results log the first byte)
-            log_FW_response_first_byte(*_hw_monitor, "Gain trim",
-                command(ivcam2::IRB, 0x6C, 0x2, 0x1),
-                sizeof(uint8_t));
-            log_FW_response_first_byte(*_hw_monitor, "IPF gain",
-                command(ivcam2::MRD, 0xA003007C, 0xA0030080),
-                sizeof(uint32_t));
-            log_FW_response_first_byte(*_hw_monitor, "APB VBR",
-                command(ivcam2::AMCGET, 0x4, 0x0, 0x0),
-                sizeof(uint32_t));
-            return std::vector< uint8_t >();
+                // Handle other commands (all results log the first byte)
+                log_FW_response_first_byte(*_hw_monitor, "Gain trim",
+                    command(ivcam2::IRB, 0x6C, 0x2, 0x1),
+                    sizeof(uint8_t));
+                log_FW_response_first_byte(*_hw_monitor, "IPF gain",
+                    command(ivcam2::MRD, 0xA003007C, 0xA0030080),
+                    sizeof(uint32_t));
+                log_FW_response_first_byte(*_hw_monitor, "APB VBR",
+                    command(ivcam2::AMCGET, 0x4, 0x0, 0x0),
+                    sizeof(uint32_t));
+                return std::vector< uint8_t >();
+            }
+            else
+                throw librealsense::invalid_value_exception(
+                    to_string() << "get-nest command require FW version >= " << minimal_fw_ver
+                                << ", current version is: " << _fw_version );
         }
 
         return _hw_monitor->send(input);
     }
 
 
-    ivcam2::extended_temperatures l500_device::get_temperatures()
+    ivcam2::extended_temperatures l500_device::get_temperatures() const
     {
         ivcam2::extended_temperatures rv;
-        if (_temperature_from_fetcher)
+        if (_have_temperatures)
         {
             std::lock_guard<std::mutex> lock(_temperature_mutex);
-            rv = *_temperatures;
+            rv = _temperatures;
         }
         else
         {
@@ -657,45 +665,36 @@ namespace librealsense
             if (res.size() < expected_size)
             {
                 throw std::runtime_error(
-                    to_string() << "TEMPERATURES_GET - Invalid result size!, expected: "
+                    to_string() << "TEMPERATURES_GET - Invalid result size! expected: "
                     << expected_size << " bytes, "
                     "got: " << res.size() << " bytes");
             }
 
-            auto t = reinterpret_cast<temperatures*>((void*)res.data());
-            rv.LDD_temperature = t->LDD_temperature;
-            rv.MC_temperature = t->MC_temperature;
-            rv.MA_temperature = t->MA_temperature;
-            rv.APD_temperature = t->APD_temperature;
-            rv.HUM_temperature = t->HUM_temperature;
-            rv.AlgoTermalLddAvg_temperature = t->AlgoTermalLddAvg_temperature;
-
             if (fw_version_support_nest)
-            {
-                extended_temperatures *t_ex = reinterpret_cast<extended_temperatures*>((void*)res.data());
-                rv.nest_avg = t_ex->nest_avg;
-            }
-
+                rv = *reinterpret_cast<extended_temperatures const *>(res.data());
+            else
+                *reinterpret_cast<temperatures *>(&rv) = *reinterpret_cast<temperatures const *>(res.data());
         }
         return rv;
     }
 
-    void l500_device::start_temperatures_fetcher()
+    void l500_device::start_temperatures_reader()
     {
         LOG_DEBUG("Starting temperature fetcher thread");
-        _temperature_fetcher = std::thread( [&]() {
+        _temperature_reader = std::thread( [&]() {
             try
             {
-                auto fw_version_support_nest = ( _fw_version >= firmware_version( "1.5.0.0" ) ) ? true : false;
+                auto fw_version_support_nest = _fw_version >= firmware_version( "1.5.0.0" );
+
                 auto expected_size = fw_version_support_nest ? sizeof( extended_temperatures )
                                                              : sizeof( temperatures );
 
                 utilities::time::periodic_timer pt(std::chrono::seconds(1));
                 pt.set_expired(); // Force condition true on start
 
-                _temperature_fetcher_on = true;
+                _keep_reading_temperature = true;
 
-                while (_temperature_fetcher_on)
+                while (_keep_reading_temperature)
                 {
                     if (pt) // Update temperatures every second
                     {
@@ -710,47 +709,40 @@ namespace librealsense
                         }
                
                         std::lock_guard<std::mutex> lock(_temperature_mutex);
-                        auto t = reinterpret_cast<temperatures*>((void*)res.data());
-                        _temperatures->LDD_temperature = t->LDD_temperature;
-                        _temperatures->MC_temperature = t->MC_temperature;
-                        _temperatures->MA_temperature = t->MA_temperature;
-                        _temperatures->APD_temperature = t->APD_temperature;
-                        _temperatures->HUM_temperature = t->HUM_temperature;
-                        _temperatures->AlgoTermalLddAvg_temperature = t->AlgoTermalLddAvg_temperature;
-               
-                        if (fw_version_support_nest)
-                        {
-                            extended_temperatures *t_ex = reinterpret_cast<extended_temperatures*>((void*)res.data());
-                            _temperatures->nest_avg = t_ex->nest_avg;
-                        }
 
-                        _temperature_from_fetcher = true;
+                        memset(&_temperatures, sizeof(_temperatures), 0);
+                        if (fw_version_support_nest)
+                            _temperatures = *reinterpret_cast<extended_temperatures const *>(res.data());
+                        else
+                            *reinterpret_cast<temperatures *>(&_temperatures) = *reinterpret_cast<temperatures const *>(res.data());
+                       
+                        _have_temperatures = true;
                     }
                
-                    // Do not hold the thread alive too long if fetcher were turned off
-                    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                    // Do not hold the thread alive too long if reader threat was turned off
+                    std::this_thread::sleep_for(std::chrono::milliseconds(300));
                 }
              }
-             catch (std::exception e)
+             catch (...)
              {
-                 LOG_ERROR("error on temperature fetcher thread: " << e.what());
+                 LOG_WARNING("unable to read temperatures - closing temperatures reader");
              }
-             _temperature_from_fetcher = false;
+             _have_temperatures = false;
          });
      }
     
-    void l500_device::stop_temperatures_fetcher()
+    void l500_device::stop_temperatures_reader()
     {
-        if (_temperature_fetcher_on)
+        if (_keep_reading_temperature)
         {
             LOG_DEBUG("Stopping temperature fetcher thread");
-            _temperature_fetcher_on = false;
-            _temperature_from_fetcher = false;
+            _keep_reading_temperature = false;
+            _have_temperatures = false;
         }
 
-        if (_temperature_fetcher.joinable())
+        if (_temperature_reader.joinable())
         {
-            _temperature_fetcher.join();
+            _temperature_reader.join();
         }
     }
 

@@ -379,12 +379,12 @@ namespace librealsense
             double AlgoTermalLddAvg_temperature;
 
             temperatures()
-                : LDD_temperature(.0)
-                , MC_temperature(.0)
-                , MA_temperature(.0)
-                , APD_temperature(.0)
-                , HUM_temperature(.0)
-                , AlgoTermalLddAvg_temperature(.0) { }
+                : LDD_temperature(0.)
+                , MC_temperature(0.)
+                , MA_temperature(0.)
+                , APD_temperature(0.)
+                , HUM_temperature(0.)
+                , AlgoTermalLddAvg_temperature(0.) { }
         };
 
         //FW versions >= 1.5.0.0 added to the response vector the nest AVG value

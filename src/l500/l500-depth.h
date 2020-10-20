@@ -31,6 +31,8 @@ namespace librealsense
         l500_depth(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
 
+        ~l500_depth() { stop_temperatures_reader(); }
+
         std::vector<tagged_profile> get_profiles_tags() const override;
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;

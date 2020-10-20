@@ -279,7 +279,7 @@ namespace librealsense
 
     l500_depth_sensor::~l500_depth_sensor()
     {
-        _owner->stop_temperatures_fetcher();
+        _owner->stop_temperatures_reader();
     }
 
     int l500_depth_sensor::read_algo_version()
@@ -513,7 +513,7 @@ namespace librealsense
         _action_delayer.do_after_delay( [&]() {
             synthetic_sensor::start( std::make_shared< frame_filter >( callback, _user_requests ) );
 
-            _owner->start_temperatures_fetcher();
+            _owner->start_temperatures_reader();
 
             if( _owner->_autocal )
                 _owner->_autocal->start();
@@ -528,7 +528,7 @@ namespace librealsense
         if( _owner->_autocal )
             _owner->_autocal->stop();
 
-        _owner->stop_temperatures_fetcher();
+        _owner->stop_temperatures_reader();
 
     }
 
