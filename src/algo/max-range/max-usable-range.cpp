@@ -15,6 +15,8 @@ float max_usable_range::get_max_range(const max_usable_range_inputs &inputs) con
 
     auto m_factor = 170.0f / (std::pow(1.1f, inputs.apd - 9.0f));
 
+
+    // MOVE THIS CODE OUTSIDE!
     preset_type preset = preset_type::LONG;
 
     if ((inputs.apd == 18) && (inputs.gtr == 3))

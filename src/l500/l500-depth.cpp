@@ -363,15 +363,19 @@ namespace librealsense
         if( get_option( RS2_OPTION_MAX_USABLE_RANGE ).query() != 1.0f )
             throw librealsense::wrong_api_call_sequence_exception( "max usable range option is not on" );
 
-        if (!is_streaming()) // TODO NOT WORKING!!!
+        if (!is_streaming())
         {
             throw librealsense::wrong_api_call_sequence_exception("depth sensor is not streaming!");
         }
 
+        // TODO Add code that check the preset if not long throw!!
+        // remove GTR + APD from the inputs
        algo::max_range::max_usable_range mur;
        algo::max_range::max_usable_range_inputs mur_inputs;
 
        gather_inputs_for_max_usable_range(mur_inputs);
+
+
        return mur.get_max_range(mur_inputs);
     }
 
@@ -388,8 +392,11 @@ namespace librealsense
 
         mur_inputs.gtr = static_cast<int>(res[0]);
         mur_inputs.apd = static_cast<int>(get_option(RS2_OPTION_AVALANCHE_PHOTO_DIODE).query());
-        //mur_inputs->humidity_temp = ;
-        //mur_inputs->nest = 
+
+        auto temperatures = _owner->get_temperatures();
+
+        mur_inputs.humidity_temp = temperatures.HUM_temperature;
+        mur_inputs.nest = temperatures.nest_avg;
 
     }
 
