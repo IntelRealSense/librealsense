@@ -356,9 +356,116 @@ namespace librealsense
 
     float l500_depth_sensor::get_max_usable_range() const
     {
-        // TODO Add real implementation
-        static int cnt = 0;
-        return cnt++ % 100;
+        if( ! supports_option( RS2_OPTION_MAX_USABLE_RANGE ) )
+            throw librealsense::wrong_api_call_sequence_exception( "max usable range option is not supported" );
+
+        if( get_option( RS2_OPTION_MAX_USABLE_RANGE ).query() != 1.0f )
+            throw librealsense::wrong_api_call_sequence_exception( "max usable range option is not on" );
+
+        if (!is_streaming())
+        {
+            throw librealsense::wrong_api_call_sequence_exception("depth sensor is not streaming!");
+        }
+
+        // Algo parameters
+        auto processing_gain = 1.75f;
+        auto long_thermal = 74.5f;
+        auto short_thermal = 10.0f;  // #TBD
+
+        // inner values
+        auto thermal = 0.0f;
+        auto normalized_nest = 0.0f;
+        auto indoor_max_range = 9.0f;
+
+        // FW values
+        // TODO - get from get_temperatures() function
+        auto nest = 0.0f;
+        auto humidity_temp = 0.0f;
+
+        int apd = static_cast<int>(get_option( RS2_OPTION_AVALANCHE_PHOTO_DIODE ).query());
+
+        auto res = _owner->_hw_monitor->send( command( ivcam2::IRB, 0x6C, 0x2, 0x1 ) );
+
+        if( res.size() < sizeof( uint8_t ) )
+        {
+            throw invalid_value_exception(
+                to_string() << "Gain trim FW command failed: size expected: " << sizeof( uint8_t )
+                            << " , size received: " << res.size() );
+        }
+
+        int gtr = res[0];
+
+        auto m_factor = 170.0f / ( std::pow( 1.1f, apd - 9.0f ) );
+
+        enum class preset_type
+        {
+            SHORT,
+            LONG,
+            CUSTOM
+        };
+
+        preset_type preset = preset_type::LONG;
+        if( ( apd == 18 ) && ( gtr == 3 ) )
+            preset = preset_type::SHORT;
+        else if( ( apd == 9 ) && ( gtr == 0 ) )
+            preset = preset_type::LONG;
+        else
+            preset = preset_type::CUSTOM;
+
+        if( preset == preset_type::LONG )
+        {
+            thermal = long_thermal;
+            normalized_nest = nest / 16.0f;
+            indoor_max_range = 9.0f;
+        }
+        else if( preset == preset_type::SHORT )
+        {
+            thermal = short_thermal;
+            indoor_max_range = 6.1f;
+            normalized_nest = ( nest - 797.0f ) / 6.275f;
+        }
+        else
+        {
+            indoor_max_range = 9.0f / std::sqrt( 170.0f / m_factor );
+            if( gtr == 3 )
+            {
+                thermal = short_thermal;
+                nest = ( nest - 797.0f ) / 6.275f;
+            }
+            else
+            {
+                thermal = long_thermal;
+                nest = nest / 16.0f;
+            }
+        }
+            
+        auto temp_range = indoor_max_range;
+        auto expected_max_range = 0.0f;
+        auto trimmed_max_range = 0.0f;
+
+        // Setting max range based on Nest
+        if (nest > thermal)
+        {
+            // Analyzing reflectivity based on 85 % reflectivity data
+            temp_range = 31000.0f * std::pow(nest, -2.0f) * processing_gain;
+        }
+
+        expected_max_range = std::min(temp_range, indoor_max_range);
+        
+        if (expected_max_range == indoor_max_range)
+            trimmed_max_range = indoor_max_range;
+        else if (expected_max_range >= indoor_max_range - 1.5f)
+            trimmed_max_range = indoor_max_range - 1.5f;
+        else if (expected_max_range >= indoor_max_range - 3.0f)
+            trimmed_max_range = indoor_max_range - 3.0f;
+        else if (expected_max_range >= indoor_max_range - 4.5f)
+            trimmed_max_range = indoor_max_range - 4.5f;
+        else if (expected_max_range >= indoor_max_range - 6.0f)
+            trimmed_max_range = indoor_max_range - 6.0f;
+        else if (expected_max_range >= indoor_max_range - 7.5f)
+            trimmed_max_range = indoor_max_range - 7.5f;
+
+        return trimmed_max_range;
     }
 
     float l500_depth_sensor::read_baseline() const

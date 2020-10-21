@@ -290,6 +290,12 @@ namespace librealsense
     void max_usable_range_option::set(float value)
     {
         // TODO if conditions are not meet throw exception!
+        //if (_fw_version < firmware_version("1.5.0.0")
+        //    throw
+        // “Max Usable Range” only supports VGA resolution and Max Range preset
+        // If the system is configured with unsupported resolution or preset and the user attempts to enable “Max Usable Range” feature, a message should notify the user to set VGA and Max Range preset before attempting to enable “Max Usable Range”
+        // If “Max Usable Range” is enabled while camera is not streaming, system will automatically select VGA and Max Range preset and not allow changing those settings.
+        
         bool_option::set(value);
     }
 
