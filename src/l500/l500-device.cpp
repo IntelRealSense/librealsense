@@ -637,7 +637,7 @@ namespace librealsense
             }
             else
                 throw librealsense::invalid_value_exception(
-                    to_string() << "get-nest command require FW version >= " << minimal_fw_ver
+                    to_string() << "get-nest command requires FW version >= " << minimal_fw_ver
                                 << ", current version is: " << _fw_version );
         }
 
@@ -681,6 +681,7 @@ namespace librealsense
     void l500_device::start_temperatures_reader()
     {
         LOG_DEBUG("Starting temperature fetcher thread");
+        _keep_reading_temperature = true;
         _temperature_reader = std::thread( [&]() {
             try
             {
@@ -689,14 +690,13 @@ namespace librealsense
                 auto expected_size = fw_version_support_nest ? sizeof( extended_temperatures )
                                                              : sizeof( temperatures );
 
-                utilities::time::periodic_timer pt(std::chrono::seconds(1));
-                pt.set_expired(); // Force condition true on start
+                utilities::time::periodic_timer second_has_passed(std::chrono::seconds(1));
+                second_has_passed.set_expired(); // Force condition true on start
 
-                _keep_reading_temperature = true;
 
                 while (_keep_reading_temperature)
                 {
-                    if (pt) // Update temperatures every second
+                    if (second_has_passed) // Update temperatures every second
                     {
                         const auto res = _hw_monitor->send(command{ TEMPERATURES_GET });
                         // Verify read
@@ -719,7 +719,7 @@ namespace librealsense
                         _have_temperatures = true;
                     }
                
-                    // Do not hold the thread alive too long if reader threat was turned off
+                    // Do not hold the device alive too long if reader thread was turned off
                     std::this_thread::sleep_for(std::chrono::milliseconds(300));
                 }
              }
