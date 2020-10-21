@@ -21,7 +21,7 @@ namespace librealsense
 
     private:
         std::vector<uint8_t> get_calibration_results(float* health = nullptr) const;
-        std::vector<uint8_t> get_one_button_calibration_results(float* health = nullptr, float* health_fl = nullptr) const;
+        std::vector<uint8_t> get_PyRxFL_calibration_results(float* health = nullptr, float* health_fl = nullptr) const;
         void handle_calibration_error(int status) const;
         std::map<std::string, int> parse_json(std::string json);
         std::shared_ptr< ds5_advanced_mode_base> change_preset();

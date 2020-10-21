@@ -37,7 +37,7 @@ namespace librealsense
         uint16_t fillFactor0; // first of the setCount number of fill factor, 1/100 of a percent
     };
 
-    struct DscOneButtonCalibrationTableResult
+    struct DscPyRxFLCalibrationTableResult
     {
         uint16_t headerSize; // 10 bytes for status & health numbers
         uint16_t status;      // DscStatus
@@ -75,15 +75,15 @@ namespace librealsense
 
     enum auto_calib_sub_cmd : uint8_t
     {
-        auto_calib_begin = 0x08,
-        auto_calib_check_status = 0x03,
+        py_rx_calib_begin = 0x08,
+        py_rx_calib_check_status = 0x03,
         tare_calib_begin = 0x0b,
         tare_calib_check_status = 0x0c,
         get_calibration_result = 0x0d,
         focal_length_calib_begin = 0x11,
         get_focal_legth_calib_result = 0x12,
-        one_button_calib_begin = 0x13,
-        get_one_button_calib_result = 0x14,
+        py_rx_plus_fl_calib_begin = 0x13,
+        get_py_rx_plus_fl_calib_result = 0x14,
         set_coefficients = 0x19
     };
 
@@ -150,12 +150,12 @@ namespace librealsense
     const int DEFAULT_ACCURACY = subpixel_accuracy::medium;
     const int DEFAULT_SPEED = auto_calib_speed::speed_slow;
     const int DEFAULT_SCAN = scan_parameter::py_scan;
-    const int DEFAULT_SAMPLING = data_sampling::polling;
+    const int DEFAULT_SAMPLING = data_sampling::interrupt;
 
     const int DEFAULT_FL_STEP_COUNT = 100;
     const int DEFAULT_FY_SCAN_RANGE = 40;
     const int DEFAULT_KEEP_NEW_VALUE_AFTER_SUCESSFUL_SCAN = 1;
-    const int DEFAULT_FL_SAMPLING = 1;
+    const int DEFAULT_FL_SAMPLING = data_sampling::interrupt;
     const int DEFAULT_ADJUST_BOTH_SIDES = 0;
 
     auto_calibrated::auto_calibrated(std::shared_ptr<hw_monitor>& hwm)
@@ -236,7 +236,7 @@ namespace librealsense
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
             // Begin auto-calibration
-            _hw_monitor->send(command{ ds::AUTO_CALIB, auto_calib_begin, speed, 0, param.param_4 });
+            _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_calib_begin, speed, 0, param.param_4 });
 
             DirectSearchCalibrationResult result{};
 
@@ -254,7 +254,7 @@ namespace librealsense
                 // Check calibration status
                 try
                 {
-                    auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, auto_calib_check_status });
+                    auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_calib_check_status });
 
                     if (res.size() < sizeof(DirectSearchCalibrationResult))
                         throw std::runtime_error("Not enough data from CALIB_STATUS!");
@@ -390,9 +390,9 @@ namespace librealsense
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
             // Begin auto-calibration
-            _hw_monitor->send(command{ ds::AUTO_CALIB, one_button_calib_begin, speed, 0, p4 });
+            _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_plus_fl_calib_begin, speed, 0, p4 });
 
-            DscOneButtonCalibrationTableResult result{};
+            DscPyRxFLCalibrationTableResult result{};
 
             int count = 0;
             bool done = false;
@@ -409,12 +409,12 @@ namespace librealsense
                 // Check calibration status
                 try
                 {
-                    auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, get_one_button_calib_result });
+                    auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, get_py_rx_plus_fl_calib_result });
 
-                    if (res.size() < sizeof(DscOneButtonCalibrationTableResult))
+                    if (res.size() < sizeof(DscPyRxFLCalibrationTableResult))
                         throw std::runtime_error("Not enough data from CALIB_STATUS!");
 
-                    result = *reinterpret_cast<DscOneButtonCalibrationTableResult*>(res.data());
+                    result = *reinterpret_cast<DscPyRxFLCalibrationTableResult*>(res.data());
                     done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
                 }
                 catch (const std::exception& ex)
@@ -447,7 +447,7 @@ namespace librealsense
             if (status != RS2_DSC_STATUS_SUCCESS)
                 handle_calibration_error(status);
 
-            res = get_one_button_calibration_results(&h_1 , &h_2);
+            res = get_PyRxFL_calibration_results(&h_1 , &h_2);
 
             int health_1 = static_cast<int>(abs(h_1) * 1000.0f + 0.5f);
             health_1 &= 0xFFF;
@@ -691,20 +691,20 @@ namespace librealsense
         return calib;
     }
 
-    std::vector<uint8_t> auto_calibrated::get_one_button_calibration_results(float* health, float* health_fl) const
+    std::vector<uint8_t> auto_calibrated::get_PyRxFL_calibration_results(float* health, float* health_fl) const
     {
         using namespace ds;
 
         // Get new calibration from the firmware
-        auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, get_one_button_calib_result });
-        if (res.size() < sizeof(DscOneButtonCalibrationTableResult))
+        auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, get_py_rx_plus_fl_calib_result });
+        if (res.size() < sizeof(DscPyRxFLCalibrationTableResult))
             throw std::runtime_error("Not enough data from CALIB_STATUS!");
 
-        auto reslt = (DscOneButtonCalibrationTableResult*)(res.data());
+        auto reslt = (DscPyRxFLCalibrationTableResult*)(res.data());
 
-        table_header* header = reinterpret_cast<table_header*>(res.data() + sizeof(DscOneButtonCalibrationTableResult));
+        table_header* header = reinterpret_cast<table_header*>(res.data() + sizeof(DscPyRxFLCalibrationTableResult));
 
-        if (res.size() < sizeof(DscOneButtonCalibrationTableResult) + sizeof(table_header) + header->table_size)
+        if (res.size() < sizeof(DscPyRxFLCalibrationTableResult) + sizeof(table_header) + header->table_size)
             throw std::runtime_error("Table truncated in CALIB_STATUS!");
 
         std::vector<uint8_t> calib;
