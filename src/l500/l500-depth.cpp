@@ -354,7 +354,7 @@ namespace librealsense
         AC_LOG( INFO, "Depth sensor calibration has been reset" );
     }
 
-    float l500_depth_sensor::get_max_usable_range()
+    float l500_depth_sensor::get_max_usable_range() const
     {
         // TODO Add real implementation
         static int cnt = 0;

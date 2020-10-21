@@ -476,17 +476,6 @@ namespace rs2
             return res;
         }
 
-        /** Retrieves the maximum range of the camera given the amount of ambient light in the scene.
-        * \return max usable range in meters
-        */
-        float get_max_usable_range() const
-        {
-            rs2_error* e = nullptr;
-            auto res = rs2_get_max_usable_range(_sensor.get(), &e);
-            error::handle(e);
-            return res;
-        }
-
         operator bool() const { return _sensor.get() != nullptr; }
         explicit depth_sensor(std::shared_ptr<rs2_sensor> dev) : depth_sensor(sensor(dev)) {}
     };
@@ -733,6 +722,34 @@ namespace rs2
             rs2_error* e = nullptr;
             rs2_reset_sensor_calibration( _sensor.get(), &e );
             error::handle( e );
+        }
+    };
+
+    class max_usable_range_sensor : public sensor
+    {
+    public:
+        max_usable_range_sensor(sensor s)
+            : sensor(s.get())
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_MAX_USABLE_RANGE_SENSOR, &e) == 0 && !e)
+            {
+                _sensor.reset();
+            }
+            error::handle(e);
+        }
+
+        operator bool() const { return _sensor.get() != nullptr; }
+
+        /** Retrieves the maximum range of the camera given the amount of ambient light in the scene.
+        * \return max usable range in meters
+        */
+        float get_max_usable_range() const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_get_max_usable_range(_sensor.get(), &e);
+            error::handle(e);
+            return res;
         }
     };
 }
