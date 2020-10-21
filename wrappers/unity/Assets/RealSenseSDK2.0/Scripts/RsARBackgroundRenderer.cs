@@ -11,7 +11,9 @@ public class RsARBackgroundRenderer : MonoBehaviour
     public RsFrameProvider Source;
     public Material material;
     private Camera cam;
+#if !UNITY_2020_1_OR_NEWER
     private ARBackgroundRenderer bg;
+#endif
     private Intrinsics intrinsics;
     private RenderTexture rt;
 
@@ -28,12 +30,14 @@ public class RsARBackgroundRenderer : MonoBehaviour
 
         cam = GetComponent<Camera>();
 
+#if !UNITY_2020_1_OR_NEWER
         bg = new ARBackgroundRenderer()
         {
             backgroundMaterial = material,
             mode = ARRenderMode.MaterialAsBackground,
             backgroundTexture = material.mainTexture
         };
+#endif
 
         cam.depthTextureMode |= DepthTextureMode.Depth;
 
@@ -56,17 +60,21 @@ public class RsARBackgroundRenderer : MonoBehaviour
         light.AddCommandBuffer(LightEvent.AfterScreenspaceMask, copyScreenSpaceShadow);
     }
 
+#if !UNITY_2020_1_OR_NEWER
     void OnEnable()
     {
         if (bg != null)
             bg.mode = ARRenderMode.MaterialAsBackground;
     }
+#endif
 
+#if !UNITY_2020_1_OR_NEWER
     void OnDisable()
     {
         if (bg != null)
             bg.mode = ARRenderMode.StandardBackground;
     }
+#endif
 
     void Update()
     {
