@@ -114,12 +114,10 @@ int main(int argc, char** argv) try
     if (startTime.isSet())
     {
         start_time = (uint64_t) (SECONDS_TO_NANOSECONDS * (std::strtod( startTime.getValue().c_str(), nullptr )));
-        cout << start_time << endl;
     }
     if (endTime.isSet())
     {
         end_time = (uint64_t) (SECONDS_TO_NANOSECONDS * (std::strtod( endTime.getValue().c_str(), nullptr )));
-        cout << end_time << endl;
     }
 
     //in order to convert frames into ply we need synced depth and color frames, 
@@ -176,7 +174,9 @@ int main(int argc, char** argv) try
             plyconverter->wait();
 
             if (static_cast<int64_t>(frame_time - posLast) < 0)
+            {
                 break;
+            }
 
             posLast = frame_time;
         }
@@ -213,21 +213,13 @@ int main(int argc, char** argv) try
                 auto frame_time = playback.get_position();
 
                 if (frameNumberStart.isSet() && frameNumber < first_frame)
-                {
                     return;
-                }
                 if (frameNumberEnd.isSet() && frameNumber > last_frame)
-                {
                     return;
-                }
                 if (startTime.isSet() && frame_time < start_time)
-                {
                     return;
-                }
                 if (endTime.isSet() && frame_time > end_time)
-                {
                     return;
-                }
 
                 for_each(converters.begin(), converters.end(),
                     [&frame](shared_ptr<rs2::tools::converter::converter_base>& converter) {
