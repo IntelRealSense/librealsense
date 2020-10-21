@@ -46,7 +46,7 @@ if [ "$install" = true ]; then
     sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/
     if [ "$auto_power_off" = true ]; then
         echo | sudo tee -a /etc/udev/rules.d/99-realsense-libusb.rules > /dev/null
-        echo "KERNEL==\"iio*\", ATTRS{idVendor}==\"8086\", ATTRS{idProduct}==\"0ad5|0afe|0aff|0b00|0b01|0b3a|0b3d\", RUN+=\"/bin/sh -c 'enfile=/sys/%p/buffer/enable && echo \\\"COUNTER=0; while [ \\\$COUNTER -lt 500 ] && grep -q 0 \$enfile; do sleep 0.01; COUNTER=\\\$((COUNTER+1)); done && echo 0 > \$enfile\\\" | at now'\"" | sudo tee -a /etc/udev/rules.d/99-realsense-libusb.rules > /dev/null
+        echo "KERNEL==\"iio*\", ATTRS{idVendor}==\"8086\", ATTRS{idProduct}==\"0ad5|0afe|0aff|0b00|0b01|0b3a|0b3d|0b64\", RUN+=\"/bin/sh -c 'enfile=/sys/%p/buffer/enable && echo \\\"COUNTER=0; while [ \\\$COUNTER -lt 500 ] && grep -q 0 \$enfile; do sleep 0.01; COUNTER=\\\$((COUNTER+1)); done && echo 0 > \$enfile\\\" | at now'\"" | sudo tee -a /etc/udev/rules.d/99-realsense-libusb.rules > /dev/null
     fi
 else
     sudo rm /etc/udev/rules.d/99-realsense-libusb.rules
