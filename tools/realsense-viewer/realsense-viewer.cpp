@@ -261,7 +261,7 @@ bool refresh_devices(std::mutex& m,
         }
         catch (std::exception& e) {
             std::stringstream s;
-            s << "Device is busy. Access denied: " << e.what();
+            s << "Couldn't refresh devices - "  << e.what();
             log(RS2_LOG_SEVERITY_WARN, s.str().c_str());
         }
         initial_refresh = false;
