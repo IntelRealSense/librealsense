@@ -523,10 +523,22 @@ namespace librealsense
 
     void uvc_sensor::release_power()
     {
-        std::lock_guard<std::mutex> lock(_power_lock);
-        if (_user_count.fetch_add(-1) == 1)
+        std::lock_guard< std::mutex > lock( _power_lock );
+        if( _user_count.fetch_add( -1 ) == 1 )
         {
-            _device->set_power_state(platform::D3);
+            try
+            {
+                _device->set_power_state( platform::D3 );
+            }
+
+            catch( std::exception const & e )
+            {
+                LOG_ERROR( "release_power failed " << e.what() );
+            }
+            catch( ... )
+            {
+                LOG_ERROR( "release_power failed " );
+            }
         }
     }
 
