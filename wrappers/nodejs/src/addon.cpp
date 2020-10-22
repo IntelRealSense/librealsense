@@ -4933,6 +4933,11 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_SENSOR_MODE_XGA)
   _FORCE_SET_ENUM(RS2_SENSOR_MODE_QVGA)
   _FORCE_SET_ENUM(RS2_SENSOR_MODE_COUNT)
+
+
+  // rs2_digital_gain
+  _FORCE_SET_ENUM(RS2_DIGITAL_GAIN_HIGH)
+  _FORCE_SET_ENUM(RS2_DIGITAL_GAIN_LOW)
 }
 
 NODE_MODULE(node_librealsense, InitModule);
