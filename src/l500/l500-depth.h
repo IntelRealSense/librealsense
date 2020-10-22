@@ -22,15 +22,6 @@
 
 namespace librealsense
 {
-    // forward declaration
-    namespace algo
-    {
-        namespace max_range 
-        {
-            struct max_usable_range_inputs;
-        }
-    }  // namespace algo
-
     class l500_depth : public virtual l500_device
     {
     public:
@@ -267,8 +258,9 @@ namespace librealsense
         void stop() override;
         float get_depth_offset() const;
 
-        void gather_inputs_for_max_usable_range(algo::max_range::max_usable_range_inputs &mur_inputs) const;
     private:
+        bool is_long_preset() const;
+
         action_delayer _action_delayer;
         l500_device * const _owner;
         float _depth_units;

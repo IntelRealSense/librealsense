@@ -357,29 +357,29 @@ namespace librealsense
 
     float l500_depth_sensor::get_max_usable_range() const
     {
-        if( ! supports_option( RS2_OPTION_MAX_USABLE_RANGE ) )
+        if( !supports_option( RS2_OPTION_MAX_USABLE_RANGE ) )
             throw librealsense::wrong_api_call_sequence_exception( "max usable range option is not supported" );
 
         if( get_option( RS2_OPTION_MAX_USABLE_RANGE ).query() != 1.0f )
             throw librealsense::wrong_api_call_sequence_exception( "max usable range option is not on" );
 
-        if (!is_streaming())
+        if( ! is_streaming() )
         {
             throw librealsense::wrong_api_call_sequence_exception("depth sensor is not streaming!");
         }
 
-        // TODO Add code that check the preset if not long throw!!
-        // remove GTR + APD from the inputs
+        if( ! is_long_preset() )
+        {
+            throw librealsense::wrong_api_call_sequence_exception("max usable range require long range preset (MAX_RANGE / NO_AMBIENT)");
+        }
+
        algo::max_range::max_usable_range mur;
-       algo::max_range::max_usable_range_inputs mur_inputs;
+       float nest = static_cast<float>(_owner->get_temperatures().nest_avg);
 
-       gather_inputs_for_max_usable_range(mur_inputs);
-
-
-       return mur.get_max_range(mur_inputs);
+       return mur.get_max_range(nest);
     }
 
-    void l500_depth_sensor::gather_inputs_for_max_usable_range(algo::max_range::max_usable_range_inputs &mur_inputs) const 
+    bool l500_depth_sensor::is_long_preset() const
     {
         auto res = _owner->_hw_monitor->send(command(ivcam2::IRB, 0x6C, 0x2, 0x1));
 
@@ -390,14 +390,10 @@ namespace librealsense
                 << " , size received: " << res.size());
         }
 
-        mur_inputs.gtr = static_cast<int>(res[0]);
-        mur_inputs.apd = static_cast<int>(get_option(RS2_OPTION_AVALANCHE_PHOTO_DIODE).query());
+        int gtr = static_cast<int>(res[0]);
+        int apd = static_cast<int>(get_option(RS2_OPTION_AVALANCHE_PHOTO_DIODE).query());
 
-        auto temperatures = _owner->get_temperatures();
-
-        mur_inputs.humidity_temp = temperatures.HUM_temperature;
-        mur_inputs.nest = temperatures.nest_avg;
-
+        return ((apd == 9) && (gtr == 0)); // indicates long preset
     }
 
 

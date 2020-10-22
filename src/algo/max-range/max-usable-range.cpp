@@ -6,52 +6,11 @@
 
 using namespace librealsense::algo::max_range;
 
-float max_usable_range::get_max_range(const max_usable_range_inputs &inputs) const
+float max_usable_range::get_max_range(float nest) const
 {
-
-    auto thermal = 0.0f;
-    auto normalized_nest = 0.0f;
-    auto indoor_max_range = 9.0f;
-
-    auto m_factor = 170.0f / (std::pow(1.1f, inputs.apd - 9.0f));
-
-
-    // MOVE THIS CODE OUTSIDE!
-    preset_type preset = preset_type::LONG;
-
-    if ((inputs.apd == 18) && (inputs.gtr == 3))
-        preset = preset_type::SHORT;
-    else if ((inputs.apd == 9) && (inputs.gtr == 0))
-        preset = preset_type::LONG;
-    else
-        preset = preset_type::CUSTOM;
-
-    if (preset == preset_type::LONG)
-    {
-        thermal = _long_thermal;
-        normalized_nest = inputs.nest / 16.0f;
-        indoor_max_range = 9.0f;
-    }
-    else if (preset == preset_type::SHORT)
-    {
-        thermal = _short_thermal;
-        indoor_max_range = 6.1f;
-        normalized_nest = (inputs.nest - 797.0f) / 6.275f;
-    }
-    else
-    {
-        indoor_max_range = 9.0f / std::sqrt(170.0f / m_factor);
-        if (inputs.gtr == 3)
-        {
-            thermal = thermal = _short_thermal;
-            normalized_nest = (inputs.nest - 797.0f) / 6.275f;
-        }
-        else
-        {
-            thermal = _long_thermal;
-            normalized_nest = inputs.nest / 16.0f;
-        }
-    }
+    const float thermal = 74.5f;
+    const float normalized_nest = nest / 16.0f;
+    const float indoor_max_range = 9.0f;
 
     auto temp_range = indoor_max_range;
     auto expected_max_range = 0.0f;

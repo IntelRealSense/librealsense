@@ -10,42 +10,19 @@ namespace librealsense {
 namespace algo {
 namespace max_range {
 
-
-struct max_usable_range_inputs
-{
-    float nest;
-    float humidity_temp;
-    int gtr;
-    int apd;
-
-    max_usable_range_inputs()
-        : nest( 0.0f )
-        , humidity_temp( 0.0f )
-        , gtr( 0 )
-        , apd( 0 )
-    {
-    }
-};
-
 class max_usable_range
 {
 public:
     max_usable_range() = default;
-    float get_max_range( const max_usable_range_inputs & inputs ) const;
+    // Calculate the maximum usable range based on current ambient light conditions
+    // Input: noise estimation value
+    // Output: maximum usable range [m] 
+    float get_max_range( float nest ) const;
 
 private:
 
     // Algo parameters
     const float _processing_gain = 1.75f;
-    const float _long_thermal = 74.5f;
-    const float _short_thermal = 10.0f;  // TBD
-
-    enum class preset_type
-    {
-        SHORT,
-        LONG,
-        CUSTOM
-    };
 };
 
 }  // namespace max_range
