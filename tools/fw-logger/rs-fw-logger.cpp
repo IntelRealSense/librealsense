@@ -46,13 +46,13 @@ string datetime_string()
 
 int main(int argc, char* argv[])
 {
-    int default_sleep_ms = 25;
+    int default_polling_interval_ms = 100;
     CmdLine cmd("librealsense rs-fw-logger example tool", ' ', RS2_API_VERSION_STR);
     ValueArg<string> xml_arg("l", "load", "Full file path of HW Logger Events XML file", false, "", "Load HW Logger Events XML file");
-    ValueArg<int> sleep_arg("s", "sleep", "Sleep between each log message pulling (in milliseconds)", false, default_sleep_ms, "");
+    ValueArg<int> polling_interval_arg("p", "polling_interval", "Time Interval between each log messages polling (in milliseconds)", false, default_polling_interval_ms, "");
     SwitchArg flash_logs_arg("f", "flash", "Flash Logs Request", false);
     cmd.add(xml_arg); 
-    cmd.add(sleep_arg);
+    cmd.add(polling_interval_arg);
     cmd.add(flash_logs_arg);
     cmd.parse(argc, argv);
 
@@ -60,9 +60,9 @@ int main(int argc, char* argv[])
 
     auto use_xml_file = false;
     auto xml_full_file_path = xml_arg.getValue();
-    auto sleep_ms = sleep_arg.getValue();
-    if (sleep_ms < 1 || sleep_ms > 200)
-        sleep_ms = default_sleep_ms;
+    auto polling_interval_ms = polling_interval_arg.getValue();
+    if (polling_interval_ms < 25 || polling_interval_ms > 300)
+        polling_interval_ms = default_polling_interval_ms;
 
     bool are_flash_logs_requested = flash_logs_arg.isSet();
 
@@ -97,11 +97,29 @@ int main(int argc, char* argv[])
             }
 
             bool are_there_remaining_flash_logs_to_pull = true;
+            std::chrono::steady_clock::time_point time_of_previous_polling_ms;
+            bool is_first_iteration = true;;
 
             while (hub.is_connected(dev))
             {
-                this_thread::sleep_for(chrono::milliseconds(sleep_ms));
-
+                auto num_of_messages = fw_log_device.get_num_of_fw_logs();
+                if (is_first_iteration)
+                {
+                    is_first_iteration = false;
+                    time_of_previous_polling_ms = std::chrono::high_resolution_clock::now();
+                }
+                else if (num_of_messages == 0)
+                {
+                    auto current_time = std::chrono::high_resolution_clock::now();
+                    auto time_since_previous_polling_ms = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - time_of_previous_polling_ms).count();
+                    //std::cout << "current_time - time_of_previous_polling_ms = " << time_since_previous_polling_ms << ", polling_interval_ms = " << polling_interval_ms << std::endl;
+                    if (time_since_previous_polling_ms < polling_interval_ms)
+                    {
+                        //std::cout << "sleeping_time = " << polling_interval_ms - time_since_previous_polling_ms << std::endl;
+                        std::this_thread::sleep_for(chrono::milliseconds(polling_interval_ms - time_since_previous_polling_ms));
+                    }
+                    time_of_previous_polling_ms = std::chrono::high_resolution_clock::now();
+                }
                 if (are_flash_logs_requested && !are_there_remaining_flash_logs_to_pull)
                 {
                     should_loop_end = true;
@@ -126,10 +144,11 @@ int main(int argc, char* argv[])
                         bool parsing_result = fw_log_device.parse_log(log_message, parsed_log);
                         
                         stringstream sstr;
-                        sstr << datetime_string() << " " << parsed_log.timestamp() << " " << parsed_log.severity() << " " << parsed_log.message()
+                        sstr << datetime_string() << " " << parsed_log.timestamp() << " " << parsed_log.sequence()
+                            << " " << parsed_log.severity() << " " << parsed_log.message()
                             << " " << parsed_log.thread_name() << " " << parsed_log.file_name()
                             << " " << parsed_log.line();
-
+                        
                         fw_log_lines.push_back(sstr.str());
                     }
                     else
@@ -144,7 +163,7 @@ int main(int argc, char* argv[])
                         fw_log_lines.push_back(sstr.str());
                     }
                     for (auto& line : fw_log_lines)
-                        cout << line << endl;
+                       cout << line << endl;
                 }
                 else
                 {

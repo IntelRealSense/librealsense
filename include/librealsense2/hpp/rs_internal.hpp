@@ -465,6 +465,14 @@ namespace rs2
             return timestamp;
         }
 
+        uint32_t sequence() const
+        {
+            rs2_error* e = nullptr;
+            uint32_t sequence(rs2_get_fw_log_parsed_sequence(_parsed_fw_log.get(), &e));
+            error::handle(e);
+            return sequence;
+        }
+
         const std::shared_ptr<rs2_firmware_log_parsed_message> get_message() const { return _parsed_fw_log; }
 
     private:
@@ -549,6 +557,15 @@ namespace rs2
             error::handle(e);
 
             return parsingResult;
+        }
+
+        int get_num_of_fw_logs()
+        {
+            rs2_error* e = nullptr;
+            int num_of_fw_logs = rs2_get_num_of_fw_logs(_dev.get(), &e);
+            error::handle(e);
+
+            return num_of_fw_logs;
         }
     };
 

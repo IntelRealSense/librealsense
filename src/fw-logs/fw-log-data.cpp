@@ -69,6 +69,11 @@ namespace librealsense
             return _timestamp;
         }
 
+        uint32_t fw_log_data::get_sequence() const
+        {
+            return _sequence;
+        }
+
         rs2_log_severity fw_logs_binary_data::get_severity() const
         {
             const fw_log_binary* log_binary = reinterpret_cast<const fw_log_binary*>(logs_buffer.data());

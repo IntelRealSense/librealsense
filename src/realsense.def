@@ -373,6 +373,7 @@ EXPORTS
 
     rs2_create_fw_log_message
     rs2_delete_fw_log_message
+    rs2_get_num_of_fw_logs
     rs2_get_fw_log
     rs2_get_flash_log
     rs2_fw_log_message_severity
@@ -389,6 +390,7 @@ EXPORTS
     rs2_get_fw_log_parsed_severity
     rs2_get_fw_log_parsed_line
     rs2_get_fw_log_parsed_timestamp
+    rs2_get_fw_log_parsed_sequence
     
     rs2_create_terminal_parser
     rs2_delete_terminal_parser
