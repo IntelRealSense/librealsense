@@ -94,7 +94,8 @@ def run(cmd, errorstatus=256, stdout=subprocess.PIPE):
         rv = subprocess.run( cmd,
                              stdout = stdout,
                              stderr = subprocess.STDOUT,
-                             universal_newlines = True )
+                             universal_newlines = True,
+                             check = True)
         status = rv.returncode
         if status >= errorstatus:
             raise RuntimeError( 'status ' + str(status) + ' from ' + cmd )
@@ -229,7 +230,10 @@ for manifest_ctx in grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir
     except FileNotFoundError:
         error( red + testname + reset + ': executable not found! (' + exe + ')' )
         continue
-    
+    except subprocess.CalledProcessError as cpe:
+        error( red + testname + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')' )
+        continue
+
     check_log(log, testname, exe)
 
 
@@ -253,11 +257,9 @@ else:
 if pyrs:
     # After use of find pyrs contains the path from librealsense to the pyrealsense that was found
     # We append it to the librealsense path to get an absolute path to the file to add to PYTHONPATH so it can be found by the tests
-    pyrs_path = librealsense + '/' + pyrs
+    pyrs_path = librealsense + os.sep + pyrs
     # We need to add the directory not the file itself
     pyrs_path = os.path.dirname(pyrs_path)
-    # Change back-slash to slash so the path is both windows and linux compatible
-    pyrs_path = pyrs_path.replace('\\' , '/')
     os.environ["PYTHONPATH"] = pyrs_path
     # We can simply change `sys.path` but any child python scripts won't see it. We change the environment instead.
 
@@ -285,7 +287,10 @@ if pyrs:
         except FileNotFoundError:
             error( red + testname + reset + ': file not found! (' + test_path + ')' )
             continue
-     
+        except subprocess.CalledProcessError as cpe:
+            error( red + testname + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')' )
+            continue
+
         check_log(log, testname, py_test)
 
 progress()

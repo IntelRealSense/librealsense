@@ -79,12 +79,8 @@ namespace librealsense
         void update_flash_internal(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, std::vector<uint8_t>& flash_backup,
             update_progress_callback_ptr callback, int update_mode);
 
-        ivcam2::extended_temperatures get_temperatures() const;
-
 
     protected:
-        void start_temperatures_reader();
-        void stop_temperatures_reader();
 
         friend class l500_depth_sensor;
 
@@ -112,12 +108,6 @@ namespace librealsense
 
         std::vector< calibration_change_callback_ptr > _calibration_change_callbacks;
         platform::usb_spec _usb_mode;
-
-        mutable std::mutex _temperature_mutex;
-        std::atomic_bool _keep_reading_temperature{ false };  // If true temperature reading thread is working, otherwise indicate to the thread to stop
-        std::atomic_bool _have_temperatures{ false }; //  If true, then the _temperatures are valid and up-to-date.
-        std::thread _temperature_reader;
-        ivcam2::extended_temperatures _temperatures;
     };
 
     class l500_notification_decoder : public notification_decoder
