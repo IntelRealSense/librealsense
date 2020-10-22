@@ -448,7 +448,12 @@ void rs2_delete_fw_log_parsed_message(rs2_firmware_log_parsed_message* fw_log_pa
 */
 int rs2_parse_firmware_log(rs2_device* dev, rs2_firmware_log_message* fw_log_msg, rs2_firmware_log_parsed_message* parsed_msg, rs2_error** error);
 
-
+/**
+* \brief Returns number of fw logs already polled from device
+* \param[in] dev                Device from which the FW log will be taken
+* \param[out] error             If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return                       number of fw logs already polled from device
+*/
 int rs2_get_num_of_fw_logs(rs2_device* dev, rs2_error** error);
 /**
 * \brief Gets RealSense firmware log parsed message.
