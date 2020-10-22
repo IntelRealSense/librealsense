@@ -178,8 +178,9 @@ int main(int argc, char** argv) try
             }
 
             auto posNext = playback.get_position();
+
             // NOTE: posNext will be 0 if there is no next frame!
-            if( posNext <= posCurr )
+            if( posNext < posCurr )
                 break;
             posCurr = posNext;
         }
@@ -198,7 +199,7 @@ int main(int argc, char** argv) try
 
         auto duration = playback.get_duration();
         int progress = 0;
-        uint64_t posLast = playback.get_position();
+        uint64_t posCurr = playback.get_position();
 
         for (auto sensor : sensors)
         {
@@ -213,15 +214,14 @@ int main(int argc, char** argv) try
                 std::lock_guard<std::mutex> lock(mutex);
 
                 auto frameNumber = frame.get_frame_number();
-                auto frame_time = playback.get_position();
 
                 if (frameNumberStart.isSet() && frameNumber < first_frame)
                     return;
                 if (frameNumberEnd.isSet() && frameNumber > last_frame)
                     return;
-                if (startTime.isSet() && frame_time < start_time)
+                if (startTime.isSet() && posCurr < start_time)
                     return;
-                if (endTime.isSet() && frame_time > end_time)
+                if (endTime.isSet() && posCurr > end_time)
                     return;
 
                 for_each(converters.begin(), converters.end(),
@@ -243,7 +243,7 @@ int main(int argc, char** argv) try
 
         while (true)
         {
-            int posP = static_cast<int>(posLast * 100. / duration.count());
+            int posP = static_cast<int>(posCurr * 100. / duration.count());
 
             if (posP > progress)
             {
@@ -251,12 +251,12 @@ int main(int argc, char** argv) try
                 cout << posP << "%" << "\r" << flush;
             }
 
-            const uint64_t posCurr = playback.get_position();
-            if (static_cast<int64_t>(posCurr - posLast) < 0)
+            const uint64_t posNext = playback.get_position();
+            if (posNext < posCurr)
             {
                 break;
             }
-            posLast = posCurr;
+            posCurr = posNext;
         }
 
         for (auto sensor : sensors)
