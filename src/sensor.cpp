@@ -509,13 +509,13 @@ namespace librealsense
             catch( std::exception const & e )
             {
                 _user_count.fetch_add( -1 );
-                LOG_ERROR( "acquire_power failed " << e.what() );
+                LOG_ERROR( "acquire_power failed: " << e.what() );
                 throw;
             }
-            catch (...)
+            catch( ... )
             {
                 _user_count.fetch_add( -1 );
-                LOG_ERROR( "acquire_power failed " );
+                LOG_ERROR( "acquire_power failed" );
                 throw;
             }
         }
@@ -530,14 +530,15 @@ namespace librealsense
             {
                 _device->set_power_state( platform::D3 );
             }
-
             catch( std::exception const & e )
             {
-                LOG_ERROR( "release_power failed " << e.what() );
+                // TODO may need to change the user-count?
+                LOG_ERROR( "release_power failed: " << e.what() );
             }
             catch( ... )
             {
-                LOG_ERROR( "release_power failed " );
+                // TODO may need to change the user-count?
+                LOG_ERROR( "release_power failed" );
             }
         }
     }
