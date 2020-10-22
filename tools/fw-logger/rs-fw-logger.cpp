@@ -62,7 +62,10 @@ int main(int argc, char* argv[])
     auto xml_full_file_path = xml_arg.getValue();
     auto polling_interval_ms = polling_interval_arg.getValue();
     if (polling_interval_ms < 25 || polling_interval_ms > 300)
+    {
+        std::cout << "Polling interval time provided: " << polling_interval_ms << "ms, is not in the valid range [25,300]. Default value " << default_polling_interval_ms << "ms is used." << std::endl;
         polling_interval_ms = default_polling_interval_ms;
+    }
 
     bool are_flash_logs_requested = flash_logs_arg.isSet();
 
