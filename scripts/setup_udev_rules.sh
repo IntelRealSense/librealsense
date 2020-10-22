@@ -5,7 +5,6 @@
 #
 # [optional parameters]:
 # --uninstall : remove permissions for realsense devices.
-# --auto_power_off : add script for automatic power off.
 
 install=true
 auto_power_off=false
@@ -14,10 +13,6 @@ for var in "$@"
 do
     if [ "$var" = "--uninstall" ]; then
         install=false
-    fi
-
-    if [ "$var" = "--auto_power_off" ]; then
-        auto_power_off=true
     fi
 done
 
@@ -44,10 +39,8 @@ if [ "$install" = true ]; then
         echo -e "\e[0m"
     fi
     sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/
-    if [ "$auto_power_off" = true ]; then
-        echo | sudo tee -a /etc/udev/rules.d/99-realsense-libusb.rules > /dev/null
-        echo "KERNEL==\"iio*\", ATTRS{idVendor}==\"8086\", ATTRS{idProduct}==\"0ad5|0afe|0aff|0b00|0b01|0b3a|0b3d|0b64\", RUN+=\"/bin/sh -c 'enfile=/sys/%p/buffer/enable && echo \\\"COUNTER=0; while [ \\\$COUNTER -lt 10 ] && grep -q 0 \$enfile; do sleep 0.01; COUNTER=\\\$((COUNTER+1)); done && echo 0 > \$enfile\\\" | at now'\"" | sudo tee -a /etc/udev/rules.d/99-realsense-libusb.rules > /dev/null
-    fi
+    echo | sudo tee -a /etc/udev/rules.d/99-realsense-libusb.rules > /dev/null
+    echo "KERNEL==\"iio*\", ATTRS{idVendor}==\"8086\", ATTRS{idProduct}==\"0ad5|0afe|0aff|0b00|0b01|0b3a|0b3d|0b64\", RUN+=\"/bin/sh -c '[ \`uname -r | cut -d \\\".\\\" -f1\` -le 4 ] || enfile=/sys/%p/buffer/enable && echo \\\"COUNTER=0; while [ \\\$COUNTER -lt 10 ] && grep -q 0 \$enfile; do sleep 0.01; COUNTER=\\\$((COUNTER+1)); done && echo 0 > \$enfile\\\" | at now'\"" | sudo tee -a /etc/udev/rules.d/99-realsense-libusb.rules > /dev/null
 else
     sudo rm /etc/udev/rules.d/99-realsense-libusb.rules
 fi
