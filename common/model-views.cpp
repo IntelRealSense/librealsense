@@ -2883,14 +2883,32 @@ namespace rs2
                 ss << " 0x" << std::hex << static_cast<int>(round(val)) << " =";
             }
 
+            bool show_max_range = false;
             if (texture->get_last_frame().is<depth_frame>())
             {
-                auto meters = texture->get_last_frame().as<depth_frame>().get_distance(x, y);
+                auto meters = texture->get_last_frame().as<depth_frame>().get_distance(x, y);             
 
                 if (viewer.metric_system)
                     ss << std::dec << " " << std::setprecision(3) << meters << " meters";
                 else
                     ss << std::dec << " " << std::setprecision(3) << meters / FEET_TO_METER << " feet";
+
+                auto ds = sensor_from_frame(texture->get_last_frame())->as<depth_sensor>();
+                
+                if (ds.supports(RS2_OPTION_MAX_USABLE_RANGE))
+                {
+                    if (ds.get_option(RS2_OPTION_MAX_USABLE_RANGE) == 1.0)
+                    {
+                        show_max_range = true;
+                        auto mur_sensor = sensor_from_frame(texture->get_last_frame())->as<max_usable_range_sensor>();
+                        auto max_usable_range = mur_sensor.get_max_usable_range();
+
+                        if (viewer.metric_system)
+                            ss << std::dec << "\nMax usable range: " << std::setprecision(1) << max_usable_range << " meters";
+                        else
+                            ss << std::dec << "\nMax usable range: " << std::setprecision(1) << max_usable_range / FEET_TO_METER << " feet";
+                    }
+                }
             }
 
             std::string msg(ss.str().c_str());
@@ -2898,14 +2916,25 @@ namespace rs2
             ImGui_ScopePushFont(font);
 
             // adjust windows size to the message length
-
+            auto new_line_start_idx = msg.find_first_of('\n');
+            int footer_vertical_size = 35;
             auto width = float(msg.size() * 8);
+
+            // adjust width according to the longest line
+            if (show_max_range)
+            {
+                footer_vertical_size = 50;
+                auto first_line_size = msg.find_first_of('\n') + 1;
+                auto second_line_size = msg.substr(new_line_start_idx).size();
+                width = std::max(first_line_size, second_line_size) * 8;
+            }
+
             auto align = 20;
             width += align - (int)width % align;
 
-            ImVec2 pos{ stream_rect.x + 5, stream_rect.y + stream_rect.h - 35 };
+            ImVec2 pos{ stream_rect.x + 5, stream_rect.y + stream_rect.h - footer_vertical_size };
             ImGui::GetWindowDrawList()->AddRectFilled({ pos.x, pos.y },
-                { pos.x + width, pos.y + 30 }, ImColor(dark_sensor_bg));
+                { pos.x + width, pos.y + footer_vertical_size - 5 }, ImColor(dark_sensor_bg));
 
             ImGui::SetCursorScreenPos({ pos.x + 10, pos.y + 5 });
 

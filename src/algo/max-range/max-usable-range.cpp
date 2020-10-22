@@ -11,9 +11,9 @@ float max_usable_range::get_max_range(float nest) const
     const float thermal = 74.5f;
     const float normalized_nest = nest / 16.0f;
     const float indoor_max_range = 9.0f;
+    const float min_range = 3.0f;
 
     auto temp_range = indoor_max_range;
-    auto expected_max_range = 0.0f;
     auto trimmed_max_range = 0.0f;
 
     // Setting max range based on Nest
@@ -23,20 +23,8 @@ float max_usable_range::get_max_range(float nest) const
         temp_range = 31000.0f * std::pow(normalized_nest, -2.0f) * _processing_gain;
     }
 
-    expected_max_range = std::min(temp_range, indoor_max_range);
+    // expected_max_range should be in range 3-9 [m] at 1 [m] resolution (rounded)
+    auto expected_max_range = std::round(std::min(std::max(temp_range, min_range), indoor_max_range));
 
-    if (expected_max_range == indoor_max_range)
-        trimmed_max_range = indoor_max_range;
-    else if (expected_max_range >= indoor_max_range - 1.5f)
-        trimmed_max_range = indoor_max_range - 1.5f;
-    else if (expected_max_range >= indoor_max_range - 3.0f)
-        trimmed_max_range = indoor_max_range - 3.0f;
-    else if (expected_max_range >= indoor_max_range - 4.5f)
-        trimmed_max_range = indoor_max_range - 4.5f;
-    else if (expected_max_range >= indoor_max_range - 6.0f)
-        trimmed_max_range = indoor_max_range - 6.0f;
-    else if (expected_max_range >= indoor_max_range - 7.5f)
-        trimmed_max_range = indoor_max_range - 7.5f;
-
-    return trimmed_max_range;
+    return expected_max_range;
 }
