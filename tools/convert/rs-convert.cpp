@@ -148,10 +148,11 @@ int main(int argc, char** argv) try
         rs2::frameset frameset;
         uint64_t posCurr = playback.get_position();
 
+        // try_wait_for_frames will keep repeating the last frame at the end of the file,
+        // so we need to exit the look in some other way!
         while (pipe->try_wait_for_frames(&frameset, 1000))
         {
             int posP = static_cast<int>(posCurr * 100. / duration.count());
-
             if (posP > progress)
             {
                 progress = posP;
@@ -159,30 +160,27 @@ int main(int argc, char** argv) try
             }
 
             frameNumber = frameset[0].get_frame_number();
-            auto posNext = playback.get_position();
 
+            bool process_frame = true;
             if (frameNumberStart.isSet() && frameNumber < first_frame)
-                continue;
-            if (frameNumberEnd.isSet() && frameNumber > last_frame)
-                continue;
-            if (startTime.isSet() && posCurr < start_time)
+                process_frame = false;
+            else if (frameNumberEnd.isSet() && frameNumber > last_frame)
+                process_frame = false;
+            else if (startTime.isSet() && posCurr < start_time)
+                process_frame = false;
+            else if (endTime.isSet() && posCurr > end_time)
+                process_frame = false;
+         
+            if( process_frame )
             {
-                posCurr = posNext;
-                continue;
+                plyconverter->convert(frameset);
+                plyconverter->wait();
             }
-            if (endTime.isSet() && posCurr > end_time)
-            {
-                posCurr = posNext;
-                continue;
-            }
-            plyconverter->convert(frameset);
-            plyconverter->wait();
 
-            if (static_cast<int64_t>(posNext - posCurr) < 0)
-            {
+            auto posNext = playback.get_position();
+            // NOTE: posNext will be 0 if there is no next frame!
+            if( posNext <= posCurr )
                 break;
-            }
-
             posCurr = posNext;
         }
     }
