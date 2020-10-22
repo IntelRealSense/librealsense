@@ -148,9 +148,9 @@ int main(int argc, char* argv[])
                         
                         stringstream sstr;
                         sstr << datetime_string() << " " << parsed_log.timestamp() << " " << parsed_log.sequence()
-                            << " " << parsed_log.severity() << " " << parsed_log.message()
-                            << " " << parsed_log.thread_name() << " " << parsed_log.file_name()
-                            << " " << parsed_log.line();
+                            << " " << parsed_log.severity() << " " << parsed_log.thread_name()
+                            << " " << parsed_log.file_name() << " " << parsed_log.line()
+                            << " " << parsed_log.message();
                         
                         fw_log_lines.push_back(sstr.str());
                     }
