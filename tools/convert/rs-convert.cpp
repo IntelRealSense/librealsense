@@ -179,9 +179,10 @@ int main(int argc, char** argv) try
 
             auto posNext = playback.get_position();
 
-            // NOTE: posNext will be 0 if there is no next frame!
-            if( posNext < posCurr )
+
+            if (posNext < posCurr)
                 break;
+
             posCurr = posNext;
         }
     }
@@ -253,9 +254,8 @@ int main(int argc, char** argv) try
 
             const uint64_t posNext = playback.get_position();
             if (posNext < posCurr)
-            {
                 break;
-            }
+
             posCurr = posNext;
         }
 
