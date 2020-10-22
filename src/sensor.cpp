@@ -500,17 +500,46 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_power_lock);
         if (_user_count.fetch_add(1) == 0)
         {
-            _device->set_power_state(platform::D0);
-            for (auto&& xu : _xus) _device->init_xu(xu);
+            try
+            {
+                _device->set_power_state( platform::D0 );
+                for( auto && xu : _xus )
+                    _device->init_xu( xu );
+            }
+            catch( std::exception const & e )
+            {
+                _user_count.fetch_add( -1 );
+                LOG_ERROR( "acquire_power failed: " << e.what() );
+                throw;
+            }
+            catch( ... )
+            {
+                _user_count.fetch_add( -1 );
+                LOG_ERROR( "acquire_power failed" );
+                throw;
+            }
         }
     }
 
     void uvc_sensor::release_power()
     {
-        std::lock_guard<std::mutex> lock(_power_lock);
-        if (_user_count.fetch_add(-1) == 1)
+        std::lock_guard< std::mutex > lock( _power_lock );
+        if( _user_count.fetch_add( -1 ) == 1 )
         {
-            _device->set_power_state(platform::D3);
+            try
+            {
+                _device->set_power_state( platform::D3 );
+            }
+            catch( std::exception const & e )
+            {
+                // TODO may need to change the user-count?
+                LOG_ERROR( "release_power failed: " << e.what() );
+            }
+            catch( ... )
+            {
+                // TODO may need to change the user-count?
+                LOG_ERROR( "release_power failed" );
+            }
         }
     }
 
