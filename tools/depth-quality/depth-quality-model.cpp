@@ -786,6 +786,7 @@ namespace rs2
                 _viewer_model.ppf.reset();
                 _viewer_model.selected_depth_source_uid = -1;
                 _viewer_model.selected_tex_source_uid = -1;
+                _viewer_model.draw_max_usable_range = false;
             }
 
             auto dev = _pipe.get_active_profile().get_device();
