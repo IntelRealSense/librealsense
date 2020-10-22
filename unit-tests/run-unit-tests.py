@@ -238,8 +238,6 @@ for manifest_ctx in grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-# Change back-slash to slash so the path is both windows and linux compatible
-current_dir = current_dir.replace('\\' , '/')
 # this script is located in librealsense/unit-tests, so one directory up is the main repository
 librealsense = os.path.dirname(current_dir)
 
