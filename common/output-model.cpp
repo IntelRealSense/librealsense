@@ -917,16 +917,11 @@ bool output_model::user_defined_command( std::string command, device_models_list
         {
             if( auto dbg = dev.as< rs2::debug_protocol >() )
             {
-                if( dev.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) )
-                {  // Verify minimal version for handling this command
-                    if( ! is_upgradeable( dev.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ), "01.05.0.0" ) )
-                    {
-                        std::vector< uint8_t > special_command
-                            = { 'G', 'E', 'T', '-', 'N', 'E', 'S', 'T' };
-                        auto res = dbg.send_and_receive_raw_data( special_command );
-                        user_defined_command_activated = true;
-                    }
-                }
+                 // Verify minimal version for handling this command
+                 std::vector< uint8_t > special_command
+                     = { 'G', 'E', 'T', '-', 'N', 'E', 'S', 'T' };
+                 auto res = dbg.send_and_receive_raw_data( special_command );
+                 user_defined_command_activated = true;
             }
         }
     }

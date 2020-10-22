@@ -5871,10 +5871,10 @@ TEST_CASE("l500_presets_set_preset", "[live]")
 
         std::map<int, int> expected_ambient_per_preset =
         {
-            {RS2_L500_VISUAL_PRESET_NO_AMBIENT, RS2_AMBIENT_LIGHT_NO_AMBIENT},
-            {RS2_L500_VISUAL_PRESET_LOW_AMBIENT, RS2_AMBIENT_LIGHT_LOW_AMBIENT},
-            {RS2_L500_VISUAL_PRESET_MAX_RANGE, RS2_AMBIENT_LIGHT_NO_AMBIENT},
-            {RS2_L500_VISUAL_PRESET_SHORT_RANGE, RS2_AMBIENT_LIGHT_LOW_AMBIENT}
+            {RS2_L500_VISUAL_PRESET_NO_AMBIENT, RS2_DIGITAL_GAIN_HIGH},
+            {RS2_L500_VISUAL_PRESET_LOW_AMBIENT, RS2_DIGITAL_GAIN_LOW},
+            {RS2_L500_VISUAL_PRESET_MAX_RANGE, RS2_DIGITAL_GAIN_HIGH},
+            {RS2_L500_VISUAL_PRESET_SHORT_RANGE, RS2_DIGITAL_GAIN_LOW}
         };
 
         std::map<int, int> expected_laser_power_per_preset =
@@ -5891,9 +5891,9 @@ TEST_CASE("l500_presets_set_preset", "[live]")
             {
                 ds.set_option(RS2_OPTION_SENSOR_MODE, (float)res);
                 ds.set_option(RS2_OPTION_VISUAL_PRESET, (float)i.first);
-                CAPTURE(ds.get_option(RS2_OPTION_AMBIENT_LIGHT));
-                REQUIRE(ds.get_option(RS2_OPTION_AMBIENT_LIGHT) == i.second);
-                apd_per_ambient[ds.get_option(RS2_OPTION_AMBIENT_LIGHT)] = ds.get_option(RS2_OPTION_AVALANCHE_PHOTO_DIODE);
+                CAPTURE(ds.get_option(RS2_OPTION_DIGITAL_GAIN));
+                REQUIRE(ds.get_option(RS2_OPTION_DIGITAL_GAIN) == i.second);
+                apd_per_ambient[ds.get_option(RS2_OPTION_DIGITAL_GAIN)] = ds.get_option(RS2_OPTION_AVALANCHE_PHOTO_DIODE);
                 auto expected_laser_power = expected_laser_power_per_preset.find(i.first);
                 if (expected_laser_power != expected_laser_power_per_preset.end())
                 {

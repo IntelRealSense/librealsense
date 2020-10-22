@@ -1012,7 +1012,7 @@ namespace ivcam2 {
                     algo::depth_to_rgb_calibration::optimizer::settings settings;
                     settings.is_manual_trigger = _calibration_type == calibration_type::MANUAL;
                     settings.hum_temp = _temp;
-                    settings.ambient = _ambient;
+                    settings.digital_gain = _digital_gain;
                     settings.receiver_gain = _receiver_gain;
                     depth_to_rgb_calibration algo(
                         settings,
@@ -1236,11 +1236,7 @@ namespace ivcam2 {
 
     double ac_trigger::read_temperature()
     {
-        auto hwm = _hwm.lock();
-        if( ! hwm )
-            throw std::runtime_error( "HW monitor is inaccessible - stopping algo" );
-
-        return _dev.get_color_sensor()->read_temperature();
+        return _dev.get_temperatures().HUM_temperature;
     }
 
 
@@ -1300,38 +1296,38 @@ namespace ivcam2 {
         // Algo was written with specific receiver gain (APD) in mind, depending on
         // the FW preset (ambient light)
         auto & depth_sensor = _dev.get_depth_sensor();
-        auto & ambient_light = depth_sensor.get_option( RS2_OPTION_AMBIENT_LIGHT );
-        float raw_ambient = ambient_light.query();
+        auto & digital_gain = depth_sensor.get_option(RS2_OPTION_DIGITAL_GAIN);
+        float raw_digital_gain = digital_gain.query();
         auto & apd = depth_sensor.get_option( RS2_OPTION_AVALANCHE_PHOTO_DIODE );
         float raw_apd = apd.query();
         _receiver_gain = int( raw_apd );
-        _ambient = ( rs2_ambient_light ) int( raw_ambient );
-        switch( _ambient )
+        _digital_gain = ( rs2_digital_gain ) int(raw_digital_gain);
+        switch(_digital_gain)
         {
-        case RS2_AMBIENT_LIGHT_LOW_AMBIENT:  // SHORT
+        case RS2_DIGITAL_GAIN_LOW:
             if( _receiver_gain != 18 )
             {
                 if( ! invalid_reason.empty() )
                     invalid_reason += ", ";
                 invalid_reason += to_string()
-                               << "low-ambient (SHORT) receiver gain (" << raw_apd << ") != 18";
+                               << "receiver gain(" << raw_apd << ") of 18 is expected with low digital gain(SHORT)";
             }
             break;
 
-        case RS2_AMBIENT_LIGHT_NO_AMBIENT:  // LONG
+        case RS2_DIGITAL_GAIN_HIGH:  
             if( _receiver_gain != 9 )
             {
                 if( ! invalid_reason.empty() )
                     invalid_reason += ", ";
                 invalid_reason += to_string()
-                               << "no-ambient (LONG) receiver gain (" << raw_apd << ") != 9";
+                               << "receiver gain(" << raw_apd << ") of 9 is expected with high digital gain(LONG)";
             }
             break;
 
         default:
             if( ! invalid_reason.empty() )
                 invalid_reason += ", ";
-            invalid_reason += to_string() << "invalid (" << raw_ambient << ") ambient preset";
+            invalid_reason += to_string() << "invalid (" << raw_digital_gain << ") digital gain preset";
             break;
         }
 

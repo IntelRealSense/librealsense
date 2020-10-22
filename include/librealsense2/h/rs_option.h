@@ -90,7 +90,8 @@ extern "C" {
         RS2_OPTION_PRE_PROCESSING_SHARPENING, /**< Changes the amount of sharpening in the pre-processed image */
         RS2_OPTION_NOISE_FILTERING, /**< Control edges and background noise */
         RS2_OPTION_INVALIDATION_BYPASS, /**< Enable\disable pixel invalidation */
-        RS2_OPTION_AMBIENT_LIGHT, /**< Change the depth ambient light see rs2_ambient_light for values */
+        RS2_OPTION_AMBIENT_LIGHT, /**< DEPRECATED! - Use RS2_OPTION_DIGITAL_GAIN instead. */
+        RS2_OPTION_DIGITAL_GAIN = RS2_OPTION_AMBIENT_LIGHT, /**< Change the depth digital gain see rs2_digital_gain for values */
         RS2_OPTION_SENSOR_MODE, /**< The resolution mode: see rs2_sensor_mode for values */
         RS2_OPTION_EMITTER_ALWAYS_ON, /**< Enable Laser On constantly (GS SKU Only) */
         RS2_OPTION_THERMAL_COMPENSATION, /**< Depth Thermal Compensation for selected D400 SKUs */
@@ -100,7 +101,7 @@ extern "C" {
         RS2_OPTION_HDR_ENABLED,  /**< Enable / disable HDR */
         RS2_OPTION_SEQUENCE_NAME, /**< HDR Sequence name */
         RS2_OPTION_SEQUENCE_SIZE, /**< HDR Sequence size */
-        RS2_OPTION_SEQUENCE_ID, /**< HDR Sequence ID - 0 is not HDR; sequence ID for HDR configuartion starts from 1 */
+        RS2_OPTION_SEQUENCE_ID, /**< HDR Sequence ID - 0 is not HDR; sequence ID for HDR configuration starts from 1 */
         RS2_OPTION_HUMIDITY_TEMPERATURE, /**< Humidity temperature [Deg Celsius]*/
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
@@ -163,13 +164,21 @@ extern "C" {
     } rs2_sensor_mode;
     const char* rs2_sensor_mode_to_string(rs2_sensor_mode preset);
 
-    /** \brief ambient light for RS2_OPTION_AMBIENT_LIGHT option. */
+    /** \brief  DEPRECATED! - Use RS2_OPTION_DIGITAL_GAIN instead. */
     typedef enum rs2_ambient_light
     {
         RS2_AMBIENT_LIGHT_NO_AMBIENT = 1,
         RS2_AMBIENT_LIGHT_LOW_AMBIENT = 2,
     } rs2_ambient_light;
     const char* rs2_ambient_light_to_string(rs2_ambient_light preset);
+
+    /** \brief digital gain for RS2_OPTION_DIGITAL_GAIN option. */
+    typedef enum rs2_digital_gain
+    {
+        RS2_DIGITAL_GAIN_HIGH = 1,
+        RS2_DIGITAL_GAIN_LOW = 2,
+    } rs2_digital_gain;
+    const char* rs2_digital_gain_to_string(rs2_digital_gain preset);
 
     /** \brief values for RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH option. */
     typedef enum rs2_cah_trigger

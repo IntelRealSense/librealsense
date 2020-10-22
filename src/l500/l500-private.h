@@ -26,7 +26,7 @@ namespace librealsense
     {
         // L500 depth XU identifiers
         const uint8_t L500_HWMONITOR = 1;
-        const uint8_t L500_AMBIENT = 2;
+        const uint8_t L500_DIGITAL_GAIN = 2; // Renamed from L500_AMBIENT
         const uint8_t L500_ERROR_REPORTING = 3;
 
         const uint32_t FLASH_SIZE = 0x00200000;
@@ -377,19 +377,29 @@ namespace librealsense
             double APD_temperature;
             double HUM_temperature;
             double AlgoTermalLddAvg_temperature;
+
+            temperatures()
+                : LDD_temperature(0.)
+                , MC_temperature(0.)
+                , MA_temperature(0.)
+                , APD_temperature(0.)
+                , HUM_temperature(0.)
+                , AlgoTermalLddAvg_temperature(0.) { }
         };
 
         //FW versions >= 1.5.0.0 added to the response vector the nest AVG value
-        struct extended_temperatures {
-            temperatures base_temperatures;
-            double nest_avg;
+        struct extended_temperatures : public temperatures 
+        {
+            double nest_avg; // NEST = Noise Estimation
+
+            extended_temperatures() : temperatures(), nest_avg(.0) {}
         };
 #pragma pack( pop )
 
         rs2_extrinsics get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
-
+        
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
-                                         const platform::uvc_device_info& info, platform::usb_device_info& result);
+        const platform::uvc_device_info& info, platform::usb_device_info& result);
 
         class l500_temperature_options : public readonly_option
         {
@@ -400,13 +410,16 @@ namespace librealsense
 
             bool is_enabled() const override { return true; }
 
-            const char* get_description() const override { return ""; }
+            const char * get_description() const override { return _description.c_str(); }
 
-            explicit l500_temperature_options(hw_monitor* hw_monitor, rs2_option opt);
+            explicit l500_temperature_options(l500_device *l500_depth_dev,
+                                               rs2_option opt,
+                                               const std::string& description );
 
         private:
             rs2_option _option;
-            hw_monitor* _hw_monitor;
+            l500_device *_l500_depth_dev;
+            std::string _description;
         };
 
         class l500_timestamp_reader : public frame_timestamp_reader

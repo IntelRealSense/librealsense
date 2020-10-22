@@ -25,6 +25,8 @@
 #include "../common/fw/firmware-version.h"
 #include "ac-trigger.h"
 #include "algo/depth-to-rgb-calibration/debug.h"
+#include "../common/utilities/time/periodic_timer.h"
+
 
 
 namespace librealsense
@@ -50,7 +52,8 @@ namespace librealsense
         :device(ctx, group), global_time_interface(), 
         _depth_stream(new stream(RS2_STREAM_DEPTH)),
         _ir_stream(new stream(RS2_STREAM_INFRARED)),
-        _confidence_stream(new stream(RS2_STREAM_CONFIDENCE))
+        _confidence_stream(new stream(RS2_STREAM_CONFIDENCE)),
+        _temperatures()
     {
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         auto pid = group.uvc_devices.front().pid;
@@ -614,33 +617,133 @@ namespace librealsense
 
         if (command_str == "GET-NEST")
         {
-            // Handle extended temperature command
-            auto nest_response = _hw_monitor->send(command{ ivcam2::TEMPERATURES_GET });
-            if (nest_response.size() < sizeof(extended_temperatures))
+            auto minimal_fw_ver = firmware_version("1.5.0.0");
+            if (_fw_version >= minimal_fw_ver)
             {
-                throw invalid_value_exception(to_string() <<
-                    "Extended temperatures get FW command failed, size expected: " << sizeof(extended_temperatures )
-                    << " , size received: " << nest_response.size() );
+                // Handle extended temperature command
+                LOG_INFO("Nest AVG: " << get_temperatures().nest_avg);
+
+                // Handle other commands (all results log the first byte)
+                log_FW_response_first_byte(*_hw_monitor, "Gain trim",
+                    command(ivcam2::IRB, 0x6C, 0x2, 0x1),
+                    sizeof(uint8_t));
+                log_FW_response_first_byte(*_hw_monitor, "IPF gain",
+                    command(ivcam2::MRD, 0xA003007C, 0xA0030080),
+                    sizeof(uint32_t));
+                log_FW_response_first_byte(*_hw_monitor, "APB VBR",
+                    command(ivcam2::AMCGET, 0x4, 0x0, 0x0),
+                    sizeof(uint32_t));
+                return std::vector< uint8_t >();
             }
-
-            auto const & ext_temp
-                = *(reinterpret_cast<extended_temperatures *>(nest_response.data()));
-            LOG_INFO("Nest AVG: " << ext_temp.nest_avg);
-
-            // Handle other commands (all results log the first byte)
-            log_FW_response_first_byte(*_hw_monitor, "Gain trim",
-                command(ivcam2::IRB, 0x6C, 0x2, 0x1),
-                sizeof(uint8_t));
-            log_FW_response_first_byte(*_hw_monitor, "IPF gain",
-                command(ivcam2::MRD, 0xA003007C, 0xA0030080),
-                sizeof(uint32_t));
-            log_FW_response_first_byte(*_hw_monitor, "APB VBR",
-                command(ivcam2::AMCGET, 0x4, 0x0, 0x0),
-                sizeof(uint32_t));
-            return std::vector< uint8_t >();
+            else
+                throw librealsense::invalid_value_exception(
+                    to_string() << "get-nest command requires FW version >= " << minimal_fw_ver
+                                << ", current version is: " << _fw_version );
         }
 
         return _hw_monitor->send(input);
+    }
+
+
+    ivcam2::extended_temperatures l500_device::get_temperatures() const
+    {
+        ivcam2::extended_temperatures rv;
+        if (_have_temperatures)
+        {
+            std::lock_guard<std::mutex> lock(_temperature_mutex);
+            rv = _temperatures;
+        }
+        else
+        {
+            auto fw_version_support_nest = (_fw_version >= firmware_version("1.5.0.0")) ? true : false;
+            auto expected_size = fw_version_support_nest ? sizeof(extended_temperatures)
+                : sizeof(temperatures);
+
+
+            const auto res = _hw_monitor->send(command{ TEMPERATURES_GET });
+            // Verify read
+            if (res.size() < expected_size)
+            {
+                throw std::runtime_error(
+                    to_string() << "TEMPERATURES_GET - Invalid result size! expected: "
+                    << expected_size << " bytes, "
+                    "got: " << res.size() << " bytes");
+            }
+
+            if (fw_version_support_nest)
+                rv = *reinterpret_cast<extended_temperatures const *>(res.data());
+            else
+                *reinterpret_cast<temperatures *>(&rv) = *reinterpret_cast<temperatures const *>(res.data());
+        }
+        return rv;
+    }
+
+    void l500_device::start_temperatures_reader()
+    {
+        LOG_DEBUG("Starting temperature fetcher thread");
+        _keep_reading_temperature = true;
+        _temperature_reader = std::thread( [&]() {
+            try
+            {
+                auto fw_version_support_nest = _fw_version >= firmware_version( "1.5.0.0" );
+
+                auto expected_size = fw_version_support_nest ? sizeof( extended_temperatures )
+                                                             : sizeof( temperatures );
+
+                utilities::time::periodic_timer second_has_passed(std::chrono::seconds(1));
+                second_has_passed.set_expired(); // Force condition true on start
+
+
+                while (_keep_reading_temperature)
+                {
+                    if (second_has_passed) // Update temperatures every second
+                    {
+                        const auto res = _hw_monitor->send(command{ TEMPERATURES_GET });
+                        // Verify read
+                        if (res.size() < expected_size)
+                        {
+                            throw std::runtime_error(
+                                to_string() << "TEMPERATURES_GET - Invalid result size!, expected: "
+                                << expected_size << " bytes, "
+                                "got: " << res.size() << " bytes");
+                        }
+               
+                        std::lock_guard<std::mutex> lock(_temperature_mutex);
+
+                        memset(&_temperatures, sizeof(_temperatures), 0);
+                        if (fw_version_support_nest)
+                            _temperatures = *reinterpret_cast<extended_temperatures const *>(res.data());
+                        else
+                            *reinterpret_cast<temperatures *>(&_temperatures) = *reinterpret_cast<temperatures const *>(res.data());
+                       
+                        _have_temperatures = true;
+                    }
+               
+                    // Do not hold the device alive too long if reader thread was turned off
+                    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+                }
+             }
+             catch (...)
+             {
+                 LOG_WARNING("unable to read temperatures - closing temperatures reader");
+             }
+             _have_temperatures = false;
+         });
+     }
+    
+    void l500_device::stop_temperatures_reader()
+    {
+        if (_keep_reading_temperature)
+        {
+            LOG_DEBUG("Stopping temperature fetcher thread");
+            _keep_reading_temperature = false;
+            _have_temperatures = false;
+        }
+
+        if (_temperature_reader.joinable())
+        {
+            _temperature_reader.join();
+        }
     }
 
     notification l500_notification_decoder::decode(int value)
