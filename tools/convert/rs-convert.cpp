@@ -146,11 +146,11 @@ int main(int argc, char** argv) try
         auto frameNumber = 0ULL;
 
         rs2::frameset frameset;
-        uint64_t posLast = playback.get_position();
+        uint64_t posCurr = playback.get_position();
 
         while (pipe->try_wait_for_frames(&frameset, 1000))
         {
-            int posP = static_cast<int>(posLast * 100. / duration.count());
+            int posP = static_cast<int>(posCurr * 100. / duration.count());
 
             if (posP > progress)
             {
@@ -159,26 +159,31 @@ int main(int argc, char** argv) try
             }
 
             frameNumber = frameset[0].get_frame_number();
-            auto frame_time = playback.get_position();
+            auto posNext = playback.get_position();
 
             if (frameNumberStart.isSet() && frameNumber < first_frame)
                 continue;
             if (frameNumberEnd.isSet() && frameNumber > last_frame)
                 continue;
-            if (startTime.isSet() && frame_time < start_time)
+            if (startTime.isSet() && posCurr < start_time)
+            {
+                posCurr = posNext;
                 continue;
-            if (endTime.isSet() && frame_time > end_time)
+            }
+            if (endTime.isSet() && posCurr > end_time)
+            {
+                posCurr = posNext;
                 continue;
-
+            }
             plyconverter->convert(frameset);
             plyconverter->wait();
 
-            if (static_cast<int64_t>(frame_time - posLast) < 0)
+            if (static_cast<int64_t>(posNext - posCurr) < 0)
             {
                 break;
             }
 
-            posLast = frame_time;
+            posCurr = posNext;
         }
     }
 
