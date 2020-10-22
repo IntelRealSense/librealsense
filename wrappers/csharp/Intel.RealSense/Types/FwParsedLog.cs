@@ -57,6 +57,11 @@ namespace Intel.RealSense
             return NativeMethods.rs2_get_fw_log_parsed_timestamp(Handle, out error);
         }
 
+        public uint GetSequence()
+        {
+            object error;
+            return NativeMethods.rs2_get_fw_log_parsed_sequence(Handle, out error);
+        }
 
     }
 }
