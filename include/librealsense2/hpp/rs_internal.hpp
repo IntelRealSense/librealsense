@@ -559,7 +559,7 @@ namespace rs2
             return parsingResult;
         }
 
-        int get_num_of_fw_logs()
+        int get_num_of_fw_logs() const
         {
             rs2_error* e = nullptr;
             int num_of_fw_logs = rs2_get_num_of_fw_logs(_dev.get(), &e);
