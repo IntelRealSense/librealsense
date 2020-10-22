@@ -289,13 +289,41 @@ namespace librealsense
 
     void max_usable_range_option::set(float value)
     {
-        // TODO if conditions are not meet throw exception!
-        //if (_fw_version < firmware_version("1.5.0.0")
-        //    throw
-        // “Max Usable Range” only supports VGA resolution and Max Range preset
-        // If the system is configured with unsupported resolution or preset and the user attempts to enable “Max Usable Range” feature, a message should notify the user to set VGA and Max Range preset before attempting to enable “Max Usable Range”
-        // If “Max Usable Range” is enabled while camera is not streaming, system will automatically select VGA and Max Range preset and not allow changing those settings.
-        
+        if (value == 1.0f)
+        {
+            auto &sensor_mode_option = _l500_depth_dev->get_depth_sensor().get_option(RS2_OPTION_SENSOR_MODE);
+            auto sensor_mode = sensor_mode_option.query();
+            bool sensor_mode_is_vga = (sensor_mode == rs2_sensor_mode::RS2_SENSOR_MODE_VGA);
+
+            bool visual_preset_is_max_range = _l500_depth_dev->get_depth_sensor().is_max_range_preset();
+
+            if (_l500_depth_dev->get_depth_sensor().is_streaming())
+            {
+                if (!sensor_mode_is_vga || !visual_preset_is_max_range)
+                    throw wrong_api_call_sequence_exception("Please set 'VGA' and 'Max Range' preset before enabling Max Usable Range");
+            }
+            else
+            {
+                if (!visual_preset_is_max_range)
+                {
+                    auto &visual_preset_option = _l500_depth_dev->get_depth_sensor().get_option(RS2_OPTION_VISUAL_PRESET);
+                    visual_preset_option.set(rs2_l500_visual_preset::RS2_L500_VISUAL_PRESET_MAX_RANGE);
+                    LOG_INFO("Visual Preset was changed to: " << visual_preset_option.get_value_description(rs2_l500_visual_preset::RS2_L500_VISUAL_PRESET_MAX_RANGE));
+                }
+
+                if (!sensor_mode_is_vga)
+                {
+                    sensor_mode_option.set(rs2_sensor_mode::RS2_SENSOR_MODE_VGA);
+                    LOG_INFO("Sensor Mode was changed to: " << sensor_mode_option.get_value_description(rs2_sensor_mode::RS2_SENSOR_MODE_VGA));
+                }
+            }
+
+            // TODO!!
+            // If “Max Usable Range” is enabled while camera is not streaming, system will automatically select VGA and Max Range preset 
+            // and not allow changing those settings.!!
+
+        }
+
         bool_option::set(value);
     }
 

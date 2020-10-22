@@ -527,12 +527,12 @@ namespace rs2
                 if (ImGui::Checkbox(label.c_str(), &bool_value))
                 {
                     res = true;
-                    value = bool_value ? 1.0f : 0.0f;
                     try
                     {
                         model.add_log(to_string() << "Setting " << opt << " to "
-                            << value << " (" << (bool_value ? "ON" : "OFF") << ")");
-                        endpoint->set_option(opt, value);
+                            << (bool_value? "1.0" : "0.0") << " (" << (bool_value ? "ON" : "OFF") << ")");
+                        endpoint->set_option(opt, bool_value ? 1.f : 0.f);
+                        value = endpoint->get_option(opt);
                         *invalidate_flag = true;
                     }
                     catch (const error& e)
@@ -6201,6 +6201,11 @@ namespace rs2
                             {
                                 if (serialize && opt == RS2_OPTION_VISUAL_PRESET)
                                     continue;
+                                if (opt == RS2_OPTION_MAX_USABLE_RANGE && !viewer.draw_max_usable_range)
+                                {
+                                    continue;
+                                }
+
                                 if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, *viewer.not_model))
                                 {
                                     get_curr_advanced_controls = true;

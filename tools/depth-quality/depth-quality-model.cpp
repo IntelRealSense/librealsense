@@ -786,7 +786,6 @@ namespace rs2
                 _viewer_model.ppf.reset();
                 _viewer_model.selected_depth_source_uid = -1;
                 _viewer_model.selected_tex_source_uid = -1;
-                _viewer_model.draw_max_usable_range = false;
             }
 
             auto dev = _pipe.get_active_profile().get_device();
@@ -799,6 +798,7 @@ namespace rs2
 
             _depth_sensor_model->draw_streams_selector = false;
             _depth_sensor_model->draw_fps_selector = true;
+            _viewer_model.draw_max_usable_range = false;
 
             // Retrieve stereo baseline for supported devices
             auto baseline_mm = -1.f;

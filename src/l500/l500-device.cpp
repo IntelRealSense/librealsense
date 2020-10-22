@@ -208,11 +208,11 @@ namespace librealsense
         is_zo_enabled_opt->set(false);
         depth_sensor.register_option(RS2_OPTION_ZERO_ORDER_ENABLED, is_zo_enabled_opt);
 
-        auto enable_max_usable_range = std::make_shared<max_usable_range_option>();
-        depth_sensor.register_option(RS2_OPTION_MAX_USABLE_RANGE, enable_max_usable_range);
-
         if( _fw_version >= firmware_version( "1.5.0.0" ) )
         {
+            auto enable_max_usable_range = std::make_shared<max_usable_range_option>(this);
+            depth_sensor.register_option(RS2_OPTION_MAX_USABLE_RANGE, enable_max_usable_range);
+
             // TODO may not need auto-cal if there's no color sensor, like on the rs500...
             _autocal = std::make_shared< ac_trigger >( *this, _hw_monitor );
 

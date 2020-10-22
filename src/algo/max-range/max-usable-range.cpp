@@ -20,11 +20,11 @@ float max_usable_range::get_max_range(float nest) const
     if (normalized_nest > thermal)
     {
         // Analyzing reflectivity based on 85 % reflectivity data
-        temp_range = 31000.0f * std::pow(normalized_nest, -2.0f) * _processing_gain;
+        temp_range = 31000.0f * pow(normalized_nest, -2.0f) * _processing_gain;
     }
 
     // expected_max_range should be in range 3-9 [m] at 1 [m] resolution (rounded)
-    auto expected_max_range = std::round(std::min(std::max(temp_range, min_range), indoor_max_range));
+    auto expected_max_range = round(std::min(std::max(temp_range, min_range), indoor_max_range));
 
     return expected_max_range;
 }

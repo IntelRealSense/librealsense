@@ -257,9 +257,9 @@ namespace librealsense
         void open(const stream_profiles& requests) override;
         void stop() override;
         float get_depth_offset() const;
+        bool is_max_range_preset() const;
 
     private:
-        bool is_long_preset() const;
 
         action_delayer _action_delayer;
         l500_device * const _owner;
