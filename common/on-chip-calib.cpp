@@ -77,8 +77,9 @@ namespace rs2
         return res;
     }
 
-    void on_chip_calib_manager::start_viewer(int w, int h, int fps, invoker invoke)
+    bool on_chip_calib_manager::start_viewer(int w, int h, int fps, invoker invoke)
     {
+        bool frame_arrived = false;
         try
         {
             if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
@@ -167,7 +168,6 @@ namespace rs2
             });
 
             // Wait for frames to arrive
-            bool frame_arrived = false;
             int count = 0;
             while (!frame_arrived && count++ < 200)
             {
@@ -185,6 +185,8 @@ namespace rs2
             }
         }
         catch (...) {}
+
+        return frame_arrived;
     }
 
     std::pair<float, float> on_chip_calib_manager::get_metric(bool use_new)
@@ -486,14 +488,40 @@ namespace rs2
         stop_viewer(invoke);
 
         _ui = std::make_shared<subdevice_ui_selection>(_sub->ui);
+        std::this_thread::sleep_for(std::chrono::milliseconds(600));
 
         // Switch into special Auto-Calibration mode
-        start_viewer(256, 144, 90, invoke);
+        bool started = start_viewer(256, 144, 90, invoke);
+        if (!started)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(600));
+            started = start_viewer(256, 144, 90, invoke);
+        }
+
+        if (!started)
+        {
+            log(to_string() << "Failed to start streaming");
+            throw std::runtime_error("Failed to start streaming before calibration!");
+        }
 
         if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
             get_ground_truth();
         else
-            calibrate();
+        {
+            try
+            {
+                calibrate();
+            }
+            catch (...)
+            {
+                log(to_string() << "Calibration failed with exception");
+                stop_viewer(invoke);
+                _sub->ui = *_ui;
+                if (_was_streaming)
+                    start_viewer(0, 0, 0, invoke);
+                throw;
+            }
+        }
 
         if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
             log(to_string() << "Tare ground truth is got: " << ground_truth);

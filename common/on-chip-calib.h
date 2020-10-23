@@ -114,7 +114,7 @@ namespace rs2
         bool _restored = true;
 
         void stop_viewer(invoker invoke);
-        void start_viewer(int w, int h, int fps, invoker invoke);
+        bool start_viewer(int w, int h, int fps, invoker invoke);
     };
 
     // Auto-calib notification model is managing the UI state-machine
