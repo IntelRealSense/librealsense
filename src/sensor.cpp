@@ -138,6 +138,7 @@ namespace librealsense
 
     rs2_format sensor_base::fourcc_to_rs2_format(uint32_t fourcc_format) const
     {
+#if (0)
         rs2_format f;
 
         if (_fourcc_to_rs2_format->end() == std::find_if(_fourcc_to_rs2_format->begin(), _fourcc_to_rs2_format->end(), [&fourcc_format, &f](const std::pair<uint32_t, rs2_format>& p) {
@@ -151,11 +152,24 @@ namespace librealsense
         {
             f = RS2_FORMAT_ANY; // Format not found.
         }
+#else
+        rs2_format f = RS2_FORMAT_ANY;
+
+        std::find_if(_fourcc_to_rs2_format->begin(), _fourcc_to_rs2_format->end(), [&fourcc_format, &f](const std::pair<uint32_t, rs2_format>& p) {
+            if (p.first == fourcc_format)
+            {
+                f = p.second;
+                return true;
+            }
+            return false;
+        });
+#endif
         return f;
     }
 
     rs2_stream sensor_base::fourcc_to_rs2_stream(uint32_t fourcc_format) const
     {
+#if (0)
         rs2_stream s;
 
         if (_fourcc_to_rs2_stream->end() == std::find_if(_fourcc_to_rs2_stream->begin(), _fourcc_to_rs2_stream->end(), [&fourcc_format, &s](const std::pair<uint32_t, rs2_stream>& p) {
@@ -169,6 +183,18 @@ namespace librealsense
         {
             s = RS2_STREAM_ANY; // Stream with selected format not found.
         }
+#else
+        rs2_stream s = RS2_STREAM_ANY;
+
+        std::find_if(_fourcc_to_rs2_stream->begin(), _fourcc_to_rs2_stream->end(), [&fourcc_format, &s](const std::pair<uint32_t, rs2_stream>& p) {
+            if (p.first == fourcc_format)
+            {
+                s = p.second;
+                return true;
+            }
+            return false;
+        });
+#endif
         return s;
     }
 
