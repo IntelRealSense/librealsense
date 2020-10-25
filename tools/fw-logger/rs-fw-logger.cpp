@@ -100,29 +100,10 @@ int main(int argc, char* argv[])
             }
 
             bool are_there_remaining_flash_logs_to_pull = true;
-            std::chrono::steady_clock::time_point time_of_previous_polling_ms;
-            bool is_first_iteration = true;;
+            auto time_of_previous_polling_ms = std::chrono::high_resolution_clock::now();
 
             while (hub.is_connected(dev))
             {
-                auto num_of_messages = fw_log_device.get_num_of_fw_logs();
-                if (is_first_iteration)
-                {
-                    is_first_iteration = false;
-                    time_of_previous_polling_ms = std::chrono::high_resolution_clock::now();
-                }
-                else if (num_of_messages == 0)
-                {
-                    auto current_time = std::chrono::high_resolution_clock::now();
-                    auto time_since_previous_polling_ms = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - time_of_previous_polling_ms).count();
-                    //std::cout << "current_time - time_of_previous_polling_ms = " << time_since_previous_polling_ms << ", polling_interval_ms = " << polling_interval_ms << std::endl;
-                    if (time_since_previous_polling_ms < polling_interval_ms)
-                    {
-                        //std::cout << "sleeping_time = " << polling_interval_ms - time_since_previous_polling_ms << std::endl;
-                        std::this_thread::sleep_for(chrono::milliseconds(polling_interval_ms - time_since_previous_polling_ms));
-                    }
-                    time_of_previous_polling_ms = std::chrono::high_resolution_clock::now();
-                }
                 if (are_flash_logs_requested && !are_there_remaining_flash_logs_to_pull)
                 {
                     should_loop_end = true;
@@ -174,6 +155,19 @@ int main(int argc, char* argv[])
                     {
                         are_there_remaining_flash_logs_to_pull = false;
                     }
+                }
+                auto num_of_messages = fw_log_device.get_num_of_fw_logs();
+                if (num_of_messages == 0)
+                {
+                    auto current_time = std::chrono::high_resolution_clock::now();
+                    auto time_since_previous_polling_ms = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - time_of_previous_polling_ms).count();
+                    //std::cout << "current_time - time_of_previous_polling_ms = " << time_since_previous_polling_ms << ", polling_interval_ms = " << polling_interval_ms << std::endl;
+                    if (time_since_previous_polling_ms < polling_interval_ms)
+                    {
+                        //std::cout << "sleeping_time = " << polling_interval_ms - time_since_previous_polling_ms << std::endl;
+                        std::this_thread::sleep_for(chrono::milliseconds(polling_interval_ms - time_since_previous_polling_ms));
+                    }
+                    time_of_previous_polling_ms = std::chrono::high_resolution_clock::now();
                 }
             }
         }
