@@ -2904,11 +2904,15 @@ namespace rs2
                             show_max_range = true;
                             auto mur_sensor = ds.as<max_usable_range_sensor>();
                             auto max_usable_range = mur_sensor.get_max_usable_depth_range();
+                            const float MIN_RANGE = 3.0f;
+                            const float MAX_RANGE = 9.0f;
+                            // display maximu, usable range in range 3-9 [m] at 1 [m] resolution (rounded)
+                            auto max_usable_range_rounded = round(std::min(std::max(max_usable_range, MIN_RANGE), MAX_RANGE));
 
                             if (viewer.metric_system)
-                                ss << std::dec << "\nMax usable range: " << std::setprecision(1) << max_usable_range << " meters";
+                                ss << std::dec << "\nMax usable range: " << std::setprecision(1) << max_usable_range_rounded << " meters";
                             else
-                                ss << std::dec << "\nMax usable range: " << std::setprecision(1) << max_usable_range / FEET_TO_METER << " feet";
+                                ss << std::dec << "\nMax usable range: " << std::setprecision(1) << max_usable_range_rounded / FEET_TO_METER << " feet";
                         }
                     }
                 }
