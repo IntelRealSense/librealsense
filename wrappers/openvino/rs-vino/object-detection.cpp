@@ -158,6 +158,10 @@ namespace openvino_helpers
 
     std::vector< object_detection::Result > object_detection::fetch_results()
     {
+        if (_output_layer_name == "")
+        {
+            THROW_IE_EXCEPTION << "Worker thread should finish!";
+        }
         std::vector< Result > results;
         const float *detections = _request->GetBlob( _output_layer_name )->buffer().as<float *>();
 
