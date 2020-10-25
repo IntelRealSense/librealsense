@@ -9,9 +9,9 @@ static const float THERMAL = 74.5f;
 static const float INDOOR_MAX_RANGE = 9.0f;
 
 // Based off of code in RS5-8358
-float librealsense::algo::max_usable_range::l500::max_usable_range(float nest)
+float librealsense::algo::max_usable_range::l500::max_usable_range(float noise_esimation)
 {
-    const float normalized_nest = nest / 16.0f;
+    const float normalized_nest = noise_esimation / 16.0f;
 
     auto expected_max_range = INDOOR_MAX_RANGE;
 

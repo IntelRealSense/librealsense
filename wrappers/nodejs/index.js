@@ -4944,6 +4944,8 @@ const option = {
   OPTION_HUMIDITY_TEMPERATURE: RS2.RS2_OPTION_HUMIDITY_TEMPERATURE,
   OPTION_ENABLE_MAX_USABLE_RANGE: RS2.RS2_OPTION_ENABLE_MAX_USABLE_RANGE,
   OPTION_ALTERNATE_IR: RS2.RS2_OPTION_ALTERNATE_IR,
+  OPTION_NOISE_ESTIMATION: RS2.RS2_OPTION_NOISE_ESTIMATION,
+  OPTION_ENABLE_IR_REFLECTIVITY: RS2.RS2_OPTION_ENABLE_IR_REFLECTIVITY,
   /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
@@ -5100,6 +5102,10 @@ const option = {
         return this.option_enable_max_usable_range;
       case this.OPTION_ALTERNATE_IR:
         return this.option_alternate_ir;
+      case this.OPTION_NOISE_ESTIMATION:
+        return this.option_noise_estimation;
+      case this.ENABLE_IR_REFLECTIVITY:
+        return this.option_enable_ir_reflectivity;
       default:
         throw new TypeError(
             'option.optionToString(option) expects a valid value as the 1st argument');

@@ -84,8 +84,9 @@ public enum Option {
     SEQUENCE_ID(79),
     HUMIDITY_TEMPERATURE(80),
     ENABLE_MAX_USABLE_RANGE(81),
-    ALTERNATE_IR(82);
-
+    ALTERNATE_IR(82),
+    NOISE_ESTIMATION(83),
+    ENABLE_IR_REFLECTIVITY(84);
     private final int mValue;
 
     private Option(int value) { mValue = value; }

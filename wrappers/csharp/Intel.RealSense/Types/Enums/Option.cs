@@ -261,6 +261,13 @@ namespace Intel.RealSense
          EnableMaxUsableRange = 81,
 
         /// <summary>Turn on/off the alternate IR, When enabling alternate IR, the IR image is holding the amplitude of the depth correlation. </summary>
-        AlternateIR = 82
+        AlternateIR = 82,
+
+        /// <summary>Noise estimation on the IR image</summary>
+        NoiseEstimation = 83,
+
+        /// <summary>Enables data collection for calculating IR pixel reflectivity</summary>
+        EnableIrReflectivity = 84
+
     }
 }

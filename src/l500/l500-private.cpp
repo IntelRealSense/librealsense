@@ -198,5 +198,11 @@ namespace librealsense
         }
 
 
-    } // librealsense::ivcam2
+        float nest_option::query() const
+        {
+            auto temperature_data = _l500_depth_dev->get_temperatures();
+            return temperature_data.nest_avg;
+        }
+
+} // librealsense::ivcam2
 } // namespace librealsense

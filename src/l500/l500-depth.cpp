@@ -107,6 +107,10 @@ namespace librealsense
                                                           RS2_OPTION_HUMIDITY_TEMPERATURE,
                                                           "Humidity temperature" ) );
 
+        depth_sensor.register_option(
+            RS2_OPTION_NOISE_ESTIMATION,
+            std::make_shared< nest_option >( this, "Noise estimation" ) );
+
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_ir_stream);
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_confidence_stream);
 
@@ -370,9 +374,9 @@ namespace librealsense
             throw librealsense::wrong_api_call_sequence_exception("depth sensor is not streaming!");
         }
 
-       float nest = static_cast<float>(_owner->get_temperatures().nest_avg);
+       float noise_estimation = static_cast<float>(_owner->get_temperatures().nest_avg);
 
-       return l500::max_usable_range(nest);
+       return l500::max_usable_range(noise_estimation);
     }
 
     // We want to disable max-usable-range when not in a particular preset:

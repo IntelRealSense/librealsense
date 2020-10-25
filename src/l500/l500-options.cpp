@@ -349,4 +349,57 @@ namespace librealsense
                "Values are rounded to whole meter values and are between 3 meters and 9 meters. "
                "Max range refers to the center 10% of the frame.";
     }
+
+    void ir_reflectivity_option::set(float value)
+    {
+        if (value == 1.0f)
+        {
+            auto &sensor_mode_option = _l500_depth_dev->get_depth_sensor().get_option(RS2_OPTION_SENSOR_MODE);
+            auto sensor_mode = sensor_mode_option.query();
+            bool sensor_mode_is_vga = (sensor_mode == rs2_sensor_mode::RS2_SENSOR_MODE_VGA);
+
+            bool visual_preset_is_max_range = _l500_depth_dev->get_depth_sensor().is_max_range_preset();
+
+            if (_l500_depth_dev->get_depth_sensor().is_streaming())
+            {
+                if (!sensor_mode_is_vga || !visual_preset_is_max_range)
+                    throw wrong_api_call_sequence_exception("Please set 'VGA' and 'Max Range' preset before enabling IR Reflectivity");
+            }
+            else
+            {
+                if (!visual_preset_is_max_range)
+                {
+                    auto &visual_preset_option = _l500_depth_dev->get_depth_sensor().get_option(RS2_OPTION_VISUAL_PRESET);
+                    visual_preset_option.set(rs2_l500_visual_preset::RS2_L500_VISUAL_PRESET_MAX_RANGE);
+                    LOG_INFO("Visual Preset was changed to: " << visual_preset_option.get_value_description(rs2_l500_visual_preset::RS2_L500_VISUAL_PRESET_MAX_RANGE));
+                }
+
+                if (!sensor_mode_is_vga)
+                {
+                    sensor_mode_option.set(rs2_sensor_mode::RS2_SENSOR_MODE_VGA);
+                    LOG_INFO("Sensor Mode was changed to: " << sensor_mode_option.get_value_description(rs2_sensor_mode::RS2_SENSOR_MODE_VGA));
+                }
+            }
+
+            auto &max_usable_range_option = _l500_depth_dev->get_depth_sensor().get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE);
+            if (max_usable_range_option.query() != 1.0f)
+            {
+                max_usable_range_option.set(1.0f);
+                LOG_INFO("Max Usable Range was off - turning it on");
+            }
+        }
+
+        bool_option::set(value);
+    }
+
+
+
+    const char * ir_reflectivity_option::get_description() const
+    {
+
+        return "IR Reflectivity Tool calculates the percentage of IR light reflected by the "
+               "object and returns to the camera for processing.\nFor example, a value of 60% means "
+               "that 60% of the IR light projected by the camera is reflected by the object and returns "
+               "to the camera.";
+    }
 }  // namespace librealsense
