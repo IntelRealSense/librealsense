@@ -2897,13 +2897,13 @@ namespace rs2
                 
                 if (viewer.draw_max_usable_range)
                 {
-                    if (ds.supports(RS2_OPTION_MAX_USABLE_RANGE))
+                    if (ds.supports(RS2_OPTION_ENABLE_MAX_USABLE_RANGE))
                     {
-                        if (ds.get_option(RS2_OPTION_MAX_USABLE_RANGE) == 1.0)
+                        if (ds.get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE) == 1.0)
                         {
                             show_max_range = true;
-                            auto mur_sensor = sensor_from_frame(texture->get_last_frame())->as<max_usable_range_sensor>();
-                            auto max_usable_range = mur_sensor.get_max_usable_range();
+                            auto mur_sensor = ds.as<max_usable_range_sensor>();
+                            auto max_usable_range = mur_sensor.get_max_usable_depth_range();
 
                             if (viewer.metric_system)
                                 ss << std::dec << "\nMax usable range: " << std::setprecision(1) << max_usable_range << " meters";
@@ -6201,7 +6201,7 @@ namespace rs2
                             {
                                 if (serialize && opt == RS2_OPTION_VISUAL_PRESET)
                                     continue;
-                                if (opt == RS2_OPTION_MAX_USABLE_RANGE && !viewer.draw_max_usable_range)
+                                if (opt == RS2_OPTION_ENABLE_MAX_USABLE_RANGE && !viewer.draw_max_usable_range)
                                 {
                                     continue;
                                 }

@@ -744,10 +744,10 @@ namespace rs2
         /** Retrieves the maximum range of the camera given the amount of ambient light in the scene.
         * \return max usable range in meters
         */
-        float get_max_usable_range() const
+        float get_max_usable_depth_range() const
         {
             rs2_error* e = nullptr;
-            auto res = rs2_get_max_usable_range(_sensor.get(), &e);
+            auto res = rs2_get_max_usable_depth_range(_sensor.get(), &e);
             error::handle(e);
             return res;
         }

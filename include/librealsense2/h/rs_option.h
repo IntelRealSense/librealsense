@@ -103,7 +103,7 @@ extern "C" {
         RS2_OPTION_SEQUENCE_SIZE, /**< HDR Sequence size */
         RS2_OPTION_SEQUENCE_ID, /**< HDR Sequence ID - 0 is not HDR; sequence ID for HDR configuration starts from 1 */
         RS2_OPTION_HUMIDITY_TEMPERATURE, /**< Humidity temperature [Deg Celsius]*/
-        RS2_OPTION_MAX_USABLE_RANGE, /**< Turn on/off the maximum usable range who calculates the maximum range of the camera given the amount of ambient light in the scene */
+        RS2_OPTION_ENABLE_MAX_USABLE_RANGE, /**< Turn on/off the maximum usable depth sensor range given the amount of ambient light in the scene */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 

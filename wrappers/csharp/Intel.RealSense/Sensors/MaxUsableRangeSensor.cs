@@ -20,7 +20,7 @@ namespace Intel.RealSense
     public float GetMaxUsableRange( )
         {
             object error;
-            return NativeMethods.rs2_get_max_usable_range(Handle, out error);
+            return NativeMethods.rs2_get_max_usable_depth_range(Handle, out error);
         }
     }
 }

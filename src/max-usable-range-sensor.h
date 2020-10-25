@@ -10,7 +10,7 @@ namespace librealsense
     class max_usable_range_sensor
     {
     public:
-        virtual float get_max_usable_range( ) const = 0;
+        virtual float get_max_usable_depth_range( ) const = 0;
     };
     MAP_EXTENSION(RS2_EXTENSION_MAX_USABLE_RANGE_SENSOR, max_usable_range_sensor);
 }

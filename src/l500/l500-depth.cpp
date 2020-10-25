@@ -20,7 +20,7 @@
 #include "ac-trigger.h"
 #include "algo/depth-to-rgb-calibration/debug.h"
 #include "algo/depth-to-rgb-calibration/utils.h"  // validate_dsm_params
-#include "algo/max-range/max-usable-range.h" 
+#include "algo/max-usable-range/l500/max-usable-range.h" 
 
 
 #define MM_TO_METER 1/1000
@@ -355,12 +355,14 @@ namespace librealsense
         AC_LOG( INFO, "Depth sensor calibration has been reset" );
     }
 
-    float l500_depth_sensor::get_max_usable_range() const
+    float l500_depth_sensor::get_max_usable_depth_range() const
     {
-        if( !supports_option( RS2_OPTION_MAX_USABLE_RANGE ) )
+        using namespace algo::max_usable_range;
+
+        if( !supports_option( RS2_OPTION_ENABLE_MAX_USABLE_RANGE) )
             throw librealsense::wrong_api_call_sequence_exception( "max usable range option is not supported" );
 
-        if( get_option( RS2_OPTION_MAX_USABLE_RANGE ).query() != 1.0f )
+        if( get_option( RS2_OPTION_ENABLE_MAX_USABLE_RANGE).query() != 1.0f )
             throw librealsense::wrong_api_call_sequence_exception( "max usable range option is not on" );
 
         if( ! is_streaming() )
@@ -368,12 +370,12 @@ namespace librealsense
             throw librealsense::wrong_api_call_sequence_exception("depth sensor is not streaming!");
         }
 
-       algo::max_range::max_usable_range mur;
        float nest = static_cast<float>(_owner->get_temperatures().nest_avg);
 
-       return mur.get_max_range(nest);
+       return l500::max_usable_range(nest);
     }
 
+    // We want to disable max-usable-range when not in a particular preset:
     bool l500_depth_sensor::is_max_range_preset() const
     {
         auto res = _owner->_hw_monitor->send(command(ivcam2::IRB, 0x6C, 0x2, 0x1));
@@ -388,7 +390,7 @@ namespace librealsense
         int gtr = static_cast<int>(res[0]);
         int apd = static_cast<int>(get_option(RS2_OPTION_AVALANCHE_PHOTO_DIODE).query());
         int laser_power = static_cast<int>(get_option(RS2_OPTION_LASER_POWER).query());
-        int max_laser_power = get_option(RS2_OPTION_LASER_POWER).get_range().max;
+        int max_laser_power = static_cast<int>(get_option(RS2_OPTION_LASER_POWER).get_range().max);
 
         return ((apd == 9) && (gtr == 0) && (laser_power == max_laser_power)); // indicates max_range preset
     }

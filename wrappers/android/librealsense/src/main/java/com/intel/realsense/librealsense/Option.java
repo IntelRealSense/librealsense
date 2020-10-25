@@ -83,7 +83,7 @@ public enum Option {
     SEQUENCE_SIZE(78),
     SEQUENCE_ID(79),
     HUMIDITY_TEMPERATURE(80),
-    MAX_USABLE_RANGE(81);
+    ENABLE_MAX_USABLE_RANGE(81);
     private final int mValue;
 
     private Option(int value) { mValue = value; }

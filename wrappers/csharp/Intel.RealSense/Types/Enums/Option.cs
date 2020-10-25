@@ -258,6 +258,6 @@ namespace Intel.RealSense
         HumidityTemperature = 80,
 
         /// <summary>Turn on/off the maximum usable range who calculates the maximum range of the camera given the amount of ambient light in the scene </summary>
-         MaxUsableRange = 81
+         EnableMaxUsableRange = 81
   }
 }

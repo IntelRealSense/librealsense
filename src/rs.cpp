@@ -2292,12 +2292,12 @@ float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0.f, sensor)
 
-float rs2_get_max_usable_range(rs2_sensor const * sensor, rs2_error** error) BEGIN_API_CALL
+float rs2_get_max_usable_depth_range(rs2_sensor const * sensor, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);
 
     auto murs = VALIDATE_INTERFACE(sensor->sensor, librealsense::max_usable_range_sensor);
-    return murs->get_max_usable_range();
+    return murs->get_max_usable_depth_range();
 }
 
 HANDLE_EXCEPTIONS_AND_RETURN(0.f, sensor)

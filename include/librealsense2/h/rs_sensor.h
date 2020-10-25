@@ -652,7 +652,7 @@ void rs2_set_motion_device_intrinsics(const rs2_sensor* sensor, const rs2_stream
 * \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return                the max usable range in meters
 */
-float rs2_get_max_usable_range(rs2_sensor const * sensor, rs2_error** error);
+float rs2_get_max_usable_depth_range(rs2_sensor const * sensor, rs2_error** error);
 
 #ifdef __cplusplus
 }

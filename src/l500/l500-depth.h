@@ -219,7 +219,7 @@ namespace librealsense
             return *_owner->_calib_table;
         }
 
-        float get_max_usable_range() const override;
+        float get_max_usable_depth_range() const override;
 
         void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const override
         {

@@ -446,7 +446,7 @@ namespace librealsense
             CASE(SEQUENCE_SIZE)
             CASE(SEQUENCE_ID)
             CASE(HUMIDITY_TEMPERATURE)
-            CASE(MAX_USABLE_RANGE)
+            CASE(ENABLE_MAX_USABLE_RANGE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

@@ -129,8 +129,8 @@ void init_sensor(py::module &m) {
     
     py::class_<rs2::max_usable_range_sensor, rs2::sensor> mur_sensor(m, "max_usable_range_sensor");
     mur_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
-        .def("get_max_usable_range",
-            &rs2::max_usable_range_sensor::get_max_usable_range,
+        .def("get_max_usable_depth_range",
+            &rs2::max_usable_range_sensor::get_max_usable_depth_range,
             py::call_guard< py::gil_scoped_release >());
     
     // rs2::depth_stereo_sensor
