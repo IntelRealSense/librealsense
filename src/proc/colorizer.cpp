@@ -245,6 +245,22 @@ namespace librealsense
             auto depth_sensor = As< librealsense::depth_sensor >( snr );
             if( depth_sensor )
                 _depth_units = depth_sensor->get_depth_scale();
+            else
+            {
+                // For playback sensors
+                auto extendable = As< librealsense::extendable_interface >( snr );
+                if( extendable
+                    && extendable->extend_to( TypeToExtension< librealsense::depth_sensor >::value,
+                                              (void **)( &depth_sensor ) ) )
+                {
+                    _depth_units = depth_sensor->get_depth_scale();
+                }
+                else
+                {
+                    LOG_ERROR( "Failed to query depth units from sensor." );
+                    throw std::runtime_error( "Failed to query depth units from sensor." );
+                }
+            }
 
             _d2d_convert_factor = info.d2d_convert_factor;
         }
