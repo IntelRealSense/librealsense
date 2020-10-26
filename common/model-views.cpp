@@ -527,18 +527,19 @@ namespace rs2
                 if (ImGui::Checkbox(label.c_str(), &bool_value))
                 {
                     res = true;
+                    model.add_log(to_string() << "Setting " << opt << " to "
+                        << (bool_value? "1.0" : "0.0") << " (" << (bool_value ? "ON" : "OFF") << ")");
                     try
                     {
-                        model.add_log(to_string() << "Setting " << opt << " to "
-                            << (bool_value? "1.0" : "0.0") << " (" << (bool_value ? "ON" : "OFF") << ")");
                         endpoint->set_option(opt, bool_value ? 1.f : 0.f);
-                        value = endpoint->get_option(opt); // Update value on UI from the option itself, if set_option throws the UI value will not be updated.
-                        *invalidate_flag = true;
                     }
                     catch (const error& e)
                     {
                         error_message = error_to_string(e);
                     }
+                    // Only update the cached value once set_option is done! That way, if it doesn't change anything...
+                    try { value = endpoint->get_option(opt); } catch( ... ) {}
+                    *invalidate_flag = true;
                 }
                 if (ImGui::IsItemHovered() && desc)
                 {
