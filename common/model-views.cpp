@@ -2880,7 +2880,7 @@ namespace rs2
             float val{};
             if (texture->try_pick(x, y, &val))
             {
-                ss << " 0x" << std::hex << static_cast<int>(round(val)) << " =";
+                ss << " 0x" << std::hex << static_cast< int >( round( val ) );
             }
 
             if (texture->get_last_frame().is<depth_frame>())
@@ -2888,9 +2888,9 @@ namespace rs2
                 auto meters = texture->get_last_frame().as<depth_frame>().get_distance(x, y);
 
                 if (viewer.metric_system)
-                    ss << std::dec << " " << std::setprecision(3) << meters << " meters";
+                    ss << std::dec << " = " << std::setprecision(3) << meters << " meters";
                 else
-                    ss << std::dec << " " << std::setprecision(3) << meters / FEET_TO_METER << " feet";
+                    ss << std::dec <<  " = " << std::setprecision(3) << meters / FEET_TO_METER << " feet";
             }
 
             std::string msg(ss.str().c_str());
