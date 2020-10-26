@@ -532,7 +532,7 @@ namespace rs2
                         model.add_log(to_string() << "Setting " << opt << " to "
                             << (bool_value? "1.0" : "0.0") << " (" << (bool_value ? "ON" : "OFF") << ")");
                         endpoint->set_option(opt, bool_value ? 1.f : 0.f);
-                        value = endpoint->get_option(opt);
+                        value = endpoint->get_option(opt); // Update value on UI from the option itself, if set_option throws the UI value will not be updated.
                         *invalidate_flag = true;
                     }
                     catch (const error& e)

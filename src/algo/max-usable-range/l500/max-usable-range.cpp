@@ -4,9 +4,9 @@
 #include "max-usable-range.h"
 
 // Algo parameters
-const float PROCESSING_GAIN = 1.75f;
-const float THERMAL = 74.5f;
-const float INDOOR_MAX_RANGE = 9.0f;
+static const float PROCESSING_GAIN = 1.75f;
+static const float THERMAL = 74.5f;
+static const float INDOOR_MAX_RANGE = 9.0f;
 
 // Based off of code in RS5-8358
 float librealsense::algo::max_usable_range::l500::max_usable_range(float nest)
