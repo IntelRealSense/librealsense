@@ -1225,6 +1225,9 @@ namespace rs2
 
     subdevice_model::~subdevice_model()
     {
+        _device_mutex.lock();
+        _device_off = true;
+        _device_mutex.unlock();
         if (zero_order_artifact_fix)
             viewer.zo_sensors--;
     }

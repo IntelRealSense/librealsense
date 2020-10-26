@@ -50,7 +50,12 @@ public:
                     continue;
                 if( !f )
                     continue;
-                worker_body( f.as< rs2::frameset >() );
+                if (!model._device_off)
+                {
+                    model._device_mutex.lock();
+                    worker_body(f.as< rs2::frameset >());
+                    model._device_mutex.unlock();
+                }
             }
             LOG(DEBUG) << "End of worker loop in " + get_name();
             worker_end();

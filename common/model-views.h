@@ -681,6 +681,9 @@ namespace rs2
         std::vector<std::shared_ptr<processing_block_model>> post_processing;
         bool post_processing_enabled = true;
         std::vector<std::shared_ptr<processing_block_model>> const_effects;
+
+        std::mutex _device_mutex;
+        bool _device_off = false;
     };
 
     class viewer_model;
