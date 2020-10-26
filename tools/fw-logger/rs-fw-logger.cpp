@@ -128,7 +128,7 @@ int main(int argc, char* argv[])
                         bool parsing_result = fw_log_device.parse_log(log_message, parsed_log);
                         
                         stringstream sstr;
-                        sstr << datetime_string() << " " << parsed_log.timestamp() << " " << parsed_log.sequence()
+                        sstr << datetime_string() << " " << parsed_log.timestamp() << " " << parsed_log.sequence_id()
                             << " " << parsed_log.severity() << " " << parsed_log.thread_name()
                             << " " << parsed_log.file_name() << " " << parsed_log.line()
                             << " " << parsed_log.message();
@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
                         are_there_remaining_flash_logs_to_pull = false;
                     }
                 }
-                auto num_of_messages = fw_log_device.get_num_of_fw_logs();
+                auto num_of_messages = fw_log_device.get_number_of_fw_logs();
                 if (num_of_messages == 0)
                 {
                     auto current_time = std::chrono::high_resolution_clock::now();

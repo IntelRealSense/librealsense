@@ -3237,12 +3237,12 @@ int rs2_parse_firmware_log(rs2_device* dev, rs2_firmware_log_message* fw_log_msg
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, dev, fw_log_msg)
 
-int rs2_get_num_of_fw_logs(rs2_device* dev, rs2_error** error) BEGIN_API_CALL
+unsigned int rs2_get_number_of_fw_logs(rs2_device* dev, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
 
     auto fw_loggerable = VALIDATE_INTERFACE(dev->device, librealsense::firmware_logger_extensions);
-    return fw_loggerable->get_num_of_fw_logs();
+    return fw_loggerable->get_number_of_fw_logs();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, dev)
 
@@ -3295,10 +3295,10 @@ unsigned int rs2_get_fw_log_parsed_timestamp(rs2_firmware_log_parsed_message* fw
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, fw_log_parsed_msg)
 
-unsigned int rs2_get_fw_log_parsed_sequence(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
+unsigned int rs2_get_fw_log_parsed_sequence_id(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(fw_log_parsed_msg);
-    return fw_log_parsed_msg->firmware_log_parsed->get_sequence();
+    return fw_log_parsed_msg->firmware_log_parsed->get_sequence_id();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, fw_log_parsed_msg)
 

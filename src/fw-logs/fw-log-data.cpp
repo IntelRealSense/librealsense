@@ -69,7 +69,7 @@ namespace librealsense
             return _timestamp;
         }
 
-        uint32_t fw_log_data::get_sequence() const
+        uint32_t fw_log_data::get_sequence_id() const
         {
             return _sequence;
         }

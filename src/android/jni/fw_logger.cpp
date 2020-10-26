@@ -46,14 +46,14 @@ Java_com_intel_realsense_librealsense_FwLogger_nGetFlashLog(JNIEnv *env, jobject
 }
 
 extern "C"
-JNIEXPORT jint JNICALL
-Java_com_intel_realsense_librealsense_FwLogger_nGetNumOfFwLogs(JNIEnv *env, jobject instance,
+JNIEXPORT jlong JNICALL
+Java_com_intel_realsense_librealsense_FwLogger_nGetNumberOfFwLogs(JNIEnv *env, jobject instance,
                                                             jlong fw_logger_handle) {
     rs2_error* e = NULL;
-    int numOfFwLogsPolledFromDevice = rs2_get_num_of_fw_logs(reinterpret_cast<rs2_device*>(fw_logger_handle), &e);
+    unsigned int numOfFwLogsPolledFromDevice = rs2_get_number_of_fw_logs(reinterpret_cast<rs2_device*>(fw_logger_handle), &e);
     handle_error(env, e);
 
-    return (jint)numOfFwLogsPolledFromDevice;
+    return (jlong)(unsigned long long)numOfFwLogsPolledFromDevice;
 }
 
 extern "C"
@@ -211,9 +211,9 @@ Java_com_intel_realsense_librealsense_FwLogParsedMsg_nGetTimestamp(JNIEnv *env, 
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_com_intel_realsense_librealsense_FwLogParsedMsg_nGetSequence(JNIEnv *env, jclass clazz, jlong handle) {
+Java_com_intel_realsense_librealsense_FwLogParsedMsg_nGetSequenceId(JNIEnv *env, jclass clazz, jlong handle) {
     rs2_error* e = NULL;
-    int sequence = rs2_get_fw_log_parsed_sequence(reinterpret_cast<rs2_firmware_log_parsed_message*>(handle), &e);
+    unsigned int sequence = rs2_get_fw_log_parsed_sequence_id(reinterpret_cast<rs2_firmware_log_parsed_message*>(handle), &e);
     handle_error(env, e);
     return (jint)sequence;
 }

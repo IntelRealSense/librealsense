@@ -38,7 +38,7 @@ namespace librealsense
         return result;
     }
 
-    int firmware_logger_device::get_num_of_fw_logs() const
+    unsigned int firmware_logger_device::get_number_of_fw_logs() const
     {
         return _fw_logs.size();
     }

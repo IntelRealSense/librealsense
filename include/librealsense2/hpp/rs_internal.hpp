@@ -465,10 +465,10 @@ namespace rs2
             return timestamp;
         }
 
-        uint32_t sequence() const
+        uint32_t sequence_id() const
         {
             rs2_error* e = nullptr;
-            uint32_t sequence(rs2_get_fw_log_parsed_sequence(_parsed_fw_log.get(), &e));
+            uint32_t sequence(rs2_get_fw_log_parsed_sequence_id(_parsed_fw_log.get(), &e));
             error::handle(e);
             return sequence;
         }
@@ -559,10 +559,10 @@ namespace rs2
             return parsingResult;
         }
 
-        int get_num_of_fw_logs() const
+        unsigned int get_number_of_fw_logs() const
         {
             rs2_error* e = nullptr;
-            int num_of_fw_logs = rs2_get_num_of_fw_logs(_dev.get(), &e);
+            unsigned int num_of_fw_logs = rs2_get_number_of_fw_logs(_dev.get(), &e);
             error::handle(e);
 
             return num_of_fw_logs;

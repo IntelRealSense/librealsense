@@ -454,7 +454,7 @@ int rs2_parse_firmware_log(rs2_device* dev, rs2_firmware_log_message* fw_log_msg
 * \param[out] error             If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return                       number of fw logs already polled from device but not by user yet
 */
-int rs2_get_num_of_fw_logs(rs2_device* dev, rs2_error** error);
+unsigned int rs2_get_number_of_fw_logs(rs2_device* dev, rs2_error** error);
 /**
 * \brief Gets RealSense firmware log parsed message.
 * \param[in] fw_log_parsed_msg      firmware log parsed message object
@@ -504,12 +504,12 @@ unsigned int rs2_get_fw_log_parsed_line(rs2_firmware_log_parsed_message* fw_log_
 unsigned int rs2_get_fw_log_parsed_timestamp(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error);
 
 /**
-* \brief Gets RealSense firmware log parsed message sequence
+* \brief Gets RealSense firmware log parsed message sequence id - cyclic number of FW log with [0..15] range
 * \param[in] fw_log_parsed_msg      firmware log parsed message object
 * \param[out] error                 If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return                           sequence of the firmware log parsed message
 */
-unsigned int rs2_get_fw_log_parsed_sequence(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error);
+unsigned int rs2_get_fw_log_parsed_sequence_id(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error);
 
 /**
 * \brief Creates RealSense terminal parser.
