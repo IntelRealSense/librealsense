@@ -132,4 +132,5 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/calibrated-sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/serializable-interface.h"
         "${CMAKE_CURRENT_LIST_DIR}/depth-to-rgb-calibration.h"
+        "${CMAKE_CURRENT_LIST_DIR}/max-usable-range-sensor.h"
 )

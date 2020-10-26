@@ -188,6 +188,8 @@ namespace rs2
 
         std::shared_ptr<updates_model> updates;
 
+        bool draw_max_usable_range = true;
+
     private:
 
         void check_permissions();

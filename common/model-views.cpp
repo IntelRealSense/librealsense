@@ -527,18 +527,19 @@ namespace rs2
                 if (ImGui::Checkbox(label.c_str(), &bool_value))
                 {
                     res = true;
-                    value = bool_value ? 1.0f : 0.0f;
+                    model.add_log(to_string() << "Setting " << opt << " to "
+                        << (bool_value? "1.0" : "0.0") << " (" << (bool_value ? "ON" : "OFF") << ")");
                     try
                     {
-                        model.add_log(to_string() << "Setting " << opt << " to "
-                            << value << " (" << (bool_value ? "ON" : "OFF") << ")");
-                        endpoint->set_option(opt, value);
-                        *invalidate_flag = true;
+                        endpoint->set_option(opt, bool_value ? 1.f : 0.f);
                     }
                     catch (const error& e)
                     {
                         error_message = error_to_string(e);
                     }
+                    // Only update the cached value once set_option is done! That way, if it doesn't change anything...
+                    try { value = endpoint->get_option(opt); } catch( ... ) {}
+                    *invalidate_flag = true;
                 }
                 if (ImGui::IsItemHovered() && desc)
                 {
@@ -2883,14 +2884,39 @@ namespace rs2
                 ss << " 0x" << std::hex << static_cast<int>(round(val)) << " =";
             }
 
+            bool show_max_range = false;
             if (texture->get_last_frame().is<depth_frame>())
             {
-                auto meters = texture->get_last_frame().as<depth_frame>().get_distance(x, y);
+                auto meters = texture->get_last_frame().as<depth_frame>().get_distance(x, y);             
 
                 if (viewer.metric_system)
                     ss << std::dec << " " << std::setprecision(3) << meters << " meters";
                 else
                     ss << std::dec << " " << std::setprecision(3) << meters / FEET_TO_METER << " feet";
+
+                auto ds = sensor_from_frame(texture->get_last_frame())->as<depth_sensor>();
+                
+                if (viewer.draw_max_usable_range)
+                {
+                    if (ds.supports(RS2_OPTION_ENABLE_MAX_USABLE_RANGE))
+                    {
+                        if (ds.get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE) == 1.0)
+                        {
+                            show_max_range = true;
+                            auto mur_sensor = ds.as<max_usable_range_sensor>();
+                            auto max_usable_range = mur_sensor.get_max_usable_depth_range();
+                            const float MIN_RANGE = 3.0f;
+                            const float MAX_RANGE = 9.0f;
+                            // display maximu, usable range in range 3-9 [m] at 1 [m] resolution (rounded)
+                            auto max_usable_range_rounded = round(std::min(std::max(max_usable_range, MIN_RANGE), MAX_RANGE));
+
+                            if (viewer.metric_system)
+                                ss << std::dec << "\nMax usable range: " << std::setprecision(1) << max_usable_range_rounded << " meters";
+                            else
+                                ss << std::dec << "\nMax usable range: " << std::setprecision(1) << max_usable_range_rounded / FEET_TO_METER << " feet";
+                        }
+                    }
+                }
             }
 
             std::string msg(ss.str().c_str());
@@ -2898,14 +2924,25 @@ namespace rs2
             ImGui_ScopePushFont(font);
 
             // adjust windows size to the message length
-
+            auto new_line_start_idx = msg.find_first_of('\n');
+            int footer_vertical_size = 35;
             auto width = float(msg.size() * 8);
+
+            // adjust width according to the longest line
+            if (show_max_range)
+            {
+                footer_vertical_size = 50;
+                auto first_line_size = msg.find_first_of('\n') + 1;
+                auto second_line_size = msg.substr(new_line_start_idx).size();
+                width = std::max(first_line_size, second_line_size) * 8;
+            }
+
             auto align = 20;
             width += align - (int)width % align;
 
-            ImVec2 pos{ stream_rect.x + 5, stream_rect.y + stream_rect.h - 35 };
+            ImVec2 pos{ stream_rect.x + 5, stream_rect.y + stream_rect.h - footer_vertical_size };
             ImGui::GetWindowDrawList()->AddRectFilled({ pos.x, pos.y },
-                { pos.x + width, pos.y + 30 }, ImColor(dark_sensor_bg));
+                { pos.x + width, pos.y + footer_vertical_size - 5 }, ImColor(dark_sensor_bg));
 
             ImGui::SetCursorScreenPos({ pos.x + 10, pos.y + 5 });
 
@@ -6169,6 +6206,11 @@ namespace rs2
                             {
                                 if (serialize && opt == RS2_OPTION_VISUAL_PRESET)
                                     continue;
+                                if (opt == RS2_OPTION_ENABLE_MAX_USABLE_RANGE && !viewer.draw_max_usable_range)
+                                {
+                                    continue;
+                                }
+
                                 if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, *viewer.not_model))
                                 {
                                     get_curr_advanced_controls = true;

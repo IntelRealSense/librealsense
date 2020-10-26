@@ -394,5 +394,7 @@ EXPORTS
     rs2_delete_terminal_parser
     rs2_terminal_parse_command 
     rs2_terminal_parse_response
+    
+    rs2_get_max_usable_depth_range
 
 

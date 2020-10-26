@@ -255,6 +255,9 @@ namespace Intel.RealSense
         SequenceId = 79,
 
         /// <summary>Humidity temperature [Deg Celsius]</summary>
-        HumidityTemperature = 80
+        HumidityTemperature = 80,
+
+        /// <summary>Turn on/off the maximum usable range who calculates the maximum range of the camera given the amount of ambient light in the scene </summary>
+         EnableMaxUsableRange = 81
   }
 }

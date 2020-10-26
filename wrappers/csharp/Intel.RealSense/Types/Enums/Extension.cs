@@ -55,6 +55,7 @@ namespace Intel.RealSense
         FisheyeSensor = 44,
         DepthHuffmanDecoder = 45,
         Serializable = 46,
-        FirmwareLogger = 47
-    }
+        FirmwareLogger = 47,
+        MaxUsableRangeSensor = 53
+  }
 }

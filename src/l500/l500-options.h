@@ -61,6 +61,20 @@ namespace librealsense
         std::string _description;
     };
 
+
+    class max_usable_range_option : public bool_option
+    {
+    public:
+        max_usable_range_option(l500_device *l500_depth_dev) : bool_option( false ), _l500_depth_dev(l500_depth_dev){};
+
+        void set(float value) override;
+
+        const char * get_description() const override;
+
+    private:
+        l500_device *_l500_depth_dev;
+    };
+
     class l500_options: public virtual l500_device
     {
     public:
