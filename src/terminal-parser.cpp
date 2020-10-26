@@ -2,6 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "terminal-parser.h"
+#include <iostream>
 
 namespace librealsense
 {

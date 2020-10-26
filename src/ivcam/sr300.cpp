@@ -324,6 +324,9 @@ namespace librealsense
 
     void sr300_camera::enter_update_state() const
     {
+        // Stop all data streaming/exchange pipes with HW
+        stop_activity();
+
         try {
             command cmd(ivcam::GoToDFU);
             cmd.param1 = 1;

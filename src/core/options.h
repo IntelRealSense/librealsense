@@ -72,6 +72,17 @@ namespace librealsense
             return *it->second;
         }
 
+        std::shared_ptr<option> get_option_handler(rs2_option id)
+        {
+            return (const_cast<const options_container*>(this)->get_option_handler(id));
+        }
+
+        std::shared_ptr<option> get_option_handler(rs2_option id) const
+        {
+            auto it = _options.find(id);
+            return (it == _options.end() ? std::shared_ptr<option>(nullptr) : it->second);
+        }
+
         void register_option(rs2_option id, std::shared_ptr<option> option)
         {
             _options[id] = option;

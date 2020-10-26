@@ -70,7 +70,8 @@ public enum Option {
     PRE_PROCESSING_SHARPENING(66),
     NOISE_FILTERING(67),
     INVALIDATION_BYPASS(68),
-    AMBIENT_LIGHT(69),
+    AMBIENT_LIGHT(69), // Deprecated - Use DIGITAL_GAIN instead
+    DIGITAL_GAIN(69),
     SENSOR_MODE(70),
     EMITTER_ALWAYS_ON(71),
     THERMAL_COMPENSATION(72),
@@ -80,7 +81,8 @@ public enum Option {
     HDR_ENABLED(76),
     SEQUENCE_NAME(77),
     SEQUENCE_SIZE(78),
-    SEQUENCE_ID(79);
+    SEQUENCE_ID(79),
+    HUMIDITY_TEMPERATURE(80);
     private final int mValue;
 
     private Option(int value) { mValue = value; }

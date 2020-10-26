@@ -32,6 +32,9 @@ void init_c_files(py::module &m) {
     BIND_ENUM(m, rs2_timestamp_domain, RS2_TIMESTAMP_DOMAIN_COUNT, "Specifies the clock in relation to which the frame timestamp was measured.")
     BIND_ENUM(m, rs2_frame_metadata_value, RS2_FRAME_METADATA_COUNT, "Per-Frame-Metadata is the set of read-only properties that might be exposed for each individual frame.")
     BIND_ENUM(m, rs2_option, RS2_OPTION_COUNT, "Defines general configuration controls. These can generally be mapped to camera UVC controls, and can be set / queried at any time unless stated otherwise.")
+    // Force binding of ambient light deprecated option (replaced by digital gain option) 
+    py_rs2_option.value("ambient_light", RS2_OPTION_AMBIENT_LIGHT);
+
     // rs2_sr300_visual_preset
     // rs2_rs400_visual_preset
     BIND_ENUM(m, rs2_playback_status, RS2_PLAYBACK_STATUS_COUNT, "") // No docstring in C++

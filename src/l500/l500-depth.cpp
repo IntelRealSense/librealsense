@@ -76,17 +76,35 @@ namespace librealsense
         auto& depth_sensor = get_depth_sensor();
         auto& raw_depth_sensor = get_raw_depth_sensor();
 
-        depth_sensor.register_option(RS2_OPTION_LLD_TEMPERATURE,
-            std::make_shared <l500_temperature_options>(_hw_monitor.get(), RS2_OPTION_LLD_TEMPERATURE));
+        depth_sensor.register_option(
+            RS2_OPTION_LLD_TEMPERATURE,
+            std::make_shared< l500_temperature_options >( this,
+                                                          RS2_OPTION_LLD_TEMPERATURE,
+                                                          "Laser Driver temperature" ) );
 
-        depth_sensor.register_option(RS2_OPTION_MC_TEMPERATURE,
-            std::make_shared <l500_temperature_options>(_hw_monitor.get(), RS2_OPTION_MC_TEMPERATURE));
+        depth_sensor.register_option(
+            RS2_OPTION_MC_TEMPERATURE,
+            std::make_shared< l500_temperature_options >( this,
+                                                          RS2_OPTION_MC_TEMPERATURE,
+                                                          "Mems Controller temperature" ) );
 
-        depth_sensor.register_option(RS2_OPTION_MA_TEMPERATURE,
-            std::make_shared <l500_temperature_options>(_hw_monitor.get(), RS2_OPTION_MA_TEMPERATURE));
+        depth_sensor.register_option(
+            RS2_OPTION_MA_TEMPERATURE,
+            std::make_shared< l500_temperature_options >( this,
+                                                          RS2_OPTION_MA_TEMPERATURE,
+                                                          "DSP controller temperature" ) );
 
-        depth_sensor.register_option(RS2_OPTION_APD_TEMPERATURE,
-            std::make_shared <l500_temperature_options>(_hw_monitor.get(), RS2_OPTION_APD_TEMPERATURE));
+        depth_sensor.register_option(
+            RS2_OPTION_APD_TEMPERATURE,
+            std::make_shared< l500_temperature_options >( this,
+                                                          RS2_OPTION_APD_TEMPERATURE,
+                                                          "Avalanche Photo Diode temperature" ) );
+
+        depth_sensor.register_option(
+            RS2_OPTION_HUMIDITY_TEMPERATURE,
+            std::make_shared< l500_temperature_options >( this,
+                                                          RS2_OPTION_HUMIDITY_TEMPERATURE,
+                                                          "Humidity temperature" ) );
 
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_ir_stream);
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_confidence_stream);
@@ -179,6 +197,8 @@ namespace librealsense
         return std::make_shared<timestamp_composite_matcher>(matchers);
     }
 
+   
+
 
     // If the user did not ask for IR, The open function will add it anyway. 
     // This class filters the IR frames is this case so they will not get to the user callback function
@@ -255,6 +275,11 @@ namespace librealsense
             lazy<float>( [&]() {
                 return get_depth_offset(); } ) ) );
 
+    }
+
+    l500_depth_sensor::~l500_depth_sensor()
+    {
+        _owner->stop_temperatures_reader();
     }
 
     int l500_depth_sensor::read_algo_version()
@@ -486,7 +511,9 @@ namespace librealsense
 
         // The delay is here as a work around to a firmware bug [RS5-5453]
         _action_delayer.do_after_delay( [&]() {
-            synthetic_sensor::start(std::make_shared< frame_filter >( callback, _user_requests));
+            synthetic_sensor::start( std::make_shared< frame_filter >( callback, _user_requests ) );
+
+            _owner->start_temperatures_reader();
 
             if( _owner->_autocal )
                 _owner->_autocal->start();
@@ -497,8 +524,12 @@ namespace librealsense
     {
     // The delay is here as a work around to a firmware bug [RS5-5453]
         _action_delayer.do_after_delay([&]() { synthetic_sensor::stop(); });
+
         if( _owner->_autocal )
             _owner->_autocal->stop();
+
+        _owner->stop_temperatures_reader();
+
     }
 
     rs2_sensor_mode get_resolution_from_width_height(int width, int height)
@@ -641,7 +672,7 @@ namespace librealsense
                     if (preset_option.query() == RS2_L500_VISUAL_PRESET_CUSTOM)
                     {
                         if(sensor_mode_option.query() != get_resolution_from_width_height(vs->get_width(), vs->get_height()))
-                            throw  std::runtime_error(to_string() << "sensor mode option ("<< sensor_mode_option.query()<<") is incompatible with requested resolution ("
+                            throw  std::runtime_error(to_string() << "sensor mode ("<< rs2_sensor_mode((int)sensor_mode_option.query())<<") with RS2_L500_VISUAL_PRESET_CUSTOM is incompatible with the requested profile resolution ("
                                 << get_resolution_from_width_height(vs->get_width(), vs->get_height())<<")");
                     }
                 }

@@ -10,6 +10,8 @@
 
 #include <librealsense2/rs.hpp>
 #include <librealsense2-gl/rs_processing_gl.hpp>
+#include <utilities/time/timer.h>
+
 
 #include <vector>
 #include <algorithm>
@@ -791,68 +793,6 @@ namespace rs2
         size_t _size; float3* _data;
     };
 
-    using clock = std::chrono::steady_clock;
-
-    // Helper class to keep track of time
-    class timer
-    {
-    public:
-        timer()
-        {
-            _start = std::chrono::steady_clock::now();
-        }
-
-        void reset() { _start = std::chrono::steady_clock::now(); }
-
-        // Get elapsed milliseconds since timer creation
-        double elapsed_ms() const
-        {
-            return std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(elapsed()).count();
-        }
-
-        clock::duration elapsed() const
-        {
-            return clock::now() - _start;
-        }
-
-        clock::time_point now() const
-        {
-            return clock::now();
-        }
-    private:
-        clock::time_point _start;
-    };
-
-    class periodic_timer
-    {
-    public:
-        periodic_timer(clock::duration delta)
-            : _delta(delta)
-        {
-            _last = _time.now();
-        }
-
-        operator bool() const
-        {
-            if (_time.now() - _last > _delta)
-            {
-                _last = _time.now();
-                return true;
-            }
-            return false;
-        }
-
-        void signal() const
-        {
-            _last = _time.now() - _delta;
-        }
-
-    private:
-        timer _time;
-        mutable clock::time_point _last;
-        clock::duration _delta;
-    };
-
     // Temporal event is a very simple time filter
     // that allows a concensus based on a set of measurements in time
     // You set the window, and add measurements, and the class offers
@@ -861,6 +801,8 @@ namespace rs2
     class temporal_event
     {
     public:
+        using clock = std::chrono::steady_clock;
+
         temporal_event(clock::duration window) : _window(window) {}
         temporal_event() : _window(std::chrono::milliseconds(1000)) {}
 
@@ -879,7 +821,7 @@ namespace rs2
         {
             std::lock_guard<std::mutex> lock(_m);
 
-            if (_t.elapsed() < _window) return false; // Ensure no false alarms in the warm-up time
+            if (_t.get_elapsed() < _window) return false; // Ensure no false alarms in the warm-up time
 
             _measurements.erase(std::remove_if(_measurements.begin(), _measurements.end(),
                 [this](std::pair<clock::time_point, bool> pair) {
@@ -904,7 +846,7 @@ namespace rs2
         std::mutex _m;
         clock::duration _window;
         std::vector<std::pair<clock::time_point, bool>> _measurements;
-        timer _t;
+        utilities::time::stopwatch _t;
     };
 
     class texture_buffer
@@ -1066,15 +1008,13 @@ namespace rs2
                                 if (!colorized_frame.is<gl::gpu_frame>())
                                 {
                                     data = colorized_frame.get_data();
-                                    // Override the first pixel in the colorized image for occlusion invalidation.
-                                    memset((void*)data, 0, colorized_frame.get_bytes_per_pixel());
-                                    {
-                                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
-                                            colorized_frame.get_width(),
-                                            colorized_frame.get_height(),
-                                            0, GL_RGB, GL_UNSIGNED_BYTE,
-                                            data);
-                                    }
+                                    
+                                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+                                        colorized_frame.get_width(),
+                                        colorized_frame.get_height(),
+                                        0, GL_RGB, GL_UNSIGNED_BYTE,
+                                        data);
+                                    
                                 }
                                 rendered_frame = colorized_frame;
                             }
@@ -1095,8 +1035,6 @@ namespace rs2
                                 glBindTexture(GL_TEXTURE_2D, texture);
                                 data = colorized_frame.get_data();
 
-                                // Override the first pixel in the colorized image for occlusion invalidation.
-                                memset((void*)data, 0, colorized_frame.get_bytes_per_pixel());
                                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
                                     colorized_frame.get_width(),
                                     colorized_frame.get_height(),

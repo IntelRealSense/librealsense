@@ -541,8 +541,9 @@ namespace rs2
         output.add_log(model->severity, __FILE__, __LINE__, model->get_title());
     }
 
-    void notifications_model::draw(ux_window& win, int w, int h, std::string& error_message)
+    bool notifications_model::draw(ux_window& win, int w, int h, std::string& error_message)
     {
+        bool modal_notification_found = false;
         ImGui::PushFont(win.get_font());
 
         std::vector<std::function<void()>> follow_up;
@@ -570,6 +571,7 @@ namespace rs2
                 auto height = 60;
                 for (auto& noti : pending_notifications)
                 {
+                    modal_notification_found = modal_notification_found || noti->expanded;
                     if (pinned_drawn && noti->pinned && !noti->forced) 
                     {
                         continue;
@@ -664,6 +666,8 @@ namespace rs2
         }
         
         ImGui::PopFont();
+
+        return modal_notification_found;
     }
 
     version_upgrade_model::version_upgrade_model(int version) 

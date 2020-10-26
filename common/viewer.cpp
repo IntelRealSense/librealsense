@@ -965,9 +965,16 @@ namespace rs2
         }
         for (auto&& i : streams_to_remove) {
             if(selected_depth_source_uid == i)
+            {
+                last_points = points();
                 selected_depth_source_uid = -1;
-            if(selected_tex_source_uid == i)
+            }
+
+            if (selected_tex_source_uid == i)
+            {
+                last_texture.reset();
                 selected_tex_source_uid = -1;
+            }
             streams.erase(i);
 
             if(ppf.frames_queue.find(i) != ppf.frames_queue.end())
@@ -1147,7 +1154,7 @@ namespace rs2
 
     void viewer_model::show_rendering_not_supported(ImFont* font_18, int min_x, int min_y, int max_x, int max_y, rs2_format format)
     {
-        static periodic_timer update_string(std::chrono::milliseconds(200));
+        static utilities::time::periodic_timer update_string(std::chrono::milliseconds(200));
         static int counter = 0;
         static std::string to_print;
         auto pos = ImGui::GetCursorScreenPos();
@@ -1283,6 +1290,7 @@ namespace rs2
         std::shared_ptr<texture_buffer> texture_frame = nullptr;
         points p;
         frame f{};
+        gc_streams();
 
         std::map<int, frame> last_frames;
         try
@@ -1290,7 +1298,9 @@ namespace rs2
             size_t index = 0;
             while (ppf.resulting_queue.poll_for_frame(&f) && ++index < ppf.resulting_queue_max_size)
             {
-                last_frames[f.get_profile().unique_id()] = f;
+                if (streams.find(f.get_profile().unique_id()) != streams.end() ||
+                    streams.find(streams_origin[f.get_profile().unique_id()]) != streams.end())
+                    last_frames[f.get_profile().unique_id()] = f;
             }
 
             for(auto&& f : last_frames)
@@ -1344,7 +1354,7 @@ namespace rs2
         }
 
 
-        gc_streams();
+        
 
         window.begin_viewport();
 
@@ -1363,7 +1373,7 @@ namespace rs2
 
         draw_viewport(viewer_rect, window, devices, error_message, texture_frame, p);
 
-        not_model->draw(window, 
+        modal_notification_on = not_model->draw(window,
             static_cast<int>(window.width()), static_cast<int>(window.height()),
             error_message);
 
@@ -1587,7 +1597,7 @@ namespace rs2
         ImFont *font1, ImFont *font2, size_t dev_model_num,
         const mouse_info &mouse, std::string& error_message)
     {
-        static periodic_timer every_sec(std::chrono::seconds(1));
+        static utilities::time::periodic_timer every_sec(std::chrono::seconds(1));
         static bool icon_visible = false;
         if (every_sec) icon_visible = !icon_visible;
         float alpha = icon_visible ? 1.f : 0.2f;
@@ -3231,7 +3241,8 @@ namespace rs2
         ux_window& window, int devices, std::string& error_message, 
         std::shared_ptr<texture_buffer> texture, points points)
     {
-        updates->draw(*this, window, error_message);
+        if (!modal_notification_on)
+            updates->draw(*this, window, error_message);
 
         static bool first = true;
         if (first)

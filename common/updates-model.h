@@ -88,8 +88,8 @@ namespace rs2
             position_params() :w(0.0f), h(0.0f), orig_pos(), x0(0.0f), y0(0.0f) {}
         };
 
-        bool draw_software_section(const char * window_name, update_profile_model& selected_profile, position_params& pos_params , ux_window& window);
-        bool draw_firmware_section(viewer_model& viewer, const char * window_name, update_profile_model& selected_profile, position_params& pos_params, ux_window& window);
+        bool draw_software_section(const char * window_name, update_profile_model& selected_profile, position_params& pos_params , ux_window& window, std::string& error_message);
+        bool draw_firmware_section(viewer_model& viewer, const char * window_name, update_profile_model& selected_profile, position_params& pos_params, ux_window& window, std::string& error_message);
 
 
         int selected_index = 0;

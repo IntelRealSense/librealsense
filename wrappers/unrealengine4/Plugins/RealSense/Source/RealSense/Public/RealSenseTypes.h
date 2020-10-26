@@ -123,11 +123,18 @@ enum class ERealSenseOptionType : uint8
     NOISE_FILTERING                            , /**< Control edges and background noise */
     INVALIDATION_BYPASS                        , /**< Enable\disable pixel invalidation */
     AMBIENT_LIGHT                              , /**< Change the depth ambient light see rs2_ambient_light for values */
+    DIGITAL_GAIN = AMBIENT_LIGHT               , /**< Change the depth digital gain see rs2_digital_gain for values */
     SENSOR_MODE                                , /**< The resolution mode: see rs2_sensor_mode for values */
     EMITTER_ALWAYS_ON                          , /**< Enable Laser On constantly (GS SKU Only) */
     THERMAL_COMPENSATION                       , /**< Depth Thermal Compensation for selected D400 SKUs */
     TRIGGER_CAMERA_ACCURACY_HEALTH             ,
     RESET_CAMERA_ACCURACY_HEALTH               ,
+    HOST_PERFORMANCE                           , /**< Set host performance mode to optimize device settings so host can keep up with workload, for example, USB transaction granularity, setting option to low performance host leads to larger USB transaction size and reduced number of transactions which improves performance and stability if host is relatively weak as compared to workload */
+    HDR_ENABLED                                , /**< Enable / disable HDR */
+    SEQUENCE_NAME                              , /**< HDR Sequence name */
+    SEQUENCE_SIZE                              , /**< HDR Sequence size */
+    SEQUENCE_ID                                , /**< HDR Sequence ID - 0 is not HDR; sequence ID for HDR configuration starts from 1 */
+    HUMIDITY_TEMPERATURE                       , /**< Humidity temperature [Deg Celsius]*/
 };
 
 UENUM(Blueprintable)

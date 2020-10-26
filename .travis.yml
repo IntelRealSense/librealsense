@@ -68,6 +68,7 @@ matrix:
       node_js: "10"
       env: LRS_BUILD_NODEJS=true
       script:
+        - python ../wrappers/nodejs/tools/enums.py -i ../include/librealsense2 -a ../wrappers/nodejs/src -v
         - cmake .. -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS=true -DPYBIND11_PYTHON_VERSION=2.7 -DCHECK_FOR_UPDATES=true
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
         - cd ../wrappers/nodejs/

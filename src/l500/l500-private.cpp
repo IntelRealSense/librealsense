@@ -75,15 +75,8 @@ namespace librealsense
         {
             if (!is_enabled())
                 throw wrong_api_call_sequence_exception("query option is allow only in streaming!");
-
-            auto res = _hw_monitor->send(command{ TEMPERATURES_GET });
-
-            if (res.size() < sizeof(temperatures))
-            {
-                throw std::runtime_error("Invalid result size!");
-            }
-
-            auto temperature_data = *(reinterpret_cast<temperatures*>((void*)res.data()));
+            
+            auto temperature_data = _l500_depth_dev->get_temperatures();
 
             switch (_option)
             {
@@ -95,13 +88,19 @@ namespace librealsense
                 return float(temperature_data.MA_temperature);
             case RS2_OPTION_APD_TEMPERATURE:
                 return float(temperature_data.APD_temperature);
+            case RS2_OPTION_HUMIDITY_TEMPERATURE:
+                return float(temperature_data.HUM_temperature);
             default:
                 throw invalid_value_exception(to_string() << _option << " is not temperature option!");
             }
         }
 
-        l500_temperature_options::l500_temperature_options(hw_monitor* hw_monitor, rs2_option opt)
-            :_hw_monitor(hw_monitor), _option(opt)
+        l500_temperature_options::l500_temperature_options(l500_device *l500_depth_dev,
+                                                            rs2_option opt,
+                                                            const std::string& description )
+            :_l500_depth_dev(l500_depth_dev)
+            , _option( opt )
+            , _description( description )
         {
         }
 

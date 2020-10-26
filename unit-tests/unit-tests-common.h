@@ -797,6 +797,67 @@ inline rs2::stream_profile get_profile_by_resolution_type(rs2::sensor& s, res_ty
     throw std::runtime_error(ss.str());
 }
 
+inline std::shared_ptr<rs2::device> do_with_waiting_for_camera_connection(rs2::context ctx, std::shared_ptr<rs2::device> dev, std::string serial, std::function<void()> operation)
+{
+    std::mutex m;
+    bool disconnected = false;
+    bool connected = false;
+    std::shared_ptr<rs2::device> result;
+    std::condition_variable cv;
+
+    ctx.set_devices_changed_callback([&result, dev, &disconnected, &connected, &m, &cv, &serial](rs2::event_information info) mutable
+        {
+            if (info.was_removed(*dev))
+            {
+                std::unique_lock<std::mutex> lock(m);
+                disconnected = true;
+                cv.notify_all();
+            }
+            auto list = info.get_new_devices();
+            if (list.size() > 0)
+            {
+                for (auto cam : list)
+                {
+                    if (serial == cam.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER))
+                    {
+                        std::unique_lock<std::mutex> lock(m);
+                        connected = true;
+                        result = std::make_shared<rs2::device>(cam);
+
+                        disable_sensitive_options_for(*result);
+                        cv.notify_all();
+                        break;
+                    }
+                }
+            }
+        });
+
+    operation();
+
+    std::unique_lock<std::mutex> lock(m);
+    REQUIRE(wait_for_reset([&]() {
+        return cv.wait_for(lock, std::chrono::seconds(20), [&]() { return disconnected; });
+        }, dev));
+    REQUIRE(cv.wait_for(lock, std::chrono::seconds(20), [&]() { return connected; }));
+    REQUIRE(result);
+    return result;
+}
+
+inline rs2::depth_sensor restart_first_device_and_return_depth_sensor(const rs2::context& ctx, const rs2::device_list& devices_list)
+{
+    rs2::device dev = devices_list[0];
+    std::string serial;
+    REQUIRE_NOTHROW(serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+    //forcing hardware reset to simulate device disconnection
+    auto shared_dev = std::make_shared<rs2::device>(devices_list.front());
+    shared_dev = do_with_waiting_for_camera_connection(ctx, shared_dev, serial, [&]()
+        {
+            shared_dev->hardware_reset();
+        });
+    rs2::depth_sensor depth_sensor = dev.query_sensors().front();
+    return depth_sensor;
+}
+
 
 enum special_folder
 {

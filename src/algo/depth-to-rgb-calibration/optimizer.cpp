@@ -121,11 +121,11 @@ std::string optimizer::settings::to_string() const
 {
     return librealsense::to_string()
         << '[' << ( is_manual_trigger ? "MANUAL" : "AUTO" ) << ' ' << hum_temp << "degC"
-        << " ambience="
-        << ( ambient == RS2_AMBIENT_LIGHT_NO_AMBIENT    ? "none/long"
-             : ambient == RS2_AMBIENT_LIGHT_LOW_AMBIENT ? "low/short"
+        << " digital gain="
+        << (digital_gain == RS2_DIGITAL_GAIN_HIGH ? "high/long"
+            : digital_gain == RS2_DIGITAL_GAIN_LOW ? "low/short"
                                                         : "??" )
-        << " gain=" << receiver_gain << ']';
+        << " receiver gain=" << receiver_gain << ']';
 }
 
 
@@ -464,7 +464,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     /*[zEdge,Zx,Zy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.z),2); % Added the second input - margin to zero out
     [iEdge,Ix,Iy] = OnlineCalibration.aux.edgeSobelXY(uint16(frame.i),2); % Added the second input - margin to zero out
     validEdgePixelsByIR = iEdge>params.gradITh; */
-    _params.set_depth_resolution(depth_intrinsics.width, depth_intrinsics.height, _settings.ambient);
+    _params.set_depth_resolution(depth_intrinsics.width, depth_intrinsics.height, _settings.digital_gain);
     _z.width = depth_intrinsics.width;
     _z.height = depth_intrinsics.height;
     _z.orig_intrinsics = depth_intrinsics;
@@ -1553,12 +1553,19 @@ svm_model_linear::svm_model_linear()
 svm_model_gaussian::svm_model_gaussian()
 {
 }
-void params::set_depth_resolution( size_t width, size_t height, rs2_ambient_light ambient)
+void params::set_depth_resolution( size_t width, size_t height, rs2_digital_gain digital_gain)
 {
     AC_LOG( DEBUG, "    depth resolution= " << width << "x" << height );
     // Some parameters are resolution-dependent
-    bool const XGA = (width == 1024 && height == 768);
-    bool const VGA = (width == 640 && height == 480);
+    bool const XGA = ( width == 1024 && height == 768 );
+    bool const VGA = ( width == 640 && height == 480 );
+
+    if( ! XGA && ! VGA )
+    {
+        throw std::runtime_error( to_string() << width << "x" << height
+                                              << " this resolution is not supported" );
+    }
+
     if( XGA )
     {
         AC_LOG( DEBUG, "    changing IR threshold: " << grad_ir_threshold << " -> " << 2.5 << "  (because of resolution)" );
@@ -1566,7 +1573,7 @@ void params::set_depth_resolution( size_t width, size_t height, rs2_ambient_ligh
     }
     if (use_enhanced_preprocessing)
     {
-        if (ambient == RS2_AMBIENT_LIGHT_NO_AMBIENT)
+        if (digital_gain == RS2_DIGITAL_GAIN_HIGH)
         {
             if (VGA)
             {
@@ -1601,6 +1608,7 @@ void params::set_depth_resolution( size_t width, size_t height, rs2_ambient_ligh
             }
         }
     }
+
     min_weighted_edge_per_section_depth = 50. * ( 480 * 640 ) / ( width * height );
 }
 
@@ -1615,6 +1623,7 @@ void params::set_rgb_resolution( size_t width, size_t height )
     max_xy_movement_per_calibration[1] = max_xy_movement_per_calibration[2] = 2. * area / hd_area;
     max_xy_movement_from_origin = 20. * area / hd_area;
     min_weighted_edge_per_section_rgb = 0.05 * hd_area / area;
+
 }
 
 calib const & optimizer::get_calibration() const
@@ -1632,33 +1641,12 @@ double optimizer::get_cost() const
     return _params_curr.cost;
 }
 
-static
-void write_to_file( void const * data, size_t cb,
-    std::string const & dir,
-    char const * filename
-)
-{
-    std::string path = dir + filename;
-    std::fstream f( path, std::ios::out | std::ios::binary );
-    if( !f )
-        throw std::runtime_error( "failed to open file:\n" + path );
-    f.write( (char const *) data, cb );
-    f.close();
-}
+
 
 template< typename T >
 void write_obj( std::fstream & f, T const & o )
 {
     f.write( (char const *)&o, sizeof( o ) );
-}
-
-template< typename T >
-void write_vector_to_file( std::vector< T > const & v,
-    std::string const & dir,
-    char const * filename
-)
-{
-    write_to_file( v.data(), v.size() * sizeof( T ), dir, filename );
 }
 
 void write_matlab_camera_params_file(
@@ -1861,12 +1849,12 @@ void optimizer::set_cycle_data(const std::vector<double3>& vertices,
 
 void optimizer::adjust_params_to_apd_gain()
 {
-    if(_settings.ambient == RS2_AMBIENT_LIGHT_NO_AMBIENT) // long preset
+    if(_settings.digital_gain == RS2_DIGITAL_GAIN_HIGH) // long preset
         _params.saturation_value = 230;
-    else if(_settings.ambient == RS2_AMBIENT_LIGHT_LOW_AMBIENT) // short preset
+    else if(_settings.digital_gain == RS2_DIGITAL_GAIN_LOW) // short preset
         _params.saturation_value = 250;
     else
-        throw std::runtime_error( to_string() <<_settings.ambient <<" invalid ambient value");
+        throw std::runtime_error(to_string() << _settings.digital_gain << " invalid digital gain value");
 }
 
 void optimizer::adjust_params_to_manual_mode()

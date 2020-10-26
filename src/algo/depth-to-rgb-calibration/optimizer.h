@@ -26,11 +26,11 @@ namespace depth_to_rgb_calibration {
         double step_size = 0;
     };
 
+
     struct params
     {
         params();
-
-        void set_depth_resolution(size_t width, size_t height, rs2_ambient_light ambient);
+        void set_depth_resolution(size_t width, size_t height, rs2_digital_gain digital_gain);
         void set_rgb_resolution(size_t width, size_t height);
 
         double gamma = 0.9;
@@ -283,7 +283,7 @@ namespace depth_to_rgb_calibration {
         {
             bool is_manual_trigger = false;
             double hum_temp = 0.;
-            rs2_ambient_light ambient = RS2_AMBIENT_LIGHT_NO_AMBIENT;
+            rs2_digital_gain digital_gain = RS2_DIGITAL_GAIN_HIGH;
             int receiver_gain = 0;  // aka APD
 
             std::string to_string() const;

@@ -73,8 +73,9 @@ namespace librealsense
 
         std::string lock_status = _is_dfu_locked ? "device is locked" : "device is unlocked";
         LOG_INFO("This device is in DFU mode, previously-installed firmware: " << _last_fw_version <<
-            ", the highest firmware ever installed: " << _highest_fw_version <<
-            ", DFU status: " << lock_status);
+            ", the highest firmware ever installed: " << _highest_fw_version);
+
+        LOG_INFO("DFU status: " << lock_status << " , DFU version is: " << payload.dfu_version);
     }
 
     bool update_device::wait_for_state(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, size_t timeout) const 

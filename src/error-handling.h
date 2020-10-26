@@ -25,7 +25,7 @@ namespace librealsense
 
         unsigned int _poll_intervals_ms;
         bool _silenced = false;
-        std::weak_ptr<option> _option;
+        std::shared_ptr<option> _option;
         std::shared_ptr < active_object<> > _active_object;
         std::weak_ptr<notifications_processor> _notifications_processor;
         std::shared_ptr<notification_decoder> _decoder;

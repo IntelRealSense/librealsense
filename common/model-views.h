@@ -28,6 +28,7 @@
 #include "updates-model.h"
 #include "calibration-model.h"
 #include "cah-model.h"
+#include "../common/utilities/time/periodic_timer.h"
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);
@@ -82,7 +83,11 @@ namespace rs2
     
     void prepare_config_file();
 
-    bool frame_metadata_to_csv(const std::string& filename, rs2::frame frame);
+    bool frame_metadata_to_csv( const std::string & filename, rs2::frame frame );
+
+    bool motion_data_to_csv( const std::string & filename, rs2::frame frame );
+
+    bool pose_data_to_csv( const std::string & filename, rs2::frame frame );
 
     void open_issue(std::string body);
 
@@ -843,7 +848,7 @@ namespace rs2
 
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
-        periodic_timer      _update_readonly_options_timer;
+        utilities::time::periodic_timer      _update_readonly_options_timer;
         bool pause_required = false;
         std::shared_ptr< atomic_objects_in_frame > _detected_objects;
         std::shared_ptr<updates_model> _updates;

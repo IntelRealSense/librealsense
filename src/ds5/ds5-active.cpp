@@ -32,20 +32,41 @@ namespace librealsense
             auto&& depth_ep = get_depth_sensor();
             auto&& raw_depth_ep = get_raw_depth_sensor();
 
+            //EMITTER ENABLED OPTION
             auto emitter_enabled = std::make_shared<emitter_option>(raw_depth_ep);
-            depth_ep.register_option(RS2_OPTION_EMITTER_ENABLED, emitter_enabled);
-
+            
+            //LASER POWER OPTION
             auto laser_power = std::make_shared<uvc_xu_option<uint16_t>>(raw_depth_ep,
                                                                          depth_xu,
                                                                          DS5_LASER_POWER,
                                                                          "Manual laser power in mw. applicable only when laser power mode is set to Manual");
 
-            depth_ep.register_option(RS2_OPTION_LASER_POWER,
-                                     std::make_shared<auto_disabling_control>(
+            auto laser_power_auto_disabling = std::make_shared<auto_disabling_control>(
                                      laser_power,
                                      emitter_enabled,
-                                     std::vector<float>{0.f, 2.f}, 1.f));
+                                     std::vector<float>{0.f, 2.f}, 1.f);
 
+            if (auto hdr_enabled_option = depth_ep.get_option_handler(RS2_OPTION_HDR_ENABLED))
+            {
+                depth_ep.register_option(RS2_OPTION_EMITTER_ENABLED,
+                    std::make_shared<gated_option>(
+                        emitter_enabled,
+                        hdr_enabled_option,
+                        "Emitter status cannot be set while HDR is enabled"));
+                
+                depth_ep.register_option(RS2_OPTION_LASER_POWER,
+                    std::make_shared<gated_option>(
+                        laser_power_auto_disabling,
+                        hdr_enabled_option,
+                        "Laser Power status cannot be set while HDR is enabled"));
+            }
+            else
+            {
+                depth_ep.register_option(RS2_OPTION_EMITTER_ENABLED, emitter_enabled);
+                depth_ep.register_option(RS2_OPTION_LASER_POWER, laser_power_auto_disabling);
+            }
+            
+            //PROJECTOR TEMPERATURE OPTION
             depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
                 std::make_shared<asic_and_projector_temperature_options>(raw_depth_ep,
                     RS2_OPTION_PROJECTOR_TEMPERATURE));

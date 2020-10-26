@@ -7,13 +7,16 @@
 #include "l500-color.h"
 #include "l500-depth.h"
 #include "algo/depth-to-rgb-calibration/debug.h"
+#include "algo/thermal-loop/l500-thermal-loop.h"
 #include "log.h"
+
 
 #ifdef _WIN32
 #include <windows.h>
 #include <direct.h>
 #else 
 #include <sys/stat.h>  // mkdir
+#include <iostream>  // std::cout
 #endif
 
 
@@ -927,6 +930,12 @@ namespace ivcam2 {
         return true;
     }
 
+     rs2_intrinsics read_intrinsics_from_camera( l500_device & dev,
+                                                      const rs2::stream_profile & profile )
+    {
+        auto vp = profile.as< rs2::video_stream_profile >(); 
+        return dev.get_color_sensor()->get_raw_intrinsics(vp.width(), vp.height() );
+    }
 
     void ac_trigger::run_algo()
     {
@@ -954,6 +963,7 @@ namespace ivcam2 {
                     // hold up the thread that the frame callbacks are on!
                     float dsm_x_scale, dsm_y_scale, dsm_x_offset, dsm_y_offset;
                     algo::depth_to_rgb_calibration::algo_calibration_info cal_info;
+                    algo::thermal_loop::l500::thermal_calibration_table thermal_table;
                     {
                         auto hwm = _hwm.lock();
                         if( ! hwm )
@@ -967,6 +977,15 @@ namespace ivcam2 {
                         ivcam2::read_fw_table( *hwm, cal_info.table_id, &cal_info );
 
                         // If the above throw (and they can!) then we catch below and stop...
+
+                        try
+                        {
+                            thermal_table = _dev.get_color_sensor()->get_thermal_table();
+                        }
+                        catch( std::exception const & e )
+                        {
+                            AC_LOG( WARNING, std::string( to_string() << "Disabling thermal correction: " << e.what() << " [NO-THERMAL]" ));
+                        }
                     }
 
                     AC_LOG( DEBUG,
@@ -993,13 +1012,20 @@ namespace ivcam2 {
                     algo::depth_to_rgb_calibration::optimizer::settings settings;
                     settings.is_manual_trigger = _calibration_type == calibration_type::MANUAL;
                     settings.hum_temp = _temp;
-                    settings.ambient = _ambient;
+                    settings.digital_gain = _digital_gain;
                     settings.receiver_gain = _receiver_gain;
-                    depth_to_rgb_calibration algo( settings,
-                                                   df, irf,
-                                                   _cf, _pcf, _last_yuy_data,
-                                                   cal_info, cal_regs,
-                                                   should_continue );
+                    depth_to_rgb_calibration algo(
+                        settings,
+                        df,
+                        irf,
+                        _cf,
+                        _pcf,
+                        _last_yuy_data,
+                        cal_info,
+                        cal_regs,
+                        read_intrinsics_from_camera( _dev, _cf.get_profile() ),
+                        thermal_table,
+                        should_continue );
 
                     std::string debug_dir = get_ac_logger().get_active_dir();
                     if( ! debug_dir.empty() )
@@ -1028,7 +1054,8 @@ namespace ivcam2 {
                     {
                     case RS2_CALIBRATION_SUCCESSFUL:
                         _extr = algo.get_extrinsics();
-                        _intr = algo.get_intrinsics();
+                        _raw_intr = algo.get_raw_intrinsics();
+                        _thermal_intr = algo.get_thermal_intrinsics();
                         _dsm_params = algo.get_dsm_params();
                         call_back( status );  // if this throws, we don't want to do the below:
                         _last_temp = _temp;
@@ -1209,36 +1236,7 @@ namespace ivcam2 {
 
     double ac_trigger::read_temperature()
     {
-        auto hwm = _hwm.lock();
-        if( ! hwm )
-        {
-            AC_LOG( ERROR, "Hardware monitor is inaccessible; cannot read temperature" );
-            return 0.;
-        }
-        // The temperature may depend on streaming?
-        std::vector<byte> res;
-
-        try
-        {
-            res = hwm->send(command{ TEMPERATURES_GET });
-        }
-        catch (std::exception const & e)
-        {
-            AC_LOG(ERROR,
-                "Failed to get temperatures; hardware monitor in inaccessible: " << e.what());
-            return 0.;
-        }
-
-        if( res.size() < sizeof( temperatures ) )  // New temperatures may get added by FW...
-        {
-            AC_LOG( ERROR,
-                    "Failed to get temperatures; result size= "
-                        << res.size() << "; expecting at least " << sizeof( temperatures ) );
-            return 0.;
-        }
-        auto const & ts = *( reinterpret_cast< temperatures * >( res.data() ) );
-        AC_LOG( DEBUG, "HUM temperture is currently " << ts.HUM_temperature << " degrees Celsius" );
-        return ts.HUM_temperature;
+        return _dev.get_temperatures().HUM_temperature;
     }
 
 
@@ -1263,56 +1261,73 @@ namespace ivcam2 {
 
         std::string invalid_reason;
 
-        // Temperature must be within range or algo may not work right
         _temp = read_temperature();
-        if( _temp < 32. )
+
+        auto thermal_table_valid = true;
+        try
         {
-            if( ! invalid_reason.empty() )
-                invalid_reason += ", ";
-            invalid_reason += to_string() << "temperature (" << _temp << ") too low (<32)";
+            _dev.get_color_sensor()->get_thermal_table();
         }
-        else if( _temp > 46. )
+        catch( std::exception const & e )
         {
-            if( ! invalid_reason.empty() )
-                invalid_reason += ", ";
-            invalid_reason += to_string() << "temperature (" << _temp << ") too high (>46)";
+            AC_LOG( DEBUG, std::string( to_string() << "Disabling thermal correction: " << e.what() << " [NO-THERMAL]" ));
+            thermal_table_valid = false;
         }
+
+        if( ! thermal_table_valid )
+        {
+            if( _temp < 32. )
+            {
+                // If from some reason there is no thermal_table or its not valid
+                // Temperature must be within range or algo may not work right
+                if( ! invalid_reason.empty() )
+                    invalid_reason += ", ";
+                invalid_reason += to_string() << "temperature (" << _temp << ") too low (<32)";
+            }
+            else if( _temp > 46. )
+            {
+                if( ! invalid_reason.empty() )
+                    invalid_reason += ", ";
+                invalid_reason += to_string() << "temperature (" << _temp << ") too high (>46)";
+            }
+        }
+       
 
         // Algo was written with specific receiver gain (APD) in mind, depending on
         // the FW preset (ambient light)
         auto & depth_sensor = _dev.get_depth_sensor();
-        auto & ambient_light = depth_sensor.get_option( RS2_OPTION_AMBIENT_LIGHT );
-        float raw_ambient = ambient_light.query();
+        auto & digital_gain = depth_sensor.get_option(RS2_OPTION_DIGITAL_GAIN);
+        float raw_digital_gain = digital_gain.query();
         auto & apd = depth_sensor.get_option( RS2_OPTION_AVALANCHE_PHOTO_DIODE );
         float raw_apd = apd.query();
         _receiver_gain = int( raw_apd );
-        _ambient = ( rs2_ambient_light ) int( raw_ambient );
-        switch( _ambient )
+        _digital_gain = ( rs2_digital_gain ) int(raw_digital_gain);
+        switch(_digital_gain)
         {
-        case RS2_AMBIENT_LIGHT_LOW_AMBIENT:  // SHORT
+        case RS2_DIGITAL_GAIN_LOW:
             if( _receiver_gain != 18 )
             {
                 if( ! invalid_reason.empty() )
                     invalid_reason += ", ";
                 invalid_reason += to_string()
-                               << "low-ambient (SHORT) receiver gain (" << raw_apd << ") != 18";
+                               << "receiver gain(" << raw_apd << ") of 18 is expected with low digital gain(SHORT)";
             }
             break;
 
-        case RS2_AMBIENT_LIGHT_NO_AMBIENT:  // LONG
+        case RS2_DIGITAL_GAIN_HIGH:  
             if( _receiver_gain != 9 )
             {
                 if( ! invalid_reason.empty() )
                     invalid_reason += ", ";
                 invalid_reason += to_string()
-                               << "no-ambient (LONG) receiver gain (" << raw_apd << ") != 9";
+                               << "receiver gain(" << raw_apd << ") of 9 is expected with high digital gain(LONG)";
             }
             break;
 
         default:
             if( ! invalid_reason.empty() )
                 invalid_reason += ", ";
-            invalid_reason += to_string() << "invalid (" << raw_ambient << ") ambient preset";
+            invalid_reason += to_string() << "invalid (" << raw_digital_gain << ") digital gain preset";
             break;
         }
 

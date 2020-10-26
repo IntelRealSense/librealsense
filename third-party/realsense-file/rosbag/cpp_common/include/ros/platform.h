@@ -36,7 +36,9 @@
 
 #ifdef WIN32
   #ifdef _MSC_VER
-    #define WIN32_LEAN_AND_MEAN // slimmer compile times
+    #ifndef WIN32_LEAN_AND_MEAN
+      #define WIN32_LEAN_AND_MEAN // slimmer compile times
+    #endif // WIN32_LEAN_AND_MEAN
     #define _WINSOCKAPI_ // stops windows.h from including winsock.h (and lets us include winsock2.h)
     #ifndef NOMINMAX
       #define NOMINMAX // windows c++ pollutes the environment like any factory
