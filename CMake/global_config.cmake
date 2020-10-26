@@ -45,6 +45,10 @@ macro(global_set_flags)
         add_definitions(-DHWM_OVER_XU)
     endif()
 
+    if(COM_MULTITHREADED)
+        add_definitions(-DCOM_MULTITHREADED)
+    endif()
+
     if (ENFORCE_METADATA)
       add_definitions(-DENFORCE_METADATA)
     endif()
