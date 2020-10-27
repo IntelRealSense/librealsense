@@ -505,10 +505,12 @@ namespace librealsense
         std::vector<uint8_t> pattern{};
 
         if (static_cast<int>(value))
+        {
             if (_is_fw_version_using_id)
                 pattern = ds::alternating_emitter_pattern;
             else
                 pattern = ds::alternating_emitter_pattern_with_name;
+        }
 
         command cmd(ds::SETSUBPRESET, static_cast<int>(pattern.size()));
         cmd.data = pattern;
