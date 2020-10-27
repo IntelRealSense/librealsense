@@ -549,7 +549,7 @@ namespace rs2
 
     };
 
-    class subdevice_model
+    class subdevice_model : public std::enable_shared_from_this<subdevice_model>
     {
     public:
         static void populate_options(std::map<int, option_model>& opt_container,
@@ -562,6 +562,7 @@ namespace rs2
         subdevice_model(device& dev, std::shared_ptr<sensor> s, std::shared_ptr< atomic_objects_in_frame > objects, std::string& error_message, viewer_model& viewer);
         ~subdevice_model();
 
+        void init_device_threads(std::string& error_message);
         bool is_there_common_fps() ;
         bool supports_on_chip_calib();
         bool draw_stream_selection();
@@ -682,8 +683,6 @@ namespace rs2
         bool post_processing_enabled = true;
         std::vector<std::shared_ptr<processing_block_model>> const_effects;
 
-        std::mutex _device_mutex;
-        bool _device_off = false;
     };
 
     class viewer_model;

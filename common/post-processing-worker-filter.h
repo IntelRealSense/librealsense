@@ -22,17 +22,23 @@ protected:
     }
     ~post_processing_worker_filter()
     {
-        _alive = false;
-        if( _worker.joinable() )
-            _worker.join();
+        if (_alive)
+        {
+            _alive = false;
+            if (_worker.joinable())
+                _worker.join();
+        }
+        
     }
 
 public:
     void start( rs2::subdevice_model & model ) override
     {
-        post_processing_filter::start( model );
-        _worker = std::thread( [&]()
-        {
+        post_processing_filter::start(model);
+        auto p = model.shared_from_this();
+        auto weak_p = std::weak_ptr<rs2::subdevice_model>(p);
+        _worker = std::thread([&, weak_p]()
+            {
             try
             {
                 worker_start();
@@ -50,16 +56,15 @@ public:
                     continue;
                 if( !f )
                     continue;
-                if (!model._device_off)
+                if (auto pp = weak_p.lock()) // lock to make it a shared pointer
                 {
-                    model._device_mutex.lock();
                     worker_body(f.as< rs2::frameset >());
-                    model._device_mutex.unlock();
                 }
             }
             LOG(DEBUG) << "End of worker loop in " + get_name();
             worker_end();
         } );
+        _worker.detach();
     }
 
 protected:
