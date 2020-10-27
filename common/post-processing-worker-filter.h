@@ -27,24 +27,26 @@ protected:
             _alive = false;
             if (_worker.joinable())
             {
+                //joinable() only checks that the thread's alive -- but we don't want to join if we're here from within the worker thread itself!
                 if (std::this_thread::get_id() != _worker.get_id())
                 {
                     _worker.join();
                 }
-                else {
+                else 
+                {
                     _worker.detach();
                 }
             }
         }
-        
+
     }
 
 public:
     void start( rs2::subdevice_model & model ) override
     {
         post_processing_filter::start(model);
-        auto p = model.shared_from_this();
-        auto weak_p = std::weak_ptr<rs2::subdevice_model>(p);
+        auto model_shared_p = model.shared_from_this();
+        auto weak_p = std::weak_ptr<rs2::subdevice_model>(model_shared_p);
         _worker = std::thread([&, weak_p]()
             {
             try
@@ -64,7 +66,8 @@ public:
                     continue;
                 if( !f )
                     continue;
-                if (auto pp = weak_p.lock()) // lock to make it a shared pointer
+                // increase refrence count by 1 to make subdevice destructor wait until worker thread is done
+                if (auto shared_p = weak_p.lock()) 
                 {
                     worker_body(f.as< rs2::frameset >());
                 }
@@ -72,7 +75,6 @@ public:
             LOG(DEBUG) << "End of worker loop in " + get_name();
             worker_end();
         } );
-        _worker.detach();
     }
 
 protected:
