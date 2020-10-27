@@ -84,7 +84,7 @@ if not os.path.isdir( dir ):
     sys.exit(1)
 
 
-def run(cmd, errorstatus=256, stdout=subprocess.PIPE):
+def run(cmd, stdout=subprocess.PIPE):
     debug( 'Running:', cmd )
     handle = None
     try:
@@ -96,15 +96,12 @@ def run(cmd, errorstatus=256, stdout=subprocess.PIPE):
                              stderr = subprocess.STDOUT,
                              universal_newlines = True,
                              check = True)
-        status = rv.returncode
-        if status >= errorstatus:
-            raise RuntimeError( 'status ' + str(status) + ' from ' + cmd )
         result = rv.stdout
         if not result:
             result = []
         else:
             result = result.split( '\n' )
-        return status, result
+        return result
     finally:
         if handle:
             handle.close()
