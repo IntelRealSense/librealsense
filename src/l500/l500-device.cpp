@@ -126,6 +126,18 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "L500");
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
 
+        // If FW supportes the SET_AGE command, we update the age of the device in weeks to aid projection of aging
+        if ((_fw_version >= firmware_version("1.5.1.4"))) {
+            try {
+                uint8_t age = weeks_since_factory_calibration(optic_serial);
+                command cmd(fw_cmd::SET_AGE, age);
+                _hw_monitor->send(cmd);
+            }
+            catch (...) {
+                LOG_ERROR("Failed to set units age");
+            }
+        }
+
         configure_depth_options();
     }
 
@@ -224,8 +236,13 @@ namespace librealsense
                     {
                         // We override the DSM params first, because it can throw if the parameters
                         // are exceeding spec! This may throw!!
-                        get_depth_sensor().override_dsm_params( _autocal->get_dsm_params() );
-                     
+                        rs2_dsm_params new_dsm_params = _autocal->get_dsm_params();
+                        // We update the age of the device in weeks and the time between factory calibration and last AC to aid projection 
+                        auto age = weeks_since_factory_calibration(get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+                        new_dsm_params.weeks_since_calibration = age;
+                        new_dsm_params.ac_weeks_since_calibaration = age;
+
+                        get_depth_sensor().override_dsm_params( new_dsm_params );
                         auto & color_sensor = *get_color_sensor();
                         color_sensor.override_intrinsics( _autocal->get_raw_intrinsics() );
                         color_sensor.override_extrinsics( _autocal->get_extrinsics() );

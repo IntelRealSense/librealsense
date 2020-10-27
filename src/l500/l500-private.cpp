@@ -197,6 +197,27 @@ namespace librealsense
             _record_action( *this );
         }
 
-
+        // Returns the number of weeks that passed since manufactoring of this device
+        // The Serial Number format is PYWWXXXX:
+        // P – Site Name(ex.“F” for Fabrinet)
+        // Y – Year(ex.“9” for 2019, "0" for 2020, , "1" for 2021  ..etc)
+        // WW – Work Week
+        // XXXX – Sequential number
+        uint8_t weeks_since_factory_calibration(const std::string& serial) {
+            int Y = serial[1] - '0'; // Converts char to int, '0'-> 0, '1'-> 1, ...
+            int man_year = 0;
+            if (Y == 9) //using Y from serial number to get manufactoring year
+                man_year = 2019;
+            else
+                man_year = 2020 + Y;
+            int man_ww = std::stoi(serial.substr(2, 2)); //using WW from serial number to get manufactoring work week
+            auto t = (std::time(nullptr));
+            auto curr_time = std::localtime(&t);
+            int curr_year = curr_time->tm_year + 1900; // The tm_year field contains the number of years since 1900, we add 1900 to get current year
+            int curr_ww = curr_time->tm_yday / 7; // The tm_yday field contains the number of days sine 1st of January, we devide by 7 to get current work week
+            curr_ww++; // We add 1 because work weeks start at 1 and not 0 (ex. 1st of January will return ww 0, but it ww 1)
+            uint8_t age = ((curr_year - man_year) * 52) + (curr_ww - man_ww); // There are 52 weeks in a year
+            return age;
+        }
     } // librealsense::ivcam2
 } // namespace librealsense
