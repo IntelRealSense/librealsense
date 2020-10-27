@@ -257,8 +257,8 @@ namespace librealsense
                 }
                 else
                 {
-                    LOG_ERROR( "Failed to query depth units from sensor." );
-                    throw std::runtime_error( "Failed to query depth units from sensor." );
+                    LOG_ERROR( "Failed to query depth units from sensor" );
+                    throw std::runtime_error( "failed to query depth units from sensor" );
                 }
             }
 
