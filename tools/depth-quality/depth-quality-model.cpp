@@ -798,6 +798,7 @@ namespace rs2
 
             _depth_sensor_model->draw_streams_selector = false;
             _depth_sensor_model->draw_fps_selector = true;
+            _viewer_model.draw_max_usable_range = false;
 
             // Retrieve stereo baseline for supported devices
             auto baseline_mm = -1.f;

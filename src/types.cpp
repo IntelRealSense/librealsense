@@ -323,6 +323,7 @@ namespace librealsense
             CASE(CALIBRATED_SENSOR)
             CASE(SEQUENCE_ID_FILTER)
             CASE(HDR_MERGE)
+            CASE(MAX_USABLE_RANGE_SENSOR)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -412,7 +413,7 @@ namespace librealsense
             CASE(EMITTER_ON_OFF)
             CASE(ZERO_ORDER_POINT_X)
             CASE(ZERO_ORDER_POINT_Y)
-            CASE(LLD_TEMPERATURE)
+            case RS2_OPTION_LLD_TEMPERATURE:       return "LDD temperature";
             CASE(MC_TEMPERATURE)
             CASE(MA_TEMPERATURE)
             CASE(APD_TEMPERATURE)
@@ -445,6 +446,7 @@ namespace librealsense
             CASE(SEQUENCE_SIZE)
             CASE(SEQUENCE_ID)
             CASE(HUMIDITY_TEMPERATURE)
+            CASE(ENABLE_MAX_USABLE_RANGE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

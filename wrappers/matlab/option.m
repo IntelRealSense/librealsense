@@ -82,6 +82,7 @@ classdef option < int64
         sequence_size                   (78)
         sequence_id                     (79)
         humidity_temperature            (80)
-        count                           (81)
+        max_usable_range                (81)
+        count                           (82)
     end
 end

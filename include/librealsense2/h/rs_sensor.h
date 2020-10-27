@@ -647,6 +647,12 @@ void rs2_reset_sensor_calibration( rs2_sensor const * sensor, rs2_error** error 
 */
 void rs2_set_motion_device_intrinsics(const rs2_sensor* sensor, const rs2_stream_profile* profile, const rs2_motion_device_intrinsic* intrinsics, rs2_error** error);
 
+/** When called on a depth sensor, this method will return the maximum range of the camera given the amount of ambient light in the scene
+* \param[in] sensor      depth sensor
+* \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                the max usable range in meters
+*/
+float rs2_get_max_usable_depth_range(rs2_sensor const * sensor, rs2_error** error);
 
 #ifdef __cplusplus
 }

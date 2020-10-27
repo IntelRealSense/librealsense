@@ -53,7 +53,8 @@ public enum Extension {
     DEVICE_CALIBRATION(49),
     CALIBRATED_SENSOR(50),
     HDR_MERGE(51),
-    SEQUENCE_ID_FILTER(52);
+    SEQUENCE_ID_FILTER(52),
+    MAX_USABLE_RANGE_SENSOR(53);
 
 
     private final int mValue;
