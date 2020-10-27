@@ -412,8 +412,7 @@ namespace librealsense
             CASE(EMITTER_ON_OFF)
             CASE(ZERO_ORDER_POINT_X)
             CASE(ZERO_ORDER_POINT_Y)
-            case RS2_OPTION_LLD_TEMPERATURE:
-            return "LDD temperature";
+            case RS2_OPTION_LLD_TEMPERATURE:       return "LDD temperature";
             CASE(MC_TEMPERATURE)
             CASE(MA_TEMPERATURE)
             CASE(APD_TEMPERATURE)
