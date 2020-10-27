@@ -70,26 +70,26 @@ typedef struct rs2_intrinsics
 /** \brief Video DSM (Digital Sync Module) parameters for calibration (same layout as in FW ac_depth_params)
     This is the block in MC that converts angles to dimensionless integers reported to MA (using "DSM coefficients").
 */
-#pragma pack(push,1)
-typedef struct rs2_dsm_params
-{
-    unsigned long long  timestamp;                       /**< system_clock::time_point::time_since_epoch().count() */
-    unsigned short      version;                         /**< MAJOR<<12 | MINOR<<4 | PATCH */
-    unsigned char       model;                           /**< rs2_dsm_correction_model */
-    unsigned char       flags[5];                        /**< TBD, now 0s */
-    float               h_scale;                         /**< the scale factor to horizontal DSM scale thermal results */
-    float               v_scale;                         /**< the scale factor to vertical DSM scale thermal results */
-    float               h_offset;                        /**< the offset to horizontal DSM offset thermal results */
-    float               v_offset;                        /**< the offset to vertical DSM offset thermal results */
-    float               rtd_offset;                      /**< the offset to the Round-Trip-Distance delay thermal results */
-    unsigned char       temp_x2;                         /**< the temperature recorded times 2 (ldd for depth; hum for rgb) */
-    float               mc_h_scale;                      /**< the scale factor to horizontal LOS coefficients in MC */
-    float               mc_v_scale;                      /**< the scale factor to vertical LOS coefficients in MC */
-    unsigned char       weeks_since_calibration;         /**< time (in weeks) since factory calibration */
-    unsigned char       ac_weeks_since_calibaration;     /**< time (in weeks) between factory calibration and last AC event */
-    unsigned char       reserved[1];
-} rs2_dsm_params;
-#pragma pack(pop)
+#pragma pack( push, 1 )
+    typedef struct rs2_dsm_params
+    {
+        unsigned long long timestamp;               /**< system_clock::time_point::time_since_epoch().count() */
+        unsigned short version;                     /**< MAJOR<<12 | MINOR<<4 | PATCH */
+        unsigned char model;                        /**< rs2_dsm_correction_model */
+        unsigned char flags[5];                     /**< TBD, now 0s */
+        float h_scale;                              /**< the scale factor to horizontal DSM scale thermal results */
+        float v_scale;                              /**< the scale factor to vertical DSM scale thermal results */
+        float h_offset;                             /**< the offset to horizontal DSM offset thermal results */
+        float v_offset;                             /**< the offset to vertical DSM offset thermal results */
+        float rtd_offset;                           /**< the offset to the Round-Trip-Distance delay thermal results */
+        unsigned char temp_x2;                      /**< the temperature recorded times 2 (ldd for depth; hum for rgb) */
+        float mc_h_scale;                           /**< the scale factor to horizontal LOS coefficients in MC */
+        float mc_v_scale;                           /**< the scale factor to vertical LOS coefficients in MC */
+        unsigned char weeks_since_calibration;      /**< time (in weeks) since factory calibration */
+        unsigned char ac_weeks_since_calibaration;  /**< time (in weeks) between factory calibration and last AC event */
+        unsigned char reserved[1];
+    } rs2_dsm_params;
+#pragma pack( pop )
 
 typedef enum rs2_dsm_correction_model
 {
