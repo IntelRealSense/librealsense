@@ -2890,7 +2890,7 @@ namespace rs2
                 if (viewer.metric_system)
                     ss << std::dec << " = " << std::setprecision(3) << meters << " meters";
                 else
-                    ss << std::dec <<  " = " << std::setprecision(3) << meters / FEET_TO_METER << " feet";
+                    ss << std::dec << " = " << std::setprecision(3) << meters / FEET_TO_METER << " feet";
             }
 
             std::string msg(ss.str().c_str());
