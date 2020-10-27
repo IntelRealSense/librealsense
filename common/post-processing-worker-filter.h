@@ -26,7 +26,15 @@ protected:
         {
             _alive = false;
             if (_worker.joinable())
-                _worker.join();
+            {
+                if (std::this_thread::get_id() != _worker.get_id())
+                {
+                    _worker.join();
+                }
+                else {
+                    _worker.detach();
+                }
+            }
         }
         
     }
