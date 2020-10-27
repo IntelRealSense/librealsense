@@ -27,11 +27,11 @@
     "bindings": "^1.2.1",
     "fs-compare": "0.0.4",
     "jsonfile": "^3.0.1",
-    "nan": "^2.8.0",
+    "nan": "^2.14.1",
     "pngjs": "^3.3.0"
   },
   "devDependencies": {
     "marked": "~0.3.9",
-    "jsdoc": "^3.5.5"
+    "jsdoc": "^3.6.6"
   }
 }
