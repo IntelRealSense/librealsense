@@ -240,7 +240,6 @@ namespace librealsense
             _source_stream_profile = f.get_profile();
             _target_stream_profile = f.get_profile().clone(RS2_STREAM_DEPTH, f.get_profile().stream_index(), RS2_FORMAT_RGB8);
 
-            auto info = disparity_info::update_info_from_frame(f);
             auto snr = ( (frame_interface *)f.get() )->get_sensor().get();
             auto depth_sensor = As< librealsense::depth_sensor >( snr );
             if( depth_sensor )
@@ -261,7 +260,7 @@ namespace librealsense
                     throw std::runtime_error( "failed to query depth units from sensor" );
                 }
             }
-
+            auto info = disparity_info::update_info_from_frame( f );
             _d2d_convert_factor = info.d2d_convert_factor;
         }
 
