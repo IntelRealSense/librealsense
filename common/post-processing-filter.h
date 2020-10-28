@@ -16,7 +16,7 @@
     A worker thread does the main job in the background, once start() is called.
     See object_detection_filters.
 */
-class post_processing_filter : public rs2::filter
+class post_processing_filter : public rs2::filter, public std::enable_shared_from_this<post_processing_filter>
 {
     std::string _name;
     bool _pb_enabled;

@@ -960,8 +960,6 @@ namespace rs2
         depth_decoder(std::make_shared<rs2::depth_huffman_decoder>()),
         viewer(viewer),
         detected_objects(device_detected_objects)
-    {}
-    void subdevice_model::init_device_threads(std::string& error_message)
     {
         supported_options = s->get_supported_options();
         restore_processing_block("colorizer", depth_colorizer);
@@ -3507,7 +3505,6 @@ namespace rs2
         for (auto&& sub : dev.query_sensors())
         {
             auto model = std::make_shared<subdevice_model>(dev, std::make_shared<sensor>(sub), _detected_objects, error_message, viewer);
-            model->init_device_threads(error_message);
             subdevices.push_back(model);
         }
 

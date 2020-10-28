@@ -38,36 +38,47 @@ public:
     void start( rs2::subdevice_model & model ) override
     {
         post_processing_filter::start(model);
-        auto model_p = model.shared_from_this();
-        auto weak_model_p = std::weak_ptr< rs2::subdevice_model >( model_p );
-        _worker = std::thread([&, weak_model_p]()
-        {
-            try
+        // worker_thread accesses worker-filter's variables and functions. 
+        // If worker-filter's destructoer is called while worker_thread runs, it will cause memory access issues.
+        // So it is important to delay the destruction of worker filter by defining a shared pointer to it.
+        // By defining a shared pointer, refrence count to worker filter will stay 1 until worker_thread is done.
+        // After worker_thread is done, the weak pointer is released and refrence count becomes 0, then worker-filter's
+        // destructor is called.
+        auto filter_p = this->shared_from_this();
+        auto weak_p = std::weak_ptr<post_processing_filter>(filter_p);
+        _worker = std::thread([&, weak_p]()
             {
-                worker_start();
-            }
-            catch( std::exception const & e )
-            {
-                // Most likely file not found, if the user didn't set up his .xml/.bin files right
-                LOG( ERROR ) << "Cannot start " << get_name() << ": " << e.what();
-                return;
-            }
-            while( _alive )
-            {
-                rs2::frame f;
-                if( !_queue.try_wait_for_frame( &f ) )
-                    continue;
-                if( !f )
-                    continue;
-                // TODO Noha: why is the subdevice model needed?
-                if( auto model_p = weak_model_p.lock() )
+                try
                 {
-                    worker_body( f.as< rs2::frameset >() );
+                    if (auto shared_p = weak_p.lock())
+                    {
+                        worker_start();
+                    }
                 }
-            }
-            LOG(DEBUG) << "End of worker loop in " + get_name();
-            worker_end();
-        } );
+                catch (std::exception const& e)
+                {
+                    // Most likely file not found, if the user didn't set up his .xml/.bin files right
+                    LOG(ERROR) << "Cannot start " << get_name() << ": " << e.what();
+                    return;
+                }
+                while (_alive)
+                {
+                    rs2::frame f;
+                    if (!_queue.try_wait_for_frame(&f))
+                        continue;
+                    if (!f)
+                        continue;
+                    if (auto shared_p = weak_p.lock())
+                    {
+                        worker_body(f.as< rs2::frameset >());
+                    }
+                }
+                LOG(DEBUG) << "End of worker loop in " + get_name();
+                if (auto shared_p = weak_p.lock())
+                {
+                    worker_end();
+                }
+            });
     }
 
 protected:
