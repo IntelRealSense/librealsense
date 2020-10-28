@@ -37,23 +37,19 @@ protected:
 public:
     void start( rs2::subdevice_model & model ) override
     {
-        post_processing_filter::start(model);
-        // worker_thread accesses worker-filter's variables and functions. 
-        // If worker-filter's destructoer is called while worker_thread runs, it will cause memory access issues.
-        // So it is important to delay the destruction of worker filter by defining a shared pointer to it.
-        // By defining a shared pointer, refrence count to worker filter will stay 1 until worker_thread is done.
-        // After worker_thread is done, the weak pointer is released and refrence count becomes 0, then worker-filter's
-        // destructor is called.
-        auto filter_p = this->shared_from_this();
-        auto weak_p = std::weak_ptr<post_processing_filter>(filter_p);
-        _worker = std::thread([&, weak_p]()
+        post_processing_filter::start( model );
+        
+        // We need to make sure the filter object doesn't get destroyed while we're working. At the same
+        // time, we need to make sure that its dtor is callable so it will set _alive to false -- so we
+        // can't just keep it reference count elevated while the thread is alive...
+        auto weak_filter_p = std::weak_ptr< post_processing_filter >( shared_from_this() );
+
+        _worker = std::thread([&, weak_filter_p]()
             {
                 try
                 {
-                    if (auto shared_p = weak_p.lock())
-                    {
+                    if( auto shared_p = weak_filter_p.lock() )
                         worker_start();
-                    }
                 }
                 catch (std::exception const& e)
                 {
@@ -64,20 +60,16 @@ public:
                 while (_alive)
                 {
                     rs2::frame f;
-                    if (!_queue.try_wait_for_frame(&f))
+                    if( ! _queue.try_wait_for_frame( &f ))
                         continue;
-                    if (!f)
+                    if( ! f )
                         continue;
-                    if (auto shared_p = weak_p.lock())
-                    {
+                    if( auto shared_p = weak_filter_p.lock() )
                         worker_body(f.as< rs2::frameset >());
-                    }
                 }
                 LOG(DEBUG) << "End of worker loop in " + get_name();
-                if (auto shared_p = weak_p.lock())
-                {
+                if( auto shared_p = weak_p.lock() )
                     worker_end();
-                }
             });
     }
 
