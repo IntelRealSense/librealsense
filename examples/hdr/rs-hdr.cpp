@@ -10,7 +10,7 @@
 int main(int argc, char * argv[]) try
 {
     rs2::context ctx;
-
+    
     rs2::device_list devices_list = ctx.query_devices();
 
     size_t device_count = devices_list.size();
@@ -76,7 +76,7 @@ int main(int argc, char * argv[]) try
     depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
 
     // Create a simple OpenGL window for rendering:
-    window app(1280, 720, "RealSense Capture Example");
+    window app(1280, 720, "RealSense HDR Example");
 
     // Declare depth colorizer for pretty visualization of depth data
     rs2::colorizer color_map;
