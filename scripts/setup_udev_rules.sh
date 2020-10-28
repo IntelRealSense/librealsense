@@ -7,7 +7,6 @@
 # --uninstall : remove permissions for realsense devices.
 
 install=true
-auto_power_off=false
 
 for var in "$@"
 do
@@ -18,10 +17,6 @@ done
 
 if [ "$install" = true ]; then
     echo "Setting-up permissions for RealSense devices"
-    if [ "$auto_power_off" = true ]; then
-        echo "Setting-up RealSense Device auto power off."
-        sudo apt install -q=3 at || (echo "Failed to install package 'at'. Remove flag --auto_power_off and run again." && exit 1)
-    fi
 else
     echo "Remove permissions for RealSense devices"
 fi
@@ -39,8 +34,6 @@ if [ "$install" = true ]; then
         echo -e "\e[0m"
     fi
     sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/
-    echo | sudo tee -a /etc/udev/rules.d/99-realsense-libusb.rules > /dev/null
-    echo "KERNEL==\"iio*\", ATTRS{idVendor}==\"8086\", ATTRS{idProduct}==\"0ad5|0afe|0aff|0b00|0b01|0b3a|0b3d|0b64\", RUN+=\"/bin/sh -c '[ \`uname -r | cut -d \\\".\\\" -f1\` -le 4 ] || enfile=/sys/%p/buffer/enable && echo \\\"COUNTER=0; while [ \\\$COUNTER -lt 10 ] && grep -q 0 \$enfile; do sleep 0.01; COUNTER=\\\$((COUNTER+1)); done && echo 0 > \$enfile\\\" | at now'\"" | sudo tee -a /etc/udev/rules.d/99-realsense-libusb.rules > /dev/null
 else
     sudo rm /etc/udev/rules.d/99-realsense-libusb.rules
 fi
