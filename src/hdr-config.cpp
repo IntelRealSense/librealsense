@@ -242,25 +242,28 @@ namespace librealsense
         {
             if (validate_config())
             {
-                // saving status of options that are not compatible with hdr,
-                // so that they could be reenabled after hdr disable
-                set_options_to_be_restored_after_disable();
-
-                if (_use_workaround)
+                if (!_is_enabled)
                 {
-                    try {
-                        // the following statement is needed in order to get/set the UVC exposure 
-                        // instead of one of the hdr's configuration exposure
-                        set_sequence_index(0.f);
-                        _pre_hdr_exposure = _sensor->get_option(RS2_OPTION_EXPOSURE).query();
-                        _sensor->get_option(RS2_OPTION_EXPOSURE).set(PRE_ENABLE_HDR_EXPOSURE);
-                    } catch (...) {
-                        LOG_WARNING("HDR: enforced exposure failed");
-                    }
-                }
+                    // saving status of options that are not compatible with hdr,
+                // so that they could be reenabled after hdr disable
+                    set_options_to_be_restored_after_disable();
 
-                _is_enabled = send_sub_preset_to_fw();
-                _has_config_changed = false;
+                    if (_use_workaround)
+                    {
+                        try {
+                            // the following statement is needed in order to get/set the UVC exposure 
+                            // instead of one of the hdr's configuration exposure
+                            set_sequence_index(0.f);
+                            _pre_hdr_exposure = _sensor->get_option(RS2_OPTION_EXPOSURE).query();
+                            _sensor->get_option(RS2_OPTION_EXPOSURE).set(PRE_ENABLE_HDR_EXPOSURE);
+                        } catch (...) {
+                            LOG_WARNING("HDR: enforced exposure failed");
+                        }
+                    }
+
+                    _is_enabled = send_sub_preset_to_fw();
+                    _has_config_changed = false;
+                }
             }
             else
                 // msg to user to be improved later on
@@ -275,6 +278,7 @@ namespace librealsense
             {
                 // this sleep is needed to let the fw restore the manual exposure
                 std::this_thread::sleep_for(std::chrono::milliseconds(70));
+
                 if (_pre_hdr_exposure >= _exposure_range.min && _pre_hdr_exposure <= _exposure_range.max)
                 {
                     try {
