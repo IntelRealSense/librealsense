@@ -240,8 +240,27 @@ namespace librealsense
             _source_stream_profile = f.get_profile();
             _target_stream_profile = f.get_profile().clone(RS2_STREAM_DEPTH, f.get_profile().stream_index(), RS2_FORMAT_RGB8);
 
-            auto info = disparity_info::update_info_from_frame(f);
-            _depth_units = info.depth_units;
+            auto snr = ( (frame_interface *)f.get() )->get_sensor().get();
+            auto depth_sensor = As< librealsense::depth_sensor >( snr );
+            if( depth_sensor )
+                _depth_units = depth_sensor->get_depth_scale();
+            else
+            {
+                // For playback sensors
+                auto extendable = As< librealsense::extendable_interface >( snr );
+                if( extendable
+                    && extendable->extend_to( TypeToExtension< librealsense::depth_sensor >::value,
+                                              (void **)( &depth_sensor ) ) )
+                {
+                    _depth_units = depth_sensor->get_depth_scale();
+                }
+                else
+                {
+                    LOG_ERROR( "Failed to query depth units from sensor" );
+                    throw std::runtime_error( "failed to query depth units from sensor" );
+                }
+            }
+            auto info = disparity_info::update_info_from_frame( f );
             _d2d_convert_factor = info.d2d_convert_factor;
         }
 
