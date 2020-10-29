@@ -107,7 +107,7 @@ namespace librealsense
                                                                    resolution_option.get(),
                                                                    "Enable/Disable alternate IR" );
 
-                depth_sensor.register_option( RS2_OPTION_ENABLE_ALTERNATE_IR, alt_ir );
+                depth_sensor.register_option( RS2_OPTION_ALTERNATE_IR, alt_ir );
             }
 
             _hw_options[RS2_OPTION_POST_PROCESSING_SHARPENING] = register_option< l500_hw_options,
