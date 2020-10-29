@@ -336,7 +336,7 @@ namespace librealsense
 
             \param [in] data Pointer to the data buffer in which the field is stored.
             \param [in] index Number of bytes into the buffer where the field starts.
-            \returns Field of arbitrary size
+            \returns Field of arbitrary type.
         */
         template <typename T>
         T get_gvd_field(const std::vector<uint8_t>& data, size_t index)
@@ -345,26 +345,26 @@ namespace librealsense
             if (index + sizeof(T) > data.size())
                 throw new std::runtime_error("get_gvd_field - index out of bounds, buffer size: " +
                     std::to_string(data.size()) + ", index: " + std::to_string(index));
-            for (int i = 0; i < sizeof(T); i++)
+            for (auto i = 0U; i < sizeof(T); i++)
                 rv += data[index + i] << (i * CHAR_BIT);
             return rv;
         }
-        /*
-            \brief get_gvd_field specialization which returns a bool field.
-
-            This specialization is required as bool is implementation specific and '+=' operation used in default template is not safe for bool.
-
-            \param [in] data Pointer to the data buffer in which the field is stored.
-            \param [in] index Number of bytes into the buffer where the field starts.
-            \returns bool field value.
-        */
-        template <>
-        bool get_gvd_field(const std::vector<uint8_t>& data, size_t index)
-        {
-            if (index >= data.size())
-                throw new std::runtime_error("get_gvd_field - index out of bounds, buffer size: " +
-                    std::to_string(data.size()) + ", index: " + std::to_string(index));
-            return data[index];
-        }
     };
+    /**
+        \brief get_gvd_field specialization which returns a bool field.
+
+        This specialization for bool is necessary as bool is implementation specific and MSVC warns '+=' operation used in default template is not safe for bool.
+
+        \param [in] data Pointer to the data buffer in which the bool field is stored.
+        \param [in] index Number of bytes into the buffer where the bool field starts.
+        \returns bool field value.
+    */
+    template <>
+    inline bool hw_monitor::get_gvd_field(const std::vector<uint8_t>& data, size_t index)
+    {
+        if (index >= data.size())
+            throw new std::runtime_error("get_gvd_field - index out of bounds, buffer size: " +
+                std::to_string(data.size()) + ", index: " + std::to_string(index));
+        return data[index];
+    }
 }
