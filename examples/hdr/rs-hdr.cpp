@@ -86,9 +86,7 @@ int main(int argc, char * argv[]) try
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
 
-    // Start streaming with default recommended configuration
-    // The default video configuration contains Depth and Color streams
-    // If a device is capable to stream IMU data, both Gyro and Accelerometer are enabled by default
+    // Start streaming with Depth and Infrared streams
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_DEPTH);
     cfg.enable_stream(RS2_STREAM_INFRARED, 1);
@@ -103,15 +101,25 @@ int main(int argc, char * argv[]) try
     // setting the required sequence ID to be shown
     spliting_filter.set_option(RS2_OPTION_SEQUENCE_ID, 2);
 
+    /*
+    rs2::frame depth_1;
+    rs2::frame depth_2;
+    rs2::frame ir_1;
+    rs2::frame ir_2;
+    rs2::frame hdr;
+    */
+
+    rs2::frameset data[4];
+    bool first_time = true;
     // flag used to see the original stream or the merged one
     bool true_for_merge_false_for_split = true;
     int frames_without_hdr_metadata_params = 0;
     while (app) // Application still alive?
     {
-        rs2::frameset data = pipe.wait_for_frames() .    // Wait for next set of frames from the camera
+            data[1] = pipe.wait_for_frames() .    // Wait for next set of frames from the camera
             apply_filter(printer);     // Print each enabled stream frame rate
 
-        auto depth_frame = data.get_depth_frame();
+        auto depth_frame = data[1].get_depth_frame();
 
         if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE) ||
             !depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID))
@@ -122,8 +130,9 @@ int main(int argc, char * argv[]) try
                 std::cout << "Firmware and/or SDK versions must be updated for the HDR feature to be supported.\n";
                 return EXIT_SUCCESS;
             }
-            data = data.apply_filter(color_map);
-            app.show(data);
+            data[1] = data[1].apply_filter(color_map);
+            app.show(data[1]);
+            //do not save this frame (in data[0]) - no meta data
             continue;
         }
 
@@ -138,18 +147,37 @@ int main(int argc, char * argv[]) try
         if (true_for_merge_false_for_split)
         {
             // merging the frames from the different HDR sequence IDs 
-            auto merged_frameset = merging_filter.process(data). // merging frames with both hdr sequence IDs 
+            auto merged_frameset = merging_filter.process(data[1]). // merging frames with both hdr sequence IDs 
                 apply_filter(color_map);   // Find and colorize the depth data;
             rs2_format format = merged_frameset.as<rs2::frameset>().get_depth_frame().get_profile().format();
             std::cout << ", after merge format = " << rs2_format_to_string(format) << std::endl;
-            app.show(merged_frameset);
+            
+            
+            //data[1] = data[1].apply_filter(color_map);
+            if (first_time) {
+                data[0] = data[1];
+                first_time = false;
+            }
+            
+     
+            std::map<int, rs2::frame> render_frames;
+            render_frames[0] = data[0].get_infrared_frame();
+            render_frames[1] = data[0].get_depth_frame().apply_filter(color_map);
+            render_frames[2] = data[1].get_infrared_frame();
+            render_frames[3] = data[1].get_depth_frame().apply_filter(color_map);
+            render_frames[4] = merged_frameset.as<rs2::frameset>().get_depth_frame().apply_filter(color_map);
+            
+            app.show(render_frames);
+
         }
         else
         {
-            auto split_frameset = spliting_filter.process(data) . // getting frames only with the requested sequence ID
+            auto split_frameset = spliting_filter.process(data[1]) . // getting frames only with the requested sequence ID
                 apply_filter(color_map);   // Find and colorize the depth data;
             app.show(split_frameset);
         }
+        //save last frame
+        data[0] = data[1];
     }
 
     return EXIT_SUCCESS;
