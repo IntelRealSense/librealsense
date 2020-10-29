@@ -161,10 +161,8 @@ int main(int argc, char* argv[])
                 {
                     auto current_time = std::chrono::high_resolution_clock::now();
                     auto time_since_previous_polling_ms = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - time_of_previous_polling_ms).count();
-                    //std::cout << "current_time - time_of_previous_polling_ms = " << time_since_previous_polling_ms << ", polling_interval_ms = " << polling_interval_ms << std::endl;
                     if (time_since_previous_polling_ms < polling_interval_ms)
                     {
-                        //std::cout << "sleeping_time = " << polling_interval_ms - time_since_previous_polling_ms << std::endl;
                         std::this_thread::sleep_for(chrono::milliseconds(polling_interval_ms - time_since_previous_polling_ms));
                     }
                     time_of_previous_polling_ms = std::chrono::high_resolution_clock::now();

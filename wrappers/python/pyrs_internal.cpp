@@ -169,7 +169,7 @@ void init_internal(py::module &m) {
         .def("get_severity", &rs2::firmware_log_parsed_message::severity, "Get severity ")
         .def("get_line", &rs2::firmware_log_parsed_message::line, "Get line ")
         .def("get_timestamp", &rs2::firmware_log_parsed_message::timestamp, "Get timestamp ")
-        .def("get_sequence_id", &rs2::firmware_log_parsed_message::sequence_id, "Get sequence ");
+        .def("get_sequence_id", &rs2::firmware_log_parsed_message::sequence_id, "Get sequence id");
 
     // rs2::firmware_logger
     py::class_<rs2::firmware_logger, rs2::device> firmware_logger(m, "firmware_logger");

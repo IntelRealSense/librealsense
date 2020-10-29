@@ -17,7 +17,7 @@ public class FwLogParsedMsg extends LrsClass {
     public String getSeverity() {return nGetSeverity(mHandle);}
     public int getLine() {return nGetLine(mHandle);}
     public long getTimestamp(){return nGetTimestamp(mHandle);}
-    public int getSequence() {return nGetSequenceId(mHandle);}
+    public int getSequenceId() {return nGetSequenceId(mHandle);}
 
 
     private native static void nRelease(long handle);
