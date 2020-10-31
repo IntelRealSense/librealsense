@@ -158,6 +158,8 @@ namespace librealsense
     const int DEFAULT_FL_SAMPLING = data_sampling::interrupt;
     const int DEFAULT_ADJUST_BOTH_SIDES = 0;
 
+    const int DEFAULT_TARE_SAMPLING = data_sampling::polling;
+
     auto_calibrated::auto_calibrated(std::shared_ptr<hw_monitor>& hwm)
         : _hw_monitor(hwm){}
 
@@ -477,7 +479,7 @@ namespace librealsense
         int accuracy = DEFAULT_ACCURACY;
         int speed = DEFAULT_SPEED;
         int scan_parameter = DEFAULT_SCAN;
-        int data_sampling = DEFAULT_SAMPLING;
+        int data_sampling = DEFAULT_TARE_SAMPLING;
         int apply_preset = 1;
 
         if (json.size() > 0)

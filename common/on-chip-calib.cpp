@@ -1897,6 +1897,10 @@ namespace rs2
         float mean = 0.0f;
         float norm = 0.0f;
 
+        float min_val = 2.0;
+        float max_val = -2.0;
+        float tmp = 0.0;
+
         float peak = 0.0f;
         _pts[q].x = 0;
         _pts[q].y = 0;
@@ -1939,24 +1943,44 @@ namespace rs2
                 for (int k = 0; k < _tsize2; ++k)
                     sum += *pit++ * *pt++;
 
-                *pncc = sum / norm;
+                tmp = sum / norm;
+                if (tmp < min_val)
+                    min_val = tmp;
 
-                if (*pncc < thresh)
-                    *pncc = 0;
+                if (tmp > max_val)
+                    max_val = tmp;
 
-                if (*pncc > peak)
-                {
-                    peak = *pncc;
-                    _pts[q].x = i;
-                    _pts[q].y = j;
-                }
-
-                ++pncc;
+                *pncc++ = tmp;
                 ++pi;
             }
 
             pncc += _tsize;
             pi += _tsize;
+        }
+
+        if (max_val > min_val)
+        {
+            float factor = 1.0f / (max_val - min_val);
+            float div = 1.0f - thresh;
+            pncc = _nccq[q].data() + (_htsize * _hwidth + _htsize);;
+            for (int j = 0; j < _hht; ++j)
+            {
+                for (int i = 0; i < _hwt; ++i)
+                {
+                    tmp = (*pncc - min_val) * factor;
+                    tmp = (tmp < thresh ? 0 : (tmp - thresh) / div);
+
+                    if (tmp > peak)
+                    {
+                        peak = tmp;
+                        _pts[q].x = i;
+                        _pts[q].y = j;
+                    }
+
+                    *pncc++ = tmp;
+                }
+                pncc += _tsize;
+            }
         }
 
         // refine the corner point
@@ -2098,41 +2122,7 @@ namespace rs2
             p += ws;
         }
 
-        for (int i = 0; i < s; ++i)
-            f[i] = -f[i];
-
-        int mi = 0;
-        float mv = f[mi];
-        for (int i = 1; i < s; ++i)
-        {
-            if (f[i] < mv)
-            {
-                mi = i;
-                mv = f[mi];
-            }
-        }
-
-        float x0 = 0.0f;
-        float y0 = 0.0f;
-        if (mi == 0)
-        {
-            if (fit_parabola(0.0f, f[0], 1.0f, f[1], 2.0f, f[2], x0, y0) && x0 > 0)
-                x += x0;
-        }
-        else if (mi + 1 == s)
-        {
-            if (fit_parabola(static_cast<float>(s - 3), f[s - 3], static_cast<float>(s - 2), f[s - 2], static_cast<float>(s - 1), f[s - 1], x0, y0))
-                x += x0;
-            else
-                x += s - 1;
-        }
-        else
-        {
-            if (fit_parabola(static_cast<float>(mi - 1), static_cast<float>(f[mi - 1]), static_cast<float>(mi), static_cast<float>(f[mi]), static_cast<float>(mi + 1), static_cast<float>(f[mi + 1]), x0, y0) && x0 < s)
-                x += x0;
-            else
-                x += mi;
-        }
+        x += subpixel_agj(f, s);
     }
 
     void tare_ground_truth_calculator::minimize_y(const float* p, int s, float* f, float& y)
@@ -2149,68 +2139,63 @@ namespace rs2
             p += ws;
         }
 
-        for (int i = 0; i < s; ++i)
-            f[i] = -f[i];
+        y += subpixel_agj(f, s);
+    }
 
+    float tare_ground_truth_calculator::subpixel_agj(float* f, int s)
+    {
         int mi = 0;
         float mv = f[mi];
         for (int i = 1; i < s; ++i)
         {
-            if (f[i] < mv)
+            if (f[i] > mv)
             {
                 mi = i;
                 mv = f[mi];
             }
         }
 
-        float x0 = 0.0f;
-        float y0 = 0.0f;
-        if (mi == 0)
+        float half_mv = 0.5f * mv;
+
+        int x_0 = 0;
+        int x_1 = 0;
+        for (int i = 0; i < s; ++i)
         {
-            if (fit_parabola(0.0f, f[0], 1.0f, f[1], 2.0f, f[2], x0, y0) && x0 > 0)
-                y += x0;
+            if (f[i] > half_mv)
+            {
+                x_1 = i;
+                break;
+            }
         }
-        else if (mi + 1 == s)
+
+        float left_mv = 0.0f;
+        if (x_1 > 0)
         {
-            if (fit_parabola(static_cast<float>(s - 3), f[s - 3], static_cast<float>(s - 2), f[s - 2], static_cast<float>(s - 1), f[s - 1], x0, y0) && x0 < s)
-                y += x0;
-            else
-                y += s - 1;
+            x_0 = x_1 - 1;
+            left_mv = x_0 + (half_mv - f[x_0]) / (f[x_1] - f[x_0]);
         }
         else
+            left_mv = static_cast<float>(0);
+
+        x_0 = s - 1;
+        for (int i = s - 1; i >= 0; --i)
         {
-            if (fit_parabola(static_cast<float>(mi - 1), static_cast<float>(f[mi - 1]), static_cast<float>(mi), static_cast<float>(f[mi]), static_cast<float>(mi + 1), static_cast<float>(f[mi + 1]), x0, y0))
-                y += x0;
-            else
-                y += mi;
+            if (f[i] > half_mv)
+            {
+                x_0 = i;
+                break;
+            }
         }
-    }
 
-    bool tare_ground_truth_calculator::fit_parabola(float x1, float y1, float x2, float y2, float x3, float y3, float& x0, float& y0)
-    {
-        float det = x1 * x1 * x2 + x1 * x3 * x3 + x2 * x2 * x3 - x2 * x3 * x3 - x1 * x1 * x3 - x1 * x2 * x2;
-        if (det == 0)
-            return false;
+        float right_mv = 0.0f;
+        if (x_0 == s - 1)
+            right_mv = static_cast<float>(s - 1);
+        else
+        {
+            x_1 = x_0 + 1;
+            right_mv = x_0 + (half_mv - f[x_0]) / (f[x_1] - f[x_0]);
+        }
 
-        float m11 = (x2 - x3) / det;
-        float m12 = (x3 - x1) / det;
-        float m13 = (x1 - x2) / det;
-
-        float m21 = (x3 * x3 - x2 * x2) / det;
-        float m22 = (x1 * x1 - x3 * x3) / det;
-        float m23 = (x2 * x2 - x1 * x1) / det;
-
-        float m31 = (x2 * x2 * x3 - x2 * x3 * x3) / det;
-        float m32 = (x1 * x3 * x3 - x1 * x1 * x3) / det;
-        float m33 = (x1 * x1 * x2 - x1 * x2 * x2) / det;
-
-        float A = m11 * y1 + m12 * y2 + m13 * y3;
-        float B = m21 * y1 + m22 * y2 + m23 * y3;
-        float C = m31 * y1 + m32 * y2 + m33 * y3;
-
-        x0 = -B / (2 * A);
-        y0 = C - B * B / (4 * A);
-
-        return A > 0;
+        return (left_mv + right_mv) / 2;
     }
 }

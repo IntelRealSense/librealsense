@@ -184,7 +184,7 @@ namespace rs2
 
         void minimize_x(const float* p, int s, float* f, float& x);
         void minimize_y(const float* p, int s, float* f, float& y);
-        bool fit_parabola(float x1, float y1, float x2, float y2, float x3, float y3, float& x0, float& y0);
+        float subpixel_agj(float* f, int s);
 
     public:
         static const int _frame_num = 50;
