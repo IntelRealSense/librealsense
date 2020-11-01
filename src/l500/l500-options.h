@@ -16,7 +16,8 @@ namespace librealsense
         apd = 4,
         laser_gain = 5,
         min_distance = 6,
-        invalidation_bypass = 7
+        invalidation_bypass = 7,
+        alternate_ir = 8
     };
 
     enum l500_command

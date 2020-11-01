@@ -100,6 +100,16 @@ namespace librealsense
 
             depth_sensor.register_option(RS2_OPTION_SENSOR_MODE, resolution_option);
 
+            if( _fw_version >= firmware_version( "1.5.2.0" ) )
+            {
+                auto alt_ir = std::make_shared< l500_hw_options >( _hw_monitor.get(),
+                                                                   alternate_ir,
+                                                                   resolution_option.get(),
+                                                                   "Enable/Disable alternate IR" );
+
+                depth_sensor.register_option( RS2_OPTION_ALTERNATE_IR, alt_ir );
+            }
+
             _hw_options[RS2_OPTION_POST_PROCESSING_SHARPENING] = register_option< l500_hw_options,
                                                                                   hw_monitor *,
                                                                                   l500_control,

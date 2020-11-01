@@ -258,6 +258,9 @@ namespace Intel.RealSense
         HumidityTemperature = 80,
 
         /// <summary>Turn on/off the maximum usable range who calculates the maximum range of the camera given the amount of ambient light in the scene </summary>
-         EnableMaxUsableRange = 81
-  }
+         EnableMaxUsableRange = 81,
+
+        /// <summary>Turn on/off the alternate IR, When enabling alternate IR, the IR image is holding the amplitude of the depth correlation. </summary>
+        AlternateIR = 82
+    }
 }
