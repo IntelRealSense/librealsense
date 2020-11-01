@@ -296,6 +296,7 @@ namespace librealsense
                 auto min = _min;
                 auto max = _max;
                 auto coloring_function = [&, this](float data) {
+                    if (max == min) return data * _depth_units;
                     return (data * _depth_units - min) / (max - min);
                 };
                 make_rgb_data<uint16_t>(depth_data, rgb_data, w, h, coloring_function);
