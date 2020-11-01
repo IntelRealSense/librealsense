@@ -46,10 +46,13 @@ string datetime_string()
 
 int main(int argc, char* argv[])
 {
+    int default_polling_interval_ms = 100;
     CmdLine cmd("librealsense rs-fw-logger example tool", ' ', RS2_API_VERSION_STR);
     ValueArg<string> xml_arg("l", "load", "Full file path of HW Logger Events XML file", false, "", "Load HW Logger Events XML file");
+    ValueArg<int> polling_interval_arg("p", "polling_interval", "Time Interval between each log messages polling (in milliseconds)", false, default_polling_interval_ms, "");
     SwitchArg flash_logs_arg("f", "flash", "Flash Logs Request", false);
     cmd.add(xml_arg); 
+    cmd.add(polling_interval_arg);
     cmd.add(flash_logs_arg);
     cmd.parse(argc, argv);
 
@@ -57,6 +60,12 @@ int main(int argc, char* argv[])
 
     auto use_xml_file = false;
     auto xml_full_file_path = xml_arg.getValue();
+    auto polling_interval_ms = polling_interval_arg.getValue();
+    if (polling_interval_ms < 25 || polling_interval_ms > 300)
+    {
+        std::cout << "Polling interval time provided: " << polling_interval_ms << "ms, is not in the valid range [25,300]. Default value " << default_polling_interval_ms << "ms is used." << std::endl;
+        polling_interval_ms = default_polling_interval_ms;
+    }
 
     bool are_flash_logs_requested = flash_logs_arg.isSet();
 
@@ -91,6 +100,7 @@ int main(int argc, char* argv[])
             }
 
             bool are_there_remaining_flash_logs_to_pull = true;
+            auto time_of_previous_polling_ms = std::chrono::high_resolution_clock::now();
 
             while (hub.is_connected(dev))
             {
@@ -118,10 +128,11 @@ int main(int argc, char* argv[])
                         bool parsing_result = fw_log_device.parse_log(log_message, parsed_log);
                         
                         stringstream sstr;
-                        sstr << datetime_string() << " " << parsed_log.timestamp() << " " << parsed_log.severity() << " " << parsed_log.message()
-                            << " " << parsed_log.thread_name() << " " << parsed_log.file_name()
-                            << " " << parsed_log.line();
-
+                        sstr << datetime_string() << " " << parsed_log.timestamp() << " " << parsed_log.sequence_id()
+                            << " " << parsed_log.severity() << " " << parsed_log.thread_name()
+                            << " " << parsed_log.file_name() << " " << parsed_log.line()
+                            << " " << parsed_log.message();
+                        
                         fw_log_lines.push_back(sstr.str());
                     }
                     else
@@ -136,7 +147,7 @@ int main(int argc, char* argv[])
                         fw_log_lines.push_back(sstr.str());
                     }
                     for (auto& line : fw_log_lines)
-                        cout << line << endl;
+                       cout << line << endl;
                 }
                 else
                 {
@@ -144,6 +155,17 @@ int main(int argc, char* argv[])
                     {
                         are_there_remaining_flash_logs_to_pull = false;
                     }
+                }
+                auto num_of_messages = fw_log_device.get_number_of_fw_logs();
+                if (num_of_messages == 0)
+                {
+                    auto current_time = std::chrono::high_resolution_clock::now();
+                    auto time_since_previous_polling_ms = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - time_of_previous_polling_ms).count();
+                    if (time_since_previous_polling_ms < polling_interval_ms)
+                    {
+                        std::this_thread::sleep_for(chrono::milliseconds(polling_interval_ms - time_since_previous_polling_ms));
+                    }
+                    time_of_previous_polling_ms = std::chrono::high_resolution_clock::now();
                 }
             }
         }

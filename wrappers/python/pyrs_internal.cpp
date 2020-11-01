@@ -168,13 +168,15 @@ void init_internal(py::module &m) {
         .def("get_thread_name", &rs2::firmware_log_parsed_message::thread_name, "Get thread name ")
         .def("get_severity", &rs2::firmware_log_parsed_message::severity, "Get severity ")
         .def("get_line", &rs2::firmware_log_parsed_message::line, "Get line ")
-        .def("get_timestamp", &rs2::firmware_log_parsed_message::timestamp, "Get timestamp ");
+        .def("get_timestamp", &rs2::firmware_log_parsed_message::timestamp, "Get timestamp ")
+        .def("get_sequence_id", &rs2::firmware_log_parsed_message::sequence_id, "Get sequence id");
 
     // rs2::firmware_logger
     py::class_<rs2::firmware_logger, rs2::device> firmware_logger(m, "firmware_logger");
     firmware_logger.def(py::init<rs2::device>(), "device"_a)
         .def("create_message", &rs2::firmware_logger::create_message, "Create FW Log")
         .def("create_parsed_message", &rs2::firmware_logger::create_parsed_message, "Create FW Parsed Log")
+        .def("get_number_of_fw_logs", &rs2::firmware_logger::get_number_of_fw_logs, "Get Number of Fw Logs Polled From Device")
         .def("get_firmware_log", &rs2::firmware_logger::get_firmware_log, "Get FW Log", "msg"_a)
         .def("get_flash_log", &rs2::firmware_logger::get_flash_log, "Get Flash Log", "msg"_a)
         .def("init_parser", &rs2::firmware_logger::init_parser, "Initialize Parser with content of xml file",
