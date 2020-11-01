@@ -28,10 +28,10 @@
 
   <build_depend>pkg-config</build_depend>
 
-  <depend>libusb-1.0-dev</depend>
-  <depend>libssl-dev</depend>
-  <depend>dkms</depend>
-  <depend>udev</depend>
+  <build_depend>libusb-1.0-dev</build_depend>
+  <build_depend>libssl-dev</build_depend>
+  <build_depend>dkms</build_depend>
+  <build_depend>udev</build_depend>
 
   <export>
     <build_type>cmake</build_type>
