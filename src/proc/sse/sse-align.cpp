@@ -215,9 +215,9 @@ void image_transform::pre_compute_x_y_map(std::vector<float>& pre_compute_map_x,
     pre_compute_map_x.resize(_depth.width*_depth.height);
     pre_compute_map_y.resize(_depth.width*_depth.height);
 
-    for (int h = 0; h < _depth.height; ++h)
+    for (auto h = 0U; h < _depth.height; ++h)
     {
-        for (int w = 0; w < _depth.width; ++w)
+        for (auto w = 0U; w < _depth.width; ++w)
         {
             const float pixel[] = { (float)w + offset, (float)h + offset };
 
@@ -240,7 +240,7 @@ void image_transform::pre_compute_x_y_map(std::vector<float>& pre_compute_map_x,
     }
 }
 
-void image_transform::align_depth_to_other(const uint16_t* z_pixels, uint16_t* dest, int bpp, const rs2_intrinsics& depth, const rs2_intrinsics& to,
+void image_transform::align_depth_to_other(const uint16_t* z_pixels, uint16_t* dest, unsigned int bpp, const rs2_intrinsics& depth, const rs2_intrinsics& to,
     const rs2_extrinsics& from_to_other)
 {
     switch (to.model)
@@ -255,20 +255,20 @@ void image_transform::align_depth_to_other(const uint16_t* z_pixels, uint16_t* d
 }
 
 inline void image_transform::move_depth_to_other(const uint16_t* z_pixels, uint16_t* dest, const rs2_intrinsics& to,
-    const std::vector<librealsense::int2>& pixel_top_left_int,
-    const std::vector<librealsense::int2>& pixel_bottom_right_int)
+    const std::vector<librealsense::uint2>& pixel_top_left_int,
+    const std::vector<librealsense::uint2>& pixel_bottom_right_int)
 {
-    for (int y = 0; y < _depth.height; ++y)
+    for (auto y = 0U; y < _depth.height; ++y)
     {
-        for (int x = 0; x < _depth.width; ++x)
+        for (auto x = 0U; x < _depth.width; ++x)
         {
             auto depth_pixel_index = y * _depth.width + x;
             // Skip over depth pixels with the value of zero, we have no depth data so we will not write anything into our aligned images
             if (z_pixels[depth_pixel_index])
             {
-                for (int other_y = pixel_top_left_int[depth_pixel_index].y; other_y <= pixel_bottom_right_int[depth_pixel_index].y; ++other_y)
+                for (auto other_y = pixel_top_left_int[depth_pixel_index].y; other_y <= pixel_bottom_right_int[depth_pixel_index].y; ++other_y)
                 {
-                    for (int other_x = pixel_top_left_int[depth_pixel_index].x; other_x <= pixel_bottom_right_int[depth_pixel_index].x; ++other_x)
+                    for (auto other_x = pixel_top_left_int[depth_pixel_index].x; other_x <= pixel_bottom_right_int[depth_pixel_index].x; ++other_x)
                     {
                         if (other_x < 0 || other_y < 0 || other_x >= to.width || other_y >= to.height)
                             continue;
@@ -282,7 +282,7 @@ inline void image_transform::move_depth_to_other(const uint16_t* z_pixels, uint1
     }
 }
 
-void image_transform::align_other_to_depth(const uint16_t* z_pixels, const byte* source, byte* dest, int bpp, const rs2_intrinsics& to,
+void image_transform::align_other_to_depth(const uint16_t* z_pixels, const byte* source, byte* dest, size_t bpp, const rs2_intrinsics& to,
     const rs2_extrinsics& from_to_other)
 {
     switch (to.model)
@@ -327,13 +327,13 @@ inline void image_transform::align_depth_to_other_sse(const uint16_t * z_pixels,
 }
 
 template<rs2_distortion dist>
-inline void image_transform::align_other_to_depth_sse(const uint16_t * z_pixels, const byte * source, byte * dest, int bpp, const rs2_intrinsics& to,
+inline void image_transform::align_other_to_depth_sse(const uint16_t * z_pixels, const byte * source, byte * dest, size_t bpp, const rs2_intrinsics& to,
     const rs2_extrinsics& from_to_other)
 {
     get_texture_map_sse<dist>(z_pixels, _depth_scale, _depth.height*_depth.width, _pre_compute_map_x_top_left.data(),
         _pre_compute_map_y_top_left.data(), (byte*)_pixel_top_left_int.data(), to, from_to_other);
 
-    std::vector<int2>& bottom_right = _pixel_top_left_int;
+    std::vector<uint2>& bottom_right = _pixel_top_left_int;
     if (to.height < _depth.height && to.width < _depth.width)
     {
         get_texture_map_sse<dist>(z_pixels, _depth_scale, _depth.height*_depth.width, _pre_compute_map_x_bottom_right.data(),
@@ -369,21 +369,21 @@ template<class T >
 void image_transform::move_other_to_depth(const uint16_t* z_pixels,
     const T* source,
     T* dest, const rs2_intrinsics& to,
-    const std::vector<librealsense::int2>& pixel_top_left_int,
-    const std::vector<librealsense::int2>& pixel_bottom_right_int)
+    const std::vector<librealsense::uint2>& pixel_top_left_int,
+    const std::vector<librealsense::uint2>& pixel_bottom_right_int)
 {
     // Iterate over the pixels of the depth image
-    for (int y = 0; y < _depth.height; ++y)
+    for (auto y = 0U; y < _depth.height; ++y)
     {
-        for (int x = 0; x < _depth.width; ++x)
+        for (auto x = 0U; x < _depth.width; ++x)
         {
             auto depth_pixel_index = y * _depth.width + x;
             // Skip over depth pixels with the value of zero, we have no depth data so we will not write anything into our aligned images
             if (z_pixels[depth_pixel_index])
             {
-                for (int other_y = pixel_top_left_int[depth_pixel_index].y; other_y <= pixel_bottom_right_int[depth_pixel_index].y; ++other_y)
+                for (auto other_y = pixel_top_left_int[depth_pixel_index].y; other_y <= pixel_bottom_right_int[depth_pixel_index].y; ++other_y)
                 {
-                    for (int other_x = pixel_top_left_int[depth_pixel_index].x; other_x <= pixel_bottom_right_int[depth_pixel_index].x; ++other_x)
+                    for (auto other_x = pixel_top_left_int[depth_pixel_index].x; other_x <= pixel_bottom_right_int[depth_pixel_index].x; ++other_x)
                     {
                         if (other_x < 0 || other_y < 0 || other_x >= to.width || other_y >= to.height)
                             continue;

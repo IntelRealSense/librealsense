@@ -566,6 +566,7 @@ namespace librealsense
     ////////////////////////////////////////////
 #pragma pack(push, 1)
     struct int2 { int x, y; };
+    struct uint2 { uint32_t x, y; };
     struct float2 { float x, y; float & operator [] (int i) { return (&x)[i]; } };
     struct float3 { float x, y, z; float & operator [] (int i) { return (&x)[i]; } };
     struct float4 { float x, y, z, w; float & operator [] (int i) { return (&x)[i]; } };
@@ -1142,7 +1143,7 @@ namespace librealsense
             i.fx, i.fy, i.model, {i.coeffs[0], i.coeffs[1], i.coeffs[2], i.coeffs[3], i.coeffs[4]} };
     }
 
-    inline rs2_intrinsics scale_intrinsics(const rs2_intrinsics & i, int width, int height)
+    inline rs2_intrinsics scale_intrinsics(const rs2_intrinsics & i, uint32_t width, uint32_t height)
     {
         const float sx = static_cast<float>(width) / i.width, sy = static_cast<float>(height) / i.height;
         return{ width, height, i.ppx*sx, i.ppy*sy, i.fx*sx, i.fy*sy, i.model,

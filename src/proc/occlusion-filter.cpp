@@ -36,24 +36,25 @@ namespace librealsense
             break;
         }
     }
-   int gcd(int a, int b) {
+   unsigned int gcd(unsigned int a, unsigned int b) {
        if (b == 0)
            return a;
        return gcd(b, a % b);
    }
    // Return the greatest common divisor of a 
    // and b which lie in the given range. 
-   int maxDivisorRange(int a, int b, int lo, int hi)
+   // Used with width and depth which are unsigned.
+   unsigned int maxDivisorRange(unsigned int a, unsigned int b, unsigned int lo, unsigned int hi)
    {
        if (lo > hi)
        {
            std::swap(hi, lo);
        }
-       int g = gcd(a, b);
-       int res = g;
+       auto g = gcd(a, b);
+       auto res = g;
 
        // Loop from 1 to sqrt(GCD(a, b). 
-       for (int i = lo; i * i <= g && i <= hi; i++)
+       for (auto i = lo; i * i <= g && i <= hi; i++)
 
            if ((g % i == 0) && (g / i) <= hi)
            {
@@ -64,7 +65,7 @@ namespace librealsense
        return res;
    }
    template<size_t SIZE>
-   void rotate_image_optimized(byte* dest[], const byte* source, int width, int height)
+   void rotate_image_optimized(byte* dest[], const byte* source, unsigned int width, unsigned int height)
    {
 
        auto width_out = height;
@@ -74,24 +75,24 @@ namespace librealsense
        auto buffer_size = maxDivisorRange(height, width, 1, ROTATION_BUFFER_SIZE); 
 
        byte** buffer = new byte * [buffer_size];
-       for (int i = 0; i < buffer_size; ++i)
+       for (auto i = 0U; i < buffer_size; ++i)
            buffer[i] = new byte[buffer_size * SIZE];
 
 
-       for (int i = 0; i <= height - buffer_size; i = i + buffer_size)
+       for (auto i = 0U; i <= height - buffer_size; i = i + buffer_size)
        {
-           for (int j = 0; j <= width - buffer_size; j = j + buffer_size)
+           for (auto j = 0U; j <= width - buffer_size; j = j + buffer_size)
            {
-               for (int ii = 0; ii < buffer_size; ++ii)
+               for (auto ii = 0U; ii < buffer_size; ++ii)
                {
-                   for (int jj = 0; jj < buffer_size; ++jj)
+                   for (auto jj = 0U; jj < buffer_size; ++jj)
                    {
                        auto source_index = ((j + jj) + (width * (i + ii))) * SIZE;
                        memcpy((void*)&(buffer[(buffer_size-1 - jj)][(buffer_size-1 - ii) * SIZE]), &source[source_index], SIZE);
                    }
                }
 
-               for (int ii = 0; ii < buffer_size; ++ii)
+               for (auto ii = 0U; ii < buffer_size; ++ii)
                {
                    auto out_index = (((height_out - buffer_size - j + 1) * width_out) - i - buffer_size + (ii)*width_out);
                    memcpy(&out[(out_index)*SIZE], (buffer[ii]), buffer_size * SIZE);
@@ -99,7 +100,7 @@ namespace librealsense
            }
        }
 
-       for (int i = 0; i < buffer_size; ++i)
+       for (auto i = 0U; i < buffer_size; ++i)
        {
            delete[] buffer[i];
        }
@@ -176,9 +177,9 @@ namespace librealsense
            // scan depth frame after rotation: check if there is a noticed jump between adjacen pixels in Z-axis (depth), it means there could be occlusion.
            // save suspected points and run occlusion-invalidation vertical scan only on them
            // after rotation : height = points_width , width = points_height
-           for (int i = 0; i < rotated_depth_height; i++)
+           for (auto i = 0U; i < rotated_depth_height; i++)
            {
-               for (int j = 0; j < rotated_depth_width; j++)
+               for (auto j = 0U; j < rotated_depth_width; j++)
                {
                    // before depth frame rotation: occlusion detected in the positive direction of Y
                    // after rotation : scan from right to left (positive direction of X) to detect occlusion

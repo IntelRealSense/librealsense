@@ -229,7 +229,7 @@ namespace librealsense
         return depth_ep;
     }
 
-    rs2_intrinsics sr300_camera::make_depth_intrinsics(const ivcam::camera_calib_params & c, const int2 & dims)
+    rs2_intrinsics sr300_camera::make_depth_intrinsics(const ivcam::camera_calib_params & c, const uint2 & dims)
     {
         return{ dims.x, dims.y, (c.Kc[0][2] * 0.5f + 0.5f) * dims.x,
             (c.Kc[1][2] * 0.5f + 0.5f) * dims.y,
@@ -240,7 +240,7 @@ namespace librealsense
               c.Invdistc[3], c.Invdistc[4] } };
     }
 
-    rs2_intrinsics sr300_camera::make_color_intrinsics(const ivcam::camera_calib_params & c, const int2 & dims)
+    rs2_intrinsics sr300_camera::make_color_intrinsics(const ivcam::camera_calib_params & c, const uint2 & dims)
     {
         rs2_intrinsics intrin = { dims.x, dims.y, c.Kt[0][2] * 0.5f + 0.5f,
             c.Kt[1][2] * 0.5f + 0.5f, c.Kt[0][0] * 0.5f,

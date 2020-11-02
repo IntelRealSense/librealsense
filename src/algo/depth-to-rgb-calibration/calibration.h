@@ -53,8 +53,8 @@ namespace depth_to_rgb_calibration {
             return res;
         }
 
-        int           width;     /**< Width of the image in pixels */
-        int           height;    /**< Height of the image in pixels */
+        uint32_t       width;     /**< Width of the image in pixels */
+        uint32_t       height;    /**< Height of the image in pixels */
         double         ppx;       /**< Horizontal coordinate of the principal point of the image, as a pixel offset from the left edge */
         double         ppy;       /**< Vertical coordinate of the principal point of the image, as a pixel offset from the top edge */
         double         fx;        /**< Focal length of the image plane, as a multiple of pixel width */

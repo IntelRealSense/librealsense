@@ -27,7 +27,7 @@ namespace librealsense
         rs2::stream_profile     _source_stream_profile;
 
         optional_value<float>   _depth_units;
-        size_t                  _width, _height, _stride;
+        uint32_t                _width, _height, _stride;
         size_t                  _bpp;
     };
 }

@@ -29,9 +29,9 @@ namespace librealsense
         _pre_compute_map_x.resize(_depth_intrinsics->width*_depth_intrinsics->height);
         _pre_compute_map_y.resize(_depth_intrinsics->width*_depth_intrinsics->height);
 
-        for (int h = 0; h < _depth_intrinsics->height; ++h)
+        for (auto h = 0U; h < _depth_intrinsics->height; ++h)
         {
-            for (int w = 0; w < _depth_intrinsics->width; ++w)
+            for (auto w = 0U; w < _depth_intrinsics->width; ++w)
             {
                 const float pixel[] = { (float)w, (float)h };
 
@@ -67,7 +67,7 @@ namespace librealsense
         float* pre_compute_x = _pre_compute_map_x.data();
         float* pre_compute_y = _pre_compute_map_y.data();
 
-        uint32_t size = depth_intrinsics.height * depth_intrinsics.width;
+        const uint32_t size = depth_intrinsics.height * depth_intrinsics.width;
 
         auto point = (float*)output.get_vertices();
 
@@ -82,7 +82,7 @@ namespace librealsense
         auto mapx = pre_compute_x;
         auto mapy = pre_compute_y;
 
-        for (unsigned int i = 0; i < size; i += 8)
+        for (auto i = 0U; i < size; i += 8U)
         {
             auto x0 = _mm_load_ps(mapx + i);
             auto x1 = _mm_load_ps(mapx + i + 4);
@@ -177,7 +177,6 @@ namespace librealsense
         auto ppy = _mm_set_ps1(other_intrinsics.ppy);
         auto w = _mm_set_ps1(float(other_intrinsics.width));
         auto h = _mm_set_ps1(float(other_intrinsics.height));
-        auto mask_inv_brown_conrady = _mm_set_ps1(RS2_DISTORTION_INVERSE_BROWN_CONRADY);
         auto zero = _mm_set_ps1(0);
         auto one = _mm_set_ps1(1);
         auto two = _mm_set_ps1(2);
@@ -189,7 +188,6 @@ namespace librealsense
             auto xyz2 = _mm_load_ps(point + i + 4);
             auto xyz3 = _mm_load_ps(point + i + 8);
 
-
             //gather x,y,z
             auto yz = _mm_shuffle_ps(xyz1, xyz2, _MM_SHUFFLE(1, 0, 2, 1));
             auto xy = _mm_shuffle_ps(xyz2, xyz3, _MM_SHUFFLE(2, 1, 3, 2));
@@ -197,7 +195,9 @@ namespace librealsense
             auto x = _mm_shuffle_ps(xyz1, xy, _MM_SHUFFLE(2, 0, 3, 0));
             auto y = _mm_shuffle_ps(yz, xy, _MM_SHUFFLE(3, 1, 2, 0));
             auto z = _mm_shuffle_ps(yz, xyz3, _MM_SHUFFLE(3, 0, 3, 1));
-
+            /*
+                Extrinsic rotation and translation.
+            */
             auto p_x = _mm_add_ps(_mm_mul_ps(r[0], x), _mm_add_ps(_mm_mul_ps(r[3], y), _mm_add_ps(_mm_mul_ps(r[6], z), t[0])));
             auto p_y = _mm_add_ps(_mm_mul_ps(r[1], x), _mm_add_ps(_mm_mul_ps(r[4], y), _mm_add_ps(_mm_mul_ps(r[7], z), t[1])));
             auto p_z = _mm_add_ps(_mm_mul_ps(r[2], x), _mm_add_ps(_mm_mul_ps(r[5], y), _mm_add_ps(_mm_mul_ps(r[8], z), t[2])));
@@ -205,10 +205,22 @@ namespace librealsense
             p_x = _mm_div_ps(p_x, p_z);
             p_y = _mm_div_ps(p_y, p_z);
 
-            // if(model == RS2_DISTORTION_MODIFIED_BROWN_CONRADY)
-            auto dist = _mm_set_ps1(other_intrinsics.model);
+            /*
+                Intrinsic distortion.
 
-            auto r2 = _mm_add_ps(_mm_mul_ps(p_x, p_x), _mm_mul_ps(p_y, p_y));
+                coeffs[5]
+                Order for MODIFIED_ INVERSE_ BROWN_CONRADY: [k1, k2, p1, p2, k3]. (Do modified and "normal" use same parameters???
+                Order for FTHETA Fish-eye: [k1, k2, k3, k4, 0]. 
+                Order for RS2_DISTORTION_KANNALA_BRANDT4???
+                Other models are subject to their own interpretations???
+            */
+            const auto mask_inv_brown_conrady = _mm_set1_epi32(RS2_DISTORTION_INVERSE_BROWN_CONRADY);
+            const auto dist = _mm_set1_epi32(other_intrinsics.model); 
+
+            /*
+                Do we really want to go through all these calculations if this isn't BROWN_CONRADY distortion model???
+            */
+            auto r2 = _mm_add_ps(_mm_mul_ps(p_x, p_x), _mm_mul_ps(p_y, p_y));  // r2=(x^2+y^2)
             auto r3 = _mm_add_ps(_mm_mul_ps(c[1], _mm_mul_ps(r2, r2)), _mm_mul_ps(c[4], _mm_mul_ps(r2, _mm_mul_ps(r2, r2))));
             auto f = _mm_add_ps(one, _mm_add_ps(_mm_mul_ps(c[0], r2), r3));
 
@@ -220,12 +232,13 @@ namespace librealsense
 
             auto r5 = _mm_mul_ps(c[2], _mm_add_ps(r2, _mm_mul_ps(two, _mm_mul_ps(y_f, y_f))));
             auto d_y = _mm_add_ps(y_f, _mm_add_ps(_mm_mul_ps(two, _mm_mul_ps(c[3], _mm_mul_ps(x_f, y_f))), r4));
-
-            auto cmp = _mm_cmpeq_ps(mask_inv_brown_conrady, dist);
+            /*
+                Use use this distortion correction if the intrinsics model matches, otherwise previous statements in this block are wasted cycles.
+            */
+            auto cmp = _mm_castsi128_ps(_mm_cmpeq_epi32(mask_inv_brown_conrady, dist));
 
             p_x = _mm_or_ps(_mm_and_ps(cmp, d_x), _mm_andnot_ps(cmp, p_x));
             p_y = _mm_or_ps(_mm_and_ps(cmp, d_y), _mm_andnot_ps(cmp, p_y));
-
             //TODO: add handle to RS2_DISTORTION_FTHETA
 
             //zero the x and y if z is zero

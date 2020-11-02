@@ -21,10 +21,10 @@ namespace librealsense
     {
         // Iterate over the pixels of the depth image
 #pragma omp parallel for schedule(dynamic)
-        for (int depth_y = 0; depth_y < depth_intrin.height; ++depth_y)
+        for (auto depth_y = 0U; depth_y < depth_intrin.height; ++depth_y)
         {
             int depth_pixel_index = depth_y * depth_intrin.width;
-            for (int depth_x = 0; depth_x < depth_intrin.width; ++depth_x, ++depth_pixel_index)
+            for (auto depth_x = 0U; depth_x < depth_intrin.width; ++depth_x, ++depth_pixel_index)
             {
                 // Skip over depth pixels with the value of zero, we have no depth data so we will not write anything into our aligned images
                 if (float depth = get_depth(depth_pixel_index))
@@ -34,24 +34,24 @@ namespace librealsense
                     rs2_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, depth);
                     rs2_transform_point_to_point(other_point, &depth_to_other, depth_point);
                     rs2_project_point_to_pixel(other_pixel, &other_intrin, other_point);
-                    const int other_x0 = static_cast<int>(other_pixel[0] + 0.5f);
-                    const int other_y0 = static_cast<int>(other_pixel[1] + 0.5f);
+                    const uint32_t other_x0 = static_cast<uint32_t>(other_pixel[0] + 0.5f);
+                    const uint32_t other_y0 = static_cast<uint32_t>(other_pixel[1] + 0.5f);
 
                     // Map the bottom-right corner of the depth pixel onto the other image
                     depth_pixel[0] = depth_x + 0.5f; depth_pixel[1] = depth_y + 0.5f;
                     rs2_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, depth);
                     rs2_transform_point_to_point(other_point, &depth_to_other, depth_point);
                     rs2_project_point_to_pixel(other_pixel, &other_intrin, other_point);
-                    const int other_x1 = static_cast<int>(other_pixel[0] + 0.5f);
-                    const int other_y1 = static_cast<int>(other_pixel[1] + 0.5f);
+                    const uint32_t other_x1 = static_cast<uint32_t>(other_pixel[0] + 0.5f);
+                    const uint32_t other_y1 = static_cast<uint32_t>(other_pixel[1] + 0.5f);
 
-                    if (other_x0 < 0 || other_y0 < 0 || other_x1 >= other_intrin.width || other_y1 >= other_intrin.height)
+                    if (other_x0 < 0U || other_y0 < 0U || other_x1 >= other_intrin.width || other_y1 >= other_intrin.height)
                         continue;
 
                     // Transfer between the depth pixels and the pixels inside the rectangle on the other image
-                    for (int y = other_y0; y <= other_y1; ++y)
+                    for (auto y = other_y0; y <= other_y1; ++y)
                     {
-                        for (int x = other_x0; x <= other_x1; ++x)
+                        for (auto x = other_x0; x <= other_x1; ++x)
                         {
                             transfer_pixel(depth_pixel_index, y * other_intrin.width + x);
                         }

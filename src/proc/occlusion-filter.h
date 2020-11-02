@@ -5,8 +5,8 @@
 #include "../include/librealsense2/hpp/rs_frame.hpp"
 #include "proc/rotation-transform.h"
 
-#define ROTATION_BUFFER_SIZE 32 // minimum limit that could be divided by all resolutions
-#define VERTICAL_SCAN_WINDOW_SIZE 16
+#define ROTATION_BUFFER_SIZE 32U // minimum limit that could be divided by all resolutions
+#define VERTICAL_SCAN_WINDOW_SIZE 16U
 #define DEPTH_OCCLUSION_THRESHOLD 0.5f //meters
 
 namespace librealsense

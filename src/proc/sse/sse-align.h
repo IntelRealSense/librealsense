@@ -15,14 +15,14 @@ namespace librealsense
             float depth_scale);
 
         inline void align_depth_to_other(const uint16_t* z_pixels,
-            uint16_t* dest, int bpp,
+            uint16_t* dest, unsigned int bpp,
             const rs2_intrinsics& depth,
             const rs2_intrinsics& to,
             const rs2_extrinsics& from_to_other);
 
         inline void align_other_to_depth(const uint16_t* z_pixels,
             const byte* source,
-            byte* dest, int bpp, const rs2_intrinsics& to,
+            byte* dest, size_t bpp, const rs2_intrinsics& to,
             const rs2_extrinsics& from_to_other);
 
         void pre_compute_x_y_map_corners();
@@ -37,8 +37,8 @@ namespace librealsense
         std::vector<float> _pre_compute_map_x_bottom_right;
         std::vector<float> _pre_compute_map_y_bottom_right;
 
-        std::vector<int2> _pixel_top_left_int;
-        std::vector<int2> _pixel_bottom_right_int;
+        std::vector<uint2> _pixel_top_left_int;
+        std::vector<uint2> _pixel_bottom_right_int;
 
         void pre_compute_x_y_map(std::vector<float>& pre_compute_map_x,
             std::vector<float>& pre_compute_map_y,
@@ -53,20 +53,20 @@ namespace librealsense
         template<rs2_distortion dist = RS2_DISTORTION_NONE>
         inline void align_other_to_depth_sse(const uint16_t* z_pixels,
             const byte* source,
-            byte* dest, int bpp, const rs2_intrinsics& to,
+            byte* dest, size_t bpp, const rs2_intrinsics& to,
             const rs2_extrinsics& from_to_other);
 
         inline void move_depth_to_other(const uint16_t* z_pixels,
             uint16_t* dest, const rs2_intrinsics& to,
-            const std::vector<int2>& pixel_top_left_int,
-            const std::vector<int2>& pixel_bottom_right_int);
+            const std::vector<uint2>& pixel_top_left_int,
+            const std::vector<uint2>& pixel_bottom_right_int);
 
         template<class T >
         inline void move_other_to_depth(const uint16_t* z_pixels,
             const T* source,
             T* dest, const rs2_intrinsics& to,
-            const std::vector<int2>& pixel_top_left_int,
-            const std::vector<int2>& pixel_bottom_right_int);
+            const std::vector<uint2>& pixel_top_left_int,
+            const std::vector<uint2>& pixel_bottom_right_int);
 
     };
 

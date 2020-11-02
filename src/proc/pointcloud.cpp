@@ -25,9 +25,9 @@ namespace librealsense
 {
     template<class MAP_DEPTH> void deproject_depth(float * points, const rs2_intrinsics & intrin, const uint16_t * depth, MAP_DEPTH map_depth)
     {
-        for (int y = 0; y < intrin.height; ++y)
+        for (auto y = 0U; y < intrin.height; ++y)
         {
-            for (int x = 0; x < intrin.width; ++x)
+            for (auto x = 0U; x < intrin.width; ++x)
             {
                 const float pixel[] = { (float)x, (float)y };
                 rs2_deproject_pixel_to_point(points, &intrin, pixel, map_depth(*depth++));

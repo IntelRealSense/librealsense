@@ -679,9 +679,9 @@ std::vector<double3> k_to_DSM::calc_relevant_vertices
 
     transpose(k_arr_inv, k_t);
 
-    for (auto i = 0; i < k.height; i++)
+    for (auto i = 0U; i < k.height; i++)
     {
-        for (auto j = 0; j < k.width; j++)
+        for (auto j = 0U; j < k.width; j++)
         {
             if (relevant_pixels_image[i*k.width + j])
             {

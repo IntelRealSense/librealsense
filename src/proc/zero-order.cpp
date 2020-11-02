@@ -34,7 +34,7 @@ namespace librealsense
 
     void z2rtd(const rs2::vertex* vertices, double* rtd, const rs2_intrinsics& intrinsics, int baseline)
     {
-        for (auto i = 0;i < intrinsics.height*intrinsics.width; i++)
+        for (auto i = 0U; i < intrinsics.height*intrinsics.width; i++)
         {
             rtd[i] = get_pixel_rtd(vertices[i], baseline);           
         }
@@ -46,9 +46,9 @@ namespace librealsense
         std::vector<T> values;
         values.reserve((patch_r + 2ULL) *(patch_r + 2ULL));
 
-        for (auto i = zo_point_y - 1 - patch_r; i <= (zo_point_y + patch_r) && i < intrinsics.height; i++)
+        for (auto i = zo_point_y - 1 - patch_r; i <= (zo_point_y + patch_r) && i < static_cast<int>(intrinsics.height); i++)
         {
-            for (auto j = (zo_point_x - 1 - patch_r); j <= (zo_point_x + patch_r) && i < intrinsics.width; j++)
+            for (auto j = (zo_point_x - 1 - patch_r); j <= (zo_point_x + patch_r) && i < static_cast<int>(intrinsics.width); j++)
             {
                 values.push_back(frame_data_in[i*intrinsics.width + j]);
             }
@@ -76,8 +76,8 @@ namespace librealsense
         const rs2_intrinsics& intrinsics, const zero_order_options& options, int zo_point_x, int zo_point_y,
         double *rtd_zo_value, uint8_t* ir_zo_data)
     {
-        if (zo_point_x - options.patch_size < 0 || zo_point_x + options.patch_size >= intrinsics.width ||
-            zo_point_y - options.patch_size < 0 || zo_point_y + options.patch_size >= intrinsics.height)
+        if (zo_point_x - options.patch_size < 0 || zo_point_x + options.patch_size >= static_cast<int>(intrinsics.width) ||
+            zo_point_y - options.patch_size < 0 || zo_point_y + options.patch_size >= static_cast<int>(intrinsics.height))
             return false;
 
         auto values_rtd = get_zo_point_values(rtd, intrinsics, zo_point_x, zo_point_y, options.patch_size);
@@ -123,7 +123,7 @@ namespace librealsense
 
         double res = (1.0 + r);
         double i_threshold_relative = options.ir_threshold / res;
-        for (auto i = 0; i < intrinsics.height*intrinsics.width; i++)
+        for (auto i = 0U; i < intrinsics.height*intrinsics.width; i++)
         {
             double rtd_val = rtd[i];
             uint8_t ir_val = ir_data[i];
@@ -376,7 +376,7 @@ namespace librealsense
     std::pair<int, int> zero_order::get_zo_point(const rs2::frame& frame)
     {
         auto intrinsics = try_read_intrinsics(frame);
-        return { intrinsics.zo.x, intrinsics.zo.y };
+        return { static_cast<int>(intrinsics.zo.x), static_cast<int>(intrinsics.zo.y) };
     }
 
     rs2::frame zero_order::process_frame(const rs2::frame_source& source, const rs2::frame& f)

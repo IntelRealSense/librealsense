@@ -252,7 +252,7 @@ namespace librealsense
 
             rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
             {
-                return make_color_intrinsics(*_owner->_camer_calib_params, { int(profile.width), int(profile.height) });
+                return make_color_intrinsics(*_owner->_camer_calib_params, { profile.width, profile.height });
             }
 
             stream_profiles init_stream_profiles() override
@@ -309,7 +309,7 @@ namespace librealsense
 
             rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
             {
-                return make_depth_intrinsics(*_owner->_camer_calib_params, { int(profile.width), int(profile.height) });
+                return make_depth_intrinsics(*_owner->_camer_calib_params, { profile.width, profile.height });
             }
 
             stream_profiles init_stream_profiles() override
@@ -515,8 +515,8 @@ namespace librealsense
             // etc..
         }
 
-        static rs2_intrinsics make_depth_intrinsics(const ivcam::camera_calib_params& c, const int2& dims);
-        static rs2_intrinsics make_color_intrinsics(const ivcam::camera_calib_params& c, const int2& dims);
+        static rs2_intrinsics make_depth_intrinsics(const ivcam::camera_calib_params& c, const uint2& dims);
+        static rs2_intrinsics make_color_intrinsics(const ivcam::camera_calib_params& c, const uint2& dims);
         float read_mems_temp() const;
         int read_ir_temp() const;
 

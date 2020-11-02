@@ -169,8 +169,8 @@ namespace librealsense
 
             // Calculate specific intrinsic parameters based on the normalized intrinsic and the sensor's resolution
             rs2_intrinsics calc_intrinsic{
-                static_cast<int>(width),
-                static_cast<int>(height),
+                width,
+                height,
                 ((1 + intrin(2, 0))*width) / 2.f,
                 ((1 + intrin(2, 1))*height) / 2.f,
                 intrin(0, 0) * width / 2.f,

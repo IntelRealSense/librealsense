@@ -52,7 +52,7 @@ namespace librealsense
         update_configuration(f);
 
         auto new_f = source.allocate_video_frame(_target_stream_profile, f,
-            _bpp, _width, _height, _stride, RS2_EXTENSION_DEPTH_FRAME);
+            static_cast<int>(_bpp), _width, _height, _stride, RS2_EXTENSION_DEPTH_FRAME);
 
         if (new_f && _depth_units)
         {
@@ -65,7 +65,7 @@ namespace librealsense
             ptr->set_sensor(orig->get_sensor());
 
             memset(new_data, 0, _width * _height * sizeof(float));
-            for (int i = 0; i < _width * _height; i++)
+            for (auto i = 0U; i < _width * _height; i++)
             {
                 float dist = *_depth_units * depth_data[i];
                 new_data[i] = dist;

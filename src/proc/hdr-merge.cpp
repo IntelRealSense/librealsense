@@ -75,7 +75,7 @@ namespace librealsense
         auto depth_frame = fs.get_depth_frame();
 
         // 2. add the frameset to vector of framesets
-        auto depth_seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
+        const int depth_seq_id = static_cast<int>(depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID));
 
         // condition added to ensure that frames are saved in the right order
         // to prevent for example the saving of frame with sequence id 1 before

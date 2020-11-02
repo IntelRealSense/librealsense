@@ -9,6 +9,8 @@
 #ifndef LIBREALSENSE_RS2_TYPES_H
 #define LIBREALSENSE_RS2_TYPES_H
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -57,8 +59,8 @@ const char* rs2_distortion_to_string(rs2_distortion distortion);
 /** \brief Video stream intrinsics. */
 typedef struct rs2_intrinsics
 {
-    int           width;     /**< Width of the image in pixels */
-    int           height;    /**< Height of the image in pixels */
+    uint32_t      width;     /**< Width of the image in pixels */
+    uint32_t      height;    /**< Height of the image in pixels */
     float         ppx;       /**< Horizontal coordinate of the principal point of the image, as a pixel offset from the left edge */
     float         ppy;       /**< Vertical coordinate of the principal point of the image, as a pixel offset from the top edge */
     float         fx;        /**< Focal length of the image plane, as a multiple of pixel width */
