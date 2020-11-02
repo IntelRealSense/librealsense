@@ -27,18 +27,10 @@ namespace librealsense
         _hdr_sequence_params.resize(DEFAULT_HDR_SEQUENCE_SIZE);
 
         // restoring current HDR configuration if such subpreset is active
-        command cmd(ds::GETSUBPRESET);
         bool existing_subpreset_restored = false;
-        try {
-            auto res = _hwm.send(cmd);
-            if (res.size() && is_current_subpreset_hdr(res))
-            {
-                existing_subpreset_restored = configure_hdr_as_in_fw(res);
-            }
-        }
-        catch (std::exception ex) {
-            LOG_WARNING("In hdr_config::hdr_config() - hw command failed: " << ex.what());
-        }
+        std::vector<byte> res;
+        if (is_hdr_enabled_in_device(res))
+            existing_subpreset_restored = configure_hdr_as_in_fw(res);
 
         if (!existing_subpreset_restored)
         {
@@ -53,6 +45,20 @@ namespace librealsense
             hdr_params params_1(1, exposure_low_value, gain_min_value);
             _hdr_sequence_params[1] = params_1;
         }
+    }
+
+    bool hdr_config::is_hdr_enabled_in_device(std::vector<byte>& result) const
+    {
+        command cmd(ds::GETSUBPRESET);
+        bool hdr_enabled_in_device = false;
+        try {
+            result = _hwm.send(cmd);
+            hdr_enabled_in_device = (result.size() && is_current_subpreset_hdr(result));
+        }
+        catch (std::exception ex) {
+            LOG_WARNING("In hdr_config::hdr_config() - hw command failed: " << ex.what());
+        }
+        return hdr_enabled_in_device;
     }
 
     bool hdr_config::is_current_subpreset_hdr(const std::vector<byte>& current_subpreset) const
@@ -242,6 +248,8 @@ namespace librealsense
         {
             if (validate_config())
             {
+                std::vector<byte> res;
+                _is_enabled = is_hdr_enabled_in_device(res);
                 if (!_is_enabled)
                 {
                     // saving status of options that are not compatible with hdr,
