@@ -190,15 +190,15 @@ namespace librealsense
 
     void update_flash_section(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, uint32_t offset, uint32_t size, update_progress_callback_ptr callback, float continue_from, float ratio)
     {
-        size_t sector_count = size / ds::FLASH_SECTOR_SIZE;
-        size_t first_sector = offset / ds::FLASH_SECTOR_SIZE;
+        uint32_t sector_count = size / ds::FLASH_SECTOR_SIZE;
+        uint32_t first_sector = offset / ds::FLASH_SECTOR_SIZE;
 
         if (sector_count * ds::FLASH_SECTOR_SIZE != size)
             sector_count++;
 
         sector_count += first_sector;
 
-        for (int sector_index = first_sector; sector_index < sector_count; sector_index++)
+        for (auto sector_index = first_sector; sector_index < sector_count; sector_index++)
         {
             command cmdFES(ds::FES);
             cmdFES.require_response = false;

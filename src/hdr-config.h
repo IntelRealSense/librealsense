@@ -75,7 +75,7 @@ namespace librealsense
         int _id;
         size_t _sequence_size;
         std::vector<hdr_params> _hdr_sequence_params;
-        int _current_hdr_sequence_index;
+        size_t _current_hdr_sequence_index;
         mutable bool _is_enabled;
         bool _is_config_in_process;
         bool _has_config_changed;
