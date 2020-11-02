@@ -26,6 +26,10 @@ protected:
     }
 
 public:
+    // Worker thread uses resources of classes that inherit from this class (e.g openvino_face_detection),
+    // so it should be released from inhereted classes.
+    // To make this happen, we created a seperate function for releasing worker thread and should be called
+    // from dtor of inhereted class.
     void release_background_worker()
     {
         _alive = false;
