@@ -263,7 +263,7 @@ namespace librealsense
 
             using namespace platform;
             auto usb_mode = raw_color_ep->get_usb_specification();
-            std::string usb_type_str("Unknown");
+            std::string usb_type_str("USB");
             if (usb_spec_names.count(usb_mode) && (usb_undefined != usb_mode))
                 usb_type_str = usb_spec_names.at(usb_mode);
 
