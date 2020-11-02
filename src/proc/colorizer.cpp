@@ -286,6 +286,7 @@ namespace librealsense
                 auto max = (_d2d_convert_factor / (__min)) * _depth_units + .5f;
                 auto min = (_d2d_convert_factor / (_max)) * _depth_units + .5f;
                 auto coloring_function = [&, this](float data) {
+                    if (max == min) return data;
                     return (data - min) / (max - min);
                 };
                 make_rgb_data<float>(depth_data, rgb_data, w, h, coloring_function);
