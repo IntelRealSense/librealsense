@@ -25,17 +25,17 @@ protected:
         release_background_worker();
     }
 
-public:
     // Worker thread uses resources of classes that inherit from this class (e.g openvino_face_detection),
-    // so it should be released from inhereted classes.
-    // To make this happen, we created a seperate function for releasing worker thread and should be called
-    // from dtor of inhereted class.
+    // so it should be released from inherited classes.
+    // This should be called from dtor of inherited classes!
     void release_background_worker()
     {
         _alive = false;
         if (_worker.joinable())
             _worker.join();
     }
+
+public:
     void start( rs2::subdevice_model & model ) override
     {
         post_processing_filter::start( model );
