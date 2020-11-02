@@ -89,6 +89,10 @@ public:
     {
     }
 
+    ~openvino_face_detection()
+    {
+        release_background_worker();
+    }
 public:
     void start( rs2::subdevice_model & model ) override
     {

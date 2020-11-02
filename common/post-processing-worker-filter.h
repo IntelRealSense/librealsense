@@ -22,12 +22,16 @@ protected:
     }
     ~post_processing_worker_filter()
     {
-        _alive = false;
-        if( _worker.joinable() )
-            _worker.join();
+        release_background_worker();
     }
 
 public:
+    void release_background_worker()
+    {
+        _alive = false;
+        if (_worker.joinable())
+            _worker.join();
+    }
     void start( rs2::subdevice_model & model ) override
     {
         post_processing_filter::start( model );
