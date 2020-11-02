@@ -64,7 +64,7 @@ public:
 
     std::vector< byte > build_raw_data() const override;
 
-    bool is_valid() const override { return ( bool ) _header.valid; }
+    bool is_valid() const override { return _header.valid != 0.f; }
 };
 #pragma pack( pop )
 

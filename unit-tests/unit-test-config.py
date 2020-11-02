@@ -226,7 +226,7 @@ handle = open( cmakefile, 'w' );
 handle.write( '''
 
 # We make use of ELPP (EasyLogging++):
-include_directories( ../../third-party/easyloggingpp/src )
+include_directories( ''' + dir +  '''/../third-party/easyloggingpp/src )
 set( ELPP_FILES
     ''' + dir + '''/../third-party/easyloggingpp/src/easylogging++.cc
     ''' + dir + '''/../third-party/easyloggingpp/src/easylogging++.h
