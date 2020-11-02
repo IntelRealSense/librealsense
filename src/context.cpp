@@ -267,7 +267,6 @@ namespace librealsense
             if (usb_spec_names.count(usb_mode) && (usb_undefined != usb_mode))
                 usb_type_str = usb_spec_names.at(usb_mode);
 
-            //register_info(RS2_CAMERA_INFO_NAME, device_name);
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
             register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, uvc_infos.front().unique_id);
             register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, uvc_infos.front().device_path);
@@ -277,7 +276,8 @@ namespace librealsense
             color_ep->register_processing_block({ {RS2_FORMAT_MJPEG} }, { {RS2_FORMAT_RGB8, RS2_STREAM_COLOR} }, []() { return std::make_shared<mjpeg_converter>(RS2_FORMAT_RGB8); });
             color_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_MJPEG, RS2_STREAM_COLOR));
 
-            // Important! Timestamp are vendor-specific, thus the translation by LRS dues not guarantee msec units.
+            // Timestamps are given in units set by device which may vary among the OEM vendors.
+            // For consistent (msec) measurements use "time of arrival" metadata attribute
             color_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
 
             color_ep->try_register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
