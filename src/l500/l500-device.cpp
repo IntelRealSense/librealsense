@@ -26,6 +26,7 @@
 #include "ac-trigger.h"
 #include "algo/depth-to-rgb-calibration/debug.h"
 #include "../common/utilities/time/periodic_timer.h"
+#include "algo/camera-age/l500/camera-age.h"
 
 
 
@@ -131,7 +132,7 @@ namespace librealsense
         {
             try
             {
-                uint8_t age = weeks_since_factory_calibration( optic_serial );
+                uint8_t age = librealsense::algo::camera_age::l500::get_work_weeks_since( optic_serial );
                 command cmd( fw_cmd::SET_AGE, age );
                 _hw_monitor->send( cmd );
             }
@@ -241,8 +242,7 @@ namespace librealsense
                         // are exceeding spec! This may throw!!
                         rs2_dsm_params new_dsm_params = _autocal->get_dsm_params();
                         // We update the age of the device in weeks and the time between factory calibration and last AC to aid projection
-                        auto age = weeks_since_factory_calibration(
-                            get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) );
+                        auto age = librealsense::algo::camera_age::l500::get_work_weeks_since( get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) );
                         new_dsm_params.weeks_since_calibration = age;
                         new_dsm_params.ac_weeks_since_calibaration = age;
 

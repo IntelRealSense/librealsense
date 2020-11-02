@@ -562,6 +562,5 @@ namespace librealsense
 
         class ac_trigger;
 
-        unsigned char weeks_since_factory_calibration(const std::string& serial);
     } // librealsense::ivcam2
 } // namespace librealsense
