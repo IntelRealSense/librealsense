@@ -132,7 +132,10 @@ namespace librealsense
         {
             try
             {
-                uint8_t age = librealsense::algo::camera_age::l500::get_work_weeks_since( optic_serial );
+                auto manufacture
+                    = librealsense::algo::camera_age::l500::get_manufature_time( optic_serial );
+                uint8_t age
+                    = librealsense::algo::camera_age::l500::get_work_weeks_since( manufacture );
                 command cmd( fw_cmd::SET_AGE, age );
                 _hw_monitor->send( cmd );
             }
@@ -236,17 +239,21 @@ namespace librealsense
             _autocal->register_callback(
                 [&]( rs2_calibration_status status )
                 {
-                    if( status == RS2_CALIBRATION_SUCCESSFUL )
-                    {
-                        // We override the DSM params first, because it can throw if the parameters
-                        // are exceeding spec! This may throw!!
-                        rs2_dsm_params new_dsm_params = _autocal->get_dsm_params();
-                        // We update the age of the device in weeks and the time between factory calibration and last AC to aid projection
-                        auto age = librealsense::algo::camera_age::l500::get_work_weeks_since( get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) );
-                        new_dsm_params.weeks_since_calibration = age;
-                        new_dsm_params.ac_weeks_since_calibaration = age;
+                if( status == RS2_CALIBRATION_SUCCESSFUL )
+                {
+                    // We override the DSM params first, because it can throw if the parameters
+                    // are exceeding spec! This may throw!!
+                    rs2_dsm_params new_dsm_params = _autocal->get_dsm_params();
+                    // We update the age of the device in weeks and the time between factory
+                    // calibration and last AC to aid projection
+                    auto manufacture = librealsense::algo::camera_age::l500::get_manufature_time(
+                        get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) );
+                    uint8_t age
+                        = librealsense::algo::camera_age::l500::get_work_weeks_since( manufacture );
+                    new_dsm_params.weeks_since_calibration = age;
+                    new_dsm_params.ac_weeks_since_calibaration = age;
 
-                        get_depth_sensor().override_dsm_params( new_dsm_params );
+                    get_depth_sensor().override_dsm_params( new_dsm_params );
                         auto & color_sensor = *get_color_sensor();
                         color_sensor.override_intrinsics( _autocal->get_raw_intrinsics() );
                         color_sensor.override_extrinsics( _autocal->get_extrinsics() );

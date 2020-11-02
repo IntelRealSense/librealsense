@@ -13,20 +13,24 @@ namespace l500 {
 
 class manufacture_time
 {
-	unsigned man_year;
-	unsigned man_ww;
+    unsigned man_year;
+    unsigned man_ww;
 
 public:
-	manufacture_time(unsigned man_year, unsigned man_ww) : man_year(man_year), man_ww(man_ww){}
+    manufacture_time( unsigned man_year, unsigned man_ww )
+        : man_year( man_year )
+        , man_ww( man_ww )
+    {
+    }
 
-	unsigned get_manufacture_year() const;
-	unsigned get_manufacture_work_week() const;
+    unsigned get_manufacture_year() const;
+    unsigned get_manufacture_work_week() const;
 };
 
-manufacture_time get_manufature_time(std::string& serial);
+manufacture_time get_manufature_time( const std::string & serial );
 
 // Returns the number of work weeks since given time
-unsigned get_work_weeks_since(const manufacture_time& start);
+unsigned get_work_weeks_since( const manufacture_time & start );
 
 }  // namespace l500
 }  // namespace camera_age

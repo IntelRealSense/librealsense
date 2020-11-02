@@ -25,7 +25,7 @@ unsigned manufacture_time::get_manufacture_work_week() const
 // Y – Year(ex.“9” for 2019, "0" for 2020, , "1" for 2021  ..etc)
 // WW – Work Week
 // XXXX – Sequential number
-manufacture_time get_manufature_time( std::string & serial )
+manufacture_time get_manufature_time( const std::string & serial )
 {
     unsigned Y = serial[1] - '0';  // Converts char to int, '0'-> 0, '1'-> 1, ...
     unsigned man_year = 0;
