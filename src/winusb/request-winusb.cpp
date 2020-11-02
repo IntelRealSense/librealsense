@@ -23,19 +23,19 @@ namespace librealsense
 
         }
 
-        int usb_request_winusb::get_actual_length() const
+        uint32_t usb_request_winusb::get_actual_length() const
         {
-            return _overlapped->InternalHigh;// _request->actual_length;
+            return static_cast<uint32_t>(_overlapped->InternalHigh); // InternalHigh is a ULONG_PTR which could be 64 bits.
         }
 
-        void usb_request_winusb::set_native_buffer_length(int length)
+        void usb_request_winusb::set_native_buffer_length(uint32_t length)
         {
 
         }
 
-        int usb_request_winusb::get_native_buffer_length()
+        uint32_t usb_request_winusb::get_native_buffer_length()
         {
-            return _buffer.size();
+            return static_cast<uint32_t>(_buffer.size());
         }
 
         void usb_request_winusb::set_native_buffer(uint8_t* buffer)
