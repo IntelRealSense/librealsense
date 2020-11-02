@@ -107,7 +107,15 @@ namespace rs2
 
     inline float smoothstep(float x, float min, float max)
     {
-        x = clamp((x - min) / (max - min), 0.0, 1.0);
+        if (max == min)
+        {
+            x = clamp((x - min) , 0.0, 1.0);
+        }
+        else
+        {
+            x = clamp((x - min) / (max - min), 0.0, 1.0);
+        }
+        
         return x*x*(3 - 2 * x);
     }
 
@@ -475,6 +483,7 @@ namespace rs2
     template<typename T>
     T normalizeT(const T& in_val, const T& min, const T& max)
     {
+        if(min == max) return in_val;
         return ((in_val - min)/(max - min));
     }
 
