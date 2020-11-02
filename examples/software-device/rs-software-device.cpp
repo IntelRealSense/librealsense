@@ -12,13 +12,13 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-const int W = 640;
-const int H = 480;
-const int BPP = 2;
+const uint32_t W = 640;
+const uint32_t H = 480;
+const uint32_t BPP = 2;
 
 struct synthetic_frame
 {
-    int x, y, bpp;
+    uint32_t x, y, bpp;
     std::vector<uint8_t> frame;
 };
 
