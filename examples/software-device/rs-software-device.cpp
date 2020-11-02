@@ -12,13 +12,13 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-const uint32_t W = 640;
-const uint32_t H = 480;
-const uint32_t BPP = 2;
+const int W = 640;
+const int H = 480;
+const int BPP = 2;
 
 struct synthetic_frame
 {
-    uint32_t x, y, bpp;
+    int x, y, bpp;
     std::vector<uint8_t> frame;
 };
 
@@ -36,7 +36,7 @@ public:
         std::vector<uint8_t> pixels_depth(depth_frame.x * depth_frame.y * depth_frame.bpp, 0);
         depth_frame.frame = std::move(pixels_depth);
 
-        auto realsense_logo = stbi_load_from_memory(splash, (int)splash_size, &color_frame.x, &color_frame.y, &color_frame.bpp, false);
+        auto realsense_logo = stbi_load_from_memory(splash, static_cast<int>(splash_size), &color_frame.x, &color_frame.y, &color_frame.bpp, false);
 
         std::vector<uint8_t> pixels_color(color_frame.x * color_frame.y * color_frame.bpp, 0);
 
@@ -85,7 +85,7 @@ public:
 
     rs2_intrinsics create_texture_intrinsics()
     {
-        rs2_intrinsics intrinsics = { color_frame.x, color_frame.y,
+        rs2_intrinsics intrinsics = { static_cast<uint32_t>(color_frame.x), static_cast<uint32_t>(color_frame.y),
             (float)color_frame.x / 2, (float)color_frame.y / 2,
             (float)color_frame.x / 2, (float)color_frame.y / 2,
             RS2_DISTORTION_BROWN_CONRADY ,{ 0,0,0,0,0 } };
@@ -95,7 +95,7 @@ public:
 
     rs2_intrinsics create_depth_intrinsics()
     {
-        rs2_intrinsics intrinsics = { depth_frame.x, depth_frame.y,
+        rs2_intrinsics intrinsics = { static_cast<uint32_t>(depth_frame.x), static_cast<uint32_t>(depth_frame.y),
             (float)depth_frame.x / 2, (float)depth_frame.y / 2,
             (float)depth_frame.x , (float)depth_frame.y ,
             RS2_DISTORTION_BROWN_CONRADY ,{ 0,0,0,0,0 } };
