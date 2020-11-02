@@ -1,8 +1,3 @@
-import sys
-# add these 2 lines to run independently and not through run-unit-tests.py
-path = "C:/Users/mmirbach/git/librealsense/build/RelWithDebInfo"
-sys.path.append(path)
-
 import pyrealsense2 as rs
 from time import sleep
 
@@ -17,7 +12,7 @@ def reset_status_list():
     global status_list
     status_list = []
 
-# Call back funtion for testing status sequences
+# Call back function for testing status sequences
 def list_status_cb( status ):
     global status_list
     status_list.append(status)
@@ -32,5 +27,5 @@ def trim_irrelevant_statuses(irrelevant_statuses):
 # Waits for calibration to end by checking last status call-back
 def wait_for_calibration():
     global status_list
-    while (status_list[-1] != rs.calibration_status.successful and status_list[-1] != rs.calibration_status.failed):
+    while status_list[-1] != rs.calibration_status.successful and status_list[-1] != rs.calibration_status.failed:
         sleep(1)

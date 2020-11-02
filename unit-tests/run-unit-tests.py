@@ -158,7 +158,7 @@ def cat( filename ):
         for line in remove_newlines( file ):
             out( line )
 
-def check_log(log, testname, exe):
+def check_log_for_fails(log, testname, exe):
     # Normal logs are expected to have in last line:
     #     "All tests passed (11 assertions in 1 test case)"
     # Tests that have failures, however, will show:
@@ -186,6 +186,8 @@ def check_log(log, testname, exe):
                 out( '<<<' )
             else:
                 error( red + testname + reset + ': ' + desc + '; see ' + log )
+            return True
+        return False
 
 logdir = dir + '/unit-tests'
 os.makedirs( logdir, exist_ok = True );
@@ -228,11 +230,9 @@ for manifest_ctx in grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir
         error( red + testname + reset + ': executable not found! (' + exe + ')' )
         continue
     except subprocess.CalledProcessError as cpe:
-        error( red + testname + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')' )
-        continue
-
-    check_log(log, testname, exe)
-
+        if not check_log_for_fails(log, testname, exe):
+            # An unexpected error occurred
+            error( red + testname + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')' )
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 # this script is located in librealsense/unit-tests, so one directory up is the main repository
@@ -250,12 +250,16 @@ else:
         pyrs = pyd
 # if we run python tests with no .pyd/.so file they will crash. Therefore we only run them if such a file was found
 if pyrs:
-    # After use of find pyrs contains the path from librealsense to the pyrealsense that was found
+    # After use of find, pyrs contains the path from librealsense to the pyrealsense that was found
     # We append it to the librealsense path to get an absolute path to the file to add to PYTHONPATH so it can be found by the tests
     pyrs_path = librealsense + os.sep + pyrs
     # We need to add the directory not the file itself
     pyrs_path = os.path.dirname(pyrs_path)
+    # We also need to add the path to the python packages that the tests use
+    py_package_path = current_dir + os.sep + "py"
+    # Add the necessary path to the PYTHONPATH environment variable so python will look for modules there
     os.environ["PYTHONPATH"] = pyrs_path
+    os.environ["PYTHONPATH"] = py_package_path
     # We can simply change `sys.path` but any child python scripts won't see it. We change the environment instead.
 
     # unit-test scripts are in the same directory as this script
@@ -283,10 +287,9 @@ if pyrs:
             error( red + testname + reset + ': file not found! (' + test_path + ')' )
             continue
         except subprocess.CalledProcessError as cpe:
-            error( red + testname + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')' )
-            continue
-
-        check_log(log, testname, py_test)
+            if not check_log_for_fails(log, testname, py_test):
+                # An unexpected error occurred
+                error(red + testname + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')')
 
 progress()
 if n_errors:

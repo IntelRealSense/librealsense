@@ -1,12 +1,6 @@
-import sys
-pyrs = "C:/Users/mmirbach/git/librealsense/build/Debug"
-py = "C:/Users/mmirbach/git/librealsense/unit-tests/py"
-sys.path.append(pyrs)
-sys.path.append(py)
-
 import pyrealsense2 as rs, common as test, ac
 
-# We set the enviroment variables to suit this test
+# We set the environment variables to suit this test
 test.set_env_vars({"RS2_AC_DISABLE_CONDITIONS":"0",
                    })
 

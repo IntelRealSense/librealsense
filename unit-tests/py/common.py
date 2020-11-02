@@ -1,9 +1,4 @@
 import os, sys, subprocess, traceback
-
-# add these 2 lines to run independently and not through run-unit-tests.py
-path = "C:/Users/mmirbach/git/librealsense/build/RelWithDebInfo"
-sys.path.append(path)
-
 import pyrealsense2 as rs
 
 n_assertions = 0
@@ -13,7 +8,7 @@ n_failed_tests = 0
 test_failed = False
 
 # If this is the first time running this script we set the wanted enviroment, However it is impossible to change the current running 
-# enviroment so we rerun the script in a child process that inherits the enviroment we set
+# environment so we rerun the script in a child process that inherits the enviroment we set
 def set_env_vars(env_vars):
     if len(sys.argv) < 2:
         for env_var, val in env_vars.items():
@@ -30,7 +25,8 @@ def get_first_device():
         print("No device found, aborting AC test")
         exit(0)
     return c.devices[0]
-# Functions for asserting test cases
+
+# Functions for asserting test cases:
 # Receives an expression which is an assertion. If false the assertion failed
 def require(exp):  
     global n_assertions, n_failed_assertions, test_failed
@@ -68,7 +64,7 @@ def require_equal_lists(result, expected):
         test_failed = True
         failed = True
         print("Require equal lists failed due to lists of different sizes:")
-        print("The resulted list has " + len(result) + "elements, but the expected list has " + len(expected) + " elements")
+        print("The resulted list has " + str(len(result)) + " elements, but the expected list has " + str(len(expected)) + " elements")
     i = 0
     for res, exp in zip(result, expected):
         n_assertions += 1
@@ -78,6 +74,7 @@ def require_equal_lists(result, expected):
             failed = True
             print("Require equal lists failed due to unequal elements:")
             print("The element of index " + str(i) + " in both lists was not equal")
+        i += 1
     if failed:
         print("Result list:", end = ' ')
         print(result)
@@ -92,12 +89,12 @@ def require_exception(exception, expected_type, expected_msg = ""):
     if expected_msg:
         require_equal(str(exception), expected_msg)
 
-# Functions for formating test cases
+# Functions for formatting test cases
 def start(msg):
     global n_tests, test_failed
     n_tests += 1
     test_failed = False
-    print("\n\n" + msg)
+    print(msg)
 
 def finish():
     global test_failed, n_failed_tests
@@ -106,13 +103,13 @@ def finish():
         print("Test failed")
     else:
         print("Test passed")
+    print("\n")
 
 def print_results_and_exit():
     global n_assertions, n_tests, n_failed_assertions, n_failed_tests
-    print("\n\n")
     if n_failed_assertions:
         passed = str(n_assertions - n_failed_assertions)
-        print("test cases: " + str(n_failed_tests) + " | " + str(n_tests) + " failed")
+        print("test cases: " + str(n_tests) + " | " + str(n_failed_tests) + " failed")
         print("assertions: " + str(n_assertions) + " | " + passed + " passed | " + str(n_failed_assertions) + " failed")
         exit(1)
     else:
