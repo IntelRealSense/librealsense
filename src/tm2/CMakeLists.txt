@@ -19,4 +19,3 @@ target_link_libraries(${LRS_TARGET} PRIVATE fw) # for T265 FW
 
 target_include_directories(${LRS_TARGET} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 set_target_properties (${LRS_TARGET} PROPERTIES FOLDER Resources)
-

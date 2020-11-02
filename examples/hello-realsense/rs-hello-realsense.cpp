@@ -6,7 +6,7 @@
 
 // Hello RealSense example demonstrates the basics of connecting to a RealSense device
 // and taking advantage of depth data
-int main(int argc, char* argv[]) try
+int main(int argc, char * argv[]) try
 {
     // Create a Pipeline - this serves as a top-level API for streaming and processing frames
     rs2::pipeline p;
@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) try
 
     return EXIT_SUCCESS;
 }
-catch (const rs2::error& e)
+catch (const rs2::error & e)
 {
     std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
     return EXIT_FAILURE;
