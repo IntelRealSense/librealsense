@@ -483,7 +483,7 @@ namespace rs2
     template<typename T>
     T normalizeT(const T& in_val, const T& min, const T& max)
     {
-        if(min == max) return in_val;
+        if (min >= max) return 0;
         return ((in_val - min)/(max - min));
     }
 

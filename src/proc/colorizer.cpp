@@ -286,7 +286,6 @@ namespace librealsense
                 auto max = (_d2d_convert_factor / (__min)) * _depth_units + .5f;
                 auto min = (_d2d_convert_factor / (_max)) * _depth_units + .5f;
                 auto coloring_function = [&, this](float data) {
-                    if (max == min) return data;
                     return (data - min) / (max - min);
                 };
                 make_rgb_data<float>(depth_data, rgb_data, w, h, coloring_function);
@@ -297,7 +296,7 @@ namespace librealsense
                 auto min = _min;
                 auto max = _max;
                 auto coloring_function = [&, this](float data) {
-                    if (max == min) return data * _depth_units;
+                    if (min >= max) return 0.f;
                     return (data * _depth_units - min) / (max - min);
                 };
                 make_rgb_data<uint16_t>(depth_data, rgb_data, w, h, coloring_function);
