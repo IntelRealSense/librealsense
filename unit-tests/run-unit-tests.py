@@ -289,6 +289,7 @@ if pyrs:
         except subprocess.CalledProcessError as cpe:
             if not check_log_for_fails(log, testname, py_test):
                 # An unexpected error occurred
+                cat(log)
                 error(red + testname + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')')
 
 progress()

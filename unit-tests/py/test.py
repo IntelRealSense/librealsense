@@ -43,9 +43,12 @@ def check_failed():
     n_failed_assertions += 1
     test_failed = True
 
+def abort_test():
+    print("Abort was specified in a failed check. Aborting test")
+    exit(1)
 
 # Receive an expression which is an assertion. If false the assertion failed.
-def check(exp):  
+def check(exp, abort = False):
     global n_assertions
     n_assertions += 1
     if not exp:
@@ -53,9 +56,12 @@ def check(exp):
         print(exp)
         check_failed()
         print_stack()
+        if abort:
+            abort_test()
+
 
 # Receives the resulted value and the expected value and asserts they are equal
-def check_equal(result, expected):
+def check_equal(result, expected, abort = False):
     check(type(expected) != list)
     global n_assertions
     n_assertions += 1
@@ -63,14 +69,16 @@ def check_equal(result, expected):
         print("Result was: " + result + "\nBut we expected: " + expected)
         check_failed()
         print_stack()
+        if abort:
+            abort_test()
 
 # This function should never be reached
-def check_not_reached():
-    check(False)
+def check_not_reached( abort = False ):
+    check(False, abort)
 
 # Receives 2 lists and asserts they are identical. python "equality" (using ==) requires same length & elements
 # but not necessarily same ordering. Here we require exactly the same, including ordering.
-def check_equal_lists(result, expected):
+def check_equal_lists(result, expected, abort = False):
     global n_assertions
     n_assertions += 1
     failed = False
@@ -92,12 +100,14 @@ def check_equal_lists(result, expected):
         print(expected)
         check_failed()
         print_stack()
+        if abort:
+            abort_test()
 
 # Receives an exception and asserts its type and message is as expected. This function is called with a caught exception,
-def check_exception(exception, expected_type, expected_msg = None):
-    check_equal(type(exception), expected_type)
+def check_exception(exception, expected_type, expected_msg = None, abort = False):
+    check_equal(type(exception), expected_type, abort)
     if expected_msg:
-        check_equal(str(exception), expected_msg)
+        check_equal(str(exception), expected_msg, abort)
 
 # Functions for formatting test cases
 def start(test_name = "Test started"):
