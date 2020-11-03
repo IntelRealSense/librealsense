@@ -183,6 +183,8 @@ PYBIND11_MODULE(NAME, m) {
         .value("humidity_temperature", RS2_OPTION_HUMIDITY_TEMPERATURE)
         .value("enable_max_usable_range", RS2_OPTION_ENABLE_MAX_USABLE_RANGE)
         .value("alternate_ir", RS2_OPTION_ALTERNATE_IR)
+        .value("noise_estimation", RS2_OPTION_NOISE_ESTIMATION)
+        .value("enable_ir_reflectivity", RS2_OPTION_ENABLE_IR_REFLECTIVITY)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");

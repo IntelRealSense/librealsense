@@ -50,6 +50,12 @@ using namespace rs400;
 
 #define MIN_IP_SIZE 7 //TODO: Ester - update size when host name is supported
 
+void update_viewer_configuration(viewer_model& viewer_model)
+{
+    // Hide options from the Viewer application
+    viewer_model._hidden_options.emplace(RS2_OPTION_ENABLE_IR_REFLECTIVITY);
+}
+
 bool add_remote_device(context& ctx, std::string address)
 {
 #ifdef NETWORK_DEVICE
@@ -302,6 +308,8 @@ int main(int argc, const char** argv) try
     std::string ip_address;
 
     viewer_model viewer_model(ctx);
+
+    update_viewer_configuration(viewer_model);
 
     std::vector<device> connected_devs;
     std::mutex m;

@@ -33,6 +33,9 @@ namespace rs2
             _viewer_model.draw_plane = true;
             _viewer_model.synchronization_enable = false;
             _viewer_model.support_non_syncronized_mode = false; //pipeline outputs only syncronized frameset
+
+            // Hide options from the DQT application
+            _viewer_model._hidden_options.emplace(RS2_OPTION_ENABLE_MAX_USABLE_RANGE);
         }
 
         bool tool_model::start(ux_window& window)
@@ -798,7 +801,6 @@ namespace rs2
 
             _depth_sensor_model->draw_streams_selector = false;
             _depth_sensor_model->draw_fps_selector = true;
-            _viewer_model.draw_max_usable_range = false;
 
             // Retrieve stereo baseline for supported devices
             auto baseline_mm = -1.f;

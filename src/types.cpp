@@ -448,6 +448,8 @@ namespace librealsense
             CASE(HUMIDITY_TEMPERATURE)
             CASE(ENABLE_MAX_USABLE_RANGE)
             case RS2_OPTION_ALTERNATE_IR:       return "Alternate IR";
+            CASE(NOISE_ESTIMATION)
+            case RS2_OPTION_ENABLE_IR_REFLECTIVITY: return "Enable IR Reflectivity";
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

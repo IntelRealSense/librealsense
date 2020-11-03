@@ -213,6 +213,9 @@ namespace librealsense
             auto enable_max_usable_range = std::make_shared<max_usable_range_option>(this);
             depth_sensor.register_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE, enable_max_usable_range);
 
+            auto enable_ir_reflectivity = std::make_shared<ir_reflectivity_option>(this);
+            depth_sensor.register_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY, enable_ir_reflectivity);
+
             // TODO may not need auto-cal if there's no color sensor, like on the rs500...
             _autocal = std::make_shared< ac_trigger >( *this, _hw_monitor );
 
@@ -658,6 +661,7 @@ namespace librealsense
         }
         else
         {
+            // Noise estimation was added at FW version 1.5.0.0
             auto fw_version_support_nest = (_fw_version >= firmware_version("1.5.0.0")) ? true : false;
             auto expected_size = fw_version_support_nest ? sizeof(extended_temperatures)
                 : sizeof(temperatures);

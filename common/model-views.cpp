@@ -2024,7 +2024,7 @@ namespace rs2
         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
         {
             auto opt = static_cast<rs2_option>(i);
-            if (skip_option(opt)) continue;
+            if (viewer.is_option_skipped(opt)) continue;
             if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
             {
                 draw_option(opt, update_read_only_options, error_message, notifications);
@@ -2037,7 +2037,7 @@ namespace rs2
         return (uint64_t)std::count_if(
             std::begin(options_metadata),
             std::end(options_metadata),
-            [](const std::pair<int, option_model>& p) {return p.second.supported && !skip_option(p.second.opt); });
+            [&](const std::pair<int, option_model>& p) {return p.second.supported && !viewer.is_option_skipped(p.second.opt); });
     }
 
     bool option_model::draw_option(bool update_read_only_options,
@@ -2174,7 +2174,7 @@ namespace rs2
         return !_stream_not_alive.eval();
     }
 
-    void stream_model::begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p)
+    void stream_model::begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p, const viewer_model& viewer)
     {
         dev = d;
         original_profile = p;
@@ -2195,7 +2195,82 @@ namespace rs2
                 static_cast<float>(vd.height()) };
         }
         _stream_not_alive.reset();
+        
+        try 
+        {
+            if( ! viewer.is_option_skipped( RS2_OPTION_ENABLE_IR_REFLECTIVITY ) )
+            {
+                auto ds = d->dev.first< depth_sensor >();
+                if( ds.supports( RS2_OPTION_ENABLE_IR_REFLECTIVITY )
+                    && ds.supports( RS2_OPTION_ENABLE_MAX_USABLE_RANGE )
+                    && ( ( p.stream_type() == RS2_STREAM_INFRARED ) || ( p.stream_type() == RS2_STREAM_DEPTH ) ) )
+                {
+                    _reflectivity = std::unique_ptr< reflectivity >( new reflectivity() );
+                }
+            }
+        }
+        catch(...) {};
 
+    }
+
+    bool stream_model::draw_reflectivity( int x,
+                                          int y,
+                                          rs2::depth_sensor ds,
+                                          const std::map< int, stream_model > & streams,
+                                          std::stringstream & ss,
+                                          bool same_line )
+    {
+        bool reflectivity_valid = false;
+
+        // Get IR sample for getting current reflectivity
+        auto ir_stream
+            = std::find_if( streams.cbegin(),
+                            streams.cend(),
+                            []( const std::pair< const int, stream_model > & stream ) {
+                                return stream.second.profile.stream_type() == RS2_STREAM_INFRARED;
+                            } );
+
+        // Get depth sample for adding to reflectivity history
+        auto depth_stream
+            = std::find_if( streams.cbegin(),
+                            streams.cend(),
+                            []( const std::pair< const int, stream_model > & stream ) {
+                                return stream.second.profile.stream_type() == RS2_STREAM_DEPTH;
+                            } );
+
+        if( ir_stream != streams.end() && depth_stream != streams.end() )
+        {
+            auto depth_val = 0.0f;
+            auto ir_val = 0.0f;
+            depth_stream->second.texture->try_pick( x, y, &depth_val );
+            ir_stream->second.texture->try_pick( x, y, &ir_val );
+
+            _reflectivity->add_depth_sample( depth_val, x, y );  // Add depth sample to the history
+
+            float noise_est = ds.get_option( RS2_OPTION_NOISE_ESTIMATION );
+            auto mur_sensor = ds.as< max_usable_range_sensor >();
+            if( mur_sensor )
+            {
+                auto max_usable_range = mur_sensor.get_max_usable_depth_range();
+                reflectivity_valid = true;
+                std::string ref_str = "N/A";
+                try
+                {
+                    auto pixel_ref = _reflectivity->get_reflectivity( noise_est, max_usable_range, ir_val );
+                    ref_str = to_string() << std::dec << round( pixel_ref * 100 ) << "%";
+                }
+                catch( ... )
+                {
+                }
+
+                if( same_line )
+                    ss << ", Reflectivity: " << ref_str;
+                else
+                    ss << "\nReflectivity: " << ref_str;
+            }
+        }
+
+        return reflectivity_valid;
     }
 
     void stream_model::update_ae_roi_rect(const rect& stream_rect, const mouse_info& mouse, std::string& error_message)
@@ -2860,7 +2935,7 @@ namespace rs2
         ImGui::PopStyleColor(5);
     }
 
-    void stream_model::show_stream_footer(ImFont* font, const rect &stream_rect, const mouse_info& mouse, viewer_model& viewer)
+    void stream_model::show_stream_footer(ImFont* font, const rect &stream_rect, const mouse_info& mouse, const std::map<int, stream_model> &streams, viewer_model& viewer)
     {
         auto non_visual_stream = (profile.stream_type() == RS2_STREAM_GYRO)
             || (profile.stream_type() == RS2_STREAM_ACCEL)
@@ -2885,8 +2960,11 @@ namespace rs2
             }
 
             bool show_max_range = false;
+            bool show_reflectivity = false;
+
             if (texture->get_last_frame().is<depth_frame>())
             {
+                // Draw pixel distance
                 auto meters = texture->get_last_frame().as<depth_frame>().get_distance(x, y);             
 
                 if (viewer.metric_system)
@@ -2894,26 +2972,55 @@ namespace rs2
                 else
                     ss << std::dec << " = " << std::setprecision(3) << meters / FEET_TO_METER << " feet";
 
+                // Draw maximum usable depth range
                 auto ds = sensor_from_frame(texture->get_last_frame())->as<depth_sensor>();
-                
-                if (viewer.draw_max_usable_range)
+                if (!viewer.is_option_skipped(RS2_OPTION_ENABLE_MAX_USABLE_RANGE))
                 {
-                    if (ds.supports(RS2_OPTION_ENABLE_MAX_USABLE_RANGE))
+                    if (ds.supports(RS2_OPTION_ENABLE_MAX_USABLE_RANGE) && 
+                        (ds.get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE) == 1.0f))
                     {
-                        if (ds.get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE) == 1.0)
+                        auto mur_sensor = ds.as<max_usable_range_sensor>();
+                        if (mur_sensor)
                         {
                             show_max_range = true;
-                            auto mur_sensor = ds.as<max_usable_range_sensor>();
                             auto max_usable_range = mur_sensor.get_max_usable_depth_range();
                             const float MIN_RANGE = 3.0f;
                             const float MAX_RANGE = 9.0f;
-                            // display maximu, usable range in range 3-9 [m] at 1 [m] resolution (rounded)
+                            // display maximum usable range in range 3-9 [m] at 1 [m] resolution (rounded)
                             auto max_usable_range_rounded = round(std::min(std::max(max_usable_range, MIN_RANGE), MAX_RANGE));
 
                             if (viewer.metric_system)
                                 ss << std::dec << "\nMax usable range: " << std::setprecision(1) << max_usable_range_rounded << " meters";
                             else
                                 ss << std::dec << "\nMax usable range: " << std::setprecision(1) << max_usable_range_rounded / FEET_TO_METER << " feet";
+                        }
+                    }
+                }
+
+                // Draw IR reflectivity on depth frame
+                if (_reflectivity)
+                {
+                    if (ds.get_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY) == 1.0f)
+                    {
+                        // Add reflectivity information on frame, if max usable range is displayed, display reflectivity on the same line
+                        show_reflectivity = draw_reflectivity(x, y, ds, streams, ss, show_max_range);
+                    }
+                }
+            }
+
+            // Draw IR reflectivity on IR frame
+            if (_reflectivity)
+            {
+                bool lf_exist = texture->get_last_frame();
+                if (lf_exist)
+                {
+                    auto ds = sensor_from_frame(texture->get_last_frame())->as<depth_sensor>();
+                    if (ds.get_option( RS2_OPTION_ENABLE_IR_REFLECTIVITY ) == 1.0f )
+                    {
+                        bool lf_exist = texture->get_last_frame();
+                        if (is_stream_alive() && texture->get_last_frame().get_profile().stream_type() == RS2_STREAM_INFRARED)
+                        {
+                            show_reflectivity = draw_reflectivity(x, y, ds, streams, ss, show_max_range);
                         }
                     }
                 }
@@ -2929,7 +3036,7 @@ namespace rs2
             auto width = float(msg.size() * 8);
 
             // adjust width according to the longest line
-            if (show_max_range)
+            if (show_max_range || show_reflectivity)
             {
                 footer_vertical_size = 50;
                 auto first_line_size = msg.find_first_of('\n') + 1;
@@ -2953,6 +3060,13 @@ namespace rs2
 
             ImGui::Text("%s", msg.c_str());
             ImGui::PopStyleColor(2);
+        }
+        else
+        {
+            if (_reflectivity)
+            {
+                _reflectivity->reset_history();
+            }
         }
     }
 
@@ -6201,15 +6315,11 @@ namespace rs2
                         for (auto&& i : sub->s->get_supported_options())
                         {
                             auto opt = static_cast<rs2_option>(i);
-                            if (skip_option(opt)) continue;
+                            if (viewer.is_option_skipped(opt)) continue;
                             if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
                             {
                                 if (serialize && opt == RS2_OPTION_VISUAL_PRESET)
                                     continue;
-                                if (opt == RS2_OPTION_ENABLE_MAX_USABLE_RANGE && !viewer.draw_max_usable_range)
-                                {
-                                    continue;
-                                }
 
                                 if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, *viewer.not_model))
                                 {
@@ -6242,7 +6352,7 @@ namespace rs2
                             for (auto i = 0; i < RS2_OPTION_COUNT; i++)
                             {
                                 auto opt = static_cast<rs2_option>(i);
-                                if (skip_option(opt)) continue;
+                                if (viewer.is_option_skipped(opt)) continue;
                                 pb->get_option(opt).draw_option(
                                     dev.is<playback>() || update_read_only_options,
                                     false, error_message, *viewer.not_model);
@@ -6445,7 +6555,7 @@ namespace rs2
                             {
                                 for (auto&& opt : pb->get_option_list())
                                 {
-                                    if (skip_option(opt)) continue;
+                                    if (viewer.is_option_skipped(opt)) continue;
                                     pb->get_option(opt).draw_option(
                                         dev.is<playback>() || update_read_only_options,
                                         false, error_message, *viewer.not_model);

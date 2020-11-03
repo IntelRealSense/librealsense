@@ -422,6 +422,27 @@ namespace librealsense
             std::string _description;
         };
 
+        // Noise estimation option
+        class nest_option : public readonly_option
+        {
+        public:
+            float query() const override;
+
+            option_range get_range() const override { return option_range{ 0, 4100, 0, 0 }; }
+
+            bool is_enabled() const override { return true; }
+
+            const char * get_description() const override { return _description.c_str(); }
+
+            explicit nest_option(l500_device * l500_depth_dev, const std::string & description)
+                : _l500_depth_dev(l500_depth_dev)
+                , _description(description) {};
+
+        private:
+            l500_device *_l500_depth_dev;
+            std::string _description;
+        };
+
         class l500_timestamp_reader : public frame_timestamp_reader
         {
             static const int pins = 3;

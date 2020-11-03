@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <unordered_set>
 #include "model-views.h"
 #include "notifications.h"
 #include "skybox.h"
@@ -118,6 +119,8 @@ namespace rs2
 
         void gc_streams();
 
+        bool is_option_skipped(rs2_option opt) const;
+
         std::mutex streams_mutex;
         std::map<int, stream_model> streams;
         std::map<int, int> streams_origin;
@@ -188,12 +191,11 @@ namespace rs2
 
         std::shared_ptr<updates_model> updates;
 
-        bool draw_max_usable_range = true;
-
+        std::unordered_set<int> _hidden_options;
     private:
 
         void check_permissions();
-
+        void hide_common_options();
         std::vector<popup> _active_popups;
 
         struct rgb {

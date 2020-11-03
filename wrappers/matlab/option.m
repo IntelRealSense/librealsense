@@ -84,6 +84,8 @@ classdef option < int64
         humidity_temperature            (80)
         max_usable_range                (81)
         alternate_IR                    (82)
-        count                           (83)
+        noise_estimation                (83)
+        enable_ir_reclectivity          (84)
+        count                           (85)
     end
 end
