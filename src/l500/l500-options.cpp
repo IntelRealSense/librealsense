@@ -96,7 +96,7 @@ namespace librealsense
 
             auto default_sensor_mode = static_cast<float>(usb3mode ? RS2_SENSOR_MODE_VGA : RS2_SENSOR_MODE_QVGA);
 
-            auto resolution_option = std::make_shared<float_option_with_description<rs2_sensor_mode>>(option_range{ RS2_SENSOR_MODE_VGA,RS2_SENSOR_MODE_COUNT - 1,1, default_sensor_mode }, "Notify the sensor about the intended streaming mode. Required for preset ");
+            auto resolution_option = std::make_shared<sensor_mode_option>(this, option_range{ RS2_SENSOR_MODE_VGA,RS2_SENSOR_MODE_COUNT - 1,1, default_sensor_mode }, "Notify the sensor about the intended streaming mode. Required for preset ");
 
             depth_sensor.register_option(RS2_OPTION_SENSOR_MODE, resolution_option);
 
@@ -226,6 +226,8 @@ namespace librealsense
 
     void l500_options::on_set_option(rs2_option opt, float value)
     {
+        verify_max_usable_range_restrictions(value);
+       
         if (opt == RS2_OPTION_VISUAL_PRESET)
         {
             change_preset(static_cast<rs2_l500_visual_preset>(int(value)));
@@ -297,6 +299,15 @@ namespace librealsense
         _hw_options[RS2_OPTION_LASER_POWER]->set_with_no_signal(range.max);
     }
 
+    void l500_options::verify_max_usable_range_restrictions(float value) 
+    {
+        if (get_depth_sensor().supports_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE)
+            && (get_depth_sensor().get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE).query() == 1.0) &&
+            (value != rs2_l500_visual_preset::RS2_L500_VISUAL_PRESET_MAX_RANGE))
+            throw  wrong_api_call_sequence_exception(to_string() << "Changing Visual Preset while Max Usable Range is enabled is prohibited");
+
+    }
+
     void max_usable_range_option::set(float value)
     {
         if (value == 1.0f)
@@ -310,7 +321,7 @@ namespace librealsense
             if (_l500_depth_dev->get_depth_sensor().is_streaming())
             {
                 if (!sensor_mode_is_vga || !visual_preset_is_max_range)
-                    throw wrong_api_call_sequence_exception("Please set 'VGA' and 'Max Range' preset before enabling Max Usable Range");
+                    throw wrong_api_call_sequence_exception("Please set 'VGA' resolution and 'Max Range' preset before enabling Max Usable Range");
             }
             else
             {
@@ -327,17 +338,31 @@ namespace librealsense
                     LOG_INFO("Sensor Mode was changed to: " << sensor_mode_option.get_value_description(rs2_sensor_mode::RS2_SENSOR_MODE_VGA));
                 }
             }
-
-            // TODO!!
-            // If “Max Usable Range” is enabled while camera is not streaming, system will automatically select VGA and Max Range preset 
-            // and not allow changing those settings.!!
-
         }
 
         bool_option::set(value);
     }
 
 
+    void sensor_mode_option::set(float value)
+    {
+        auto &ds = _l500_depth_dev->get_depth_sensor();
+
+        if (ds.supports_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY) && ds.get_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY).query() == 1.0f)
+        {
+            ds.get_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY).set(0.0f);
+            LOG_INFO("IR Reflectivity was on - turning it off");
+        }
+
+        if (ds.supports_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE) &&
+            (ds.get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE).query() == 1.0) &&
+            (value != rs2_sensor_mode::RS2_SENSOR_MODE_VGA))
+        {
+            throw wrong_api_call_sequence_exception("Max Usable Range support VGA resolution only");
+        }
+
+        float_option_with_description::set(value);
+    }
 
     const char * max_usable_range_option::get_description() const
     {
@@ -352,24 +377,55 @@ namespace librealsense
 
     void ir_reflectivity_option::set(float value)
     {
+        auto &ds = _l500_depth_dev->get_depth_sensor();
+
         if (value == 1.0f)
         {
-            auto &sensor_mode_option = _l500_depth_dev->get_depth_sensor().get_option(RS2_OPTION_SENSOR_MODE);
+            // Verify option Alternate IR is off
+            if (ds.supports_option(RS2_OPTION_ALTERNATE_IR))
+            {
+                auto alternate_ir_on = (ds.get_option(RS2_OPTION_ALTERNATE_IR).query() == 1.0f);
+
+                if (alternate_ir_on)
+                    throw wrong_api_call_sequence_exception("Cannot enable IR Reflectivity when Alternate IR option is on");
+            }
+
+            auto &sensor_mode_option = ds.get_option(RS2_OPTION_SENSOR_MODE);
             auto sensor_mode = sensor_mode_option.query();
             bool sensor_mode_is_vga = (sensor_mode == rs2_sensor_mode::RS2_SENSOR_MODE_VGA);
 
-            bool visual_preset_is_max_range = _l500_depth_dev->get_depth_sensor().is_max_range_preset();
+            bool visual_preset_is_max_range = ds.is_max_range_preset();
 
-            if (_l500_depth_dev->get_depth_sensor().is_streaming())
+            if( ds.is_streaming() )
             {
-                if (!sensor_mode_is_vga || !visual_preset_is_max_range)
-                    throw wrong_api_call_sequence_exception("Please set 'VGA' and 'Max Range' preset before enabling IR Reflectivity");
+                // While streaming we use active stream resolution and not sensor mode due as a
+                // patch for the DQT sensor mode wrong handling. 
+                // This should be changed for using sensor mode after DQT fix
+                auto active_streams = ds.get_active_streams();
+                auto dp = std::find_if( active_streams.begin(),
+                                        active_streams.end(),
+                                        []( std::shared_ptr< stream_profile_interface > sp ) {
+                                            return sp->get_stream_type() == RS2_STREAM_DEPTH;
+                                        } );
+
+                bool vga_sensor_mode = false;
+                if( dp != active_streams.end() )
+                {
+                    auto vs = dynamic_cast< video_stream_profile * >( ( *dp ).get() );
+                    vga_sensor_mode
+                        = ( get_resolution_from_width_height( vs->get_width(), vs->get_height() )
+                            == RS2_SENSOR_MODE_VGA );
+                }
+
+                if( ( ! vga_sensor_mode ) || ! visual_preset_is_max_range )
+                    throw wrong_api_call_sequence_exception(
+                        "Please set 'VGA' resolution and 'Max Range' preset before enabling IR Reflectivity" );
             }
             else
             {
                 if (!visual_preset_is_max_range)
                 {
-                    auto &visual_preset_option = _l500_depth_dev->get_depth_sensor().get_option(RS2_OPTION_VISUAL_PRESET);
+                    auto &visual_preset_option = ds.get_option(RS2_OPTION_VISUAL_PRESET);
                     visual_preset_option.set(rs2_l500_visual_preset::RS2_L500_VISUAL_PRESET_MAX_RANGE);
                     LOG_INFO("Visual Preset was changed to: " << visual_preset_option.get_value_description(rs2_l500_visual_preset::RS2_L500_VISUAL_PRESET_MAX_RANGE));
                 }
@@ -381,11 +437,23 @@ namespace librealsense
                 }
             }
 
-            auto &max_usable_range_option = _l500_depth_dev->get_depth_sensor().get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE);
+            auto &max_usable_range_option = ds.get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE);
             if (max_usable_range_option.query() != 1.0f)
             {
                 max_usable_range_option.set(1.0f);
+                _max_usable_range_forced_on = true;
                 LOG_INFO("Max Usable Range was off - turning it on");
+            }
+        }
+        else
+        {
+            if (_max_usable_range_forced_on)
+            {
+                auto &max_usable_range_option = ds.get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE);
+
+                max_usable_range_option.set(0.0f);
+                _max_usable_range_forced_on = false;
+                LOG_INFO("Max Usable Range was on - turning it off");
             }
         }
 

@@ -309,7 +309,7 @@ namespace rs2
         void update_supported(std::string& error_message);
         void update_read_only_status(std::string& error_message);
         void update_all_fields(std::string& error_message, notifications_model& model);
-
+        void set_option(rs2_option opt, float value, std::string &error_message);
         bool draw_option(bool update_read_only_options, bool is_streaming,
             std::string& error_message, notifications_model& model);
 
@@ -551,7 +551,7 @@ namespace rs2
 
         bool is_there_common_fps() ;
         bool supports_on_chip_calib();
-        bool draw_stream_selection();
+        bool draw_stream_selection(std::string& error_message);
         bool is_selected_combination_supported();
         std::vector<stream_profile> get_selected_profiles();
         std::vector<stream_profile> get_supported_profiles();

@@ -18,8 +18,10 @@ static const float INDOOR_MAX_RANGE = 9.0f;
 static const float FOV_H = 0.610865f;
 static const float FOV_V = 0.479966f;
 
-static const int VGA_HALF_WIDTH = 320;
-static const int VGA_HALF_HEIGHT = 240;
+static const int VGA_WIDTH = 640;
+static const int VGA_HEIGHT = 480;
+static const int VGA_HALF_WIDTH = VGA_WIDTH / 2;
+static const int VGA_HALF_HEIGHT = VGA_HEIGHT / 2;
 
 static bool is_close_to_zero( float x )
 {
@@ -158,16 +160,19 @@ float reflectivity::get_reflectivity( float raw_noise_estimation,
 
 void reflectivity::add_depth_sample( float depth_val, int x_in_image, int y_in_image )
 {
-    auto dist_z = round( depth_val * 16000.f / MAX_RANGE_IN_UNIT );  // convert to mm units
-    float x_ang = FOV_H * std::abs( VGA_HALF_WIDTH - x_in_image ) / VGA_HALF_WIDTH;
-    float y_ang = FOV_V * std::abs( VGA_HALF_HEIGHT - y_in_image ) / VGA_HALF_HEIGHT;
-    auto dist_r = dist_z * std::sqrt( 1.0f + (std::pow( 2.0f * std::tan( x_ang ), 2.0f ) + std::pow( 2.0f * std::tan( y_ang ), 2.0f ) ) / 4.0f );
+    if( x_in_image >= 0 && x_in_image < VGA_WIDTH && y_in_image >= 0 && y_in_image < VGA_HEIGHT )
+    {
+        auto dist_z = round( depth_val * 16000.f / MAX_RANGE_IN_UNIT );  // convert to mm units
+        float x_ang = FOV_H * std::abs( VGA_HALF_WIDTH - x_in_image ) / VGA_HALF_WIDTH;
+        float y_ang = FOV_V * std::abs( VGA_HALF_HEIGHT - y_in_image ) / VGA_HALF_HEIGHT;
+        auto dist_r = dist_z * std::sqrt( 1.0f + (std::pow( 2.0f * std::tan( x_ang ), 2.0f ) + std::pow( 2.0f * std::tan( y_ang ), 2.0f ) ) / 4.0f );
 
-    if( _dist_queue.size() >= N_STD_FRAMES )  // Keep queue as N_STD_FRAMES size queue
-        _dist_queue.pop_front();
+        if( _dist_queue.size() >= N_STD_FRAMES )  // Keep queue as N_STD_FRAMES size queue
+            _dist_queue.pop_front();
 
-    _dist_queue.push_back( dist_r );
-    _is_empty = false;
+        _dist_queue.push_back( dist_r );
+        _is_empty = false;
+    }
 }
 
 void rs2::reflectivity::reset_history()

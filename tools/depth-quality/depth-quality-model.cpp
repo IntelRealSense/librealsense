@@ -554,7 +554,7 @@ namespace rs2
                         ImGui::PopStyleVar();
                         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2, 2 });
 
-                        if (_depth_sensor_model->draw_stream_selection())
+                        if (_depth_sensor_model->draw_stream_selection(_error_message))
                         {
                             if (_depth_sensor_model->is_selected_combination_supported())
                             {

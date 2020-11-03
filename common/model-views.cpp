@@ -54,6 +54,28 @@ static rs2_sensor_mode resolution_from_width_height(int width, int height)
         return RS2_SENSOR_MODE_COUNT;
 }
 
+static void width_height_from_resolution(rs2_sensor_mode mode, int &width, int &height)
+{
+    switch (mode)
+    {
+    case RS2_SENSOR_MODE_VGA:
+        width = 640;
+        height = 480;
+        break;
+    case RS2_SENSOR_MODE_XGA:
+        width = 1024;
+        height = 768;
+        break;
+    case RS2_SENSOR_MODE_QVGA:
+        width = 320;
+        height = 240;
+        break;
+    default:
+        width = height = 0;
+        break;
+    }
+}
+
 ImVec4 flip(const ImVec4& c)
 {
     return{ c.y, c.x, c.z, c.w };
@@ -529,16 +551,8 @@ namespace rs2
                     res = true;
                     model.add_log(to_string() << "Setting " << opt << " to "
                         << (bool_value? "1.0" : "0.0") << " (" << (bool_value ? "ON" : "OFF") << ")");
-                    try
-                    {
-                        endpoint->set_option(opt, bool_value ? 1.f : 0.f);
-                    }
-                    catch (const error& e)
-                    {
-                        error_message = error_to_string(e);
-                    }
-                    // Only update the cached value once set_option is done! That way, if it doesn't change anything...
-                    try { value = endpoint->get_option(opt); } catch( ... ) {}
+                    
+                    set_option(opt, bool_value ? 1.f : 0.f, error_message);
                     *invalidate_flag = true;
                 }
                 if (ImGui::IsItemHovered() && desc)
@@ -654,15 +668,7 @@ namespace rs2
                                 }
                                 else
                                 {
-                                    try
-                                    {
-                                        endpoint->set_option(opt, new_value);
-                                        value = new_value;
-                                    }
-                                    catch (const error& e)
-                                    {
-                                        error_message = error_to_string(e);
-                                    }
+                                    set_option(opt, new_value, error_message);
                                 }
 
                                 edit_mode = false;
@@ -679,28 +685,28 @@ namespace rs2
                                 static_cast<int>(range.step)))
                             {
                                 // TODO: Round to step?
-                                value = static_cast<float>(int_value);
-                                model.add_log(to_string() << "Setting " << opt << " to " << value);
-                                endpoint->set_option(opt, value);
+                                model.add_log(to_string() << "Setting " << opt << " to " << int_value);
+                                set_option(opt, static_cast<float>(int_value), error_message);
                                 *invalidate_flag = true;
                                 res = true;
                             }
                         }
                         else
                         {
-                            if (ImGui::SliderFloat(id.c_str(), &value,
+                            float tmp_value = value;
+                            if (ImGui::SliderFloat(id.c_str(), &tmp_value,
                                 range.min, range.max, "%.4f"))
                             {
-                                auto loffset = std::abs(fmod(value, range.step));
+                                auto loffset = std::abs(fmod(tmp_value, range.step));
                                 auto roffset = range.step - loffset;
-                                if (value >= 0)
-                                    value = (loffset < roffset) ? value - loffset : value + roffset;
+                                if (tmp_value >= 0)
+                                    tmp_value = (loffset < roffset) ? tmp_value - loffset : tmp_value + roffset;
                                 else
-                                    value = (loffset < roffset) ? value + loffset : value - roffset;
-                                value = (value < range.min) ? range.min : value;
-                                value = (value > range.max) ? range.max : value;
-                                model.add_log(to_string() << "Setting " << opt << " to " << value);
-                                endpoint->set_option(opt, value);
+                                    tmp_value = (loffset < roffset) ? tmp_value + loffset : tmp_value - roffset;
+                                tmp_value = (tmp_value < range.min) ? range.min : tmp_value;
+                                tmp_value = (tmp_value > range.max) ? range.max : tmp_value;
+                                model.add_log(to_string() << "Setting " << opt << " to " << tmp_value);
+                                set_option(opt, tmp_value, error_message);
                                 *invalidate_flag = true;
                                 res = true;
                             }
@@ -740,13 +746,16 @@ namespace rs2
 
                     try
                     {
-                        if (ImGui::Combo(id.c_str(), &selected, labels.data(),
+                        int tmp_selected = selected;
+                        float tmp_value = value;
+                        if (ImGui::Combo(id.c_str(), &tmp_selected, labels.data(),
                             static_cast<int>(labels.size())))
                         {
-                            value = range.min + range.step * selected;
+                            tmp_value = range.min + range.step * selected;
                             model.add_log(to_string() << "Setting " << opt << " to "
-                                << value << " (" << labels[selected] << ")");
-                            endpoint->set_option(opt, value);
+                                << tmp_value << " (" << labels[selected] << ")");
+                            set_option(opt, tmp_value, error_message);
+                            selected = tmp_selected;
                             if (invalidate_flag) *invalidate_flag = true;
                             res = true;
                         }
@@ -1267,7 +1276,7 @@ namespace rs2
         return true;
     }
 
-    bool subdevice_model::draw_stream_selection()
+    bool subdevice_model::draw_stream_selection(std::string& error_message)
     {
         bool res = false;
 
@@ -1303,8 +1312,9 @@ namespace rs2
             else
             {
                 ImGui::PushItemWidth(-1);
-                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-                if (ImGui::Combo(label.c_str(), &ui.selected_res_id, res_chars.data(),
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 }); 
+                auto tmp_selected_res_id = ui.selected_res_id;
+                if (ImGui::Combo(label.c_str(), &tmp_selected_res_id, res_chars.data(),
                     static_cast<int>(res_chars.size())))
                 {
                     res = true;
@@ -1312,11 +1322,44 @@ namespace rs2
 
                     if (s->supports(RS2_OPTION_SENSOR_MODE))
                     {
-                        auto width = res_values[ui.selected_res_id].first;
-                        auto height = res_values[ui.selected_res_id].second;
+                        auto width = res_values[tmp_selected_res_id].first;
+                        auto height = res_values[tmp_selected_res_id].second;
                         auto res = resolution_from_width_height(width, height);
                         if (res >= RS2_SENSOR_MODE_VGA && res < RS2_SENSOR_MODE_COUNT)
-                            s->set_option(RS2_OPTION_SENSOR_MODE, float(res));
+                        {   
+                            try
+                            {
+                                s->set_option(RS2_OPTION_SENSOR_MODE, float(res));
+                            }
+                            catch (const error& e)
+                            {
+                                error_message = error_to_string(e);
+                            }
+
+                            // Only update the cached value once set_option is done! That way, if it doesn't change anything...
+                            try 
+                            {
+                               int sensor_mode = static_cast<int>(s->get_option(RS2_OPTION_SENSOR_MODE));
+                               int width = 0, height = 0;
+                               width_height_from_resolution(static_cast<rs2_sensor_mode>(sensor_mode), width, height);
+                               auto iter = std::find_if( res_values.begin(),
+                                                          res_values.end(),
+                                                          [width, height]( std::pair< int, int > res ) 
+                               {
+                                   if ((res.first == width) && (res.second == height) ||
+                                       (res.first == height) && (res.second == width))
+                                       return true;
+                                   return false;
+                               });
+                               if (iter != res_values.end())
+                               {
+                                   int index = std::distance(res_values.begin(), iter);
+                                   ui.selected_res_id = index;
+                               }
+                               
+                            }
+                            catch (...) {}
+                        }
                     }
                 }
                 ImGui::PopStyleColor();
@@ -2062,6 +2105,21 @@ namespace rs2
             return draw(error_message, model);
     }
 
+    void option_model::set_option(rs2_option opt, float req_value, std::string &error_message)
+    {
+        try
+        {
+            endpoint->set_option(opt, req_value);
+        }
+        catch (const error& e)
+        {
+            error_message = error_to_string(e);
+        }
+        // Only update the cached value once set_option is done! That way, if it doesn't change anything...
+        try { value = endpoint->get_option(opt); }
+        catch (...) {}
+    }
+
     stream_model::stream_model()
         : texture(std::unique_ptr<texture_buffer>(new texture_buffer())),
         _stream_not_alive(std::chrono::milliseconds(1500))
@@ -2238,7 +2296,7 @@ namespace rs2
                                 return stream.second.profile.stream_type() == RS2_STREAM_DEPTH;
                             } );
 
-        if( ir_stream != streams.end() && depth_stream != streams.end() )
+        if ((ir_stream != streams.end()) && (depth_stream != streams.end()))
         {
             auto depth_val = 0.0f;
             auto ir_val = 0.0f;
@@ -5692,11 +5750,10 @@ namespace rs2
                                     model.add_log(to_string() << "Setting " << opt_model.opt << " to "
                                         << new_val << " (" << labels[selected] << ")");
 
-                                    opt_model.endpoint->set_option(opt_model.opt, new_val);
+                                    opt_model.set_option(opt_model.opt, new_val, error_message);
 
                                     // Only apply preset to GUI if set_option was succesful
                                     selected_file_preset = "";
-                                    opt_model.value = new_val;
                                     is_clicked = true;
                                 }
                                 else
@@ -6292,7 +6349,7 @@ namespace rs2
                 ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2, 2 });
 
                 if (show_stream_selection)
-                    sub->draw_stream_selection();
+                    sub->draw_stream_selection(error_message);
 
                 static const std::vector<rs2_option> drawing_order = serialize ?
                     std::vector<rs2_option>{                           RS2_OPTION_EMITTER_ENABLED, RS2_OPTION_ENABLE_AUTO_EXPOSURE }
