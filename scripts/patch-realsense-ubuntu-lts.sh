@@ -59,11 +59,11 @@ kernel_name="ubuntu-${ubuntu_codename}-$kernel_branch"
 echo -e "\e[32mCreate patches workspace in \e[93m${kernel_name} \e[32mfolder\n\e[0m"
 
 #Distribution-specific packages
-if [ ${ubuntu_codename} == "bionic" ];
+if { [ ${ubuntu_codename} == "bionic" ] || [ ${ubuntu_codename} == "focal" ];  } ;
 then
 	require_package libelf-dev
 	require_package elfutils
-	#Ubuntu 18.04 kernel 4.18
+	#Ubuntu 18.04 kernel 4.18 + 20.04/ 5.4
 	require_package bison
 	require_package flex
 fi
