@@ -2074,7 +2074,7 @@ namespace rs2
 
     std::shared_ptr<texture_buffer> stream_model::upload_frame(frame&& f)
     {
-        if (dev && dev->is_paused() && !dev->dev.is<playback>()) return nullptr;
+        if (dev && dev->is_paused()) return nullptr;
 
         last_frame = std::chrono::high_resolution_clock::now();
 
@@ -4014,7 +4014,7 @@ namespace rs2
                         if (s->streaming)
                             s->resume();
                     }
-
+                    viewer.paused = false;
                     p.resume();
                 }
 
