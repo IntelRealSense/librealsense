@@ -91,8 +91,7 @@ public:
 
     ~openvino_face_detection()
     {
-        // The worker filter will do this itself, but we must manually do it if we want to avoid a crash
-        // by access to our data (gone by the time we get to the parent dtor) by the worker thread!
+        // Complete background worker to ensure it releases the instance's resources in controlled manner
         release_background_worker();
     }
 public:
