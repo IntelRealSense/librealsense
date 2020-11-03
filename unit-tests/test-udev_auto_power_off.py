@@ -186,7 +186,7 @@ class udevTester:
         dev1 = self.connect_imu_device([])
         if (dev1 is None):
             print ('motion module device was not connected.')
-            return False
+            return True
         print ('motion module device connected: %s' % dev1.get_info(rs.camera_info.serial_number))
         dev1 = self.reset_device(dev1)
         # check power off dev1
