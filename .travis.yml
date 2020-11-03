@@ -15,7 +15,7 @@ matrix:
         - ls
         - ./live-test.exe -d yes -i [software-device]
         - unset LRS_LOG_LEVEL
-        - mv C:/Users/travis/build/MMirbach/librealsense/build/Release/pyrealsense2.cp38-win_amd64.pyd C:/Users/travis/build/MMirbach/librealsense/build/Release/pyrealsense2.pyd
+        - mv pyrealsense2.cp38-win_amd64.pyd pyrealsense2.pyd
         - C:/Python38/python.exe ../../unit-tests/run-unit-tests.py --verbose .
         
     - name: "Windows - cpp"
