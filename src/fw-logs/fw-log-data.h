@@ -87,7 +87,7 @@ namespace librealsense
             uint32_t _p1;
             uint32_t _p2;
             uint32_t _p3;
-            uint64_t _timestamp;
+            uint32_t _timestamp;
             double _delta;
 
             uint32_t _thread_id;

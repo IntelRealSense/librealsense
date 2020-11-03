@@ -14,7 +14,7 @@ namespace librealsense
         _serial_number = parse_serial_number(_serial_number_buffer);
     }
 
-    void sr300_update_device::update(const void* fw_image, int fw_image_size, update_progress_callback_ptr callback) const
+    void sr300_update_device::update(const void* fw_image, size_t fw_image_size, update_progress_callback_ptr callback) const
     {
         update_device::update(fw_image, fw_image_size, callback);
 

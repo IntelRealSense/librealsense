@@ -19,7 +19,7 @@ namespace librealsense
     class update_device_interface : public device_interface
     {
     public:
-        virtual void update(const void* fw_image, int fw_image_size, update_progress_callback_ptr = nullptr) const = 0;
+        virtual void update(const void* fw_image, size_t fw_image_size, update_progress_callback_ptr = nullptr) const = 0;
     protected:
         virtual const std::string& get_name() const = 0;
         virtual const std::string& get_product_line() const = 0;

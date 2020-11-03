@@ -136,26 +136,26 @@ namespace librealsense
 
     }
 
-    void update_device::update(const void* fw_image, int fw_image_size, update_progress_callback_ptr update_progress_callback) const
+    void update_device::update(const void* fw_image, size_t fw_image_size, update_progress_callback_ptr update_progress_callback) const
     {
         auto messenger = _usb_device->open(FW_UPDATE_INTERFACE_NUMBER);
 
         const size_t transfer_size = 1024;
 
         size_t remaining_bytes = fw_image_size;
-        uint16_t blocks_count = fw_image_size / transfer_size;
-        uint16_t block_number = 0;
+        const size_t blocks_count = fw_image_size / transfer_size;
+        int block_number = 0;
 
-        size_t offset = 0;
-        uint32_t transferred = 0;
+        uint32_t offset = 0U;
+        uint32_t transferred = 0U;
         int retries = 10;
 
         while (remaining_bytes > 0) 
         {
-            size_t chunk_size = std::min(transfer_size, remaining_bytes);
+            uint32_t chunk_size = static_cast<uint32_t>(std::min(transfer_size, remaining_bytes));
 
             auto curr_block = ((uint8_t*)fw_image + offset);
-            auto sts = messenger->control_transfer(0x21 /*DFU_DOWNLOAD_PACKET*/, RS2_DFU_DOWNLOAD, block_number, 0, curr_block, chunk_size, transferred, 5000);
+            auto sts = messenger->control_transfer(0x21 /*DFU_DOWNLOAD_PACKET*/, RS2_DFU_DOWNLOAD, block_number, 0, curr_block, chunk_size, transferred, 5000U);
             if (sts != platform::RS2_USB_STATUS_SUCCESS || !wait_for_state(messenger, RS2_DFU_STATE_DFU_DOWNLOAD_IDLE, 1000))
             {
                 auto state = get_dfu_state(messenger);

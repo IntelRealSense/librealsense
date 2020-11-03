@@ -523,7 +523,7 @@ namespace rs2
         * retrieve data size from frame handle
         * \return               the number of bytes in frame
         */
-        const int get_data_size() const
+        const size_t get_data_size() const
         {
             rs2_error* e = nullptr;
             auto r = rs2_get_frame_data_size(frame_ref, &e);

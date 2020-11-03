@@ -394,7 +394,7 @@ const unsigned char* rs2_fw_log_message_data(rs2_firmware_log_message* msg, rs2_
 * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return               size of the firmware log message data
 */
-int rs2_fw_log_message_size(rs2_firmware_log_message* msg, rs2_error** error);
+size_t rs2_fw_log_message_size(rs2_firmware_log_message* msg, rs2_error** error);
 
 
 /**

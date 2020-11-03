@@ -920,7 +920,7 @@ rs2_sensor* rs2_get_frame_sensor(const rs2_frame* frame, rs2_error** error) BEGI
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
 
-int rs2_get_frame_data_size(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
+size_t rs2_get_frame_data_size(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame_ref);
     return ((frame_interface*)frame_ref)->get_frame_data_size();
@@ -2869,7 +2869,7 @@ int rs2_send_wheel_odometry(const rs2_sensor* sensor, char wo_sensor_id, unsigne
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, wo_sensor_id, frame_num, translational_velocity)
 
-void rs2_update_firmware_cpp(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback* callback, rs2_error** error) BEGIN_API_CALL
+void rs2_update_firmware_cpp(const rs2_device* device, const void* fw_image, size_t fw_image_size, rs2_update_progress_callback* callback, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(fw_image);
@@ -2886,7 +2886,7 @@ void rs2_update_firmware_cpp(const rs2_device* device, const void* fw_image, int
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, fw_image)
 
-void rs2_update_firmware(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error) BEGIN_API_CALL
+void rs2_update_firmware(const rs2_device* device, const void* fw_image, size_t fw_image_size, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(fw_image);
@@ -3194,7 +3194,7 @@ const unsigned char* rs2_fw_log_message_data(rs2_firmware_log_message* msg, rs2_
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, msg)
 
-int rs2_fw_log_message_size(rs2_firmware_log_message* msg, rs2_error** error)BEGIN_API_CALL
+size_t rs2_fw_log_message_size(rs2_firmware_log_message* msg, rs2_error** error)BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(msg);
     return msg->firmware_log_binary_data->logs_buffer.size();
@@ -3207,7 +3207,7 @@ rs2_log_severity rs2_fw_log_message_severity(const rs2_firmware_log_message* msg
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS2_LOG_SEVERITY_NONE, msg)
 
-unsigned int rs2_fw_log_message_timestamp(rs2_firmware_log_message* msg, rs2_error** error) BEGIN_API_CALL
+uint32_t rs2_fw_log_message_timestamp(rs2_firmware_log_message* msg, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(msg);
     return msg->firmware_log_binary_data->get_timestamp();
