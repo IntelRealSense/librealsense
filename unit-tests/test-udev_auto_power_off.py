@@ -21,13 +21,12 @@ class udevTester:
         print_help = '--help' in sys.argv or '-h' in sys.argv
         if print_help:
             print ('USAGE:')
-            print ('python test_udev_auto_power_off.py [--one_device]')
+            print ('python test_udev_auto_power_off.py [--two_devices]')
             print
             print ('Test application for udev-rules auto-power-off:')
             print ('Test that once a device is connected, all its IMU sensors are turned off.')
-            print ('Test that if a device is already connected and running, it is not turned off by connecting a new device.')
-            print
-            print ('To disable test with second device add the flag --one_device.')
+            print ('If --two_devices is set, test also that if a device is already connected and running,\
+                    it is not turned off by connecting a new device.')
             print
             exit(-1)
 
@@ -50,12 +49,17 @@ class udevTester:
     def connect_imu_device(self, existing_sns):
         #function retrievs 1 motion module device that is not on the <existing_sns> list.
         imu_devices = [dev for dev in self.ctx.query_devices() if self.is_motion_module_device(dev) and dev.get_info(rs.camera_info.serial_number) not in existing_sns]
-        while (len(imu_devices) == 0):
+        start_waiting_time =time.time()
+        time_out = 10
+        while (len(imu_devices) == 0 and time.time() - start_waiting_time < time_out):
             print ('Please Connect 1 device with a motion module%s') % ('.' if len(existing_sns) == 0 else ' (other then: %s)' % (', '.join(existing_sns)))
-            while (not self.changed):
+            print ('Will wait for %.1f seconds...' % time_out)
+            while (not self.changed and (time.time() - start_waiting_time < time_out)):
                 time.sleep(0.001)
             self.changed = False
             imu_devices = [dev for dev in self.ctx.query_devices() if self.is_motion_module_device(dev) and dev.get_info(rs.camera_info.serial_number) not in existing_sns]
+        if (len(imu_devices) == 0):
+            return None
         return imu_devices[-1]
 
     def wait_for_device(self, sn):
@@ -180,6 +184,9 @@ class udevTester:
         if not self.check_power_off():
             return False
         dev1 = self.connect_imu_device([])
+        if (dev1 is None):
+            print ('motion module device was not connected.')
+            return False
         print ('motion module device connected: %s' % dev1.get_info(rs.camera_info.serial_number))
         dev1 = self.reset_device(dev1)
         # check power off dev1
@@ -196,6 +203,9 @@ class udevTester:
         # connect dev2
         if test_2_devices:
             dev2 = self.connect_imu_device([dev1.get_info(rs.camera_info.serial_number)])
+            if (dev2 is None):
+                print ('motion module device 2 was not connected.')
+                return True
             dev2 = self.reset_device(dev2)
             # check power off dev2
             if not self.check_power_off(ignore_dev1=True):
@@ -212,7 +222,7 @@ class udevTester:
 def main():
     testobj = udevTester()
     testobj.message()
-    test_2_devices = '--one_device' not in sys.argv
+    test_2_devices = '--two_devices' in sys.argv
 
     ok = testobj.start(test_2_devices=test_2_devices)
     testobj.stop_sensors()
