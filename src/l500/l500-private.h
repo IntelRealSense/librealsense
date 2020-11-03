@@ -561,6 +561,5 @@ namespace librealsense
         };
 
         class ac_trigger;
-
     } // librealsense::ivcam2
 } // namespace librealsense

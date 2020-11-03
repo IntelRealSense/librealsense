@@ -254,13 +254,13 @@ namespace librealsense
                     new_dsm_params.ac_weeks_since_calibaration = age;
 
                     get_depth_sensor().override_dsm_params( new_dsm_params );
-                        auto & color_sensor = *get_color_sensor();
-                        color_sensor.override_intrinsics( _autocal->get_raw_intrinsics() );
-                        color_sensor.override_extrinsics( _autocal->get_extrinsics() );
-                        color_sensor.set_k_thermal_intrinsics( _autocal->get_thermal_intrinsics() );
-                    }
-                    notify_of_calibration_change( status );
-                } );
+                    auto & color_sensor = *get_color_sensor();
+                    color_sensor.override_intrinsics( _autocal->get_raw_intrinsics() );
+                    color_sensor.override_extrinsics( _autocal->get_extrinsics() );
+                    color_sensor.set_k_thermal_intrinsics( _autocal->get_thermal_intrinsics() );
+                }
+                notify_of_calibration_change( status );
+            } );
 
             depth_sensor.register_option(
                 RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH,

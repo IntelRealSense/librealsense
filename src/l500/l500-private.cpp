@@ -197,5 +197,6 @@ namespace librealsense
             _record_action( *this );
         }
 
+
     } // librealsense::ivcam2
 } // namespace librealsense
