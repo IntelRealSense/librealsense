@@ -138,37 +138,33 @@ namespace librealsense
 
     rs2_format sensor_base::fourcc_to_rs2_format(uint32_t fourcc_format) const
     {
-        rs2_format f;
+        rs2_format f = RS2_FORMAT_ANY;
 
-        if (_fourcc_to_rs2_format->end() == std::find_if(_fourcc_to_rs2_format->begin(), _fourcc_to_rs2_format->end(), [&fourcc_format, &f](const std::pair<uint32_t, rs2_format>& p) {
+        std::find_if(_fourcc_to_rs2_format->begin(), _fourcc_to_rs2_format->end(), [&fourcc_format, &f](const std::pair<uint32_t, rs2_format>& p) {
             if (p.first == fourcc_format)
             {
                 f = p.second;
                 return true;
             }
             return false;
-        }))
-        {
-            f = RS2_FORMAT_ANY; // Format not found.
-        }
+        });
+
         return f;
     }
 
     rs2_stream sensor_base::fourcc_to_rs2_stream(uint32_t fourcc_format) const
     {
-        rs2_stream s;
+        rs2_stream s = RS2_STREAM_ANY;
 
-        if (_fourcc_to_rs2_stream->end() == std::find_if(_fourcc_to_rs2_stream->begin(), _fourcc_to_rs2_stream->end(), [&fourcc_format, &s](const std::pair<uint32_t, rs2_stream>& p) {
+        std::find_if(_fourcc_to_rs2_stream->begin(), _fourcc_to_rs2_stream->end(), [&fourcc_format, &s](const std::pair<uint32_t, rs2_stream>& p) {
             if (p.first == fourcc_format)
             {
                 s = p.second;
                 return true;
             }
             return false;
-        }))
-        {
-            s = RS2_STREAM_ANY; // Stream with selected format not found.
-        }
+        });
+
         return s;
     }
 
@@ -266,7 +262,7 @@ namespace librealsense
             last_timestamp,
             last_frame_number,
             false,
-            static_cast<uint32_t>(fo.frame_size));
+            fo.frame_size);
         fr->additional_data = additional_data;
 
         // update additional data
@@ -1257,9 +1253,9 @@ namespace librealsense
         stream_profiles best_match_requests;
         std::shared_ptr<processing_block_factory> best_match_processing_block_factory;
 
-        size_t max_satisfied_req = 0;
-        size_t best_source_size = 0;
-        size_t satisfied_count = 0;
+        int max_satisfied_req = 0;
+        int best_source_size = 0;
+        int satisfied_count = 0;
 
         for (auto&& pbf : _pb_factories)
         {
