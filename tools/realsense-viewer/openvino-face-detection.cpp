@@ -89,6 +89,11 @@ public:
     {
     }
 
+    ~openvino_face_detection()
+    {
+        // Complete background worker to ensure it releases the instance's resources in controlled manner
+        release_background_worker();
+    }
 public:
     void start( rs2::subdevice_model & model ) override
     {

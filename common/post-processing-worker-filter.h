@@ -22,8 +22,16 @@ protected:
     }
     ~post_processing_worker_filter()
     {
+        release_background_worker();
+    }
+
+    // Worker thread uses resources of classes that inherit from this class (e.g openvino_face_detection),
+    // so it should be released from inherited classes.
+    // This should be called from dtor of inherited classes!
+    void release_background_worker()
+    {
         _alive = false;
-        if( _worker.joinable() )
+        if (_worker.joinable())
             _worker.join();
     }
 
