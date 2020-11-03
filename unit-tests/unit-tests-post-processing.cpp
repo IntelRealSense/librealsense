@@ -220,8 +220,8 @@ TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post
             rs2::software_device dev; // Create software-only device
             auto depth_sensor = dev.add_sensor("Depth");
 
-            uint32_t width = test_cfg.input_res_x;
-            uint32_t height = test_cfg.input_res_y;
+            int width = static_cast<int>(test_cfg.input_res_x);
+            int height = static_cast<int>(test_cfg.input_res_y);
             int depth_bpp = 2; //16bit unsigned
             int frame_number = 1;
             rs2_intrinsics depth_intrinsics = { width, height,
