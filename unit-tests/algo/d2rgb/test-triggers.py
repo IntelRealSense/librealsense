@@ -1,15 +1,16 @@
-import pyrealsense2 as rs, common as test, ac
+import pyrealsense2 as rs, test, ac
 
 # We set the environment variables to suit this test
 test.set_env_vars({"RS2_AC_DISABLE_CONDITIONS":"1",
                    "RS2_AC_DISABLE_RETRIES":"1",
                    "RS2_AC_FORCE_BAD_RESULT":"1",
-                   #"RS2_AC_IGNORE_LIMITERS":"1"
+                   "LOG_TO_STDOUT":"1"
+                   #,"RS2_AC_IGNORE_LIMITERS":"1"
                    })
 
 # rs.log_to_file( rs.log_severity.debug, "rs.log" )
 
-dev = test.get_first_device()
+dev = test.get_first_device_or_exit()
 depth_sensor = dev.first_depth_sensor()
 color_sensor = dev.first_color_sensor()
 
@@ -21,7 +22,7 @@ ccs = rs.calibrated_sensor(color_sensor)
 ccs.reset_calibration()
 
 d2r = rs.device_calibration(dev)
-d2r.register_calibration_change_callback( ac.list_status_cb )
+d2r.register_calibration_change_callback( ac.status_list_callback )
 
 cp = next(p for p in color_sensor.profiles if p.fps() == 30
                 and p.stream_type() == rs.stream.color
@@ -54,10 +55,10 @@ try:
     d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
     ac.wait_for_calibration() 
 except Exception as e:
-    test.require_exception(e, RuntimeError, "not streaming")
+    test.check_exception(e, RuntimeError, "not streaming")
 else:
-    test.require_no_reach() # No error Occurred, should have received a RuntimeError
-test.require(ac.status_list_empty()) # No status changes are expected, list should remain empty
+    test.check_no_reach() # No error Occurred, should have received a RuntimeError
+test.check(ac.status_list_empty()) # No status changes are expected, list should remain empty
 test.finish()
 
 #############################################################################################
@@ -70,17 +71,17 @@ try:
     d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
     ac.wait_for_calibration()
     ac.trim_irrelevant_statuses(irrelevant_statuses)
-    test.require_equal_lists(ac.status_list, successful_calibration_status_list)
+    test.check_equal_lists(ac.status_list, successful_calibration_status_list)
 except Exception:
-    test.require_no_reach()
+    test.check_no_reach()
 try:
     # Since the sensor was closed before calibration started, it should have been returned to a 
     # closed state
     color_sensor.stop() 
 except Exception as e:
-    test.require_exception(e, RuntimeError, "tried to stop sensor without starting it")
+    test.check_exception(e, RuntimeError, "tried to stop sensor without starting it")
 else:
-    test.require_no_reach()
+    test.check_no_reach()
 test.finish()
 
 #############################################################################################
@@ -93,14 +94,14 @@ try:
     d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
     ac.wait_for_calibration()
     ac.trim_irrelevant_statuses(irrelevant_statuses)
-    test.require_equal_lists(ac.status_list, successful_calibration_status_list)
+    test.check_equal_lists(ac.status_list, successful_calibration_status_list)
 except Exception:
-    require_no_reach()
+    check_no_reach()
 try:
     # This time the color sensor was on before calibration so it should remain on at the end
     color_sensor.stop() 
 except Exception:
-    test.require_no_reach()
+    test.check_no_reach()
 test.finish()
 
 #############################################################################################
@@ -113,12 +114,12 @@ try:
     d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
     ac.wait_for_calibration()
 except Exception as e: # Second trigger should throw exception
-    test.require_exception(e, RuntimeError, "Camera Accuracy Health is already active")
+    test.check_exception(e, RuntimeError, "Camera Accuracy Health is already active")
 else:
-    test.require_no_reach()
+    test.check_no_reach()
 ac.wait_for_calibration() # First trigger should continue and finish successfully
 ac.trim_irrelevant_statuses(irrelevant_statuses)
-test.require_equal_lists(ac.status_list, successful_calibration_status_list)
+test.check_equal_lists(ac.status_list, successful_calibration_status_list)
 test.finish()
 
 #############################################################################################

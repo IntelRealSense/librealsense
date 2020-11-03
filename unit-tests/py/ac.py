@@ -13,7 +13,7 @@ def reset_status_list():
     status_list = []
 
 # Call back function for testing status sequences
-def list_status_cb( status ):
+def status_list_callback( status ):
     global status_list
     status_list.append(status)
 
@@ -29,3 +29,4 @@ def wait_for_calibration():
     global status_list
     while status_list[-1] != rs.calibration_status.successful and status_list[-1] != rs.calibration_status.failed:
         sleep(1)
+    return status_list[-1]

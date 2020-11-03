@@ -1,22 +1,21 @@
-import pyrealsense2 as rs, common as test, ac
+import pyrealsense2 as rs, test, ac
 
-# This variable controls how many calibrations we do while testing for frame drops
-n_cal = 5
 
 # We set the environment variables to suit this test
 test.set_env_vars({"RS2_AC_DISABLE_CONDITIONS":"1",
                    "RS2_AC_DISABLE_RETRIES":"1",
-                   "RS2_AC_FORCE_BAD_RESULT":"1"
+                   "RS2_AC_FORCE_BAD_RESULT":"1",
+                   "LOG_TO_STDOUT":"1"
                    })
 
 # rs.log_to_file( rs.log_severity.debug, "rs.log" )
 
-dev = test.get_first_device()
+dev = test.get_first_device_or_exit()
 depth_sensor = dev.first_depth_sensor()
 color_sensor = dev.first_color_sensor()
 
 d2r = rs.device_calibration(dev)
-d2r.register_calibration_change_callback( ac.list_status_cb )
+d2r.register_calibration_change_callback( ac.status_list_callback )
 
 cp = next(p for p in color_sensor.profiles if p.fps() == 30
                 and p.stream_type() == rs.stream.color
@@ -31,6 +30,8 @@ dp = next(p for p in
                 and p.as_video_stream_profile().width() == 1024
                 and p.as_video_stream_profile().height() == 768)
 
+# This variable controls how many calibrations we do while testing for frame drops
+n_cal = 5
 # Variables for saving the previous color frame number and previous depth frame number
 pcf_num = -1
 pdf_num = -1
@@ -38,23 +39,19 @@ pdf_num = -1
 # Functions that assert that each frame we receive has the frame number following the previous frame number
 def check_next_cf(frame):
     global pcf_num
-    if pcf_num == -1: # If this is the first color frame received there is no previous frame to compare to
-        pcf_num = frame.get_frame_number()
-    else:
-        cf_num = frame.get_frame_number()
+    cf_num = frame.get_frame_number()
+    if pcf_num != -1:
         # print("pre: " + str(pcf_num) + " ,cur: " + str(cf_num))
-        test.require_equal(pcf_num + 1, cf_num)
-        pcf_num = cf_num
+        test.check_equal(pcf_num + 1, cf_num)
+    pcf_num = cf_num
 
 def check_next_df(frame):
     global pdf_num
-    if pdf_num == -1: # If this is the first depth frame received there is no previous frame to compare to
-        first_df_num = frame.get_frame_number()
-    else:
-        df_num = frame.get_frame_number()
-        # print("pre: " + str(pdf_num) + " ,cur: " + str(df_num))
-        test.require_equal(pdf_num + 1, df_num)
-        pdf_num = df_num
+    cf_num = frame.get_frame_number()
+    if pdf_num != -1:
+        # print("pre: " + str(pdf_num) + " ,cur: " + str(cf_num))
+        test.check_equal(pdf_num + 1, cf_num)
+    pdf_num = cf_num
 
 depth_sensor.open( dp )
 depth_sensor.start( check_next_df )
@@ -78,9 +75,9 @@ try:
     d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
     ac.wait_for_calibration()
 except Exception as e: # Second trigger should throw exception
-    test.require_exception(e, RuntimeError, "Camera Accuracy Health is already active")
+    test.check_exception(e, RuntimeError, "Camera Accuracy Health is already active")
 else:
-    test.require_no_reach()
+    test.check_no_reach()
 ac.wait_for_calibration() # First trigger should continue and finish successfully
 test.finish()
 

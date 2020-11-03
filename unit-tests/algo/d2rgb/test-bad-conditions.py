@@ -1,17 +1,18 @@
-import pyrealsense2 as rs, common as test, ac
+import pyrealsense2 as rs, test, ac
 
 # We set the environment variables to suit this test
 test.set_env_vars({"RS2_AC_DISABLE_CONDITIONS":"0",
+                   "LOG_TO_STDOUT":"1"
                    })
 
 # rs.log_to_file( rs.log_severity.debug, "rs.log" )
 
-dev = test.get_first_device()
+dev = test.get_first_device_or_exit()
 depth_sensor = dev.first_depth_sensor()
 color_sensor = dev.first_color_sensor()
 
 d2r = rs.device_calibration(dev)
-d2r.register_calibration_change_callback( ac.list_status_cb )
+d2r.register_calibration_change_callback( ac.status_list_callback )
 
 cp = next(p for p in color_sensor.profiles if p.fps() == 30
                 and p.stream_type() == rs.stream.color
@@ -39,10 +40,10 @@ try:
     d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
     ac.wait_for_calibration()
 except Exception as e:
-    test.require_exception(e, RuntimeError)
+    test.check_exception(e, RuntimeError)
 else:
-    test.require_no_reach()
-test.require_equal_lists(ac.status_list, [rs.calibration_status.bad_conditions])
+    test.check_no_reach()
+test.check_equal_lists(ac.status_list, [rs.calibration_status.bad_conditions])
 test.finish()
 #############################################################################################
 test.print_results_and_exit()
