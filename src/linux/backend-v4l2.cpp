@@ -899,7 +899,11 @@ namespace librealsense
 
             if(val < 0)
             {
-                stop_data_capture();
+                _is_capturing = false;
+                _is_started = false;
+
+                // Notify kernel
+                streamoff();
             }
             else
             {
