@@ -36,7 +36,8 @@ manufacture_time get_manufature_time( const std::string & serial )
     else
         man_year = 2020 + Y;
     // using WW from serial number to get manufactoring work week
-    unsigned man_ww = std::stoi( serial.substr( 2, 2 ) );
+    // unsigned man_ww = std::stoi( serial.substr( 2, 2 ) );
+    unsigned man_ww = ( ( serial[2] - '0' ) * 10 ) + ( serial[3] - '0' );
     return manufacture_time( man_year, man_ww );
 }
 
