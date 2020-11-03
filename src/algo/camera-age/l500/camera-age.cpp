@@ -3,6 +3,7 @@
 
 #include "camera-age.h"
 #include <ctime>
+#include <string>
 
 
 namespace librealsense {
