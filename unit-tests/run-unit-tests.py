@@ -255,7 +255,7 @@ if pyrs:
     # We append it to the librealsense path to get an absolute path to the file to add to PYTHONPATH so it can be found by the tests
     pyrs_path = librealsense + os.sep + pyrs
     # We need to add the directory not the file itself
-    pyrs_path = os.path.dirname(pyrs_path).replace("\\", "/")
+    pyrs_path = os.path.dirname(pyrs_path)
     # We also need to add the path to the python packages that the tests use
     py_package_path = current_dir + os.sep + "py"
     # Add the necessary path to the PYTHONPATH environment variable so python will look for modules there
@@ -263,7 +263,7 @@ if pyrs:
     print(pyrs_path)
     print(py_package_path)
     os.environ["PYTHONPATH"] = pyrs_path
-    os.environ["PYTHONPATH"] = py_package_path
+    # os.environ["PYTHONPATH"] = py_package_path
     # We can simply change `sys.path` but any child python scripts won't see it. We change the environment instead.
 
     # unit-test scripts are in the same directory as this script
