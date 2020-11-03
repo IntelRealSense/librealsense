@@ -519,7 +519,7 @@ void rs2_delete_terminal_parser(rs2_terminal_parser* terminal_parser);
 * \return                           command to hw monitor, in hex
 */
 rs2_raw_data_buffer* rs2_terminal_parse_command(rs2_terminal_parser* terminal_parser,
-    const char* command, unsigned int size_of_command, rs2_error** error);
+    const char* command, size_t size_of_command, rs2_error** error);
 
 /**
 * \brief Parses terminal response via RealSense terminal parser
@@ -532,8 +532,8 @@ rs2_raw_data_buffer* rs2_terminal_parse_command(rs2_terminal_parser* terminal_pa
 * \return                           answer parsed
 */
 rs2_raw_data_buffer* rs2_terminal_parse_response(rs2_terminal_parser* terminal_parser,
-    const char* command, unsigned int size_of_command,
-    const void* response, unsigned int size_of_response, rs2_error** error);
+    const char* command, size_t size_of_command,
+    const void* response, size_t size_of_response, rs2_error** error);
 
 
 #ifdef __cplusplus

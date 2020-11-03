@@ -3314,11 +3314,11 @@ void rs2_delete_terminal_parser(rs2_terminal_parser* terminal_parser) BEGIN_API_
 NOEXCEPT_RETURN(, terminal_parser)
 
 rs2_raw_data_buffer* rs2_terminal_parse_command(rs2_terminal_parser* terminal_parser,
-    const char* command, unsigned int size_of_command, rs2_error** error) BEGIN_API_CALL
+    const char* command, size_t size_of_command, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(terminal_parser);
     VALIDATE_NOT_NULL(command);
-    VALIDATE_LE(size_of_command, 1000);//bufer shall be less than 1000 bytes or similar
+    VALIDATE_LE(size_of_command, 1000);//buffer shall be less than 1000 bytes or similar
 
     std::string command_string;
     command_string.insert(command_string.begin(), command, command + size_of_command);
@@ -3329,14 +3329,14 @@ rs2_raw_data_buffer* rs2_terminal_parse_command(rs2_terminal_parser* terminal_pa
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, terminal_parser, command)
 
 rs2_raw_data_buffer* rs2_terminal_parse_response(rs2_terminal_parser* terminal_parser,
-    const char* command, unsigned int size_of_command,
-    const void* response, unsigned int size_of_response, rs2_error** error) BEGIN_API_CALL
+    const char* command, size_t size_of_command,
+    const void* response, size_t size_of_response, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(terminal_parser);
     VALIDATE_NOT_NULL(command);
     VALIDATE_NOT_NULL(response);
-    VALIDATE_LE(size_of_command, 1000); //bufer shall be less than 1000 bytes or similar
-    VALIDATE_LE(size_of_response, 5000);//bufer shall be less than 5000 bytes or similar
+    VALIDATE_LE(size_of_command, 1000); //buffer shall be less than 1000 bytes or similar
+    VALIDATE_LE(size_of_response, 5000);//buffer shall be less than 5000 bytes or similar
 
 
     std::string command_string;

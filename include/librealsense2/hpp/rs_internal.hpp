@@ -570,7 +570,7 @@ namespace rs2
             rs2_error* e = nullptr;
 
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_terminal_parse_command(_terminal_parser.get(), command.c_str(), static_cast<unsigned int>(command.size()), &e),
+                rs2_terminal_parse_command(_terminal_parser.get(), command.c_str(), command.size(), &e),
                 rs2_delete_raw_data);
             error::handle(e);
 
@@ -590,7 +590,7 @@ namespace rs2
             rs2_error* e = nullptr;
 
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_terminal_parse_response(_terminal_parser.get(), command.c_str(), static_cast<unsigned int>(command.size()),
+                rs2_terminal_parse_response(_terminal_parser.get(), command.c_str(), command.size(),
                 (void*)response.data(), response.size(), &e),
                 rs2_delete_raw_data);
             error::handle(e);
