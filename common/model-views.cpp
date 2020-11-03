@@ -2174,7 +2174,7 @@ namespace rs2
         return !_stream_not_alive.eval();
     }
 
-    void stream_model::begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p)
+    void stream_model::begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p, const viewer_model& viewer)
     {
         dev = d;
         original_profile = p;
@@ -2198,64 +2198,72 @@ namespace rs2
         
         try 
         {
-            auto ds = d->dev.first<depth_sensor>();
-            if( ds.supports( RS2_OPTION_ENABLE_IR_REFLECTIVITY )
-                    && ds.supports( RS2_OPTION_ENABLE_MAX_USABLE_RANGE )
-                    && ( p.stream_type() == RS2_STREAM_INFRARED ) || ( p.stream_type() == RS2_STREAM_DEPTH ) )
+            if( ! viewer.is_option_skipped( RS2_OPTION_ENABLE_IR_REFLECTIVITY ) )
             {
-                _reflectivity = std::unique_ptr< reflectivity >(new reflectivity());
+                auto ds = d->dev.first< depth_sensor >();
+                if( ds.supports( RS2_OPTION_ENABLE_IR_REFLECTIVITY )
+                    && ds.supports( RS2_OPTION_ENABLE_MAX_USABLE_RANGE )
+                    && ( ( p.stream_type() == RS2_STREAM_INFRARED ) || ( p.stream_type() == RS2_STREAM_DEPTH ) ) )
+                {
+                    _reflectivity = std::unique_ptr< reflectivity >( new reflectivity() );
+                }
             }
         }
         catch(...) {};
 
     }
 
-    bool stream_model::draw_reflectivity(int x, int y, rs2::depth_sensor ds, const std::map<int, stream_model> &streams, std::stringstream &ss, bool same_line)
+    bool stream_model::draw_reflectivity( int x,
+                                          int y,
+                                          rs2::depth_sensor ds,
+                                          const std::map< int, stream_model > & streams,
+                                          std::stringstream & ss,
+                                          bool same_line )
     {
         bool reflectivity_valid = false;
 
         // Get IR sample for getting current reflectivity
-        auto ir_stream = std::find_if(
-            streams.cbegin(),
-            streams.cend(),
-            [](const std::pair< const int, stream_model > & stream) {
-            return stream.second.profile.stream_type() == RS2_STREAM_INFRARED;
-        });
+        auto ir_stream
+            = std::find_if( streams.cbegin(),
+                            streams.cend(),
+                            []( const std::pair< const int, stream_model > & stream ) {
+                                return stream.second.profile.stream_type() == RS2_STREAM_INFRARED;
+                            } );
 
         // Get depth sample for adding to reflectivity history
-        auto depth_stream = std::find_if(
-            streams.cbegin(),
-            streams.cend(),
-            [](const std::pair< const int, stream_model > & stream) {
-            return stream.second.profile.stream_type() == RS2_STREAM_DEPTH;
-        });
+        auto depth_stream
+            = std::find_if( streams.cbegin(),
+                            streams.cend(),
+                            []( const std::pair< const int, stream_model > & stream ) {
+                                return stream.second.profile.stream_type() == RS2_STREAM_DEPTH;
+                            } );
 
-        if (ir_stream != streams.end() && depth_stream != streams.end())
+        if( ir_stream != streams.end() && depth_stream != streams.end() )
         {
             auto depth_val = 0.0f;
             auto ir_val = 0.0f;
-            depth_stream->second.texture->try_pick(x, y, &depth_val);
-            ir_stream->second.texture->try_pick(x, y, &ir_val);
-            
-            _reflectivity->add_depth_sample(depth_val, x, y); // Add depth sample to the history
+            depth_stream->second.texture->try_pick( x, y, &depth_val );
+            ir_stream->second.texture->try_pick( x, y, &ir_val );
 
-            float noise_est = ds.get_option(RS2_OPTION_NOISE_ESTIMATION);
-            auto mur_sensor = ds.as<max_usable_range_sensor>();
-            if (mur_sensor)
+            _reflectivity->add_depth_sample( depth_val, x, y );  // Add depth sample to the history
+
+            float noise_est = ds.get_option( RS2_OPTION_NOISE_ESTIMATION );
+            auto mur_sensor = ds.as< max_usable_range_sensor >();
+            if( mur_sensor )
             {
                 auto max_usable_range = mur_sensor.get_max_usable_depth_range();
                 reflectivity_valid = true;
                 std::string ref_str = "N/A";
-                float pixel_ref = -1.0f;
                 try
                 {
-                    pixel_ref = _reflectivity->get_reflectivity(noise_est, max_usable_range, ir_val);
+                    auto pixel_ref = _reflectivity->get_reflectivity( noise_est, max_usable_range, ir_val );
+                    ref_str = to_string() << std::dec << round( pixel_ref * 100 ) << "%";
                 }
-                catch (...) {};
-                if (pixel_ref != -1.0f)
-                    ref_str = to_string() << std::dec << round(pixel_ref * 100) << "%";
+                catch( ... )
+                {
+                }
 
-                if (same_line)
+                if( same_line )
                     ss << ", Reflectivity: " << ref_str;
                 else
                     ss << "\nReflectivity: " << ref_str;
@@ -2990,7 +2998,7 @@ namespace rs2
                 }
 
                 // Draw IR reflectivity on depth frame
-                if (_reflectivity && !viewer.is_option_skipped(RS2_OPTION_ENABLE_IR_REFLECTIVITY))
+                if (_reflectivity)
                 {
                     if (ds.get_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY) == 1.0f)
                     {
@@ -3001,7 +3009,7 @@ namespace rs2
             }
 
             // Draw IR reflectivity on IR frame
-            if (_reflectivity && !viewer.is_option_skipped(RS2_OPTION_ENABLE_IR_REFLECTIVITY))
+            if (_reflectivity)
             {
                 bool lf_exist = texture->get_last_frame();
                 if (lf_exist)

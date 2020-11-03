@@ -695,7 +695,7 @@ namespace rs2
 
         void snapshot_frame(const char* filename,viewer_model& viewer) const;
 
-        void begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p);
+        void begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p, const viewer_model& viewer);
         bool draw_reflectivity(int x, int y, rs2::depth_sensor ds, const std::map<int, stream_model> &streams, std::stringstream &ss, bool same_line = false);
         rect layout;
         std::shared_ptr<texture_buffer> texture;

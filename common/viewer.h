@@ -119,7 +119,7 @@ namespace rs2
 
         void gc_streams();
 
-        bool is_option_skipped(rs2_option opt);
+        bool is_option_skipped(rs2_option opt) const;
 
         std::mutex streams_mutex;
         std::map<int, stream_model> streams;

@@ -999,7 +999,7 @@ namespace rs2
         }
     }
 
-    bool rs2::viewer_model::is_option_skipped(rs2_option opt)
+    bool rs2::viewer_model::is_option_skipped(rs2_option opt) const
     {
         return (_hidden_options.find(opt) != _hidden_options.end());
     }
@@ -3171,7 +3171,7 @@ namespace rs2
     {
         // Starting post processing filter rendering thread
         ppf.start();
-        streams[p.unique_id()].begin_stream(d, p);
+        streams[p.unique_id()].begin_stream(d, p, *this);
         ppf.frames_queue.emplace(p.unique_id(), rs2::frame_queue(5));
     }
 
