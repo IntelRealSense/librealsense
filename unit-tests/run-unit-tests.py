@@ -164,6 +164,7 @@ def check_log_for_fails(log, testname, exe):
     # Tests that have failures, however, will show:
     #     "test cases: 1 | 1 failed
     #      assertions: 9 | 6 passed | 3 failed"
+    global verbose
     for ctx in grep( r'^test cases:\s*(\d+) \|\s*(\d+) (passed|failed)', log ):
         m = ctx['match']
         total = int(m.group(1))

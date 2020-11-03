@@ -14,6 +14,13 @@ dev = test.get_first_device_or_exit()
 depth_sensor = dev.first_depth_sensor()
 color_sensor = dev.first_color_sensor()
 
+# Resetting sensors to factory calibration
+dcs = rs.calibrated_sensor(depth_sensor)
+dcs.reset_calibration()
+
+ccs = rs.calibrated_sensor(color_sensor)
+ccs.reset_calibration()
+
 d2r = rs.device_calibration(dev)
 d2r.register_calibration_change_callback( ac.status_list_callback )
 
@@ -62,8 +69,11 @@ color_sensor.start( check_next_cf )
 # Test #1
 test.start("Checking for frame drops in " + str(n_cal) + " calibrations")
 for i in range(n_cal):
-    d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
-    ac.wait_for_calibration()
+    try:
+        d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
+        ac.wait_for_calibration()
+    except:
+        continue
 test.finish()
 
 #############################################################################################
