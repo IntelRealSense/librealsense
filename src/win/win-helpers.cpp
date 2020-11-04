@@ -76,7 +76,7 @@ namespace librealsense
                 return false;
         }
 
-        bool check(const char * call, HRESULT hr, bool to_throw)
+        bool check(const char * call, HRESULT hr, bool to_throw, bool sdk_exception)
         {
             if (FAILED(hr))
             {

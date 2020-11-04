@@ -497,7 +497,7 @@ namespace librealsense
                     return false;
 
                 value = (opt == RS2_OPTION_EXPOSURE) ? to_100micros(val) : (flags == CameraControl_Flags_Auto);
-                CHECK_HR(hr);
+                THROW_HR(hr);
                 return true;
             }
 
@@ -526,7 +526,7 @@ namespace librealsense
 
                     value = val;
 
-                    CHECK_HR(hr);
+                    THROW_HR(hr);
                     return true;
                 }
             }
@@ -542,7 +542,7 @@ namespace librealsense
                 if (hr == DEVICE_NOT_READY_ERROR)
                     return false;
 
-                CHECK_HR(hr);
+                THROW_HR(hr);
                 return true;
             }
             if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
@@ -553,7 +553,7 @@ namespace librealsense
                     if (hr == DEVICE_NOT_READY_ERROR)
                         return false;
 
-                    CHECK_HR(hr);
+                    THROW_HR(hr);
                 }
                 else
                 {
@@ -562,13 +562,13 @@ namespace librealsense
                     if (hr == DEVICE_NOT_READY_ERROR)
                         return false;
 
-                    CHECK_HR(hr);
+                    THROW_HR(hr);
 
                     hr = get_camera_control()->Set(CameraControl_Exposure, def, CameraControl_Flags_Manual);
                     if (hr == DEVICE_NOT_READY_ERROR)
                         return false;
 
-                    CHECK_HR(hr);
+                    THROW_HR(hr);
                 }
                 return true;
             }
@@ -672,7 +672,7 @@ namespace librealsense
             long minVal = 0, maxVal = 0, steppingDelta = 0, defVal = 0, capsFlag = 0;
             if (opt == RS2_OPTION_EXPOSURE)
             {
-                CHECK_HR(get_camera_control()->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
+                THROW_HR(get_camera_control()->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
                 long min = to_100micros(minVal), max = to_100micros(maxVal), def = to_100micros(defVal);
                 control_range result(min, max, min, def);
                 return result;
@@ -690,12 +690,12 @@ namespace librealsense
             {
                 if (opt == ct.option)
                 {
-                    CHECK_HR(get_camera_control()->GetRange(ct.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
+                    THROW_HR(get_camera_control()->GetRange(ct.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
                     control_range result(minVal, maxVal, steppingDelta, defVal);
                     return result;
                 }
             }
-            throw std::runtime_error("unsupported control");
+            throw std::runtime_error(to_string() << "unsupported control:" << opt);
         }
 
         void wmf_uvc_device::foreach_uvc_device(enumeration_callback action)
