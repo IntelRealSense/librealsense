@@ -18,7 +18,8 @@ const int BPP = 2;
 
 struct synthetic_frame
 {
-    int x, y, bpp;
+    uint32_t x, y; 
+    int bpp;
     std::vector<uint8_t> frame;
 };
 
@@ -36,14 +37,14 @@ public:
         std::vector<uint8_t> pixels_depth(depth_frame.x * depth_frame.y * depth_frame.bpp, 0);
         depth_frame.frame = std::move(pixels_depth);
 
-        auto realsense_logo = stbi_load_from_memory(splash, static_cast<int>(splash_size), &color_frame.x, &color_frame.y, &color_frame.bpp, false);
+        auto realsense_logo = stbi_load_from_memory(splash, static_cast<int>(splash_size), (int*)(&color_frame.x), (int*)(&color_frame.y), &color_frame.bpp, false);
 
         std::vector<uint8_t> pixels_color(color_frame.x * color_frame.y * color_frame.bpp, 0);
 
         memcpy(pixels_color.data(), realsense_logo, color_frame.x*color_frame.y * 4);
 
-        for (auto i = 0; i< color_frame.y; i++)
-            for (auto j = 0; j < color_frame.x * 4; j += 4)
+        for (auto i = 0U; i< color_frame.y; i++)
+            for (auto j = 0U; j < color_frame.x * 4; j += 4)
             {
                 if (pixels_color.data()[i*color_frame.x * 4 + j] == 0)
                 {
@@ -71,9 +72,9 @@ public:
             wave_base += 0.1f;
             last = now;
 
-            for (int i = 0; i < depth_frame.y; i++)
+            for (auto i = 0U; i < depth_frame.y; i++)
             {
-                for (int j = 0; j < depth_frame.x; j++)
+                for (auto j = 0U; j < depth_frame.x; j++)
                 {
                     auto d = 2 + 0.1 * (1 + sin(wave_base + j / 50.f));
                     ((uint16_t*)depth_frame.frame.data())[i*depth_frame.x + j] = (int)(d * 0xff);
@@ -166,14 +167,14 @@ int main(int argc, char * argv[]) try
 
         depth_sensor.on_video_frame({ depth_frame.frame.data(), // Frame pixels from capture API
             [](void*) {}, // Custom deleter (if required)
-            depth_frame.x*depth_frame.bpp, depth_frame.bpp, // Stride and Bytes-per-pixel
+            (int)depth_frame.x*depth_frame.bpp, depth_frame.bpp, // Stride and Bytes-per-pixel
             (rs2_time_t)frame_number * 16, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, frame_number, // Timestamp, Frame# for potential sync services
             depth_stream });
 
 
         color_sensor.on_video_frame({ texture.frame.data(), // Frame pixels from capture API
             [](void*) {}, // Custom deleter (if required)
-            texture.x*texture.bpp, texture.bpp, // Stride and Bytes-per-pixel
+            (int)texture.x*texture.bpp, texture.bpp, // Stride and Bytes-per-pixel
             (rs2_time_t)frame_number * 16, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, frame_number, // Timestamp, Frame# for potential sync services
             color_stream });
 
