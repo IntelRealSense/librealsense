@@ -146,16 +146,13 @@ int main(int argc, char * argv[]) try
             rs2_format format = merged_frameset.as<rs2::frameset>().get_depth_frame().get_profile().format();
             std::cout << ", after merge format = " << rs2_format_to_string(format) << std::endl;
             
-            if (hdr_seq_id==1) {
-                std::cout << "hdr_seq_id = 1" << std::endl;
-            }
-            else {
-                std::cout << "hdr_seq_id = 0" << std::endl;
+            //if (hdr_seq_id==1) {
+            //    std::cout << "hdr_seq_id = 1" << std::endl;
+            //}
+            //else {
+            //    std::cout << "hdr_seq_id = 0" << std::endl;
+            //}
 
-            }
-
-            //render_frames[0] = data[0].get_infrared_frame();
-            //render_frames[1] = data[0].get_depth_frame().apply_filter(color_map);
             render_frames[hdr_seq_id] = data.get_infrared_frame();
             render_frames[hdr_seq_id + hdr_seq_size] = data.get_depth_frame().apply_filter(color_map);
             render_frames[2*hdr_seq_size] = merged_frameset.as<rs2::frameset>().get_depth_frame().apply_filter(color_map);
