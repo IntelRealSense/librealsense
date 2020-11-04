@@ -669,11 +669,19 @@ namespace librealsense
                                 } )
                != requests.end();
 
+            auto is_ir_needed
+                = std::find_if( requests.begin(),
+                                requests.end(),
+                                []( std::shared_ptr< stream_profile_interface > const & sp ) {
+                                    return sp->get_format() != RS2_FORMAT_FG;
+                                } )
+               != requests.end();
+
             _validator_requests = requests;
 
             // Enable IR stream if user didn't asked for IR
             // IR stream improves depth frames
-            if (!is_ir_requested)
+            if( ! is_ir_requested && is_ir_needed )
             {
                 auto user_request = std::find_if(requests.begin(), requests.end(), [](std::shared_ptr<stream_profile_interface> sp)
                 {return sp->get_stream_type() != RS2_STREAM_INFRARED;});
@@ -717,8 +725,8 @@ namespace librealsense
                                 << get_resolution_from_width_height(vs->get_width(), vs->get_height())<<")");
                     }
                 }
-                
-                sensor_mode_option.set(float(get_resolution_from_width_height(vs->get_width(), vs->get_height())));
+                if( vs->get_format() == RS2_FORMAT_Z16 )
+                    sensor_mode_option.set(float(get_resolution_from_width_height(vs->get_width(), vs->get_height())));
             }
 
             synthetic_sensor::open(_validator_requests);
