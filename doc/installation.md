@@ -57,6 +57,8 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
   3. Run Intel Realsense permissions script from librealsense root directory:<br />
     `./scripts/setup_udev_rules.sh`  
     <br />
+    *Notice: One can always remove permissions by running:*
+    *`./scripts/setup_udev_rules.sh --uninstall`*
 
   4. Build and apply patched kernel modules for: <br />
     * **Ubuntu 14/16/18 with LTS kernel**
