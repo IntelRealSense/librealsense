@@ -93,6 +93,9 @@ namespace Intel.RealSense
         W10 = 27,
 
         /// <summary>Variable-length Huffman-compressed 16-bit depth values.</summary>
-        Z16H = 28
+        Z16H = 28,
+
+        /// <summary>16-bit per-pixel frame grabber format.</summary>
+        FG = 29
     }
 }
