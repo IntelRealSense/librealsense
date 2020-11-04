@@ -112,7 +112,6 @@ class udevTester:
         if self.frame_count[sn][stream_type]['start_time'] is None:
             self.frame_count[sn][stream_type]['start_time'] = time.time()
         self.frame_count[sn][stream_type]['count']+=1
-        # print('%s:%s:%d' % (sn, stream_type, self.frame_count[sn][stream_type]['count']))
 
     def start_sensors(self, dev):
         wanted_stream_types = [rs.stream.gyro, rs.stream.accel]
@@ -159,7 +158,6 @@ class udevTester:
                                                                                                                       stop_time-count[1]['start_time'], 
                                                                                                                       count[1]['fps'], count[1]['count'], 
                                                                                                                       (stop_time-count[1]['start_time']-1)*count[1]['fps'] ) )
-                print self.frame_count[sn]
                 return False
         return True
 
