@@ -170,7 +170,7 @@ void rs2_write_calibration(const rs2_device* device, rs2_error** e);
 * \param[in]  callback      Optional callback for update progress notifications, the progress value is normailzed to 1
 * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_update_firmware_cpp(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback* callback, rs2_error** error);
+void rs2_update_firmware_cpp(const rs2_device* device, const void* fw_image, size_t fw_image_size, rs2_update_progress_callback* callback, rs2_error** error);
 
 /**
 * Update device to the provided firmware, the device must be extendable to RS2_EXTENSION_UPDATABLE.
@@ -182,7 +182,7 @@ void rs2_update_firmware_cpp(const rs2_device* device, const void* fw_image, int
 * \param[in]  client_data   Optional client data for the callback
 * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_update_firmware(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error);
+void rs2_update_firmware(const rs2_device* device, const void* fw_image, size_t fw_image_size, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error);
 
 /**
 * Create backup of camera flash memory. Such backup does not constitute valid firmware image, and cannot be
