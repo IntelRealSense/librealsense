@@ -36,8 +36,8 @@ typedef struct rs2_video_stream
     rs2_stream type;
     int index;
     int uid;
-    int width;
-    int height;
+    uint32_t width;
+    uint32_t height;
     int fps;
     int bpp;
     rs2_format fmt;

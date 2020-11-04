@@ -220,8 +220,8 @@ TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post
             rs2::software_device dev; // Create software-only device
             auto depth_sensor = dev.add_sensor("Depth");
 
-            int width = test_cfg.input_res_x;
-            int height = test_cfg.input_res_y;
+            uint32_t width = test_cfg.input_res_x;
+            uint32_t height = test_cfg.input_res_y;
             int depth_bpp = 2; //16bit unsigned
             int frame_number = 1;
             rs2_intrinsics depth_intrinsics = { width, height,
@@ -294,10 +294,10 @@ TEST_CASE("Post-Processing Filters metadata validation", "[software-device][post
             rs2::software_device dev; // Create software-only device
             auto depth_sensor = dev.add_sensor("Depth");
 
-            int width = test_cfg.input_res_x;
-            int height = test_cfg.input_res_y;
-            int depth_bpp = 2; //16bit unsigned
-            int frame_number = 1;
+            const uint32_t width = test_cfg.input_res_x;
+            const uint32_t height = test_cfg.input_res_y;
+            const int depth_bpp = 2; //16bit unsigned
+            const int frame_number = 1;
             rs2_intrinsics depth_intrinsics = { width, height,
                 width / 2.f, height / 2.f,                      // Principal point (N/A in this test)
                 test_cfg.focal_length ,test_cfg.focal_length,   // Focal Length
@@ -313,7 +313,7 @@ TEST_CASE("Post-Processing Filters metadata validation", "[software-device][post
             depth_sensor.start(sync);
 
             size_t frames = (test_cfg.frames_sequence_size > 1) ? test_cfg.frames_sequence_size : 1;
-            for (auto i = 0; i < frames; i++)
+            for (auto i = 0U; i < frames; i++)
             {
                 //set next frames metadata
                 for (auto i = 0; i < rs2_frame_metadata_value::RS2_FRAME_METADATA_COUNT; i++)
