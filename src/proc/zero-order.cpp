@@ -60,16 +60,16 @@ namespace librealsense
     template<typename T>
     T get_zo_point_value(std::vector<T>& values)
     {
-        std::sort(values.begin(), values.end());
-
-        if ((values.size()) % 2 == 0)
+        if (values.size())
         {
-            return (values[values.size() / 2 - 1] + values[values.size() / 2]) / 2;
-        }
-        else if (values.size() > 0)
-            return values[values.size() / 2];
+            std::sort(values.begin(), values.end());
 
-        return 0;
+            if ((values.size()) % 2 == 0)
+                return (values[values.size() / 2 - 1] + values[values.size() / 2]) / 2; // size is non-zero and even. Should this be rounded up?
+            else
+                return values[values.size() / 2]; // size is odd.
+        }
+        return 0; // size is zero.
     }
 
     bool try_get_zo_rtd_ir_point_values(const double* rtd, const uint16_t* depth_data_in, const uint8_t* ir_data, 
