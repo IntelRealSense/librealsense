@@ -313,7 +313,7 @@ namespace rs2
 
                     if (auto vf = f.as<video_frame>()) {
                         auto vp = profile.as<video_stream_profile>();
-                        rs2_video_stream stream{ vp.stream_type(), vp.stream_index(), i, vp.width(), vp.height(), vp.fps(), vf.get_bytes_per_pixel(), vp.format(), vp.get_intrinsics() };
+                        rs2_video_stream stream{ vp.stream_type(), vp.stream_index(), i, static_cast<uint32_t>(vp.width()), static_cast<uint32_t>(vp.height()), vp.fps(), vf.get_bytes_per_pixel(), vp.format(), vp.get_intrinsics() };
                         software_profile = s.add_video_stream(stream);
                         if (f.is<rs2::depth_frame>()) {
                             auto ds = sensor_from_frame(f)->as<rs2::depth_sensor>();

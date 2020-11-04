@@ -274,12 +274,12 @@ namespace librealsense
             : frame(), _width(0), _height(0), _bpp(0), _stride(0)
         {}
 
-        int get_width() const { return _width; }
-        int get_height() const { return _height; }
+        uint32_t get_width() const { return _width; }
+        uint32_t get_height() const { return _height; }
         int get_stride() const { return _stride; }
         int get_bpp() const { return _bpp; }
 
-        void assign(int width, int height, int stride, int bpp)
+        void assign(uint32_t width, uint32_t height, int stride, int bpp)
         {
             _width = width;
             _height = height;
