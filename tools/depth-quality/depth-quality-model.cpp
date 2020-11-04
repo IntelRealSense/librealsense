@@ -614,13 +614,34 @@ namespace rs2
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
 
                         static std::vector<std::string> items{ "80%", "60%", "40%", "20%" };
-                        if (draw_combo_box("##ROI Percent", items, _roi_combo_index))
+                        int tmp_roi_combo_box = _roi_combo_index;
+                        if (draw_combo_box("##ROI Percent", items, tmp_roi_combo_box))
                         {
-                            if (_roi_combo_index == 0) _roi_percent = 0.8f;
-                            else if (_roi_combo_index == 1) _roi_percent = 0.6f;
-                            else if (_roi_combo_index == 2) _roi_percent = 0.4f;
-                            else if (_roi_combo_index == 3) _roi_percent = 0.2f;
-                            update_configuration();
+                            bool allow_changing_roi = true;
+                            try
+                            {
+                                if (_depth_sensor_model)
+                                {
+                                    auto& ds = _depth_sensor_model->dev.first<depth_sensor>();
+                                    if( ds.supports( RS2_OPTION_ENABLE_IR_REFLECTIVITY )
+                                        && ( ds.get_option( RS2_OPTION_ENABLE_IR_REFLECTIVITY ) == 1.0f ) )
+                                    {
+                                        allow_changing_roi = false;
+                                        _error_message = "Changing ROI while IR Reflectivity is enabled is prohibited!";
+                                    }
+                                }
+                            }
+                            catch (...) {}
+
+                            if (allow_changing_roi)
+                            {
+                                _roi_combo_index = tmp_roi_combo_box;
+                                if (_roi_combo_index == 0) _roi_percent = 0.8f;
+                                else if (_roi_combo_index == 1) _roi_percent = 0.6f;
+                                else if (_roi_combo_index == 2) _roi_percent = 0.4f;
+                                else if (_roi_combo_index == 3) _roi_percent = 0.2f;
+                                update_configuration();
+                            }
                         }
 
                         ImGui::PopStyleColor();
@@ -837,6 +858,7 @@ namespace rs2
                 if (!sub->s->is<depth_sensor>()) continue;
 
                 sub->show_algo_roi = true;
+                sub->roi_percentage = _roi_percent;
                 auto profiles = _pipe.get_active_profile().get_streams();
                 sub->streaming = true;      // The streaming activated externally to the device_model
                 sub->depth_colorizer->set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 0.f);

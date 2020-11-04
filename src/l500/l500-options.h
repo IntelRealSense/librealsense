@@ -44,7 +44,8 @@ namespace librealsense
 
         void enable_recording(std::function<void(const option&)> recording_action) override;
 
-        l500_hw_options( hw_monitor * hw_monitor,
+        l500_hw_options( l500_device* l500_dev,
+                         hw_monitor* hw_monitor,
                          l500_control type,
                          option * resolution,
                          const std::string& description );
@@ -54,6 +55,7 @@ namespace librealsense
         float query(int width) const;
 
         l500_control _type;
+        l500_device* _l500_dev;
         hw_monitor* _hw_monitor;
         option_range _range;
         uint32_t _width;
@@ -114,7 +116,7 @@ namespace librealsense
         void move_to_custom ();
         void reset_hw_controls();
         void set_max_laser();
-        void verify_max_usable_range_restrictions(float value);
+        void verify_max_usable_range_restrictions(rs2_option opt, float value);
 
         std::map<rs2_option, std::shared_ptr<cascade_option<l500_hw_options>>> _hw_options;
         std::shared_ptr< cascade_option<uvc_xu_option<int>>> _digital_gain;

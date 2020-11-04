@@ -76,6 +76,27 @@ static void width_height_from_resolution(rs2_sensor_mode mode, int &width, int &
     }
 }
 
+static int get_resolution_id_from_sensor_mode(int sensor_mode, const rs2::sensor &s, const std::vector<std::pair<int, int>> &res_values)
+{
+    int width = 0, height = 0;
+    width_height_from_resolution(static_cast<rs2_sensor_mode>(sensor_mode), width, height);
+    auto iter = std::find_if(res_values.begin(),
+        res_values.end(),
+        [width, height](std::pair< int, int > res)
+    {
+        if ((res.first == width) && (res.second == height) ||
+            (res.first == height) && (res.second == width))
+            return true;
+        return false;
+    });
+    if (iter != res_values.end())
+    {
+        return static_cast<int>(std::distance(res_values.begin(), iter));
+    }
+
+    throw std::runtime_error("cannot convert sensor mode to resolution ID");
+}
+
 ImVec4 flip(const ImVec4& c)
 {
     return{ c.y, c.x, c.z, c.w };
@@ -548,12 +569,15 @@ namespace rs2
                 auto bool_value = value > 0.0f;
                 if (ImGui::Checkbox(label.c_str(), &bool_value))
                 {
-                    res = true;
-                    model.add_log(to_string() << "Setting " << opt << " to "
-                        << (bool_value? "1.0" : "0.0") << " (" << (bool_value ? "ON" : "OFF") << ")");
-                    
-                    set_option(opt, bool_value ? 1.f : 0.f, error_message);
-                    *invalidate_flag = true;
+                    if (allow_change((bool_value ? 1.0f : 0.0f), error_message))
+                    {
+                        res = true;
+                        model.add_log(to_string() << "Setting " << opt << " to "
+                            << (bool_value? "1.0" : "0.0") << " (" << (bool_value ? "ON" : "OFF") << ")");
+
+                        set_option(opt, bool_value ? 1.f : 0.f, error_message);
+                        *invalidate_flag = true;
+                    }
                 }
                 if (ImGui::IsItemHovered() && desc)
                 {
@@ -880,6 +904,20 @@ namespace rs2
         return range.max == 1.0f &&
             range.min == 0.0f &&
             range.step == 1.0f;
+    }
+
+    bool option_model::allow_change(float val, std::string& error_message) const
+    {
+        // Deny enabling IR Reflectivity on ROI != 20% [RS5-8358]
+        if ((RS2_OPTION_ENABLE_IR_REFLECTIVITY == opt) && (1.0f == val))
+        {
+            if (0.2f != dev->roi_percentage)
+            {
+                error_message = "Please set 'VGA' resolution, 'Max Range' preset and 20% ROI before enabling IR Reflectivity";
+                return false;
+            }
+        }
+        return true;
     }
 
     void subdevice_model::populate_options(std::map<int, option_model>& opt_container,
@@ -1214,7 +1252,10 @@ namespace rs2
                 // Watch out for read-only options in the playback sensor!
                 try
                 {
-                    s->set_option( RS2_OPTION_SENSOR_MODE, resolution_from_width_height( res_values[ui.selected_res_id].first, res_values[ui.selected_res_id].second ) );
+                    s->set_option( RS2_OPTION_SENSOR_MODE,
+                                   static_cast< float >( resolution_from_width_height(
+                                       res_values[ui.selected_res_id].first,
+                                       res_values[ui.selected_res_id].second ) ) );
                 }
                 catch( not_implemented_error const &)
                 {
@@ -1339,24 +1380,7 @@ namespace rs2
                             // Only update the cached value once set_option is done! That way, if it doesn't change anything...
                             try 
                             {
-                               int sensor_mode = static_cast<int>(s->get_option(RS2_OPTION_SENSOR_MODE));
-                               int width = 0, height = 0;
-                               width_height_from_resolution(static_cast<rs2_sensor_mode>(sensor_mode), width, height);
-                               auto iter = std::find_if( res_values.begin(),
-                                                          res_values.end(),
-                                                          [width, height]( std::pair< int, int > res ) 
-                               {
-                                   if ((res.first == width) && (res.second == height) ||
-                                       (res.first == height) && (res.second == width))
-                                       return true;
-                                   return false;
-                               });
-                               if (iter != res_values.end())
-                               {
-                                   int index = std::distance(res_values.begin(), iter);
-                                   ui.selected_res_id = index;
-                               }
-                               
+                               ui.selected_res_id = get_resolution_id_from_sensor_mode(static_cast<int>(s->get_option(RS2_OPTION_SENSOR_MODE)), *s, res_values);
                             }
                             catch (...) {}
                         }
@@ -2339,7 +2363,7 @@ namespace rs2
             // Case 1: Starting Dragging of the ROI rect
             // Pre-condition: not capturing already + mouse is down + we are inside stream rect
             if (!capturing_roi && mouse.mouse_down[0] && stream_rect.contains(mouse.cursor))
-            {
+            {   
                 // Initialize roi_display_rect with drag-start position
                 roi_display_rect.x = mouse.cursor.x;
                 roi_display_rect.y = mouse.cursor.y;
@@ -3060,8 +3084,11 @@ namespace rs2
                 {
                     if (ds.get_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY) == 1.0f)
                     {
-                        // Add reflectivity information on frame, if max usable range is displayed, display reflectivity on the same line
-                        show_reflectivity = draw_reflectivity(x, y, ds, streams, ss, show_max_range);
+                        if ((0.2f == roi_percentage) && roi_display_rect.contains(mouse.cursor))
+                        {
+                            // Add reflectivity information on frame, if max usable range is displayed, display reflectivity on the same line
+                            show_reflectivity = draw_reflectivity(x, y, ds, streams, ss, show_max_range);
+                        }
                     }
                 }
             }
@@ -3078,7 +3105,10 @@ namespace rs2
                         bool lf_exist = texture->get_last_frame();
                         if (is_stream_alive() && texture->get_last_frame().get_profile().stream_type() == RS2_STREAM_INFRARED)
                         {
-                            show_reflectivity = draw_reflectivity(x, y, ds, streams, ss, show_max_range);
+                            if ((0.2f == roi_percentage) && roi_display_rect.contains(mouse.cursor))
+                            {
+                                show_reflectivity = draw_reflectivity(x, y, ds, streams, ss, show_max_range);
+                            }
                         }
                     }
                 }
@@ -3534,7 +3564,6 @@ namespace rs2
                     float(dev->algo_roi.max_y - dev->algo_roi.min_y) };
 
             r = r.normalize(_normalized_zoom.unnormalize(get_original_stream_bounds())).unnormalize(stream_rect).cut_by(stream_rect);
-
             glColor3f(yellow.x, yellow.y, yellow.z);
             draw_rect(r, 2);
 
@@ -3544,6 +3573,8 @@ namespace rs2
                 draw_text(static_cast<int>(r.x + r.w / 2 - msg_width / 2), static_cast<int>(r.y + 10), message.c_str());
 
             glColor3f(1.f, 1.f, 1.f);
+            roi_percentage = dev->roi_percentage;
+            roi_display_rect = r;
         }
 
         update_ae_roi_rect(stream_rect, g, error_message);

@@ -330,6 +330,7 @@ namespace rs2
         bool is_all_integers() const;
         bool is_enum() const;
         bool is_checkbox() const;
+        bool allow_change(float val, std::string& error_message) const; 
     };
 
     class frame_queues
@@ -659,6 +660,7 @@ namespace rs2
 
         region_of_interest algo_roi;
         bool show_algo_roi = false;
+        float roi_percentage;
 
         std::shared_ptr<rs2::colorizer> depth_colorizer;
         std::shared_ptr<rs2::yuy_decoder> yuy2rgb;
@@ -712,6 +714,7 @@ namespace rs2
         fps_calc            fps, view_fps;
         int                 count = 0;
         rect                roi_display_rect{};
+        float               roi_percentage = 0.4f;
         frame_metadata      frame_md;
         bool                capturing_roi       = false;    // active modification of roi
         std::shared_ptr<subdevice_model> dev;

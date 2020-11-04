@@ -18,6 +18,16 @@ namespace librealsense
 
     void l500_hw_options::set(float value)
     {
+        // Block activating alternate IR when IR reflectivity is on [RS5-8358]
+        auto &ds = _l500_dev->get_depth_sensor();
+        if( ( alternate_ir == _type ) && ( 1.0f == value ) )
+        {
+            if( ds.supports_option( RS2_OPTION_ENABLE_IR_REFLECTIVITY )
+                && ds.get_option( RS2_OPTION_ENABLE_IR_REFLECTIVITY ).query() == 1.0f )
+                throw librealsense::wrong_api_call_sequence_exception(
+                    "Enabling Alternate IR while IR Reflectivity is enabled is prohibited" );
+        }
+
         _hw_monitor->send(command{ AMCSET, _type, (int)value });
     }
 
@@ -26,12 +36,15 @@ namespace librealsense
         return _range;
     }
 
-    l500_hw_options::l500_hw_options( hw_monitor * hw_monitor,
+    l500_hw_options::l500_hw_options( l500_device* l500_dev,
+                                      hw_monitor * hw_monitor,
                                       l500_control type,
                                       option * resolution,
                                       const std::string & description )
-        :_hw_monitor(hw_monitor),
-        _type(type), _resolution( resolution )
+        : _l500_dev( l500_dev )
+        , _hw_monitor( hw_monitor )
+        , _type( type )
+        , _resolution( resolution )
         , _description( description )
     {
         auto min = _hw_monitor->send(command{ AMCGET, _type, get_min });
@@ -102,7 +115,8 @@ namespace librealsense
 
             if( _fw_version >= firmware_version( "1.5.2.0" ) )
             {
-                auto alt_ir = std::make_shared< l500_hw_options >( _hw_monitor.get(),
+                auto alt_ir = std::make_shared< l500_hw_options >( this,
+                                                                   _hw_monitor.get(),
                                                                    alternate_ir,
                                                                    resolution_option.get(),
                                                                    "Enable/Disable alternate IR" );
@@ -111,22 +125,26 @@ namespace librealsense
             }
 
             _hw_options[RS2_OPTION_POST_PROCESSING_SHARPENING] = register_option< l500_hw_options,
+                                                                                  l500_device *,
                                                                                   hw_monitor *,
                                                                                   l500_control,
                                                                                   option *,
                                                                                   std::string >(
                 RS2_OPTION_POST_PROCESSING_SHARPENING,
+                this,
                 _hw_monitor.get(),
                 post_processing_sharpness,
                 resolution_option.get(),
                 "Changes the amount of sharpening in the post-processed image" );
 
             _hw_options[RS2_OPTION_PRE_PROCESSING_SHARPENING] = register_option< l500_hw_options,
+                                                                                 l500_device *,
                                                                                  hw_monitor *,
                                                                                  l500_control,
                                                                                  option *,
                                                                                  std::string >(
                 RS2_OPTION_PRE_PROCESSING_SHARPENING,
+                this,
                 _hw_monitor.get(),
                 pre_processing_sharpness,
                 resolution_option.get(),
@@ -134,43 +152,52 @@ namespace librealsense
 
             _hw_options[RS2_OPTION_NOISE_FILTERING]
                 = register_option< l500_hw_options,
+                                   l500_device *,
                                    hw_monitor *,
                                    l500_control,
                                    option *,
                                    std::string >( RS2_OPTION_NOISE_FILTERING,
+                                                  this,
                                                   _hw_monitor.get(),
                                                   noise_filtering,
                                                   resolution_option.get(),
                                                   "Control edges and background noise" );
 
             _hw_options[RS2_OPTION_AVALANCHE_PHOTO_DIODE] = register_option< l500_hw_options,
+                                                                             l500_device *,
                                                                              hw_monitor *,
                                                                              l500_control,
                                                                              option *,
                                                                              std::string >(
                 RS2_OPTION_AVALANCHE_PHOTO_DIODE,
+                this,
                 _hw_monitor.get(),
                 apd,
                 resolution_option.get(),
                 "Changes the exposure time of Avalanche Photo Diode in the receiver" );
 
-            _hw_options[RS2_OPTION_CONFIDENCE_THRESHOLD] = register_option< l500_hw_options,
-                                                                            hw_monitor *,
-                                                                            l500_control,
-                                                                            option *,
-                                                                            std::string >(
-                RS2_OPTION_CONFIDENCE_THRESHOLD,
-                _hw_monitor.get(),
-                confidence,
-                resolution_option.get(),
-                "The confidence level threshold to use to mark a pixel as valid by the depth algorithm" );
+            _hw_options[RS2_OPTION_CONFIDENCE_THRESHOLD]
+                = register_option< l500_hw_options,
+                                   l500_device *,
+                                   hw_monitor *,
+                                   l500_control,
+                                   option *,
+                                   std::string >( RS2_OPTION_CONFIDENCE_THRESHOLD,
+                                                  this,
+                                                  _hw_monitor.get(),
+                                                  confidence,
+                                                  resolution_option.get(),
+                                                  "The confidence level threshold to use to mark a "
+                                                  "pixel as valid by the depth algorithm" );
 
             _hw_options[RS2_OPTION_LASER_POWER] = register_option< l500_hw_options,
+                                                                   l500_device *,
                                                                    hw_monitor *,
                                                                    l500_control,
                                                                    option *,
                                                                    std::string >(
                 RS2_OPTION_LASER_POWER,
+                this,
                 _hw_monitor.get(),
                 laser_gain,
                 resolution_option.get(),
@@ -178,10 +205,12 @@ namespace librealsense
 
             _hw_options[RS2_OPTION_MIN_DISTANCE]
                 = register_option< l500_hw_options,
+                                   l500_device *,
                                    hw_monitor *,
                                    l500_control,
                                    option *,
                                    std::string >( RS2_OPTION_MIN_DISTANCE,
+                                                  this,
                                                   _hw_monitor.get(),
                                                   min_distance,
                                                   resolution_option.get(),
@@ -189,10 +218,12 @@ namespace librealsense
 
             _hw_options[RS2_OPTION_INVALIDATION_BYPASS]
                 = register_option< l500_hw_options,
+                                   l500_device *,
                                    hw_monitor *,
                                    l500_control,
                                    option *,
                                    std::string >( RS2_OPTION_INVALIDATION_BYPASS,
+                                                  this,
                                                   _hw_monitor.get(),
                                                   invalidation_bypass,
                                                   resolution_option.get(),
@@ -226,17 +257,19 @@ namespace librealsense
 
     void l500_options::on_set_option(rs2_option opt, float value)
     {
-        verify_max_usable_range_restrictions(value);
-       
         if (opt == RS2_OPTION_VISUAL_PRESET)
         {
+            verify_max_usable_range_restrictions( opt, value );
             change_preset(static_cast<rs2_l500_visual_preset>(int(value)));
         }
         else
         {
             auto advanced_controls = get_advanced_controls();
             if (std::find(advanced_controls.begin(), advanced_controls.end(), opt) != advanced_controls.end())
-                move_to_custom ();
+            {
+                verify_max_usable_range_restrictions( opt, value );
+                move_to_custom();
+            }
             else
                 throw  wrong_api_call_sequence_exception(to_string() << "on_set_option support advanced controls only "<< opt<<" injected");
         }
@@ -269,8 +302,8 @@ namespace librealsense
             break;
         case RS2_L500_VISUAL_PRESET_DEFAULT:
             LOG_ERROR("L515 Visual Preset option cannot be changed to Default");
-            throw  invalid_value_exception(to_string() << "The Default preset signifies that the controls have not been changed \n"
-                                                           "since initialization, the API does not support changing back to this state.\n"
+            throw  invalid_value_exception(to_string() << "The Default preset signifies that the controls have not been changed "
+                                                           "since initialization, the API does not support changing back to this state, "
                                                            "Please choose one of the other presets");
             break;
         default: break;
@@ -299,26 +332,33 @@ namespace librealsense
         _hw_options[RS2_OPTION_LASER_POWER]->set_with_no_signal(range.max);
     }
 
-    void l500_options::verify_max_usable_range_restrictions(float value) 
+    void l500_options::verify_max_usable_range_restrictions( rs2_option opt, float value )
     {
+        // Block changing visual preset while Max Usable Range is on [RS5-8358]
         if (get_depth_sensor().supports_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE)
-            && (get_depth_sensor().get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE).query() == 1.0) &&
-            (value != rs2_l500_visual_preset::RS2_L500_VISUAL_PRESET_MAX_RANGE))
-            throw  wrong_api_call_sequence_exception(to_string() << "Changing Visual Preset while Max Usable Range is enabled is prohibited");
+            && (get_depth_sensor().get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE).query() == 1.0))
+        {
+            if ((RS2_OPTION_VISUAL_PRESET == opt) && (value == RS2_L500_VISUAL_PRESET_MAX_RANGE))
+                return;
 
-    }
+            throw wrong_api_call_sequence_exception(
+                to_string() << "Changing Visual Preset while Max Usable Range is enabled is prohibited");
+        }
+    }  
 
     void max_usable_range_option::set(float value)
     {
+        // Restrictions for Max Usable Range option as required on [RS5-8358]
+        auto& ds = _l500_depth_dev->get_depth_sensor();
         if (value == 1.0f)
         {
-            auto &sensor_mode_option = _l500_depth_dev->get_depth_sensor().get_option(RS2_OPTION_SENSOR_MODE);
+            auto &sensor_mode_option = ds.get_option(RS2_OPTION_SENSOR_MODE);
             auto sensor_mode = sensor_mode_option.query();
             bool sensor_mode_is_vga = (sensor_mode == rs2_sensor_mode::RS2_SENSOR_MODE_VGA);
 
-            bool visual_preset_is_max_range = _l500_depth_dev->get_depth_sensor().is_max_range_preset();
+            bool visual_preset_is_max_range = ds.is_max_range_preset();
 
-            if (_l500_depth_dev->get_depth_sensor().is_streaming())
+            if (ds.is_streaming())
             {
                 if (!sensor_mode_is_vga || !visual_preset_is_max_range)
                     throw wrong_api_call_sequence_exception("Please set 'VGA' resolution and 'Max Range' preset before enabling Max Usable Range");
@@ -327,7 +367,7 @@ namespace librealsense
             {
                 if (!visual_preset_is_max_range)
                 {
-                    auto &visual_preset_option = _l500_depth_dev->get_depth_sensor().get_option(RS2_OPTION_VISUAL_PRESET);
+                    auto &visual_preset_option = ds.get_option(RS2_OPTION_VISUAL_PRESET);
                     visual_preset_option.set(rs2_l500_visual_preset::RS2_L500_VISUAL_PRESET_MAX_RANGE);
                     LOG_INFO("Visual Preset was changed to: " << visual_preset_option.get_value_description(rs2_l500_visual_preset::RS2_L500_VISUAL_PRESET_MAX_RANGE));
                 }
@@ -339,6 +379,14 @@ namespace librealsense
                 }
             }
         }
+        else
+        {
+            if (ds.supports_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY) && ds.get_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY).query() == 1.0f)
+            {
+                ds.get_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY).set(0.0f);
+                LOG_INFO("IR Reflectivity was on - turning it off");
+            }
+        }
 
         bool_option::set(value);
     }
@@ -346,8 +394,8 @@ namespace librealsense
 
     void sensor_mode_option::set(float value)
     {
+        // Restrictions for sensor mode option as required on [RS5-8358]
         auto &ds = _l500_depth_dev->get_depth_sensor();
-
         if (ds.supports_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY) && ds.get_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY).query() == 1.0f)
         {
             ds.get_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY).set(0.0f);
@@ -358,7 +406,8 @@ namespace librealsense
             (ds.get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE).query() == 1.0) &&
             (value != rs2_sensor_mode::RS2_SENSOR_MODE_VGA))
         {
-            throw wrong_api_call_sequence_exception("Max Usable Range support VGA resolution only");
+            ds.get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE).set(0.0f);
+            LOG_INFO("Max Usable Range was on - turning it off");
         }
 
         float_option_with_description::set(value);
@@ -377,17 +426,15 @@ namespace librealsense
 
     void ir_reflectivity_option::set(float value)
     {
+        // Restrictions for IR Reflectivity option as required on [RS5-8358]
         auto &ds = _l500_depth_dev->get_depth_sensor();
-
         if (value == 1.0f)
         {
             // Verify option Alternate IR is off
-            if (ds.supports_option(RS2_OPTION_ALTERNATE_IR))
+            if( ds.supports_option( RS2_OPTION_ALTERNATE_IR )
+                && ds.get_option( RS2_OPTION_ALTERNATE_IR ).query() == 1.0f )
             {
-                auto alternate_ir_on = (ds.get_option(RS2_OPTION_ALTERNATE_IR).query() == 1.0f);
-
-                if (alternate_ir_on)
-                    throw wrong_api_call_sequence_exception("Cannot enable IR Reflectivity when Alternate IR option is on");
+                throw wrong_api_call_sequence_exception("Cannot enable IR Reflectivity when Alternate IR option is on");
             }
 
             auto &sensor_mode_option = ds.get_option(RS2_OPTION_SENSOR_MODE);
@@ -419,7 +466,7 @@ namespace librealsense
 
                 if( ( ! vga_sensor_mode ) || ! visual_preset_is_max_range )
                     throw wrong_api_call_sequence_exception(
-                        "Please set 'VGA' resolution and 'Max Range' preset before enabling IR Reflectivity" );
+                        "Please set 'VGA' resolution, 'Max Range' preset and 20% ROI before enabling IR Reflectivity" );
             }
             else
             {
@@ -449,11 +496,13 @@ namespace librealsense
         {
             if (_max_usable_range_forced_on)
             {
-                auto &max_usable_range_option = ds.get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE);
-
-                max_usable_range_option.set(0.0f);
                 _max_usable_range_forced_on = false;
+                bool_option::set( value );  // We set the value here to prevent a loop between Max Usable Range &
+                                            // Reflectivity options trying to turn off each other
+
+                ds.get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE).set(0.0f);
                 LOG_INFO("Max Usable Range was on - turning it off");
+                return;
             }
         }
 
@@ -468,6 +517,7 @@ namespace librealsense
         return "IR Reflectivity Tool calculates the percentage of IR light reflected by the "
                "object and returns to the camera for processing.\nFor example, a value of 60% means "
                "that 60% of the IR light projected by the camera is reflected by the object and returns "
-               "to the camera.";
+               "to the camera.\n\n"
+               "Note: only active on 2D view, Visual Preset:Max Range, Resolution:VGA, ROI:20%";
     }
 }  // namespace librealsense
