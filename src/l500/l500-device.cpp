@@ -210,11 +210,15 @@ namespace librealsense
 
         if( _fw_version >= firmware_version( "1.5.0.0" ) )
         {
-            auto enable_max_usable_range = std::make_shared<max_usable_range_option>(this);
-            depth_sensor.register_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE, enable_max_usable_range);
+            bool usb3mode = (_usb_mode >= platform::usb3_type || _usb_mode == platform::usb_undefined);
+            if (usb3mode)
+            {
+                auto enable_max_usable_range = std::make_shared<max_usable_range_option>(this);
+                depth_sensor.register_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE, enable_max_usable_range);
 
-            auto enable_ir_reflectivity = std::make_shared<ir_reflectivity_option>(this);
-            depth_sensor.register_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY, enable_ir_reflectivity);
+                auto enable_ir_reflectivity = std::make_shared<ir_reflectivity_option>(this);
+                depth_sensor.register_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY, enable_ir_reflectivity);
+            }
 
             // TODO may not need auto-cal if there's no color sensor, like on the rs500...
             _autocal = std::make_shared< ac_trigger >( *this, _hw_monitor );

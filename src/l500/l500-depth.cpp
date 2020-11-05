@@ -577,18 +577,6 @@ namespace librealsense
 
     }
 
-    rs2_sensor_mode get_resolution_from_width_height(int width, int height)
-    {
-        if ((width == 240 && height == 320) || (width == 320 && height == 240))
-            return RS2_SENSOR_MODE_QVGA;
-        else if ((width == 640 && height == 480) || (width == 480  && height == 640))
-            return RS2_SENSOR_MODE_VGA;
-        else if ((width == 1024 && height == 768) || (width == 768 && height == 1024))
-            return RS2_SENSOR_MODE_XGA;
-        else
-            throw std::runtime_error(to_string() << "Invalid resolution " << width << "x" << height);
-    }
-
     bool stream_profiles_correspond(stream_profile_interface* l, stream_profile_interface* r)
     {
         auto vl = dynamic_cast<video_stream_profile_interface*>(l);
