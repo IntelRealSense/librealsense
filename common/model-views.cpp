@@ -76,25 +76,26 @@ static void width_height_from_resolution(rs2_sensor_mode mode, int &width, int &
     }
 }
 
-static int get_resolution_id_from_sensor_mode(int sensor_mode, const rs2::sensor &s, const std::vector<std::pair<int, int>> &res_values)
+static int get_resolution_id_from_sensor_mode( rs2_sensor_mode sensor_mode,
+                                    const rs2::sensor & s,
+                                    const std::vector< std::pair< int, int > > & res_values )
 {
     int width = 0, height = 0;
-    width_height_from_resolution(static_cast<rs2_sensor_mode>(sensor_mode), width, height);
-    auto iter = std::find_if(res_values.begin(),
-        res_values.end(),
-        [width, height](std::pair< int, int > res)
+    width_height_from_resolution( sensor_mode, width, height );
+    auto iter = std::find_if( res_values.begin(),
+                              res_values.end(),
+                              [width, height]( std::pair< int, int > res ) {
+                                  if( ( res.first == width ) && ( res.second == height )
+                                      || ( res.first == height ) && ( res.second == width ) )
+                                      return true;
+                                  return false;
+                              } );
+    if( iter != res_values.end() )
     {
-        if ((res.first == width) && (res.second == height) ||
-            (res.first == height) && (res.second == width))
-            return true;
-        return false;
-    });
-    if (iter != res_values.end())
-    {
-        return static_cast<int>(std::distance(res_values.begin(), iter));
+        return static_cast< int >( std::distance( res_values.begin(), iter ) );
     }
 
-    throw std::runtime_error("cannot convert sensor mode to resolution ID");
+    throw std::runtime_error( "cannot convert sensor mode to resolution ID" );
 }
 
 ImVec4 flip(const ImVec4& c)
@@ -1378,9 +1379,15 @@ namespace rs2
                             }
 
                             // Only update the cached value once set_option is done! That way, if it doesn't change anything...
-                            try 
+                            try
                             {
-                               ui.selected_res_id = get_resolution_id_from_sensor_mode(static_cast<int>(s->get_option(RS2_OPTION_SENSOR_MODE)), *s, res_values);
+                                int sensor_mode_val = static_cast<int>(s->get_option( RS2_OPTION_SENSOR_MODE ));
+                                {
+                                    ui.selected_res_id = get_resolution_id_from_sensor_mode(
+                                        static_cast< rs2_sensor_mode >( sensor_mode_val ),
+                                        *s,
+                                        res_values );
+                                }
                             }
                             catch (...) {}
                         }

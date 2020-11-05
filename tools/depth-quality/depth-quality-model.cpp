@@ -622,12 +622,12 @@ namespace rs2
                             {
                                 if (_depth_sensor_model)
                                 {
-                                    auto& ds = _depth_sensor_model->dev.first<depth_sensor>();
+                                    auto && ds = _depth_sensor_model->dev.first<depth_sensor>();
                                     if( ds.supports( RS2_OPTION_ENABLE_IR_REFLECTIVITY )
                                         && ( ds.get_option( RS2_OPTION_ENABLE_IR_REFLECTIVITY ) == 1.0f ) )
                                     {
                                         allow_changing_roi = false;
-                                        _error_message = "Changing ROI while IR Reflectivity is enabled is prohibited!";
+                                        _error_message = "ROI cannot be changed while IR Reflectivity is enabled";
                                     }
                                 }
                             }

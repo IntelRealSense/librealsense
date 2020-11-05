@@ -25,7 +25,7 @@ namespace librealsense
             if( ds.supports_option( RS2_OPTION_ENABLE_IR_REFLECTIVITY )
                 && ds.get_option( RS2_OPTION_ENABLE_IR_REFLECTIVITY ).query() == 1.0f )
                 throw librealsense::wrong_api_call_sequence_exception(
-                    "Enabling Alternate IR while IR Reflectivity is enabled is prohibited" );
+                    "Alternate IR cannot be enabled with IR Reflectivity" );
         }
 
         _hw_monitor->send(command{ AMCSET, _type, (int)value });
@@ -342,7 +342,7 @@ namespace librealsense
                 return;
 
             throw wrong_api_call_sequence_exception(
-                to_string() << "Changing Visual Preset while Max Usable Range is enabled is prohibited");
+                to_string() << "Visual Preset cannot be changed while Max Usable Range is enabled");
         }
     }  
 
