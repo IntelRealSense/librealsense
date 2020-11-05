@@ -580,6 +580,8 @@ namespace librealsense
             std::shared_ptr< freefall_option > _freefall_opt;
         };
 
+        rs2_sensor_mode get_resolution_from_width_height(int width, int height);
+
         class ac_trigger;
     } // librealsense::ivcam2
 } // namespace librealsense

@@ -44,7 +44,8 @@ namespace librealsense
 
         void enable_recording(std::function<void(const option&)> recording_action) override;
 
-        l500_hw_options( hw_monitor * hw_monitor,
+        l500_hw_options( l500_device* l500_dev,
+                         hw_monitor* hw_monitor,
                          l500_control type,
                          option * resolution,
                          const std::string& description );
@@ -54,6 +55,7 @@ namespace librealsense
         float query(int width) const;
 
         l500_control _type;
+        l500_device* _l500_dev;
         hw_monitor* _hw_monitor;
         option_range _range;
         uint32_t _width;
@@ -76,10 +78,20 @@ namespace librealsense
         l500_device *_l500_depth_dev;
     };
 
+    class sensor_mode_option : public float_option_with_description<rs2_sensor_mode>
+    {
+    public:
+        sensor_mode_option(l500_device *l500_depth_dev, option_range range, std::string description) : float_option_with_description<rs2_sensor_mode>(range, description), _l500_depth_dev(l500_depth_dev) {};
+        void set(float value) override;
+
+    private:
+        l500_device *_l500_depth_dev;
+    };
+
     class ir_reflectivity_option : public bool_option
     {
     public:
-        ir_reflectivity_option(l500_device *l500_depth_dev) : bool_option(false), _l500_depth_dev(l500_depth_dev) {};
+        ir_reflectivity_option(l500_device *l500_depth_dev) : bool_option(false), _l500_depth_dev(l500_depth_dev), _max_usable_range_forced_on(false){};
 
         void set(float value) override;
 
@@ -87,6 +99,7 @@ namespace librealsense
 
     private:
         l500_device *_l500_depth_dev;
+        bool _max_usable_range_forced_on;
     };
 
     class l500_options: public virtual l500_device
@@ -103,6 +116,7 @@ namespace librealsense
         void move_to_custom ();
         void reset_hw_controls();
         void set_max_laser();
+        void verify_max_usable_range_restrictions(rs2_option opt, float value);
 
         std::map<rs2_option, std::shared_ptr<cascade_option<l500_hw_options>>> _hw_options;
         std::shared_ptr< cascade_option<uvc_xu_option<int>>> _digital_gain;
