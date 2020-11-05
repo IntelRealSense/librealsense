@@ -1261,6 +1261,26 @@ namespace ivcam2 {
 
         std::string invalid_reason;
 
+        auto alt_ir_is_on = false;
+        try
+        {
+            auto& alt_ir_opt = _dev.get_depth_sensor().get_option( RS2_OPTION_ALTERNATE_IR );
+            auto val = alt_ir_opt.query();
+            if( val == 1.f )
+                alt_ir_is_on = true;
+        }
+        catch( std::exception const & e )
+        {
+                AC_LOG( DEBUG,
+                        std::string( to_string() << "Error while checking alternate IR option: " << e.what() ) );
+        }
+        if (alt_ir_is_on)
+        {
+            if( ! invalid_reason.empty() )
+                invalid_reason += ", ";
+            invalid_reason += to_string() << "alternate IR is on";
+        }
+
         _temp = read_temperature();
 
         auto thermal_table_valid = true;
