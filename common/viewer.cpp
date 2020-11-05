@@ -21,6 +21,7 @@
 
 #define ARCBALL_CAMERA_IMPLEMENTATION
 #include <arcball_camera.h>
+#include "../common/utilities/string/trim-newlines.h"
 
 namespace rs2
 {
@@ -1067,9 +1068,31 @@ namespace rs2
         auto custom_command = [&]()
         {
             auto msg = _active_popups.front().message;
+            auto trimmed_msg = utilities::string::trim_newlines( msg );
+            std::string wrapped_msg = trimmed_msg;
+            try
+            {
+                // Wrap to pop up windows (should be adjusted in the future to wrap the message by
+                // pixels after the LRS prefix line is exist)
+                int wrap_pos = 77;
+                int n = std::string::npos;
+                int i = 0;
+
+                while( ( trimmed_msg.size() > wrap_pos )
+                       && ( ( n = trimmed_msg.rfind( ' ', wrap_pos ) ) != std::string::npos ) )
+                {
+                    wrapped_msg.at( n + wrap_pos * i++ ) = '\n';
+                    trimmed_msg = trimmed_msg.substr( wrap_pos );
+                }
+            }
+            catch( ... )
+            {
+                wrapped_msg = msg;
+            }
+
             ImGui::Text("RealSense error calling:");
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
-            ImGui::InputTextMultiline("##error", const_cast<char*>(msg.c_str()),
+            ImGui::InputTextMultiline("##error", const_cast<char*>(wrapped_msg.c_str()),
                 msg.size() + 1, { 500,95 }, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
             ImGui::PopStyleColor();
 
