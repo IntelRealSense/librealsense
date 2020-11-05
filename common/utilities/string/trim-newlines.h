@@ -9,6 +9,23 @@ namespace utilities {
 namespace string {
 
 
+// Prepare a block of text for word-wrap by removing newlines:
+//     - Remove trailing spaces from lines
+//     - Multiple newlines stay as-is, so still separate paragraphs
+//     - Newlines preceded by colons stay
+//     - Newlines not preceded or followed by anything (beginning/end) stay
+//     - All other newlines replaced by spaces
+// Example: (\n added just for verbosity)
+//     First line \n       // extra space removed
+//     second line\n       // joined into first line
+//     \n                  // stays
+//     third line: \n      // trimmed; stays
+//         fourth\n        // trailing \n stays
+// Becomes:
+//     First line second line\n
+//     \n
+//     third line:\n
+//         fourth\n
 inline std::string trim_newlines( std::string s )
 {
     char const * const base = s.c_str();
