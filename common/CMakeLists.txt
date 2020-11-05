@@ -56,12 +56,16 @@ set(COMMON_SRC
         "${CMAKE_CURRENT_LIST_DIR}/reflectivity/reflectivity.cpp"
         )
         
-    set(UTILITIES
+    set(UTILITIES_FILES
         "${CMAKE_CURRENT_LIST_DIR}/utilities/number/stabilized-value.h"
+        "${CMAKE_CURRENT_LIST_DIR}/utilities/string/trim-newlines.h"
+        "${CMAKE_CURRENT_LIST_DIR}/utilities/string/wrap-text.h"
         )
+
     set(COMMON_SRC
         ${COMMON_SRC}
         ${SW_UPDATE_FILES}
         ${REFLECTIVITY_FILES}
-        ${UTILITIES})
+	${UTILITIES_FILES}
+	)
 
