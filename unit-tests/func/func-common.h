@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #include "../test.h"
 #include "librealsense2/rs.hpp"
@@ -7,6 +7,7 @@
 #include "hw-monitor.h"
 
 using namespace rs2;
+
 
 inline rs2::device_list find_devices_by_product_line_or_exit( int product )
 {
@@ -33,6 +34,47 @@ inline void exit_if_fw_version_is_under( rs2::device & dev, librealsense::firmwa
                   << version << std::endl;
         exit( 0 );
     }
+}
+
+// This function returns the first device found that it's name contains the given string,
+// if there is no such device it will exit the test.
+// Can get as input a full device name or short like "L515/D435..."
+inline rs2::device find_first_device_by_name_or_exit( const std::string & dev_name )
+{
+    rs2::context ctx;
+    std::vector< rs2::device > devices_list = ctx.query_devices();
+
+    auto dev_iter
+        = std::find_if( devices_list.begin(), devices_list.end(), [dev_name]( rs2::device dev ) {
+              return dev.supports( RS2_CAMERA_INFO_NAME )
+                  && std::string( dev.get_info( RS2_CAMERA_INFO_NAME ) ).find( dev_name )
+                         != std::string::npos;
+          } );
+
+    if( dev_iter != devices_list.end() )
+    {
+        return *dev_iter;
+    }
+
+    std::cout << "No " << dev_name << " device was found; skipping test" << std::endl;
+    exit( 0 );
+}
+
+// Return the first device that supports the input option or exits.
+// Can get as input a full device name or short like "L515/D435..."
+rs2::depth_sensor find_first_supported_depth_sensor_or_exit(const std::string & dev_name,
+    rs2_option opt)
+{
+    auto dev = find_first_device_by_name_or_exit(dev_name);
+
+    auto ds = dev.first< rs2::depth_sensor >();
+    if (!ds.supports(opt))
+    {
+        std::cout << "Device: " << dev_name << " does not support option: " << rs2_option_to_string(opt) << std::endl;
+        exit(0);
+    }
+
+    return ds;
 }
 
 // Remove the frame's stream (or streams if a frameset) from the list of streams we expect to arrive
@@ -169,3 +211,30 @@ inline void do_while_streaming( rs2::sensor depth_sens,
     depth_sens.stop();
     depth_sens.close();
 }
+
+rs2::stream_profile get_profile_by_stream_parameters( rs2::sensor s,
+                                                      rs2_stream stream = RS2_STREAM_ANY,
+                                                      rs2_format format = RS2_FORMAT_ANY,
+                                                      int width = -1,
+                                                      int height = -1,
+                                                      int fps = -1,
+                                                      int stream_index = -1 )
+{
+    auto profiles = s.get_stream_profiles();
+    auto found_profile
+        = std::find_if( profiles.begin(), profiles.end(), [=]( rs2::stream_profile sp ) {
+              auto vp = sp.as< rs2::video_stream_profile >();
+              return ( ( RS2_STREAM_ANY == stream || sp.stream_type() == stream )
+                       && ( RS2_FORMAT_ANY == format || sp.format() == format )
+                       && ( ( -1 == width )  || ( vp.width() == width ) )
+                       && ( ( -1 == height ) || ( vp.height() == height ) )
+                       && ( ( -1 == fps )    || ( vp.fps() == fps )
+                       && ( ( -1 == stream_index ) || vp.stream_index() == stream_index ) ) );
+          } );
+
+    if( found_profile != profiles.end() )
+        return *found_profile;
+    else
+        return rs2::stream_profile();
+}
+

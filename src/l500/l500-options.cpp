@@ -746,18 +746,21 @@ namespace librealsense
     {
         // Restrictions for sensor mode option as required on [RS5-8358]
         auto &ds = _l500_depth_dev->get_depth_sensor();
-        if (ds.supports_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY) && ds.get_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY).query() == 1.0f)
+
+        if( ds.supports_option( RS2_OPTION_ENABLE_IR_REFLECTIVITY )
+            && ds.get_option( RS2_OPTION_ENABLE_IR_REFLECTIVITY ).query() == 1.0f
+            && ( value != rs2_sensor_mode::RS2_SENSOR_MODE_VGA ) )
         {
-            ds.get_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY).set(0.0f);
-            LOG_INFO("IR Reflectivity was on - turning it off");
+            ds.get_option( RS2_OPTION_ENABLE_IR_REFLECTIVITY ).set( 0.0f );
+            LOG_INFO( "IR Reflectivity was on - turning it off" );
         }
 
-        if (ds.supports_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE) &&
-            (ds.get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE).query() == 1.0) &&
-            (value != rs2_sensor_mode::RS2_SENSOR_MODE_VGA))
+        if( ds.supports_option( RS2_OPTION_ENABLE_MAX_USABLE_RANGE )
+            && ( ds.get_option( RS2_OPTION_ENABLE_MAX_USABLE_RANGE ).query() == 1.0 )
+            && ( value != rs2_sensor_mode::RS2_SENSOR_MODE_VGA ) )
         {
-            ds.get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE).set(0.0f);
-            LOG_INFO("Max Usable Range was on - turning it off");
+            ds.get_option( RS2_OPTION_ENABLE_MAX_USABLE_RANGE ).set( 0.0f );
+            LOG_INFO( "Max Usable Range was on - turning it off" );
         }
 
         float_option_with_description::set(value);
