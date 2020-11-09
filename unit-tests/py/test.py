@@ -117,12 +117,13 @@ def start(test_name = "Test started"):
         exit(1)
     n_tests += 1
     test_failed = False
+    test_in_progress = True
     print(test_name)
 
 def finish():
     global test_failed, n_failed_tests, test_in_progress
     if not test_in_progress:
-        print("Tried to finish a test without starting a test")
+        print("Tried to finish a test without starting one")
         return
     if test_failed:
         n_failed_tests += 1
@@ -130,6 +131,7 @@ def finish():
     else:
         print("Test passed")
     print("\n")
+    test_in_progress = False
 
 # The format has to agree with the expected format in check_log() in run-unit-tests and with the C++ format using Catch
 def print_results_and_exit():
