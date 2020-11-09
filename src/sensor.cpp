@@ -427,7 +427,7 @@ namespace librealsense
         }
         if (Is<librealsense::global_time_interface>(_owner))
         {
-            As<librealsense::global_time_interface>(_owner)->enable_time_diff_keeper(true);
+            As<librealsense::global_timestamp_reader>(_timestamp_reader.get())->sensor_enable_time_diff_keeper(true);
         }
         set_active_streams(requests);
     }
@@ -451,7 +451,7 @@ namespace librealsense
         reset_streaming();
         if (Is<librealsense::global_time_interface>(_owner))
         {
-            As<librealsense::global_time_interface>(_owner)->enable_time_diff_keeper(false);
+            As<librealsense::global_timestamp_reader>(_timestamp_reader.get())->sensor_enable_time_diff_keeper(false);
         }
         _power.reset();
         _is_opened = false;
@@ -730,7 +730,8 @@ namespace librealsense
         _hid_device->open(configured_hid_profiles);
         if (Is<librealsense::global_time_interface>(_owner))
         {
-            As<librealsense::global_time_interface>(_owner)->enable_time_diff_keeper(true);
+            As<librealsense::global_timestamp_reader>(_hid_iio_timestamp_reader.get())->sensor_enable_time_diff_keeper(true);
+            As<librealsense::global_timestamp_reader>(_custom_hid_timestamp_reader.get())->sensor_enable_time_diff_keeper(true);
         }
         _is_opened = true;
         set_active_streams(requests);
@@ -751,7 +752,8 @@ namespace librealsense
         _is_opened = false;
         if (Is<librealsense::global_time_interface>(_owner))
         {
-            As<librealsense::global_time_interface>(_owner)->enable_time_diff_keeper(false);
+            As<librealsense::global_timestamp_reader>(_hid_iio_timestamp_reader.get())->sensor_enable_time_diff_keeper(false);
+            As<librealsense::global_timestamp_reader>(_custom_hid_timestamp_reader.get())->sensor_enable_time_diff_keeper(false);
         }
         set_active_streams({});
     }

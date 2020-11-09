@@ -11,10 +11,15 @@ namespace librealsense
 {
     class LRS_EXTENSION_API global_time_option : public bool_option
     {
+    private:
+        std::vector<std::function<void(float)> > _callbacks;
+
     public:
         global_time_option() {}
+        void add_callback(std::function<void(float)> callback) { _callbacks.push_back(callback); }
         // TODO: expose this outwards
         const char* get_description() const override { return "Enable/Disable global timestamp"; }
+        void set(float value) override;
     };
 
     class CSample
@@ -89,11 +94,14 @@ namespace librealsense
         global_timestamp_reader(std::unique_ptr<frame_timestamp_reader> device_timestamp_reader, 
                                 std::shared_ptr<time_diff_keeper> timediff,
                                 std::shared_ptr<global_time_option>);
-
+        void sensor_enable_time_diff_keeper(bool is_sensor_enabled);
         rs2_time_t get_frame_timestamp(const std::shared_ptr<frame_interface>& frame) override;
         unsigned long long get_frame_counter(const std::shared_ptr<frame_interface>& frame) const override;
         rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const override;
         void reset() override;
+
+    private:
+        void enable_time_diff_keeper(bool is_enable);
 
     private:
         std::unique_ptr<frame_timestamp_reader> _device_timestamp_reader;
@@ -101,6 +109,7 @@ namespace librealsense
         mutable std::recursive_mutex _mtx;
         std::shared_ptr<global_time_option> _option_is_enabled;
         bool _ts_is_ready;
+        bool _is_sensor_enabled;
     };
 
     class global_time_interface : public recordable<global_time_interface>
@@ -111,7 +120,6 @@ namespace librealsense
     public:
         global_time_interface();
         ~global_time_interface() { _tf_keeper.reset(); }
-        void enable_time_diff_keeper(bool is_enable);
         virtual double get_device_time_ms() = 0; // Returns time in miliseconds.
         virtual void create_snapshot(std::shared_ptr<global_time_interface>& snapshot) const override {}
         virtual void enable_recording(std::function<void(const global_time_interface&)> record_action) override {}
