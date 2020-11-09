@@ -26,7 +26,7 @@ def set_env_vars(env_vars):
         if platform.system() == 'Linux' and "microsoft" not in platform.uname()[3].lower():
             cmd = ["python3"] + sys.argv
         else:
-            cmd = ["py", "-3", test_path] + sys.argv
+            cmd = ["py", "-3"] + sys.argv
         p = subprocess.run( cmd, stderr=subprocess.PIPE, universal_newlines=True )
         exit(p.returncode)
 
