@@ -44,15 +44,24 @@ unsigned work_week::operator-( const work_week & ww ) const
 // XXXX – Sequential number
 work_week get_manufature_work_week( const std::string & serial )
 {
+    if( serial.size() != 8 )
+        throw invalid_value_exception( "invalid serial number: " + serial + " is of invalid size" );
     unsigned Y = serial[1] - '0';  // Converts char to int, '0'-> 0, '1'-> 1, ...
     unsigned man_year = 0;
     // using Y from serial number to get manufactoring year
     if( Y == 9 )
         man_year = 2019;
-    else
+    else if( Y >= 0 && Y <= 8 )
         man_year = 2020 + Y;
+    else
+        throw invalid_value_exception( "invalid serial number: " + serial + " has invalid year" );
     // using WW from serial number to get manufactoring work week
-    unsigned man_ww = ( ( serial[2] - '0' ) * 10 ) + ( serial[3] - '0' );
+    unsigned WW_tens = serial[2] - '0';
+    unsigned WW_singles = serial[3] - '0';
+    if( WW_tens > 9 || WW_tens < 0 || WW_singles > 9 || WW_singles < 0 )
+        throw invalid_value_exception( "invalid serial number: " + serial
+                                       + " has invalid work week" );
+    unsigned man_ww = ( (WW_tens)*10 ) + WW_singles;
     return work_week( man_year, man_ww );
 }
 
