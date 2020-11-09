@@ -6,7 +6,7 @@
 # 5. Use print_results_and_exit to print the number of tests and assertions that passed/failed in the correct format
 #    before exiting with 0 if all tests passed or with 1 if there was a failed test
 
-import os, sys, subprocess, traceback
+import os, sys, subprocess, traceback, platform
 import pyrealsense2 as rs
 
 n_assertions = 0
