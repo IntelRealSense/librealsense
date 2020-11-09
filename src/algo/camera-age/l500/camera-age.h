@@ -4,6 +4,7 @@
 #pragma once
 
 #include <string>
+#include <ctime>
 
 
 namespace librealsense {
@@ -11,26 +12,28 @@ namespace algo {
 namespace camera_age {
 namespace l500 {
 
-class manufacture_time
+class work_week
 {
     unsigned man_year;
     unsigned man_ww;
 
 public:
-    manufacture_time( unsigned man_year, unsigned man_ww )
+    work_week( unsigned man_year, unsigned man_ww )
         : man_year( man_year )
         , man_ww( man_ww )
     {
     }
+    work_week(std::time_t& time);
 
-    unsigned get_manufacture_year() const;
-    unsigned get_manufacture_work_week() const;
+    unsigned get_year() const;
+    unsigned get_work_week() const;
+    unsigned operator-( const work_week & ww ) const;
 };
 
-manufacture_time get_manufature_time( const std::string & serial );
+work_week get_manufature_work_week( const std::string & serial );
 
 // Returns the number of work weeks since given time
-unsigned get_work_weeks_since( const manufacture_time & start );
+unsigned get_work_weeks_since( const work_week & start );
 
 }  // namespace l500
 }  // namespace camera_age
