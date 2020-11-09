@@ -1,3 +1,11 @@
+# This module is for formatting and writing unit-tests in python. The general format is as follows
+# 1. Use start to start a test and give it, as an argument, the name of the test
+# 2. Use whatever check functions are relevant to test the program run against the expected program run
+# 3. Use finish to signal the end of the test
+# 4. Repeat stages 1-3 as the number of tests you want to run in the file
+# 5. Use print_results_and_exit to print the number of tests and assertions that passed/failed in the correct format
+#    before exiting with 0 if all tests passed or with 1 if there was a failed test
+
 import os, sys, subprocess, traceback
 import pyrealsense2 as rs
 
@@ -15,7 +23,10 @@ def set_env_vars(env_vars):
         for env_var, val in env_vars.items():
             os.environ[env_var] = val
         sys.argv.append("rerun")
-        cmd = ["py", "-3"] + sys.argv
+        if platform.system() == 'Linux' and "microsoft" not in platform.uname()[3].lower():
+            cmd = ["python3"] + sys.argv
+        else:
+            cmd = ["py", "-3", test_path] + sys.argv
         p = subprocess.run( cmd, stderr=subprocess.PIPE, universal_newlines=True )
         exit(p.returncode)
 
