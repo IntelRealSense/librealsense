@@ -6,6 +6,8 @@
 
 using namespace rs2;
 
+static const char L515_DEVICE[] = "L515";
+
 inline rs2::device_list find_devices_by_product_line_or_exit( int product )
 {
     rs2::context ctx;
@@ -18,6 +20,45 @@ inline rs2::device_list find_devices_by_product_line_or_exit( int product )
     }
 
     return devices_list;
+}
+
+// This function returns the first device found that it's name contains the given string,
+// if there is no such device it will exit the test.
+// Can get as input a full device name or short like "L515/D435..."
+inline rs2::device find_device_by_name_or_exit( const std::string & dev_name )
+{
+    rs2::context ctx;
+    std::vector< rs2::device > devices_list = ctx.query_devices();
+
+    auto dev_iter
+        = std::find_if( devices_list.begin(), devices_list.end(), [dev_name]( rs2::device dev ) {
+              return dev.supports( RS2_CAMERA_INFO_NAME )
+                       ? std::string( dev.get_info( RS2_CAMERA_INFO_NAME ) ).find( dev_name )
+                             != std::string::npos
+                       : false;
+          } );
+
+    if( dev_iter != devices_list.end() )
+    {
+        return *dev_iter;
+    }
+
+    std::cout << "No " << dev_name << " device was found; skipping test" << std::endl;
+    exit( 0 );
+}
+
+// Return the first device that supports the input option or exits.
+// Can get as input a full device name or short like "L515/D435..."
+rs2::depth_sensor find_first_supported_depth_sensor_or_exit(const std::string & dev_name,
+    rs2_option opt)
+{
+    auto dev = find_device_by_name_or_exit(dev_name);
+
+    auto ds = dev.first< rs2::depth_sensor >();
+    if (!ds.supports(opt))
+        exit(0);
+
+    return ds;
 }
 
 // Remove the frame's stream (or streams if a frameset) from the list of streams we expect to arrive
@@ -94,3 +135,30 @@ inline stream_profile find_confidence_corresponding_to_depth( rs2::depth_sensor 
     REQUIRE( confidence_profile != stream_profiles.end() );
     return *confidence_profile;
 }
+
+
+bool get_profile_by_stream_parameters( rs2::depth_sensor ds,
+                                       rs2_stream stream,
+                                       rs2_format format,
+                                       int width,
+                                       int height,
+                                       rs2::stream_profile & required_profile )
+{
+    auto profiles = ds.get_stream_profiles();
+    auto vga_depth_profile
+        = std::find_if(profiles.begin(), profiles.end(), [=](rs2::stream_profile sp) {
+        auto vp = sp.as< rs2::video_stream_profile >();
+        return ((sp.stream_type() == stream) && (sp.format() == format)
+            && (vp.width() == width) && (vp.height() == height));
+    });
+
+    if (vga_depth_profile != profiles.end())
+    {
+        required_profile = *vga_depth_profile;
+        return true;
+    }
+
+    return false;
+}
+
+
