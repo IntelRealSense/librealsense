@@ -3,6 +3,7 @@
 
 #include "camera-age.h"
 #include <string>
+#include <types.h>
 
 
 namespace librealsense {
@@ -10,26 +11,25 @@ namespace algo {
 namespace camera_age {
 namespace l500 {
 
-work_week::work_week( std::time_t & t )
+work_week::work_week( const std::time_t & t )
 {
-    auto time = std::localtime( t );
-    int year = time->tm_year + 1900;  // The tm_year field contains the number of years
-                                      // since 1900, we add 1900 to get current year
-    int ww = time->tm_yday / 7;       // The tm_yday field contains the number of days sine 1st
-                                      // of January, we divide by 7 to get current work week
-    ww++;  // We add 1 because work weeks start at 1 and not 0 (ex. 1st of January will return
-           // ww 0, but it ww 1)
-    return work_week( year, ww );
+    auto time = std::localtime( &t );
+    year = time->tm_year + 1900;     // The tm_year field contains the number of years
+                                     // since 1900, we add 1900 to get current year
+    ww = ( time->tm_yday / 7 ) + 1;  // The tm_yday field contains the number of days sine 1st
+                                     // of January, we divide by 7 to get current work week
+                                     // than add 1 because work weeks start at 1 and not 0
+                                     // (ex. 1st of January will return ww 0, but it ww 1)
 }
 
 unsigned work_week::get_year() const
 {
-    return man_year;
+    return year;
 }
 
 unsigned work_week::get_work_week() const
 {
-    return man_ww;
+    return ww;
 }
 
 unsigned work_week::operator-( const work_week & ww ) const

@@ -133,7 +133,7 @@ namespace librealsense
             try
             {
                 auto manufacture
-                    = librealsense::algo::camera_age::l500::get_manufature_time( optic_serial );
+                    = librealsense::algo::camera_age::l500::get_manufature_work_week( optic_serial );
                 uint8_t age
                     = librealsense::algo::camera_age::l500::get_work_weeks_since( manufacture );
                 command cmd( fw_cmd::SET_AGE, age );
@@ -246,7 +246,7 @@ namespace librealsense
                     rs2_dsm_params new_dsm_params = _autocal->get_dsm_params();
                     // We update the age of the device in weeks and the time between factory
                     // calibration and last AC to aid projection
-                    auto manufacture = librealsense::algo::camera_age::l500::get_manufature_time(
+                    auto manufacture = librealsense::algo::camera_age::l500::get_manufature_work_week(
                         get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) );
                     uint8_t age
                         = librealsense::algo::camera_age::l500::get_work_weeks_since( manufacture );

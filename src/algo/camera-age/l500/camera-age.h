@@ -14,16 +14,16 @@ namespace l500 {
 
 class work_week
 {
-    unsigned man_year;
-    unsigned man_ww;
+    unsigned year;
+    unsigned ww;
 
 public:
     work_week( unsigned man_year, unsigned man_ww )
-        : man_year( man_year )
-        , man_ww( man_ww )
+        : year( man_year )
+        , ww( man_ww )
     {
     }
-    work_week(std::time_t& time);
+    work_week( const std::time_t& time );
 
     unsigned get_year() const;
     unsigned get_work_week() const;
