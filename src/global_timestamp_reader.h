@@ -71,6 +71,7 @@ namespace librealsense
         void stop();
         ~time_diff_keeper();
         double get_system_hw_time(double crnt_hw_time, bool& is_ready);
+        bool is_running();
 
     private:
         bool update_diff_time();

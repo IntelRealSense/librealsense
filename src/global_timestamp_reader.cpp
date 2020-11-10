@@ -270,6 +270,11 @@ namespace librealsense
             return crnt_hw_time;
     }
 
+    bool time_diff_keeper::is_running()
+    {
+        return _active_object.is_running();
+    }
+
     global_timestamp_reader::global_timestamp_reader(std::unique_ptr<frame_timestamp_reader> device_timestamp_reader,
                                                      std::shared_ptr<time_diff_keeper> timediff,
                                                      std::shared_ptr<global_time_option> enable_option) :
@@ -279,7 +284,7 @@ namespace librealsense
         _ts_is_ready(false),
         _is_sensor_enabled(false)
     {
-        LOG_INFO("set global_timestamp_reader::_option_is_enabled" << _option_is_enabled->is_true());
+        LOG_INFO("set global_timestamp_reader::_option_is_enabled: " << _option_is_enabled->is_true());
         _option_is_enabled->add_callback([this](float val)
         {
             LOG_INFO("set _option_is_enabled: " << val << ", " << _option_is_enabled->is_true() << ", _is_sensor_enabled=" << _is_sensor_enabled);
