@@ -32,7 +32,7 @@ def set_env_vars(env_vars):
 
 # Returns the first device that was found, if no device is found the test is skipped. That way we can still run
 # the unit-tests when no device is connected and not fail the tests that check a connected device
-def get_first_device_or_exit():
+def find_first_device_or_exit():
     c = rs.context()
     if not c.devices.size():  # if no device is connected we skip the test
         print("No device found, skipping test")
