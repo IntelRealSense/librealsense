@@ -207,7 +207,7 @@ namespace librealsense
                 throw wrong_api_call_sequence_exception("time_diff_keeper::update_diff_time called before object started.");
             double system_time_start = duration<double, std::milli>(system_clock::now().time_since_epoch()).count();
             double sample_hw_time = _device->get_device_time_ms();
-            LOG_INFO("get_device_time_ms()");
+            LOG_DEBUG("get_device_time_ms()");
             double system_time_finish = duration<double, std::milli>(system_clock::now().time_since_epoch()).count();
             double command_delay = (system_time_finish-system_time_start)/2;
 
@@ -284,10 +284,8 @@ namespace librealsense
         _ts_is_ready(false),
         _is_sensor_enabled(false)
     {
-        LOG_INFO("set global_timestamp_reader::_option_is_enabled: " << _option_is_enabled->is_true());
         _option_is_enabled->add_callback([this](float val)
         {
-            LOG_INFO("set _option_is_enabled: " << val << ", " << _option_is_enabled->is_true() << ", _is_sensor_enabled=" << _is_sensor_enabled);
             if (_is_sensor_enabled)
             {
                 enable_time_diff_keeper(static_cast<bool>(val));
@@ -310,7 +308,6 @@ namespace librealsense
     void global_timestamp_reader::sensor_enable_time_diff_keeper(bool is_sensor_enabled)
     {
         _is_sensor_enabled = is_sensor_enabled;
-        LOG_INFO("sensor_enable_time_diff_keeper: _option_is_enabled: " << _option_is_enabled->is_true() << ", _is_sensor_enabled=" << _is_sensor_enabled);
         if (_option_is_enabled->is_true())
         {
             enable_time_diff_keeper(is_sensor_enabled);
