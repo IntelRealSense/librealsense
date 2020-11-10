@@ -7,7 +7,7 @@
 #include <ctime>
 
 
-namespace utileties {
+namespace utilities {
 namespace time {
 
 class work_week
@@ -32,8 +32,8 @@ public:
 unsigned get_work_weeks_since( const work_week & start );
 
 namespace l500 {
-work_week get_manufature_work_week( const std::string & serial );
+work_week get_manufacture_work_week( const std::string & serial );
 }
 
 }  // namespace time
-}  // namespace utileties
+}  // namespace utilities

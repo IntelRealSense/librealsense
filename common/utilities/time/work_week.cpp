@@ -6,7 +6,7 @@
 #include <types.h>
 
 
-namespace utileties {
+namespace utilities {
 namespace time {
 
 work_week::work_week( const std::time_t & t )
@@ -55,10 +55,10 @@ namespace l500 {
 // Y – Year(ex.“9” for 2019, "0" for 2020, , "1" for 2021  ..etc)
 // WW – Work Week
 // XXXX – Sequential number
-work_week get_manufature_work_week( const std::string & serial )
+work_week get_manufacture_work_week( const std::string & serial )
 {
     if( serial.size() != 8 )
-        throw librealsense::invalid_value_exception( "invalid serial number \"" + serial
+        throw std::runtime_error( "Invalid serial number \"" + serial
                                                      + "\" length" );
     unsigned Y = serial[1] - '0';  // Converts char to int, '0'-> 0, '1'-> 1, ...
     unsigned man_year = 0;
@@ -68,13 +68,13 @@ work_week get_manufature_work_week( const std::string & serial )
     else if( Y < 9 )
         man_year = 2020 + Y;
     else
-        throw librealsense::invalid_value_exception( "invalid serial number \"" + serial
+        throw std::runtime_error( "Invalid serial number \"" + serial
                                                      + "\" year" );
     // using WW from serial number to get manufactoring work week
     unsigned WW_tens = serial[2] - '0';
     unsigned WW_singles = serial[3] - '0';
-    if( WW_tens > 9 || WW_singles > 9 )
-        throw librealsense::invalid_value_exception( "invalid serial number \"" + serial
+    if( WW_tens > 5 || WW_singles > 9 || ( WW_tens == 5 && WW_singles > 3))
+        throw std::runtime_error( "Invalid serial number \"" + serial
                                                      + "\" work week" );
     unsigned man_ww = ( (WW_tens)*10 ) + WW_singles;
     return work_week( man_year, man_ww );
@@ -82,4 +82,4 @@ work_week get_manufature_work_week( const std::string & serial )
 }  // namespace l500
 
 }  // namespace time
-}  // namespace utileties
+}  // namespace utilities
