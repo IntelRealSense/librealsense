@@ -26,6 +26,7 @@ classdef format < int64
 		inzi     		(23)
 		invi     		(24)
 		w10     		(25)
-        count           (26)
+        FG              (26)
+        count           (27)
     end
 end
