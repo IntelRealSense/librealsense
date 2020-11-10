@@ -1,3 +1,5 @@
+#ifdef __linux__
+
 #include "catch/catch.hpp"
 #include <thread>
 #include <string>
@@ -188,3 +190,5 @@ TEST_CASE("named_mutex_processes", "[code]")
         REQUIRE(child_alive == actual_test);
     }
 }
+
+#endif // __linux__
