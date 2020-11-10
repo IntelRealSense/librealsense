@@ -144,14 +144,14 @@ namespace librealsense
 
         // Write a table to firmware
         template< typename T >
-        void write_fw_table( hw_monitor& hwm, uint16_t const table_id, T const & table )
+        void write_fw_table( hw_monitor& hwm, uint16_t const table_id, T const & table, uint16_t const version )
         {
             command cmd( fw_cmd::WRITE_TABLE, 0 );
             cmd.data.resize( sizeof( table_header ) + sizeof( table ) );
 
             table_header * h = (table_header *)cmd.data.data();
-            h->major = 1;
-            h->minor = 0;
+            h->major = version >> 8;
+            h->minor = version & 0xFF;
             h->table_id = table_id;
             h->table_size = sizeof( T );
             h->reserved = 0xFFFFFFFF;
