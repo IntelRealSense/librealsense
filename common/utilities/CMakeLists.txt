@@ -7,4 +7,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/time/stopwatch.h"
         "${CMAKE_CURRENT_LIST_DIR}/time/timer.h"
         "${CMAKE_CURRENT_LIST_DIR}/time/periodic_timer.h"
+	"${CMAKE_CURRENT_LIST_DIR}/time/work_week.h"
+	"${CMAKE_CURRENT_LIST_DIR}/time/work_week.cpp"
 )

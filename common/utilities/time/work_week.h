@@ -7,35 +7,33 @@
 #include <ctime>
 
 
-namespace librealsense {
-namespace algo {
-namespace camera_age {
-namespace l500 {
+namespace utileties {
+namespace time {
 
 class work_week
 {
-    unsigned year;
-    unsigned ww;
+    unsigned _year;
+    unsigned _ww;
 
 public:
-    work_week( unsigned man_year, unsigned man_ww )
-        : year( man_year )
-        , ww( man_ww )
+    work_week( unsigned year, unsigned ww )
+        : _year( year )
+        , _ww( ww )
     {
     }
-    work_week( const std::time_t& time );
+    work_week( const std::time_t & time );
 
     unsigned get_year() const;
     unsigned get_work_week() const;
     unsigned operator-( const work_week & ww ) const;
+    static work_week current();
 };
-
-work_week get_manufature_work_week( const std::string & serial );
-
 // Returns the number of work weeks since given time
 unsigned get_work_weeks_since( const work_week & start );
 
-}  // namespace l500
-}  // namespace camera_age
-}  // namespace algo
-}  // namespace librealsense
+namespace l500 {
+work_week get_manufature_work_week( const std::string & serial );
+}
+
+}  // namespace time
+}  // namespace utileties
