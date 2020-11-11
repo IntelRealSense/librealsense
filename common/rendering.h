@@ -1031,6 +1031,9 @@ namespace rs2
                     }
                     else glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, data);
                     break;
+                case RS2_FORMAT_FG:
+                    glTexImage2D( GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
+                    break;
                 case RS2_FORMAT_XYZ32F:
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, data);
                     break;

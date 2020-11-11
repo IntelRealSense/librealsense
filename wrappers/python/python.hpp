@@ -148,7 +148,7 @@ MAP_FMT_TO_TYPE(RS2_FORMAT_Y8I, uint8_t);
 //MAP_FMT_TO_TYPE(RS2_FORMAT_INZI, );
 MAP_FMT_TO_TYPE(RS2_FORMAT_INVI, uint8_t);
 //MAP_FMT_TO_TYPE(RS2_FORMAT_W10, );
-
+MAP_FMT_TO_TYPE(RS2_FORMAT_FG, uint16_t);
 template <rs2_format FMT> struct itemsize {
     static constexpr size_t func() { return sizeof(typename FmtToType<FMT>::type); }
 };
