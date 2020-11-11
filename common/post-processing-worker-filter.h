@@ -66,9 +66,30 @@ public:
     }
 
 protected:
-    rs2::frameset process_frameset( rs2::frameset fs ) override
+    rs2::frameset process_frameset(rs2::frame fs) override
     {
-        _queue.enqueue( fs );
+        std::vector<rs2::frame> bundle;
+        rs2::processing_block bundler([&](rs2::frame f, rs2::frame_source& src) {
+            bundle.push_back(f);
+            if (bundle.size())
+            {
+                auto fs = src.allocate_composite_frame(bundle);
+                src.frame_ready(fs);
+                bundle.clear();
+            }
+            });
+
+        if (fs.as< rs2::frameset >().size() == 0)
+        {
+            rs2::frame_queue q;
+            bundler.start(q); // Results from the block will be enqueued into q
+            bundler.invoke(fs); // Invoke the lambda above
+            rs2::frameset output_frame = q.wait_for_frame(); // Fetch the result
+            _queue.enqueue(output_frame);
+            return output_frame;
+        }
+
+        _queue.enqueue(fs);
         return fs;
     }
 
