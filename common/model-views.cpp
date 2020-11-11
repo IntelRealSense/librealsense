@@ -776,9 +776,9 @@ namespace rs2
                         if (ImGui::Combo(id.c_str(), &tmp_selected, labels.data(),
                             static_cast<int>(labels.size())))
                         {
-                            tmp_value = range.min + range.step * selected;
+                            tmp_value = range.min + range.step * tmp_selected;
                             model.add_log(to_string() << "Setting " << opt << " to "
-                                << tmp_value << " (" << labels[selected] << ")");
+                                << tmp_value << " (" << labels[tmp_selected] << ")");
                             set_option(opt, tmp_value, error_message);
                             selected = tmp_selected;
                             if (invalidate_flag) *invalidate_flag = true;
@@ -1391,6 +1391,10 @@ namespace rs2
                             }
                             catch (...) {}
                         }
+                    }
+                    else
+                    {
+                        ui.selected_res_id = tmp_selected_res_id;
                     }
                 }
                 ImGui::PopStyleColor();
