@@ -36,6 +36,7 @@ namespace librealsense
         { rs_fourcc('Z','1','6',' '), RS2_FORMAT_Z16 },
         { rs_fourcc('C',' ',' ',' '), RS2_FORMAT_RAW8 },
         { rs_fourcc('C','N','F','4'), RS2_FORMAT_RAW8 },
+        { rs_fourcc('F','G',' ',' '), RS2_FORMAT_FG },
     };
 
     std::map<uint32_t, rs2_stream> l500_depth_fourcc_to_rs2_stream = {
@@ -43,6 +44,7 @@ namespace librealsense
         { rs_fourcc('Z','1','6',' '), RS2_STREAM_DEPTH },
         { rs_fourcc('C',' ',' ',' '), RS2_STREAM_CONFIDENCE },
         { rs_fourcc('C','N','F','4'), RS2_STREAM_CONFIDENCE },
+        { rs_fourcc('F','G',' ',' '), RS2_STREAM_DEPTH },
     };
 
     using namespace ivcam2;
@@ -320,6 +322,8 @@ namespace librealsense
             []() { return std::make_shared<confidence_rotation_transform>(); }
         );
 
+        depth_sensor.register_processing_block(
+            processing_block_factory::create_id_pbf( RS2_FORMAT_FG, RS2_STREAM_DEPTH ) );
 
         std::shared_ptr< freefall_option > freefall_opt;
         if( _fw_version >= firmware_version( "1.3.5.0" ) )
