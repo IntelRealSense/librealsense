@@ -54,7 +54,7 @@ public:
 
 protected:
     // Main handler for each frameset we get
-    virtual rs2::frameset process_frameset( rs2::frame fs ) = 0;
+    virtual rs2::frame process_frameset( rs2::frame fs ) = 0;
 
 
     // Helper fn to get the frame context when logs are written, e.g.:
