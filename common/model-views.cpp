@@ -1393,7 +1393,7 @@ namespace rs2
                         }
                         else
                         {
-                            error_message = to_string() << "Resolution: " << width << " x " << height
+                            error_message = to_string() << "Resolution " << width << "x" << height
                                                         << " is not supported on this device";
                         }
                     }
