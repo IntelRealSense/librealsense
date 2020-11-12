@@ -5,6 +5,8 @@
 #include "example.hpp"          // Include short list of convenience functions for rendering
 #include <iostream>
 
+enum frame_number { IR1, IR2, DEPTH1, DEPTH2, HDR };
+
 // HDR Example demonstrates how to
 // use the HDR feature - only for D400 product line devices
 int main(int argc, char * argv[]) try
@@ -60,12 +62,12 @@ int main(int argc, char * argv[]) try
 
     // configuration for the first HDR sequence ID
     depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, 1);
-    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 8500);
+    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 6000);
     depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
 
     // configuration for the second HDR sequence ID
     depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, 2);
-    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 150);
+    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 300);
     depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
 
     // after setting the HDR sequence ID opotion to 0, setting exposure or gain
@@ -75,8 +77,7 @@ int main(int argc, char * argv[]) try
     // turning ON the HDR with the above configuration 
     depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
 
-    // Create a simple OpenGL window for rendering:
-    window app(1280, 720, "RealSense HDR Example");
+    window app(1280, 720, "RealSense HDR Example", 4, 2, 0.8, 0.6, 0.1, 0.075);
 
     // Declare depth colorizer for pretty visualization of depth data
     rs2::colorizer color_map;
@@ -104,13 +105,18 @@ int main(int argc, char * argv[]) try
     rs2::frameset data;
 
     // flag used to see the original stream or the merged one
-    bool true_for_merge_false_for_split = true;
     int frames_without_hdr_metadata_params = 0;
 
-    //storing the IR1,DEPTH1 && IR2, DEPTH2 && HDR frames
-    std::map<int, rs2::frame> render_frames;
-
-    while (app) // Application still alive?
+    std::map<int, std::pair<rs2::frame, frame_attributes>> frames_map;
+    //for initilize only - an empty frame 
+    rs2::frame frame;
+    frames_map[IR1] = std::pair<rs2::frame, frame_attributes>(frame, { 0,0,1,1 }); //{ 0,0,1,1 }
+    frames_map[IR2] = std::pair<rs2::frame, frame_attributes>(frame, { 1,0,1,1 }); //{ 0,1,1,1 }
+    frames_map[DEPTH1] = std::pair<rs2::frame, frame_attributes>(frame, { 0,1,1,1 }); //{ 1,0,1,1 }
+    frames_map[DEPTH2] = std::pair<rs2::frame, frame_attributes>(frame, { 1,1,1,1 }); //{ 1,1,1,1 }
+    frames_map[HDR] = std::pair<rs2::frame, frame_attributes>(frame, { 2,0,2,2 }); //{ 2,1,1,1 }
+    
+    while (app) // application is still alive
     {
             data = pipe.wait_for_frames() .    // Wait for next set of frames from the camera
             apply_filter(printer);     // Print each enabled stream frame rate
@@ -138,35 +144,17 @@ int main(int argc, char * argv[]) try
         std::cout << "frame hdr metadata: hdr_seq_id = "<< hdr_seq_id << ", exposure = " << exp << std::endl;
         // The show method, when applied on frameset, break it to frames and upload each frame into a gl textures
         // Each texture is displayed on different viewport according to it's stream unique id
-        if (true_for_merge_false_for_split)
-        {
-            // merging the frames from the different HDR sequence IDs 
-            auto merged_frameset = merging_filter.process(data). // merging frames with both hdr sequence IDs 
-                apply_filter(color_map);   // Find and colorize the depth data;
-            rs2_format format = merged_frameset.as<rs2::frameset>().get_depth_frame().get_profile().format();
-            std::cout << ", after merge format = " << rs2_format_to_string(format) << std::endl;
-            
-            //if (hdr_seq_id==1) {
-            //    std::cout << "hdr_seq_id = 1" << std::endl;
-            //}
-            //else {
-            //    std::cout << "hdr_seq_id = 0" << std::endl;
-            //}
+        // merging the frames from the different HDR sequence IDs 
+        auto merged_frameset = merging_filter.process(data). // merging frames with both hdr sequence IDs 
+            apply_filter(color_map);   // Find and colorize the depth data;
+        rs2_format format = merged_frameset.as<rs2::frameset>().get_depth_frame().get_profile().format();
+        std::cout << ", after merge format = " << rs2_format_to_string(format) << std::endl;
+        
+        frames_map[hdr_seq_id].first = data.get_infrared_frame();
+        frames_map[hdr_seq_id + hdr_seq_size].first = data.get_depth_frame().apply_filter(color_map);
+        frames_map[HDR].first = merged_frameset.as<rs2::frameset>().get_depth_frame().apply_filter(color_map);
 
-            render_frames[hdr_seq_id] = data.get_infrared_frame();
-            render_frames[hdr_seq_id + hdr_seq_size] = data.get_depth_frame().apply_filter(color_map);
-            render_frames[2*hdr_seq_size] = merged_frameset.as<rs2::frameset>().get_depth_frame().apply_filter(color_map);
-            
-            app.show(render_frames);
-
-        }
-        else
-        {
-            auto split_frameset = spliting_filter.process(data) . // getting frames only with the requested sequence ID
-                apply_filter(color_map);   // Find and colorize the depth data;
-            app.show(split_frameset);
-        }
-
+        app.show(frames_map);
     }
 
     return EXIT_SUCCESS;

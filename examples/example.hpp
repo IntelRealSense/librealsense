@@ -84,13 +84,21 @@ struct rect
     }
 };
 
+struct frame_attributes
+{
+    int x, y; //location of tile in the grid
+    int w, h; //number of tiles
+    int priority = 0; //when should the tile be drawn?: 0 is on top of all, -1 is a layer under top layer, -2 ... etc
+
+};
+
 //////////////////////////////
 // Simple font loading code //
 //////////////////////////////
 
 #include "../third-party/stb_easy_font.h"
 
-inline void draw_text(int x, int y, const char * text)
+inline void draw_text(int x, int y, const char* text)
 {
     char buffer[60000]; // ~300 chars //need to change to std::vector[60]
     glEnableClientState(GL_VERTEX_ARRAY);
@@ -488,7 +496,7 @@ public:
     std::function<void(int)>            on_key_release = [](int) {};
 
     window(int width, int height, const char* title)
-        : _width(width), _height(height)
+        : _width(width), _height(height), _canvas_left_top_x(0), _canvas_left_top_y(0), _canvas_width(width), _canvas_height(height)
     {
         glfwInit();
         win = glfwCreateWindow(width, height, title, nullptr, nullptr);
@@ -523,6 +531,57 @@ public:
                 s->on_key_release(key);
             }
         });
+    }
+
+    //another c'tor for adjusting canvas size (not the whole window) - is it okay? kind of copy-paste
+    window(int width, int height, const char* title, int tiles_in_row, int tiles_in_col, float canvas_width = 0.8,
+        float canvas_height = 0.6, float canvas_left_top_x=0, float canvas_left_top_y=0)
+        : _width(width), _height(height), _tiles_in_row(tiles_in_row), _tiles_in_col(tiles_in_col)
+        
+    {
+        //calculate canvas size
+        _canvas_width = _width * canvas_width;
+        _canvas_height = _height * canvas_height;
+        _canvas_left_top_x = _width * canvas_left_top_x;
+        _canvas_left_top_y = _height * canvas_left_top_y;
+
+        //calculate tile size
+        _tile_width = std::floor(0.9*(_canvas_width / _tiles_in_row));
+        _tile_height = std::floor(_canvas_height / _tiles_in_col);
+
+        glfwInit();
+        win = glfwCreateWindow(width, height, title, nullptr, nullptr);
+        if (!win)
+            throw std::runtime_error("Could not open OpenGL window, please check your graphic drivers or use the textual SDK tools");
+        glfwMakeContextCurrent(win);
+
+        glfwSetWindowUserPointer(win, this);
+        glfwSetMouseButtonCallback(win, [](GLFWwindow* w, int button, int action, int mods)
+            {
+                auto s = (window*)glfwGetWindowUserPointer(w);
+                if (button == 0) s->on_left_mouse(action == GLFW_PRESS);
+            });
+
+        glfwSetScrollCallback(win, [](GLFWwindow* w, double xoffset, double yoffset)
+            {
+                auto s = (window*)glfwGetWindowUserPointer(w);
+                s->on_mouse_scroll(xoffset, yoffset);
+            });
+
+        glfwSetCursorPosCallback(win, [](GLFWwindow* w, double x, double y)
+            {
+                auto s = (window*)glfwGetWindowUserPointer(w);
+                s->on_mouse_move(x, y);
+            });
+
+        glfwSetKeyCallback(win, [](GLFWwindow* w, int key, int scancode, int action, int mods)
+            {
+                auto s = (window*)glfwGetWindowUserPointer(w);
+                if (0 == action) // on key release
+                {
+                    s->on_key_release(key);
+                }
+            });
     }
 
     ~window()
@@ -588,7 +647,7 @@ public:
 
              float view_width = float(_width / cols);
              float view_height = float(_height / rows);
-             int stream_no =0;
+             int stream_no = 0;
              for (auto& frame : frames)
              {
                  rect viewport_loc{ view_width * (stream_no % cols), view_height * (stream_no / cols), view_width, view_height };
@@ -603,15 +662,107 @@ public:
          }
     }
 
+    void show(const std::map<int, std::pair<rs2::frame, frame_attributes>> frames)
+    {
+        // Render openGl mosaic of frames
+        if (frames.size())
+        {
+
+            // create vector of frames from map, and sort it by priority
+            std::vector <std::pair<rs2::frame, frame_attributes>> vector_frames;
+            //copy: map -> vector
+            for (auto frame : frames) { vector_frames.push_back(frame.second); }
+            //sort in ascending order of the priority
+            std::sort(vector_frames.begin(), vector_frames.end(),
+                [](std::pair<rs2::frame, frame_attributes> frame1, std::pair<rs2::frame, frame_attributes> frame2)
+                {
+                    return frame1.second.priority < frame2.second.priority; 
+                });
+
+            //iterate over frames in ascending priority order (so that lower priority frame is drawn first, and can be over-written by higher priority frame )
+            for (auto& frame : vector_frames)
+            {
+                frame_attributes attr = frame.second;
+                rect viewport_loc{ _tile_width * attr.x + _canvas_left_top_x, _tile_height * attr.y + _canvas_left_top_y, _tile_width * attr.w,
+                                   _tile_height * attr.h };
+                show(frame.first, viewport_loc);
+            }
+        }
+        else
+        {
+            _main_win.put_text("Connect one or more Intel RealSense devices and rerun the example",
+                0.4f, 0.5f, { 0.f,0.f, float(_width) , float(_height) });
+        }
+    }
+
+    /*
+    void show_dynamic_canvas(const std::map<int, rs2::frame> frames)
+    {
+        // Render openGl mosaic of frames
+        if (frames.size())
+        {
+            int cols = int(std::ceil(std::sqrt(frames.size())));
+            int rows = int(std::ceil(frames.size() / static_cast<float>(cols)));
+
+            float view_width = float(_canvas_w / cols);
+            float view_height = float(_canvas_h / rows);
+            int stream_no = 0;
+            int x_offset = _is_splitted ? _width / 2 : 0;
+
+            for (auto& frame : frames)
+            {
+                rect viewport_loc{ view_width * (stream_no % cols) + _canvas_x, view_height * (stream_no / cols) + _canvas_y, view_width, view_height };
+                //rect viewport_loc{ view_width * (stream_no % cols) + x_offset, view_height * (stream_no / cols), view_width, view_height };
+                show(frame.second, viewport_loc);
+                stream_no++;
+            }
+
+        }
+        else
+        {
+            _main_win.put_text("Connect one or more Intel RealSense devices and rerun the example",
+                0.4f, 0.5f, { 0.f,0.f, float(_width) , float(_height) });
+        }
+    }
+    */
+    /*
+    void configure_mosaike(int left_top_x, int left_top_y, int left_bottom_x, int left_bottom_y, int number_tiles_in_row, int number_tiles_in_col){
+        _canvas_left_top_x = left_top_x;
+        _canvas_left_top_y = left_top_y;
+        _canvas_right_bottom_x = left_bottom_x;
+        _canvas_right_bottom_y = left_bottom_y;
+        _number_tiles_in_row = number_tiles_in_row;
+        _number_tiles_in_col = number_tiles_in_col;
+
+        //hold data structure to represent tile - (maybe vector of vectors or map where the key is tuple (x,y) of the tile's location )
+
+    }
+    */
+    /*
+    //override to show?
+    //put params in struct - (x,y) & size of frame
+    void show_in_tiles(rs2::frame frame, int start_row_tile, int start_col_tile, int numer_of_tiles_in_row=1, int numer_of_tiles_in_col=1) {
+        //some logic to calculate 
+        int tile_width;
+        int tile_height;
+        int start_tile_x;
+        int start_tile_y;
+
+        show(frame, { 0, 0, (float)_width, (float)_height });
+    }*/
+
     operator GLFWwindow*() { return win; }
 
-private:
+private: 
     GLFWwindow * win;
     std::map<int, texture> _textures;
     std::map<int, imu_renderer> _imus;
     std::map<int, pose_renderer> _poses;
     text_renderer   _main_win;
     int _width, _height;
+    int _canvas_left_top_x, _canvas_left_top_y, _canvas_width, _canvas_height;
+    int _tiles_in_row, _tiles_in_col;
+    float _tile_width, _tile_height;
 
     void render_video_frame(const rs2::video_frame& f, const rect& r)
     {
