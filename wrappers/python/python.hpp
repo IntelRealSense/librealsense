@@ -186,6 +186,7 @@ template<template<rs2_format> class F>
     case RS2_FORMAT_INZI: return F<RS2_FORMAT_INZI>::func();
     case RS2_FORMAT_INVI: return F<RS2_FORMAT_INVI>::func();
     case RS2_FORMAT_W10: return F<RS2_FORMAT_W10>::func();
+    case RS2_FORMAT_FG: return F<RS2_FORMAT_FG>::func();
     // c++11 standard doesn't allow throw in constexpr function switch case
     case RS2_FORMAT_COUNT: throw std::runtime_error("format.count is not a valid value for arguments of type format!");
     default: return F<RS2_FORMAT_ANY>::func();
