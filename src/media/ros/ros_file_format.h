@@ -73,16 +73,42 @@ namespace librealsense
     inline bool convert(const std::string& source, rs2_format& target)
     {
         bool ret = true;
-        if (source == sensor_msgs::image_encodings::MONO16)     target = RS2_FORMAT_Z16;
+        std::string source_alias("");
+        bool source_alias_assignement = false;
+        if (source == sensor_msgs::image_encodings::MONO16) {
+            target = RS2_FORMAT_Z16;
+            source_alias_assignement = true;
+        }
+        if (source == sensor_msgs::image_encodings::TYPE_8UC1) {
+            target = RS2_FORMAT_Y8;
+            source_alias_assignement = true;
+        }
+        if (source == sensor_msgs::image_encodings::TYPE_16UC1) {
+            target = RS2_FORMAT_Y16;
+            source_alias_assignement = true;
+        }
+        if (source == sensor_msgs::image_encodings::MONO8) {
+            target = RS2_FORMAT_RAW8;
+            source_alias_assignement = true;
+        }
+        if (source == sensor_msgs::image_encodings::YUV422) {
+            target = RS2_FORMAT_UYVY;
+            source_alias_assignement = true;
+        }
         if (source == sensor_msgs::image_encodings::RGB8)       target = RS2_FORMAT_RGB8;
         if (source == sensor_msgs::image_encodings::BGR8)       target = RS2_FORMAT_BGR8;
         if (source == sensor_msgs::image_encodings::RGBA8)      target = RS2_FORMAT_RGBA8;
         if (source == sensor_msgs::image_encodings::BGRA8)      target = RS2_FORMAT_BGRA8;
-        if (source == sensor_msgs::image_encodings::TYPE_8UC1)  target = RS2_FORMAT_Y8;
-        if (source == sensor_msgs::image_encodings::TYPE_16UC1) target = RS2_FORMAT_Y16;
-        if (source == sensor_msgs::image_encodings::MONO8)      target = RS2_FORMAT_RAW8;
-        if (source == sensor_msgs::image_encodings::YUV422)     target = RS2_FORMAT_UYVY;
-        if (!(ret = try_parse(source, target)))
+        
+        if (source_alias_assignement)
+            source_alias = std::string(rs2_format_to_string(target));
+        else {
+            std::string source_upper(source);
+            std::transform(source_upper.begin(), source_upper.end(), source_upper.begin(), ::toupper);
+            source_alias = source_upper;
+        }
+        
+        if (!(ret = try_parse(source_alias, target)))
         {
             LOG_INFO("Failed to convert source: " << source << " to matching rs2_format");
         }
