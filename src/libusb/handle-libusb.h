@@ -123,7 +123,7 @@ namespace librealsense
                 {
                     for(auto&& i : interface->get_associated_interfaces())
                         libusb_release_interface(_handle, i->get_number());
-                    libusb_release_interface(interface->get_number());
+                    libusb_release_interface(_handle, interface->get_number());
                 }
                     
                 libusb_device_handle* _handle;
