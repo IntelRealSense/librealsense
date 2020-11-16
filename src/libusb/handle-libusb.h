@@ -91,7 +91,7 @@ namespace librealsense
                     } while (0);
                     
                     uninit(interface);
-                    throw std::runtime_error(to_string() << "Unable to claim interface " << failed_interface << ", error: " << usb_status_to_string.at(rs_sts));
+                    throw std::runtime_error(to_string() << "Unable to claim interface " << failed_interface << ", error: " << usb_status_to_string.at(status));
                 }
 
                 operator libusb_device_handle* () const
