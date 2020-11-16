@@ -1729,6 +1729,42 @@ namespace rs2
         calculate_ncc();
 
         _corners_found = find_corners();
+
+        if (_corners_found)
+        {
+            uint8_t peaks[4] = { 0 };
+            int idx = 0;
+            int x = 0;
+            int y = 0;
+            for (int i = 0; i < 4; ++i)
+            {
+                y = static_cast<int>(_corners[_corners_idx][i].y + 0.5f);
+                x = static_cast<int>(_corners[_corners_idx][i].x + 0.5f);
+                idx = y * _width + x;
+                peaks[i] = img[idx];
+            }
+
+            static const int peak_diff_thresh = 12;
+            bool ok = true;
+            for (int j = 0; j < 4; ++j)
+            {
+                for (int i = 0; i < 4; ++i)
+                {
+                    if (abs(peaks[i] - peaks[j]) > peak_diff_thresh)
+                    {
+                        ok = false;
+                        break;
+                    }
+
+                    if (!ok)
+                        break;
+                }
+            }
+
+            if (!ok)
+                _corners_found = false;
+        }
+
         return smooth_corner_locations(ground_truth);
     }
 
@@ -1844,6 +1880,8 @@ namespace rs2
 
     bool tare_ground_truth_calculator::find_corners()
     {
+        static const int edge = 18;
+
         // upper left
         _pts[0].x = 0;
         _pts[0].y = 0;
@@ -1865,7 +1903,7 @@ namespace rs2
             p += _hwidth;
         }
 
-        if (peak < _thresh)
+        if (peak < _thresh || _pts[0].x < edge || _pts[0].y < edge)
             return false;
 
         // upper right
@@ -1889,7 +1927,7 @@ namespace rs2
             p += _htsize;
         }
 
-        if (peak < _thresh)
+        if (peak < _thresh || _pts[1].x + edge > _width || _pts[1].y < edge || _pts[1].x - _pts[0].x < edge)
             return false;
 
         // lower left
@@ -1913,7 +1951,7 @@ namespace rs2
             p += _hwidth;
         }
 
-        if (peak < _thresh)
+        if (peak < _thresh || _pts[2].x < edge || _pts[2].y + edge > _height || _pts[2].y - _pts[1].y < edge)
             return false;
 
         // lower right
@@ -1937,13 +1975,11 @@ namespace rs2
             p += _htsize;
         }
 
-        if (peak >= _thresh)
-        {
-            refine_corners();
-            return true;
-        }
+        if (peak < _thresh || _pts[3].x + edge > _width || _pts[3].y + edge > _height || _pts[3].x - _pts[2].x < edge || _pts[3].y - _pts[1].y < edge)
+            return false;
 
-        return false;
+        refine_corners();
+        return true;
     }
 
     void tare_ground_truth_calculator::refine_corners()
