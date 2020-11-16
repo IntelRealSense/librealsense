@@ -281,7 +281,7 @@ if pyrs:
         if linux:
             cmd = ["python3", test_path]
         else:
-            cmd = ["py","-3",test_path]
+            cmd = ["py","-3", test_path]
         try:
             run( cmd, stdout=log )
         except FileNotFoundError:
@@ -290,6 +290,7 @@ if pyrs:
         except subprocess.CalledProcessError as cpe:
             if not check_log_for_fails(log, testname, py_test):
                 # An unexpected error occurred
+                cat(log)
                 error(red + testname + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')')
 
 progress()

@@ -7,7 +7,7 @@ test.set_env_vars({"RS2_AC_DISABLE_CONDITIONS":"0",
 
 # rs.log_to_file( rs.log_severity.debug, "rs.log" )
 
-dev = test.get_first_device_or_exit()
+dev = test.find_first_device_or_exit()
 depth_sensor = dev.first_depth_sensor()
 color_sensor = dev.first_color_sensor()
 
