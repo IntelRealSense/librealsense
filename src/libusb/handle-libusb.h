@@ -133,7 +133,7 @@ namespace librealsense
             handle_libusb(std::shared_ptr<usb_context> context, libusb_device* device, std::shared_ptr<usb_interface_libusb> interface) :
                     _handle(device), _context(context)
             {
-                _handle.init(interface)
+                _handle.init(interface);
                 _context->start_event_handler();
             }
 
