@@ -49,7 +49,7 @@ namespace librealsense
                     {
                         auto rs_sts =  libusb_status_to_rs(sts);
                         std::stringstream msg;
-                        msg << "failed to open usb interface: " << (int)interface->get_number() << ", error: " << usb_status_to_string.at(rs_sts);
+                        msg << "failed to open usb interface, error: " << usb_status_to_string.at(rs_sts);
                         LOG_ERROR(msg.str());
                         throw std::runtime_error(msg.str());
                     }
