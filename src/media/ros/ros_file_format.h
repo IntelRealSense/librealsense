@@ -74,38 +74,41 @@ namespace librealsense
     {
         bool ret = true;
         std::string source_alias("");
-        bool source_alias_assignement = false;
+        bool mapped_format = false;
         if (source == sensor_msgs::image_encodings::MONO16) {
             target = RS2_FORMAT_Z16;
-            source_alias_assignement = true;
+            mapped_format = true;
         }
         if (source == sensor_msgs::image_encodings::TYPE_8UC1) {
             target = RS2_FORMAT_Y8;
-            source_alias_assignement = true;
+            mapped_format = true;
         }
         if (source == sensor_msgs::image_encodings::TYPE_16UC1) {
             target = RS2_FORMAT_Y16;
-            source_alias_assignement = true;
+            mapped_format = true;
         }
         if (source == sensor_msgs::image_encodings::MONO8) {
             target = RS2_FORMAT_RAW8;
-            source_alias_assignement = true;
+            mapped_format = true;
         }
         if (source == sensor_msgs::image_encodings::YUV422) {
             target = RS2_FORMAT_UYVY;
-            source_alias_assignement = true;
+            mapped_format = true;
         }
         if (source == sensor_msgs::image_encodings::RGB8)       target = RS2_FORMAT_RGB8;
         if (source == sensor_msgs::image_encodings::BGR8)       target = RS2_FORMAT_BGR8;
         if (source == sensor_msgs::image_encodings::RGBA8)      target = RS2_FORMAT_RGBA8;
         if (source == sensor_msgs::image_encodings::BGRA8)      target = RS2_FORMAT_BGRA8;
         
-        if (source_alias_assignement)
+        // formats that need to be mapped to sdk native formats (e.g. MONO16)
+        if (mapped_format)
             source_alias = std::string(rs2_format_to_string(target));
         else {
-            std::string source_upper(source);
-            std::transform(source_upper.begin(), source_upper.end(), source_upper.begin(), ::toupper);
-            source_alias = source_upper;
+            // formats that are same as the sdk native formats (e.g.rgb8), 
+            // these need to be changed to upper case
+            // because values in sensor_msgs::image_encodings are lower case
+            source_alias = source;
+            std::transform(source_alias.begin(), source_alias.end(), source_alias.begin(), ::toupper);
         }
         
         if (!(ret = try_parse(source_alias, target)))
