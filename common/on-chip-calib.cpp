@@ -1880,7 +1880,7 @@ namespace rs2
 
     bool tare_ground_truth_calculator::find_corners()
     {
-        static const int edge = 18;
+        static const int edge = 20;
 
         // upper left
         _pts[0].x = 0;
