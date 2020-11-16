@@ -5,7 +5,7 @@ import pyrealsense2 as rs, test, ac
 test.set_env_vars({"RS2_AC_DISABLE_CONDITIONS":"1",
                    "RS2_AC_DISABLE_RETRIES":"1",
                    "RS2_AC_FORCE_BAD_RESULT":"1",
-                   "LOG_TO_STDOUT":"1"
+                   "RS2_AC_LOG_TO_STDOUT":"1"
                    })
 
 # rs.log_to_file( rs.log_severity.debug, "rs.log" )
@@ -40,55 +40,68 @@ dp = next(p for p in
 # This variable controls how many calibrations we do while testing for frame drops
 n_cal = 5
 # Variables for saving the previous color frame number and previous depth frame number
-pcf_num = -1
-pdf_num = -1
+previous_color_frame_number = -1
+previous_depth_frame_number = -1
 
 # Functions that assert that each frame we receive has the frame number following the previous frame number
-def check_next_cf(frame):
-    global pcf_num
-    cf_num = frame.get_frame_number()
-    if pcf_num != -1:
-        # print("pre: " + str(pcf_num) + " ,cur: " + str(cf_num))
-        test.check_equal(pcf_num + 1, cf_num)
-    pcf_num = cf_num
+def color_frame_call_back(frame):
+    global previous_color_frame_number
+    frame_number = frame.get_frame_number()
+    if previous_color_frame_number != -1:
+        dropped_frames = frame_number - previous_color_frame_number + 1
+        if dropped_frames == 1:
+            print("Color frame number", previous_color_frame_number + 1, "was dropped")
+            test.fail()
+        if dropped_frames > 1:
+            print("Color frames", previous_color_frame_number + 1, "-", frame_number - 1, "were dropped")
+            test.fail()
+    previous_color_frame_number = frame_number
 
-def check_next_df(frame):
-    global pdf_num
-    cf_num = frame.get_frame_number()
-    if pdf_num != -1:
-        # print("pre: " + str(pdf_num) + " ,cur: " + str(cf_num))
-        test.check_equal(pdf_num + 1, cf_num)
-    pdf_num = cf_num
+def depth_frame_call_back(frame):
+    global previous_depth_frame_number
+    frame_number = frame.get_frame_number()
+    if previous_depth_frame_number != -1:
+        dropped_frames = frame_number - previous_depth_frame_number + 1
+        if dropped_frames == 1:
+            print("Depth frame number", previous_depth_frame_number + 1, "was dropped")
+            test.fail()
+        if dropped_frames > 1:
+            print("Depth frames", previous_depth_frame_number + 1, "-", frame_number - 1, "were dropped")
+            test.fail()
+    previous_depth_frame_number = frame_number
 
 depth_sensor.open( dp )
-depth_sensor.start( check_next_df )
+depth_sensor.start( depth_frame_call_back )
 color_sensor.open( cp )
-color_sensor.start( check_next_cf )
+color_sensor.start( color_frame_call_back )
 
 #############################################################################################
 # Test #1
-test.start("Checking for frame drops in " + str(n_cal) + " calibrations")
+test.start("Checking for frame drops in", n_cal, "calibrations")
 for i in range(n_cal):
     try:
         d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
         ac.wait_for_calibration()
     except:
-        continue
+        test.check_no_exception()
 test.finish()
 
 #############################################################################################
 # Test #2
 test.start("Checking for frame drops in a failed calibration")
 ac.reset_status_list()
-d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
 try:
     d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
-    ac.wait_for_calibration()
-except Exception as e: # Second trigger should throw exception
-    test.check_exception(e, RuntimeError, "Camera Accuracy Health is already active")
-else:
-    test.check_no_reach()
-ac.wait_for_calibration() # First trigger should continue and finish successfully
+    try:
+        d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
+        ac.wait_for_calibration()
+    except Exception as e: # Second trigger should throw exception
+        test.check_exception(e, RuntimeError, "Camera Accuracy Health is already active")
+    else:
+        test.check_no_exception()
+    ac.wait_for_calibration() # First trigger should continue and finish successfully
+except:
+    test.check_no_exception()
 test.finish()
 
 #############################################################################################

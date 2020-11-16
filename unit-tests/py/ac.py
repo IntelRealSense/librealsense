@@ -4,7 +4,7 @@ from time import sleep
 status_list = []
 
 # Functions for using status list
-def status_list_empty():
+def status_list_is_empty():
     global status_list
     return not status_list
 
@@ -21,6 +21,7 @@ def status_list_callback( status ):
 def trim_irrelevant_statuses(irrelevant_statuses):
     global status_list
     for irrelevant_status in irrelevant_statuses:
+        # Each status could appear multiple times in the status list, we remove all appearances
         while irrelevant_status in status_list:
             status_list.remove(irrelevant_status)
 

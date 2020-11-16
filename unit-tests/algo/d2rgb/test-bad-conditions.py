@@ -2,7 +2,7 @@ import pyrealsense2 as rs, test, ac
 
 # We set the environment variables to suit this test
 test.set_env_vars({"RS2_AC_DISABLE_CONDITIONS":"0",
-                   "LOG_TO_STDOUT":"1"
+                   "RS2_AC_LOG_TO_STDOUT":"1"
                    })
 
 # rs.log_to_file( rs.log_severity.debug, "rs.log" )
@@ -34,15 +34,17 @@ color_sensor.start( lambda f: None )
 
 #############################################################################################
 test.start("Failing check_conditions function")
+# If ambient light is RS2_DIGITAL_GAIN_LOW (2) receiver_gain must be 18
 depth_sensor.set_option(rs.option.ambient_light, 2)
 depth_sensor.set_option(rs.option.receiver_gain, 15)
 try:
     d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
+    test.check_not_reached()
     ac.wait_for_calibration()
 except Exception as e:
     test.check_exception(e, RuntimeError)
 else:
-    test.check_no_reach()
+    test.check_no_exception()
 test.check_equal_lists(ac.status_list, [rs.calibration_status.bad_conditions])
 test.finish()
 #############################################################################################

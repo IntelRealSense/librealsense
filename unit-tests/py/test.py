@@ -1,6 +1,6 @@
 # This module is for formatting and writing unit-tests in python. The general format is as follows
 # 1. Use start to start a test and give it, as an argument, the name of the test
-# 2. Use whatever check functions are relevant to test the program run against the expected program run
+# 2. Use whatever check functions are relevant to test the run
 # 3. Use finish to signal the end of the test
 # 4. Repeat stages 1-3 as the number of tests you want to run in the file
 # 5. Use print_results_and_exit to print the number of tests and assertions that passed/failed in the correct format
@@ -54,74 +54,96 @@ def check_failed():
     n_failed_assertions += 1
     test_failed = True
 
-def abort_test():
-    print("Abort was specified in a failed check. Aborting test")
+def abort():
+    print("A was specified in a failed check. Aborting test")
     exit(1)
 
 # Receive an expression which is an assertion. If false the assertion failed.
-def check(exp, abort = False):
+def check(exp, abort_if_failed = False):
     global n_assertions
     n_assertions += 1
     if not exp:
-        print("Check failed, received", end = " ")
-        print(exp)
+        print("Check failed, received", exp)
         check_failed()
         print_stack()
-        if abort:
-            abort_test()
-
+        if abort_if_failed:
+            abort()
+        return False
+    return True
 
 # Receives the resulted value and the expected value and asserts they are equal
-def check_equal(result, expected, abort = False):
+def check_equal(result, expected, abort_if_failed = False):
     check(type(expected) != list)
     global n_assertions
     n_assertions += 1
-    if not result == expected:
-        print("Result was: " + result + "\nBut we expected: " + expected)
+    if result != expected:
+        print("Result was:" + result + "\nBut we expected: " + expected)
         check_failed()
         print_stack()
-        if abort:
-            abort_test()
+        if abort_if_failed:
+            abort()
+        return False
+    return True
 
 # This function should never be reached
-def check_not_reached( abort = False ):
-    check(False, abort)
+def check_not_reached( abort_if_failed = False ):
+    check(False, abort_if_failed)
+
+# This function should be put in except blocks that should not be reached.
+# It's different from check_not_reached because it expects to be in an except block and prints the stack of the error
+# and not the call-stack for this function
+def check_no_exception( abort_if_failed = False ):
+    global n_assertions
+    n_assertions += 1
+    check_failed()
+    traceback.print_exc( file = sys.stdout )
+    if abort_if_failed:
+        abort()
+        return False
+    return True
 
 # Receives 2 lists and asserts they are identical. python "equality" (using ==) requires same length & elements
 # but not necessarily same ordering. Here we require exactly the same, including ordering.
-def check_equal_lists(result, expected, abort = False):
+def check_equal_lists(result, expected, abort_if_failed = False):
     global n_assertions
     n_assertions += 1
     failed = False
-    if not len(result) == len(expected):
+    if len(result) != len(expected):
         failed = True
         print("Check equal lists failed due to lists of different sizes:")
-        print("The resulted list has " + str(len(result)) + " elements, but the expected list has " + str(len(expected)) + " elements")
+        print("The resulted list has", len(result), "elements, but the expected list has", len(expected), "elements")
     i = 0
     for res, exp in zip(result, expected):
-        if not res == exp:
+        if res != exp:
             failed = True
             print("Check equal lists failed due to unequal elements:")
-            print("The element of index " + str(i) + " in both lists was not equal")
+            print("The element of index", i, "in both lists was not equal")
         i += 1
     if failed:
-        print("Result list:", end = ' ')
-        print(result)
-        print("Expected list:", end = ' ')
-        print(expected)
+        print("Result list:", result)
+        print("Expected list:", expected)
         check_failed()
         print_stack()
-        if abort:
-            abort_test()
+        if abort_if_failed:
+            abort()
+        return False
+    return True
 
 # Receives an exception and asserts its type and message is as expected. This function is called with a caught exception,
-def check_exception(exception, expected_type, expected_msg = None, abort = False):
-    check_equal(type(exception), expected_type, abort)
+def check_exception(exception, expected_type, expected_msg = None, abort_if_failed = False):
+    check_equal(type(exception), expected_type, abort_if_failed)
     if expected_msg:
-        check_equal(str(exception), expected_msg, abort)
+        check_equal(str(exception), expected_msg, abort_if_failed)
+
+# Function for manually failing a test
+def fail():
+    global test_in_progress, n_failed_tests, test_failed
+    if test_in_progress and not test_failed:
+        n_failed_tests += 1
+        test_failed = True
 
 # Functions for formatting test cases
-def start(test_name = "Test started"):
+def start(test_name):
     global n_tests, test_failed, test_in_progress
     if test_in_progress:
         print("Tried to start test before previous test finished. Aborting test")
@@ -141,16 +163,16 @@ def finish():
         print("Test failed")
     else:
         print("Test passed")
-    print("\n")
+    print()
     test_in_progress = False
 
 # The format has to agree with the expected format in check_log() in run-unit-tests and with the C++ format using Catch
 def print_results_and_exit():
     global n_assertions, n_tests, n_failed_assertions, n_failed_tests
     if n_failed_assertions:
-        passed = str(n_assertions - n_failed_assertions)
-        print("test cases: " + str(n_tests) + " | " + str(n_failed_tests) + " failed")
-        print("assertions: " + str(n_assertions) + " | " + passed + " passed | " + str(n_failed_assertions) + " failed")
+        passed = n_assertions - n_failed_assertions
+        print("test cases:", n_tests, "|" , n_failed_tests,  "failed")
+        print("assertions:", n_assertions, "|", passed, "passed |", n_failed_assertions, "failed")
         exit(1)
     print("All tests passed (" + str(n_assertions) + " assertions in " + str(n_tests) + " test cases)")
     exit(0)

@@ -4,7 +4,7 @@ import pyrealsense2 as rs, test, ac
 test.set_env_vars({"RS2_AC_DISABLE_CONDITIONS":"1",
                    "RS2_AC_DISABLE_RETRIES":"1",
                    "RS2_AC_FORCE_BAD_RESULT":"1",
-                   "LOG_TO_STDOUT":"1"
+                   "RS2_AC_LOG_TO_STDOUT":"1"
                    #,"RS2_AC_IGNORE_LIMITERS":"1"
                    })
 
@@ -57,8 +57,8 @@ try:
 except Exception as e:
     test.check_exception(e, RuntimeError, "not streaming")
 else:
-    test.check_no_reach() # No error Occurred, should have received a RuntimeError
-test.check(ac.status_list_empty()) # No status changes are expected, list should remain empty
+    test.check_no_exception() # No error Occurred, should have received a RuntimeError
+test.check(ac.status_list_is_empty()) # No status changes are expected, list should remain empty
 test.finish()
 
 #############################################################################################
@@ -73,7 +73,7 @@ try:
     ac.trim_irrelevant_statuses(irrelevant_statuses)
     test.check_equal_lists(ac.status_list, successful_calibration_status_list)
 except Exception:
-    test.check_no_reach()
+    test.check_no_exception()
 try:
     # Since the sensor was closed before calibration started, it should have been returned to a 
     # closed state
@@ -81,7 +81,7 @@ try:
 except Exception as e:
     test.check_exception(e, RuntimeError, "tried to stop sensor without starting it")
 else:
-    test.check_no_reach()
+    test.check_no_exception()
 test.finish()
 
 #############################################################################################
@@ -95,13 +95,13 @@ try:
     ac.wait_for_calibration()
     ac.trim_irrelevant_statuses(irrelevant_statuses)
     test.check_equal_lists(ac.status_list, successful_calibration_status_list)
-except Exception:
-    check_no_reach()
+except:
+    test.check_no_exception()
 try:
     # This time the color sensor was on before calibration so it should remain on at the end
     color_sensor.stop() 
-except Exception:
-    test.check_no_reach()
+except:
+    test.check_no_exception()
 test.finish()
 
 #############################################################################################
@@ -109,17 +109,20 @@ test.finish()
 test.start("2 AC triggers in a row")
 ac.reset_status_list()
 color_sensor.start( lambda f: None )
-d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
 try:
     d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
-    ac.wait_for_calibration()
-except Exception as e: # Second trigger should throw exception
-    test.check_exception(e, RuntimeError, "Camera Accuracy Health is already active")
-else:
-    test.check_no_reach()
-ac.wait_for_calibration() # First trigger should continue and finish successfully
-ac.trim_irrelevant_statuses(irrelevant_statuses)
-test.check_equal_lists(ac.status_list, successful_calibration_status_list)
+    try:
+        d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
+        ac.wait_for_calibration()
+    except Exception as e: # Second trigger should throw exception
+        test.check_exception(e, RuntimeError, "Camera Accuracy Health is already active")
+    else:
+        test.check_no_exception()
+    ac.wait_for_calibration() # First trigger should continue and finish successfully
+    ac.trim_irrelevant_statuses(irrelevant_statuses)
+    test.check_equal_lists(ac.status_list, successful_calibration_status_list)
+except:
+    test.check_no_exception()
 test.finish()
 
 #############################################################################################
