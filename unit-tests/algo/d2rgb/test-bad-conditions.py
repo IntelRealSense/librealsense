@@ -39,12 +39,12 @@ depth_sensor.set_option(rs.option.ambient_light, 2)
 depth_sensor.set_option(rs.option.receiver_gain, 15)
 try:
     d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
-    test.check_not_reached()
+    test.unreachable()
     ac.wait_for_calibration()
 except Exception as e:
     test.check_exception(e, RuntimeError)
 else:
-    test.check_no_exception()
+    test.unexpected_exception()
 test.check_equal_lists(ac.status_list, [rs.calibration_status.bad_conditions])
 test.finish()
 #############################################################################################

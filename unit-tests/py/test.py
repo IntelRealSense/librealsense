@@ -55,7 +55,7 @@ def check_failed():
     test_failed = True
 
 def abort():
-    print("A was specified in a failed check. Aborting test")
+    print("Abort was specified in a failed check. Aborting test")
     exit(1)
 
 # Receive an expression which is an assertion. If false the assertion failed.
@@ -86,13 +86,13 @@ def check_equal(result, expected, abort_if_failed = False):
     return True
 
 # This function should never be reached
-def check_not_reached( abort_if_failed = False ):
+def unreachable( abort_if_failed = False ):
     check(False, abort_if_failed)
 
 # This function should be put in except blocks that should not be reached.
-# It's different from check_not_reached because it expects to be in an except block and prints the stack of the error
+# It's different from unreachable because it expects to be in an except block and prints the stack of the error
 # and not the call-stack for this function
-def check_no_exception( abort_if_failed = False ):
+def unexpected_exception( abort_if_failed = False ):
     global n_assertions
     n_assertions += 1
     check_failed()
@@ -136,7 +136,9 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
 # Function for manually failing a test
 def fail():
     global test_in_progress, n_failed_tests, test_failed
-    if test_in_progress and not test_failed:
+    if not test_in_progress:
+        raise RuntimeError("Tried to fail a test with no test running")
+    if not test_failed:
         n_failed_tests += 1
         test_failed = True
 
@@ -144,8 +146,7 @@ def fail():
 def start(test_name):
     global n_tests, test_failed, test_in_progress
     if test_in_progress:
-        print("Tried to start test before previous test finished. Aborting test")
-        exit(1)
+        raise RuntimeError("Tried to start test before previous test finished. Aborting test")
     n_tests += 1
     test_failed = False
     test_in_progress = True
@@ -154,8 +155,7 @@ def start(test_name):
 def finish():
     global test_failed, n_failed_tests, test_in_progress
     if not test_in_progress:
-        print("Tried to finish a test without starting one")
-        return
+        raise RuntimeError("Tried to finish a test without starting one")
     if test_failed:
         n_failed_tests += 1
         print("Test failed")

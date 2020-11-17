@@ -57,7 +57,7 @@ try:
 except Exception as e:
     test.check_exception(e, RuntimeError, "not streaming")
 else:
-    test.check_no_exception() # No error Occurred, should have received a RuntimeError
+    test.unexpected_exception() # No error Occurred, should have received a RuntimeError
 test.check(ac.status_list_is_empty()) # No status changes are expected, list should remain empty
 test.finish()
 
@@ -73,7 +73,7 @@ try:
     ac.trim_irrelevant_statuses(irrelevant_statuses)
     test.check_equal_lists(ac.status_list, successful_calibration_status_list)
 except Exception:
-    test.check_no_exception()
+    test.unexpected_exception()
 try:
     # Since the sensor was closed before calibration started, it should have been returned to a 
     # closed state
@@ -81,7 +81,7 @@ try:
 except Exception as e:
     test.check_exception(e, RuntimeError, "tried to stop sensor without starting it")
 else:
-    test.check_no_exception()
+    test.unexpected_exception()
 test.finish()
 
 #############################################################################################
@@ -96,12 +96,12 @@ try:
     ac.trim_irrelevant_statuses(irrelevant_statuses)
     test.check_equal_lists(ac.status_list, successful_calibration_status_list)
 except:
-    test.check_no_exception()
+    test.unexpected_exception()
 try:
     # This time the color sensor was on before calibration so it should remain on at the end
     color_sensor.stop() 
 except:
-    test.check_no_exception()
+    test.unexpected_exception()
 test.finish()
 
 #############################################################################################
@@ -117,12 +117,12 @@ try:
     except Exception as e: # Second trigger should throw exception
         test.check_exception(e, RuntimeError, "Camera Accuracy Health is already active")
     else:
-        test.check_no_exception()
+        test.unexpected_exception()
     ac.wait_for_calibration() # First trigger should continue and finish successfully
     ac.trim_irrelevant_statuses(irrelevant_statuses)
     test.check_equal_lists(ac.status_list, successful_calibration_status_list)
 except:
-    test.check_no_exception()
+    test.unexpected_exception()
 test.finish()
 
 #############################################################################################

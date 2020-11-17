@@ -48,12 +48,13 @@ def color_frame_call_back(frame):
     global previous_color_frame_number
     frame_number = frame.get_frame_number()
     if previous_color_frame_number != -1:
-        dropped_frames = frame_number - previous_color_frame_number + 1
-        if dropped_frames == 1:
-            print("Color frame number", previous_color_frame_number + 1, "was dropped")
+        dropped_frames = frame_number - ( previous_color_frame_number + 1 ) # should be 0
+        if dropped_frames > 0:
+            print(dropped_frames, "color frame(s) starting from frame", previous_color_frame_number + 1, "were dropped")
             test.fail()
-        if dropped_frames > 1:
-            print("Color frames", previous_color_frame_number + 1, "-", frame_number - 1, "were dropped")
+        if dropped_frames < 0:
+            print("Color frames repeated or out of order. Got frame", frame_number, "after frame",
+                  previous_color_frame_number)
             test.fail()
     previous_color_frame_number = frame_number
 
@@ -61,12 +62,13 @@ def depth_frame_call_back(frame):
     global previous_depth_frame_number
     frame_number = frame.get_frame_number()
     if previous_depth_frame_number != -1:
-        dropped_frames = frame_number - previous_depth_frame_number + 1
-        if dropped_frames == 1:
-            print("Depth frame number", previous_depth_frame_number + 1, "was dropped")
+        dropped_frames = frame_number - (previous_depth_frame_number + 1)  # should be 0
+        if dropped_frames > 0:
+            print(dropped_frames, "depth frame(s) starting from frame", previous_depth_frame_number + 1, "were dropped")
             test.fail()
-        if dropped_frames > 1:
-            print("Depth frames", previous_depth_frame_number + 1, "-", frame_number - 1, "were dropped")
+        if dropped_frames < 0:
+            print("Depth frames repeated or out of order. Got frame", frame_number, "after frame",
+                  previous_depth_frame_number)
             test.fail()
     previous_depth_frame_number = frame_number
 
@@ -83,7 +85,7 @@ for i in range(n_cal):
         d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
         ac.wait_for_calibration()
     except:
-        test.check_no_exception()
+        test.unexpected_exception()
 test.finish()
 
 #############################################################################################
@@ -98,10 +100,10 @@ try:
     except Exception as e: # Second trigger should throw exception
         test.check_exception(e, RuntimeError, "Camera Accuracy Health is already active")
     else:
-        test.check_no_exception()
+        test.unexpected_exception()
     ac.wait_for_calibration() # First trigger should continue and finish successfully
 except:
-    test.check_no_exception()
+    test.unexpected_exception()
 test.finish()
 
 #############################################################################################
