@@ -2,9 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "../test.h"
-#include "../include/librealsense2/rs.hpp"
-#include "../include/librealsense2/hpp/rs_context.hpp"
-#include "../include/librealsense2/hpp/rs_internal.hpp"
+#include "librealsense2/rs.hpp"
 #include <concurrency.h>
 
 using namespace rs2;

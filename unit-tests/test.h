@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../include/librealsense2/rs.hpp"
+#include "librealsense2/rs.hpp"
 
 #if ! defined( NO_CATCH_CONFIG_MAIN )
 #define CATCH_CONFIG_MAIN
