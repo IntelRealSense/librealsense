@@ -34,6 +34,7 @@ namespace librealsense
         PROFILE_TAG_ANY = 0,
         PROFILE_TAG_SUPERSET = 1, // to be included in enable_all
         PROFILE_TAG_DEFAULT = 2,  // to be included in default pipeline start
+        PROFILE_TAG_DEBUG = 4,    // tag for debug formats
     } profile_tag;
 
     struct tagged_profile
