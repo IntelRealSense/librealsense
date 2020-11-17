@@ -99,8 +99,6 @@ def check_no_exception( abort_if_failed = False ):
     traceback.print_exc( file = sys.stdout )
     if abort_if_failed:
         abort()
-        return False
-    return True
 
 # Receives 2 lists and asserts they are identical. python "equality" (using ==) requires same length & elements
 # but not necessarily same ordering. Here we require exactly the same, including ordering.
