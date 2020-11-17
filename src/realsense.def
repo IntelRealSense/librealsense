@@ -398,5 +398,6 @@ EXPORTS
     rs2_terminal_parse_response
     
     rs2_get_max_usable_depth_range
+    rs2_get_debug_stream_profiles
 
 
