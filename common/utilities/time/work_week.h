@@ -13,7 +13,7 @@ namespace time {
 class work_week
 {
     unsigned _year;
-    unsigned _ww;
+    unsigned _ww; //starts at 1
 
 public:
     work_week( unsigned year, unsigned ww )
@@ -22,18 +22,16 @@ public:
     {
     }
     work_week( const std::time_t & time );
+    static work_week current();
+    work_week(const work_week & ) = default;
 
     unsigned get_year() const;
     unsigned get_work_week() const;
-    unsigned operator-( const work_week & ww ) const;
-    static work_week current();
+    int operator-( const work_week & ww ) const;
 };
+
 // Returns the number of work weeks since given time
 unsigned get_work_weeks_since( const work_week & start );
-
-namespace l500 {
-work_week get_manufacture_work_week( const std::string & serial );
-}
 
 }  // namespace time
 }  // namespace utilities

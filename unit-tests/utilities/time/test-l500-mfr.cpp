@@ -10,6 +10,7 @@
 
 #include "common.h"
 #include "../common/utilities/time/work_week.h"
+#include "../common/utilities/time/l500/get-mfr-ww.h"
 
 #define INVALID_MESSAGE( serial, invalid ) "Invalid serial number \"" + serial + "\" " + invalid
 
@@ -48,5 +49,7 @@ TEST_CASE( "test get_manufacture_work_week", "[work_week]" )
                        INVALID_MESSAGE( serial, "work week" ) );
 
     serial = "x925xxxx";
-    CHECK_NOTHROW( l500::get_manufacture_work_week( serial ) );
+    CHECK_NOTHROW( auto mfr = l500::get_manufacture_work_week( serial ) );
+    CHECK(mfr.get_work_week() == 25)
+    CHECK(mfr.get_year() == 2019)
 }
