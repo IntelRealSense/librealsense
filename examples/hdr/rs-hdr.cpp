@@ -110,11 +110,11 @@ int main(int argc, char * argv[]) try
     std::map<int, std::pair<rs2::frame, frame_attributes>> frames_map;
     //for initilize only - an empty frame 
     rs2::frame frame;
-    frames_map[IR1] = std::pair<rs2::frame, frame_attributes>(frame, { 0,0,1,1 }); //{ 0,0,1,1 }
-    frames_map[IR2] = std::pair<rs2::frame, frame_attributes>(frame, { 1,0,1,1 }); //{ 0,1,1,1 }
-    frames_map[DEPTH1] = std::pair<rs2::frame, frame_attributes>(frame, { 0,1,1,1 }); //{ 1,0,1,1 }
-    frames_map[DEPTH2] = std::pair<rs2::frame, frame_attributes>(frame, { 1,1,1,1 }); //{ 1,1,1,1 }
-    frames_map[HDR] = std::pair<rs2::frame, frame_attributes>(frame, { 2,0,2,2 }); //{ 2,1,1,1 }
+    frames_map[IR1] = std::pair<rs2::frame, frame_attributes>(frame, { 0,0,1,1 }); 
+    frames_map[IR2] = std::pair<rs2::frame, frame_attributes>(frame, { 1,0,1,1 }); 
+    frames_map[DEPTH1] = std::pair<rs2::frame, frame_attributes>(frame, { 0,1,1,1 }); 
+    frames_map[DEPTH2] = std::pair<rs2::frame, frame_attributes>(frame, { 1,1,1,1 }); 
+    frames_map[HDR] = std::pair<rs2::frame, frame_attributes>(frame, { 2,0,2,2 }); 
     
     while (app) // application is still alive
     {
