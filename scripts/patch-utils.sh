@@ -21,7 +21,7 @@ function require_package {
 }
 
 #Based on the current kernel version select the branch name to fetch the kernel source code
-# The reference name are pulled here : http://kernel.ubuntu.com/git/ubuntu/ubuntu-xenial.git/
+#Ubuntu xenial repo : http://kernel.ubuntu.com/git/ubuntu/ubuntu-xenial.git/
 # As of Jun 19
 #	Branch		Commit message								Author							Age
 #	hwe			UBUNTU: Ubuntu-hwe-4.15.0-24.26~16.04.1		Andy Whitcroft					6 days
@@ -97,15 +97,10 @@ function choose_kernel_branch {
 			exit 1
 			;;
 		esac
-	else
-		if [ "$2" != "focal" ]; 				# Ubuntu 20
-		then
-			echo -e "\e[31mUnsupported distribution $2, kernel version $1 . The patches are maintained for Ubuntu 16/18/20 LTS\e[0m" >&2
-			exit 1
-		fi
+	elif [ "$2" == "focal" ];
 		case "${kernel_version[0]}.${kernel_version[1]}" in
 		"5.4")									# kernel 5.4
-			echo master
+			echo hwe-5.4
 			;;
 		*)
 			#error message shall be redirected to stderr to be printed properly
@@ -113,6 +108,9 @@ function choose_kernel_branch {
 			exit 1
 			;;
 		esac
+	else
+		echo -e "\e[31mUnsupported distribution $2, kernel version $1 . The patches are maintained for Ubuntu 16/18/20 LTS\e[0m" >&2
+		exit 1
 	fi
 }
 
