@@ -117,8 +117,7 @@ namespace librealsense
         friend class software_device;
         stream_profiles _profiles;
         std::map<rs2_frame_metadata_value, rs2_metadata_type> _metadata_map;
-        int _unique_id;
-
+        uint64_t _unique_id;
         class stereo_extension : public depth_stereo_sensor
         {
         public:
