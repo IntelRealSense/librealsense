@@ -1,10 +1,25 @@
 import pyrealsense2 as rs, test, ac
 
-dev = test.find_first_device_or_exit()
-depth_sensor = dev.first_depth_sensor()
+dev = test.find_devices_by_product_line_or_exit(8)
+depth_sensor = dev[0].first_depth_sensor()
 
-debug_sensor = rs.debug_streaming_sensor(depth_sensor)
+debug_sensor = rs.debug_stream_sensor(depth_sensor)
 debug_profiles = debug_sensor.get_debug_stream_profiles()
+
+
+#############################################################################################
+test.start("FG doesn't exposed by get_stream_profiles ")
+
+matches = list(p for p in depth_sensor.profiles if p.format() == rs.format.fg)
+test.check(len(matches) == 0 )
+test.finish()
+
+#############################################################################################
+test.start("FG exposed by debug_stream_sensor ")
+
+matches = list(p for p in debug_profiles if p.format() == rs.format.fg)
+test.check(len(matches) > 0 )
+test.finish()
 
 #############################################################################################
 test.start("streaming FG 800x600")
@@ -26,6 +41,7 @@ try:
 except:
     test.unexpected_exception()
 test.finish()
+
 #############################################################################################
 test.start("streaming FG 1280x720")
 
@@ -39,7 +55,7 @@ lrs_queue = rs.frame_queue(capacity=10, keep_frames=False)
 depth_sensor.start( lrs_queue )
 
 try:
-    lrs_frame = lrs_queue.wait_for_frame(150000)
+    lrs_frame = lrs_queue.wait_for_frame(5000)
     debug_sensor.stop()
     debug_sensor.close()
     test.check_equal(lrs_frame.profile.format(), rs.format.fg)

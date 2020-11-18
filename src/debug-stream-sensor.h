@@ -7,10 +7,10 @@
 
 namespace librealsense
 {
-    class debug_streaming_sensor
+    class debug_stream_sensor
     {
     public:
-        virtual stream_profiles get_debug_stream_profiles() = 0;
+        virtual stream_profiles get_debug_stream_profiles() const= 0;
     };
-    MAP_EXTENSION( RS2_EXTENSION_DEBUG_STREAM_SENSOR, debug_streaming_sensor );
-    }
+    MAP_EXTENSION( RS2_EXTENSION_DEBUG_STREAM_SENSOR, debug_stream_sensor );
+}

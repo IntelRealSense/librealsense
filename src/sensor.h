@@ -227,24 +227,15 @@ namespace librealsense
 
     protected:
         void add_source_profiles_missing_data();
-        std::vector< std::shared_ptr< processing_block_factory > > _pb_factories;
-        std::shared_ptr< stream_profile_interface >
-        clone_profile( const std::shared_ptr< stream_profile_interface > & profile );
-        std::unordered_map< processing_block_factory *, stream_profiles > _pbf_supported_profiles;
-        std::unordered_map< std::shared_ptr< stream_profile_interface >, stream_profiles >
-            _source_to_target_profiles_map;
-        std::unordered_map< stream_profile, stream_profiles > _target_to_source_profiles_map;
-        bool is_duplicated_profile( const std::shared_ptr< stream_profile_interface > & duplicate,
-                                    const stream_profiles & profiles );
-        void sort_profiles( stream_profiles * profiles );
 
     private:
         stream_profiles resolve_requests(const stream_profiles& requests);
         std::shared_ptr<stream_profile_interface> filter_frame_by_requests(const frame_interface* f);
-        
+        void sort_profiles(stream_profiles * profiles);
         std::pair<std::shared_ptr<processing_block_factory>, stream_profiles> find_requests_best_pb_match(const stream_profiles& sp);
         void add_source_profile_missing_data(std::shared_ptr<stream_profile_interface>& source_profile);
-       
+        bool is_duplicated_profile(const std::shared_ptr<stream_profile_interface>& duplicate, const stream_profiles& profiles);
+        std::shared_ptr<stream_profile_interface> clone_profile(const std::shared_ptr<stream_profile_interface>& profile);
         void register_processing_block_options(const processing_block& pb);
         void unregister_processing_block_options(const processing_block& pb);
 
@@ -252,8 +243,11 @@ namespace librealsense
 
         frame_callback_ptr _post_process_callback;
         std::shared_ptr<sensor_base> _raw_sensor;
-
+        std::vector<std::shared_ptr<processing_block_factory>> _pb_factories;
+        std::unordered_map<processing_block_factory*, stream_profiles> _pbf_supported_profiles;
         std::unordered_map<std::shared_ptr<stream_profile_interface>, std::unordered_set<std::shared_ptr<processing_block>>> _profiles_to_processing_block;
+        std::unordered_map<std::shared_ptr<stream_profile_interface>, stream_profiles> _source_to_target_profiles_map;
+        std::unordered_map<stream_profile, stream_profiles> _target_to_source_profiles_map;
         std::unordered_map<rs2_format, stream_profiles> _cached_requests;
         std::vector<rs2_option> _cached_processing_blocks_options;
     };
@@ -352,9 +346,9 @@ namespace librealsense
             power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
             return action(*_device);
         }
-        stream_profiles init_stream_profiles() override;
 
     protected:
+        stream_profiles init_stream_profiles() override;
         rs2_extension stream_to_frame_types(rs2_stream stream) const;
 
     private:

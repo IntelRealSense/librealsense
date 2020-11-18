@@ -336,7 +336,7 @@ rs2_stream_profile_list * rs2_get_debug_stream_profiles( rs2_sensor * sensor,
 {
     VALIDATE_NOT_NULL( sensor );
     auto debug_streaming
-        = VALIDATE_INTERFACE( sensor->sensor, librealsense::debug_streaming_sensor );
+        = VALIDATE_INTERFACE( sensor->sensor, librealsense::debug_stream_sensor );
     return new rs2_stream_profile_list{ debug_streaming->get_debug_stream_profiles() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN( nullptr, sensor )
@@ -1400,7 +1400,7 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
     case RS2_EXTENSION_FISHEYE_SENSOR          : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::fisheye_sensor)         != nullptr;
     case RS2_EXTENSION_CALIBRATED_SENSOR       : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::calibrated_sensor)      != nullptr;
     case RS2_EXTENSION_MAX_USABLE_RANGE_SENSOR : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::max_usable_range_sensor) != nullptr;
-    case RS2_EXTENSION_DEBUG_STREAM_SENSOR     : return VALIDATE_INTERFACE_NO_THROW( sensor->sensor, librealsense::debug_streaming_sensor ) != nullptr;
+    case RS2_EXTENSION_DEBUG_STREAM_SENSOR     : return VALIDATE_INTERFACE_NO_THROW( sensor->sensor, librealsense::debug_stream_sensor ) != nullptr;
 
 
     default:

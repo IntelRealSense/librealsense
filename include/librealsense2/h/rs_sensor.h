@@ -326,7 +326,7 @@ const char* rs2_get_notification_serialized_data(rs2_notification* notification,
 rs2_stream_profile_list* rs2_get_stream_profiles(rs2_sensor* sensor, rs2_error** error);
 
 /**
-* check if physical subdevice is supported
+* retrieve list of debug stream profiles that given subdevice can provide
 * \param[in] sensor  input RealSense subdevice
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            list of debug stream profiles that given subdevice can provide, should be released by rs2_delete_profiles_list

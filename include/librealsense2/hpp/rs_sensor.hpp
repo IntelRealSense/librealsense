@@ -753,10 +753,10 @@ namespace rs2
         }
     };
 
-    class debug_streaming_sensor : public sensor
+    class debug_stream_sensor : public sensor
     {
     public:
-        debug_streaming_sensor( sensor s )
+        debug_stream_sensor( sensor s )
             : sensor( s.get() )
         {
             rs2_error * e = nullptr;
@@ -775,7 +775,7 @@ namespace rs2
         */
         std::vector< stream_profile > get_debug_stream_profiles() const
         {
-            std::vector< stream_profile > results{};
+            std::vector< stream_profile > results;
 
             rs2_error * e = nullptr;
             std::shared_ptr< rs2_stream_profile_list > list(
@@ -796,5 +796,5 @@ namespace rs2
             return results;
         }
     };
-    }
+}
 #endif // LIBREALSENSE_RS2_SENSOR_HPP

@@ -271,11 +271,6 @@ namespace librealsense
             l500_depth_fourcc_to_rs2_format_map,
             l500_depth_fourcc_to_rs2_stream_map )
         , _owner( owner )
-        , _debug_profiles( [&, uvc_sensor]() {
-            auto profiles = init_debug_stream_profiles( uvc_sensor );
-            _owner->tag_profiles( profiles );
-            return profiles;
-        } )
     {
 
         register_option( RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>( "Number of meters represented by a single depth unit",
@@ -286,79 +281,6 @@ namespace librealsense
             lazy<float>( [&]() {
                 return get_depth_offset(); } ) ) );
 
-    }
-
-    stream_profiles
-    l500_depth_sensor::init_debug_stream_profiles( std::shared_ptr< uvc_sensor > uvc_sensor )
-    {
-        stream_profiles result_profiles;
-        auto profiles = uvc_sensor->init_stream_profiles();
-        _owner->tag_profiles( profiles );
-
-        for( auto && pbf : synthetic_sensor::_pb_factories )
-        {
-            const auto && sources = pbf->get_source_info();
-            const auto && targets = pbf->get_target_info();
-
-            for( auto && source : sources )
-            {
-                // add profiles that are supported by the device
-                for( auto & profile : profiles )
-                {
-                    if( profile->get_tag() == PROFILE_TAG_DEBUG
-                        && profile->get_format() == source.format
-                        && ( source.stream == profile->get_stream_type()
-                             || source.stream == RS2_STREAM_ANY ) )
-                    {
-                        for( auto target : targets )
-                        {
-                            target.fps = profile->get_framerate();
-
-                            auto && cloned_profile = clone_profile( profile );
-                            cloned_profile->set_format( target.format );
-                            cloned_profile->set_stream_index( target.index );
-                            cloned_profile->set_stream_type( target.stream );
-
-                            auto && cloned_vsp
-                                = As< video_stream_profile, stream_profile_interface >(
-                                    cloned_profile );
-                            if( cloned_vsp )
-                            {
-                                const auto && res = target.stream_resolution(
-                                    { cloned_vsp->get_width(), cloned_vsp->get_height() } );
-                                target.height = res.height;
-                                target.width = res.width;
-                                cloned_vsp->set_dims( target.width, target.height );
-                            }
-
-                            // Add the cloned profile to the supported profiles by this processing
-                            // block factory, for later processing validation in resolving the
-                            // request.
-                            _pbf_supported_profiles[pbf.get()].push_back( cloned_profile );
-
-                            // cache the source to target mapping
-                            _source_to_target_profiles_map[profile].push_back( cloned_profile );
-                            // cache each target profile to its source profiles which were generated
-                            // from.
-                            _target_to_source_profiles_map[target].push_back( profile );
-
-                            // disregard duplicated from profiles list
-                            if( is_duplicated_profile( cloned_profile, result_profiles ) )
-                                continue;
-
-                            // Only injective cloning in many to one mapping.
-                            // One to many is not affected.
-                            if( sources.size() > 1 && target.format != source.format )
-                                continue;
-
-                            result_profiles.push_back( cloned_profile );
-                        }
-                    }
-                }
-            }
-        }
-        sort_profiles( &result_profiles );
-        return result_profiles;
     }
 
     l500_depth_sensor::~l500_depth_sensor()
@@ -458,17 +380,9 @@ namespace librealsense
        return l500::max_usable_range(noise_estimation);
     }
 
-    stream_profiles l500_depth_sensor::get_debug_stream_profiles()
+    stream_profiles l500_depth_sensor::get_debug_stream_profiles() const
     {
-        stream_profiles results;
-
-        for( auto p : *_debug_profiles )
-        {
-            auto curr_tag = p->get_tag();
-            if(  curr_tag & PROFILE_TAG_DEBUG )
-                results.push_back( p );
-        }
-        return results;
+       return get_stream_profiles( PROFILE_TAG_DEBUG );
     }
 
     // We want to disable max-usable-range when not in a particular preset:

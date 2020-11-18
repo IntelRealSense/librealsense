@@ -190,25 +190,19 @@ namespace librealsense
         _source_owner = owner;
     }
 
-    stream_profiles sensor_base::get_stream_profiles(int tag) const
+    stream_profiles sensor_base::get_stream_profiles( int tag ) const
     {
         stream_profiles results;
 
-        if (tag == profile_tag::PROFILE_TAG_ANY)
-        {
-            for( auto p : *_profiles )
-            {
-                auto curr_tag = p->get_tag();
-                if( !(curr_tag & PROFILE_TAG_DEBUG) )
-                    results.push_back( p );
-            }
-        }
-
-        for (auto p : *_profiles)
+        for( auto p : *_profiles )
         {
             auto curr_tag = p->get_tag();
-            if (curr_tag & tag)
-                results.push_back(p);
+            if( curr_tag & tag
+                || tag == profile_tag::PROFILE_TAG_ANY
+                       && ! ( curr_tag & profile_tag::PROFILE_TAG_DEBUG ) )
+            {
+                results.push_back( p );
+            }
         }
 
         return results;
@@ -556,7 +550,6 @@ namespace librealsense
         std::unordered_set<std::shared_ptr<video_stream_profile>> profiles;
         power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
 
-        if (_uvc_profiles.empty()) {}
         _uvc_profiles = _device->get_profiles();
 
         for (auto&& p : _uvc_profiles)
@@ -1218,7 +1211,7 @@ namespace librealsense
     stream_profiles synthetic_sensor::init_stream_profiles()
     {
         stream_profiles result_profiles;
-        auto profiles = _raw_sensor->get_stream_profiles();
+        auto profiles = _raw_sensor->get_stream_profiles( PROFILE_TAG_ANY | PROFILE_TAG_DEBUG );
 
         for (auto&& pbf : _pb_factories)
         {
