@@ -42,11 +42,11 @@ def find_first_device_or_exit():
 # Returns a list of devices of specific product line that was found, if no device is found the test is skipped.
 # That way we can still run the unit-tests when no device is connected
 # and not fail the tests that check a connected device
-def find_devices_by_product_line_or_exit(product):
+def find_devices_by_product_line_or_exit(product_line):
     c = rs.context()
-    devices_list = c.query_devices(product)
+    devices_list = c.query_devices(product_line)
     if devices_list.size() == 0:
-        print("No device of the " , product ," product line was found; skipping test")
+        print("No device of the" , product ,"product line was found; skipping test")
         exit(0)
     return devices_list
 
