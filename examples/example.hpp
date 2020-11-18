@@ -20,6 +20,9 @@
 #include <map>
 #include <functional>
 
+#include "../third-party/stb_easy_font.h"
+
+
 #ifndef PI
 const double PI = 3.14159265358979323846;
 #endif
@@ -87,7 +90,7 @@ struct rect
 struct frame_attributes
 {
     int x, y; //location of tile in the grid
-    int w, h; //number of tiles
+    int w, h; //width and height by number of tiles
     int priority = 0; //when should the tile be drawn?: 0 is on top of all, -1 is a layer under top layer, -2 ... etc
 
 };
@@ -96,7 +99,6 @@ struct frame_attributes
 // Simple font loading code //
 //////////////////////////////
 
-#include "../third-party/stb_easy_font.h"
 
 inline void draw_text(int x, int y, const char* text)
 {
@@ -667,7 +669,6 @@ public:
         // Render openGl mosaic of frames
         if (frames.size())
         {
-
             // create vector of frames from map, and sort it by priority
             std::vector <std::pair<rs2::frame, frame_attributes>> vector_frames;
             //copy: map -> vector

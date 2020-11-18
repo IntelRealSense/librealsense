@@ -5,6 +5,9 @@
 #include "example.hpp"          // Include short list of convenience functions for rendering
 #include <iostream>
 
+#include <imgui.h>
+#include "imgui_impl_glfw.h"
+
 enum frame_number { IR1, IR2, DEPTH1, DEPTH2, HDR };
 
 // HDR Example demonstrates how to
@@ -62,7 +65,7 @@ int main(int argc, char * argv[]) try
 
     // configuration for the first HDR sequence ID
     depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, 1);
-    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 6000);
+    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 3000);
     depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
 
     // configuration for the second HDR sequence ID
@@ -77,7 +80,18 @@ int main(int argc, char * argv[]) try
     // turning ON the HDR with the above configuration 
     depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
 
-    window app(1280, 720, "RealSense HDR Example", 4, 2, 0.8, 0.6, 0.1, 0.075);
+    //initialize parameters to set view's window 
+    int width = 1280;
+    int height = 720;
+    char* title = "RealSense HDR Example";
+    int tiles_in_row = 4;
+    int tiles_in_col = 2;
+    float canvas_width = 0.8;
+    float canvas_height = 0.6;
+    float canvas_left_top_x = 0.15;
+    float canvas_left_top_y = 0.075;
+
+    window app(width, height, title, tiles_in_row, tiles_in_col, canvas_width, canvas_height, canvas_left_top_x, canvas_left_top_y);
 
     // Declare depth colorizer for pretty visualization of depth data
     rs2::colorizer color_map;
@@ -116,6 +130,7 @@ int main(int argc, char * argv[]) try
     frames_map[DEPTH2] = std::pair<rs2::frame, frame_attributes>(frame, { 1,1,1,1 }); 
     frames_map[HDR] = std::pair<rs2::frame, frame_attributes>(frame, { 2,0,2,2 }); 
     
+
     while (app) // application is still alive
     {
             data = pipe.wait_for_frames() .    // Wait for next set of frames from the camera
@@ -141,14 +156,12 @@ int main(int argc, char * argv[]) try
         auto hdr_seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
         auto exp = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
 
-        std::cout << "frame hdr metadata: hdr_seq_id = "<< hdr_seq_id << ", exposure = " << exp << std::endl;
         // The show method, when applied on frameset, break it to frames and upload each frame into a gl textures
         // Each texture is displayed on different viewport according to it's stream unique id
         // merging the frames from the different HDR sequence IDs 
         auto merged_frameset = merging_filter.process(data). // merging frames with both hdr sequence IDs 
             apply_filter(color_map);   // Find and colorize the depth data;
         rs2_format format = merged_frameset.as<rs2::frameset>().get_depth_frame().get_profile().format();
-        std::cout << ", after merge format = " << rs2_format_to_string(format) << std::endl;
         
         frames_map[hdr_seq_id].first = data.get_infrared_frame();
         frames_map[hdr_seq_id + hdr_seq_size].first = data.get_depth_frame().apply_filter(color_map);
