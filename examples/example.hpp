@@ -695,62 +695,6 @@ public:
         }
     }
 
-    /*
-    void show_dynamic_canvas(const std::map<int, rs2::frame> frames)
-    {
-        // Render openGl mosaic of frames
-        if (frames.size())
-        {
-            int cols = int(std::ceil(std::sqrt(frames.size())));
-            int rows = int(std::ceil(frames.size() / static_cast<float>(cols)));
-
-            float view_width = float(_canvas_w / cols);
-            float view_height = float(_canvas_h / rows);
-            int stream_no = 0;
-            int x_offset = _is_splitted ? _width / 2 : 0;
-
-            for (auto& frame : frames)
-            {
-                rect viewport_loc{ view_width * (stream_no % cols) + _canvas_x, view_height * (stream_no / cols) + _canvas_y, view_width, view_height };
-                //rect viewport_loc{ view_width * (stream_no % cols) + x_offset, view_height * (stream_no / cols), view_width, view_height };
-                show(frame.second, viewport_loc);
-                stream_no++;
-            }
-
-        }
-        else
-        {
-            _main_win.put_text("Connect one or more Intel RealSense devices and rerun the example",
-                0.4f, 0.5f, { 0.f,0.f, float(_width) , float(_height) });
-        }
-    }
-    */
-    /*
-    void configure_mosaike(int left_top_x, int left_top_y, int left_bottom_x, int left_bottom_y, int number_tiles_in_row, int number_tiles_in_col){
-        _canvas_left_top_x = left_top_x;
-        _canvas_left_top_y = left_top_y;
-        _canvas_right_bottom_x = left_bottom_x;
-        _canvas_right_bottom_y = left_bottom_y;
-        _number_tiles_in_row = number_tiles_in_row;
-        _number_tiles_in_col = number_tiles_in_col;
-
-        //hold data structure to represent tile - (maybe vector of vectors or map where the key is tuple (x,y) of the tile's location )
-
-    }
-    */
-    /*
-    //override to show?
-    //put params in struct - (x,y) & size of frame
-    void show_in_tiles(rs2::frame frame, int start_row_tile, int start_col_tile, int numer_of_tiles_in_row=1, int numer_of_tiles_in_col=1) {
-        //some logic to calculate 
-        int tile_width;
-        int tile_height;
-        int start_tile_x;
-        int start_tile_y;
-
-        show(frame, { 0, 0, (float)_width, (float)_height });
-    }*/
-
     operator GLFWwindow*() { return win; }
 
 private: 
