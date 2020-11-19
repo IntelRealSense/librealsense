@@ -48,7 +48,7 @@ inline void remove_all_streams_arrived( rs2::frame f,
     }
 }
 
-stream_profile find_default_depth_profile( rs2::depth_sensor depth_sens )
+inline stream_profile find_default_depth_profile( rs2::depth_sensor depth_sens )
 {
     std::vector< stream_profile > stream_profiles;
     REQUIRE_NOTHROW( stream_profiles = depth_sens.get_stream_profiles() );
@@ -58,10 +58,12 @@ stream_profile find_default_depth_profile( rs2::depth_sensor depth_sens )
               return sp.is_default() && sp.stream_type() == RS2_STREAM_DEPTH;
           } );
 
+    REQUIRE( depth_profile != stream_profiles.end() );
+
     return *depth_profile;
 }
 
-stream_profile find_default_ir_profile( rs2::depth_sensor depth_sens)
+inline stream_profile find_default_ir_profile( rs2::depth_sensor depth_sens )
 {
     std::vector< stream_profile > stream_profiles;
     REQUIRE_NOTHROW( stream_profiles = depth_sens.get_stream_profiles() );
@@ -71,10 +73,12 @@ stream_profile find_default_ir_profile( rs2::depth_sensor depth_sens)
               return sp.is_default() && sp.stream_type() == RS2_STREAM_INFRARED;
           } );
 
+    REQUIRE( ir_profile != stream_profiles.end() );
+
     return *ir_profile;
 }
 
-stream_profile find_confidence_corresponding_to_depth( rs2::depth_sensor depth_sens,
+inline stream_profile find_confidence_corresponding_to_depth( rs2::depth_sensor depth_sens,
                                                        stream_profile depth_profile )
 {
     std::vector< stream_profile > stream_profiles;
@@ -88,6 +92,8 @@ stream_profile find_confidence_corresponding_to_depth( rs2::depth_sensor depth_s
                   && sp.as< rs2::video_stream_profile >().height()
                          == depth_profile.as< rs2::video_stream_profile >().height();
           } );
+
+    REQUIRE( confidence_profile != stream_profiles.end() );
 
     return *confidence_profile;
 }

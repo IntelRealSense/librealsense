@@ -6,6 +6,14 @@
 
 using namespace rs2;
 
+void set_alt_ir_if_needed( const rs2::depth_sensor & depth_sens, float val )
+{
+    // set alt_ir if it was disabled
+    REQUIRE( depth_sens.supports( RS2_OPTION_ALTERNATE_IR ) );
+    auto alt_ir = depth_sens.get_option( RS2_OPTION_ALTERNATE_IR );
+    if( alt_ir != val )
+        REQUIRE_NOTHROW( depth_sens.set_option( RS2_OPTION_ALTERNATE_IR, val ) );
+}
 
 void enable_alt_ir_and_check_that_AC_fails(
     const rs2::device & dev,
@@ -17,11 +25,7 @@ void enable_alt_ir_and_check_that_AC_fails(
 
     REQUIRE_NOTHROW( depth_sens.start( [&]( rs2::frame f ) {} ) );
 
-    // set alt_ir if it was disabled
-    REQUIRE( depth_sens.supports( RS2_OPTION_ALTERNATE_IR ) );
-    auto alt_ir = depth_sens.get_option( RS2_OPTION_ALTERNATE_IR );
-    if( alt_ir == 0 )
-        REQUIRE_NOTHROW( depth_sens.set_option( RS2_OPTION_ALTERNATE_IR, 1 ) );
+    set_alt_ir_if_needed( depth_sens, 1 );
 
     // check that AC throws exception
     if( dev.is< rs2::device_calibration >() )
@@ -53,16 +57,6 @@ void enable_alt_ir_and_check_that_AC_fails(
     option_range r;
     REQUIRE_NOTHROW( r = depth_sens.get_option_range( RS2_OPTION_ALTERNATE_IR ) );
     REQUIRE_NOTHROW( depth_sens.set_option( RS2_OPTION_ALTERNATE_IR, r.def ) );
-}
-
-
-void set_alt_ir_if_needed( const rs2::depth_sensor & depth_sens, float val ) 
-{
-    // set alt_ir if it was disabled
-    REQUIRE( depth_sens.supports( RS2_OPTION_ALTERNATE_IR ) );
-    auto alt_ir = depth_sens.get_option( RS2_OPTION_ALTERNATE_IR );
-    if( alt_ir != val )
-        REQUIRE_NOTHROW( depth_sens.set_option( RS2_OPTION_ALTERNATE_IR, val ) );
 }
 
 void enable_alt_ir_and_check_that_all_streams_arrived(
