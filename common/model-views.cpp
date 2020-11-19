@@ -1401,6 +1401,10 @@ namespace rs2
                     {
                         ui.selected_res_id = tmp_selected_res_id;
                     }
+                    else
+                    {
+                        ui.selected_res_id = tmp_selected_res_id;
+                    }
                 }
                 ImGui::PopStyleColor();
                 ImGui::PopItemWidth();
