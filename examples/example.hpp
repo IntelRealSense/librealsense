@@ -538,7 +538,7 @@ public:
     }
 
     //another c'tor for adjusting canvas size (not the whole window) - is it okay? kind of copy-paste
-    window(unsigned int width, unsigned int height, const char* title, unsigned int tiles_in_row, unsigned int tiles_in_col, float canvas_width = 0.8,
+    window(int width, int height, const char* title, int tiles_in_row, int tiles_in_col, float canvas_width = 0.8,
         float canvas_height = 0.6, float canvas_left_top_x = 0.1, float canvas_left_top_y = 0.075)
         : _width(width), _height(height), _tiles_in_row(tiles_in_row), _tiles_in_col(tiles_in_col)
 
