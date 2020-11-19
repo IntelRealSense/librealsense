@@ -714,8 +714,8 @@ namespace librealsense
 
         bool usb3mode = (_usb_mode >= platform::usb3_type || _usb_mode == platform::usb_undefined);
 
-        uint32_t width = usb3mode ? 1280 : 960;
-        uint32_t height = usb3mode ? 720 : 540;
+        int width = usb3mode ? 1280 : 960;
+        int height = usb3mode ? 720 : 540;
 
         tags.push_back({ RS2_STREAM_COLOR, -1, width, height, RS2_FORMAT_RGB8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
 

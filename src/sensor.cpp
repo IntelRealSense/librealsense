@@ -264,7 +264,7 @@ namespace librealsense
             last_timestamp,
             last_frame_number,
             false,
-            fo.frame_size);
+            (uint32_t)fo.frame_size );
         fr->additional_data = additional_data;
 
         // update additional data
@@ -1291,13 +1291,13 @@ namespace librealsense
         for (auto&& pbf : _pb_factories)
         {
             auto satisfied_req = pbf->find_satisfied_requests(requests, _pbf_supported_profiles[pbf.get()]);
-            satisfied_count = satisfied_req.size();
+            satisfied_count = (int)satisfied_req.size();
             if (satisfied_count > max_satisfied_req
                 || (satisfied_count == max_satisfied_req
                     && pbf->get_source_info().size() < best_source_size))
             {
                 max_satisfied_req = satisfied_count;
-                best_source_size = pbf->get_source_info().size();
+                best_source_size = (int)pbf->get_source_info().size();
                 best_match_processing_block_factory = pbf;
                 best_match_requests = satisfied_req;
             }

@@ -168,14 +168,13 @@ namespace librealsense
 
         bool usb3mode = (_usb_mode >= platform::usb3_type || _usb_mode == platform::usb_undefined);
 
-        uint32_t width = usb3mode ? 640 : 320;
-        uint32_t height = usb3mode ? 480 : 240;
+        int width = usb3mode ? 640 : 320;
+        int height = usb3mode ? 480 : 240;
 
         tags.push_back({ RS2_STREAM_DEPTH, -1, width, height, RS2_FORMAT_Z16, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
         tags.push_back({ RS2_STREAM_INFRARED, -1, width, height, RS2_FORMAT_Y8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
         tags.push_back({ RS2_STREAM_CONFIDENCE, -1, width, height, RS2_FORMAT_RAW8, 30, profile_tag::PROFILE_TAG_SUPERSET });
-        tags.push_back({ RS2_STREAM_DEPTH, -1, 800, 600, RS2_FORMAT_FG, 30, profile_tag::PROFILE_TAG_DEBUG } );
-        tags.push_back({ RS2_STREAM_DEPTH, -1, 1280, 720, RS2_FORMAT_FG, 30, profile_tag::PROFILE_TAG_DEBUG } );
+        tags.push_back({ RS2_STREAM_DEPTH, -1, -1, -1, RS2_FORMAT_FG, -1, profile_tag::PROFILE_TAG_DEBUG } );
         return tags;
     }
 

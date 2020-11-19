@@ -41,9 +41,9 @@ namespace librealsense
     {
         rs2_stream stream;
         int stream_index;
-        uint32_t width, height;
+        int width, height;
         rs2_format format;
-        uint32_t fps;
+        int fps;
         int tag;
     };
 
