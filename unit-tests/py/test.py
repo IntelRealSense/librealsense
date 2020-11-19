@@ -46,7 +46,7 @@ def find_devices_by_product_line_or_exit(product_line):
     c = rs.context()
     devices_list = c.query_devices(product_line)
     if devices_list.size() == 0:
-        print("No device of the" , product ,"product line was found; skipping test")
+        print("No device of the" , product_line ,"product line was found; skipping test")
         exit(0)
     return devices_list
 
