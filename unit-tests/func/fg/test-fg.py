@@ -35,11 +35,10 @@ depth_sensor.start( lrs_queue )
 
 try:
     lrs_frame = lrs_queue.wait_for_frame(5000)
-    debug_sensor.stop()
-    debug_sensor.close()
     test.check_equal(lrs_frame.profile.format(), rs.format.fg)
 except:
     test.unexpected_exception()
+finally:
     debug_sensor.stop()
     debug_sensor.close()
 test.finish()
@@ -58,11 +57,10 @@ depth_sensor.start( lrs_queue )
 
 try:
     lrs_frame = lrs_queue.wait_for_frame(5000)
-    debug_sensor.stop()
-    debug_sensor.close()
     test.check_equal(lrs_frame.profile.format(), rs.format.fg)
 except:
     test.unexpected_exception()
+finally:
     debug_sensor.stop()
     debug_sensor.close()
 test.finish()
