@@ -8,14 +8,14 @@ debug_profiles = debug_sensor.get_debug_stream_profiles()
 
 
 #############################################################################################
-test.start("FG isn't exposed by get_stream_profiles ")
+test.start("FG isn't exposed by get_stream_profiles")
 
 matches = list(p for p in depth_sensor.profiles if p.format() == rs.format.fg)
 test.check(len(matches) == 0 )
 test.finish()
 
 #############################################################################################
-test.start("FG exposed by debug_stream_sensor ")
+test.start("FG exposed by debug_stream_sensor")
 
 matches = list(p for p in debug_profiles if p.format() == rs.format.fg)
 test.check(len(matches) > 0 )
