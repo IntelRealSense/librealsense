@@ -76,8 +76,8 @@ void init_sensor(py::module &m) {
         .def(BIND_DOWNCAST(sensor, pose_sensor))
         .def(BIND_DOWNCAST(sensor, calibrated_sensor))
         .def(BIND_DOWNCAST(sensor, wheel_odometer))
-        .def(BIND_DOWNCAST(sensor, max_usable_range_sensor));
-
+        .def(BIND_DOWNCAST(sensor, max_usable_range_sensor))
+        .def(BIND_DOWNCAST(sensor, debug_stream_sensor));
     // rs2::sensor_from_frame [frame.def("get_sensor", ...)?
     // rs2::sensor==sensor?
 
@@ -133,6 +133,12 @@ void init_sensor(py::module &m) {
             &rs2::max_usable_range_sensor::get_max_usable_depth_range,
             py::call_guard< py::gil_scoped_release >());
     
+    py::class_< rs2::debug_stream_sensor, rs2::sensor > ds_sensor( m, "debug_stream_sensor" );
+    ds_sensor.def( py::init< rs2::sensor >(), "sensor"_a )
+        .def( "get_debug_stream_profiles",
+               &rs2::debug_stream_sensor::get_debug_stream_profiles,
+              py::call_guard< py::gil_scoped_release >() );
+
     // rs2::depth_stereo_sensor
     py::class_<rs2::depth_stereo_sensor, rs2::depth_sensor> depth_stereo_sensor(m, "depth_stereo_sensor"); // No docstring in C++
     depth_stereo_sensor.def(py::init<rs2::sensor>())

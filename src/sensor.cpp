@@ -190,17 +190,19 @@ namespace librealsense
         _source_owner = owner;
     }
 
-    stream_profiles sensor_base::get_stream_profiles(int tag) const
+    stream_profiles sensor_base::get_stream_profiles( int tag ) const
     {
-        if (tag == profile_tag::PROFILE_TAG_ANY)
-            return *_profiles;
-
         stream_profiles results;
-        for (auto p : *_profiles)
+
+        for( auto p : *_profiles )
         {
             auto curr_tag = p->get_tag();
-            if (curr_tag & tag)
-                results.push_back(p);
+            if( curr_tag & tag
+                || tag == profile_tag::PROFILE_TAG_ANY
+                       && ! ( curr_tag & profile_tag::PROFILE_TAG_DEBUG ) )
+            {
+                results.push_back( p );
+            }
         }
 
         return results;
@@ -262,7 +264,7 @@ namespace librealsense
             last_timestamp,
             last_frame_number,
             false,
-            fo.frame_size);
+            (uint32_t)fo.frame_size );
         fr->additional_data = additional_data;
 
         // update additional data
@@ -548,7 +550,6 @@ namespace librealsense
         std::unordered_set<std::shared_ptr<video_stream_profile>> profiles;
         power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
 
-        if (_uvc_profiles.empty()) {}
         _uvc_profiles = _device->get_profiles();
 
         for (auto&& p : _uvc_profiles)
@@ -1210,7 +1211,7 @@ namespace librealsense
     stream_profiles synthetic_sensor::init_stream_profiles()
     {
         stream_profiles result_profiles;
-        auto profiles = _raw_sensor->get_stream_profiles();
+        auto profiles = _raw_sensor->get_stream_profiles( PROFILE_TAG_ANY | PROFILE_TAG_DEBUG );
 
         for (auto&& pbf : _pb_factories)
         {
@@ -1290,13 +1291,13 @@ namespace librealsense
         for (auto&& pbf : _pb_factories)
         {
             auto satisfied_req = pbf->find_satisfied_requests(requests, _pbf_supported_profiles[pbf.get()]);
-            satisfied_count = satisfied_req.size();
+            satisfied_count = (int)satisfied_req.size();
             if (satisfied_count > max_satisfied_req
                 || (satisfied_count == max_satisfied_req
                     && pbf->get_source_info().size() < best_source_size))
             {
                 max_satisfied_req = satisfied_count;
-                best_source_size = pbf->get_source_info().size();
+                best_source_size = (int)pbf->get_source_info().size();
                 best_match_processing_block_factory = pbf;
                 best_match_requests = satisfied_req;
             }

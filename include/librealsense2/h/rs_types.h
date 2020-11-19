@@ -213,6 +213,7 @@ typedef enum rs2_extension
     RS2_EXTENSION_HDR_MERGE,
     RS2_EXTENSION_SEQUENCE_ID_FILTER,
     RS2_EXTENSION_MAX_USABLE_RANGE_SENSOR,
+    RS2_EXTENSION_DEBUG_STREAM_SENSOR,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);

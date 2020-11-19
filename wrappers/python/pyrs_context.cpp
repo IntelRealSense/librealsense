@@ -20,6 +20,8 @@ void init_context(py::module &m) {
     context.def(py::init<>())
         .def("query_devices", (rs2::device_list(rs2::context::*)() const) &rs2::context::query_devices, "Create a static"
              " snapshot of all connected devices at the time of the call.")
+        .def( "query_devices", ( rs2::device_list( rs2::context::* )(int) const ) & rs2::context::query_devices, "Create a static"
+              " snapshot of all connected devices of specific product line at the time of the call." )
         .def_property_readonly("devices", (rs2::device_list(rs2::context::*)() const) &rs2::context::query_devices,
                                "A static snapshot of all connected devices at time of access. Identical to calling query_devices.")
         .def("query_all_sensors", &rs2::context::query_all_sensors, "Generate a flat list of "

@@ -19,6 +19,7 @@
 #include "l500-options.h"
 #include "calibrated-sensor.h"
 #include "max-usable-range-sensor.h"
+#include "debug-stream-sensor.h"
 
 namespace librealsense
 {
@@ -93,6 +94,7 @@ namespace librealsense
         , public virtual l500_depth_sensor_interface
         , public calibrated_sensor
         , public max_usable_range_sensor
+        , public debug_stream_sensor
     {
     public:
         explicit l500_depth_sensor(
@@ -221,6 +223,8 @@ namespace librealsense
 
         float get_max_usable_depth_range() const override;
 
+        stream_profiles get_debug_stream_profiles() const override;
+
         void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const override
         {
             snapshot = std::make_shared<depth_sensor_snapshot>(get_depth_scale());
@@ -260,7 +264,6 @@ namespace librealsense
         bool is_max_range_preset() const;
 
     private:
-
         action_delayer _action_delayer;
         l500_device * const _owner;
         float _depth_units;

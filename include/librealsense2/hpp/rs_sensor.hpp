@@ -752,5 +752,49 @@ namespace rs2
             return res;
         }
     };
+
+    class debug_stream_sensor : public sensor
+    {
+    public:
+        debug_stream_sensor( sensor s )
+            : sensor( s.get() )
+        {
+            rs2_error * e = nullptr;
+            if( rs2_is_sensor_extendable_to( _sensor.get(), RS2_EXTENSION_DEBUG_STREAM_SENSOR, &e ) == 0 && ! e )
+            {
+                _sensor.reset();
+            }
+            error::handle( e );
+        }
+
+        operator bool() const { return _sensor.get() != nullptr; }
+
+        /**
+        * Retrieves the list of debug stream profiles supported by the sensor.
+        * \return   list of debug stream profiles that given sensor can provide
+        */
+        std::vector< stream_profile > get_debug_stream_profiles() const
+        {
+            std::vector< stream_profile > results;
+
+            rs2_error * e = nullptr;
+            std::shared_ptr< rs2_stream_profile_list > list(
+                rs2_get_debug_stream_profiles( _sensor.get(), &e ),
+                rs2_delete_stream_profiles_list );
+            error::handle( e );
+
+            auto size = rs2_get_stream_profiles_count( list.get(), &e );
+            error::handle( e );
+
+            for( auto i = 0; i < size; i++ )
+            {
+                stream_profile profile( rs2_get_stream_profile( list.get(), i, &e ) );
+                error::handle( e );
+                results.push_back( profile );
+            }
+
+            return results;
+        }
+    };
 }
 #endif // LIBREALSENSE_RS2_SENSOR_HPP

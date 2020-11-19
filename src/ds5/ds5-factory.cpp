@@ -638,11 +638,11 @@ namespace librealsense
             auto usb_spec = get_usb_spec();
             bool usb3mode = (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined);
 
-            uint32_t depth_width  = usb3mode ?      848 : 640;
-            uint32_t depth_height = usb3mode ?      480 : 480;
-            uint32_t color_width = usb3mode ?       1280 : 640;
-            uint32_t color_height = usb3mode ?      720 : 480;
-            uint32_t fps    = usb3mode ?            30 :  15;
+            int depth_width  = usb3mode ?      848 : 640;
+            int depth_height = usb3mode ?      480 : 480;
+            int color_width = usb3mode ?       1280 : 640;
+            int color_height = usb3mode ?      720 : 480;
+            int fps    = usb3mode ?            30 :  15;
 
             tags.push_back({ RS2_STREAM_COLOR, -1, color_width, color_height, RS2_FORMAT_RGB8, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             tags.push_back({ RS2_STREAM_DEPTH, -1, depth_width, depth_height, RS2_FORMAT_Z16, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
@@ -855,9 +855,9 @@ namespace librealsense
             auto usb_spec = get_usb_spec();
             bool usb3mode = (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined);
 
-            uint32_t width = usb3mode ? 1280 : 640;
-            uint32_t height = usb3mode ? 720 : 480;
-            uint32_t fps = usb3mode ? 30 : 15;
+            int width = usb3mode ? 1280 : 640;
+            int height = usb3mode ? 720 : 480;
+            int fps = usb3mode ? 30 : 15;
 
             tags.push_back({ RS2_STREAM_COLOR, -1, width, height, RS2_FORMAT_RGB8, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             tags.push_back({ RS2_STREAM_DEPTH, -1, width, height, RS2_FORMAT_Z16, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
@@ -927,11 +927,11 @@ namespace librealsense
             auto usb_spec = get_usb_spec();
             bool usb3mode = (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined);
 
-            uint32_t depth_width  = usb3mode ?      848 : 640;
-            uint32_t depth_height = usb3mode ?      480 : 480;
-            uint32_t color_width = usb3mode ?       1280 : 640;
-            uint32_t color_height = usb3mode ?      720 : 480;
-            uint32_t fps    = usb3mode ?            30 :  15;
+            int depth_width  = usb3mode ?      848 : 640;
+            int depth_height = usb3mode ?      480 : 480;
+            int color_width = usb3mode ?       1280 : 640;
+            int color_height = usb3mode ?      720 : 480;
+            int fps    = usb3mode ?            30 :  15;
 
             tags.push_back({ RS2_STREAM_COLOR, -1, color_width, color_height, RS2_FORMAT_RGB8, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             tags.push_back({ RS2_STREAM_DEPTH, -1, depth_width, depth_height, RS2_FORMAT_Z16, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
@@ -976,11 +976,11 @@ namespace librealsense
             auto usb_spec = get_usb_spec();
             bool usb3mode = (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined);
 
-            uint32_t depth_width  = usb3mode ?      848 : 640;
-            uint32_t depth_height = usb3mode ?      480 : 480;
-            uint32_t color_width = usb3mode ?       1280 : 640;
-            uint32_t color_height = usb3mode ?      720 : 480;
-            uint32_t fps    = usb3mode ?            30 :  15;
+            int depth_width = usb3mode ? 848 : 640;
+            int depth_height = usb3mode ?      480 : 480;
+            int color_width = usb3mode ?       1280 : 640;
+            int color_height = usb3mode ?      720 : 480;
+            int fps    = usb3mode ?            30 :  15;
 
             tags.push_back({ RS2_STREAM_COLOR, -1, color_width, color_height, RS2_FORMAT_RGB8, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             tags.push_back({ RS2_STREAM_DEPTH, -1, depth_width, depth_height, RS2_FORMAT_Z16, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
