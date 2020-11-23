@@ -3,7 +3,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-import sys, os, subprocess, locale, re, platform, getopt, traceback
+import sys, os, subprocess, locale, re, platform, getopt
 
 def usage():
     ourname = os.path.basename(sys.argv[0])
