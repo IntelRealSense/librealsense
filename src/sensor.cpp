@@ -193,13 +193,15 @@ namespace librealsense
     stream_profiles sensor_base::get_stream_profiles( int tag ) const
     {
         stream_profiles results;
-
+        bool const need_debug = tag & profile_tag::PROFILE_TAG_DEBUG;
+        bool const need_any = tag & profile_tag::PROFILE_TAG_ANY;
         for( auto p : *_profiles )
         {
             auto curr_tag = p->get_tag();
-            if( curr_tag & tag
-                || tag == profile_tag::PROFILE_TAG_ANY
-                       && ! ( curr_tag & profile_tag::PROFILE_TAG_DEBUG ) )
+            if( ! need_debug && ( curr_tag & profile_tag::PROFILE_TAG_DEBUG ) )
+                continue;
+
+            if( curr_tag & tag || need_any )
             {
                 results.push_back( p );
             }
