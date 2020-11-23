@@ -88,6 +88,8 @@ test.finish()
 # Test #3
 test.start("Color sensor is on")
 ac.reset_status_list()
+dcs.reset_calibration()
+ccs.reset_calibration()
 color_sensor.open( cp )
 color_sensor.start( lambda f: None )
 try:
@@ -108,6 +110,8 @@ test.finish()
 # Test #4
 test.start("2 AC triggers in a row")
 ac.reset_status_list()
+dcs.reset_calibration()
+ccs.reset_calibration()
 color_sensor.start( lambda f: None )
 try:
     d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )

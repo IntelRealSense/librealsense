@@ -3,13 +3,14 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-import sys, os, subprocess, locale, re, platform, getopt
+import sys, os, subprocess, locale, re, platform, getopt, traceback
 
 def usage():
     ourname = os.path.basename(sys.argv[0])
-    print( 'Syntax: ' + ourname + ' <dir>' )
-    print( '        Run all unit-tests in $dir (in Windows: .../build/Release; in Linux: .../build' )
+    print( 'Syntax: ' + ourname + ' <dir or re for python tests>' )
+    print( '        If given a directory, run all unit-tests in $dir (in Windows: .../build/Release; in Linux: .../build' )
     print( '        Test logs are kept in <dir>/unit-tests/<test-name>.log' )
+    print( '        If given a regular expression, run all python tests in unit-tests directory that fit that expression' )
     print( 'Options:' )
     print( '        --debug        Turn on debugging information' )
     print( '        -v, --verbose  Errors will dump the log to stdout' )
@@ -78,11 +79,6 @@ for opt,arg in opts:
             pass
 if len(args) != 1:
     usage()
-dir = args[0]
-if not os.path.isdir( dir ):
-    error( 'Directory not found:', dir )
-    sys.exit(1)
-
 
 def run(cmd, stdout=subprocess.PIPE):
     debug( 'Running:', cmd )
@@ -119,6 +115,59 @@ def find( dir, mask ):
         if pattern.search( leaf ):
             debug(leaf)
             yield leaf
+
+# NOTE: WSL will read as 'Linux' but the build is Windows-based!
+system = platform.system()
+if system == 'Linux'  and  "microsoft" not in platform.uname()[3].lower():
+    linux = True
+else:
+    linux = False
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# this script is located in librealsense/unit-tests, so one directory up is the main repository
+librealsense = os.path.dirname(current_dir)
+
+# Python scripts should be able to find the pyrealsense2 .pyd or else they won't work. We don't know
+# if the user (Travis included) has pyrealsense2 installed but even if so, we want to use the one we compiled.
+# we search the librealsense repository for the .pyd file (.so file in linux)
+pyrs = ""
+if linux:
+    for so in find(librealsense, '(^|/)pyrealsense2.*\.so$'):
+        pyrs = so
+else:
+    for pyd in find(librealsense, '(^|/)pyrealsense2.*\.pyd$'):
+        pyrs = pyd
+
+if pyrs:
+    # After use of find, pyrs contains the path from librealsense to the pyrealsense that was found
+    # We append it to the librealsense path to get an absolute path to the file to add to PYTHONPATH so it can be found by the tests
+    pyrs_path = librealsense + os.sep + pyrs
+    # We need to add the directory not the file itself
+    pyrs_path = os.path.dirname(pyrs_path)
+    # Add the necessary path to the PYTHONPATH environment variable so python will look for modules there
+    os.environ["PYTHONPATH"] = pyrs_path
+    # We also need to add the path to the python packages that the tests use
+    os.environ["PYTHONPATH"] += os.pathsep + (current_dir + os.sep + "py")
+    # We can simply change `sys.path` but any child python scripts won't see it. We change the environment instead.
+
+target = args[0]
+if not os.path.isdir( target ):
+    if not pyrs:
+        error( "pyrealsense2 not found. Please make sure to build with python wrappers")
+    for py_test in find(current_dir, target):
+        test_path = current_dir + os.sep + py_test
+        if linux:
+            cmd = ["python3", test_path]
+        else:
+            cmd = ["py", "-3", test_path]
+        try:
+            subprocess.run( cmd )
+        except subprocess.CalledProcessError as cpe:
+            print( cpe )
+            error(red + py_test + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')')
+    if n_errors:
+        sys.exit(1)
+    sys.exit(0)
 
 def remove_newlines (lines):
     for line in lines:
@@ -190,24 +239,17 @@ def check_log_for_fails(log, testname, exe):
             return True
         return False
 
-logdir = dir + '/unit-tests'
-os.makedirs( logdir, exist_ok = True );
+logdir = target + '/unit-tests'
+os.makedirs( logdir, exist_ok = True )
 n_tests = 0
 
 # In Linux, the build targets are located elsewhere than on Windows
-# NOTE: WSL will read as 'Linux' but the build is Windows-based!
-system = platform.system()
-if system == 'Linux'  and  "microsoft" not in platform.uname()[3].lower():
-    linux = True
-else:
-    linux = False
-
 # Go over all the tests from a "manifest" we take from the result of the last CMake
 # run (rather than, for example, looking for test-* in the build-directory):
 if linux:
-    manifestfile = dir + '/CMakeFiles/TargetDirectories.txt'
+    manifestfile = target + '/CMakeFiles/TargetDirectories.txt'
 else:
-    manifestfile = dir + '/../CMakeFiles/TargetDirectories.txt'
+    manifestfile = target + '/../CMakeFiles/TargetDirectories.txt'
 
 for manifest_ctx in grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir$)', manifestfile ):
     
@@ -218,9 +260,9 @@ for manifest_ctx in grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir
     else:
         testname = testdir                                      # no parent folder so we get "test-all"
     if linux:
-        exe = dir + '/unit-tests/build/' + testdir + '/' + testname
+        exe = target + '/unit-tests/build/' + testdir + '/' + testname
     else:
-        exe = dir + '/' + testname + '.exe'
+        exe = target + '/' + testname + '.exe'
     log = logdir + '/' + testname + '.log'
 
     progress( testname, '>', log, '...' )
@@ -235,33 +277,8 @@ for manifest_ctx in grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir
             # An unexpected error occurred
             error( red + testname + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')' )
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-# this script is located in librealsense/unit-tests, so one directory up is the main repository
-librealsense = os.path.dirname(current_dir)
-
-# Python scripts should be able to find the pyrealsense2 .pyd or else they won't work. We don't know
-# if the user (Travis included) has pyrealsense2 installed but even if so, we want to use the one we compiled.
-# we search the librealsense repository for the .pyd file (.so file in linux)
-pyrs = ""
-if linux:
-    for so in find(librealsense, '(^|/)pyrealsense2.*\.so$'):
-        pyrs = so
-else:
-    for pyd in find(librealsense, '(^|/)pyrealsense2.*\.pyd$'):
-        pyrs = pyd
-# if we run python tests with no .pyd/.so file they will crash. Therefore we only run them if such a file was found
+# If we run python tests with no .pyd/.so file they will crash. Therefore we only run them if such a file was found
 if pyrs:
-    # After use of find, pyrs contains the path from librealsense to the pyrealsense that was found
-    # We append it to the librealsense path to get an absolute path to the file to add to PYTHONPATH so it can be found by the tests
-    pyrs_path = librealsense + os.sep + pyrs
-    # We need to add the directory not the file itself
-    pyrs_path = os.path.dirname(pyrs_path)
-    # Add the necessary path to the PYTHONPATH environment variable so python will look for modules there
-    os.environ["PYTHONPATH"] = pyrs_path
-    # We also need to add the path to the python packages that the tests use
-    os.environ["PYTHONPATH"] += os.pathsep + (current_dir + os.sep + "py")
-    # We can simply change `sys.path` but any child python scripts won't see it. We change the environment instead.
-
     # unit-test scripts are in the same directory as this script
     for py_test in find(current_dir, '(^|/)test-.*\.py'):
     

@@ -154,14 +154,14 @@ def fail():
         test_failed = True
 
 # Functions for formatting test cases
-def start(test_name):
+def start(*test_name):
     global n_tests, test_failed, test_in_progress
     if test_in_progress:
         raise RuntimeError("Tried to start test before previous test finished. Aborting test")
     n_tests += 1
     test_failed = False
     test_in_progress = True
-    print(test_name)
+    print(*test_name)
 
 def finish():
     global test_failed, n_failed_tests, test_in_progress
@@ -178,7 +178,7 @@ def finish():
 # The format has to agree with the expected format in check_log() in run-unit-tests and with the C++ format using Catch
 def print_results_and_exit():
     global n_assertions, n_tests, n_failed_assertions, n_failed_tests
-    if n_failed_assertions:
+    if n_failed_tests:
         passed = n_assertions - n_failed_assertions
         print("test cases:", n_tests, "|" , n_failed_tests,  "failed")
         print("assertions:", n_assertions, "|", passed, "passed |", n_failed_assertions, "failed")
