@@ -254,3 +254,10 @@ void init_advanced_mode(py::module &m) {
         .def("serialize_json", &rs400::advanced_mode::serialize_json)
         .def("load_json", &rs400::advanced_mode::load_json, "json_content"_a);
 }
+
+void init_serializable_device(py::module& m) {
+    py::class_<rs2::serializable_device> serializable_device(m, "serializable_device");
+    serializable_device.def(py::init<rs2::device>(), "device"_a)
+        .def("serialize_json", &rs2::serializable_device::serialize_json)
+        .def("load_json", &rs2::serializable_device::load_json, "json_content"_a);
+}

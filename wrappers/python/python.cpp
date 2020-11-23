@@ -27,6 +27,7 @@ PYBIND11_MODULE(NAME, m) {
     init_internal(m); // must be run after init_frame()
     init_export(m);
     init_advanced_mode(m);
+    init_serializable_device(m);
     init_util(m);
     
     /** rs_export.hpp **/
