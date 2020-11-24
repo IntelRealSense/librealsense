@@ -2,7 +2,7 @@
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
-#include "../include/librealsense2/hpp/rs_frame.hpp"
+#include "../include/librealsense2/rs.hpp"
 
 void init_frame(py::module &m) {
     py::class_<BufData> BufData_py(m, "BufData", py::buffer_protocol());
@@ -67,14 +67,14 @@ void init_frame(py::module &m) {
             if (auto vf = self.as<rs2::video_stream_profile>())
             {
                 ss << "<" SNAME ".video_stream_profile: "
-                    << rs2_stream_to_string( vf.stream_type() ) << "(" << vf.stream_index() << ") " << vf.width()
+                    << vf.stream_type() << "(" << vf.stream_index() << ") " << vf.width()
                     << "x" << vf.height() << " @ " << vf.fps() << "fps "
-                    << rs2_format_to_string( vf.format() ) << ">";
+                    << vf.format() << ">";
             }
             else
             {
-                ss << "<" SNAME ".stream_profile: " << rs2_stream_to_string( self.stream_type() ) << "(" << self.stream_index()
-                    << ") @ " << self.fps() << "fps " << rs2_format_to_string( self.format() ) << ">";
+                ss << "<" SNAME ".stream_profile: " << self.stream_type() << "(" << self.stream_index()
+                    << ") @ " << self.fps() << "fps " << self.format() << ">";
             }
             return ss.str();
         });
