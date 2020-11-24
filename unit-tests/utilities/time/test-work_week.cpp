@@ -22,6 +22,7 @@ TEST_CASE("test work_week c'tor", "[work_week]")
     work_week first_day(std::mktime(tm));
     CHECK(first_day.get_work_week() == 1);
     tm->tm_yday = 6;
+    tm->tm_wday = 6;
     // This should be the last day of the first work week
     work_week sixth_day(std::mktime(tm));
     CHECK(sixth_day.get_work_week() == 1);
@@ -29,6 +30,11 @@ TEST_CASE("test work_week c'tor", "[work_week]")
     // This should be the first day of the second work week
     work_week seventh_day(std::mktime(tm));
     CHECK(seventh_day.get_work_week() == 2);
+    // If the didn't start on a Sunday, day 6 should be in work week 2
+    tm->tm_yday = 6;
+    tm->tm_wday = 2;
+    work_week second_week(std::mktime(tm));
+    CHECK(second_week.get_work_week() == 2);
 }
 
 // Test description:

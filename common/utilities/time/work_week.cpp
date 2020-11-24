@@ -13,10 +13,10 @@ work_week::work_week( const std::time_t & t )
     auto time = std::localtime( &t );
     _year = time->tm_year + 1900;     // The tm_year field contains the number of years
                                       // since 1900, we add 1900 to get current year
-    _ww = ( time->tm_yday / 7 ) + 1;  // The tm_yday field contains the number of days sine 1st
-                                      // of January, we divide by 7 to get current work week
-                                      // than add 1 because work weeks start at 1 and not 0
-                                      // (ex. 1st of January will return ww 0, but it ww 1)
+    int Jan_1_wday = (time->tm_wday - time->tm_yday) % 7;
+    if (Jan_1_wday < 0) 
+        Jan_1_wday += 7;
+    _ww = ((time->tm_yday + Jan_1_wday) / 7) + 1;
 }
 
 unsigned work_week::get_year() const
