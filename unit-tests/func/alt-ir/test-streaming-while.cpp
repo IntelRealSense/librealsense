@@ -8,14 +8,10 @@
 
 using namespace rs2;
 
-TEST_CASE( "AC fails if AltIR was enable after stream start", "[l500][live]" )
+TEST_CASE( "Enable AltIR while streaming and check that all streams arrived", "[l500][live]" )
 {
     auto devices = find_devices_by_product_line_or_exit( RS2_PRODUCT_LINE_L500 );
     auto dev = devices[0];
-
-    std::string serial;
-    REQUIRE_NOTHROW( serial = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) );
-
 
     auto depth_sens = dev.first< rs2::depth_sensor >();
 

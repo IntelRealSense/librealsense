@@ -21,20 +21,21 @@ inline rs2::device_list find_devices_by_product_line_or_exit( int product )
     return devices_list;
 }
 
-
+// Remove the frame's stream (or streams if a frameset) from the list of streams we expect to arrive
+// If any stream is unexpected, it is ignored
 inline void remove_all_streams_arrived( rs2::frame f,
-                                        std::vector< rs2::stream_profile > & stream_to_arrive )
+                                        std::vector< rs2::stream_profile > & expected_streams )
 {
     auto remove_stream = [&]() {
-        auto it = std::remove_if( stream_to_arrive.begin(),
-                                  stream_to_arrive.end(),
+        auto it = std::remove_if( expected_streams.begin(),
+                                  expected_streams.end(),
                                   [&]( rs2::stream_profile s ) {
                                       return s.stream_type() == f.get_profile().stream_type();
                                   } );
 
 
-        if( it != stream_to_arrive.end() )
-            stream_to_arrive.erase( it );
+        if( it != expected_streams.end() )
+            expected_streams.erase( it );
     };
 
     if( f.is< rs2::frameset >() )
