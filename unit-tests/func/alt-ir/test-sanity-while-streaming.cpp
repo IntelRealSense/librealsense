@@ -28,7 +28,7 @@ TEST_CASE( "AltIR", "[l500][live]" )
         for( auto i = r.min; i <= r.max; i+=r.step )
         {
             // We expect that no delay is needed between set and get, as would be the case
-            // XU options (during streaming)
+            // with XU options (during streaming)
             CHECK_NOTHROW( depth_sens.set_option( RS2_OPTION_ALTERNATE_IR, i ) );
             CHECK( depth_sens.get_option( RS2_OPTION_ALTERNATE_IR ) == i );
         }
