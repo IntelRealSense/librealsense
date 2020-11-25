@@ -332,6 +332,28 @@ namespace rs2
 
     void on_chip_calib_manager::calibrate()
     {
+        if (speed_fl == 0)
+        {
+            speed = 1;
+            fl_step_count = 51;
+            fy_scan_range = 40;
+            white_wall_mode = 0;
+        }
+        else if (speed_fl == 1)
+        {
+            speed = 3;
+            fl_step_count = 51;
+            fy_scan_range = 59;
+            white_wall_mode = 0;
+        }
+        else if (speed_fl == 2)
+        {
+            speed = 4;
+            fl_step_count = 51;
+            fy_scan_range = 40;
+            white_wall_mode = 1;
+        }
+
         std::stringstream ss;
         if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
         {
@@ -340,7 +362,10 @@ namespace rs2
                   ",\n \"fy scan range\":" << fy_scan_range <<
                   ",\n \"keep new value after sucessful scan\":" << keep_new_value_after_sucessful_scan <<
                   ",\n \"fl data sampling\":" << fl_data_sampling <<
-                  ",\n \"adjust both sides\":" << adjust_both_sides << "}";
+                  ",\n \"adjust both sides\":" << adjust_both_sides <<  
+                  ",\n \"fl scan location\":" << fl_scan_location <<
+                  ",\n \"fy scan direction\":" << fy_scan_direction <<
+                  ",\n \"white wall mode\":" << white_wall_mode << "}";
         }
         else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB)
         {
@@ -360,6 +385,9 @@ namespace rs2
                   ",\n \"keep new value after sucessful scan\":" << keep_new_value_after_sucessful_scan <<
                   ",\n \"fl data sampling\":" << fl_data_sampling <<
                   ",\n \"adjust both sides\":" << adjust_both_sides <<
+                  ",\n \"fl scan location\":" << fl_scan_location <<
+                  ",\n \"fy scan direction\":" << fy_scan_direction <<
+                  ",\n \"white wall mode\":" << white_wall_mode << 
                   ",\n \"speed\":" << speed <<
                   ",\n \"average step count\":" << average_step_count <<
                   ",\n \"scan parameter\":" << (intrinsic_scan ? 0 : 1) <<
@@ -1025,14 +1053,26 @@ namespace rs2
 
                 std::string id = to_string() << "##speed_" << index;
 
-                std::vector<std::string> vals{ "Very Fast", "Fast", "Medium", "Slow", "White Wall" };
                 std::vector<const char*> vals_cstr;
-                for (auto&& s : vals) vals_cstr.push_back(s.c_str());
+                if (get_manager().action != on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB)
+                {
+                    std::vector<std::string> vals{ "Fast", "Slow", "White Wall" };
+                    for (auto&& s : vals) vals_cstr.push_back(s.c_str());
 
-                ImGui::PushItemWidth(width - 145.f);
+                    ImGui::PushItemWidth(width - 145.f);
+                    ImGui::Combo(id.c_str(), &get_manager().speed_fl, vals_cstr.data(), int(vals.size()));
+                    ImGui::PopItemWidth();
 
-                ImGui::Combo(id.c_str(), &get_manager().speed, vals_cstr.data(), int(vals.size()));
-                ImGui::PopItemWidth();
+                }
+                else
+                {
+                    std::vector<std::string> vals{ "Very Fast", "Fast", "Medium", "Slow", "White Wall" };
+                    for (auto&& s : vals) vals_cstr.push_back(s.c_str());
+
+                    ImGui::PushItemWidth(width - 145.f);
+                    ImGui::Combo(id.c_str(), &get_manager().speed, vals_cstr.data(), int(vals.size()));
+                    ImGui::PopItemWidth();
+                }
 
                 if (get_manager().action != on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
                     draw_intrinsic_extrinsic(x, y);

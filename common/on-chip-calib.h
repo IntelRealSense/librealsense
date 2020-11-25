@@ -57,6 +57,7 @@ namespace rs2
         int step_count = 20;
         int accuracy = 2;
         int speed = 3;
+        int speed_fl = 0;
         bool intrinsic_scan = true;
         bool apply_preset = true;
 
@@ -77,6 +78,10 @@ namespace rs2
         int keep_new_value_after_sucessful_scan = 1;
         int fl_data_sampling = 1;
         int adjust_both_sides = 0;
+
+        int fl_scan_location = 0;
+        int fy_scan_direction = 0;
+        int white_wall_mode = 0;
 
         std::shared_ptr<subdevice_model> _sub;
 

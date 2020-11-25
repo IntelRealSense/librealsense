@@ -333,12 +333,14 @@ namespace rs2
                                               "calib type" : 0,
                                               "speed": 3,
                                               "scan parameter": 0,
-                                              "adjust both sides": 0
+                                              "adjust both sides": 0,
+                                              "white wall mode": 0
                                             }
                                             calib_type - calibraton type: 0 = regular, 1 = focal length, 2 = both regular and focal length in order
-                                            speed - for regular calibration. value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is  Slow
+                                            speed - for regular calibration. value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is Slow for type 0 and Fast for type 2
                                             scan_parameter - for regular calibration. value can be one of: Py scan (default) = 0, Rx scan = 1
                                             adjust_both_sides - for focal length calibration. value can be one of: 0 = adjust right only, 1 = adjust both sides
+                                            white_wall_mode - white wall mode: 0 for normal mode and 1 for white wall mode
                                             if json is nullptr it will be ignored and calibration will use the default parameters
          * \param[out] health           The absolute value of regular calibration Health-Check captures how far camera calibration is from the optimal one
                                             [0, 0.25) - Good
@@ -385,12 +387,14 @@ namespace rs2
                                               "focal length" : 0,
                                               "speed": 3,
                                               "scan parameter": 0,
-                                              "adjust both sides": 0
+                                              "adjust both sides": 0,
+                                              "white wall mode": 0
                                             }
                                             focal_length - calibraton type: 0 = regular, 1 = focal length, 2 = both regular and focal length in order
-                                            speed - for regular calibration. value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is  Slow
+                                            speed - for regular calibration. value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is Slow for type 0 and Fast for type 2
                                             scan_parameter - for regular calibration. value can be one of: Py scan (default) = 0, Rx scan = 1
                                             adjust_both_sides - for focal length calibration. value can be one of: 0 = adjust right only, 1 = adjust both sides
+                                            white_wall_mode - white wall mode: 0 for normal mode and 1 for white wall mode
                                             if json is nullptr it will be ignored and calibration will use the default parameters
          * \param[out] health           The absolute value of regular calibration Health-Check captures how far camera calibration is from the optimal one
                                             [0, 0.25) - Good

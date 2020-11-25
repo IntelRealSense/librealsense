@@ -160,6 +160,10 @@ namespace librealsense
 
     const int DEFAULT_TARE_SAMPLING = data_sampling::polling;
 
+    const int DEFAULT_OCC_FL_SCAN_LOCATION = 0;
+    const int DEFAULT_FY_SCAN_DIRECTION = 0;
+    const int DEFAULT_WHITE_WALL_MODE = 0;
+
     auto_calibrated::auto_calibrated(std::shared_ptr<hw_monitor>& hwm)
         : _hw_monitor(hwm){}
 
@@ -193,6 +197,7 @@ namespace librealsense
         int calib_type = DEFAULT_CALIB_TYPE;
 
         int speed = DEFAULT_SPEED;
+        int speed_fl = auto_calib_speed::speed_fast;
         int scan_parameter = DEFAULT_SCAN;
         int data_sampling = DEFAULT_SAMPLING;
         int apply_preset = 1;
@@ -203,6 +208,10 @@ namespace librealsense
         int fl_data_sampling = DEFAULT_FL_SAMPLING;
         int adjust_both_sides = DEFAULT_ADJUST_BOTH_SIDES;
         
+        int fl_scan_location = DEFAULT_OCC_FL_SCAN_LOCATION;
+        int fy_scan_direction = DEFAULT_FY_SCAN_DIRECTION;
+        int white_wall_mode = DEFAULT_WHITE_WALL_MODE;
+        
         float h_1 = 0.0f;
         float h_2 = 0.0f;
 
@@ -211,7 +220,11 @@ namespace librealsense
             auto jsn = parse_json(json);
             try_fetch(jsn, "calib type", &calib_type);
 
-            try_fetch(jsn, "speed", &speed);
+            if (calib_type == 0)
+                try_fetch(jsn, "speed", &speed);
+            else
+                try_fetch(jsn, "speed", &speed_fl);
+
             try_fetch(jsn, "scan parameter", &scan_parameter);
             try_fetch(jsn, "data sampling", &data_sampling);
             try_fetch(jsn, "apply preset", &apply_preset);
@@ -221,6 +234,10 @@ namespace librealsense
             try_fetch(jsn, "keep new value after sucessful scan", &keep_new_value_after_sucessful_scan);
             try_fetch(jsn, "fl data sampling", &fl_data_sampling);
             try_fetch(jsn, "adjust both sides", &adjust_both_sides);
+
+            try_fetch(jsn, "fl scan location", &fl_scan_location);
+            try_fetch(jsn, "fy scan direction", &fy_scan_direction);
+            try_fetch(jsn, "white wall mode", &white_wall_mode);
         }
 
         std::vector<uint8_t> res;
@@ -299,8 +316,9 @@ namespace librealsense
         {
             LOG_INFO("run_on_chip_focal_length_calibration with parameters: step count = " << fl_step_count
                 << ", fy scan range = " << fy_scan_range << ", keep new value after sucessful scan = " << keep_new_value_after_sucessful_scan
-                << ", interrrupt data sampling " << fl_data_sampling << ", adjust both sides = " << adjust_both_sides);
-            check_focal_length_params(fl_step_count, fy_scan_range, keep_new_value_after_sucessful_scan, fl_data_sampling, adjust_both_sides);
+                << ", interrrupt data sampling " << fl_data_sampling << ", adjust both sides = " << adjust_both_sides
+                << ", fl scan location = " << fl_scan_location << ", fy scan direction = " << fy_scan_direction << ", white wall mode = " << white_wall_mode);
+            check_focal_length_params(fl_step_count, fy_scan_range, keep_new_value_after_sucessful_scan, fl_data_sampling, adjust_both_sides, fl_scan_location, fy_scan_direction, white_wall_mode);
 
             // Begin auto-calibration
             int p4 = 0;
@@ -310,6 +328,12 @@ namespace librealsense
                 p4 |= (1 << 3);
             if (adjust_both_sides)
                 p4 |= (1 << 4);
+            if (fl_scan_location)
+                p4 |= (1 << 5);
+            if (fy_scan_direction)
+                p4 |= (1 << 6);
+            if (white_wall_mode)
+                p4 |= (1 << 7);
             _hw_monitor->send(command{ ds::AUTO_CALIB, focal_length_calib_begin, fl_step_count, fy_scan_range, p4 });
 
             FocalLengthCalibrationResult result{};
@@ -370,10 +394,11 @@ namespace librealsense
         }
         else
         {
-            LOG_INFO("run_on_chip_calibration with parameters: speed = " << speed 
+            LOG_INFO("run_on_chip_calibration with parameters: speed = " << speed_fl 
                 << ", keep new value after sucessful scan = " << keep_new_value_after_sucessful_scan 
-                << " data_sampling = " << data_sampling << ", adjust both sides = " << adjust_both_sides);
-            check_one_button_params(speed, keep_new_value_after_sucessful_scan, data_sampling, adjust_both_sides);
+                << " data_sampling = " << data_sampling << ", adjust both sides = " << adjust_both_sides 
+                << ", fl scan location = " << fl_scan_location << ", fy scan direction = " << fy_scan_direction << ", white wall mode = " << white_wall_mode);
+            check_one_button_params(speed, keep_new_value_after_sucessful_scan, data_sampling, adjust_both_sides, fl_scan_location, fy_scan_direction, white_wall_mode);
 
             int p4 = 0;
             if (scan_parameter)
@@ -384,6 +409,12 @@ namespace librealsense
                 p4 |= (1 << 3);
             if (adjust_both_sides)
                 p4 |= (1 << 4);
+            if (fl_scan_location)
+                p4 |= (1 << 5);
+            if (fy_scan_direction)
+                p4 |= (1 << 6);
+            if (white_wall_mode)
+                p4 |= (1 << 7);
 
             std::shared_ptr<ds5_advanced_mode_base> preset_recover;
             if (speed == speed_white_wall && apply_preset)
@@ -392,7 +423,7 @@ namespace librealsense
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
             // Begin auto-calibration
-            _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_plus_fl_calib_begin, speed, 0, p4 });
+            _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_plus_fl_calib_begin, speed_fl, 0, p4 });
 
             DscPyRxFLCalibrationTableResult result{};
 
@@ -615,7 +646,7 @@ namespace librealsense
             throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'subpixel accuracy' " << accuracy << " is out of range (0 - 3).");
     }
 
-    void auto_calibrated::check_focal_length_params(int step_count, int fy_scan_range, int keep_new_value_after_sucessful_scan, int interrrupt_data_samling, int adjust_both_sides) const
+    void auto_calibrated::check_focal_length_params(int step_count, int fy_scan_range, int keep_new_value_after_sucessful_scan, int interrrupt_data_samling, int adjust_both_sides, int fl_scan_location, int fy_scan_direction, int white_wall_mode) const
     {
         if (step_count < 8 || step_count >  256)
             throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'step_count' " << step_count << " is out of range (8 - 256).");
@@ -627,9 +658,15 @@ namespace librealsense
             throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'interrrupt_data_samling' " << interrrupt_data_samling << " is out of range (0 - 1).");
         if (adjust_both_sides < 0 || adjust_both_sides >  1)
             throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'adjust_both_sides' " << adjust_both_sides << " is out of range (0 - 1).");
+        if (fl_scan_location < 0 || fl_scan_location >  1)
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'fl_scan_location' " << fl_scan_location << " is out of range (0 - 1).");
+        if (fy_scan_direction < 0 || fy_scan_direction >  1)
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'fy_scan_direction' " << fy_scan_direction << " is out of range (0 - 1).");
+        if (white_wall_mode < 0 || white_wall_mode >  1)
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'white_wall_mode' " << white_wall_mode << " is out of range (0 - 1).");
     }
 
-    void auto_calibrated::check_one_button_params(int speed, int keep_new_value_after_sucessful_scan, int data_sampling, int adjust_both_sides) const
+    void auto_calibrated::check_one_button_params(int speed, int keep_new_value_after_sucessful_scan, int data_sampling, int adjust_both_sides, int fl_scan_location, int fy_scan_direction, int white_wall_mode) const
     {
         if (speed < speed_very_fast || speed >  speed_white_wall)
             throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'speed' " << speed << " is out of range (0 - 4).");
@@ -639,6 +676,12 @@ namespace librealsense
             throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'data sampling' " << data_sampling << " is out of range (0 - 1).");
         if (adjust_both_sides < 0 || adjust_both_sides >  1)
             throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'adjust_both_sides' " << adjust_both_sides << " is out of range (0 - 1).");
+        if (fl_scan_location < 0 || fl_scan_location >  1)
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'fl_scan_location' " << fl_scan_location << " is out of range (0 - 1).");
+        if (fy_scan_direction < 0 || fy_scan_direction >  1)
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'fy_scan_direction' " << fy_scan_direction << " is out of range (0 - 1).");
+        if (white_wall_mode < 0 || white_wall_mode >  1)
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'white_wall_mode' " << white_wall_mode << " is out of range (0 - 1).");
     }
 
     void auto_calibrated::handle_calibration_error(int status) const
