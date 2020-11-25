@@ -332,26 +332,29 @@ namespace rs2
 
     void on_chip_calib_manager::calibrate()
     {
-        if (speed_fl == 0)
+        if (action != RS2_CALIB_ACTION_ON_CHIP_CALIB)
         {
-            speed = 1;
-            fl_step_count = 51;
-            fy_scan_range = 40;
-            white_wall_mode = 0;
-        }
-        else if (speed_fl == 1)
-        {
-            speed = 3;
-            fl_step_count = 51;
-            fy_scan_range = 59;
-            white_wall_mode = 0;
-        }
-        else if (speed_fl == 2)
-        {
-            speed = 4;
-            fl_step_count = 51;
-            fy_scan_range = 40;
-            white_wall_mode = 1;
+            if (speed_fl == 0)
+            {
+                speed = 1;
+                fl_step_count = 51;
+                fy_scan_range = 40;
+                white_wall_mode = 0;
+            }
+            else if (speed_fl == 1)
+            {
+                speed = 3;
+                fl_step_count = 51;
+                fy_scan_range = 59;
+                white_wall_mode = 0;
+            }
+            else if (speed_fl == 2)
+            {
+                speed = 4;
+                fl_step_count = 51;
+                fy_scan_range = 40;
+                white_wall_mode = 1;
+            }
         }
 
         std::stringstream ss;
