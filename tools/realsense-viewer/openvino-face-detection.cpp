@@ -3,14 +3,15 @@
 
 // NOTE: This file will be compiled only with INTEL_OPENVINO_DIR pointing to an OpenVINO install!
 
-
 #include "post-processing-filters-list.h"
 #include "post-processing-worker-filter.h"
+
 #include <rs-vino/object-detection.h>
 #include <rs-vino/age-gender-detection.h>
 #include <rs-vino/detected-object.h>
 #include <cv-helpers.hpp>
 
+namespace openvino = InferenceEngine;
 
 /* We need to extend the basic detected_object to include facial characteristics
 */
@@ -94,6 +95,7 @@ public:
         // Complete background worker to ensure it releases the instance's resources in controlled manner
         release_background_worker();
     }
+
 public:
     void start( rs2::subdevice_model & model ) override
     {
@@ -105,9 +107,14 @@ private:
     void worker_start() override
     {
         LOG(INFO) << "Loading CPU extensions...";
-        _ie.AddExtension( std::make_shared< InferenceEngine::Extensions::Cpu::CpuExtensions >(), "CPU" );
-        _face_detector.load_into( _ie, "CPU" );
-        _age_detector.load_into( _ie, "CPU" );
+        std::string const device_name{ "CPU" };
+
+#ifdef OPENVINO2019
+        _ie.AddExtension(std::make_shared< openvino::Extensions::Cpu::CpuExtensions >(), device_name);
+#endif
+
+        _face_detector.load_into( _ie, device_name);
+        _age_detector.load_into( _ie, device_name);
     }
 
     /*
