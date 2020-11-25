@@ -14,7 +14,9 @@
 #pragma warning(disable:4275)
 #   include <inference_engine.hpp>
 #   include <ie_iextension.h>
+#ifdef OPENVINO2019
 #   include <ext_list.hpp>              // Required for CPU extension usage
+#endif
 #pragma warning(pop)
 
 #include <opencv2/opencv.hpp>
