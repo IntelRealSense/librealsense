@@ -217,7 +217,7 @@ int main(int argc, char * argv[]) try
     openvino::Core engine;
     openvino_helpers::error_listener error_listener;
     engine.SetLogCallback( error_listener );
-    std::string const device_name { "ÑPU" };
+    std::string const device_name { "CPU" };
 
 #ifdef OPENVINO2019
 	engine.AddExtension(std::make_shared< openvino::Extensions::Cpu::CpuExtensions >(), device_name);
