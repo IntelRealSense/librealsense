@@ -2162,7 +2162,8 @@ namespace rs2
 
     stream_model::stream_model()
         : texture(std::unique_ptr<texture_buffer>(new texture_buffer())),
-        _stream_not_alive(std::chrono::milliseconds(1500))
+        _stream_not_alive(std::chrono::milliseconds(1500)),
+        _reflectivity_stabilizer(10, 0.75f)
     {
         show_map_ruler = config_file::instance().get_or_default(
             configurations::viewer::show_map_ruler, true);
@@ -2304,12 +2305,14 @@ namespace rs2
                     && ( ( p.stream_type() == RS2_STREAM_INFRARED ) || ( p.stream_type() == RS2_STREAM_DEPTH ) ) )
                 {
                     _reflectivity = std::unique_ptr< reflectivity >( new reflectivity() );
+
                 }
             }
         }
         catch(...) {};
 
     }
+
 
     bool stream_model::draw_reflectivity( int x,
                                           int y,
@@ -2355,7 +2358,8 @@ namespace rs2
                 try
                 {
                     auto pixel_ref = _reflectivity->get_reflectivity( noise_est, max_usable_range, ir_val );
-                    ref_str = to_string() << std::dec << round( pixel_ref * 100 ) << "%";
+                    auto stabilized_pixel_ref = _reflectivity_stabilizer.get_stabilized_value(pixel_ref);
+                    ref_str = to_string() << std::dec << round(stabilized_pixel_ref * 100 ) << "%";
                 }
                 catch( ... )
                 {

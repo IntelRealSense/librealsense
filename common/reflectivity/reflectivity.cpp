@@ -155,6 +155,20 @@ float reflectivity::get_reflectivity( float raw_noise_estimation,
 
     ref = ( i_ref * ref_from_ir + s_ref * ref_from_std ) / ( ref_from_ir + ref_from_std );
 
+    // Force 15% resolution
+    if (ref >= 0.85f)
+        ref = 0.85f;
+    else if (ref >= 0.7f)
+        ref = 0.7f;
+    else if (ref >= 0.55f)
+        ref = 0.55f;
+    else if (ref >= 0.4f)
+        ref = 0.4f;
+    else if (ref >= 0.25f)
+        ref = 0.25f;
+    else
+        ref = 0.1f;
+
     return ref;
 }
 

@@ -30,6 +30,7 @@
 #include "cah-model.h"
 #include "../common/utilities/time/periodic_timer.h"
 #include "reflectivity/reflectivity.h"
+#include "utilities/number/value-stabilizer.hpp"
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);
@@ -677,7 +678,6 @@ namespace rs2
     void outline_rect(const rect& r);
     void draw_rect(const rect& r, int line_width = 1);
 
-
     class stream_model
     {
     public:
@@ -735,6 +735,7 @@ namespace rs2
 
     private:
         std::unique_ptr< reflectivity > _reflectivity; 
+        utilities::number::value_stabilizer<float> _reflectivity_stabilizer;
 
     };
 
