@@ -2,7 +2,6 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 
-#include "../../test.h"
 #include "../func-common.h"
 #include "alt-ir-common.h"
 
@@ -14,19 +13,14 @@ TEST_CASE( "Enable AltIR while streaming and check that all streams arrived", "[
     auto dev = devices[0];
 
     auto depth_sens = dev.first< rs2::depth_sensor >();
-
-    if( depth_sens.supports( RS2_OPTION_ALTERNATE_IR ) )
+    if( alt_ir_supported_or_message( depth_sens ) )
     {
         auto depth = find_default_depth_profile( depth_sens );
         auto ir = find_default_ir_profile( depth_sens );
         auto confidence = find_confidence_corresponding_to_depth( depth_sens, depth );
 
         enable_alt_ir_and_check_that_all_streams_arrived( dev,
-                                                          dev.first< rs2::depth_sensor >(),
+                                                          depth_sens,
                                                           { depth, ir, confidence } );
     }
-    else
-        std::cout << depth_sens.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION )
-                  << " doesn't support alt IR option";
-
 }

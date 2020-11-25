@@ -6,6 +6,19 @@
 
 using namespace rs2;
 
+
+bool alt_ir_supported_or_message( const rs2::depth_sensor & depth_sens )
+{
+    REQUIRE( depth_sens );
+
+    if( depth_sens.supports( RS2_OPTION_ALTERNATE_IR ) )
+        return true;
+
+    std::cout << "FW version " << depth_sens.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION )
+                << " doesn't support alt IR option";
+    return false;
+}
+
 void set_alt_ir_if_needed( const rs2::depth_sensor & depth_sens, float val )
 {
     REQUIRE( depth_sens.supports( RS2_OPTION_ALTERNATE_IR ) );
@@ -21,31 +34,26 @@ void enable_alt_ir_and_check_that_AC_fails(
 {
     std::vector< stream_profile > profiles = expected_profiles;
     REQUIRE_NOTHROW( depth_sens.open( profiles ) );
-
     REQUIRE_NOTHROW( depth_sens.start( [&]( rs2::frame f ) {} ) );
 
     set_alt_ir_if_needed( depth_sens, 1 );
 
-    // check that AC throws exception
-    if( dev.is< rs2::device_calibration >() )
+    auto calib = dev.as< rs2::device_calibration >();
+    if( calib )
     {
-        std::condition_variable cv;
-        std::mutex m;
-
-        auto calib = dev.as< rs2::device_calibration >();
-
         rs2_calibration_status status;
         calib.register_calibration_change_callback( [&]( rs2_calibration_status cal_status ) {
             status = cal_status;
         } );
 
+        // Before throwing, AC will notify of a BAD_CONDITIONS status
         REQUIRE_THROWS( calib.trigger_device_calibration( RS2_CALIBRATION_MANUAL_DEPTH_TO_RGB ) );
 
         REQUIRE( status == RS2_CALIBRATION_BAD_CONDITIONS );
     }
 
-    depth_sens.stop();
-    depth_sens.close();
+    REQUIRE_NOTHROW( depth_sens.stop() );
+    REQUIRE_NOTHROW( depth_sens.close() );
 }
 
 void enable_alt_ir_and_check_that_all_streams_arrived(
@@ -82,7 +90,7 @@ void enable_alt_ir_and_check_that_all_streams_arrived(
     set_alt_ir_if_needed( depth_sens, 1 );
     wait_for_streams();
 
-    depth_sens.stop();
-    depth_sens.close();
+    REQUIRE_NOTHROW( depth_sens.stop() );
+    REQUIRE_NOTHROW( depth_sens.close() );
 
 }

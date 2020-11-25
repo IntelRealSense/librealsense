@@ -3,7 +3,6 @@
 
 #include "../test.h"
 #include "librealsense2/rs.hpp"
-#include <concurrency.h>
 
 using namespace rs2;
 
@@ -60,7 +59,6 @@ inline stream_profile find_default_depth_profile( rs2::depth_sensor depth_sens )
           } );
 
     REQUIRE( depth_profile != stream_profiles.end() );
-
     return *depth_profile;
 }
 
@@ -75,7 +73,6 @@ inline stream_profile find_default_ir_profile( rs2::depth_sensor depth_sens )
           } );
 
     REQUIRE( ir_profile != stream_profiles.end() );
-
     return *ir_profile;
 }
 
@@ -95,6 +92,5 @@ inline stream_profile find_confidence_corresponding_to_depth( rs2::depth_sensor 
           } );
 
     REQUIRE( confidence_profile != stream_profiles.end() );
-
     return *confidence_profile;
 }

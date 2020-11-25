@@ -1,8 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#include "../../test.h"
 #include "../func-common.h"
+#include "alt-ir-common.h"
 
 using namespace rs2;
 
@@ -13,8 +13,7 @@ TEST_CASE( "AltIR", "[l500][live]" )
     auto dev = devices[0];
     
     auto depth_sens = dev.first< rs2::depth_sensor >();
-    
-    if( depth_sens.supports(RS2_OPTION_ALTERNATE_IR) )
+    if( alt_ir_supported_or_message( depth_sens ) )
     {
         option_range r;
         REQUIRE_NOTHROW( r = depth_sens.get_option_range( RS2_OPTION_ALTERNATE_IR ) );
@@ -26,9 +25,10 @@ TEST_CASE( "AltIR", "[l500][live]" )
         REQUIRE_NOTHROW( depth_sens.open( { depth, ir, confidence } ) );
         REQUIRE_NOTHROW( depth_sens.start( [&]( rs2::frame f ) {} ) );
 
-
         for( auto i = r.min; i <= r.max; i+=r.step )
         {
+            // We expect that no delay is needed between set and get, as would be the case
+            // XU options (during streaming)
             CHECK_NOTHROW( depth_sens.set_option( RS2_OPTION_ALTERNATE_IR, i ) );
             CHECK( depth_sens.get_option( RS2_OPTION_ALTERNATE_IR ) == i );
         }
@@ -36,7 +36,4 @@ TEST_CASE( "AltIR", "[l500][live]" )
         depth_sens.stop();
         depth_sens.close();
     }
-    else
-        std::cout << depth_sens.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION )
-                  << " doesn't support alt IR option";
 }

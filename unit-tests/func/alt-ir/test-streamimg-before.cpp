@@ -1,8 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-
-#include "../../test.h"
 #include "../func-common.h" //todo functional-common.h
 #include "alt-ir-common.h" //todo alt-ir-common.h
 
@@ -15,8 +13,7 @@ TEST_CASE( "Enable AltIR before stream start and check that all streams arrived"
     auto dev = devices[0];
 
     auto depth_sens = dev.first< rs2::depth_sensor >();
-
-    if( depth_sens.supports( RS2_OPTION_ALTERNATE_IR ) )
+    if( alt_ir_supported_or_message( depth_sens ) )
     {
         REQUIRE_NOTHROW( depth_sens.set_option( RS2_OPTION_ALTERNATE_IR, 1 ) );
 
@@ -25,10 +22,7 @@ TEST_CASE( "Enable AltIR before stream start and check that all streams arrived"
         auto confidence = find_confidence_corresponding_to_depth( depth_sens, depth );
 
         enable_alt_ir_and_check_that_all_streams_arrived( dev,
-                                               dev.first< rs2::depth_sensor >(),
-                                               { depth, ir, confidence } );
+                                                          depth_sens,
+                                                          { depth, ir, confidence } );
     }
-    else
-        std::cout << "FW version " << depth_sens.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION )
-                  << " doesn't support alt IR option";
 }
