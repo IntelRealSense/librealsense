@@ -10,11 +10,19 @@ namespace number {
 
 // TODO add description and UT
 template<typename T>
-    class value_stabilizer
+    class stabilized_value
     {
     public:
-        value_stabilizer(size_t history_size, float stabilize_percentage) : _history_size(history_size), _last_stable_value(0), _stabilize_percentage(stabilize_percentage){}
-        T get_stabilized_value(T val)
+        stabilized_value( size_t history_size, float stabilize_percentage )
+            : _history_size( history_size )
+            , _last_stable_value( 0 )
+            , _stabilize_percentage( stabilize_percentage )
+        {
+            if( ( stabilize_percentage <= 0.0f ) || ( stabilize_percentage >= 1.0f ) )
+                throw std::runtime_error( "Illegal value for stabilize_percentage" );
+        }
+
+        T get(T val)
         {
             if (_values.empty())
             {

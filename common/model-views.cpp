@@ -2163,7 +2163,7 @@ namespace rs2
     stream_model::stream_model()
         : texture(std::unique_ptr<texture_buffer>(new texture_buffer())),
         _stream_not_alive(std::chrono::milliseconds(1500)),
-        _reflectivity_stabilizer(10, 0.75f)
+        _stabilized_reflectivity(10, 0.75f)
     {
         show_map_ruler = config_file::instance().get_or_default(
             configurations::viewer::show_map_ruler, true);
@@ -2358,7 +2358,7 @@ namespace rs2
                 try
                 {
                     auto pixel_ref = _reflectivity->get_reflectivity( noise_est, max_usable_range, ir_val );
-                    auto stabilized_pixel_ref = _reflectivity_stabilizer.get_stabilized_value(pixel_ref);
+                    auto stabilized_pixel_ref = _stabilized_reflectivity.get(pixel_ref);
                     ref_str = to_string() << std::dec << round(stabilized_pixel_ref * 100 ) << "%";
                 }
                 catch( ... )
