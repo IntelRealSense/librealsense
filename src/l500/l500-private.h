@@ -268,7 +268,14 @@ namespace librealsense
             ld_alarm = 14,
             hard_error = 15,
             ld_alarm_hard_error = 16,
-            pzr_vbias_exceed_limit = 17
+            pzr_vbias_exceed_limit = 17,
+            eye_safety_general_critical_error = 18,
+            eye_safety_stuck_at_ld_error = 19,
+            eye_safety_stuck_at_mode_sign_error = 20,
+            eye_safety_stuck_at_vbst_error = 21,
+            eye_safety_stuck_at_msafe_error = 22,
+            eye_safety_stuck_at_ldd_snubber_error = 23,
+            eye_safety_stuck_at_flash_otp_error = 24
         };
 
         // Elaborate FW XU report.
@@ -288,6 +295,13 @@ namespace librealsense
             { hard_error,                   "Fatal error occurred (15)" },
             { ld_alarm_hard_error,          "Fatal error occurred (16)" },
             { pzr_vbias_exceed_limit,       "Fatal error occurred (17)" },
+            { eye_safety_general_critical_error,        "Fatal error occurred (18)" },
+            { eye_safety_stuck_at_ld_error,             "Fatal error occurred (19)" },
+            { eye_safety_stuck_at_mode_sign_error,      "Fatal error occurred (20)" },
+            { eye_safety_stuck_at_vbst_error,           "Fatal error occurred (21)" },
+            { eye_safety_stuck_at_msafe_error,          "Fatal error occurred (22)" },
+            { eye_safety_stuck_at_ldd_snubber_error,    "Fatal error occurred (23)" },
+            { eye_safety_stuck_at_flash_otp_error,      "Fatal error occurred (24)" }
         };
 
 #pragma pack(push, 1)
