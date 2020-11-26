@@ -13,39 +13,54 @@ namespace string {
 
 std::string wrap_paragraph( const std::string & paragraph, int wrap_pixels_width )
 {
-    float space_size = ImGui::CalcTextSize( " " ).x;  // Calculate space width in pixels
-    std::string wrapped_line;                         // The line that is wrapped in this iteration
-    std::string wrapped_paragraph;                    // The output wrapped paragraph
-    auto remaining_paragraph = paragraph;             // holds the remaining unwrapped part of the input paragraph
+    float space_width = ImGui::CalcTextSize( " " ).x;  // Calculate space width in pixels
+    std::string wrapped_line;                          // The line that is wrapped in this iteration
+    std::string wrapped_paragraph;                     // The output wrapped paragraph
+    auto remaining_paragraph = paragraph;              // Holds the remaining unwrapped part of the input paragraph
+
+    // Handle a case when the paragraph starts with spaces
+    if( remaining_paragraph[0] == ' ' )
+    {
+        auto non_space_index = remaining_paragraph.find_first_not_of( ' ' );
+        // If non spaces characters exist
+        if( non_space_index != std::string::npos )
+        {
+            // Remove trailing spaces
+            remaining_paragraph
+                = remaining_paragraph.substr( remaining_paragraph.find_first_not_of( ' ' ) );
+        }
+    }
+
     auto next_word = remaining_paragraph.substr(
         0,
-        remaining_paragraph.find( " " ) );  // The next word to add to the current line
+        remaining_paragraph.find( ' ' ) );  // The next word to add to the current line
     bool first_word = true;
 
     while( ! next_word.empty() )
     {
+
         float next_x = 0.0f;
         // If this is the first word we try to place it first in line,
         // if not we concatenate it to the last word after adding a space
         if( ! first_word )
         {
-            next_x = ImGui::CalcTextSize( wrapped_line.c_str() ).x + space_size;
+            next_x = ImGui::CalcTextSize( wrapped_line.c_str() ).x + space_width;
         }
 
         if( next_x + ImGui::CalcTextSize( next_word.c_str() ).x <= wrap_pixels_width )
         {
             if( ! first_word )
-                wrapped_line += " ";  // first word should not start with " "
+                wrapped_line += " ";  // First word should not start with " "
             wrapped_line += next_word;
         }
         else
-        {  // current line cannot feat new word so we wrap the line and
+        {  // Current line cannot feat new word so we wrap the line and
            // start building the new line
 
             wrapped_paragraph += wrapped_line;  // copy line build by now
             if( ! first_word )
-                wrapped_paragraph += '\n';      // break the previous line if exist
-            wrapped_line = next_word;           // add next work to new line
+                wrapped_paragraph += '\n';  // break the previous line if exist
+            wrapped_line = next_word;       // add next work to new line
         }
 
         first_word = false;
@@ -56,7 +71,29 @@ std::string wrap_paragraph( const std::string & paragraph, int wrap_pixels_width
         if( remaining_paragraph.size() > next_word.size() )
         {
             remaining_paragraph = remaining_paragraph.substr( next_word.size() + 1 );
-            next_word = remaining_paragraph.substr( 0, remaining_paragraph.find( " " ) );
+
+
+            // Handle a case when the paragraph starts with spaces
+            if( remaining_paragraph[0] == ' ' )
+            {
+                auto non_space_index = remaining_paragraph.find_first_not_of( ' ' );
+                // If non spaces characters exist
+                if( non_space_index != std::string::npos )
+                {
+                    // Remove trailing spaces
+                    remaining_paragraph = remaining_paragraph.substr(
+                        remaining_paragraph.find_first_not_of( ' ' ) );
+                }
+            }
+
+            next_word = remaining_paragraph.substr( 0, remaining_paragraph.find( ' ' ) );
+
+            // If no more words exist, copy the current wrapped line to output and stop
+            if( next_word.empty() )
+            {
+                wrapped_paragraph += wrapped_line;
+                break;
+            }
         }
         else
         {
@@ -74,7 +111,7 @@ std::string wrap( const std::string & text, int wrap_pixels_width )
     if( wrap_pixels_width < 32 )
         return text;
 
-    // split text into paragraphs
+    // Split text into paragraphs
     auto paragraphs_vector = split( text, '\n' );
 
     std::string wrapped_text;
@@ -83,7 +120,7 @@ std::string wrap( const std::string & text, int wrap_pixels_width )
     for( auto paragraph : paragraphs_vector )
     {
         wrapped_text += wrap_paragraph( paragraph, wrap_pixels_width );
-        // each paragraph except the last one ends with a new line
+        // Each paragraph except the last one ends with a new line
         if( line_number++ != paragraphs_vector.size() )
             wrapped_text += '\n';
     }

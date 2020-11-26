@@ -70,4 +70,17 @@ TEST_CASE( "wrap-text", "[string]" )
 
     CHECK( wrap( "this is the first line\nthis is the second line\nthis is the last line", 60 )
            == "this is\nthe\nfirst\nline\nthis is\nthe\nsecond\nline\nthis is\nthe\nlast\nline" );
+
+    CHECK(wrap("ab cd ", 32) == "ab\ncd");
+    CHECK(wrap("ab  cd", 32) == "ab\ncd"); // Multiple spaces
+    CHECK(wrap("ab  cd ", 32) == "ab\ncd");
+    CHECK(wrap(" ab  cd ", 32) == "ab\ncd");
+    CHECK(wrap("  ab  cd ", 32) == "ab\ncd");
+    CHECK(wrap("  ab    ", 33) == "ab");
+    CHECK(wrap("ab    ", 33) == "ab");
+
+    CHECK(wrap(" ", 33) == "");
+    CHECK(wrap("  ", 33) == "");
+    CHECK(wrap("  ab", 33) == "ab");
+
 }
