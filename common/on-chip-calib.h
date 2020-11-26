@@ -192,7 +192,7 @@ namespace rs2
         double subpixel_agj(double* f, int s);
 
     public:
-        static const int _frame_num = 40;
+        static const int _frame_num = 25;
 
     private:
         const int _tsize = 28;
