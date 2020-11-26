@@ -27,7 +27,7 @@ std::string wrap_paragraph( const std::string & paragraph, int wrap_pixels_width
         {
             // Remove trailing spaces
             remaining_paragraph
-                = remaining_paragraph.substr( remaining_paragraph.find_first_not_of( ' ' ) );
+                = remaining_paragraph.substr( non_space_index );
         }
     }
 
@@ -59,8 +59,8 @@ std::string wrap_paragraph( const std::string & paragraph, int wrap_pixels_width
 
             wrapped_paragraph += wrapped_line;  // copy line build by now
             if( ! first_word )
-                wrapped_paragraph += '\n';  // break the previous line if exist
-            wrapped_line = next_word;       // add next work to new line
+                wrapped_paragraph += '\n';      // break the previous line if exist
+            wrapped_line = next_word;           // add next work to new line
         }
 
         first_word = false;
@@ -72,7 +72,6 @@ std::string wrap_paragraph( const std::string & paragraph, int wrap_pixels_width
         {
             remaining_paragraph = remaining_paragraph.substr( next_word.size() + 1 );
 
-
             // Handle a case when the paragraph starts with spaces
             if( remaining_paragraph[0] == ' ' )
             {
@@ -81,8 +80,7 @@ std::string wrap_paragraph( const std::string & paragraph, int wrap_pixels_width
                 if( non_space_index != std::string::npos )
                 {
                     // Remove trailing spaces
-                    remaining_paragraph = remaining_paragraph.substr(
-                        remaining_paragraph.find_first_not_of( ' ' ) );
+                    remaining_paragraph = remaining_paragraph.substr( non_space_index );
                 }
             }
 
