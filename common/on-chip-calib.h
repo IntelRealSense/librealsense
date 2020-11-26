@@ -57,7 +57,7 @@ namespace rs2
         int step_count = 20;
         int accuracy = 2;
         int speed = 3;
-        int speed_fl = 0;
+        int speed_fl = 1;
         bool intrinsic_scan = true;
         bool apply_preset = true;
 
@@ -192,7 +192,7 @@ namespace rs2
         double subpixel_agj(double* f, int s);
 
     public:
-        static const int _frame_num = 25;
+        static const int _frame_num = 40;
 
     private:
         const int _tsize = 28;

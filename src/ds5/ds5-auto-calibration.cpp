@@ -197,7 +197,7 @@ namespace librealsense
         int calib_type = DEFAULT_CALIB_TYPE;
 
         int speed = DEFAULT_SPEED;
-        int speed_fl = auto_calib_speed::speed_fast;
+        int speed_fl = auto_calib_speed::speed_slow;
         int scan_parameter = DEFAULT_SCAN;
         int data_sampling = DEFAULT_SAMPLING;
         int apply_preset = 1;
