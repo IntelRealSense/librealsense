@@ -56,7 +56,7 @@ else:
     def out(*args):
         print( *args )
     def progress(*args):
-        debug( *args )
+        print( *args )
 
 n_errors = 0
 def error(*args):
@@ -164,11 +164,15 @@ if pyrs:
     # We can simply change `sys.path` but any child python scripts won't see it. We change the environment instead.
 
 target = args[0]
+
+# If a regular expression (not a directory) is passed in, find the test
 if not os.path.isdir( target ):
     if not pyrs:
         error( "Python wrappers (pyrealsense2*." + pyrs + ") not found" )
         usage()
+    n_tests = 0
     for py_test in find(current_dir, target):
+        n_tests += 1
         if linux:
             cmd = ["python3"]
         else:
@@ -184,6 +188,9 @@ if not os.path.isdir( target ):
             error( red + py_test + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')' )
     if n_errors:
         sys.exit(1)
+    if not n_tests:
+        error( "No tests found matching: " + target )
+        usage()
     sys.exit(0)
 
 def remove_newlines (lines):
