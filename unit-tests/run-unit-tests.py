@@ -93,11 +93,11 @@ for opt,arg in opts:
 if len(args) != 1:
     usage()
 
-def run(cmd, stdout=subprocess.PIPE):
+def run( cmd, stdout = None ):
     debug( 'Running:', cmd )
     handle = None
     try:
-        if stdout != subprocess.PIPE:
+        if stdout  and  stdout != subprocess.PIPE:
             handle = open( stdout, "w" )
             stdout = handle
         rv = subprocess.run( cmd,
@@ -165,7 +165,8 @@ if pyrs:
 
 target = args[0]
 
-# If a regular expression (not a directory) is passed in, find the test
+# If a regular expression (not a directory) is passed in, find the test(s) and run
+# them directly
 if not os.path.isdir( target ):
     if not pyrs:
         error( "Python wrappers (pyrealsense2*." + pyrs + ") not found" )
@@ -173,6 +174,7 @@ if not os.path.isdir( target ):
     n_tests = 0
     for py_test in find(current_dir, target):
         n_tests += 1
+        progress( py_test + ' ...' )
         if linux:
             cmd = ["python3"]
         else:
@@ -181,8 +183,7 @@ if not os.path.isdir( target ):
             cmd += ["-v"]
         cmd += [current_dir + os.sep + py_test]
         try:
-            debug( 'Running:', cmd )
-            subprocess.run( cmd )
+            run( cmd )
         except subprocess.CalledProcessError as cpe:
             error( cpe )
             error( red + py_test + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')' )
