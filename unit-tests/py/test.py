@@ -24,9 +24,12 @@ def set_env_vars(env_vars):
             os.environ[env_var] = val
         sys.argv.append("rerun")
         if platform.system() == 'Linux' and "microsoft" not in platform.uname()[3].lower():
-            cmd = ["python3"] + sys.argv
+            cmd = ["python3"]
         else:
-            cmd = ["py", "-3"] + sys.argv
+            cmd = ["py", "-3"]
+        if sys.flags.verbose:
+            cmd += ["-v"]
+        cmd += sys.argv
         p = subprocess.run( cmd, stderr=subprocess.PIPE, universal_newlines=True )
         exit(p.returncode)
 

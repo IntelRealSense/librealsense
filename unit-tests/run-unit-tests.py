@@ -7,10 +7,10 @@ import sys, os, subprocess, locale, re, platform, getopt
 
 def usage():
     ourname = os.path.basename(sys.argv[0])
-    print( 'Syntax: ' + ourname + ' <dir or re for python tests>' )
+    print( 'Syntax: ' + ourname + ' <dir-or-regex>' )
     print( '        If given a directory, run all unit-tests in $dir (in Windows: .../build/Release; in Linux: .../build' )
     print( '        Test logs are kept in <dir>/unit-tests/<test-name>.log' )
-    print( '        If given a regular expression, run all python tests in unit-tests directory that fit that expression' )
+    print( '        If given a regular expression, run all python tests in unit-tests directory that fit <regex>, to stdout' )
     print( 'Options:' )
     print( '        --debug        Turn on debugging information' )
     print( '        -v, --verbose  Errors will dump the log to stdout' )
@@ -20,8 +20,21 @@ def debug(*args):
     pass
 
 
+def stream_has_color( stream ):
+    if not hasattr(stream, "isatty"):
+        return False
+    if not stream.isatty():
+        return False # auto color only on TTYs
+    try:
+        import curses
+        curses.setupterm()
+        return curses.tigetnum( "colors" ) > 2
+    except:
+        # guess false in case of error
+        return False
+
 # Set up the default output system; if not a terminal, disable colors!
-if sys.stdout.isatty():
+if stream_has_color( sys.stdout ):
     red = '\033[91m'
     gray = '\033[90m'
     reset = '\033[0m'
@@ -39,7 +52,7 @@ if sys.stdout.isatty():
         global _progress
         _progress = args
 else:
-    red = reset = cr = clear_eos = ''
+    red = gray = reset = cr = clear_eos = ''
     def out(*args):
         print( *args )
     def progress(*args):
@@ -153,18 +166,22 @@ if pyrs:
 target = args[0]
 if not os.path.isdir( target ):
     if not pyrs:
-        error( "pyrealsense2 not found. Please make sure to build with python wrappers")
+        error( "Python wrappers (pyrealsense2*." + pyrs + ") not found" )
+        usage()
     for py_test in find(current_dir, target):
-        test_path = current_dir + os.sep + py_test
         if linux:
-            cmd = ["python3", test_path]
+            cmd = ["python3"]
         else:
-            cmd = ["py", "-3", test_path]
+            cmd = ["py", "-3"]
+        if sys.flags.verbose:
+            cmd += ["-v"]
+        cmd += [current_dir + os.sep + py_test]
         try:
+            debug( 'Running:', cmd )
             subprocess.run( cmd )
         except subprocess.CalledProcessError as cpe:
-            print( cpe )
-            error(red + py_test + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')')
+            error( cpe )
+            error( red + py_test + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')' )
     if n_errors:
         sys.exit(1)
     sys.exit(0)
