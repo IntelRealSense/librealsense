@@ -2305,14 +2305,12 @@ namespace rs2
                     && ( ( p.stream_type() == RS2_STREAM_INFRARED ) || ( p.stream_type() == RS2_STREAM_DEPTH ) ) )
                 {
                     _reflectivity = std::unique_ptr< reflectivity >( new reflectivity() );
-
                 }
             }
         }
         catch(...) {};
 
     }
-
 
     bool stream_model::draw_reflectivity( int x,
                                           int y,
@@ -2358,7 +2356,8 @@ namespace rs2
                 try
                 {
                     auto pixel_ref = _reflectivity->get_reflectivity( noise_est, max_usable_range, ir_val );
-                    auto stabilized_pixel_ref = _stabilized_reflectivity.get(pixel_ref);
+                    _stabilized_reflectivity.add(pixel_ref);
+                    auto stabilized_pixel_ref = _stabilized_reflectivity.get();
                     ref_str = to_string() << std::dec << round(stabilized_pixel_ref * 100 ) << "%";
                 }
                 catch( ... )
@@ -3174,6 +3173,7 @@ namespace rs2
             if (_reflectivity)
             {
                 _reflectivity->reset_history();
+                _stabilized_reflectivity.reset();
             }
         }
     }
