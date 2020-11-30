@@ -1264,10 +1264,9 @@ namespace ivcam2 {
         auto alt_ir_is_on = false;
         try
         {
-            auto& alt_ir_opt = _dev.get_depth_sensor().get_option( RS2_OPTION_ALTERNATE_IR );
-            auto val = alt_ir_opt.query();
-            if( val == 1.f )
-                alt_ir_is_on = true;
+            auto & depth_sensor = _dev.get_depth_sensor();
+            alt_ir_is_on = depth_sensor.supports_option( RS2_OPTION_ALTERNATE_IR )
+                        && depth_sensor.get_option( RS2_OPTION_ALTERNATE_IR ).query() == 1.f;
         }
         catch( std::exception const & e )
         {
