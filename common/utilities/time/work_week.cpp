@@ -31,9 +31,16 @@ unsigned work_week::get_work_week() const
 
 int work_week::operator-( const work_week & other ) const
 {
-    auto age_in_weeks = (this->get_year() * 52) + this->get_work_week();
-    auto other_age_in_weeks = (other.get_year() * 52) + other.get_work_week();
-    return age_in_weeks - other_age_in_weeks;
+    // Calculating the JDN (Julian Day Number) for the first day of the first work week of both years
+    int Y = _year + 4799;
+    int other_Y = other._year + 4799;
+    int Jan_1_JDN = (365 * Y) + (Y / 4) - (Y / 100) + (Y / 400) - 31738;
+    int other_Jan_1_JDN = (365 * other_Y) + (other_Y / 4) - (other_Y / 100) + (other_Y / 400) - 31738;
+    int start_of_year_first_work_week = Jan_1_JDN - (Jan_1_JDN % 7);
+    int start_of_other_year_first_work_week = other_Jan_1_JDN - (other_Jan_1_JDN % 7);
+
+    // Subtracting the JDNs results in the number of days between 2 dates
+    return ((start_of_other_year_first_work_week - start_of_year_first_work_week) / 7) + (_ww - other._ww);
 }
 
 work_week work_week::current()
