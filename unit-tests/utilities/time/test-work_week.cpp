@@ -15,25 +15,27 @@ using namespace utilities::time;
 // > Test the c'tor
 TEST_CASE("test work_week c'tor", "[work_week]")
 {
-    auto now = std::time(nullptr);
-    auto tm = std::localtime(&now);
-    tm->tm_yday = 0; // This feild hold the number of days since the 1st of January and is 0 based
+    tm set_time = {0};
+    set_time.tm_year = 117; // 2017
+    set_time.tm_mday = 1;
+    set_time.tm_isdst = -1;
     // The work week of the first day of the year is 1 because work weeks are 1 based
-    work_week first_day(std::mktime(tm));
+    work_week first_day(std::mktime(&set_time));
     CHECK(first_day.get_work_week() == 1);
-    tm->tm_yday = 6;
-    tm->tm_wday = 6;
-    // This should be the last day of the first work week
-    work_week sixth_day(std::mktime(tm));
+    set_time.tm_mday = 7;
+    set_time.tm_wday = 6;
+    // This should be the last day of the first work week because 2017 started on Sunday
+    work_week sixth_day(std::mktime(&set_time));
     CHECK(sixth_day.get_work_week() == 1);
-    tm->tm_yday = 7;
+    set_time.tm_mday = 8;
+    set_time.tm_wday = 0;
     // This should be the first day of the second work week
-    work_week seventh_day(std::mktime(tm));
+    work_week seventh_day(std::mktime(&set_time));
     CHECK(seventh_day.get_work_week() == 2);
-    // If the didn't start on a Sunday, day 6 should be in work week 2
-    tm->tm_yday = 6;
-    tm->tm_wday = 2;
-    work_week second_week(std::mktime(tm));
+    // If the year didn't start on a Sunday (for example 2018), Jan 7th should be in work week 2
+    set_time.tm_year = 118; // 2018
+    set_time.tm_mday = 7;
+    work_week second_week(std::mktime(&set_time));
     CHECK(second_week.get_work_week() == 2);
 }
 
@@ -46,19 +48,20 @@ TEST_CASE("test work_week c'tor equivalence", "[work_week]")
     auto now = std::time(nullptr);
     work_week now_to_work_week(now);
     CHECK(current_ww.get_year() == now_to_work_week.get_year());
-    CHECK(current_ww.get_work_week() == now_to_work_week.get_year());
+    CHECK(current_ww.get_work_week() == now_to_work_week.get_work_week());
 
     // Test copy c'tor
     work_week copy(current_ww);
     CHECK(current_ww.get_year() == copy.get_year());
-    CHECK(current_ww.get_work_week() == copy.get_year());
+    CHECK(current_ww.get_work_week() == copy.get_work_week());
 
     // Compare manual c'tor with c'tor from given time
-    auto tm = std::localtime(&now);
-    tm->tm_year = 0;
-    tm->tm_yday = 5;
-    work_week manual(1900, 0);
-    work_week from_time(std::mktime(tm));
+    tm set_time = { 0 };
+    set_time.tm_year = 117; // 2017
+    set_time.tm_mday = 1;
+    set_time.tm_isdst = -1;
+    work_week manual(2017, 1);
+    work_week from_time(std::mktime(&set_time));
     CHECK(manual.get_year() == from_time.get_year());
     CHECK(manual.get_work_week() == from_time.get_work_week());
 }
@@ -67,13 +70,20 @@ TEST_CASE("test work_week c'tor equivalence", "[work_week]")
 // > Test the subtraction operator for work_week
 TEST_CASE("test work_week subtraction", "[work_week]")
 {
-    CHECK(work_week(3, 5) - work_week(1, 2) == 107);
+    // Simple cases
+    CHECK(work_week(2019, 7) - work_week(2018, 7) == 52);
+    CHECK(work_week(2019, 7) - work_week(2018, 3) == 56);
+    CHECK(work_week(2019, 7) - work_week(2018, 10) == 49);
 
-    CHECK(work_week(3, 5) - work_week(1, 7) == 102);
+    // Simple cases with negative results
+    CHECK( work_week(2018, 7) - work_week(2019, 7) == -52);
+    CHECK( work_week(2018, 3) - work_week(2019, 7) == -56);
+    CHECK( work_week(2018, 10) - work_week(2019, 7) == -49);
 
-    CHECK(work_week(1, 2) - work_week(3, 5) == -107);
-
-    CHECK(work_week(1, 7) - work_week(3, 5) == -102);
+    // 2016 had 53 work weeks
+    CHECK(work_week(2017, 7) - work_week(2016, 7) == 53);
+    CHECK(work_week(2017, 7) - work_week(2016, 3) == 57);
+    CHECK(work_week(2017, 7) - work_week(2016, 10) == 50);
 }
 
 // Test description:

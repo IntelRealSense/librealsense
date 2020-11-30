@@ -4,13 +4,14 @@
 #pragma once
 
 #include <string>
+#include "../work_week.h"
 
 
 namespace utilities {
 namespace time {
 namespace l500 {
 
-work_week get_manufacture_work_week( const std::string & serial );
+utilities::time::work_week get_manufacture_work_week( const std::string & serial );
 
 }  // namespace l500
 }  // namespace time

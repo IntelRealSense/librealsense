@@ -3,6 +3,7 @@
 
 #include "get-mfr-ww.h"
 #include <string>
+#include <stdexcept>
 
 
 namespace utilities {
@@ -13,7 +14,7 @@ namespace l500 {
 // Y – Year(ex.“9” for 2019, "0" for 2020, , "1" for 2021  ..etc)
 // WW – Work Week
 // XXXX – Sequential number
-work_week get_manufacture_work_week( const std::string & serial )
+utilities::time::work_week get_manufacture_work_week( const std::string & serial )
 {
     if( serial.size() != 8 )
         throw std::runtime_error( "Invalid serial number \"" + serial + "\" length" );
@@ -32,7 +33,7 @@ work_week get_manufacture_work_week( const std::string & serial )
     if( WW_tens > 5 || WW_singles > 9 || ( WW_tens == 5 && WW_singles > 3 ) )
         throw std::runtime_error( "Invalid serial number \"" + serial + "\" work week" );
     unsigned man_ww = ( (WW_tens)*10 ) + WW_singles;
-    return work_week( man_year, man_ww );
+    return utilities::time::work_week( man_year, man_ww );
 }
 
 }  // namespace l500
