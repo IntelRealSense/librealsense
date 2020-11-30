@@ -35,7 +35,8 @@ color_sensor.start( lambda f: None )
 #############################################################################################
 test.start("Failing check_conditions function")
 # If ambient light is RS2_DIGITAL_GAIN_LOW (2) receiver_gain must be 18
-depth_sensor.set_option(rs.option.ambient_light, 2)
+# If ambient light is RS2_DIGITAL_GAIN_HIGH (1) receiver_gain must be 9
+old_receiver_gain = depth_sensor.get_option(rs.option.receiver_gain)
 depth_sensor.set_option(rs.option.receiver_gain, 15)
 try:
     d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
@@ -46,6 +47,7 @@ except Exception as e:
 else:
     test.unexpected_exception()
 test.check_equal_lists(ac.status_list, [rs.calibration_status.bad_conditions])
+depth_sensor.set_option(rs.option.receiver_gain, old_receiver_gain)
 test.finish()
 #############################################################################################
 test.print_results_and_exit()

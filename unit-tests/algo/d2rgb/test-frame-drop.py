@@ -1,7 +1,5 @@
 import pyrealsense2 as rs, test, ac
 
-
-# We set the environment variables to suit this test
 test.set_env_vars({"RS2_AC_DISABLE_CONDITIONS":"1",
                    "RS2_AC_DISABLE_RETRIES":"1",
                    "RS2_AC_FORCE_BAD_RESULT":"1",
@@ -16,10 +14,8 @@ color_sensor = dev.first_color_sensor()
 
 # Resetting sensors to factory calibration
 dcs = rs.calibrated_sensor(depth_sensor)
-dcs.reset_calibration()
 
 ccs = rs.calibrated_sensor(color_sensor)
-ccs.reset_calibration()
 
 d2r = rs.device_calibration(dev)
 d2r.register_calibration_change_callback( ac.status_list_callback )
@@ -82,6 +78,8 @@ color_sensor.start( color_frame_call_back )
 test.start("Checking for frame drops in", n_cal, "calibrations")
 for i in range(n_cal):
     try:
+        dcs.reset_calibration()
+        ccs.reset_calibration()
         d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
         ac.wait_for_calibration()
     except:

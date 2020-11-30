@@ -586,8 +586,8 @@ namespace ivcam2 {
             if( stdOut != NULL && stdOut != INVALID_HANDLE_VALUE )
             {
                 DWORD written = 0;
-                WriteConsoleA( stdOut, s.c_str(), (DWORD)s.length(), &written, NULL );
-                WriteConsoleA( stdOut, "\n\r", 2, &written, NULL );
+                WriteFile( stdOut, s.c_str(), (DWORD)s.length(), &written, NULL );
+                WriteFile( stdOut, "\n", 1, &written, NULL );
             }
 #else
             std::cout << s << std::endl;
@@ -1271,10 +1271,10 @@ namespace ivcam2 {
         }
         catch( std::exception const & e )
         {
-                AC_LOG( DEBUG,
-                        std::string( to_string() << "Error while checking alternate IR option: " << e.what() ) );
+            AC_LOG( DEBUG,
+                    std::string( to_string() << "Error while checking alternate IR option: " << e.what() ) );
         }
-        if (alt_ir_is_on)
+        if( alt_ir_is_on )
         {
             if( ! invalid_reason.empty() )
                 invalid_reason += ", ";
