@@ -52,7 +52,7 @@ namespace librealsense
         auto found_preset = j.find( get_string( RS2_OPTION_VISUAL_PRESET ) );
         if( found_preset != j.end() )
         {
-            if( int( found_preset.value() ) != 0 )
+            if( int( found_preset.value() ) != 0 ) // 0 is custom
             {
                 options_to_ignore.insert( RS2_OPTION_POST_PROCESSING_SHARPENING );
                 options_to_ignore.insert( RS2_OPTION_PRE_PROCESSING_SHARPENING );
@@ -70,8 +70,10 @@ namespace librealsense
         for (auto o: opts)
         {
             auto& opt = _depth_sensor.get_option(o);
-            if (opt.is_read_only()) continue;
-            if (options_to_ignore.find(o) != options_to_ignore.end()) continue;
+            if (opt.is_read_only()) 
+                continue;
+            if (options_to_ignore.find(o) != options_to_ignore.end()) 
+                continue;
 
             auto key = get_string(o);
             auto it = j.find(key);
