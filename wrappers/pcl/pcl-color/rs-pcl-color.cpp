@@ -164,11 +164,11 @@ int main() try
     rs2::config cfg;
 
     //======================
-    // Stream configuration
+    // Stream configuration with parameters resolved internally. See enable_stream() overloads for extended usage
     //======================
-    cfg.enable_stream(RS2_STREAM_COLOR, 640, 480, RS2_FORMAT_BGR8, 30);
-    cfg.enable_stream(RS2_STREAM_INFRARED, 640, 480, RS2_FORMAT_Y8, 30);
-    cfg.enable_stream(RS2_STREAM_DEPTH, 640, 480, RS2_FORMAT_Z16, 30);
+    cfg.enable_stream(RS2_STREAM_COLOR);
+    cfg.enable_stream(RS2_STREAM_INFRARED);
+    cfg.enable_stream(RS2_STREAM_DEPTH);
     
     rs2::pipeline_profile selection = pipe.start(cfg); 
 
