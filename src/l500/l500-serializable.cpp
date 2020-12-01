@@ -36,32 +36,33 @@ namespace librealsense
         json j = json::parse(json_content);
 
         // Set of options that should not be set in the loop
-        std::set<rs2_option> options_to_ignore { RS2_OPTION_SENSOR_MODE };
+        std::set< rs2_option > options_to_ignore{ RS2_OPTION_SENSOR_MODE };
 
         // We have to set the sensor mode (resolution) first
-        auto& sensor_mode = _depth_sensor.get_option(RS2_OPTION_SENSOR_MODE);
-        auto found_sensor_mode = j.find(get_string(RS2_OPTION_SENSOR_MODE));
-        if (found_sensor_mode != j.end())
+        auto & sensor_mode = _depth_sensor.get_option( RS2_OPTION_SENSOR_MODE );
+        auto found_sensor_mode = j.find( get_string( RS2_OPTION_SENSOR_MODE ) );
+        if( found_sensor_mode != j.end() )
         {
             float sensor_mode_val = found_sensor_mode.value();
-            sensor_mode.set(sensor_mode_val);
+            sensor_mode.set( sensor_mode_val );
         }
 
-        // If a non custom preset is used, we should ignore all the settings that are automatically set by the preset
-        auto found_preset = j.find(get_string(RS2_OPTION_VISUAL_PRESET));
-        if (found_preset != j.end())
+        // If a non custom preset is used, we should ignore all the settings that are automatically
+        // set by the preset
+        auto found_preset = j.find( get_string( RS2_OPTION_VISUAL_PRESET ) );
+        if( found_preset != j.end() )
         {
-            if (int(found_preset.value()) != 0)
+            if( int( found_preset.value() ) != 0 )
             {
-                options_to_ignore.insert(RS2_OPTION_POST_PROCESSING_SHARPENING);
-                options_to_ignore.insert(RS2_OPTION_PRE_PROCESSING_SHARPENING);
-                options_to_ignore.insert(RS2_OPTION_NOISE_FILTERING);
-                options_to_ignore.insert(RS2_OPTION_AVALANCHE_PHOTO_DIODE);
-                options_to_ignore.insert(RS2_OPTION_CONFIDENCE_THRESHOLD);
-                options_to_ignore.insert(RS2_OPTION_LASER_POWER);
-                options_to_ignore.insert(RS2_OPTION_MIN_DISTANCE);
-                options_to_ignore.insert(RS2_OPTION_INVALIDATION_BYPASS);
-                options_to_ignore.insert(RS2_OPTION_DIGITAL_GAIN);
+                options_to_ignore.insert( RS2_OPTION_POST_PROCESSING_SHARPENING );
+                options_to_ignore.insert( RS2_OPTION_PRE_PROCESSING_SHARPENING );
+                options_to_ignore.insert( RS2_OPTION_NOISE_FILTERING );
+                options_to_ignore.insert( RS2_OPTION_AVALANCHE_PHOTO_DIODE );
+                options_to_ignore.insert( RS2_OPTION_CONFIDENCE_THRESHOLD );
+                options_to_ignore.insert( RS2_OPTION_LASER_POWER );
+                options_to_ignore.insert( RS2_OPTION_MIN_DISTANCE );
+                options_to_ignore.insert( RS2_OPTION_INVALIDATION_BYPASS );
+                options_to_ignore.insert( RS2_OPTION_DIGITAL_GAIN );
             }
         }
 
