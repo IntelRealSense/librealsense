@@ -5085,7 +5085,6 @@ namespace rs2
                 }
             }
 
-
             if (_allow_remove)
             {
                 something_to_show = true;
@@ -5191,9 +5190,7 @@ namespace rs2
                     }
                 }
             }
-
-
-                
+            
             bool has_autocalib = false;
             for (auto&& sub : subdevices)
             {
@@ -5205,8 +5202,7 @@ namespace rs2
                         try
                         {
                             auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
-                            auto n = std::make_shared<autocalib_notification_model>(
-                                "", manager, false);
+                            auto n = std::make_shared<autocalib_notification_model>("", manager, false);
 
                             viewer.not_model->add_notification(n);
                             n->forced = true;
@@ -5260,9 +5256,9 @@ namespace rs2
                     }
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("Tare calibration is used to adjust camera absolute distance to flat target.\n"
-                            "User needs to enter the known ground truth");
+                            "User needs either to enter the known ground truth or use the get button\n"
+                            "with specific target to get the ground truth.");
 
-                    
                     if (_calib_model.supports())
                     {
                         if (ImGui::Selectable("Calibration Data"))

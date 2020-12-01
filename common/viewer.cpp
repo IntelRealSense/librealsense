@@ -911,7 +911,7 @@ namespace rs2
             configurations::performance::occlusion_invalidation, true);
 
         ground_truth_r = config_file::instance().get_or_default(
-            configurations::viewer::ground_truth_r, 2500);
+            configurations::viewer::ground_truth_r, 1200);
 
         selected_shader = (shader_type)config_file::instance().get_or_default(
             configurations::viewer::shading_mode, 2);

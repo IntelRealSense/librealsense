@@ -134,7 +134,7 @@ namespace rs2
         bool is_3d_view = false;
         bool paused = false;
         bool metric_system = true;
-        uint32_t ground_truth_r = 2500;
+        uint32_t ground_truth_r = 1200;
 
         enum export_type
         {
