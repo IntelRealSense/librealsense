@@ -4,6 +4,7 @@
 #pragma once
 
 #include <string>
+#include <atomic>
 
 namespace utilities {
 namespace number {
@@ -15,68 +16,87 @@ namespace number {
     // Inputs: Template <value_type>
     //         required history size
     //         required stabilization percentage
-    template<typename T>
-    class stabilized_value
+    template<typename T> class stabilized_value
+{
+public:
+    stabilized_value( size_t history_size, float stabilize_percentage )
+        : _history_size( history_size )
+        , _last_stable_value( 0 )
+        , _stabilize_percentage( stabilize_percentage )
     {
-    public:
-        stabilized_value( size_t history_size, float stabilize_percentage )
-            : _history_size( history_size )
-            , _last_stable_value( 0 )
-            , _stabilize_percentage( stabilize_percentage )
+        if( ( stabilize_percentage <= 0.0f ) || ( stabilize_percentage > 1.0f ) )
+            throw std::runtime_error( "Illegal value for stabilize_percentage: "
+                                      + std::to_string( stabilize_percentage ) );
+    }
+
+    void add( T val )
+    {
+        _recalc_stable_val = true;
+
+        if( _values.empty() )
         {
-            if( ( stabilize_percentage <= 0.0f ) || ( stabilize_percentage > 1.0f ) )
-                throw std::runtime_error( "Illegal value for stabilize_percentage: " + std::to_string(stabilize_percentage));
+            _values.push_back( val );
+            _last_stable_value = val;
+            return;
         }
 
-        void add(T val)
+        _values.push_back( val );
+        if( _values.size() > _history_size )
+            _values.pop_front();
+    }
+
+    T get()
+    {
+        if( _values.empty() )
         {
-            if (_values.empty())
+            throw std::runtime_error( "No stable value exist, history is empty" );
+        }
+
+        if( _recalc_stable_val )
+        {
+            std::unordered_map< T, int > values_count_map;
+            std::pair< T, int > most_stable_value = { 0, 0 };
+            for( T val : _values )
             {
-                _values.push_back(val);
-                _last_stable_value = val;
-                return;
-            }
-
-            _values.push_back(val);
-            if (_values.size() > _history_size)
-                _values.pop_front();
-
-            std::unordered_map<T, int> values_count_map;
-            for (T val : _values)
-                if (values_count_map.find(val) != values_count_map.end()) 
+                if( values_count_map.find( val ) != values_count_map.end() )
                     values_count_map[val]++;
                 else
                     values_count_map[val] = 1;
 
+                if( most_stable_value.second < values_count_map[val] )
+                {
+                    most_stable_value.first = val;
+                    most_stable_value.second = values_count_map[val];
+                }
+            }
+
             auto new_value_percentage
-                = values_count_map[val] / static_cast< float >( _values.size() );
+                = most_stable_value.second / static_cast< float >( _values.size() );
             if( new_value_percentage >= _stabilize_percentage )
             {
-                _last_stable_value = val;
-            }
-        }
-
-        T get()
-        {
-            if (_values.empty())
-            {
-                throw std::runtime_error( "No stable value exist, history is empty" );
+                _last_stable_value = most_stable_value.first;
             }
 
-            return _last_stable_value;
+            _recalc_stable_val = false;
         }
 
-        void reset()
-        {
-            _values.clear();
-            _last_stable_value = 0.0f;
-        }
-    private:
-        std::deque<T> _values;
-        size_t _history_size;
-        T _last_stable_value;
-        float _stabilize_percentage;
-    };
+        return _last_stable_value;
+    }
+
+    void reset()
+    {
+        _values.clear();
+        _last_stable_value = 0.0f;
+        _recalc_stable_val = false;
+    }
+
+private:
+    std::deque< T > _values;
+    const size_t _history_size;
+    T _last_stable_value;
+    const float _stabilize_percentage;
+    std::atomic_bool _recalc_stable_val = { true };
+};
 
 
 }  // namespace value_stabilizer

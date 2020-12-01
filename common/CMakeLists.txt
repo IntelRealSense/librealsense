@@ -57,7 +57,7 @@ set(COMMON_SRC
         )
         
     set(UTILITIES
-    "${CMAKE_CURRENT_LIST_DIR}/utilities/number/stabilized-value.h"
+        "${CMAKE_CURRENT_LIST_DIR}/utilities/number/stabilized-value.h"
         )
     set(COMMON_SRC
         ${COMMON_SRC}
