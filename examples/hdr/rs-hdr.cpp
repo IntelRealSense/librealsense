@@ -123,9 +123,10 @@ int main(int argc, char* argv[]) try
 
     //create a map to hold frames with their properties
     map_of_frames_and_tiles_properties frames_map;
+
     rs2::frame frame;  //for initilize only - an empty frame with it properties
     //set each frame with its properties:
-    //{ tile's x coordinate, tiles's y coordinate, tile's width (in tiles), tile's height (in tiles), priority (default value=0) }
+    //{ tile's x coordinate, tiles's y coordinate, tile's width (in tiles), tile's height (in tiles), priority (default value=0) }, (x=0,y=0) <-> left bottom corner
     //priority sets the order of drawing frame when two frames share part of the same tile, 
     //meaning if there are two frames: frame1 with priority=-1 and frame2 with priority=0, both with { 0,0,1,1 } as property,
     //frame2 will be drawn on top of frame1
@@ -202,7 +203,6 @@ int main(int argc, char* argv[]) try
         ImGui::SetNextWindowPos(slider1_position);
         ImGui::Begin("slider1", nullptr, flags);
 
-
         // ImGui::SliderFloat returns if the value changed
         bool is_exposure_value_slider1_changed = ImGui::SliderFloat("exposure 1", &exposure_value_slider1, exposure_range.min, exposure_range.max / reduce_max_range_exposure_factor);
         bool is_gain_value_slider1_changed = ImGui::SliderFloat("gain 1", &gain_value_slider1, gain_range.min, gain_range.max / reduce_max_range_gain_factor);
@@ -224,6 +224,7 @@ int main(int argc, char* argv[]) try
         ImGui::SetNextWindowPos(slider2_position);
         ImGui::Begin("slider2", nullptr, flags);
 
+        // ImGui::SliderFloat returns if the value changed
         bool is_exposure_value_slider2_changed = ImGui::SliderFloat("exposure 2", &exposure_value_slider2, exposure_range.min, exposure_range.max / reduce_max_range_exposure_factor);
         bool is_gain_value_slider2_changed = ImGui::SliderFloat("gain 2", &gain_value_slider2, gain_range.min, gain_range.max / reduce_max_range_gain_factor);
 
