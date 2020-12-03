@@ -850,13 +850,34 @@ namespace librealsense
         if ((_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
         {
             auto alternating_emitter_opt = std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor, is_fw_version_using_id);
+            auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>(*_hw_monitor, &depth_sensor);
+
+            if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER))
+            {
+                depth_sensor.register_option(RS2_OPTION_EMITTER_ALWAYS_ON,
+                    std::make_shared<gated_option>(
+                        emitter_always_on_opt,
+                        alternating_emitter_opt,
+                        "Emitter always ON cannot be set while Emitter ON/OFF is enabled"));
+            }
+
             if (_fw_version >= hdr_firmware_version)
+            {
+                std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(hdr_enabled_option, "Emitter ON/OFF cannot be set while HDR is enabled"),
+                        std::make_pair(emitter_always_on_opt, "Emitter ON/OFF cannot be set while Emitter always ON is enabled") };
+                depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF,
+                    std::make_shared<multi_gated_option>(
+                        alternating_emitter_opt,
+                        options_and_reasons
+                        ));
+            }
+            else if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER))
             {
                 depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF,
                     std::make_shared<gated_option>(
                         alternating_emitter_opt,
-                        hdr_enabled_option,
-                        "Emitter ON/OFF cannot be set while HDR is enabled"));
+                        emitter_always_on_opt,
+                        "Emitter ON/OFF cannot be set while Emitter always ON is enabled"));
             }
             else
             {
@@ -869,10 +890,7 @@ namespace librealsense
             depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &raw_depth_sensor));
         }
 
-        if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER))
-        {
-            depth_sensor.register_option(RS2_OPTION_EMITTER_ALWAYS_ON, std::make_shared<emitter_always_on_option>(*_hw_monitor, &depth_sensor));
-        }
+        
 
         if (_fw_version >= firmware_version("5.12.4.0") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
         {
