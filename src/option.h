@@ -616,6 +616,46 @@ namespace librealsense
        std::string _reason;
    };
 
+   class multi_gated_option : public proxy_option
+   {
+   public:
+       explicit multi_gated_option(std::shared_ptr<option> leading_to_read_only,
+           std::vector<std::pair<std::shared_ptr<option>, std::string>> gated_options)
+           : proxy_option(leading_to_read_only)
+       {
+           for (auto& gated : gated_options)
+           {
+               _gated_options.push_back(gated);
+           }
+       }
+
+       void set(float value) override
+       {
+           
+           bool gated_set = false;
+           for (auto& gated : _gated_options)
+           {
+               auto strong = gated.first.lock();
+               if (!strong)
+                   return;
+               auto val = strong->query();
+               if (val)
+               {
+                   gated_set = true;
+                   LOG_WARNING(gated.second.c_str());
+               }
+           }
+
+           if (!gated_set)
+               _proxy->set(value);
+
+           _recording_function(*this);
+       }
+
+   private:
+       std::vector < std::pair<std::weak_ptr<option>, std::string> >  _gated_options;
+   };
+
    /** \brief class provided a control
    * that changes min distance value when changing max distance value */
    class max_distance_option : public proxy_option
