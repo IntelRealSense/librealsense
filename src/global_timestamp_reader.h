@@ -30,6 +30,14 @@ namespace librealsense
         double _y;
     };
 
+    class TimestampRectifier
+    {
+    public:
+        double get(double value);
+    private:
+        uint64_t _max_value = 0;
+    };
+
     class CLinearCoefficients
     {
     public:
@@ -37,7 +45,6 @@ namespace librealsense
         void reset();
         void add_value(CSample val);
         void add_const_y_coefs(double dy);
-        bool update_samples_base(double x);
         void update_last_sample_time(double x);
         double calc_value(double x) const;
         bool is_full() const;
@@ -54,6 +61,8 @@ namespace librealsense
         double _dest_a, _dest_b;    //Linear regression coeffitions - recently calculated.
         double _prev_time, _time_span_ms;
         double _last_request_time;
+
+        mutable TimestampRectifier _rectifier;
     };
 
     class global_time_interface;

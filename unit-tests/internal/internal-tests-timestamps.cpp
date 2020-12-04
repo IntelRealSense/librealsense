@@ -32,8 +32,6 @@ static void testLinearCoefficients(const uint64_t ts_offset)
 
 
         // Feed sample for linear regression
-        coeffs.update_samples_base(hardware_ts);
-
         CSample sample(hardware_ts, system_ts);
         coeffs.add_value(sample);
     }
@@ -47,8 +45,6 @@ static void testLinearCoefficients(const uint64_t ts_offset)
         const double system_ts = ts * TIMESTAMP_USEC_TO_MSEC;
 
         // Query system time at the point of the sample
-        coeffs.update_samples_base(hardware_ts);
-
         coeffs.update_last_sample_time(hardware_ts);
         const double queried_ts = coeffs.calc_value(hardware_ts);
 
