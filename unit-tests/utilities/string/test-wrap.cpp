@@ -84,4 +84,7 @@ TEST_CASE( "wrap-text", "[string]" )
     CHECK(wrap(" ", 33) == "");
     CHECK(wrap("  ", 33) == "");
 
+    CHECK(wrap("ab cd ", 100) == "ab cd");
+    CHECK(wrap("ab  cd", 100) == "ab cd"); // Known corner case - we trim multiple spaces
+
 }

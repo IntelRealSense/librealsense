@@ -11,25 +11,27 @@
 namespace utilities {
 namespace string {
 
+void trim_trailing_spaces( std::string &remaining_paragraph )
+{
+    auto non_space_index = remaining_paragraph.find_first_not_of( ' ' );
+
+    if( non_space_index != std::string::npos )
+    {
+        // Remove trailing spaces
+        remaining_paragraph = remaining_paragraph.substr( non_space_index );
+    }
+}
+
 std::string wrap_paragraph( const std::string & paragraph, int wrap_pixels_width )
 {
     float space_width = ImGui::CalcTextSize( " " ).x;  // Calculate space width in pixels
     std::string wrapped_line;                          // The line that is wrapped in this iteration
     std::string wrapped_paragraph;                     // The output wrapped paragraph
-    auto remaining_paragraph = paragraph;              // Holds the remaining unwrapped part of the input paragraph
+    auto remaining_paragraph
+        = paragraph;  // Holds the remaining unwrapped part of the input paragraph
 
     // Handle a case when the paragraph starts with spaces
-    if( remaining_paragraph[0] == ' ' )
-    {
-        auto non_space_index = remaining_paragraph.find_first_not_of( ' ' );
-        // If non spaces characters exist
-        if( non_space_index != std::string::npos )
-        {
-            // Remove trailing spaces
-            remaining_paragraph
-                = remaining_paragraph.substr( non_space_index );
-        }
-    }
+    trim_trailing_spaces(remaining_paragraph);
 
     auto next_word = remaining_paragraph.substr(
         0,
@@ -38,7 +40,6 @@ std::string wrap_paragraph( const std::string & paragraph, int wrap_pixels_width
 
     while( ! next_word.empty() )
     {
-
         float next_x = 0.0f;
         // If this is the first word we try to place it first in line,
         // if not we concatenate it to the last word after adding a space
@@ -73,16 +74,7 @@ std::string wrap_paragraph( const std::string & paragraph, int wrap_pixels_width
             remaining_paragraph = remaining_paragraph.substr( next_word.size() + 1 );
 
             // Handle a case when the paragraph starts with spaces
-            if( remaining_paragraph[0] == ' ' )
-            {
-                auto non_space_index = remaining_paragraph.find_first_not_of( ' ' );
-                // If non spaces characters exist
-                if( non_space_index != std::string::npos )
-                {
-                    // Remove trailing spaces
-                    remaining_paragraph = remaining_paragraph.substr( non_space_index );
-                }
-            }
+            trim_trailing_spaces(remaining_paragraph);
 
             next_word = remaining_paragraph.substr( 0, remaining_paragraph.find( ' ' ) );
 
