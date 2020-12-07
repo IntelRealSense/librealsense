@@ -6,6 +6,10 @@ project(RealSensePCLExample)
 add_executable(rs-pcl rs-pcl.cpp)
 set_property(TARGET rs-pcl PROPERTY CXX_STANDARD 11)
 target_link_libraries(rs-pcl ${DEPENDENCIES})
+if(NOT glfw3_DIR)
+    target_include_directories(rs-pcl PUBLIC "${CMAKE_SOURCE_DIR}/third-party/glfw/include")
+    target_link_directories(rs-pcl PUBLIC "${CMAKE_BINARY_DIR}/third-party/glfw/src/${CMAKE_BUILD_TYPE}")
+endif()
 set_target_properties (rs-pcl PROPERTIES
     FOLDER "Examples/PCL"
 )
