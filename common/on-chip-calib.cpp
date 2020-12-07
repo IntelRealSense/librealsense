@@ -194,6 +194,23 @@ namespace rs2
         return _metrics[use_new ? 1 : 0];
     }
 
+    void on_chip_calib_manager::try_start_viewer(int w, int h, int fps, invoker invoke)
+    {
+        bool started = start_viewer(w, h, fps, invoke);
+        if (!started)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(600));
+            started = start_viewer(w, h, fps, invoke);
+        }
+
+        if (!started)
+        {
+            stop_viewer(invoke);
+            log(to_string() << "Failed to start streaming");
+            throw std::runtime_error(to_string() << "Failed to start streaming (" << w << ", " << h << ", " << fps << ")!");
+        }
+    }
+
     std::pair<float, float> on_chip_calib_manager::get_depth_metrics(invoker invoke)
     {
         using namespace depth_quality;
@@ -334,25 +351,35 @@ namespace rs2
     {
         if (action != RS2_CALIB_ACTION_ON_CHIP_CALIB)
         {
+            if (fl_retry)
+            {
+                if (speed_fl == 0)
+                    speed_fl = 1;
+                else if (speed_fl == 1)
+                    speed_fl = 0;
+                fl_retry = false;
+                std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+            }
+
             if (speed_fl == 0)
             {
                 speed = 1;
-                fl_step_count = 51;
-                fy_scan_range = 40;
+                fl_step_count = 41;
+                fy_scan_range = 30;
                 white_wall_mode = 0;
             }
             else if (speed_fl == 1)
             {
                 speed = 3;
                 fl_step_count = 51;
-                fy_scan_range = 59;
+                fy_scan_range = 40;
                 white_wall_mode = 0;
             }
             else if (speed_fl == 2)
             {
                 speed = 4;
-                fl_step_count = 51;
-                fy_scan_range = 40;
+                fl_step_count = 41;
+                fy_scan_range = 30;
                 white_wall_mode = 1;
             }
         }
@@ -404,7 +431,7 @@ namespace rs2
         if (action == RS2_CALIB_ACTION_TARE_CALIB)
             _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = int(progress);}, 5000);
         else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
-            _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = int(progress);}, 10000);
+            _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = int(progress);}, 12000);
 
         if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
         {
@@ -509,7 +536,7 @@ namespace rs2
         if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
         {
             if (!_was_streaming)
-                start_viewer(0, 0, 0, invoke);
+                try_start_viewer(0, 0, 0, invoke);
 
             // Capture metrics before
             auto metrics_before = get_depth_metrics(invoke);
@@ -522,18 +549,7 @@ namespace rs2
         std::this_thread::sleep_for(std::chrono::milliseconds(600));
 
         // Switch into special Auto-Calibration mode
-        bool started = start_viewer(256, 144, 90, invoke);
-        if (!started)
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(600));
-            started = start_viewer(256, 144, 90, invoke);
-        }
-
-        if (!started)
-        {
-            log(to_string() << "Failed to start streaming");
-            throw std::runtime_error("Failed to start streaming before calibration!");
-        }
+        try_start_viewer(256, 144, 90, invoke);
 
         if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
             get_ground_truth();
@@ -564,7 +580,7 @@ namespace rs2
 
         if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
         {
-            start_viewer(0, 0, 0, invoke); // Start with default settings
+            try_start_viewer(0, 0, 0, invoke); // Start with default settings
 
             // Make new calibration active
             apply_calib(true);
@@ -1158,6 +1174,8 @@ namespace rs2
                     auto invoke = [_this](std::function<void()> action) {
                         _this->invoke(action);
                     };
+                    if (get_manager().action != on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB)
+                        get_manager().fl_retry = true;
                     get_manager().start(invoke);
                     update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
                     enable_dismiss = false;
@@ -1166,7 +1184,7 @@ namespace rs2
                 ImGui::PopStyleColor(2);
 
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB ? "Retry on-chip calibration process" : "Retry on-chip focal length calibration process");
+                    ImGui::SetTooltip("%s", get_manager().action != on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB ? "Retry on-chip calibration process" : "Retry on-chip focal length calibration process");
             }
             else if (update_state == RS2_CALIB_STATE_CALIB_COMPLETE)
             {
