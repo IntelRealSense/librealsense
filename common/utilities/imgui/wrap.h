@@ -4,7 +4,7 @@
 #pragma once
 
 namespace utilities {
-namespace string {
+namespace imgui {
 
 // Wrap text according to input width
 //     - Input:  - text as a string

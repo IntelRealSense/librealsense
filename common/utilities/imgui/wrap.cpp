@@ -5,13 +5,13 @@
 #include <vector>
 #include <sstream>
 #include "wrap.h"
-#include "split.h"
+#include "../common/utilities/string/split.h"
 #include "../third-party/imgui/imgui.h"
 
 namespace utilities {
-namespace string {
+namespace imgui {
 
-void trim_trailing_spaces( std::string &remaining_paragraph )
+void trim_leading_spaces( std::string &remaining_paragraph )
 {
     auto non_space_index = remaining_paragraph.find_first_not_of( ' ' );
 
@@ -31,7 +31,7 @@ std::string wrap_paragraph( const std::string & paragraph, int wrap_pixels_width
         = paragraph;  // Holds the remaining unwrapped part of the input paragraph
 
     // Handle a case when the paragraph starts with spaces
-    trim_trailing_spaces(remaining_paragraph);
+    trim_leading_spaces(remaining_paragraph);
 
     auto next_word = remaining_paragraph.substr(
         0,
@@ -74,7 +74,7 @@ std::string wrap_paragraph( const std::string & paragraph, int wrap_pixels_width
             remaining_paragraph = remaining_paragraph.substr( next_word.size() + 1 );
 
             // Handle a case when the paragraph starts with spaces
-            trim_trailing_spaces(remaining_paragraph);
+            trim_leading_spaces(remaining_paragraph);
 
             next_word = remaining_paragraph.substr( 0, remaining_paragraph.find( ' ' ) );
 
@@ -102,7 +102,7 @@ std::string wrap( const std::string & text, int wrap_pixels_width )
         return text;
 
     // Split text into paragraphs
-    auto paragraphs_vector = split( text, '\n' );
+    auto paragraphs_vector = string::split( text, '\n' );
 
     std::string wrapped_text;
     int line_number = 1;

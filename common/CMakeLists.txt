@@ -60,8 +60,8 @@ set(COMMON_SRC
         "${CMAKE_CURRENT_LIST_DIR}/utilities/number/stabilized-value.h"
         "${CMAKE_CURRENT_LIST_DIR}/utilities/string/trim-newlines.h"
         "${CMAKE_CURRENT_LIST_DIR}/utilities/string/split.h"
-        "${CMAKE_CURRENT_LIST_DIR}/utilities/string/wrap.h"
-        "${CMAKE_CURRENT_LIST_DIR}/utilities/string/wrap.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/utilities/imgui/wrap.h"
+        "${CMAKE_CURRENT_LIST_DIR}/utilities/imgui/wrap.cpp"
         )
 
     set(COMMON_SRC

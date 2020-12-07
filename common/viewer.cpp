@@ -22,7 +22,7 @@
 #define ARCBALL_CAMERA_IMPLEMENTATION
 #include <arcball_camera.h>
 #include "../common/utilities/string/trim-newlines.h"
-#include "../common/utilities/string/wrap.h"
+#include "../common/utilities/imgui/wrap.h"
 
 namespace rs2
 {
@@ -1075,7 +1075,7 @@ namespace rs2
             try
             {
                 auto trimmed_msg = utilities::string::trim_newlines(msg);  
-                wrapped_msg = utilities::string::wrap(trimmed_msg, 500);
+                wrapped_msg = utilities::imgui::wrap(trimmed_msg, 500);
             }
             catch (...)
             {
