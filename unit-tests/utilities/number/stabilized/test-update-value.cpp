@@ -5,7 +5,7 @@
 
 
 #include "../../../test.h"
-#include "../common/utilities/number/stabilized-value.h"
+#include <../common/utilities/number/stabilized-value.h>
 
 using namespace utilities::number;
 

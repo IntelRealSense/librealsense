@@ -3173,7 +3173,7 @@ namespace rs2
             if (_reflectivity)
             {
                 _reflectivity->reset_history();
-                _stabilized_reflectivity.reset();
+                _stabilized_reflectivity.clear();
             }
         }
     }

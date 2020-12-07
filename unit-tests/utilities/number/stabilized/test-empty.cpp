@@ -5,7 +5,7 @@
 
 
 #include "../../../test.h"
-#include "../common/utilities/number/stabilized-value.h"
+#include <../common/utilities/number/stabilized-value.h>
 
 using namespace utilities::number;
 
@@ -13,20 +13,17 @@ using namespace utilities::number;
 //       * This tests group verifies stabilized_value class.
 //
 // Current test description:
-//       * Verify if history is full with a specific value, the stabilized value is always the same
-//         no matter what percentage is required   
-TEST_CASE( "stable value sanity - 100%", "[stabilized value]" )
+//       * Verify that empty function works as expected   
+TEST_CASE( "empty test", "[stabilized value]" )
 {
     try
     {
         stabilized_value< float > stab_value(5, 1.0f);
+        CHECK(stab_value.empty());
         CHECK_NOTHROW(stab_value.add(1.0f));
-        CHECK_NOTHROW(stab_value.add(1.0f));
-        CHECK_NOTHROW(stab_value.add(1.0f));
-        CHECK_NOTHROW(stab_value.add(1.0f));
-        CHECK_NOTHROW(stab_value.add(1.0f));
-
-        CHECK(1.0f == stab_value.get());
+        CHECK_FALSE(stab_value.empty());
+        stab_value.clear();
+        CHECK(stab_value.empty());
     }
     catch(const std::exception &e)
     {
@@ -49,7 +46,7 @@ TEST_CASE("stable value sanity - 40%", "[stabilized value]")
     }
     catch (const std::exception &e)
     {
-        FAIL(" Exception caught: " << e.what());
+        FAIL("Exception caught: " << e.what());
     }
 }
 
@@ -68,6 +65,6 @@ TEST_CASE("stable value sanity - 25%", "[stabilized value]")
     }
     catch (const std::exception &e)
     {
-        FAIL(" Exception caught: " << e.what());
+        FAIL("Exception caught: " << e.what());
     }
 }
