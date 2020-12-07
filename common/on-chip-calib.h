@@ -73,7 +73,7 @@ namespace rs2
         auto_calib_action action = RS2_CALIB_ACTION_ON_CHIP_OB_CALIB;
         float laser_status_prev = 0.0f;
 
-        int fl_step_count = 100;
+        int fl_step_count = 51;
         int fy_scan_range = 40;
         int keep_new_value_after_sucessful_scan = 1;
         int fl_data_sampling = 1;
@@ -82,6 +82,8 @@ namespace rs2
         int fl_scan_location = 0;
         int fy_scan_direction = 0;
         int white_wall_mode = 0;
+        
+        bool fl_retry = false;
 
         std::shared_ptr<subdevice_model> _sub;
 
@@ -120,6 +122,7 @@ namespace rs2
 
         void stop_viewer(invoker invoke);
         bool start_viewer(int w, int h, int fps, invoker invoke);
+        void try_start_viewer(int w, int h, int fps, invoker invoke);
     };
 
     // Auto-calib notification model is managing the UI state-machine
@@ -187,8 +190,6 @@ namespace rs2
 
         void minimize_x(const double* p, int s, double* f, double& x);
         void minimize_y(const double* p, int s, double* f, double& y);
-        bool fit_parabola(double x1, double y1, double x2, double y2, double x3, double y3, double& x0, double& y0);
-
         double subpixel_agj(double* f, int s);
 
     public:

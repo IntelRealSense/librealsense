@@ -365,10 +365,10 @@ namespace rs2
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
-            std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_on_chip_calibration_cpp(_dev.get(), json_content.data(), int(json_content.size()), health, new update_progress_callback<T>(std::move(callback)), timeout_ms, &e),
-                rs2_delete_raw_data);
+            auto buf = rs2_run_on_chip_calibration_cpp(_dev.get(), json_content.data(), int(json_content.size()), health, new update_progress_callback<T>(std::move(callback)), timeout_ms, &e);
             error::handle(e);
+
+            std::shared_ptr<const rs2_raw_data_buffer> list(buf, rs2_delete_raw_data);
 
             auto size = rs2_get_raw_data_size(list.get(), &e);
             error::handle(e);
