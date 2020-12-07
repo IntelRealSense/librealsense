@@ -49,7 +49,8 @@ TEST_CASE( "test get_manufacture_work_week", "[work_week]" )
                        INVALID_MESSAGE( serial, "work week" ) );
 
     serial = "x925xxxx";
-    CHECK_NOTHROW( auto mfr = l500::get_manufacture_work_week( serial ) );
-    CHECK(mfr.get_work_week() == 25)
-    CHECK(mfr.get_year() == 2019)
+    work_week mfr(0,0);
+    CHECK_NOTHROW( mfr = l500::get_manufacture_work_week( serial ) );
+    CHECK(mfr.get_work_week() == 25);
+    CHECK(mfr.get_year() == 2019);
 }
