@@ -172,7 +172,7 @@ namespace librealsense
                                                                 const firmware_version& camera_fw_version)
     {
 #ifdef __APPLE__
-        std::cerr << "IMU is not avaliable on MAC OS in this version" << std::endl;
+        LOG_WARNING("IMU is not avaliable on MAC OS in this version");
         return nullptr;
 #endif
         if (all_hid_infos.empty())
