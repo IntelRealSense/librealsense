@@ -95,6 +95,10 @@ namespace librealsense
 
     std::shared_ptr<synthetic_sensor> l500_motion::create_hid_device(std::shared_ptr<context> ctx, const std::vector<platform::hid_device_info>& all_hid_infos)
     {
+#ifdef __APPLE__
+        LOG_WARNING("IMU is not avaliable on MAC OS in this version");
+        return nullptr;
+#endif
         if (all_hid_infos.empty())
         {
             LOG_WARNING("No HID info provided, IMU is disabled");

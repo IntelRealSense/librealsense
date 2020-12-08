@@ -171,6 +171,10 @@ namespace librealsense
                                                                 const std::vector<platform::hid_device_info>& all_hid_infos,
                                                                 const firmware_version& camera_fw_version)
     {
+#ifdef __APPLE__
+        LOG_WARNING("IMU is not avaliable on MAC OS in this version");
+        return nullptr;
+#endif
         if (all_hid_infos.empty())
         {
             LOG_WARNING("No HID info provided, IMU is disabled");
