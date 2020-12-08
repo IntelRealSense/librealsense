@@ -3,20 +3,66 @@
 
 #include "work_week.h"
 #include <string>
+#include <stdexcept>
 
+static int work_weeks_between_years( unsigned year, unsigned other_year )
+{
+    unsigned Jan_1_JDN = utilities::time::jdn( year, 1, 1 );
+    unsigned other_Jan_1_JDN = utilities::time::jdn( other_year, 1, 1 );
+    // We need to compare between weeks, so we get the JDN of the Sunday of the wanted weeks
+    // (JDN + 1) % 7 gives us the day of the week for the JDN. 0 -> Sun, 1 -> Mon ...
+    int start_of_year_first_work_week = Jan_1_JDN - ( ( Jan_1_JDN + 1 ) % 7 );
+    int start_of_other_year_first_work_week = other_Jan_1_JDN - ( ( other_Jan_1_JDN + 1 ) % 7 );
+    // Subtracting the JDNs results in the number of days between 2 dates
+    return ( ( start_of_year_first_work_week - start_of_other_year_first_work_week ) / 7 );
+}
+
+static unsigned days_in_month( unsigned year, unsigned month )
+{
+    if( month == 2 )
+    {
+        if( ( year % 400 == 0 ) || ( year % 4 == 0 && year % 100 != 0 ) )
+            return 29;
+        else
+            return 28;
+    }
+    // Months with 30 days
+    else if( month == 4 || month == 6 || month == 9 || month == 11 )
+        return 30;
+    else
+        return 31;
+}
 
 namespace utilities {
 namespace time {
 
+work_week::work_week( unsigned year, unsigned ww )
+{
+    if( ww == 0 || ww > work_weeks_between_years( year + 1, year ) )
+        throw std::runtime_error( "Invalid work week given: " + std::to_string( year )
+                                  + " doesn't have a work week " + std::to_string( ww ) );
+    _year = year;
+    _ww = ww;
+}
+
 work_week::work_week( const std::time_t & t )
 {
     auto time = std::localtime( &t );
-    _year = time->tm_year + 1900;     // The tm_year field contains the number of years
-                                      // since 1900, we add 1900 to get current year
-    int Jan_1_wday = (time->tm_wday - time->tm_yday) % 7;
-    if (Jan_1_wday < 0) 
+
+    _year = time->tm_year + 1900;  // The tm_year field contains the number of years
+                                   // since 1900, we add 1900 to get current year
+    int Jan_1_wday = ( time->tm_wday - time->tm_yday ) % 7;
+    if( Jan_1_wday < 0 )
         Jan_1_wday += 7;
-    _ww = ((time->tm_yday + Jan_1_wday) / 7) + 1;
+    _ww = ( ( time->tm_yday + Jan_1_wday ) / 7 ) + 1;
+    // As explained in the header file, the last few days of a year may belong to work week 1 of the
+    // following year. This is the case if we are at the end of December, and the next year start
+    // before the week ends
+    if( _ww == 53 && ( 31 - time->tm_mday ) < ( 6 - time->tm_wday ) )
+    {
+        _year++;
+        _ww = 1;
+    }
 }
 
 unsigned work_week::get_year() const
@@ -31,19 +77,7 @@ unsigned work_week::get_work_week() const
 
 int work_week::operator-( const work_week & other ) const
 {
-    // Calculating the JDN (Julian Day Number) for the first day of the first work week of both years
-    int Y = this->_year + 4799;
-    int other_Y = other._year + 4799;
-    int Jan_1_JDN = ( 365 * Y ) + ( Y / 4 ) - ( Y / 100 ) + ( Y / 400 ) - 31738;
-    int other_Jan_1_JDN
-        = ( 365 * other_Y ) + ( other_Y / 4 ) - ( other_Y / 100 ) + ( other_Y / 400 ) - 31738;
-    // We need to compare between weeks, so we get the JDN of the Sunday of the wanted weeks
-    // (JDN + 1) % 7 gives us the day of the week for the JDN. 0 -> Sun, 1 -> Mon ...
-    int start_of_year_first_work_week = Jan_1_JDN - ( ( Jan_1_JDN + 1 ) % 7 );
-    int start_of_other_year_first_work_week = other_Jan_1_JDN - ( ( other_Jan_1_JDN + 1 ) % 7 );
-    // Subtracting the JDNs results in the number of days between 2 dates
-    return ( ( start_of_year_first_work_week - start_of_other_year_first_work_week ) / 7 )
-         + ( this->_ww - other._ww );
+    return work_weeks_between_years( _year, other._year ) + ( this->_ww - other._ww );
 }
 
 work_week work_week::current()
@@ -59,5 +93,15 @@ unsigned get_work_weeks_since( const work_week & start )
     return age;
 }
 
+// Calculation is according to formula found in the link provided in the headet file
+unsigned jdn( unsigned year, unsigned month, unsigned day )
+{
+    if( month == 0 || day == 0 || month > 12 || day > days_in_month( year, month ) )
+        throw std::runtime_error( "Invalid date given: " + std::to_string( day ) + "/"
+                                  + std::to_string( month ) + "/" + std::to_string( year ) );
+    return ( ( 1461 * ( year + 4800 + ( ( (int)month - 14 ) / 12 ) ) ) / 4 )
+         + ( ( 367 * ( month - 2 - ( 12 * ( ( (int)month - 14 ) / 12 ) ) ) ) / 12 )
+         - ( ( 3 * ( ( year + 4900 + ( ( (int)month - 14 ) / 12 ) ) / 100 ) ) / 4 ) + day - 32075;
+}
 }  // namespace time
 }  // namespace utilities

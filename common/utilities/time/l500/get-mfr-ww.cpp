@@ -30,9 +30,9 @@ utilities::time::work_week get_manufacture_work_week( const std::string & serial
     // using WW from serial number to get manufactoring work week
     unsigned WW_tens = serial[2] - '0';
     unsigned WW_singles = serial[3] - '0';
-    if( WW_tens > 5 || WW_singles > 9 || ( WW_tens == 5 && WW_singles > 3 ) )
-        throw std::runtime_error( "Invalid serial number \"" + serial + "\" work week" );
     unsigned man_ww = ( (WW_tens)*10 ) + WW_singles;
+    if (man_ww > 53)
+        throw std::runtime_error("Invalid serial number \"" + serial + "\" work week");
     return utilities::time::work_week( man_year, man_ww );
 }
 
