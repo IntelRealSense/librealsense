@@ -18,7 +18,9 @@ TEST_CASE( "Illegal input - percentage value too high", "[stabilized value]" )
 {
     try
     {
-        stabilized_value< float > stab_value1( 5, 1.1f );
+        stabilized_value< float > stab_value( 5 );
+        stab_value.add( 55.f );
+        stab_value.get( 1.1f );
         FAIL( "percentage over 100% must throw" );
     }
     catch( ... )
@@ -31,7 +33,9 @@ TEST_CASE( "Illegal input - percentage value too low", "[stabilized value]" )
 {
     try
     {
-        stabilized_value< float > stab_value3( 5, -1.1f );
+        stabilized_value< float > stab_value( 5 );
+        stab_value.add( 55.f );
+        stab_value.get( -1.1f );
         FAIL( "negative percentage must throw" );
     }
     catch( ... )
@@ -44,7 +48,9 @@ TEST_CASE( "Illegal input - percentage value is zero", "[stabilized value]" )
 {
     try
     {
-        stabilized_value< float > stab_value( 5, 0.0f );
+        stabilized_value< float > stab_value( 5 );
+        stab_value.add( 55.f );
+        stab_value.get( 0.0f );
         FAIL( "zero percentage must throw" );
     }
     catch( ... )

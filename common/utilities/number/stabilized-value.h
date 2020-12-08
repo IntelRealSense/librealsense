@@ -21,14 +21,11 @@ namespace number {
 template < typename T > class stabilized_value
 {
 public:
-    stabilized_value( size_t history_size, float stabilize_percentage = 0.75f )
+    stabilized_value( size_t history_size )
         : _history_size( history_size )
         , _last_stable_value( 0 )
-        , _stabilize_percentage( stabilize_percentage )
     {
-        if( ( stabilize_percentage <= 0.0f ) || ( stabilize_percentage > 1.0f ) )
-            throw std::runtime_error( "Illegal value for stabilize_percentage: "
-                                      + std::to_string( stabilize_percentage ) );
+
     }
 
     stabilized_value() = delete;
@@ -52,8 +49,12 @@ public:
             _values.pop_front();
     }
 
-    T get() const
+    T get( float stabilization_percent = 0.75f) const
     {
+        if ((stabilization_percent <= 0.0f) || (stabilization_percent > 1.0f))
+            throw std::runtime_error("Illegal value for stabilize_percentage: "
+                + std::to_string(stabilization_percent));
+
         std::lock_guard< std::mutex > lock( _mutex );
 
         if( _values.empty() )
@@ -61,8 +62,9 @@ public:
             throw std::runtime_error( "history is empty; no stable value" );
         }
 
-        if( _recalc_stable_val )
+        if (_recalc_stable_val || (_stabilize_percentage != stabilization_percent))
         {
+            _stabilize_percentage = stabilization_percent;
             std::unordered_map< T, int > values_count_map;
             std::pair< T, int > most_stable_value = { 0, 0 };
             for( T val : _values )
@@ -108,7 +110,7 @@ private:
     std::deque< T > _values;
     const size_t _history_size;
     mutable T _last_stable_value;
-    const float _stabilize_percentage;
+    mutable float _stabilize_percentage;
     mutable std::atomic_bool _recalc_stable_val = { true };
     mutable std::mutex _mutex;
 };

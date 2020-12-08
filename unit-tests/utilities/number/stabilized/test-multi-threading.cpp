@@ -22,7 +22,7 @@ TEST_CASE( "multi-threading", "[stabilized value]" )
         std::atomic<float> inserted_val_1 = { 20.0f };
         std::atomic<float> inserted_val_2 = { 55.0f };
         std::vector<float> values_vec;
-        stabilized_value< float > stab_value( 10, 0.6f );
+        stabilized_value< float > stab_value( 10 );
         
         // Fill history with values (> 60% is 'inserted_val_1')
         std::thread first( [&]() {
@@ -40,7 +40,7 @@ TEST_CASE( "multi-threading", "[stabilized value]" )
         std::thread second( [&]() {
             while (stab_value.empty());
             for (int i = 0; i < 1000; i++)
-                values_vec.push_back(stab_value.get());
+                values_vec.push_back(stab_value.get( 0.6f ));
         } );
 
         if (first.joinable()) first.join();

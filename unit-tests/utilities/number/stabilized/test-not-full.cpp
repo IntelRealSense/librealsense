@@ -13,30 +13,32 @@ using namespace utilities::number;
 //       * This tests group verifies stabilized_value class.
 //
 // Current test description:
-//       * Verify if history is not the logic works as expected and the percentage is calculated from the history current size
+//       * Verify if history is not the logic works as expected and the percentage is calculated
+//       from the history current size
 TEST_CASE( "not full history", "[stabilized value]" )
 {
     try
     {
-        stabilized_value< float > stab_value(30, 0.6f);
-        CHECK_NOTHROW(stab_value.add(76.0f));
-        CHECK_NOTHROW(stab_value.add(76.0f));
-        CHECK_NOTHROW(stab_value.add(76.0f));
-        CHECK_NOTHROW(stab_value.add(76.0f));
-        CHECK(76.0f == stab_value.get());
+        stabilized_value< float > stab_value( 30 );
+        CHECK_NOTHROW( stab_value.add( 76.0f ) );
+        CHECK_NOTHROW( stab_value.add( 76.0f ) );
+        CHECK_NOTHROW( stab_value.add( 76.0f ) );
+        CHECK_NOTHROW( stab_value.add( 76.0f ) );
+        CHECK( 76.0f == stab_value.get( 0.6f ) );
 
-        CHECK_NOTHROW(stab_value.add(45.0f));
-        CHECK_NOTHROW(stab_value.add(45.0f));
-        CHECK_NOTHROW(stab_value.add(45.0f));
-        CHECK_NOTHROW(stab_value.add(45.0f));
-        CHECK(76.0f == stab_value.get());
+        CHECK_NOTHROW( stab_value.add( 45.0f ) );
+        CHECK_NOTHROW( stab_value.add( 45.0f ) );
+        CHECK_NOTHROW( stab_value.add( 45.0f ) );
+        CHECK_NOTHROW( stab_value.add( 45.0f ) );
+        CHECK( 76.0f == stab_value.get( 0.6f ) );
 
-        CHECK_NOTHROW(stab_value.add(45.0f));
-        CHECK_NOTHROW(stab_value.add(45.0f)); // The stable value should change now (4 * 76.0 + 6 * 45.0 (total 10 values))
-        CHECK(45.0f == stab_value.get());
+        CHECK_NOTHROW( stab_value.add( 45.0f ) );
+        CHECK_NOTHROW( stab_value.add( 45.0f ) );  // The stable value should change now (4 * 76.0 +
+                                                   // 6 * 45.0 (total 10 values))
+        CHECK( 45.0f == stab_value.get( 0.6f ) );
     }
-    catch(const std::exception &e)
+    catch( const std::exception & e )
     {
-        FAIL("Exception caught: " << e.what());
+        FAIL( "Exception caught: " << e.what() );
     }
 }

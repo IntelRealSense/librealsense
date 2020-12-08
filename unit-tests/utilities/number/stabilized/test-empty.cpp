@@ -13,58 +13,58 @@ using namespace utilities::number;
 //       * This tests group verifies stabilized_value class.
 //
 // Current test description:
-//       * Verify that empty function works as expected   
+//       * Verify that empty function works as expected
 TEST_CASE( "empty test", "[stabilized value]" )
 {
     try
     {
-        stabilized_value< float > stab_value(5, 1.0f);
-        CHECK(stab_value.empty());
-        CHECK_NOTHROW(stab_value.add(1.0f));
-        CHECK_FALSE(stab_value.empty());
+        stabilized_value< float > stab_value( 5 );
+        CHECK( stab_value.empty() );
+        CHECK_NOTHROW( stab_value.add( 1.0f ) );
+        CHECK_FALSE( stab_value.empty() );
         stab_value.clear();
-        CHECK(stab_value.empty());
+        CHECK( stab_value.empty() );
     }
-    catch(const std::exception &e)
+    catch( const std::exception & e )
     {
-        FAIL(" Exception caught: " << e.what());
-    }
-}
-
-TEST_CASE("stable value sanity - 40%", "[stabilized value]")
-{
-    try
-    {
-        stabilized_value< float > stab_value(5, 0.4f);
-        CHECK_NOTHROW(stab_value.add(1.0f));
-        CHECK_NOTHROW(stab_value.add(1.0f));
-        CHECK_NOTHROW(stab_value.add(1.0f));
-        CHECK_NOTHROW(stab_value.add(1.0f));
-        CHECK_NOTHROW(stab_value.add(1.0f));
-
-        CHECK(1.0f == stab_value.get());
-    }
-    catch (const std::exception &e)
-    {
-        FAIL("Exception caught: " << e.what());
+        FAIL( " Exception caught: " << e.what() );
     }
 }
 
-TEST_CASE("stable value sanity - 25%", "[stabilized value]")
+TEST_CASE( "stable value sanity - 40%", "[stabilized value]" )
 {
     try
     {
-        stabilized_value< float > stab_value(5, 0.25f);
-        CHECK_NOTHROW(stab_value.add(1.0f));
-        CHECK_NOTHROW(stab_value.add(1.0f));
-        CHECK_NOTHROW(stab_value.add(1.0f));
-        CHECK_NOTHROW(stab_value.add(1.0f));
-        CHECK_NOTHROW(stab_value.add(1.0f));
+        stabilized_value< float > stab_value( 5 );
+        CHECK_NOTHROW( stab_value.add( 1.0f ) );
+        CHECK_NOTHROW( stab_value.add( 1.0f ) );
+        CHECK_NOTHROW( stab_value.add( 1.0f ) );
+        CHECK_NOTHROW( stab_value.add( 1.0f ) );
+        CHECK_NOTHROW( stab_value.add( 1.0f ) );
 
-        CHECK(1.0f == stab_value.get());
+        CHECK( 1.0f == stab_value.get( 0.4f ) );
     }
-    catch (const std::exception &e)
+    catch( const std::exception & e )
     {
-        FAIL("Exception caught: " << e.what());
+        FAIL( "Exception caught: " << e.what() );
+    }
+}
+
+TEST_CASE( "stable value sanity - 25%", "[stabilized value]" )
+{
+    try
+    {
+        stabilized_value< float > stab_value( 5 );
+        CHECK_NOTHROW( stab_value.add( 1.0f ) );
+        CHECK_NOTHROW( stab_value.add( 1.0f ) );
+        CHECK_NOTHROW( stab_value.add( 1.0f ) );
+        CHECK_NOTHROW( stab_value.add( 1.0f ) );
+        CHECK_NOTHROW( stab_value.add( 1.0f ) );
+
+        CHECK( 1.0f == stab_value.get( 0.4f ) );
+    }
+    catch( const std::exception & e )
+    {
+        FAIL( "Exception caught: " << e.what() );
     }
 }

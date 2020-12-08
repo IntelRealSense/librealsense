@@ -16,26 +16,26 @@ using namespace utilities::number;
 //       * Verify if history is filled with less stable percantage than required the last stable
 //         value is returned
 
-TEST_CASE("stay with last value", "[stabilized value]")
+TEST_CASE( "stay with last value", "[stabilized value]" )
 {
     try
     {
-        stabilized_value< float > stab_value(10, 0.6f);
-        CHECK_NOTHROW(stab_value.add(55.0f));
-        CHECK_NOTHROW(stab_value.add(55.0f));
-        CHECK_NOTHROW(stab_value.add(55.0f));
-        CHECK_NOTHROW(stab_value.add(55.0f));
-        CHECK_NOTHROW(stab_value.add(55.0f));
-        CHECK_NOTHROW(stab_value.add(60.0f));
-        CHECK_NOTHROW(stab_value.add(60.0f));
-        CHECK_NOTHROW(stab_value.add(60.0f));
-        CHECK_NOTHROW(stab_value.add(60.0f));
-        CHECK_NOTHROW(stab_value.add(60.0f));
+        stabilized_value< float > stab_value( 10 );
+        CHECK_NOTHROW( stab_value.add( 55.0f ) );
+        CHECK_NOTHROW( stab_value.add( 55.0f ) );
+        CHECK_NOTHROW( stab_value.add( 55.0f ) );
+        CHECK_NOTHROW( stab_value.add( 55.0f ) );
+        CHECK_NOTHROW( stab_value.add( 55.0f ) );
+        CHECK_NOTHROW( stab_value.add( 60.0f ) );
+        CHECK_NOTHROW( stab_value.add( 60.0f ) );
+        CHECK_NOTHROW( stab_value.add( 60.0f ) );
+        CHECK_NOTHROW( stab_value.add( 60.0f ) );
+        CHECK_NOTHROW( stab_value.add( 60.0f ) );
 
-        CHECK(55.0f == stab_value.get());
+        CHECK( 55.0f == stab_value.get( 0.6f ) );
     }
-    catch (const std::exception & e)
+    catch( const std::exception & e )
     {
-        FAIL("Exception caught: " << e.what());
+        FAIL( "Exception caught: " << e.what() );
     }
 }

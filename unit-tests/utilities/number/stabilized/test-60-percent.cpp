@@ -19,7 +19,7 @@ TEST_CASE( "get 60% stability", "[stabilized value]" )
 {
     try
     {
-        stabilized_value< float > stab_value( 10, 0.6f );
+        stabilized_value< float > stab_value( 10 );
         CHECK_NOTHROW( stab_value.add( 55.0f ) );
         CHECK_NOTHROW( stab_value.add( 55.0f ) );
         CHECK_NOTHROW( stab_value.add( 55.0f ) );
@@ -31,7 +31,7 @@ TEST_CASE( "get 60% stability", "[stabilized value]" )
         CHECK_NOTHROW( stab_value.add( 60.0f ) );
         CHECK_NOTHROW( stab_value.add( 60.0f ) );
 
-        CHECK( 55.0f == stab_value.get() );
+        CHECK( 55.0f == stab_value.get(0.6f) );
     }
     catch( const std::exception & e )
     {
