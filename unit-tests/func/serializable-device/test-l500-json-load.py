@@ -9,6 +9,7 @@ visual_preset_number = depth_sensor.get_option(rs.option.visual_preset)
 visual_preset_name = rs.l500_visual_preset(int(visual_preset_number))
 
 #############################################################################################
+# The default preset is scheduled to be removed, once that happens this test is irrelevant and should be removed
 if visual_preset_name == rs.l500_visual_preset.default:
     test.start("Trying to load default settings from json. Should fail")
     try:
