@@ -17,28 +17,21 @@ using namespace utilities::number;
 //       from the history current size
 TEST_CASE( "not full history", "[stabilized value]" )
 {
-    try
-    {
-        stabilized_value< float > stab_value( 30 );
-        CHECK_NOTHROW( stab_value.add( 76.0f ) );
-        CHECK_NOTHROW( stab_value.add( 76.0f ) );
-        CHECK_NOTHROW( stab_value.add( 76.0f ) );
-        CHECK_NOTHROW( stab_value.add( 76.0f ) );
-        CHECK( 76.0f == stab_value.get( 0.6f ) );
+    stabilized_value< float > stab_value( 30 );
+    CHECK_NOTHROW( stab_value.add( 76.0f ) );
+    CHECK_NOTHROW( stab_value.add( 76.0f ) );
+    CHECK_NOTHROW( stab_value.add( 76.0f ) );
+    CHECK_NOTHROW( stab_value.add( 76.0f ) );
+    CHECK( 76.0f == stab_value.get( 0.6f ) );
 
-        CHECK_NOTHROW( stab_value.add( 45.0f ) );
-        CHECK_NOTHROW( stab_value.add( 45.0f ) );
-        CHECK_NOTHROW( stab_value.add( 45.0f ) );
-        CHECK_NOTHROW( stab_value.add( 45.0f ) );
-        CHECK( 76.0f == stab_value.get( 0.6f ) );
+    CHECK_NOTHROW( stab_value.add( 45.0f ) );
+    CHECK_NOTHROW( stab_value.add( 45.0f ) );
+    CHECK_NOTHROW( stab_value.add( 45.0f ) );
+    CHECK_NOTHROW( stab_value.add( 45.0f ) );
+    CHECK_NOTHROW( stab_value.add( 45.0f ) );
 
-        CHECK_NOTHROW( stab_value.add( 45.0f ) );
-        CHECK_NOTHROW( stab_value.add( 45.0f ) );  // The stable value should change now (4 * 76.0 +
-                                                   // 6 * 45.0 (total 10 values))
-        CHECK( 45.0f == stab_value.get( 0.6f ) );
-    }
-    catch( const std::exception & e )
-    {
-        FAIL( "Exception caught: " << e.what() );
-    }
+    CHECK( 76.0f == stab_value.get( 0.6f ) );
+    CHECK_NOTHROW( stab_value.add( 45.0f ) );  // The stable value should change now (4 * 76.0 +
+                                               // 6 * 45.0 (total 10 values))
+    CHECK( 45.0f == stab_value.get( 0.6f ) );
 }

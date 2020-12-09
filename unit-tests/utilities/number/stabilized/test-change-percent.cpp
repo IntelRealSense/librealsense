@@ -17,26 +17,19 @@ using namespace utilities::number;
 //         give the expected value
 TEST_CASE( "change stabilization percent", "[stabilized value]" )
 {
-    try
-    {
-        stabilized_value< float > stab_value( 5 );
-        CHECK_NOTHROW( stab_value.add( 1.0f ) );
-        CHECK_NOTHROW( stab_value.add( 1.0f ) );
-        CHECK_NOTHROW( stab_value.add( 1.0f ) );
-        CHECK_NOTHROW( stab_value.add( 1.0f ) );
-        CHECK_NOTHROW( stab_value.add( 1.0f ) );
+    stabilized_value< float > stab_value( 5 );
+    CHECK_NOTHROW( stab_value.add( 1.0f ) );
+    CHECK_NOTHROW( stab_value.add( 1.0f ) );
+    CHECK_NOTHROW( stab_value.add( 1.0f ) );
+    CHECK_NOTHROW( stab_value.add( 1.0f ) );
+    CHECK_NOTHROW( stab_value.add( 1.0f ) );
 
-        CHECK_NOTHROW( stab_value.add( 2.0f ) );
-        CHECK_NOTHROW( stab_value.add( 2.0f ) );
-        CHECK_NOTHROW( stab_value.add( 2.0f ) );
-        CHECK_NOTHROW( stab_value.add( 2.0f ) );
+    CHECK_NOTHROW( stab_value.add( 2.0f ) );
+    CHECK_NOTHROW( stab_value.add( 2.0f ) );
+    CHECK_NOTHROW( stab_value.add( 2.0f ) );
+    CHECK_NOTHROW( stab_value.add( 2.0f ) );
 
-        CHECK( 1.0f == stab_value.get( 1.0f ) );
-        CHECK( 1.0f == stab_value.get( 0.9f ) );
-        CHECK( 2.0f == stab_value.get( 0.8f ) );
-    }
-    catch( const std::exception & e )
-    {
-        FAIL( "Exception caught: " << e.what() );
-    }
+    CHECK( 1.0f == stab_value.get( 1.0f ) );
+    CHECK( 1.0f == stab_value.get( 0.9f ) );
+    CHECK( 2.0f == stab_value.get( 0.8f ) );
 }

@@ -16,45 +16,9 @@ using namespace utilities::number;
 //       * Verify stabilized_value percentage input is at range (0-100] % (zero not included)
 TEST_CASE( "Illegal input - percentage value too high", "[stabilized value]" )
 {
-    try
-    {
-        stabilized_value< float > stab_value( 5 );
-        stab_value.add( 55.f );
-        stab_value.get( 1.1f );
-        FAIL( "percentage over 100% must throw" );
-    }
-    catch( ... )
-    {
-        SUCCEED();
-    }
-}
-
-TEST_CASE( "Illegal input - percentage value too low", "[stabilized value]" )
-{
-    try
-    {
-        stabilized_value< float > stab_value( 5 );
-        stab_value.add( 55.f );
-        stab_value.get( -1.1f );
-        FAIL( "negative percentage must throw" );
-    }
-    catch( ... )
-    {
-        SUCCEED();
-    }
-}
-
-TEST_CASE( "Illegal input - percentage value is zero", "[stabilized value]" )
-{
-    try
-    {
-        stabilized_value< float > stab_value( 5 );
-        stab_value.add( 55.f );
-        stab_value.get( 0.0f );
-        FAIL( "zero percentage must throw" );
-    }
-    catch( ... )
-    {
-        SUCCEED();
-    }
+    stabilized_value< float > stab_value( 5 );
+    stab_value.add( 55.f );
+    CHECK_THROWS( stab_value.get( 1.1f ) );
+    CHECK_THROWS( stab_value.get( -1.1f ) );
+    CHECK_THROWS( stab_value.get( 0.0f ) );
 }

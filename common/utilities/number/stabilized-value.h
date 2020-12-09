@@ -24,8 +24,8 @@ public:
     stabilized_value( size_t history_size )
         : _history_size( history_size )
         , _last_stable_value( 0 )
+        , _recalc_stable_val( false )
     {
-
     }
 
     stabilized_value() = delete;
@@ -69,12 +69,12 @@ public:
             std::pair< T, int > most_stable_value = { 0, 0 };
             for( T val : _values )
             {
-                ++values_count_map[val];
+                auto current_val = ++values_count_map[val];
 
-                if( most_stable_value.second < values_count_map[val] )
+                if( most_stable_value.second < current_val)
                 {
                     most_stable_value.first = val;
-                    most_stable_value.second = values_count_map[val];
+                    most_stable_value.second = current_val;
                 }
             }
 
@@ -94,13 +94,10 @@ public:
     void clear()
     {
         const std::lock_guard< std::mutex > lock( _mutex );
-
         _values.clear();
-        _last_stable_value = 0.0f;
-        _recalc_stable_val = false;
     }
 
-    bool empty()
+    bool empty() const
     {
         const std::lock_guard< std::mutex > lock( _mutex );
         return _values.empty();
@@ -111,7 +108,7 @@ private:
     const size_t _history_size;
     mutable T _last_stable_value;
     mutable float _stabilize_percentage;
-    mutable std::atomic_bool _recalc_stable_val = { true };
+    mutable bool _recalc_stable_val;
     mutable std::mutex _mutex;
 };
 

@@ -15,59 +15,17 @@ using namespace utilities::number;
 // Current test description:
 //       * Verify if history is full with a specific value, the stabilized value is always the same
 //         no matter what percentage is required
-TEST_CASE( "stable value sanity - 100%", "[stabilized value]" )
+TEST_CASE( "stable value sanity", "[stabilized value]" )
 {
-    try
-    {
-        stabilized_value< float > stab_value( 5 );
-        CHECK_NOTHROW( stab_value.add( 1.0f ) );
-        CHECK_NOTHROW( stab_value.add( 1.0f ) );
-        CHECK_NOTHROW( stab_value.add( 1.0f ) );
-        CHECK_NOTHROW( stab_value.add( 1.0f ) );
-        CHECK_NOTHROW( stab_value.add( 1.0f ) );
+    stabilized_value< float > stab_value( 5 );
+    CHECK_NOTHROW( stab_value.add( 1.0f ) );
+    CHECK_NOTHROW( stab_value.add( 1.0f ) );
+    CHECK_NOTHROW( stab_value.add( 1.0f ) );
+    CHECK_NOTHROW( stab_value.add( 1.0f ) );
+    CHECK_NOTHROW( stab_value.add( 1.0f ) );
 
-        CHECK( 1.0f == stab_value.get( 1.0f ) );
-    }
-    catch( const std::exception & e )
-    {
-        FAIL( "Exception caught: " << e.what() );
-    }
+    CHECK( 1.0f == stab_value.get( 1.0f ) );
+    CHECK(1.0f == stab_value.get(0.4f));
+    CHECK(1.0f == stab_value.get(0.25f));
 }
 
-TEST_CASE( "stable value sanity - 40%", "[stabilized value]" )
-{
-    try
-    {
-        stabilized_value< float > stab_value( 5 );
-        CHECK_NOTHROW( stab_value.add( 1.0f ) );
-        CHECK_NOTHROW( stab_value.add( 1.0f ) );
-        CHECK_NOTHROW( stab_value.add( 1.0f ) );
-        CHECK_NOTHROW( stab_value.add( 1.0f ) );
-        CHECK_NOTHROW( stab_value.add( 1.0f ) );
-
-        CHECK( 1.0f == stab_value.get( 0.4f ) );
-    }
-    catch( const std::exception & e )
-    {
-        FAIL( "Exception caught: " << e.what() );
-    }
-}
-
-TEST_CASE( "stable value sanity - 25%", "[stabilized value]" )
-{
-    try
-    {
-        stabilized_value< float > stab_value( 5 );
-        CHECK_NOTHROW( stab_value.add( 1.0f ) );
-        CHECK_NOTHROW( stab_value.add( 1.0f ) );
-        CHECK_NOTHROW( stab_value.add( 1.0f ) );
-        CHECK_NOTHROW( stab_value.add( 1.0f ) );
-        CHECK_NOTHROW( stab_value.add( 1.0f ) );
-
-        CHECK( 1.0f == stab_value.get( 0.25f ) );
-    }
-    catch( const std::exception & e )
-    {
-        FAIL( "Exception caught: " << e.what() );
-    }
-}
