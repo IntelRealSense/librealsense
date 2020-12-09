@@ -349,10 +349,12 @@ namespace rs2
 
     void on_chip_calib_manager::calibrate()
     {
+        int occ_timeout_ms = 9000;
         if (action != RS2_CALIB_ACTION_ON_CHIP_CALIB)
         {
             if (fl_retry)
             {
+                occ_timeout_ms = 12000;
                 if (speed_fl == 0)
                     speed_fl = 1;
                 else if (speed_fl == 1)
@@ -431,7 +433,7 @@ namespace rs2
         if (action == RS2_CALIB_ACTION_TARE_CALIB)
             _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = int(progress);}, 5000);
         else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
-            _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = int(progress);}, 12000);
+            _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = int(progress);}, occ_timeout_ms);
 
         if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
         {
@@ -1165,8 +1167,19 @@ namespace rs2
 
                 std::string button_name = to_string() << "Retry" << "##retry" << index;
 
+                static int retry_times = 0;
+                if (get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
+                {
+                    if (!get_manager().fl_retry)
+                        retry_times = 0;
+                    else
+                        ++retry_times;
+                }
+                else
+                    retry_times = 3;
+                
                 ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
-                if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
+                if (retry_times < 3 || ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
                 {
                     get_manager().restore_workspace([](std::function<void()> a){ a(); });
                     get_manager().reset();
