@@ -15,7 +15,7 @@ using namespace utilities::number;
 // Current test description:
 //       * Verify if history is filled with a stable value and then filled with required percentage
 //         of new val, new val is returned as stable value.
-TEST_CASE( "update stable value", "[stabilized value]" )
+TEST_CASE( "update stable value - nominal", "[stabilized value]" )
 {
     stabilized_value< float > stab_value( 10 );
     CHECK_NOTHROW( stab_value.add( 55.0f ) );
@@ -39,4 +39,36 @@ TEST_CASE( "update stable value", "[stabilized value]" )
 
     CHECK_NOTHROW( stab_value.add( 35.0f ) );
     CHECK( 35.0f == stab_value.get( 0.6f ) );
+}
+
+
+
+TEST_CASE("update stable value - last stable not in history", "[stabilized value]")
+{
+    stabilized_value< float > stab_value(10);
+    stab_value.add(55.0f);
+    CHECK(55.0f == stab_value.get(1.0f));
+
+    stab_value.add(60.0f);
+    stab_value.add(60.0f);
+    stab_value.add(60.0f);
+    stab_value.add(60.0f);
+    stab_value.add(60.0f);
+    stab_value.add(60.0f);
+    stab_value.add(60.0f);
+    stab_value.add(60.0f);
+    stab_value.add(60.0f);
+    CHECK(55.0f == stab_value.get(1.0f));
+    CHECK(60.0 == stab_value.get(0.9f));
+    stab_value.add(70.0f);
+    CHECK(60.0f == stab_value.get(1.0f));
+}
+
+TEST_CASE("update stable value - last stable not set", "[stabilized value]")
+{
+    stabilized_value< float > stab_value(10);
+    stab_value.add(55.0f);
+    stab_value.add(60.0f);
+    stab_value.add(60.0f);
+    CHECK(60.0f == stab_value.get(0.8f));
 }
