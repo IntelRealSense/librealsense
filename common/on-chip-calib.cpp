@@ -350,16 +350,16 @@ namespace rs2
     void on_chip_calib_manager::calibrate()
     {
         int occ_timeout_ms = 9000;
-        if (action != RS2_CALIB_ACTION_ON_CHIP_CALIB)
+        if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
         {
-            if (fl_retry)
+            if (toggle)
             {
                 occ_timeout_ms = 12000;
                 if (speed_fl == 0)
                     speed_fl = 1;
                 else if (speed_fl == 1)
                     speed_fl = 0;
-                fl_retry = false;
+                toggle = false;
                 std::this_thread::sleep_for(std::chrono::milliseconds(3000));
             }
 
@@ -742,7 +742,7 @@ namespace rs2
                 ImGui::Text("%s", "Get Tare Calibration Ground Truth");
             else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED)
                 ImGui::Text("%s", "Get Tare Calibration Ground Truth Failed");
-            else if (update_state == RS2_CALIB_STATE_FAILED)
+            else if (update_state == RS2_CALIB_STATE_FAILED && !((get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB) && get_manager().retry_times < 3))
                 ImGui::Text("%s", "Calibration Failed");
 
             if (update_state == RS2_CALIB_STATE_TARE_INPUT || update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED)
@@ -841,6 +841,7 @@ namespace rs2
                 {
                     get_manager().restore_workspace([this](std::function<void()> a) { a(); });
                     get_manager().reset();
+                    get_manager().retry_times = 0;
                     get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_TARE_GROUND_TRUTH;
                     auto _this = shared_from_this();
                     auto invoke = [_this](std::function<void()> action) {
@@ -1048,6 +1049,7 @@ namespace rs2
                 {
                     get_manager().restore_workspace([](std::function<void()> a) { a(); });
                     get_manager().reset();
+                    get_manager().retry_times = 0;
                     get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB;
                     auto _this = shared_from_this();
                     auto invoke = [_this](std::function<void()> action) {
@@ -1142,10 +1144,9 @@ namespace rs2
                 {
                     get_manager().restore_workspace([this](std::function<void()> a) { a(); });
                     get_manager().reset();
+                    get_manager().retry_times = 0;
                     auto _this = shared_from_this();
-                    auto invoke = [_this](std::function<void()> action) {
-                        _this->invoke(action);
-                    };
+                    auto invoke = [_this](std::function<void()> action) {_this->invoke(action);};
                     get_manager().start(invoke);
                     update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
                     enable_dismiss = false;
@@ -1158,46 +1159,56 @@ namespace rs2
             }
             else if (update_state == RS2_CALIB_STATE_FAILED)
             {
-                ImGui::Text("%s", _error_message.c_str());
+                if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB
+                    || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
+                {           
+                    if (get_manager().retry_times < 3)
+                    {
+                        get_manager().restore_workspace([](std::function<void()> a){ a(); });
+                        get_manager().reset();
+                        ++get_manager().retry_times;
+                        get_manager().toggle = true;
 
-                auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
-
-                ImGui::PushStyleColor(ImGuiCol_Button, saturate(redish, sat));
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(redish, 1.5f));
-
-                std::string button_name = to_string() << "Retry" << "##retry" << index;
-
-                static int retry_times = 0;
-                if (get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
-                {
-                    if (!get_manager().fl_retry)
-                        retry_times = 0;
+                        auto _this = shared_from_this();
+                        auto invoke = [_this](std::function<void()> action) {_this->invoke(action);};
+                        get_manager().start(invoke);
+                        update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
+                        enable_dismiss = false;
+                    }
                     else
-                        ++retry_times;
+                    {
+                        ImGui::Text("%s", (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB ? "OCC FL calibraton cannot work with this camera!" : "OCC ALL calibraton cannot work with this camera!"));
+                    }
                 }
                 else
-                    retry_times = 3;
-                
-                ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
-                if (retry_times < 3 || ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
                 {
-                    get_manager().restore_workspace([](std::function<void()> a){ a(); });
-                    get_manager().reset();
-                    auto _this = shared_from_this();
-                    auto invoke = [_this](std::function<void()> action) {
-                        _this->invoke(action);
-                    };
-                    if (get_manager().action != on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB)
-                        get_manager().fl_retry = true;
-                    get_manager().start(invoke);
-                    update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
-                    enable_dismiss = false;
+                    ImGui::Text("%s", _error_message.c_str());
+
+                    auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
+
+                    ImGui::PushStyleColor(ImGuiCol_Button, saturate(redish, sat));
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(redish, 1.5f));
+
+                    std::string button_name = to_string() << "Retry" << "##retry" << index;
+                    ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
+                    if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
+                    {
+                        get_manager().restore_workspace([](std::function<void()> a) { a(); });
+                        get_manager().reset();
+                        auto _this = shared_from_this();
+                        auto invoke = [_this](std::function<void()> action) {
+                            _this->invoke(action);
+                        };
+                        get_manager().start(invoke);
+                        update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
+                        enable_dismiss = false;
+                    }
+
+                    ImGui::PopStyleColor(2);
+
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("%s", "Retry on-chip calibration process");
                 }
-
-                ImGui::PopStyleColor(2);
-
-                if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", get_manager().action != on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB ? "Retry on-chip calibration process" : "Retry on-chip focal length calibration process");
             }
             else if (update_state == RS2_CALIB_STATE_CALIB_COMPLETE)
             {
@@ -1725,7 +1736,7 @@ namespace rs2
         else if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED) return 210;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH) return 110;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED) return 115;
-        else if (update_state == RS2_CALIB_STATE_FAILED) return 110;
+        else if (update_state == RS2_CALIB_STATE_FAILED) return ((get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB) ? (get_manager().retry_times < 3 ? 0 : 80) : 110);
         else return 100;
     }
 

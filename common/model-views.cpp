@@ -5250,6 +5250,8 @@ namespace rs2
                             for (auto&& n : related_notifications)
                                 if (dynamic_cast<autocalib_notification_model*>(n.get()))
                                     n->dismiss(false);
+
+                            related_notifications.push_back(n);
                         }
                         catch (const error& e)
                         {
