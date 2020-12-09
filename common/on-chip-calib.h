@@ -83,7 +83,8 @@ namespace rs2
         int fy_scan_direction = 0;
         int white_wall_mode = 0;
         
-        bool fl_retry = false;
+        int retry_times = 0;
+        bool toggle = false;
 
         std::shared_ptr<subdevice_model> _sub;
 
