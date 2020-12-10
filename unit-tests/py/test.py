@@ -58,6 +58,23 @@ def print_stack():
     for line in traceback.format_stack():
         print(line)
 
+# Function to check frame drops while streaming
+def check_frame_drops(frame, previous_frame, after_set_option = 0):
+    if platform.system() == 'Linux' and after_set_option == 1:
+        allowed_drops = 4
+    else:
+        allowed_drops = 0
+    frame_number = frame.get_frame_number()
+    if previous_frame != -1:
+        dropped_frames = frame_number - (previous_frame + 1)  # should be 0 in windows, less than 5 in linux
+        if dropped_frames > allowed_drops:
+            print(dropped_frames, "depth frame(s) starting from frame", previous_frame + 1, "were dropped")
+            fail()
+        if dropped_frames < 0:
+            print("Depth frames repeated or out of order. Got frame", frame_number, "after frame",
+                  previous_frame)
+            fail()
+
 # Functions for asserting test cases:
 # The check family of functions tests an expression and continues the test whether the assertion succeeded or failed.
 # The require family are equivalent but execution is aborted if the assertion fails.
