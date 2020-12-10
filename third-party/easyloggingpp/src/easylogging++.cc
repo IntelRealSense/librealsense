@@ -2094,8 +2094,10 @@ Storage::Storage(const LogBuilderPtr& defaultLogBuilder) :
   addFlag(LoggingFlag::AllowVerboseIfModuleNotSpecified);
 #if ELPP_ASYNC_LOGGING
   installLogDispatchCallback<base::AsyncLogDispatchCallback>(std::string("AsyncLogDispatchCallback"));
+  std::cout << "Storage::ELPP_ASYNC_LOGGING" << std::endl;
 #else
   installLogDispatchCallback<base::DefaultLogDispatchCallback>(std::string("DefaultLogDispatchCallback"));
+  std::cout << "Storage::ELPP_ASYNC_LOGGING(not)" << std::endl;
 #endif  // ELPP_ASYNC_LOGGING
 #if defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_PERFORMANCE_TRACKING)
   installPerformanceTrackingCallback<base::DefaultPerformanceTrackingCallback>
@@ -2104,6 +2106,7 @@ Storage::Storage(const LogBuilderPtr& defaultLogBuilder) :
   ELPP_INTERNAL_INFO(1, "Easylogging++ has been initialized");
 #if ELPP_ASYNC_LOGGING
   m_asyncDispatchWorker->start();
+  std::cout << "Storage::Done" << std::endl;
 #endif  // ELPP_ASYNC_LOGGING
 }
 
@@ -2315,36 +2318,48 @@ AsyncDispatchWorker::AsyncDispatchWorker() {
 AsyncDispatchWorker::~AsyncDispatchWorker() {
   setContinueRunning(false);
   ELPP_INTERNAL_INFO(6, "Stopping dispatch worker - Cleaning log queue");
+  if (m_t1.joinable())
+      m_t1.join();
+  else
+      std::cout << "logger not joinable" << std::endl;
   clean();
   ELPP_INTERNAL_INFO(6, "Log queue cleaned");
 }
 
 bool AsyncDispatchWorker::clean(void) {
-  std::mutex m;
-  std::unique_lock<std::mutex> lk(m);
-  cv.wait(lk, [] { return !ELPP->asyncLogQueue()->empty(); });
-  emptyQueue();
+  std::unique_lock<std::mutex> lk(_mtx);
+  try
+  {
+      emptyQueue();
+  }
+  catch(...){}
   lk.unlock();
   cv.notify_one();
-  return ELPP->asyncLogQueue()->empty();
+  return (ELPP && ELPP->asyncLogQueue() &&ELPP->asyncLogQueue()->empty());
 }
 
 void AsyncDispatchWorker::emptyQueue(void) {
-  while (!ELPP->asyncLogQueue()->empty()) {
-    AsyncLogItem data = ELPP->asyncLogQueue()->next();
-    handle(&data);
-    base::threading::msleep(100);
+  if (ELPP && ELPP->asyncLogQueue())
+  {
+      try // TODO Thread-safety
+      {
+        for (auto i=0UL; i< ELPP->asyncLogQueue()->size(); i++)
+        {
+          AsyncLogItem data = ELPP->asyncLogQueue()->next();
+          handle(&data);
+        }
+      }
+      catch(...){}
   }
 }
 
 void AsyncDispatchWorker::start(void) {
-  base::threading::msleep(5000); // 5s (why?)
   setContinueRunning(true);
-  std::thread t1(&AsyncDispatchWorker::run, this);
-  t1.join();
+  m_t1 = std::thread(&AsyncDispatchWorker::run, this);
 }
 
 void AsyncDispatchWorker::handle(AsyncLogItem* logItem) {
+    base::threading::ScopedLock scopedLock(lock());
   LogDispatchData* data = logItem->data();
   LogMessage* logMessage = logItem->logMessage();
   Logger* logger = logMessage->logger();
@@ -2401,7 +2416,7 @@ void AsyncDispatchWorker::handle(AsyncLogItem* logItem) {
 void AsyncDispatchWorker::run(void) {
   while (continueRunning()) {
     emptyQueue();
-    base::threading::msleep(10); // 10ms
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
   }
 }
 #endif  // ELPP_ASYNC_LOGGING
@@ -2548,6 +2563,7 @@ MessageBuilder& MessageBuilder::operator<<(const wchar_t* msg) {
 // Writer
 
 Writer& Writer::construct(Logger* logger, bool needLock) {
+  if (!ELPP) return *this;
   m_logger = logger;
   initializeLogger(logger->id(), false, needLock);
   m_messageBuilder.initialize(m_logger);
@@ -2555,6 +2571,7 @@ Writer& Writer::construct(Logger* logger, bool needLock) {
 }
 
 Writer& Writer::construct(int count, const char* loggerIds, ...) {
+  if (!ELPP) return *this;
   if (ELPP->hasFlag(LoggingFlag::MultiLoggerSupport)) {
     va_list loggersList;
     va_start(loggersList, loggerIds);
@@ -2602,6 +2619,7 @@ void Writer::initializeLogger(const std::string& loggerId, bool lookup, bool nee
 }
 
 void Writer::processDispatch() {
+  if (!ELPP) return;
 #if ELPP_LOGGING_ENABLED
   if (ELPP->hasFlag(LoggingFlag::MultiLoggerSupport)) {
     bool firstDispatched = false;
@@ -3096,6 +3114,9 @@ bool Loggers::configureFromArg(const char* argKey) {
 }
 
 void Loggers::flushAll(void) {
+#if ELPP_ASYNC_LOGGING
+    ELPP->asyncDispatchWorker()->clean();
+#endif
   ELPP->registeredLoggers()->flushAll();
 }
 
