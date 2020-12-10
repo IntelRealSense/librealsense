@@ -48,17 +48,19 @@ namespace librealsense
 
             if (auto hdr_enabled_option = depth_ep.get_option_handler(RS2_OPTION_HDR_ENABLED))
             {
+                std::vector<std::pair<std::shared_ptr<option>, std::string>> emitter_options_and_reasons = { std::make_pair(hdr_enabled_option,
+                    "Emitter status cannot be set while HDR is enabled")};
                 depth_ep.register_option(RS2_OPTION_EMITTER_ENABLED,
                     std::make_shared<gated_option>(
                         emitter_enabled,
-                        hdr_enabled_option,
-                        "Emitter status cannot be set while HDR is enabled"));
+                        emitter_options_and_reasons));
                 
+                std::vector<std::pair<std::shared_ptr<option>, std::string>> laser_options_and_reasons = { std::make_pair(hdr_enabled_option,
+                    "Laser Power status cannot be set while HDR is enabled") };
                 depth_ep.register_option(RS2_OPTION_LASER_POWER,
                     std::make_shared<gated_option>(
-                        laser_power_auto_disabling,
-                        hdr_enabled_option,
-                        "Laser Power status cannot be set while HDR is enabled"));
+					    laser_power_auto_disabling,
+                        laser_options_and_reasons));
             }
             else
             {
