@@ -11,6 +11,11 @@ previous_depth_frame_number = -1
 previous_color_frame_number = -1
 after_set_option = 0
 
+def collect_frames_after_set(): 
+    after_set_option = 1
+    time.sleep(0.5) #collect frames for 0.5 seconds
+    after_set_option = 0
+
 def check_depth_frame_drops(frame):
     global previous_depth_frame_number
     global after_set_option
@@ -52,9 +57,7 @@ test.start("Checking for frame drops when setting laser power several times")
 
 for i in range(1,5): 
     depth_sensor.set_option(laser_power, current_laser_control + 10*i)
-    after_set_option=1
-    time.sleep(0.5) #collect frames for 0.5 seconds
-    after_set_option=0
+    collect_frames_after_set()
 
 test.finish()
 #############################################################################################
@@ -70,18 +73,14 @@ for option in depth_options:
         continue
     new_value = depth_sensor.get_option_range(option).min
     depth_sensor.set_option(option,new_value)
-    after_set_option = 1
-    time.sleep(0.5) #collect frames for 0.5 seconds
-    after_set_option = 0
+    collect_frames_after_set()
 
 for option in color_options:
     if (color_sensor.is_option_read_only(option) == 1): 
         continue
     new_value = color_sensor.get_option_range(option).min
     color_sensor.set_option(option,new_value)
-    after_set_option = 1
-    time.sleep(0.5) #collect frames for 0.5 seconds
-    after_set_option = 0
+    collect_frames_after_set()
 
 test.finish()
 #############################################################################################
