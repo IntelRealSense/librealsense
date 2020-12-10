@@ -22,11 +22,13 @@ public:
     {
         ImGui::SetNextWindowSize(_size);
         ImGui::SetNextWindowPos(_position);
-        ImGui::Begin(_name, nullptr, _sliders_flags);
-        ImGui::Text(_name);
+        //concate the name given with seq_id in order to make a unique name (needed for Begin())
+        std::string name_id = std::string(_name) + std::to_string(_seq_id);
+        ImGui::Begin(name_id.c_str(), nullptr, _sliders_flags);
+        //ImGui::Text(_name);
+        std::string text_inside_slider = std::string(_name) + ": %.3f";
         bool is_changed =
-            ImGui::SliderFloat(" ", &_value, _range.min, _range.max, "%.3f", 5.0f); //logarithmic scale 
-
+            ImGui::SliderFloat("", &_value, _range.min, _range.max, text_inside_slider.c_str(), 5.0f, false); //logarithmic 
         if (is_changed) {
             _depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, _seq_id);
             _depth_sensor.set_option(_option, _value);
@@ -45,7 +47,7 @@ public:
     ImVec2 _position;
     ImVec2 _size;
     //flags for the sliders
-    static const int _sliders_flags = ImGuiWindowFlags_NoCollapse
+    int _sliders_flags = ImGuiWindowFlags_NoCollapse
         | ImGuiWindowFlags_NoScrollbar
         | ImGuiWindowFlags_NoSavedSettings
         | ImGuiWindowFlags_NoResize
@@ -56,23 +58,26 @@ public:
 
 class text_box {
 public:
-    text_box(ImVec2 position, ImVec2 size) : _position(position), _size(size) {}
+    text_box(const char* name, ImVec2 position, ImVec2 size) : _name(name), _position(position), _size(size) {}
 
     void show(const char* text)
     {
         ImGui::SetNextWindowSize(_size);
         ImGui::SetNextWindowPos(_position);
-        ImGui::Begin("HDR Demo", nullptr, _text_box_flags);
+        ImGui::Begin(_name, nullptr, _text_box_flags);
         ImGui::Text(text);
 
         ImGui::End();
     }
-
+    void remove_title_bar() {
+        _text_box_flags |= ImGuiWindowFlags_NoTitleBar;
+    }
 public:
+    const char* _name;
     ImVec2 _position;
     ImVec2 _size;
     // flags for displaying text box
-    static const int _text_box_flags = ImGuiWindowFlags_NoCollapse
+    int _text_box_flags = ImGuiWindowFlags_NoCollapse
         | ImGuiWindowFlags_NoScrollbar
         | ImGuiWindowFlags_NoSavedSettings
         | ImGuiWindowFlags_NoResize
@@ -260,20 +265,25 @@ int main(int argc, char* argv[]) try
     ////init sliders variables
     //rs2::option_range exposure_range = depth_sensor.get_option_range(RS2_OPTION_EXPOSURE);
     //rs2::option_range gain_range = depth_sensor.get_option_range(RS2_OPTION_GAIN);
-
     //init sliders
     //exposure_slider_1(name, sequence id, RS2 OPTION, start value, depth sensor, position, size);
-    slider exposure_slider_1("Exposure 1", 1, RS2_OPTION_EXPOSURE, EXPOSURE_START_VALUE,
-        depth_sensor, { 130.f, 180.0f }, { 350, 40 });
-    slider exposure_slider_2("Exposure 2", 2, RS2_OPTION_EXPOSURE, EXPOSURE_START_VALUE,
-        depth_sensor, { 390.0f, 180.0f }, { 350, 40 });
-    slider gain_slider_1("Gain 1", 1, RS2_OPTION_GAIN, GAIN_START_VALUE,
-        depth_sensor, { 130.f, 220.0f }, { 350, 40 });
-    slider gain_slider_2("Gain 2", 2, RS2_OPTION_GAIN,GAIN_START_VALUE,
-        depth_sensor, { 390.0f, 220.0f }, { 350, 40 });
+    slider exposure_slider_1("Exposure", 1, RS2_OPTION_EXPOSURE, EXPOSURE_START_VALUE,
+        depth_sensor, { 130, 180 }, { 350, 40 });
+    slider exposure_slider_2("Exposure", 2, RS2_OPTION_EXPOSURE, EXPOSURE_START_VALUE,
+        depth_sensor, { 390, 180 }, { 350, 40 });
+    slider gain_slider_1("Gain", 1, RS2_OPTION_GAIN, GAIN_START_VALUE,
+        depth_sensor, { 130, 220 }, { 350, 40 });
+    slider gain_slider_2("Gain", 2, RS2_OPTION_GAIN,GAIN_START_VALUE,
+        depth_sensor, { 390, 220 }, { 350, 40 });
 
-    //init text box
-    text_box text_box({ 120.0f, 20.0f }, { 1000, 140 });
+    //init text boxes
+    text_box text_box_hdr_explain("HDR Tutorial",{ 120, 20}, { 1000, 140 });
+    text_box text_box_first_frame("frame 1", { 200, 150 }, { 170, 40 });
+    text_box_first_frame.remove_title_bar();
+    text_box text_box_second_frame("frame 2", { 460, 150 }, { 170, 40 });
+    text_box_second_frame.remove_title_bar();
+    text_box text_box_hdr("hdr", { 850, 280 }, { 170, 40 });
+    text_box_hdr.remove_title_bar();
 
     while (app) // application is still alive
     {
@@ -317,13 +327,17 @@ int main(int argc, char* argv[]) try
         }
 
         ImGui_ImplGlfw_NewFrame(1);
-       
-        exposure_slider_1.show();
-        exposure_slider_2.show();
-        gain_slider_1.show();
-        gain_slider_2.show();
 
-        text_box.show("This demo provides a quick overview of the High Dynamic Range (HDR) feature.\nThe HDR uses 2 frame's configurations, for which exposureand gain are defined.\nBoth configurations are streamedand the HDR feature uses both frames in order to provide the best depth image.\nChange the values of the sliders to see the impact on the HDR Depth Image.");
+        //we need slider 2 to be showen before slider 1 because of the padding 
+        exposure_slider_2.show();
+        exposure_slider_1.show();
+        gain_slider_2.show();
+        gain_slider_1.show();
+
+        text_box_first_frame.show("Seqeunce 1");
+        text_box_second_frame.show("Seqeunce 2");
+        text_box_hdr.show("HDR Stream");
+        text_box_hdr_explain.show("This demo provides a quick overview of the High Dynamic Range (HDR) feature.\nThe HDR uses 2 frames configurations, for which exposure and gain are defined.\nBoth configurations are streamed and the HDR feature uses both frames in order to provide the best depth image.\nChange the values of the sliders to see the impact on the HDR Depth Image.");
 
         ImGui::Render();
 

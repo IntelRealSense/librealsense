@@ -107,7 +107,7 @@ inline void draw_text(int x, int y, const char* text)
     std::vector<char>* buffer[60000]; 
     glEnableClientState(GL_VERTEX_ARRAY);
     glVertexPointer(2, GL_FLOAT, 16, buffer);
-    glDrawArrays(GL_QUADS, 0, 4 * stb_easy_font_print((float)x, (float)(y - 7), (char*)text, nullptr, buffer, sizeof(*buffer)));
+    glDrawArrays(GL_QUADS, 0, 4 * stb_easy_font_print((float)x, (float)(y - 7), (char*)text, nullptr, buffer, sizeof(buffer)));
     glDisableClientState(GL_VERTEX_ARRAY);
 }
 
@@ -565,6 +565,8 @@ public:
         _tile_height_pixels = std::floor(_canvas_height / _tiles_in_col);
 
         glfwInit();
+        // we don't want to enable resizing the window
+        glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
         win = glfwCreateWindow(width, height, title, nullptr, nullptr);
         if (!win)
             throw std::runtime_error("Could not open OpenGL window, please check your graphic drivers or use the textual SDK tools");
