@@ -27,7 +27,7 @@ protected:
     post_processing_filter( std::string const & name )
         : rs2::filter( [&]( rs2::frame f, rs2::frame_source & source ) {
                 // Process the frame, take the result and post it for the next post-processor
-                source.frame_ready( process_frameset( f.as< rs2::frameset >() ) );
+        source.frame_ready(process_frame(f));
             } )
         , _name( name )
         , _pb_enabled( true )
@@ -54,7 +54,7 @@ public:
 
 protected:
     // Main handler for each frameset we get
-    virtual rs2::frameset process_frameset( rs2::frameset fs ) = 0;
+    virtual rs2::frame process_frame( rs2::frame fs ) = 0;
 
 
     // Helper fn to get the frame context when logs are written, e.g.:

@@ -66,9 +66,9 @@ public:
     }
 
 protected:
-    rs2::frameset process_frameset( rs2::frameset fs ) override
+    rs2::frame process_frame(rs2::frame fs) override
     {
-        _queue.enqueue( fs );
+        _queue.enqueue(fs);
         return fs;
     }
 
