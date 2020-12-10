@@ -33,7 +33,6 @@ public:
     stabilized_value( size_t history_size )
         : _history_size( history_size )
         , _last_stable_value( 0 )
-        , _recalc_stable_val( false )
     {
         if( ! history_size )
             throw std::runtime_error( "history size must be > 0" );

@@ -64,11 +64,11 @@ TEST_CASE("update stable value - last stable not in history", "[stabilized value
     CHECK(60.0f == stab_value.get(1.0f));
 }
 
-TEST_CASE("update stable value - last stable not set", "[stabilized value]")
+TEST_CASE("update stable value - last stable is in history", "[stabilized value]")
 {
     stabilized_value< float > stab_value(10);
     stab_value.add(55.0f);
     stab_value.add(60.0f);
     stab_value.add(60.0f);
-    CHECK(60.0f == stab_value.get(0.8f));
+    CHECK(55.0f == stab_value.get(0.8f));
 }
