@@ -55,8 +55,13 @@ set(COMMON_SRC
         "${CMAKE_CURRENT_LIST_DIR}/reflectivity/reflectivity.h"
         "${CMAKE_CURRENT_LIST_DIR}/reflectivity/reflectivity.cpp"
         )
+        
+    set(UTILITIES
+        "${CMAKE_CURRENT_LIST_DIR}/utilities/number/stabilized-value.h"
+        )
     set(COMMON_SRC
         ${COMMON_SRC}
         ${SW_UPDATE_FILES}
-        ${REFLECTIVITY_FILES})
+        ${REFLECTIVITY_FILES}
+        ${UTILITIES})
 
