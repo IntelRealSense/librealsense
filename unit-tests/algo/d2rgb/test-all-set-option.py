@@ -12,6 +12,7 @@ previous_color_frame_number = -1
 after_set_option = 0
 
 def collect_frames_after_set(): 
+    global after_set_option
     after_set_option = 1
     time.sleep(0.5) #collect frames for 0.5 seconds
     after_set_option = 0
