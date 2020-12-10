@@ -565,7 +565,8 @@ namespace rs2
             {
                 log(to_string() << "Calibration failed with exception");
                 stop_viewer(invoke);
-                _sub->ui = *_ui;
+                if (_ui.get())
+                    _sub->ui = *_ui;
                 if (_was_streaming)
                     start_viewer(0, 0, 0, invoke);
                 throw;
@@ -578,7 +579,8 @@ namespace rs2
             log(to_string() << "Calibration completed, health factor = " << _health);
 
         stop_viewer(invoke);
-        _sub->ui = *_ui;
+        if (_ui.get())
+            _sub->ui = *_ui;
 
         if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
         {
