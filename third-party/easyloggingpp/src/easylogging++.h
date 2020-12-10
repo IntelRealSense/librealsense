@@ -2509,6 +2509,8 @@ class AsyncLogQueue : public base::threading::ThreadSafe {
 
   inline AsyncLogItem next(void) {
     base::threading::ScopedLock scopedLock(lock());
+    if (!m_queue.size())
+        throw ("TODO Thread Safety");
     AsyncLogItem result = m_queue.front();
     m_queue.pop();
     return result;
@@ -2529,6 +2531,10 @@ class AsyncLogQueue : public base::threading::ThreadSafe {
   inline bool empty(void) {
     base::threading::ScopedLock scopedLock(lock());
     return m_queue.empty();
+  }
+  inline size_t size(void) {
+    base::threading::ScopedLock scopedLock(lock());
+    return m_queue.size();
   }
  private:
   std::queue<AsyncLogItem> m_queue;
@@ -2750,6 +2756,8 @@ class AsyncDispatchWorker : public base::IWorker, public base::threading::Thread
   std::condition_variable cv;
   bool m_continueRunning;
   base::threading::Mutex m_continueRunningLock;
+  std::thread m_t1;
+  std::mutex _mtx;
 };
 #endif  // ELPP_ASYNC_LOGGING
 }  // namespace base
