@@ -127,18 +127,23 @@ public class SettingsActivity extends AppCompatActivity {
 
         final Map<Integer,String> settingsMap = new TreeMap<>();
         settingsMap.put(INDEX_DEVICE_INFO,"Device info");
-        settingsMap.put(INDEX_ADVANCE_MODE,"Enable advanced mode");
+
+        if(device.supportsInfo(CameraInfo.ADVANCED_MODE)) {
+            if (device.isInAdvancedMode()) {
+                settingsMap.put(INDEX_ADVANCE_MODE, "Disable advanced mode");
+                settingsMap.put(INDEX_PRESETS, "Presets");
+            }
+            else {
+                settingsMap.put(INDEX_ADVANCE_MODE, "Enable advanced mode");
+            }
+        }
+
         if(device.is(Extension.UPDATABLE)){
             settingsMap.put(INDEX_UPDATE,"Firmware update");
             try(Updatable fwud = device.as(Extension.UPDATABLE)){
                 if(fwud != null && fwud.supportsInfo(CameraInfo.CAMERA_LOCKED) && fwud.getInfo(CameraInfo.CAMERA_LOCKED).equals("NO"))
                     settingsMap.put(INDEX_UPDATE_UNSIGNED,"Firmware update (unsigned)");
             }
-        }
-
-        if(device.supportsInfo(CameraInfo.ADVANCED_MODE) && device.isInAdvancedMode()){
-            settingsMap.put(INDEX_ADVANCE_MODE,"Disable advanced mode");
-            settingsMap.put(INDEX_PRESETS,"Presets");
         }
 
         if (areAdvancedFeaturesEnabled) {
