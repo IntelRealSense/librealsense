@@ -2355,6 +2355,7 @@ void AsyncDispatchWorker::emptyQueue(void) {
 
 void AsyncDispatchWorker::start(void) {
   setContinueRunning(true);
+    std::cout << "AsyncDispatchWorker::start" << std::endl;
   m_t1 = std::thread(&AsyncDispatchWorker::run, this);
 }
 
@@ -2413,6 +2414,7 @@ void AsyncDispatchWorker::handle(AsyncLogItem* logItem) {
 }
 
 void AsyncDispatchWorker::run(void) {
+    std::cout << "AsyncDispatchWorker::run" << std::endl;
   while (continueRunning()) {
     emptyQueue();
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
