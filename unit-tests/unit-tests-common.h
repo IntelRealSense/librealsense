@@ -106,9 +106,11 @@ inline std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor
         { RS2_STREAM_COLOR,     RS2_FORMAT_RGB8,          width, height,    0, fps},
         { RS2_STREAM_INFRARED,  RS2_FORMAT_Y8,            width, height,    1, fps},
         { RS2_STREAM_INFRARED,  RS2_FORMAT_Y8,            width, height,    2, fps},
+        { RS2_STREAM_INFRARED,  RS2_FORMAT_Y8,            width, height,    0, fps},
+        { RS2_STREAM_CONFIDENCE,RS2_FORMAT_RAW8,          width, height,    0, fps},
         { RS2_STREAM_FISHEYE,   RS2_FORMAT_RAW8,          width, height,    0, fps},
+        { RS2_STREAM_ACCEL,     RS2_FORMAT_MOTION_XYZ32F,   1,      1,      0, 200},
         { RS2_STREAM_GYRO,      RS2_FORMAT_MOTION_XYZ32F,   1,      1,      0, 200},
-        { RS2_STREAM_ACCEL,     RS2_FORMAT_MOTION_XYZ32F,   1,      1,      0, 250}
     };
 
     std::vector<profile> profiles;
@@ -136,7 +138,7 @@ inline std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor
                 {
                     if (auto  motion = p.as<rs2::motion_stream_profile>())
                     {
-                        if (p.fps() == profile.fps &&
+                        if (((profile.fps / (p.fps()+1)) <= 2.f)  && // Approximate IMU rates. No need for being exact
                             p.stream_index() == profile.index &&
                             p.stream_type() == profile.stream &&
                             p.format() == profile.format)
@@ -215,7 +217,9 @@ inline void disable_sensitive_options_for(rs2::sensor& sen)
     {
         rs2::option_range range;
         REQUIRE_NOTHROW(range = sen.get_option_range(RS2_OPTION_EXPOSURE)); // TODO: fails sometimes with "Element Not Found!"
-        REQUIRE_NOTHROW(sen.set_option(RS2_OPTION_EXPOSURE, range.def));
+        float val = (range.min + (range.def-range.min)/10.f);
+
+        REQUIRE_NOTHROW(sen.set_option(RS2_OPTION_EXPOSURE, val));
     }
 }
 
