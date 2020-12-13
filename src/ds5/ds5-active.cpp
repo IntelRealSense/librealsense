@@ -59,7 +59,7 @@ namespace librealsense
                     "Laser Power status cannot be set while HDR is enabled") };
                 depth_ep.register_option(RS2_OPTION_LASER_POWER,
                     std::make_shared<gated_option>(
-					    laser_power_auto_disabling,
+                        laser_power_auto_disabling,
                         laser_options_and_reasons));
             }
             else
