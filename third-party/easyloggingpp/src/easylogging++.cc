@@ -2106,8 +2106,9 @@ Storage::Storage(const LogBuilderPtr& defaultLogBuilder) :
   ELPP_INTERNAL_INFO(1, "Easylogging++ has been initialized");
 #if ELPP_ASYNC_LOGGING
   std::cout << "before asyncDispatchWorker start" << std::endl;
-  ELPP->asyncDispatchWorker()->start();
-  //m_asyncDispatchWorker->start();
+  if (!m_asyncDispatchWorker)
+      std::cout << "asyncDispatchWorker is NULL!!!" << std::endl;
+  reinterpret_cast<el::base::AsyncDispatchWorker*>(m_asyncDispatchWorker)->start();
   std::cout << "Storage::Done" << std::endl;
 #endif  // ELPP_ASYNC_LOGGING
 }
