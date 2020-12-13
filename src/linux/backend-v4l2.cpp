@@ -871,6 +871,30 @@ namespace librealsense
             }
         }
 
+        std::string time_in_HH_MM_SS_MMM()
+        {
+            using namespace std::chrono;
+
+            // get current time
+            auto now = system_clock::now();
+
+            // get number of milliseconds for the current second
+            // (remainder after division into seconds)
+            auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000;
+
+            // convert to std::time_t in order to convert to std::tm (broken time)
+            auto timer = system_clock::to_time_t(now);
+
+            // convert to broken time
+            std::tm bt = *std::localtime(&timer);
+
+            std::ostringstream oss;
+
+            oss << std::put_time(&bt, "%H:%M:%S"); // HH:MM:SS
+            oss << '.' << std::setfill('0') << std::setw(3) << ms.count();
+            return oss.str();
+        }
+
         void v4l_uvc_device::poll()
         {
              fd_set fds{};
@@ -886,6 +910,10 @@ namespace librealsense
 
             struct timeval expiration_time = { mono_time.tv_sec + 5, mono_time.tv_nsec / 1000 };
             int val = 0;
+
+            auto realtime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            auto time_since_epoch = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+            LOG_DEBUG_V4L("Select initiated at " << time_in_HH_MM_SS_MMM() << ", mono time " << time_since_epoch << ", host time " << realtime );
             do {
                 struct timeval remaining;
                 ret = clock_gettime(CLOCK_MONOTONIC, &mono_time);
