@@ -23,12 +23,7 @@ macro(global_set_flags)
 
     add_definitions(-DELPP_THREAD_SAFE)
     add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
-    
-    #Performance improvement with Ubuntu 18/20
-    if(UNIX AND (NOT ANDROID_NDK_TOOLCHAIN_INCLUDED))
-       message(INFO "Asynchronous ELPP invoked - experimental")
-       add_definitions(-DELPP_EXPERIMENTAL_ASYNC)
-    endif()
+    add_definitions(-DELPP_EXPERIMENTAL_ASYNC)
 
     if (BUILD_GLSL_EXTENSIONS)
         set(LRS_GL_TARGET realsense2-gl)
