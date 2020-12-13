@@ -195,19 +195,19 @@ namespace librealsense
 
             void register_profiles(const std::vector<hid_profile>& hid_profiles) override { _hid_profiles = hid_profiles;}
 
-            void open(const std::vector<hid_profile>& hid_profiles);
+            void open(const std::vector<hid_profile>& hid_profiles) override;
 
-            void close();
+            void close() override;
 
-            std::vector<hid_sensor> get_sensors();
+            std::vector<hid_sensor> get_sensors() override;
 
-            void start_capture(hid_callback callback);
+            void start_capture(hid_callback callback) override;
 
-            void stop_capture();
+            void stop_capture() override;
 
             std::vector<uint8_t> get_custom_report_data(const std::string& custom_sensor_name,
                                                         const std::string& report_name,
-                                                        custom_sensor_report_field report_field);
+                                                        custom_sensor_report_field report_field) override;
 
             static void foreach_hid_device(std::function<void(const hid_device_info&)> action);
 
