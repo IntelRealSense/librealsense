@@ -34,13 +34,9 @@ namespace librealsense
         auto md = f->additional_data.metadata_blob;
         auto mds = f->additional_data.metadata_size;
 
-        for(uint32_t i = 0; i < mds; i++)
-        {
-            if(md[i] != 0)
-            {
-                return true;
-            }
-        }
+        if (mds)
+            return true;
+
         return false;
     }
 
