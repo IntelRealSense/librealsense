@@ -18,7 +18,6 @@ TEST_CASE( "Mixed file & console logging", "[log]" ) {
 
     // Following should log to both, meaning the file should get one line:
     log_all();
-
     el::Loggers::flushAll();   // requires static!
     REQUIRE( count_lines( filename ) == 1 );
 }
