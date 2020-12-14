@@ -217,9 +217,9 @@ inline void disable_sensitive_options_for(rs2::sensor& sen)
     {
         rs2::option_range range;
         REQUIRE_NOTHROW(range = sen.get_option_range(RS2_OPTION_EXPOSURE)); // TODO: fails sometimes with "Element Not Found!"
-        float val = (range.min + (range.def-range.min)/10.f);
+        //float val = (range.min + (range.def-range.min)/10.f); // TODO - generate new records using the modified exposure
 
-        REQUIRE_NOTHROW(sen.set_option(RS2_OPTION_EXPOSURE, val));
+        REQUIRE_NOTHROW(sen.set_option(RS2_OPTION_EXPOSURE, range.def));
     }
 }
 
