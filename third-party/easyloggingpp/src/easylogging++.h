@@ -2584,6 +2584,10 @@ class Storage : base::NoCopy, public base::threading::ThreadSafe {
   inline base::AsyncLogQueue* asyncLogQueue(void) const {
     return m_asyncLogQueue;
   }
+
+  inline base::AsyncDispatchWorker* asyncDispatchWorker(void) const {
+      return reinterpret_cast<el::base::AsyncDispatchWorker*>(m_asyncDispatchWorker);
+  }
 #endif  // ELPP_ASYNC_LOGGING
 
   inline const base::utils::CommandLineArgs* commandLineArgs(void) const {

@@ -2318,7 +2318,7 @@ AsyncDispatchWorker::AsyncDispatchWorker() {
 AsyncDispatchWorker::~AsyncDispatchWorker() {
   setContinueRunning(false);
   ELPP_INTERNAL_INFO(6, "Stopping dispatch worker - Cleaning log queue");
-  m_t1.join();
+  if (m_t1.joinable()) m_t1.join();
   clean();
   ELPP_INTERNAL_INFO(6, "Log queue cleaned");
 }
@@ -3110,6 +3110,9 @@ bool Loggers::configureFromArg(const char* argKey) {
 }
 
 void Loggers::flushAll(void) {
+#ifdef ELPP_ASYNC_LOGGING
+    ELPP->asyncDispatchWorker()->clean();
+#endif
   ELPP->registeredLoggers()->flushAll();
 }
 
