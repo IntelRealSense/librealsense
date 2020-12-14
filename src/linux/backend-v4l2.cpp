@@ -24,6 +24,7 @@
 #include <chrono>
 #include <thread>
 #include <atomic>
+#include <iomanip> // std::put_time
 
 #include <dirent.h>
 #include <fcntl.h>
