@@ -105,7 +105,7 @@ std::string wrap( const std::string & text, int wrap_pixels_width )
     auto paragraphs_vector = string::split( text, '\n' );
 
     std::string wrapped_text;
-    int line_number = 1;
+    size_t line_number = 1;
     // Wrap each line according to the requested wrap width
     for( auto paragraph : paragraphs_vector )
     {
@@ -118,5 +118,5 @@ std::string wrap( const std::string & text, int wrap_pixels_width )
     return wrapped_text;
 }
 
-}  // namespace string
+}  // namespace imgui
 }  // namespace utilities

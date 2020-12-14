@@ -19,5 +19,5 @@ namespace imgui {
 // Note: If the paragraph contain multiple spaces, it will be trimmed into a single space.
 std::string wrap( const std::string & text, int wrap_pixels_width );
 
-}  // namespace string
+}  // namespace imgui
 }  // namespace utilities
