@@ -359,6 +359,10 @@ namespace librealsense
                     int height = vsp ? vsp->get_height() : 0;
 
                     frame_holder fh = _source.alloc_frame(stream_to_frame_types(req_profile_base->get_stream_type()), width * height * bpp / 8, fr->additional_data, requires_processing);
+                    auto diff = environment::get_instance().get_time_service()->get_time() - system_time;
+                    if (diff >10 )
+                        LOG_DEBUG("!! Frame allocation took " << diff << " msec");
+
                     if (fh.frame)
                     {
                         memcpy((void*)fh->get_frame_data(), fr->data.data(), sizeof(byte)*fr->data.size());
@@ -373,6 +377,9 @@ namespace librealsense
                         return;
                     }
 
+                    diff = environment::get_instance().get_time_service()->get_time() - system_time;
+                    if (diff >10 )
+                        LOG_DEBUG("!! Frame memcpy took " << diff << " msec");
                     if (!requires_processing)
                     {
                         fh->attach_continuation(std::move(release_and_enqueue));

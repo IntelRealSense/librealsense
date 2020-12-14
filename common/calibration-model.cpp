@@ -123,7 +123,7 @@ namespace helpers
             oldcrc32 = UPDC32(*buf, oldcrc32);
         return ~oldcrc32;
     }
-};
+}
 
 void calibration_model::update(ux_window& window, std::string& error_message)
 {
