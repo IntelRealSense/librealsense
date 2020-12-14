@@ -2322,7 +2322,7 @@ AsyncDispatchWorker::~AsyncDispatchWorker() {
   setContinueRunning(false);
   ELPP_INTERNAL_INFO(6, "Stopping dispatch worker - Cleaning log queue");
   std::cout << "m_t1 join" << std::endl;
-  m_t1.join();
+  if (m_t1.joinable()) m_t1.join();
   clean();
   ELPP_INTERNAL_INFO(6, "Log queue cleaned");
 }
