@@ -117,12 +117,13 @@ namespace librealsense
 
     std::shared_ptr<stream_profile_interface> software_sensor::add_motion_stream(rs2_motion_stream motion_stream, bool is_default)
     {
-        auto currProfile = find_profile_by_uid(motion_stream.uid);
-        if (currProfile)
-        {
-            LOG_WARNING("Motion stream unique ID already exist!");
-            throw rs2::error("Stream unique ID already exist!");
-        }
+        // AP // 
+        // auto currProfile = find_profile_by_uid(motion_stream.uid);
+        // if (currProfile)
+        // {
+        //     LOG_WARNING("Motion stream unique ID already exist!");
+        //     throw rs2::error("Stream unique ID already exist!");
+        // }
 
         auto profile = std::make_shared<motion_stream_profile>(
             platform::stream_profile{ 0, 0, (uint32_t)motion_stream.fps, 0 });

@@ -89,8 +89,7 @@ if(BUILD_UNIT_TESTS)
 endif()
 
 if(BUILD_NETWORK_DEVICE)
-    add_subdirectory(src/ethernet)
-    add_subdirectory(src/compression)
+    add_subdirectory(src/network)
 endif()
 
 if(BUILD_WITH_TM2)
