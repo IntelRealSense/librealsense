@@ -2355,9 +2355,7 @@ void AsyncDispatchWorker::emptyQueue(void) {
 }
 
 void AsyncDispatchWorker::start(void) {
-  setContinueRunning(true);
-    std::cout << "AsyncDispatchWorker::start" << std::endl;
-    //m_t1 = std::thread(&AsyncDispatchWorker::run, this);
+  //setContinueRunning(true);
     m_t1 = std::thread([this]() { run(); });
     std::cout << "AsyncDispatchWorker::started" << std::endl;
 }
