@@ -63,11 +63,11 @@ set(COMMON_SRC
         "${CMAKE_CURRENT_LIST_DIR}/utilities/imgui/wrap.h"
         "${CMAKE_CURRENT_LIST_DIR}/utilities/imgui/wrap.cpp"
         )
-
+        
     set(COMMON_SRC
         ${COMMON_SRC}
         ${SW_UPDATE_FILES}
         ${REFLECTIVITY_FILES}
-	${UTILITIES_FILES}
-	)
+        ${UTILITIES_FILES}
+        )
 
