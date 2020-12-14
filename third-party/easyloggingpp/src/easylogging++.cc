@@ -2321,6 +2321,7 @@ AsyncDispatchWorker::AsyncDispatchWorker() {
 AsyncDispatchWorker::~AsyncDispatchWorker() {
   setContinueRunning(false);
   ELPP_INTERNAL_INFO(6, "Stopping dispatch worker - Cleaning log queue");
+  std::cout << "m_t1 join" << std::endl;
   m_t1.join();
   clean();
   ELPP_INTERNAL_INFO(6, "Log queue cleaned");
@@ -2358,6 +2359,7 @@ void AsyncDispatchWorker::start(void) {
     std::cout << "AsyncDispatchWorker::start" << std::endl;
     //m_t1 = std::thread(&AsyncDispatchWorker::run, this);
     m_t1 = std::thread([this]() { run(); });
+    std::cout << "AsyncDispatchWorker::started" << std::endl;
 }
 
 void AsyncDispatchWorker::handle(AsyncLogItem* logItem) {
