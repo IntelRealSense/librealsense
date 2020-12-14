@@ -5562,11 +5562,10 @@ TEST_CASE("L500 zero order sanity", "[live]") {
 TEST_CASE("Positional_Sensors_API", "[live]")
 {
     rs2::context ctx;
-    auto dev_list = ctx.query_devices();
-    log_to_console(RS2_LOG_SEVERITY_WARN);
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.18.1"))
     {
+        log_to_console(RS2_LOG_SEVERITY_WARN);
         rs2::device dev;
         rs2::pipeline pipe(ctx);
         rs2::config cfg;
@@ -5698,11 +5697,10 @@ TEST_CASE("Positional_Sensors_API", "[live]")
 TEST_CASE("Wheel_Odometry_API", "[live]")
 {
     rs2::context ctx;
-    auto dev_list = ctx.query_devices();
-    log_to_console(RS2_LOG_SEVERITY_WARN);
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.18.1"))
     {
+        log_to_console(RS2_LOG_SEVERITY_WARN);
         rs2::device dev;
         rs2::pipeline pipe(ctx);
         rs2::config cfg;
