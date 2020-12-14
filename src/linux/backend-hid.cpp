@@ -24,6 +24,13 @@ const std::string IIO_DEVICE_PREFIX("iio:device");
 const std::string IIO_ROOT_PATH("/sys/bus/iio/devices");
 const std::string HID_CUSTOM_PATH("/sys/bus/platform/drivers/hid_sensor_custom");
 
+//#define DEBUG_HID
+#ifdef DEBUG_HID
+#define LOG_DEBUG_HID(...)   do { CLOG(DEBUG   ,"librealsense") << __VA_ARGS__; } while(false)
+#else
+#define LOG_DEBUG_HID(...)
+#endif //DEBUG_HID
+
 namespace librealsense
 {
     namespace platform
@@ -252,9 +259,9 @@ namespace librealsense
                     size_t read_size = 0;
 
                     struct timeval tv = {5,0};
-                    LOG_DEBUG("HID Select initiated");
+                    LOG_DEBUG_HID("HID Select initiated");
                     auto val = select(max_fd + 1, &fds, nullptr, nullptr, &tv);
-                    LOG_DEBUG("HID Select done, val = " << val);
+                    LOG_DEBUG_HID("HID Select done, val = " << val);
                     if (val < 0)
                     {
                         // TODO: write to log?
@@ -536,9 +543,9 @@ namespace librealsense
 
                     ssize_t read_size = 0;
                     struct timeval tv = {5, 0};
-                    LOG_DEBUG("HID IIO Select initiated");
+                    LOG_DEBUG_HID("HID IIO Select initiated");
                     auto val = select(max_fd + 1, &fds, nullptr, nullptr, &tv);
-                    LOG_DEBUG("HID IIO Select done, val = " << val);
+                    LOG_DEBUG_HID("HID IIO Select done, val = " << val);
 
                     if (val < 0)
                     {

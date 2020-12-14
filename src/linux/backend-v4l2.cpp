@@ -1736,6 +1736,7 @@ namespace librealsense
                     LOG_WARNING("Metadata override requested but avoided skipped");
                     return;
                 }
+                FD_CLR(_md_fd,&fds);
 
                 v4l2_buffer buf{};
                 buf.type = LOCAL_V4L2_BUF_TYPE_META_CAPTURE;
