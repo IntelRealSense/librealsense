@@ -18,7 +18,7 @@
 
 using namespace rs2;
 
-TEST_CASE("Sync sanity", "[live][!mayfail]") {
+TEST_CASE("Sync sanity", "[live][mayfail]") {
 
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -113,7 +113,7 @@ TEST_CASE("Sync sanity", "[live][!mayfail]") {
     }
 }
 
-TEST_CASE("Sync different fps", "[live][!mayfail]") {
+TEST_CASE("Sync different fps", "[live][mayfail]") {
 
     rs2::context ctx;
 
@@ -252,7 +252,7 @@ bool get_mode(rs2::device& dev, stream_profile* profile, int mode_index = 0)
     return false;
 }
 
-TEST_CASE("Sync start stop", "[live][!mayfail]") {
+TEST_CASE("Sync start stop", "[live][mayfail]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -692,7 +692,7 @@ TEST_CASE("Extrinsic transformations are transitive", "[live]")
     }
 }
 
-TEST_CASE("Toggle Advanced Mode", "[live][AdvMd]") {
+TEST_CASE("Toggle Advanced Mode", "[live][AdvMd][mayfail]") {
     for (int i = 0; i < 3; ++i)
     {
         rs2::context ctx;
@@ -737,7 +737,7 @@ TEST_CASE("Toggle Advanced Mode", "[live][AdvMd]") {
 }
 
 
-TEST_CASE("Advanced Mode presets", "[live][AdvMd]")
+TEST_CASE("Advanced Mode presets", "[live][AdvMd][mayfail]")
 {
     static const std::vector<res_type> resolutions = { low_resolution,
                                                        medium_resolution,
@@ -827,7 +827,7 @@ TEST_CASE("Advanced Mode presets", "[live][AdvMd]")
     }
 }
 
-TEST_CASE("Advanced Mode JSON", "[live][AdvMd]") {
+TEST_CASE("Advanced Mode JSON", "[live][AdvMd][mayfail]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -890,7 +890,7 @@ TEST_CASE("Advanced Mode JSON", "[live][AdvMd]") {
     }
 }
 
-TEST_CASE("Advanced Mode controls", "[live][AdvMd]") {
+TEST_CASE("Advanced Mode controls", "[live][AdvMd][mayfail]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -1078,7 +1078,7 @@ TEST_CASE("Advanced Mode controls", "[live][AdvMd]") {
 }
 
 // the tests may incorrectly interpret changes to librealsense-core, namely default profiles selections
-TEST_CASE("Streaming modes sanity check", "[live][!mayfail]")
+TEST_CASE("Streaming modes sanity check", "[live][mayfail]")
 {
     // Require at least one device to be plugged in
     rs2::context ctx;
