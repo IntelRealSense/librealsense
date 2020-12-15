@@ -162,12 +162,12 @@ void init_frame(py::module &m) {
         .def("get_bits_per_pixel", &rs2::video_frame::get_bits_per_pixel, "Retrieve bits per pixel.")
         .def_property_readonly("bits_per_pixel", &rs2::video_frame::get_bits_per_pixel, "Bits per pixel. Identical to calling get_bits_per_pixel.")
         .def("get_bytes_per_pixel", &rs2::video_frame::get_bytes_per_pixel, "Retrieve bytes per pixel.")
-        .def_property_readonly("bytes_per_pixel", &rs2::video_frame::get_bytes_per_pixel, "Bytes per pixel. Identical to calling get_bytes_per_pixel.");
+        .def_property_readonly("bytes_per_pixel", &rs2::video_frame::get_bytes_per_pixel, "Bytes per pixel. Identical to calling get_bytes_per_pixel.")
         .def("get_target_size_on_frame", [](const rs2::video_frame& self)
         {
             float rect_sides[4] = { 0.0f };
             return py::make_tuple(self.get_target_size_on_frame(rect_sides), rect_sides));
-        }, "This will calculate the Calculate the four rectangle side sizes on the specific target.", "target_width"_a, "target_height"_a)
+    }, "This will calculate the Calculate the four rectangle side sizes on the specific target.", "target_width"_a, "target_height"_a);
 
     py::class_<rs2::vertex> vertex(m, "vertex"); // No docstring in C++
     vertex.def_readwrite("x", &rs2::vertex::x)
