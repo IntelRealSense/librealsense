@@ -398,7 +398,7 @@ namespace librealsense
 
             if (nullptr == md_start)
             {
-                LOG_WARNING("Could not parse metadata");
+                LOG_DEBUG("Could not parse metadata");
             }
             set_md_attributes(static_cast<uint8_t>(md_size),md_start);
         }
@@ -1025,7 +1025,7 @@ namespace librealsense
                             {
                                 if(buf.bytesused == 0)
                                 {
-                                    LOG_INFO("Empty video frame arrived, index " << buf.index);
+                                    LOG_DEBUG_V4L("Empty video frame arrived, index " << buf.index);
                                     return;
                                 }
 
@@ -1106,7 +1106,7 @@ namespace librealsense
                             }
                             else
                             {
-                                LOG_INFO("Video frame arrived in idle mode."); // TODO - verification
+                                LOG_DEBUG_V4L("Video frame arrived in idle mode."); // TODO - verification
                             }
                         }
                         else
