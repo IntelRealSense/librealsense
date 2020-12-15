@@ -2397,7 +2397,7 @@ void rs2_get_target_size_on_frame(const rs2_frame* frame_ref, float * rect_sides
     if (!calculator.calculate(vf->get_frame_data(), rect_sides))
         throw std::runtime_error("Failed to find the four rectangle side sizes on the frame");
 }
-NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(,)
+HANDLE_EXCEPTIONS_AND_RETURN(, frame_ref, rect_sides)
 
 rs2_time_t rs2_get_time(rs2_error** error) BEGIN_API_CALL
 {
