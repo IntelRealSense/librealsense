@@ -998,12 +998,9 @@ namespace librealsense
                                         {
                                             LOG_DEBUG_V4L("Discard md buffer");
                                             auto md_buf = buf_mgr.get_buffers().at(e_metadata_buf);
-                                            md_buf._data_buf->request_next_frame(md_buf._file_desc,true);
+                                            if (md_buf._data_buf)
+                                                md_buf._data_buf->request_next_frame(md_buf._file_desc,true);
                                         }
-                                    }
-                                    else
-                                    {
-                                        LOG_WARNING("MD Poller: No metadata could be extracted");
                                     }
                                 }
                                 delete d;
