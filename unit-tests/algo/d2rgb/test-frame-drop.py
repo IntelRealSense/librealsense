@@ -42,31 +42,13 @@ previous_depth_frame_number = -1
 # Functions that assert that each frame we receive has the frame number following the previous frame number
 def color_frame_call_back(frame):
     global previous_color_frame_number
-    frame_number = frame.get_frame_number()
-    if previous_color_frame_number != -1:
-        dropped_frames = frame_number - ( previous_color_frame_number + 1 ) # should be 0
-        if dropped_frames > 0:
-            print(dropped_frames, "color frame(s) starting from frame", previous_color_frame_number + 1, "were dropped")
-            test.fail()
-        if dropped_frames < 0:
-            print("Color frames repeated or out of order. Got frame", frame_number, "after frame",
-                  previous_color_frame_number)
-            test.fail()
-    previous_color_frame_number = frame_number
+    test.check_frame_drops(frame, previous_color_frame_number)
+    previous_color_frame_number = frame.get_frame_number()
 
 def depth_frame_call_back(frame):
     global previous_depth_frame_number
-    frame_number = frame.get_frame_number()
-    if previous_depth_frame_number != -1:
-        dropped_frames = frame_number - (previous_depth_frame_number + 1)  # should be 0
-        if dropped_frames > 0:
-            print(dropped_frames, "depth frame(s) starting from frame", previous_depth_frame_number + 1, "were dropped")
-            test.fail()
-        if dropped_frames < 0:
-            print("Depth frames repeated or out of order. Got frame", frame_number, "after frame",
-                  previous_depth_frame_number)
-            test.fail()
-    previous_depth_frame_number = frame_number
+    test.check_frame_drops(frame, previous_depth_frame_number)
+    previous_depth_frame_number = frame.get_frame_number()
 
 depth_sensor.open( dp )
 depth_sensor.start( depth_frame_call_back )
