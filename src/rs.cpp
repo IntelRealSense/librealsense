@@ -2385,6 +2385,20 @@ void rs2_pose_frame_get_pose_data(const rs2_frame* frame, rs2_pose* pose, rs2_er
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, frame, pose)
 
+void rs2_get_target_size_on_frame(const rs2_frame* frame_ref, float * rect_sides, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(frame_ref);
+
+    auto vf = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::video_frame);
+    if (vf->get_stream()->get_format() != RS2_FORMAT_Y8)
+        throw std::runtime_error("wrong video frame format");
+
+    target_calculator calculator(vf->get_width(), vf->get_height());
+    if (!calculator.calculate(vf->get_frame_data(), rect_sides))
+        throw std::runtime_error("Failed to find the four rectangle side sizes on the frame");
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(,)
+
 rs2_time_t rs2_get_time(rs2_error** error) BEGIN_API_CALL
 {
     return environment::get_instance().get_time_service()->get_time();
@@ -3375,6 +3389,4 @@ rs2_raw_data_buffer* rs2_terminal_parse_response(rs2_terminal_parser* terminal_p
     return new rs2_raw_data_buffer{ result };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, terminal_parser, command, response)
-
-
 

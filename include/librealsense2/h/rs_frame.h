@@ -339,6 +339,14 @@ void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error**
 */
 void rs2_pose_frame_get_pose_data(const rs2_frame* frame, rs2_pose* pose, rs2_error** error);
 
+/**
+* Calculate the rectangle size on the specific target
+* \param[in] frame         Left or right camera fram of size 256x144
+* \param[out] rect_sides   The four rectangle side sizes in pixels with the order of top, bottom, left, and right
+* \param[out] error        If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_get_target_size_on_frame(const rs2_frame* frame, float * rect_sides, rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif
