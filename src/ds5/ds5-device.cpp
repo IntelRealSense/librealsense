@@ -123,12 +123,26 @@ namespace librealsense
     {
         // Stop all data streaming/exchange pipes with HW
         stop_activity();
+        using namespace std;
+        using namespace std::chrono;
 
         try {
             LOG_INFO("entering to update state, device disconnect is expected");
             command cmd(ds::DFU);
             cmd.param1 = 1;
             _hw_monitor->send(cmd);
+            std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
+            for (auto i = 0; i < 10; i++)
+            {
+                _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), ds::GVD);
+                this_thread::sleep_for(milliseconds(50));
+            }
+            throw std::runtime_error("Device still connected!");
+
+        }
+        catch (std::exception& e)
+        {
+            LOG_WARNING(e.what());
         }
         catch (...) {
             // The set command returns a failure because switching to DFU resets the device while the command is running.
