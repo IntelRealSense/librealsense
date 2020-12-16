@@ -13,8 +13,11 @@ after_set_option = 0
 
 def get_allowed_drops(): 
     global after_set_option
+    # On Linux, there is a known issue (RS5-7148) where up to 4 frame drops can occur
+    # sequentially after setting control values during streaming... on Windows this
+    # does not occur.
     if platform.system() == 'Linux' and after_set_option == 1:
-        return 4 #the number of allowed drops after set_option in linux is 4  
+        return 4
     return 0
 
 def set_new_value(sensor, option, value): 
@@ -26,16 +29,15 @@ def set_new_value(sensor, option, value):
 
 def check_depth_frame_drops(frame):
     global previous_depth_frame_number
-    allowed_drops = get_allowed_drops()
-    test.check_frame_drops(frame, previous_depth_frame_number, allowed_drops)
+    test.check_frame_drops(frame, previous_depth_frame_number, get_allowed_drops())
     previous_depth_frame_number = frame.get_frame_number()
 
 def check_color_frame_drops(frame):
     global previous_color_frame_number
-    allowed_drops = get_allowed_drops()
-    test.check_frame_drops(frame, previous_color_frame_number, allowed_drops)
+    test.check_frame_drops(frame, previous_color_frame_number, get_allowed_drops())
     previous_color_frame_number = frame.get_frame_number()
 
+# Use a profile that's common to both L500 and D400
 depth_profile = next(p for p in
                 depth_sensor.profiles if p.fps() == 30
                 and p.stream_type() == rs.stream.depth
