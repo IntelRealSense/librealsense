@@ -2510,7 +2510,10 @@ class AsyncLogQueue : public base::threading::ThreadSafe {
   inline AsyncLogItem next(void) {
     base::threading::ScopedLock scopedLock(lock());
     if (!m_queue.size())
+    {
+        std::cout << "queue was empty" << std::endl;
         throw ("TODO Thread Safety");
+    }
     AsyncLogItem result = m_queue.front();
     m_queue.pop();
     return result;
