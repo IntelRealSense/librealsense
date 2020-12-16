@@ -25,8 +25,10 @@
 #ifndef PI
 const double PI = 3.14159265358979323846;
 #endif
+#include "../third-party/imgui/imgui.h"
 const size_t IMU_FRAME_WIDTH = 1280;
 const size_t IMU_FRAME_HEIGHT = 720;
+
 //////////////////////////////
 // Basic Data Types         //
 //////////////////////////////
@@ -95,12 +97,95 @@ struct tile_properties
 };
 
 //////////////////////////////
+// Class Helpers            //
+//////////////////////////////
+
+//slider for ImGui 
+class slider {
+public:
+    slider(const char* name, int seq_id, rs2_option option, float init_value, rs2::depth_sensor depth_sensor,
+        ImVec2 position, ImVec2 size) :_name(name), _seq_id(seq_id), _option(option), _range(depth_sensor.get_option_range(option)),
+        _depth_sensor(depth_sensor), _position(position), _size(size), _value(init_value) {}
+
+    void show()
+    {
+        ImGui::SetNextWindowSize(_size);
+        ImGui::SetNextWindowPos(_position);
+        //concate the name given with seq_id in order to make a unique name (needed for Begin())
+        std::string name_id = std::string(_name) + std::to_string(_seq_id);
+        ImGui::Begin(name_id.c_str(), nullptr, _sliders_flags);
+        std::string text_inside_slider = std::string(_name) + ": %.3f";
+        bool is_changed =
+            ImGui::SliderFloat("", &_value, _range.min, _range.max, text_inside_slider.c_str(), 5.0f, false); //logarithmic scale 
+        if (is_changed) {
+            _depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, _seq_id);
+            _depth_sensor.set_option(_option, _value);
+        }
+
+        ImGui::End();
+    }
+
+public:
+    const char* _name;
+    int _seq_id;
+    float _value;
+    rs2::option_range _range;
+    rs2::depth_sensor _depth_sensor;
+    rs2_option _option;
+    ImVec2 _position;
+    ImVec2 _size;
+    //flags for the sliders
+    int _sliders_flags = ImGuiWindowFlags_NoCollapse
+        | ImGuiWindowFlags_NoScrollbar
+        | ImGuiWindowFlags_NoSavedSettings
+        | ImGuiWindowFlags_NoResize
+        | ImGuiWindowFlags_NoMove
+        | ImGuiWindowFlags_NoTitleBar
+        | ImGuiWindowFlags_NoBringToFrontOnFocus;
+};
+
+//text box for ImGui
+class text_box {
+public:
+    text_box(const char* name, ImVec2 position, ImVec2 size) : _name(name), _position(position), _size(size) {}
+
+    void show(const char* text)
+    {
+        ImGui::SetNextWindowSize(_size);
+        ImGui::SetNextWindowPos(_position);
+        ImGui::Begin(_name, nullptr, _text_box_flags);
+        ImGui::Text(text);
+
+        ImGui::End();
+    }
+    void remove_title_bar() {
+        _text_box_flags |= ImGuiWindowFlags_NoTitleBar;
+    }
+public:
+    const char* _name;
+    ImVec2 _position;
+    ImVec2 _size;
+    // flags for displaying text box
+    int _text_box_flags = ImGuiWindowFlags_NoCollapse
+        | ImGuiWindowFlags_NoScrollbar
+        | ImGuiWindowFlags_NoSavedSettings
+        | ImGuiWindowFlags_NoResize
+        | ImGuiWindowFlags_NoMove
+        | ImGuiWindowFlags_NoFocusOnAppearing
+        | ImGuiWindowFlags_AlwaysUseWindowPadding
+        | ImGuiWindowFlags_NoBringToFrontOnFocus
+        | ImGuiWindowFlags_AlwaysAutoResize;
+};
+
+
+//////////////////////////////
 // Simple font loading code //
 //////////////////////////////
 
 //name aliasing the map of pairs<frame, tile_properties>
 using frame_and_tile_property = std::pair<rs2::frame, tile_properties>;
 using map_of_frames_and_tiles_properties = std::map<int, std::pair<rs2::frame, tile_properties>>;
+
 
 inline void draw_text(int x, int y, const char* text)
 {
@@ -537,7 +622,7 @@ public:
             });
     }
 
-    //another c'tor for adjusting canvas size (not the whole window) - is it okay? kind of copy-paste
+    //another c'tor for adjusting specific frames in specific tiles, this window is NOT resizeable
     window(int width, int height, const char* title, int tiles_in_row, int tiles_in_col, float canvas_width = 0.8,
         float canvas_height = 0.6, float canvas_left_top_x = 0.1, float canvas_left_top_y = 0.075)
         : _width(width), _height(height), _tiles_in_row(tiles_in_row), _tiles_in_col(tiles_in_col)

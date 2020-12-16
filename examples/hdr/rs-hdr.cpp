@@ -8,137 +8,12 @@
 #include "imgui_impl_glfw.h"
 
 enum frame_id { IR1, IR2, DEPTH1, DEPTH2, HDR };
-#define EXPOSURE_START_VALUE 1000
-#define GAIN_START_VALUE 16
+#define EXPOSURE_START_VALUE_HIGH 6000
+#define EXPOSURE_START_VALUE_LOW 300
+#define GAIN_START_VALUE_HIGH 25
+#define GAIN_START_VALUE_LOW 16
 
-//TODO insert to hpp
-class slider {
-public:
-    slider(const char* name, int seq_id, rs2_option option, float init_value, rs2::depth_sensor depth_sensor,
-        ImVec2 position, ImVec2 size) :_name(name), _seq_id(seq_id), _option(option), _range(depth_sensor.get_option_range(option)),
-        _depth_sensor(depth_sensor), _position(position), _size(size), _value(init_value){}
-
-    void show()
-    {
-        ImGui::SetNextWindowSize(_size);
-        ImGui::SetNextWindowPos(_position);
-        //concate the name given with seq_id in order to make a unique name (needed for Begin())
-        std::string name_id = std::string(_name) + std::to_string(_seq_id);
-        ImGui::Begin(name_id.c_str(), nullptr, _sliders_flags);
-        //ImGui::Text(_name);
-        std::string text_inside_slider = std::string(_name) + ": %.3f";
-        bool is_changed =
-            ImGui::SliderFloat("", &_value, _range.min, _range.max, text_inside_slider.c_str(), 5.0f, false); //logarithmic 
-        if (is_changed) {
-            _depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, _seq_id);
-            _depth_sensor.set_option(_option, _value);
-        }
-
-        ImGui::End();
-    }
-
-public:
-    const char* _name;
-    int _seq_id;
-    float _value;
-    rs2::option_range _range;
-    rs2::depth_sensor _depth_sensor;
-    rs2_option _option;
-    ImVec2 _position;
-    ImVec2 _size;
-    //flags for the sliders
-    int _sliders_flags = ImGuiWindowFlags_NoCollapse
-        | ImGuiWindowFlags_NoScrollbar
-        | ImGuiWindowFlags_NoSavedSettings
-        | ImGuiWindowFlags_NoResize
-        | ImGuiWindowFlags_NoMove
-        | ImGuiWindowFlags_NoTitleBar
-        | ImGuiWindowFlags_NoBringToFrontOnFocus;
-};
-
-class text_box {
-public:
-    text_box(const char* name, ImVec2 position, ImVec2 size) : _name(name), _position(position), _size(size) {}
-
-    void show(const char* text)
-    {
-        ImGui::SetNextWindowSize(_size);
-        ImGui::SetNextWindowPos(_position);
-        ImGui::Begin(_name, nullptr, _text_box_flags);
-        ImGui::Text(text);
-
-        ImGui::End();
-    }
-    void remove_title_bar() {
-        _text_box_flags |= ImGuiWindowFlags_NoTitleBar;
-    }
-public:
-    const char* _name;
-    ImVec2 _position;
-    ImVec2 _size;
-    // flags for displaying text box
-    int _text_box_flags = ImGuiWindowFlags_NoCollapse
-        | ImGuiWindowFlags_NoScrollbar
-        | ImGuiWindowFlags_NoSavedSettings
-        | ImGuiWindowFlags_NoResize
-        | ImGuiWindowFlags_NoMove
-        | ImGuiWindowFlags_NoFocusOnAppearing
-        | ImGuiWindowFlags_AlwaysUseWindowPadding
-        | ImGuiWindowFlags_NoBringToFrontOnFocus
-        | ImGuiWindowFlags_AlwaysAutoResize;
-};
-/*
-class exposure_slider : public slider {
-
-    exposure_slider(const char* name, int seq_id, rs2::option_range range, rs2::depth_sensor depth_sensor, int flags) : 
-                    slider(name, seq_id, range, depth_sensor, flags) {}
-
-    void show (ImVec2 position, ImVec2 size) override {
-
-        ImGui::SetNextWindowSize(size);
-        ImGui::SetNextWindowPos(position);
-        ImGui::Begin(_name, nullptr, _sliders_flags);
-
-        bool is_changed =
-            ImGui::SliderFloat("Exposure", &_value, _range.min, _range.max, "%.3f", 5.0f);
-
-        if (is_changed) {
-            _depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, _seq_id);
-            _depth_sensor.set_option(RS2_OPTION_EXPOSURE, _value);
-        }
-
-        ImGui::End();
-    }
-};
-*/
-
-/*
-class gain_slider : public slider {
-
-    gain_slider(const char* name, int seq_id, rs2::option_range range, rs2::depth_sensor depth_sensor, int flags) :
-        slider(name, seq_id, range, depth_sensor, flags) {}
-
-    void show(ImVec2 position, ImVec2 size) override {
-
-        ImGui::SetNextWindowSize(size);
-        ImGui::SetNextWindowPos(position);
-        ImGui::Begin(_name, nullptr, _sliders_flags);
-        ImGui::Text("IR1 - DEPTH1");
-         ImGui::SliderFloat returns if the value changed
-        bool is_gain_value_slider1_changed =
-            ImGui::SliderFloat("Gain", &_gain_value, _gain_range.min, _gain_range.max, "%.3f", 5.0f);
-        if (is_gain_value_slider1_changed) {
-            _depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, _seq_id);
-            _depth_sensor.set_option(RS2_OPTION_GAIN, _gain_value);
-        }
-        ImGui::End();
-    }
-};
-*/
-
-
-// HDR Example demonstrates how to
-// use the HDR feature - only for D400 product line devices
+// HDR Example demonstrates how to use the HDR feature - only for D400 product line devices
 int main(int argc, char* argv[]) try
 {
     rs2::context ctx;
@@ -190,13 +65,13 @@ int main(int argc, char* argv[]) try
 
     // configuration for the first HDR sequence ID
     depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, 1);
-    depth_sensor.set_option(RS2_OPTION_EXPOSURE, EXPOSURE_START_VALUE);
-    depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
+    depth_sensor.set_option(RS2_OPTION_EXPOSURE, EXPOSURE_START_VALUE_HIGH);
+    depth_sensor.set_option(RS2_OPTION_GAIN, GAIN_START_VALUE_HIGH);
 
     // configuration for the second HDR sequence ID
     depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, 2);
-    depth_sensor.set_option(RS2_OPTION_EXPOSURE, EXPOSURE_START_VALUE);
-    depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
+    depth_sensor.set_option(RS2_OPTION_EXPOSURE, EXPOSURE_START_VALUE_LOW);
+    depth_sensor.set_option(RS2_OPTION_GAIN, GAIN_START_VALUE_LOW);
 
     // after setting the HDR sequence ID opotion to 0, setting exposure or gain
     // will be targetted to the normal (UVC) exposure and gain options (not HDR configuration)
@@ -217,10 +92,13 @@ int main(int argc, char* argv[]) try
     float canvas_left_top_y = 0.075f;
 
     window app(width, height, title, tiles_in_row, tiles_in_col, canvas_width, canvas_height, canvas_left_top_x, canvas_left_top_y);
+
+    // init ImGui with app (window object)
     ImGui_ImplGlfw_Init(app, false);
 
     // Declare depth colorizer for pretty visualization of depth data
     rs2::colorizer color_map;
+
     // Declare rates printer for showing streaming rates of the enabled streams.
     rs2::rates_printer printer;
 
@@ -250,9 +128,11 @@ int main(int argc, char* argv[]) try
     //create a map to hold frames with their properties
     map_of_frames_and_tiles_properties frames_map;
 
-    rs2::frame frame;  //for initilize only - an empty frame with it properties
+    //for initilize only - an empty frame with its properties
+    rs2::frame frame;
+
     //set each frame with its properties:
-    //{ tile's x coordinate, tiles's y coordinate, tile's width (in tiles), tile's height (in tiles), priority (default value=0) }, (x=0,y=0) <-> left bottom corner
+    //  { tile's x coordinate, tiles's y coordinate, tile's width (in tiles), tile's height (in tiles), priority (default value=0) }, (x=0,y=0) <-> left bottom corner
     //priority sets the order of drawing frame when two frames share part of the same tile, 
     //meaning if there are two frames: frame1 with priority=-1 and frame2 with priority=0, both with { 0,0,1,1 } as property,
     //frame2 will be drawn on top of frame1
@@ -262,18 +142,15 @@ int main(int argc, char* argv[]) try
     frames_map[DEPTH2] = frame_and_tile_property(frame, { 1,1,1,1 });
     frames_map[HDR] = frame_and_tile_property(frame, { 2,0,2,2 });
 
-    ////init sliders variables
-    //rs2::option_range exposure_range = depth_sensor.get_option_range(RS2_OPTION_EXPOSURE);
-    //rs2::option_range gain_range = depth_sensor.get_option_range(RS2_OPTION_GAIN);
     //init sliders
     //exposure_slider_1(name, sequence id, RS2 OPTION, start value, depth sensor, position, size);
-    slider exposure_slider_1("Exposure", 1, RS2_OPTION_EXPOSURE, EXPOSURE_START_VALUE,
+    slider exposure_slider_1("Exposure", 1, RS2_OPTION_EXPOSURE, EXPOSURE_START_VALUE_HIGH,
         depth_sensor, { 130, 180 }, { 350, 40 });
-    slider exposure_slider_2("Exposure", 2, RS2_OPTION_EXPOSURE, EXPOSURE_START_VALUE,
+    slider exposure_slider_2("Exposure", 2, RS2_OPTION_EXPOSURE, EXPOSURE_START_VALUE_LOW,
         depth_sensor, { 390, 180 }, { 350, 40 });
-    slider gain_slider_1("Gain", 1, RS2_OPTION_GAIN, GAIN_START_VALUE,
+    slider gain_slider_1("Gain", 1, RS2_OPTION_GAIN, GAIN_START_VALUE_HIGH,
         depth_sensor, { 130, 220 }, { 350, 40 });
-    slider gain_slider_2("Gain", 2, RS2_OPTION_GAIN,GAIN_START_VALUE,
+    slider gain_slider_2("Gain", 2, RS2_OPTION_GAIN, GAIN_START_VALUE_LOW,
         depth_sensor, { 390, 220 }, { 350, 40 });
 
     //init text boxes
@@ -305,20 +182,18 @@ int main(int argc, char* argv[]) try
             continue;
         }
 
-        //check if depth_fram
+        //get frame's data 
         auto hdr_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_NAME);
         auto hdr_seq_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE);
-        //auto hdr_seq_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE)>0 ? depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE) : 2;
         auto hdr_seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
         auto exp = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
 
-        // The show method, when applied on frameset, break it to frames and upload each frame into a gl textures
-        // Each texture is displayed on different viewport according to it's stream unique id
+
         // merging the frames from the different HDR sequence IDs 
         auto merged_frameset = merging_filter.process(data).apply_filter(color_map);   // Find and colorize the depth data;
         rs2_format format = merged_frameset.as<rs2::frameset>().get_depth_frame().get_profile().format();
 
-        //a walk around because sometimes the metadata we get is invalid and it sets hdr_seq_size to 0 even though it 2
+        //a walk around, 'get_frame_metadata' sometimes (after changing exposure or gain values) sets hdr_seq_size to 0 even though it 2 for few frames
         //so we update the frames only if hdr_seq_size > 0. (hdr_seq_size==0 <-> frame is invalid)
         if (hdr_seq_size > 0) {//update frames
             frames_map[hdr_seq_id].first = data.get_infrared_frame();
@@ -326,9 +201,11 @@ int main(int argc, char* argv[]) try
             frames_map[HDR].first = merged_frameset.as<rs2::frameset>().get_depth_frame().apply_filter(color_map); //HDR shall be after IR1/2 & DEPTH1/2
         }
 
+        //start a new frame of ImGui
         ImGui_ImplGlfw_NewFrame(1);
 
-        //we need slider 2 to be showen before slider 1 because of the padding 
+        //show the features of the ImGui we have created
+        //we need slider 2 to be showen before slider 1 (otherwise slider 1 padding is covering slider 2)
         exposure_slider_2.show();
         exposure_slider_1.show();
         gain_slider_2.show();
@@ -339,9 +216,10 @@ int main(int argc, char* argv[]) try
         text_box_hdr.show("HDR Stream");
         text_box_hdr_explain.show("This demo provides a quick overview of the High Dynamic Range (HDR) feature.\nThe HDR uses 2 frames configurations, for which exposure and gain are defined.\nBoth configurations are streamed and the HDR feature uses both frames in order to provide the best depth image.\nChange the values of the sliders to see the impact on the HDR Depth Image.");
 
+        //render the ImGui features: sliders and text
         ImGui::Render();
 
-        // render frames sent from camera
+        //the show method, when applied on frame map, break it to frames and upload each frame into its specific tile
         app.show(frames_map);
     }
 
