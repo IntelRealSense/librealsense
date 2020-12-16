@@ -42,8 +42,8 @@ depth_profile = next(p for p in
                 depth_sensor.profiles if p.fps() == 30
                 and p.stream_type() == rs.stream.depth
                 and p.format() == rs.format.z16
-                and p.as_video_stream_profile().width() == 320
-                and p.as_video_stream_profile().height() == 240)
+                and p.as_video_stream_profile().width() == 640
+                and p.as_video_stream_profile().height() == 480)
 
 color_profile = next(p for p in color_sensor.profiles if p.fps() == 30
                 and p.stream_type() == rs.stream.color
