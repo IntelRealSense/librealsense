@@ -50,10 +50,12 @@ namespace librealsense
                          option * resolution,
                          const std::string& description );
 
+        void update_default();
 
     private:
         float query(int width) const;
-
+        float get_default() const;
+        
         l500_control _type;
         l500_device* _l500_dev;
         hw_monitor* _hw_monitor;
@@ -78,7 +80,9 @@ namespace librealsense
         l500_device *_l500_depth_dev;
     };
 
-    class sensor_mode_option : public float_option_with_description<rs2_sensor_mode>
+    class sensor_mode_option
+        : public float_option_with_description< rs2_sensor_mode >
+        , public observable_option
     {
     public:
         sensor_mode_option(l500_device *l500_depth_dev, option_range range, std::string description) : float_option_with_description<rs2_sensor_mode>(range, description), _l500_depth_dev(l500_depth_dev) {};
@@ -111,8 +115,10 @@ namespace librealsense
         std::vector<rs2_option> get_advanced_controls();
 
     private:
+        rs2_l500_visual_preset calc_preset_from_controls();
         void on_set_option(rs2_option opt, float value);
         void change_preset(rs2_l500_visual_preset preset);
+        void set_controls_defaults();
         void move_to_custom ();
         void reset_hw_controls();
         void set_max_laser();

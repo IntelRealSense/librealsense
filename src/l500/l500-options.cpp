@@ -36,6 +36,17 @@ namespace librealsense
         return _range;
     }
 
+    float l500_hw_options::get_default() const
+    {
+        auto current = query( int( _resolution->query() ) );
+        _hw_monitor->send( command{ AMCSET, _type, -1 } );
+        auto def = query( int( _resolution->query() ) );
+
+        _hw_monitor->send( command{ AMCSET, _type, (int)current } );
+
+        return def;
+    }
+
     l500_hw_options::l500_hw_options( l500_device* l500_dev,
                                       hw_monitor * hw_monitor,
                                       l500_control type,
@@ -51,8 +62,6 @@ namespace librealsense
         auto max = _hw_monitor->send(command{ AMCGET, _type, get_max });
         auto step = _hw_monitor->send(command{ AMCGET, _type, get_step });
 
-        auto def = query(int(_resolution->query()));
-
         if (min.size() < sizeof(int32_t) || max.size() < sizeof(int32_t) || step.size() < sizeof(int32_t))
         {
             std::stringstream s;
@@ -64,9 +73,14 @@ namespace librealsense
         auto min_value = float(*(reinterpret_cast<int32_t*>(min.data())));
 
         _range = option_range{ min_value,
-            max_value,
-            float(*(reinterpret_cast<int32_t*>(step.data()))),
-            def };
+                               max_value,
+                               float( *( reinterpret_cast< int32_t * >( step.data() ) ) ),
+                               get_default() };
+    }
+
+    void l500_hw_options::update_default()
+    {
+        _range.def = get_default();
     }
 
     void l500_hw_options::enable_recording(std::function<void(const option&)> recording_action)
@@ -110,6 +124,21 @@ namespace librealsense
             auto default_sensor_mode = static_cast<float>(usb3mode ? RS2_SENSOR_MODE_VGA : RS2_SENSOR_MODE_QVGA);
 
             auto resolution_option = std::make_shared<sensor_mode_option>(this, option_range{ RS2_SENSOR_MODE_VGA,RS2_SENSOR_MODE_COUNT - 1,1, default_sensor_mode }, "Notify the sensor about the intended streaming mode. Required for preset ");
+
+            // changing the resolution affects the defaults
+            resolution_option->add_observer( [&]( float ) {
+
+                for( auto opt : _hw_options )
+                    opt.second->update_default();
+
+                auto p = calc_preset_from_controls();
+                if( p != RS2_L500_VISUAL_PRESET_CUSTOM )
+                    _preset->set_with_no_signal( p );
+
+                set_controls_defaults();
+            } );
+
+           
 
             depth_sensor.register_option(RS2_OPTION_SENSOR_MODE, resolution_option);
 
@@ -235,12 +264,14 @@ namespace librealsense
                     std::map<float, std::string>{ { RS2_DIGITAL_GAIN_HIGH, "High Gain"},
                     { RS2_DIGITAL_GAIN_LOW, "Low Gain" }});
 
-
+             auto preset = calc_preset_from_controls();
             _preset = register_option <float_option_with_description<rs2_l500_visual_preset>, option_range>
-                (RS2_OPTION_VISUAL_PRESET, option_range{ RS2_L500_VISUAL_PRESET_CUSTOM , RS2_L500_VISUAL_PRESET_SHORT_RANGE, 1, RS2_L500_VISUAL_PRESET_DEFAULT },
+                (RS2_OPTION_VISUAL_PRESET, option_range{ RS2_L500_VISUAL_PRESET_CUSTOM , RS2_L500_VISUAL_PRESET_SHORT_RANGE, 1, (float)preset },
                     "Preset to calibrate the camera to environment ambient, no ambient or low ambient.");
 
+            set_controls_defaults();
             _advanced_options = get_advanced_controls();
+
         }
     }
 
@@ -255,6 +286,54 @@ namespace librealsense
         return res;
     }
 
+    rs2_l500_visual_preset l500_options::calc_preset_from_controls()
+    {
+        rs2_l500_visual_preset preset = RS2_L500_VISUAL_PRESET_CUSTOM;
+        try
+        {
+            // compare default values to current values exept from laser power that can
+            // get diffrant value according to preset
+            std::map< rs2_option, float > hw_options_default_values;
+            for( auto control : _hw_options )
+            {
+                if( control.first != RS2_OPTION_LASER_POWER )
+                {
+                    if( control.second->get_range().def != control.second->query() )
+                        return preset;
+                }
+            }
+
+            // all the hw_options values are equal to their default values
+            // now what is left to check if the gain and laser power correspond to one of the
+            // presets
+            auto max_laser = _hw_options[RS2_OPTION_LASER_POWER]->get_range().max;
+            auto def_laser = _hw_options[RS2_OPTION_LASER_POWER]->get_range().def;
+
+            std::map< std::pair< rs2_digital_gain, float >, rs2_l500_visual_preset >
+                gain_and_laser_to_preset = {
+                    { { RS2_DIGITAL_GAIN_HIGH, def_laser }, RS2_L500_VISUAL_PRESET_NO_AMBIENT },
+                    { { RS2_DIGITAL_GAIN_LOW, max_laser }, RS2_L500_VISUAL_PRESET_LOW_AMBIENT },
+                    { { RS2_DIGITAL_GAIN_HIGH, max_laser }, RS2_L500_VISUAL_PRESET_MAX_RANGE },
+                    { { RS2_DIGITAL_GAIN_LOW, def_laser }, RS2_L500_VISUAL_PRESET_SHORT_RANGE },
+                };
+
+            if( gain_and_laser_to_preset.find( { ( rs2_digital_gain )(int)_digital_gain->query(),
+                                                 _hw_options[RS2_OPTION_LASER_POWER]->query() } )
+                != gain_and_laser_to_preset.end() )
+            {
+                return gain_and_laser_to_preset[{ ( rs2_digital_gain )(int)_digital_gain->query(),
+                                                  _hw_options[RS2_OPTION_LASER_POWER]->query() }];
+            }
+            return preset;
+        }
+
+        catch( ... )
+        {
+
+            LOG_ERROR( "Exception caught in calc_preset_from_controls" );
+            return preset;
+        }
+    }
     void l500_options::on_set_option(rs2_option opt, float value)
     {
         if (opt == RS2_OPTION_VISUAL_PRESET)
@@ -268,55 +347,64 @@ namespace librealsense
             if (std::find(advanced_controls.begin(), advanced_controls.end(), opt) != advanced_controls.end())
             {
                 verify_max_usable_range_restrictions( opt, value );
-                move_to_custom();
+
+                for( auto opt : _hw_options )
+                    opt.second->update_default();
+
+                auto p = calc_preset_from_controls();
+                if( p != RS2_L500_VISUAL_PRESET_CUSTOM )
+                    _preset->set_with_no_signal( p );
+                else
+                    move_to_custom();
             }
             else
                 throw  wrong_api_call_sequence_exception(to_string() << "on_set_option support advanced controls only "<< opt<<" injected");
         }
     }
 
-    void l500_options::change_preset(rs2_l500_visual_preset preset)
+   void l500_options::change_preset( rs2_l500_visual_preset preset )
     {
-        if ((preset != RS2_L500_VISUAL_PRESET_CUSTOM) &&
-            (preset != RS2_L500_VISUAL_PRESET_DEFAULT))
-            reset_hw_controls();
-
-        switch (preset)
+        switch( preset )
         {
         case RS2_L500_VISUAL_PRESET_NO_AMBIENT:
-            _digital_gain->set_with_no_signal(RS2_DIGITAL_GAIN_HIGH);
+        case RS2_L500_VISUAL_PRESET_MAX_RANGE:
+            _digital_gain->set_with_no_signal( RS2_DIGITAL_GAIN_HIGH );
             break;
         case RS2_L500_VISUAL_PRESET_LOW_AMBIENT:
-            _digital_gain->set_with_no_signal(RS2_DIGITAL_GAIN_LOW);
-            set_max_laser();
-            break;
-        case RS2_L500_VISUAL_PRESET_MAX_RANGE:
-            _digital_gain->set_with_no_signal(RS2_DIGITAL_GAIN_HIGH);
-            set_max_laser();
-            break;
         case RS2_L500_VISUAL_PRESET_SHORT_RANGE:
-            _digital_gain->set_with_no_signal(RS2_DIGITAL_GAIN_LOW);
+            _digital_gain->set_with_no_signal( RS2_DIGITAL_GAIN_LOW );
+            break;
+        };
+
+        for( auto opt : _hw_options )
+            opt.second->update_default();
+
+        if( preset != RS2_L500_VISUAL_PRESET_CUSTOM )
+            set_controls_defaults();
+
+        switch( preset )
+        {
+        case RS2_L500_VISUAL_PRESET_LOW_AMBIENT:
+        case RS2_L500_VISUAL_PRESET_MAX_RANGE:
+            set_max_laser();
             break;
         case RS2_L500_VISUAL_PRESET_CUSTOM:
             move_to_custom();
             break;
-        case RS2_L500_VISUAL_PRESET_DEFAULT:
-            LOG_ERROR("L515 Visual Preset option cannot be changed to Default");
-            throw  invalid_value_exception(to_string() << "The Default preset signifies that the controls have not been changed "
-                                                           "since initialization, the API does not support changing back to this state, "
-                                                           "Please choose one of the other presets");
-            break;
-        default: break;
         };
+    }
+
+    void l500_options::set_controls_defaults() 
+    {
+        for( auto & o : _hw_options )
+        {
+            auto val = o.second->get_range().def;
+            o.second->set_with_no_signal( val );
+        }
     }
 
     void l500_options::move_to_custom ()
     {
-        for (auto& o : _hw_options)
-        {
-            auto  val = o.second->query();
-            o.second->set_with_no_signal(val);
-        }
         _preset->set_with_no_signal(RS2_L500_VISUAL_PRESET_CUSTOM);
     }
 
@@ -411,6 +499,7 @@ namespace librealsense
         }
 
         float_option_with_description::set(value);
+        notify( value );
     }
 
     const char * max_usable_range_option::get_description() const

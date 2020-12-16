@@ -135,8 +135,19 @@ namespace librealsense
 
         void set(float value) override
         {
-            notify(value);
-            T::set(value);
+            auto old = query();
+            T::set( value );
+            try
+            {
+                notify( value );
+            }
+            catch (...)
+            {
+                T::set( old );
+                LOG_WARNING( "An exception thrown while notifying " );
+                throw;
+            }
+            
         }
 
         void set_with_no_signal(float value)

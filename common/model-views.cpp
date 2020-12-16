@@ -5765,6 +5765,7 @@ namespace rs2
                     //TODO: make this a member function
                     std::vector<const char*> labels;
                     auto selected = 0, counter = 0;
+                    opt_model.update_all_fields( error_message, model );
                     for (auto i = opt_model.range.min; i <= opt_model.range.max; i += opt_model.range.step, counter++)
                     {
                         if (std::fabs(i - opt_model.value) < 0.001f)
