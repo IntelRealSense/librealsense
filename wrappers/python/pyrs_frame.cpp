@@ -167,7 +167,7 @@ void init_frame(py::module &m) {
         {
             float rect_sides[4] = { 0 };
             return py::make_tuple(self.get_target_size_on_frame(rect_sides), rect_sides);
-    }, "This will calculate the Calculate the four rectangle side sizes on the specific target.", "target_width"_a, "target_height"_a);
+        }, "This will calculate the Calculate the four rectangle side sizes on the specific target.");
 
     py::class_<rs2::vertex> vertex(m, "vertex"); // No docstring in C++
     vertex.def_readwrite("x", &rs2::vertex::x)
