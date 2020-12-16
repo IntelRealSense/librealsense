@@ -3110,7 +3110,7 @@ bool Loggers::configureFromArg(const char* argKey) {
 }
 
 void Loggers::flushAll(void) {
-#ifdef ELPP_ASYNC_LOGGING
+#if ELPP_ASYNC_LOGGING
     ELPP->asyncDispatchWorker()->clean();
 #endif
   ELPP->registeredLoggers()->flushAll();
