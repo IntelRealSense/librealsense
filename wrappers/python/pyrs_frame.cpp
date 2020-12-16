@@ -166,7 +166,7 @@ void init_frame(py::module &m) {
         .def("get_target_size_on_frame", [](const rs2::video_frame& self)
         {
             float rect_sides[4] = { 0 };
-            return py::make_tuple(self.get_target_size_on_frame(rect_sides), rect_sides);
+            return py::make_tuple(self.get_target_size_on_frame(rect_sides), rect_sides[0], rect_sides[1], rect_sides[2], rect_sides[3]);
         }, "This will calculate the Calculate the four rectangle side sizes on the specific target.");
 
     py::class_<rs2::vertex> vertex(m, "vertex"); // No docstring in C++
