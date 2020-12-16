@@ -2,8 +2,6 @@ import platform
 import pyrealsense2 as rs, test
 import time
 
-#L515
-
 dev = test.find_first_device_or_exit()
 depth_sensor = dev.first_depth_sensor()
 color_sensor = dev.first_color_sensor()
