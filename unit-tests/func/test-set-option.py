@@ -78,13 +78,13 @@ color_options = color_sensor.get_supported_options()
 test.start("Checking for frame drops when setting any option")
 
 for option in depth_options:
-    if (depth_sensor.is_option_read_only(option) == 1): 
+    if depth_sensor.is_option_read_only(option): 
         continue
     new_value = depth_sensor.get_option_range(option).min
     set_new_value(depth_sensor, option, new_value)
 
 for option in color_options:
-    if (color_sensor.is_option_read_only(option) == 1): 
+    if color_sensor.is_option_read_only(option): 
         continue
     new_value = color_sensor.get_option_range(option).min
     set_new_value(color_sensor, option, new_value)
