@@ -243,6 +243,22 @@ namespace librealsense
                 //el::Helpers::uninstallLogDispatchCallback< el::base::DefaultLogDispatchCallback >( "DefaultLogDispatchCallback" );
             }
         }
+        void reset_logger()
+        {
+            el::Configurations defaultConf;
+            defaultConf.setToDefault();
+
+            defaultConf.setGlobally(el::ConfigurationType::ToFile, "false");
+            defaultConf.setGlobally(el::ConfigurationType::ToStandardOutput, "false");
+
+            el::Loggers::reconfigureLogger(log_id, defaultConf);
+
+            minimum_log_severity = RS2_LOG_SEVERITY_NONE; //not in use? I can't find any use to it 
+            minimum_console_severity = RS2_LOG_SEVERITY_NONE;
+            minimum_file_severity = RS2_LOG_SEVERITY_NONE;
+
+            //should call remove_callbacks() function? 
+        }
     };
 #else //BUILD_EASYLOGGINGPP
     struct log_message

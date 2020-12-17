@@ -1304,6 +1304,12 @@ void rs2_log_to_callback_cpp( rs2_log_severity min_severity, rs2_log_callback * 
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , min_severity, callback )
 
+void rs2_reset_logger( rs2_error** error) BEGIN_API_CALL
+{
+    librealsense::reset_logger();
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN()
+
 // librealsense wrapper around a C function
 class on_log_callback : public rs2_log_callback
 {
