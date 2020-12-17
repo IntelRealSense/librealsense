@@ -5765,6 +5765,8 @@ namespace rs2
                     //TODO: make this a member function
                     std::vector<const char*> labels;
                     auto selected = 0, counter = 0;
+                    // After changing preset the default values of some controls may change
+                    // So we need to refrash the cached values
                     opt_model.update_all_fields( error_message, model );
                     for (auto i = opt_model.range.min; i <= opt_model.range.max; i += opt_model.range.step, counter++)
                     {

@@ -633,6 +633,7 @@ namespace librealsense
         switch (value)
         {
             CASE(CUSTOM)
+            CASE(DEFAULT)
             //CASE(NO_AMBIENT)
             case RS2_L500_VISUAL_PRESET_NO_AMBIENT: return "No Ambient Light";
             //CASE(LOW_AMBIENT)

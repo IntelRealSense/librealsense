@@ -25,7 +25,8 @@ namespace librealsense
         get_current = 0,
         get_min = 1,
         get_max = 2,
-        get_step = 3
+        get_step = 3,
+        get_default = 4
     };
 
     class l500_hw_options : public option
@@ -48,13 +49,15 @@ namespace librealsense
                          hw_monitor* hw_monitor,
                          l500_control type,
                          option * resolution,
-                         const std::string& description );
+                         const std::string & description,
+                         firmware_version fw_version,
+                         std::shared_ptr< cascade_option< uvc_xu_option< int > > > digital_gain);
 
         void update_default();
 
     private:
-        float query(int width) const;
-        float get_default() const;
+        float query( l500_command type, int width ) const;
+        float query_default() const;
         
         l500_control _type;
         l500_device* _l500_dev;
@@ -64,6 +67,8 @@ namespace librealsense
         uint32_t _height;
         option* _resolution;
         std::string _description;
+        firmware_version _fw_version;
+        std::shared_ptr< cascade_option< uvc_xu_option< int > > > _digital_gain;
     };
 
 
