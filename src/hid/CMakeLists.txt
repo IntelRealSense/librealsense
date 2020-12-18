@@ -6,3 +6,11 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/hid-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/hid-device.cpp"
 )
+
+if(APPLE)
+    target_sources(${LRS_TARGET}
+        PRIVATE
+            "${CMAKE_CURRENT_LIST_DIR}/hidapi.h"
+            "${CMAKE_CURRENT_LIST_DIR}/hidapi.cpp"
+    )
+endif()
