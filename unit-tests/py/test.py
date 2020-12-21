@@ -220,18 +220,30 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
     info_reset()
     return True
 
-# Function to check frame drops while streaming
 def check_frame_drops(frame, previous_frame_number, allowed_drops = 0):
+    """
+    Used for checking frame drops while streaming
+    :param frame: Current frame being checked
+    :param previous_frame_number: Number of the previous frame
+    :param allowed_drops: Maximum number of frame drops we accept
+    :return: False if dropped too many frames or frames were out of order, True otherwise
+    """
     frame_number = frame.get_frame_number()
+    failed = False
     if previous_frame_number > 0:
         dropped_frames = frame_number - (previous_frame_number + 1)  # should be 0 in windows, less than 5 in linux
         if dropped_frames > allowed_drops:
             print(dropped_frames, "frame(s) starting from frame", previous_frame_number + 1, "were dropped")
-            fail()
+            failed = True
         if dropped_frames < 0:
             print("Frames repeated or out of order. Got frame", frame_number, "after frame",
                   previous_frame_number)
-            fail()
+            failed = True
+    if failed:
+        check_failed()
+        return False
+    info_reset()
+    return True
 
 """
 The following functions are for adding additional information to the printed messages in case of a failed check.
