@@ -231,6 +231,7 @@ void init_pipeline(py::module &m);
 void init_internal(py::module &m);
 void init_export(py::module &m);
 void init_advanced_mode(py::module &m);
+void init_serializable_device(py::module& m);
 void init_util(py::module &m);
 
 #endif // LIBREALSENSE_PYTHON_HPP

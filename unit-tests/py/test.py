@@ -104,7 +104,7 @@ def check_equal(result, expected, abort_if_failed = False):
     global n_assertions
     n_assertions += 1
     if result != expected:
-        print("Result was:" + result + "\nBut we expected: " + expected)
+        print("Result was:", result ,"\nBut we expected: ", expected)
         check_failed()
         print_stack()
         if abort_if_failed:
