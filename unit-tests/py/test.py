@@ -90,7 +90,6 @@ def check_failed():
     n_failed_assertions += 1
     test_failed = True
     print_info()
-    info_reset()
 
 def abort():
     print("Abort was specified in a failed check. Aborting test")
@@ -112,7 +111,7 @@ def check(exp, abort_if_failed = False):
         if abort_if_failed:
             abort()
         return False
-    info_reset()
+    reset_info()
     return True
 
 def check_equal(result, expected, abort_if_failed = False):
@@ -137,7 +136,7 @@ def check_equal(result, expected, abort_if_failed = False):
         if abort_if_failed:
             abort()
         return False
-    info_reset()
+    reset_info()
     return True
 
 def unreachable( abort_if_failed = False ):
@@ -159,7 +158,7 @@ def unexpected_exception( abort_if_failed = False ):
     check_failed()
     if abort_if_failed:
         abort()
-    info_reset()
+    reset_info()
 
 def check_equal_lists(result, expected, abort_if_failed = False):
     """
@@ -192,7 +191,7 @@ def check_equal_lists(result, expected, abort_if_failed = False):
         if abort_if_failed:
             abort()
         return False
-    info_reset()
+    reset_info()
     return True
 
 def check_exception(exception, expected_type, expected_msg = None, abort_if_failed = False):
@@ -217,7 +216,7 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
         if abort_if_failed:
             abort()
         return False
-    info_reset()
+    reset_info()
     return True
 
 def check_frame_drops(frame, previous_frame_number, allowed_drops = 0):
@@ -242,12 +241,20 @@ def check_frame_drops(frame, previous_frame_number, allowed_drops = 0):
     if failed:
         check_failed()
         return False
-    info_reset()
+    reset_info()
     return True
 
 """
 The following functions are for adding additional information to the printed messages in case of a failed check.
 """
+
+class Information:
+    """
+    Class representing the information stored in test_info dictionary
+    """
+    def __init__(self, value, persistent = False):
+        self.value = value
+        self.persistent = persistent
 
 def info(name, value, persistent = False):
     """
@@ -257,12 +264,12 @@ def info(name, value, persistent = False):
     :param name: The name of the variable
     :param value: The value this variable stores
     :param persistent: If this parameter is True, the information stored will be kept after the following check
-        and will only be erased at the end of the test ( or when info_reset is called with True)
+        and will only be erased at the end of the test ( or when reset_info is called with True)
     """
     global test_info
-    test_info[name] = (value, persistent)
+    test_info[name] = Information(value, persistent)
 
-def info_reset(persistent = False):
+def reset_info(persistent = False):
     """
     erases the stored information
     :param persistent: If this parameter is True, even the persistent information will be erased
@@ -271,9 +278,8 @@ def info_reset(persistent = False):
     if persistent:
         test_info.clear()
     else:
-        for name, value_persistent in test_info:
-            persistent = value_persistent[1]
-            if persistent:
+        for name, information in test_info:
+            if information.persistent:
                 test_info.pop(name)
 
 def print_info():
@@ -281,8 +287,9 @@ def print_info():
     if not test_info: # No information is stored
         return
     print("Printing information")
-    for name, value in test_info:
-        print("Name:", name, "        value:", value[0])
+    for name, information in test_info:
+        print("Name:", name, "        value:", information.value)
+    reset_info()
 
 """
 The following functions are for formatting tests in a file
@@ -311,7 +318,7 @@ def start(*test_name):
     n_tests += 1
     test_failed = False
     test_in_progress = True
-    info_reset(persistent=True)
+    reset_info(persistent=True)
     print(*test_name)
 
 def finish():
