@@ -1,4 +1,4 @@
-classdef rs_capture_class < matlab.apps.AppBase
+classdef capture_example < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
@@ -11,797 +11,314 @@ classdef rs_capture_class < matlab.apps.AppBase
         GyroTextAX                matlab.ui.control.UIAxes
         StartButton               matlab.ui.control.Button
         StopButton                matlab.ui.control.Button
+        RsPipeLine                realsense.pipeline
+        RsColorizer               realsense.colorizer
     end
 
-    properties (Access = private) %, Hidden = true)
-        MeTimer            % Timer object
-        Ctx                % Realsense.context
-        Dev                % Realsense.device
-        Cfg                % Realsense.config
-        Pipe               % Realsense.pipeline
-        Colorizer          % Realsense.colorizer
-        Profile            % Realsense.profile
-        Frameset           % Realsense.frameset
-        hhDepth            % Image
-        hhColor            % Image
-        sintVect           % vect
-        costVect           % vect
-        zeroVect           % vect
+    properties (Access = private, Hidden = true)
+        tmr                % Timer object
+        SupportDepth       % Support Depth Chanel
+        SupportColor       % Support Color Chanel
+        SupportAccel       % Support Accel Chanel
+        SupportGyro        % Support Gyro  Chanel
+        hD                 % Depth image handle
+        hC                 % Color image handle
+        hA                 % Accel handles
+                           % hA{1} - Circle Accel.x0y 
+                           % hA{2} - Circle Accel.x0z 
+                           % hA{3} - Circle Accel.y0z
+                           % hA{4} - Vect Accel.xyz
+                           % hA{5} - String Accel.x
+                           % hA{6} - String Accel.y
+                           % hA{7} - String Accel.z
+                           % hA{8} - String Accel.r
+        hG                 % Gyro handles
+                           % hG{1} - Circle Gyro.x0y 
+                           % hG{2} - Circle Gyro.x0z 
+                           % hG{3} - Circle Gyro.y0z
+                           % hG{4} - Vect Gyro.xyz
+                           % hG{5} - String Gyro.x
+                           % hG{6} - String Gyro.y
+                           % hG{7} - String Gyro.z
+                           % hG{8} - String Gyro.r
+        dV                 % Data vectors
+                           % dV{1} - ort line  = - 1.15 .. 1.15 
+                           % dV{2} - sin(t) , t = 0 .. 2 pi
+                           % dV{3} - cos(t)
+                           % dV{4} - zero = t ; zero(:) = 0;
         Period             % double ( sec. )
-        hhX0Ya             % Circle Accel.x0y 
-        hhX0Za             % Circle Accel.x0z 
-        hhY0Za             % Circle Accel.y0z
-        hhVa               % Vect Accel.xyz
-        hhSxA              % String Accel.x
-        hhSyA              % String Accel.y
-        hhSzA              % String Accel.z
-        hhSrA              % String Accel.r
-        hhX0Yg             % Circle Gyro.x0y 
-        hhX0Zg             % Circle Gyro.x0z 
-        hhY0Zg             % Circle Gyro.y0z
-        hhVg               % Vect Gyro.xyz
-        hhSxG              % String Gyro.x
-        hhSyG              % String Gyro.y
-        hhSzG              % String Gyro.z
-        hhSrG              % String Gyro.r
     end
 
-    % Callbacks that handle component events
     methods (Access = private)
-        
+    
+        function set_motion_data(app,h,d)
+            x = d(1); y = d(2); z = d(3); R = sqrt(x^2+y^2+z^2);
+            nx = x/R; ny = y/R; nz = z/R;
+            zz = app.dV{4}; zz(:) = nz; rr = sqrt(nx^2+ny^2);
+            xx = rr*app.dV{3}; yy = rr*app.dV{2};
+            h{1}.XData = xx; h{1}.YData = yy; h{1}.ZData = zz;
+            xx = app.dV{4}; xx(:) = nx; rr = sqrt(ny^2+nz^2);
+            yy = rr*app.dV{3}; zz = rr*app.dV{2};
+            h{3}.XData = xx; h{3}.YData = yy; h{3}.ZData = zz;
+            yy = app.dV{4}; yy(:) = ny; rr = sqrt(nx^2+nz^2);
+            xx = rr*app.dV{3}; zz = rr*app.dV{2};
+            h{2}.XData = xx; h{2}.YData = yy; h{2}.ZData = zz;
+            h{4}.XData = [0 nx];
+            h{4}.YData = [0 ny];
+            h{4}.ZData = [0 nz];
+            h{5}.String = sprintf('x = %f',x);
+            h{6}.String = sprintf('y = %f',y);
+            h{7}.String = sprintf('z = %f',z);
+            h{8}.String = sprintf('r = %f',R);
+        end
+     
+        function h = draw_motion_data(app,ag,at,d,ss)
+            colorG = [0.1 0.7 0.2];
+            x = d(1); y = d(2); z = d(3); R = sqrt(x^2+y^2+z^2);
+            nx = x/R; ny = y/R; nz = z/R;
+            plot3(ag,app.dV{3},app.dV{2},app.dV{4},'LineStyle','-','Color','b','linewidth',1);
+            hold(ag,'on');
+            plot3(ag,app.dV{4},app.dV{3},app.dV{2},'LineStyle','-','Color','r','linewidth',1);
+            plot3(ag,app.dV{3},app.dV{4},app.dV{2},'LineStyle','-','Color',colorG,'linewidth',1);
+            zz = app.dV{4}; zz(:) = nz; rr = sqrt(nx^2+ny^2);
+            xx = rr * app.dV{3}; yy = rr * app.dV{2};
+            h{1}=plot3(ag,xx,yy,zz,'LineStyle','--','Color','b','linewidth',1);
+            yy = app.dV{4}; yy(:) = ny; rr = sqrt(nx^2+nz^2);
+            xx = rr * app.dV{3}; zz = rr * app.dV{2};
+            h{2}=plot3(ag,xx,yy,zz,'LineStyle','--','Color',colorG,'linewidth',1);
+            xx = app.dV{4}; xx(:) = nx; rr = sqrt(ny^2+nz^2);
+            yy = rr * app.dV{3}; zz = rr * app.dV{2};
+            h{3}=plot3(ag,xx,yy,zz,'LineStyle','--','Color','r','linewidth',1);
+            xx(:) = 0; yy(:) = 0; zz = app.dV{1};
+            plot3(ag,xx,yy,zz,'LineStyle','-','Color','b','linewidth',1);
+            xx(:) = 0; yy(:) = app.dV{1}; zz(:) = 0;
+            plot3(ag,xx,yy,zz,'LineStyle','-','Color',colorG,'linewidth',1);
+            xx(:) = app.dV{1}; yy(:) = 0; zz(:) = 0;
+            plot3(ag,xx,yy,zz,'LineStyle','-','Color','r','linewidth',1);
+            h{4}=line(ag,[0 nx],[0 ny],[0 nz]); h{4}.Color = 'k';
+            axis(ag,'off'); hold(ag,'off');
+            text(at,0.3,0.8,ss,'Color',[0,0,0],'FontSize',14); hold(at,'on');
+            s=sprintf('x = %f',x);
+            h{5}=text(at,0.2,0.7,s,'Color','r','FontSize',12);
+            s=sprintf('y = %f',y);
+            h{6}=text(at,0.2,0.6,s,'Color',colorG,'FontSize',12);
+            s=sprintf('z = %f',z);
+            h{7}=text(at,0.2,0.5,s,'Color','b','FontSize',12);
+            s=sprintf('r = %f',R);
+            h{8}=text(at,0.2,0.4,s,'Color','k','FontSize',12);
+            axis(at,'off'); hold(at,'off');
+        end
+
         function tmProcess(app,~,~)
-            
-            % RealSense process
-           
-           app.Frameset = app.Pipe.wait_for_frames();
- 
-           depth_frame = app.Frameset.get_depth_frame();
-           depth_color = app.Colorizer.colorize(depth_frame);
-           depth_data = depth_color.get_data();
-           depth_img = permute                     ...
-                       (                           ...
-                        reshape                    ...
-                        (                          ...
-                         depth_data',              ...
-                         [                         ...
-                          3,                       ...
-                          depth_color.get_width(), ...
-                          depth_color.get_height() ...
-                         ]                         ...
-                        ),                         ...
-                        [3 2 1]                    ...
-                       );
-           app.hhDepth.CData = depth_img;
- 
-           color_frame = app.Frameset.get_color_frame();
-           color_data = color_frame.get_data();
-           color_img = permute                     ...
-                       (                           ...
-                        reshape                    ...
-                        (                          ...
-                         color_data',              ...
-                         [                         ...
-                          3,                       ...
-                          color_frame.get_width(), ...
-                          color_frame.get_height() ...
-                         ]                         ...
-                        ),                         ...
-                        [3 2 1]                    ...
-                       );
-           app.hhColor.CData = color_img;
-
-           VideoFrameAccel = app.Frameset.first(realsense.stream.accel);
-           MotionFrameAccel = VideoFrameAccel.as('motion_frame');
-           AccelData = MotionFrameAccel.get_motion_data();
-  
-           VideoFrameGyro = app.Frameset.first(realsense.stream.gyro);
-           MotionFrameGyro = VideoFrameGyro.as('motion_frame');
-           GyroData = MotionFrameGyro.get_motion_data();
-
-           % Draw Accel scene
-           
-           x = AccelData(1);
-           y = AccelData(2);
-           z = AccelData(3);
-           R = sqrt(x^2+y^2+z^2);
-           nx = x/R;
-           ny = y/R;
-           nz = z/R;
-           
-           zz = app.zeroVect;
-           zz(:) = nz;
-           rr = sqrt(nx^2+ny^2);
-           xx = rr * app.costVect;
-           yy = rr * app.sintVect;
-
-           app.hhX0Ya.XData = xx;
-           app.hhX0Ya.YData = yy;
-           app.hhX0Ya.ZData = zz;
- 
-           xx = app.zeroVect;
-           xx(:) = nx;
-           rr = sqrt(ny^2+nz^2);
-           yy = rr * app.costVect;
-           zz = rr * app.sintVect;
-           
-           app.hhY0Za.XData = xx;
-           app.hhY0Za.YData = yy;
-           app.hhY0Za.ZData = zz;
-
-           yy = app.zeroVect;
-           yy(:) = ny;
-           rr = sqrt(nx^2+nz^2);
-           xx = rr * app.costVect;
-           zz = rr * app.sintVect;
-            
-           app.hhX0Za.XData = xx;
-           app.hhX0Za.YData = yy;
-           app.hhX0Za.ZData = zz;
-
-           app.hhVa.XData = [0 nx];
-           app.hhVa.YData = [0 ny];
-           app.hhVa.ZData = [0 nz];
-
-           app.hhSxA.String = sprintf('Accel.x = %f',x);
-           app.hhSyA.String = sprintf('Accel.y = %f',y);
-           app.hhSzA.String = sprintf('Accel.z = %f',z);
-           app.hhSrA.String = sprintf('Accel.r = %f',R);
-
-           % Draw Gyro scene
-           
-           x = GyroData(1);
-           y = GyroData(2);
-           z = GyroData(3);
-           R = sqrt(x^2+y^2+z^2);
-           nx = x/R;
-           ny = y/R;
-           nz = z/R;
-           
-           zz = app.zeroVect;
-           zz(:) = nz;
-           rr = sqrt(nx^2+ny^2);
-           xx = rr * app.costVect;
-           yy = rr * app.sintVect;
-
-           app.hhX0Yg.XData = xx;
-           app.hhX0Yg.YData = yy;
-           app.hhX0Yg.ZData = zz;
- 
-           xx = app.zeroVect;
-           xx(:) = nx;
-           rr = sqrt(ny^2+nz^2);
-           yy = rr * app.costVect;
-           zz = rr * app.sintVect;
-           
-           app.hhY0Zg.XData = xx;
-           app.hhY0Zg.YData = yy;
-           app.hhY0Zg.ZData = zz;
-
-           yy = app.zeroVect;
-           yy(:) = ny;
-           rr = sqrt(nx^2+nz^2);
-           xx = rr * app.costVect;
-           zz = rr * app.sintVect;
-            
-           app.hhX0Zg.XData = xx;
-           app.hhX0Zg.YData = yy;
-           app.hhX0Zg.ZData = zz;
-
-           app.hhVg.XData = [0 nx];
-           app.hhVg.YData = [0 ny];
-           app.hhVg.ZData = [0 nz];
-
-           app.hhSxG.String = sprintf('Gyro.x = %f',x);
-           app.hhSyG.String = sprintf('Gyro.y = %f',y);
-           app.hhSzG.String = sprintf('Gyro.z = %f',z);
-           app.hhSrG.String = sprintf('Gyro.r = %f',R);
-           
-           pause(0.001);
-
-        end
-        
-        function tmStart(app,~,~)
-
-           % Creating a utility vectors and variables
-
-           tVect = 0:pi/60:2*pi;
-           eVect = ((0:1/60:2)-1)*1.15;
-           app.sintVect = sin(tVect);
-           app.costVect = cos(tVect);
-           app.zeroVect = tVect;
-           app.zeroVect(:) = 0;
-           colorG = [0.1 0.7 0.2];
-
-           % RealSense process
-           
-           app.Frameset = app.Pipe.wait_for_frames();
- 
-           depth_frame = app.Frameset.get_depth_frame();
-           depth_color = app.Colorizer.colorize(depth_frame);
-           depth_data = depth_color.get_data();
-           depth_img = permute                     ...
-                       (                           ...
-                        reshape                    ...
-                        (                          ...
-                         depth_data',              ...
-                         [                         ...
-                          3,                       ...
-                          depth_color.get_width(), ...
-                          depth_color.get_height() ...
-                         ]                         ...
-                        ),                         ...
-                        [3 2 1]                    ...
-                       );
-           app.hhDepth = imshow(depth_img,'Parent',app.DepthAX);
-
-           color_frame = app.Frameset.get_color_frame();
-           color_data = color_frame.get_data();
-           color_img = permute                     ...
-                       (                           ...
-                        reshape                    ...
-                        (                          ...
-                         color_data',              ...
-                         [                         ...
-                          3,                       ...
-                          color_frame.get_width(), ...
-                          color_frame.get_height() ...
-                         ]                         ...
-                        ),                         ...
-                        [3 2 1]                    ...
-                       );
-           app.hhColor = imshow(color_img,'Parent',app.ColorAX);
-
-           VideoFrameAccel = app.Frameset.first(realsense.stream.accel);
-           MotionFrameAccel = VideoFrameAccel.as('motion_frame');
-           AccelData = MotionFrameAccel.get_motion_data();
-  
-           VideoFrameGyro = app.Frameset.first(realsense.stream.gyro);
-           MotionFrameGyro = VideoFrameGyro.as('motion_frame');
-           GyroData = MotionFrameGyro.get_motion_data();
-
-           % Draw Accel scene
-           
-           x = AccelData(1);
-           y = AccelData(2);
-           z = AccelData(3);
-           R = sqrt(x^2+y^2+z^2);
-           nx = x/R;
-           ny = y/R;
-           nz = z/R;
-
-           plot3             ...
-           (                 ...
-            app.AccelAX,     ...
-            app.costVect,    ...
-            app.sintVect,    ...
-            app.zeroVect,    ...
-            'LineStyle','-', ...
-            'Color','b',     ...
-            'linewidth',1    ...
-           );
-           hold(app.AccelAX,'on');
-           plot3             ...
-           (                 ...
-            app.AccelAX,     ...
-            app.zeroVect,    ...
-            app.costVect,    ...
-            app.sintVect,    ...
-            'LineStyle','-', ...
-            'Color','r',     ...
-            'linewidth',1    ...
-           );
-           plot3             ...
-           (                 ...
-            app.AccelAX,     ...
-            app.costVect,    ...
-            app.zeroVect,    ...
-            app.sintVect,    ...
-            'LineStyle','-', ...
-            'Color',colorG,  ...
-            'linewidth',1    ...
-           );
-       
-           zz = app.zeroVect;
-           zz(:) = nz;
-           rr = sqrt(nx^2+ny^2);
-           xx = rr * app.costVect;
-           yy = rr * app.sintVect;
-
-           app.hhX0Ya = plot3              ...
-                        (                  ...
-                         app.AccelAX,      ...
-                         xx,               ...
-                         yy,               ...
-                         zz,               ...
-                         'LineStyle','--', ...
-                         'Color','b',      ...
-                         'linewidth',1     ...
-                        );
-
-           xx = app.zeroVect;
-           xx(:) = nx;
-           rr = sqrt(ny^2+nz^2);
-           yy = rr * app.costVect;
-           zz = rr * app.sintVect;
-           
-           app.hhY0Za = plot3              ...
-                        (                  ...
-                         app.AccelAX,      ...
-                         xx,               ...
-                         yy,               ...
-                         zz,               ...
-                         'LineStyle','--', ...
-                         'Color','r',      ...
-                         'linewidth',1     ...
-                        );
- 
-           yy = app.zeroVect;
-           yy(:) = ny;
-           rr = sqrt(nx^2+nz^2);
-           xx = rr * app.costVect;
-           zz = rr * app.sintVect;
-            
-           app.hhX0Za = plot3              ...
-                        (                  ...
-                         app.AccelAX,      ...
-                         xx,               ...
-                         yy,               ...
-                         zz,               ...
-                         'LineStyle','--', ...
-                         'Color',colorG,   ...
-                         'linewidth',1     ...
-                        );
- 
-           xx(:) = 0;
-           yy(:) = 0;
-           zz = eVect;
-           
-           plot3             ...
-           (                 ...
-            app.AccelAX,     ...
-            xx,              ...
-            yy,              ...
-            zz,              ...
-            'LineStyle','-', ...
-            'Color','b',     ...
-            'linewidth',1    ...
-           );
-
-           xx(:) = 0;
-           yy(:) = eVect;
-           zz(:) = 0;
-
-           plot3             ...
-           (                 ...
-            app.AccelAX,     ...
-            xx,              ...
-            yy,              ...
-            zz,              ...
-            'LineStyle','-', ...
-            'Color',colorG,  ...
-            'linewidth',1    ...
-           );
-           
-           xx(:) = eVect;
-           yy(:) = 0;
-           zz(:) = 0;
-
-           plot3             ...
-           (                 ...
-            app.AccelAX,     ...
-            xx,              ...
-            yy,              ...
-            zz,              ...
-            'LineStyle','-', ...
-            'Color','r',     ...
-            'linewidth',1    ...
-           );
-           
-           app.hhVa = line(app.AccelAX,[0 nx],[0 ny],[0 nz]);
-           app.hhVa.Color = 'k';
-           %app.hhVa.Marker = '>';
-
-           axis(app.AccelAX,'off');
-           hold(app.AccelAX,'off');
-  
-           text                              ...
-           (                                 ...
-            app.AccelTextAX,0.3,0.8,'Accel', ...
-            'Color',[0,0,0],'FontSize',14    ...
-           );
-       
-           hold(app.AccelTextAX,'on');
-           
-           s = sprintf('Accel.x = %f',x);
-           app.hhSxA = text                        ...
-                       (                           ...
-                        app.AccelTextAX,0.2,0.7,s, ...
-                        'Color','r','FontSize',12  ...
-                       );
-
-           s = sprintf('Accel.y = %f',y);
-           app.hhSyA = text                          ...
-                       (                             ...
-                        app.AccelTextAX,0.2,0.6,s,   ...
-                        'Color',colorG,'FontSize',12 ...
-                       );
-
-           s = sprintf('Accel.z = %f',z);
-           app.hhSzA = text                          ...
-                       (                             ...
-                        app.AccelTextAX,0.2,0.5,s,   ...
-                        'Color','b','FontSize',12 ...
-                       );
-
-           s = sprintf('Accel.r = %f',R);
-           app.hhSrA = text                         ...
-                       (                            ...
-                        app.AccelTextAX,0.2,0.4,s,  ...
-                        'Color','k','FontSize',12   ...
-                       );
-
-           axis(app.AccelTextAX,'off');
-           hold(app.AccelTextAX,'off');
- 
-           % Draw Gyro scene
-           
-           x = GyroData(1);
-           y = GyroData(2);
-           z = GyroData(3);
-           R = sqrt(x^2+y^2+z^2);
-           nx = x/R;
-           ny = y/R;
-           nz = z/R;
-
-           plot3             ...
-           (                 ...
-            app.GyroAX,      ...
-            app.costVect,    ...
-            app.sintVect,    ...
-            app.zeroVect,    ...
-            'LineStyle','-', ...
-            'Color','b',     ...
-            'linewidth',1    ...
-           );
-           hold(app.GyroAX,'on');
-           plot3             ...
-           (                 ...
-            app.GyroAX,      ...
-            app.zeroVect,    ...
-            app.costVect,    ...
-            app.sintVect,    ...
-            'LineStyle','-', ...
-            'Color','r',     ...
-            'linewidth',1    ...
-           );
-           plot3             ...
-           (                 ...
-            app.GyroAX,      ...
-            app.costVect,    ...
-            app.zeroVect,    ...
-            app.sintVect,    ...
-            'LineStyle','-', ...
-            'Color',colorG,  ...
-            'linewidth',1    ...
-           );
-       
-           zz = app.zeroVect;
-           zz(:) = nz;
-           rr = sqrt(nx^2+ny^2);
-           xx = rr * app.costVect;
-           yy = rr * app.sintVect;
-
-           app.hhX0Yg = plot3              ...
-                        (                  ...
-                         app.GyroAX,       ...
-                         xx,               ...
-                         yy,               ...
-                         zz,               ...
-                         'LineStyle','--', ...
-                         'Color','b',      ...
-                         'linewidth',1     ...
-                        );
-
-           xx = app.zeroVect;
-           xx(:) = nx;
-           rr = sqrt(ny^2+nz^2);
-           yy = rr * app.costVect;
-           zz = rr * app.sintVect;
-           
-           app.hhY0Zg = plot3              ...
-                        (                  ...
-                         app.GyroAX,       ...
-                         xx,               ...
-                         yy,               ...
-                         zz,               ...
-                         'LineStyle','--', ...
-                         'Color','r',      ...
-                         'linewidth',1     ...
-                        );
- 
-           yy = app.zeroVect;
-           yy(:) = ny;
-           rr = sqrt(nx^2+nz^2);
-           xx = rr * app.costVect;
-           zz = rr * app.sintVect;
-            
-           app.hhX0Zg = plot3              ...
-                        (                  ...
-                         app.GyroAX,       ...
-                         xx,               ...
-                         yy,               ...
-                         zz,               ...
-                         'LineStyle','--', ...
-                         'Color',colorG,   ...
-                         'linewidth',1     ...
-                        );
- 
-           xx(:) = 0;
-           yy(:) = 0;
-           zz = eVect;
-           
-           plot3             ...
-           (                 ...
-            app.GyroAX,      ...
-            xx,              ...
-            yy,              ...
-            zz,              ...
-            'LineStyle','-', ...
-            'Color','b',     ...
-            'linewidth',1    ...
-           );
-
-           xx(:) = 0;
-           yy(:) = eVect;
-           zz(:) = 0;
-
-           plot3             ...
-           (                 ...
-            app.GyroAX,      ...
-            xx,              ...
-            yy,              ...
-            zz,              ...
-            'LineStyle','-', ...
-            'Color',colorG,  ...
-            'linewidth',1    ...
-           );
-           
-           xx(:) = eVect;
-           yy(:) = 0;
-           zz(:) = 0;
-
-           plot3             ...
-           (                 ...
-            app.GyroAX,      ...
-            xx,              ...
-            yy,              ...
-            zz,              ...
-            'LineStyle','-', ...
-            'Color','r',     ...
-            'linewidth',1    ...
-           );
-           
-           app.hhVg = line(app.GyroAX,[0 nx],[0 ny],[0 nz]);
-           app.hhVg.Color = 'k';
-           %app.hhVg.Marker = '>';
-
-           axis(app.GyroAX,'off');
-           hold(app.GyroAX,'off');
-  
-           text                              ...
-           (                                 ...
-            app.GyroTextAX,0.3,0.8,'Gyro',   ...
-            'Color',[0,0,0],'FontSize',14    ...
-           );
-       
-           hold(app.GyroTextAX,'on');
-           
-           s = sprintf('Gyro.x = %f',x);
-           app.hhSxG = text                        ...
-                       (                           ...
-                        app.GyroTextAX,0.2,0.7,s,  ...
-                        'Color','r','FontSize',12  ...
-                       );
-
-           s = sprintf('Gyro.y = %f',y);
-           app.hhSyG = text                          ...
-                       (                             ...
-                        app.GyroTextAX,0.2,0.6,s,    ...
-                        'Color',colorG,'FontSize',12 ...
-                       );
-
-           s = sprintf('Gyro.z = %f',z);
-           app.hhSzG = text                          ...
-                       (                             ...
-                        app.GyroTextAX,0.2,0.5,s,    ...
-                        'Color','b','FontSize',12 ...
-                       );
-
-           s = sprintf('Gyro.r = %f',R);
-           app.hhSrG = text                         ...
-                       (                            ...
-                        app.GyroTextAX,0.2,0.4,s,   ...
-                        'Color','k','FontSize',12   ...
-                       );
-
-           axis(app.GyroTextAX,'off');
-           hold(app.GyroTextAX,'off');
-
-           stop(app.MeTimer);
-           delete(app.MeTimer);
-           
-% ------------ WARNING : Fix it for a faster computer ---------------------
-           app.MeTimer = ...
-               timer ...
-               (...
-                'ExecutionMode', 'fixedSpacing', ...  % 'fixedRate', ...
-                'Period', app.Period, ...
-                'BusyMode', 'drop', ... %'queue',...
-                'TimerFcn', @app.tmProcess);
-            
-           pause(0.001);
-           
-           start(app.MeTimer);
-           
+            RsFrameSet = app.RsPipeLine.wait_for_frames();
+            if app.SupportDepth ~= 0
+               df = RsFrameSet.get_depth_frame();
+               dc = app.RsColorizer.colorize(df);
+               dd = dc.get_data();
+               app.hD.CData = permute(reshape(dd',[3,dc.get_width(),dc.get_height()]),[3 2 1]);
+            end
+            if app.SupportColor ~= 0
+               cf = RsFrameSet.get_color_frame();
+               dd = cf.get_data();
+               app.hC.CData = permute(reshape(dd',[3,cf.get_width(),cf.get_height()]),[3 2 1]);
+            end
+            if app.SupportAccel ~= 0
+               fa = RsFrameSet.first(realsense.stream.accel);
+               ma = fa.as('motion_frame');
+               d = ma.get_motion_data();
+               app.set_motion_data(app.hA,d);
+            end
+            if app.SupportGyro ~= 0
+               fg = RsFrameSet.first(realsense.stream.gyro);
+               mg = fg.as('motion_frame');
+               d = mg.get_motion_data();
+               app.set_motion_data(app.hG,d);
+            end
+            drawnow;
+            delete(RsFrameSet);
         end
 
-        % Executes after component creation
-        function StartUpFunc(app)
-        
-               % Create Realsense items
-               
-               app.Ctx = realsense.context();
-               devs = app.Ctx.query_devices();
-
-               if ( numel(devs) < 1 )
-                error ( 'Not found RealSense device' );
-               end
-
-               app.Dev = devs{1};
-               sn = app.Dev.get_info(realsense.camera_info.serial_number);
-               app.Cfg = realsense.config();
-               app.Cfg.enable_device(sn);
-               
-% ------------ WARNING : Choose the best option ---------------------------
-               %app.Pipe = realsense.pipeline();
-               app.Pipe = realsense.pipeline(app.Ctx);
-               
-               app.Colorizer = realsense.colorizer();
-
-% ------------ WARNING : Choose the best option ---------------------------
-               %app.Profile = app.Pipe.start();
-               app.Profile = app.Pipe.start(app.Cfg);
-
-               % Create timer object
-
-               kFramePerSecond = 30;  % Number of frames per second
-               app.Period = double                             ...
-                            (                                  ...
-                             int64(1000.0/kFramePerSecond+0.5) ...
-                            )                                  ...
-                            /                                  ...
-                            1000.0;
-               
-% ------------ WARNING : Fix it for a faster computer ---------------------
-               app.MeTimer = timer(...
-                 'ExecutionMode', 'fixedSpacing', ...  % 'fixedRate', ...
-                 'Period', app.Period, ...
-                 'BusyMode', 'drop', ... %'queue',...
-                 'TimerFcn', @app.tmStart);
-        end
-
-        % Button pushed function: start timer
-        function onStartButton(app, event)
-            %app.Profile = app.Pipe.start();
-            % If timer is not running, start it
-            if strcmp(app.MeTimer.Running, 'off')
-               start(app.MeTimer);
+        function onStartButton(app, ~)
+            if strcmp(app.tmr.Running, 'off')
+               app.RsPipeLine.start();
+               start(app.tmr);
             end
         end
 
-        % Button pushed function: stop timer
-        function onStopButton(app, event)
-            app.Pipe.stop();
-            stop(app.MeTimer);
+        function onStopButton(app,~)
+            if strcmp(app.tmr.Running, 'on')
+               stop(app.tmr);
+               app.RsPipeLine.stop();
+            end
         end
 
-        %Close request UIFigure function
-        function UIFigureCloseRequest(app,event)
-            stop(app.MeTimer);
-            delete(app.MeTimer);
-%            app.Pipe.stop();
-            delete(app.Profile);
-            delete(app.Colorizer);
-            delete(app.Pipe);
-            delete(app.Cfg);
-            delete(app.Dev);
-            delete(app.Ctx);
+        function UIFigureCloseRequest(app,~)
+            if strcmp(app.tmr.Running, 'on')
+               stop(app.tmr);
+               app.RsPipeLine.stop();
+            end
+            delete(app.tmr);
+            delete(app.RsPipeLine);
+            delete(app.RsColorizer);
             delete(app);
         end
 
-    end
+        function StartUpFunc(app)
+            RsCtx = realsense.context();
+            Devs = RsCtx.query_devices();
+            if ( numel(Devs) < 1 )
+                error ( 'Not found RealSense device' );
+            end
+            RsDev = Devs{1};
+            cn = RsDev.get_info(realsense.camera_info.name);
+            delete(RsDev);
+            delete(RsCtx);
+            app.UIFigure.Name = sprintf('rs_capture_class < Camera : %s >',cn);
+            app.RsPipeLine = realsense.pipeline();
+            app.RsColorizer = realsense.colorizer();
+            app.RsPipeLine.start();
+            sProf = app.RsPipeLine.get_active_profile();
+            Streams = sProf.get_streams();
+            delete(sProf);
+            kStreams = numel(Streams);
+            app.SupportDepth=0;
+            app.SupportColor=0;
+            app.SupportAccel=0;
+            app.SupportGyro=0;
+            for i=1:kStreams
+                Stream = Streams{i};
+                StreamType = Stream.stream_type();
+                if strcmp(StreamType, 'depth')
+                   app.SupportDepth = 1;
+                end
+                if strcmp(StreamType, 'color')
+                   app.SupportColor = 1;
+                end
+                if strcmp(StreamType, 'accel')
+                   app.SupportAccel = 1;
+                end
+                if strcmp(StreamType, 'gyro')
+                   app.SupportGyro = 1;
+                end
+                delete(Stream);
+            end
+            RsFrameSet = app.RsPipeLine.wait_for_frames();
+            if app.SupportDepth ~=0
+               df = RsFrameSet.get_depth_frame();
+               dc = app.RsColorizer.colorize(df);
+               dd = dc.get_data();
+               d = permute(reshape(dd',[3,dc.get_width(),dc.get_height()]),[3 2 1]);
+               app.hD = imshow(d,'Parent',app.DepthAX);
+            else
+               d = zeros(480,640,3,'uint8'); d(:)=240;
+               app.hD = imshow(d,'Parent',app.DepthAX);
+               hold(app.DepthAX,'on');
+               text(app.DepthAX,140,220,'The <Depth> property is not supported','Color','k','FontSize',16);
+               hold(app.DepthAX,'off');
+            end
+            if app.SupportColor ~= 0
+               cf = RsFrameSet.get_color_frame();
+               dd = cf.get_data();
+               d = permute(reshape(dd',[3,cf.get_width(),cf.get_height()]),[3 2 1]);
+               app.hC = imshow(d,'Parent',app.ColorAX);
+            else
+               d = zeros(480,640,3,'uint8'); d(:)=240;
+               app.hC = imshow(d,'Parent',app.ColorAX);
+               hold(app.ColorAX,'on');
+               text(app.ColorAX,140,220,'The <Color> property is not supported','Color','k','FontSize',16);
+               hold(app.ColorAX,'off');
+            end
+            if app.SupportAccel ~= 0
+               fa = RsFrameSet.first(realsense.stream.accel);
+               ma = fa.as('motion_frame');
+               d = ma.get_motion_data();
+               app.hA = app.draw_motion_data(app.AccelAX,app.AccelTextAX,d,'Accel');
+            else
+               d = [ -0.5, 0.5, sqrt(0.5) ];
+               app.hA = app.draw_motion_data(app.AccelAX,app.AccelTextAX,d,'Accel');
+               app.hA{5}.String='-------------';
+               app.hA{6}.String='-------------';
+               app.hA{7}.String='-------------';
+               app.hA{8}.String='not supported';
+            end
+            if app.SupportGyro ~= 0
+               fg = RsFrameSet.first(realsense.stream.gyro);
+               mg = fg.as('motion_frame');
+               d = mg.get_motion_data();
+               app.hG = app.draw_motion_data(app.GyroAX,app.GyroTextAX,d,'Gyro');
+            else
+               d = [ 0.5, -0.5, sqrt(0.5) ];
+               app.hG = app.draw_motion_data(app.GyroAX,app.GyroTextAX,d,'Gyro');
+               app.hG{5}.String='-------------';
+               app.hG{6}.String='-------------';
+               app.hG{7}.String='-------------';
+               app.hG{8}.String='not supported';
+            end
+            app.tmr = timer ...
+            ( ...
+             'ExecutionMode', 'fixedRate', ...    % 'fixedSpacing', ...
+             'Period',app.Period, ...
+             'BusyMode', 'queue',...              % 'drop', ...
+             'TimerFcn',@app.tmProcess ...
+            );
+            app.RsPipeLine.stop();                            %--- STOP ---
+            drawnow;
+            delete(RsFrameSet);
+        end
 
-    % Component initialization
-    methods (Access = private)
-
-        % Create UIFigure and components
         function createComponents(app)
-
-            % Create UIFigure and hide until all components are created
-            app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [20 20 1310 840];
-            app.UIFigure.Name = 'rs_capture_class';
-            app.UIFigure.CloseRequestFcn = createCallbackFcn(app,@UIFigureCloseRequest);
-            setAutoResize(app,app.UIFigure,false);
-
-            % Create DepthAX
-            app.DepthAX = uiaxes(app.UIFigure);
-            app.DepthAX.Position = [10 40 640 480];
-
-            % Create ColorAX
-            app.ColorAX = uiaxes(app.UIFigure);
-            app.ColorAX.Position = [660 40 640 480];
-
-            % Create AccelAX
-            app.AccelAX = uiaxes(app.UIFigure);
-            app.AccelAX.Position = [30 530 330 300];
-
-            % Create AccelTextAX
-            app.AccelTextAX = uiaxes(app.UIFigure);
-            app.AccelTextAX.Position = [390 530 240 300];
-            
-            % Create GyroAX
-            app.GyroAX = uiaxes(app.UIFigure);
-            app.GyroAX.Position = [680 530 330 300];
-
-            % Create GyroTextAX
-            app.GyroTextAX = uiaxes(app.UIFigure);
-            app.GyroTextAX.Position = [1040 530 240 300];
-
-            % Create StartButton
-            app.StartButton = uibutton(app.UIFigure, 'push');
-            app.StartButton.ButtonPushedFcn = createCallbackFcn(app, @onStartButton, true);
-            app.StartButton.IconAlignment = 'center';
-            app.StartButton.Position = [10 10 100 30];
-            app.StartButton.Text = 'Start';
-
-            % Create StopButton
-            app.StopButton = uibutton(app.UIFigure, 'push');
-            app.StopButton.ButtonPushedFcn = createCallbackFcn(app, @onStopButton, true);
-            app.StopButton.IconAlignment = 'center';
-            app.StopButton.Position = [120 10 100 30];
-            app.StopButton.Text = 'Stop';
-
-            % Show the figure after all components are created
-            app.UIFigure.Visible = 'on';
+         tVect = 0:pi/60:2*pi;
+         app.dV{1} = ((0:1/60:2)-1)*1.15;
+         app.dV{2} = sin(tVect);
+         app.dV{3} = cos(tVect);
+         app.dV{4} = tVect; app.dV{4}(:) = 0;
+         kFramePerSecond = 30;  % Number of frames per second
+         app.Period = double(int64(1000.0/kFramePerSecond+0.5))/1000.0;
+         app.UIFigure = uifigure('Visible', 'off');
+         app.UIFigure.Position = [20 20 1310 840];
+         app.UIFigure.Name = '< Camera : ? >';
+         app.UIFigure.CloseRequestFcn = createCallbackFcn(app,@UIFigureCloseRequest);
+         setAutoResize(app,app.UIFigure,false);
+         app.DepthAX = uiaxes(app.UIFigure);
+         app.DepthAX.Position = [10 40 640 480];
+         app.ColorAX = uiaxes(app.UIFigure);
+         app.ColorAX.Position = [660 40 640 480];
+         app.AccelAX = uiaxes(app.UIFigure);
+         app.AccelAX.Position = [30 530 330 300];
+         app.AccelTextAX = uiaxes(app.UIFigure);
+         app.AccelTextAX.Position = [390 530 240 300];
+         app.GyroAX = uiaxes(app.UIFigure);
+         app.GyroAX.Position = [680 530 330 300];
+         app.GyroTextAX = uiaxes(app.UIFigure);
+         app.GyroTextAX.Position = [1040 530 240 300];
+         app.StartButton = uibutton(app.UIFigure, 'push');
+         app.StartButton.ButtonPushedFcn = createCallbackFcn(app, @onStartButton, true);
+         app.StartButton.IconAlignment = 'center';
+         app.StartButton.Position = [10 10 100 30];
+         app.StartButton.Text = 'Start';
+         app.StopButton = uibutton(app.UIFigure, 'push');
+         app.StopButton.ButtonPushedFcn = createCallbackFcn(app, @onStopButton, true);
+         app.StopButton.IconAlignment = 'center';
+         app.StopButton.Position = [120 10 100 30];
+         app.StopButton.Text = 'Stop';
+         app.UIFigure.Visible = 'on';
+         drawnow;
         end
     end
 
-    % App creation and deletion
     methods (Access = public)
 
-        % Construct app
-        function app = rs_capture_class
-
-            % Create UIFigure and components
-            createComponents(app)
-
-            % Register the app with App Designer
-            registerApp(app, app.UIFigure)
-
-            % Set Startup function - after component creation
-            runStartupFcn(app,@StartUpFunc);
-            
-            if nargout == 0
-                clear app
-            end            
+        function app = capture_example
+         createComponents(app)
+         registerApp(app, app.UIFigure)
+         runStartupFcn(app,@StartUpFunc);
+         if nargout == 0
+          clear app
+         end            
         end
 
-        % Code that executes before app deletion
         function delete(app)
-
-            % Delete UIFigure when app is deleted
-            delete(app.UIFigure)
+         delete(app.UIFigure)
         end
     end
 end
