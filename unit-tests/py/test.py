@@ -260,7 +260,8 @@ def info(name, value, persistent = False):
     """
     This function is used to store additional information to print in case of a failed test. This information is
     erased after the next check. The information is stored in the dictionary test_info, Keys are names (strings)
-    and the items are tuples of value, persistent
+    and the items are of Information class
+    If information with the given name is already stored it will be replaced
     :param name: The name of the variable
     :param value: The value this variable stores
     :param persistent: If this parameter is True, the information stored will be kept after the following check
