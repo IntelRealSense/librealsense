@@ -4,6 +4,7 @@
 #include "work_week.h"
 #include <string>
 #include <stdexcept>
+#include <sstream>
 
 static int work_weeks_between_years( unsigned year, unsigned other_year )
 {
@@ -39,8 +40,8 @@ namespace time {
 work_week::work_week( unsigned year, unsigned ww )
 {
     if( ww == 0 || ww > work_weeks_between_years( year + 1, year ) )
-        throw std::runtime_error( "Invalid work week given: " + std::to_string( year )
-                                  + " doesn't have a work week " + std::to_string( ww ) );
+        throw std::runtime_error( (std::ostringstream() << 
+            "Invalid work week given: " << year << " doesn't have a work week " << ww ).str() );
     _year = year;
     _ww = ww;
 }
@@ -97,8 +98,8 @@ unsigned get_work_weeks_since( const work_week & start )
 unsigned jdn( unsigned year, unsigned month, unsigned day )
 {
     if( month == 0 || day == 0 || month > 12 || day > days_in_month( year, month ) )
-        throw std::runtime_error( "Invalid date given: " + std::to_string( day ) + "/"
-                                  + std::to_string( month ) + "/" + std::to_string( year ) );
+        throw std::runtime_error( ( std::ostringstream() << 
+            "Invalid date given: " << day << "/" << month << "/" << year ).str() );
     return ( ( 1461 * ( year + 4800 + ( ( (int)month - 14 ) / 12 ) ) ) / 4 )
          + ( ( 367 * ( month - 2 - ( 12 * ( ( (int)month - 14 ) / 12 ) ) ) ) / 12 )
          - ( ( 3 * ( ( year + 4900 + ( ( (int)month - 14 ) / 12 ) ) / 100 ) ) / 4 ) + day - 32075;

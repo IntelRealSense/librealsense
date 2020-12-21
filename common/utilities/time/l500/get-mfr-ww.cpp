@@ -32,7 +32,7 @@ utilities::time::work_week get_manufacture_work_week( const std::string & serial
     unsigned WW_singles = serial[3] - '0';
     unsigned man_ww = ( (WW_tens)*10 ) + WW_singles;
     if (man_ww > 53)
-        throw std::runtime_error("Invalid serial number \"" + serial + "\" work week");
+        throw std::runtime_error( "Invalid serial number \"" + serial + "\" work week" );
     return utilities::time::work_week( man_year, man_ww );
 }
 
