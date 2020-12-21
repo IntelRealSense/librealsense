@@ -65,7 +65,7 @@ FPrimitiveViewRelevance FRuntimeMeshComponentSceneProxy::GetViewRelevance(const 
 	Result.bDrawRelevance = IsShown(View);
 	Result.bShadowRelevance = IsShadowCast(View);
 
-	bool bForceDynamicPath = !IsStaticPathAvailable() || IsRichView(*View->Family) || IsSelected() || View->Family->EngineShowFlags.Wireframe;
+	bool bForceDynamicPath = !IsStatic() || IsRichView(*View->Family) || IsSelected() || View->Family->EngineShowFlags.Wireframe;
 	Result.bStaticRelevance = !bForceDynamicPath && bHasStaticSections;
 	Result.bDynamicRelevance = bForceDynamicPath || bHasDynamicSections;
 
@@ -136,7 +136,7 @@ void FRuntimeMeshComponentSceneProxy::GetDynamicMeshElements(const TArray<const 
 			{
 				if (VisibilityMap & (1 << ViewIndex))
 				{
-					bool bForceDynamicPath = IsRichView(*Views[ViewIndex]->Family) || Views[ViewIndex]->Family->EngineShowFlags.Wireframe || IsSelected() || !IsStaticPathAvailable();
+					bool bForceDynamicPath = IsRichView(*Views[ViewIndex]->Family) || Views[ViewIndex]->Family->EngineShowFlags.Wireframe || IsSelected() || !IsStatic();
 
 					if (bForceDynamicPath || !Section->WantsToRenderInStaticPath())
 					{
