@@ -49,10 +49,11 @@ namespace librealsense
 
         // If a non custom preset is used, we should ignore all the settings that are automatically
         // set by the preset
-        auto found_preset = j.find( get_string( RS2_OPTION_VISUAL_PRESET ) );
-        if( found_preset != j.end() )
+        auto found_iterator = j.find( get_string( RS2_OPTION_VISUAL_PRESET ) );
+        if( found_iterator != j.end() )
         {
-            if( int( found_preset.value() ) != 0 ) // 0 is custom
+            auto found_preset = rs2_l500_visual_preset( int( found_iterator.value() ));
+            if( found_preset != RS2_L500_VISUAL_PRESET_CUSTOM) 
             {
                 options_to_ignore.insert( RS2_OPTION_POST_PROCESSING_SHARPENING );
                 options_to_ignore.insert( RS2_OPTION_PRE_PROCESSING_SHARPENING );
