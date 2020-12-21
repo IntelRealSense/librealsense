@@ -20,6 +20,52 @@ inline rs2::device_list find_devices_by_product_line_or_exit( int product )
     return devices_list;
 }
 
+inline rs2::device reset_camera_and_wait_for_connection( rs2::device & dev)
+{
+    rs2::context ctx;
+    std::mutex m;
+    bool disconnected = false;
+    bool connected = false;
+    rs2::device result;
+    std::condition_variable cv;
+
+    std::string serial = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
+
+    ctx.set_devices_changed_callback( [&] (rs2::event_information info ) mutable {
+        if( info.was_removed( dev ) )
+        {
+            std::unique_lock< std::mutex > lock( m );
+            disconnected = true;
+            cv.notify_all();
+        }
+        auto list = info.get_new_devices();
+        if( list.size() > 0 )
+        {
+            for( auto cam : list )
+            {
+                auto new_ser = cam.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
+                if( serial == cam.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) )
+                {
+                    std::unique_lock< std::mutex > lock( m );
+                    connected = true;
+                    result = cam ;
+
+                    cv.notify_all();
+                    break;
+                }
+            }
+        }
+    } );
+
+    dev.hardware_reset();
+
+    std::unique_lock< std::mutex > lock( m );
+    REQUIRE(cv.wait_for( lock, std::chrono::seconds( 50 ), [&]() { return disconnected; } ) );
+    REQUIRE( cv.wait_for( lock, std::chrono::seconds( 50 ), [&]() { return connected; } ) );
+    REQUIRE( result );
+    return result;
+}
+
 // Remove the frame's stream (or streams if a frameset) from the list of streams we expect to arrive
 // If any stream is unexpected, it is ignored
 inline void remove_all_streams_arrived( rs2::frame f,

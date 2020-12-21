@@ -53,10 +53,10 @@ namespace librealsense
                          firmware_version fw_version,
                          std::shared_ptr< cascade_option< uvc_xu_option< int > > > digital_gain);
 
-        void update_default();
+        void update_default( float def );
+        float query( l500_command op, int mode ) const;
 
     private:
-        float query( l500_command type, int width ) const;
         float query_default() const;
         
         l500_control _type;
@@ -111,7 +111,20 @@ namespace librealsense
         bool _max_usable_range_forced_on;
     };
 
-    class l500_options: public virtual l500_device
+    class l500_options;
+
+    class l500_preset_option : public float_option_with_description< rs2_l500_visual_preset >
+    {
+    public:
+        l500_preset_option( option_range range, std::string description, l500_options * owner );
+        void set( float value ) override;
+        void set_value( float value );
+
+    private:
+        l500_options * _owner;
+    };
+
+    class l500_options : public virtual l500_device
     {
     public:
         l500_options(std::shared_ptr<context> ctx,
@@ -120,18 +133,20 @@ namespace librealsense
         std::vector<rs2_option> get_advanced_controls();
 
     private:
+        friend class l500_preset_option;
+        void verify_max_usable_range_restrictions( rs2_option opt, float value );
         rs2_l500_visual_preset calc_preset_from_controls();
         void on_set_option(rs2_option opt, float value);
         void change_preset(rs2_l500_visual_preset preset);
-        void set_controls_defaults();
+        void set_controls_values_for_preset( rs2_l500_visual_preset preset );
         void move_to_custom ();
         void reset_hw_controls();
         void set_max_laser();
-        void verify_max_usable_range_restrictions(rs2_option opt, float value);
 
+        void update_defaults();
         std::map<rs2_option, std::shared_ptr<cascade_option<l500_hw_options>>> _hw_options;
         std::shared_ptr< cascade_option<uvc_xu_option<int>>> _digital_gain;
-        std::shared_ptr< cascade_option<float_option_with_description<rs2_l500_visual_preset>>> _preset;
+        std::shared_ptr< l500_preset_option > _preset;
 
         template<typename T, class ... Args>
         std::shared_ptr<cascade_option<T>> register_option(rs2_option opt, Args... args)

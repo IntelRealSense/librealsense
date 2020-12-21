@@ -21,14 +21,8 @@ TEST_CASE( "calc preset from controls on start up", "[l500][live]" )
         build_new_device_an_do( [&] (rs2::depth_sensor & depth_sens)
         {
             CAPTURE( rs2_l500_visual_preset( i ) );
-            if( rs2_l500_visual_preset (i) ==RS2_L500_VISUAL_PRESET_SHORT_RANGE)
-                CHECK(
-                    depth_sens.get_option( RS2_OPTION_VISUAL_PRESET )
-                    == RS2_L500_VISUAL_PRESET_LOW_AMBIENT );  // RS2_L500_VISUAL_PRESET_SHORT_RANGE
-                                                              // is the same as
-                                                              // RS2_L500_VISUAL_PRESET_LOW_AMBIENT
-            else
-                CHECK( depth_sens.get_option( RS2_OPTION_VISUAL_PRESET ) == i );
+            
+            validate_presets_value( depth_sens, rs2_l500_visual_preset( i ) );
         } );
     }
 }
