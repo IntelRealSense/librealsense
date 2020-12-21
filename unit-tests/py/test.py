@@ -265,9 +265,12 @@ def info_reset(persistent = False):
                 test_info.pop(name)
 
 def print_info():
+    global test_info
     if not test_info: # No information is stored
         return
-    
+    print("Printing information")
+    for name, value in test_info:
+        print("Name:", name, "        value:", value[0])
 
 """
 The following functions are for formatting tests in a file
