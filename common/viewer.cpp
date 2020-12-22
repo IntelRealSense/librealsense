@@ -939,12 +939,13 @@ namespace rs2
 
   
 
-    viewer_model::viewer_model(context &ctx_)
-            : ppf(*this),
-              ctx(ctx_),
-              frameset_alloc(this),
-              synchronization_enable(true),
-              zo_sensors(0)
+    viewer_model::viewer_model( context & ctx_ )
+        : ppf( *this )
+        , ctx( ctx_ )
+        , frameset_alloc( this )
+        , synchronization_enable( true )
+        , zo_sensors( 0 )
+        , _support_ir_reflectivity( false )
     {
 
         syncer = std::make_shared<syncer_model>();

@@ -33,9 +33,10 @@ namespace rs2
             _viewer_model.draw_plane = true;
             _viewer_model.synchronization_enable = false;
             _viewer_model.support_non_syncronized_mode = false; //pipeline outputs only syncronized frameset
-
+            _viewer_model._support_ir_reflectivity = true;
             // Hide options from the DQT application
             _viewer_model._hidden_options.emplace(RS2_OPTION_ENABLE_MAX_USABLE_RANGE);
+            _viewer_model._hidden_options.emplace(RS2_OPTION_ENABLE_IR_REFLECTIVITY);
         }
 
         bool tool_model::start(ux_window& window)
@@ -646,6 +647,45 @@ namespace rs2
 
                         ImGui::PopStyleColor();
                         ImGui::PopItemWidth();
+
+                        try
+                        {
+                            if (_depth_sensor_model)
+                            {
+                                auto && ds = _depth_sensor_model->dev.first< depth_sensor >();
+                                if (ds.supports(RS2_OPTION_ENABLE_IR_REFLECTIVITY))
+                                {
+                                    ImGui::SetCursorPosX(col0);
+                                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+
+                                    bool current_ir_reflectivity_opt
+                                        = ds.get_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY);
+
+                                    if (ImGui::Checkbox("IR Reflectivity",
+                                        &current_ir_reflectivity_opt))
+                                    {
+                                        // Deny enabling IR Reflectivity on ROI != 20% [RS5-8358]
+                                        if (0.2f == _roi_percent)
+                                            ds.set_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY,
+                                                current_ir_reflectivity_opt);
+                                        else
+                                            _error_message
+                                            = "Please set 'VGA' resolution, 'Max Range' preset and "
+                                            "20% ROI before enabling IR Reflectivity";
+                                    }
+
+                                    if (ImGui::IsItemHovered())
+                                    {
+                                        ImGui::SetTooltip(ds.get_option_description(RS2_OPTION_ENABLE_IR_REFLECTIVITY));
+                                    }
+                                }
+                            }
+                        }
+                        catch (const std::exception& e)
+                        {
+                            _error_message = e.what();
+                        }
+
                         ImGui::SetCursorPosX(col0);
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
