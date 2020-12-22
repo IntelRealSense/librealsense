@@ -252,13 +252,11 @@ namespace librealsense
             defaultConf.setGlobally(el::ConfigurationType::ToStandardOutput, "false");
             remove_callbacks();
 
-            el::Loggers::reconfigureLogger(log_id, defaultConf);
-
             minimum_log_severity = RS2_LOG_SEVERITY_NONE; //not in use? I can't find any use to it 
             minimum_console_severity = RS2_LOG_SEVERITY_NONE;
             minimum_file_severity = RS2_LOG_SEVERITY_NONE;
 
-            //should call remove_callbacks() function? 
+            el::Loggers::reconfigureLogger(log_id, defaultConf);
         }
     };
 #else //BUILD_EASYLOGGINGPP

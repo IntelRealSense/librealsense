@@ -18,18 +18,51 @@ void c_callback(rs2_log_severity severity, rs2_log_message const* msg, void * ar
     TRACE(str);
 }
 
+void error_callback(rs2_log_severity severity, rs2_log_message const* msg, void * arg)
+{
+    REQUIRE(arg == (void*)0xbadf00d);
+
+    ++c_n_callbacks;
+    rs2_error* e = nullptr;
+    char const* str = rs2_get_full_log_message(msg, &e);
+    REQUIRE_NOTHROW(rs2::error::handle(e));
+    TRACE(str);
+}
+
 
 TEST_CASE("Logging C INFO", "[log]") {
     c_n_callbacks = 0;
-
     rs2_error* e = nullptr;
+
     rs2_log_to_callback(RS2_LOG_SEVERITY_INFO, c_callback, nullptr, &e);
+    REQUIRE_NOTHROW(rs2::error::handle(e));
+    rs2_reset_logger(&e);
+    REQUIRE_NOTHROW(rs2::error::handle(e));
+    REQUIRE(!c_n_callbacks);
+
+    rs2_log_to_callback(RS2_LOG_SEVERITY_INFO, c_callback, nullptr, &e);
+    REQUIRE_NOTHROW(rs2::error::handle(e));
+    log_all();
+    REQUIRE(c_n_callbacks == 3);
+
+    rs2_reset_logger(&e);
+    REQUIRE_NOTHROW(rs2::error::handle(e));
+    c_n_callbacks = 0;
+
+    rs2_log_to_callback(RS2_LOG_SEVERITY_DEBUG, c_callback, nullptr, &e);
     REQUIRE_NOTHROW(rs2::error::handle(e));
     REQUIRE(!c_n_callbacks);
     log_all();
-    REQUIRE(c_n_callbacks == 3);
+    REQUIRE(c_n_callbacks == 4);
+
     rs2_reset_logger(&e);
     REQUIRE_NOTHROW(rs2::error::handle(e));
+    c_n_callbacks = 0;
+
+    rs2_log_to_callback(RS2_LOG_SEVERITY_NONE, c_callback, nullptr, &e);
+    REQUIRE_NOTHROW(rs2::error::handle(e));
+    REQUIRE(!c_n_callbacks);
     log_all();
-    REQUIRE(c_n_callbacks == 3);
+    REQUIRE(c_n_callbacks == 0);
+
 }
