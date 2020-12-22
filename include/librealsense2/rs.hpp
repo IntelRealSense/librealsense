@@ -30,7 +30,7 @@ namespace rs2
         error::handle(e);
     }
 
-    inline void reset_logger(const char * file_path = nullptr)
+    inline void reset_logger()
     {
         rs2_error* e = nullptr;
         rs2_reset_logger(&e);

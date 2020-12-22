@@ -250,6 +250,7 @@ namespace librealsense
 
             defaultConf.setGlobally(el::ConfigurationType::ToFile, "false");
             defaultConf.setGlobally(el::ConfigurationType::ToStandardOutput, "false");
+            remove_callbacks();
 
             el::Loggers::reconfigureLogger(log_id, defaultConf);
 
