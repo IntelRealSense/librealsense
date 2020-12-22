@@ -2385,19 +2385,25 @@ void rs2_pose_frame_get_pose_data(const rs2_frame* frame, rs2_pose* pose, rs2_er
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, frame, pose)
 
-void rs2_get_target_size_on_frame(const rs2_frame* frame_ref, float * rect_sides, rs2_error** error) BEGIN_API_CALL
+void rs2_extract_target_dimensions(const rs2_frame* frame_ref, rs2_calib_target_type calib_type, float* target_dims, unsigned int target_dims_size, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame_ref);
+    VALIDATE_NOT_NULL(target_dims_size);
 
     auto vf = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::video_frame);
     if (vf->get_stream()->get_format() != RS2_FORMAT_Y8)
         throw std::runtime_error("wrong video frame format");
 
-    target_calculator calculator(vf->get_width(), vf->get_height());
-    if (!calculator.calculate(vf->get_frame_data(), rect_sides))
+    std::shared_ptr<target_calculator_interface> target_calculator;
+    if (calib_type == RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES)
+        target_calculator = std::make_shared<rect_gaussian_dots_target_calculator>(vf->get_width(), vf->get_height());
+    else
+        throw std::runtime_error("unsupported calibration target type");
+
+    if (!target_calculator->calculate(vf->get_frame_data(), target_dims, target_dims_size))
         throw std::runtime_error("Failed to find the four rectangle side sizes on the frame");
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, frame_ref, rect_sides)
+HANDLE_EXCEPTIONS_AND_RETURN(, frame_ref, calib_type, target_dims, target_dims_size)
 
 rs2_time_t rs2_get_time(rs2_error** error) BEGIN_API_CALL
 {

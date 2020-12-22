@@ -561,7 +561,7 @@ void auto_exposure_algorithm::histogram_score(std::vector<int>& h, const int tot
     }
 }
 
-target_calculator::target_calculator(int width, int height)
+rect_gaussian_dots_target_calculator::rect_gaussian_dots_target_calculator(int width, int height)
     : _width(width), _height(height)
 {
     if (width != 256 || height != 144)
@@ -582,13 +582,15 @@ target_calculator::target_calculator(int width, int height)
     _buf.resize(_patch_size * _patch_size);
 }
 
-target_calculator::~target_calculator()
+rect_gaussian_dots_target_calculator::~rect_gaussian_dots_target_calculator()
 {
 }
 
-bool target_calculator::calculate(const uint8_t* img, float rect_sides[4])
+bool rect_gaussian_dots_target_calculator::calculate(const uint8_t* img, float* target_dims, unsigned int target_dims_size)
 {
     bool ret = false;
+    if (target_dims_size < 4)
+        return ret;
 
     normalize(img);
     calculate_ncc();
@@ -597,12 +599,12 @@ bool target_calculator::calculate(const uint8_t* img, float rect_sides[4])
         ret = validate_corners(img);
 
     if (ret)
-        calculate_rect_sides(rect_sides);
+        calculate_rect_sides(target_dims);
 
     return ret;
 }
 
-void target_calculator::normalize(const uint8_t* img)
+void rect_gaussian_dots_target_calculator::normalize(const uint8_t* img)
 {
     uint8_t min_val = 255;
     uint8_t max_val = 0;
@@ -629,7 +631,7 @@ void target_calculator::normalize(const uint8_t* img)
     }
 }
 
-void target_calculator::calculate_ncc()
+void rect_gaussian_dots_target_calculator::calculate_ncc()
 {
     double* pncc = _ncc.data() + (_htsize * _width + _htsize);
     double* pi = _img.data();
@@ -712,7 +714,7 @@ void target_calculator::calculate_ncc()
     }
 }
 
-bool target_calculator::find_corners()
+bool rect_gaussian_dots_target_calculator::find_corners()
 {
     static const int edge = 20;
 
@@ -817,7 +819,7 @@ bool target_calculator::find_corners()
     return true;
 }
 
-void target_calculator::refine_corners()
+void rect_gaussian_dots_target_calculator::refine_corners()
 {
     double* f = _buf.data();
     int hs = _patch_size >> 1;
@@ -859,7 +861,7 @@ void target_calculator::refine_corners()
     minimize_y(_ncc.data() + pos, _patch_size, f, _corners[3].y);
 }
 
-bool target_calculator::validate_corners(const uint8_t* img)
+bool rect_gaussian_dots_target_calculator::validate_corners(const uint8_t* img)
 {
     uint8_t peaks[4] = { 0 };
     int idx = 0;
@@ -879,7 +881,7 @@ bool target_calculator::validate_corners(const uint8_t* img)
     {
         for (int i = 0; i < 4; ++i)
         {
-            if (abs(peaks[i] - peaks[j]) > peak_diff_thresh)
+            if (std::abs(peaks[i] - peaks[j]) > peak_diff_thresh)
             {
                 ok = false;
                 break;
@@ -893,7 +895,7 @@ bool target_calculator::validate_corners(const uint8_t* img)
     return ok;
 }
 
-void target_calculator::calculate_rect_sides(float rect_sides[4])
+void rect_gaussian_dots_target_calculator::calculate_rect_sides(float* rect_sides)
 {
     double lx = _corners[1].x - _corners[0].x;
     double ly = _corners[1].y - _corners[0].y;
@@ -912,7 +914,7 @@ void target_calculator::calculate_rect_sides(float rect_sides[4])
     rect_sides[3] = static_cast<float>(sqrt(lx * lx + ly * ly)); // right
 }
 
-void target_calculator::minimize_x(const double* p, int s, double* f, double& x)
+void rect_gaussian_dots_target_calculator::minimize_x(const double* p, int s, double* f, double& x)
 {
     int ws = _width - s;
 
@@ -929,7 +931,7 @@ void target_calculator::minimize_x(const double* p, int s, double* f, double& x)
     x += subpixel_agj(f, s);
 }
 
-void target_calculator::minimize_y(const double* p, int s, double* f, double& y)
+void rect_gaussian_dots_target_calculator::minimize_y(const double* p, int s, double* f, double& y)
 {
     int ws = _width - s;
 
@@ -946,7 +948,7 @@ void target_calculator::minimize_y(const double* p, int s, double* f, double& y)
     y += subpixel_agj(f, s);
 }
 
-double target_calculator::subpixel_agj(double* f, int s)
+double rect_gaussian_dots_target_calculator::subpixel_agj(double* f, int s)
 {
     int mi = 0;
     double mv = f[mi];

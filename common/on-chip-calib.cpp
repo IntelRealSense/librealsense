@@ -516,6 +516,9 @@ namespace rs2
                 if (rect_sides[3] > 0)
                     gt[3] = target_fh / rect_sides[3];
 
+                if (gt[0] <= 0.1f || gt[1] <= 0.1f || gt[2] <= 0.1f || gt[3] <= 0.1f)
+                    fail("Bad target rectangle side sizes returned!");
+
                 ground_truth = 0.0;
                 for (int i = 0; i < 4; ++i)
                     ground_truth += gt[i];
@@ -1821,12 +1824,12 @@ namespace rs2
 
         int ret = 0;
         rs2_error* e = nullptr;
-        rs2_get_target_size_on_frame(frame_ref, _rec_sides[_rec_idx], &e);
+        rs2_extract_target_dimensions(frame_ref, RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES, _rec_sides[_rec_idx], 4, &e);
         if (e == nullptr)
         {
             ret = 1;
             reset_counter = 0;
-            _rec_idx = ++_rec_idx % _frame_num;
+            _rec_idx = (++_rec_idx) % _frame_num;
             ++_rec_num;
 
             if (_rec_num == _frame_num)

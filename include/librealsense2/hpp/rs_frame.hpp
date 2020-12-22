@@ -705,10 +705,10 @@ namespace rs2
         * \param[out] rec_sides     The four rectangle side sizes in pixels with the order of top, bottom, left, and right
         * \return                   true if succeeded
         */
-        bool get_target_size_on_frame(float rect_sides[4]) const
+        bool extract_target_dimensions(rs2_calib_target_type calib_type, float* target_dims, unsigned int target_dims_size) const
         {
             rs2_error* e = nullptr;
-            rs2_get_target_size_on_frame(get(),  rect_sides , &e);
+            rs2_extract_target_dimensions(get(), calib_type, target_dims, target_dims_size, &e);
             error::handle(e);
             return (e == nullptr);
         }

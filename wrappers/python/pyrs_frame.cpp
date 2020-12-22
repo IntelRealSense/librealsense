@@ -163,11 +163,13 @@ void init_frame(py::module &m) {
         .def_property_readonly("bits_per_pixel", &rs2::video_frame::get_bits_per_pixel, "Bits per pixel. Identical to calling get_bits_per_pixel.")
         .def("get_bytes_per_pixel", &rs2::video_frame::get_bytes_per_pixel, "Retrieve bytes per pixel.")
         .def_property_readonly("bytes_per_pixel", &rs2::video_frame::get_bytes_per_pixel, "Bytes per pixel. Identical to calling get_bytes_per_pixel.")
-        .def("get_target_size_on_frame", [](const rs2::video_frame& self)
+        .def("extract_target_dimensions", [](const rs2::video_frame& self, int target_type)->std::array<float, 4>
         {
-            float rect_sides[4] = { 0 };
-            return py::make_tuple(self.get_target_size_on_frame(rect_sides), rect_sides[0], rect_sides[1], rect_sides[2], rect_sides[3]);
-        }, "This will calculate the Calculate the four rectangle side sizes on the specific target.");
+            std::array<float, 4> rect_sides{};
+            if (target_type == 0)
+                self.extract_target_dimensions(RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES, rect_sides.data(), 4);
+            return rect_sides;
+        }, "This will calculate the four rectangle side sizes in millimeter on the specific target.");
 
     py::class_<rs2::vertex> vertex(m, "vertex"); // No docstring in C++
     vertex.def_readwrite("x", &rs2::vertex::x)

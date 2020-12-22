@@ -137,18 +137,26 @@ namespace librealsense
         std::atomic<unsigned>                     _skip_frames;
     };
 
-    class target_calculator
+    // Interface for target calculator
+    class target_calculator_interface
     {
     public:
-        target_calculator(int width, int height);
-        virtual ~target_calculator();
-        bool calculate(const uint8_t* img, float rect_sides[4]);
+        virtual bool calculate(const uint8_t* img, float* target_dims, unsigned int target_dims_size) = 0;
+        virtual ~target_calculator_interface() = default;
+    };
 
-        target_calculator(const target_calculator&) = delete;
-        target_calculator& operator=(const target_calculator&) = delete;
+    class rect_gaussian_dots_target_calculator : public target_calculator_interface
+    {
+    public:
+        rect_gaussian_dots_target_calculator(int width, int height);
+        virtual ~rect_gaussian_dots_target_calculator();
+        bool calculate(const uint8_t* img, float* target_dims, unsigned int target_dims_size) override;
 
-        target_calculator(const target_calculator&&) = delete;
-        target_calculator& operator=(const target_calculator&&) = delete;
+        rect_gaussian_dots_target_calculator(const rect_gaussian_dots_target_calculator&) = delete;
+        rect_gaussian_dots_target_calculator& operator=(const rect_gaussian_dots_target_calculator&) = delete;
+
+        rect_gaussian_dots_target_calculator(const rect_gaussian_dots_target_calculator&&) = delete;
+        rect_gaussian_dots_target_calculator& operator=(const rect_gaussian_dots_target_calculator&&) = delete;
 
     protected:
         void normalize(const uint8_t* img);
@@ -158,17 +166,17 @@ namespace librealsense
         void refine_corners();
         bool validate_corners(const uint8_t* img);
 
-        void calculate_rect_sides(float rect_sides[4]);
+        void calculate_rect_sides(float* rect_sides);
 
         void minimize_x(const double* p, int s, double* f, double& x);
         void minimize_y(const double* p, int s, double* f, double& y);
         double subpixel_agj(double* f, int s);
 
     public:
-        static const int _frame_num = 25;
+        static const int _frame_num = 25; // number of frames used to smooth the result
 
     protected:
-        const int _tsize = 28;
+        const int _tsize = 28; // template size
         const int _htsize = _tsize >> 1;
         const int _tsize2 = _tsize * _tsize;
         std::vector<double> _imgt;
@@ -205,8 +213,8 @@ namespace librealsense
             -0.02855973, -0.02855973, -0.02841493, -0.02827013, -0.02798063, -0.02769113, -0.02740153, -0.02682253, -0.02624343, -0.02566433, -0.02508533, -0.02465103, -0.02421673, -0.02392713, -0.02378243, -0.02392713, -0.02421673, -0.02465103, -0.02508533, -0.02566433, -0.02624343, -0.02682253, -0.02740153, -0.02769113, -0.02798063, -0.02827013, -0.02841493, -0.02855973,
         };
 
-        const double _thresh = 0.7;
-        const int _patch_size = 20;
+        const double _thresh = 0.7; // used internally, range from 0 to 1 for normalized image ma
+        const int _patch_size = 20; // in pixels
         std::vector<double> _buf;
 
         std::vector<double> _img;
