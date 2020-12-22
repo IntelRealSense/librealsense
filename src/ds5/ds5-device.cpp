@@ -564,8 +564,12 @@ namespace librealsense
         auto&& backend = ctx->get_backend();
 
         std::vector<std::shared_ptr<platform::uvc_device>> depth_devices;
-        for (auto&& info : filter_by_mi(all_device_infos, 0)) // Filter just mi=0, DEPTH
-            depth_devices.push_back(backend.create_uvc_device(info));
+        for (auto&& info : filter_by_mi(all_device_infos, 0)) { // Filter just mi=0, DEPTH
+            const auto depth_device = backend.create_uvc_device(info);
+            if (depth_device == nullptr)
+                throw std::runtime_error("Unable to create UVC Device");
+            depth_devices.push_back(depth_device);
+        }
 
         std::unique_ptr<frame_timestamp_reader> timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
         std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new ds5_timestamp_reader_from_metadata(std::move(timestamp_reader_backup)));
