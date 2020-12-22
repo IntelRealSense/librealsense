@@ -219,7 +219,7 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
     reset_info()
     return True
 
-def check_frame_drops(frame, previous_frame_number, allowed_drops = 0):
+def check_frame_drops(frame, previous_frame_number, allowed_drops = 1):
     """
     Used for checking frame drops while streaming
     :param frame: Current frame being checked
@@ -227,10 +227,12 @@ def check_frame_drops(frame, previous_frame_number, allowed_drops = 0):
     :param allowed_drops: Maximum number of frame drops we accept
     :return: False if dropped too many frames or frames were out of order, True otherwise
     """
+    if not test_in_progress: 
+        return True; 
     frame_number = frame.get_frame_number()
     failed = False
     if previous_frame_number > 0:
-        dropped_frames = frame_number - (previous_frame_number + 1)  # should be 0 in windows, less than 5 in linux
+        dropped_frames = frame_number - (previous_frame_number + 1)
         if dropped_frames > allowed_drops:
             print(dropped_frames, "frame(s) starting from frame", previous_frame_number + 1, "were dropped")
             failed = True
@@ -279,7 +281,7 @@ def reset_info(persistent = False):
     if persistent:
         test_info.clear()
     else:
-        for name, information in test_info:
+        for name, information in test_info.items():
             if information.persistent:
                 test_info.pop(name)
 
@@ -288,7 +290,7 @@ def print_info():
     if not test_info: # No information is stored
         return
     print("Printing information")
-    for name, information in test_info:
+    for name, information in test_info.items():
         print("Name:", name, "        value:", information.value)
     reset_info()
 
