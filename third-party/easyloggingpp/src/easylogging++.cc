@@ -635,6 +635,7 @@ Logger::Logger(const Logger& logger) {
 }
 
 Logger& Logger::operator=(const Logger& logger) {
+  el::base::threading::ScopedLock scopedLock(lock());
   if (&logger != this) {
     base::utils::safeDelete(m_typedConfigurations);
     m_id = logger.m_id;
@@ -692,6 +693,7 @@ void Logger::flush(void) {
 }
 
 void Logger::flush(Level level, base::type::fstream_t* fs) {
+  el::base::threading::ScopedLock scopedLock(lock());
   if (fs == nullptr && m_typedConfigurations->toFile(level)) {
     fs = m_typedConfigurations->fileStream(level);
   }
@@ -706,6 +708,7 @@ void Logger::flush(Level level, base::type::fstream_t* fs) {
 }
 
 void Logger::initUnflushedCount(void) {
+  el::base::threading::ScopedLock scopedLock(lock());
   m_unflushedCount.clear();
   base::type::EnumType lIndex = LevelHelper::kMinValid;
   LevelHelper::forEachLevel(&lIndex, [&](void) -> bool {
@@ -1636,10 +1639,12 @@ bool TypedConfigurations::enabled(Level level) {
 }
 
 bool TypedConfigurations::toFile(Level level) {
+  base::threading::ScopedLock scopedLock(lock());
   return getConfigByVal<bool>(level, &m_toFileMap, "toFile");
 }
 
 const std::string& TypedConfigurations::filename(Level level) {
+  base::threading::ScopedLock scopedLock(lock());
   return getConfigByRef<std::string>(level, &m_filenameMap, "filename");
 }
 
@@ -2359,14 +2364,14 @@ void AsyncDispatchWorker::start(void) {
 }
 
 void AsyncDispatchWorker::handle(AsyncLogItem* logItem) {
-    base::threading::ScopedLock scopedLock(lock());
   LogDispatchData* data = logItem->data();
   LogMessage* logMessage = logItem->logMessage();
   Logger* logger = logMessage->logger();
+  base::threading::ScopedLock scopedLock(logger->lock());
   base::TypedConfigurations* conf = logger->typedConfigurations();
   base::type::string_t logLine = logItem->logLine();
   if (data->dispatchAction() == base::DispatchAction::NormalLog) {
-    if (conf->toFile(logMessage->level())) {
+    if (conf && conf->toFile(logMessage->level())) {
       base::type::fstream_t* fs = conf->fileStream(logMessage->level());
       if (fs != nullptr) {
         fs->write(logLine.c_str(), logLine.size());
