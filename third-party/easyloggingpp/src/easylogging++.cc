@@ -1636,10 +1636,12 @@ bool TypedConfigurations::enabled(Level level) {
 }
 
 bool TypedConfigurations::toFile(Level level) {
+  base::threading::ScopedLock scopedLock(lock());
   return getConfigByVal<bool>(level, &m_toFileMap, "toFile");
 }
 
 const std::string& TypedConfigurations::filename(Level level) {
+  base::threading::ScopedLock scopedLock(lock());
   return getConfigByRef<std::string>(level, &m_filenameMap, "filename");
 }
 
@@ -2359,14 +2361,13 @@ void AsyncDispatchWorker::start(void) {
 }
 
 void AsyncDispatchWorker::handle(AsyncLogItem* logItem) {
-    base::threading::ScopedLock scopedLock(lock());
   LogDispatchData* data = logItem->data();
   LogMessage* logMessage = logItem->logMessage();
   Logger* logger = logMessage->logger();
   base::TypedConfigurations* conf = logger->typedConfigurations();
   base::type::string_t logLine = logItem->logLine();
   if (data->dispatchAction() == base::DispatchAction::NormalLog) {
-    if (conf->toFile(logMessage->level())) {
+    if (conf && conf->toFile(logMessage->level())) {
       base::type::fstream_t* fs = conf->fileStream(logMessage->level());
       if (fs != nullptr) {
         fs->write(logLine.c_str(), logLine.size());
