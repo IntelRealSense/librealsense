@@ -2318,7 +2318,10 @@ AsyncDispatchWorker::AsyncDispatchWorker() {
 AsyncDispatchWorker::~AsyncDispatchWorker() {
   setContinueRunning(false);
   ELPP_INTERNAL_INFO(6, "Stopping dispatch worker - Cleaning log queue");
-  if (m_t1.joinable()) m_t1.join();
+  if (m_t1.joinable())
+      m_t1.join();
+  else
+      std::cout << "logger not joinable" << std::endl;
   clean();
   ELPP_INTERNAL_INFO(6, "Log queue cleaned");
 }
@@ -2356,6 +2359,7 @@ void AsyncDispatchWorker::start(void) {
 }
 
 void AsyncDispatchWorker::handle(AsyncLogItem* logItem) {
+    base::threading::ScopedLock scopedLock(lock());
   LogDispatchData* data = logItem->data();
   LogMessage* logMessage = logItem->logMessage();
   Logger* logger = logMessage->logger();

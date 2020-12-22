@@ -28,6 +28,8 @@ macro(global_set_flags)
     if(UNIX AND (NOT ANDROID_NDK_TOOLCHAIN_INCLUDED))
        message(INFO "Asynchronous ELPP invoked - experimental")
        add_definitions(-DELPP_EXPERIMENTAL_ASYNC)
+       add_definitions(-DELPP_DEBUG_ERRORS)
+       add_definitions(-DELPP_DEBUG_INFO)
     endif()
 
     if (BUILD_GLSL_EXTENSIONS)
