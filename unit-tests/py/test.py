@@ -227,6 +227,7 @@ def check_frame_drops(frame, previous_frame_number, allowed_drops = 1):
     :param allowed_drops: Maximum number of frame drops we accept
     :return: False if dropped too many frames or frames were out of order, True otherwise
     """
+    global test_in_progress
     if not test_in_progress: 
         return True; 
     frame_number = frame.get_frame_number()

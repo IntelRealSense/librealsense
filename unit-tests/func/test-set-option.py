@@ -90,7 +90,7 @@ for option in depth_options:
         set_new_value(depth_sensor, option, new_value)
     except: 
         option_name = "Depth sensor - " + str(option)
-        test.info(option_info, new_value)
+        test.info(option_name, new_value)
         test.unexpected_exception()
 
 for option in color_options:
@@ -101,7 +101,7 @@ for option in color_options:
         set_new_value(color_sensor, option, new_value)
     except: 
         option_name = "Color sensor - " + str(option)
-        test.info(option_info, new_value)
+        test.info(option_name, new_value)
         test.unexpected_exception()
 
 test.finish()
