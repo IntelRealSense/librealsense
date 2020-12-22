@@ -75,7 +75,7 @@ preset_to_expected_values_map build_preset_to_expected_values_map( rs2::depth_se
                 = depth_sens.get_option_range( dependent_option ).def;
         }
         preset_to_expected_values[{ preset, mode }][RS2_OPTION_DIGITAL_GAIN]
-            = preset_to_gain[preset];
+            = (float)preset_to_gain[preset];
 
         preset_to_expected_values[{ preset, mode }][RS2_OPTION_LASER_POWER]
             = preset_to_laser[preset];
@@ -114,14 +114,13 @@ inline std::vector< uint8_t > encode_raw_data_command( const hw_monitor_command 
         cur_index += sizeof( int );
     }
 
-
-    *reinterpret_cast< uint16_t * >( write_ptr ) = cur_index - header_size;
+    *reinterpret_cast< uint16_t * >( write_ptr ) = (uint16_t)cur_index - header_size;
 
     return res;
 }
 
 std::vector< uint8_t > send_command_and_check( rs2::debug_protocol dp, hw_monitor_command command,
-                                               uint32_t expected_size_return = 1 )
+                                               uint32_t expected_size_return = 0 )
 {
     auto res = dp.send_and_receive_raw_data( encode_raw_data_command( command ) );
     REQUIRE( res.size() == sizeof( unsigned int ) * ( expected_size_return + 1 ) );  // opcode
@@ -133,7 +132,7 @@ std::vector< uint8_t > send_command_and_check( rs2::debug_protocol dp, hw_monito
     return res;
 }
 
-    std::map< rs2_option, float > get_expected_default_values( rs2::device & dev )
+    std::map< rs2_option, float > get_expected_default_values( rs2::device & dev, bool streaming = false )
 {
     std::map< rs2_option, float > option_to_defaults;
 
@@ -179,41 +178,43 @@ std::vector< uint8_t > send_command_and_check( rs2::debug_protocol dp, hw_monito
 
             option_to_defaults[op.first] = float( vals[(int)digital_gain_val - 1] );
         }
-        //else
-        //{
-        //    // FW versions older than get_default doesn't support
-        //    // the way to get the default is set -1 and query
-        //    hw_monitor_command command = { librealsense::ivcam2::fw_cmd::AMCGET,
-        //                                   librealsense::l500_control( op.second ),
-        //                                   librealsense::l500_command::get_current,
-        //                                   (int)mode };
+        else
+        {
+            // FW versions older than get_default doesn't support
+            // the way to get the default is set -1 and query
+            hw_monitor_command get_command = { librealsense::ivcam2::fw_cmd::AMCGET,
+                                           librealsense::l500_control( op.second ),
+                                           librealsense::l500_command::get_current,
+                                           (int)mode };
 
 
-        //    auto res = dp.send_and_receive_raw_data( encode_raw_data_command( command ) );
-        //    REQUIRE( res.size() == sizeof( uint32_t ) * ( 2 ) );  // res + opcode
-        //    REQUIRE( res[0] == command.cmd );
-        //    auto current = reinterpret_cast< int32_t * >( (void *)res.data() );
+            auto res = send_command_and_check( dp, get_command, 1 );
 
-        //    command
-        //        = { librealsense::ivcam2::fw_cmd::AMCSET, librealsense::l500_control( op.second ) };
+            auto current = *reinterpret_cast< int32_t * >( (void *)res.data() );
 
-        //    auto res = dp.send_and_receive_raw_data( encode_raw_data_command( command ) );
-        //    _hw_monitor->send( command{ AMCSET, _type, -1 } );
+            hw_monitor_command set_command = { librealsense::ivcam2::fw_cmd::AMCSET,
+                                 librealsense::l500_control( op.second ),
+                                 -1 };
 
-        //    // if the sensor is streaming the value of control will update only whan the next
-        //    // frame
-        //    // arrive
-        //    if( _l500_dev->get_depth_sensor().is_streaming() )
-        //        std::this_thread::sleep_for( std::chrono::seconds( 50 ) );
+            send_command_and_check( dp, set_command );
 
-        //    auto def = query( get_current, int( _resolution->query() ) );
+            // if the sensor is streaming the value of control will update only whan the next
+            // frame arrive
+            if( streaming )
+                std::this_thread::sleep_for( std::chrono::seconds( 50 ) );
 
-        //    _hw_monitor->send( command{ AMCSET, _type, (int)current } );
+            res = send_command_and_check( dp, get_command, 1 );
+            auto def = *reinterpret_cast< int32_t * >( (void *)res.data() );
+            
+            set_command = { librealsense::ivcam2::fw_cmd::AMCSET,
+                            librealsense::l500_control( op.second ),
+                            current };
 
-        //    return def;
-        //}
+            send_command_and_check( dp, set_command );
+
+            option_to_defaults[op.first] = float( def );
+        }
     }
-
 
     return option_to_defaults;
 }
