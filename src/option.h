@@ -135,7 +135,7 @@ namespace librealsense
 
         void set(float value) override
         {
-            auto old = query();
+            auto old = T::query();
             T::set( value );
             try
             {
