@@ -16,9 +16,10 @@ def get_allowed_drops():
     # On Linux, there is a known issue (RS5-7148) where up to 4 frame drops can occur
     # sequentially after setting control values during streaming... on Windows this
     # does not occur.
+    # Our KPI is to prevent sequential frame drops, therefore single frame drop is allowed.
     if platform.system() == 'Linux' and after_set_option == 1:
         return 4
-    return 0
+    return 1
 
 def set_new_value(sensor, option, value): 
     global after_set_option
@@ -29,12 +30,14 @@ def set_new_value(sensor, option, value):
 
 def check_depth_frame_drops(frame):
     global previous_depth_frame_number
-    test.check_frame_drops(frame, previous_depth_frame_number, get_allowed_drops())
+    allowed_drops = get_allowed_drops()
+    test.check_frame_drops(frame, previous_depth_frame_number, allowed_drops)
     previous_depth_frame_number = frame.get_frame_number()
 
 def check_color_frame_drops(frame):
     global previous_color_frame_number
-    test.check_frame_drops(frame, previous_color_frame_number, get_allowed_drops())
+    allowed_drops = get_allowed_drops()
+    test.check_frame_drops(frame, previous_color_frame_number, allowed_drops)
     previous_color_frame_number = frame.get_frame_number()
 
 # Use a profile that's common to both L500 and D400
@@ -80,16 +83,26 @@ color_options = color_sensor.get_supported_options()
 test.start("Checking for frame drops when setting any option")
 
 for option in depth_options:
-    if depth_sensor.is_option_read_only(option): 
-        continue
-    new_value = depth_sensor.get_option_range(option).min
-    set_new_value(depth_sensor, option, new_value)
+    try:
+        if depth_sensor.is_option_read_only(option): 
+            continue
+        new_value = depth_sensor.get_option_range(option).min
+        set_new_value(depth_sensor, option, new_value)
+    except: 
+        option_name = "Depth sensor - " + str(option)
+        test.info(option_name, new_value)
+        test.unexpected_exception()
 
 for option in color_options:
-    if color_sensor.is_option_read_only(option): 
-        continue
-    new_value = color_sensor.get_option_range(option).min
-    set_new_value(color_sensor, option, new_value)
+    try:
+        if color_sensor.is_option_read_only(option): 
+            continue
+        new_value = color_sensor.get_option_range(option).min
+        set_new_value(color_sensor, option, new_value)
+    except: 
+        option_name = "Color sensor - " + str(option)
+        test.info(option_name, new_value)
+        test.unexpected_exception()
 
 test.finish()
 #############################################################################################
