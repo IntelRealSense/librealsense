@@ -273,7 +273,7 @@ echo -e "\e[32mPatched kernels modules were created successfully\n\e[0m"
 # As a precausion start with unloading the core uvcvideo:
 try_unload_module uvcvideo
 try_unload_module videobuf2_v4l2
-try_unload_module videobuf2_common
+[ ${k_maj_min} -ge 500 ] && try_unload_module videobuf2_common
 try_unload_module videodev
 
 
@@ -305,8 +305,8 @@ if [ $build_usbcore_modules -eq 1 ]; then
 fi
 
 try_module_insert videodev				~/$LINUX_BRANCH-videodev.ko 			/lib/modules/`uname -r`/kernel/drivers/media/v4l2-core/videodev.ko
-try_module_insert videobuf2-common		~/$LINUX_BRANCH-videobuf2-common.ko 	/lib/modules/`uname -r`/kernel/drivers/media/common/videobuf2/videobuf2-common.ko
-try_module_insert videobuf2-v4l2		~/$LINUX_BRANCH-videobuf2-v4l2.ko 		/lib/modules/`uname -r`/kernel/drivers/media/common/videobuf2/videobuf2-v4l2.ko
+[ ${k_maj_min} -ge 500 ] && try_module_insert videobuf2-common		~/$LINUX_BRANCH-videobuf2-common.ko 	/lib/modules/`uname -r`/kernel/drivers/media/common/videobuf2/videobuf2-common.ko
+[ ${k_maj_min} -ge 500 ] && try_module_insert videobuf2-v4l2		~/$LINUX_BRANCH-videobuf2-v4l2.ko 		/lib/modules/`uname -r`/kernel/drivers/media/common/videobuf2/videobuf2-v4l2.ko
 try_module_insert uvcvideo				~/$LINUX_BRANCH-uvcvideo.ko 			/lib/modules/`uname -r`/kernel/drivers/media/usb/uvc/uvcvideo.ko
 try_module_insert hid_sensor_accel_3d 	~/$LINUX_BRANCH-hid-sensor-accel-3d.ko 	/lib/modules/`uname -r`/kernel/drivers/iio/accel/hid-sensor-accel-3d.ko
 try_module_insert hid_sensor_gyro_3d	~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko 	/lib/modules/`uname -r`/kernel/drivers/iio/gyro/hid-sensor-gyro-3d.ko

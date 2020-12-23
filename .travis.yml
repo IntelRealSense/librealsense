@@ -58,7 +58,7 @@ matrix:
       env: RS_CPP_TEST=true
       script:
         - cmake .. -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false -DCHECK_FOR_UPDATES=true
-        - cmake --build . --config $LRS_RUN_CONFIG -- -j$(($(nproc)-1))
+        - cmake --build . --config $LRS_RUN_CONFIG -- -j4
         - ./unit-tests/live-test -d yes -i [software-device]
         - for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam] from "$i"; done
         - for i in ./records/multi_cam/*; do ./unit-tests/live-test -d yes -i [multicam] from "$i"; done
@@ -71,7 +71,7 @@ matrix:
       script:
         - cd ../scripts && ./pr_check.sh && cd ../build
         - cmake .. -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.5
-        - cmake --build . --config $LRS_BUILD_CONFIG -- -j$(($(nproc)-1))
+        - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
         - python3 ../unit-tests/run-unit-tests.py --verbose .
 
     - name: "Linux - python & nodejs"
@@ -85,7 +85,7 @@ matrix:
       script:
         - python ../wrappers/nodejs/tools/enums.py -i ../include/librealsense2 -a ../wrappers/nodejs/src -v
         - cmake .. -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS=true -DPYBIND11_PYTHON_VERSION=2.7 -DCHECK_FOR_UPDATES=true
-        - cmake --build . --config $LRS_BUILD_CONFIG -- -j$(($(nproc)-1))
+        - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
         - cd ../wrappers/nodejs/
         - npm install
         - cd test
@@ -98,7 +98,7 @@ matrix:
       osx_image: xcode7
       script:
         - cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DCHECK_FOR_UPDATES=true
-        - cmake --build . --config $LRS_BUILD_CONFIG -- -j$(($(nproc)-1))
+        - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
         - ls
 
     - name: "Android - cpp"
@@ -109,7 +109,7 @@ matrix:
       env: LRS_BUILD_ANDROID=true
       script:
         - cmake .. -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r20b/build/cmake/android.toolchain.cmake  -DCHECK_FOR_UPDATES=true
-        - cmake --build . --config $LRS_BUILD_CONFIG -- -j$(($(nproc)-1))
+        - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
         - ls
 
 before_install:

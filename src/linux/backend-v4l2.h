@@ -197,17 +197,17 @@ namespace librealsense
                         {
                             if (xioctl(_file_desc, (int)VIDIOC_QBUF, &_dq_buf) < 0)
                             {
-                                LOG_ERROR("xioctl(VIDIOC_QBUF) guard failed for fd " << std::dec << _file_desc);
+                                LOG_DEBUG_V4L("xioctl(VIDIOC_QBUF) guard failed for fd " << std::dec << _file_desc);
                                 if (xioctl(_file_desc, (int)VIDIOC_DQBUF, &_dq_buf) >= 0)
                                 {
-                                    LOG_WARNING("xioctl(VIDIOC_QBUF) Re-enqueue succeeded for fd " << std::dec << _file_desc);
+                                    LOG_DEBUG_V4L("xioctl(VIDIOC_QBUF) Re-enqueue succeeded for fd " << std::dec << _file_desc);
                                     if (xioctl(_file_desc, (int)VIDIOC_QBUF, &_dq_buf) < 0)
-                                        LOG_WARNING("xioctl(VIDIOC_QBUF) re-deque  failed for fd " << std::dec << _file_desc);
+                                        LOG_DEBUG_V4L("xioctl(VIDIOC_QBUF) re-deque  failed for fd " << std::dec << _file_desc);
                                     else
-                                        LOG_WARNING("xioctl(VIDIOC_QBUF) re-deque succeeded for fd " << std::dec << _file_desc);
+                                        LOG_DEBUG_V4L("xioctl(VIDIOC_QBUF) re-deque succeeded for fd " << std::dec << _file_desc);
                                 }
                                 else
-                                    LOG_WARNING("xioctl(VIDIOC_QBUF) Re-enqueue failed for fd " << std::dec << _file_desc);
+                                    LOG_DEBUG_V4L("xioctl(VIDIOC_QBUF) Re-enqueue failed for fd " << std::dec << _file_desc);
                             }
                             else
                                 LOG_DEBUG_V4L("Enqueue (e) buf " << std::dec << _dq_buf.index << " for fd " << _file_desc);

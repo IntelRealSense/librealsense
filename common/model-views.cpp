@@ -909,15 +909,7 @@ namespace rs2
 
     bool option_model::allow_change(float val, std::string& error_message) const
     {
-        // Deny enabling IR Reflectivity on ROI != 20% [RS5-8358]
-        if ((RS2_OPTION_ENABLE_IR_REFLECTIVITY == opt) && (1.0f == val))
-        {
-            if (0.2f != dev->roi_percentage)
-            {
-                error_message = "Please set 'VGA' resolution, 'Max Range' preset and 20% ROI before enabling IR Reflectivity";
-                return false;
-            }
-        }
+        // Place here option restrictions
         return true;
     }
 
@@ -2295,17 +2287,16 @@ namespace rs2
         }
         _stream_not_alive.reset();
         
-        try 
+        try
         {
-            if( ! viewer.is_option_skipped( RS2_OPTION_ENABLE_IR_REFLECTIVITY ) )
+            auto ds = d->dev.first< depth_sensor >();
+            if( viewer._support_ir_reflectivity
+                && ds.supports( RS2_OPTION_ENABLE_IR_REFLECTIVITY )
+                && ds.supports( RS2_OPTION_ENABLE_MAX_USABLE_RANGE )
+                && ( ( p.stream_type() == RS2_STREAM_INFRARED )
+                     || ( p.stream_type() == RS2_STREAM_DEPTH ) ) )
             {
-                auto ds = d->dev.first< depth_sensor >();
-                if( ds.supports( RS2_OPTION_ENABLE_IR_REFLECTIVITY )
-                    && ds.supports( RS2_OPTION_ENABLE_MAX_USABLE_RANGE )
-                    && ( ( p.stream_type() == RS2_STREAM_INFRARED ) || ( p.stream_type() == RS2_STREAM_DEPTH ) ) )
-                {
-                    _reflectivity = std::unique_ptr< reflectivity >( new reflectivity() );
-                }
+                _reflectivity = std::unique_ptr< reflectivity >( new reflectivity() );
             }
         }
         catch(...) {};
