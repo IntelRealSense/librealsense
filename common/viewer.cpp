@@ -21,6 +21,8 @@
 
 #define ARCBALL_CAMERA_IMPLEMENTATION
 #include <arcball_camera.h>
+#include "../common/utilities/string/trim-newlines.h"
+#include "../common/utilities/imgui/wrap.h"
 
 namespace rs2
 {
@@ -1068,9 +1070,24 @@ namespace rs2
         auto custom_command = [&]()
         {
             auto msg = _active_popups.front().message;
+
+            // Wrap the text to feet the error pop-up window
+            std::string wrapped_msg;
+            try
+            {
+                auto trimmed_msg = utilities::string::trim_newlines(msg);  
+                wrapped_msg = utilities::imgui::wrap(trimmed_msg, 500);
+            }
+            catch (...)
+            {
+                wrapped_msg = msg; // Revert to original text on wrapping failure
+                not_model->output.add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__,
+                    to_string() << "Wrapping of error message text failed!");
+            }
+
             ImGui::Text("RealSense error calling:");
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
-            ImGui::InputTextMultiline("##error", const_cast<char*>(msg.c_str()),
+            ImGui::InputTextMultiline("##error", const_cast<char*>(wrapped_msg.c_str()),
                 msg.size() + 1, { 500,95 }, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
             ImGui::PopStyleColor();
 
