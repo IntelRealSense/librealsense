@@ -6,6 +6,7 @@
 #include <types.h>
 #include "l500/l500-private.h"
 #include "l500/l500-options.h"
+#include "hw-monitor.h"
 
 using namespace rs2;
 
@@ -86,45 +87,33 @@ preset_to_expected_values_map build_preset_to_expected_values_map( rs2::depth_se
 }
 
 const int MAX_PARAMS = 4;
-#pragma pack( push, 1 )
+
 struct hw_monitor_command
 {
     unsigned int cmd;
     int params[MAX_PARAMS] = { 0 };
 };
-#pragma pack( pop )
-
-inline std::vector< uint8_t > encode_raw_data_command( const hw_monitor_command & command )
-{
-    std::vector< uint8_t > res;
-    const uint16_t pre_header_data = 0xcdab;  // magic number
-    auto header_size = sizeof( unsigned int );
-    res.resize( sizeof( hw_monitor_command )
-                + header_size );  // TODO: resize std::vector to the right size
-    auto write_ptr = res.data();
-
-    auto cur_index = sizeof( uint16_t );
-    *reinterpret_cast< uint16_t * >( write_ptr + cur_index ) = pre_header_data;
-    cur_index += sizeof( uint16_t );
-    *reinterpret_cast< unsigned int * >( write_ptr + cur_index ) = command.cmd;
-    cur_index += sizeof( unsigned int );
-
-    for( auto param_index = 0; param_index < MAX_PARAMS; ++param_index )
-    {
-        *reinterpret_cast< int * >( write_ptr + cur_index ) = command.params[param_index];
-        cur_index += sizeof( int );
-    }
-
-    *reinterpret_cast< uint16_t * >( write_ptr ) = (uint16_t)cur_index - header_size;
-
-    return res;
-}
 
 std::vector< uint8_t > send_command_and_check( rs2::debug_protocol dp,
                                                hw_monitor_command command,
                                                uint32_t expected_size_return = 0 )
 {
-    auto res = dp.send_and_receive_raw_data( encode_raw_data_command( command ) );
+    const int MAX_HW_MONITOR_BUFFER_SIZE = 1024;
+
+    std::vector< uint8_t > res( MAX_HW_MONITOR_BUFFER_SIZE , 0);
+    int size = 0;
+
+    librealsense::hw_monitor::fill_usb_buffer( command.cmd,
+                                               command.params[0],
+                                               command.params[1],
+                                               command.params[2],
+                                               command.params[3],
+                                               nullptr,
+                                               0,
+                                               res.data(),
+                                               size );
+
+    res = dp.send_and_receive_raw_data( res );
     REQUIRE( res.size() == sizeof( unsigned int ) * ( expected_size_return + 1 ) );  // opcode
 
     auto vals = reinterpret_cast< int32_t * >( (void *)res.data() );
