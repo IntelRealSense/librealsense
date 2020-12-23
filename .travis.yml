@@ -2,7 +2,6 @@ env:
   global:
     - LRS_BUILD_CONFIG=Debug
     - LRS_RUN_CONFIG=Release
-    - export TRAVIS_WORKER_HARD_TIMEOUT="90m"
 matrix:
   include:
     - name: "Windows Testing - cpp, Win USB (Win7)"
@@ -16,6 +15,7 @@ matrix:
           subst d: ../. 
         - cd d:/build
         - cmake .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE="C:/Python38/python.exe" -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.8 -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_GRAPHICAL_EXAMPLES=false -DBUILD_WITH_TM2=false -DFORCE_RSUSB_BACKEND=true -DCHECK_FOR_UPDATES=true
+        - cmake --build . --config $LRS_BUILD_CONFIG -- -m
         - cmake --build . --config $LRS_RUN_CONFIG -- -m
         - cd $LRS_RUN_CONFIG
         - ls
