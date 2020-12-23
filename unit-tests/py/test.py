@@ -229,17 +229,17 @@ def check_frame_drops(frame, previous_frame_number, allowed_drops = 1):
     """
     global test_in_progress
     if not test_in_progress: 
-        return True; 
+        return True
     frame_number = frame.get_frame_number()
     failed = False
     if previous_frame_number > 0:
         dropped_frames = frame_number - (previous_frame_number + 1)
         if dropped_frames > allowed_drops:
-            print(dropped_frames, "frame(s) starting from frame", previous_frame_number + 1, "were dropped")
+            print( dropped_frames, "frame(s) starting from frame", previous_frame_number + 1, "were dropped" )
             failed = True
         if dropped_frames < 0:
-            print("Frames repeated or out of order. Got frame", frame_number, "after frame",
-                  previous_frame_number)
+            print( "Frames repeated or out of order. Got frame", frame_number, "after frame",
+                   previous_frame_number)
             failed = True
     if failed:
         check_failed()
