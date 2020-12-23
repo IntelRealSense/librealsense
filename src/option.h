@@ -143,7 +143,8 @@ namespace librealsense
             }
             catch (...)
             {
-                T::set( old );
+                if( old != value )
+                    T::set( old );
                 LOG_WARNING( "An exception thrown while notifying " );
                 throw;
             }

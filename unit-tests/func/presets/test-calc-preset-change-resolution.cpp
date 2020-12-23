@@ -3,7 +3,7 @@
 
 #include "../func-common.h"
 #include "presets-common.h"
-#include "l500/l500-options.h"
+#include <l500/l500-options.h>
 
 using namespace rs2;
 
@@ -17,7 +17,7 @@ TEST_CASE( "test-func-presets-calc-preset-change-resolution", "[l500][live]" )
     auto preset_to_expected_map = build_preset_to_expected_values_map( depth_sens );
 
     for_each_preset_mode_combination( [&]( rs2_l500_visual_preset preset, rs2_sensor_mode mode ) {
-        set_values_manually(
+        set_option_values(
             depth_sens,
             preset_to_expected_map[{ rs2_l500_visual_preset( preset ), rs2_sensor_mode( mode ) }] );
 

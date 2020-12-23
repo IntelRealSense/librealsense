@@ -38,25 +38,25 @@ namespace librealsense
 
     float l500_hw_options::query_default() const
     {
-        if(_fw_version >= firmware_version( "1.5.3.0" ) )
+        if(_fw_version >= firmware_version( "1.5.4.0" ) )
         {
             return query( get_default, int( _resolution->query() ) );
         }
         else
         {
-            // FW versions older than get_default doesn't support
-            // the way to get the default is set -1 and query
+            // For older FW without support for get_default, we have to:
+            //     1. Save the current value
+            //     2. Change to -1
+            //     3. Wait for the next frame (if streaming)
+            //     4. Read the current value
+            //     5. Restore the current value
             auto current = query( get_current, int( _resolution->query() ) );
             _hw_monitor->send( command{ AMCSET, _type, -1 } );
 
-            // if the sensor is streaming the value of control will update only whan the next frame
-            // arrive
-            if( _l500_dev->get_depth_sensor().is_streaming() )
-                std::this_thread::sleep_for( std::chrono::seconds( 50 ) );
-
             auto def = query( get_current, int( _resolution->query() ) );
 
-            _hw_monitor->send( command{ AMCSET, _type, (int)current } );
+            if( current != def )
+                _hw_monitor->send( command{ AMCSET, _type, (int)current } );
 
             return def;
         }
@@ -178,11 +178,11 @@ namespace librealsense
 
             // changing the resolution affects the defaults
             resolution_option->add_observer( [&]( float ) {
-            update_defaults();
+                update_defaults();
 
-            auto p = calc_preset_from_controls();
-            if( p != RS2_L500_VISUAL_PRESET_CUSTOM )
-                _preset->set_value( (float)p );
+                auto p = calc_preset_from_controls();
+                if( p != RS2_L500_VISUAL_PRESET_CUSTOM )
+                    _preset->set_value( (float)p );
 
                 set_controls_values_for_preset( p );
             } );
@@ -406,7 +406,6 @@ namespace librealsense
             }
             return RS2_L500_VISUAL_PRESET_CUSTOM;
         }
-
         catch( ... )
         {
             LOG_ERROR( "Exception caught in calc_preset_from_controls" );
@@ -551,8 +550,12 @@ namespace librealsense
         }
         else
         {
-            // FW versions older than get_default doesn't support
-            // the way to get the default is set -1 and query
+            // For older FW without support for get_default, we have to:
+            //     1. Save the current value
+            //     2. Change to -1
+            //     3. Wait for the next frame (if streaming)
+            //     4. Read the current value
+            //     5. Restore the current value
             std::map< rs2_option, float > currents;
             for (auto opt : _hw_options)
             {
@@ -563,7 +566,7 @@ namespace librealsense
             // if the sensor is streaming the value of control will update only whan the next frame
             // arrive
             if( get_depth_sensor().is_streaming() )
-                std::this_thread::sleep_for( std::chrono::seconds( 50 ) );
+                std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
 
             for( auto opt : _hw_options )
             {

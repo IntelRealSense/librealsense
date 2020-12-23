@@ -3,14 +3,15 @@
 
 #include "../../test.h"
 #include <concurrency.h>
-#include "../src/types.h"
-#include "../src/l500/l500-private.h"
-#include "../src/l500/l500-options.h"
+#include <types.h>
+#include "l500/l500-private.h"
+#include "l500/l500-options.h"
 
 using namespace rs2;
 
-#define preset_to_expected_values_map                                                              \
-    std ::map< std::pair< rs2_l500_visual_preset, rs2_sensor_mode >, std::map< rs2_option, float > >
+typedef std ::map< std::pair< rs2_l500_visual_preset, rs2_sensor_mode >,
+                   std::map< rs2_option, float > >
+    preset_to_expected_values_map;
 
 const std::vector< rs2_option > preset_dependent_options = { RS2_OPTION_POST_PROCESSING_SHARPENING,
                                                              RS2_OPTION_PRE_PROCESSING_SHARPENING,
@@ -119,7 +120,8 @@ inline std::vector< uint8_t > encode_raw_data_command( const hw_monitor_command 
     return res;
 }
 
-std::vector< uint8_t > send_command_and_check( rs2::debug_protocol dp, hw_monitor_command command,
+std::vector< uint8_t > send_command_and_check( rs2::debug_protocol dp,
+                                               hw_monitor_command command,
                                                uint32_t expected_size_return = 0 )
 {
     auto res = dp.send_and_receive_raw_data( encode_raw_data_command( command ) );
@@ -127,12 +129,13 @@ std::vector< uint8_t > send_command_and_check( rs2::debug_protocol dp, hw_monito
 
     auto vals = reinterpret_cast< int32_t * >( (void *)res.data() );
     REQUIRE( vals[0] == command.cmd );
-    res.erase( res.begin(), res.begin() + sizeof( unsigned int ) ); //remove opcode
-    
+    res.erase( res.begin(), res.begin() + sizeof( unsigned int ) );  // remove opcode
+
     return res;
 }
 
-    std::map< rs2_option, float > get_expected_default_values( rs2::device & dev, bool streaming = false )
+std::map< rs2_option, float > get_defaults_from_fw( rs2::device & dev,
+                                                           bool streaming = false )
 {
     std::map< rs2_option, float > option_to_defaults;
 
@@ -165,7 +168,7 @@ std::vector< uint8_t > send_command_and_check( rs2::debug_protocol dp, hw_monito
 
             const uint32_t digital_gain_num_of_values = RS2_DIGITAL_GAIN_LOW;
             auto res = send_command_and_check( dp, command, digital_gain_num_of_values );
-          
+
             REQUIRE( ds.supports( RS2_OPTION_DIGITAL_GAIN ) );
             float digital_gain_val;
 
@@ -183,9 +186,9 @@ std::vector< uint8_t > send_command_and_check( rs2::debug_protocol dp, hw_monito
             // FW versions older than get_default doesn't support
             // the way to get the default is set -1 and query
             hw_monitor_command get_command = { librealsense::ivcam2::fw_cmd::AMCGET,
-                                           librealsense::l500_control( op.second ),
-                                           librealsense::l500_command::get_current,
-                                           (int)mode };
+                                               librealsense::l500_control( op.second ),
+                                               librealsense::l500_command::get_current,
+                                               (int)mode };
 
 
             auto res = send_command_and_check( dp, get_command, 1 );
@@ -193,19 +196,19 @@ std::vector< uint8_t > send_command_and_check( rs2::debug_protocol dp, hw_monito
             auto current = *reinterpret_cast< int32_t * >( (void *)res.data() );
 
             hw_monitor_command set_command = { librealsense::ivcam2::fw_cmd::AMCSET,
-                                 librealsense::l500_control( op.second ),
-                                 -1 };
+                                               librealsense::l500_control( op.second ),
+                                               -1 };
 
             send_command_and_check( dp, set_command );
 
             // if the sensor is streaming the value of control will update only whan the next
             // frame arrive
             if( streaming )
-                std::this_thread::sleep_for( std::chrono::seconds( 50 ) );
+                std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
 
             res = send_command_and_check( dp, get_command, 1 );
             auto def = *reinterpret_cast< int32_t * >( (void *)res.data() );
-            
+
             set_command = { librealsense::ivcam2::fw_cmd::AMCSET,
                             librealsense::l500_control( op.second ),
                             current };
@@ -219,7 +222,7 @@ std::vector< uint8_t > send_command_and_check( rs2::debug_protocol dp, hw_monito
     return option_to_defaults;
 }
 
-std::map< rs2_option, float > get_actual_default_values( rs2::depth_sensor & depth_sens )
+std::map< rs2_option, float > get_defaults_from_lrs( rs2::depth_sensor & depth_sens )
 {
     std::map< rs2_option, float > option_to_defaults;
 
@@ -273,25 +276,26 @@ void print_presets_to_csv( rs2::depth_sensor & depth_sens,
     csv.close();
 }
 
-void set_values_manually( rs2::depth_sensor & depth_sens, std::map< rs2_option, float > values )
+void set_option_values( const rs2::sensor & sens, std::map< rs2_option, float > option_values )
 {
-    for( auto val : values )
+    for( auto option_value : option_values )
     {
-        REQUIRE( depth_sens.supports( val.first ) );
-        REQUIRE_NOTHROW( depth_sens.set_option( val.first, val.second ) );
-        REQUIRE( depth_sens.get_option( val.first ) == val.second );
+        REQUIRE_NOTHROW( sens.set_option( option_value.first, option_value.second ) );
+        float value;
+        REQUIRE_NOTHROW( value = sens.get_option( option_value.first ) );
+        REQUIRE( value == option_value.second );
     }
 }
 
-void check_presets_values( rs2::depth_sensor & depth_sens,
+void check_presets_values( const rs2::sensor & sens,
                            preset_to_expected_values_map & preset_to_expected_values )
 {
-    REQUIRE( depth_sens.supports( RS2_OPTION_VISUAL_PRESET ) );
+    REQUIRE( sens.supports( RS2_OPTION_VISUAL_PRESET ) );
 
     for_each_preset_mode_combination( [&]( rs2_l500_visual_preset preset, rs2_sensor_mode mode ) {
-        REQUIRE_NOTHROW( depth_sens.set_option( RS2_OPTION_SENSOR_MODE, (float)mode ) );
-        REQUIRE_NOTHROW( depth_sens.set_option( RS2_OPTION_VISUAL_PRESET, (float)preset ) );
-        CHECK( depth_sens.get_option( RS2_OPTION_VISUAL_PRESET ) == (float)preset );
+        REQUIRE_NOTHROW( sens.set_option( RS2_OPTION_SENSOR_MODE, (float)mode ) );
+        REQUIRE_NOTHROW( sens.set_option( RS2_OPTION_VISUAL_PRESET, (float)preset ) );
+        CHECK( sens.get_option( RS2_OPTION_VISUAL_PRESET ) == (float)preset );
 
         if( preset == RS2_L500_VISUAL_PRESET_CUSTOM )
             return;
@@ -303,14 +307,12 @@ void check_presets_values( rs2::depth_sensor & depth_sens,
         for( auto i : expected_values )
         {
             CAPTURE( rs2_option( i.first ) );
-            CHECK( depth_sens.get_option( rs2_option( i.first ) ) == i.second );
+            CHECK( sens.get_option( rs2_option( i.first ) ) == i.second );
         }
     } );
 }
 
-void check_custom( rs2::depth_sensor & depth_sens ) {}
-
-void build_new_device_an_do( std::function< void( rs2::depth_sensor & depth_sens ) > action )
+void build_new_device_and_do( std::function< void( rs2::depth_sensor & depth_sens ) > action )
 {
     auto devices = find_devices_by_product_line_or_exit( RS2_PRODUCT_LINE_L500 );
     auto dev = devices[0];
