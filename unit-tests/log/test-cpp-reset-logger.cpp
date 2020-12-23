@@ -5,31 +5,36 @@
 #include "log-common.h"
 
 
-// See log_callback_function_ptr
-size_t c_n_callbacks = 0;
-void c_callback(rs2_log_severity severity, rs2_log_message const* msg, void * arg)
-{
-    REQUIRE(!arg);
+TEST_CASE("RESET C++ LOGGER", "[log]") {
+    size_t n_callbacks = 0;
+    auto callback = [&](rs2_log_severity severity, rs2::log_message const& msg)
+    {
+        ++n_callbacks;
+        TRACE(severity << ' ' << msg.filename() << '+' << msg.line_number() << ": " << msg.raw());
+    };
 
-    ++c_n_callbacks;
-    rs2_error* e = nullptr;
-    char const* str = rs2_get_full_log_message(msg, &e);
-    REQUIRE_NOTHROW(rs2::error::handle(e));
-    TRACE(str);
-}
-
-
-TEST_CASE("Logging C INFO", "[log]") {
-    c_n_callbacks = 0;
-
-    rs2_error* e = nullptr;
-    rs2_log_to_callback(RS2_LOG_SEVERITY_INFO, c_callback, nullptr, &e);
-    REQUIRE_NOTHROW(rs2::error::handle(e));
-    REQUIRE(!c_n_callbacks);
+    rs2::log_to_callback(RS2_LOG_SEVERITY_INFO, callback);
+    REQUIRE(!n_callbacks);
+    rs2::reset_logger();
     log_all();
-    REQUIRE(c_n_callbacks == 3);
-    rs2_reset_logger(&e);
-    REQUIRE_NOTHROW(rs2::error::handle(e));
+    REQUIRE(n_callbacks == 0);
+
+    rs2::log_to_callback(RS2_LOG_SEVERITY_INFO, callback);
+    REQUIRE(!n_callbacks);
     log_all();
-    REQUIRE(c_n_callbacks == 3);
+    REQUIRE(n_callbacks == 3);
+    rs2::reset_logger();
+    log_all();
+    REQUIRE(n_callbacks == 3);
+
+    n_callbacks = 0;
+    rs2::log_to_callback(RS2_LOG_SEVERITY_DEBUG, callback);
+    REQUIRE(!n_callbacks);
+    log_all();
+    REQUIRE(n_callbacks == 4);
+    n_callbacks = 0;
+    rs2::reset_logger();
+    log_all();
+    REQUIRE(n_callbacks == 0);
+
 }

@@ -30,7 +30,7 @@ void error_callback(rs2_log_severity severity, rs2_log_message const* msg, void 
 }
 
 
-TEST_CASE("Logging C INFO", "[log]") {
+TEST_CASE("RESET C LOGGER", "[log]") {
     c_n_callbacks = 0;
     rs2_error* e = nullptr;
 
@@ -65,4 +65,10 @@ TEST_CASE("Logging C INFO", "[log]") {
     log_all();
     REQUIRE(c_n_callbacks == 0);
 
+    c_n_callbacks = 0;
+    rs2_log_to_callback(RS2_LOG_SEVERITY_ERROR, error_callback, (void *)0xbadf00d, &e);
+    REQUIRE_NOTHROW(rs2::error::handle(e));
+    REQUIRE(!c_n_callbacks);
+    log_all();
+    REQUIRE(c_n_callbacks == 1);
 }
