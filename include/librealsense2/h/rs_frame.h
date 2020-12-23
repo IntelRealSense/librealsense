@@ -74,7 +74,9 @@ const char* rs2_frame_metadata_value_to_string(rs2_frame_metadata_value metadata
 typedef enum rs2_calib_target_type
 {
     RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES, /**< Flat rectangle with vertices as the centers of Gaussian dots */
+    RS2_CALIB_TARGET_COUNT           /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_calib_target_type;
+const char* rs2_calib_target_type_to_string(rs2_calib_target_type type);
 
 /**
 * retrieve metadata from frame handle

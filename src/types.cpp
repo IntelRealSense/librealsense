@@ -595,6 +595,17 @@ namespace librealsense
 #undef CASE
     }
 
+    const char* get_string(rs2_calib_target_type value)
+    {
+#define CASE(X) STRCASE(CALIB_TARGET, X)
+        switch (value)
+        {
+            CASE(RECT_GAUSSIAN_DOT_VERTICES)
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
+        }
+#undef CASE
+    }
+
     const char* get_string(rs2_notification_category value)
     {
 #define CASE(X) STRCASE(NOTIFICATION_CATEGORY, X)
