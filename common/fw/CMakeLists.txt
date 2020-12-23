@@ -14,7 +14,7 @@ set(REALSENSE_FIRMWARE_URL "http://realsense-hw-public.s3.amazonaws.com" CACHE S
 string(REGEX MATCH "D4XX_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
 set(D4XX_FW_VERSION ${CMAKE_MATCH_1})
 message(STATUS "D4XX_FW_VERSION: ${D4XX_FW_VERSION}")
-set(D4XX_FW_SHA1 db5325dae0fbec52306b1d873aa81b9636aa0e36)
+set(D4XX_FW_SHA1 f8bee1615eb176815023cfc8bc0f4f412509c9da)
 set(D4XX_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/RS4xx/FW")
 
 
