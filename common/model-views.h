@@ -734,6 +734,8 @@ namespace rs2
         bool show_metadata = false;
 
         animated<float> _info_height{ 0.f };
+        int _prev_mouse_pos_x = 0;
+        int _prev_mouse_pos_y = 0;
 
     private:
         std::unique_ptr< reflectivity > _reflectivity; 

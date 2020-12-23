@@ -30,7 +30,7 @@ static bool is_close_to_zero( float x )
 
 
 reflectivity::reflectivity()
-    : _is_empty( false )
+    : _samples_count( 0 )
 {
     _dist_queue.assign( N_STD_FRAMES,
                         0 );  // Allocate size for all samples in advance to minimize runtime.
@@ -185,15 +185,23 @@ void reflectivity::add_depth_sample( float depth_val, int x_in_image, int y_in_i
             _dist_queue.pop_front();
 
         _dist_queue.push_back( dist_r );
-        _is_empty = false;
+        if (_samples_count < N_STD_FRAMES) _samples_count++;
     }
 }
 
 void rs2::reflectivity::reset_history()
 {
-    if( ! _is_empty )
+    if( _samples_count > 0 )
     {
         _dist_queue.assign( N_STD_FRAMES, 0 );
-        _is_empty = true;
+        _samples_count = 0;
     }
+}
+
+float rs2::reflectivity::get_samples_ratio() const
+{
+    if (0 != N_STD_FRAMES)
+        return static_cast<float>(_samples_count) / N_STD_FRAMES;
+    else
+        return 0.0f;
 }
