@@ -6046,6 +6046,11 @@ const calib_target_type = {
      * @type {Integer}
      */
     CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES: RS2.RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES,
+    /**
+     * Number of enumeration values. Not a valid input: intended to be used in for-loops.
+     * @type {Integer}
+     */
+    CALIB_TARGET_COUNT: RS2.RS2_CALIB_TARGET_COUNT,
 
     calibTargetTypeToString: function (domainVal) {
         const funcName = 'calib_target_type.calibTargetTypeToString()';

@@ -4814,6 +4814,7 @@ void InitModule(v8::Local<v8::Object> exports) {
 
   // rs2_calib_target_type
   _FORCE_SET_ENUM(RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES);
+  _FORCE_SET_ENUM(RS2_CALIB_TARGET_COUNT);
 
   // rs2_recording_mode
   _FORCE_SET_ENUM(RS2_RECORDING_MODE_BLANK_FRAMES);
