@@ -2,6 +2,7 @@ env:
   global:
     - LRS_BUILD_CONFIG=Debug
     - LRS_RUN_CONFIG=Release
+    - export TRAVIS_WORKER_HARD_TIMEOUT="90m"
 matrix:
   include:
     - name: "Windows Testing - cpp, Win USB (Win7)"
