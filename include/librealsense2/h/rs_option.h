@@ -179,6 +179,7 @@ extern "C" {
     /** \brief digital gain for RS2_OPTION_DIGITAL_GAIN option. */
     typedef enum rs2_digital_gain
     {
+        RS2_DIGITAL_GAIN_AUTO = 0,
         RS2_DIGITAL_GAIN_HIGH = 1,
         RS2_DIGITAL_GAIN_LOW = 2,
     } rs2_digital_gain;

@@ -3,6 +3,7 @@
 
 #include "../test.h"
 #include "librealsense2/rs.hpp"
+#include <condition_variable>
 
 using namespace rs2;
 

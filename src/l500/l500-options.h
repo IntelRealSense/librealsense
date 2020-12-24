@@ -138,7 +138,7 @@ namespace librealsense
         rs2_l500_visual_preset calc_preset_from_controls();
         void on_set_option(rs2_option opt, float value);
         void change_preset(rs2_l500_visual_preset preset);
-        void set_controls_values_for_preset( rs2_l500_visual_preset preset );
+        void set_preset_controls( rs2_l500_visual_preset preset );
         void move_to_custom ();
         void reset_hw_controls();
         void set_max_laser();

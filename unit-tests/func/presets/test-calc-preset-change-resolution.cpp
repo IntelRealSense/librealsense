@@ -7,7 +7,7 @@
 
 using namespace rs2;
 
-TEST_CASE( "test-func-presets-calc-preset-change-resolution", "[l500][live]" )
+TEST_CASE( "calc preset after change resolution", "[l500][live]" )
 {
     auto devices = find_devices_by_product_line_or_exit( RS2_PRODUCT_LINE_L500 );
     auto dev = devices[0];

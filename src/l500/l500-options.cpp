@@ -184,7 +184,7 @@ namespace librealsense
                 if( p != RS2_L500_VISUAL_PRESET_CUSTOM )
                     _preset->set_value( (float)p );
 
-                set_controls_values_for_preset( p );
+                set_preset_controls( p );
             } );
 
 
@@ -201,7 +201,8 @@ namespace librealsense
                 ivcam2::depth_xu,
                 ivcam2::L500_DIGITAL_GAIN,
                 "Change the depth digital gain to: 1 for high gain and 2 for low gain",
-                std::map< float, std::string >{ { RS2_DIGITAL_GAIN_HIGH, "High Gain" },
+                std::map< float, std::string >{ { RS2_DIGITAL_GAIN_AUTO, "Auto Gain" },
+                                                { RS2_DIGITAL_GAIN_HIGH, "High Gain" },
                                                 { RS2_DIGITAL_GAIN_LOW, "Low Gain" } } );
 
             if( _fw_version >= firmware_version( "1.5.2.0" ) )
@@ -351,11 +352,10 @@ namespace librealsense
 
             depth_sensor.register_option( RS2_OPTION_VISUAL_PRESET, _preset );
 
-            set_controls_values_for_preset( preset );
-            _advanced_options = get_advanced_controls();
-
-        }
+        set_preset_controls( preset );
+        _advanced_options = get_advanced_controls();
     }
+}
 
     std::vector<rs2_option> l500_options::get_advanced_controls()
     {
@@ -473,22 +473,13 @@ namespace librealsense
 
         update_defaults();
 
-        if( preset != RS2_L500_VISUAL_PRESET_CUSTOM )
-            set_controls_values_for_preset( preset );
+    if( preset != RS2_L500_VISUAL_PRESET_CUSTOM )
+        set_preset_controls( preset );
+    else
+        move_to_custom();
+}
 
-        switch( preset )
-        {
-        case RS2_L500_VISUAL_PRESET_LOW_AMBIENT:
-        case RS2_L500_VISUAL_PRESET_MAX_RANGE:
-            set_max_laser();
-            break;
-        case RS2_L500_VISUAL_PRESET_CUSTOM:
-            move_to_custom();
-            break;
-        };
-    }
-
-    void l500_options::set_controls_values_for_preset( rs2_l500_visual_preset preset )
+    void l500_options::set_preset_controls( rs2_l500_visual_preset preset )
     {
         for( auto & o : _hw_options )
         {
@@ -573,11 +564,11 @@ namespace librealsense
                 defaults[opt.first] = opt.second->query( get_current, int( resolution ) );
             }
 
-            for( auto opt : currents )
-            {
-                _hw_options[opt.first]->set( opt.second );
-            }
+        for( auto opt : currents )
+        {
+            _hw_options[opt.first]->set_with_no_signal( opt.second );
         }
+    }
 
         for( auto opt : _hw_options )
         {
