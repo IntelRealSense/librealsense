@@ -146,19 +146,15 @@ def unreachable( abort_if_failed = False ):
     """
     check(False, abort_if_failed)
 
-def unexpected_exception( abort_if_failed = False ):
+def unexpected_exception():
     """
     Used to assert that an except block is not reached. It's different from unreachable because it expects
     to be in an except block and prints the stack of the error and not the call-stack for this function
-    :param abort_if_failed: If True and this function is reached the test will be aborted
     """
     global n_assertions
     n_assertions += 1
     traceback.print_exc( file = sys.stdout )
     check_failed()
-    if abort_if_failed:
-        abort()
-    reset_info()
 
 def check_equal_lists(result, expected, abort_if_failed = False):
     """
@@ -283,7 +279,7 @@ def reset_info(persistent = False):
         test_info.clear()
     else:
         for name, information in test_info.items():
-            if information.persistent:
+            if not information.persistent:
                 test_info.pop(name)
 
 def print_info():
