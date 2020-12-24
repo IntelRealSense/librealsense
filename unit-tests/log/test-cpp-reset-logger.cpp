@@ -23,6 +23,7 @@ TEST_CASE("RESET C++ LOGGER", "[log]") {
     REQUIRE(!n_callbacks);
     log_all();
     REQUIRE(n_callbacks == 3);
+
     rs2::reset_logger();
     log_all();
     REQUIRE(n_callbacks == 3);
@@ -32,6 +33,7 @@ TEST_CASE("RESET C++ LOGGER", "[log]") {
     REQUIRE(!n_callbacks);
     log_all();
     REQUIRE(n_callbacks == 4);
+
     n_callbacks = 0;
     rs2::reset_logger();
     log_all();

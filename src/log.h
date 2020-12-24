@@ -243,6 +243,8 @@ namespace librealsense
                 //el::Helpers::uninstallLogDispatchCallback< el::base::DefaultLogDispatchCallback >( "DefaultLogDispatchCallback" );
             }
         }
+
+        //stop logging and reset logger to default configurations
         void reset_logger()
         {
             el::Configurations defaultConf;
@@ -252,7 +254,7 @@ namespace librealsense
             defaultConf.setGlobally(el::ConfigurationType::ToStandardOutput, "false");
             remove_callbacks();
 
-            minimum_log_severity = RS2_LOG_SEVERITY_NONE; //not in use? I can't find any use to it 
+            minimum_log_severity = RS2_LOG_SEVERITY_NONE;
             minimum_console_severity = RS2_LOG_SEVERITY_NONE;
             minimum_file_severity = RS2_LOG_SEVERITY_NONE;
 
