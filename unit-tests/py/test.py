@@ -283,7 +283,7 @@ def reset_info(persistent = False):
         test_info.clear()
     else:
         for name, information in test_info.items():
-            if information.persistent:
+            if not information.persistent:
                 test_info.pop(name)
 
 def print_info():
