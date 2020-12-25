@@ -204,6 +204,7 @@ namespace librealsense
     void log_to_console(rs2_log_severity min_severity);
     void log_to_file( rs2_log_severity min_severity, const char* file_path );
     void log_to_callback( rs2_log_severity min_severity, log_callback_ptr callback );
+    void reset_logger();
 
 #if BUILD_EASYLOGGINGPP
 

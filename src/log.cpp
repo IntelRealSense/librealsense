@@ -29,6 +29,11 @@ void librealsense::log_to_callback( rs2_log_severity min_severity, log_callback_
     logger.log_to_callback( min_severity, callback );
 }
 
+void librealsense::reset_logger()
+{
+    logger.reset_logger();
+}
+
 #else // BUILD_EASYLOGGINGPP
 
 void librealsense::log_to_console(rs2_log_severity min_severity)
@@ -42,6 +47,10 @@ void librealsense::log_to_file(rs2_log_severity min_severity, const char * file_
 void librealsense::log_to_callback(rs2_log_severity min_severity, log_callback_ptr callback)
 {
     throw std::runtime_error("log_to_callback is not supported without BUILD_EASYLOGGINGPP");
+}
+
+void librealsense::reset_logger()
+{
 }
 #endif // BUILD_EASYLOGGINGPP
 
