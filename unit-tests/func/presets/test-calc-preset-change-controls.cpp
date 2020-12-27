@@ -29,7 +29,7 @@ TEST_CASE( "calc preset after change controls", "[l500][live]" )
         CAPTURE( preset );
         CAPTURE(  mode );
 
-        validate_presets_value( depth_sens, preset );
+        check_preset_is_equal_to( depth_sens, preset );
     } );
 
 }

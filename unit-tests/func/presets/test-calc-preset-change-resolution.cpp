@@ -14,20 +14,20 @@ TEST_CASE( "calc preset after change resolution", "[l500][live]" )
 
     auto depth_sens = dev.first< rs2::depth_sensor >();
 
-    auto preset_to_expected_map = build_preset_to_expected_values_map( depth_sens );
+    auto expected_preset_values = build_preset_to_expected_values_map( depth_sens );
 
     for_each_preset_mode_combination( [&]( rs2_l500_visual_preset preset, rs2_sensor_mode mode ) {
         set_option_values(
             depth_sens,
-            preset_to_expected_map[{ rs2_l500_visual_preset( preset ), rs2_sensor_mode( mode ) }] );
+            expected_preset_values[{ preset , mode }] );
 
         REQUIRE( depth_sens.supports( RS2_OPTION_SENSOR_MODE ) );
-        REQUIRE_NOTHROW( depth_sens.set_option( RS2_OPTION_SENSOR_MODE, rs2_sensor_mode( mode ) ) );
+        REQUIRE_NOTHROW( depth_sens.set_option( RS2_OPTION_SENSOR_MODE, float( mode ) ) );
 
-        CAPTURE( rs2_l500_visual_preset( preset ) );
-        CAPTURE( rs2_sensor_mode( mode ) );
+        CAPTURE( preset );
+        CAPTURE( mode );
 
-        validate_presets_value( depth_sens, rs2_l500_visual_preset( preset ) );
+        check_preset_is_equal_to( depth_sens, preset );
     } );
 
 }

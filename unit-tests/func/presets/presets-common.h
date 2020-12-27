@@ -14,6 +14,7 @@ typedef std ::map< std::pair< rs2_l500_visual_preset, rs2_sensor_mode >,
                    std::map< rs2_option, float > >
     preset_to_expected_values_map;
 
+// These are all the options that are changed when changing a preset
 const std::vector< rs2_option > preset_dependent_options = { RS2_OPTION_POST_PROCESSING_SHARPENING,
                                                              RS2_OPTION_PRE_PROCESSING_SHARPENING,
                                                              RS2_OPTION_NOISE_FILTERING,
@@ -123,8 +124,7 @@ std::vector< uint8_t > send_command_and_check( rs2::debug_protocol dp,
     return res;
 }
 
-std::map< rs2_option, float > get_defaults_from_fw( rs2::device & dev,
-                                                           bool streaming = false )
+std::map< rs2_option, float > get_defaults_from_fw( rs2::device & dev, bool streaming = false )
 {
     std::map< rs2_option, float > option_to_defaults;
 
@@ -149,10 +149,10 @@ std::map< rs2_option, float > get_defaults_from_fw( rs2::device & dev,
     {
         if( new_fw )
         {
-            hw_monitor_command command = { librealsense::ivcam2::fw_cmd::AMCGET,
-                                           librealsense::l500_control( op.second ),
-                                           librealsense::l500_command::get_default,
-                                           (int)mode };
+            auto command = hw_monitor_command{ librealsense::ivcam2::fw_cmd::AMCGET,
+                                               op.second,
+                                               librealsense::l500_command::get_default,
+                                               (int)mode };
 
 
             const uint32_t digital_gain_num_of_values = RS2_DIGITAL_GAIN_LOW;
@@ -174,19 +174,19 @@ std::map< rs2_option, float > get_defaults_from_fw( rs2::device & dev,
         {
             // FW versions older than get_default doesn't support
             // the way to get the default is set -1 and query
-            hw_monitor_command get_command = { librealsense::ivcam2::fw_cmd::AMCGET,
-                                               librealsense::l500_control( op.second ),
-                                               librealsense::l500_command::get_current,
-                                               (int)mode };
+            auto get_command = hw_monitor_command{ librealsense::ivcam2::fw_cmd::AMCGET,
+                                                   librealsense::l500_control( op.second ),
+                                                   librealsense::l500_command::get_current,
+                                                   (int)mode };
 
 
             auto res = send_command_and_check( dp, get_command, 1 );
 
             auto current = *reinterpret_cast< int32_t * >( (void *)res.data() );
 
-            hw_monitor_command set_command = { librealsense::ivcam2::fw_cmd::AMCSET,
-                                               librealsense::l500_control( op.second ),
-                                               -1 };
+            auto set_command = hw_monitor_command{ librealsense::ivcam2::fw_cmd::AMCSET,
+                                                   librealsense::l500_control( op.second ),
+                                                   -1 };
 
             send_command_and_check( dp, set_command );
 
@@ -252,13 +252,13 @@ void print_presets_to_csv( rs2::depth_sensor & depth_sens,
         auto expected_values
             = preset_to_expected_values[{ rs2_l500_visual_preset( preset ), mode }];
 
-        csv << "-----" << rs2_l500_visual_preset( preset ) << " " << rs2_sensor_mode( mode )
+        csv << "-----" << preset << " " << mode 
             << "-----"
             << "\n";
 
         for( auto i : expected_values )
         {
-            csv << rs2_option( i.first ) << "," << i.second << "\n";
+            csv << i.first << "," << i.second << "\n";
         }
     } );
 
@@ -289,14 +289,16 @@ void check_presets_values( const rs2::sensor & sens,
         if( preset == RS2_L500_VISUAL_PRESET_CUSTOM )
             return;
 
-        auto expected_values = preset_to_expected_values[{ rs2_l500_visual_preset( preset ),
-                                                           rs2_sensor_mode( mode ) }];
-        CAPTURE( rs2_l500_visual_preset( preset ) );
-        CAPTURE( rs2_sensor_mode( mode ) );
+        const std::map< rs2_option, float > & expected_values
+            = preset_to_expected_values[{ preset ,
+                                           mode }];
+
+        CAPTURE( preset );
+        CAPTURE( mode );
         for( auto i : expected_values )
         {
-            CAPTURE( rs2_option( i.first ) );
-            CHECK( sens.get_option( rs2_option( i.first ) ) == i.second );
+            CAPTURE( i.first );
+            CHECK( sens.get_option( i.first ) == i.second );
         }
     } );
 }
@@ -311,7 +313,7 @@ void build_new_device_and_do( std::function< void( rs2::depth_sensor & depth_sen
     action( depth_sens );
 }
 
-void validate_presets_value( rs2::depth_sensor & depth_sens, rs2_l500_visual_preset preset )
+void check_preset_is_equal_to( rs2::depth_sensor & depth_sens, rs2_l500_visual_preset preset )
 {
     if( preset == RS2_L500_VISUAL_PRESET_SHORT_RANGE )
         CHECK( depth_sens.get_option( RS2_OPTION_VISUAL_PRESET )

@@ -14,5 +14,7 @@ TEST_CASE( "calc preset after hw reset", "[l500][live]" )
 
     auto new_dev = reset_camera_and_wait_for_connection( dev );
     auto depth_sens = new_dev.first< rs2::depth_sensor >();
+
+    // Camera should boot up with max-range preset, always
     CHECK( depth_sens.get_option( RS2_OPTION_VISUAL_PRESET ) == RS2_L500_VISUAL_PRESET_MAX_RANGE );
 }

@@ -24,7 +24,7 @@ TEST_CASE( "calc preset from controls on start up", "[l500][live]" )
         build_new_device_and_do( [&] (rs2::depth_sensor & depth_sens)
         {
             REQUIRE_NOTHROW( depth_sens.set_option( RS2_OPTION_SENSOR_MODE, RS2_SENSOR_MODE_VGA ) );
-            REQUIRE_NOTHROW( depth_sens.set_option( RS2_OPTION_VISUAL_PRESET, i ) );
+            REQUIRE_NOTHROW( depth_sens.set_option( RS2_OPTION_VISUAL_PRESET, (float)i ) );
         } );
 
         // We set the preset on the previous device, and want to check that, for a new device, the
@@ -32,7 +32,7 @@ TEST_CASE( "calc preset from controls on start up", "[l500][live]" )
         build_new_device_and_do( [&] (rs2::depth_sensor & depth_sens)
         {
             CAPTURE( rs2_l500_visual_preset( i ) );
-            validate_presets_value( depth_sens, rs2_l500_visual_preset( i ) );
+            check_preset_is_equal_to( depth_sens, rs2_l500_visual_preset( i ) );
         } );
     }
 }

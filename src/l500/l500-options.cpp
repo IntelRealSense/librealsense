@@ -6,6 +6,7 @@
 #include "l500-depth.h"
 
 const std::string MIN_CONTROLS_FW_VERSION("1.3.9.0");
+const std::string MIN_GET_DEFAULT_FW_VERSION( "1.3.9.0" );
 
 namespace librealsense
 {
@@ -38,7 +39,7 @@ namespace librealsense
 
     float l500_hw_options::query_default() const
     {
-        if(_fw_version >= firmware_version( "1.5.4.0" ) )
+        if( _fw_version >= firmware_version( MIN_GET_DEFAULT_FW_VERSION ) )
         {
             return query( get_default, int( _resolution->query() ) );
         }
@@ -190,7 +191,7 @@ namespace librealsense
 
             depth_sensor.register_option(RS2_OPTION_SENSOR_MODE, resolution_option);
 
-             _digital_gain = register_option< uvc_xu_option< int >,
+            _digital_gain = register_option< uvc_xu_option< int >,
                                              uvc_sensor &,
                                              platform::extension_unit,
                                              uint8_t,
@@ -532,7 +533,7 @@ namespace librealsense
         auto resolution = get_depth_sensor().get_option( RS2_OPTION_SENSOR_MODE ).query();
 
         std::map< rs2_option, float > defaults;
-        if( _fw_version >= firmware_version( "1.5.3.0" ) )
+        if( _fw_version >= firmware_version( MIN_GET_DEFAULT_FW_VERSION ) )
         {
             for( auto opt : _hw_options )
             {
