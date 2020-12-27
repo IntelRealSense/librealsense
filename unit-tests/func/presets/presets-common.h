@@ -36,6 +36,19 @@ std::map< rs2_option, librealsense::l500_control > option_to_code = {
     { RS2_OPTION_AVALANCHE_PHOTO_DIODE, librealsense::l500_control::apd },
     { RS2_OPTION_MIN_DISTANCE, librealsense::l500_control::min_distance } };
 
+enum presets_useful_laser_values
+{
+    defualt_laser,
+    max_laser
+} ;
+
+const std::map< rs2_l500_visual_preset, std::pair< rs2_digital_gain, presets_useful_laser_values > >
+    preset_to_gain_and_laser_map
+    = { { RS2_L500_VISUAL_PRESET_NO_AMBIENT, { RS2_DIGITAL_GAIN_HIGH, defualt_laser } },
+        { RS2_L500_VISUAL_PRESET_MAX_RANGE, { RS2_DIGITAL_GAIN_HIGH, max_laser } },
+        { RS2_L500_VISUAL_PRESET_LOW_AMBIENT, { RS2_DIGITAL_GAIN_LOW, defualt_laser } },
+        { RS2_L500_VISUAL_PRESET_SHORT_RANGE, { RS2_DIGITAL_GAIN_LOW, max_laser } } };
+
 void for_each_preset_mode_combination(
     std::function< void( rs2_l500_visual_preset, rs2_sensor_mode ) > action )
 {
@@ -54,23 +67,14 @@ preset_to_expected_values_map build_preset_to_expected_values_map( rs2::depth_se
     std::map< std::pair< rs2_l500_visual_preset, rs2_sensor_mode >, std::map< rs2_option, float > >
         preset_to_expected_values;
 
-    std::map< rs2_l500_visual_preset, rs2_digital_gain > preset_to_gain
-        = { { RS2_L500_VISUAL_PRESET_NO_AMBIENT, RS2_DIGITAL_GAIN_HIGH },
-            { RS2_L500_VISUAL_PRESET_MAX_RANGE, RS2_DIGITAL_GAIN_HIGH },
-            { RS2_L500_VISUAL_PRESET_LOW_AMBIENT, RS2_DIGITAL_GAIN_LOW },
-            { RS2_L500_VISUAL_PRESET_SHORT_RANGE, RS2_DIGITAL_GAIN_LOW } };
-
+    auto preset_to_gain_and_laser = preset_to_gain_and_laser_map;
 
     for_each_preset_mode_combination( [&]( rs2_l500_visual_preset preset, rs2_sensor_mode mode ) {
-        depth_sens.set_option( RS2_OPTION_DIGITAL_GAIN, (float)preset_to_gain[preset] );
+        depth_sens.set_option( RS2_OPTION_DIGITAL_GAIN,
+                               (float)preset_to_gain_and_laser[preset].first );
         depth_sens.set_option( RS2_OPTION_SENSOR_MODE, (float)mode );
 
         auto laser_range = depth_sens.get_option_range( RS2_OPTION_LASER_POWER );
-        std::map< rs2_l500_visual_preset, float > preset_to_laser
-            = { { RS2_L500_VISUAL_PRESET_NO_AMBIENT, laser_range.def },
-                { RS2_L500_VISUAL_PRESET_MAX_RANGE, laser_range.max },
-                { RS2_L500_VISUAL_PRESET_LOW_AMBIENT, laser_range.max },
-                { RS2_L500_VISUAL_PRESET_SHORT_RANGE, laser_range.def } };
 
         for( auto dependent_option : preset_dependent_options )
         {
@@ -78,10 +82,11 @@ preset_to_expected_values_map build_preset_to_expected_values_map( rs2::depth_se
                 = depth_sens.get_option_range( dependent_option ).def;
         }
         preset_to_expected_values[{ preset, mode }][RS2_OPTION_DIGITAL_GAIN]
-            = (float)preset_to_gain[preset];
+            = (float)preset_to_gain_and_laser[preset].first;
 
         preset_to_expected_values[{ preset, mode }][RS2_OPTION_LASER_POWER]
-            = preset_to_laser[preset];
+            = preset_to_gain_and_laser[preset].second == defualt_laser ? laser_range.def
+                                                                       : laser_range.max;
     } );
 
     return preset_to_expected_values;
@@ -101,7 +106,7 @@ std::vector< uint8_t > send_command_and_check( rs2::debug_protocol dp,
 {
     const int MAX_HW_MONITOR_BUFFER_SIZE = 1024;
 
-    std::vector< uint8_t > res( MAX_HW_MONITOR_BUFFER_SIZE , 0);
+    std::vector< uint8_t > res( MAX_HW_MONITOR_BUFFER_SIZE, 0 );
     int size = 0;
 
     librealsense::hw_monitor::fill_usb_buffer( command.cmd,
@@ -152,7 +157,8 @@ std::map< rs2_option, float > get_defaults_from_fw( rs2::device & dev, bool stre
             auto command = hw_monitor_command{ librealsense::ivcam2::fw_cmd::AMCGET,
                                                op.second,
                                                librealsense::l500_command::get_default,
-                                               (int)mode };
+                                               (int)mode,
+                                               0 };
 
 
             const uint32_t digital_gain_num_of_values = RS2_DIGITAL_GAIN_LOW;
@@ -177,7 +183,8 @@ std::map< rs2_option, float > get_defaults_from_fw( rs2::device & dev, bool stre
             auto get_command = hw_monitor_command{ librealsense::ivcam2::fw_cmd::AMCGET,
                                                    librealsense::l500_control( op.second ),
                                                    librealsense::l500_command::get_current,
-                                                   (int)mode };
+                                                   (int)mode,
+                                                   0 };
 
 
             auto res = send_command_and_check( dp, get_command, 1 );
@@ -186,7 +193,9 @@ std::map< rs2_option, float > get_defaults_from_fw( rs2::device & dev, bool stre
 
             auto set_command = hw_monitor_command{ librealsense::ivcam2::fw_cmd::AMCSET,
                                                    librealsense::l500_control( op.second ),
-                                                   -1 };
+                                                   -1,
+                                                   0,
+                                                   0 };
 
             send_command_and_check( dp, set_command );
 
@@ -252,8 +261,7 @@ void print_presets_to_csv( rs2::depth_sensor & depth_sens,
         auto expected_values
             = preset_to_expected_values[{ rs2_l500_visual_preset( preset ), mode }];
 
-        csv << "-----" << preset << " " << mode 
-            << "-----"
+        csv << "-----" << preset << " " << mode << "-----"
             << "\n";
 
         for( auto i : expected_values )
@@ -290,8 +298,7 @@ void check_presets_values( const rs2::sensor & sens,
             return;
 
         const std::map< rs2_option, float > & expected_values
-            = preset_to_expected_values[{ preset ,
-                                           mode }];
+            = preset_to_expected_values[{ preset, mode }];
 
         CAPTURE( preset );
         CAPTURE( mode );
@@ -315,11 +322,14 @@ void build_new_device_and_do( std::function< void( rs2::depth_sensor & depth_sen
 
 void check_preset_is_equal_to( rs2::depth_sensor & depth_sens, rs2_l500_visual_preset preset )
 {
-    if( preset == RS2_L500_VISUAL_PRESET_SHORT_RANGE )
-        CHECK( depth_sens.get_option( RS2_OPTION_VISUAL_PRESET )
-               == RS2_L500_VISUAL_PRESET_LOW_AMBIENT );  // RS2_L500_VISUAL_PRESET_SHORT_RANGE
-                                                         // is the same as
-                                                         // RS2_L500_VISUAL_PRESET_LOW_AMBIENT
-    else
-        CHECK( depth_sens.get_option( RS2_OPTION_VISUAL_PRESET ) == preset );
+    auto curr_preset = (rs2_l500_visual_preset)(int)depth_sens.get_option( RS2_OPTION_VISUAL_PRESET ); 
+    if( curr_preset != preset )
+    {
+        auto preset_to_gain_and_laser = preset_to_gain_and_laser_map;
+        option_range laser_range;
+        REQUIRE_NOTHROW(laser_range = depth_sens.get_option_range( RS2_OPTION_LASER_POWER ));
+        CHECK( laser_range.def == laser_range.max );
+        CHECK( preset_to_gain_and_laser[preset].first
+               == preset_to_gain_and_laser[curr_preset].first );
+    }
 }
