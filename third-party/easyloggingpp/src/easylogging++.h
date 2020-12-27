@@ -2511,8 +2511,7 @@ class AsyncLogQueue : public base::threading::ThreadSafe {
     base::threading::ScopedLock scopedLock(lock());
     if (!m_queue.size())
     {
-        std::cout << "queue was empty" << std::endl;
-        throw ("TODO Thread Safety");
+        throw ("Async Logger queue is empty!");
     }
     AsyncLogItem result = m_queue.front();
     m_queue.pop();
@@ -2763,7 +2762,7 @@ class AsyncDispatchWorker : public base::IWorker, public base::threading::Thread
   std::condition_variable cv;
   bool m_continueRunning;
   base::threading::Mutex m_continueRunningLock;
-  std::thread m_t1;
+  std::thread m_asyncWorkerThread;
   std::mutex _mtx;
 };
 #endif  // ELPP_ASYNC_LOGGING

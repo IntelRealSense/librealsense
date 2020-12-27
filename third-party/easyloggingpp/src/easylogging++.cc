@@ -2099,10 +2099,10 @@ Storage::Storage(const LogBuilderPtr& defaultLogBuilder) :
   addFlag(LoggingFlag::AllowVerboseIfModuleNotSpecified);
 #if ELPP_ASYNC_LOGGING
   installLogDispatchCallback<base::AsyncLogDispatchCallback>(std::string("AsyncLogDispatchCallback"));
-  std::cout << "Storage::ELPP_ASYNC_LOGGING" << std::endl;
+  ELPP_INTERNAL_INFO(1, "Storage::ELPP_ASYNC_LOGGING");
 #else
   installLogDispatchCallback<base::DefaultLogDispatchCallback>(std::string("DefaultLogDispatchCallback"));
-  std::cout << "Storage::ELPP_ASYNC_LOGGING(not)" << std::endl;
+  ELPP_INTERNAL_INFO(1, "Storage::ELPP_ASYNC_LOGGING(not)");
 #endif  // ELPP_ASYNC_LOGGING
 #if defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_PERFORMANCE_TRACKING)
   installPerformanceTrackingCallback<base::DefaultPerformanceTrackingCallback>
@@ -2111,7 +2111,7 @@ Storage::Storage(const LogBuilderPtr& defaultLogBuilder) :
   ELPP_INTERNAL_INFO(1, "Easylogging++ has been initialized");
 #if ELPP_ASYNC_LOGGING
   m_asyncDispatchWorker->start();
-  std::cout << "Storage::Done" << std::endl;
+  ELPP_INTERNAL_INFO(1, "Storage::Done");
 #endif  // ELPP_ASYNC_LOGGING
 }
 
@@ -2323,8 +2323,8 @@ AsyncDispatchWorker::AsyncDispatchWorker() {
 AsyncDispatchWorker::~AsyncDispatchWorker() {
   setContinueRunning(false);
   ELPP_INTERNAL_INFO(6, "Stopping dispatch worker - Cleaning log queue");
-  if (m_t1.joinable())
-      m_t1.join();
+  if (m_asyncWorkerThread.joinable())
+      m_asyncWorkerThread.join();
   else
       std::cout << "logger not joinable" << std::endl;
   clean();
@@ -2360,7 +2360,7 @@ void AsyncDispatchWorker::emptyQueue(void) {
 
 void AsyncDispatchWorker::start(void) {
   setContinueRunning(true);
-  m_t1 = std::thread(&AsyncDispatchWorker::run, this);
+  m_asyncWorkerThread = std::thread(&AsyncDispatchWorker::run, this);
 }
 
 void AsyncDispatchWorker::handle(AsyncLogItem* logItem) {
