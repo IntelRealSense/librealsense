@@ -676,7 +676,10 @@ namespace rs2
 
                                     if (ImGui::IsItemHovered())
                                     {
-                                        ImGui::SetTooltip(ds.get_option_description(RS2_OPTION_ENABLE_IR_REFLECTIVITY));
+                                        ImGui::SetTooltip(
+                                            "%s",
+                                            ds.get_option_description(
+                                                RS2_OPTION_ENABLE_IR_REFLECTIVITY ) );
                                     }
                                 }
                             }
