@@ -3,11 +3,10 @@
 
 //#cmake:add-file log-common.h
 #include "log-common.h"
-#include <time.h>
 
 std::atomic_int atomic_integer = 0;
 std::chrono::milliseconds global_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-time_t my_time = time(NULL);
+std::chrono::milliseconds max_time = (std::chrono::milliseconds)0;
 
 TEST_CASE("async logger", "[log][remi]")
 {
@@ -15,12 +14,12 @@ TEST_CASE("async logger", "[log][remi]")
     auto callback = [&](rs2_log_severity severity, rs2::log_message const& msg)
     {
         ++n_callbacks;
-        //std::cout << msg.raw();
+        std::cout << msg.raw();
     };
 
     auto func = [](int required_value) {
         int iterations = 0;
-        while (iterations < 10)
+        while (iterations < 200)
         {
             std::stringstream ss;
             int value_to_check = (required_value) + 10 * iterations;
@@ -31,6 +30,7 @@ TEST_CASE("async logger", "[log][remi]")
             if (!value_result)
                 int a = 1;*/
             std::chrono::milliseconds delta_ms = ms - global_ms;
+            if (delta_ms > max_time) max_time = delta_ms;
             bool performance_result = (delta_ms < (std::chrono::milliseconds)20);
             if (!performance_result)
                 int a = 1;
@@ -40,7 +40,7 @@ TEST_CASE("async logger", "[log][remi]")
         }
     };
     rs2::log_to_callback(RS2_LOG_SEVERITY_DEBUG, callback);
-
+    global_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
     std::vector<std::thread> threads;
 
     for (int i = 0; i < 10; ++i)
@@ -52,4 +52,6 @@ TEST_CASE("async logger", "[log][remi]")
     {
         if (t.joinable()) t.join();
     }
+
+    std::cout << "max time = " << max_time.count() << std::endl;
 }
