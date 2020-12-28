@@ -2303,14 +2303,16 @@ void DefaultLogDispatchCallback::dispatch(base::type::string_t&& logLine) {
 void AsyncLogDispatchCallback::handle(const LogDispatchData* data) {
   base::type::string_t logLine = data->logMessage()->logger()->logBuilder()->build(data->logMessage(),
                                  data->dispatchAction() == base::DispatchAction::NormalLog);
-  if (data->dispatchAction() == base::DispatchAction::NormalLog
+  /*if (data->dispatchAction() == base::DispatchAction::NormalLog
       && data->logMessage()->logger()->typedConfigurations()->toStandardOutput(data->logMessage()->level())) {
     if (ELPP->hasFlag(LoggingFlag::ColoredTerminalOutput))
       data->logMessage()->logger()->logBuilder()->convertToColoredOutput(&logLine, data->logMessage()->level());
     ELPP_COUT << ELPP_COUT_LINE(logLine);
-  }
+  }*/
   // Save resources and only queue if we want to write to file otherwise just ignore handler
-  if (data->logMessage()->logger()->typedConfigurations()->toFile(data->logMessage()->level())) {
+  auto conf = data->logMessage()->logger()->typedConfigurations();
+  if (conf->toStandardOutput(data->logMessage()->level()) ||
+      conf->toFile(data->logMessage()->level())) {
     ELPP->asyncLogQueue()->push(AsyncLogItem(*(data->logMessage()), *data, logLine));
   }
 }
@@ -2371,25 +2373,33 @@ void AsyncDispatchWorker::handle(AsyncLogItem* logItem) {
   base::TypedConfigurations* conf = logger->typedConfigurations();
   base::type::string_t logLine = logItem->logLine();
   if (data->dispatchAction() == base::DispatchAction::NormalLog) {
-    if (conf && conf->toFile(logMessage->level())) {
-      base::type::fstream_t* fs = conf->fileStream(logMessage->level());
-      if (fs != nullptr) {
-        fs->write(logLine.c_str(), logLine.size());
-        if (fs->fail()) {
-          ELPP_INTERNAL_ERROR("Unable to write log to file ["
-                              << conf->filename(logMessage->level()) << "].\n"
-                              << "Few possible reasons (could be something else):\n" << "      * Permission denied\n"
-                              << "      * Disk full\n" << "      * Disk is not writable", true);
-        } else {
-          if (ELPP->hasFlag(LoggingFlag::ImmediateFlush) || (logger->isFlushNeeded(logMessage->level()))) {
-            logger->flush(logMessage->level(), fs);
+      if (conf) {
+          if (conf->toFile(logMessage->level())) {
+              base::type::fstream_t* fs = conf->fileStream(logMessage->level());
+              if (fs != nullptr) {
+                  fs->write(logLine.c_str(), logLine.size());
+                  if (fs->fail()) {
+                      ELPP_INTERNAL_ERROR("Unable to write log to file ["
+                          << conf->filename(logMessage->level()) << "].\n"
+                          << "Few possible reasons (could be something else):\n" << "      * Permission denied\n"
+                          << "      * Disk full\n" << "      * Disk is not writable", true);
+                  }
+                  else {
+                      if (ELPP->hasFlag(LoggingFlag::ImmediateFlush) || (logger->isFlushNeeded(logMessage->level()))) {
+                          logger->flush(logMessage->level(), fs);
+                      }
+                  }
+
+              }
+              else {
+                  ELPP_INTERNAL_ERROR("Log file for [" << LevelHelper::convertToString(logMessage->level()) << "] "
+                      << "has not been configured but [TO_FILE] is configured to TRUE. [Logger ID: " << logger->id() << "]", false);
+              }
           }
-        }
-      } else {
-        ELPP_INTERNAL_ERROR("Log file for [" << LevelHelper::convertToString(logMessage->level()) << "] "
-                            << "has not been configured but [TO_FILE] is configured to TRUE. [Logger ID: " << logger->id() << "]", false);
-      }
-    }
+          else if (conf->toStandardOutput(logMessage->level())) {
+              ELPP_COUT << ELPP_COUT_LINE(logLine);
+          }
+      } 
   }
 #  if defined(ELPP_SYSLOG)
   else if (data->dispatchAction() == base::DispatchAction::SysLog) {
