@@ -2583,8 +2583,12 @@ class Storage : base::NoCopy, public base::threading::ThreadSafe {
   }
 
 #if ELPP_ASYNC_LOGGING
-  inline base::AsyncLogQueue* asyncLogQueue(void) const {
-    return m_asyncLogQueue;
+  inline base::AsyncLogQueue* asyncLogQueueWrite(void) const {
+    return m_asyncLogQueueWrite;
+  }
+
+  inline base::AsyncLogQueue* asyncLogQueueRead(void) const {
+      return m_asyncLogQueueRead;
   }
 
   inline base::AsyncDispatchWorker* asyncDispatchWorker(void) const {
@@ -2698,7 +2702,8 @@ class Storage : base::NoCopy, public base::threading::ThreadSafe {
   base::type::EnumType m_flags;
   base::VRegistry* m_vRegistry;
 #if ELPP_ASYNC_LOGGING
-  base::AsyncLogQueue* m_asyncLogQueue;
+  base::AsyncLogQueue* m_asyncLogQueueWrite; 
+  base::AsyncLogQueue* m_asyncLogQueueRead;
   base::IWorker* m_asyncDispatchWorker;
 #endif  // ELPP_ASYNC_LOGGING
   base::utils::CommandLineArgs m_commandLineArgs;
@@ -2745,10 +2750,11 @@ class AsyncDispatchWorker : public base::IWorker, public base::threading::Thread
   virtual ~AsyncDispatchWorker();
 
   bool clean(void);
-  void emptyQueue(void);
+  void emptyQueueRead(void);
   virtual void start(void);
   void handle(AsyncLogItem* logItem);
   void run(void);
+  void MoveLogsFromWriteQueueToReadQueue();
 
   void setContinueRunning(bool value) {
     base::threading::ScopedLock scopedLock(m_continueRunningLock);
