@@ -2077,7 +2077,8 @@ Storage::Storage(const LogBuilderPtr& defaultLogBuilder) :
   m_flags(ELPP_DEFAULT_LOGGING_FLAGS),
   m_vRegistry(new base::VRegistry(0, &m_flags)),
 #if ELPP_ASYNC_LOGGING
-  m_asyncLogQueue(new base::AsyncLogQueue()),
+    m_asyncLogQueueWrite(new base::AsyncLogQueue()),
+    m_asyncLogQueueRead(new base::AsyncLogQueue()),
   m_asyncDispatchWorker(asyncDispatchWorker),
 #endif  // ELPP_ASYNC_LOGGING
   m_preRollOutCallback(base::defaultPreRollOutCallback) {
@@ -2123,8 +2124,9 @@ Storage::~Storage(void) {
   installLogDispatchCallback<base::DefaultLogDispatchCallback>(std::string("DefaultLogDispatchCallback"));
   ELPP_INTERNAL_INFO(5, "Destroying asyncDispatchWorker");
   base::utils::safeDelete(m_asyncDispatchWorker);
-  ELPP_INTERNAL_INFO(5, "Destroying asyncLogQueue");
-  base::utils::safeDelete(m_asyncLogQueue);
+  ELPP_INTERNAL_INFO(5, "Destroying asyncLogQueues");
+  base::utils::safeDelete(m_asyncLogQueueWrite);
+  base::utils::safeDelete(m_asyncLogQueueRead);
 #endif  // ELPP_ASYNC_LOGGING
   ELPP_INTERNAL_INFO(5, "Destroying registeredHitCounters");
   base::utils::safeDelete(m_registeredHitCounters);
@@ -2313,7 +2315,7 @@ void AsyncLogDispatchCallback::handle(const LogDispatchData* data) {
   auto conf = data->logMessage()->logger()->typedConfigurations();
   if (conf->toStandardOutput(data->logMessage()->level()) ||
       conf->toFile(data->logMessage()->level())) {
-    ELPP->asyncLogQueue()->push(AsyncLogItem(*(data->logMessage()), *data, logLine));
+    ELPP->asyncLogQueueWrite()->push(AsyncLogItem(*(data->logMessage()), *data, logLine));
   }
 }
 
@@ -2337,22 +2339,22 @@ bool AsyncDispatchWorker::clean(void) {
   std::unique_lock<std::mutex> lk(_mtx);
   try
   {
-      emptyQueue();
+      emptyQueueRead();
   }
   catch(...){}
   lk.unlock();
   cv.notify_one();
-  return (ELPP && ELPP->asyncLogQueue() &&ELPP->asyncLogQueue()->empty());
+  return (ELPP && ELPP->asyncLogQueueWrite() && ELPP->asyncLogQueueWrite()->empty() && ELPP->asyncLogQueueRead() && ELPP->asyncLogQueueRead()->empty());
 }
 
-void AsyncDispatchWorker::emptyQueue(void) {
-  if (ELPP && ELPP->asyncLogQueue())
+void AsyncDispatchWorker::emptyQueueRead(void) {
+  if (ELPP && ELPP->asyncLogQueueRead())
   {
       try // TODO Thread-safety
       {
-        for (auto i=0UL; i< ELPP->asyncLogQueue()->size(); i++)
+        for (auto i=0UL; i < ELPP->asyncLogQueueRead()->size(); i++)
         {
-          AsyncLogItem data = ELPP->asyncLogQueue()->next();
+          AsyncLogItem data = ELPP->asyncLogQueueRead()->next();
           handle(&data);
         }
       }
@@ -2430,9 +2432,20 @@ void AsyncDispatchWorker::handle(AsyncLogItem* logItem) {
 
 void AsyncDispatchWorker::run(void) {
   while (continueRunning()) {
-    emptyQueue();
+    emptyQueueRead();
+    MoveLogsFromWriteQueueToReadQueue();
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
   }
+}
+
+void AsyncDispatchWorker::MoveLogsFromWriteQueueToReadQueue()
+{
+    if (ELPP) {
+        while (ELPP->asyncLogQueueWrite()->size() > 0) {
+            ELPP->asyncLogQueueRead()->push(ELPP->asyncLogQueueWrite()->front());
+            ELPP->asyncLogQueueWrite()->pop();
+        }
+    }
 }
 #endif  // ELPP_ASYNC_LOGGING
 
