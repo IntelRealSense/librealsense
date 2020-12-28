@@ -268,6 +268,8 @@ namespace rs2
 
     void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18, ImFont*& monofont);
 
+    rs2_sensor_mode resolution_from_width_height(int width, int height);
+
     template<class T>
     void sort_together(std::vector<T>& vec, std::vector<std::string>& names)
     {

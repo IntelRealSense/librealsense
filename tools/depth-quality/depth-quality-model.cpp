@@ -927,6 +927,23 @@ namespace rs2
                 }
 
                 sub->algo_roi = _metrics_model.get_roi();
+
+                // We need to update the sensor mode and the resolution ID at the sub-model that draw the controls
+                sub->ui.selected_res_id = _depth_sensor_model->ui.selected_res_id;
+                if( sub->s->supports( RS2_OPTION_SENSOR_MODE ) &&  !sub->res_values.empty())
+                {
+                    try
+                    {
+                        sub->s->set_option(
+                            RS2_OPTION_SENSOR_MODE,
+                            static_cast< float >( rs2::resolution_from_width_height(
+                                sub->res_values[sub->ui.selected_res_id].first,
+                                sub->res_values[sub->ui.selected_res_id].second ) ) );
+                    }
+                    catch( ... )
+                    {
+                    }
+                }
             }
         }
 

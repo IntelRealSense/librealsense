@@ -42,7 +42,7 @@ using namespace rs400;
 using namespace nlohmann;
 using namespace rs2::sw_update;
 
-static rs2_sensor_mode resolution_from_width_height(int width, int height)
+ rs2_sensor_mode rs2::resolution_from_width_height(int width, int height)
 {
     if ((width == 240 && height == 320) || (width == 320 && height == 240))
         return RS2_SENSOR_MODE_QVGA;
