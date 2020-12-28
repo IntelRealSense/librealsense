@@ -3,8 +3,11 @@
 
 //#cmake:add-file log-common.h
 #include "log-common.h"
+#include <time.h>
 
 std::atomic_int atomic_integer = 0;
+std::chrono::milliseconds global_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+time_t my_time = time(NULL);
 
 TEST_CASE("async logger", "[log][remi]")
 {
@@ -12,30 +15,41 @@ TEST_CASE("async logger", "[log][remi]")
     auto callback = [&](rs2_log_severity severity, rs2::log_message const& msg)
     {
         ++n_callbacks;
-        TRACE(severity << ' ' << msg.filename() << '+' << msg.line_number() << ": " << msg.raw());
+        //std::cout << msg.raw();
     };
 
-    auto func = []() {
-        int iterations = 2;
-        while (--iterations)
+    auto func = [](int required_value) {
+        int iterations = 0;
+        while (iterations < 10)
         {
-            ++atomic_integer;
             std::stringstream ss;
-            ss << "atomic integer = " << atomic_integer;
+            int value_to_check = (required_value) + 10 * iterations;
+            ss << "atomic integer = " << ++atomic_integer << ", and required value = " << value_to_check;
             rs2::log(RS2_LOG_SEVERITY_DEBUG, ss.str().c_str());
+            std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+            /*bool value_result = (atomic_integer <= value_to_check + 3) && (atomic_integer >= value_to_check - 3);
+            if (!value_result)
+                int a = 1;*/
+            std::chrono::milliseconds delta_ms = ms - global_ms;
+            bool performance_result = (delta_ms < (std::chrono::milliseconds)20);
+            if (!performance_result)
+                int a = 1;
+            std::cout << " , delta_ms = " << delta_ms.count() << std::endl;
+            global_ms = ms;
+            ++iterations;
         }
     };
     rs2::log_to_callback(RS2_LOG_SEVERITY_DEBUG, callback);
 
-    std::thread thread1(func);
-    std::thread thread2(func);
-    std::thread thread3(func);
-    std::thread thread4(func);
-    std::thread thread5(func);
+    std::vector<std::thread> threads;
 
-    thread1.join();
-    thread2.join();
-    thread3.join();
-    thread4.join();
-    thread5.join();    
+    for (int i = 0; i < 10; ++i)
+    {
+        threads.push_back(std::thread(func, i + 1));
+    }
+    
+    for (auto&&t : threads)
+    {
+        if (t.joinable()) t.join();
+    }
 }
