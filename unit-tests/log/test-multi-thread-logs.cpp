@@ -4,7 +4,7 @@
 //#cmake:add-file log-common.h
 #include "log-common.h"
 
-std::atomic_int atomic_integer = 0;
+std::atomic<int> atomic_integer = 0;
 std::chrono::milliseconds global_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 std::chrono::milliseconds max_time = (std::chrono::milliseconds)0;
 std::chrono::milliseconds min_time = (std::chrono::milliseconds)50;
