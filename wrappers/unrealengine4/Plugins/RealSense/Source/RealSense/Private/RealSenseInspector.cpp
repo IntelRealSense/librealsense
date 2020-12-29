@@ -32,6 +32,7 @@ ARealSenseInspector::ARealSenseInspector(const FObjectInitializer& ObjectInitial
 	PclMesh->bGenerateOverlapEvents = false;
 #endif
 	PclMesh->SetupAttachment(RootComponent);
+	GetDeviceDefaultProfileConfig(); // Get device profile and init Configs with proper values
 }
 
 ARealSenseInspector::~ARealSenseInspector()
@@ -39,6 +40,79 @@ ARealSenseInspector::~ARealSenseInspector()
 	REALSENSE_TRACE(TEXT("~ARealSenseInspector %p"), this);
 
 	Stop();
+}
+
+void ARealSenseInspector::GetDeviceDefaultProfileConfig()
+{
+	REALSENSE_TRACE(TEXT("ARealSenseInspector::InitializeDeviceProfile %p"), this);
+	try
+	{
+		Context = IRealSensePlugin::Get().GetContext();
+		if (!Context)
+		{
+			throw std::runtime_error("GetContext failed");
+		}
+
+		if (Context->Devices.Num() == 0)
+			{
+				Context->QueryDevices();
+				if (Context->Devices.Num() == 0)
+				{
+					throw std::runtime_error("No devices available");
+				}
+			}
+
+		ActiveDevice = Context->GetDeviceById(0);
+		if (!ActiveDevice)
+		{
+			throw std::runtime_error("Device not found");
+		}
+
+		TArray<FRealSenseStreamProfile> depthProfiles = ActiveDevice->GetStreamProfiles(ERealSenseStreamType::STREAM_DEPTH);		
+		if (depthProfiles.Num() > 0) {
+			auto profile = depthProfiles[depthProfiles.Num()-1];
+			REALSENSE_TRACE(TEXT("Will initialize DEPTH profile: %dx%d @%d"), profile.Width, profile.Height, profile.Rate);			
+			DepthConfig.Width = profile.Width;
+			DepthConfig.Height = profile.Height;
+			DepthConfig.Rate = profile.Rate;			
+		}
+
+		TArray<FRealSenseStreamProfile> colorProfiles = ActiveDevice->GetStreamProfiles(ERealSenseStreamType::STREAM_COLOR);		
+		if (colorProfiles.Num() > 0) {
+			auto profile = colorProfiles[colorProfiles.Num()-1];
+			REALSENSE_TRACE(TEXT("Will initialize COLOR profile: %dx%d @%d"), profile.Width, profile.Height, profile.Rate);			
+			ColorConfig.Width = profile.Width;
+			ColorConfig.Height = profile.Height;
+			ColorConfig.Rate = profile.Rate;
+		}
+
+		if (DepthConfig.Width != ColorConfig.Width || DepthConfig.Height != ColorConfig.Height) 
+		{
+			bAlignDepthToColor = false;
+		}
+
+		TArray<FRealSenseStreamProfile> infraredProfiles = ActiveDevice->GetStreamProfiles(ERealSenseStreamType::STREAM_INFRARED);		
+		if (infraredProfiles.Num() > 0) {
+			auto profile = infraredProfiles[infraredProfiles.Num()-1];
+			REALSENSE_TRACE(TEXT("Will initialize INFRARED profile: %dx%d @%d"), profile.Width, profile.Height, profile.Rate);
+			InfraredConfig.Width = profile.Width;
+			InfraredConfig.Height = profile.Height;
+			InfraredConfig.Rate = profile.Rate;
+		}
+	}catch (const rs2::error& ex)
+	{
+		auto what(uestr(ex.what()));
+		auto func(uestr(ex.get_failed_function()));
+		auto args(uestr(ex.get_failed_args()));
+
+		REALSENSE_ERR(TEXT("ARealSenseInspector::GetDeviceDefaultProfileConfig exception: %s (FUNC %s ; ARGS %s ; TYPE %d"), *what, *func, *args, (int)ex.get_type());
+	}
+	catch (const std::exception& ex)
+	{
+		REALSENSE_ERR(TEXT("ARealSenseInspector::GetDeviceDefaultProfileConfig exception: %s"), ANSI_TO_TCHAR(ex.what()));
+	}
+
+	REALSENSE_TRACE(TEXT("ARealSenseInspector::GetDeviceDefaultProfileConfig finished."));
 }
 
 bool ARealSenseInspector::Start()
