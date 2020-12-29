@@ -2518,6 +2518,12 @@ class AsyncLogQueue : public base::threading::ThreadSafe {
     return result;
   }
 
+  inline void moveTo(AsyncLogQueue* otherQueue) {
+      base::threading::ScopedLock scopedLock(lock());
+      if(otherQueue)
+        otherQueue->m_queue = std::move(m_queue);
+  }
+
   inline void push(const AsyncLogItem& item) {
     base::threading::ScopedLock scopedLock(lock());
     m_queue.push(item);
@@ -2754,7 +2760,6 @@ class AsyncDispatchWorker : public base::IWorker, public base::threading::Thread
   virtual void start(void);
   void handle(AsyncLogItem* logItem);
   void run(void);
-  void MoveLogsFromWriteQueueToReadQueue();
 
   void setContinueRunning(bool value) {
     base::threading::ScopedLock scopedLock(m_continueRunningLock);
