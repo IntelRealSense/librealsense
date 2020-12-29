@@ -1318,8 +1318,9 @@ namespace rs2
             << s->get_info(RS2_CAMERA_INFO_NAME);
 
         auto streaming_tooltip = [&]() {
-            if (streaming && ImGui::IsItemHovered())
-                ImGui::SetTooltip("Can't modify while streaming");
+            if( ( ! allow_change_resolution_while_streaming && streaming )
+                && ImGui::IsItemHovered() )
+                ImGui::SetTooltip( "Can't modify while streaming" );
         };
 
         //ImGui::Columns(2, label.c_str(), false);
@@ -1338,7 +1339,7 @@ namespace rs2
             label = to_string() << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
                 << s->get_info(RS2_CAMERA_INFO_NAME) << " resolution";
 
-            if (streaming)
+            if( ! allow_change_resolution_while_streaming && streaming )
             {
                 ImGui::Text("%s", res_chars[ui.selected_res_id]);
                 streaming_tooltip();
@@ -1413,7 +1414,7 @@ namespace rs2
                 label = to_string() << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
                     << s->get_info(RS2_CAMERA_INFO_NAME) << " fps";
 
-                if (streaming)
+                if( ! allow_change_fps_while_streaming && streaming )
                 {
                     ImGui::Text("%s", fps_chars[ui.selected_shared_fps_id]);
                     streaming_tooltip();

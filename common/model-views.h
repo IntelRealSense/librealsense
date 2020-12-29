@@ -648,7 +648,8 @@ namespace rs2
         int next_option = 0;
         std::vector<rs2_option> supported_options;
         bool streaming = false;
-
+        bool allow_change_resolution_while_streaming = false;
+        bool allow_change_fps_while_streaming = false;
         rect normalized_zoom{0, 0, 1, 1};
         rect roi_rect;
         bool auto_exposure_enabled = false;
