@@ -243,6 +243,18 @@ namespace librealsense
                 //el::Helpers::uninstallLogDispatchCallback< el::base::DefaultLogDispatchCallback >( "DefaultLogDispatchCallback" );
             }
         }
+
+        //Stop logging and reset logger to initial configurations
+        void reset_logger()
+        {
+            el::Loggers::reconfigureLogger(log_id, el::ConfigurationType::ToFile, "false");
+            el::Loggers::reconfigureLogger(log_id, el::ConfigurationType::ToStandardOutput, "false");
+            remove_callbacks();
+
+            minimum_log_severity = RS2_LOG_SEVERITY_NONE;
+            minimum_console_severity = RS2_LOG_SEVERITY_NONE;
+            minimum_file_severity = RS2_LOG_SEVERITY_NONE;
+        }
     };
 #else //BUILD_EASYLOGGINGPP
     struct log_message

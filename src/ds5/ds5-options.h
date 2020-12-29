@@ -268,7 +268,7 @@ namespace librealsense
         virtual bool is_enabled() const override { return true; }
         virtual const char* get_description() const override
         {
-            return "Alternating Emitter Pattern: 0:disabled(default), 1:enabled( emitter is toggled on/off on per-frame basis)";
+            return "Alternating emitter pattern, toggled on/off on per-frame basis";
         }
         virtual void enable_recording(std::function<void(const option &)> record_action) override { _record_action = record_action; }
 
@@ -291,7 +291,7 @@ namespace librealsense
         virtual bool is_enabled() const override { return true; }
         virtual const char* get_description() const override
         {
-            return "Emitter always on mode: 0:disabled(default), 1:enabled.";
+            return "Emitter always on mode: 0:disabled(default), 1:enabled";
         }
         virtual void enable_recording(std::function<void(const option &)> record_action) override { _record_action = record_action; }
 

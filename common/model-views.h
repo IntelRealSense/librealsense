@@ -28,7 +28,9 @@
 #include "updates-model.h"
 #include "calibration-model.h"
 #include "cah-model.h"
-#include "../common/utilities/time/periodic_timer.h"
+#include <utilities/time/periodic_timer.h>
+#include "reflectivity/reflectivity.h"
+#include <utilities/number/stabilized-value.h>
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);
@@ -144,6 +146,8 @@ namespace rs2
         {
             static const char* is_3d_view          { "viewer_model.is_3d_view" };
             static const char* ground_truth_r      { "viewer_model.ground_truth_r" };
+            static const char* target_width_r      { "viewer_model.target_width_r" };
+            static const char* target_height_r     { "viewer_model.target_height_r" };
             static const char* continue_with_ui_not_aligned { "viewer_model.continue_with_ui_not_aligned" };
             static const char* continue_with_current_fw{ "viewer_model.continue_with_current_fw" };
             static const char* settings_tab        { "viewer_model.settings_tab" };
@@ -264,20 +268,6 @@ namespace rs2
 
     void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18, ImFont*& monofont);
 
-    // avoid display the following options
-    bool static skip_option(rs2_option opt)
-    {
-        if (opt == RS2_OPTION_STREAM_FILTER ||
-            opt == RS2_OPTION_STREAM_FORMAT_FILTER ||
-            opt == RS2_OPTION_STREAM_INDEX_FILTER ||
-            opt == RS2_OPTION_FRAMES_QUEUE_SIZE ||
-            opt == RS2_OPTION_SENSOR_MODE || 
-            opt == RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH ||
-            opt == RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH)
-            return true;
-        return false;
-    }
-
     template<class T>
     void sort_together(std::vector<T>& vec, std::vector<std::string>& names)
     {
@@ -322,7 +312,7 @@ namespace rs2
         void update_supported(std::string& error_message);
         void update_read_only_status(std::string& error_message);
         void update_all_fields(std::string& error_message, notifications_model& model);
-
+        void set_option(rs2_option opt, float value, std::string &error_message);
         bool draw_option(bool update_read_only_options, bool is_streaming,
             std::string& error_message, notifications_model& model);
 
@@ -343,6 +333,7 @@ namespace rs2
         bool is_all_integers() const;
         bool is_enum() const;
         bool is_checkbox() const;
+        bool allow_change(float val, std::string& error_message) const; 
     };
 
     class frame_queues
@@ -564,7 +555,7 @@ namespace rs2
 
         bool is_there_common_fps() ;
         bool supports_on_chip_calib();
-        bool draw_stream_selection();
+        bool draw_stream_selection(std::string& error_message);
         bool is_selected_combination_supported();
         std::vector<stream_profile> get_selected_profiles();
         std::vector<stream_profile> get_supported_profiles();
@@ -672,6 +663,7 @@ namespace rs2
 
         region_of_interest algo_roi;
         bool show_algo_roi = false;
+        float roi_percentage;
 
         std::shared_ptr<rs2::colorizer> depth_colorizer;
         std::shared_ptr<rs2::yuy_decoder> yuy2rgb;
@@ -688,7 +680,6 @@ namespace rs2
     void outline_rect(const rect& r);
     void draw_rect(const rect& r, int line_width = 1);
 
-
     class stream_model
     {
     public:
@@ -700,8 +691,7 @@ namespace rs2
         rect get_normalized_zoom(const rect& stream_rect, const mouse_info& g, bool is_middle_clicked, float zoom_val);
 
         bool is_stream_alive();
-
-        void show_stream_footer(ImFont* font, const rect& stream_rect,const mouse_info& mouse, viewer_model& viewer);
+        void show_stream_footer(ImFont* font, const rect &stream_rect, const mouse_info& mouse, const std::map<int, stream_model> &streams, viewer_model& viewer);
         void show_stream_header(ImFont* font, const rect& stream_rect, viewer_model& viewer);
         void show_stream_imu(ImFont* font, const rect& stream_rect, const rs2_vector& axis, const mouse_info& mouse);
         void show_stream_pose(ImFont* font, const rect& stream_rect, const rs2_pose& pose_data, 
@@ -709,7 +699,8 @@ namespace rs2
 
         void snapshot_frame(const char* filename,viewer_model& viewer) const;
 
-        void begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p);
+        void begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p, const viewer_model& viewer);
+        bool draw_reflectivity(int x, int y, rs2::depth_sensor ds, const std::map<int, stream_model> &streams, std::stringstream &ss, bool same_line = false);
         rect layout;
         std::shared_ptr<texture_buffer> texture;
         float2 size;
@@ -725,6 +716,7 @@ namespace rs2
         fps_calc            fps, view_fps;
         int                 count = 0;
         rect                roi_display_rect{};
+        float               roi_percentage = 0.4f;
         frame_metadata      frame_md;
         bool                capturing_roi       = false;    // active modification of roi
         std::shared_ptr<subdevice_model> dev;
@@ -742,6 +734,11 @@ namespace rs2
         bool show_metadata = false;
 
         animated<float> _info_height{ 0.f };
+
+    private:
+        std::unique_ptr< reflectivity > _reflectivity; 
+        utilities::number::stabilized_value<float> _stabilized_reflectivity;
+
     };
 
     std::pair<std::string, std::string> get_device_name(const device& dev);

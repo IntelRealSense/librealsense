@@ -33,6 +33,10 @@ namespace rs2
             _viewer_model.draw_plane = true;
             _viewer_model.synchronization_enable = false;
             _viewer_model.support_non_syncronized_mode = false; //pipeline outputs only syncronized frameset
+            _viewer_model._support_ir_reflectivity = true;
+            // Hide options from the DQT application
+            _viewer_model._hidden_options.emplace(RS2_OPTION_ENABLE_MAX_USABLE_RANGE);
+            _viewer_model._hidden_options.emplace(RS2_OPTION_ENABLE_IR_REFLECTIVITY);
         }
 
         bool tool_model::start(ux_window& window)
@@ -551,7 +555,7 @@ namespace rs2
                         ImGui::PopStyleVar();
                         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2, 2 });
 
-                        if (_depth_sensor_model->draw_stream_selection())
+                        if (_depth_sensor_model->draw_stream_selection(_error_message))
                         {
                             if (_depth_sensor_model->is_selected_combination_supported())
                             {
@@ -611,17 +615,80 @@ namespace rs2
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
 
                         static std::vector<std::string> items{ "80%", "60%", "40%", "20%" };
-                        if (draw_combo_box("##ROI Percent", items, _roi_combo_index))
+                        int tmp_roi_combo_box = _roi_combo_index;
+                        if (draw_combo_box("##ROI Percent", items, tmp_roi_combo_box))
                         {
-                            if (_roi_combo_index == 0) _roi_percent = 0.8f;
-                            else if (_roi_combo_index == 1) _roi_percent = 0.6f;
-                            else if (_roi_combo_index == 2) _roi_percent = 0.4f;
-                            else if (_roi_combo_index == 3) _roi_percent = 0.2f;
-                            update_configuration();
+                            bool allow_changing_roi = true;
+                            try
+                            {
+                                if (_depth_sensor_model)
+                                {
+                                    auto && ds = _depth_sensor_model->dev.first<depth_sensor>();
+                                    if( ds.supports( RS2_OPTION_ENABLE_IR_REFLECTIVITY )
+                                        && ( ds.get_option( RS2_OPTION_ENABLE_IR_REFLECTIVITY ) == 1.0f ) )
+                                    {
+                                        allow_changing_roi = false;
+                                        _error_message = "ROI cannot be changed while IR Reflectivity is enabled";
+                                    }
+                                }
+                            }
+                            catch (...) {}
+
+                            if (allow_changing_roi)
+                            {
+                                _roi_combo_index = tmp_roi_combo_box;
+                                if (_roi_combo_index == 0) _roi_percent = 0.8f;
+                                else if (_roi_combo_index == 1) _roi_percent = 0.6f;
+                                else if (_roi_combo_index == 2) _roi_percent = 0.4f;
+                                else if (_roi_combo_index == 3) _roi_percent = 0.2f;
+                                update_configuration();
+                            }
                         }
 
                         ImGui::PopStyleColor();
                         ImGui::PopItemWidth();
+
+                        try
+                        {
+                            if (_depth_sensor_model)
+                            {
+                                auto && ds = _depth_sensor_model->dev.first< depth_sensor >();
+                                if (ds.supports(RS2_OPTION_ENABLE_IR_REFLECTIVITY))
+                                {
+                                    ImGui::SetCursorPosX(col0);
+                                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+
+                                    bool current_ir_reflectivity_opt
+                                        = ds.get_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY);
+
+                                    if (ImGui::Checkbox("IR Reflectivity",
+                                        &current_ir_reflectivity_opt))
+                                    {
+                                        // Deny enabling IR Reflectivity on ROI != 20% [RS5-8358]
+                                        if (0.2f == _roi_percent)
+                                            ds.set_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY,
+                                                current_ir_reflectivity_opt);
+                                        else
+                                            _error_message
+                                            = "Please set 'VGA' resolution, 'Max Range' preset and "
+                                            "20% ROI before enabling IR Reflectivity";
+                                    }
+
+                                    if (ImGui::IsItemHovered())
+                                    {
+                                        ImGui::SetTooltip(
+                                            "%s",
+                                            ds.get_option_description(
+                                                RS2_OPTION_ENABLE_IR_REFLECTIVITY ) );
+                                    }
+                                }
+                            }
+                        }
+                        catch (const std::exception& e)
+                        {
+                            _error_message = e.what();
+                        }
+
                         ImGui::SetCursorPosX(col0);
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
@@ -834,6 +901,7 @@ namespace rs2
                 if (!sub->s->is<depth_sensor>()) continue;
 
                 sub->show_algo_roi = true;
+                sub->roi_percentage = _roi_percent;
                 auto profiles = _pipe.get_active_profile().get_streams();
                 sub->streaming = true;      // The streaming activated externally to the device_model
                 sub->depth_colorizer->set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 0.f);

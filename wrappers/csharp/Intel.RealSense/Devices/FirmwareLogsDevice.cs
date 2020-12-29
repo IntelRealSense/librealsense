@@ -42,6 +42,12 @@ namespace Intel.RealSense
             return FwParsedLog.Create(NativeMethods.rs2_create_fw_log_parsed_message(Handle, out error));
         }
 
+        public uint GetNumberOfFwLogs()
+        {
+            object error;
+            return NativeMethods.rs2_get_number_of_fw_logs(Handle, out error);
+        }
+
         public bool GetFwLog(ref FwLog fwLog)
         {
             object error;

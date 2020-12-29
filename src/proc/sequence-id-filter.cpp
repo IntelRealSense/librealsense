@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#include "sequence_id_filter.h"
+#include "sequence-id-filter.h"
 
 namespace librealsense
 {

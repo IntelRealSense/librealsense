@@ -73,16 +73,45 @@ namespace librealsense
     inline bool convert(const std::string& source, rs2_format& target)
     {
         bool ret = true;
-        if (source == sensor_msgs::image_encodings::MONO16)     target = RS2_FORMAT_Z16;
+        std::string source_alias("");
+        bool mapped_format = false;
+        if (source == sensor_msgs::image_encodings::MONO16) {
+            target = RS2_FORMAT_Z16;
+            mapped_format = true;
+        }
+        if (source == sensor_msgs::image_encodings::TYPE_8UC1) {
+            target = RS2_FORMAT_Y8;
+            mapped_format = true;
+        }
+        if (source == sensor_msgs::image_encodings::TYPE_16UC1) {
+            target = RS2_FORMAT_Y16;
+            mapped_format = true;
+        }
+        if (source == sensor_msgs::image_encodings::MONO8) {
+            target = RS2_FORMAT_RAW8;
+            mapped_format = true;
+        }
+        if (source == sensor_msgs::image_encodings::YUV422) {
+            target = RS2_FORMAT_UYVY;
+            mapped_format = true;
+        }
         if (source == sensor_msgs::image_encodings::RGB8)       target = RS2_FORMAT_RGB8;
         if (source == sensor_msgs::image_encodings::BGR8)       target = RS2_FORMAT_BGR8;
         if (source == sensor_msgs::image_encodings::RGBA8)      target = RS2_FORMAT_RGBA8;
         if (source == sensor_msgs::image_encodings::BGRA8)      target = RS2_FORMAT_BGRA8;
-        if (source == sensor_msgs::image_encodings::TYPE_8UC1)  target = RS2_FORMAT_Y8;
-        if (source == sensor_msgs::image_encodings::TYPE_16UC1) target = RS2_FORMAT_Y16;
-        if (source == sensor_msgs::image_encodings::MONO8)      target = RS2_FORMAT_RAW8;
-        if (source == sensor_msgs::image_encodings::YUV422)     target = RS2_FORMAT_UYVY;
-        if (!(ret = try_parse(source, target)))
+        
+        // formats that need to be mapped to sdk native formats (e.g. MONO16)
+        if (mapped_format)
+            source_alias = std::string(rs2_format_to_string(target));
+        else {
+            // formats that are same as the sdk native formats (e.g.rgb8), 
+            // these need to be changed to upper case
+            // because values in sensor_msgs::image_encodings are lower case
+            source_alias = source;
+            std::transform(source_alias.begin(), source_alias.end(), source_alias.begin(), ::toupper);
+        }
+        
+        if (!(ret = try_parse(source_alias, target)))
         {
             LOG_INFO("Failed to convert source: " << source << " to matching rs2_format");
         }

@@ -43,6 +43,8 @@ macro(os_set_flags)
     else()
         set(BACKEND RS2_USE_V4L2_BACKEND)
     endif()
+
+    add_definitions(-DSQLITE_HAVE_ISNAN)
 endmacro()
 
 macro(os_target_config)

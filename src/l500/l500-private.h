@@ -268,7 +268,14 @@ namespace librealsense
             ld_alarm = 14,
             hard_error = 15,
             ld_alarm_hard_error = 16,
-            pzr_vbias_exceed_limit = 17
+            pzr_vbias_exceed_limit = 17,
+            eye_safety_general_critical_error = 18,
+            eye_safety_stuck_at_ld_error = 19,
+            eye_safety_stuck_at_mode_sign_error = 20,
+            eye_safety_stuck_at_vbst_error = 21,
+            eye_safety_stuck_at_msafe_error = 22,
+            eye_safety_stuck_at_ldd_snubber_error = 23,
+            eye_safety_stuck_at_flash_otp_error = 24
         };
 
         // Elaborate FW XU report.
@@ -288,6 +295,13 @@ namespace librealsense
             { hard_error,                   "Fatal error occurred (15)" },
             { ld_alarm_hard_error,          "Fatal error occurred (16)" },
             { pzr_vbias_exceed_limit,       "Fatal error occurred (17)" },
+            { eye_safety_general_critical_error,        "Fatal error occurred (18)" },
+            { eye_safety_stuck_at_ld_error,             "Fatal error occurred (19)" },
+            { eye_safety_stuck_at_mode_sign_error,      "Fatal error occurred (20)" },
+            { eye_safety_stuck_at_vbst_error,           "Fatal error occurred (21)" },
+            { eye_safety_stuck_at_msafe_error,          "Fatal error occurred (22)" },
+            { eye_safety_stuck_at_ldd_snubber_error,    "Fatal error occurred (23)" },
+            { eye_safety_stuck_at_flash_otp_error,      "Fatal error occurred (24)" }
         };
 
 #pragma pack(push, 1)
@@ -377,19 +391,29 @@ namespace librealsense
             double APD_temperature;
             double HUM_temperature;
             double AlgoTermalLddAvg_temperature;
+
+            temperatures()
+                : LDD_temperature(0.)
+                , MC_temperature(0.)
+                , MA_temperature(0.)
+                , APD_temperature(0.)
+                , HUM_temperature(0.)
+                , AlgoTermalLddAvg_temperature(0.) { }
         };
 
         //FW versions >= 1.5.0.0 added to the response vector the nest AVG value
-        struct extended_temperatures {
-            temperatures base_temperatures;
-            double nest_avg;
+        struct extended_temperatures : public temperatures 
+        {
+            double nest_avg; // NEST = Noise Estimation
+
+            extended_temperatures() : temperatures(), nest_avg(.0) {}
         };
 #pragma pack( pop )
 
         rs2_extrinsics get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
-
+        
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
-                                         const platform::uvc_device_info& info, platform::usb_device_info& result);
+        const platform::uvc_device_info& info, platform::usb_device_info& result);
 
         class l500_temperature_options : public readonly_option
         {
@@ -402,13 +426,34 @@ namespace librealsense
 
             const char * get_description() const override { return _description.c_str(); }
 
-            explicit l500_temperature_options( hw_monitor * hw_monitor,
+            explicit l500_temperature_options(l500_device *l500_depth_dev,
                                                rs2_option opt,
                                                const std::string& description );
 
         private:
             rs2_option _option;
-            hw_monitor* _hw_monitor;
+            l500_device *_l500_depth_dev;
+            std::string _description;
+        };
+
+        // Noise estimation option
+        class nest_option : public readonly_option
+        {
+        public:
+            float query() const override;
+
+            option_range get_range() const override { return option_range{ 0, 4100, 0, 0 }; }
+
+            bool is_enabled() const override { return true; }
+
+            const char * get_description() const override { return _description.c_str(); }
+
+            explicit nest_option(l500_device * l500_depth_dev, const std::string & description)
+                : _l500_depth_dev(l500_depth_dev)
+                , _description(description) {};
+
+        private:
+            l500_device *_l500_depth_dev;
             std::string _description;
         };
 
@@ -548,6 +593,8 @@ namespace librealsense
             hw_monitor& _hwm;
             std::shared_ptr< freefall_option > _freefall_opt;
         };
+
+        rs2_sensor_mode get_resolution_from_width_height(int width, int height);
 
         class ac_trigger;
     } // librealsense::ivcam2

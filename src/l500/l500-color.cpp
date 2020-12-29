@@ -268,35 +268,6 @@ namespace librealsense
                                               << height << " don't exist" );
     }
 
-    double l500_color_sensor::read_temperature() const
-    {
-        auto & hwm = *_owner->_hw_monitor;
-
-        std::vector< byte > res;
-
-        try
-        {
-            res = hwm.send( command{ TEMPERATURES_GET } );
-        }
-        catch( std::exception const & e )
-        {
-            AC_LOG( ERROR,
-                    "Failed to get temperatures; hardware monitor in inaccessible: " << e.what() );
-            return 0.;
-        }
-
-        if( res.size() < sizeof( temperatures ) )  // New temperatures may get added by FW...
-        {
-            AC_LOG( ERROR,
-                    "Failed to get temperatures; result size= "
-                        << res.size() << "; expecting at least " << sizeof( temperatures ) );
-            return 0.;
-        }
-        auto const & ts = *( reinterpret_cast< temperatures * >( res.data() ) );
-        AC_LOG( DEBUG, "HUM temperture is currently " << ts.HUM_temperature << " degrees Celsius" );
-        return ts.HUM_temperature;
-    }
-
     rs2_intrinsics normalize( const rs2_intrinsics & intr )
     {
         auto res = intr;
@@ -743,8 +714,8 @@ namespace librealsense
 
         bool usb3mode = (_usb_mode >= platform::usb3_type || _usb_mode == platform::usb_undefined);
 
-        uint32_t width = usb3mode ? 1280 : 960;
-        uint32_t height = usb3mode ? 720 : 540;
+        int width = usb3mode ? 1280 : 960;
+        int height = usb3mode ? 720 : 540;
 
         tags.push_back({ RS2_STREAM_COLOR, -1, width, height, RS2_FORMAT_RGB8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
 

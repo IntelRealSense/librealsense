@@ -27,6 +27,7 @@ PYBIND11_MODULE(NAME, m) {
     init_internal(m); // must be run after init_frame()
     init_export(m);
     init_advanced_mode(m);
+    init_serializable_device(m);
     init_util(m);
     
     /** rs_export.hpp **/
@@ -40,6 +41,7 @@ PYBIND11_MODULE(NAME, m) {
 
     m.def("log_to_console", &rs2::log_to_console, "min_severity"_a);
     m.def("log_to_file", &rs2::log_to_file, "min_severity"_a, "file_path"_a);
+    m.def("reset_logger", &rs2::reset_logger);
 
     // Access to log_message is only from a callback (see log_to_callback below) and so already
     // should have the GIL acquired

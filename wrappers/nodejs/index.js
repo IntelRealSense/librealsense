@@ -2059,6 +2059,7 @@ class Frame {
       case constants.format.FORMAT_MOTION_RAW:
       case constants.format.FORMAT_GPIO_RAW:
       case constants.format.FORMAT_RAW10:
+      case constants.format.FORMAT_FG:
       case constants.format.FORMAT_ANY:
         this.typedArray = new Uint8Array(this.arrayBuffer);
         return this.typedArray;
@@ -3967,6 +3968,11 @@ const format = {
    */
   format_w10: 'w10',
   /**
+  * String literal of <code>'FG'</code>.
+  * <br>16-bit per-pixel frame grabber format.
+  */
+  format_FG: 'FG',
+  /**
    * When passed to enable stream, librealsense will try to provide best suited
    * format. <br>Equivalent to its lowercase counterpart.
    * @type {Integer}
@@ -4111,6 +4117,11 @@ const format = {
    * @type {Integer}
    */
   FORMAT_W10: RS2.RS2_FORMAT_W10,
+   /**
+  * 16-bit per-pixel frame grabber format.
+  * @type {Integer}
+  */
+  FORMAT_FG: RS2.RS2_FORMAT_FG,
   /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * <br>Equivalent to its lowercase counterpart.
@@ -4180,6 +4191,8 @@ const format = {
 		return this.format_invi;
 	  case this.RS2_FORMAT_W10:
 		return this.format_w10;
+      case this.RS2_FORMAT_FG:
+        return this.format_FG;
     }
   },
 };
@@ -4942,6 +4955,10 @@ const option = {
   OPTION_SEQUENCE_SIZE: RS2.RS2_OPTION_SEQUENCE_SIZE,
   OPTION_SEQUENCE_ID: RS2.RS2_OPTION_SEQUENCE_ID,
   OPTION_HUMIDITY_TEMPERATURE: RS2.RS2_OPTION_HUMIDITY_TEMPERATURE,
+  OPTION_ENABLE_MAX_USABLE_RANGE: RS2.RS2_OPTION_ENABLE_MAX_USABLE_RANGE,
+  OPTION_ALTERNATE_IR: RS2.RS2_OPTION_ALTERNATE_IR,
+  OPTION_NOISE_ESTIMATION: RS2.RS2_OPTION_NOISE_ESTIMATION,
+  OPTION_ENABLE_IR_REFLECTIVITY: RS2.RS2_OPTION_ENABLE_IR_REFLECTIVITY,
   /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
@@ -5094,6 +5111,14 @@ const option = {
         return this.option_thermal_compensation;
       case this.OPTION_HUMIDITY_TEMPERATURE:
         return this.option_humidity_temperature;
+      case this.OPTION_ENABLE_MAX_USABLE_RANGE:
+        return this.option_enable_max_usable_range;
+      case this.OPTION_ALTERNATE_IR:
+        return this.option_alternate_ir;
+      case this.OPTION_NOISE_ESTIMATION:
+        return this.option_noise_estimation;
+      case this.ENABLE_IR_REFLECTIVITY:
+        return this.option_enable_ir_reflectivity;
       default:
         throw new TypeError(
             'option.optionToString(option) expects a valid value as the 1st argument');

@@ -4,6 +4,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include "python.hpp"
 #include "../include/librealsense2/hpp/rs_sensor.hpp"
 #include "calibrated-sensor.h"
+#include "max-usable-range-sensor.h"
 
 void init_sensor(py::module &m) {
     /** rs_sensor.hpp **/
@@ -74,8 +75,9 @@ void init_sensor(py::module &m) {
         .def(BIND_DOWNCAST(sensor, fisheye_sensor))
         .def(BIND_DOWNCAST(sensor, pose_sensor))
         .def(BIND_DOWNCAST(sensor, calibrated_sensor))
-        .def(BIND_DOWNCAST(sensor, wheel_odometer));
-
+        .def(BIND_DOWNCAST(sensor, wheel_odometer))
+        .def(BIND_DOWNCAST(sensor, max_usable_range_sensor))
+        .def(BIND_DOWNCAST(sensor, debug_stream_sensor));
     // rs2::sensor_from_frame [frame.def("get_sensor", ...)?
     // rs2::sensor==sensor?
 
@@ -124,6 +126,18 @@ void init_sensor(py::module &m) {
               &rs2::calibrated_sensor::reset_calibration,
               py::call_guard< py::gil_scoped_release >() )
         .def( "__nonzero__", &rs2::calibrated_sensor::operator bool );
+    
+    py::class_<rs2::max_usable_range_sensor, rs2::sensor> mur_sensor(m, "max_usable_range_sensor");
+    mur_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
+        .def("get_max_usable_depth_range",
+            &rs2::max_usable_range_sensor::get_max_usable_depth_range,
+            py::call_guard< py::gil_scoped_release >());
+    
+    py::class_< rs2::debug_stream_sensor, rs2::sensor > ds_sensor( m, "debug_stream_sensor" );
+    ds_sensor.def( py::init< rs2::sensor >(), "sensor"_a )
+        .def( "get_debug_stream_profiles",
+               &rs2::debug_stream_sensor::get_debug_stream_profiles,
+              py::call_guard< py::gil_scoped_release >() );
 
     // rs2::depth_stereo_sensor
     py::class_<rs2::depth_stereo_sensor, rs2::depth_sensor> depth_stereo_sensor(m, "depth_stereo_sensor"); // No docstring in C++

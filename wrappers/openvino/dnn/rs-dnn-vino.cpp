@@ -218,7 +218,10 @@ int main(int argc, char * argv[]) try
     openvino_helpers::error_listener error_listener;
     engine.SetLogCallback( error_listener );
     std::string const device_name { "CPU" };
-    engine.AddExtension( std::make_shared< openvino::Extensions::Cpu::CpuExtensions >(), device_name );
+
+#ifdef OPENVINO2019
+	engine.AddExtension(std::make_shared< openvino::Extensions::Cpu::CpuExtensions >(), device_name);
+#endif
 
     std::vector< detector_and_labels > detectors;
     load_detectors_into( detectors, engine, device_name );

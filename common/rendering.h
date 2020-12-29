@@ -107,7 +107,15 @@ namespace rs2
 
     inline float smoothstep(float x, float min, float max)
     {
-        x = clamp((x - min) / (max - min), 0.0, 1.0);
+        if (max == min)
+        {
+            x = clamp((x - min) , 0.0, 1.0);
+        }
+        else
+        {
+            x = clamp((x - min) / (max - min), 0.0, 1.0);
+        }
+        
         return x*x*(3 - 2 * x);
     }
 
@@ -475,6 +483,7 @@ namespace rs2
     template<typename T>
     T normalizeT(const T& in_val, const T& min, const T& max)
     {
+        if (min >= max) return 0;
         return ((in_val - min)/(max - min));
     }
 
@@ -1021,6 +1030,9 @@ namespace rs2
                         }
                     }
                     else glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, data);
+                    break;
+                case RS2_FORMAT_FG:
+                    glTexImage2D( GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
                     break;
                 case RS2_FORMAT_XYZ32F:
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, data);

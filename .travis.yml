@@ -9,7 +9,12 @@ matrix:
       language: cpp
       env: VS15=false RS_CPP_TEST=true
       script:
-        - cmake .. -G "Visual Studio 15 2017 Win64" -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_GRAPHICAL_EXAMPLES=false -DBUILD_WITH_TM2=false -DFORCE_RSUSB_BACKEND=true -DCHECK_FOR_UPDATES=true
+        # map librealsense folder to overcome windows path too long issue
+        - pwd
+        - |
+          subst d: ../. 
+        - cd d:/build
+        - cmake .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE="C:/Python38/python.exe" -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.8 -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_GRAPHICAL_EXAMPLES=false -DBUILD_WITH_TM2=false -DFORCE_RSUSB_BACKEND=true -DCHECK_FOR_UPDATES=true
         - cmake --build . --config $LRS_RUN_CONFIG -- -m
         - cd $LRS_RUN_CONFIG
         - ls
@@ -22,6 +27,11 @@ matrix:
       language: cpp
       env: VS15=true
       script:
+        # map librealsense folder to overcome windows path too long issue
+        - pwd
+        - |
+          subst d: ../. 
+        - cd d:/build
         - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DCHECK_FOR_UPDATES=true
         - cmake --build . --config $LRS_BUILD_CONFIG -- -m
         - ls $LRS_BUILD_CONFIG
@@ -31,6 +41,11 @@ matrix:
       language: cpp
       env: VS15=true
       script:
+        # map librealsense folder to overcome windows path too long issue
+        - pwd
+        - |
+          subst d: ../. 
+        - cd d:/build
         - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_EXAMPLES=false -DBUILD_CSHARP_BINDINGS=true -DDOTNET_VERSION_LIBRARY="4.5" -DDOTNET_VERSION_EXAMPLES="4.5" -DCHECK_FOR_UPDATES=true
         - cmake --build . --config $LRS_BUILD_CONFIG -- -m
         - ls $LRS_BUILD_CONFIG
@@ -55,7 +70,7 @@ matrix:
       dist: xenial
       script:
         - cd ../scripts && ./pr_check.sh && cd ../build
-        - cmake .. -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true
+        - cmake .. -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.5
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
         - python3 ../unit-tests/run-unit-tests.py --verbose .
 
@@ -68,6 +83,7 @@ matrix:
       node_js: "10"
       env: LRS_BUILD_NODEJS=true
       script:
+        - python ../wrappers/nodejs/tools/enums.py -i ../include/librealsense2 -a ../wrappers/nodejs/src -v
         - cmake .. -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS=true -DPYBIND11_PYTHON_VERSION=2.7 -DCHECK_FOR_UPDATES=true
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
         - cd ../wrappers/nodejs/
@@ -92,7 +108,7 @@ matrix:
       dist: xenial
       env: LRS_BUILD_ANDROID=true
       script:
-        - cmake .. -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r16b/build/cmake/android.toolchain.cmake  -DCHECK_FOR_UPDATES=true
+        - cmake .. -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r20b/build/cmake/android.toolchain.cmake  -DCHECK_FOR_UPDATES=true
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
         - ls
 
@@ -110,8 +126,8 @@ before_install:
       export PATH=$OLDPATH && unset OLDPATH && cd ../../;
     fi
   - if [[ "$LRS_BUILD_ANDROID" == "true" ]]; then
-      wget https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip;
-      unzip -q android-ndk-r16b-linux-x86_64.zip -d ./;
+      wget https://dl.google.com/android/repository/android-ndk-r20b-linux-x86_64.zip;
+      unzip -q android-ndk-r20b-linux-x86_64.zip -d ./;
     fi
   - mkdir build && cd build
   - if [[ "$RS_CPP_TEST" == "true" ]]; then

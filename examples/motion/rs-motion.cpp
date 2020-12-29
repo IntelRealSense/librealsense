@@ -223,7 +223,7 @@ int main(int argc, char * argv[]) try
     // Before running the example, check that a device supporting IMU is connected
     if (!check_imu_is_supported())
     {
-        std::cerr << "Device supporting IMU (D435i) not found";
+        std::cerr << "Device supporting IMU not found";
         return EXIT_FAILURE;
     }
 

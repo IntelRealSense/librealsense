@@ -160,6 +160,7 @@ namespace rs2
 
         std::shared_ptr<process_manager> update_manager = nullptr;
         int update_state = 0;
+        int update_state_prev = 0;
         progress_bar _progress_bar;
     };
 

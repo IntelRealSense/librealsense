@@ -592,28 +592,40 @@ namespace librealsense
    {
    public:
        explicit gated_option(std::shared_ptr<option> leading_to_read_only,
-           std::shared_ptr<option> gated_option, std::string reason = "This option cannot be set right now")
-           : proxy_option(leading_to_read_only), _gated_option(gated_option), _reason(reason)
-       {}
+           std::vector<std::pair<std::shared_ptr<option>, std::string>> gated_options)
+           : proxy_option(leading_to_read_only)
+       {
+           for (auto& gated : gated_options)
+           {
+               _gated_options.push_back(gated);
+           }
+       }
 
        void set(float value) override
        {
-           auto strong = _gated_option.lock();
-           if (!strong)
-               return;
-           auto val = strong->query();
-
-           if (val)
-               LOG_WARNING(_reason.c_str());
-           else
-               _proxy->set(value);          
            
+           bool gated_set = false;
+           for (auto& gated : _gated_options)
+           {
+               auto strong = gated.first.lock();
+               if (!strong)
+                   return;
+               auto val = strong->query();
+               if (val)
+               {
+                   gated_set = true;
+                   LOG_WARNING(gated.second.c_str());
+               }
+           }
+
+           if (!gated_set)
+               _proxy->set(value);
+
            _recording_function(*this);
        }
 
    private:
-       std::weak_ptr<option>  _gated_option;
-       std::string _reason;
+       std::vector < std::pair<std::weak_ptr<option>, std::string> >  _gated_options;
    };
 
    /** \brief class provided a control

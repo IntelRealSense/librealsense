@@ -20,6 +20,7 @@
 #include "ac-trigger.h"
 #include "algo/depth-to-rgb-calibration/debug.h"
 #include "algo/depth-to-rgb-calibration/utils.h"  // validate_dsm_params
+#include "algo/max-usable-range/l500/max-usable-range.h" 
 
 
 #define MM_TO_METER 1/1000
@@ -78,33 +79,37 @@ namespace librealsense
 
         depth_sensor.register_option(
             RS2_OPTION_LLD_TEMPERATURE,
-            std::make_shared< l500_temperature_options >( _hw_monitor.get(),
+            std::make_shared< l500_temperature_options >( this,
                                                           RS2_OPTION_LLD_TEMPERATURE,
                                                           "Laser Driver temperature" ) );
 
         depth_sensor.register_option(
             RS2_OPTION_MC_TEMPERATURE,
-            std::make_shared< l500_temperature_options >( _hw_monitor.get(),
+            std::make_shared< l500_temperature_options >( this,
                                                           RS2_OPTION_MC_TEMPERATURE,
                                                           "Mems Controller temperature" ) );
 
         depth_sensor.register_option(
             RS2_OPTION_MA_TEMPERATURE,
-            std::make_shared< l500_temperature_options >( _hw_monitor.get(),
+            std::make_shared< l500_temperature_options >( this,
                                                           RS2_OPTION_MA_TEMPERATURE,
                                                           "DSP controller temperature" ) );
 
         depth_sensor.register_option(
             RS2_OPTION_APD_TEMPERATURE,
-            std::make_shared< l500_temperature_options >( _hw_monitor.get(),
+            std::make_shared< l500_temperature_options >( this,
                                                           RS2_OPTION_APD_TEMPERATURE,
                                                           "Avalanche Photo Diode temperature" ) );
 
         depth_sensor.register_option(
             RS2_OPTION_HUMIDITY_TEMPERATURE,
-            std::make_shared< l500_temperature_options >( _hw_monitor.get(),
+            std::make_shared< l500_temperature_options >( this,
                                                           RS2_OPTION_HUMIDITY_TEMPERATURE,
                                                           "Humidity temperature" ) );
+
+        depth_sensor.register_option(
+            RS2_OPTION_NOISE_ESTIMATION,
+            std::make_shared< nest_option >( this, "Noise estimation" ) );
 
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_ir_stream);
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_confidence_stream);
@@ -163,13 +168,13 @@ namespace librealsense
 
         bool usb3mode = (_usb_mode >= platform::usb3_type || _usb_mode == platform::usb_undefined);
 
-        uint32_t width = usb3mode ? 640 : 320;
-        uint32_t height = usb3mode ? 480 : 240;
+        int width = usb3mode ? 640 : 320;
+        int height = usb3mode ? 480 : 240;
 
         tags.push_back({ RS2_STREAM_DEPTH, -1, width, height, RS2_FORMAT_Z16, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
         tags.push_back({ RS2_STREAM_INFRARED, -1, width, height, RS2_FORMAT_Y8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
         tags.push_back({ RS2_STREAM_CONFIDENCE, -1, width, height, RS2_FORMAT_RAW8, 30, profile_tag::PROFILE_TAG_SUPERSET });
-        
+        tags.push_back({ RS2_STREAM_DEPTH, -1, -1, -1, RS2_FORMAT_FG, -1, profile_tag::PROFILE_TAG_DEBUG } );
         return tags;
     }
 
@@ -196,6 +201,8 @@ namespace librealsense
 
         return std::make_shared<timestamp_composite_matcher>(matchers);
     }
+
+   
 
 
     // If the user did not ask for IR, The open function will add it anyway. 
@@ -275,6 +282,11 @@ namespace librealsense
 
     }
 
+    l500_depth_sensor::~l500_depth_sensor()
+    {
+        _owner->stop_temperatures_reader();
+    }
+
     int l500_depth_sensor::read_algo_version()
     {
         const int algo_version_address = 0xa0020bd8;
@@ -345,6 +357,51 @@ namespace librealsense
         command cmd( ivcam2::fw_cmd::DELETE_TABLE, ac_depth_results::table_id );
         _owner->_hw_monitor->send( cmd );
         AC_LOG( INFO, "Depth sensor calibration has been reset" );
+    }
+
+    float l500_depth_sensor::get_max_usable_depth_range() const
+    {
+        using namespace algo::max_usable_range;
+
+        if( !supports_option( RS2_OPTION_ENABLE_MAX_USABLE_RANGE) )
+            throw librealsense::wrong_api_call_sequence_exception( "max usable range option is not supported" );
+
+        if( get_option( RS2_OPTION_ENABLE_MAX_USABLE_RANGE).query() != 1.0f )
+            throw librealsense::wrong_api_call_sequence_exception( "max usable range option is not on" );
+
+        if( ! is_streaming() )
+        {
+            throw librealsense::wrong_api_call_sequence_exception("depth sensor is not streaming!");
+        }
+
+       float noise_estimation = static_cast<float>(_owner->get_temperatures().nest_avg);
+
+       return l500::max_usable_range(noise_estimation);
+    }
+
+    stream_profiles l500_depth_sensor::get_debug_stream_profiles() const
+    {
+       return get_stream_profiles( PROFILE_TAG_DEBUG );
+    }
+
+    // We want to disable max-usable-range when not in a particular preset:
+    bool l500_depth_sensor::is_max_range_preset() const
+    {
+        auto res = _owner->_hw_monitor->send(command(ivcam2::IRB, 0x6C, 0x2, 0x1));
+
+        if (res.size() < sizeof(uint8_t))
+        {
+            throw invalid_value_exception(
+                to_string() << "Gain trim FW command failed: size expected: " << sizeof(uint8_t)
+                << " , size received: " << res.size());
+        }
+
+        int gtr = static_cast<int>(res[0]);
+        int apd = static_cast<int>(get_option(RS2_OPTION_AVALANCHE_PHOTO_DIODE).query());
+        int laser_power = static_cast<int>(get_option(RS2_OPTION_LASER_POWER).query());
+        int max_laser_power = static_cast<int>(get_option(RS2_OPTION_LASER_POWER).get_range().max);
+
+        return ((apd == 9) && (gtr == 0) && (laser_power == max_laser_power)); // indicates max_range preset
     }
 
 
@@ -504,7 +561,9 @@ namespace librealsense
 
         // The delay is here as a work around to a firmware bug [RS5-5453]
         _action_delayer.do_after_delay( [&]() {
-            synthetic_sensor::start(std::make_shared< frame_filter >( callback, _user_requests));
+            synthetic_sensor::start( std::make_shared< frame_filter >( callback, _user_requests ) );
+
+            _owner->start_temperatures_reader();
 
             if( _owner->_autocal )
                 _owner->_autocal->start();
@@ -515,20 +574,12 @@ namespace librealsense
     {
     // The delay is here as a work around to a firmware bug [RS5-5453]
         _action_delayer.do_after_delay([&]() { synthetic_sensor::stop(); });
+
         if( _owner->_autocal )
             _owner->_autocal->stop();
-    }
 
-    rs2_sensor_mode get_resolution_from_width_height(int width, int height)
-    {
-        if ((width == 240 && height == 320) || (width == 320 && height == 240))
-            return RS2_SENSOR_MODE_QVGA;
-        else if ((width == 640 && height == 480) || (width == 480  && height == 640))
-            return RS2_SENSOR_MODE_VGA;
-        else if ((width == 1024 && height == 768) || (width == 768 && height == 1024))
-            return RS2_SENSOR_MODE_XGA;
-        else
-            throw std::runtime_error(to_string() << "Invalid resolution " << width << "x" << height);
+        _owner->stop_temperatures_reader();
+
     }
 
     bool stream_profiles_correspond(stream_profile_interface* l, stream_profile_interface* r)
@@ -615,11 +666,19 @@ namespace librealsense
                                 } )
                != requests.end();
 
+            auto is_ir_needed
+                = std::find_if( requests.begin(),
+                                requests.end(),
+                                []( std::shared_ptr< stream_profile_interface > const & sp ) {
+                                    return sp->get_format() != RS2_FORMAT_FG;
+                                } )
+               != requests.end();
+
             _validator_requests = requests;
 
             // Enable IR stream if user didn't asked for IR
             // IR stream improves depth frames
-            if (!is_ir_requested)
+            if( ! is_ir_requested && is_ir_needed )
             {
                 auto user_request = std::find_if(requests.begin(), requests.end(), [](std::shared_ptr<stream_profile_interface> sp)
                 {return sp->get_stream_type() != RS2_STREAM_INFRARED;});
@@ -663,8 +722,8 @@ namespace librealsense
                                 << get_resolution_from_width_height(vs->get_width(), vs->get_height())<<")");
                     }
                 }
-                
-                sensor_mode_option.set(float(get_resolution_from_width_height(vs->get_width(), vs->get_height())));
+                if( vs->get_format() == RS2_FORMAT_Z16 )
+                    sensor_mode_option.set(float(get_resolution_from_width_height(vs->get_width(), vs->get_height())));
             }
 
             synthetic_sensor::open(_validator_requests);

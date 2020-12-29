@@ -181,6 +181,10 @@ PYBIND11_MODULE(NAME, m) {
         .value("sequence_size", RS2_OPTION_SEQUENCE_SIZE)
         .value("sequence_id", RS2_OPTION_SEQUENCE_ID)
         .value("humidity_temperature", RS2_OPTION_HUMIDITY_TEMPERATURE)
+        .value("enable_max_usable_range", RS2_OPTION_ENABLE_MAX_USABLE_RANGE)
+        .value("alternate_ir", RS2_OPTION_ALTERNATE_IR)
+        .value("noise_estimation", RS2_OPTION_NOISE_ESTIMATION)
+        .value("enable_ir_reflectivity", RS2_OPTION_ENABLE_IR_REFLECTIVITY)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");
@@ -288,7 +292,7 @@ PYBIND11_MODULE(NAME, m) {
 
     hid_device.def("open", &platform::hid_device::open, "hid_profiles"_a)
               .def("close", &platform::hid_device::close)
-              .def("stop_capture", &platform::hid_device::stop_capture)
+              .def("stop_capture", &platform::hid_device::stop_capture, py::call_guard<py::gil_scoped_release>())
               .def("start_capture", &platform::hid_device::start_capture, "callback"_a)
               .def("get_sensors", &platform::hid_device::get_sensors)
               .def("get_custom_report_data", &platform::hid_device::get_custom_report_data,
@@ -299,7 +303,7 @@ PYBIND11_MODULE(NAME, m) {
     multi_pins_hid_device.def(py::init<std::vector<std::shared_ptr<platform::hid_device>>&>())
                          .def("open", &platform::multi_pins_hid_device::open, "hid_profiles"_a)
                          .def("close", &platform::multi_pins_hid_device::close)
-                         .def("stop_capture", &platform::multi_pins_hid_device::stop_capture)
+                         .def("stop_capture", &platform::multi_pins_hid_device::stop_capture, py::call_guard<py::gil_scoped_release>())
                          .def("start_capture", &platform::multi_pins_hid_device::start_capture, "callback"_a)
                          .def("get_sensors", &platform::multi_pins_hid_device::get_sensors)
                          .def("get_custom_report_data", &platform::multi_pins_hid_device::get_custom_report_data,

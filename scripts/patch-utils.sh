@@ -39,12 +39,15 @@ function require_package {
 #   master	UBUNTU: Ubuntu-4.15.0-106.107	Kleber Sacilotto de Souza	2 weeks
 #	master-current	UBUNTU: Ubuntu-4.15.0-66.75	Khalid Elmously	4 months
 
+#Ubuntu focal repo : https://kernel.ubuntu.com/git/ubuntu/ubuntu-focal.git/
+#	Branch		Commit message
+#	master		UBUNTU: Ubuntu-5.4.0-21.25
 function choose_kernel_branch {
 
 	# Split the kernel version string
 	IFS='.' read -a kernel_version <<< "$1"
 
-	if [ "$2" = "xenial" ];
+	if [ "$2" == "xenial" ];
 	then
 		case "${kernel_version[1]}" in
 		"4")									# Kernel 4.4. is managed on master branch
@@ -68,12 +71,8 @@ function choose_kernel_branch {
 			exit 1
 			;;
 		esac
-	else
-		if [ "$2" != "bionic" ];
-		then
-			echo -e "\e[31mUnsupported distribution $2 kernel version $1 . The patches are maintained for Ubuntu16/18 (Xenial/Bionic) with LTS kernels 4-[4,8,10,13,15,18]\e[0m" >&2
-			exit 1
-		fi
+	elif [ "$2" == "bionic" ];
+	then
 		case "${kernel_version[0]}.${kernel_version[1]}" in
 		"4.15")								 	# kernel 4.15 for Ubuntu 18/Bionic Beaver
 			echo master
@@ -94,7 +93,23 @@ function choose_kernel_branch {
 			;;
 		*)
 			#error message shall be redirected to stderr to be printed properly
-			echo -e "\e[31mUnsupported kernel version $1 . The Bionic patches are maintained for Ubuntu LTS with kernels 4.15, 4.18, 5.0 and 5.3\e[0m" >&2
+			echo -e "\e[31mUnsupported kernel version $1 . The Bionic patches are maintained for Bionic Beaver LTS kernels 4.1[5/8], 5.[0/3/4]\e[0m" >&2
+			exit 1
+			;;
+		esac
+	else
+		if [ "$2" != "focal" ]; 				# Ubuntu 20
+		then
+			echo -e "\e[31mUnsupported distribution $2, kernel version $1 . The patches are maintained for Ubuntu 16/18/20 LTS\e[0m" >&2
+			exit 1
+		fi
+		case "${kernel_version[0]}.${kernel_version[1]}" in
+		"5.4")									# kernel 5.4
+			echo master
+			;;
+		*)
+			#error message shall be redirected to stderr to be printed properly
+			echo -e "\e[31mUnsupported kernel version $1 . The Focal patches are maintained for Ubuntu LTS with kernel 5.4 only\e[0m" >&2
 			exit 1
 			;;
 		esac

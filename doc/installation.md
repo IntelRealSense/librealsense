@@ -46,7 +46,7 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
       `sudo apt-get install libglfw3-dev`<br />
 
      * Ubuntu 18:<br />
-      `sudo apt-get install libglfw3-dev libgl1-mesa-dev libglu1-mesa-dev`  <br /><br />
+      `sudo apt-get install libglfw3-dev libgl1-mesa-dev libglu1-mesa-dev at`  <br /><br />
 
 > **Cmake Note**: certain librealsense CMAKE flags (e.g. CUDA) require version 3.8+ which is currently not made available via apt manager for Ubuntu LTS.   
     Go to the [official CMake site](https://cmake.org/download/) to download and install the application  
@@ -57,6 +57,8 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
   3. Run Intel Realsense permissions script from librealsense root directory:<br />
     `./scripts/setup_udev_rules.sh`  
     <br />
+    *Notice: One can always remove permissions by running:*
+    *`./scripts/setup_udev_rules.sh --uninstall`*
 
   4. Build and apply patched kernel modules for: <br />
     * **Ubuntu 14/16/18 with LTS kernel**

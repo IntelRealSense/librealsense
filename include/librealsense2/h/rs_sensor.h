@@ -87,6 +87,7 @@ typedef enum rs2_format
     RS2_FORMAT_INVI            , /**< 8-bit IR stream.  */
     RS2_FORMAT_W10             , /**< Grey-scale image as a bit-packed array. 4 pixel data stream taking 5 bytes */
     RS2_FORMAT_Z16H            , /**< Variable-length Huffman-compressed 16-bit depth values. */
+    RS2_FORMAT_FG              , /**< 16-bit per-pixel frame grabber format. */
     RS2_FORMAT_COUNT             /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_format;
 const char* rs2_format_to_string(rs2_format format);
@@ -323,6 +324,14 @@ const char* rs2_get_notification_serialized_data(rs2_notification* notification,
 * \return            list of stream profiles that given subdevice can provide, should be released by rs2_delete_profiles_list
 */
 rs2_stream_profile_list* rs2_get_stream_profiles(rs2_sensor* sensor, rs2_error** error);
+
+/**
+* retrieve list of debug stream profiles that given subdevice can provide
+* \param[in] sensor  input RealSense subdevice
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            list of debug stream profiles that given subdevice can provide, should be released by rs2_delete_profiles_list
+*/
+rs2_stream_profile_list * rs2_get_debug_stream_profiles( rs2_sensor * sensor, rs2_error ** error );
 
 /**
 * check how subdevice is streaming
@@ -647,6 +656,12 @@ void rs2_reset_sensor_calibration( rs2_sensor const * sensor, rs2_error** error 
 */
 void rs2_set_motion_device_intrinsics(const rs2_sensor* sensor, const rs2_stream_profile* profile, const rs2_motion_device_intrinsic* intrinsics, rs2_error** error);
 
+/** When called on a depth sensor, this method will return the maximum range of the camera given the amount of ambient light in the scene
+* \param[in] sensor      depth sensor
+* \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                the max usable range in meters
+*/
+float rs2_get_max_usable_depth_range(rs2_sensor const * sensor, rs2_error** error);
 
 #ifdef __cplusplus
 }

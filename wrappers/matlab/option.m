@@ -82,6 +82,10 @@ classdef option < int64
         sequence_size                   (78)
         sequence_id                     (79)
         humidity_temperature            (80)
-        count                           (81)
+        max_usable_range                (81)
+        alternate_IR                    (82)
+        noise_estimation                (83)
+        enable_ir_reclectivity          (84)
+        count                           (85)
     end
 end

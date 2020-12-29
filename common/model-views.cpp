@@ -54,6 +54,50 @@ static rs2_sensor_mode resolution_from_width_height(int width, int height)
         return RS2_SENSOR_MODE_COUNT;
 }
 
+static void width_height_from_resolution(rs2_sensor_mode mode, int &width, int &height)
+{
+    switch (mode)
+    {
+    case RS2_SENSOR_MODE_VGA:
+        width = 640;
+        height = 480;
+        break;
+    case RS2_SENSOR_MODE_XGA:
+        width = 1024;
+        height = 768;
+        break;
+    case RS2_SENSOR_MODE_QVGA:
+        width = 320;
+        height = 240;
+        break;
+    default:
+        width = height = 0;
+        break;
+    }
+}
+
+static int get_resolution_id_from_sensor_mode( rs2_sensor_mode sensor_mode,
+                                    const rs2::sensor & s,
+                                    const std::vector< std::pair< int, int > > & res_values )
+{
+    int width = 0, height = 0;
+    width_height_from_resolution( sensor_mode, width, height );
+    auto iter = std::find_if( res_values.begin(),
+                              res_values.end(),
+                              [width, height]( std::pair< int, int > res ) {
+                                  if( ( res.first == width ) && ( res.second == height )
+                                      || ( res.first == height ) && ( res.second == width ) )
+                                      return true;
+                                  return false;
+                              } );
+    if( iter != res_values.end() )
+    {
+        return static_cast< int >( std::distance( res_values.begin(), iter ) );
+    }
+
+    throw std::runtime_error( "cannot convert sensor mode to resolution ID" );
+}
+
 ImVec4 flip(const ImVec4& c)
 {
     return{ c.y, c.x, c.z, c.w };
@@ -526,18 +570,14 @@ namespace rs2
                 auto bool_value = value > 0.0f;
                 if (ImGui::Checkbox(label.c_str(), &bool_value))
                 {
-                    res = true;
-                    value = bool_value ? 1.0f : 0.0f;
-                    try
+                    if (allow_change((bool_value ? 1.0f : 0.0f), error_message))
                     {
+                        res = true;
                         model.add_log(to_string() << "Setting " << opt << " to "
-                            << value << " (" << (bool_value ? "ON" : "OFF") << ")");
-                        endpoint->set_option(opt, value);
+                            << (bool_value? "1.0" : "0.0") << " (" << (bool_value ? "ON" : "OFF") << ")");
+
+                        set_option(opt, bool_value ? 1.f : 0.f, error_message);
                         *invalidate_flag = true;
-                    }
-                    catch (const error& e)
-                    {
-                        error_message = error_to_string(e);
                     }
                 }
                 if (ImGui::IsItemHovered() && desc)
@@ -653,15 +693,7 @@ namespace rs2
                                 }
                                 else
                                 {
-                                    try
-                                    {
-                                        endpoint->set_option(opt, new_value);
-                                        value = new_value;
-                                    }
-                                    catch (const error& e)
-                                    {
-                                        error_message = error_to_string(e);
-                                    }
+                                    set_option(opt, new_value, error_message);
                                 }
 
                                 edit_mode = false;
@@ -678,28 +710,28 @@ namespace rs2
                                 static_cast<int>(range.step)))
                             {
                                 // TODO: Round to step?
-                                value = static_cast<float>(int_value);
-                                model.add_log(to_string() << "Setting " << opt << " to " << value);
-                                endpoint->set_option(opt, value);
+                                model.add_log(to_string() << "Setting " << opt << " to " << int_value);
+                                set_option(opt, static_cast<float>(int_value), error_message);
                                 *invalidate_flag = true;
                                 res = true;
                             }
                         }
                         else
                         {
-                            if (ImGui::SliderFloat(id.c_str(), &value,
+                            float tmp_value = value;
+                            if (ImGui::SliderFloat(id.c_str(), &tmp_value,
                                 range.min, range.max, "%.4f"))
                             {
-                                auto loffset = std::abs(fmod(value, range.step));
+                                auto loffset = std::abs(fmod(tmp_value, range.step));
                                 auto roffset = range.step - loffset;
-                                if (value >= 0)
-                                    value = (loffset < roffset) ? value - loffset : value + roffset;
+                                if (tmp_value >= 0)
+                                    tmp_value = (loffset < roffset) ? tmp_value - loffset : tmp_value + roffset;
                                 else
-                                    value = (loffset < roffset) ? value + loffset : value - roffset;
-                                value = (value < range.min) ? range.min : value;
-                                value = (value > range.max) ? range.max : value;
-                                model.add_log(to_string() << "Setting " << opt << " to " << value);
-                                endpoint->set_option(opt, value);
+                                    tmp_value = (loffset < roffset) ? tmp_value + loffset : tmp_value - roffset;
+                                tmp_value = (tmp_value < range.min) ? range.min : tmp_value;
+                                tmp_value = (tmp_value > range.max) ? range.max : tmp_value;
+                                model.add_log(to_string() << "Setting " << opt << " to " << tmp_value);
+                                set_option(opt, tmp_value, error_message);
                                 *invalidate_flag = true;
                                 res = true;
                             }
@@ -739,13 +771,16 @@ namespace rs2
 
                     try
                     {
-                        if (ImGui::Combo(id.c_str(), &selected, labels.data(),
+                        int tmp_selected = selected;
+                        float tmp_value = value;
+                        if (ImGui::Combo(id.c_str(), &tmp_selected, labels.data(),
                             static_cast<int>(labels.size())))
                         {
-                            value = range.min + range.step * selected;
+                            tmp_value = range.min + range.step * tmp_selected;
                             model.add_log(to_string() << "Setting " << opt << " to "
-                                << value << " (" << labels[selected] << ")");
-                            endpoint->set_option(opt, value);
+                                << tmp_value << " (" << labels[tmp_selected] << ")");
+                            set_option(opt, tmp_value, error_message);
+                            selected = tmp_selected;
                             if (invalidate_flag) *invalidate_flag = true;
                             res = true;
                         }
@@ -870,6 +905,12 @@ namespace rs2
         return range.max == 1.0f &&
             range.min == 0.0f &&
             range.step == 1.0f;
+    }
+
+    bool option_model::allow_change(float val, std::string& error_message) const
+    {
+        // Place here option restrictions
+        return true;
     }
 
     void subdevice_model::populate_options(std::map<int, option_model>& opt_container,
@@ -1204,7 +1245,10 @@ namespace rs2
                 // Watch out for read-only options in the playback sensor!
                 try
                 {
-                    s->set_option( RS2_OPTION_SENSOR_MODE, resolution_from_width_height( res_values[ui.selected_res_id].first, res_values[ui.selected_res_id].second ) );
+                    s->set_option( RS2_OPTION_SENSOR_MODE,
+                                   static_cast< float >( resolution_from_width_height(
+                                       res_values[ui.selected_res_id].first,
+                                       res_values[ui.selected_res_id].second ) ) );
                 }
                 catch( not_implemented_error const &)
                 {
@@ -1266,7 +1310,7 @@ namespace rs2
         return true;
     }
 
-    bool subdevice_model::draw_stream_selection()
+    bool subdevice_model::draw_stream_selection(std::string& error_message)
     {
         bool res = false;
 
@@ -1302,8 +1346,9 @@ namespace rs2
             else
             {
                 ImGui::PushItemWidth(-1);
-                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-                if (ImGui::Combo(label.c_str(), &ui.selected_res_id, res_chars.data(),
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 }); 
+                auto tmp_selected_res_id = ui.selected_res_id;
+                if (ImGui::Combo(label.c_str(), &tmp_selected_res_id, res_chars.data(),
                     static_cast<int>(res_chars.size())))
                 {
                     res = true;
@@ -1311,11 +1356,42 @@ namespace rs2
 
                     if (s->supports(RS2_OPTION_SENSOR_MODE))
                     {
-                        auto width = res_values[ui.selected_res_id].first;
-                        auto height = res_values[ui.selected_res_id].second;
+                        auto width = res_values[tmp_selected_res_id].first;
+                        auto height = res_values[tmp_selected_res_id].second;
                         auto res = resolution_from_width_height(width, height);
                         if (res >= RS2_SENSOR_MODE_VGA && res < RS2_SENSOR_MODE_COUNT)
-                            s->set_option(RS2_OPTION_SENSOR_MODE, float(res));
+                        {   
+                            try
+                            {
+                                s->set_option(RS2_OPTION_SENSOR_MODE, float(res));
+                            }
+                            catch (const error& e)
+                            {
+                                error_message = error_to_string(e);
+                            }
+
+                            // Only update the cached value once set_option is done! That way, if it doesn't change anything...
+                            try
+                            {
+                                int sensor_mode_val = static_cast<int>(s->get_option( RS2_OPTION_SENSOR_MODE ));
+                                {
+                                    ui.selected_res_id = get_resolution_id_from_sensor_mode(
+                                        static_cast< rs2_sensor_mode >( sensor_mode_val ),
+                                        *s,
+                                        res_values );
+                                }
+                            }
+                            catch (...) {}
+                        }
+                        else
+                        {
+                            error_message = to_string() << "Resolution " << width << "x" << height
+                                                        << " is not supported on this device";
+                        }
+                    }
+                    else
+                    {
+                        ui.selected_res_id = tmp_selected_res_id;
                     }
                 }
                 ImGui::PopStyleColor();
@@ -2023,7 +2099,7 @@ namespace rs2
         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
         {
             auto opt = static_cast<rs2_option>(i);
-            if (skip_option(opt)) continue;
+            if (viewer.is_option_skipped(opt)) continue;
             if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
             {
                 draw_option(opt, update_read_only_options, error_message, notifications);
@@ -2036,7 +2112,7 @@ namespace rs2
         return (uint64_t)std::count_if(
             std::begin(options_metadata),
             std::end(options_metadata),
-            [](const std::pair<int, option_model>& p) {return p.second.supported && !skip_option(p.second.opt); });
+            [&](const std::pair<int, option_model>& p) {return p.second.supported && !viewer.is_option_skipped(p.second.opt); });
     }
 
     bool option_model::draw_option(bool update_read_only_options,
@@ -2061,9 +2137,25 @@ namespace rs2
             return draw(error_message, model);
     }
 
+    void option_model::set_option(rs2_option opt, float req_value, std::string &error_message)
+    {
+        try
+        {
+            endpoint->set_option(opt, req_value);
+        }
+        catch (const error& e)
+        {
+            error_message = error_to_string(e);
+        }
+        // Only update the cached value once set_option is done! That way, if it doesn't change anything...
+        try { value = endpoint->get_option(opt); }
+        catch (...) {}
+    }
+
     stream_model::stream_model()
         : texture(std::unique_ptr<texture_buffer>(new texture_buffer())),
-        _stream_not_alive(std::chrono::milliseconds(1500))
+        _stream_not_alive(std::chrono::milliseconds(1500)),
+        _stabilized_reflectivity(10)
     {
         show_map_ruler = config_file::instance().get_or_default(
             configurations::viewer::show_map_ruler, true);
@@ -2073,7 +2165,7 @@ namespace rs2
 
     std::shared_ptr<texture_buffer> stream_model::upload_frame(frame&& f)
     {
-        if (dev && dev->is_paused() && !dev->dev.is<playback>()) return nullptr;
+        if (dev && dev->is_paused()) return nullptr;
 
         last_frame = std::chrono::high_resolution_clock::now();
 
@@ -2173,7 +2265,7 @@ namespace rs2
         return !_stream_not_alive.eval();
     }
 
-    void stream_model::begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p)
+    void stream_model::begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p, const viewer_model& viewer)
     {
         dev = d;
         original_profile = p;
@@ -2194,7 +2286,83 @@ namespace rs2
                 static_cast<float>(vd.height()) };
         }
         _stream_not_alive.reset();
+        
+        try
+        {
+            auto ds = d->dev.first< depth_sensor >();
+            if( viewer._support_ir_reflectivity
+                && ds.supports( RS2_OPTION_ENABLE_IR_REFLECTIVITY )
+                && ds.supports( RS2_OPTION_ENABLE_MAX_USABLE_RANGE )
+                && ( ( p.stream_type() == RS2_STREAM_INFRARED )
+                     || ( p.stream_type() == RS2_STREAM_DEPTH ) ) )
+            {
+                _reflectivity = std::unique_ptr< reflectivity >( new reflectivity() );
+            }
+        }
+        catch(...) {};
 
+    }
+
+    bool stream_model::draw_reflectivity( int x,
+                                          int y,
+                                          rs2::depth_sensor ds,
+                                          const std::map< int, stream_model > & streams,
+                                          std::stringstream & ss,
+                                          bool same_line )
+    {
+        bool reflectivity_valid = false;
+
+        // Get IR sample for getting current reflectivity
+        auto ir_stream
+            = std::find_if( streams.cbegin(),
+                            streams.cend(),
+                            []( const std::pair< const int, stream_model > & stream ) {
+                                return stream.second.profile.stream_type() == RS2_STREAM_INFRARED;
+                            } );
+
+        // Get depth sample for adding to reflectivity history
+        auto depth_stream
+            = std::find_if( streams.cbegin(),
+                            streams.cend(),
+                            []( const std::pair< const int, stream_model > & stream ) {
+                                return stream.second.profile.stream_type() == RS2_STREAM_DEPTH;
+                            } );
+
+        if ((ir_stream != streams.end()) && (depth_stream != streams.end()))
+        {
+            auto depth_val = 0.0f;
+            auto ir_val = 0.0f;
+            depth_stream->second.texture->try_pick( x, y, &depth_val );
+            ir_stream->second.texture->try_pick( x, y, &ir_val );
+
+            _reflectivity->add_depth_sample( depth_val, x, y );  // Add depth sample to the history
+
+            float noise_est = ds.get_option( RS2_OPTION_NOISE_ESTIMATION );
+            auto mur_sensor = ds.as< max_usable_range_sensor >();
+            if( mur_sensor )
+            {
+                auto max_usable_range = mur_sensor.get_max_usable_depth_range();
+                reflectivity_valid = true;
+                std::string ref_str = "N/A";
+                try
+                {
+                    auto pixel_ref = _reflectivity->get_reflectivity( noise_est, max_usable_range, ir_val );
+                    _stabilized_reflectivity.add( pixel_ref );
+                    auto stabilized_pixel_ref = _stabilized_reflectivity.get( 0.75f );
+                    ref_str = to_string() << std::dec << round( stabilized_pixel_ref * 100 ) << "%";
+                }
+                catch( ... )
+                {
+                }
+
+                if( same_line )
+                    ss << ", Reflectivity: " << ref_str;
+                else
+                    ss << "\nReflectivity: " << ref_str;
+            }
+        }
+
+        return reflectivity_valid;
     }
 
     void stream_model::update_ae_roi_rect(const rect& stream_rect, const mouse_info& mouse, std::string& error_message)
@@ -2205,7 +2373,7 @@ namespace rs2
             // Case 1: Starting Dragging of the ROI rect
             // Pre-condition: not capturing already + mouse is down + we are inside stream rect
             if (!capturing_roi && mouse.mouse_down[0] && stream_rect.contains(mouse.cursor))
-            {
+            {   
                 // Initialize roi_display_rect with drag-start position
                 roi_display_rect.x = mouse.cursor.x;
                 roi_display_rect.y = mouse.cursor.y;
@@ -2859,7 +3027,7 @@ namespace rs2
         ImGui::PopStyleColor(5);
     }
 
-    void stream_model::show_stream_footer(ImFont* font, const rect &stream_rect, const mouse_info& mouse, viewer_model& viewer)
+    void stream_model::show_stream_footer(ImFont* font, const rect &stream_rect, const mouse_info& mouse, const std::map<int, stream_model> &streams, viewer_model& viewer)
     {
         auto non_visual_stream = (profile.stream_type() == RS2_STREAM_GYRO)
             || (profile.stream_type() == RS2_STREAM_ACCEL)
@@ -2880,17 +3048,80 @@ namespace rs2
             float val{};
             if (texture->try_pick(x, y, &val))
             {
-                ss << " 0x" << std::hex << static_cast<int>(round(val)) << " =";
+                ss << " 0x" << std::hex << static_cast< int >( round( val ) );
             }
+
+            bool show_max_range = false;
+            bool show_reflectivity = false;
 
             if (texture->get_last_frame().is<depth_frame>())
             {
-                auto meters = texture->get_last_frame().as<depth_frame>().get_distance(x, y);
+                // Draw pixel distance
+                auto meters = texture->get_last_frame().as<depth_frame>().get_distance(x, y);             
 
                 if (viewer.metric_system)
-                    ss << std::dec << " " << std::setprecision(3) << meters << " meters";
+                    ss << std::dec << " = " << std::setprecision(3) << meters << " meters";
                 else
-                    ss << std::dec << " " << std::setprecision(3) << meters / FEET_TO_METER << " feet";
+                    ss << std::dec << " = " << std::setprecision(3) << meters / FEET_TO_METER << " feet";
+
+                // Draw maximum usable depth range
+                auto ds = sensor_from_frame(texture->get_last_frame())->as<depth_sensor>();
+                if (!viewer.is_option_skipped(RS2_OPTION_ENABLE_MAX_USABLE_RANGE))
+                {
+                    if (ds.supports(RS2_OPTION_ENABLE_MAX_USABLE_RANGE) && 
+                        (ds.get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE) == 1.0f))
+                    {
+                        auto mur_sensor = ds.as<max_usable_range_sensor>();
+                        if (mur_sensor)
+                        {
+                            show_max_range = true;
+                            auto max_usable_range = mur_sensor.get_max_usable_depth_range();
+                            const float MIN_RANGE = 3.0f;
+                            const float MAX_RANGE = 9.0f;
+                            // display maximum usable range in range 3-9 [m] at 1 [m] resolution (rounded)
+                            auto max_usable_range_rounded = round(std::min(std::max(max_usable_range, MIN_RANGE), MAX_RANGE));
+
+                            if (viewer.metric_system)
+                                ss << std::dec << "\nMax usable range: " << std::setprecision(1) << max_usable_range_rounded << " meters";
+                            else
+                                ss << std::dec << "\nMax usable range: " << std::setprecision(1) << max_usable_range_rounded / FEET_TO_METER << " feet";
+                        }
+                    }
+                }
+
+                // Draw IR reflectivity on depth frame
+                if (_reflectivity)
+                {
+                    if (ds.get_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY) == 1.0f)
+                    {
+                        if ((0.2f == roi_percentage) && roi_display_rect.contains(mouse.cursor))
+                        {
+                            // Add reflectivity information on frame, if max usable range is displayed, display reflectivity on the same line
+                            show_reflectivity = draw_reflectivity(x, y, ds, streams, ss, show_max_range);
+                        }
+                    }
+                }
+            }
+
+            // Draw IR reflectivity on IR frame
+            if (_reflectivity)
+            {
+                bool lf_exist = texture->get_last_frame();
+                if (lf_exist)
+                {
+                    auto ds = sensor_from_frame(texture->get_last_frame())->as<depth_sensor>();
+                    if (ds.get_option( RS2_OPTION_ENABLE_IR_REFLECTIVITY ) == 1.0f )
+                    {
+                        bool lf_exist = texture->get_last_frame();
+                        if (is_stream_alive() && texture->get_last_frame().get_profile().stream_type() == RS2_STREAM_INFRARED)
+                        {
+                            if ((0.2f == roi_percentage) && roi_display_rect.contains(mouse.cursor))
+                            {
+                                show_reflectivity = draw_reflectivity(x, y, ds, streams, ss, show_max_range);
+                            }
+                        }
+                    }
+                }
             }
 
             std::string msg(ss.str().c_str());
@@ -2898,14 +3129,25 @@ namespace rs2
             ImGui_ScopePushFont(font);
 
             // adjust windows size to the message length
-
+            auto new_line_start_idx = msg.find_first_of('\n');
+            int footer_vertical_size = 35;
             auto width = float(msg.size() * 8);
+
+            // adjust width according to the longest line
+            if (show_max_range || show_reflectivity)
+            {
+                footer_vertical_size = 50;
+                auto first_line_size = msg.find_first_of('\n') + 1;
+                auto second_line_size = msg.substr(new_line_start_idx).size();
+                width = std::max(first_line_size, second_line_size) * 8;
+            }
+
             auto align = 20;
             width += align - (int)width % align;
 
-            ImVec2 pos{ stream_rect.x + 5, stream_rect.y + stream_rect.h - 35 };
+            ImVec2 pos{ stream_rect.x + 5, stream_rect.y + stream_rect.h - footer_vertical_size };
             ImGui::GetWindowDrawList()->AddRectFilled({ pos.x, pos.y },
-                { pos.x + width, pos.y + 30 }, ImColor(dark_sensor_bg));
+                { pos.x + width, pos.y + footer_vertical_size - 5 }, ImColor(dark_sensor_bg));
 
             ImGui::SetCursorScreenPos({ pos.x + 10, pos.y + 5 });
 
@@ -2916,6 +3158,14 @@ namespace rs2
 
             ImGui::Text("%s", msg.c_str());
             ImGui::PopStyleColor(2);
+        }
+        else
+        {
+            if (_reflectivity)
+            {
+                _reflectivity->reset_history();
+                _stabilized_reflectivity.clear();
+            }
         }
     }
 
@@ -3325,7 +3575,6 @@ namespace rs2
                     float(dev->algo_roi.max_y - dev->algo_roi.min_y) };
 
             r = r.normalize(_normalized_zoom.unnormalize(get_original_stream_bounds())).unnormalize(stream_rect).cut_by(stream_rect);
-
             glColor3f(yellow.x, yellow.y, yellow.z);
             draw_rect(r, 2);
 
@@ -3335,6 +3584,8 @@ namespace rs2
                 draw_text(static_cast<int>(r.x + r.w / 2 - msg_width / 2), static_cast<int>(r.y + 10), message.c_str());
 
             glColor3f(1.f, 1.f, 1.f);
+            roi_percentage = dev->roi_percentage;
+            roi_display_rect = r;
         }
 
         update_ae_roi_rect(stream_rect, g, error_message);
@@ -3977,7 +4228,7 @@ namespace rs2
                         if (s->streaming)
                             s->resume();
                     }
-
+                    viewer.paused = false;
                     p.resume();
                 }
 
@@ -4829,7 +5080,6 @@ namespace rs2
                 }
             }
 
-
             if (_allow_remove)
             {
                 something_to_show = true;
@@ -4935,9 +5185,7 @@ namespace rs2
                     }
                 }
             }
-
-
-                
+            
             bool has_autocalib = false;
             for (auto&& sub : subdevices)
             {
@@ -4949,8 +5197,7 @@ namespace rs2
                         try
                         {
                             auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
-                            auto n = std::make_shared<autocalib_notification_model>(
-                                "", manager, false);
+                            auto n = std::make_shared<autocalib_notification_model>("", manager, false);
 
                             viewer.not_model->add_notification(n);
                             n->forced = true;
@@ -4959,6 +5206,8 @@ namespace rs2
                             for (auto&& n : related_notifications)
                                 if (dynamic_cast<autocalib_notification_model*>(n.get()))
                                     n->dismiss(false);
+
+                            related_notifications.push_back(n);
                         }
                         catch (const error& e)
                         {
@@ -4992,6 +5241,8 @@ namespace rs2
                             for (auto&& n : related_notifications)
                                 if (dynamic_cast<autocalib_notification_model*>(n.get()))
                                     n->dismiss(false);
+
+                            related_notifications.push_back(n);
                         }
                         catch (const error& e)
                         {
@@ -5004,9 +5255,9 @@ namespace rs2
                     }
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("Tare calibration is used to adjust camera absolute distance to flat target.\n"
-                            "User needs to enter the known ground truth");
+                            "User needs either to enter the known ground truth or use the get button\n"
+                            "with specific target to get the ground truth.");
 
-                    
                     if (_calib_model.supports())
                     {
                         if (ImGui::Selectable("Calibration Data"))
@@ -5541,11 +5792,10 @@ namespace rs2
                                     model.add_log(to_string() << "Setting " << opt_model.opt << " to "
                                         << new_val << " (" << labels[selected] << ")");
 
-                                    opt_model.endpoint->set_option(opt_model.opt, new_val);
+                                    opt_model.set_option(opt_model.opt, new_val, error_message);
 
                                     // Only apply preset to GUI if set_option was succesful
                                     selected_file_preset = "";
-                                    opt_model.value = new_val;
                                     is_clicked = true;
                                 }
                                 else
@@ -6141,7 +6391,7 @@ namespace rs2
                 ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2, 2 });
 
                 if (show_stream_selection)
-                    sub->draw_stream_selection();
+                    sub->draw_stream_selection(error_message);
 
                 static const std::vector<rs2_option> drawing_order = serialize ?
                     std::vector<rs2_option>{                           RS2_OPTION_EMITTER_ENABLED, RS2_OPTION_ENABLE_AUTO_EXPOSURE }
@@ -6164,11 +6414,12 @@ namespace rs2
                         for (auto&& i : sub->s->get_supported_options())
                         {
                             auto opt = static_cast<rs2_option>(i);
-                            if (skip_option(opt)) continue;
+                            if (viewer.is_option_skipped(opt)) continue;
                             if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
                             {
                                 if (serialize && opt == RS2_OPTION_VISUAL_PRESET)
                                     continue;
+
                                 if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, *viewer.not_model))
                                 {
                                     get_curr_advanced_controls = true;
@@ -6200,7 +6451,7 @@ namespace rs2
                             for (auto i = 0; i < RS2_OPTION_COUNT; i++)
                             {
                                 auto opt = static_cast<rs2_option>(i);
-                                if (skip_option(opt)) continue;
+                                if (viewer.is_option_skipped(opt)) continue;
                                 pb->get_option(opt).draw_option(
                                     dev.is<playback>() || update_read_only_options,
                                     false, error_message, *viewer.not_model);
@@ -6403,7 +6654,7 @@ namespace rs2
                             {
                                 for (auto&& opt : pb->get_option_list())
                                 {
-                                    if (skip_option(opt)) continue;
+                                    if (viewer.is_option_skipped(opt)) continue;
                                     pb->get_option(opt).draw_option(
                                         dev.is<playback>() || update_read_only_options,
                                         false, error_message, *viewer.not_model);
