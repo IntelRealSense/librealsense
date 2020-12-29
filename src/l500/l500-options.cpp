@@ -6,7 +6,7 @@
 #include "l500-depth.h"
 
 const std::string MIN_CONTROLS_FW_VERSION("1.3.9.0");
-const std::string MIN_GET_DEFAULT_FW_VERSION( "1.3.9.0" );
+const std::string MIN_GET_DEFAULT_FW_VERSION( "1.5.3.0" );
 
 namespace librealsense
 {
@@ -39,7 +39,7 @@ namespace librealsense
 
     float l500_hw_options::query_default() const
     {
-        if( _fw_version >= firmware_version( MIN_GET_DEFAULT_FW_VERSION ) )
+        if(_fw_version >= firmware_version( MIN_GET_DEFAULT_FW_VERSION ) )
         {
             return query( get_default, int( _resolution->query() ) );
         }
@@ -109,48 +109,17 @@ namespace librealsense
 
     float l500_hw_options::query( l500_command op, int mode ) const
     {
-        if( op == get_current )
+        auto res = _hw_monitor->send( command{ AMCGET, _type, op, mode } );
+
+        if( res.size() < sizeof( int32_t ) )
         {
-            auto res = _hw_monitor->send( command{ AMCGET, _type, get_current, mode } );
-
-            if( res.size() < sizeof( int32_t ) )
-            {
-                std::stringstream s;
-                s << "Size of data returned from query(get_current) of " << _type << "is "
-                  << res.size() << " while min size = " << sizeof( int32_t );
-                throw std::runtime_error( s.str() );
-            }
-            auto val = *( reinterpret_cast< uint32_t * >( (void *)res.data() ) );
-            return float( val );
+            std::stringstream s;
+            s << "Size of data returned from query(get_current) of " << _type << "is " << res.size()
+              << " while min size = " << sizeof( int32_t );
+            throw std::runtime_error( s.str() );
         }
-        else if( op == get_default )
-        {
-            const uint32_t digital_gain_num_of_values = RS2_DIGITAL_GAIN_LOW;
-            auto digital_gain_val = _digital_gain->query();
-            auto res = _hw_monitor->send( command{ AMCGET, _type, get_default, mode } );
-
-            // In AMCGET get_default we expect two values: 
-            // the first for digital gain high and the second for digital gain low
-            // because each one of them has diffrant default value
-            if( res.size() < sizeof( uint32_t ) * digital_gain_num_of_values )
-            {
-                std::stringstream s;
-                s << "Size of data returned from query(get_default) of " << _type << "is "
-                  << res.size() << " while min size = " << sizeof( uint32_t ) * digital_gain_num_of_values;
-
-                throw std::runtime_error( s.str() );
-            }
-
-            auto vals = reinterpret_cast< int32_t * >( (void *)res.data() );
-
-            if( digital_gain_val < RS2_DIGITAL_GAIN_HIGH || digital_gain_val > RS2_DIGITAL_GAIN_LOW )
-                throw std::runtime_error( to_string()
-                                          << "Invalid digital_gain value" << digital_gain_val );
-
-            return float( vals[(int)digital_gain_val - 1] );
-        }
-        else
-            throw std::invalid_argument( to_string() << op << "is not valid operation for query" );
+        auto val = *( reinterpret_cast< uint32_t * >( (void *)res.data() ) );
+        return float( val );
     }
 
     l500_options::l500_options(std::shared_ptr<context> ctx, const platform::backend_device_group & group) :
@@ -373,7 +342,7 @@ namespace librealsense
     {
         try
         {
-            // compare default values to current values 
+            // compare default values to current values
             // exept from laser power that can get diffrant value according to preset
             std::map< rs2_option, float > hw_options_default_values;
             for( auto control : _hw_options )
@@ -385,22 +354,23 @@ namespace librealsense
                 }
             }
 
-                // all the hw_options values are equal to their default values
-                // now what is left to check if the gain and laser power correspond to one of the
-                // presets
-                auto max_laser = _hw_options[RS2_OPTION_LASER_POWER]->get_range().max;
-                auto def_laser = _hw_options[RS2_OPTION_LASER_POWER]->get_range().def;
+            // all the hw_options values are equal to their default values
+            // now what is left to check if the gain and laser power correspond to one of the
+            // presets
+            auto max_laser = _hw_options[RS2_OPTION_LASER_POWER]->get_range().max;
+            auto def_laser = _hw_options[RS2_OPTION_LASER_POWER]->get_range().def;
 
-                std::map< std::pair< rs2_digital_gain, float >, rs2_l500_visual_preset >
-                    gain_and_laser_to_preset = {
-                        { { RS2_DIGITAL_GAIN_HIGH, def_laser }, RS2_L500_VISUAL_PRESET_NO_AMBIENT },
-                        { { RS2_DIGITAL_GAIN_LOW, max_laser }, RS2_L500_VISUAL_PRESET_LOW_AMBIENT },
-                        { { RS2_DIGITAL_GAIN_HIGH, max_laser }, RS2_L500_VISUAL_PRESET_MAX_RANGE },
-                        { { RS2_DIGITAL_GAIN_LOW, def_laser }, RS2_L500_VISUAL_PRESET_SHORT_RANGE },
-                    };
+            std::map< std::pair< rs2_digital_gain, float >, rs2_l500_visual_preset >
+                gain_and_laser_to_preset = {
+                    { { RS2_DIGITAL_GAIN_HIGH, def_laser }, RS2_L500_VISUAL_PRESET_NO_AMBIENT },
+                    { { RS2_DIGITAL_GAIN_LOW, max_laser }, RS2_L500_VISUAL_PRESET_LOW_AMBIENT },
+                    { { RS2_DIGITAL_GAIN_HIGH, max_laser }, RS2_L500_VISUAL_PRESET_MAX_RANGE },
+                    { { RS2_DIGITAL_GAIN_LOW, def_laser }, RS2_L500_VISUAL_PRESET_SHORT_RANGE },
+                };
 
-            auto it = gain_and_laser_to_preset.find( { ( rs2_digital_gain )(int)_digital_gain->query(),
-                                                       _hw_options[RS2_OPTION_LASER_POWER]->query() } );
+            auto it
+                = gain_and_laser_to_preset.find( { ( rs2_digital_gain )(int)_digital_gain->query(),
+                                                   _hw_options[RS2_OPTION_LASER_POWER]->query() } );
             if( it != gain_and_laser_to_preset.end() )
             {
                 return it->second;
@@ -419,12 +389,13 @@ namespace librealsense
         _owner( owner )
     {}
 
-    void l500_preset_option::set( float value ) 
+    void l500_preset_option::set( float value )
     {
-        if( static_cast< rs2_l500_visual_preset >( int( value ) ) == RS2_L500_VISUAL_PRESET_DEFAULT )
+        if( static_cast< rs2_l500_visual_preset >( int( value ) )
+            == RS2_L500_VISUAL_PRESET_DEFAULT )
             throw invalid_value_exception( to_string()
                                            << "RS2_L500_VISUAL_PRESET_DEFAULT was deprecated! " );
-    
+
         _owner->verify_max_usable_range_restrictions( RS2_OPTION_VISUAL_PRESET, value );
         _owner->change_preset( static_cast< rs2_l500_visual_preset >( int( value ) ) );
 
@@ -535,6 +506,11 @@ namespace librealsense
         std::map< rs2_option, float > defaults;
         if( _fw_version >= firmware_version( MIN_GET_DEFAULT_FW_VERSION ) )
         {
+            // if the sensor is streaming and somebody changed one of the hw control 
+            // the value of control will update only whan the next frame arrive
+            if( get_depth_sensor().is_streaming() )
+                std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+
             for( auto opt : _hw_options )
             {
                 defaults[opt.first] = opt.second->query( get_default, int( resolution ) );
@@ -549,7 +525,7 @@ namespace librealsense
             //     4. Read the current value
             //     5. Restore the current value
             std::map< rs2_option, float > currents;
-            for (auto opt : _hw_options)
+            for( auto opt : _hw_options )
             {
                 currents[opt.first] = opt.second->query( get_current, int( resolution ) );
                 opt.second->set_with_no_signal( -1 );
@@ -565,11 +541,11 @@ namespace librealsense
                 defaults[opt.first] = opt.second->query( get_current, int( resolution ) );
             }
 
-        for( auto opt : currents )
-        {
-            _hw_options[opt.first]->set_with_no_signal( opt.second );
+            for( auto opt : currents )
+            {
+                _hw_options[opt.first]->set_with_no_signal( opt.second );
+            }
         }
-    }
 
         for( auto opt : _hw_options )
         {
@@ -740,8 +716,6 @@ namespace librealsense
 
         bool_option::set(value);
     }
-
-
 
     const char * ir_reflectivity_option::get_description() const
     {

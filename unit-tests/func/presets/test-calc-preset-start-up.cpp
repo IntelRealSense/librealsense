@@ -7,6 +7,16 @@
 
 using namespace rs2;
 
+void build_new_device_and_do( std::function< void( rs2::depth_sensor & depth_sens ) > action )
+{
+    auto devices = find_devices_by_product_line_or_exit( RS2_PRODUCT_LINE_L500 );
+    auto dev = devices[0];
+
+    auto depth_sens = dev.first< rs2::depth_sensor >();
+
+    action( depth_sens );
+}
+
 TEST_CASE( "calc preset from controls on start up", "[l500][live]" )
 {
     // This test will create for each preset value new rs2::device and destroy it
