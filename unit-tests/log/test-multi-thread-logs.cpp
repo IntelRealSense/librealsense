@@ -3,6 +3,7 @@
 
 //#cmake:add-file log-common.h
 #include "log-common.h"
+#include <atomic>
 
 std::atomic<int> atomic_integer = 0;
 std::chrono::milliseconds global_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
