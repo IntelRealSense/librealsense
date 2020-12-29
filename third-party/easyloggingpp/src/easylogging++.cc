@@ -2433,19 +2433,14 @@ void AsyncDispatchWorker::handle(AsyncLogItem* logItem) {
 void AsyncDispatchWorker::run(void) {
   while (continueRunning()) {
     emptyQueueRead();
-    MoveLogsFromWriteQueueToReadQueue();
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
-  }
-}
-
-void AsyncDispatchWorker::MoveLogsFromWriteQueueToReadQueue()
-{
+    
     if (ELPP) {
-        while (ELPP->asyncLogQueueWrite()->size() > 0) {
-            ELPP->asyncLogQueueRead()->push(ELPP->asyncLogQueueWrite()->front());
-            ELPP->asyncLogQueueWrite()->pop();
+        if (ELPP->asyncLogQueueWrite()->size() > 0) {
+            ELPP->asyncLogQueueWrite()->moveTo(ELPP->asyncLogQueueRead());
         }
     }
+  }
 }
 #endif  // ELPP_ASYNC_LOGGING
 
