@@ -640,6 +640,7 @@ namespace librealsense
             case RS2_L500_VISUAL_PRESET_LOW_AMBIENT: return "Low Ambient Light";
             CASE(MAX_RANGE)
             CASE(SHORT_RANGE)
+            CASE(AUTOMATIC)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

@@ -54,10 +54,12 @@ namespace librealsense
                          std::shared_ptr< cascade_option< uvc_xu_option< int > > > digital_gain);
 
         void update_default( float def );
-        float query( l500_command op, int mode ) const;
+        float query( l500_command op, int mode, hwmon_response *response = nullptr) const;
+        bool is_read_only() const override { return _is_read_only; }
+        void set_read_only( bool read_only );
 
     private:
-        float query_default() const;
+        float query_default( hwmon_response *response ) const;
         
         l500_control _type;
         l500_device* _l500_dev;
@@ -69,6 +71,7 @@ namespace librealsense
         std::string _description;
         firmware_version _fw_version;
         std::shared_ptr< cascade_option< uvc_xu_option< int > > > _digital_gain;
+        bool _is_read_only;
     };
 
 

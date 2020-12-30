@@ -37,11 +37,11 @@ namespace librealsense
         return _range;
     }
 
-    float l500_hw_options::query_default() const
+    float l500_hw_options::query_default( hwmon_response * response ) const
     {
         if(_fw_version >= firmware_version( MIN_GET_DEFAULT_FW_VERSION ) )
         {
-            return query( get_default, int( _resolution->query() ) );
+            return query( get_default, int( _resolution->query() ), response );
         }
         else
         {
@@ -78,6 +78,7 @@ namespace librealsense
         , _description( description )
         , _fw_version( fw_version )
         , _digital_gain( digital_gain )
+        , _is_read_only(false)
     {
         auto min = _hw_monitor->send(command{ AMCGET, _type, get_min });
         auto max = _hw_monitor->send(command{ AMCGET, _type, get_max });
@@ -93,10 +94,19 @@ namespace librealsense
         auto max_value = float(*(reinterpret_cast<int32_t*>(max.data())));
         auto min_value = float(*(reinterpret_cast<int32_t*>(min.data())));
 
+        hwmon_response response;
+        auto res = query_default( &response );
+
+        if (response == hwm_IllegalHwState)
+        {
+            _is_read_only = true;
+            res = -1;
+        }
+
         _range = option_range{ min_value,
                                max_value,
                                float( *( reinterpret_cast< int32_t * >( step.data() ) ) ),
-                               query_default() };
+                               res };
     }
 
     void l500_hw_options::update_default( float def )
@@ -104,12 +114,20 @@ namespace librealsense
         _range.def = def;
     }
 
+    void l500_hw_options::set_read_only( bool read_only )
+    {
+        _is_read_only = read_only;
+    }
+
     void l500_hw_options::enable_recording(std::function<void(const option&)> recording_action)
     {}
 
-    float l500_hw_options::query( l500_command op, int mode ) const
+    float l500_hw_options::query( l500_command op, int mode, hwmon_response *response ) const
     {
-        auto res = _hw_monitor->send( command{ AMCGET, _type, op, mode } );
+        auto res = _hw_monitor->send( command{ AMCGET, _type, op, mode }, response );
+
+        if( response && * response == hwm_IllegalHwState )
+            return -1;
 
         if( res.size() < sizeof( int32_t ) )
         {
@@ -313,7 +331,7 @@ namespace librealsense
 
              _preset = std::make_shared< l500_preset_option >(
                  option_range{ RS2_L500_VISUAL_PRESET_CUSTOM,
-                               RS2_L500_VISUAL_PRESET_SHORT_RANGE,
+                               RS2_L500_VISUAL_PRESET_AUTOMATIC,
                                1,
                                (float)preset },
                  "Preset to calibrate the camera to environment ambient, no ambient or low "
@@ -347,7 +365,7 @@ namespace librealsense
             std::map< rs2_option, float > hw_options_default_values;
             for( auto control : _hw_options )
             {
-                if( control.first != RS2_OPTION_LASER_POWER )
+                if( control.first != RS2_OPTION_LASER_POWER && !control.second->is_read_only() )
                 {
                     if( control.second->get_range().def != control.second->query() )
                         return RS2_L500_VISUAL_PRESET_CUSTOM;
@@ -368,13 +386,18 @@ namespace librealsense
                     { { RS2_DIGITAL_GAIN_LOW, def_laser }, RS2_L500_VISUAL_PRESET_SHORT_RANGE },
                 };
 
-            auto it
-                = gain_and_laser_to_preset.find( { ( rs2_digital_gain )(int)_digital_gain->query(),
-                                                   _hw_options[RS2_OPTION_LASER_POWER]->query() } );
+            auto gain = ( rs2_digital_gain )( int ) _digital_gain->query();
+
+            auto it = gain_and_laser_to_preset.find(
+                { gain, _hw_options[RS2_OPTION_LASER_POWER]->query() } );
+
             if( it != gain_and_laser_to_preset.end() )
             {
                 return it->second;
             }
+            if( gain == RS2_DIGITAL_GAIN_AUTO )
+                return RS2_L500_VISUAL_PRESET_AUTOMATIC;
+
             return RS2_L500_VISUAL_PRESET_CUSTOM;
         }
         catch( ... )
@@ -441,22 +464,28 @@ namespace librealsense
         case RS2_L500_VISUAL_PRESET_SHORT_RANGE:
             _digital_gain->set_with_no_signal( RS2_DIGITAL_GAIN_LOW );
             break;
+        case RS2_L500_VISUAL_PRESET_AUTOMATIC:
+            _digital_gain->set_with_no_signal( RS2_DIGITAL_GAIN_AUTO );
+            break;
         };
 
         update_defaults();
 
-    if( preset != RS2_L500_VISUAL_PRESET_CUSTOM )
-        set_preset_controls( preset );
-    else
-        move_to_custom();
-}
+        if( preset != RS2_L500_VISUAL_PRESET_CUSTOM)
+            set_preset_controls( preset );
+        else if( preset == RS2_L500_VISUAL_PRESET_CUSTOM )
+            move_to_custom();
+    }
 
     void l500_options::set_preset_controls( rs2_l500_visual_preset preset )
     {
         for( auto & o : _hw_options )
         {
-            auto val = o.second->get_range().def;
-            o.second->set_with_no_signal( val );
+            if (!o.second->is_read_only())
+            {
+                auto val = o.second->get_range().def;
+                o.second->set_with_no_signal( val );
+            }
         }
 
         switch( preset )
@@ -513,7 +542,15 @@ namespace librealsense
 
             for( auto opt : _hw_options )
             {
-                defaults[opt.first] = opt.second->query( get_default, int( resolution ) );
+                hwmon_response response;
+                defaults[opt.first] = opt.second->query( get_default, int( resolution ), &response );
+                if( response == hwm_IllegalHwState )
+                {
+                    defaults[opt.first] = -1;
+                    opt.second->set_read_only( true );
+                }
+                else
+                    opt.second->set_read_only( false );
             }
         }
         else
