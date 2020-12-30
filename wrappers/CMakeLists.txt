@@ -25,6 +25,10 @@ if (BUILD_OPENVINO_EXAMPLES)
   add_subdirectory(openvino)
 endif()
 
+if (BUILD_OPEN3D_EXAMPLES)
+  add_subdirectory(open3d)
+endif()
+
 if(BUILD_MATLAB_BINDINGS)
     add_subdirectory(matlab)
 endif()
