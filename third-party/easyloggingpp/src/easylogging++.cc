@@ -2330,7 +2330,7 @@ AsyncDispatchWorker::~AsyncDispatchWorker() {
   if (m_asyncWorkerThread.joinable())
       m_asyncWorkerThread.join();
   else
-      std::cout << "logger not joinable" << std::endl;
+      ELPP_INTERNAL_INFO(6, "logger not joinable");
   clean();
   ELPP_INTERNAL_INFO(6, "Log queue cleaned");
 }
@@ -2339,6 +2339,7 @@ bool AsyncDispatchWorker::clean(void) {
   std::unique_lock<std::mutex> lk(_mtx);
   try
   {
+      moveWriteQueueToReadQueue();
       emptyQueueRead();
   }
   catch(...){}
@@ -2430,16 +2431,23 @@ void AsyncDispatchWorker::handle(AsyncLogItem* logItem) {
 #  endif  // defined(ELPP_SYSLOG)
 }
 
+void AsyncDispatchWorker::moveWriteQueueToReadQueue()
+{
+    if (ELPP) {
+        if (ELPP->asyncLogQueueWrite()->size() > 0) {
+            base::threading::ScopedLock scopedLockW(ELPP->asyncLogQueueWrite()->lock());
+            base::threading::ScopedLock scopedLockR(ELPP->asyncLogQueueRead()->lock());
+            ELPP->asyncLogQueueWrite()->appendTo(ELPP->asyncLogQueueRead());
+            ELPP->asyncLogQueueWrite()->clear();
+        }
+    }
+}
+
 void AsyncDispatchWorker::run(void) {
   while (continueRunning()) {
     emptyQueueRead();
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
-    
-    if (ELPP) {
-        if (ELPP->asyncLogQueueWrite()->size() > 0) {
-            ELPP->asyncLogQueueWrite()->moveTo(ELPP->asyncLogQueueRead());
-        }
-    }
+    moveWriteQueueToReadQueue();    
   }
 }
 #endif  // ELPP_ASYNC_LOGGING

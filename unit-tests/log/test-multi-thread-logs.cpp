@@ -26,12 +26,13 @@ TEST_CASE("async logger", "[log][remi]")
     auto func = [](int required_value) {
         int iterations = 0;
         auto start = std::chrono::steady_clock::now();
-        auto start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-        while (std::chrono::steady_clock::now() - start < std::chrono::seconds(20))
+        
+        while (iterations < 3000)//std::chrono::steady_clock::now() - start < std::chrono::seconds(3))
         {
             std::stringstream ss;
             int value_to_check = (required_value) + 10 * iterations;
-            ss << "atomic integer = " << ++atomic_integer << ", and required value = " << value_to_check;
+            ss << "atomic integer = " << ++atomic_integer << " and required value = " << value_to_check;
+            auto start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
             rs2::log(RS2_LOG_SEVERITY_DEBUG, ss.str().c_str());
             std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
             std::chrono::milliseconds delta_ms = ms - start_ms;
