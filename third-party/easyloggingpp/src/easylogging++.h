@@ -2513,24 +2513,26 @@ class AsyncLogQueue : public base::threading::ThreadSafe {
     {
         throw ("Async Logger queue is empty!");
     }
-    AsyncLogItem result = m_queue.front();
-    m_queue.pop();
+    AsyncLogItem result = m_queue.back();
+    m_queue.pop_back();
     return result;
   }
 
-  inline void moveTo(AsyncLogQueue* otherQueue) {
+  inline void appendTo(AsyncLogQueue* otherQueue) {
       base::threading::ScopedLock scopedLock(lock());
-      if(otherQueue)
-        otherQueue->m_queue = std::move(m_queue);
+      if (otherQueue) {
+          base::threading::ScopedLock scopedLock(otherQueue->lock());
+          otherQueue->m_queue.insert(otherQueue->m_queue.end(), m_queue.begin(), m_queue.end());
+      } 
   }
 
   inline void push(const AsyncLogItem& item) {
     base::threading::ScopedLock scopedLock(lock());
-    m_queue.push(item);
+    m_queue.push_front(item);
   }
   inline void pop(void) {
     base::threading::ScopedLock scopedLock(lock());
-    m_queue.pop();
+    m_queue.pop_back();
   }
   inline AsyncLogItem front(void) {
     base::threading::ScopedLock scopedLock(lock());
@@ -2540,12 +2542,16 @@ class AsyncLogQueue : public base::threading::ThreadSafe {
     base::threading::ScopedLock scopedLock(lock());
     return m_queue.empty();
   }
+  inline void clear(void) {
+      base::threading::ScopedLock scopedLock(lock());
+      m_queue.clear();
+  }
   inline size_t size(void) {
     base::threading::ScopedLock scopedLock(lock());
     return m_queue.size();
   }
  private:
-  std::queue<AsyncLogItem> m_queue;
+  std::deque<AsyncLogItem> m_queue;
 };
 class IWorker {
  public:
@@ -2760,6 +2766,7 @@ class AsyncDispatchWorker : public base::IWorker, public base::threading::Thread
   virtual void start(void);
   void handle(AsyncLogItem* logItem);
   void run(void);
+  void moveWriteQueueToReadQueue();
 
   void setContinueRunning(bool value) {
     base::threading::ScopedLock scopedLock(m_continueRunningLock);
