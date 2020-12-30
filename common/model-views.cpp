@@ -992,7 +992,8 @@ namespace rs2
         std::shared_ptr<sensor> s,
         std::shared_ptr< atomic_objects_in_frame > device_detected_objects,
         std::string& error_message,
-        viewer_model& viewer
+        viewer_model& viewer,
+        bool new_device_connected
     )
         : s(s), dev(dev), tm2(), ui(), last_valid_ui(),
         streaming(false), _pause(false),
@@ -1236,23 +1237,26 @@ namespace rs2
             get_default_selection_index(res_values, default_resolution, &selection_index);
             ui.selected_res_id = selection_index;
 
-            // Have the various preset options automatically update based on the resolution of the
-            // (closed) stream...
-            // TODO we have no res_values when loading color rosbag, and color sensor isn't
-            // even supposed to support SENSOR_MODE... see RS5-7726
-            if( s->supports( RS2_OPTION_SENSOR_MODE ) && !res_values.empty() )
+            if (new_device_connected)
             {
-                // Watch out for read-only options in the playback sensor!
-                try
+                // Have the various preset options automatically update based on the resolution of the
+                // (closed) stream...
+                // TODO we have no res_values when loading color rosbag, and color sensor isn't
+                // even supposed to support SENSOR_MODE... see RS5-7726
+                if( s->supports( RS2_OPTION_SENSOR_MODE ) && !res_values.empty() )
                 {
-                    s->set_option( RS2_OPTION_SENSOR_MODE,
-                                   static_cast< float >( resolution_from_width_height(
-                                       res_values[ui.selected_res_id].first,
-                                       res_values[ui.selected_res_id].second ) ) );
-                }
-                catch( not_implemented_error const &)
-                {
-                    // Just ignore for now: need to figure out a way to write to playback sensors...
+                    // Watch out for read-only options in the playback sensor!
+                    try
+                    {
+                        s->set_option( RS2_OPTION_SENSOR_MODE,
+                            static_cast< float >( resolution_from_width_height(
+                                res_values[ui.selected_res_id].first,
+                                res_values[ui.selected_res_id].second ) ) );
+                    }
+                    catch( not_implemented_error const &)
+                    {
+                        // Just ignore for now: need to figure out a way to write to playback sensors...
+                    }
                 }
             }
 
@@ -3735,7 +3739,7 @@ namespace rs2
         }
     }
 
-    device_model::device_model(device& dev, std::string& error_message, viewer_model& viewer, bool remove)
+    device_model::device_model(device& dev, std::string& error_message, viewer_model& viewer, bool new_device_connected, bool remove)
         : dev(dev),
         _calib_model(dev),
         syncer(viewer.syncer),
@@ -3756,7 +3760,7 @@ namespace rs2
 
         for (auto&& sub : dev.query_sensors())
         {
-            auto model = std::make_shared<subdevice_model>(dev, std::make_shared<sensor>(sub), _detected_objects, error_message, viewer);
+            auto model = std::make_shared<subdevice_model>(dev, std::make_shared<sensor>(sub), _detected_objects, error_message, viewer, new_device_connected);
             subdevices.push_back(model);
         }
 

@@ -857,7 +857,7 @@ namespace rs2
                 _viewer_model.selected_tex_source_uid = -1;
             }
             // Create a new device model - reset all UI the new device
-            _device_model = std::shared_ptr<rs2::device_model>(new device_model(dev, _error_message, _viewer_model, false));
+            _device_model = std::shared_ptr<rs2::device_model>(new device_model(dev, _error_message, _viewer_model, _first_frame, false));
             
             // Get device depth sensor model
             for (auto&& sub : _device_model->subdevices)
@@ -904,47 +904,6 @@ namespace rs2
             if (save)
             {
                 _depth_sensor_model->ui = _depth_sensor_model->last_valid_ui = prev_ui;
-
-                // Set the sensor mode according to the selected resolution (it was reseted to
-                // default upon creation of new device model)
-                if( _depth_sensor_model->s->supports( RS2_OPTION_SENSOR_MODE )
-                    && ! _depth_sensor_model->res_values.empty() )
-                {
-                    try
-                    {
-                        if (_depth_sensor_model->ui.selected_res_id < _depth_sensor_model->res_values.size())
-                        {
-                            _depth_sensor_model->s->set_option(
-                                RS2_OPTION_SENSOR_MODE,
-                                static_cast< float >( resolution_from_width_height(
-                                    _depth_sensor_model
-                                    ->res_values[_depth_sensor_model->ui.selected_res_id]
-                                    .first,
-                                    _depth_sensor_model
-                                    ->res_values[_depth_sensor_model->ui.selected_res_id]
-                                    .second ) ) );
-                        }
-                        else
-                        {
-                            _viewer_model.not_model->output.add_log(
-                                RS2_LOG_SEVERITY_ERROR,
-                                __FILE__,
-                                __LINE__,
-                                to_string()
-                                    << "resolution id:" << _depth_sensor_model->ui.selected_res_id
-                                    << " not supported" );
-                        }
-                    }
-                    catch( const error &e )
-                    {
-                        _viewer_model.not_model->output.add_log(
-                            RS2_LOG_SEVERITY_ERROR,
-                            __FILE__,
-                            __LINE__,
-                            to_string()
-                            << "error setting sensor mode; selected resolution id:"  << _depth_sensor_model->ui.selected_res_id << " is out of bound");
-                    }
-                }
             }
 
             // Connect the device_model to the viewer_model

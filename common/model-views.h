@@ -552,7 +552,7 @@ namespace rs2
             bool* options_invalidated,
             std::string& error_message);
 
-        subdevice_model(device& dev, std::shared_ptr<sensor> s, std::shared_ptr< atomic_objects_in_frame > objects, std::string& error_message, viewer_model& viewer);
+        subdevice_model(device& dev, std::shared_ptr<sensor> s, std::shared_ptr< atomic_objects_in_frame > objects, std::string& error_message, viewer_model& viewer, bool new_device_connected = true);
         ~subdevice_model();
 
         bool is_there_common_fps() ;
@@ -754,7 +754,7 @@ namespace rs2
         typedef std::function<void(std::function<void()> load)> json_loading_func;
 
         void reset();
-        explicit device_model(device& dev, std::string& error_message, viewer_model& viewer, bool allow_remove=true);
+        explicit device_model(device& dev, std::string& error_message, viewer_model& viewer, bool new_device_connected = true, bool allow_remove=true);
         ~device_model();
         void start_recording(const std::string& path, std::string& error_message);
         void stop_recording(viewer_model& viewer);
