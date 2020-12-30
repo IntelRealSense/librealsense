@@ -26,8 +26,10 @@
 const double PI = 3.14159265358979323846;
 #endif
 #include "../third-party/imgui/imgui.h"
+#include "imgui_impl_glfw.h"
 const size_t IMU_FRAME_WIDTH = 1280;
 const size_t IMU_FRAME_HEIGHT = 720;
+
 
 //////////////////////////////
 // Basic Data Types         //
@@ -96,46 +98,62 @@ struct tile_properties
 
 };
 
+//name aliasing the map of pairs<frame, tile_properties>
+using frame_and_tile_property = std::pair<rs2::frame, tile_properties>;
+using frames_mosaic = std::map<int, std::pair<rs2::frame, tile_properties>>;
+
 //////////////////////////////
 // Class Helpers            //
 //////////////////////////////
 
-//slider for ImGui 
+//slider for ImGui
 class slider {
 public:
-    slider(const char* name, int seq_id, rs2_option option, float init_value, rs2::depth_sensor depth_sensor,
-        ImVec2 position, ImVec2 size) :_name(name), _seq_id(seq_id), _option(option), _range(depth_sensor.get_option_range(option)),
-        _depth_sensor(depth_sensor), _position(position), _size(size), _value(init_value) {}
+    slider(const char* name, int seq_id, float init_value, float min_value, float max_value, ImVec2 position, ImVec2 size) :
+        _name(name), _seq_id(seq_id), _value(init_value), _min_value(min_value), _max_value(max_value), _position(position), _size(size) {}
 
-    void show()
-    {
-        ImGui::SetNextWindowSize(_size);
-        ImGui::SetNextWindowPos(_position);
-        //concate the name given with seq_id in order to make a unique name (needed for Begin())
-        std::string name_id = std::string(_name) + std::to_string(_seq_id);
-        ImGui::Begin(name_id.c_str(), nullptr, _sliders_flags);
-        std::string text_inside_slider = std::string(_name) + ": %.3f";
-        bool is_changed =
-            ImGui::SliderFloat("", &_value, _range.min, _range.max, text_inside_slider.c_str(), 5.0f, false); //logarithmic scale 
-        if (is_changed) {
-            _depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, _seq_id);
-            _depth_sensor.set_option(_option, _value);
-        }
-
-        ImGui::End();
-    }
+    void virtual show()=0;
 
 public:
     const char* _name;
     int _seq_id;
     float _value;
-    rs2::option_range _range;
-    rs2::depth_sensor _depth_sensor;
-    rs2_option _option;
+    float _max_value;
+    float _min_value;
     ImVec2 _position;
     ImVec2 _size;
+
+};
+
+class hdr_slider : public slider {
+public:
+    hdr_slider(const char* name, int seq_id, float init_value, rs2::sensor& sensor,
+        rs2_option option, rs2::option_range range, ImVec2 position, ImVec2 size) : slider(name, seq_id, init_value, range.min, range.max, position, size),
+        _sensor(sensor), _option(option), _range(range){}
+
+    void show() override 
+    {
+        ImGui::SetNextWindowSize(_size);
+        ImGui::SetNextWindowPos(_position);
+        //concate the name given with seq_id in order to make a unique name (uniqeness is needed for Begin())
+        std::string name_id = std::string(_name) + std::to_string(_seq_id);
+        ImGui::Begin(name_id.c_str(), nullptr, _sliders_flags);
+        ImGui::Text(_name);
+        bool is_changed =
+            ImGui::SliderFloat("", &_value, _min_value, _max_value, "%.3f", 5.0f, false); //5.0f for logarithmic scale 
+        if (is_changed) {
+            _sensor.set_option(RS2_OPTION_SEQUENCE_ID, _seq_id);
+            _sensor.set_option(_option, _value);
+        }
+        ImGui::End();
+    }
+
+public:
+    rs2::sensor& _sensor;
+    rs2_option _option;
+    rs2::option_range _range;
     //flags for the sliders
-    int _sliders_flags = ImGuiWindowFlags_NoCollapse
+    const static int _sliders_flags = ImGuiWindowFlags_NoCollapse
         | ImGuiWindowFlags_NoScrollbar
         | ImGuiWindowFlags_NoSavedSettings
         | ImGuiWindowFlags_NoResize
@@ -161,6 +179,7 @@ public:
     void remove_title_bar() {
         _text_box_flags |= ImGuiWindowFlags_NoTitleBar;
     }
+
 public:
     const char* _name;
     ImVec2 _position;
@@ -178,21 +197,126 @@ public:
 };
 
 
+class hdr_widgets {
+public:
+    // c'tor that creats all 4 sliders and text boxes
+    // needed to init in an init list because no default c'tor for sliders and they are allocated inside hdr_widgets
+    hdr_widgets(rs2::depth_sensor& depth_sensor):
+        _exposure_slider_seq_1("Exposure", 1, 6000,
+            depth_sensor, RS2_OPTION_EXPOSURE, depth_sensor.get_option_range(RS2_OPTION_EXPOSURE), { 130, 180 }, { 350, 40 }),
+        _exposure_slider_seq_2("Exposure", 2, 300,
+            depth_sensor, RS2_OPTION_EXPOSURE, depth_sensor.get_option_range(RS2_OPTION_EXPOSURE), { 390, 180 }, { 350, 40 }),
+        _gain_slider_seq_1("Gain", 1, 25,
+            depth_sensor, RS2_OPTION_GAIN, depth_sensor.get_option_range(RS2_OPTION_GAIN), { 130, 220 }, { 350, 40 }),
+        _gain_slider_seq_2("Gain", 2, 16,
+            depth_sensor, RS2_OPTION_GAIN, depth_sensor.get_option_range(RS2_OPTION_GAIN), { 390, 220 }, { 350, 40 }),
+        _text_box_hdr_explain("HDR Tutorial", { 120, 20 }, { 1000, 140 }),
+        _text_box_first_frame("frame 1", { 200, 150 }, { 170, 40 }),
+        _text_box_second_frame("frame 2", { 460, 150 }, { 170, 40 }),
+        _text_box_hdr_frame("hdr", { 850, 280 }, { 170, 40 })
+    {
+        // init frames map
+        //for initilize only - an empty frame with its properties
+        rs2::frame frame;
+
+        //set each frame with its properties:
+        //  { tile's x coordinate, tiles's y coordinate, tile's width (in tiles), tile's height (in tiles), priority (default value=0) }, (x=0,y=0) <-> left bottom corner
+        //priority sets the order of drawing frame when two frames share part of the same tile, 
+        //meaning if there are two frames: frame1 with priority=-1 and frame2 with priority=0, both with { 0,0,1,1 } as property,
+        //frame2 will be drawn on top of frame1
+        _frames_map[IR1] = frame_and_tile_property(frame, { 0,0,1,1 });
+        _frames_map[IR2] = frame_and_tile_property(frame, { 1,0,1,1 });
+        _frames_map[DEPTH1] = frame_and_tile_property(frame, { 0,1,1,1 });
+        _frames_map[DEPTH2] = frame_and_tile_property(frame, { 1,1,1,1 });
+        _frames_map[HDR] = frame_and_tile_property(frame, { 2,0,2,2 });
+    }
+
+    //show the features of the ImGui we have created
+    //we need slider 2 to be showen before slider 1 (otherwise slider 1 padding is covering slider 2)
+    void render_sliders() {
+
+        //start a new frame of ImGui
+        ImGui_ImplGlfw_NewFrame(1);
+
+        _exposure_slider_seq_2.show();
+        _exposure_slider_seq_1.show();
+        _gain_slider_seq_2.show();
+        _gain_slider_seq_1.show();
+
+        _text_box_first_frame.remove_title_bar();
+        _text_box_first_frame.show("Sequence 1");
+
+        _text_box_second_frame.remove_title_bar();
+        _text_box_second_frame.show("Sequence 2");
+
+        _text_box_hdr_frame.remove_title_bar();
+        _text_box_hdr_frame.show("HDR Stream");
+        _text_box_hdr_explain.show("This demo provides a quick overview of the High Dynamic Range (HDR) feature.\nThe HDR uses 2 frames configurations, for which exposure and gain are defined.\nBoth configurations are streamed and the HDR feature uses both frames in order to provide the best depth image.\nChange the values of the sliders to see the impact on the HDR Depth Image.");
+
+        //render the ImGui features: sliders and text
+        ImGui::Render();
+
+    }
+
+    // return a reference to frames map
+    frames_mosaic& get_frames_map() {
+        return _frames_map;
+    }
+
+    void update_frames_map(const rs2::video_frame& infrared_frame, const rs2::frame& depth_frame, 
+        const rs2::frame& hdr_frame, rs2_metadata_type hdr_seq_id, rs2_metadata_type hdr_seq_size) {
+
+        // frame index in frames_map are according to hdr_seq_id and hdr_seq_size
+        int infrared_index = hdr_seq_id;
+        int depth_index = hdr_seq_id + hdr_seq_size;
+        int hdr_index = hdr_seq_id + hdr_seq_size + 1;
+
+        //a walk around, 'get_frame_metadata' sometimes (after changing exposure or gain values) sets hdr_seq_size to 0 even though it 2 for few frames
+        //so we update the frames only if hdr_seq_size > 0. (hdr_seq_size==0 <-> frame is invalid)
+        if (hdr_seq_size > 0) {
+            _frames_map[infrared_index].first = infrared_frame;
+            _frames_map[depth_index].first = depth_frame;
+            _frames_map[hdr_index].first = hdr_frame; //HDR shall be after IR1/2 & DEPTH1/2
+        }
+    }
+
+public:
+
+    frames_mosaic _frames_map;
+
+    hdr_slider _exposure_slider_seq_1;
+    hdr_slider _gain_slider_seq_1;
+    hdr_slider _exposure_slider_seq_2;
+    hdr_slider _gain_slider_seq_2;
+
+    text_box _text_box_hdr_explain;
+    text_box _text_box_first_frame;
+    text_box _text_box_second_frame;
+    text_box _text_box_hdr_frame;
+
+    enum frame_id { IR1, IR2, DEPTH1, DEPTH2, HDR };
+
+    /*
+    const float _exposure_start_value_high = 6000;
+    const float _exposure_start_value_low = 300;
+    const float _gain_start_value_high = 25;
+    const float _gain_start_value_low = 16;
+    */
+
+};
+
+
 //////////////////////////////
 // Simple font loading code //
 //////////////////////////////
 
-//name aliasing the map of pairs<frame, tile_properties>
-using frame_and_tile_property = std::pair<rs2::frame, tile_properties>;
-using map_of_frames_and_tiles_properties = std::map<int, std::pair<rs2::frame, tile_properties>>;
-
 
 inline void draw_text(int x, int y, const char* text)
 {
-    std::vector<char>* buffer[60000]; 
+    std::vector<char> buffer; 
     glEnableClientState(GL_VERTEX_ARRAY);
-    glVertexPointer(2, GL_FLOAT, 16, buffer);
-    glDrawArrays(GL_QUADS, 0, 4 * stb_easy_font_print((float)x, (float)(y - 7), (char*)text, nullptr, buffer, sizeof(buffer)));
+    glVertexPointer(2, GL_FLOAT, 16, &buffer);
+    glDrawArrays(GL_QUADS, 0, 4 * stb_easy_font_print((float)x, (float)(y - 7), (char*)text, nullptr, &buffer, sizeof(buffer)));
     glDisableClientState(GL_VERTEX_ARRAY);
 }
 
@@ -623,12 +747,12 @@ public:
     }
 
     //another c'tor for adjusting specific frames in specific tiles, this window is NOT resizeable
-    window(int width, int height, const char* title, int tiles_in_row, int tiles_in_col, float canvas_width = 0.8,
-        float canvas_height = 0.6, float canvas_left_top_x = 0.1, float canvas_left_top_y = 0.075)
+    window(unsigned width, unsigned height, const char* title, unsigned tiles_in_row, unsigned tiles_in_col, float canvas_width = 0.8f,
+        float canvas_height = 0.6f, float canvas_left_top_x = 0.1f, float canvas_left_top_y = 0.075f)
         : _width(width), _height(height), _tiles_in_row(tiles_in_row), _tiles_in_col(tiles_in_col)
 
     {
-        //user input verification, if invalid values were given - set to default
+        //user input verification for mosaic size, if invalid values were given - set to default
         if (canvas_width < 0 || canvas_width > 1 || canvas_height < 0 || canvas_height > 1 ||
             canvas_left_top_x < 0 || canvas_left_top_x > 1 || canvas_left_top_y < 0 || canvas_left_top_y > 1)
         {
@@ -637,6 +761,14 @@ public:
             canvas_height = 0.6;
             canvas_left_top_x = 0.15;
             canvas_left_top_y = 0.075;
+        }
+
+        //user input verification for number of tiles in row and column
+        if (_tiles_in_row <= 0) {
+            _tiles_in_row = 4;
+        }
+        if (_tiles_in_col <= 0) {
+            _tiles_in_col = 2;
         }
 
         //calculate canvas size
@@ -739,7 +871,7 @@ public:
             render_pose_frame(pf, rect);
     }
 
-    void show(const std::map<int, rs2::frame> frames)
+    void show(const std::map<int, rs2::frame>& frames)
     {
         // Render openGl mosaic of frames
         if (frames.size())
@@ -766,7 +898,7 @@ public:
 
     //gets as argument a map of the -need to be drawn- frames with their tiles properties,
     //which indicates where and what size should the frame be drawn on the canvas 
-    void show(const map_of_frames_and_tiles_properties frames)
+    void show(const frames_mosaic& frames)
     {
         // Render openGl mosaic of frames
         if (frames.size())
@@ -777,7 +909,7 @@ public:
             for (const auto& frame : frames) { vector_frames.push_back(frame.second); }
             //sort in ascending order of the priority
             std::sort(vector_frames.begin(), vector_frames.end(),
-                [](frame_and_tile_property frame1, frame_and_tile_property frame2)
+                [](const frame_and_tile_property& frame1, const frame_and_tile_property& frame2)
                 {
                     return frame1.second.priority < frame2.second.priority;
                 });
@@ -808,8 +940,9 @@ private:
     std::map<int, pose_renderer> _poses;
     text_renderer _main_win;
     int _width, _height;
-    int _canvas_left_top_x, _canvas_left_top_y, _canvas_width, _canvas_height;
-    int _tiles_in_row, _tiles_in_col;
+    float _canvas_left_top_x, _canvas_left_top_y;
+    int _canvas_width, _canvas_height;
+    unsigned _tiles_in_row, _tiles_in_col;
     float _tile_width_pixels, _tile_height_pixels;
 
     void render_video_frame(const rs2::video_frame& f, const rect& r)
