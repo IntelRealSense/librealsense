@@ -2372,7 +2372,7 @@ void AsyncDispatchWorker::handle(AsyncLogItem* logItem) {
   LogDispatchData* data = logItem->data();
   LogMessage* logMessage = logItem->logMessage();
   Logger* logger = logMessage->logger();
-  base::threading::ScopedLock scopedLock(logger->lock());
+  //base::threading::ScopedLock scopedLock(logger->lock());
   base::TypedConfigurations* conf = logger->typedConfigurations();
   base::type::string_t logLine = logItem->logLine();
   if (data->dispatchAction() == base::DispatchAction::NormalLog) {

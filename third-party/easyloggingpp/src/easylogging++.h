@@ -2523,7 +2523,9 @@ class AsyncLogQueue : public base::threading::ThreadSafe {
       if (otherQueue) {
           base::threading::ScopedLock scopedLock(otherQueue->lock());
           otherQueue->m_queue.insert(otherQueue->m_queue.end(), m_queue.begin(), m_queue.end());
-      } 
+              //std::make_move_iterator(m_queue.begin()),
+              //std::make_move_iterator(m_queue.end()));
+      }
   }
 
   inline void push(const AsyncLogItem& item) {
