@@ -2552,8 +2552,13 @@ class AsyncLogQueue : public base::threading::ThreadSafe {
     base::threading::ScopedLock scopedLock(lock());
     return m_queue.size();
   }
+  inline std::condition_variable& cv(){
+      base::threading::ScopedLock scopedLock(lock());
+      return m_cv;
+  }
  private:
   std::deque<AsyncLogItem> m_queue;
+  std::condition_variable m_cv;
 };
 class IWorker {
  public:

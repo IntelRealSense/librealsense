@@ -650,6 +650,14 @@ Logger& Logger::operator=(const Logger& logger) {
 }
 
 void Logger::configure(const Configurations& configurations) {
+    if (ELPP && ELPP->asyncLogQueueRead()) {
+        std::mutex m;
+        std::unique_lock<std::mutex> lk(m);
+        ELPP->asyncLogQueueRead()->cv().wait(lk, []{
+            std::cout << "Read Q size = " << ELPP->asyncLogQueueRead()->size() << std::endl;
+            return  ELPP->asyncLogQueueRead()->empty();});
+    }
+
   m_isConfigured = false;  // we set it to false in case if we fail
   initUnflushedCount();
   if (m_typedConfigurations != nullptr) {
@@ -2446,6 +2454,8 @@ void AsyncDispatchWorker::moveWriteQueueToReadQueue()
 void AsyncDispatchWorker::run(void) {
   while (continueRunning()) {
     emptyQueueRead();
+    if (ELPP && ELPP->asyncLogQueueRead() )
+        ELPP->asyncLogQueueRead()->cv().notify_all();
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
     moveWriteQueueToReadQueue();    
   }
