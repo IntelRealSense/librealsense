@@ -61,17 +61,13 @@ int main(int argc, char* argv[]) try
 
     // configuration for the first HDR sequence ID
     depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, 1);
-    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 5000); // setting exposure to 5000, so sequence 1 will be the higher exposure
-    depth_sensor.set_option(RS2_OPTION_GAIN, 25); // setting gain to 25, so sequence 1 will be the higher gain
+    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 8000); // setting exposure to 8000, so sequence 1 will be set to high exposure
+    depth_sensor.set_option(RS2_OPTION_GAIN, 25); // setting gain to 25, so sequence 1 will be set to high gain
 
     // configuration for the second HDR sequence ID
     depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, 2);
-    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 300);  // setting exposure to 300, so sequence 2 will be the lower exposure
-    depth_sensor.set_option(RS2_OPTION_GAIN, 16); // setting gain to 16, so sequence 2 will be the lower gain
-
-    // after setting the HDR sequence ID opotion to 0, setting exposure or gain
-    // will be targetted to the normal (UVC) exposure and gain options (not HDR configuration)
-    depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, 0);
+    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 18);  // setting exposure to 18, so sequence 2 will be set to low exposure
+    depth_sensor.set_option(RS2_OPTION_GAIN, 16); // setting gain to 16, so sequence 2 will be set to low gain
 
     // turning ON the HDR with the above configuration 
     depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
@@ -82,7 +78,9 @@ int main(int argc, char* argv[]) try
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
 
-    // Start streaming with Depth and Infrared streams
+    // Start streaming with depth and infrared configuration
+    // The HDR merging algorithm can work with both depth and infrared,or only with depth, 
+    // but the resulting stream is better when both depth and infrared are used.
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_DEPTH);
     cfg.enable_stream(RS2_STREAM_INFRARED, 1);
@@ -135,7 +133,6 @@ int main(int argc, char* argv[]) try
 
         // merging the frames from the different HDR sequence IDs 
         auto merged_frame = merging_filter.process(data).apply_filter(color_map);   // Find and colorize the depth data;
-        rs2_format format = merged_frame.as<rs2::frameset>().get_depth_frame().get_profile().format();
 
         //get frames data 
         auto hdr_seq_size = frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE);
@@ -144,13 +141,13 @@ int main(int argc, char* argv[]) try
         //get frames
         auto infrared_frame = data.get_infrared_frame();
         auto depth_frame = data.get_depth_frame().apply_filter(color_map);
-        auto hdr_frame = merged_frame.as<rs2::frameset>().get_depth_frame().apply_filter(color_map); //HDR shall be after IR1/2 & DEPTH1/2
+        auto hdr_frame = merged_frame.as<rs2::frameset>().get_depth_frame().apply_filter(color_map);
 
         //update frames in frames map in hdr_widgets
         hdr_widgets.update_frames_map(infrared_frame, depth_frame, hdr_frame, hdr_seq_id, hdr_seq_size);
 
         //render hdr widgets sliders and text boxes
-        hdr_widgets.render_sliders();
+        hdr_widgets.render_widgets();
 
         //the show method, when applied on frame map, break it to frames and upload each frame into its specific tile
         app.show(hdr_widgets.get_frames_map());

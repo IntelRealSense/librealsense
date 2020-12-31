@@ -26,10 +26,10 @@
 const double PI = 3.14159265358979323846;
 #endif
 #include "../third-party/imgui/imgui.h"
-#include "imgui_impl_glfw.h"
+#include "../third-party/imgui/imgui_impl_glfw.h"
 const size_t IMU_FRAME_WIDTH = 1280;
 const size_t IMU_FRAME_HEIGHT = 720;
-
+enum class Priority { high = 0, medium = -1, low = -2 };
 
 //////////////////////////////
 // Basic Data Types         //
@@ -92,9 +92,10 @@ struct rect
 
 struct tile_properties
 {
+   
     unsigned int x, y; //location of tile in the grid
     unsigned int w, h; //width and height by number of tiles
-    int priority = 0; //when should the tile be drawn?: 0 is on top of all, -1 is a layer under top layer, -2 ... etc
+    Priority priority = Priority::high; //when should the tile be drawn?: high priority is on top of all, medium is a layer under top layer, low is a layer under medium layer
 
 };
 
@@ -202,9 +203,9 @@ public:
     // c'tor that creats all 4 sliders and text boxes
     // needed to init in an init list because no default c'tor for sliders and they are allocated inside hdr_widgets
     hdr_widgets(rs2::depth_sensor& depth_sensor):
-        _exposure_slider_seq_1("Exposure", 1, 6000,
+        _exposure_slider_seq_1("Exposure", 1, 8000,
             depth_sensor, RS2_OPTION_EXPOSURE, depth_sensor.get_option_range(RS2_OPTION_EXPOSURE), { 130, 180 }, { 350, 40 }),
-        _exposure_slider_seq_2("Exposure", 2, 300,
+        _exposure_slider_seq_2("Exposure", 2, 18,
             depth_sensor, RS2_OPTION_EXPOSURE, depth_sensor.get_option_range(RS2_OPTION_EXPOSURE), { 390, 180 }, { 350, 40 }),
         _gain_slider_seq_1("Gain", 1, 25,
             depth_sensor, RS2_OPTION_GAIN, depth_sensor.get_option_range(RS2_OPTION_GAIN), { 130, 220 }, { 350, 40 }),
@@ -233,7 +234,7 @@ public:
 
     //show the features of the ImGui we have created
     //we need slider 2 to be showen before slider 1 (otherwise slider 1 padding is covering slider 2)
-    void render_sliders() {
+    void render_widgets() {
 
         //start a new frame of ImGui
         ImGui_ImplGlfw_NewFrame(1);
@@ -251,7 +252,7 @@ public:
 
         _text_box_hdr_frame.remove_title_bar();
         _text_box_hdr_frame.show("HDR Stream");
-        _text_box_hdr_explain.show("This demo provides a quick overview of the High Dynamic Range (HDR) feature.\nThe HDR uses 2 frames configurations, for which exposure and gain are defined.\nBoth configurations are streamed and the HDR feature uses both frames in order to provide the best depth image.\nChange the values of the sliders to see the impact on the HDR Depth Image.");
+        _text_box_hdr_explain.show("This demo provides a quick overview of the High Dynamic Range (HDR) feature.\nThe HDR configures and operates on sequences of two frames configurations, for which separate exposure and gain values are defined.\nBoth configurations are streamed and the HDR feature uses both frames in order to provide the best depth image.\nChange the values of the sliders to see the impact on the HDR Depth Image.");
 
         //render the ImGui features: sliders and text
         ImGui::Render();
@@ -271,7 +272,7 @@ public:
         int depth_index = hdr_seq_id + hdr_seq_size;
         int hdr_index = hdr_seq_id + hdr_seq_size + 1;
 
-        //a walk around, 'get_frame_metadata' sometimes (after changing exposure or gain values) sets hdr_seq_size to 0 even though it 2 for few frames
+        //work-around, 'get_frame_metadata' sometimes (after changing exposure or gain values) sets hdr_seq_size to 0 even though it 2 for few frames
         //so we update the frames only if hdr_seq_size > 0. (hdr_seq_size==0 <-> frame is invalid)
         if (hdr_seq_size > 0) {
             _frames_map[infrared_index].first = infrared_frame;
@@ -295,13 +296,6 @@ public:
     text_box _text_box_hdr_frame;
 
     enum frame_id { IR1, IR2, DEPTH1, DEPTH2, HDR };
-
-    /*
-    const float _exposure_start_value_high = 6000;
-    const float _exposure_start_value_low = 300;
-    const float _gain_start_value_high = 25;
-    const float _gain_start_value_low = 16;
-    */
 
 };
 
