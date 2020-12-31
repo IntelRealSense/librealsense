@@ -654,7 +654,6 @@ void Logger::configure(const Configurations& configurations) {
         std::mutex m;
         std::unique_lock<std::mutex> lk(m);
         ELPP->asyncLogQueueRead()->cv().wait(lk, []{
-            std::cout << "Read Q size = " << ELPP->asyncLogQueueRead()->size() << std::endl;
             return  ELPP->asyncLogQueueRead()->empty();});
     }
 
