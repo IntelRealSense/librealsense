@@ -61,13 +61,13 @@ int main(int argc, char* argv[]) try
 
     // configuration for the first HDR sequence ID
     depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, 1);
-    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 6000); //explain 6000
-    depth_sensor.set_option(RS2_OPTION_GAIN, 25);
+    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 5000); // setting exposure to 5000, so sequence 1 will be the higher exposure
+    depth_sensor.set_option(RS2_OPTION_GAIN, 25); // setting gain to 25, so sequence 1 will be the higher gain
 
     // configuration for the second HDR sequence ID
     depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, 2);
-    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 300); //explain 300
-    depth_sensor.set_option(RS2_OPTION_GAIN, 16);
+    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 300);  // setting exposure to 300, so sequence 2 will be the lower exposure
+    depth_sensor.set_option(RS2_OPTION_GAIN, 16); // setting gain to 16, so sequence 2 will be the lower gain
 
     // after setting the HDR sequence ID opotion to 0, setting exposure or gain
     // will be targetted to the normal (UVC) exposure and gain options (not HDR configuration)
@@ -78,9 +78,6 @@ int main(int argc, char* argv[]) try
 
     // Declare depth colorizer for pretty visualization of depth data
     rs2::colorizer color_map;
-
-    // Declare rates printer for showing streaming rates of the enabled streams.
-    rs2::rates_printer printer;
 
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
@@ -119,9 +116,7 @@ int main(int argc, char* argv[]) try
 
     while (app) // application is still alive
     {
-        //TODO check if needed (printer orint statistics), maybe not needed 
-        data = pipe.wait_for_frames() .    // Wait for next set of frames from the camera
-            apply_filter(printer);     // Print each enabled stream frame rate
+        data = pipe.wait_for_frames();    // Wait for next set of frames from the camera
 
         auto frame = data.get_depth_frame();
 
