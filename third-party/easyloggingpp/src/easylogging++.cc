@@ -635,7 +635,6 @@ Logger::Logger(const Logger& logger) {
 }
 
 Logger& Logger::operator=(const Logger& logger) {
-  el::base::threading::ScopedLock scopedLock(lock());
   if (&logger != this) {
     base::utils::safeDelete(m_typedConfigurations);
     m_id = logger.m_id;
@@ -650,22 +649,31 @@ Logger& Logger::operator=(const Logger& logger) {
 }
 
 void Logger::configure(const Configurations& configurations) {
-  m_isConfigured = false;  // we set it to false in case if we fail
-  initUnflushedCount();
-  if (m_typedConfigurations != nullptr) {
-    Configurations* c = const_cast<Configurations*>(m_typedConfigurations->configurations());
-    if (c->hasConfiguration(Level::Global, ConfigurationType::Filename)) {
-      flush();
+    if (ELPP) {
+        base::threading::ScopedLock scopedLockConfig(ELPP->configLock()); 
+        performConfig(configurations);
     }
-  }
-  base::threading::ScopedLock scopedLock(lock());
-  if (m_configurations != configurations) {
-    m_configurations.setFromBase(const_cast<Configurations*>(&configurations));
-  }
-  base::utils::safeDelete(m_typedConfigurations);
-  m_typedConfigurations = new base::TypedConfigurations(&m_configurations, m_logStreamsReference);
-  resolveLoggerFormatSpec();
-  m_isConfigured = true;
+    else
+        performConfig(configurations);
+}
+
+void Logger::performConfig(const Configurations& configurations) {
+    m_isConfigured = false;  // we set it to false in case if we fail
+    initUnflushedCount();
+    if (m_typedConfigurations != nullptr) {
+        Configurations* c = const_cast<Configurations*>(m_typedConfigurations->configurations());
+        if (c->hasConfiguration(Level::Global, ConfigurationType::Filename)) {
+            flush();
+        }
+    }
+    base::threading::ScopedLock scopedLock(lock());
+    if (m_configurations != configurations) {
+        m_configurations.setFromBase(const_cast<Configurations*>(&configurations));
+    }
+    base::utils::safeDelete(m_typedConfigurations);
+    m_typedConfigurations = new base::TypedConfigurations(&m_configurations, m_logStreamsReference);
+    resolveLoggerFormatSpec();
+    m_isConfigured = true;
 }
 
 void Logger::reconfigure(void) {
@@ -693,7 +701,6 @@ void Logger::flush(void) {
 }
 
 void Logger::flush(Level level, base::type::fstream_t* fs) {
-  el::base::threading::ScopedLock scopedLock(lock());
   if (fs == nullptr && m_typedConfigurations->toFile(level)) {
     fs = m_typedConfigurations->fileStream(level);
   }
@@ -708,7 +715,6 @@ void Logger::flush(Level level, base::type::fstream_t* fs) {
 }
 
 void Logger::initUnflushedCount(void) {
-  el::base::threading::ScopedLock scopedLock(lock());
   m_unflushedCount.clear();
   base::type::EnumType lIndex = LevelHelper::kMinValid;
   LevelHelper::forEachLevel(&lIndex, [&](void) -> bool {
@@ -1639,12 +1645,10 @@ bool TypedConfigurations::enabled(Level level) {
 }
 
 bool TypedConfigurations::toFile(Level level) {
-  base::threading::ScopedLock scopedLock(lock());
   return getConfigByVal<bool>(level, &m_toFileMap, "toFile");
 }
 
 const std::string& TypedConfigurations::filename(Level level) {
-  base::threading::ScopedLock scopedLock(lock());
   return getConfigByRef<std::string>(level, &m_filenameMap, "filename");
 }
 
@@ -2077,8 +2081,8 @@ Storage::Storage(const LogBuilderPtr& defaultLogBuilder) :
   m_flags(ELPP_DEFAULT_LOGGING_FLAGS),
   m_vRegistry(new base::VRegistry(0, &m_flags)),
 #if ELPP_ASYNC_LOGGING
-    m_asyncLogQueueWrite(new base::AsyncLogQueue()),
-    m_asyncLogQueueRead(new base::AsyncLogQueue()),
+    m_asyncLogWriteQueue(new base::AsyncLogQueue()),
+    m_asyncLogReadQueue(new base::AsyncLogQueue()),
   m_asyncDispatchWorker(asyncDispatchWorker),
 #endif  // ELPP_ASYNC_LOGGING
   m_preRollOutCallback(base::defaultPreRollOutCallback) {
@@ -2125,8 +2129,8 @@ Storage::~Storage(void) {
   ELPP_INTERNAL_INFO(5, "Destroying asyncDispatchWorker");
   base::utils::safeDelete(m_asyncDispatchWorker);
   ELPP_INTERNAL_INFO(5, "Destroying asyncLogQueues");
-  base::utils::safeDelete(m_asyncLogQueueWrite);
-  base::utils::safeDelete(m_asyncLogQueueRead);
+  base::utils::safeDelete(m_asyncLogWriteQueue);
+  base::utils::safeDelete(m_asyncLogReadQueue);
 #endif  // ELPP_ASYNC_LOGGING
   ELPP_INTERNAL_INFO(5, "Destroying registeredHitCounters");
   base::utils::safeDelete(m_registeredHitCounters);
@@ -2315,7 +2319,7 @@ void AsyncLogDispatchCallback::handle(const LogDispatchData* data) {
   auto conf = data->logMessage()->logger()->typedConfigurations();
   if (conf->toStandardOutput(data->logMessage()->level()) ||
       conf->toFile(data->logMessage()->level())) {
-    ELPP->asyncLogQueueWrite()->push(AsyncLogItem(*(data->logMessage()), *data, logLine));
+    ELPP->asyncLogWriteQueue()->push(AsyncLogItem(*(data->logMessage()), *data, logLine));
   }
 }
 
@@ -2339,23 +2343,23 @@ bool AsyncDispatchWorker::clean(void) {
   std::unique_lock<std::mutex> lk(_mtx);
   try
   {
-      moveWriteQueueToReadQueue();
-      emptyQueueRead();
+      fetchLogQueue();
+      emptyLogQueue();
   }
   catch(...){}
   lk.unlock();
   cv.notify_one();
-  return (ELPP && ELPP->asyncLogQueueWrite() && ELPP->asyncLogQueueWrite()->empty() && ELPP->asyncLogQueueRead() && ELPP->asyncLogQueueRead()->empty());
+  return (ELPP && ELPP->asyncLogWriteQueue() && ELPP->asyncLogWriteQueue()->empty() && ELPP->asyncLogReadQueue() && ELPP->asyncLogReadQueue()->empty());
 }
 
-void AsyncDispatchWorker::emptyQueueRead(void) {
-  if (ELPP && ELPP->asyncLogQueueRead())
+void AsyncDispatchWorker::emptyLogQueue(void) {
+  if (ELPP && ELPP->asyncLogReadQueue())
   {
       try // TODO Thread-safety
       {
-        for (auto i=0UL; i < ELPP->asyncLogQueueRead()->size(); i++)
+        for (auto i=0UL; i < ELPP->asyncLogReadQueue()->size(); i++)
         {
-          AsyncLogItem data = ELPP->asyncLogQueueRead()->next();
+          AsyncLogItem data = ELPP->asyncLogReadQueue()->next();
           handle(&data);
         }
       }
@@ -2372,7 +2376,7 @@ void AsyncDispatchWorker::handle(AsyncLogItem* logItem) {
   LogDispatchData* data = logItem->data();
   LogMessage* logMessage = logItem->logMessage();
   Logger* logger = logMessage->logger();
-  base::threading::ScopedLock scopedLock(logger->lock());
+  //base::threading::ScopedLock scopedLock(logger->lock());
   base::TypedConfigurations* conf = logger->typedConfigurations();
   base::type::string_t logLine = logItem->logLine();
   if (data->dispatchAction() == base::DispatchAction::NormalLog) {
@@ -2431,24 +2435,25 @@ void AsyncDispatchWorker::handle(AsyncLogItem* logItem) {
 #  endif  // defined(ELPP_SYSLOG)
 }
 
-void AsyncDispatchWorker::moveWriteQueueToReadQueue()
+void AsyncDispatchWorker::fetchLogQueue()
 {
-    if (ELPP) {
-        if (ELPP->asyncLogQueueWrite()->size() > 0) {
-            base::threading::ScopedLock scopedLockW(ELPP->asyncLogQueueWrite()->lock());
-            base::threading::ScopedLock scopedLockR(ELPP->asyncLogQueueRead()->lock());
-            ELPP->asyncLogQueueWrite()->appendTo(ELPP->asyncLogQueueRead());
-            ELPP->asyncLogQueueWrite()->clear();
-        }
+    if (ELPP && ELPP->asyncLogWriteQueue() && ELPP->asyncLogWriteQueue()->size() > 0) {
+        base::threading::ScopedLock scopedLockW(ELPP->asyncLogWriteQueue()->lock());
+        base::threading::ScopedLock scopedLockR(ELPP->asyncLogReadQueue()->lock());
+        ELPP->asyncLogWriteQueue()->appendTo(ELPP->asyncLogReadQueue());
+        ELPP->asyncLogWriteQueue()->clear();
     }
 }
 
 void AsyncDispatchWorker::run(void) {
-  while (continueRunning()) {
-    emptyQueueRead();
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
-    moveWriteQueueToReadQueue();    
-  }
+    while (continueRunning()) {
+        if (ELPP) {
+            base::threading::ScopedLock scopedLock(ELPP->configLock());
+            emptyLogQueue();
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        fetchLogQueue();    
+    }
 }
 #endif  // ELPP_ASYNC_LOGGING
 

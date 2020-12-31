@@ -2288,6 +2288,8 @@ inline void FUNCTION_NAME(const T&);
 #  undef LOGGER_LEVEL_WRITERS_SIGNATURES
 #endif // ELPP_VARIADIC_TEMPLATES_SUPPORTED
  private:
+  void performConfig(const Configurations& configurations);
+
   std::string m_id;
   base::TypedConfigurations* m_typedConfigurations;
   base::type::stringstream_t m_stream;
@@ -2522,8 +2524,10 @@ class AsyncLogQueue : public base::threading::ThreadSafe {
       base::threading::ScopedLock scopedLock(lock());
       if (otherQueue) {
           base::threading::ScopedLock scopedLock(otherQueue->lock());
-          otherQueue->m_queue.insert(otherQueue->m_queue.end(), m_queue.begin(), m_queue.end());
-      } 
+          otherQueue->m_queue.insert(otherQueue->m_queue.begin(), m_queue.begin(), m_queue.end());
+              //std::make_move_iterator(m_queue.begin()),
+              //std::make_move_iterator(m_queue.end()));
+      }
   }
 
   inline void push(const AsyncLogItem& item) {
@@ -2595,12 +2599,12 @@ class Storage : base::NoCopy, public base::threading::ThreadSafe {
   }
 
 #if ELPP_ASYNC_LOGGING
-  inline base::AsyncLogQueue* asyncLogQueueWrite(void) const {
-    return m_asyncLogQueueWrite;
+  inline base::AsyncLogQueue* asyncLogWriteQueue(void) const {
+    return m_asyncLogWriteQueue;
   }
 
-  inline base::AsyncLogQueue* asyncLogQueueRead(void) const {
-      return m_asyncLogQueueRead;
+  inline base::AsyncLogQueue* asyncLogReadQueue(void) const {
+      return m_asyncLogReadQueue;
   }
 
   inline base::AsyncDispatchWorker* asyncDispatchWorker(void) const {
@@ -2708,15 +2712,20 @@ class Storage : base::NoCopy, public base::threading::ThreadSafe {
     }
     return it->second;
   }
+#if ELPP_ASYNC_LOGGING
+  inline base::threading::Mutex& configLock(void) { return m_configLock; }
+#endif  // ELPP_ASYNC_LOGGING
+
  private:
   base::RegisteredHitCounters* m_registeredHitCounters;
   base::RegisteredLoggers* m_registeredLoggers;
   base::type::EnumType m_flags;
   base::VRegistry* m_vRegistry;
 #if ELPP_ASYNC_LOGGING
-  base::AsyncLogQueue* m_asyncLogQueueWrite; 
-  base::AsyncLogQueue* m_asyncLogQueueRead;
+  base::AsyncLogQueue* m_asyncLogWriteQueue; 
+  base::AsyncLogQueue* m_asyncLogReadQueue;
   base::IWorker* m_asyncDispatchWorker;
+  base::threading::Mutex m_configLock;
 #endif  // ELPP_ASYNC_LOGGING
   base::utils::CommandLineArgs m_commandLineArgs;
   PreRollOutCallback m_preRollOutCallback;
@@ -2762,11 +2771,11 @@ class AsyncDispatchWorker : public base::IWorker, public base::threading::Thread
   virtual ~AsyncDispatchWorker();
 
   bool clean(void);
-  void emptyQueueRead(void);
+  void emptyLogQueue(void);
   virtual void start(void);
   void handle(AsyncLogItem* logItem);
   void run(void);
-  void moveWriteQueueToReadQueue();
+  void fetchLogQueue();
 
   void setContinueRunning(bool value) {
     base::threading::ScopedLock scopedLock(m_continueRunningLock);
