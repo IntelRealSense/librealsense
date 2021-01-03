@@ -2435,13 +2435,11 @@ void AsyncDispatchWorker::handle(AsyncLogItem* logItem) {
 
 void AsyncDispatchWorker::moveWriteQueueToReadQueue()
 {
-    if (ELPP) {
-        if (ELPP->asyncLogQueueWrite()->size() > 0) {
-            base::threading::ScopedLock scopedLockW(ELPP->asyncLogQueueWrite()->lock());
-            base::threading::ScopedLock scopedLockR(ELPP->asyncLogQueueRead()->lock());
-            ELPP->asyncLogQueueWrite()->appendTo(ELPP->asyncLogQueueRead());
-            ELPP->asyncLogQueueWrite()->clear();
-        }
+    if (ELPP && ELPP->asyncLogQueueWrite() && ELPP->asyncLogQueueWrite()->size() > 0) {
+        base::threading::ScopedLock scopedLockW(ELPP->asyncLogQueueWrite()->lock());
+        base::threading::ScopedLock scopedLockR(ELPP->asyncLogQueueRead()->lock());
+        ELPP->asyncLogQueueWrite()->appendTo(ELPP->asyncLogQueueRead());
+        ELPP->asyncLogQueueWrite()->clear();
     }
 }
 
