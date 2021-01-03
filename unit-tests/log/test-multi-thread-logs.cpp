@@ -27,7 +27,7 @@ TEST_CASE("async logger", "[log][remi]")
         int iterations = 0;
         auto start = std::chrono::steady_clock::now();
         
-        while (iterations < 3000)//std::chrono::steady_clock::now() - start < std::chrono::seconds(3))
+        while (std::chrono::steady_clock::now() - start < std::chrono::seconds(20))
         {
             std::stringstream ss;
             int value_to_check = (required_value) + 10 * iterations;
@@ -71,4 +71,5 @@ TEST_CASE("async logger", "[log][remi]")
     std::cout << "max time = " << max_time.count() << " ms, on iteration: " << max_time_iteration << std::endl;
     std::cout << "min time = " << min_time.count() << " ms" << std::endl;
     std::cout << "avg time = " << (float) (avg_time.count()) / (number_of_iterations * 10.f) << " ms" << std::endl;
+    REQUIRE(max_time.count() < 20);
 }
