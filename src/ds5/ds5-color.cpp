@@ -51,9 +51,19 @@ namespace librealsense
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
         register_stream_to_extrinsic_group(*_color_stream, 0);
 
-        auto color_devs_info = filter_by_mi(group.uvc_devices, 3); // TODO check
-        if (color_devs_info.size() != 1)
-            throw invalid_value_exception(to_string() << "RS4XX with RGB models are expected to include a single color device! - "
+        auto mi = 3;
+        auto devs = 1;
+
+        // D405 has no separate interface for color - reuses Depth
+        if (ds::RS405_PID == group.uvc_devices.front().pid)
+        {
+            mi = 0;
+            //devs = 3; 
+        }
+
+        auto color_devs_info = filter_by_mi(group.uvc_devices, mi); // TODO check
+        if (color_devs_info.size() != devs)
+            throw invalid_value_exception(to_string() << "RS4XX: RGB modules inconsistency - "
                 << color_devs_info.size() << " found");
 
         auto color_ep = create_color_device(ctx, color_devs_info);

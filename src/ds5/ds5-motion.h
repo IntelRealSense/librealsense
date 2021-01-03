@@ -155,13 +155,6 @@ namespace librealsense
                 _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.03022f, 0.0074f, 0.01602f } };
                 _imu_2_depth_rot = { { -1,0,0 },{ 0,1,0 },{ 0,0,-1 } };
             }
-            else if (_pid == ds::RS405_PID)
-            {
-                // D405 specific - Bosch BMI055
-                // TODO - verify with mechanical drawing
-                _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.00552f, 0.0051f, 0.01174f } };
-                _imu_2_depth_rot = { { -1,0,0 },{ 0,1,0 },{ 0,0,-1 } };
-            }
             else if (_pid == ds::RS465_PID)
             {
                 // D465 specific - Bosch BMI085

@@ -1080,7 +1080,7 @@ namespace librealsense
                                     if (wa_applied)
                                     {
                                         auto fn = *(uint32_t*)((char*)(buf_mgr.metadata_start())+28);
-                                        LOG_INFO("Extracting md buff, fn = " << fn);
+                                        LOG_DEBUG_V4L("Extracting md buff, fn = " << fn);
                                     }
 
                                     auto frame_sz = buf_mgr.md_node_present() ? buf.bytesused :
@@ -1772,7 +1772,7 @@ namespace librealsense
                 }
                 else
                 {
-                    LOG_WARNING("Invalid md size: bytes used =  " << buf.bytesused << " ,start offset=" << uvc_md_start_offset);
+                    LOG_DEBUG_V4L("Invalid md size: bytes used =  " << buf.bytesused << " ,start offset=" << uvc_md_start_offset);
                     // Zero-size buffers generate empty md. Non-zero partial bufs handled as errors
                     if(buf.bytesused > 0)
                     {
