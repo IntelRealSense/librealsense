@@ -71,5 +71,5 @@ TEST_CASE("async logger", "[log][remi]")
     std::cout << "max time = " << max_time.count() << " ms, on iteration: " << max_time_iteration << std::endl;
     std::cout << "min time = " << min_time.count() << " ms" << std::endl;
     std::cout << "avg time = " << (float) (avg_time.count()) / (number_of_iterations * 10.f) << " ms" << std::endl;
-    REQUIRE(max_time.count() < 20);
+    REQUIRE(max_time.count() < 50);
 }
