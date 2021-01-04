@@ -649,29 +649,37 @@ Logger& Logger::operator=(const Logger& logger) {
 }
 
 void Logger::configure(const Configurations& configurations) {
-    if (ELPP && ELPP->asyncLogQueueRead()) {
-        std::mutex m;
-        std::unique_lock<std::mutex> lk(m);
-        ELPP->asyncLogQueueRead()->cv().wait(lk, []{
-            return  ELPP->asyncLogQueueRead()->empty();});
+    base::threading::ScopedLock scopedLock(lock());
+    if (m_isConfigured) {
+        if (m_configurations != configurations) {
+            m_newConfigurations = configurations;
+            m_shouldUpdateConfig = true;
+        }
     }
+    else {
+        performConfigurations(configurations);
+    }
+}
 
-  m_isConfigured = false;  // we set it to false in case if we fail
-  initUnflushedCount();
-  if (m_typedConfigurations != nullptr) {
-    Configurations* c = const_cast<Configurations*>(m_typedConfigurations->configurations());
-    if (c->hasConfiguration(Level::Global, ConfigurationType::Filename)) {
-      flush();
+void Logger::performConfigurations(const Configurations& configurations) {
+    m_isConfigured = false;  // we set it to false in case if we fail
+    initUnflushedCount();
+    if (m_typedConfigurations != nullptr) {
+        Configurations* c = const_cast<Configurations*>(m_typedConfigurations->configurations());
+        if (c->hasConfiguration(Level::Global, ConfigurationType::Filename)) {
+            flush();
+        }
     }
-  }
-  base::threading::ScopedLock scopedLock(lock());
-  if (m_configurations != configurations) {
+    base::threading::ScopedLock scopedLock(lock());
     m_configurations.setFromBase(const_cast<Configurations*>(&configurations));
-  }
-  base::utils::safeDelete(m_typedConfigurations);
-  m_typedConfigurations = new base::TypedConfigurations(&m_configurations, m_logStreamsReference);
-  resolveLoggerFormatSpec();
-  m_isConfigured = true;
+    base::utils::safeDelete(m_typedConfigurations);
+    m_typedConfigurations = new base::TypedConfigurations(&m_configurations, m_logStreamsReference);
+    resolveLoggerFormatSpec();
+    m_isConfigured = true;
+}
+
+void Logger::updateConfigurations() {
+    performConfigurations(m_newConfigurations);
 }
 
 void Logger::reconfigure(void) {
@@ -2446,8 +2454,14 @@ void AsyncDispatchWorker::moveWriteQueueToReadQueue()
 void AsyncDispatchWorker::run(void) {
   while (continueRunning()) {
     emptyQueueRead();
-    if (ELPP && ELPP->asyncLogQueueRead() )
-        ELPP->asyncLogQueueRead()->cv().notify_all();
+    if (ELPP) {
+        Logger* logger = ELPP->registeredLoggers()->get("librealsense");
+        if (logger && logger->shouldUpdateConfigurations())
+        {
+            base::threading::ScopedLock scopedLockLogger(logger->lock());
+            logger->updateConfigurations();
+        }
+    }
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
     moveWriteQueueToReadQueue();    
   }

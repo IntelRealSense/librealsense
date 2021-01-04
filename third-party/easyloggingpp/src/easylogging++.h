@@ -2217,11 +2217,20 @@ class Logger : public base::threading::ThreadSafe, public Loggable {
     os << m_id.c_str();
   }
 
-  /// @brief Configures the logger using specified configurations.
+  /// @brief Stores new configurations for the logger using specified configurations.
   void configure(const Configurations& configurations);
 
   /// @brief Reconfigures logger using existing configurations
   void reconfigure(void);
+
+  /// @brief Updates the logger's configurations using specified configurations.
+  void updateConfigurations();
+
+  void performConfigurations(const Configurations& configurations);
+
+  inline bool shouldUpdateConfigurations(void) {
+      return m_shouldUpdateConfig;
+  }
 
   inline const std::string& id(void) const {
     return m_id;
@@ -2293,6 +2302,8 @@ inline void FUNCTION_NAME(const T&);
   base::type::stringstream_t m_stream;
   std::string m_parentApplicationName;
   bool m_isConfigured;
+  Configurations m_newConfigurations;
+  bool m_shouldUpdateConfig;
   Configurations m_configurations;
   std::unordered_map<Level, unsigned int> m_unflushedCount;
   base::LogStreamsReferenceMap* m_logStreamsReference;
@@ -2552,13 +2563,8 @@ class AsyncLogQueue : public base::threading::ThreadSafe {
     base::threading::ScopedLock scopedLock(lock());
     return m_queue.size();
   }
-  inline std::condition_variable& cv(){
-      base::threading::ScopedLock scopedLock(lock());
-      return m_cv;
-  }
  private:
   std::deque<AsyncLogItem> m_queue;
-  std::condition_variable m_cv;
 };
 class IWorker {
  public:
