@@ -19,7 +19,9 @@ matrix:
         - cd $LRS_RUN_CONFIG
         - ls
         - ./live-test.exe -d yes -i [software-device]
+        - echo "before unset LRS_LOG_LEVEL"
         - unset LRS_LOG_LEVEL
+        - echo "after unset LRS_LOG_LEVEL"
         - C:/Python38/python.exe ../../unit-tests/run-unit-tests.py --verbose .
         
     - name: "Windows - cpp"
