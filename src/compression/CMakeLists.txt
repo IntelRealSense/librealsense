@@ -19,7 +19,7 @@ set(COMPRESSION_SOURCES ${COMPRESSION_SOURCES} ${LZ4_DIR}/lz4.h ${LZ4_DIR}/lz4.c
 
 add_library(${PROJECT_NAME} STATIC ${COMPRESSION_SOURCES})
 
-include_directories(${PROJECT_NAME}
+include_directories(
     ../../common
     ../ipDeviceCommon
     ../../third-party/easyloggingpp/src    
@@ -33,7 +33,7 @@ add_dependencies(${PROJECT_NAME}
     libjpeg-turbo
 )
 
-include_directories(${PROJECT_NAME}
+include_directories(
     ${CMAKE_BINARY_DIR}/libjpeg-turbo/include
     ${LZ4_DIR}
 )

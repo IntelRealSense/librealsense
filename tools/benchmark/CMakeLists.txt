@@ -21,7 +21,7 @@ endif()
 if(BUILD_GRAPHICAL_EXAMPLES)
     add_executable(rs-benchmark rs-benchmark.cpp ../../third-party/glad/glad.c)
     target_link_libraries(rs-benchmark ${DEPENDENCIES} realsense2-gl)
-    include_directories(rs-benchmark ../../third-party/tclap/include ../../third-party/glad)
+    include_directories(../../third-party/tclap/include ../../third-party/glad)
     set_target_properties (rs-benchmark PROPERTIES
         FOLDER Tools
     )
