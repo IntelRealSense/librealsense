@@ -26,14 +26,18 @@ namespace rs2
         // Reset depth samples history (queue history will reset only if needed (if add_depth_sample was called since last reset/construction)
         void reset_history();
 
-        // Return the samples history ratio samples_count / capacity [0-1]
+        // Return the samples history ratio size / capacity [0-1]
         float get_samples_ratio() const;
+
+        // Return true if the history queue is full
+        bool is_history_full() const;
+
 
     private:
         // Implement a cyclic queue for depth samples
         std::deque<float> _dist_queue; 
 
-        // Holds the current samples_count
-        int _samples_count;
+        // Holds the current history size
+        int _history_size;
     };
 }

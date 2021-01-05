@@ -30,7 +30,7 @@ static bool is_close_to_zero( float x )
 
 
 reflectivity::reflectivity()
-    : _samples_count( 0 )
+    : _history_size( 0 )
 {
     _dist_queue.assign( N_STD_FRAMES,
                         0 );  // Allocate size for all samples in advance to minimize runtime.
@@ -156,15 +156,15 @@ float reflectivity::get_reflectivity( float raw_noise_estimation,
     ref = ( i_ref * ref_from_ir + s_ref * ref_from_std ) / ( ref_from_ir + ref_from_std );
 
     // Force 15% resolution
-    if (ref >= 0.85f)
+    if( ref >= 0.85f )
         ref = 0.85f;
-    else if (ref >= 0.7f)
+    else if( ref >= 0.7f )
         ref = 0.7f;
-    else if (ref >= 0.55f)
+    else if( ref >= 0.55f )
         ref = 0.55f;
-    else if (ref >= 0.4f)
+    else if( ref >= 0.4f )
         ref = 0.4f;
-    else if (ref >= 0.25f)
+    else if( ref >= 0.25f )
         ref = 0.25f;
     else
         ref = 0.1f;
@@ -185,23 +185,26 @@ void reflectivity::add_depth_sample( float depth_val, int x_in_image, int y_in_i
             _dist_queue.pop_front();
 
         _dist_queue.push_back( dist_r );
-        if (_samples_count < N_STD_FRAMES) _samples_count++;
+        if( _history_size < N_STD_FRAMES )
+            _history_size++;
     }
 }
 
 void rs2::reflectivity::reset_history()
 {
-    if( _samples_count > 0 )
+    if( _history_size > 0 )
     {
         _dist_queue.assign( N_STD_FRAMES, 0 );
-        _samples_count = 0;
+        _history_size = 0;
     }
 }
 
 float rs2::reflectivity::get_samples_ratio() const
 {
-    if (0 != N_STD_FRAMES)
-        return static_cast<float>(_samples_count) / N_STD_FRAMES;
-    else
-        return 0.0f;
+    return static_cast< float >( _history_size ) / N_STD_FRAMES;
+}
+
+bool rs2::reflectivity::is_history_full() const
+{
+    return _history_size / N_STD_FRAMES;
 }

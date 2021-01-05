@@ -2357,8 +2357,7 @@ namespace rs2
                 std::string ref_str = "N/A";
                 try
                 {
-                    auto samples_ratio = _reflectivity->get_samples_ratio();
-                    if (samples_ratio == 1.0f)
+                    if (_reflectivity->is_history_full())
                     {
                         auto pixel_ref
                             = _reflectivity->get_reflectivity(noise_est, max_usable_range, ir_val);
@@ -2369,7 +2368,7 @@ namespace rs2
                     else
                     {
                         // Show dots when calculating ,dots count [3-10]
-                        int dots_count = static_cast<int>(samples_ratio * 7);
+                        int dots_count = static_cast<int>(_reflectivity->get_samples_ratio() * 7);
                         ref_str = "calculating...";
                         ref_str += std::string(dots_count, '.');
                     }
