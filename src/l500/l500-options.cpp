@@ -454,6 +454,9 @@ namespace librealsense
 
    void l500_options::change_preset( rs2_l500_visual_preset preset )
     {
+       if( _fw_version < firmware_version( MIN_GET_DEFAULT_FW_VERSION ) )
+           reset_hw_controls();  // should be before gain changing as WA for old FW versions
+
         switch( preset )
         {
         case RS2_L500_VISUAL_PRESET_NO_AMBIENT:
@@ -563,10 +566,8 @@ namespace librealsense
             //     5. Restore the current value
             std::map< rs2_option, float > currents;
             for( auto opt : _hw_options )
-            {
                 currents[opt.first] = opt.second->query( get_current, int( resolution ) );
-                opt.second->set_with_no_signal( -1 );
-            }
+
 
             // if the sensor is streaming the value of control will update only whan the next frame
             // arrive
@@ -575,7 +576,8 @@ namespace librealsense
 
             for( auto opt : _hw_options )
             {
-                defaults[opt.first] = opt.second->query( get_current, int( resolution ) );
+                currents[opt.first] = opt.second->query( get_current, int( resolution ) );
+                opt.second->set_with_no_signal( -1 );
             }
 
             for( auto opt : currents )
