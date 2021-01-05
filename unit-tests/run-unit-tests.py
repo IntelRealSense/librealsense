@@ -146,7 +146,7 @@ if not target:
         target = dir_with_test
 
 if target:
-    logdir = target + '/unit-tests'
+    logdir = target + os.sep + 'unit-tests'
 else: # no test executables were found. We put the logs directly in build directory
     logdir = librealsense + os.sep + 'build'
 os.makedirs( logdir, exist_ok = True )
@@ -268,7 +268,7 @@ def check_log_for_fails(log, testname, exe):
         return False
 
 # definition of classes for tests
-class Test(ABC):
+class Test(ABC): # Abstract Base Class
     """
     Abstract class for a test. Holds the name of the test, the log file for it and the command line needed to run it
     """
@@ -300,7 +300,7 @@ class PyTest(Test):
         :param testname: name of the test
         :param path_to_test: the relative path from the current directory to the path
         """
-        global current_dir
+        global current_dir, linux
 
         if linux:
             cmd = ["python3", path_to_test]
@@ -309,9 +309,9 @@ class PyTest(Test):
 
         Test.__init__(self, testname, cmd, current_dir + path_to_test)
 
-class CTest(Test):
+class ExeTest(Test):
     """
-       Class for c/cpp tests
+    Class for c/cpp tests
     """
     def __init__(self, testname, exe):
         """
@@ -321,7 +321,7 @@ class CTest(Test):
         Test.__init__(self, testname, exe, exe)
 
 def get_tests():
-    global regex, target, pyrs, current_dir
+    global regex, target, pyrs, current_dir, linux
     if regex:
         pattern = re.compile(regex)
     if target:
@@ -349,7 +349,7 @@ def get_tests():
             else:
                 exe = target + '/' + testname + '.exe'
 
-            yield CTest(testname, exe)
+            yield ExeTest(testname, exe)
 
     # If we run python tests with no .pyd/.so file they will crash. Therefore we only run them if such a file was found
     if pyrs:
