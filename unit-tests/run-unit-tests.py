@@ -14,7 +14,7 @@ def usage():
     print( '        --debug        Turn on debugging information' )
     print( '        -v, --verbose  Errors will dump the log to stdout' )
     print( '        -q, --quiet    Suppress output; rely on exit status (0=no failures)' )
-    print( '        -r, --regex    run all tests that fit the immediately following regular expression')
+    print( '        -r, --regex    run all tests that fit the following regular expression')
     sys.exit(2)
 def debug(*args):
     pass
@@ -123,9 +123,8 @@ for opt,arg in opts:
     elif opt in ('-q','--quiet'):
         def out(*args):
             pass
-    elif opt in ('-r', '--regex'):
-        regex = args[0]
-        del args[0]
+    elif opt[0] in ('-r', '--regex'):
+        regex = opt[1]
 if len(args) > 1:
     usage()
 target = None
