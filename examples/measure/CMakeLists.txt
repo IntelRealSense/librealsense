@@ -12,7 +12,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     add_executable(rs-measure rs-measure.cpp ../example.hpp)
     set_property(TARGET rs-measure PROPERTY CXX_STANDARD 11)
     target_link_libraries(rs-measure ${DEPENDENCIES} Threads::Threads)
-    include_directories(rs-measure ../)
+    include_directories(../)
     set_target_properties (rs-measure PROPERTIES FOLDER "Examples")
 
     install(TARGETS rs-measure RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
