@@ -649,12 +649,16 @@ Logger& Logger::operator=(const Logger& logger) {
 }
 
 void Logger::configure(const Configurations& configurations) {
+#if ELPP_ASYNC_LOGGING
     if (ELPP) {
         base::threading::ScopedLock scopedLockConfig(ELPP->configLock()); 
         performConfig(configurations);
     }
     else
         performConfig(configurations);
+#else
+    performConfig(configurations);
+#endif  // ELPP_ASYNC_LOGGING
 }
 
 void Logger::performConfig(const Configurations& configurations) {
@@ -2353,18 +2357,12 @@ bool AsyncDispatchWorker::clean(void) {
 }
 
 void AsyncDispatchWorker::emptyLogQueue(void) {
-  if (ELPP && ELPP->asyncLogReadQueue())
-  {
-      try // TODO Thread-safety
-      {
-        for (auto i=0UL; i < ELPP->asyncLogReadQueue()->size(); i++)
-        {
-          AsyncLogItem data = ELPP->asyncLogReadQueue()->next();
-          handle(&data);
+    if (ELPP && ELPP->asyncLogReadQueue()) {
+        for (auto i=0UL; i < ELPP->asyncLogReadQueue()->size(); i++) {
+            AsyncLogItem data = ELPP->asyncLogReadQueue()->next();
+            handle(&data);
         }
-      }
-      catch(...){}
-  }
+    }
 }
 
 void AsyncDispatchWorker::start(void) {
