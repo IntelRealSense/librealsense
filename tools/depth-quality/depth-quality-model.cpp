@@ -841,10 +841,15 @@ namespace rs2
             bool save = false;
             subdevice_ui_selection prev_ui;
 
-            if (_depth_sensor_model)
+            auto dev = _pipe.get_active_profile().get_device();
+
+            if (_device_model && _depth_sensor_model)
             {
-                prev_ui = _depth_sensor_model->last_valid_ui;
-                save = true;
+                if( ! _first_frame )
+                {
+                    prev_ui = _depth_sensor_model->last_valid_ui;
+                    save = true;
+                }
 
                 // Clean-up the models for new configuration
                 for (auto&& s : _device_model->subdevices)
@@ -854,21 +859,30 @@ namespace rs2
                 _viewer_model.selected_depth_source_uid = -1;
                 _viewer_model.selected_tex_source_uid = -1;
             }
-
-            auto dev = _pipe.get_active_profile().get_device();
-            auto dpt_sensor = std::make_shared<sensor>(dev.first<depth_sensor>());
-            _device_model = std::shared_ptr<rs2::device_model>(new device_model(dev, _error_message, _viewer_model,false));
+            // Create a new device model - reset all UI the new device
+            _device_model = std::shared_ptr<rs2::device_model>(new device_model(dev, _error_message, _viewer_model, _first_frame, false));
+            
+            // Get device depth sensor model
+            for (auto&& sub : _device_model->subdevices)
+            {
+                if (sub->s->is<depth_sensor>())
+                {
+                    _depth_sensor_model = sub;
+                    break;
+                }
+            }
+        
             _device_model->show_depth_only = true;
             _device_model->show_stream_selection = false;
-            std::shared_ptr< atomic_objects_in_frame > no_detected_objects;
-            _depth_sensor_model = std::make_shared<rs2::subdevice_model>(dev, dpt_sensor, no_detected_objects, _error_message, _viewer_model);
 
             _depth_sensor_model->draw_streams_selector = false;
             _depth_sensor_model->draw_fps_selector = true;
+            _depth_sensor_model->allow_change_resolution_while_streaming = true;
+            _depth_sensor_model->allow_change_fps_while_streaming = true;
 
             // Retrieve stereo baseline for supported devices
             auto baseline_mm = -1.f;
-            auto profiles = dpt_sensor->get_stream_profiles();
+            auto profiles = _depth_sensor_model->s->get_stream_profiles();
             auto right_sensor = std::find_if(profiles.begin(), profiles.end(), [](rs2::stream_profile& p)
             { return (p.stream_index() == 2) && (p.stream_type() == RS2_STREAM_INFRARED); });
 

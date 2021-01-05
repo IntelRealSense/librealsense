@@ -42,7 +42,7 @@ using namespace rs400;
 using namespace nlohmann;
 using namespace rs2::sw_update;
 
-static rs2_sensor_mode resolution_from_width_height(int width, int height)
+ rs2_sensor_mode rs2::resolution_from_width_height(int width, int height)
 {
     if ((width == 240 && height == 320) || (width == 320 && height == 240))
         return RS2_SENSOR_MODE_QVGA;
@@ -992,7 +992,8 @@ namespace rs2
         std::shared_ptr<sensor> s,
         std::shared_ptr< atomic_objects_in_frame > device_detected_objects,
         std::string& error_message,
-        viewer_model& viewer
+        viewer_model& viewer,
+        bool new_device_connected
     )
         : s(s), dev(dev), tm2(), ui(), last_valid_ui(),
         streaming(false), _pause(false),
@@ -1236,23 +1237,26 @@ namespace rs2
             get_default_selection_index(res_values, default_resolution, &selection_index);
             ui.selected_res_id = selection_index;
 
-            // Have the various preset options automatically update based on the resolution of the
-            // (closed) stream...
-            // TODO we have no res_values when loading color rosbag, and color sensor isn't
-            // even supposed to support SENSOR_MODE... see RS5-7726
-            if( s->supports( RS2_OPTION_SENSOR_MODE ) && !res_values.empty() )
+            if (new_device_connected)
             {
-                // Watch out for read-only options in the playback sensor!
-                try
+                // Have the various preset options automatically update based on the resolution of the
+                // (closed) stream...
+                // TODO we have no res_values when loading color rosbag, and color sensor isn't
+                // even supposed to support SENSOR_MODE... see RS5-7726
+                if( s->supports( RS2_OPTION_SENSOR_MODE ) && !res_values.empty() )
                 {
-                    s->set_option( RS2_OPTION_SENSOR_MODE,
-                                   static_cast< float >( resolution_from_width_height(
-                                       res_values[ui.selected_res_id].first,
-                                       res_values[ui.selected_res_id].second ) ) );
-                }
-                catch( not_implemented_error const &)
-                {
-                    // Just ignore for now: need to figure out a way to write to playback sensors...
+                    // Watch out for read-only options in the playback sensor!
+                    try
+                    {
+                        s->set_option( RS2_OPTION_SENSOR_MODE,
+                            static_cast< float >( resolution_from_width_height(
+                                res_values[ui.selected_res_id].first,
+                                res_values[ui.selected_res_id].second ) ) );
+                    }
+                    catch( not_implemented_error const &)
+                    {
+                        // Just ignore for now: need to figure out a way to write to playback sensors...
+                    }
                 }
             }
 
@@ -1318,8 +1322,9 @@ namespace rs2
             << s->get_info(RS2_CAMERA_INFO_NAME);
 
         auto streaming_tooltip = [&]() {
-            if (streaming && ImGui::IsItemHovered())
-                ImGui::SetTooltip("Can't modify while streaming");
+            if( ( ! allow_change_resolution_while_streaming && streaming )
+                && ImGui::IsItemHovered() )
+                ImGui::SetTooltip( "Can't modify while streaming" );
         };
 
         //ImGui::Columns(2, label.c_str(), false);
@@ -1338,7 +1343,7 @@ namespace rs2
             label = to_string() << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
                 << s->get_info(RS2_CAMERA_INFO_NAME) << " resolution";
 
-            if (streaming)
+            if( ! allow_change_resolution_while_streaming && streaming )
             {
                 ImGui::Text("%s", res_chars[ui.selected_res_id]);
                 streaming_tooltip();
@@ -1413,7 +1418,7 @@ namespace rs2
                 label = to_string() << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
                     << s->get_info(RS2_CAMERA_INFO_NAME) << " fps";
 
-                if (streaming)
+                if( ! allow_change_fps_while_streaming && streaming )
                 {
                     ImGui::Text("%s", fps_chars[ui.selected_shared_fps_id]);
                     streaming_tooltip();
@@ -3734,7 +3739,7 @@ namespace rs2
         }
     }
 
-    device_model::device_model(device& dev, std::string& error_message, viewer_model& viewer, bool remove)
+    device_model::device_model(device& dev, std::string& error_message, viewer_model& viewer, bool new_device_connected, bool remove)
         : dev(dev),
         _calib_model(dev),
         syncer(viewer.syncer),
@@ -3755,7 +3760,7 @@ namespace rs2
 
         for (auto&& sub : dev.query_sensors())
         {
-            auto model = std::make_shared<subdevice_model>(dev, std::make_shared<sensor>(sub), _detected_objects, error_message, viewer);
+            auto model = std::make_shared<subdevice_model>(dev, std::make_shared<sensor>(sub), _detected_objects, error_message, viewer, new_device_connected);
             subdevices.push_back(model);
         }
 
