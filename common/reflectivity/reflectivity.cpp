@@ -201,10 +201,22 @@ void rs2::reflectivity::reset_history()
 
 float rs2::reflectivity::get_samples_ratio() const
 {
-    return static_cast< float >( _history_size ) / N_STD_FRAMES;
+    return static_cast< float >( history_size() ) / history_capacity();
 }
 
 bool rs2::reflectivity::is_history_full() const
 {
-    return _history_size / N_STD_FRAMES;
+    return history_size() == history_capacity();
+}
+
+// Return the history queue capacity
+size_t rs2::reflectivity::history_capacity() const 
+{ 
+    return N_STD_FRAMES;
+}
+
+// Return the history queue current size
+size_t rs2::reflectivity::history_size() const 
+{ 
+    return _history_size; 
 }

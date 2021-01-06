@@ -32,6 +32,11 @@ namespace rs2
         // Return true if the history queue is full
         bool is_history_full() const;
 
+        // Return the history queue capacity
+        size_t history_capacity() const;
+
+        // Return the history queue current size
+        size_t history_size() const;
 
     private:
         // Implement a cyclic queue for depth samples
