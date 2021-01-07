@@ -146,9 +146,12 @@ namespace librealsense
         void reset_hw_controls();
         void set_max_laser();
 
+        void change_gain( rs2_l500_visual_preset preset );
+        void change_alt_ir( rs2_l500_visual_preset preset );
         void update_defaults();
         std::map<rs2_option, std::shared_ptr<cascade_option<l500_hw_options>>> _hw_options;
         std::shared_ptr< cascade_option<uvc_xu_option<int>>> _digital_gain;
+        std::shared_ptr< l500_hw_options > _alt_ir;
         std::shared_ptr< l500_preset_option > _preset;
 
         template<typename T, class ... Args>
