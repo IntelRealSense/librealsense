@@ -622,12 +622,16 @@ namespace librealsense
             module_asic_serial_offset       = 64,
             fisheye_sensor_lb               = 112,
             fisheye_sensor_hb               = 113,
+            imu_acc_chip_id                 = 124,
             depth_sensor_type               = 166,
             active_projector                = 170,
             rgb_sensor                      = 174,
             imu_sensor                      = 178,
             motion_module_fw_version_offset = 212
         };
+
+        const uint8_t I2C_IMU_BMI055_ID_ACC = 0xfa;
+        const uint8_t I2C_IMU_BMI085_ID_ACC = 0x1f;
 
         enum gvd_fields_size
         {
