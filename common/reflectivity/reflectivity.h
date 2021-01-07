@@ -5,6 +5,7 @@
 
 #include <deque>
 #include <atomic>
+#include <stddef.h>
 
 namespace rs2
 {
@@ -43,6 +44,6 @@ namespace rs2
         std::deque<float> _dist_queue; 
 
         // Holds the current history size
-        int _history_size;
+        size_t _history_size;
     };
 }
