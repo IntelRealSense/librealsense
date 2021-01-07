@@ -8,11 +8,11 @@
 using namespace rs2;
 
 
-static const int   N_STD_FRAMES = 100;
-static const int   NINETY_FIVE_PERCENT_OF_STD_PERIOD = static_cast< int >( 0.95 * N_STD_FRAMES );
-static const float MAX_RANGE_IN_UNIT = 65536.0f;
-static const float LONG_THERMAL = 74.5f;
-static const float INDOOR_MAX_RANGE = 9.0f;
+static const size_t N_STD_FRAMES = 100;
+static const int    NINETY_FIVE_PERCENT_OF_STD_PERIOD = static_cast< int >( 0.95 * N_STD_FRAMES );
+static const float  MAX_RANGE_IN_UNIT = 65536.0f;
+static const float  LONG_THERMAL = 74.5f;
+static const float  INDOOR_MAX_RANGE = 9.0f;
 
 // TODO try to read from LRS
 static const float FOV_H = 0.610865f;
@@ -30,7 +30,7 @@ static bool is_close_to_zero( float x )
 
 
 reflectivity::reflectivity()
-    : _is_empty( false )
+    : _history_size( 0 )
 {
     _dist_queue.assign( N_STD_FRAMES,
                         0 );  // Allocate size for all samples in advance to minimize runtime.
@@ -156,15 +156,15 @@ float reflectivity::get_reflectivity( float raw_noise_estimation,
     ref = ( i_ref * ref_from_ir + s_ref * ref_from_std ) / ( ref_from_ir + ref_from_std );
 
     // Force 15% resolution
-    if (ref >= 0.85f)
+    if( ref >= 0.85f )
         ref = 0.85f;
-    else if (ref >= 0.7f)
+    else if( ref >= 0.7f )
         ref = 0.7f;
-    else if (ref >= 0.55f)
+    else if( ref >= 0.55f )
         ref = 0.55f;
-    else if (ref >= 0.4f)
+    else if( ref >= 0.4f )
         ref = 0.4f;
-    else if (ref >= 0.25f)
+    else if( ref >= 0.25f )
         ref = 0.25f;
     else
         ref = 0.1f;
@@ -185,15 +185,38 @@ void reflectivity::add_depth_sample( float depth_val, int x_in_image, int y_in_i
             _dist_queue.pop_front();
 
         _dist_queue.push_back( dist_r );
-        _is_empty = false;
+        if( _history_size < N_STD_FRAMES )
+            _history_size++;
     }
 }
 
 void rs2::reflectivity::reset_history()
 {
-    if( ! _is_empty )
+    if( _history_size > 0 )
     {
         _dist_queue.assign( N_STD_FRAMES, 0 );
-        _is_empty = true;
+        _history_size = 0;
     }
+}
+
+float rs2::reflectivity::get_samples_ratio() const
+{
+    return static_cast< float >( history_size() ) / history_capacity();
+}
+
+bool rs2::reflectivity::is_history_full() const
+{
+    return history_size() == history_capacity();
+}
+
+// Return the history queue capacity
+size_t rs2::reflectivity::history_capacity() const 
+{ 
+    return N_STD_FRAMES;
+}
+
+// Return the history queue current size
+size_t rs2::reflectivity::history_size() const 
+{ 
+    return _history_size; 
 }

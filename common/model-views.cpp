@@ -2317,6 +2317,17 @@ namespace rs2
     {
         bool reflectivity_valid = false;
 
+        static const int MAX_PIXEL_MOVEMENT_TOLERANCE = 0;
+
+        if( std::abs( _prev_mouse_pos_x - x ) > MAX_PIXEL_MOVEMENT_TOLERANCE
+            || std::abs( _prev_mouse_pos_y - y ) > MAX_PIXEL_MOVEMENT_TOLERANCE )
+        {
+            _reflectivity->reset_history();
+            _stabilized_reflectivity.clear();
+            _prev_mouse_pos_x = x;
+            _prev_mouse_pos_y = y;
+        }
+
         // Get IR sample for getting current reflectivity
         auto ir_stream
             = std::find_if( streams.cbegin(),
@@ -2351,10 +2362,21 @@ namespace rs2
                 std::string ref_str = "N/A";
                 try
                 {
-                    auto pixel_ref = _reflectivity->get_reflectivity( noise_est, max_usable_range, ir_val );
-                    _stabilized_reflectivity.add( pixel_ref );
-                    auto stabilized_pixel_ref = _stabilized_reflectivity.get( 0.75f );
-                    ref_str = to_string() << std::dec << round( stabilized_pixel_ref * 100 ) << "%";
+                    if (_reflectivity->is_history_full())
+                    {
+                        auto pixel_ref
+                            = _reflectivity->get_reflectivity(noise_est, max_usable_range, ir_val);
+                        _stabilized_reflectivity.add(pixel_ref);
+                        auto stabilized_pixel_ref = _stabilized_reflectivity.get( 0.75f ); // We use 75% stability for preventing spikes
+                        ref_str = to_string() << std::dec << round( stabilized_pixel_ref * 100 ) << "%";
+                    }
+                    else
+                    {
+                        // Show dots when calculating ,dots count [3-10]
+                        int dots_count = static_cast<int>(_reflectivity->get_samples_ratio() * 7);
+                        ref_str = "calculating...";
+                        ref_str += std::string(dots_count, '.');
+                    }
                 }
                 catch( ... )
                 {
@@ -3144,7 +3166,7 @@ namespace rs2
                 footer_vertical_size = 50;
                 auto first_line_size = msg.find_first_of('\n') + 1;
                 auto second_line_size = msg.substr(new_line_start_idx).size();
-                width = std::max(first_line_size, second_line_size) * 8;
+                width = std::max(first_line_size, second_line_size) * 8.0f;
             }
 
             auto align = 20;
