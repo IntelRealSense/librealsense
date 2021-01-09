@@ -8,9 +8,16 @@ target_sources(${LRS_TARGET}
 )
 
 if(APPLE)
+
+    find_library(CoreFoundationLib CoreFoundation)
+    find_library(IOKitLib IOKit)
+
     target_sources(${LRS_TARGET}
         PRIVATE
             "${CMAKE_CURRENT_LIST_DIR}/hidapi.h"
             "${CMAKE_CURRENT_LIST_DIR}/hidapi.cpp"
     )
+
+    target_link_libraries(${LRS_TARGET} PRIVATE ${CoreFoundationLib} ${IOKitLib})
+
 endif()
