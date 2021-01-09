@@ -175,10 +175,7 @@ if not os.path.isdir( target ):
     for py_test in find(current_dir, target):
         n_tests += 1
         progress( py_test + ' ...' )
-        if linux:
-            cmd = ["python3"]
-        else:
-            cmd = ["py", "-3"]
+        cmd = [sys.executable]
         if sys.flags.verbose:
             cmd += ["-v"]
         cmd += [current_dir + os.sep + py_test]
@@ -319,10 +316,7 @@ if pyrs:
         progress( testname, '>', log, '...' )
         n_tests += 1
         test_path = current_dir + os.sep + py_test
-        if linux:
-            cmd = ["python3", test_path]
-        else:
-            cmd = ["py","-3", test_path]
+        cmd = [sys.executable, test_path]
         try:
             run( cmd, stdout=log )
         except FileNotFoundError:
