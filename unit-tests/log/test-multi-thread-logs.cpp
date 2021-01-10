@@ -13,8 +13,8 @@ std::chrono::milliseconds avg_time = (std::chrono::milliseconds)0;
 int max_time_iteration = -1;
 int number_of_iterations = 10000;
 
-
-TEST_CASE("async logger", "[log][remi]")
+#ifdef ELPP_EXPERIMENTAL_ASYNC
+TEST_CASE("async logger", "[log][async_log]")
 {
     size_t n_callbacks = 0;
     auto callback = [&](rs2_log_severity severity, rs2::log_message const& msg)
@@ -73,3 +73,6 @@ TEST_CASE("async logger", "[log][remi]")
     std::cout << "avg time = " << (float) (avg_time.count()) / (number_of_iterations * 10.f) << " ms" << std::endl;
     REQUIRE(max_time.count() < 50);
 }
+#endif
+
+
