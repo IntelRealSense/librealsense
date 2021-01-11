@@ -2108,10 +2108,10 @@ Storage::Storage(const LogBuilderPtr& defaultLogBuilder) :
   addFlag(LoggingFlag::AllowVerboseIfModuleNotSpecified);
 #if ELPP_ASYNC_LOGGING
   installLogDispatchCallback<base::AsyncLogDispatchCallback>(std::string("AsyncLogDispatchCallback"));
-  ELPP_INTERNAL_INFO(1, "ELPP ASYNC logger");
+  ELPP_INTERNAL_INFO(1, "ELPP ASYNC logger selected");
 #else
   installLogDispatchCallback<base::DefaultLogDispatchCallback>(std::string("DefaultLogDispatchCallback"));
-  ELPP_INTERNAL_INFO(1, "ELPP sync logger");
+  ELPP_INTERNAL_INFO(1, "ELPP sync logger selected");
 #endif  // ELPP_ASYNC_LOGGING
 #if defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_PERFORMANCE_TRACKING)
   installPerformanceTrackingCallback<base::DefaultPerformanceTrackingCallback>
@@ -2120,7 +2120,6 @@ Storage::Storage(const LogBuilderPtr& defaultLogBuilder) :
   ELPP_INTERNAL_INFO(1, "Easylogging++ has been initialized");
 #if ELPP_ASYNC_LOGGING
   m_asyncDispatchWorker->start();
-  ELPP_INTERNAL_INFO(1, "Storage::Done");
 #endif  // ELPP_ASYNC_LOGGING
 }
 
@@ -2313,12 +2312,6 @@ void DefaultLogDispatchCallback::dispatch(base::type::string_t&& logLine) {
 void AsyncLogDispatchCallback::handle(const LogDispatchData* data) {
   base::type::string_t logLine = data->logMessage()->logger()->logBuilder()->build(data->logMessage(),
                                  data->dispatchAction() == base::DispatchAction::NormalLog);
-  /*if (data->dispatchAction() == base::DispatchAction::NormalLog
-      && data->logMessage()->logger()->typedConfigurations()->toStandardOutput(data->logMessage()->level())) {
-    if (ELPP->hasFlag(LoggingFlag::ColoredTerminalOutput))
-      data->logMessage()->logger()->logBuilder()->convertToColoredOutput(&logLine, data->logMessage()->level());
-    ELPP_COUT << ELPP_COUT_LINE(logLine);
-  }*/
   // Save resources and only queue if we want to write to file otherwise just ignore handler
   auto conf = data->logMessage()->logger()->typedConfigurations();
   if (conf->toStandardOutput(data->logMessage()->level()) ||
@@ -2436,11 +2429,11 @@ void AsyncDispatchWorker::handle(AsyncLogItem* logItem) {
 // This method is used in order to transfer all the logs:
 // from the "write queue" - queue in which all the logs are added by the other threads
 // to the "read queue" - queue from which the logs are read and dispatched by the async logger's thread
-// This double buffer mechanism avoids from the other threads the need to wait writing their logs 
-// until other logs are read from the queue.
+// This double buffer mechanism minimizes the inter-thread locking time, improving log's bandwidth and 
+// preventing costly stalls due to log flushes to HD.
 void AsyncDispatchWorker::fetchLogQueue()
 {
-    if (ELPP && ELPP->asyncLogWriteQueue() && ELPP->asyncLogWriteQueue()->size() > 0) {
+    if (ELPP && ELPP->asyncLogWriteQueue() && ELPP->asyncLogWriteQueue()->size()) {
         base::threading::ScopedLock scopedLockW(ELPP->asyncLogWriteQueue()->lock());
         base::threading::ScopedLock scopedLockR(ELPP->asyncLogReadQueue()->lock());
         ELPP->asyncLogWriteQueue()->appendTo(ELPP->asyncLogReadQueue());

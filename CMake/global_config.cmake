@@ -26,7 +26,7 @@ macro(global_set_flags)
     
     #Performance improvement with Ubuntu 18/20
     if(UNIX AND (NOT ANDROID_NDK_TOOLCHAIN_INCLUDED))
-       message(INFO "Asynchronous ELPP invoked - experimental")
+       message(INFO "Asynchronous ELPP invoked")
        add_definitions(-DELPP_EXPERIMENTAL_ASYNC)
     endif()
 
