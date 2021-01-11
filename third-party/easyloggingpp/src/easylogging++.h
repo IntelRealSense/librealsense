@@ -2525,8 +2525,6 @@ class AsyncLogQueue : public base::threading::ThreadSafe {
       if (otherQueue) {
           base::threading::ScopedLock scopedLock(otherQueue->lock());
           otherQueue->m_queue.insert(otherQueue->m_queue.begin(), m_queue.begin(), m_queue.end());
-              //std::make_move_iterator(m_queue.begin()),
-              //std::make_move_iterator(m_queue.end()));
       }
   }
 
@@ -2722,9 +2720,13 @@ class Storage : base::NoCopy, public base::threading::ThreadSafe {
   base::type::EnumType m_flags;
   base::VRegistry* m_vRegistry;
 #if ELPP_ASYNC_LOGGING
-  base::AsyncLogQueue* m_asyncLogWriteQueue; 
+  // logs are added to this queue by other threads
+  base::AsyncLogQueue* m_asyncLogWriteQueue;
+  // logs are read and dispatched from this queue, by the async logger's thread
   base::AsyncLogQueue* m_asyncLogReadQueue;
+  // async logger worker - helds the async logger's thread
   base::IWorker* m_asyncDispatchWorker;
+  // mutex used for configuration of the logger - so that no change will happen dwhile handling a log message
   base::threading::Mutex m_configLock;
 #endif  // ELPP_ASYNC_LOGGING
   base::utils::CommandLineArgs m_commandLineArgs;
@@ -2771,7 +2773,7 @@ class AsyncDispatchWorker : public base::IWorker, public base::threading::Thread
   virtual ~AsyncDispatchWorker();
 
   bool clean(void);
-  void emptyLogQueue(void);
+  void emptyQueue(void);
   virtual void start(void);
   void handle(AsyncLogItem* logItem);
   void run(void);

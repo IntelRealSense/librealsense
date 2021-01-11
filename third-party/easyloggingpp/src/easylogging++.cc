@@ -2108,10 +2108,10 @@ Storage::Storage(const LogBuilderPtr& defaultLogBuilder) :
   addFlag(LoggingFlag::AllowVerboseIfModuleNotSpecified);
 #if ELPP_ASYNC_LOGGING
   installLogDispatchCallback<base::AsyncLogDispatchCallback>(std::string("AsyncLogDispatchCallback"));
-  ELPP_INTERNAL_INFO(1, "Storage::ELPP_ASYNC_LOGGING");
+  ELPP_INTERNAL_INFO(1, "ELPP ASYNC logger");
 #else
   installLogDispatchCallback<base::DefaultLogDispatchCallback>(std::string("DefaultLogDispatchCallback"));
-  ELPP_INTERNAL_INFO(1, "Storage::ELPP_ASYNC_LOGGING(not)");
+  ELPP_INTERNAL_INFO(1, "ELPP sync logger");
 #endif  // ELPP_ASYNC_LOGGING
 #if defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_PERFORMANCE_TRACKING)
   installPerformanceTrackingCallback<base::DefaultPerformanceTrackingCallback>
@@ -2348,7 +2348,7 @@ bool AsyncDispatchWorker::clean(void) {
   try
   {
       fetchLogQueue();
-      emptyLogQueue();
+      emptyQueue();
   }
   catch(...){}
   lk.unlock();
@@ -2356,7 +2356,7 @@ bool AsyncDispatchWorker::clean(void) {
   return (ELPP && ELPP->asyncLogWriteQueue() && ELPP->asyncLogWriteQueue()->empty() && ELPP->asyncLogReadQueue() && ELPP->asyncLogReadQueue()->empty());
 }
 
-void AsyncDispatchWorker::emptyLogQueue(void) {
+void AsyncDispatchWorker::emptyQueue(void) {
     if (ELPP && ELPP->asyncLogReadQueue()) {
         for (auto i=0UL; i < ELPP->asyncLogReadQueue()->size(); i++) {
             AsyncLogItem data = ELPP->asyncLogReadQueue()->next();
@@ -2433,6 +2433,11 @@ void AsyncDispatchWorker::handle(AsyncLogItem* logItem) {
 #  endif  // defined(ELPP_SYSLOG)
 }
 
+// This method is used in order to transfer all the logs:
+// from the "write queue" - queue in which all the logs are added by the other threads
+// to the "read queue" - queue from which the logs are read and dispatched by the async logger's thread
+// This double buffer mechanism avoids from the other threads the need to wait writing their logs 
+// until other logs are read from the queue.
 void AsyncDispatchWorker::fetchLogQueue()
 {
     if (ELPP && ELPP->asyncLogWriteQueue() && ELPP->asyncLogWriteQueue()->size() > 0) {
@@ -2447,7 +2452,7 @@ void AsyncDispatchWorker::run(void) {
     while (continueRunning()) {
         if (ELPP) {
             base::threading::ScopedLock scopedLock(ELPP->configLock());
-            emptyLogQueue();
+            emptyQueue();
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
         fetchLogQueue();    
