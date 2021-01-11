@@ -123,8 +123,9 @@ for opt,arg in opts:
     elif opt in ('-q','--quiet'):
         def out(*args):
             pass
-    elif opt[0] in ('-r', '--regex'):
-        regex = opt[1]
+    elif opt in ('-r', '--regex'):
+        regex = arg
+
 if len(args) > 1:
     usage()
 target = None
@@ -291,7 +292,7 @@ class PyTest(Test):
         """
         global current_dir
         Test.__init__(self, testname)
-        self.path_to_script = current_dir + path_to_test
+        self.path_to_script = current_dir + os.sep + path_to_test
 
     @property
     def command(self):
