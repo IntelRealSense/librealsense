@@ -21,7 +21,7 @@ if(BUILD_GRAPHICAL_EXAMPLES AND NOT APPLE)
     #pointcloud
     add_executable(rs-gl rs-gl.cpp ../example.hpp)
     target_link_libraries(rs-gl ${DEPENDENCIES} realsense2-gl)
-    include_directories(rs-gl ../)
+    include_directories(../)
     set_target_properties (rs-gl PROPERTIES FOLDER Examples)
     install(TARGETS rs-gl RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()

@@ -268,6 +268,8 @@ namespace rs2
 
     void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18, ImFont*& monofont);
 
+    rs2_sensor_mode resolution_from_width_height(int width, int height);
+
     template<class T>
     void sort_together(std::vector<T>& vec, std::vector<std::string>& names)
     {
@@ -550,7 +552,7 @@ namespace rs2
             bool* options_invalidated,
             std::string& error_message);
 
-        subdevice_model(device& dev, std::shared_ptr<sensor> s, std::shared_ptr< atomic_objects_in_frame > objects, std::string& error_message, viewer_model& viewer);
+        subdevice_model(device& dev, std::shared_ptr<sensor> s, std::shared_ptr< atomic_objects_in_frame > objects, std::string& error_message, viewer_model& viewer, bool new_device_connected = true);
         ~subdevice_model();
 
         bool is_there_common_fps() ;
@@ -646,7 +648,8 @@ namespace rs2
         int next_option = 0;
         std::vector<rs2_option> supported_options;
         bool streaming = false;
-
+        bool allow_change_resolution_while_streaming = false;
+        bool allow_change_fps_while_streaming = false;
         rect normalized_zoom{0, 0, 1, 1};
         rect roi_rect;
         bool auto_exposure_enabled = false;
@@ -734,6 +737,8 @@ namespace rs2
         bool show_metadata = false;
 
         animated<float> _info_height{ 0.f };
+        int _prev_mouse_pos_x = 0;
+        int _prev_mouse_pos_y = 0;
 
     private:
         std::unique_ptr< reflectivity > _reflectivity; 
@@ -751,7 +756,7 @@ namespace rs2
         typedef std::function<void(std::function<void()> load)> json_loading_func;
 
         void reset();
-        explicit device_model(device& dev, std::string& error_message, viewer_model& viewer, bool allow_remove=true);
+        explicit device_model(device& dev, std::string& error_message, viewer_model& viewer, bool new_device_connected = true, bool allow_remove=true);
         ~device_model();
         void start_recording(const std::string& path, std::string& error_message);
         void stop_recording(viewer_model& viewer);
