@@ -104,7 +104,7 @@ def is_executable(path_to_test):
 # Parse command-line:
 try:
     opts,args = getopt.getopt( sys.argv[1:], 'hvqr:',
-        longopts = [ 'help', 'verbose', 'debug', 'quiet', 'regex' ])
+        longopts = [ 'help', 'verbose', 'debug', 'quiet', 'regex=' ])
 except getopt.GetoptError as err:
     error( err )   # something like "option -a not recognized"
     usage()
@@ -271,7 +271,7 @@ def check_log_for_fails(log, testname, exe):
 # definition of classes for tests
 class Test(ABC): # Abstract Base Class
     """
-    Abstract class for a test. Holds the name of the test, the log file for it and the command line needed to run it
+    Abstract class for a test. Holds the name of the test
     """
     def __init__(self, testname):
         self.testname = testname
@@ -282,7 +282,7 @@ class Test(ABC): # Abstract Base Class
 
 class PyTest(Test):
     """
-    Class for python tests
+    Class for python tests. Hold the path to the script of the test
     """
     def __init__(self, testname, path_to_test):
         """
@@ -298,6 +298,8 @@ class PyTest(Test):
         return [sys.executable, self.path_to_script]
 
     def run_test(self):
+        global n_tests
+        n_tests +=1
         log = logdir + os.sep + self.testname + ".log"
         progress(self.testname, '>', log, '...')
         try:
@@ -311,7 +313,7 @@ class PyTest(Test):
 
 class ExeTest(Test):
     """
-    Class for c/cpp tests
+    Class for c/cpp tests. Hold the path to the executable for the test
     """
     def __init__(self, testname, exe):
         """
@@ -326,6 +328,8 @@ class ExeTest(Test):
         return [self.exe]
 
     def run_test(self):
+        global n_tests
+        n_tests += 1
         log = logdir + os.sep + self.testname + ".log"
         progress(self.testname, '>', log, '...')
         try:
