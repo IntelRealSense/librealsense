@@ -17,7 +17,7 @@ TEST_CASE( "move to custom after gain changed", "[l500][live]" )
     auto depth_sens = dev.first< rs2::depth_sensor >();
 
     for( auto preset = (float)RS2_L500_VISUAL_PRESET_NO_AMBIENT;
-         preset < (float)RS2_L500_VISUAL_PRESET_COUNT;
+         preset < (float)RS2_L500_VISUAL_PRESET_AUTOMATIC;
          preset++ )
     {
         REQUIRE_NOTHROW( depth_sens.set_option( RS2_OPTION_VISUAL_PRESET, preset ) );

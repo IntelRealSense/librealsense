@@ -54,7 +54,9 @@ namespace librealsense
                          std::shared_ptr< cascade_option< uvc_xu_option< int > > > digital_gain);
 
         void update_default( float def );
-        float query( l500_command op, int mode, hwmon_response *response = nullptr) const;
+        float query_default( int mode, hwmon_response * response = nullptr ) const;
+        float query_current( int mode ) const;
+
         bool is_read_only() const override { return _is_read_only; }
         void set_read_only( bool read_only );
 
@@ -141,13 +143,15 @@ namespace librealsense
         rs2_l500_visual_preset calc_preset_from_controls();
         void on_set_option(rs2_option opt, float value);
         void change_preset(rs2_l500_visual_preset preset);
-        void set_preset_controls( rs2_l500_visual_preset preset );
-        void move_to_custom ();
+        void set_preset_controls_to_defaults();
+        void move_to_custom();
         void reset_hw_controls();
         void set_max_laser();
 
         void change_gain( rs2_l500_visual_preset preset );
         void change_alt_ir( rs2_l500_visual_preset preset );
+        void change_laser_power( rs2_l500_visual_preset preset );
+
         void update_defaults();
         std::map<rs2_option, std::shared_ptr<cascade_option<l500_hw_options>>> _hw_options;
         std::shared_ptr< cascade_option<uvc_xu_option<int>>> _digital_gain;

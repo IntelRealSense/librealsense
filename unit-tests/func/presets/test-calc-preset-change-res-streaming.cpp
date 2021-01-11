@@ -15,6 +15,7 @@ TEST_CASE( "calc preset after change resolution while streaming", "[l500][live]"
     auto dev = devices[0];
 
     auto depth_sens = dev.first< rs2::depth_sensor >();
+    reset_camera_preset( depth_sens );
 
     auto expected_preset_values = build_preset_to_expected_values_map( depth_sens );
 

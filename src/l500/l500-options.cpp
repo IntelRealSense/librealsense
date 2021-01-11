@@ -14,7 +14,7 @@ namespace librealsense
 
     float l500_hw_options::query() const
     {
-        return query( get_current, int( _resolution->query() ) );
+        return query_current( int( _resolution->query() ) );
     }
 
     void l500_hw_options::set(float value)
@@ -41,7 +41,7 @@ namespace librealsense
     {
         if(_fw_version >= firmware_version( MIN_GET_DEFAULT_FW_VERSION ) )
         {
-            return query( get_default, int( _resolution->query() ), response );
+            return query_default( int( _resolution->query() ), response );
         }
         else
         {
@@ -51,10 +51,10 @@ namespace librealsense
             //     3. Wait for the next frame (if streaming)
             //     4. Read the current value
             //     5. Restore the current value
-            auto current = query( get_current, int( _resolution->query() ) );
+            auto current = query_current( int( _resolution->query() ) );
             _hw_monitor->send( command{ AMCSET, _type, -1 } );
 
-            auto def = query( get_current, int( _resolution->query() ) );
+            auto def = query_current( int( _resolution->query() ) );
 
             if( current != def )
                 _hw_monitor->send( command{ AMCSET, _type, (int)current } );
@@ -122,17 +122,32 @@ namespace librealsense
     void l500_hw_options::enable_recording(std::function<void(const option&)> recording_action)
     {}
 
-    float l500_hw_options::query( l500_command op, int mode, hwmon_response *response ) const
+    float l500_hw_options::query_default( int mode, hwmon_response * response ) const 
     {
-        auto res = _hw_monitor->send( command{ AMCGET, _type, op, mode }, response );
+        auto res = _hw_monitor->send( command{ AMCGET, _type, get_default, mode }, response );
 
-        if( response && * response == hwm_IllegalHwState )
-            return -1;
+            if( response && * response == hwm_IllegalHwState )
+                return -1;
 
         if( res.size() < sizeof( int32_t ) )
         {
             std::stringstream s;
-            s << "Size of data returned from query(get_current) of " << _type << "is " << res.size()
+            s << "Size of data returned from query(get_default) of " << _type << "is " << res.size()
+              << " while min size = " << sizeof( int32_t );
+            throw std::runtime_error( s.str() );
+        }
+        auto val = *( reinterpret_cast< uint32_t * >( (void *)res.data() ) );
+        return float( val );
+    }
+
+    float l500_hw_options::query_current( int mode ) const 
+    {
+        auto res = _hw_monitor->send( command{ AMCGET, _type, get_current, mode } );
+
+        if( res.size() < sizeof( int32_t ) )
+        {
+            std::stringstream s;
+            s << "Size of data returned from query(get_default) of " << _type << "is " << res.size()
               << " while min size = " << sizeof( int32_t );
             throw std::runtime_error( s.str() );
         }
@@ -172,7 +187,8 @@ namespace librealsense
                 if( p != RS2_L500_VISUAL_PRESET_CUSTOM )
                     _preset->set_value( (float)p );
 
-                set_preset_controls( p );
+                set_preset_controls_to_defaults();
+                change_laser_power( p );
             } );
 
 
@@ -340,8 +356,10 @@ namespace librealsense
 
             depth_sensor.register_option( RS2_OPTION_VISUAL_PRESET, _preset );
 
-        set_preset_controls( preset );
-        _advanced_options = get_advanced_controls();
+            set_preset_controls_to_defaults();
+
+            change_laser_power( preset );
+            _advanced_options = get_advanced_controls();
     }
 }
 
@@ -466,7 +484,6 @@ namespace librealsense
             _digital_gain->set_with_no_signal( RS2_DIGITAL_GAIN_LOW );
             break;
         case RS2_L500_VISUAL_PRESET_AUTOMATIC:
-            reset_hw_controls();
             _digital_gain->set_with_no_signal( RS2_DIGITAL_GAIN_AUTO );
             break;
         };
@@ -476,22 +493,18 @@ namespace librealsense
     {
         auto curr_preset = ( rs2_l500_visual_preset )(int)_preset->query();
 
-        switch( preset )
-        {
-        case RS2_L500_VISUAL_PRESET_NO_AMBIENT:
-        case RS2_L500_VISUAL_PRESET_MAX_RANGE:
-            if( curr_preset == RS2_L500_VISUAL_PRESET_AUTOMATIC )
-                _alt_ir->set( 0 );
-            break;
-        case RS2_L500_VISUAL_PRESET_LOW_AMBIENT:
-        case RS2_L500_VISUAL_PRESET_SHORT_RANGE:
-            if( curr_preset == RS2_L500_VISUAL_PRESET_AUTOMATIC )
-                _alt_ir->set( 0 );
-            break;
-        case RS2_L500_VISUAL_PRESET_AUTOMATIC:
+        if( preset == RS2_L500_VISUAL_PRESET_AUTOMATIC )
             _alt_ir->set( 1 );
-            break;
-        };
+        else if( curr_preset == RS2_L500_VISUAL_PRESET_AUTOMATIC
+                 && preset != RS2_L500_VISUAL_PRESET_CUSTOM )
+            _alt_ir->set( 0 );
+    }
+
+    void l500_options::change_laser_power( rs2_l500_visual_preset preset )
+    {
+        if( preset == RS2_L500_VISUAL_PRESET_LOW_AMBIENT
+            || preset == RS2_L500_VISUAL_PRESET_MAX_RANGE )
+            set_max_laser();
     }
 
     void l500_options::change_preset( rs2_l500_visual_preset preset )
@@ -499,34 +512,38 @@ namespace librealsense
         if( _fw_version < firmware_version( MIN_GET_DEFAULT_FW_VERSION ) )
             reset_hw_controls();  // should be before gain changing as WA for old FW versions
 
+        // we need to reset the controls before change gain because after moving to auto gain APD is
+        // read only. This will tell the FW that the control values are defaults and therefore can
+        // be overriden automatically according to gain
+        else if( preset == RS2_L500_VISUAL_PRESET_AUTOMATIC )
+        {
+            // todo: check if we are not in auto already
+            reset_hw_controls();
+        }
+
         change_gain( preset );
         change_alt_ir( preset );
 
         update_defaults();
 
         if( preset != RS2_L500_VISUAL_PRESET_CUSTOM && preset != RS2_L500_VISUAL_PRESET_AUTOMATIC )
-            set_preset_controls( preset );
-        else if( preset == RS2_L500_VISUAL_PRESET_CUSTOM )
+            set_preset_controls_to_defaults();
+
+        change_laser_power( preset );
+        // todo
+        if( preset == RS2_L500_VISUAL_PRESET_CUSTOM )
             move_to_custom();
     }
 
-    void l500_options::set_preset_controls( rs2_l500_visual_preset preset )
+    void l500_options::set_preset_controls_to_defaults()
     {
         for( auto & o : _hw_options )
         {
-            if (!o.second->is_read_only())
+            if( ! o.second->is_read_only() )
             {
                 auto val = o.second->get_range().def;
                 o.second->set_with_no_signal( val );
             }
-        }
-
-        switch( preset )
-        {
-        case RS2_L500_VISUAL_PRESET_LOW_AMBIENT:
-        case RS2_L500_VISUAL_PRESET_MAX_RANGE:
-            set_max_laser();
-            break;
         }
     }
 
@@ -568,19 +585,25 @@ namespace librealsense
         std::map< rs2_option, float > defaults;
         if( _fw_version >= firmware_version( MIN_GET_DEFAULT_FW_VERSION ) )
         {
-            // if the sensor is streaming and somebody changed one of the hw control 
+            // if the sensor is streaming and somebody changed one of the hw control
             // the value of control will update only whan the next frame arrive
-            if( get_depth_sensor().is_streaming() )
-                std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
-
             for( auto opt : _hw_options )
             {
                 hwmon_response response;
-                defaults[opt.first] = opt.second->query( get_default, int( resolution ), &response );
-                if( response == hwm_IllegalHwState )
+                defaults[opt.first] = opt.second->query_default( int( resolution ), &response );
+                if( response != hwm_Success )
                 {
-                    defaults[opt.first] = -1;
-                    opt.second->set_read_only( true );
+                    if( response == hwm_IllegalHwState )
+                    {
+                        defaults[opt.first] = -1;
+                        opt.second->set_read_only( true );
+                    }
+                    else
+                    {
+                        LOG_ERROR( "hw_monitor command AMCGET with get_default failed with error "
+                                   << hwmon_error2str( response ) );
+                        throw std::exception( hwmon_error2str( response ).c_str() );
+                    }
                 }
                 else
                     opt.second->set_read_only( false );
@@ -596,7 +619,7 @@ namespace librealsense
             //     5. Restore the current value
             std::map< rs2_option, float > currents;
             for( auto opt : _hw_options )
-                currents[opt.first] = opt.second->query( get_current, int( resolution ) );
+                currents[opt.first] = opt.second->query_current( int( resolution ) );
 
             // if the sensor is streaming the value of control will update only whan the next frame
             // arrive
@@ -606,7 +629,7 @@ namespace librealsense
             for( auto opt : _hw_options )
             {
                 opt.second->set_with_no_signal( -1 );
-                defaults[opt.first] = opt.second->query( get_current, int( resolution ) );
+                defaults[opt.first] = opt.second->query_current( int( resolution ) );
             }
 
             for( auto opt : currents )

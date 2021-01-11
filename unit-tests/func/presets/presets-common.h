@@ -51,14 +51,22 @@ const std::map< rs2_l500_visual_preset, std::pair< rs2_digital_gain, presets_use
 void for_each_preset_mode_combination(
     std::function< void( rs2_l500_visual_preset, rs2_sensor_mode ) > action )
 {
-    for( auto i = (int)RS2_L500_VISUAL_PRESET_NO_AMBIENT; i < (int)RS2_L500_VISUAL_PRESET_COUNT;
-         i++ )
+    for( int preset = RS2_L500_VISUAL_PRESET_MAX_RANGE; preset < RS2_L500_VISUAL_PRESET_AUTOMATIC;
+         preset++ )
     {
-        for( auto j = (int)RS2_SENSOR_MODE_VGA; j < (int)RS2_SENSOR_MODE_COUNT; j++ )
+        for( int sensor_mode = RS2_SENSOR_MODE_VGA; sensor_mode < RS2_SENSOR_MODE_COUNT;
+             sensor_mode++ )
         {
-            action( rs2_l500_visual_preset( i ), rs2_sensor_mode( j ) );
+            action( rs2_l500_visual_preset( preset ), rs2_sensor_mode( sensor_mode ) );
         }
     }
+}
+
+inline void reset_camera_preset( rs2::depth_sensor & depth_sens ) 
+{
+    // reset to some declared preset
+    REQUIRE_NOTHROW(
+        depth_sens.set_option( RS2_OPTION_VISUAL_PRESET, RS2_L500_VISUAL_PRESET_NO_AMBIENT ) );
 }
 
 preset_values_map build_preset_to_expected_values_map( rs2::depth_sensor & depth_sens )
@@ -249,7 +257,7 @@ void check_preset_values( const rs2::sensor & sens,
     REQUIRE_NOTHROW( sens.set_option( RS2_OPTION_SENSOR_MODE, (float)mode ) );
     REQUIRE_NOTHROW( sens.set_option( RS2_OPTION_VISUAL_PRESET, (float)preset ) );
     CHECK( sens.get_option( RS2_OPTION_VISUAL_PRESET ) == (float)preset );
-    std::this_thread::sleep_for( std::chrono::milliseconds( 60 ) );
+
     if( preset == RS2_L500_VISUAL_PRESET_CUSTOM )
         return;
 
@@ -291,6 +299,8 @@ void check_presets_values_while_streaming(
 void check_preset_is_equal_to( rs2::depth_sensor & depth_sens, rs2_l500_visual_preset preset )
 {
     auto curr_preset = (rs2_l500_visual_preset)(int)depth_sens.get_option( RS2_OPTION_VISUAL_PRESET ); 
+    CAPTURE( curr_preset );
+
     if( curr_preset != preset )
     {
         auto preset_to_gain_and_laser = preset_to_gain_and_laser_map;
