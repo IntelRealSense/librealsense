@@ -4,7 +4,7 @@
 # Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 import sys, os, subprocess, locale, re, platform, getopt
-from abc import ABC
+from abc import ABC, abstractmethod
 
 def usage():
     ourname = os.path.basename(sys.argv[0])
@@ -55,7 +55,7 @@ else:
     def out(*args):
         print( *args )
     def progress(*args):
-        print( *args, end='\r' )
+        print( *args )
 
 n_errors = 0
 def error(*args):
@@ -103,7 +103,7 @@ def is_executable(path_to_test):
 
 # Parse command-line:
 try:
-    opts,args = getopt.getopt( sys.argv[1:], 'hvqr',
+    opts,args = getopt.getopt( sys.argv[1:], 'hvqr:',
         longopts = [ 'help', 'verbose', 'debug', 'quiet', 'regex' ])
 except getopt.GetoptError as err:
     error( err )   # something like "option -a not recognized"
@@ -152,7 +152,8 @@ else: # no test executables were found. We put the logs directly in build direct
 os.makedirs( logdir, exist_ok = True )
 n_tests = 0
 
-def run( cmd, stdout = None ):
+# wrapper function for subprocess.run
+def subprocess_run(cmd, stdout = None):
     debug( 'Running:', cmd )
     handle = None
     try:
@@ -272,24 +273,12 @@ class Test(ABC): # Abstract Base Class
     """
     Abstract class for a test. Holds the name of the test, the log file for it and the command line needed to run it
     """
-    def __init__(self, testname, command, executable):
+    def __init__(self, testname):
         self.testname = testname
-        self.command = command
-        self.executable = executable
-        self.log = logdir + '/' + testname + '.log'
 
+    @abstractmethod
     def run_test(self):
-        global n_tests
-        progress(self.testname, '>', self.log, '...')
-        n_tests += 1
-        try:
-            run( self.command, stdout=self.log )
-        except FileNotFoundError:
-            error(red + self.testname + reset + ': executable not found! (' + self.executable + ')')
-        except subprocess.CalledProcessError as cpe:
-            if not check_log_for_fails(self.log, self.testname, self.executable):
-                # An unexpected error occurred
-                error(red + self.testname + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')')
+        pass
 
 class PyTest(Test):
     """
@@ -300,14 +289,25 @@ class PyTest(Test):
         :param testname: name of the test
         :param path_to_test: the relative path from the current directory to the path
         """
-        global current_dir, linux
+        global current_dir
+        Test.__init__(self, testname)
+        self.path_to_script = current_dir + path_to_test
 
-        if linux:
-            cmd = ["python3", path_to_test]
-        else:
-            cmd = ["py", "-3", path_to_test]
+    @property
+    def command(self):
+        return [sys.executable, self.path_to_script]
 
-        Test.__init__(self, testname, cmd, current_dir + path_to_test)
+    def run_test(self):
+        log = logdir + os.sep + self.testname + ".log"
+        progress(self.testname, '>', log, '...')
+        try:
+            subprocess_run(self.command, stdout=log)
+        except FileNotFoundError:
+            error(red + self.testname + reset + ': executable not found! (' + self.path_to_script + ')')
+        except subprocess.CalledProcessError as cpe:
+            if not check_log_for_fails(log, self.testname, self.path_to_script):
+                # An unexpected error occurred
+                error(red + self.testname + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')')
 
 class ExeTest(Test):
     """
@@ -318,7 +318,24 @@ class ExeTest(Test):
         :param testname: name of the test
         :param exe: full path to executable
         """
-        Test.__init__(self, testname, exe, exe)
+        Test.__init__(self, testname)
+        self.exe = exe
+
+    @property
+    def command(self):
+        return [self.exe]
+
+    def run_test(self):
+        log = logdir + os.sep + self.testname + ".log"
+        progress(self.testname, '>', log, '...')
+        try:
+            subprocess_run(self.command, stdout=log)
+        except FileNotFoundError:
+            error(red + self.testname + reset + ': executable not found! (' + self.exe + ')')
+        except subprocess.CalledProcessError as cpe:
+            if not check_log_for_fails(log, self.testname, self.exe):
+                # An unexpected error occurred
+                error(red + self.testname + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')')
 
 def get_tests():
     global regex, target, pyrs, current_dir, linux
