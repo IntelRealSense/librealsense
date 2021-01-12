@@ -390,6 +390,7 @@ def get_tests():
 
 # Before we run any tests, recycle all ports and make sure they're set to USB3
 try:
+    sys.path.insert( 1, current_dir + os.sep + "py" )
     import acroname
     acroname.connect()
     acroname.enable_ports()     # so ports() will return all
