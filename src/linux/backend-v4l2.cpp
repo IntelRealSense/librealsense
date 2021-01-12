@@ -448,7 +448,7 @@ namespace librealsense
             // RAII to handle exceptions
             std::unique_ptr<int, std::function<void(int*)> > fd(
                         new int (open(dev_name.c_str(), O_RDWR | O_NONBLOCK, 0)),
-                        [](int* d){ if (d && (*d)) ::close(*d);});
+                        [](int* d){ if (d && (*d)) {::close(*d); } delete d; });
 
             if(*fd < 0)
                 throw linux_backend_exception(to_string() << __FUNCTION__ << ": Cannot open '" << dev_name);

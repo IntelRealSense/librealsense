@@ -83,7 +83,7 @@ namespace librealsense
         bool _auto_exposure_to_be_restored;
         bool _emitter_on_off_to_be_restored;
         hw_monitor& _hwm;
-        std::shared_ptr<sensor_base> _sensor;
+        std::weak_ptr<sensor_base> _sensor;
         option_range _exposure_range;
         option_range _gain_range;
         bool _use_workaround;
