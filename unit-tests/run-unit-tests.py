@@ -388,6 +388,20 @@ def get_tests():
 
             yield PyTest(testname, py_test)
 
+# Before we run any tests, recycle all ports and make sure they're set to USB3
+try:
+    import acroname
+    acroname.connect()
+    acroname.enable_ports()     # so ports() will return all
+    portlist = acroname.ports()
+    debug( 'Recycling found ports:', portlist )
+    acroname.set_ports_usb3( portlist )   # will recycle them, too
+except ModuleNotFoundError:
+    # Error should have already been printed
+    # We assume there's no brainstem library, meaning no acroname either
+    pass
+
+# Run all tests
 for test in get_tests():
     test.run_test()
 
