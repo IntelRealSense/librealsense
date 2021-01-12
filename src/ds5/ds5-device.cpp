@@ -536,15 +536,16 @@ namespace librealsense
         if (gvd_buf[imu_sensor])
         {
             val |= d400_caps::CAP_IMU_SENSOR;
-            if (hid_bmi_055_pid.end() != hid_bmi_055_pid.find(pid))
+            if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI055_ID_ACC)
                 val |= d400_caps::CAP_BMI_055;
+            else if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI085_ID_ACC)
+                val |= d400_caps::CAP_BMI_085;
+            else if (hid_bmi_055_pid.end() != hid_bmi_055_pid.find(pid))
+                val |= d400_caps::CAP_BMI_055;
+            else if (hid_bmi_085_pid.end() != hid_bmi_085_pid.find(pid))
+                val |= d400_caps::CAP_BMI_085;
             else
-            {
-                if (hid_bmi_085_pid.end() != hid_bmi_085_pid.find(pid))
-                    val |= d400_caps::CAP_BMI_085;
-                else
-                    LOG_WARNING("The IMU sensor is undefined for PID " << std::hex << pid << std::dec);
-            }
+                LOG_WARNING("The IMU sensor is undefined for PID " << std::hex << pid << " and imu_chip_id: " << gvd_buf[imu_acc_chip_id] << std::dec);
         }
         if (0xFF != (gvd_buf[fisheye_sensor_lb] & gvd_buf[fisheye_sensor_hb]))
             val |= d400_caps::CAP_FISHEYE_SENSOR;
