@@ -251,9 +251,34 @@ namespace librealsense
             el::Loggers::reconfigureLogger(log_id, el::ConfigurationType::ToStandardOutput, "false");
             remove_callbacks();
 
+            if(el::Loggers::hasFlag(el::LoggingFlag::StrictLogFileSizeCheck))
+            {
+                el::Loggers::removeFlag(el::LoggingFlag::StrictLogFileSizeCheck);
+            }
+
             minimum_log_severity = RS2_LOG_SEVERITY_NONE;
             minimum_console_severity = RS2_LOG_SEVERITY_NONE;
             minimum_file_severity = RS2_LOG_SEVERITY_NONE;
+        }
+
+        static void rolloutHandler(const char* filename, std::size_t size)
+        {
+            char backup_name[256];
+            std::string file_str(filename);
+            std::string file_name = file_str.substr(0, file_str.find_last_of('.'));
+            sprintf_s(backup_name, sizeof(backup_name), "%s-%s.log", file_name.c_str(), "backup");
+            std::string tmp = file_name + "_tmp.log";
+            rename(backup_name, tmp.c_str());
+            rename(filename, backup_name);
+            rename(tmp.c_str(), filename);
+        }
+
+        void enable_rolling_files(std::size_t max_size )
+        {
+            std::string size = std::to_string(max_size);
+            el::Loggers::addFlag( el::LoggingFlag::StrictLogFileSizeCheck );
+            el::Loggers::reconfigureLogger( log_id, el::ConfigurationType::MaxLogFileSize, size.c_str());
+            el::Helpers::installPreRollOutCallback(rolloutHandler);
         }
     };
 #else //BUILD_EASYLOGGINGPP

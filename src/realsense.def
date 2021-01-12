@@ -148,7 +148,8 @@ EXPORTS
     rs2_log_to_callback
     rs2_log_to_callback_cpp
     rs2_reset_logger
-    
+    rs2_enable_rolling_files
+
     rs2_get_log_message_line_number
     rs2_get_log_message_filename
     rs2_get_raw_log_message

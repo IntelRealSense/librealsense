@@ -34,6 +34,11 @@ void librealsense::reset_logger()
     logger.reset_logger();
 }
 
+void librealsense::enable_rolling_files(std::size_t max_size )
+{
+    logger.enable_rolling_files(max_size);
+}
+
 #else // BUILD_EASYLOGGINGPP
 
 void librealsense::log_to_console(rs2_log_severity min_severity)
@@ -50,6 +55,10 @@ void librealsense::log_to_callback(rs2_log_severity min_severity, log_callback_p
 }
 
 void librealsense::reset_logger()
+{
+}
+
+void librealsense::enable_rolling_files(std::size_t max_size )
 {
 }
 #endif // BUILD_EASYLOGGINGPP

@@ -1310,6 +1310,12 @@ void rs2_reset_logger( rs2_error** error) BEGIN_API_CALL
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN()
 
+void rs2_enable_rolling_files(std::size_t max_size, rs2_error** error) BEGIN_API_CALL
+{
+    librealsense::enable_rolling_files(max_size);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, max_size)
+
 // librealsense wrapper around a C function
 class on_log_callback : public rs2_log_callback
 {
