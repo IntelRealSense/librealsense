@@ -125,6 +125,8 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         FOLDER Tools
     )
 
+    target_include_directories(rs-depth-quality PRIVATE ../../src)
+
     install(
         TARGETS
 

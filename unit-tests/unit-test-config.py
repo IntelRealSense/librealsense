@@ -88,6 +88,9 @@ def grep( expr, *args ):
             for line in grep_( pattern, remove_newlines( file ), context ):
                 yield context
 
+librealsense = os.path.dirname(os.path.dirname(os.path.abspath(__file__))).replace('\\', '/')
+src = librealsense + '/src'
+
 def generate_cmake( builddir, testdir, testname, filelist ):
     makefile = builddir + '/' + testdir + '/CMakeLists.txt'
     debug( '   creating:', makefile )
@@ -108,6 +111,8 @@ set_property(TARGET ''' + testname + ''' PROPERTY CXX_STANDARD 11)
 target_link_libraries( ''' + testname + ''' ${DEPENDENCIES})
 
 set_target_properties( ''' + testname + ''' PROPERTIES FOLDER "Unit-Tests/''' + os.path.dirname( testdir ) + '''" )
+
+target_include_directories(''' + testname + ''' PRIVATE ''' + src + ''')
 
 ''' )
     handle.close()

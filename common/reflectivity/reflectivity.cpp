@@ -3,7 +3,7 @@
 
 #include <numeric>
 #include "reflectivity.h"
-#include "types.h"
+#include <types.h>
 
 using namespace rs2;
 
