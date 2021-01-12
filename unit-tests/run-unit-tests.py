@@ -6,6 +6,10 @@
 import sys, os, subprocess, locale, re, platform, getopt
 from abc import ABC, abstractmethod
 
+# Add our py/ module directory to Python's list so we can use them
+current_dir = os.path.dirname( os.path.abspath( __file__ ))
+sys.path.insert( 1, current_dir + os.sep + "py" )
+
 def usage():
     ourname = os.path.basename(sys.argv[0])
     print( 'Syntax: ' + ourname + ' [options] [dir]' )
@@ -89,7 +93,6 @@ if system == 'Linux'  and  "microsoft" not in platform.uname()[3].lower():
 else:
     linux = False
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
 # this script is located in librealsense/unit-tests, so one directory up is the main repository
 librealsense = os.path.dirname(current_dir)
 
@@ -390,7 +393,6 @@ def get_tests():
 
 # Before we run any tests, recycle all ports and make sure they're set to USB3
 try:
-    sys.path.insert( 1, current_dir + os.sep + "py" )
     import acroname
     acroname.connect()
     acroname.enable_ports()     # so ports() will return all
