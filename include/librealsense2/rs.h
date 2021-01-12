@@ -82,6 +82,9 @@ void rs2_log_to_callback( rs2_log_severity min_severity, rs2_log_callback_ptr ca
 
 void rs2_reset_logger( rs2_error ** error);
 
+void rs2_enable_rolling_files(size_t max_size, rs2_error ** error);
+
+
 unsigned rs2_get_log_message_line_number( rs2_log_message const * msg, rs2_error** error );
 const char * rs2_get_log_message_filename( rs2_log_message const * msg, rs2_error** error );
 const char * rs2_get_raw_log_message( rs2_log_message const * msg, rs2_error** error );

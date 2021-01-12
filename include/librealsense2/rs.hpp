@@ -36,6 +36,13 @@ namespace rs2
         rs2_reset_logger(&e);
         error::handle(e);
     }
+
+    inline void enable_rolling_files(std::size_t max_size )
+    {
+        rs2_error* e = nullptr;
+        rs2_enable_rolling_files(max_size,&e);
+        error::handle(e);
+    }
     /*
         Interface to the log message data we expose.
     */
