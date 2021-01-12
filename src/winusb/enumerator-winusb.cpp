@@ -18,7 +18,8 @@
 #include <regex>
 #include <sstream>
 #include <mutex>
-
+#include <locale>
+#include <codecvt>
 #include <Cfgmgr32.h>
 #include <SetupAPI.h>
 
@@ -82,7 +83,10 @@ namespace librealsense
         {
             usb_device_info rv{};
             std::smatch matches;
-            std::string device_str(device_wstr.begin(), device_wstr.end());
+
+            using convert_type = std::codecvt_utf8<wchar_t>; // Avoid warnings about function template instantiation by using converter.
+            std::wstring_convert<convert_type, wchar_t> converter;
+            std::string device_str = converter.to_bytes(device_wstr); // Device string converted from wstring to string.
 
             std::regex regex_camera_interface("\\b(.*VID_)(.*)(&PID_)(.*)(&MI_)(.*)(#.*&)(.*)(&.*)(&.*)(.*#)(.*)", std::regex_constants::icase);
             std::regex regex_usb_interface("\\b(.*VID_)(.*)(&PID_)(.*)(#.*&)(.*)(&.*)(&.*)", std::regex_constants::icase);

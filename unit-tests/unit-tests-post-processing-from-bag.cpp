@@ -18,7 +18,6 @@
 
 typedef struct _sw_context
 {
-
     rs2::software_device sdev;
     std::map<std::string, std::shared_ptr<rs2::software_sensor>> sw_sensors;
     std::map<std::string, rs2::syncer> sw_syncers;

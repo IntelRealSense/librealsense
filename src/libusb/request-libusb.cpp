@@ -59,17 +59,17 @@ namespace librealsense
             _active = state;
         }
 
-        int usb_request_libusb::get_native_buffer_length()
+        uint32_t usb_request_libusb::get_native_buffer_length()
         {
             return _transfer->length;
         }
 
-        void usb_request_libusb::set_native_buffer_length(int length)
+        void usb_request_libusb::set_native_buffer_length(uint32_t length)
         {
             _transfer->length = length;
         }
 
-        int usb_request_libusb::get_actual_length() const
+        uint32_t usb_request_libusb::get_actual_length() const
         {
             return _transfer->actual_length;
         }

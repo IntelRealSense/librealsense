@@ -22,7 +22,7 @@ namespace librealsense
         {
         public:
             virtual rs_usb_endpoint get_endpoint() const = 0;
-            virtual int get_actual_length() const = 0;
+            virtual uint32_t get_actual_length() const = 0;
             virtual void set_callback(rs_usb_request_callback callback) = 0;
             virtual rs_usb_request_callback get_callback() const = 0;
             virtual void set_client_data(void* data) = 0;
@@ -32,8 +32,8 @@ namespace librealsense
             virtual void set_buffer(const std::vector<uint8_t>& buffer) = 0;
 
         protected:
-            virtual void set_native_buffer_length(int length) = 0;
-            virtual int get_native_buffer_length() = 0;
+            virtual void set_native_buffer_length(uint32_t length) = 0;
+            virtual uint32_t get_native_buffer_length() = 0;
             virtual void set_native_buffer(uint8_t* buffer) = 0;
             virtual uint8_t* get_native_buffer() const = 0;
         };

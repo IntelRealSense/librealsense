@@ -136,9 +136,9 @@ namespace librealsense
             auto h = _handle->get_interface_handle(in);
 
             auto buffer = const_cast<uint8_t*>(request->get_buffer().data());
-            int res = WinUsb_ReadPipe(h, epa, buffer, request->get_buffer().size(), &read_pipe_transfer_size, ovl);
-            if (0 != res)
-                return winusb_status_to_rs(res);
+
+            if (0 != WinUsb_ReadPipe(h, epa, buffer, static_cast<ULONG>(request->get_buffer().size()), &read_pipe_transfer_size, ovl))
+                return RS2_USB_STATUS_SUCCESS;
 
             auto lastError = GetLastError();
             if (lastError != ERROR_IO_PENDING)

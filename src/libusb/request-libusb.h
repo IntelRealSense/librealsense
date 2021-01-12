@@ -18,7 +18,7 @@ namespace librealsense
             usb_request_libusb(libusb_device_handle *dev_handle, rs_usb_endpoint endpoint);
             virtual ~usb_request_libusb();
             
-            virtual int get_actual_length() const override;
+            virtual uint32_t get_actual_length() const override;
             virtual void* get_native_request() const override;
 
             std::shared_ptr<usb_request> get_shared() const;
@@ -26,8 +26,8 @@ namespace librealsense
             void set_active(bool state);
 
         protected:
-            virtual void set_native_buffer_length(int length) override;
-            virtual int get_native_buffer_length() override;
+            virtual void set_native_buffer_length(uint32_t length) override;
+            virtual uint32_t get_native_buffer_length() override;
             virtual void set_native_buffer(uint8_t* buffer) override;
             virtual uint8_t* get_native_buffer() const override;
 
