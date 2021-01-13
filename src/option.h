@@ -151,7 +151,7 @@ namespace librealsense
             
         }
 
-        void set_with_no_signal(float value)
+        virtual void set_with_no_signal(float value)
         {
             T::set(value);
         }

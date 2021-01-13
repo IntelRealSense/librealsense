@@ -70,7 +70,7 @@ namespace librealsense
                                       option * resolution,
                                       const std::string & description,
                                       firmware_version fw_version,
-                                      std::shared_ptr< cascade_option< uvc_xu_option< int > > > digital_gain )
+                                      std::shared_ptr< digital_gain_option > digital_gain )
         : _l500_dev( l500_dev )
         , _hw_monitor( hw_monitor )
         , _type( type )
@@ -194,20 +194,21 @@ namespace librealsense
 
             depth_sensor.register_option(RS2_OPTION_SENSOR_MODE, resolution_option);
 
-            _digital_gain = register_option< uvc_xu_option< int >,
-                                             uvc_sensor &,
-                                             platform::extension_unit,
-                                             uint8_t,
-                                             std::string,
-                                             const std::map< float, std::string > & >(
-                RS2_OPTION_DIGITAL_GAIN,
+            _digital_gain = std::make_shared< digital_gain_option >(
                 raw_depth_sensor,
                 ivcam2::depth_xu,
                 ivcam2::L500_DIGITAL_GAIN,
                 "Change the depth digital gain to: 1 for high gain and 2 for low gain",
                 std::map< float, std::string >{ { RS2_DIGITAL_GAIN_AUTO, "Auto Gain" },
                                                 { RS2_DIGITAL_GAIN_HIGH, "High Gain" },
-                                                { RS2_DIGITAL_GAIN_LOW, "Low Gain" } } );
+                                                { RS2_DIGITAL_GAIN_LOW, "Low Gain" } },
+                _fw_version,
+                this );
+
+            _digital_gain->add_observer(
+                [this]( float val ) { on_set_option( RS2_OPTION_DIGITAL_GAIN, val ); } );
+
+            depth_sensor.register_option( RS2_OPTION_DIGITAL_GAIN, _digital_gain );
 
             if( _fw_version >= firmware_version( "1.5.2.0" ) )
             {
@@ -509,18 +510,17 @@ namespace librealsense
 
     void l500_options::change_preset( rs2_l500_visual_preset preset )
     {
-        if( _fw_version < firmware_version( MIN_GET_DEFAULT_FW_VERSION ) )
-            reset_hw_controls();  // should be before gain changing as WA for old FW versions
-
         // we need to reset the controls before change gain because after moving to auto gain APD is
         // read only. This will tell the FW that the control values are defaults and therefore can
         // be overriden automatically according to gain
-        else if( preset == RS2_L500_VISUAL_PRESET_AUTOMATIC )
+        if( preset == RS2_L500_VISUAL_PRESET_AUTOMATIC )
         {
             // todo: check if we are not in auto already
             reset_hw_controls();
         }
 
+        // digital gain must be the first option that is set because it's
+        // impact the default values of some of the hw controls
         change_gain( preset );
         change_alt_ir( preset );
 
@@ -817,4 +817,13 @@ namespace librealsense
                "to the camera.\n\n"
                "Note: only active on 2D view, Visual Preset:Max Range, Resolution:VGA, ROI:20%";
     }
-}  // namespace librealsense
+
+    // set gain as result of change preset 
+    void digital_gain_option::set_with_no_signal( float value ) 
+    {
+        if( _fw_version < firmware_version( MIN_GET_DEFAULT_FW_VERSION ) )
+            _owner->reset_hw_controls();  // should be before gain changing as WA for old FW versions
+
+        cascade_option::set_with_no_signal( value );
+    }
+    }  // namespace librealsense

@@ -22,6 +22,19 @@ inline rs2::device_list find_devices_by_product_line_or_exit( int product )
     return devices_list;
 }
 
+inline void exit_if_fw_version_is_under( rs2::device & dev, librealsense::firmware_version version )
+{
+    std::string fw_version;
+    REQUIRE_NOTHROW(fw_version = dev.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ));
+
+    if (librealsense::firmware_version(fw_version) < version)
+    {
+        std::cout << "FW version " << fw_version << " is under the minimum requiered FW version "
+                  << version << std::endl;
+        exit( 0 );
+    }
+}
+
 inline rs2::device reset_camera_and_wait_for_connection( rs2::device & dev)
 {
     rs2::context ctx;
@@ -145,6 +158,7 @@ find_profile( rs2::depth_sensor depth_sens, rs2_stream stream, rs2_sensor_mode m
                       && vp.width() == sensor_mode_to_resolution[mode].first
                       && vp.height() == sensor_mode_to_resolution[mode].second;
               }
+              return false;
           } );
 
     REQUIRE( profile != stream_profiles.end() );

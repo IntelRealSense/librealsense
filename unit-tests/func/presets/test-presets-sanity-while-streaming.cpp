@@ -13,6 +13,8 @@ TEST_CASE( "presets sanity", "[l500][live]" )
     auto devices = find_devices_by_product_line_or_exit( RS2_PRODUCT_LINE_L500 );
     auto dev = devices[0];
 
+    exit_if_fw_version_is_under( dev, MIN_GET_DEFAULT_FW_VERSION );
+
     auto depth_sens = dev.first< rs2::depth_sensor >();
 
     auto preset_to_expected_map = build_preset_to_expected_values_map( depth_sens );

@@ -9,6 +9,8 @@
 
 using namespace rs2;
 
+const librealsense::firmware_version MIN_GET_DEFAULT_FW_VERSION( "1.5.3.0" );
+
 typedef std::map< std::pair< rs2_l500_visual_preset, rs2_sensor_mode >,
                   std::map< rs2_option, float > >
     preset_values_map;
@@ -51,7 +53,7 @@ const std::map< rs2_l500_visual_preset, std::pair< rs2_digital_gain, presets_use
 void for_each_preset_mode_combination(
     std::function< void( rs2_l500_visual_preset, rs2_sensor_mode ) > action )
 {
-    for( int preset = RS2_L500_VISUAL_PRESET_MAX_RANGE; preset < RS2_L500_VISUAL_PRESET_AUTOMATIC;
+    for( int preset = RS2_L500_VISUAL_PRESET_NO_AMBIENT; preset < RS2_L500_VISUAL_PRESET_AUTOMATIC;
          preset++ )
     {
         for( int sensor_mode = RS2_SENSOR_MODE_VGA; sensor_mode < RS2_SENSOR_MODE_COUNT;
@@ -99,86 +101,54 @@ preset_values_map build_preset_to_expected_values_map( rs2::depth_sensor & depth
     return preset_to_expected_values;
 }
 
+void reset_hw_controls(rs2::device & dev)
+{
+    auto dp = dev.as< rs2::debug_protocol >();
+
+    for( auto op : option_to_code )
+    {
+        auto set_command = hw_monitor_command{ librealsense::ivcam2::fw_cmd::AMCSET,
+                                               librealsense::l500_control( op.second ),
+                                               -1,
+                                               0,
+                                               0 };
+        send_command_and_check( dp, set_command );
+    }
+}
+
 std::map< rs2_option, float > get_defaults_from_fw( rs2::device & dev, bool streaming = false )
 {
     std::map< rs2_option, float > option_to_defaults;
 
     auto dp = dev.as< rs2::debug_protocol >();
-
     REQUIRE( dp );
-
-    auto fw_version = dev.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION );
-
-    auto new_fw = librealsense::firmware_version( fw_version )
-               >= librealsense::firmware_version( "1.5.3.0" );
 
     auto ds = dev.first< rs2::depth_sensor >();
 
     REQUIRE( ds.supports( RS2_OPTION_SENSOR_MODE ) );
 
     rs2_sensor_mode mode;
-
     REQUIRE_NOTHROW( mode = rs2_sensor_mode( (int)ds.get_option( RS2_OPTION_SENSOR_MODE ) ) );
 
     for( auto op : option_to_code )
     {
-        if( new_fw )
-        {
-            auto command = hw_monitor_command{ librealsense::ivcam2::fw_cmd::AMCGET,
-                                               op.second,
-                                               librealsense::l500_command::get_default,
-                                               (int)mode,
-                                               0 };
 
-            auto res = send_command_and_check( dp, command, 1 );
+        auto command = hw_monitor_command{ librealsense::ivcam2::fw_cmd::AMCGET,
+                                           op.second,
+                                           librealsense::l500_command::get_default,
+                                           (int)mode,
+                                           0 };
 
-            REQUIRE( ds.supports( RS2_OPTION_DIGITAL_GAIN ) );
-            float digital_gain_val;
+        auto res = send_command_and_check( dp, command, 1 );
 
-            REQUIRE_NOTHROW( digital_gain_val = ds.get_option( RS2_OPTION_DIGITAL_GAIN ) );
+        REQUIRE( ds.supports( RS2_OPTION_DIGITAL_GAIN ) );
+        float digital_gain_val;
 
-            auto val = *reinterpret_cast< int32_t * >( (void *)res.data() );
+        REQUIRE_NOTHROW( digital_gain_val = ds.get_option( RS2_OPTION_DIGITAL_GAIN ) );
 
-            option_to_defaults[op.first] = float( val );
-        }
-        else
-        {
-            // FW versions older than get_default doesn't support
-            // the way to get the default is set -1 and query
-            auto get_command = hw_monitor_command{ librealsense::ivcam2::fw_cmd::AMCGET,
-                                                   librealsense::l500_control( op.second ),
-                                                   librealsense::l500_command::get_current,
-                                                   (int)mode};
+        auto val = *reinterpret_cast< int32_t * >( (void *)res.data() );
 
-
-            auto res = send_command_and_check( dp, get_command, 1 );
-
-            auto current = *reinterpret_cast< int32_t * >( (void *)res.data() );
-
-            auto set_command = hw_monitor_command{ librealsense::ivcam2::fw_cmd::AMCSET,
-                                                   librealsense::l500_control( op.second ),
-                                                   -1,
-                                                   0,
-                                                   0 };
-
-            send_command_and_check( dp, set_command );
-
-            // if the sensor is streaming the value of control will update only whan the next
-            // frame arrive
-            if( streaming )
-                std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
-
-            res = send_command_and_check( dp, get_command, 1 );
-            auto def = *reinterpret_cast< int32_t * >( (void *)res.data() );
-
-            set_command = { librealsense::ivcam2::fw_cmd::AMCSET,
-                            librealsense::l500_control( op.second ),
-                            current };
-
-            send_command_and_check( dp, set_command );
-
-            option_to_defaults[op.first] = float( def );
-        }
+        option_to_defaults[op.first] = float( val );
     }
 
     return option_to_defaults;
