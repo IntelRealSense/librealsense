@@ -69,7 +69,7 @@ namespace librealsense
             std::shared_ptr<active_object<>> _handle_interrupts_thread;
 
 #ifdef __APPLE__
-           hidapi_device* _hidapi_device;
+           hidapi_device* _hidapi_device = nullptr;
 #endif
         };
     }

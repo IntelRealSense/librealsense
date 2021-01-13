@@ -74,7 +74,10 @@ namespace librealsense
 
         rs_hid_device::~rs_hid_device()
         {
-            hid_close(_hidapi_device);
+#ifdef __APPLE__
+            if(_hidapi_device)
+                hid_close(_hidapi_device);
+#endif
             _action_dispatcher.stop();
         }
 
@@ -309,47 +312,47 @@ namespace librealsense
             if (_hidapi_device == NULL)
                 return -1;
 
-                REALSENSE_FEATURE_REPORT featureReport;
-                int ret;
+            REALSENSE_FEATURE_REPORT featureReport;
+            int ret;
 
-                memset(&featureReport,0, sizeof(featureReport));
-                featureReport.reportId = reportId;
-                // Reading feature report.
-                ret = hid_get_feature_report(_hidapi_device, (unsigned char *)
-                                             &featureReport ,sizeof(featureReport) );
+            memset(&featureReport,0, sizeof(featureReport));
+            featureReport.reportId = reportId;
+            // Reading feature report.
+            ret = hid_get_feature_report(_hidapi_device, (unsigned char *)
+                                         &featureReport ,sizeof(featureReport) );
 
-                if (ret == -1) {
-                    LOG_ERROR("fail to read feature report from device");
-                    return ret;
-                }
+            if (ret == -1) {
+                LOG_ERROR("fail to read feature report from device");
+                return ret;
+            }
 
-                // change report to power the device to D0
+            // change report to power the device to D0
 
-                featureReport.power = DEVICE_POWER_D0;
+            featureReport.power = DEVICE_POWER_D0;
 
-                // Write feature report back.
-                ret = hid_send_feature_report(_hidapi_device, (unsigned char *) &featureReport, sizeof(featureReport));
+            // Write feature report back.
+            ret = hid_send_feature_report(_hidapi_device, (unsigned char *) &featureReport, sizeof(featureReport));
 
-                if (ret == -1) {
-                    LOG_ERROR("fail to write feature report from device");
-                    return ret;
-                }
+            if (ret == -1) {
+                LOG_ERROR("fail to write feature report from device");
+                return ret;
+            }
 
-                ret = hid_get_feature_report(_hidapi_device, (unsigned char *) &featureReport ,sizeof(featureReport) );
+            ret = hid_get_feature_report(_hidapi_device, (unsigned char *) &featureReport ,sizeof(featureReport) );
 
-                if (ret == -1) {
-                    LOG_ERROR("fail to read feature report from device");
-                    return ret;
-                }
+            if (ret == -1) {
+                LOG_ERROR("fail to read feature report from device");
+                return ret;
+            }
 
-                if (featureReport.power == DEVICE_POWER_D0) {
-                    LOG_INFO("Device is powered up");
-                } else {
-                    LOG_INFO("Device is powered off");
-                    return -1;
-                }
+            if (featureReport.power == DEVICE_POWER_D0) {
+                LOG_INFO("Device is powered up");
+            } else {
+                LOG_INFO("Device is powered off");
+                return -1;
+            }
 
-                return 0;
+            return 0;
         }
 #endif
 
