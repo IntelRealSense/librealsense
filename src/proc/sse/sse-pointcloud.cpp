@@ -206,7 +206,7 @@ namespace librealsense
             p_y = _mm_div_ps(p_y, p_z);
 
             // if(model == RS2_DISTORTION_MODIFIED_BROWN_CONRADY)
-            auto dist = _mm_set_ps1(other_intrinsics.model);
+            auto dist = _mm_set_ps1( (float)other_intrinsics.model );
 
             auto r2 = _mm_add_ps(_mm_mul_ps(p_x, p_x), _mm_mul_ps(p_y, p_y));
             auto r3 = _mm_add_ps(_mm_mul_ps(c[1], _mm_mul_ps(r2, r2)), _mm_mul_ps(c[4], _mm_mul_ps(r2, _mm_mul_ps(r2, r2))));

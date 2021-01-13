@@ -99,7 +99,7 @@ public:
     int queue_size()
     {
         std::lock_guard<std::mutex> lock(this->stream_lock);
-        return frames_queue.size();
+        return (int)frames_queue.size();
     }
 
     static MemoryPool& get_memory_pool()
