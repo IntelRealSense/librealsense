@@ -219,7 +219,7 @@ static void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
         rs2_transform_point_to_point(transformed_point, depth_to_color, point);
         rs2_project_point_to_pixel(projected_pixel, color_intrin, transformed_point);
 
-        float new_dist = pow((projected_pixel[1] - from_pixel[1]), 2) + pow((projected_pixel[0] - from_pixel[0]), 2);
+        float new_dist = float(pow((projected_pixel[1] - from_pixel[1]), 2) + pow((projected_pixel[0] - from_pixel[0]), 2));
         if (new_dist < min_dist || min_dist < 0)
         {
             min_dist = new_dist;
