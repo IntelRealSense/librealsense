@@ -72,7 +72,7 @@ matrix:
         - cd ../scripts && ./pr_check.sh && cd ../build
         - cmake .. -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.5
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
-        - python3 ../unit-tests/run-unit-tests.py --verbose .
+        # python3 ../unit-tests/run-unit-tests.py --verbose .
 
     - name: "Linux - python & nodejs"
       os: linux
