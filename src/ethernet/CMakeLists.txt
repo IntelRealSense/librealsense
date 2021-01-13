@@ -49,6 +49,8 @@ include_directories(${PROJECT_NAME}
     ${LIVE}/BasicUsageEnvironment/include
 )
 
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
 if(WIN32)
     #
     # Windows doesn't support POSIX ssize_t type
