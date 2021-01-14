@@ -6,7 +6,11 @@ project(RealsenseWrappers)
 set(DEPENDENCIES realsense2)
 
 if (BUILD_PYTHON_BINDINGS OR BUILD_PYTHON_DOCS)
-  add_subdirectory(python)
+    if (NOT INTERNET_CONNECTION)
+        message(WARNING "No internet connection. Cloning Python bindings may fail")
+    endif()
+    add_subdirectory(python)        
+   
 endif()
 
 if (BUILD_NODEJS_BINDINGS)

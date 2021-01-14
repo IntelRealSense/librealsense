@@ -19,8 +19,24 @@ else()
 endif()
 
 set(DEPENDENCIES realsense2)
+# In order for the external project clone to occur during cmake configure step,
+# we copy the external project declaration to the build folder and than execute it
+configure_file(${CMAKE_SOURCE_DIR}/third-party/pybind11/CMakeLists.txt ${CMAKE_BINARY_DIR}/third-party/pybind11/configure/CMakeLists.txt)
+execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/third-party/pybind11/configure"
+)
+execute_process(COMMAND "${CMAKE_COMMAND}" --build .
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/third-party/pybind11/configure"
+)
 
-add_subdirectory(third_party/pybind11)
+# Add pybind11 makefile
+add_subdirectory("${CMAKE_BINARY_DIR}/third-party/pybind11/src"
+                 "${CMAKE_BINARY_DIR}/third-party/pybind11/src"
+                 EXCLUDE_FROM_ALL
+)
+
+set(PYBIND11_CPP_STANDARD -std=c++11)
+include_directories(${CMAKE_BINARY_DIR}/third-party/pybind11/src/include)
 
 set(PYRS_CPP
     python.cpp
