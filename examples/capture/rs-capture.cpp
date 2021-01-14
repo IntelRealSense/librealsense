@@ -6,7 +6,7 @@
 
 // Capture Example demonstrates how to
 // capture depth and color video streams and render them to the screen
-int main(int argc, char * argv[]) try
+int main(int argc, char* argv[]) try
 {
     rs2::log_to_console(RS2_LOG_SEVERITY_ERROR);
     // Create a simple OpenGL window for rendering:
