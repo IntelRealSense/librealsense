@@ -301,9 +301,10 @@ namespace librealsense
             std::shared_ptr<uvc_sensor> uvc_sensor)
             : synthetic_sensor(ds::DEPTH_STEREO, uvc_sensor, owner, ds5_depth_fourcc_to_rs2_format, ds5_depth_fourcc_to_rs2_stream),
             _owner(owner),
-            _depth_units(-1),
-            _hdr_cfg(nullptr)
-        { }
+            _depth_units(-1)
+        { 
+            _hdr_cfg.lock() = nullptr;
+        }
 
         processing_blocks get_recommended_processing_blocks() const override
         {
@@ -334,7 +335,7 @@ namespace librealsense
             synthetic_sensor::open(requests);
 
             // needed in order to restore the HDR sub-preset when streaming is turned off and on
-            if (_hdr_cfg && _hdr_cfg->is_enabled())
+            if (_hdr_cfg.lock() && _hdr_cfg.lock()->is_enabled())
                 get_option(RS2_OPTION_HDR_ENABLED).set(1.f);
         }
 
@@ -403,7 +404,7 @@ namespace librealsense
                 exposure_range, gain_range);
         }
 
-        std::shared_ptr<hdr_config> get_hdr_config() { return _hdr_cfg; }
+        std::shared_ptr<hdr_config> get_hdr_config() { return _hdr_cfg.lock(); }
 
         float get_stereo_baseline_mm() const override { return _owner->get_stereo_baseline_mm(); }
 
@@ -430,7 +431,7 @@ namespace librealsense
         const ds5_device* _owner;
         mutable std::atomic<float> _depth_units;
         float _stereo_baseline_mm;
-        std::shared_ptr<hdr_config> _hdr_cfg;
+        std::weak_ptr<hdr_config> _hdr_cfg;
     };
 
     class ds5u_depth_sensor : public ds5_depth_sensor
