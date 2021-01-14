@@ -95,13 +95,13 @@ struct tile_properties
    
     unsigned int x, y; //location of tile in the grid
     unsigned int w, h; //width and height by number of tiles
-    Priority priority = Priority::high; //when should the tile be drawn?: high priority is on top of all, medium is a layer under top layer, low is a layer under medium layer
+    Priority priority; //when should the tile be drawn?: high priority is on top of all, medium is a layer under top layer, low is a layer under medium layer
 
 };
 
 //name aliasing the map of pairs<frame, tile_properties>
 using frame_and_tile_property = std::pair<rs2::frame, tile_properties>;
-using frames_mosaic = std::map<int, std::pair<rs2::frame, tile_properties>>;
+using frames_mosaic = std::map<int, frame_and_tile_property>;
 
 //////////////////////////////
 // Class Helpers            //
@@ -225,11 +225,11 @@ public:
         //priority sets the order of drawing frame when two frames share part of the same tile, 
         //meaning if there are two frames: frame1 with priority=-1 and frame2 with priority=0, both with { 0,0,1,1 } as property,
         //frame2 will be drawn on top of frame1
-        _frames_map[IR1] = frame_and_tile_property(frame, { 0,0,1,1 });
-        _frames_map[IR2] = frame_and_tile_property(frame, { 1,0,1,1 });
-        _frames_map[DEPTH1] = frame_and_tile_property(frame, { 0,1,1,1 });
-        _frames_map[DEPTH2] = frame_and_tile_property(frame, { 1,1,1,1 });
-        _frames_map[HDR] = frame_and_tile_property(frame, { 2,0,2,2 });
+        _frames_map[IR1] = frame_and_tile_property(frame, { 0,0,1,1,Priority::high });
+        _frames_map[IR2] = frame_and_tile_property(frame, { 1,0,1,1,Priority::high });
+        _frames_map[DEPTH1] = frame_and_tile_property(frame,{ 0,1,1,1,Priority::high });
+        _frames_map[DEPTH2] = frame_and_tile_property(frame, { 1,1,1,1,Priority::high });
+        _frames_map[HDR] = frame_and_tile_property(frame, { 2,0,2,2,Priority::high });
     }
 
     //show the features of the ImGui we have created
