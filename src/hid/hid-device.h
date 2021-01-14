@@ -17,7 +17,7 @@
 #include "../types.h"
 
 #ifdef __APPLE__
-#include "hidapi.h"
+#include <hidapi.h>
 #endif
 
 namespace librealsense

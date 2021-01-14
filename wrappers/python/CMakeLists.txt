@@ -103,7 +103,14 @@ if(${FORCE_RSUSB_BACKEND})
         ../../src/uvc/uvc-parser.cpp
         ../../src/uvc/uvc-streamer.cpp
         ../../src/hid/hid-device.cpp
+        ../../src/hid/hid-device.h
     )
+if(APPLE)
+    list(APPEND RAW_RS
+        ../../third-party/hidapi/hidapi.cpp
+        ../../third-party/hidapi/hidapi.h
+    )
+endif()
 endif()
 
 if(${BUILD_EASYLOGGINGPP})
@@ -137,7 +144,13 @@ set_target_properties(pybackend2 PROPERTIES
                         VERSION     ${REALSENSE_VERSION_STRING}
                         SOVERSION   ${REALSENSE_VERSION_MAJOR})
 set_target_properties(pybackend2 PROPERTIES FOLDER Wrappers/python)
-include_directories(pybackend2 ../../include)
+target_include_directories(pybackend2 PRIVATE ${CMAKE_SOURCE_DIR}/include)
+
+if(${FORCE_RSUSB_BACKEND})
+if(APPLE)
+    target_include_directories(pybackend2 PRIVATE ${CMAKE_SOURCE_DIR}/third-party/hidapi/)
+endif()
+endif()
 
 write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/pyrealsense2ConfigVersion.cmake"
     VERSION ${REALSENSE_VERSION_STRING} COMPATIBILITY AnyNewerVersion)
