@@ -19,6 +19,8 @@ def usage():
     print( '        -v, --verbose  Errors will dump the log to stdout' )
     print( '        -q, --quiet    Suppress output; rely on exit status (0=no failures)' )
     print( '        -r, --regex    run all tests that fit the following regular expression')
+    print( '        -s, --stdout   do not redirect stdout to logs')
+    print( '        -a, --asis     do not init acroname; just run the tests as-is' )
     sys.exit(2)
 def debug(*args):
     pass
@@ -106,13 +108,15 @@ def is_executable(path_to_test):
 
 # Parse command-line:
 try:
-    opts,args = getopt.getopt( sys.argv[1:], 'hvqr:',
-        longopts = [ 'help', 'verbose', 'debug', 'quiet', 'regex=' ])
+    opts,args = getopt.getopt( sys.argv[1:], 'hvqr:sa',
+        longopts = [ 'help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'asis' ])
 except getopt.GetoptError as err:
     error( err )   # something like "option -a not recognized"
     usage()
 verbose = False
 regex = None
+to_stdout = False
+asis = False
 for opt,arg in opts:
     if opt in ('-h','--help'):
         usage()
@@ -128,6 +132,10 @@ for opt,arg in opts:
             pass
     elif opt in ('-r', '--regex'):
         regex = arg
+    elif opt in ('-s', '--stdout'):
+        to_stdout = True
+    elif opt in ('-a', '--asis'):
+        asis = True
 
 if len(args) > 1:
     usage()
@@ -246,6 +254,8 @@ def check_log_for_fails(log, testname, exe):
     # Tests that have failures, however, will show:
     #     "test cases: 1 | 1 failed
     #      assertions: 9 | 6 passed | 3 failed"
+    if log is None:
+        return False
     global verbose
     for ctx in grep( r'^test cases:\s*(\d+) \|\s*(\d+) (passed|failed)', log ):
         m = ctx['match']
@@ -261,7 +271,7 @@ def check_log_for_fails(log, testname, exe):
                 desc = str(total - passed) + ' of ' + str(total) + ' failed'
 
             if verbose:
-                error( red + testname + reset + ': ' + desc )
+                errOR( Red + testname + reset + ': ' + desc )
                 info( 'Executable:', exe )
                 info( 'Log: >>>' )
                 out()
@@ -302,9 +312,12 @@ class PyTest(Test):
         return [sys.executable, self.path_to_script]
 
     def run_test(self):
-        global n_tests
-        n_tests +=1
-        log = logdir + os.sep + self.testname + ".log"
+        global n_tests, to_stdout
+        n_tests += 1
+        if to_stdout:
+            log = None
+        else:
+            log = logdir + os.sep + self.testname + ".log"
         progress(self.testname, '>', log, '...')
         try:
             subprocess_run(self.command, stdout=log)
@@ -319,7 +332,7 @@ class ExeTest(Test):
     """
     Class for c/cpp tests. Hold the path to the executable for the test
     """
-    def __init__(self, testname, exe):
+    def __init__( self, testname, exe ):
         """
         :param testname: name of the test
         :param exe: full path to executable
@@ -332,10 +345,13 @@ class ExeTest(Test):
         return [self.exe]
 
     def run_test(self):
-        global n_tests
+        global n_tests, to_stdout
         n_tests += 1
-        log = logdir + os.sep + self.testname + ".log"
-        progress(self.testname, '>', log, '...')
+        if to_stdout:
+            log = None
+        else:
+            log = logdir + os.sep + self.testname + ".log"
+        progress( self.testname, '>', log, '...' )
         try:
             subprocess_run(self.command, stdout=log)
         except FileNotFoundError:
@@ -344,6 +360,7 @@ class ExeTest(Test):
             if not check_log_for_fails(log, self.testname, self.exe):
                 # An unexpected error occurred
                 error(red + self.testname + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')')
+
 
 def get_tests():
     global regex, target, pyrs, current_dir, linux
@@ -392,17 +409,21 @@ def get_tests():
             yield PyTest(testname, py_test)
 
 # Before we run any tests, recycle all ports and make sure they're set to USB3
-try:
-    import acroname
-    acroname.connect()
-    acroname.enable_ports()     # so ports() will return all
-    portlist = acroname.ports()
-    debug( 'Recycling found ports:', portlist )
-    acroname.set_ports_usb3( portlist )   # will recycle them, too
-except ModuleNotFoundError:
-    # Error should have already been printed
-    # We assume there's no brainstem library, meaning no acroname either
-    pass
+if not asis:
+    try:
+        import acroname
+        acroname.connect()
+        acroname.enable_ports()     # so ports() will return all
+        portlist = acroname.ports()
+        debug( 'Recycling found ports:', portlist )
+        acroname.set_ports_usb3( portlist )   # will recycle them, too
+        acroname.disconnect()
+        import time
+        time.sleep(5)
+    except ModuleNotFoundError:
+        # Error should have already been printed
+        # We assume there's no brainstem library, meaning no acroname either
+        pass
 
 # Run all tests
 for test in get_tests():
