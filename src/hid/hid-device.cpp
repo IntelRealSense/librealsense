@@ -75,8 +75,8 @@ namespace librealsense
         rs_hid_device::~rs_hid_device()
         {
 #ifdef __APPLE__
-            if(_hidapi_device)
-                hid_close(_hidapi_device);
+            if( _hidapi_device )
+                hid_close( _hidapi_device );
 #endif
             _action_dispatcher.stop();
         }
