@@ -271,7 +271,7 @@ def check_log_for_fails(log, testname, exe):
                 desc = str(total - passed) + ' of ' + str(total) + ' failed'
 
             if verbose:
-                error( Red + testname + reset + ': ' + desc )
+                error( red + testname + reset + ': ' + desc )
                 info( 'Executable:', exe )
                 info( 'Log: >>>' )
                 out()
