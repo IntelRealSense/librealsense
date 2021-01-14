@@ -18,6 +18,8 @@
 std::string pretty_time(std::chrono::nanoseconds duration);
 // Helper function for rendering a seek bar
 void draw_seek_bar(rs2::playback& playback, int* seek_pos, float2& location, float width);
+// Helper function to get bag file in temp folder
+std::string bag_file();
 
 int main(int argc, char * argv[]) try
 {
@@ -91,8 +93,8 @@ int main(int argc, char * argv[]) try
                 {
                     pipe->stop(); // Stop the pipeline with the default configuration
                     pipe = std::make_shared<rs2::pipeline>();
-                    rs2::config cfg; // Declare a new configuration
-                    cfg.enable_record_to_file("a.bag");
+                    rs2::config cfg; // Declare a new configuration                    
+                    cfg.enable_record_to_file(bag_file());
                     pipe->start(cfg); //File will be opened at this point
                     device = pipe->get_active_profile().get_device();
                 }
@@ -111,7 +113,8 @@ int main(int argc, char * argv[]) try
                 if (recording)
                 {
                     ImGui::SetCursorPos({ app.width() / 2 - 100, 3 * app.height() / 5 + 60 });
-                    ImGui::TextColored({ 255 / 255.f, 64 / 255.f, 54 / 255.f, 1 }, "Recording to file 'a.bag'");
+                    auto info = "Recording to file '" + bag_file() + "'";
+                    ImGui::TextColored({ 255 / 255.f, 64 / 255.f, 54 / 255.f, 1 }, info.c_str());
                 }
 
                 // Pause the playback if button is clicked
@@ -147,7 +150,7 @@ int main(int argc, char * argv[]) try
                     pipe->stop(); // Stop streaming with default configuration
                     pipe = std::make_shared<rs2::pipeline>();
                     rs2::config cfg;
-                    cfg.enable_device_from_file("a.bag");
+                    cfg.enable_device_from_file(bag_file());
                     pipe->start(cfg); //File will be opened in read mode at this point
                     device = pipe->get_active_profile().get_device();
                 }
@@ -209,6 +212,27 @@ catch (const std::exception& e)
     return EXIT_FAILURE;
 }
 
+std::string bag_file()
+{
+    char sep = '/';
+    std::string tmp_path = std::getenv("TEMP");
+    std::string bag = "a.bag";
+
+    #ifdef _WIN32
+        sep = '\\';
+    #endif
+
+    if (tmp_path == "")
+    {
+        return bag;
+    }
+    if (tmp_path[tmp_path.length()] != sep) 
+    { 
+        tmp_path += sep;        
+    }
+
+    return tmp_path + bag;
+}
 
 std::string pretty_time(std::chrono::nanoseconds duration)
 {
