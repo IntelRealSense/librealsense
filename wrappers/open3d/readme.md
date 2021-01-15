@@ -59,9 +59,10 @@ documentation](http://www.open3d.org/docs/latest/cpp_api/classopen3d_1_1t_1_1io_
     using namespace open3d;
     t::io::RSBagReader bag_reader;
     bag_reader.Open(bag_filename);
+    auto im_rgbd = bag_reader.NextFrame();
     while (!bag_reader.IsEOF()) {
-        im_rgbd = bag_reader.NextFrame();
         // process im_rgbd.depth_ and im_rgbd.color_
+        im_rgbd = bag_reader.NextFrame();
     }
     bag_reader.Close();
 
@@ -70,9 +71,10 @@ Here is the corresponding Python code. The Python API has equivalent functionali
     import open3d as o3d
     bag_reader = o3d.t.io.RSBagReader()
     bag_reader.open(bag_filename)
+    im_rgbd = bag_reader.next_frame()
     while not bag_reader.is_eof():
-        im_rgbd = bag_reader.next_frame()
         # process im_rgbd.depth and im_rgbd.color
+        im_rgbd = bag_reader.next_frame()
 
     bag_reader.close()
 
