@@ -14,11 +14,11 @@ if(APPLE)
 
     target_sources(${LRS_TARGET}
         PRIVATE
-            "${CMAKE_CURRENT_LIST_DIR}/third-party/hidapi/hidapi.h"
-            "${CMAKE_CURRENT_LIST_DIR}/third-party/hidapi/hidapi.cpp"
+            "${CMAKE_CURRENT_LIST_DIR}/../../third-party/hidapi/hidapi.h"
+            "${CMAKE_CURRENT_LIST_DIR}/../../third-party/hidapi/hidapi.cpp"
     )
 
-    target_include_directories(${LRS_TARGET} PRIVATE ${CMAKE_SOURCE_DIR}/third-party/hidapi/)
+    target_include_directories(${LRS_TARGET} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../../third-party/hidapi/)
 
     target_link_libraries(${LRS_TARGET} PRIVATE ${CoreFoundationLib} ${IOKitLib})
 
