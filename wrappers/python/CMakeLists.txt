@@ -8,8 +8,8 @@ if (NOT BUILD_PYTHON_BINDINGS)
 endif()
 
 set(DEPENDENCIES realsense2)
-# In order for the external project clone to occur during cmake configure step,
-# we copy the external project declaration to the build folder and than execute it
+# In order for the external project clone to occur during cmake configure step(rather than during compilation, as would normally happen),
+# we copy the external project declaration to the build folder and then execute it
 configure_file(${CMAKE_SOURCE_DIR}/third-party/pybind11/CMakeLists.txt ${CMAKE_BINARY_DIR}/third-party/pybind11/configure/CMakeLists.txt)
 execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/third-party/pybind11/configure"
