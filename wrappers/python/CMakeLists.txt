@@ -47,6 +47,8 @@ set(PYRS_CPP
 
 pybind11_add_module(pyrealsense2 SHARED python.hpp ${PYRS_CPP})
 
+# pybind11 version 2.6.1 require find_package to run after pybind11_add_module call,
+# This way the pybind takes the python version set in PYTHON_EXECUTABLE variable.
 if (CMAKE_VERSION VERSION_LESS 3.12)
   find_package(PythonInterp REQUIRED)
   find_package(PythonLibs REQUIRED)
