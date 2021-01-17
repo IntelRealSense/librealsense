@@ -616,7 +616,7 @@ namespace librealsense
                     {
                         LOG_ERROR( "hw_monitor command AMCGET with get_default failed with error "
                                    << hwmon_error2str( response ) );
-                        throw std::exception( hwmon_error2str( response ).c_str() );
+                        throw std::runtime_error( hwmon_error2str( response ) );
                     }
                 }
                 else

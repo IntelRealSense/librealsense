@@ -172,7 +172,7 @@ public:
 
     private:
         friend class l500_preset_option;
-		friend class digital_gain_option;
+        friend class digital_gain_option;
         void verify_max_usable_range_restrictions( rs2_option opt, float value );
         rs2_l500_visual_preset calc_preset_from_controls();
         void on_set_option(rs2_option opt, float value);
