@@ -65,14 +65,13 @@ private:
 class l500_hw_options : public option
 {
 public:
-    float query() const override;
+        float query() const override;
 
         void set(float value) override;
 
         option_range get_range() const override;
 
         bool is_enabled() const override { return true; }
-
 
         const char * get_description() const override { return _description.c_str(); }
 
@@ -92,6 +91,7 @@ public:
 
         bool is_read_only() const override { return _is_read_only; }
         void set_read_only( bool read_only );
+        void set_manualy( bool set );
 
     private:
         float query_default( hwmon_response *response ) const;
@@ -107,6 +107,7 @@ public:
         firmware_version _fw_version;
         std::shared_ptr< digital_gain_option > _digital_gain;
         bool _is_read_only;
+        bool _was_set_manualy;
     };
 
 

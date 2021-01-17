@@ -79,6 +79,7 @@ namespace librealsense
         , _fw_version( fw_version )
         , _digital_gain( digital_gain )
         , _is_read_only(false)
+        , _was_set_manualy( false )
     {
         auto min = _hw_monitor->send(command{ AMCGET, _type, get_min });
         auto max = _hw_monitor->send(command{ AMCGET, _type, get_max });
@@ -117,6 +118,11 @@ namespace librealsense
     void l500_hw_options::set_read_only( bool read_only )
     {
         _is_read_only = read_only;
+    }
+
+    void l500_hw_options::set_manualy( bool set ) 
+    {
+        _was_set_manualy = set;
     }
 
     void l500_hw_options::enable_recording(std::function<void(const option&)> recording_action)
@@ -385,7 +391,6 @@ namespace librealsense
         {
             // compare default values to current values
             // exept from laser power that can get diffrant value according to preset
-            std::map< rs2_option, float > hw_options_default_values;
             for( auto control : _hw_options )
             {
                 if( control.first != RS2_OPTION_LASER_POWER && !control.second->is_read_only() )
@@ -417,7 +422,8 @@ namespace librealsense
             if( it != gain_and_laser_to_preset.end() )
             {
                 return it->second;
-            } 
+            }
+            
             return RS2_L500_VISUAL_PRESET_CUSTOM;
         }
         catch( ... )
@@ -463,12 +469,15 @@ namespace librealsense
 
             // whan we moved to auto preset we set all controls to -1 
             // so we have to set preset controls to defaults values now
-            auto curr_preset = ( rs2_l500_visual_preset )(int)_preset->query();
+            /*auto curr_preset = ( rs2_l500_visual_preset )(int)_preset->query();
             if( curr_preset == RS2_L500_VISUAL_PRESET_AUTOMATIC )
-               set_preset_controls_to_defaults();
+               set_preset_controls_to_defaults();*/
 
             auto p = calc_preset_from_controls();
             _preset->set_value( (float)p );
+
+            if( opt != RS2_OPTION_DIGITAL_GAIN )
+                _hw_options[opt]->set_manualy( true );
         }
         else
             throw wrong_api_call_sequence_exception(
@@ -476,7 +485,7 @@ namespace librealsense
                             << " injected" );
     }
 
-   void l500_options::change_gain( rs2_l500_visual_preset preset )
+    void l500_options::change_gain( rs2_l500_visual_preset preset )
     {
         switch( preset )
         {
@@ -554,6 +563,7 @@ namespace librealsense
             {
                 auto val = o.second->get_range().def;
                 o.second->set_with_no_signal( val );
+                o.second->set_manualy( false );
             }
         }
     }

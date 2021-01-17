@@ -80,7 +80,11 @@ namespace librealsense
             auto it = j.find(key);
             if (it != j.end())
             {
+                
                 float val = it.value();
+                if( o == RS2_OPTION_VISUAL_PRESET
+                    && (int)val == (int)RS2_L500_VISUAL_PRESET_DEFAULT )
+                    continue;
                 opt.set(val);
             }
 
