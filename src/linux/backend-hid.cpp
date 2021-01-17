@@ -666,7 +666,7 @@ namespace librealsense
 
             std::unique_ptr<int, std::function<void(int*)> > fd(
                         new int (_fd = open(iio_read_device_path.str().c_str(), O_RDONLY | O_NONBLOCK)),
-                        [&](int* d){ if (d && (*d)) { _fd = ::close(*d);}});
+                        [&](int* d){ if (d && (*d)) { _fd = ::close(*d); } delete d; });
 
             if (!(*fd > 0))
                 throw linux_backend_exception("open() failed with all retries!");
