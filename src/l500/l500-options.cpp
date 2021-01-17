@@ -183,12 +183,16 @@ namespace librealsense
             resolution_option->add_observer( [&]( float ) {
                 update_defaults();
 
-                auto p = calc_preset_from_controls();
-                if( p != RS2_L500_VISUAL_PRESET_CUSTOM )
-                    _preset->set_value( (float)p );
+                auto curr_preset = ( rs2_l500_visual_preset )(int)_preset->query();
+                if( curr_preset != RS2_L500_VISUAL_PRESET_AUTOMATIC )
+                {
+                    auto p = calc_preset_from_controls();
+                    if( p != RS2_L500_VISUAL_PRESET_CUSTOM )
+                        _preset->set_value( (float)p );
 
-                set_preset_controls_to_defaults();
-                change_laser_power( p );
+                    set_preset_controls_to_defaults();
+                    change_laser_power( p );
+                }
             } );
 
 
@@ -405,18 +409,15 @@ namespace librealsense
                     { { RS2_DIGITAL_GAIN_LOW, def_laser }, RS2_L500_VISUAL_PRESET_SHORT_RANGE },
                 };
 
-            auto gain = ( rs2_digital_gain )( int ) _digital_gain->query();
+            auto gain = ( rs2_digital_gain )(int)_digital_gain->query();
+            auto laser = _hw_options[RS2_OPTION_LASER_POWER]->query();
 
-            auto it = gain_and_laser_to_preset.find(
-                { gain, _hw_options[RS2_OPTION_LASER_POWER]->query() } );
+            auto it = gain_and_laser_to_preset.find( { gain, laser } );
 
             if( it != gain_and_laser_to_preset.end() )
             {
                 return it->second;
-            }
-            if( gain == RS2_DIGITAL_GAIN_AUTO )
-                return RS2_L500_VISUAL_PRESET_AUTOMATIC;
-
+            } 
             return RS2_L500_VISUAL_PRESET_CUSTOM;
         }
         catch( ... )
@@ -460,11 +461,14 @@ namespace librealsense
             if( opt == RS2_OPTION_DIGITAL_GAIN )
                 update_defaults();
 
+            // whan we moved to auto preset we set all controls to -1 
+            // so we have to set preset controls to defaults values now
+            auto curr_preset = ( rs2_l500_visual_preset )(int)_preset->query();
+            if( curr_preset == RS2_L500_VISUAL_PRESET_AUTOMATIC )
+               set_preset_controls_to_defaults();
+
             auto p = calc_preset_from_controls();
-            if( p != RS2_L500_VISUAL_PRESET_CUSTOM )
-                _preset->set_value( (float)p );
-            else
-                move_to_custom();
+            _preset->set_value( (float)p );
         }
         else
             throw wrong_api_call_sequence_exception(
@@ -515,8 +519,18 @@ namespace librealsense
         // be overriden automatically according to gain
         if( preset == RS2_L500_VISUAL_PRESET_AUTOMATIC )
         {
-            // todo: check if we are not in auto already
+            auto curr_preset = ( rs2_l500_visual_preset )(int)_preset->query();
+            if( curr_preset == RS2_L500_VISUAL_PRESET_AUTOMATIC )
+                return;
             reset_hw_controls();
+        }
+
+        // if the user set preset custom we should not change the controls default or current values
+        // the values should stay the same
+        if( preset == RS2_L500_VISUAL_PRESET_CUSTOM )
+        {
+            move_to_custom();
+            return;
         }
 
         // digital gain must be the first option that is set because it's
@@ -526,13 +540,10 @@ namespace librealsense
 
         update_defaults();
 
-        if( preset != RS2_L500_VISUAL_PRESET_CUSTOM && preset != RS2_L500_VISUAL_PRESET_AUTOMATIC )
+        if( preset != RS2_L500_VISUAL_PRESET_AUTOMATIC )
             set_preset_controls_to_defaults();
 
         change_laser_power( preset );
-        // todo
-        if( preset == RS2_L500_VISUAL_PRESET_CUSTOM )
-            move_to_custom();
     }
 
     void l500_options::set_preset_controls_to_defaults()
@@ -554,8 +565,11 @@ namespace librealsense
 
     void l500_options::reset_hw_controls()
     {
-        for (auto& o : _hw_options)
-            o.second->set_with_no_signal(-1);
+        for( auto & o : _hw_options )
+            if( ! o.second->is_read_only() )
+            {
+                o.second->set_with_no_signal( -1 );
+            }
     }
 
     void l500_options::set_max_laser()

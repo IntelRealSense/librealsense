@@ -3,13 +3,13 @@
 
 //#cmake: static!
 
-#include "../func-common.h"
-#include "presets-common.h"
+#include "../../func-common.h"
+#include "../presets-common.h"
 #include <l500/l500-options.h>
 
 using namespace rs2;
 
-TEST_CASE( "check defaults after gain changed", "[l500][live]" )
+TEST_CASE( "check currents after res changed", "[l500][live]" )
 {
     auto devices = find_devices_by_product_line_or_exit( RS2_PRODUCT_LINE_L500 );
     auto dev = devices[0];
@@ -18,16 +18,17 @@ TEST_CASE( "check defaults after gain changed", "[l500][live]" )
 
     auto depth_sens = dev.first< rs2::depth_sensor >();
 
-     for( auto gain = (float)RS2_DIGITAL_GAIN_HIGH; gain <= (float)RS2_DIGITAL_GAIN_LOW; gain++ )
-    {
-         depth_sens.set_option( RS2_OPTION_DIGITAL_GAIN, gain );
-     
+    for_each_preset_mode_combination( [&]( rs2_l500_visual_preset preset, rs2_sensor_mode mode ) {
+        REQUIRE_NOTHROW( depth_sens.set_option( RS2_OPTION_SENSOR_MODE, (float)mode ) );
+        REQUIRE_NOTHROW( depth_sens.set_option( RS2_OPTION_VISUAL_PRESET, (float)preset ) );
+        CHECK( depth_sens.get_option( RS2_OPTION_VISUAL_PRESET ) == (float)preset );
+
         for( auto mode = (float)RS2_SENSOR_MODE_VGA; mode < (float)RS2_SENSOR_MODE_COUNT; mode++ )
         {
             depth_sens.set_option( RS2_OPTION_SENSOR_MODE, mode );
             auto expected_default_values = get_defaults_from_fw( dev );
-            auto actual_default_values = get_defaults_from_lrs( depth_sens );
-            compare( actual_default_values, expected_default_values );
+            auto actual_currents_values = get_currents_from_lrs( depth_sens );
+            compare( actual_currents_values, expected_default_values );
         }
-    }
+    } );
 }

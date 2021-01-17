@@ -145,8 +145,8 @@ find_profile( rs2::depth_sensor depth_sens, rs2_stream stream, rs2_sensor_mode m
 
     std::map< rs2_sensor_mode, std::pair< uint32_t, uint32_t > > sensor_mode_to_resolution
         = { { { RS2_SENSOR_MODE_VGA }, { 640, 480 } },
-            { { RS2_SENSOR_MODE_XGA }, { 320, 240 } },
-            { { RS2_SENSOR_MODE_QVGA }, { 1024, 768 } } };
+            { { RS2_SENSOR_MODE_XGA }, { 1024, 768 } },
+            { { RS2_SENSOR_MODE_QVGA }, { 320, 240 } } };
 
 
     auto profile

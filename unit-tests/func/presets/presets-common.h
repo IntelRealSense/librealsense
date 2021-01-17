@@ -50,6 +50,7 @@ const std::map< rs2_l500_visual_preset, std::pair< rs2_digital_gain, presets_use
         { RS2_L500_VISUAL_PRESET_LOW_AMBIENT, { RS2_DIGITAL_GAIN_LOW, defualt_laser } },
         { RS2_L500_VISUAL_PRESET_SHORT_RANGE, { RS2_DIGITAL_GAIN_LOW, max_laser } } };
 
+// exept from RS2_L500_VISUAL_PRESET_AUTOMATIC and RS2_L500_VISUAL_PRESET_CUSTOM
 void for_each_preset_mode_combination(
     std::function< void( rs2_l500_visual_preset, rs2_sensor_mode ) > action )
 {
@@ -168,6 +169,20 @@ std::map< rs2_option, float > get_defaults_from_lrs( rs2::depth_sensor & depth_s
     return option_to_defaults;
 }
 
+std::map< rs2_option, float > get_currents_from_lrs( rs2::depth_sensor & depth_sens )
+{
+    std::map< rs2_option, float > option_to_defaults;
+
+    for( auto op : option_to_code )
+    {
+        REQUIRE( depth_sens.supports( op.first ) );
+        option_range range;
+        REQUIRE_NOTHROW( range = depth_sens.get_option_range( op.first ) );
+        option_to_defaults[op.first] = range.def;
+    }
+    return option_to_defaults;
+}
+
 void compare( const std::map< rs2_option, float > & first,
               const std::map< rs2_option, float > & second )
 {
@@ -245,9 +260,22 @@ void check_presets_values( const rs2::sensor & sens,
 {
     REQUIRE( sens.supports( RS2_OPTION_VISUAL_PRESET ) );
 
-    for_each_preset_mode_combination( [&]( rs2_l500_visual_preset preset, rs2_sensor_mode mode ) {
-        check_preset_values( sens, preset, mode, preset_to_expected_values[{ preset, mode }] );
+    for_each_preset_mode_combination( [&]( rs2_l500_visual_preset from_preset,
+                                           rs2_sensor_mode from_mode ) {
+        REQUIRE_NOTHROW( sens.set_option( RS2_OPTION_SENSOR_MODE, (float)from_mode  ) );
+        REQUIRE_NOTHROW( sens.set_option( RS2_OPTION_VISUAL_PRESET, (float)from_preset ) );
+        CHECK( sens.get_option( RS2_OPTION_VISUAL_PRESET ) == (float)from_preset );
+
+        for_each_preset_mode_combination( [&]( rs2_l500_visual_preset to_preset,
+                                               rs2_sensor_mode to_mode ) {
+                check_preset_values( sens,
+                                     to_preset,
+                                     to_mode,
+                                     preset_to_expected_values[{ to_preset, to_mode }] );
+        } );
     } );
+    
+
 }
 
 void check_presets_values_while_streaming(
@@ -280,4 +308,14 @@ void check_preset_is_equal_to( rs2::depth_sensor & depth_sens, rs2_l500_visual_p
         CHECK( preset_to_gain_and_laser[preset].first
                == preset_to_gain_and_laser[curr_preset].first );
     }
+}
+
+void build_new_device_and_do( std::function< void( rs2::depth_sensor & depth_sens ) > action )
+{
+    auto devices = find_devices_by_product_line_or_exit( RS2_PRODUCT_LINE_L500 );
+    auto dev = devices[0];
+
+    auto depth_sens = dev.first< rs2::depth_sensor >();
+
+    action( depth_sens );
 }

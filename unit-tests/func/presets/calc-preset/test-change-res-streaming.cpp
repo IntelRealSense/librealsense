@@ -3,8 +3,8 @@
 
 //#cmake: static!
 
-#include "../func-common.h"
-#include "presets-common.h"
+#include "../../func-common.h"
+#include "../presets-common.h"
 #include <l500/l500-options.h>
 
 using namespace rs2;
@@ -27,10 +27,18 @@ TEST_CASE( "calc preset after change resolution while streaming", "[l500][live]"
         auto confidence = find_profile( depth_sens, RS2_STREAM_CONFIDENCE, mode );
 
         do_while_streaming( depth_sens, { depth, ir, confidence }, [&]() {
-            set_option_values( depth_sens, expected_preset_values[{ preset, mode }] );
+            REQUIRE_NOTHROW( depth_sens.set_option( RS2_OPTION_SENSOR_MODE, (float)mode ) );
 
-            REQUIRE( depth_sens.supports( RS2_OPTION_SENSOR_MODE ) );
-            REQUIRE_NOTHROW( depth_sens.set_option( RS2_OPTION_SENSOR_MODE, float( mode ) ) );
+            // set first the digital gain value and then the hw monitor controls because this unit
+            // test checks the calculation of preset after change hw controls
+            auto gain_value = expected_preset_values[{ preset, mode }][RS2_OPTION_DIGITAL_GAIN];
+            REQUIRE_NOTHROW( depth_sens.set_option( RS2_OPTION_DIGITAL_GAIN, gain_value ) );
+
+            // erase the digital gain from map after setting it
+            expected_preset_values[{ preset, mode }].erase(
+                expected_preset_values[{ preset, mode }].find( RS2_OPTION_DIGITAL_GAIN ) );
+
+            set_option_values( depth_sens, expected_preset_values[{ preset, mode }] );
 
             CAPTURE( preset );
             CAPTURE( mode );

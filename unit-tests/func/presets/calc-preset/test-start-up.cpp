@@ -3,21 +3,12 @@
 
 //#cmake: static!
 
-#include "../func-common.h"
-#include "presets-common.h"
+#include "../../func-common.h"
+#include "../presets-common.h"
 #include <l500/l500-options.h>
 
 using namespace rs2;
 
-void build_new_device_and_do( std::function< void( rs2::depth_sensor & depth_sens ) > action )
-{
-    auto devices = find_devices_by_product_line_or_exit( RS2_PRODUCT_LINE_L500 );
-    auto dev = devices[0];
-
-    auto depth_sens = dev.first< rs2::depth_sensor >();
-
-    action( depth_sens );
-}
 
 TEST_CASE( "calc preset from controls on start up", "[l500][live]" )
 {
@@ -34,7 +25,7 @@ TEST_CASE( "calc preset from controls on start up", "[l500][live]" )
 
     exit_if_fw_version_is_under( dev, MIN_GET_DEFAULT_FW_VERSION );
 
-    for( auto i = (int)RS2_L500_VISUAL_PRESET_NO_AMBIENT; i < (int)RS2_L500_VISUAL_PRESET_COUNT;
+    for( auto i = (int)RS2_L500_VISUAL_PRESET_NO_AMBIENT; i < (int)RS2_L500_VISUAL_PRESET_AUTOMATIC;
          i++ )
     {
         // this will create an object of L500 device set it preset and destroy it
