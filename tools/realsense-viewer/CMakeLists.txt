@@ -200,12 +200,12 @@ source_group("EasyLogging++" FILES ${ELPP_FILES})
 source_group("SW-Update" FILES ${SW_UPDATE_FILES})
 
 include_directories(
-    ../../common
-    ../../third-party
-    ../../third-party/tinyfiledialogs
+    ${CMAKE_SOURCE_DIR}/common
+    ${CMAKE_SOURCE_DIR}/third-party
+    ${CMAKE_SOURCE_DIR}/third-party/tinyfiledialogs
     ${GLFW_SOURCE_DIR}/include
-    ../../third-party/imgui
-    ../../third-party/glad
+    ${CMAKE_SOURCE_DIR}/third-party/imgui
+    ${CMAKE_SOURCE_DIR}/third-party/glad
     )
 
 
@@ -234,8 +234,6 @@ target_link_libraries(realsense-viewer ${DEPENDENCIES} ${RS_VIEWER_LIBS})
 set_target_properties (realsense-viewer PROPERTIES
     FOLDER Tools
 )
-
-target_include_directories(realsense-viewer PRIVATE ../../src)
 
 install(
     TARGETS

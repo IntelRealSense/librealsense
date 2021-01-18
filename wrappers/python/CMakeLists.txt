@@ -137,7 +137,7 @@ set_target_properties(pybackend2 PROPERTIES
                         VERSION     ${REALSENSE_VERSION_STRING}
                         SOVERSION   ${REALSENSE_VERSION_MAJOR})
 set_target_properties(pybackend2 PROPERTIES FOLDER Wrappers/python)
-include_directories(pybackend2 ../../include)
+include_directories(pybackend2 ${CMAKE_SOURCE_DIR}/include)
 
 write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/pyrealsense2ConfigVersion.cmake"
     VERSION ${REALSENSE_VERSION_STRING} COMPATIBILITY AnyNewerVersion)
@@ -168,8 +168,7 @@ install(FILES "${CMAKE_BINARY_DIR}/wrappers/python/pyrealsense2ConfigVersion.cma
     DESTINATION ${CMAKECONFIG_PY_INSTALL_DIR}
 )
 
-target_include_directories(pybackend2 PRIVATE ../../src)
-target_include_directories(pyrealsense2 PRIVATE ../../src)
+include_directories(${CMAKE_SOURCE_DIR})
 
 if(BUILD_NETWORK_DEVICE)
     pybind11_add_module(pyrealsense2-net SHARED pyrs_net.cpp)

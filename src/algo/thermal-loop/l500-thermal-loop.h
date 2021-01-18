@@ -4,7 +4,7 @@
 #pragma once
 
 #include <vector>
-#include "../../types.h"
+#include <src/types.h>
 #include "thermal-calibration-table-interface.h"
 
 namespace librealsense {

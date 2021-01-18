@@ -2,7 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "l500-thermal-loop.h"
-#include "../../l500/l500-private.h"
+#include <src/l500/l500-private.h>
 
 namespace librealsense {
 namespace algo {
