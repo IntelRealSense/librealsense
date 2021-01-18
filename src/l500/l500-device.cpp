@@ -129,7 +129,7 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
 
         // If FW supportes the SET_AGE command, we update the age of the device in weeks to aid projection of aging
-        if( ( _fw_version >= firmware_version( "1.5.3.0" ) ) )
+        if( ( _fw_version >= firmware_version( "1.5.4.0" ) ) )
         {
             try
             {
