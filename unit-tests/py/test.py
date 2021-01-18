@@ -72,7 +72,10 @@ def print_stack():
     """
     Function for printing the current call stack. Used when an assertion fails
     """
+    test_py_path = "librealsense" + os.sep + "unit-tests" + os.sep + "py" + os.sep + "test.py"
     for line in traceback.format_stack():
+        if test_py_path in line: # avoid printing the lines of calling to this function
+            continue
         print(line)
 
 """
