@@ -263,21 +263,24 @@ namespace librealsense
 
         static void rolloutHandler(const char* filename, std::size_t size)
         {
-            char backup_name[256];
             std::string file_str(filename);
-            std::string file_name = file_str.substr(0, file_str.find_last_of('.'));
-            sprintf_s(backup_name, sizeof(backup_name), "%s-%s.log", file_name.c_str(), "backup");
-            std::string tmp = file_name + "_tmp.log";
-            rename(backup_name, tmp.c_str());
-            rename(filename, backup_name);
-            rename(tmp.c_str(), filename);
+            std::string old_file = file_str + ".old";
+            const char* old_filename = old_file.c_str();
+            std::ifstream exists(old_filename);
+            if (exists.is_open()) {
+                exists.close();
+                std::remove(old_filename);
+            }
+            rename(filename, old_filename);
         }
 
-        void enable_rolling_files(std::size_t max_size )
+        //enable rolling files upon reaching max_size
+        //@param max_size - in bytes.
+        void enable_rolling_files(std::size_t max_size)
         {
-            std::string size = std::to_string(max_size);
-            el::Loggers::addFlag( el::LoggingFlag::StrictLogFileSizeCheck );
-            el::Loggers::reconfigureLogger( log_id, el::ConfigurationType::MaxLogFileSize, size.c_str());
+            std::string size = std::to_string(max_size/2);
+            el::Loggers::addFlag(el::LoggingFlag::StrictLogFileSizeCheck);
+            el::Loggers::reconfigureLogger(log_id, el::ConfigurationType::MaxLogFileSize, size.c_str());
             el::Helpers::installPreRollOutCallback(rolloutHandler);
         }
     };
