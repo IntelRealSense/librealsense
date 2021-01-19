@@ -26,6 +26,8 @@
 #include "ac-trigger.h"
 #include "algo/depth-to-rgb-calibration/debug.h"
 #include "../common/utilities/time/periodic_timer.h"
+#include "../common/utilities/time/work_week.h"
+#include "../common/utilities/time/l500/get-mfr-ww.h"
 
 
 
@@ -127,6 +129,24 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "L500");
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
+
+        // If FW supportes the SET_AGE command, we update the age of the device in weeks to aid projection of aging
+        if( ( _fw_version >= firmware_version( "1.5.4.0" ) ) )
+        {
+            try
+            {
+                auto manufacture
+                    = utilities::time::l500::get_manufacture_work_week( optic_serial );
+                auto age
+                    = utilities::time::get_work_weeks_since( manufacture );
+                command cmd( fw_cmd::SET_AGE, (uint8_t)age );
+                _hw_monitor->send( cmd );
+            }
+            catch( ... )
+            {
+                LOG_ERROR( "Failed to set units age" );
+            }
+        }
 
         configure_depth_options();
     }
@@ -231,14 +251,23 @@ namespace librealsense
                 {
                     if( status == RS2_CALIBRATION_SUCCESSFUL )
                     {
+                        rs2_dsm_params new_dsm_params = _autocal->get_dsm_params();
+                        // We update the age of the device in weeks and the time between factory
+                        // calibration and last AC to aid projection
+                        auto manufacture = utilities::time::l500::get_manufacture_work_week(
+                            get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) );
+                        auto age
+                            = utilities::time::get_work_weeks_since( manufacture );
+                        new_dsm_params.weeks_since_calibration = (uint8_t)age;
+                        new_dsm_params.ac_weeks_since_calibaration = (uint8_t)age;
+
                         // We override the DSM params first, because it can throw if the parameters
                         // are exceeding spec! This may throw!!
-                        get_depth_sensor().override_dsm_params( _autocal->get_dsm_params() );
-                     
+                        get_depth_sensor().override_dsm_params( new_dsm_params );
                         auto & color_sensor = *get_color_sensor();
                         color_sensor.override_intrinsics( _autocal->get_raw_intrinsics() );
                         color_sensor.override_extrinsics( _autocal->get_extrinsics() );
-                        color_sensor.set_k_thermal_intrinsics(_autocal->get_thermal_intrinsics());
+                        color_sensor.set_k_thermal_intrinsics( _autocal->get_thermal_intrinsics() );
                     }
                     notify_of_calibration_change( status );
                 } );

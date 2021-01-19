@@ -72,7 +72,8 @@ namespace librealsense
             RGB_INTRINSIC_GET           = 0x81,
             RGB_EXTRINSIC_GET           = 0x82,
             FALL_DETECT_ENABLE          = 0x9D, // Enable (by default) free-fall sensor shutoff (0=disable; 1=enable)
-            GET_SPECIAL_FRAME           = 0xA0  // Request auto-calibration (0) special frames (#)
+            GET_SPECIAL_FRAME           = 0xA0, // Request auto-calibration (0) special frames (#)
+            SET_AGE                     = 0x5B  // Sets the age of the unit in weeks
         };
 
 #pragma pack(push, 1)
@@ -143,14 +144,14 @@ namespace librealsense
 
         // Write a table to firmware
         template< typename T >
-        void write_fw_table( hw_monitor& hwm, uint16_t const table_id, T const & table )
+        void write_fw_table( hw_monitor& hwm, uint16_t const table_id, T const & table, uint16_t const version = 0x0100 )
         {
             command cmd( fw_cmd::WRITE_TABLE, 0 );
             cmd.data.resize( sizeof( table_header ) + sizeof( table ) );
 
             table_header * h = (table_header *)cmd.data.data();
-            h->major = 1;
-            h->minor = 0;
+            h->major = version >> 8;
+            h->minor = version & 0xFF;
             h->table_id = table_id;
             h->table_size = sizeof( T );
             h->reserved = 0xFFFFFFFF;
