@@ -533,7 +533,7 @@ namespace librealsense
         return {};
     }
 
-    ds::d400_caps ds5_device::parse_device_capabilities(const uint16_t pid) const
+    ds::d400_caps ds5_device::parse_device_capabilities() const
     {
         using namespace ds;
         std::array<unsigned char,HW_MONITOR_BUFFER_SIZE> gvd_buf;
@@ -552,12 +552,12 @@ namespace librealsense
                 val |= d400_caps::CAP_BMI_055;
             else if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI085_ID_ACC)
                 val |= d400_caps::CAP_BMI_085;
-            else if (hid_bmi_055_pid.end() != hid_bmi_055_pid.find(pid))
+            else if (hid_bmi_055_pid.end() != hid_bmi_055_pid.find(_pid))
                 val |= d400_caps::CAP_BMI_055;
-            else if (hid_bmi_085_pid.end() != hid_bmi_085_pid.find(pid))
+            else if (hid_bmi_085_pid.end() != hid_bmi_085_pid.find(_pid))
                 val |= d400_caps::CAP_BMI_085;
             else
-                LOG_WARNING("The IMU sensor is undefined for PID " << std::hex << pid << " and imu_chip_id: " << gvd_buf[imu_acc_chip_id] << std::dec);
+                LOG_WARNING("The IMU sensor is undefined for PID " << std::hex << _pid << " and imu_chip_id: " << gvd_buf[imu_acc_chip_id] << std::dec);
         }
         if (0xFF != (gvd_buf[fisheye_sensor_lb] & gvd_buf[fisheye_sensor_hb]))
             val |= d400_caps::CAP_FISHEYE_SENSOR;
@@ -611,7 +611,7 @@ namespace librealsense
           _depth_stream(new stream(RS2_STREAM_DEPTH)),
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
           _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),
-          _color_stream(new stream(RS2_STREAM_COLOR))
+          _color_stream(nullptr)
     {
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         init(ctx, group);
@@ -650,11 +650,6 @@ namespace librealsense
             return ext;
         });
 
-        _color_calib_table_raw = [this]() { return get_raw_calibration_table(rgb_calibration_id); };
-        _color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>([this]() { return from_pose(get_color_stream_extrinsic(*_color_calib_table_raw)); });
-        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
-        register_stream_to_extrinsic_group(*_color_stream, 0);
-
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_left_ir_stream);
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_right_ir_stream, _left_right_extrinsics);
 
@@ -665,8 +660,8 @@ namespace librealsense
         _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
         _new_calib_table_raw = [this]() { return get_new_calibration_table(); };
 
-        auto pid = group.uvc_devices.front().pid;
-        std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(pid)) ? rs400_sku_names.at(pid) : "RS4xx";
+        _pid = group.uvc_devices.front().pid;
+        std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(_pid)) ? rs400_sku_names.at(_pid) : "RS4xx";
 
         std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
         _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
@@ -680,7 +675,7 @@ namespace librealsense
 
         _recommended_fw_version = firmware_version(D4XX_RECOMMENDED_FIRMWARE_VERSION);
         if (_fw_version >= firmware_version("5.10.4.0"))
-            _device_capabilities = parse_device_capabilities(pid);
+            _device_capabilities = parse_device_capabilities();
 
         auto& depth_sensor = get_depth_sensor();
         auto& raw_depth_sensor = get_raw_depth_sensor();
@@ -718,13 +713,9 @@ namespace librealsense
             []() {return std::make_shared<y12i_to_y16y16>(); }
         );
 
-        //depth_sensor.register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_COLOR));
-        depth_sensor.register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
-        depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_COLOR));
+        auto pid_hex_str = hexify(_pid);
 
-        auto pid_hex_str = hexify(pid);
-
-        if ((pid == RS416_PID || pid == RS416_RGB_PID) && _fw_version >= firmware_version("5.12.0.1"))
+        if ((_pid == RS416_PID || _pid == RS416_RGB_PID) && _fw_version >= firmware_version("5.12.0.1"))
         {
             depth_sensor.register_option(RS2_OPTION_HARDWARE_PRESET,
                 std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_HARDWARE_PRESET,
@@ -748,7 +739,7 @@ namespace librealsense
 #ifdef HWM_OVER_XU
             //if hw_monitor was created by usb replace it with xu
             // D400_IMU will remain using USB interface due to HW limitations
-            if ((group.usb_devices.size() > 0) && (RS400_IMU_PID != pid))
+            if ((group.usb_devices.size() > 0) && (RS400_IMU_PID != _pid))
             {
                 _hw_monitor = std::make_shared<hw_monitor>(
                     std::make_shared<locked_transfer>(
