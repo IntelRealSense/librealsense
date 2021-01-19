@@ -93,7 +93,7 @@ macro(global_target_config)
 
     target_include_directories(${LRS_TARGET}
         PRIVATE
-            src
+            ${CMAKE_SOURCE_DIR}
             ${ROSBAG_HEADER_DIRS}
             ${BOOST_INCLUDE_PATH}
             ${LZ4_INCLUDE_PATH}

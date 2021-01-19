@@ -7,7 +7,7 @@
 #include "frame-data.h"
 #include <librealsense2/h/rs_types.h>
 
-#include <types.h>  // librealsense types (intr/extr)
+#include <src/types.h>  // librealsense types (intr/extr)
 
 namespace librealsense {
 namespace algo {

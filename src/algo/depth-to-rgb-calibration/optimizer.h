@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <vector>
 #include <map>
-#include <types.h>
+#include <src/types.h>
 
 #include "calibration.h"
 #include "coeffs.h"
