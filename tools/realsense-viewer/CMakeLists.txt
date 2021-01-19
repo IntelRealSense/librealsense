@@ -8,7 +8,7 @@ project(RealsenseToolsRealSenseViewer)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-include_directories(${CMAKE_BINARY_DIR})
+include_directories(${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR})
 
 if(${BUILD_EASYLOGGINGPP})
 set( ELPP_DIR ../../third-party/easyloggingpp/src )
@@ -234,8 +234,6 @@ target_link_libraries(realsense-viewer ${DEPENDENCIES} ${RS_VIEWER_LIBS})
 set_target_properties (realsense-viewer PROPERTIES
     FOLDER Tools
 )
-
-target_include_directories(realsense-viewer PRIVATE ../../src)
 
 install(
     TARGETS

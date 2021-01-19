@@ -3,9 +3,9 @@
 
 #include <jni.h>
 #include "error.h"
-#include "../../../include/librealsense2/rs.h"
-#include "../../../include/librealsense2/rs_advanced_mode.h"
-#include "../../api.h"
+#include <include/librealsense2/rs.h>
+#include <include/librealsense2/rs_advanced_mode.h>
+#include <src/api.h>
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_Device_nToggleAdvancedMode(JNIEnv *env, jclass type,

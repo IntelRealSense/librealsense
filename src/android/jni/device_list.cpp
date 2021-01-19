@@ -4,7 +4,7 @@
 #include <jni.h>
 #include "error.h"
 
-#include "../../../include/librealsense2/rs.h"
+#include <include/librealsense2/rs.h>
 
 extern "C" JNIEXPORT jint JNICALL
 Java_com_intel_realsense_librealsense_DeviceList_nGetDeviceCount(JNIEnv *env, jclass type,

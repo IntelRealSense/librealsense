@@ -3,8 +3,8 @@
 
 #include <jni.h>
 #include "error.h"
-#include "../../../include/librealsense2/rs.h"
-#include "../../../include/librealsense2/h/rs_pipeline.h"
+#include <include/librealsense2/rs.h>
+#include <include/librealsense2/h/rs_pipeline.h>
 
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_intel_realsense_librealsense_Pipeline_nCreate(JNIEnv *env, jclass type,

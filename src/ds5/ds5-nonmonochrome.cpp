@@ -7,17 +7,17 @@
 #include <iterator>
 #include <cstddef>
 
-#include "device.h"
-#include "context.h"
-#include "image.h"
-#include "metadata-parser.h"
+#include <src/device.h>
+#include <src/context.h>
+#include <src/image.h>
+#include <src/metadata-parser.h>
 
 #include "ds5-nonmonochrome.h"
 #include "ds5-private.h"
 #include "ds5-options.h"
 #include "ds5-timestamp.h"
-#include "proc/color-formats-converter.h"
-#include "proc/depth-formats-converter.h"
+#include <src/proc/color-formats-converter.h>
+#include <src/proc/depth-formats-converter.h>
 
 namespace librealsense
 {

@@ -1,11 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "core/advanced_mode.h"
-#include "ds5/ds5-active.h"
-#include "ds5/ds5-nonmonochrome.h"
+#include <src/core/advanced_mode.h>
+#include <src/ds5/ds5-active.h>
+#include <src/ds5/ds5-nonmonochrome.h>
 #include "json_loader.hpp"
-#include "ds5/ds5-color.h"
+#include <src/ds5/ds5-color.h>
 
 namespace librealsense
 {

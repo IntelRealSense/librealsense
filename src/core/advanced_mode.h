@@ -2,14 +2,14 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "ds5/ds5-private.h"
-#include "hw-monitor.h"
+#include <src/ds5/ds5-private.h>
+#include <src/hw-monitor.h>
 #include "streaming.h"
-#include "option.h"
+#include <src/option.h>
 #define RS400_ADVANCED_MODE_HPP
-#include "ds5/advanced_mode/presets.h"
-#include "../../include/librealsense2/h/rs_advanced_mode_command.h"
-#include "serializable-interface.h"
+#include <src/ds5/advanced_mode/presets.h>
+#include <include/librealsense2/h/rs_advanced_mode_command.h>
+#include <src/serializable-interface.h>
 
 #undef RS400_ADVANCED_MODE_HPP
 

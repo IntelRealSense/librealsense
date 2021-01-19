@@ -4,8 +4,8 @@
 #include <jni.h>
 #include "error.h"
 #include <fstream>
-#include "../../../include/librealsense2/h/rs_internal.h"
-#include "../../../common/parser.hpp"   //needed for auto completion in nGetCommands
+#include <include/librealsense2/h/rs_internal.h>
+#include <common/parser.hpp>   //needed for auto completion in nGetCommands
 
 
 extern "C"

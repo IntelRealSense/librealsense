@@ -3,7 +3,7 @@
 
 #include <jni.h>
 #include "error.h"
-#include "../../../include/librealsense2/rs.h"
+#include <include/librealsense2/rs.h>
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_FrameSet_nAddRef(JNIEnv *env, jclass type, jlong handle) {

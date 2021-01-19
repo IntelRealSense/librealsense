@@ -9,9 +9,9 @@
 #include <vector>
 #include <iterator>
 
-#include "device.h"
-#include "context.h"
-#include "image.h"
+#include <src/device.h>
+#include <src/context.h>
+#include <src/image.h>
 
 namespace librealsense
 {

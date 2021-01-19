@@ -3,7 +3,7 @@
 
 #include <jni.h>
 #include "error.h"
-#include "../../../include/librealsense2/h/rs_internal.h"
+#include <include/librealsense2/h/rs_internal.h>
 
 // Fw Logger methods
 

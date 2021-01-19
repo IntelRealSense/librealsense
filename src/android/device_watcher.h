@@ -2,9 +2,9 @@
 /* Copyright(c) 2019 Intel Corporation. All Rights Reserved. */
 #pragma once
 
-#include "../types.h"
-#include "../backend.h"
-#include "../usb/usb-device.h"
+#include <src/types.h>
+#include <src/backend.h>
+#include <src/usb/usb-device.h>
 
 #include <memory>
 

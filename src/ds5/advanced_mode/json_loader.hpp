@@ -12,9 +12,9 @@
 #include <string>
 #include <iomanip>
 
-#include "../../../third-party/json.hpp"
+#include <third-party/json.hpp>
 #include <librealsense2/h/rs_advanced_mode_command.h>
-#include "types.h"
+#include <src/types.h>
 #include "presets.h"
 
 namespace librealsense

@@ -8,19 +8,19 @@
 #include <cstddef>
 #include <functional>
 
-#include "device.h"
-#include "context.h"
-#include "image.h"
-#include "metadata-parser.h"
-#include "global_timestamp_reader.h"
-#include "environment.h"
+#include <src/device.h>
+#include <src/context.h>
+#include <src/image.h>
+#include <src/metadata-parser.h>
+#include <src/global_timestamp_reader.h>
+#include <src/environment.h>
 
 #include "ds5-color.h"
 #include "ds5-private.h"
 #include "ds5-options.h"
 #include "ds5-timestamp.h"
 
-#include "proc/color-formats-converter.h"
+#include <src/proc/color-formats-converter.h>
 
 namespace librealsense
 {

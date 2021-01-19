@@ -7,7 +7,7 @@
 
 #include <map>
 
-#include "stream.h"
+#include <src/stream.h>
 
 namespace librealsense
 {

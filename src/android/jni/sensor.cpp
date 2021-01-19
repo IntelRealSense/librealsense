@@ -6,7 +6,7 @@
 #include <vector>
 #include "error.h"
 
-#include "../../../include/librealsense2/rs.h"
+#include <include/librealsense2/rs.h>
 
 extern "C"
 JNIEXPORT void JNICALL

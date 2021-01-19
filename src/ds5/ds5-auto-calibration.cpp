@@ -2,7 +2,7 @@
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
 #include "ds5-auto-calibration.h"
-#include "../third-party/json.hpp"
+#include <third-party/json.hpp>
 #include "ds5-device.h"
 #include "ds5-private.h"
 

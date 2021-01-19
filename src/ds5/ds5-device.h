@@ -4,15 +4,15 @@
 #pragma once
 
 #include "ds5-private.h"
-
-#include "algo.h"
-#include "error-handling.h"
-#include "core/debug.h"
-#include "core/advanced_mode.h"
-#include "device.h"
-#include "global_timestamp_reader.h"
-#include "fw-update/fw-update-device-interface.h"
 #include "ds5-auto-calibration.h"
+
+#include <src/algo.h>
+#include <src/error-handling.h>
+#include <src/core/debug.h>
+#include <src/core/advanced_mode.h>
+#include <src/device.h>
+#include <src/global_timestamp_reader.h>
+#include <src/fw-update/fw-update-device-interface.h>
 
 namespace librealsense
 {

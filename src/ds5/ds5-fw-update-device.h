@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "fw-update/fw-update-device.h"
+#include <src/fw-update/fw-update-device.h>
 
 namespace librealsense
 {

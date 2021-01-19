@@ -8,7 +8,7 @@ project(RealsenseToolsDepthQuality)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-include_directories(${CMAKE_BINARY_DIR})
+include_directories(${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR})
 
 if(${BUILD_EASYLOGGINGPP})
 set( ELPP_DIR ../../third-party/easyloggingpp/src )
@@ -124,8 +124,6 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     set_target_properties (rs-depth-quality PROPERTIES
         FOLDER Tools
     )
-
-    target_include_directories(rs-depth-quality PRIVATE ../../src)
 
     install(
         TARGETS

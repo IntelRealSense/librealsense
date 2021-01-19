@@ -4,10 +4,10 @@
 #include <thread>
 #include <sstream>
 
-#include "types.h"
+#include <src/types.h>
 #include <librealsense2/rs_advanced_mode.h>
-#include "core/advanced_mode.h"
-#include "api.h"
+#include <src/core/advanced_mode.h>
+#include <src/api.h>
 
 #define STRCASE(T, X) case RS2_##T##_##X: {\
         static std::string s##T##_##X##_str = make_less_screamy(#X);\

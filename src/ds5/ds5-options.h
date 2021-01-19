@@ -5,9 +5,9 @@
 
 #include "ds5-private.h"
 
-#include "algo.h"
-#include "error-handling.h"
-#include "../hdr-config.h"
+#include <src/algo.h>
+#include <src/error-handling.h>
+#include <src/hdr-config.h>
 
 namespace librealsense
 {

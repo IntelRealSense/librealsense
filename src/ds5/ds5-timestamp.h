@@ -5,8 +5,8 @@
 
 #include "ds5-private.h"
 
-#include "algo.h"
-#include "error-handling.h"
+#include <src/algo.h>
+#include <src/error-handling.h>
 
 namespace librealsense
 {

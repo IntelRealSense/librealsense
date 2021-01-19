@@ -12,11 +12,11 @@
 
 #include "ds5-timestamp.h"
 #include "ds5-options.h"
-#include "stream.h"
-#include "proc/motion-transform.h"
-#include "proc/auto-exposure-processor.h"
+#include <src/stream.h>
+#include <src/proc/motion-transform.h>
+#include <src/proc/auto-exposure-processor.h>
 
-#include "../l500/l500-private.h"
+#include <src/l500/l500-private.h>
 
 using namespace librealsense;
 namespace librealsense

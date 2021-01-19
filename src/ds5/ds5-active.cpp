@@ -7,10 +7,10 @@
 #include <iterator>
 #include <cstddef>
 
-#include "device.h"
-#include "context.h"
-#include "image.h"
-#include "metadata-parser.h"
+#include <src/device.h>
+#include <src/context.h>
+#include <src/image.h>
+#include <src/metadata-parser.h>
 
 #include "ds5-active.h"
 #include "ds5-private.h"

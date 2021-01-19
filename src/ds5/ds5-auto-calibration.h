@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "auto-calibrated-device.h"
-#include "../core/advanced_mode.h"
+#include <src/auto-calibrated-device.h>
+#include <src/core/advanced_mode.h>
 
 namespace librealsense
 {

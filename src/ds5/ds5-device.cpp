@@ -8,39 +8,39 @@
 #include <cstddef>
 #include <string>
 
-#include "device.h"
-#include "context.h"
-#include "image.h"
-#include "metadata-parser.h"
+#include <src/device.h>
+#include <src/context.h>
+#include <src/image.h>
+#include <src/metadata-parser.h>
 
 #include "ds5-device.h"
 #include "ds5-private.h"
 #include "ds5-options.h"
 #include "ds5-timestamp.h"
-#include "stream.h"
-#include "environment.h"
+#include <src/stream.h>
+#include <src/environment.h>
 #include "ds5-color.h"
 #include "ds5-nonmonochrome.h"
 
-#include "proc/decimation-filter.h"
-#include "proc/threshold.h"
-#include "proc/disparity-transform.h"
-#include "proc/spatial-filter.h"
-#include "proc/colorizer.h"
-#include "proc/temporal-filter.h"
-#include "proc/y8i-to-y8y8.h"
-#include "proc/y12i-to-y16y16.h"
-#include "proc/color-formats-converter.h"
-#include "proc/syncer-processing-block.h"
-#include "proc/hole-filling-filter.h"
-#include "proc/depth-formats-converter.h"
-#include "proc/depth-decompress.h"
-#include "proc/hdr-merge.h"
-#include "proc/sequence-id-filter.h"
-#include "hdr-config.h"
-#include "../common/fw/firmware-version.h"
-#include "fw-update/fw-update-unsigned.h"
-#include "../third-party/json.hpp"
+#include <src/proc/decimation-filter.h>
+#include <src/proc/threshold.h>
+#include <src/proc/disparity-transform.h>
+#include <src/proc/spatial-filter.h>
+#include <src/proc/colorizer.h>
+#include <src/proc/temporal-filter.h>
+#include <src/proc/y8i-to-y8y8.h>
+#include <src/proc/y12i-to-y16y16.h>
+#include <src/proc/color-formats-converter.h>
+#include <src/proc/syncer-processing-block.h>
+#include <src/proc/hole-filling-filter.h>
+#include <src/proc/depth-formats-converter.h>
+#include <src/proc/depth-decompress.h>
+#include <src/proc/hdr-merge.h>
+#include <src/proc/sequence-id-filter.h>
+#include <src/hdr-config.h>
+#include <common/fw/firmware-version.h>
+#include <src/fw-update/fw-update-unsigned.h>
+#include <third-party/json.hpp>
 
 namespace librealsense
 {

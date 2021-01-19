@@ -3,7 +3,7 @@
 #pragma once
 
 #include "options.h"
-#include "types.h"
+#include <src/types.h>
 #include "info.h"
 #include <functional>
 

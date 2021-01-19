@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../rsusb-backend/rsusb-backend.h"
+#include <src/rsusb-backend/rsusb-backend.h>
 
 namespace librealsense
 {
