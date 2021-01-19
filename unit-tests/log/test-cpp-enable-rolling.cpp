@@ -3,26 +3,29 @@
 
 //#cmake:add-file log-common.h
 #include "log-common.h"
-
+#include<fstream>
 
 TEST_CASE("ENABLE ROLLING C++ LOGGER", "[log]") {
-    size_t n_callbacks = 0;
-    auto callback = [&](rs2_log_severity severity, rs2::log_message const& msg)
-    {
-        ++n_callbacks;
 
+    std::string log_filename = "rolling-log.log";
+    rs2::log_to_file(RS2_LOG_SEVERITY_INFO, log_filename.c_str());
 
-        TRACE(severity << ' ' << msg.filename() << '+' << msg.line_number() << ": " << msg.raw());
-    };
-
-    rs2::log_to_callback(RS2_LOG_SEVERITY_INFO, callback);
-    REQUIRE(!n_callbacks);
-    rs2::log_to_file(RS2_LOG_SEVERITY_INFO, "C:/Users/aegbaria/Documents/max-size.log");
-
-    rs2::enable_rolling_files( 1024 );
+    int max_size = 1024;
+    rs2::enable_rolling_files(max_size);
 
     for (int i = 0; i < 100; ++i)
         log_all();
 
-    n_callbacks = 2;
+    std::ifstream log_file(log_filename.c_str(), std::ios::binary);
+    log_file.seekg(0, std::ios::end);
+    int log_size = log_file.tellg();
+
+    std::string old_filename = log_filename + ".old";
+    std::ifstream old_file(old_filename.c_str(), std::ios::binary);
+    old_file.seekg(0, std::ios::end);
+    int old_size = old_file.tellg();
+
+    int size = log_size + old_size;
+    REQUIRE(size <= max_size);
+
 }

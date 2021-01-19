@@ -254,6 +254,7 @@ namespace librealsense
             if(el::Loggers::hasFlag(el::LoggingFlag::StrictLogFileSizeCheck))
             {
                 el::Loggers::removeFlag(el::LoggingFlag::StrictLogFileSizeCheck);
+                el::Loggers::reconfigureLogger(log_id, el::ConfigurationType::MaxLogFileSize, "0");
             }
 
             minimum_log_severity = RS2_LOG_SEVERITY_NONE;
@@ -261,24 +262,30 @@ namespace librealsense
             minimum_file_severity = RS2_LOG_SEVERITY_NONE;
         }
 
+        //Renames current log file to "log_name.log.old", after this function
+        //log file will be truncated and re-initiated.
         static void rolloutHandler(const char* filename, std::size_t size)
         {
             std::string file_str(filename);
             std::string old_file = file_str + ".old";
             const char* old_filename = old_file.c_str();
+
             std::ifstream exists(old_filename);
             if (exists.is_open()) {
                 exists.close();
                 std::remove(old_filename);
             }
+
             rename(filename, old_filename);
         }
 
-        //enable rolling files upon reaching max_size
-        //@param max_size - in bytes.
+        //Since log file will be truncated upon reaching max_size, MaxLogFileSize is configured to be half of the original max_size
+        //another file will be created in rolloutHandler that contains previous half.
+        //file directory should have permissions of removing/renaming files. 
+        //@param max_size max file size in bytes
         void enable_rolling_files(std::size_t max_size)
         {
-            std::string size = std::to_string(max_size/2);
+            std::string size = std::to_string( max_size/2 );
             el::Loggers::addFlag(el::LoggingFlag::StrictLogFileSizeCheck);
             el::Loggers::reconfigureLogger(log_id, el::ConfigurationType::MaxLogFileSize, size.c_str());
             el::Helpers::installPreRollOutCallback(rolloutHandler);
