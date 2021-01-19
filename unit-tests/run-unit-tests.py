@@ -160,7 +160,7 @@ if not target:
 if target:
     logdir = target + os.sep + 'unit-tests'
 else: # no test executables were found. We put the logs directly in build directory
-    logdir = librealsense + os.sep + 'build'
+    logdir = librealsense + os.sep + 'build' + os.sep + 'unit-tests'
 os.makedirs( logdir, exist_ok = True )
 n_tests = 0
 
