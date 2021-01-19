@@ -143,7 +143,7 @@ public:
         bool is_changed =
             ImGui::SliderFloat("", &_value, _min_value, _max_value, "%.3f", 5.0f, false); //5.0f for logarithmic scale 
         if (is_changed) {
-            _sensor.set_option(RS2_OPTION_SEQUENCE_ID, _seq_id);
+            _sensor.set_option(RS2_OPTION_SEQUENCE_ID, float(_seq_id));
             _sensor.set_option(_option, _value);
         }
         ImGui::End();
@@ -268,9 +268,9 @@ public:
         const rs2::frame& hdr_frame, rs2_metadata_type hdr_seq_id, rs2_metadata_type hdr_seq_size) {
 
         // frame index in frames_map are according to hdr_seq_id and hdr_seq_size
-        int infrared_index = hdr_seq_id;
-        int depth_index = hdr_seq_id + hdr_seq_size;
-        int hdr_index = hdr_seq_id + hdr_seq_size + 1;
+        int infrared_index = int(hdr_seq_id);
+        int depth_index = int(hdr_seq_id + hdr_seq_size);
+        int hdr_index = int(hdr_seq_id + hdr_seq_size + 1);
 
         //work-around, 'get_frame_metadata' sometimes (after changing exposure or gain values) sets hdr_seq_size to 0 even though it 2 for few frames
         //so we update the frames only if hdr_seq_size > 0. (hdr_seq_size==0 <-> frame is invalid)
@@ -751,10 +751,10 @@ public:
             canvas_left_top_x < 0 || canvas_left_top_x > 1 || canvas_left_top_y < 0 || canvas_left_top_y > 1)
         {
             std::cout << "Invalid window's size parameter entered, setting to default values" << std::endl;
-            canvas_width = 0.8;
-            canvas_height = 0.6;
-            canvas_left_top_x = 0.15;
-            canvas_left_top_y = 0.075;
+            canvas_width = 0.8f;
+            canvas_height = 0.6f;
+            canvas_left_top_x = 0.15f;
+            canvas_left_top_y = 0.075f;
         }
 
         //user input verification for number of tiles in row and column
@@ -766,14 +766,14 @@ public:
         }
 
         //calculate canvas size
-        _canvas_width = _width * canvas_width;
-        _canvas_height = _height * canvas_height;
+        _canvas_width = int(_width * canvas_width);
+        _canvas_height = int(_height * canvas_height);
         _canvas_left_top_x = _width * canvas_left_top_x;
         _canvas_left_top_y = _height * canvas_left_top_y;
 
         //calculate tile size
-        _tile_width_pixels = std::floor(_canvas_width / _tiles_in_row);
-        _tile_height_pixels = std::floor(_canvas_height / _tiles_in_col);
+        _tile_width_pixels = float(std::floor(_canvas_width / _tiles_in_row));
+        _tile_height_pixels = float(std::floor(_canvas_height / _tiles_in_col));
 
         glfwInit();
         // we don't want to enable resizing the window
