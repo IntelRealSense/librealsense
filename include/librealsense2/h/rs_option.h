@@ -68,8 +68,8 @@ extern "C" {
         RS2_OPTION_STREAM_FORMAT_FILTER, /**< Select a stream format to process */
         RS2_OPTION_STREAM_INDEX_FILTER, /**< Select a stream index to process */
         RS2_OPTION_EMITTER_ON_OFF, /**< When supported, this option make the camera to switch the emitter state every frame. 0 for disabled, 1 for enabled */
-        RS2_OPTION_ZERO_ORDER_POINT_X, /**< Zero order point x*/
-        RS2_OPTION_ZERO_ORDER_POINT_Y, /**< Zero order point y*/
+        RS2_OPTION_ZERO_ORDER_POINT_X, /**< Deprecated!!! - Zero order point x*/
+        RS2_OPTION_ZERO_ORDER_POINT_Y, /**< Deprecated!!! - Zero order point y*/
         RS2_OPTION_LLD_TEMPERATURE, /**< LDD temperature*/
         RS2_OPTION_MC_TEMPERATURE, /**< MC temperature*/
         RS2_OPTION_MA_TEMPERATURE, /**< MA temperature*/
@@ -82,7 +82,7 @@ extern "C" {
         RS2_OPTION_ENABLE_DYNAMIC_CALIBRATION, /**< Enable dynamic calibration */
         RS2_OPTION_DEPTH_OFFSET, /**< Offset from sensor to depth origin in millimetrers*/
         RS2_OPTION_LED_POWER, /**< Power of the LED (light emitting diode), with 0 meaning LED off*/
-        RS2_OPTION_ZERO_ORDER_ENABLED, /**< Toggle Zero-Order mode */
+        RS2_OPTION_ZERO_ORDER_ENABLED, /**< DEPRECATED! - Toggle Zero-Order mode */
         RS2_OPTION_ENABLE_MAP_PRESERVATION, /**< Preserve previous map when starting */
         RS2_OPTION_FREEFALL_DETECTION_ENABLED, /**< Enable/disable sensor shutdown when a free-fall is detected (on by default) */
         RS2_OPTION_AVALANCHE_PHOTO_DIODE, /**< Changes the exposure time of Avalanche Photo Diode in the receiver */

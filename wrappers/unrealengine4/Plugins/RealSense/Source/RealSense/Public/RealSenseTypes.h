@@ -114,7 +114,7 @@ enum class ERealSenseOptionType : uint8
     ENABLE_DYNAMIC_CALIBRATION                 , /**< Enable dynamic calibration */
     DEPTH_OFFSET                               , /**< Offset from sensor to depth origin in millimetrers */
     LED_POWER                                  , /**< Power of the LED (light emitting diode), with 0 meaning LED off */
-    ZERO_ORDER_ENABLED                         , /**< Zero-order mode */
+    ZERO_ORDER_ENABLED                         , /**< Deprecated!! -  Zero-order mode */
     ENABLE_MAP_PRESERVATION                    , /**< Preserve map from the previous run */
     FREEFALL_DETECTION_ENABLED                 , /**< Enable/disable sensor shutdown when a free-fall is detected (on by default) */
     AVALANCHE_PHOTO_DIODE                      , /**< Changes the exposure time of Avalanche Photo Diode in the receiver */
