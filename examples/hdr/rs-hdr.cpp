@@ -4,15 +4,16 @@
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include "example.hpp"          // Include short list of convenience functions for rendering
 #include <iostream>
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
 
-// HDR Example demonstrates how to
-// use the HDR feature - only for D400 product line devices
-int main(int argc, char * argv[]) try
+
+// HDR Example demonstrates how to use the HDR feature - only for D400 product line devices
+int main(int argc, char* argv[]) try
 {
+
     rs2::context ctx;
-
     rs2::device_list devices_list = ctx.query_devices();
-
     size_t device_count = devices_list.size();
     if (!device_count)
     {
@@ -25,7 +26,7 @@ int main(int argc, char * argv[]) try
     for (auto&& dev : devices_list)
     {
         // finding a device of D400 product line for working with HDR feature
-        if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && 
+        if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) &&
             std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D400")
         {
             device = dev;
@@ -60,35 +61,26 @@ int main(int argc, char * argv[]) try
 
     // configuration for the first HDR sequence ID
     depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, 1);
-    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 8500);
-    depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
+    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 8000); // setting exposure to 8000, so sequence 1 will be set to high exposure
+    depth_sensor.set_option(RS2_OPTION_GAIN, 25); // setting gain to 25, so sequence 1 will be set to high gain
 
     // configuration for the second HDR sequence ID
     depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, 2);
-    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 150);
-    depth_sensor.set_option(RS2_OPTION_GAIN, 16.f);
-
-    // after setting the HDR sequence ID opotion to 0, setting exposure or gain
-    // will be targetted to the normal (UVC) exposure and gain options (not HDR configuration)
-    depth_sensor.set_option(RS2_OPTION_SEQUENCE_ID, 0);
+    depth_sensor.set_option(RS2_OPTION_EXPOSURE, 18);  // setting exposure to 18, so sequence 2 will be set to low exposure
+    depth_sensor.set_option(RS2_OPTION_GAIN, 16); // setting gain to 16, so sequence 2 will be set to low gain
 
     // turning ON the HDR with the above configuration 
     depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
 
-    // Create a simple OpenGL window for rendering:
-    window app(1280, 720, "RealSense Capture Example");
-
     // Declare depth colorizer for pretty visualization of depth data
     rs2::colorizer color_map;
-    // Declare rates printer for showing streaming rates of the enabled streams.
-    rs2::rates_printer printer;
 
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
 
-    // Start streaming with default recommended configuration
-    // The default video configuration contains Depth and Color streams
-    // If a device is capable to stream IMU data, both Gyro and Accelerometer are enabled by default
+    // Start streaming with depth and infrared configuration
+    // The HDR merging algorithm can work with both depth and infrared,or only with depth, 
+    // but the resulting stream is better when both depth and infrared are used.
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_DEPTH);
     cfg.enable_stream(RS2_STREAM_INFRARED, 1);
@@ -97,24 +89,37 @@ int main(int argc, char * argv[]) try
     // initializing the merging filter
     rs2::hdr_merge merging_filter;
 
-    // initializing the spliting filter
-    rs2::sequence_id_filter spliting_filter;
-
-    // setting the required sequence ID to be shown
-    spliting_filter.set_option(RS2_OPTION_SEQUENCE_ID, 2);
+    // initializing the frameset
+    rs2::frameset data;
 
     // flag used to see the original stream or the merged one
-    bool true_for_merge_false_for_split = true;
     int frames_without_hdr_metadata_params = 0;
-    while (app) // Application still alive?
+
+    // init parameters to set view's window 
+    unsigned width = 1280;
+    unsigned height = 720;
+    char* title = "RealSense HDR Example";
+    unsigned tiles_in_row = 4;
+    unsigned tiles_in_col = 2;
+
+    // init view window 
+    window app(width, height, title, tiles_in_row, tiles_in_col);
+
+    // init ImGui with app (window object)
+    ImGui_ImplGlfw_Init(app, false);
+
+    // init hdr_widgets object
+    // hdr_widgets holds the sliders, the text boxes and the frames_map 
+    hdr_widgets hdr_widgets(depth_sensor);
+
+    while (app) // application is still alive
     {
-        rs2::frameset data = pipe.wait_for_frames() .    // Wait for next set of frames from the camera
-            apply_filter(printer);     // Print each enabled stream frame rate
+        data = pipe.wait_for_frames();    // Wait for next set of frames from the camera
 
-        auto depth_frame = data.get_depth_frame();
+        auto frame = data.get_depth_frame();
 
-        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE) ||
-            !depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID))
+        if (!frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE) ||
+            !frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID))
         {
             ++frames_without_hdr_metadata_params;
             if (frames_without_hdr_metadata_params > 20)
@@ -122,39 +127,36 @@ int main(int argc, char * argv[]) try
                 std::cout << "Firmware and/or SDK versions must be updated for the HDR feature to be supported.\n";
                 return EXIT_SUCCESS;
             }
-            data = data.apply_filter(color_map);
-            app.show(data);
+            app.show(data.apply_filter(color_map));
             continue;
         }
 
-        auto hdr_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_NAME);
-        auto hdr_seq_size = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE);
-        auto hdr_seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
-        auto exp = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
+        // merging the frames from the different HDR sequence IDs 
+        auto merged_frame = merging_filter.process(data).apply_filter(color_map);   // Find and colorize the depth data;
 
-        std::cout << "frame hdr metadata: hdr_seq_id = "<< hdr_seq_id << ", exposure = " << exp << std::endl;
-        // The show method, when applied on frameset, break it to frames and upload each frame into a gl textures
-        // Each texture is displayed on different viewport according to it's stream unique id
-        if (true_for_merge_false_for_split)
-        {
-            // merging the frames from the different HDR sequence IDs 
-            auto merged_frameset = merging_filter.process(data). // merging frames with both hdr sequence IDs 
-                apply_filter(color_map);   // Find and colorize the depth data;
-            rs2_format format = merged_frameset.as<rs2::frameset>().get_depth_frame().get_profile().format();
-            std::cout << ", after merge format = " << rs2_format_to_string(format) << std::endl;
-            app.show(merged_frameset);
-        }
-        else
-        {
-            auto split_frameset = spliting_filter.process(data) . // getting frames only with the requested sequence ID
-                apply_filter(color_map);   // Find and colorize the depth data;
-            app.show(split_frameset);
-        }
+        //get frames data 
+        auto hdr_seq_size = frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE);
+        auto hdr_seq_id = frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
+
+        //get frames
+        auto infrared_frame = data.get_infrared_frame();
+        auto depth_frame = data.get_depth_frame().apply_filter(color_map);
+        auto hdr_frame = merged_frame.as<rs2::frameset>().get_depth_frame().apply_filter(color_map);
+
+        //update frames in frames map in hdr_widgets
+        hdr_widgets.update_frames_map(infrared_frame, depth_frame, hdr_frame, hdr_seq_id, hdr_seq_size);
+
+        //render hdr widgets sliders and text boxes
+        hdr_widgets.render_widgets();
+
+        //the show method, when applied on frame map, break it to frames and upload each frame into its specific tile
+        app.show(hdr_widgets.get_frames_map());
+
     }
 
     return EXIT_SUCCESS;
 }
-catch (const rs2::error & e)
+catch (const rs2::error& e)
 {
     std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
     return EXIT_FAILURE;
