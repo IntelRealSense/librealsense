@@ -1,3 +1,6 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+
 import platform
 import pyrealsense2 as rs, test
 import time
