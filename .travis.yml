@@ -89,7 +89,7 @@ matrix:
         - cd ../wrappers/nodejs/
         - npm install
         - cd test
-        - wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/nodejs_records.rec
+        - wget https://librealsense.intel.com/rs-tests/nodejs_records.rec
 
     - name: "Mac - cpp"
       os: osx
@@ -132,7 +132,7 @@ before_install:
   - mkdir build && cd build
   - if [[ "$RS_CPP_TEST" == "true" ]]; then
       export LRS_LOG_LEVEL="DEBUG";
-      url_records_path="http://realsense-hw-public.s3.amazonaws.com/rs-tests/lrs_2.8.3/";
+      url_records_path="https://librealsense.intel.com/rs-tests/lrs_2.8.3/";
       records_name="records_test.txt";
       url_records_list=$url_records_path$records_name;
       wget $url_records_path$records_name;
