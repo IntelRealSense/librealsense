@@ -15,6 +15,7 @@ std::chrono::milliseconds avg_time = (std::chrono::milliseconds)0;
 int max_time_iteration = -1;
 const int number_of_iterations = 10000;
 const int number_of_threads = 10;
+std::mutex stats_mutex;
 //thresholds
 const int checked_log_write_time = 10; //ms
 const int required_log_write_time = 50; //ms
@@ -95,14 +96,18 @@ TEST_CASE("async logger", "[log][async_log]")
             rs2::log(RS2_LOG_SEVERITY_DEBUG, ss.str().c_str());
             std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
             std::chrono::milliseconds delta_ms = ms - start_ms;
-            if (delta_ms > max_time) max_time = delta_ms;
-            if (delta_ms < min_time) min_time = delta_ms;
-            avg_time += delta_ms;
+            {
+                std::lock_guard<std::mutex> lock(stats_mutex);
+                if (delta_ms > max_time) max_time = delta_ms;
+                if (delta_ms < min_time) min_time = delta_ms;
+                avg_time += delta_ms;
+            }
             ++iterations;
         }
     };
     const char* log_file_path = ".//multi-thread-logs.log";
-    try {
+    try 
+    {
         remove(log_file_path);
     }
     catch (...) {}
@@ -139,7 +144,8 @@ TEST_CASE("async logger", "[log][async_log]")
         if (check_file.good())
         {
             std::string line;
-            while (std::getline(check_file, line)) {
+            while (std::getline(check_file, line)) 
+            {
                 auto value_in_log = stoi(line.substr(line.find_last_of(" ")));
                 REQUIRE(value_in_log > 0);
                 REQUIRE((value_in_log - 1) < (number_of_iterations* number_of_threads));
@@ -183,7 +189,8 @@ TEST_CASE("async logger", "[log][async_log]")
 
             // go over each line and check that its logging time is not "far away" in means of time than the "ideal" time
             int max_delta = 0;
-            while (getline(check_file, line)) {
+            while (getline(check_file, line)) 
+            {
                 auto value_in_log = stoi(line.substr(line.find_last_of(" ")));
                 auto log_time_ms = get_time_from_line(line);
                 auto log_ideal_time_ms = get_log_ideal_time(first_50_avg_time_ms, first_50_avg_value, last_50_avg_time_ms, last_50_avg_value, value_in_log);
@@ -204,7 +211,8 @@ TEST_CASE("async logger", "[log][async_log]")
         if (check_file.good())
         {
             std::string line;
-            while (std::getline(check_file, line)) {
+            while (std::getline(check_file, line)) 
+            {
                 auto previous_time = get_time_from_line(line);
                 int logs_counter_in_one_ms = 1;
                 while (std::getline(check_file, line))
