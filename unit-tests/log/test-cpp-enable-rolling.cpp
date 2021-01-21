@@ -5,7 +5,7 @@
 #include "log-common.h"
 #include<fstream>
 
-TEST_CASE("ENABLE ROLLING C++ LOGGER", "[log]") {
+TEST_CASE("ROLLING C++ LOGGER", "[log]") {
 
     std::string log_filename = "rolling-log.log";
     rs2::log_to_file(RS2_LOG_SEVERITY_INFO, log_filename.c_str());

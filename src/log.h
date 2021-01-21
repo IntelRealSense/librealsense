@@ -268,8 +268,8 @@ namespace librealsense
         {
             std::string file_str(filename);
             std::string old_file = file_str + ".old";
-            const char* old_filename = old_file.c_str();
 
+            const char* old_filename = old_file.c_str();
             std::ifstream exists(old_filename);
             if (exists.is_open()) {
                 exists.close();
@@ -280,8 +280,8 @@ namespace librealsense
         }
 
         //Since log file will be truncated upon reaching max_size, MaxLogFileSize is configured to be half of the original max_size
-        //another file will be created in rolloutHandler that contains previous half.
-        //file directory should have permissions of removing/renaming files. 
+        //another file that contains previous half will be created in rolloutHandler.
+        //log file directory should have permissions of removing/renaming files. 
         //@param max_size max file size in bytes
         void enable_rolling_files(std::size_t max_size)
         {
