@@ -7,20 +7,25 @@ if (NOT BUILD_PYTHON_BINDINGS)
     message(WARNING "Python Bindings being built despite unset option because they are required for python documentation")
 endif()
 
-if (CMAKE_VERSION VERSION_LESS 3.12)
-  find_package(PythonInterp REQUIRED)
-  find_package(PythonLibs REQUIRED)
-  set(PYTHON_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/pyrealsense2" CACHE PATH "Installation directory for Python bindings")
-  set(CMAKECONFIG_PY_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/pyrealsense2")
-else()
-  find_package(Python REQUIRED COMPONENTS Interpreter Development)
-  set(PYTHON_INSTALL_DIR "${Python_SITEARCH}/pyrealsense2" CACHE PATH "Installation directory for Python bindings")
-  set(CMAKECONFIG_PY_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/pyrealsense2")
-endif()
-
 set(DEPENDENCIES realsense2)
+# In order for the external project clone to occur during cmake configure step(rather than during compilation, as would normally happen),
+# we copy the external project declaration to the build folder and then execute it
+configure_file(${CMAKE_SOURCE_DIR}/third-party/pybind11/CMakeLists.txt ${CMAKE_BINARY_DIR}/external-projects/pybind11/CMakeLists.txt)
+execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external-projects/pybind11"
+)
+execute_process(COMMAND "${CMAKE_COMMAND}" --build .
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external-projects/pybind11"
+)
 
-add_subdirectory(third_party/pybind11)
+# Add pybind11 makefile
+add_subdirectory("${CMAKE_BINARY_DIR}/third-party/pybind11"
+                 "${CMAKE_BINARY_DIR}/third-party/pybind11"
+                 EXCLUDE_FROM_ALL
+)
+
+set(PYBIND11_CPP_STANDARD -std=c++11)
+include_directories(${CMAKE_BINARY_DIR}/third-party/pybind11/include)
 
 set(PYRS_CPP
     python.cpp
@@ -41,6 +46,20 @@ set(PYRS_CPP
 )
 
 pybind11_add_module(pyrealsense2 SHARED python.hpp ${PYRS_CPP})
+
+# pybind11 version 2.6.1 require find_package to run after pybind11_add_module call,
+# This way the pybind takes the python version set in PYTHON_EXECUTABLE variable.
+if (CMAKE_VERSION VERSION_LESS 3.12)
+  find_package(PythonInterp REQUIRED)
+  find_package(PythonLibs REQUIRED)
+  set(PYTHON_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/pyrealsense2" CACHE PATH "Installation directory for Python bindings")
+  set(CMAKECONFIG_PY_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/pyrealsense2")
+else()
+  find_package(Python REQUIRED COMPONENTS Interpreter Development)
+  set(PYTHON_INSTALL_DIR "${Python_SITEARCH}/pyrealsense2" CACHE PATH "Installation directory for Python bindings")
+  set(CMAKECONFIG_PY_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/pyrealsense2")
+endif()
+
 target_link_libraries(pyrealsense2 PRIVATE ${DEPENDENCIES})
 set_target_properties(pyrealsense2 PROPERTIES VERSION
     ${REALSENSE_VERSION_STRING} SOVERSION "${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}")
