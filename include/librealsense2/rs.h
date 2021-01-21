@@ -82,7 +82,13 @@ void rs2_log_to_callback( rs2_log_severity min_severity, rs2_log_callback_ptr ca
 
 void rs2_reset_logger( rs2_error ** error);
 
-void rs2_enable_rolling_files(size_t max_size, rs2_error ** error);
+/**
+* Enable rolling log file upon reaching max size.
+* Must have permissions of removing/renaming files in log file directory.
+* \param[in] max_size   max file size in bytes
+* \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_enable_rolling_log_file(size_t max_size, rs2_error ** error);
 
 
 unsigned rs2_get_log_message_line_number( rs2_log_message const * msg, rs2_error** error );

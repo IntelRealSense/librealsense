@@ -11,10 +11,12 @@ TEST_CASE("ROLLING C++ LOGGER", "[log]") {
     rs2::log_to_file(RS2_LOG_SEVERITY_INFO, log_filename.c_str());
 
     int max_size = 1024;
-    rs2::enable_rolling_files(max_size);
+    rs2::enable_rolling_log_file(max_size);
 
     for (int i = 0; i < 100; ++i)
         log_all();
+
+    rs2::reset_logger();
 
     std::ifstream log_file(log_filename.c_str(), std::ios::binary);
     log_file.seekg(0, std::ios::end);
@@ -26,6 +28,6 @@ TEST_CASE("ROLLING C++ LOGGER", "[log]") {
     int old_size = old_file.tellg();
 
     int size = log_size + old_size;
-    REQUIRE(size <= max_size);
+    REQUIRE(size <= 2*max_size);
 
 }

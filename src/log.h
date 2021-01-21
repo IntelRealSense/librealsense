@@ -249,13 +249,8 @@ namespace librealsense
         {
             el::Loggers::reconfigureLogger(log_id, el::ConfigurationType::ToFile, "false");
             el::Loggers::reconfigureLogger(log_id, el::ConfigurationType::ToStandardOutput, "false");
+            el::Loggers::reconfigureLogger(log_id, el::ConfigurationType::MaxLogFileSize, "0");
             remove_callbacks();
-
-            if(el::Loggers::hasFlag(el::LoggingFlag::StrictLogFileSizeCheck))
-            {
-                el::Loggers::removeFlag(el::LoggingFlag::StrictLogFileSizeCheck);
-                el::Loggers::reconfigureLogger(log_id, el::ConfigurationType::MaxLogFileSize, "0");
-            }
 
             minimum_log_severity = RS2_LOG_SEVERITY_NONE;
             minimum_console_severity = RS2_LOG_SEVERITY_NONE;
@@ -276,17 +271,21 @@ namespace librealsense
                 std::remove(old_filename);
             }
 
-            rename(filename, old_filename);
+            std::rename(filename, old_filename);
         }
 
         //Since log file will be truncated upon reaching max_size, MaxLogFileSize is configured to be half of the original max_size
         //another file that contains previous half will be created in rolloutHandler.
         //log file directory should have permissions of removing/renaming files. 
         //@param max_size max file size in bytes
-        void enable_rolling_files(std::size_t max_size)
+        void enable_rolling_log_file(std::size_t max_size)
         {
             std::string size = std::to_string( max_size/2 );
-            el::Loggers::addFlag(el::LoggingFlag::StrictLogFileSizeCheck);
+
+            //Rollout checking happens when Easylogging++ flushes the log file,
+            //or, if you have added the flag el::LoggingFlags::StrictLogFileSizeCheck, at each log output.
+            //el::Loggers::addFlag(el::LoggingFlag::StrictLogFileSizeCheck);
+
             el::Loggers::reconfigureLogger(log_id, el::ConfigurationType::MaxLogFileSize, size.c_str());
             el::Helpers::installPreRollOutCallback(rolloutHandler);
         }

@@ -37,10 +37,12 @@ namespace rs2
         error::handle(e);
     }
 
-    inline void enable_rolling_files(std::size_t max_size )
+    //Enable rolling log file upon reaching max size.
+    //@param max_size max file size in bytes
+    inline void enable_rolling_log_file(std::size_t max_size )
     {
         rs2_error* e = nullptr;
-        rs2_enable_rolling_files(max_size,&e);
+        rs2_enable_rolling_log_file(max_size,&e);
         error::handle(e);
     }
     /*

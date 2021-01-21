@@ -34,19 +34,21 @@ void librealsense::reset_logger()
     logger.reset_logger();
 }
 
-void librealsense::enable_rolling_files(std::size_t max_size )
+void librealsense::enable_rolling_log_file(std::size_t max_size )
 {
-    logger.enable_rolling_files(max_size);
+    logger.enable_rolling_log_file(max_size);
 }
 
 #else // BUILD_EASYLOGGINGPP
 
 void librealsense::log_to_console(rs2_log_severity min_severity)
 {
+    throw std::runtime_error("log_to_console is not supported without BUILD_EASYLOGGINGPP");
 }
 
 void librealsense::log_to_file(rs2_log_severity min_severity, const char * file_path)
 {
+    throw std::runtime_error("log_to_file is not supported without BUILD_EASYLOGGINGPP");
 }
 
 void librealsense::log_to_callback(rs2_log_severity min_severity, log_callback_ptr callback)
@@ -56,10 +58,12 @@ void librealsense::log_to_callback(rs2_log_severity min_severity, log_callback_p
 
 void librealsense::reset_logger()
 {
+    throw std::runtime_error("reset_logger is not supported without BUILD_EASYLOGGINGPP");
 }
 
-void librealsense::enable_rolling_files(std::size_t max_size )
+void librealsense::enable_rolling_log_file(std::size_t max_size )
 {
+    throw std::runtime_error("enable_rolling_log_file is not supported without BUILD_EASYLOGGINGPP");
 }
 #endif // BUILD_EASYLOGGINGPP
 
