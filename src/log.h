@@ -244,7 +244,7 @@ namespace librealsense
             }
         }
 
-        //Stop logging and reset logger to initial configurations
+        // Stop logging and reset logger to initial configurations
         void reset_logger()
         {
             el::Loggers::reconfigureLogger(log_id, el::ConfigurationType::ToFile, "false");
@@ -257,37 +257,43 @@ namespace librealsense
             minimum_file_severity = RS2_LOG_SEVERITY_NONE;
         }
 
-        //Renames current log file to "log_name.log.old", after this function
-        //log file will be truncated and re-initiated.
-        static void rolloutHandler(const char* filename, std::size_t size)
+        // Callback: called by EL++ when the current log file has reached a certain maximum size.
+        // When the callback returns, the log-file will be truncated and reinitialized.
+        // We rename the current log file to "<filename>.old" so as not to lose the contents.
+        static void rolloutHandler( const char * filename, std::size_t size )
         {
-            std::string file_str(filename);
+            std::string file_str( filename );
             std::string old_file = file_str + ".old";
 
+            // Remove any existing .old
             const char* old_filename = old_file.c_str();
-            std::ifstream exists(old_filename);
-            if (exists.is_open()) {
+            std::ifstream exists( old_filename );
+            if( exists.is_open() )
+            {
                 exists.close();
-                std::remove(old_filename);
+                std::remove( old_filename );
             }
 
-            std::rename(filename, old_filename);
+            std::rename( filename, old_filename );
         }
 
-        //Since log file will be truncated upon reaching max_size, MaxLogFileSize is configured to be half of the original max_size
-        //another file that contains previous half will be created in rolloutHandler.
-        //log file directory should have permissions of removing/renaming files. 
-        //@param max_size max file size in bytes
-        void enable_rolling_log_file(std::size_t max_size)
+        // Enable rolling log file:
+        // Upon reaching (max_size/2) bytes, the log will be renamed with an ".old" suffix and a new log created. Any
+        // previous .old file will be erased.
+        // Must have permissions to remove/rename files in log file directory.
+        //
+        // @param max_size max file size in bytes
+        //
+        void enable_rolling_log_file( std::size_t max_size )
         {
             std::string size = std::to_string( max_size/2 );
 
-            //Rollout checking happens when Easylogging++ flushes the log file,
-            //or, if you have added the flag el::LoggingFlags::StrictLogFileSizeCheck, at each log output.
-            //el::Loggers::addFlag(el::LoggingFlag::StrictLogFileSizeCheck);
+            // Rollout checking happens when Easylogging++ flushes the log file!
+            // Or, with the flag el::LoggingFlags::StrictLogFileSizeCheck, at each log output...
+            //el::Loggers::addFlag( el::LoggingFlag::StrictLogFileSizeCheck );
 
-            el::Loggers::reconfigureLogger(log_id, el::ConfigurationType::MaxLogFileSize, size.c_str());
-            el::Helpers::installPreRollOutCallback(rolloutHandler);
+            el::Loggers::reconfigureLogger( log_id, el::ConfigurationType::MaxLogFileSize, size.c_str() );
+            el::Helpers::installPreRollOutCallback( rolloutHandler );
         }
     };
 #else //BUILD_EASYLOGGINGPP
