@@ -773,8 +773,10 @@ namespace librealsense
         {
             return static_cast<rs2_stream>(RS2_STREAM_GPIO);
         }
-
+#ifndef __APPLE__
+        // TODO to be refactored/tested
         LOG_ERROR("custom_gpio " << std::to_string(custom_gpio) << " is incorrect!");
+#endif
         return RS2_STREAM_ANY;
     }
 
