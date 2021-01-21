@@ -6,7 +6,7 @@
 #include <atomic>
 
 
-#ifdef ELPP_EXPERIMENTAL_ASYNC
+#ifdef EASYLOGGINGPP_ASYNC
 
 std::atomic<int> atomic_integer(0);
 std::chrono::milliseconds max_time = (std::chrono::milliseconds)0;
@@ -130,6 +130,8 @@ TEST_CASE("async logger", "[log][async_log]")
     CAPTURE(max_time);
     CAPTURE(min_time);
     CAPTURE(avg_time);
+    // The threshold in the CHECK_NOFAIL statement should be filled when running in "normal PC"
+    // The threshold in the REQUIRE statement should be filled when running CI tests (less cores are available there)
     CHECK_NOFAIL(max_time.count() < checked_log_write_time);
     REQUIRE(max_time.count() < required_log_write_time);
     
@@ -197,6 +199,8 @@ TEST_CASE("async logger", "[log][async_log]")
                 auto delta = std::abs(log_ideal_time_ms - log_time_ms);
                 if (delta > max_delta) max_delta = delta;
             }
+            // The threshold in the CHECK_NOFAIL statement should be filled when running in "normal PC"
+            // The threshold in the REQUIRE statement should be filled when running CI tests (less cores are available there)
             CHECK_NOFAIL(max_delta < checked_lag_time);
             REQUIRE(max_delta < required_lag_time);
         }
