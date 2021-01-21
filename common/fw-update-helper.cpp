@@ -257,10 +257,10 @@ namespace rs2
                             }
                         }
                         catch (std::exception &e) {
-                            _viewer.not_model->output.add_log(RS2_LOG_SEVERITY_WARN,
+                            _viewer.not_model->output.add_log( RS2_LOG_SEVERITY_WARN,
                                 __FILE__,
                                 __LINE__,
-                                to_string() << "Exception caught in FW Update process-flow: " << e.what() << " ; Retrying..");
+                                to_string() << "Exception caught in FW Update process-flow: " << e.what() << "; Retrying..." );
                         }
                         catch (...) {}
                     }
