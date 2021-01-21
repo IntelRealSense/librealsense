@@ -353,4 +353,49 @@ namespace librealsense
         std::shared_ptr<option> _uvc_option;
         std::shared_ptr<option> _hdr_option;
     };
+
+    class auto_exposure_limit_option : public option
+    {
+    public:
+        auto_exposure_limit_option(hw_monitor& hwm, sensor_base* depth_ep);
+        virtual ~auto_exposure_limit_option() = default;
+        virtual void set(float value) override;
+        virtual float query() const override;
+        virtual option_range get_range() const override;
+        virtual bool is_enabled() const override { return _sensor && !_sensor->is_streaming(); }
+        virtual const char* get_description() const override
+        {
+            return "Exposure limit is in microseconds. Default is 0 which means full exposure range. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session.";
+        }
+        virtual void enable_recording(std::function<void(const option&)> record_action) override { _record_action = record_action; }
+
+    private:
+        std::function<void(const option&)> _record_action = [](const option&) {};
+        lazy<option_range> _range;
+        hw_monitor& _hwm;
+        sensor_base* _sensor;
+    };
+
+    class auto_gain_limit_option : public option
+    {
+    public:
+        auto_gain_limit_option(hw_monitor& hwm, sensor_base* depth_ep);
+        virtual ~auto_gain_limit_option() = default;
+        virtual void set(float value) override;
+        virtual float query() const override;
+        virtual option_range get_range() const override;
+        virtual bool is_enabled() const override { return _sensor && !_sensor->is_streaming(); }
+        virtual const char* get_description() const override
+        {
+            return "Gain limits ranges from 16 to 248. Default is 0 which means full gain. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session.";
+        }
+        virtual void enable_recording(std::function<void(const option&)> record_action) override { _record_action = record_action; }
+
+    private:
+        std::function<void(const option&)> _record_action = [](const option&) {};
+        lazy<option_range> _range;
+        hw_monitor& _hwm;
+        sensor_base* _sensor;
+    };
+
 }

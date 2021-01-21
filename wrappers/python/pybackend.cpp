@@ -185,6 +185,8 @@ PYBIND11_MODULE(NAME, m) {
         .value("alternate_ir", RS2_OPTION_ALTERNATE_IR)
         .value("noise_estimation", RS2_OPTION_NOISE_ESTIMATION)
         .value("enable_ir_reflectivity", RS2_OPTION_ENABLE_IR_REFLECTIVITY)
+        .value("auto_exposure_limit", RS2_OPTION_AUTO_EXPOSURE_LIMIT)
+        .value("auto_gain_limit", RS2_OPTION_AUTO_GAIN_LIMIT)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");
