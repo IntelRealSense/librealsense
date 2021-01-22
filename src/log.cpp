@@ -61,7 +61,7 @@ void librealsense::reset_logger()
     throw std::runtime_error("reset_logger is not supported without BUILD_EASYLOGGINGPP");
 }
 
-void librealsense::enable_rolling_log_file(std::size_t max_size )
+void librealsense::enable_rolling_log_file( unsigned max_size )
 {
     throw std::runtime_error("enable_rolling_log_file is not supported without BUILD_EASYLOGGINGPP");
 }
