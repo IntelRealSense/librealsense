@@ -34,9 +34,9 @@ void librealsense::reset_logger()
     logger.reset_logger();
 }
 
-void librealsense::enable_rolling_log_file(std::size_t max_size )
+void librealsense::enable_rolling_log_file( unsigned max_size )
 {
-    logger.enable_rolling_log_file(max_size);
+    logger.enable_rolling_log_file( max_size );
 }
 
 #else // BUILD_EASYLOGGINGPP

@@ -20,14 +20,14 @@ TEST_CASE("ROLLING C++ LOGGER", "[log]") {
 
     std::ifstream log_file(log_filename.c_str(), std::ios::binary);
     log_file.seekg(0, std::ios::end);
-    int log_size = log_file.tellg();
+    auto log_size = log_file.tellg();
 
     std::string old_filename = log_filename + ".old";
     std::ifstream old_file(old_filename.c_str(), std::ios::binary);
     old_file.seekg(0, std::ios::end);
-    int old_size = old_file.tellg();
+    auto old_size = old_file.tellg();
 
-    int size = log_size + old_size;
+    auto size = log_size + old_size;
     REQUIRE(size <= 2*max_size);
 
 }

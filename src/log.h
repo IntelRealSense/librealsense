@@ -284,7 +284,7 @@ namespace librealsense
         //
         // @param max_size max file size in bytes
         //
-        void enable_rolling_log_file( std::size_t max_size )
+        void enable_rolling_log_file( unsigned max_size )
         {
             std::string size = std::to_string( max_size/2 );
 

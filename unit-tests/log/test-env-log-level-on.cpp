@@ -12,7 +12,7 @@
 TEST_CASE( "With LRS_LOG_LEVEL", "[log]" ) {
 
     REQUIRE( ! getenv( "LRS_LOG_LEVEL" ));
-    putenv( "LRS_LOG_LEVEL=WARN" );
+    _putenv( "LRS_LOG_LEVEL=WARN" );
     REQUIRE( getenv( "LRS_LOG_LEVEL" ));
     TRACE( "LRS_LOG_LEVEL=" << getenv( "LRS_LOG_LEVEL" ));
 

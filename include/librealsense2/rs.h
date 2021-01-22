@@ -88,9 +88,9 @@ void rs2_reset_logger( rs2_error ** error);
 * previous .old file will be erased.
 * Must have permissions to remove/rename files in log file directory.
 * \param[in] max_size   max file size in bytes
-* \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_enable_rolling_log_file(size_t max_size, rs2_error ** error);
+void rs2_enable_rolling_log_file( unsigned max_size, rs2_error ** error );
 
 
 unsigned rs2_get_log_message_line_number( rs2_log_message const * msg, rs2_error** error );

@@ -44,11 +44,11 @@ namespace rs2
     //
     // @param max_size max file size in bytes
     //
-    inline void enable_rolling_log_file(std::size_t max_size )
+    inline void enable_rolling_log_file( unsigned max_size )
     {
-        rs2_error* e = nullptr;
-        rs2_enable_rolling_log_file(max_size,&e);
-        error::handle(e);
+        rs2_error * e = nullptr;
+        rs2_enable_rolling_log_file( max_size, &e );
+        error::handle( e );
     }
     
     /*
