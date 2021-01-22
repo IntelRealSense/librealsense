@@ -267,7 +267,7 @@ namespace Intel.RealSense
         NoiseEstimation = 83,
 
         /// <summary>Enables data collection for calculating IR pixel reflectivity</summary>
-        EnableIrReflectivity = 84
+        EnableIrReflectivity = 84,
 
         /// <summary>Auto exposure limit - for D400 SKUs</summary>
         auto_exposure_limit = 85,
