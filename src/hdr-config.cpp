@@ -101,13 +101,15 @@ namespace librealsense
         if (current_subpreset[offset] != CONTROL_ID_EXPOSURE)
             return false;
         offset += size_of_control_id;
-        float exposure_0 = *reinterpret_cast<const uint32_t*>(&(current_subpreset[offset]));
+        float exposure_0
+            = (float)*reinterpret_cast< const uint32_t * >( &( current_subpreset[offset] ) );
         offset += size_of_control_value;
 
         if (current_subpreset[offset] != CONTROL_ID_GAIN)
             return false;
         offset += size_of_control_id;
-        float gain_0 = *reinterpret_cast<const uint32_t*>(&(current_subpreset[offset]));
+        float gain_0
+            = (float)*reinterpret_cast< const uint32_t * >( &( current_subpreset[offset] ) );
         offset += size_of_control_value;
 
         offset += size_of_subpreset_item_header;
@@ -115,13 +117,15 @@ namespace librealsense
         if (current_subpreset[offset] != CONTROL_ID_EXPOSURE)
             return false;
         offset += size_of_control_id;
-        float exposure_1 = *reinterpret_cast<const uint32_t*>(&(current_subpreset[offset]));
+        float exposure_1
+            = (float)*reinterpret_cast< const uint32_t * >( &( current_subpreset[offset] ) );
         offset += size_of_control_value;
 
         if (current_subpreset[offset] != CONTROL_ID_GAIN)
             return false;
         offset += size_of_control_id;
-        float gain_1 = *reinterpret_cast<const uint32_t*>(&(current_subpreset[offset]));
+        float gain_1
+            = (float)*reinterpret_cast< const uint32_t * >( &( current_subpreset[offset] ) );
         offset += size_of_control_value;
 
         _hdr_sequence_params[0]._exposure = exposure_0;
@@ -482,7 +486,7 @@ namespace librealsense
 
         if (new_index <= _hdr_sequence_params.size())
         {
-            _current_hdr_sequence_index = new_index - 1;
+            _current_hdr_sequence_index = (int)new_index - 1;
         }
         else
             throw invalid_value_exception(to_string() << "hdr_config::set_sequence_index(...) failed! Index above sequence size.");

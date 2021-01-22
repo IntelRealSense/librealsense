@@ -143,7 +143,7 @@ namespace librealsense
         const size_t transfer_size = 1024;
 
         size_t remaining_bytes = fw_image_size;
-        uint16_t blocks_count = fw_image_size / transfer_size;
+        uint16_t blocks_count = uint16_t( fw_image_size / transfer_size );
         uint16_t block_number = 0;
 
         size_t offset = 0;
@@ -155,7 +155,7 @@ namespace librealsense
             size_t chunk_size = std::min(transfer_size, remaining_bytes);
 
             auto curr_block = ((uint8_t*)fw_image + offset);
-            auto sts = messenger->control_transfer(0x21 /*DFU_DOWNLOAD_PACKET*/, RS2_DFU_DOWNLOAD, block_number, 0, curr_block, chunk_size, transferred, 5000);
+            auto sts = messenger->control_transfer(0x21 /*DFU_DOWNLOAD_PACKET*/, RS2_DFU_DOWNLOAD, block_number, 0, curr_block, uint32_t(chunk_size), transferred, 5000);
             if (sts != platform::RS2_USB_STATUS_SUCCESS || !wait_for_state(messenger, RS2_DFU_STATE_DFU_DOWNLOAD_IDLE, 1000))
             {
                 auto state = get_dfu_state(messenger);
