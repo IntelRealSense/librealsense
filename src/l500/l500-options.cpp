@@ -190,14 +190,9 @@ namespace librealsense
                 update_defaults();
 
                 auto curr_preset = ( rs2_l500_visual_preset )(int)_preset->query();
-                if( curr_preset != RS2_L500_VISUAL_PRESET_AUTOMATIC )
+                if( curr_preset != RS2_L500_VISUAL_PRESET_AUTOMATIC && curr_preset != RS2_L500_VISUAL_PRESET_CUSTOM)
                 {
-                    auto p = calc_preset_from_controls();
-                    if( p != RS2_L500_VISUAL_PRESET_CUSTOM )
-                        _preset->set_value( (float)p );
-
-                    set_preset_controls_to_defaults();
-                    change_laser_power( p );
+                    change_preset( curr_preset );
                 }
             } );
 
@@ -209,7 +204,7 @@ namespace librealsense
                 ivcam2::depth_xu,
                 ivcam2::L500_DIGITAL_GAIN,
                 "Change the depth digital gain to: 1 for high gain and 2 for low gain",
-                std::map< float, std::string >{ { RS2_DIGITAL_GAIN_AUTO, "Auto Gain" },
+                std::map< float, std::string >{ /*{ RS2_DIGITAL_GAIN_AUTO, "Auto Gain" },*/
                                                 { RS2_DIGITAL_GAIN_HIGH, "High Gain" },
                                                 { RS2_DIGITAL_GAIN_LOW, "Low Gain" } },
                 _fw_version,
@@ -358,7 +353,7 @@ namespace librealsense
 
              _preset = std::make_shared< l500_preset_option >(
                  option_range{ RS2_L500_VISUAL_PRESET_CUSTOM,
-                               RS2_L500_VISUAL_PRESET_AUTOMATIC,
+                               RS2_L500_VISUAL_PRESET_SHORT_RANGE,
                                1,
                                (float)preset },
                  "Preset to calibrate the camera to environment ambient, no ambient or low "
@@ -395,7 +390,9 @@ namespace librealsense
             {
                 if( control.first != RS2_OPTION_LASER_POWER && !control.second->is_read_only() )
                 {
-                    if( control.second->get_range().def != control.second->query() )
+                    auto curr = control.second->query();
+                    auto def = control.second->get_range().def;
+                    if( def != curr )
                         return RS2_L500_VISUAL_PRESET_CUSTOM;
                 }
             }
@@ -473,8 +470,7 @@ namespace librealsense
             if( curr_preset == RS2_L500_VISUAL_PRESET_AUTOMATIC )
                set_preset_controls_to_defaults();*/
 
-            auto p = calc_preset_from_controls();
-            _preset->set_value( (float)p );
+            _preset->set_value( (float)RS2_L500_VISUAL_PRESET_CUSTOM );
 
             if( opt != RS2_OPTION_DIGITAL_GAIN )
                 _hw_options[opt]->set_manualy( true );
@@ -840,6 +836,14 @@ namespace librealsense
                "that 60% of the IR light projected by the camera is reflected by the object and returns "
                "to the camera.\n\n"
                "Note: only active on 2D view, Visual Preset:Max Range, Resolution:VGA, ROI:20%";
+    }
+
+    // don't expose 'auto gain' for now
+    option_range digital_gain_option::get_range() const
+    {
+        auto range = uvc_xu_option< int >::get_range();
+        range.min = 1;
+        return range;
     }
 
     // set gain as result of change preset 

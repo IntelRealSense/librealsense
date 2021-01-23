@@ -54,7 +54,7 @@ public:
         , _owner( owner )
     {
     }
-
+    option_range get_range() const override;
     void set_with_no_signal( float value ) override;
 
 private:
