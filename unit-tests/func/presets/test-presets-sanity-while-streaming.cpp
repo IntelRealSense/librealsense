@@ -18,6 +18,11 @@ TEST_CASE( "presets sanity while streaming", "[l500][live]" )
     auto depth_sens = dev.first< rs2::depth_sensor >();
 
     auto preset_to_expected_map = build_preset_to_expected_values_map( depth_sens );
+    auto preset_to_expected_defaults_map = build_preset_to_expected_defaults_map( dev, depth_sens );
 
-    check_presets_values_while_streaming( depth_sens, preset_to_expected_map );
+    reset_camera_preset( depth_sens );
+
+    check_presets_values_while_streaming( depth_sens,
+                                          preset_to_expected_map,
+                                          preset_to_expected_defaults_map );
 }

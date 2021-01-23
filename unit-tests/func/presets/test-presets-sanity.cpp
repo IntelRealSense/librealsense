@@ -18,9 +18,9 @@ TEST_CASE( "presets sanity", "[l500][live]" )
     auto depth_sens = dev.first< rs2::depth_sensor >();
 
     auto preset_to_expected_map = build_preset_to_expected_values_map( depth_sens );
+    auto preset_to_expected_defaults_map = build_preset_to_expected_defaults_map( dev, depth_sens );
 
-    print_presets_to_csv( depth_sens, preset_to_expected_map );
+    //print_presets_to_csv( depth_sens, preset_to_expected_map );
 
-    check_presets_values( depth_sens, preset_to_expected_map );
-
+    check_presets_values( depth_sens, preset_to_expected_map, preset_to_expected_defaults_map );
 }
