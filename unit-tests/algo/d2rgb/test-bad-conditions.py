@@ -1,5 +1,5 @@
-import pyrealsense2 as rs, test, ac
-
+import pyrealsense2 as rs
+from rspy import test, ac
 # We set the environment variables to suit this test
 test.set_env_vars({"RS2_AC_DISABLE_CONDITIONS":"0",
                    "RS2_AC_LOG_TO_STDOUT":"1"

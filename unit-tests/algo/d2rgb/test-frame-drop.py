@@ -1,4 +1,5 @@
-import pyrealsense2 as rs, test, ac
+import pyrealsense2 as rs
+from rspy import test, ac
 
 test.set_env_vars({"RS2_AC_DISABLE_CONDITIONS":"1",
                    "RS2_AC_DISABLE_RETRIES":"1",

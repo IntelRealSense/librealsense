@@ -1,4 +1,8 @@
-import pyrealsense2 as rs, test
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+
+import pyrealsense2 as rs
+from rspy import test
 
 devices = test.find_devices_by_product_line_or_exit(rs.product_line.L500)
 device = devices[0]

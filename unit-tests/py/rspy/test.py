@@ -1,3 +1,6 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+
 """
 This module is for formatting and writing unit-tests in python. The general format is as follows
 1. Use start to start a test and give it, as an argument, the name of the test

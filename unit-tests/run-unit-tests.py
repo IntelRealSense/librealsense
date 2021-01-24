@@ -12,6 +12,7 @@ sys.path.insert( 1, current_dir + os.sep + "py" )
 
 def usage():
     ourname = os.path.basename(sys.argv[0])
+    ourname = os.path.basename(sys.argv[0])
     print( 'Syntax: ' + ourname + ' [options] [dir]' )
     print( '        dir: the directory holding the executable tests to run (default to the build directory')
     print( 'Options:' )
@@ -410,8 +411,9 @@ def get_tests():
 
 # Before we run any tests, recycle all ports and make sure they're set to USB3
 if not asis:
+    
     try:
-        import acroname
+        from rspy import acroname
         acroname.connect()
         acroname.enable_ports()     # so ports() will return all
         portlist = acroname.ports()

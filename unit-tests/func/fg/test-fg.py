@@ -1,4 +1,8 @@
-import pyrealsense2 as rs, test, ac
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+
+import pyrealsense2 as rs
+from rspy import test,ac
 
 devices = test.find_devices_by_product_line_or_exit(rs.product_line.L500)
 depth_sensor = devices[0].first_depth_sensor()
