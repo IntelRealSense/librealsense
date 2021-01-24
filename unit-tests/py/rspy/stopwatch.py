@@ -12,8 +12,11 @@ class Stopwatch:
         self._start = time.perf_counter()
 
     # Reset the stopwatch time
-    def reset(self):
-        self._start = time.perf_counter()
+    def reset(self, val = None):
+        if val:
+            self._start = val
+        else:
+            self._start = time.perf_counter()
 
     # Get elapsed since timer creation
     def get_elapsed(self):
