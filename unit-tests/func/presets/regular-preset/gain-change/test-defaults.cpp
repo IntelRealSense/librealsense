@@ -32,7 +32,7 @@ TEST_CASE( "check defaults after gain changed", "[l500][live]" )
             auto gain_to_expected_defaults
                 = gain_to_expected_defaults_map[{ rs2_digital_gain( gain ), mode }];
 
-            compare_defaults_to_actual( depth_sens, gain_to_expected_defaults );
+            compare_expected_defaults_to_actual( depth_sens, gain_to_expected_defaults );
         }
     } );
 }

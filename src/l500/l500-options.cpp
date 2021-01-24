@@ -470,7 +470,7 @@ namespace librealsense
             if( curr_preset == RS2_L500_VISUAL_PRESET_AUTOMATIC )
                set_preset_controls_to_defaults();*/
 
-            _preset->set_value( (float)RS2_L500_VISUAL_PRESET_CUSTOM );
+            move_to_custom();
 
             if( opt != RS2_OPTION_DIGITAL_GAIN )
                 _hw_options[opt]->set_manualy( true );

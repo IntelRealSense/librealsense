@@ -34,7 +34,7 @@ TEST_CASE( "check currents after gain changed", "[l500][live]" )
 
             preset_to_expected[RS2_OPTION_DIGITAL_GAIN] = gain;
 
-            compare_currents_to_actual( depth_sens, preset_to_expected);
+            compare_expected_currents_to_actual( depth_sens, preset_to_expected);
         } 
     } );
 }

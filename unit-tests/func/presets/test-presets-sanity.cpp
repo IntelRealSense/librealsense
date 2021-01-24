@@ -20,7 +20,12 @@ TEST_CASE( "presets sanity", "[l500][live]" )
     auto preset_to_expected_map = build_preset_to_expected_values_map( depth_sens );
     auto preset_to_expected_defaults_map = build_preset_to_expected_defaults_map( dev, depth_sens );
 
-    //print_presets_to_csv( depth_sens, preset_to_expected_map );
+    // print_presets_to_csv( depth_sens, preset_to_expected_map );
 
-    check_presets_values( depth_sens, preset_to_expected_map, preset_to_expected_defaults_map );
+    check_presets_values( depth_sens,
+                          preset_to_expected_map,
+                          preset_to_expected_defaults_map,
+                          [&]( rs2_sensor_mode mode, rs2_l500_visual_preset preset ) {
+                              set_mode_preset( depth_sens, mode, preset );
+                          } );
 }

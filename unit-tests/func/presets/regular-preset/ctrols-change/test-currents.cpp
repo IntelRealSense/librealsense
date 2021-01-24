@@ -39,7 +39,7 @@ TEST_CASE( "check currents after hw control changed", "[l500][live]" )
 
             preset_to_expected[o] = range.min;
 
-            compare_currents_to_actual( depth_sens, preset_to_expected);
+            compare_expected_currents_to_actual( depth_sens, preset_to_expected);
         } 
     } );
 }
