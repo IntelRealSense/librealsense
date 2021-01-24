@@ -6472,7 +6472,36 @@ namespace rs2
                     label = to_string() << "Controls ##" << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << id;
                     if (ImGui::TreeNode(label.c_str()))
                     {
-                        for (auto&& i : sub->s->get_supported_options())
+                        std::vector<rs2_option> supported_options = sub->s->get_supported_options();
+
+                        // moving the color dediacted options to the end of the vector
+                        std::vector<rs2_option> color_options = {
+                            RS2_OPTION_BACKLIGHT_COMPENSATION,
+                            RS2_OPTION_BRIGHTNESS,
+                            RS2_OPTION_CONTRAST,
+                            RS2_OPTION_GAMMA,
+                            RS2_OPTION_HUE,
+                            RS2_OPTION_SATURATION,
+                            RS2_OPTION_SHARPNESS,
+                            RS2_OPTION_WHITE_BALANCE
+                        };
+
+                        std::vector<rs2_option> so_ordered;
+
+                        for (auto&& i : supported_options)
+                        {
+                            auto it = find(color_options.begin(), color_options.end(), i);
+                            if (it == color_options.end())
+                                so_ordered.push_back(i);
+                        }
+
+                        std::for_each(color_options.begin(), color_options.end(), [&](rs2_option opt) {
+                            auto it = std::find(supported_options.begin(), supported_options.end(), opt);
+                            if (it != supported_options.end())
+                                so_ordered.push_back(opt);
+                            });
+
+                        for (auto&& i : so_ordered)
                         {
                             auto opt = static_cast<rs2_option>(i);
                             if (viewer.is_option_skipped(opt)) continue;
