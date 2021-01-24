@@ -110,21 +110,34 @@ namespace librealsense
         auto& color_ep = get_color_sensor();
         auto& raw_color_ep = get_raw_color_sensor();
     
+        color_ep.register_pu(RS2_OPTION_BRIGHTNESS);
+        color_ep.register_pu(RS2_OPTION_CONTRAST);
+        color_ep.register_pu(RS2_OPTION_SATURATION);
+        color_ep.register_pu(RS2_OPTION_GAMMA);
+        color_ep.register_pu(RS2_OPTION_SHARPNESS);
+        color_ep.register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
+
+        auto white_balance_option = std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_WHITE_BALANCE);
+        color_ep.register_option(RS2_OPTION_WHITE_BALANCE, white_balance_option);
+
+        // Currently disabled for certain sensors
+        if (!val_in_range(_pid, { ds::RS465_PID }))
+        {
+            color_ep.register_pu(RS2_OPTION_HUE);
+        }
+
         if (_separate_color)
         {
-            //---------------------
-            // temporary in the if statement
-            color_ep.register_pu(RS2_OPTION_BRIGHTNESS);
-            color_ep.register_pu(RS2_OPTION_CONTRAST);
-            color_ep.register_pu(RS2_OPTION_SATURATION);
-            color_ep.register_pu(RS2_OPTION_GAMMA);
-            color_ep.register_pu(RS2_OPTION_SHARPNESS);
-            color_ep.register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
+            auto auto_white_balance_option = std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+            color_ep.register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, auto_white_balance_option);
+            color_ep.register_option(RS2_OPTION_WHITE_BALANCE,
+                std::make_shared<auto_disabling_control>(
+                    white_balance_option,
+                    auto_white_balance_option));
 
             // Currently disabled for certain sensors
             if (!val_in_range(_pid, { ds::RS465_PID }))
             {
-                color_ep.register_pu(RS2_OPTION_HUE);
                 color_ep.register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
             }
             // From 5.11.15 auto-exposure priority is supported on the D465
@@ -132,15 +145,6 @@ namespace librealsense
             {
                 color_ep.register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
             }
-            //---------------------
-            auto white_balance_option = std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_WHITE_BALANCE);
-            auto auto_white_balance_option = std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
-            color_ep.register_option(RS2_OPTION_WHITE_BALANCE, white_balance_option);
-            color_ep.register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, auto_white_balance_option);
-            color_ep.register_option(RS2_OPTION_WHITE_BALANCE,
-                std::make_shared<auto_disabling_control>(
-                    white_balance_option,
-                    auto_white_balance_option));
 
             auto gain_option = std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_GAIN);
             auto exposure_option = std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_EXPOSURE);
