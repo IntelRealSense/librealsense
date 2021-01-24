@@ -185,7 +185,8 @@ TEST_CASE("Pipe - Extrinsic memory leak detection", "[live]")
         auto list = ctx.query_devices();
         REQUIRE(list.size());
         auto dev = list.front();
-        //auto sens = dev.query_sensors();
+        auto sensors = dev.query_sensors();
+
         std::string device_type = "L500";
         if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D400") device_type = "D400";
         if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "SR300") device_type = "SR300";
