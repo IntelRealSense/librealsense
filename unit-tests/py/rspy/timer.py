@@ -10,8 +10,8 @@ class Timer:
     _delta = 0
     _sw = Stopwatch()
 
-    def __init__(self, timeout):
-        self._delta = timeout
+    def __init__(self, timeout_in_sec):
+        self._delta = timeout_in_sec
 
     # Start timer
     def start(self):
@@ -19,7 +19,7 @@ class Timer:
 
     # Check if timer time expired
     def has_expired(self):
-        return self._sw.get_start() + self._delta <= time.perf_counter()
+        return self._sw.get_elapsed() >= self._delta
 
     # Force time expiration
     def set_expired(self):

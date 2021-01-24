@@ -12,9 +12,9 @@ class Stopwatch:
         self._start = time.perf_counter()
 
     # Reset the stopwatch time
-    def reset(self, val = None):
-        if val:
-            self._start = val
+    def reset(self, new_start_time = None):
+        if new_start_time:
+            self._start = new_start_time
         else:
             self._start = time.perf_counter()
 
