@@ -221,16 +221,16 @@ void reset_hw_controls( rs2::device & dev )
 
 std::map< rs2_option, float > get_currents_from_lrs( rs2::depth_sensor & depth_sens )
 {
-    std::map< rs2_option, float > option_to_defaults;
+    std::map< rs2_option, float > option_to_currents;
 
     for( auto op : option_to_code )
     {
         REQUIRE( depth_sens.supports( op.first ) );
-        option_range range;
-        REQUIRE_NOTHROW( range = depth_sens.get_option_range( op.first ) );
-        option_to_defaults[op.first] = range.def;
+        float curr;
+        REQUIRE_NOTHROW( curr = depth_sens.get_option( op.first ) );
+        option_to_currents[op.first] = curr;
     }
-    return option_to_defaults;
+    return option_to_currents;
 }
 
 void compare( const std::map< rs2_option, float > & first,
@@ -379,10 +379,16 @@ void set_mode_preset( const rs2::sensor & sens,
     CHECK( sens.get_option( RS2_OPTION_VISUAL_PRESET ) == (float)preset );
 }
 
-void check_presets_values_while_streaming( const rs2::sensor & sens,
-                                           preset_values_map & preset_to_expected_values,
-                                           preset_values_map & preset_to_expected_defaults,
-                                           std::function< void() > do_before_streaming = nullptr )
+void check_presets_values_while_streaming(
+    const rs2::sensor & sens,
+    preset_values_map & preset_to_expected_values,
+    preset_values_map & preset_to_expected_defaults,
+    std::function< void( rs2_sensor_mode mode, rs2_l500_visual_preset preset ) >
+        do_before_stream_start
+    = nullptr,
+    std::function< void( rs2_sensor_mode mode, rs2_l500_visual_preset preset ) >
+        do_after_stream_start
+    = nullptr )
 {
     REQUIRE( sens.supports( RS2_OPTION_VISUAL_PRESET ) );
 
@@ -391,8 +397,13 @@ void check_presets_values_while_streaming( const rs2::sensor & sens,
         preset_to_expected_values,
         preset_to_expected_defaults,
         [&]( rs2_sensor_mode mode, rs2_l500_visual_preset preset ) {
+            if( do_before_stream_start )
+                do_before_stream_start( mode, preset );
+
             start_depth_ir_confidence( sens, mode );
-            set_mode_preset( sens, mode, preset );
+
+            if( do_after_stream_start )
+                do_after_stream_start( mode, preset );
         },
         [&]( rs2_sensor_mode mode, rs2_l500_visual_preset preset ) { stop_depth( sens ); } );
 }
