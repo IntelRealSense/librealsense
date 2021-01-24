@@ -19,10 +19,11 @@
 using namespace librealsense;
 using namespace librealsense::platform;
 
-#define ITERATIONS_PER_CONFIG 100
-#define DELAY_INCREMENT_THRESHOLD 5 //[%]
-#define DELAY_INCREMENT_THRESHOLD_IMU 40 //[%]
-#define SPIKE_THRESHOLD 5 //[%]
+constexpr int ITERATIONS_PER_CONFIG = 100;
+constexpr int INNER_ITERATIONS_PER_CONFIG = 10;
+constexpr int DELAY_INCREMENT_THRESHOLD = 5; //[%]
+constexpr int DELAY_INCREMENT_THRESHOLD_IMU = 40; //[%]
+constexpr int SPIKE_THRESHOLD = 5; //[%]
 
 // Require that vector is exactly the zero vector
 /*inline void require_zero_vector(const float(&vector)[3])
@@ -37,7 +38,7 @@ inline void require_identity_matrix(const float(&matrix)[9])
     for (int i = 0; i < 9; ++i) REQUIRE(matrix[i] == approx(identity_matrix_3x3[i]));
 }*/
 
-bool get_mode(rs2::device& dev, rs2::stream_profile* profile, int mode_index = 0)
+bool get_mode(rs2::device& dev, rs2::stream_profile& profile, int mode_index = 0)
 {
     auto sensors = dev.query_sensors();
     REQUIRE(sensors.size() > 0);
@@ -50,7 +51,7 @@ bool get_mode(rs2::device& dev, rs2::stream_profile* profile, int mode_index = 0
         if (mode_index >= modes.size())
             continue;
 
-        *profile = modes[mode_index];
+        profile = modes[mode_index];
         return true;
     }
     return false;
@@ -78,21 +79,21 @@ void data_filter(double* filtered_vec_avg_arr, std::vector<double>& stream_vec, 
 
         auto v = vec.first;
         double sum = std::accumulate(v.begin(), v.end(), 0.0);
-        double mean = sum / v.size();
+        double avg = sum / v.size();
         std::vector<double> diff(v.size());
-        std::transform(v.begin(), v.end(), diff.begin(), std::bind2nd(std::minus<double>(), mean));
+        std::transform(v.begin(), v.end(), diff.begin(), std::bind2nd(std::minus<double>(), avg));
         double sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
         double stdev = std::sqrt(sq_sum / v.size());
-        std::vector<double> stdev_diff(v.size());
+        std::vector<double> sample_stdev_weight(v.size());
         auto v_size = v.size();
-        std::transform(v.begin(), v.end(), stdev_diff.begin(), [stdev, v_size, mean](double d) {
+        std::transform(v.begin(), v.end(), sample_stdev_weight.begin(), [stdev, v_size, avg](double d) {
             d = d < 0 ? -d : d;
-            auto val = (d - mean) / v_size;
+            auto val = (d - avg) / v_size;
             val = val * 100 / stdev;
             return  val > 0 ? val : -val;
             }
         );
-        auto stdev_diff_it = stdev_diff.begin();
+        auto stdev_diff_it = sample_stdev_weight.begin();
         auto v_it = v.begin();
         for (auto i = 0; i < v.size(); i++)
         {
@@ -187,6 +188,8 @@ TEST_CASE("Pipe - Extrinsic memory leak detection", "[live]")
         //auto sens = dev.query_sensors();
         std::string device_type = "L500";
         if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D400") device_type = "D400";
+        if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "SR300") device_type = "SR300";
+
         rs2::stream_profile mode;
         auto mode_index = 0;
         bool usb3_device = is_usb3(dev);
@@ -194,7 +197,7 @@ TEST_CASE("Pipe - Extrinsic memory leak detection", "[live]")
         int req_fps = usb3_device ? 60 : 30; // USB2 Mode has only a single resolution for 60 fps which is not sufficient to run the test
         do
         {
-            REQUIRE(get_mode(dev, &mode, mode_index));
+            REQUIRE(get_mode(dev, mode, mode_index));
             mode_index++;
         } while (mode.fps() != req_fps);
 
@@ -271,7 +274,7 @@ TEST_CASE("Pipe - Extrinsic memory leak detection", "[live]")
                         condition = true;
                         for (auto it = new_frame.begin(); it != new_frame.end(); it++)
                         {
-                            if (it->second < 10)
+                            if (it->second < INNER_ITERATIONS_PER_CONFIG)
                             {
                                 condition = false;
                                 break;
@@ -292,7 +295,7 @@ TEST_CASE("Pipe - Extrinsic memory leak detection", "[live]")
         std::cout << "Analyzing info ..  " << std::endl;
 
         // the test will succeed only if all 3 conditions are met:
-        // 1. extrinsics table size is perserved over iterations for each stream 
+        // 1. extrinsics table size is preserved over iterations for each stream 
         // 2. no delay increment over iterations
         // 3. "most" iterations have time to first frame delay below a defined threshold
         if (extrinsics_table_size.size())
@@ -317,11 +320,14 @@ TEST_CASE("Pipe - Extrinsic memory leak detection", "[live]")
             // check if increment between the 2 vectors is below a threshold  
             auto y1 = filtered_vec_avg_arr[0];
             auto y2 = filtered_vec_avg_arr[1];
+            // if no delay increment is detected over iterations no need to compare against a threshold
             if (y2 < y1) continue;
             double dy_dx = y2 / y1;
+            // calculate delay increment percentage
             dy_dx = 100 * (dy_dx - 1);
             std::cout << stream.first << " : " << dy_dx << std::endl;
             auto threshold = DELAY_INCREMENT_THRESHOLD;
+            // IMU streams have different threshold
             if (stream.first == "Accel" || stream.first == "Gyro") threshold = DELAY_INCREMENT_THRESHOLD_IMU;
             CAPTURE(stream.first, dy_dx, threshold);
             CHECK(dy_dx < threshold);
@@ -349,8 +355,8 @@ TEST_CASE("Pipe - Extrinsic memory leak detection", "[live]")
         {
             auto v = stream_.second;
             auto stream = stream_.first;
-            double sum = std::accumulate(v.begin(), v.end(), 0.0);
-            double mean = sum / v.size();
+            double avg = std::accumulate(v.begin(), v.end(), 0.0);
+            double mean = avg / v.size();
             std::cout << "Delay of " << stream << " = " << mean * 1.5 << std::endl;
             CAPTURE(stream);
             for (auto it = stream_.second.begin(); it != stream_.second.end(); ++it) {
