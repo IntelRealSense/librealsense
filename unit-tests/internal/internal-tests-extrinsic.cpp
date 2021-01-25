@@ -365,19 +365,19 @@ TEST_CASE("Pipe - Extrinsic memory leak detection", "[live]")
             delay_thresholds["Accel"] = 1200; // ms
             delay_thresholds["Color"] = 1200; // ms
             delay_thresholds["Depth"] = 1200; // ms
-            delay_thresholds["Gyro"] = 1200; // ms
+            delay_thresholds["Gyro"]  = 1200; // ms
             delay_thresholds["Infrared 1"] = 1200; // ms
             delay_thresholds["Infrared 2"] = 1200; // ms
 
             // L500
             if (device_type == "L500")
             {
-                delay_thresholds["Accel"] = 2200; //pipe: 1200; // ms
-                delay_thresholds["Color"] = 2000; //pipe: 1200; // ms
-                delay_thresholds["Depth"] = 1700; //pipe: 1200; // ms
-                delay_thresholds["Gyro"] = 2200; //pipe: 1200; // ms
-                delay_thresholds["Confidence"] = 1700; //pipe: 1200; // ms
-                delay_thresholds["Infrared"]   = 1700; //pipe: 1200; // ms
+                delay_thresholds["Accel"] = 2200;  // ms
+                delay_thresholds["Color"] = 2000;  // ms
+                delay_thresholds["Depth"] = 1800;  // ms
+                delay_thresholds["Gyro"] = 2200;   // ms
+                delay_thresholds["Confidence"] = 1800; // ms
+                delay_thresholds["Infrared"] = 1700;   // ms
             }
 
             // SR300
@@ -386,7 +386,7 @@ TEST_CASE("Pipe - Extrinsic memory leak detection", "[live]")
                 delay_thresholds["Accel"] = 1200; // ms
                 delay_thresholds["Color"] = 1200; // ms
                 delay_thresholds["Depth"] = 1200; // ms
-                delay_thresholds["Gyro"] = 1200; // ms
+                delay_thresholds["Gyro"]  = 1200; // ms
                 delay_thresholds["Infrared 1"] = 1200; // ms
                 delay_thresholds["Infrared 2"] = 1200; // ms
             }
