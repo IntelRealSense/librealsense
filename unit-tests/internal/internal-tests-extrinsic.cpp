@@ -25,39 +25,11 @@ constexpr int DELAY_INCREMENT_THRESHOLD = 3; //[%]
 constexpr int DELAY_INCREMENT_THRESHOLD_IMU = 8; //[%]
 constexpr int SPIKE_THRESHOLD = 2; //[stdev]
 
-// Require that vector is exactly the zero vector
-/*inline void require_zero_vector(const float(&vector)[3])
-{
-    for (int i = 1; i < 3; ++i) REQUIRE(vector[i] == 0.0f);
-}
-
-// Require that matrix is exactly the identity matrix
-inline void require_identity_matrix(const float(&matrix)[9])
-{
-    static const float identity_matrix_3x3[] = { 1,0,0, 0,1,0, 0,0,1 };
-    for (int i = 0; i < 9; ++i) REQUIRE(matrix[i] == approx(identity_matrix_3x3[i]));
-}*/
-
-bool get_mode(rs2::device& dev, rs2::stream_profile& profile, int mode_index = 0)
-{
-    auto sensors = dev.query_sensors();
-    REQUIRE(sensors.size() > 0);
-
-    for (auto i = 0; i < sensors.size(); i++)
-    {
-        auto modes = sensors[i].get_stream_profiles();
-        REQUIRE(modes.size() > 0);
-
-        if (mode_index >= modes.size())
-            continue;
-
-        profile = modes[mode_index];
-        return true;
-    }
-    return false;
-}
-
-double line_fitting(const std::vector<double>& y_vec, std::vector<double>& y_fit)
+// Input:  vector that represent samples of delay to first frame of one stream
+// Output: - vector of line fitting data according to algorithm mentioned in the reference below
+//         - slope and intercept of the fitted line
+// reference: https://www.bragitoff.com/2015/09/c-program-to-linear-fit-the-data-using-least-squares-method/
+double line_fitting(const std::vector<double>& y_vec, std::vector<double>& y_fit = std::vector<double>())
 {
     double ysum = std::accumulate(y_vec.begin(), y_vec.end(), 0.0);  //calculate sigma(yi)
     double xsum = 0;
@@ -73,17 +45,22 @@ double line_fitting(const std::vector<double>& y_vec, std::vector<double>& y_fit
     }
     double a = (n * xysum - xsum * ysum) / (n * x2sum - xsum * xsum);      //calculate slope
     double b = (x2sum * ysum - xsum * xysum) / (x2sum * n - xsum * xsum);  //calculate intercept   
-    for (auto i = 0; i < n; i++)
+    if (y_fit.size() > 0)
     {
-        //calculate y(fitted) at given x points             
-        y_fit.push_back(a * i + b);
+        auto it = y_fit.begin();
+        for (auto i = 0; i < n; i++)
+        {
+            //calculate y(fitted) at given x points             
+            *(it + i) = a * i + b;
+        }
     }
     return a; // return the slope for later usage when checking delay increment 
 }
-//void data_filter(double* filtered_vec_avg_arr, std::vector<double>& stream_vec, std::vector<double>& filtered_stream_vec, std::string const stream_type)
-double data_filter(const std::vector<double>& stream_vec, std::vector<double>& filtered_stream_vec, std::string const stream_type)
+// Input: vector that represent samples of time delay to first frame of one stream
+// Output: vector of filtered-out spikes 
+void data_filter(const std::vector<double>& stream_vec, std::vector<double>& filtered_stream_vec)
 {
-    std::vector<double> y_fit;
+    std::vector<double> y_fit(stream_vec.size());
     double slope = line_fitting(stream_vec, y_fit);
 
     auto y_fit_it = y_fit.begin();
@@ -116,9 +93,6 @@ double data_filter(const std::vector<double>& stream_vec, std::vector<double>& f
         if (*(samples_stdev_it + i) > SPIKE_THRESHOLD) continue;
         filtered_stream_vec.push_back(*(stream_vec_it + i));
     }
-
-    return slope;
-
 }
 TEST_CASE("Extrinsic graph management", "[live][multicam]")
 {
@@ -158,8 +132,6 @@ TEST_CASE("Extrinsic graph management", "[live][multicam]")
                     }
                     else
                         extrinsic_graph_at_sensor[snr_id] = b._streams.size();
-
-                    //                    std::cout << __LINE__ << " " << snr.get_info(RS2_CAMERA_INFO_NAME) <<" : Extrinsic graph map size is " << b._streams.size() << std::endl;
 
                     rs2_extrinsics extrin{};
                     try {
@@ -207,19 +179,19 @@ TEST_CASE("Pipe - Extrinsic memory leak detection", "[live]")
             if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D400") device_type = "D400";
             if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "SR300") device_type = "SR300";
 
-            rs2::stream_profile mode;
-            auto mode_index = 0;
             bool usb3_device = is_usb3(dev);
             int fps = usb3_device ? 30 : 15; // In USB2 Mode the devices will switch to lower FPS rates
             int req_fps = usb3_device ? 60 : 30; // USB2 Mode has only a single resolution for 60 fps which is not sufficient to run the test
-            do
-            {
-                REQUIRE(get_mode(dev, mode, mode_index));
-                mode_index++;
-            } while (mode.fps() != req_fps);
 
-            auto video = mode.as<rs2::video_stream_profile>();
-            auto res = configure_all_supported_streams(dev, video.width(), video.height(), mode.fps());
+            int width = 848;
+            int height = 480;
+
+            if (device_type == "L500")
+            {
+                req_fps = 30;
+                width =  640;
+            }
+            auto res = configure_all_supported_streams(dev, width, height, fps);
 
 
             // collect a log that contains info about 20 iterations for each stream
@@ -228,7 +200,7 @@ TEST_CASE("Pipe - Extrinsic memory leak detection", "[live]")
             // 2. delay to first frame
             // 3. delay threshold for each stream (set fps=6 delay as worst case)
             // the test will succeed only if all 3 conditions are met:
-            // 1. extrinsics table size is perserved over iterations for each stream 
+            // 1. extrinsics table size is preserved over iterations for each stream 
             // 2. no delay increment over iterations
             // 3. "most" iterations have time to first frame delay below a defined threshold
 
@@ -262,12 +234,13 @@ TEST_CASE("Pipe - Extrinsic memory leak detection", "[live]")
                     cfg.enable_stream(profile.stream, profile.index, profile.width, profile.height, profile.format, fps); // all streams in cfg
                     cfg_size += 1;
                 }
-
+                
                 for (auto it = new_frame.begin(); it != new_frame.end(); it++)
                 {
                     it->second = 0;
                 }
-                auto t1 = std::chrono::system_clock::now().time_since_epoch();
+                auto start_time = std::chrono::system_clock::now().time_since_epoch();
+                auto start_time_milli = std::chrono::duration_cast<std::chrono::milliseconds>(start_time).count();
                 bool condition = false;
                 std::mutex mutex;
                 std::mutex mutex_2;
@@ -283,39 +256,37 @@ TEST_CASE("Pipe - Extrinsic memory leak detection", "[live]")
                         if (!new_frame[stream_type])
                         {
                             frame_number[stream_type].push_back(frame_num);
-                            auto milli = std::chrono::duration_cast<std::chrono::milliseconds>(t1).count();
-                            streams_delay[stream_type].push_back(time_of_arrival - milli);
+                            streams_delay[stream_type].push_back(time_of_arrival - start_time_milli);
                             new_frame[stream_type] = true;
                         }
                         new_frame[stream_type] += 1;
                     }
                 };
-                auto callback_pipe_sensor = [&](const rs2::frame& ff)
+                auto frame_callback = [&](const rs2::frame& f)
                 {
                     std::lock_guard<std::mutex> lock(mutex);
-                    if (rs2::frameset fs = ff.as<rs2::frameset>())
+                    if (rs2::frameset fs = f.as<rs2::frameset>())
                     {
                         // With callbacks, all synchronized stream will arrive in a single frameset
-                        for (const rs2::frame& f : fs)
+                        for (const rs2::frame& ff : fs)
                         {
-                            process_frame(f);
+                            process_frame(ff);
                         }
                     }
                     else
                     {
                         // Stream that bypass synchronization (such as IMU) will produce single frames
-                        process_frame(ff);
+                        process_frame(f);
                     }
                 };
                 if (is_pipe)
                 {
-                    rs2::pipeline_profile profiles = pipe.start(cfg, callback_pipe_sensor);
+                    rs2::pipeline_profile profiles = pipe.start(cfg, frame_callback);
                 }
                 else {
-                    for (auto s : res.first)
+                    for (auto &s : res.first)
                     {
-                        s.start(callback_pipe_sensor);
-                        //s.open(s.get_stream_profiles());
+                        s.start(frame_callback);
                     }
                 }
                 // to prevent FW issue, at least 20 frames per stream should arrive
@@ -349,14 +320,10 @@ TEST_CASE("Pipe - Extrinsic memory leak detection", "[live]")
                 else
                 {
                     // Stop & flush all active sensors. The separation is intended to semi-confirm the FPS
-                    for (auto s : res.first)
+                    for (auto &s : res.first)
                     {
                         s.stop();
                     }
-                    /*for (auto s : res.first)
-                    {
-                        s.close();
-                    }*/
                 }
                 extrinsics_table_size.push_back(b._extrinsics.size());
 
@@ -383,49 +350,56 @@ TEST_CASE("Pipe - Extrinsic memory leak detection", "[live]")
 
                 // remove first 5 iterations from each stream 
                 stream.second.erase(stream.second.begin(), stream.second.begin() + 5);
-
-                double filtered_vec_avg_arr[2];
-                //double slope = data_filter(filtered_vec_avg_arr, stream.second, stream.first);
-                std::vector<double> filtered_stream_vec;
-                std::vector<double> filtered_stream_vec_2;
-                double slope1 = data_filter(stream.second, filtered_stream_vec, stream.first);
-                // check slope of filtered data
-                double slope2 = data_filter(filtered_stream_vec, filtered_stream_vec_2, stream.first);
-                // set origin data to filtered data
-                stream.second = filtered_stream_vec;
+                double slope = line_fitting(stream.second);
                 // check slope value against threshold
                 auto threshold = DELAY_INCREMENT_THRESHOLD;
                 // IMU streams have different threshold
                 if (stream.first == "Accel" || stream.first == "Gyro") threshold = DELAY_INCREMENT_THRESHOLD_IMU;
-                CAPTURE(stream.first, slope2, threshold);
-                CHECK(slope2 < threshold);
+                CAPTURE(stream.first, slope, threshold);
+                CHECK(slope < threshold);
 
             }
             // 3. "most" iterations have time to first frame delay below a defined threshold
             std::map<std::string, double> delay_thresholds;
             // D400
             delay_thresholds["Accel"] = 1200; // ms
-            delay_thresholds["Color"] = 1000; // ms
-            delay_thresholds["Depth"] = 1000; // ms
+            delay_thresholds["Color"] = 1200; // ms
+            delay_thresholds["Depth"] = 1200; // ms
             delay_thresholds["Gyro"] = 1200; // ms
-            delay_thresholds["Infrared 1"] = 1000; // ms
-            delay_thresholds["Infrared 2"] = 1000; // ms
+            delay_thresholds["Infrared 1"] = 1200; // ms
+            delay_thresholds["Infrared 2"] = 1200; // ms
 
             // L500
             if (device_type == "L500")
             {
-                delay_thresholds["Accel"] = 2000; // ms
+                delay_thresholds["Accel"] = 2200; //pipe: 1200; // ms
+                delay_thresholds["Color"] = 2000; //pipe: 1200; // ms
+                delay_thresholds["Depth"] = 1700; //pipe: 1200; // ms
+                delay_thresholds["Gyro"] = 2200; //pipe: 1200; // ms
+                delay_thresholds["Confidence"] = 1700; //pipe: 1200; // ms
+                delay_thresholds["Infrared"]   = 1700; //pipe: 1200; // ms
+            }
+
+            // SR300
+            if (device_type == "SR300")
+            {
+                delay_thresholds["Accel"] = 1200; // ms
                 delay_thresholds["Color"] = 1200; // ms
-                delay_thresholds["Gyro"] = 2000; // ms
+                delay_thresholds["Depth"] = 1200; // ms
+                delay_thresholds["Gyro"] = 1200; // ms
+                delay_thresholds["Infrared 1"] = 1200; // ms
+                delay_thresholds["Infrared 2"] = 1200; // ms
             }
 
             for (const auto& stream_ : streams_delay)
             {
-                auto v = stream_.second;
+                std::vector<double> filtered_stream_vec;
+                data_filter(stream_.second, filtered_stream_vec);
+
                 auto stream = stream_.first;
-                double avg = std::accumulate(v.begin(), v.end(), 0.0);
-                double mean = avg / v.size();
-                std::cout << "Delay of " << stream << " = " << mean * 1.5 << std::endl;
+                double sum = std::accumulate(filtered_stream_vec.begin(), filtered_stream_vec.end(), 0.0);
+                double avg = sum / filtered_stream_vec.size();
+                std::cout << "Delay of " << stream << " = " << avg * 1.5 << std::endl;
                 CAPTURE(stream);
                 for (auto it = stream_.second.begin(); it != stream_.second.end(); ++it) {
                     CHECK(*it < delay_thresholds[stream]);
