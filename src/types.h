@@ -1552,7 +1552,7 @@ namespace librealsense
 
         void polling(dispatcher::cancellable_timer cancellable_timer)
         {
-            if(cancellable_timer.try_sleep(5000))
+            if(cancellable_timer.try_sleep(LRS_BACKEND_POLLING_INTERVAL))
             {
                 platform::backend_device_group curr(_backend->query_uvc_devices(), _backend->query_usb_devices(), _backend->query_hid_devices());
                 if(list_changed(_devices_data.uvc_devices, curr.uvc_devices ) ||
