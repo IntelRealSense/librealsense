@@ -661,7 +661,7 @@ namespace librealsense
     {
         _range = [this]()
         {
-            return option_range{ 0, 166666, 1, 0 };
+            return option_range{ 0, 165000, 1, 0 };
         };
     }
 
