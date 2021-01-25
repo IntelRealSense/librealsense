@@ -349,7 +349,7 @@ namespace librealsense
         class v4l_uvc_meta_device : public v4l_uvc_device
         {
         public:
-            v4l_uvc_meta_device(const uvc_device_info& info, bool use_memory_map = true);
+            v4l_uvc_meta_device(const uvc_device_info& info, bool use_memory_map = false);
 
             ~v4l_uvc_meta_device();
 
