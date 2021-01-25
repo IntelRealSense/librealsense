@@ -187,36 +187,41 @@ TEST_CASE("Extrinsic graph management", "[live][multicam]")
 TEST_CASE("Pipe - Extrinsic memory leak detection", "[live]")
 {
     // Require at least one device to be plugged in
+
     rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
+        rs2::log_to_file(RS2_LOG_SEVERITY_DEBUG, "lrs_log.txt");
+
         std::cout << "Pipe - Extrinsic memory leak detection started" << std::endl;
-        auto list = ctx.query_devices();
-        REQUIRE(list.size());
-        auto dev = list.front();
-        auto sensors = dev.query_sensors();
-
-        std::string device_type = "L500";
-        if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D400") device_type = "D400";
-        if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "SR300") device_type = "SR300";
-
-        rs2::stream_profile mode;
-        auto mode_index = 0;
-        bool usb3_device = is_usb3(dev);
-        int fps = usb3_device ? 30 : 15; // In USB2 Mode the devices will switch to lower FPS rates
-        int req_fps = usb3_device ? 60 : 30; // USB2 Mode has only a single resolution for 60 fps which is not sufficient to run the test
-        do
-        {
-            REQUIRE(get_mode(dev, mode, mode_index));
-            mode_index++;
-        } while (mode.fps() != req_fps);
-
-        auto video = mode.as<rs2::video_stream_profile>();
-        auto res = configure_all_supported_streams(dev, video.width(), video.height(), mode.fps());
-
-        bool is_pipe_test[2] = { false, true };
+        bool is_pipe_test[2] = { true, false };
 
         for (auto is_pipe : is_pipe_test)
         {
+            auto list = ctx.query_devices();
+            REQUIRE(list.size());
+            auto dev = list.front();
+            auto sensors = dev.query_sensors();
+
+            std::string device_type = "L500";
+            if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D400") device_type = "D400";
+            if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "SR300") device_type = "SR300";
+
+            rs2::stream_profile mode;
+            auto mode_index = 0;
+            bool usb3_device = is_usb3(dev);
+            int fps = usb3_device ? 30 : 15; // In USB2 Mode the devices will switch to lower FPS rates
+            int req_fps = usb3_device ? 60 : 30; // USB2 Mode has only a single resolution for 60 fps which is not sufficient to run the test
+            do
+            {
+                REQUIRE(get_mode(dev, mode, mode_index));
+                mode_index++;
+            } while (mode.fps() != req_fps);
+
+            auto video = mode.as<rs2::video_stream_profile>();
+            auto res = configure_all_supported_streams(dev, video.width(), video.height(), mode.fps());
+
+
             // collect a log that contains info about 20 iterations for each stream
             // the info should include:
             // 1. extrinsics table size
