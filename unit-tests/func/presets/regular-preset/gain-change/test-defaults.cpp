@@ -23,7 +23,7 @@ TEST_CASE( "check defaults after gain changed", "[l500][live]" )
     // print_presets_to_csv( depth_sens, preset_to_expected_map );
     for_each_preset_mode_combination( [&]( rs2_l500_visual_preset preset, rs2_sensor_mode mode ) 
     {
-        for( int gain = RS2_DIGITAL_GAIN_HIGH; gain < RS2_DIGITAL_GAIN_LOW; gain++ )
+        for( int gain = RS2_DIGITAL_GAIN_HIGH; gain <= RS2_DIGITAL_GAIN_LOW; gain++ )
         {
             depth_sens.set_option( RS2_OPTION_SENSOR_MODE, mode );
             depth_sens.set_option( RS2_OPTION_VISUAL_PRESET, preset );

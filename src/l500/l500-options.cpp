@@ -79,7 +79,7 @@ namespace librealsense
         , _fw_version( fw_version )
         , _digital_gain( digital_gain )
         , _is_read_only(false)
-        , _was_set_manualy( false )
+        , _was_set_manually( false )
     {
         auto min = _hw_monitor->send(command{ AMCGET, _type, get_min });
         auto max = _hw_monitor->send(command{ AMCGET, _type, get_max });
@@ -120,9 +120,9 @@ namespace librealsense
         _is_read_only = read_only;
     }
 
-    void l500_hw_options::set_manualy( bool set ) 
+    void l500_hw_options::set_manually( bool set ) 
     {
-        _was_set_manualy = set;
+        _was_set_manually = set;
     }
 
     void l500_hw_options::enable_recording(std::function<void(const option&)> recording_action)
@@ -461,8 +461,13 @@ namespace librealsense
         {
             verify_max_usable_range_restrictions( opt, value );
 
-            if( opt == RS2_OPTION_DIGITAL_GAIN )
+            if (opt == RS2_OPTION_DIGITAL_GAIN)
+            {
+                // WA for fw bug will be removed after fixed on FW
+                std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
                 update_defaults();
+            }
+                
 
             // whan we moved to auto preset we set all controls to -1 
             // so we have to set preset controls to defaults values now
@@ -473,7 +478,7 @@ namespace librealsense
             move_to_custom();
 
             if( opt != RS2_OPTION_DIGITAL_GAIN )
-                _hw_options[opt]->set_manualy( true );
+                _hw_options[opt]->set_manually( true );
         }
         else
             throw wrong_api_call_sequence_exception(
@@ -559,7 +564,7 @@ namespace librealsense
             {
                 auto val = o.second->get_range().def;
                 o.second->set_with_no_signal( val );
-                o.second->set_manualy( false );
+                o.second->set_manually( false );
             }
         }
     }

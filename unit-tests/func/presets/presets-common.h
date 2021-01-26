@@ -72,7 +72,7 @@ void for_each_preset_mode_combination(
 void for_each_gain_mode_combination(
     std::function< void( rs2_digital_gain, rs2_sensor_mode ) > action )
 {
-    for( int gain = RS2_DIGITAL_GAIN_HIGH; gain < RS2_DIGITAL_GAIN_LOW; gain++ )
+    for( int gain = RS2_DIGITAL_GAIN_HIGH; gain <= RS2_DIGITAL_GAIN_LOW; gain++ )
     {
         for( int sensor_mode = RS2_SENSOR_MODE_VGA; sensor_mode < RS2_SENSOR_MODE_COUNT;
              sensor_mode++ )
@@ -82,10 +82,11 @@ void for_each_gain_mode_combination(
     }
 }
 // Can be called at a point on test we want to be sure we are on preset and not on custom
-inline void reset_camera_preset( const rs2::sensor & sens )
+inline void reset_camera_preset_mode( const rs2::sensor & sens )
 {
     REQUIRE_NOTHROW(
         sens.set_option( RS2_OPTION_VISUAL_PRESET, RS2_L500_VISUAL_PRESET_NO_AMBIENT ) );
+    REQUIRE_NOTHROW( sens.set_option( RS2_OPTION_SENSOR_MODE, RS2_SENSOR_MODE_VGA ) );
 }
 
 std::map< rs2_option, float > get_defaults_from_fw( rs2::device & dev, bool streaming = false )
@@ -354,7 +355,8 @@ void check_presets_values( const rs2::sensor & sens,
         } );
 }
 
-void start_depth_ir_confidence( const rs2::sensor & sens, rs2_sensor_mode mode )
+void start_depth_ir_confidence( const rs2::sensor & sens,
+                                rs2_sensor_mode mode = RS2_SENSOR_MODE_VGA )
 {
     auto depth = find_profile( sens, RS2_STREAM_DEPTH, mode );
     auto ir = find_profile( sens, RS2_STREAM_INFRARED, mode );

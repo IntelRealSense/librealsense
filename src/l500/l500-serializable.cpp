@@ -53,7 +53,8 @@ namespace librealsense
         if( found_iterator != j.end() )
         {
             auto found_preset = rs2_l500_visual_preset( int( found_iterator.value() ));
-            if( found_preset != RS2_L500_VISUAL_PRESET_CUSTOM) 
+            if( found_preset != RS2_L500_VISUAL_PRESET_CUSTOM
+                && found_preset != RS2_L500_VISUAL_PRESET_DEFAULT ) 
             {
                 options_to_ignore.insert( RS2_OPTION_POST_PROCESSING_SHARPENING );
                 options_to_ignore.insert( RS2_OPTION_PRE_PROCESSING_SHARPENING );

@@ -21,7 +21,7 @@ TEST_CASE( "check currents after resolution changed by start stream", "[l500][li
     auto preset_to_expected_map = build_preset_to_expected_values_map( sens );
     auto preset_to_expected_defaults_map = build_preset_to_expected_defaults_map( dev, sens );
 
-    reset_camera_preset( sens );
+    reset_camera_preset_mode( sens );
 
     // set preset before stream start
     check_presets_values_while_streaming(
