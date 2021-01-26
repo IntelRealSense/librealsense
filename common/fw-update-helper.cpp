@@ -29,7 +29,7 @@ const char* fw_get_L5XX_FW_Image(int) { return NULL; }
 
 #endif // INTERNAL_FW
 
-constexpr const char* recommended_fw_url = "https://dev.intelrealsense.com/docs/firmware-releases";
+constexpr const char* recommended_fw_url = "https://dev.intelrealsense.com/docs/firmware-updates";
 
 namespace rs2
 {
