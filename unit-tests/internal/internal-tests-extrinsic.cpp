@@ -78,9 +78,8 @@ void data_filter(const std::vector<double>& stream_vec, std::vector<double>& fil
     std::vector<double> samples_stdev(diff_y_fit.size());
     auto v_size = diff_y_fit.size();
     std::transform(diff_y_fit.begin(), diff_y_fit.end(), samples_stdev.begin(), [stdev](double d) {
-        d = d < 0 ? -d : d;
         auto val = d / stdev;
-        return  val >= 0 ? val : -val;
+        return  val;
         }
     );
 
@@ -285,6 +284,8 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
                 else {
                     for (auto& s : res.first)
                     {
+                        start_time = std::chrono::system_clock::now().time_since_epoch();
+                        start_time_milli = std::chrono::duration_cast<std::chrono::milliseconds>(start_time).count();
                         s.start(frame_callback);
                     }
                 }
