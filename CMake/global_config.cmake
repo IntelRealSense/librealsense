@@ -37,6 +37,10 @@ macro(global_set_flags)
         add_definitions(-DBUILD_EASYLOGGINGPP)
     endif()
 
+    if (ENABLE_EASYLOGGINGPP_ASYNC)
+        add_definitions(-DEASYLOGGINGPP_ASYNC)
+    endif()
+
     if(TRACE_API)
         add_definitions(-DTRACE_API)
     endif()
