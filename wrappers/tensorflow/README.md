@@ -163,7 +163,7 @@ While TensorFlow is convenient to install and use, it is not as convinient as Op
 
 [Example 3](example3%20-%20opencv%20deploy.py) is functionally equal to Example 2, but instead of using TensorFlow APIs directly it is loading and running inference using OpenCV.
 
-In addition to the model file, you will need `pbtxt` file accompanying the model. This file can be found [at this link]([TensorFlow-Object-Detection-API](https://github.com/opencv/opencv/wiki/TensorFlow-Object-Detection-API#use-existing-config-file-for-your-model)).
+In addition to the model file, you will need `pbtxt` file accompanying the model. This file can be found [at this link](https://github.com/opencv/opencv_extra/blob/master/testdata/dnn/faster_rcnn_inception_v2_coco_2018_01_28.pbtxt).
 
 ```py
 net = cv2.dnn.readNetFromTensorflow(r"frozen_inference_graph.pb", 
