@@ -164,7 +164,7 @@ static void next_pixel_in_line(float curr[2], const float start[2], const float 
     else
     {
         curr[1] = end[1] > curr[1] ? curr[1] + 1 : curr[1] - 1;
-        curr[0] = end[0] - ((end[1] + curr[1]) / line_slope);
+        curr[0] = end[0] - ((end[1] - curr[1]) / line_slope);
     }
 }
 
