@@ -280,7 +280,6 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
                 if (is_pipe)
                 {
                     rs2::pipeline_profile profiles = pipe.start(cfg, frame_callback);
-                    
                 }
                 else {
                     for (auto& s : res.first)
