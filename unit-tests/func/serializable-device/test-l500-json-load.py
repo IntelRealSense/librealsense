@@ -13,19 +13,21 @@ visual_preset_number = depth_sensor.get_option(rs.option.visual_preset)
 visual_preset_name = rs.l500_visual_preset(int(visual_preset_number))
 
 #############################################################################################
-# The default preset is scheduled to be removed, once that happens this test is irrelevant and should be removed
-if visual_preset_name == rs.l500_visual_preset.default:
-    test.start("Trying to load default settings from json. Should fail")
-    try:
-        serialized_json = sd.serialize_json()
-        sd.load_json(serialized_json)
-    except RuntimeError as e:
-        test.check_exception(e, RuntimeError, "The Default preset signifies that the controls have not been changed"
-                                              " since initialization, the API does not support changing back to this"
-                                              " state, Please choose one of the other presets")
-    else:
-        test.unexpected_exception()
-    test.finish()
+# This test checks backward compatibility to old json files that saved with default preset
+# The default preset is deprecated but json files that saved with default preset
+# should be support
+test.start("Trying to load default settings from json")
+try:
+    with open('func/serializable-device/default.json') as f:
+        data = f.read()
+    sd.load_json(data)
+    visual_preset_number = depth_sensor.get_option(rs.option.visual_preset)
+    visual_preset_name = rs.l500_visual_preset(int(visual_preset_number))
+
+    test.check_equal(visual_preset_name, rs.l500_visual_preset.low_ambient_light)
+except:
+    test.unexpected_exception()
+test.finish()
 
 #############################################################################################
 test.start("Trying to load non default presets")

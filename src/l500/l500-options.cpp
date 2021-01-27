@@ -464,7 +464,7 @@ namespace librealsense
             if (opt == RS2_OPTION_DIGITAL_GAIN)
             {
                 // WA for fw bug will be removed after fixed on FW
-                std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
+                //std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
                 update_defaults();
             }
                 

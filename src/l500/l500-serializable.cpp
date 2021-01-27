@@ -4,6 +4,7 @@
 #include "l500-serializable.h"
 #include "../../../third-party/json.hpp"
 #include <set>
+#include "l500-options.h"
 
 namespace librealsense
 {
@@ -69,6 +70,8 @@ namespace librealsense
         }
 
         auto opts = _depth_sensor.get_supported_options();
+
+        auto default_preset = false;
         for (auto o: opts)
         {
             auto& opt = _depth_sensor.get_option(o);
@@ -81,14 +84,25 @@ namespace librealsense
             auto it = j.find(key);
             if (it != j.end())
             {
-                
                 float val = it.value();
-                if( o == RS2_OPTION_VISUAL_PRESET
-                    && (int)val == (int)RS2_L500_VISUAL_PRESET_DEFAULT )
+                if (o == RS2_OPTION_VISUAL_PRESET
+                    && (int)val == (int)RS2_L500_VISUAL_PRESET_DEFAULT)
+                {
+                    default_preset = true;
                     continue;
+                }
+                    
                 opt.set(val);
             }
-
+        }
+        if (default_preset)
+        {
+            auto options = dynamic_cast< l500_options * >( this );
+            if( options )
+            {
+                auto preset = options->calc_preset_from_controls();
+                options->_preset->set_value( preset );
+            }
         }
     }
 } // namespace librealsense
