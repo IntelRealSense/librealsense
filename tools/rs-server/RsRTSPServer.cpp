@@ -18,15 +18,15 @@
 
 RsRTSPServer* RsRTSPServer::createNew(UsageEnvironment& t_env, std::shared_ptr<RsDevice> t_device, Port t_ourPort, UserAuthenticationDatabase* t_authDatabase, unsigned t_reclamationSeconds)
 {
-    int ourSocket = setUpOurSocket(t_env, t_ourPort);
-    if(ourSocket == -1)
-        return NULL;
+    int ourSocketIPv4 = setUpOurSocket(t_env, t_ourPort, AF_INET);
+    int ourSocketIPv6 = setUpOurSocket(t_env, t_ourPort, AF_INET6);
+    if (ourSocketIPv4 < 0 && ourSocketIPv6 < 0) return NULL;
 
-    return new RsRTSPServer(t_env, t_device, ourSocket, t_ourPort, t_authDatabase, t_reclamationSeconds);
+    return new RsRTSPServer(t_env, t_device, ourSocketIPv4, ourSocketIPv6, t_ourPort, t_authDatabase, t_reclamationSeconds);
 }
 
-RsRTSPServer::RsRTSPServer(UsageEnvironment& t_env, std::shared_ptr<RsDevice> t_device, int t_ourSocket, Port t_ourPort, UserAuthenticationDatabase* t_authDatabase, unsigned t_reclamationSeconds)
-    : RTSPServer(t_env, t_ourSocket, t_ourPort, t_authDatabase, t_reclamationSeconds)
+RsRTSPServer::RsRTSPServer(UsageEnvironment& t_env, std::shared_ptr<RsDevice> t_device, int t_ourSocketIPv4, int t_ourSocketIPv6, Port t_ourPort, UserAuthenticationDatabase* t_authDatabase, unsigned t_reclamationSeconds)
+    : RTSPServer(t_env, t_ourSocketIPv4, t_ourSocketIPv6, t_ourPort, t_authDatabase, t_reclamationSeconds)
     , m_device(t_device)
 {}
 

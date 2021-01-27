@@ -38,6 +38,7 @@ else()
 
   include_directories(
     ../../common
+    ../../src
     ../../src/ipDeviceCommon
     ../../include/librealsense2
     ../../third-party/tclap/include
