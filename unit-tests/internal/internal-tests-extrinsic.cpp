@@ -190,7 +190,10 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
                 width = 640;
             }
             auto res = configure_all_supported_streams(dev, width, height, fps);
-
+            for (auto& s : res.first)
+            {
+                s.close();
+            }
 
             // collect a log that contains info about 20 iterations for each stream
             // the info should include:
@@ -225,14 +228,33 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
                 rs2::config cfg;
                 rs2::pipeline pipe;
                 size_t cfg_size = 0;
-                for (auto profile : res.second)
+                std::vector<rs2::stream_profile> valid_stream_profiles;
+                std::map<int, std::vector<rs2::stream_profile>> sensor_stream_profiles;
+                std::map<int, std::vector<rs2_stream>> ds5_sensor_stream_map;
+                for (auto& profile : res.second)
                 {
                     auto fps = profile.fps;
                     if (device_type == "D400" && profile.stream == RS2_STREAM_ACCEL) fps = 250;
                     cfg.enable_stream(profile.stream, profile.index, profile.width, profile.height, profile.format, fps); // all streams in cfg
                     cfg_size += 1;
+                    // create stream profiles data structure to open streams per sensor when testing in sensor mode
+                    for (auto& s : res.first)
+                    {
+                        auto stream_profiles = s.get_stream_profiles();
+                        for (auto& sp : stream_profiles)
+                        {
+                            if (!(sp.stream_type() == profile.stream && sp.fps() == fps && sp.stream_index() == profile.index && sp.format() == profile.format)) continue;
+                            if (sp.stream_type() == RS2_STREAM_ACCEL || sp.stream_type() == RS2_STREAM_GYRO) sensor_stream_profiles[2].push_back(sp);
+                            auto vid = sp.as<rs2::video_stream_profile>();
+                            auto h = vid.height();
+                            auto w = vid.width();
+                            if (!(w == profile.width && h == profile.height)) continue;
+                            if (sp.stream_type() == RS2_STREAM_DEPTH || sp.stream_type() == RS2_STREAM_INFRARED || sp.stream_type() == RS2_STREAM_CONFIDENCE) sensor_stream_profiles[0].push_back(sp);
+                            if (sp.stream_type() == RS2_STREAM_COLOR) sensor_stream_profiles[1].push_back(sp);
+                        }
+                    }
                 }
-
+                
                 for (auto it = new_frame.begin(); it != new_frame.end(); it++)
                 {
                     it->second = 0;
@@ -282,10 +304,15 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
                     rs2::pipeline_profile profiles = pipe.start(cfg, frame_callback);
                 }
                 else {
+                    
+                    int i = 0;
                     for (auto& s : res.first)
                     {
-                        start_time = std::chrono::system_clock::now().time_since_epoch();
-                        start_time_milli = std::chrono::duration_cast<std::chrono::milliseconds>(start_time).count();
+                        s.open(sensor_stream_profiles[i]);
+                        i += 1;
+                    }
+                    for (auto& s : res.first)
+                    {
                         s.start(frame_callback);
                     }
                 }
@@ -324,14 +351,14 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
                     {
                         s.stop();
                     }
+                    for (auto& s : res.first)
+                    {
+                        s.close();
+                    }
                     
                 }
                 extrinsics_table_size.push_back(b._extrinsics.size());
 
-            }
-            for (auto& s : res.first)
-            {
-                s.close();
             }
             std::cout << "Analyzing info ..  " << std::endl;
 
