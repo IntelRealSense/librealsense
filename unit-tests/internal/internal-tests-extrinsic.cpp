@@ -280,6 +280,7 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
                 if (is_pipe)
                 {
                     rs2::pipeline_profile profiles = pipe.start(cfg, frame_callback);
+                    
                 }
                 else {
                     for (auto& s : res.first)
@@ -324,11 +325,15 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
                     {
                         s.stop();
                     }
+                    
                 }
                 extrinsics_table_size.push_back(b._extrinsics.size());
 
             }
-
+            for (auto& s : res.first)
+            {
+                s.close();
+            }
             std::cout << "Analyzing info ..  " << std::endl;
 
             // the test will succeed only if all 3 conditions are met:
