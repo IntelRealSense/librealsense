@@ -86,7 +86,9 @@ public enum Option {
     ENABLE_MAX_USABLE_RANGE(81),
     ALTERNATE_IR(82),
     NOISE_ESTIMATION(83),
-    ENABLE_IR_REFLECTIVITY(84);
+    ENABLE_IR_REFLECTIVITY(84),
+    AUTO_EXPOSURE_LIMIT(85),
+    AUTO_GAIN_LIMIT(86);
     private final int mValue;
 
     private Option(int value) { mValue = value; }

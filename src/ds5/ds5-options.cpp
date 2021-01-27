@@ -656,4 +656,88 @@ namespace librealsense
             return _uvc_option->is_enabled();
     }
 
+    auto_exposure_limit_option::auto_exposure_limit_option(hw_monitor& hwm, sensor_base* ep)
+        : _hwm(hwm), _sensor(ep)
+    {
+        _range = [this]()
+        {
+            return option_range{ 0, 165000, 1, 0 };
+        };
+    }
+
+    void auto_exposure_limit_option::set(float value)
+    {
+        command cmd_get(ds::AUTO_CALIB);
+        cmd_get.param1 = 5;
+        std::vector<uint8_t> ret = _hwm.send(cmd_get);
+        if (ret.empty())
+            throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
+
+        command cmd(ds::AUTO_CALIB);
+        cmd.param1 = 4;
+        cmd.param2 = static_cast<int>(value);
+        cmd.param3 = *(reinterpret_cast<uint32_t*>(ret.data() + 4));
+        _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float auto_exposure_limit_option::query() const
+    {
+        command cmd(ds::AUTO_CALIB);
+        cmd.param1 = 5;
+
+        auto res = _hwm.send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
+
+        return *(reinterpret_cast<uint32_t*>(res.data()));
+    }
+
+    option_range auto_exposure_limit_option::get_range() const
+    {
+        return *_range;
+    }
+
+    auto_gain_limit_option::auto_gain_limit_option(hw_monitor& hwm, sensor_base* ep)
+        : _hwm(hwm), _sensor(ep)
+    {
+        _range = [this]()
+        {
+            return option_range{ 0, 248, 1, 0 };
+        };
+    }
+
+    void auto_gain_limit_option::set(float value)
+    {
+        command cmd_get(ds::AUTO_CALIB);
+        cmd_get.param1 = 5;
+        std::vector<uint8_t> ret = _hwm.send(cmd_get);
+        if (ret.empty())
+            throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
+
+        command cmd(ds::AUTO_CALIB);
+        cmd.param1 = 4;
+        cmd.param2 = *(reinterpret_cast<uint32_t*>(ret.data()));
+        cmd.param3 = static_cast<int>(value);
+        _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float auto_gain_limit_option::query() const
+    {
+        command cmd(ds::AUTO_CALIB);
+        cmd.param1 = 5;
+
+        auto res = _hwm.send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
+
+        return *(reinterpret_cast<uint32_t*>(res.data() + 4));
+    }
+
+    option_range auto_gain_limit_option::get_range() const
+    {
+        return *_range;
+    }
+
 }

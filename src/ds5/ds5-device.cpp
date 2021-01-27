@@ -934,6 +934,13 @@ namespace librealsense
         // Metadata registration
         depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc_header::timestamp));
 
+        // Auto exposure and gain limit
+        if (_fw_version >= firmware_version("5.12.10.11"))
+        {
+            depth_sensor.register_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT, std::make_shared<auto_exposure_limit_option>(*_hw_monitor, &depth_sensor));
+            depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT, std::make_shared<auto_gain_limit_option>(*_hw_monitor, &depth_sensor));
+        }
+
         // attributes of md_capture_timing
         auto md_prop_offset = offsetof(metadata_raw, mode) +
             offsetof(md_depth_mode, depth_y_mode) +

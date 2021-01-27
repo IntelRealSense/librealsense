@@ -4960,6 +4960,16 @@ const option = {
   OPTION_NOISE_ESTIMATION: RS2.RS2_OPTION_NOISE_ESTIMATION,
   OPTION_ENABLE_IR_REFLECTIVITY: RS2.RS2_OPTION_ENABLE_IR_REFLECTIVITY,
   /**
+   * Set or get auto exposure limit in microsecond.
+   * @type {Integer}
+   */
+  OPTION_AUTO_EXPOSURE_LIMIT: RS2.RS2_OPTION_AUTO_EXPOSURE_LIMIT,
+  /**
+   * Set or get auto gain limit.
+   * @type {Integer}
+   */
+  OPTION_AUTO_GAIN_LIMIT: RS2.RS2_OPTION_AUTO_GAIN_LIMIT,
+  /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
    */

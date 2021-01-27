@@ -86,6 +86,8 @@ classdef option < int64
         alternate_IR                    (82)
         noise_estimation                (83)
         enable_ir_reclectivity          (84)
-        count                           (85)
+        auto_exposure_limit             (85)
+        auto_gain_limit                 (86)
+        count                           (87)
     end
 end
