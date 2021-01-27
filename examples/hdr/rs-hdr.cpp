@@ -9,7 +9,7 @@
 
 
 // HDR Example demonstrates how to use the HDR feature - only for D400 product line devices
-int main(int argc, char* argv[]) try
+int main() try
 {
 
     rs2::context ctx;
@@ -98,12 +98,12 @@ int main(int argc, char* argv[]) try
     // init parameters to set view's window 
     unsigned width = 1280;
     unsigned height = 720;
-    char* title = "RealSense HDR Example";
+    std::string title = "RealSense HDR Example";
     unsigned tiles_in_row = 4;
     unsigned tiles_in_col = 2;
 
     // init view window 
-    window app(width, height, title, tiles_in_row, tiles_in_col);
+    window app(width, height, title.c_str(), tiles_in_row, tiles_in_col);
 
     // init ImGui with app (window object)
     ImGui_ImplGlfw_Init(app, false);
