@@ -81,7 +81,9 @@ public class DetachedActivity extends AppCompatActivity {
     }
 
     private boolean isCameraPermissionGranted() {
-        return android.os.Build.VERSION.SDK_INT > android.os.Build.VERSION_CODES.O && ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+        if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.O)
+            return true;
+        return  ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
     }
 
     private boolean isWritePermissionGranted() {
