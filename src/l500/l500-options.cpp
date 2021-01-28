@@ -54,7 +54,7 @@ namespace librealsense
             auto current = query_current( ( rs2_sensor_mode )( int( _resolution->query() ) ) );
             _hw_monitor->send( command{ AMCSET, _type, -1 } );
 
-            // if the sensor is streaming the value of control will update only whan the next frame
+            // if the sensor is streaming the value of control will update only when the next frame
             // arrive
             if( _l500_dev->get_depth_sensor().is_streaming() )
                 std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
@@ -461,7 +461,7 @@ namespace librealsense
             throw invalid_value_exception( to_string()
                                            << "RS2_L500_VISUAL_PRESET_DEFAULT was deprecated! " );
 
-        _owner->verify_max_usable_range_restrictions( RS2_OPTION_VISUAL_PRESET, value );
+        verify_max_usable_range_restrictions( RS2_OPTION_VISUAL_PRESET, value );
         _owner->change_preset( static_cast< rs2_l500_visual_preset >( int( value ) ) );
 
         float_option_with_description< rs2_l500_visual_preset >::set( value );
@@ -472,14 +472,29 @@ namespace librealsense
         float_option_with_description< rs2_l500_visual_preset >::set( value );
     }
 
+    void l500_preset_option::verify_max_usable_range_restrictions( rs2_option opt, float value ) 
+    {
+        // Block changing visual preset while Max Usable Range is on [RS5-8358]
+        if( _owner->get_depth_sensor().supports_option( RS2_OPTION_ENABLE_MAX_USABLE_RANGE )
+            && ( _owner->get_depth_sensor().get_option( RS2_OPTION_ENABLE_MAX_USABLE_RANGE ).query()
+                 == 1.0 ) )
+        {
+            if( ( RS2_OPTION_VISUAL_PRESET == opt )
+                && ( value == RS2_L500_VISUAL_PRESET_MAX_RANGE ) )
+                return;
+
+            throw wrong_api_call_sequence_exception(
+                to_string()
+                << "Visual Preset cannot be changed while Max Usable Range is enabled" );
+        }
+    }
+
     void l500_options::on_set_option( rs2_option opt, float value )
     {
         auto advanced_controls = get_advanced_controls();
         if( std::find( advanced_controls.begin(), advanced_controls.end(), opt )
             != advanced_controls.end() )
         {
-            verify_max_usable_range_restrictions( opt, value );
-
             if (opt == RS2_OPTION_DIGITAL_GAIN)
             {
                 // WA for fw bug will be removed after fixed on FW
@@ -608,20 +623,6 @@ namespace librealsense
         _hw_options[RS2_OPTION_LASER_POWER]->set_with_no_signal(range.max);
     }
 
-    void l500_options::verify_max_usable_range_restrictions( rs2_option opt, float value )
-    {
-        // Block changing visual preset while Max Usable Range is on [RS5-8358]
-        if (get_depth_sensor().supports_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE)
-            && (get_depth_sensor().get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE).query() == 1.0))
-        {
-            if ((RS2_OPTION_VISUAL_PRESET == opt) && (value == RS2_L500_VISUAL_PRESET_MAX_RANGE))
-                return;
-
-            throw wrong_api_call_sequence_exception(
-                to_string() << "Visual Preset cannot be changed while Max Usable Range is enabled");
-        }
-    }  
-
     // this method not uses l500_hw_options::query_default() because
     // we want to save the sleep 50 Msec on streaming and do it once to all the controlls
     void l500_options::update_defaults()
@@ -670,7 +671,7 @@ namespace librealsense
                 currents[opt.first]
                     = opt.second->query_current( ( rs2_sensor_mode )( int( resolution ) ) );
 
-            // if the sensor is streaming the value of control will update only whan the next frame
+            // if the sensor is streaming the value of control will update only when the next frame
             // arrive
             if( get_depth_sensor().is_streaming() )
                 std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );

@@ -151,6 +151,7 @@ namespace librealsense
         void set_value( float value );
 
     private:
+        void verify_max_usable_range_restrictions( rs2_option opt, float value );
         l500_options * _owner;
     };
 
@@ -161,19 +162,17 @@ namespace librealsense
             const platform::backend_device_group& group);
 
         std::vector<rs2_option> get_advanced_controls();
+        void change_preset( rs2_l500_visual_preset preset );
+        void set_preset_value( rs2_l500_visual_preset preset );
+        void reset_hw_controls();
+        rs2_l500_visual_preset calc_preset_from_controls();
 
     private:
-        friend class l500_preset_option;
-        friend class digital_gain_option;
-        friend class l500_serializable;
-
-        void verify_max_usable_range_restrictions( rs2_option opt, float value );
-        rs2_l500_visual_preset calc_preset_from_controls();
         void on_set_option(rs2_option opt, float value);
-        void change_preset(rs2_l500_visual_preset preset);
+        
         void set_preset_controls_to_defaults();
         void move_to_custom();
-        void reset_hw_controls();
+        
         void set_max_laser();
 
         void change_gain( rs2_l500_visual_preset preset );
