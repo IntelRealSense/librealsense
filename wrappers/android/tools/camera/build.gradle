@@ -37,14 +37,14 @@ task downloadFirmware() {
     def d4xxFile = new File("$projectDir/src/main/res/raw/fw_d4xx.bin")
     if (!d4xxFile.exists()) {
         println("downloading D4xx fw: " + d4xxFwVersion)
-        new URL('https://librealsense.intel.com/Releases/RS4xx/FW/D4XX_FW_Image-' + d4xxFwVersion + '.bin').withInputStream{ i -> d4xxFile.withOutputStream{ it << i }}
+        new URL('http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/RS4xx/FW/D4XX_FW_Image-' + d4xxFwVersion + '.bin').withInputStream{ i -> d4xxFile.withOutputStream{ it << i }}
     }
 
     def sr3xxFwVersion = getFwVersion('SR3XX_RECOMMENDED_FIRMWARE_VERSION')
     def sr3xxFile = new File("$projectDir/src/main/res/raw/fw_sr3xx.bin")
     if (!sr3xxFile.exists()) {
         println("downloading SR3xx fw: " + sr3xxFwVersion)
-        new URL('https://librealsense.intel.com/Releases/SR300/FW/SR3XX_FW_Image-' + sr3xxFwVersion + '.bin').withInputStream{ i -> sr3xxFile.withOutputStream{ it << i }}
+        new URL('http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/SR300/FW/SR3XX_FW_Image-' + sr3xxFwVersion + '.bin').withInputStream{ i -> sr3xxFile.withOutputStream{ it << i }}
     }
 }
 
