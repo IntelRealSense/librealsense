@@ -308,12 +308,16 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
                     int i = 0;
                     for (auto& s : res.first)
                     {
+                        if (sensor_stream_profiles.find(i) == sensor_stream_profiles.end()) continue;
                         s.open(sensor_stream_profiles[i]);
                         i += 1;
                     }
+                    i = 0;
                     for (auto& s : res.first)
                     {
+                        if (sensor_stream_profiles.find(i) == sensor_stream_profiles.end()) continue;
                         s.start(frame_callback);
+                        i += 1;
                     }
                 }
                 // to prevent FW issue, at least 20 frames per stream should arrive
