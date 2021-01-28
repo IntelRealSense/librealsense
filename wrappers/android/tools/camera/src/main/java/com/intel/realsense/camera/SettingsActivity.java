@@ -91,7 +91,8 @@ public class SettingsActivity extends AppCompatActivity {
                 _device = devices.createDevice(0);
                 loadInfosList();
                 loadSettingsList(_device);
-                StreamProfileSelector[] profilesList = createSettingList(_device);
+                List<StreamProfileSelector> profilesList = createSettingList(_device);
+                RemoveUnsupportedProfiles(profilesList);
                 loadStreamList(_device, profilesList);
                 return;
             } catch(Exception e){
@@ -299,11 +300,13 @@ public class SettingsActivity extends AppCompatActivity {
         return rv;
     }
 
-    private void loadStreamList(Device device, StreamProfileSelector[] lines){
-        if(device == null || lines == null)
+    private void loadStreamList(Device device, List<StreamProfileSelector> streamProfiles){
+        if(device == null || streamProfiles.size() == 0)
             return;
         if(!device.supportsInfo(CameraInfo.PRODUCT_ID))
             throw new RuntimeException("try to config unknown device");
+
+        StreamProfileSelector[] lines = streamProfiles.toArray(new StreamProfileSelector[streamProfiles.size()]);
         final String pid = device.getInfo(CameraInfo.PRODUCT_ID);
         final StreamProfileAdapter adapter = new StreamProfileAdapter(this, lines, new StreamProfileAdapter.Listener() {
             @Override
@@ -322,7 +325,7 @@ public class SettingsActivity extends AppCompatActivity {
         adapter.notifyDataSetChanged();
     }
 
-    private StreamProfileSelector[] createSettingList(final Device device){
+    private List<StreamProfileSelector> createSettingList(final Device device){
         Map<Integer, List<StreamProfile>> profilesMap = createProfilesMap(device);
 
         SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);
@@ -340,7 +343,24 @@ public class SettingsActivity extends AppCompatActivity {
 
         Collections.sort(lines);
 
-        return lines.toArray(new StreamProfileSelector[lines.size()]);
+        return lines;
+    }
+
+    private void RemoveUnsupportedProfiles(List<StreamProfileSelector> streamProfiles){
+
+        // Entering Settings when all stream on (including confidence) result in an application crash.
+        // as a workaround we remove confidence profile as it is not supported on display anyway.
+        // See [RS5-8989]
+        StreamProfileSelector confidenceProfile = null;
+        for (StreamProfileSelector streamProfile : streamProfiles){
+            if (streamProfile.getProfile().getType() == StreamType.CONFIDENCE){
+                confidenceProfile = streamProfile;
+                break;
+            }
+        }
+
+        if (confidenceProfile != null)
+            streamProfiles.remove(confidenceProfile);
     }
 
     void toggleFwLogging(){
