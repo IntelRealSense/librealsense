@@ -664,9 +664,14 @@ namespace librealsense
             std::ostringstream iio_read_device_path;
             iio_read_device_path << "/dev/" << IIO_DEVICE_PREFIX << _iio_device_number;
 
+            _fd = open(iio_read_device_path.str().c_str(), O_RDONLY | O_NONBLOCK);
             std::unique_ptr<int, std::function<void(int*)> > fd(
-                        new int (_fd = open(iio_read_device_path.str().c_str(), O_RDONLY | O_NONBLOCK)),
-                        [&](int* d){ if (d && (*d)) { _fd = ::close(*d);}});
+                        new int (_fd),
+                        [&](int* d)
+                        {
+                          if (*d) { _fd = ::close(*d);};
+                          delete d;
+                        });
 
             if (!(*fd > 0))
                 throw linux_backend_exception("open() failed with all retries!");
@@ -746,7 +751,7 @@ namespace librealsense
             {
                 if (input->get_hid_input_info().enabled)
                 {
-                    _channels.push_back(input);
+                    _channels.push_back(input.get());
                 }
             }
 
@@ -918,9 +923,9 @@ namespace librealsense
 
                         try
                         {
-                            auto* new_input = new hid_input(_iio_device_path, file);
+                          std::unique_ptr<hid_input> new_input(new hid_input(_iio_device_path, file));
                             // push to input list.
-                            _inputs.push_front(new_input);
+                            _inputs.push_front(std::move(new_input));
                         }
                         catch(...)
                         {

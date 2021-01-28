@@ -170,11 +170,12 @@ namespace librealsense
         {
             stream_selector->set_description(float(s), "Process - " + std::string (rs2_stream_to_string((rs2_stream)s)));
         }
-        stream_selector->on_set([this, stream_selector](float val)
+        auto stream_selector_ptr = stream_selector.get();
+        stream_selector->on_set([this, stream_selector_ptr](float val)
         {
             std::lock_guard<std::mutex> lock(_mutex);
 
-            if (!stream_selector->is_valid(val))
+            if (!stream_selector_ptr->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported stream filter, " << val << " is out of range.");
 
@@ -186,11 +187,12 @@ namespace librealsense
         {
             format_selector->set_description(float(f), "Process - " + std::string(rs2_format_to_string((rs2_format)f)));
         }
-        format_selector->on_set([this, format_selector](float val)
+        auto format_selector_ptr = format_selector.get();
+        format_selector->on_set([this, format_selector_ptr](float val)
         {
             std::lock_guard<std::mutex> lock(_mutex);
 
-            if (!format_selector->is_valid(val))
+            if (!format_selector_ptr->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported stream format filter, " << val << " is out of range.");
 
@@ -198,11 +200,12 @@ namespace librealsense
         });
 
         auto index_selector = std::make_shared<ptr_option<int>>(-1, std::numeric_limits<int>::max(), 1, -1, &_stream_filter.index, "Stream index");
-        index_selector->on_set([this, index_selector](float val)
+        auto index_selector_ptr = index_selector.get();
+        index_selector->on_set([this, index_selector_ptr](float val)
         {
             std::lock_guard<std::mutex> lock(_mutex);
 
-            if (!index_selector->is_valid(val))
+            if (!index_selector_ptr->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported stream index filter, " << val << " is out of range.");
 

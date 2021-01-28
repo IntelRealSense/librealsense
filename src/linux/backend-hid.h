@@ -177,7 +177,7 @@ namespace librealsense
             std::string _iio_device_path;
             std::string _sensor_name;
             std::string _sampling_frequency_name;
-            std::list<hid_input*> _inputs;
+            std::list<std::unique_ptr<hid_input>> _inputs;
             std::list<hid_input*> _channels;
             hid_callback _callback;
             std::atomic<bool> _is_capturing;
