@@ -400,8 +400,11 @@ namespace librealsense
     {
         try
         {
-            // compare default values to current values
-            // exept from laser power that can get diffrant value according to preset
+            // compare default values to current values exept from laser power,
+            // if we are on preset, we expect that all control's currents values will
+            // be aqual to control's default values according to current digital gain value,
+            // only laser power can have diffrant value according to preset
+            // laser power value will be check later
             for( auto control : _hw_options )
             {
                 if( control.first != RS2_OPTION_LASER_POWER && !control.second->is_read_only() )
@@ -485,7 +488,7 @@ namespace librealsense
             }
                 
 
-            // whan we moved to auto preset we set all controls to -1 
+            // when we moved to auto preset we set all controls to -1 
             // so we have to set preset controls to defaults values now
             /*auto curr_preset = ( rs2_l500_visual_preset )(int)_preset->query();
             if( curr_preset == RS2_L500_VISUAL_PRESET_AUTOMATIC )
@@ -559,8 +562,8 @@ namespace librealsense
             return;
         }
 
-        // digital gain must be the first option that is set because it's
-        // impact the default values of some of the hw controls
+        // digital gain must be the first option that is set because it
+        // impacts the default values of some of the hw controls
         change_gain( preset );
         change_alt_ir( preset );
 

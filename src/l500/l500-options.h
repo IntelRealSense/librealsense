@@ -29,34 +29,34 @@ namespace librealsense
         get_default = 4
     };
 
-class l500_options;
+    class l500_options;
 
-class digital_gain_option : public cascade_option< uvc_xu_option< int > >
-{
-public:
-    digital_gain_option( uvc_sensor & ep,
-                         platform::extension_unit xu,
-                         uint8_t id,
-                         std::string description,
-                         const std::map< float, std::string > & description_per_value,
-                         firmware_version fw_version,
-                         l500_options * owner )
-        : cascade_option( ep, xu, id, description, description_per_value )
-        , _fw_version( fw_version )
-        , _owner( owner )
+    class digital_gain_option : public cascade_option< uvc_xu_option< int > >
     {
-    }
-    option_range get_range() const override;
-    void set_with_no_signal( float value ) override;
+    public:
+        digital_gain_option( uvc_sensor & ep,
+                             platform::extension_unit xu,
+                             uint8_t id,
+                             std::string description,
+                             const std::map< float, std::string > & description_per_value,
+                             firmware_version fw_version,
+                             l500_options * owner )
+            : cascade_option( ep, xu, id, description, description_per_value )
+            , _fw_version( fw_version )
+            , _owner( owner )
+        {
+        }
+        option_range get_range() const override;
+        void set_with_no_signal( float value ) override;
 
-private:
-    firmware_version _fw_version;
-    l500_options * _owner;
-};
+    private:
+        firmware_version _fw_version;
+        l500_options * _owner;
+    };
 
-class l500_hw_options : public option
-{
-public:
+    class l500_hw_options : public option
+    {
+    public:
         float query() const override;
 
         void set(float value) override;
@@ -101,7 +101,6 @@ public:
         bool _is_read_only;
         bool _was_set_manually;
     };
-
 
     class max_usable_range_option : public bool_option
     {
