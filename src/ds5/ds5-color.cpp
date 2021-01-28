@@ -119,6 +119,12 @@ namespace librealsense
 
         auto white_balance_option = std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_WHITE_BALANCE);
         color_ep.register_option(RS2_OPTION_WHITE_BALANCE, white_balance_option);
+        auto auto_white_balance_option = std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+        color_ep.register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, auto_white_balance_option);
+        color_ep.register_option(RS2_OPTION_WHITE_BALANCE,
+            std::make_shared<auto_disabling_control>(
+                white_balance_option,
+                auto_white_balance_option));
 
         // Currently disabled for certain sensors
         if (!val_in_range(_pid, { ds::RS465_PID }))
@@ -126,15 +132,15 @@ namespace librealsense
             color_ep.register_pu(RS2_OPTION_HUE);
         }
 
+        color_ep.register_option(RS2_OPTION_POWER_LINE_FREQUENCY,
+            std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_POWER_LINE_FREQUENCY,
+                std::map<float, std::string>{ { 0.f, "Disabled"},
+                { 1.f, "50Hz" },
+                { 2.f, "60Hz" },
+                { 3.f, "Auto" }, }));
+
         if (_separate_color)
         {
-            auto auto_white_balance_option = std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
-            color_ep.register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, auto_white_balance_option);
-            color_ep.register_option(RS2_OPTION_WHITE_BALANCE,
-                std::make_shared<auto_disabling_control>(
-                    white_balance_option,
-                    auto_white_balance_option));
-
             // Currently disabled for certain sensors
             if (!val_in_range(_pid, { ds::RS465_PID }))
             {
@@ -161,17 +167,7 @@ namespace librealsense
                     gain_option,
                     auto_exposure_option));
 
-            // temp in if
-            color_ep.register_option(RS2_OPTION_POWER_LINE_FREQUENCY,
-                std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_POWER_LINE_FREQUENCY,
-                    std::map<float, std::string>{ { 0.f, "Disabled"},
-                    { 1.f, "50Hz" },
-                    { 2.f, "60Hz" },
-                    { 3.f, "Auto" }, }));
-        }
 
-        if (_separate_color)
-        {
             color_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
             color_ep.register_metadata(RS2_FRAME_METADATA_ACTUAL_FPS, std::make_shared<ds5_md_attribute_actual_fps>(false, [](const rs2_metadata_type& param)
                 {return param * 100; })); //the units of the exposure of the RGB sensor are 100 microseconds so the md_attribute_actual_fps need the lambda to convert it to microseconds
@@ -193,13 +189,6 @@ namespace librealsense
                     roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor, ds::fw_cmd::SETRGBAEROI));
             }
 
-            // attributes of md_capture_stats
-            md_prop_offset = offsetof(metadata_raw, mode) +
-                offsetof(md_rgb_mode, rgb_mode) +
-                offsetof(md_rgb_normal_mode, intel_capture_stats);
-
-            color_ep.register_metadata(RS2_FRAME_METADATA_WHITE_BALANCE, make_attribute_parser(&md_capture_stats::white_balance, md_capture_stat_attributes::white_balance_attribute, md_prop_offset));
-            
             // attributes of md_rgb_control
             md_prop_offset = offsetof(metadata_raw, mode) +
                 offsetof(md_rgb_mode, rgb_mode) +
@@ -210,8 +199,16 @@ namespace librealsense
             color_ep.register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE, make_attribute_parser(&md_rgb_control::ae_mode, md_rgb_control_attributes::ae_mode_attribute, md_prop_offset,
                 [](rs2_metadata_type param) { return (param != 1); }));
 
+            // attributes of md_capture_stats
+            md_prop_offset = offsetof(metadata_raw, mode) +
+                offsetof(md_rgb_mode, rgb_mode) +
+                offsetof(md_rgb_normal_mode, intel_capture_stats);
+
+            color_ep.register_metadata(RS2_FRAME_METADATA_WHITE_BALANCE, make_attribute_parser(&md_capture_stats::white_balance, md_capture_stat_attributes::white_balance_attribute, md_prop_offset));
+
         }
 
+           
         // attributes of md_rgb_control
         auto md_prop_offset = offsetof(metadata_raw, mode) +
             offsetof(md_rgb_mode, rgb_mode) +
