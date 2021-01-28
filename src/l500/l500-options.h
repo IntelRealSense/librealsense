@@ -31,14 +31,6 @@ namespace librealsense
 
 class l500_options;
 
-// On old FW versions the way to get the default values of the hw commands is to
-// reset hw commands current values -1 and than get the current values
-// on some of the old FW versions there is a bug that we must reset hw commands
-// before setting the digital gain, otherwise its not updates the current with default values
-// in digital_gain_option class we override the set_with_no_signal that called when 
-// changing preset and reset hw commands before setting the digital gain as WA to this bug
-// we still have a limit on the scenario that user change digital gain manually (not from preset)
-// we won't get the correct default values
 class digital_gain_option : public cascade_option< uvc_xu_option< int > >
 {
 public:
@@ -86,8 +78,8 @@ public:
                          std::shared_ptr< digital_gain_option > digital_gain);
 
         void update_default( float def );
-        float query_default( int mode, hwmon_response * response = nullptr ) const;
-        float query_current( int mode ) const;
+        float get_default( int mode, hwmon_response * response = nullptr ) const;
+        float query_current( rs2_sensor_mode mode ) const;
 
         bool is_read_only() const override { return _is_read_only; }
         void set_read_only( bool read_only );

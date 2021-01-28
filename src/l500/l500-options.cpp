@@ -6,7 +6,7 @@
 #include "l500-depth.h"
 
 const std::string MIN_CONTROLS_FW_VERSION("1.3.9.0");
-const std::string MIN_GET_DEFAULT_FW_VERSION( "1.5.3.0" );
+const std::string MIN_GET_DEFAULT_FW_VERSION( "1.5.4.0" );
 
 namespace librealsense
 {
@@ -14,7 +14,7 @@ namespace librealsense
 
     float l500_hw_options::query() const
     {
-        return query_current( int( _resolution->query() ) );
+        return query_current( ( rs2_sensor_mode )( int( _resolution->query() ) ) );
     }
 
     void l500_hw_options::set(float value)
@@ -41,7 +41,7 @@ namespace librealsense
     {
         if(_fw_version >= firmware_version( MIN_GET_DEFAULT_FW_VERSION ) )
         {
-            return query_default( int( _resolution->query() ), response );
+            return get_default( int( _resolution->query() ), response );
         }
         else
         {
@@ -51,17 +51,22 @@ namespace librealsense
             //     3. Wait for the next frame (if streaming)
             //     4. Read the current value
             //     5. Restore the current value
-            auto current = query_current( int( _resolution->query() ) );
+            auto current = query_current( ( rs2_sensor_mode )( int( _resolution->query() ) ) );
             _hw_monitor->send( command{ AMCSET, _type, -1 } );
 
-            auto def = query_current( int( _resolution->query() ) );
+            // if the sensor is streaming the value of control will update only whan the next frame
+            // arrive
+            if( _l500_dev->get_depth_sensor().is_streaming() )
+                std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+
+            auto def = query_current( ( rs2_sensor_mode )( int( _resolution->query() ) ) );
 
             if( current != def )
                 _hw_monitor->send( command{ AMCSET, _type, (int)current } );
 
+            *response = hwm_Success;
             return def;
         }
-      
     }
 
     l500_hw_options::l500_hw_options( l500_device* l500_dev,
@@ -128,36 +133,47 @@ namespace librealsense
     void l500_hw_options::enable_recording(std::function<void(const option&)> recording_action)
     {}
 
-    float l500_hw_options::query_default( int mode, hwmon_response * response ) const 
+    float l500_hw_options::get_default( int mode, hwmon_response * response ) const
     {
-        auto res = _hw_monitor->send( command{ AMCGET, _type, get_default, mode }, response );
+        auto res = _hw_monitor->send( command{ AMCGET, _type, l500_command::get_default, mode },
+                                      response );
 
-            if( response && * response == hwm_IllegalHwState )
-                return -1;
-
-        if( res.size() < sizeof( int32_t ) )
+        // If digital gain is on 'auto' the gain value can change in FW internaly
+        // there are some controls that their default values depend on gain and
+        // became not applicable, on this state the FW return hwm_IllegalHwState and we set the
+        // value of default to -1 means not applicable.
+        if( response && *response == hwm_IllegalHwState )
+            return -1;
+        else if( *response != hwm_Success)
         {
             std::stringstream s;
-            s << "Size of data returned from query(get_default) of " << _type << "is " << res.size()
-              << " while min size = " << sizeof( int32_t );
+            s << "hw_monitor  AMCGET of " << _type << " return error " << *response;
             throw std::runtime_error( s.str() );
         }
-        auto val = *( reinterpret_cast< uint32_t * >( (void *)res.data() ) );
+        else if (res.size() < sizeof(int32_t))
+        {
+            std::stringstream s;
+            s << "Size of data returned from query(get_default) of " << _type << " is "
+              << res.size() << " while min size = " << sizeof( int32_t );
+            throw std::runtime_error( s.str() );
+        }
+
+        auto val = *( reinterpret_cast< uint32_t * >( res.data() ) );
         return float( val );
     }
 
-    float l500_hw_options::query_current( int mode ) const 
+    float l500_hw_options::query_current( rs2_sensor_mode mode ) const 
     {
         auto res = _hw_monitor->send( command{ AMCGET, _type, get_current, mode } );
 
         if( res.size() < sizeof( int32_t ) )
         {
             std::stringstream s;
-            s << "Size of data returned from query(get_default) of " << _type << "is " << res.size()
+            s << "Size of data returned from query(get_current) of " << _type << " is " << res.size()
               << " while min size = " << sizeof( int32_t );
             throw std::runtime_error( s.str() );
         }
-        auto val = *( reinterpret_cast< uint32_t * >( (void *)res.data() ) );
+        auto val = *( reinterpret_cast< uint32_t * >( res.data() ) );
         return float( val );
     }
 
@@ -603,6 +619,8 @@ namespace librealsense
         }
     }  
 
+    // this method not uses l500_hw_options::query_default() because
+    // we want to save the sleep 50 Msec on streaming and do it once to all the controlls
     void l500_options::update_defaults()
     {
         auto resolution = get_depth_sensor().get_option( RS2_OPTION_SENSOR_MODE ).query();
@@ -610,14 +628,16 @@ namespace librealsense
         std::map< rs2_option, float > defaults;
         if( _fw_version >= firmware_version( MIN_GET_DEFAULT_FW_VERSION ) )
         {
-            // if the sensor is streaming and somebody changed one of the hw control
-            // the value of control will update only whan the next frame arrive
             for( auto opt : _hw_options )
             {
                 hwmon_response response;
-                defaults[opt.first] = opt.second->query_default( int( resolution ), &response );
+                defaults[opt.first] = opt.second->get_default( int( resolution ), &response );
                 if( response != hwm_Success )
                 {
+                    // If we set the digital gain to 'auto' the gain value can change in FW internaly 
+                    // there are some controls that their default values depend on gain and on this state of auto
+                    // became not applicable in this state the FW return hwm_IllegalHwState
+                    // and we set the value of default to -1 means not applicable.
                     if( response == hwm_IllegalHwState )
                     {
                         defaults[opt.first] = -1;
@@ -644,7 +664,8 @@ namespace librealsense
             //     5. Restore the current value
             std::map< rs2_option, float > currents;
             for( auto opt : _hw_options )
-                currents[opt.first] = opt.second->query_current( int( resolution ) );
+                currents[opt.first]
+                    = opt.second->query_current( ( rs2_sensor_mode )( int( resolution ) ) );
 
             // if the sensor is streaming the value of control will update only whan the next frame
             // arrive
@@ -654,7 +675,8 @@ namespace librealsense
             for( auto opt : _hw_options )
             {
                 opt.second->set_with_no_signal( -1 );
-                defaults[opt.first] = opt.second->query_current( int( resolution ) );
+                defaults[opt.first]
+                    = opt.second->query_current( ( rs2_sensor_mode )( int( resolution ) ) );
             }
 
             for( auto opt : currents )
@@ -843,7 +865,10 @@ namespace librealsense
                "Note: only active on 2D view, Visual Preset:Max Range, Resolution:VGA, ROI:20%";
     }
 
-    // don't expose 'auto gain' for now
+    // FW expose 'auto gain' with value 0 as one of the values of gain option in addition 
+    // to 'low gain' and 'high gain'
+    // for now we don't want to expose it to user so the range starts from 1 
+    // once we want to expose it we will remove this override method
     option_range digital_gain_option::get_range() const
     {
         auto range = uvc_xu_option< int >::get_range();
@@ -854,9 +879,17 @@ namespace librealsense
     // set gain as result of change preset 
     void digital_gain_option::set_with_no_signal( float value ) 
     {
+        // On old FW versions the way to get the default values of the hw commands is to
+        // reset hw commands current values -1 and than get the current values
+        // on some of the old FW versions there is a bug that we must reset hw commands
+        // before setting the digital gain, otherwise its not updates the current with default
+        // values in digital_gain_option class we override the set_with_no_signal that called when
+        // changing preset and reset hw commands before setting the digital gain as WA to this bug
+        // we still have a limit on the scenario that user change digital gain manually (not from
+        // preset) we won't get the correct default values
         if( _fw_version < firmware_version( MIN_GET_DEFAULT_FW_VERSION ) )
             _owner->reset_hw_controls();  // should be before gain changing as WA for old FW versions
 
         cascade_option::set_with_no_signal( value );
     }
-    }  // namespace librealsense
+}  // namespace librealsense
