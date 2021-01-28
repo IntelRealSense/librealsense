@@ -139,7 +139,7 @@ public:
         //concate the name given with seq_id in order to make a unique name (uniqeness is needed for Begin())
         std::string name_id = std::string(_name) + std::to_string(_seq_id);
         ImGui::Begin(name_id.c_str(), nullptr, _sliders_flags);
-        ImGui::Text(_name);
+        ImGui::Text("%s",_name);
         bool is_changed =
             ImGui::SliderFloat("", &_value, _min_value, _max_value, "%.3f", 5.0f, false); //5.0f for logarithmic scale 
         if (is_changed) {
@@ -173,7 +173,7 @@ public:
         ImGui::SetNextWindowSize(_size);
         ImGui::SetNextWindowPos(_position);
         ImGui::Begin(_name, nullptr, _text_box_flags);
-        ImGui::Text(text);
+        ImGui::Text("%s",text);
 
         ImGui::End();
     }
