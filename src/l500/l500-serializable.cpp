@@ -37,7 +37,9 @@ namespace librealsense
         json j = json::parse(json_content);
 
         // Set of options that should not be set in the loop
-        std::set< rs2_option > options_to_ignore{ RS2_OPTION_SENSOR_MODE };
+        std::set< rs2_option > options_to_ignore{ RS2_OPTION_SENSOR_MODE,
+                                                  RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH,
+                                                  RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH };
 
         // We have to set the sensor mode (resolution) first
         auto & sensor_mode = _depth_sensor.get_option( RS2_OPTION_SENSOR_MODE );
