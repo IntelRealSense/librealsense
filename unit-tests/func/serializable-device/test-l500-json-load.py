@@ -16,10 +16,50 @@ visual_preset_name = rs.l500_visual_preset(int(visual_preset_number))
 # This test checks backward compatibility to old json files that saved with default preset
 # The default preset is deprecated but json files that saved with default preset
 # should be support
+
+data = """
+{
+    "Alternate IR": 0.0,
+    "Apd Temperature": -9999,
+    "Confidence Threshold": 1,
+    "Depth Offset": 4.5,
+    "Depth Units": 0.000250000011874363,
+    "Digital Gain": 2,
+    "Enable IR Reflectivity": 0.0,
+    "Enable Max Usable Range": 0.0,
+    "Error Polling Enabled": 1,
+    "Frames Queue Size": 16,
+    "Freefall Detection Enabled": 1,
+    "Global Time Enabled": 0.0,
+    "Host Performance": 0.0,
+    "Humidity Temperature": 32.8908233642578,
+    "Inter Cam Sync Mode": 0.0,
+    "Invalidation Bypass": 0.0,
+    "LDD temperature": 32.1463623046875,
+    "Laser Power": 100,
+    "Ma Temperature": 39.667610168457,
+    "Mc Temperature": 31.6955661773682,
+    "Min Distance": 95,
+    "Noise Estimation": 0.0,
+    "Noise Filtering": 4,
+    "Post Processing Sharpening": 1,
+    "Pre Processing Sharpening": 0.0,
+    "Receiver Gain": 18,
+    "Reset Camera Accuracy Health": 0.0,
+    "Sensor Mode": 0.0,
+    "Trigger Camera Accuracy Health": 0.0,
+    "Visual Preset": 1,
+    "Zero Order Enabled": 0.0,
+    "stream-depth-format": "Z16",
+    "stream-fps": "30",
+    "stream-height": "480",
+    "stream-ir-format": "Y8",
+    "stream-width": "640"
+}
+"""
+
 test.start("Trying to load default settings from json")
 try:
-    with open('func/serializable-device/default.json') as f:
-        data = f.read()
     sd.load_json(data)
     visual_preset_number = depth_sensor.get_option(rs.option.visual_preset)
     visual_preset_name = rs.l500_visual_preset(int(visual_preset_number))

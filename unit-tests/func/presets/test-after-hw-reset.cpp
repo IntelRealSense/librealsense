@@ -4,6 +4,7 @@
 //#cmake: static!
 
 #include "../func-common.h"
+#include "../reset-camera.h"
 #include "presets-common.h"
 #include <l500/l500-options.h>
 

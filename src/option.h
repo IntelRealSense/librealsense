@@ -145,7 +145,7 @@ namespace librealsense
             {
                 if( old != value )
                     T::set( old );
-                LOG_WARNING( "An exception thrown while notifying " );
+                LOG_WARNING( "An exception was thrown while notifying inside cascase_option::set" );
                 throw;
             }
             

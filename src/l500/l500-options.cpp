@@ -590,6 +590,11 @@ namespace librealsense
         change_laser_power( preset );
     }
 
+    void l500_options::set_preset_value( rs2_l500_visual_preset preset ) 
+    {
+        _preset->set_value( preset );
+    }
+
     void l500_options::set_preset_controls_to_defaults()
     {
         for( auto & o : _hw_options )

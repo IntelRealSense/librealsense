@@ -101,7 +101,7 @@ namespace librealsense
             if( options )
             {
                 auto preset = options->calc_preset_from_controls();
-                options->_preset->set_value( preset );
+                options->set_preset_value( preset );
             }
         }
     }
