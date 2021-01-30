@@ -173,8 +173,8 @@ namespace librealsense
         void set_preset_value( rs2_l500_visual_preset preset );
         void reset_hw_controls();
         rs2_l500_visual_preset calc_preset_from_controls();
-		void update_defaults();
-    	void move_to_custom();
+        void update_defaults();
+        void move_to_custom();
     private:
         void on_set_option(rs2_option opt, float value);
         

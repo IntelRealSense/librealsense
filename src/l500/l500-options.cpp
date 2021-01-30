@@ -874,8 +874,6 @@ namespace librealsense
 
     void digital_gain_option::set( float value ) 
     {
-        work_around_for_old_fw();
-
         uvc_xu_option< int >::set( value );
         _owner->update_defaults();
 
