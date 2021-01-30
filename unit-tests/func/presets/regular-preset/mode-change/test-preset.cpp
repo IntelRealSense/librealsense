@@ -17,8 +17,6 @@ TEST_CASE( "stay at the same preset after resolution changed", "[l500][live]" )
 
     auto depth_sens = dev.first< rs2::depth_sensor >();
 
-    auto preset_to_expected_map = build_preset_to_expected_values_map( depth_sens );
-
     // print_presets_to_csv( depth_sens, preset_to_expected_map );
     for_each_preset_mode_combination( [&]( rs2_l500_visual_preset preset, rs2_sensor_mode mode ) 
     {

@@ -53,14 +53,14 @@ const std::map< rs2_l500_visual_preset, std::pair< rs2_digital_gain, presets_use
         { RS2_L500_VISUAL_PRESET_LOW_AMBIENT, { RS2_DIGITAL_GAIN_LOW, defualt_laser } },
         { RS2_L500_VISUAL_PRESET_SHORT_RANGE, { RS2_DIGITAL_GAIN_LOW, max_laser } } };
 
-// exept from RS2_L500_VISUAL_PRESET_AUTOMATIC and RS2_L500_VISUAL_PRESET_CUSTOM
+// except from RS2_L500_VISUAL_PRESET_AUTOMATIC and RS2_L500_VISUAL_PRESET_CUSTOM
 void for_each_preset_mode_combination(
     std::function< void( rs2_l500_visual_preset, rs2_sensor_mode ) > action )
 {
     for( int preset = RS2_L500_VISUAL_PRESET_NO_AMBIENT; preset < RS2_L500_VISUAL_PRESET_AUTOMATIC;
          preset++ )
     {
-        for( int sensor_mode = RS2_SENSOR_MODE_VGA; sensor_mode < RS2_SENSOR_MODE_COUNT;
+        for( int sensor_mode = RS2_SENSOR_MODE_VGA; sensor_mode < RS2_SENSOR_MODE_QVGA;
              sensor_mode++ )
         {
             action( rs2_l500_visual_preset( preset ), rs2_sensor_mode( sensor_mode ) );
@@ -68,7 +68,7 @@ void for_each_preset_mode_combination(
     }
 }
 
-// exept from RS2_L500_VISUAL_PRESET_AUTOMATIC and RS2_L500_VISUAL_PRESET_CUSTOM
+// except from RS2_L500_VISUAL_PRESET_AUTOMATIC and RS2_L500_VISUAL_PRESET_CUSTOM
 void for_each_gain_mode_combination(
     std::function< void( rs2_digital_gain, rs2_sensor_mode ) > action )
 {

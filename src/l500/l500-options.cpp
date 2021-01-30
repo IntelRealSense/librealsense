@@ -88,7 +88,7 @@ namespace librealsense
         bool success;
         auto res = query_default( success );
 
-        if( success )
+        if( !success )
         {
             _is_read_only = true;
             res = -1;
@@ -100,7 +100,7 @@ namespace librealsense
                                res };
     }
 
-    void l500_hw_options::update_default( float def )
+    void l500_hw_options::set_default( float def )
     {
         _range.def = def;
     }
@@ -130,7 +130,7 @@ namespace librealsense
 
         // If of digital gain is on 'auto' the gain value can change in FW internally
         // there are some controls that their default values depend on gain and
-        // became not applicable, on this state the FW return hwm_IllegalHwState and we set the
+        // become not applicable, on this state the FW return hwm_IllegalHwState and we set the
         // value of default to -1 means not applicable.
         if ( response == hwm_IllegalHwState)
         {
@@ -242,9 +242,6 @@ namespace librealsense
                                                 { RS2_DIGITAL_GAIN_LOW, "Low Gain" } },
                 _fw_version,
                 this );
-
-            _digital_gain->add_observer(
-                [this]( float val ) { on_set_option( RS2_OPTION_DIGITAL_GAIN, val ); } );
 
             depth_sensor.register_option( RS2_OPTION_DIGITAL_GAIN, _digital_gain );
 
@@ -384,14 +381,16 @@ namespace librealsense
 
              auto preset = calc_preset_from_controls();
 
-             _preset = std::make_shared< l500_preset_option >(
-                 option_range{ RS2_L500_VISUAL_PRESET_CUSTOM,
-                               RS2_L500_VISUAL_PRESET_SHORT_RANGE,
-                               1,
-                               (float)preset },
-                 "Preset to calibrate the camera to environment ambient, no ambient or low "
-                 "ambient.",
-                 this );
+            _preset = std::make_shared< l500_preset_option >(
+            option_range{ RS2_L500_VISUAL_PRESET_CUSTOM,
+                          RS2_L500_VISUAL_PRESET_SHORT_RANGE,
+                          1,
+                          RS2_L500_VISUAL_PRESET_MAX_RANGE },
+            "Preset to calibrate the camera to environment ambient, no ambient or low "
+            "ambient.",
+            this );
+
+            _preset->set_value( (float)preset );
 
             depth_sensor.register_option( RS2_OPTION_VISUAL_PRESET, _preset );
 
@@ -414,7 +413,7 @@ namespace librealsense
     {
         try
         {
-            // compare default values to current values exept from laser power,
+            // compare default values to current values except for laser power,
             // if we are on preset, we expect that all control's currents values will
             // be aqual to control's default values according to current digital gain value,
             // only laser power can have diffrant value according to preset
@@ -473,7 +472,7 @@ namespace librealsense
         if( static_cast< rs2_l500_visual_preset >( int( value ) )
             == RS2_L500_VISUAL_PRESET_DEFAULT )
             throw invalid_value_exception( to_string()
-                                           << "RS2_L500_VISUAL_PRESET_DEFAULT was deprecated! " );
+                                           << "RS2_L500_VISUAL_PRESET_DEFAULT was deprecated!" );
 
         verify_max_usable_range_restrictions( RS2_OPTION_VISUAL_PRESET, value );
         _owner->change_preset( static_cast< rs2_l500_visual_preset >( int( value ) ) );
@@ -540,14 +539,14 @@ namespace librealsense
         {
         case RS2_L500_VISUAL_PRESET_NO_AMBIENT:
         case RS2_L500_VISUAL_PRESET_MAX_RANGE:
-            _digital_gain->set_with_no_signal( RS2_DIGITAL_GAIN_HIGH );
+            _digital_gain->set_by_preset( RS2_DIGITAL_GAIN_HIGH );
             break;
         case RS2_L500_VISUAL_PRESET_LOW_AMBIENT:
         case RS2_L500_VISUAL_PRESET_SHORT_RANGE:
-            _digital_gain->set_with_no_signal( RS2_DIGITAL_GAIN_LOW );
+            _digital_gain->set_by_preset( RS2_DIGITAL_GAIN_LOW );
             break;
         case RS2_L500_VISUAL_PRESET_AUTOMATIC:
-            _digital_gain->set_with_no_signal( RS2_DIGITAL_GAIN_AUTO );
+            _digital_gain->set_by_preset( RS2_DIGITAL_GAIN_AUTO );
             break;
         };
     }
@@ -596,8 +595,6 @@ namespace librealsense
         change_gain( preset );
         change_alt_ir( preset );
 
-        update_defaults();
-
         if( preset != RS2_L500_VISUAL_PRESET_AUTOMATIC )
             set_preset_controls_to_defaults();
 
@@ -643,7 +640,7 @@ namespace librealsense
     }
 
     // this method not uses l500_hw_options::query_default() because
-    // we want to save the sleep 50 Msec on streaming and do it once to all the controlls
+    // we want to save the 50ms sleep on streaming and do it once to all the controlls
     void l500_options::update_defaults()
     {
         auto resolution = get_depth_sensor().get_option( RS2_OPTION_SENSOR_MODE ).query();
@@ -654,10 +651,9 @@ namespace librealsense
             for( auto opt : _hw_options )
             {
                 bool success;
-                defaults[opt.first]
-                    = opt.second->query_new_fw_default( success );
+                defaults[opt.first] = opt.second->query_new_fw_default( success );
 
-                if( !success )
+                if( ! success )
                 {
                     defaults[opt.first] = -1;
                     opt.second->set_read_only( true );
@@ -699,7 +695,7 @@ namespace librealsense
 
         for( auto opt : _hw_options )
         {
-            opt.second->update_default( defaults[opt.first] );
+            opt.second->set_default( defaults[opt.first] );
         }
     }
 
@@ -747,7 +743,6 @@ namespace librealsense
 
         bool_option::set(value);
     }
-
 
     void sensor_mode_option::set(float value)
     {
@@ -877,7 +872,32 @@ namespace librealsense
                "Note: only active on 2D view, Visual Preset:Max Range, Resolution:VGA, ROI:20%";
     }
 
-    // FW expose 'auto gain' with value 0 as one of the values of gain option in addition 
+    void digital_gain_option::set( float value ) 
+    {
+        work_around_for_old_fw();
+
+        uvc_xu_option< int >::set( value );
+        _owner->update_defaults();
+
+        // when we moved to auto preset we set all controls to -1
+        // so we have to set preset controls to defaults values now
+        /*auto curr_preset = ( rs2_l500_visual_preset )(int)_preset->query();
+        if( curr_preset == RS2_L500_VISUAL_PRESET_AUTOMATIC )
+           set_preset_controls_to_defaults();*/
+
+        _owner->move_to_custom();
+    }
+
+    // set gain as result of change preset
+    void digital_gain_option::set_by_preset( float value )
+    {
+        work_around_for_old_fw();
+
+        uvc_xu_option< int >::set( value );
+        _owner->update_defaults();
+    }
+
+    // FW expose 'auto gain' with value 0 as one of the values of gain option in addition
     // to 'low gain' and 'high gain'
     // for now we don't want to expose it to user so the range starts from 1 
     // once we want to expose it we will remove this override method
@@ -888,8 +908,7 @@ namespace librealsense
         return range;
     }
 
-    // set gain as result of change preset 
-    void digital_gain_option::set_with_no_signal( float value ) 
+    void digital_gain_option::work_around_for_old_fw() 
     {
         // On old FW versions the way to get the default values of the hw commands is to
         // reset hw commands current values -1 and than get the current values
@@ -901,7 +920,5 @@ namespace librealsense
         // preset) we won't get the correct default values
         if( _fw_version < firmware_version( MIN_GET_DEFAULT_FW_VERSION ) )
             _owner->reset_hw_controls();  // should be before gain changing as WA for old FW versions
-
-        cascade_option::set_with_no_signal( value );
     }
 }  // namespace librealsense

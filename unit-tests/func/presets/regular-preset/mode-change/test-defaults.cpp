@@ -30,8 +30,9 @@ TEST_CASE( "check defaults after resolution changed", "[l500][live]" )
                 depth_sens.set_option( RS2_OPTION_VISUAL_PRESET, (float)preset );
                 depth_sens.set_option( RS2_OPTION_SENSOR_MODE, to_mode );
 
-                auto preset_to_expected = preset_to_expected_map[{ rs2_l500_visual_preset( preset ),
-                                                                   rs2_sensor_mode( to_mode ) }];
+                auto & preset_to_expected
+                    = preset_to_expected_map[{ rs2_l500_visual_preset( preset ),
+                                               rs2_sensor_mode( to_mode ) }];
 
                 compare_expected_defaults_to_actual( depth_sens, preset_to_expected );
             }

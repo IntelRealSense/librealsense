@@ -20,26 +20,31 @@ TEST_CASE( "check currents after hw control changed", "[l500][live]" )
 
     auto preset_to_expected_map = build_preset_to_expected_values_map( depth_sens );
 
-    // print_presets_to_csv( depth_sens, preset_to_expected_map );
-    for_each_preset_mode_combination( [&]( rs2_l500_visual_preset preset, rs2_sensor_mode mode ) {
+    reset_camera_preset_mode( depth_sens );
 
-        for( auto o : preset_dependent_options)
+    auto sensor_mode_def
+        = rs2_sensor_mode( (int)depth_sens.get_option_range( RS2_OPTION_SENSOR_MODE ).def );
+
+    // print_presets_to_csv( depth_sens, preset_to_expected_map );
+    for( int preset = RS2_L500_VISUAL_PRESET_NO_AMBIENT; preset < RS2_L500_VISUAL_PRESET_AUTOMATIC;
+         preset++ )
+    {
+        for( auto& o : preset_dependent_options)
         {
             if( o == RS2_OPTION_DIGITAL_GAIN )
                 continue;
 
-            depth_sens.set_option( RS2_OPTION_SENSOR_MODE, mode );
             depth_sens.set_option( RS2_OPTION_VISUAL_PRESET, preset );
 
             auto range = depth_sens.get_option_range( o );
             depth_sens.set_option( o, range.min );
 
             auto preset_to_expected
-                = preset_to_expected_map[{ rs2_l500_visual_preset( preset ), mode }];
+                = preset_to_expected_map[{ rs2_l500_visual_preset( preset ), sensor_mode_def }];
 
             preset_to_expected[o] = range.min;
 
             compare_expected_currents_to_actual( depth_sens, preset_to_expected);
         } 
-    } );
+    }
 }

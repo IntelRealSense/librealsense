@@ -26,7 +26,6 @@ TEST_CASE( "check defaults values on start up", "[l500][live]" )
 
     exit_if_fw_version_is_under( dev, MIN_GET_DEFAULT_FW_VERSION );
 
-    auto preset_to_expected_map = build_preset_to_expected_values_map( sens );
     auto preset_to_expected_defaults_map = build_preset_to_expected_defaults_map( dev, sens );
 
     for_each_preset_mode_combination( [&]( rs2_l500_visual_preset preset, rs2_sensor_mode mode ) {
@@ -43,7 +42,7 @@ TEST_CASE( "check defaults values on start up", "[l500][live]" )
 
             auto def = rs2_sensor_mode( (int)sens.get_option_range( RS2_OPTION_SENSOR_MODE ).def );
 
-            auto expected_default_values = preset_to_expected_defaults_map[{ preset, def }];
+            auto & expected_default_values = preset_to_expected_defaults_map[{ preset, def }];
             compare_expected_defaults_to_actual( sens, expected_default_values );
         } );
     } );

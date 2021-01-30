@@ -31,7 +31,7 @@ namespace librealsense
 
     class l500_options;
 
-    class digital_gain_option : public cascade_option< uvc_xu_option< int > >
+    class digital_gain_option : public uvc_xu_option< int >
     {
     public:
         digital_gain_option( uvc_sensor & ep,
@@ -41,13 +41,15 @@ namespace librealsense
                              const std::map< float, std::string > & description_per_value,
                              firmware_version fw_version,
                              l500_options * owner )
-            : cascade_option( ep, xu, id, description, description_per_value )
+            : uvc_xu_option< int >( ep, xu, id, description, description_per_value )
             , _fw_version( fw_version )
             , _owner( owner )
         {
         }
+        void set( float value ) override;
+        void set_by_preset( float value );
         option_range get_range() const override;
-        void set_with_no_signal( float value ) override;
+        void work_around_for_old_fw();
 
     private:
         firmware_version _fw_version;
@@ -77,7 +79,7 @@ namespace librealsense
                          firmware_version fw_version,
                          std::shared_ptr< digital_gain_option > digital_gain);
 
-        void update_default( float def );
+        void set_default( float def );
 
         // on new FW version query default can fail when we are on 'auto gain' mode
         float query_new_fw_default( bool & success ) const;
@@ -171,20 +173,19 @@ namespace librealsense
         void set_preset_value( rs2_l500_visual_preset preset );
         void reset_hw_controls();
         rs2_l500_visual_preset calc_preset_from_controls();
-
+		void update_defaults();
+    	void move_to_custom();
     private:
         void on_set_option(rs2_option opt, float value);
         
         void set_preset_controls_to_defaults();
-        void move_to_custom();
+
         
         void set_max_laser();
 
         void change_gain( rs2_l500_visual_preset preset );
         void change_alt_ir( rs2_l500_visual_preset preset );
         void change_laser_power( rs2_l500_visual_preset preset );
-
-        void update_defaults();
         std::map<rs2_option, std::shared_ptr<cascade_option<l500_hw_options>>> _hw_options;
         std::shared_ptr< digital_gain_option > _digital_gain;
         std::shared_ptr< l500_hw_options > _alt_ir;
