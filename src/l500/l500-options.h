@@ -78,7 +78,11 @@ namespace librealsense
                          std::shared_ptr< digital_gain_option > digital_gain);
 
         void update_default( float def );
-        float get_default( int mode, hwmon_response * response = nullptr ) const;
+
+        // on new FW version query default can fail when we are on 'auto gain' mode
+        float query_new_fw_default( bool & success ) const;
+        float query_old_fw_default() const;
+
         float query_current( rs2_sensor_mode mode ) const;
 
         bool is_read_only() const override { return _is_read_only; }
@@ -86,8 +90,9 @@ namespace librealsense
         void set_manually( bool set );
 
     private:
-        float query_default( hwmon_response *response ) const;
-        
+        float query_default( bool & success ) const;
+        rs2_sensor_mode query_sensor_mode() const;
+
         l500_control _type;
         l500_device* _l500_dev;
         hw_monitor* _hw_monitor;

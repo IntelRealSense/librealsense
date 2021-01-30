@@ -5769,6 +5769,9 @@ namespace rs2
                     for (auto i = opt_model.range.min; i <= opt_model.range.max; i += opt_model.range.step)
                     {
                         std::string product = dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
+
+                        // Default is only there for backwards compatibility and will throw an
+                        // exception if used
                         if( product == "L500" && i == RS2_L500_VISUAL_PRESET_DEFAULT )
                             continue;
 
