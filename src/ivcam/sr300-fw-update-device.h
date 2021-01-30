@@ -12,7 +12,7 @@ namespace librealsense
     public:
         sr300_update_device(std::shared_ptr<context> ctx, bool register_device_notifications, std::shared_ptr<platform::usb_device> usb_device);
         virtual ~sr300_update_device() = default;
-        virtual void update(const void* fw_image, int fw_image_size, update_progress_callback_ptr = nullptr) const override;
+        virtual void update(const void* fw_image, size_t fw_image_size, update_progress_callback_ptr = nullptr) const override;
 
     protected:
         virtual const std::string& get_name() const override { return _name; }

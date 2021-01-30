@@ -100,7 +100,7 @@ namespace librealsense
         update_device(const std::shared_ptr<context>& ctx, bool register_device_notifications, std::shared_ptr<platform::usb_device> usb_device);
         virtual ~update_device();
 
-        virtual void update(const void* fw_image, int fw_image_size, update_progress_callback_ptr = nullptr) const override;
+        virtual void update(const void* fw_image, size_t fw_image_size, update_progress_callback_ptr = nullptr) const override;
         
         virtual sensor_interface& get_sensor(size_t i) override;
 

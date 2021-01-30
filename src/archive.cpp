@@ -60,11 +60,11 @@ namespace librealsense
         new_vertices.reserve(get_vertex_count());
         new_tex.reserve(get_vertex_count());
         assert(get_vertex_count());
-        for (size_t i = 0; i < get_vertex_count(); ++i)
+        for (int i = 0; i < get_vertex_count(); ++i)
             if (fabs(vertices[i].x) >= MIN_DISTANCE || fabs(vertices[i].y) >= MIN_DISTANCE ||
                 fabs(vertices[i].z) >= MIN_DISTANCE)
             {
-                index2reducedIndex[i] = new_vertices.size();
+                index2reducedIndex[i] = static_cast<int>(new_vertices.size());
                 new_vertices.push_back({ vertices[i].x,  -1*vertices[i].y, -1*vertices[i].z });
                 if (texture)
                 {
@@ -76,8 +76,8 @@ namespace librealsense
         const auto threshold = 0.05f;
         auto width = video_stream_profile->get_width();
         std::vector<std::tuple<int, int, int>> faces;
-        for (int x = 0; x < width - 1; ++x) {
-            for (int y = 0; y < video_stream_profile->get_height() - 1; ++y) {
+        for (auto x = 0U; x < width - 1; ++x) {
+            for (auto y = 0U; y < video_stream_profile->get_height() - 1; ++y) {
                 auto a = y * width + x, b = y * width + x + 1, c = (y + 1)*width + x, d = (y + 1)*width + x + 1;
                 if (vertices[a].z && vertices[b].z && vertices[c].z && vertices[d].z
                     && abs(vertices[a].z - vertices[b].z) < threshold && abs(vertices[a].z - vertices[c].z) < threshold
@@ -240,7 +240,7 @@ namespace librealsense
         return it->second->supports(*this);
     }
 
-    int frame::get_frame_data_size() const
+    size_t frame::get_frame_data_size() const
     {
         return data.size();
     }

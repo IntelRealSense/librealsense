@@ -101,13 +101,13 @@ namespace librealsense
         if (current_subpreset[offset] != CONTROL_ID_EXPOSURE)
             return false;
         offset += size_of_control_id;
-        float exposure_0 = *reinterpret_cast<const uint32_t*>(&(current_subpreset[offset]));
+        float exposure_0 = static_cast<float>(*reinterpret_cast<const uint32_t*>(&(current_subpreset[offset])));
         offset += size_of_control_value;
 
         if (current_subpreset[offset] != CONTROL_ID_GAIN)
             return false;
         offset += size_of_control_id;
-        float gain_0 = *reinterpret_cast<const uint32_t*>(&(current_subpreset[offset]));
+        float gain_0 = static_cast<float>(*reinterpret_cast<const uint32_t*>(&(current_subpreset[offset])));
         offset += size_of_control_value;
 
         offset += size_of_subpreset_item_header;
@@ -115,13 +115,13 @@ namespace librealsense
         if (current_subpreset[offset] != CONTROL_ID_EXPOSURE)
             return false;
         offset += size_of_control_id;
-        float exposure_1 = *reinterpret_cast<const uint32_t*>(&(current_subpreset[offset]));
+        float exposure_1 = static_cast<float>(*reinterpret_cast<const uint32_t*>(&(current_subpreset[offset])));
         offset += size_of_control_value;
 
         if (current_subpreset[offset] != CONTROL_ID_GAIN)
             return false;
         offset += size_of_control_id;
-        float gain_1 = *reinterpret_cast<const uint32_t*>(&(current_subpreset[offset]));
+        float gain_1 = static_cast<float>(*reinterpret_cast<const uint32_t*>(&(current_subpreset[offset])));
         offset += size_of_control_value;
 
         _hdr_sequence_params[0]._exposure = exposure_0;

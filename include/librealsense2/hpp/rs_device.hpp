@@ -267,7 +267,7 @@ namespace rs2
         void update(const std::vector<uint8_t>& fw_image) const
         {
             rs2_error* e = nullptr;
-            rs2_update_firmware_cpp(_dev.get(), fw_image.data(), (int)fw_image.size(), NULL, &e);
+            rs2_update_firmware_cpp(_dev.get(), fw_image.data(), fw_image.size(), NULL, &e);
             error::handle(e);
         }
 
@@ -277,7 +277,7 @@ namespace rs2
         void update(const std::vector<uint8_t>& fw_image, T callback) const
         {
             rs2_error* e = nullptr;
-            rs2_update_firmware_cpp(_dev.get(), fw_image.data(), int(fw_image.size()), new update_progress_callback<T>(std::move(callback)), &e);
+            rs2_update_firmware_cpp(_dev.get(), fw_image.data(), fw_image.size(), new update_progress_callback<T>(std::move(callback)), &e);
             error::handle(e);
         }
     };

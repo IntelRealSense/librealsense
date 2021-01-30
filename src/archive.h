@@ -126,7 +126,7 @@ namespace librealsense
         virtual ~frame() { on_release.reset(); }
         rs2_metadata_type get_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const override;
         bool supports_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const override;
-        int get_frame_data_size() const override;
+        size_t get_frame_data_size() const override;
         const byte* get_frame_data() const override;
         rs2_time_t get_frame_timestamp() const override;
         rs2_timestamp_domain get_frame_timestamp_domain() const override;
@@ -232,7 +232,7 @@ namespace librealsense
         {
             return first()->supports_frame_metadata(frame_metadata);
         }
-        int get_frame_data_size() const override
+        size_t get_frame_data_size() const override
         {
             return first()->get_frame_data_size();
         }

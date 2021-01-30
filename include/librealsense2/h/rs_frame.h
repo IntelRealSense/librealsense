@@ -128,7 +128,7 @@ unsigned long long rs2_get_frame_number(const rs2_frame* frame, rs2_error** erro
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               the size of the frame data
 */
-int rs2_get_frame_data_size(const rs2_frame* frame, rs2_error** error);
+size_t rs2_get_frame_data_size(const rs2_frame* frame, rs2_error** error);
 
 /**
 * retrieve data from frame handle
