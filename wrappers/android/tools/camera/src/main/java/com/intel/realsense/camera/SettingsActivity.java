@@ -347,10 +347,6 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void RemoveUnsupportedProfiles(List<StreamProfileSelector> streamProfiles){
-
-        // Entering Settings when all stream on (including confidence) result in an application crash.
-        // as a workaround we remove confidence profile as it is not supported on display anyway.
-        // See [RS5-8989]
         StreamProfileSelector confidenceProfile = null;
         for (StreamProfileSelector streamProfile : streamProfiles){
             if (streamProfile.getProfile().getType() == StreamType.CONFIDENCE){
@@ -359,6 +355,8 @@ public class SettingsActivity extends AppCompatActivity {
             }
         }
 
+    // Confidence stream format is RAW8, and it is not supported for display.
+    // Its removal is necessary until format RAW8 display is enabled.
         if (confidenceProfile != null)
             streamProfiles.remove(confidenceProfile);
     }
