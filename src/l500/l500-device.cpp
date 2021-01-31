@@ -105,7 +105,7 @@ namespace librealsense
         _fw_version = firmware_version(fwv);
         firmware_version recommended_fw_version(L5XX_RECOMMENDED_FIRMWARE_VERSION);
 
-        _is_locked = _hw_monitor->get_gvd_field<bool>(gvd_buff, is_camera_locked_offset);
+        _is_locked = _hw_monitor->get_gvd_field<uint8_t>(gvd_buff, is_camera_locked_offset) != 0;
 
         auto pid_hex_str = hexify(group.uvc_devices.front().pid);
 
@@ -225,11 +225,6 @@ namespace librealsense
     {
         synthetic_sensor & depth_sensor = get_depth_sensor();
 
-        auto is_zo_enabled_opt = std::make_shared<bool_option>();
-        auto weak_is_zo_enabled_opt = std::weak_ptr<bool_option>(is_zo_enabled_opt);
-        is_zo_enabled_opt->set(false);
-        depth_sensor.register_option(RS2_OPTION_ZERO_ORDER_ENABLED, is_zo_enabled_opt);
-
         if( _fw_version >= firmware_version( "1.5.0.0" ) )
         {
             bool usb3mode = (_usb_mode >= platform::usb3_type || _usb_mode == platform::usb_undefined);
@@ -286,17 +281,14 @@ namespace librealsense
             { {RS2_FORMAT_Z16}, {RS2_FORMAT_Y8} },
             { {RS2_FORMAT_Z16, RS2_STREAM_DEPTH, 0, 0, 0, 0, &rotate_resolution} },
             [=]() {
-                auto is_zo_enabled_opt = weak_is_zo_enabled_opt.lock();
                 auto z16rot = std::make_shared<rotation_transform>(RS2_FORMAT_Z16, RS2_STREAM_DEPTH, RS2_EXTENSION_DEPTH_FRAME);
                 auto y8rot = std::make_shared<rotation_transform>(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME);
                 auto sync = std::make_shared<syncer_process_unit>(); // is_zo_enabled_opt );
-                auto zo = std::make_shared<zero_order>(is_zo_enabled_opt);
 
                 auto cpb = std::make_shared<composite_processing_block>();
                 cpb->add(z16rot);
                 cpb->add(y8rot);
                 cpb->add(sync);
-                cpb->add(zo);
                 if( _autocal )
                 {
                     //sync->add_enabling_option( _autocal->get_enabler_opt() );
@@ -315,19 +307,16 @@ namespace librealsense
                 {RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE, 0, 0, 0, 0, &l500_confidence_resolution}
             },
             [=]() {
-                auto is_zo_enabled_opt = weak_is_zo_enabled_opt.lock();
                 auto z16rot = std::make_shared<rotation_transform>(RS2_FORMAT_Z16, RS2_STREAM_DEPTH, RS2_EXTENSION_DEPTH_FRAME);
                 auto y8rot = std::make_shared<rotation_transform>(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME);
                 auto conf = std::make_shared<confidence_rotation_transform>();
                 auto sync = std::make_shared<syncer_process_unit>(); // is_zo_enabled_opt );
-                auto zo = std::make_shared<zero_order>(is_zo_enabled_opt);
 
                 auto cpb = std::make_shared<composite_processing_block>();
                 cpb->add(z16rot);
                 cpb->add(y8rot);
                 cpb->add(conf);
                 cpb->add(sync);
-                cpb->add(zo);
                 if( _autocal )
                 {
                     //sync->add_enabling_option( _autocal->get_enabler_opt() );

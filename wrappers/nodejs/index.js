@@ -4656,8 +4656,8 @@ const option = {
   option_stream_format_filter: 'stream-format-filter',
   option_stream_index_filter: 'stream-index-filter',
   option_emitter_on_off: 'emitter-on-off',
-  option_zero_order_point_x: 'zero-order-point-x',
-  option_zero_order_point_y: 'zero-order-point-y',
+  option_zero_order_point_x: 'zero-order-point-x', /* Deprecated */
+  option_zero_order_point_y: 'zero-order-point-y', /* Deprecated */
   option_lld_temperature: 'lld-temperature',
   option_mc_temperature: 'mc-temperature',
   option_ma_temperature: 'ma-temperature',
@@ -4670,7 +4670,7 @@ const option = {
   option_enable_dynamic_calibration: 'enable-dynamic-calibration',
   option_depth_offset: 'depth-offset',
   option_led_power: 'led-power',
-  option_zero_order_enabled: 'zero-order-enabled',
+  option_zero_order_enabled: 'zero-order-enabled', /* Deprecated */
   option_enable_map_preservation: 'enable-map-preservation',
   /**
    * Enable / disable color backlight compensatio.<br>Equivalent to its lowercase counterpart.

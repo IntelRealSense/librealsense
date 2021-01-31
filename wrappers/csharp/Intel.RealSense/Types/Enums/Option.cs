@@ -152,10 +152,10 @@ namespace Intel.RealSense
         /// <summary>When supported, this option make the camera to switch the emitter state every frame. 0 for disabled, 1 for enabled</summary>
         EmitterOnOff = 46,
 
-        /// <summary>Zero order point x</summary>
+        /// <summary>Deprecated!!! - Zero order point x</summary>
         ZeroOrderPointX = 47,
 
-        /// <summary>Zero order point y</summary>
+        /// <summary>Deprecated!!! - Zero order point y</summary>
         ZeroOrderPointY = 48,
 
         /// <summary>LLD temperature</summary>
@@ -194,7 +194,7 @@ namespace Intel.RealSense
         /// <summary>Power of the LED (light emitting diode), with 0 meaning LED off</summary>
         LedPower = 60,
 
-        /// <summary>Toggle Zero-Order mode</summary>
+        /// <summary>Deprecated!!! - Toggle Zero-Order mode</summary>
         ZeroOrderEnabled = 61,
 
         /// <summary>Preserve previous map when starting</summary>
@@ -258,7 +258,7 @@ namespace Intel.RealSense
         HumidityTemperature = 80,
 
         /// <summary>Turn on/off the maximum usable range who calculates the maximum range of the camera given the amount of ambient light in the scene </summary>
-         EnableMaxUsableRange = 81,
+        EnableMaxUsableRange = 81,
 
         /// <summary>Turn on/off the alternate IR, When enabling alternate IR, the IR image is holding the amplitude of the depth correlation. </summary>
         AlternateIR = 82,

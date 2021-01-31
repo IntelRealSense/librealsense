@@ -146,8 +146,8 @@ PYBIND11_MODULE(NAME, m) {
         .value("stream_format_filter", RS2_OPTION_STREAM_FORMAT_FILTER)
         .value("stream_index_filter", RS2_OPTION_STREAM_INDEX_FILTER)
         .value("emitter_on_off", RS2_OPTION_EMITTER_ON_OFF)
-        .value("zero_order_point_x", RS2_OPTION_ZERO_ORDER_POINT_X)
-        .value("zero_order_point_y", RS2_OPTION_ZERO_ORDER_POINT_Y)
+        .value("zero_order_point_x", RS2_OPTION_ZERO_ORDER_POINT_X) // Deprecated
+        .value("zero_order_point_y", RS2_OPTION_ZERO_ORDER_POINT_Y) // Deprecated
         .value("lld_temperature", RS2_OPTION_LLD_TEMPERATURE)
         .value("mc_temperature", RS2_OPTION_MC_TEMPERATURE)
         .value("ma_temperature", RS2_OPTION_MA_TEMPERATURE)
@@ -160,7 +160,7 @@ PYBIND11_MODULE(NAME, m) {
         .value("enable_dynamic_calibration", RS2_OPTION_ENABLE_DYNAMIC_CALIBRATION)
         .value("enable_depth_offset", RS2_OPTION_DEPTH_OFFSET)
         .value("enable_led_power", RS2_OPTION_LED_POWER)
-        .value("zero_order_enabled", RS2_OPTION_ZERO_ORDER_ENABLED)
+        .value("zero_order_enabled", RS2_OPTION_ZERO_ORDER_ENABLED) // Deprecated
         .value("enable_map_preservation", RS2_OPTION_ENABLE_MAP_PRESERVATION)
         .value("enable_freefall_detection", RS2_OPTION_FREEFALL_DETECTION_ENABLED)
         .value("exposure_time_receiver_APD", RS2_OPTION_AVALANCHE_PHOTO_DIODE)

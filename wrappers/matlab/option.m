@@ -61,7 +61,7 @@ classdef option < int64
         enable_dynamic_calibration      (58)
         depth_offset                    (59)
         led_power                       (60)
-        zero_order_enabled              (61)
+        zero_order_enabled              (61) % Deprecated
         enable_map_preservation         (62)
         freefall_detection_enabled      (63)
         apd_exposure_time               (64)
