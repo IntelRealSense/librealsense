@@ -15,7 +15,7 @@ public:
     void setSupportedOptions(std::string t_key, std::vector<RsOption> t_supportedOptions);
 
 protected:
-    RsRTSPServer(UsageEnvironment& t_env, std::shared_ptr<RsDevice> t_device, int t_ourSocketIPv4, int t_ourSocketIPv6, Port t_ourPort, UserAuthenticationDatabase* t_authDatabase, unsigned t_reclamationSeconds);
+    RsRTSPServer(UsageEnvironment& t_env, std::shared_ptr<RsDevice> t_device, int t_ourSocket, Port t_ourPort, UserAuthenticationDatabase* t_authDatabase, unsigned t_reclamationSeconds);
     virtual ~RsRTSPServer();
     char const* allowedCommandNames();
 

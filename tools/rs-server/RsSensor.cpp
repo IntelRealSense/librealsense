@@ -182,11 +182,6 @@ std::vector<RsOption> RsSensor::getSupportedOptions()
             RsOption option;
             option.m_opt = opt;
             option.m_range = m_sensor.get_option_range(opt);
-
-            /// FIXME: the default value for some option is invalid
-            if (option.m_range.def < option.m_range.min) option.m_range.def = option.m_range.min;
-            if (option.m_range.def > option.m_range.max) option.m_range.def = option.m_range.max;
-
             returnedVector.push_back(option);
         }
     }
