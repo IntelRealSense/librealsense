@@ -5764,14 +5764,24 @@ namespace rs2
                     ///////////////////////////////////////////
                     //TODO: make this a member function
                     std::vector<const char*> labels;
+                    std::vector< int > counters;
                     auto selected = 0, counter = 0;
-                    for (auto i = opt_model.range.min; i <= opt_model.range.max; i += opt_model.range.step, counter++)
+                    for (auto i = opt_model.range.min; i <= opt_model.range.max; i += opt_model.range.step)
                     {
+                        std::string product = dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
+
+                        // Default is only there for backwards compatibility and will throw an
+                        // exception if used
+                        if( product == "L500" && i == RS2_L500_VISUAL_PRESET_DEFAULT )
+                            continue;
+
                         if (std::fabs(i - opt_model.value) < 0.001f)
                         {
                             selected = counter;
                         }
                         labels.push_back(opt_model.endpoint->get_option_value_description(opt_model.opt, i));
+                        counters.push_back( i );
+                        counter++;
                     }
                     ///////////////////////////////////////////
 
@@ -5815,7 +5825,7 @@ namespace rs2
                                 if (selected < static_cast<int>(labels.size() - files_labels.size()))
                                 {
                                     //Known preset was chosen
-                                    auto new_val = opt_model.range.min + opt_model.range.step * selected;
+                                    auto new_val = counters[selected];
                                     model.add_log(to_string() << "Setting " << opt_model.opt << " to "
                                         << new_val << " (" << labels[selected] << ")");
 
@@ -5894,6 +5904,13 @@ namespace rs2
             {
                 json_loading([&]()
                 {
+                    for( auto && sub : subdevices )
+                    {
+                        if( auto dpt = sub->s->as< depth_sensor >() )
+                        {
+                            sub->_options_invalidated = true;
+                        }
+                    }
                     auto ret = file_dialog_open(open_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
                     if (ret)
                     {

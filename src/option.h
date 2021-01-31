@@ -135,11 +135,23 @@ namespace librealsense
 
         void set(float value) override
         {
-            notify(value);
-            T::set(value);
+            auto old = T::query();
+            T::set( value );
+            try
+            {
+                notify( value );
+            }
+            catch (...)
+            {
+                if( old != value )
+                    T::set( old );
+                LOG_WARNING( "An exception was thrown while notifying inside cascase_option::set" );
+                throw;
+            }
+            
         }
 
-        void set_with_no_signal(float value)
+        virtual void set_with_no_signal(float value)
         {
             T::set(value);
         }

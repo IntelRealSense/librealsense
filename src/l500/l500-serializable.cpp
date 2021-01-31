@@ -4,6 +4,7 @@
 #include "l500-serializable.h"
 #include "../../../third-party/json.hpp"
 #include <set>
+#include "l500-options.h"
 
 namespace librealsense
 {
@@ -36,7 +37,9 @@ namespace librealsense
         json j = json::parse(json_content);
 
         // Set of options that should not be set in the loop
-        std::set< rs2_option > options_to_ignore{ RS2_OPTION_SENSOR_MODE };
+        std::set< rs2_option > options_to_ignore{ RS2_OPTION_SENSOR_MODE,
+                                                  RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH,
+                                                  RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH };
 
         // We have to set the sensor mode (resolution) first
         auto & sensor_mode = _depth_sensor.get_option( RS2_OPTION_SENSOR_MODE );
@@ -53,7 +56,8 @@ namespace librealsense
         if( found_iterator != j.end() )
         {
             auto found_preset = rs2_l500_visual_preset( int( found_iterator.value() ));
-            if( found_preset != RS2_L500_VISUAL_PRESET_CUSTOM) 
+            if( found_preset != RS2_L500_VISUAL_PRESET_CUSTOM
+                && found_preset != RS2_L500_VISUAL_PRESET_DEFAULT ) 
             {
                 options_to_ignore.insert( RS2_OPTION_POST_PROCESSING_SHARPENING );
                 options_to_ignore.insert( RS2_OPTION_PRE_PROCESSING_SHARPENING );
@@ -68,6 +72,8 @@ namespace librealsense
         }
 
         auto opts = _depth_sensor.get_supported_options();
+
+        auto default_preset = false;
         for (auto o: opts)
         {
             auto& opt = _depth_sensor.get_option(o);
@@ -81,9 +87,24 @@ namespace librealsense
             if (it != j.end())
             {
                 float val = it.value();
+                if (o == RS2_OPTION_VISUAL_PRESET
+                    && (int)val == (int)RS2_L500_VISUAL_PRESET_DEFAULT)
+                {
+                    default_preset = true;
+                    continue;
+                }
+                    
                 opt.set(val);
             }
-
+        }
+        if (default_preset)
+        {
+            auto options = dynamic_cast< l500_options * >( this );
+            if( options )
+            {
+                auto preset = options->calc_preset_from_controls();
+                options->set_preset_value( preset );
+            }
         }
     }
 } // namespace librealsense

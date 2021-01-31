@@ -156,6 +156,7 @@ extern "C" {
         RS2_L500_VISUAL_PRESET_LOW_AMBIENT,
         RS2_L500_VISUAL_PRESET_MAX_RANGE,
         RS2_L500_VISUAL_PRESET_SHORT_RANGE,
+        RS2_L500_VISUAL_PRESET_AUTOMATIC,
         RS2_L500_VISUAL_PRESET_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_l500_visual_preset;
     const char* rs2_l500_visual_preset_to_string(rs2_l500_visual_preset preset);
@@ -181,6 +182,7 @@ extern "C" {
     /** \brief digital gain for RS2_OPTION_DIGITAL_GAIN option. */
     typedef enum rs2_digital_gain
     {
+        RS2_DIGITAL_GAIN_AUTO = 0,
         RS2_DIGITAL_GAIN_HIGH = 1,
         RS2_DIGITAL_GAIN_LOW = 2,
     } rs2_digital_gain;
