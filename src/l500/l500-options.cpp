@@ -132,16 +132,15 @@ namespace librealsense
                                                (int)query_sensor_mode( *_resolution ) },
                                       &response );
 
-        // If of digital gain is on 'auto' the gain value can change in FW internally
-        // there are some controls that their default values depend on gain and
-        // become not applicable, on this state the FW return hwm_IllegalHwState and we set the
-        // value of default to -1 means not applicable.
-        if ( response == hwm_IllegalHwState)
+        // Some controls that are automatically set by the FW (e.g., APD when digital gain is AUTO) are read-only
+        // and have no defaults: the FW will return hwm_IllegalHwState for these. Some can still be modified (e.g.,
+        // laser power & min distance), and for these we expect hwm_Success.
+        if( response == hwm_IllegalHwState )
         {
             success = false;
             return -1;
         }
-        else if( response != hwm_Success)
+        else if( response != hwm_Success )
         {
             std::stringstream s;
             s << "hw_monitor  AMCGET of " << _type << " return error " << response;
