@@ -42,7 +42,7 @@ namespace rs2
     // previous .old file will be erased.
     // Must have permissions to remove/rename files in log file directory.
     //
-    // @param max_size max file size in bytes
+    // @param max_size max file size in megabytes
     //
     inline void enable_rolling_log_file( unsigned max_size )
     {

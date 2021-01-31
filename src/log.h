@@ -282,11 +282,12 @@ namespace librealsense
         // previous .old file will be erased.
         // Must have permissions to remove/rename files in log file directory.
         //
-        // @param max_size max file size in bytes
+        // @param max_size max file size in megabytes
         //
         void enable_rolling_log_file( unsigned max_size )
         {
-            std::string size = std::to_string( max_size/2 );
+            auto max_size_in_bytes = max_size * 1024 * 1024;
+            std::string size = std::to_string(max_size_in_bytes / 2 );
 
             // Rollout checking happens when Easylogging++ flushes the log file!
             // Or, with the flag el::LoggingFlags::StrictLogFileSizeCheck, at each log output...
