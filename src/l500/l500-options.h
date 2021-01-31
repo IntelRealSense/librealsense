@@ -31,7 +31,9 @@ namespace librealsense
 
     class l500_options;
 
-    class digital_gain_option : public uvc_xu_option< int >
+    typedef uvc_xu_option< int > super;
+
+    class digital_gain_option : public super
     {
     public:
         digital_gain_option( uvc_sensor & ep,
@@ -41,7 +43,7 @@ namespace librealsense
                              const std::map< float, std::string > & description_per_value,
                              firmware_version fw_version,
                              l500_options * owner )
-            : uvc_xu_option< int >( ep, xu, id, description, description_per_value )
+            : super( ep, xu, id, description, description_per_value )
             , _fw_version( fw_version )
             , _owner( owner )
         {
@@ -49,9 +51,10 @@ namespace librealsense
         void set( float value ) override;
         void set_by_preset( float value );
         option_range get_range() const override;
-        void work_around_for_old_fw();
 
     private:
+        void work_around_for_old_fw();
+
         firmware_version _fw_version;
         l500_options * _owner;
     };
@@ -172,7 +175,7 @@ namespace librealsense
         void change_preset( rs2_l500_visual_preset preset );
         void set_preset_value( rs2_l500_visual_preset preset );
         void reset_hw_controls();
-        rs2_l500_visual_preset calc_preset_from_controls();
+        rs2_l500_visual_preset calc_preset_from_controls() const;
         void update_defaults();
         void move_to_custom();
     private:

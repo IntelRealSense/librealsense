@@ -413,7 +413,7 @@ namespace librealsense
         return res;
     }
 
-    rs2_l500_visual_preset l500_options::calc_preset_from_controls()
+    rs2_l500_visual_preset l500_options::calc_preset_from_controls() const
     {
         try
         {
@@ -436,8 +436,15 @@ namespace librealsense
             // all the hw_options values are equal to their default values
             // now what is left to check if the gain and laser power correspond to one of the
             // presets
-            auto max_laser = _hw_options[RS2_OPTION_LASER_POWER]->get_range().max;
-            auto def_laser = _hw_options[RS2_OPTION_LASER_POWER]->get_range().def;
+            
+            auto laser = _hw_options.find(RS2_OPTION_LASER_POWER);
+            if (laser == _hw_options.end())
+            {
+                LOG_ERROR("RS2_OPTION_LASER_POWER didnt found on hw_options list ");
+                return RS2_L500_VISUAL_PRESET_CUSTOM;
+            }
+            auto max_laser = laser->second->get_range().max;
+            auto def_laser = laser->second->get_range().def;
 
             std::map< std::pair< rs2_digital_gain, float >, rs2_l500_visual_preset >
                 gain_and_laser_to_preset = {
@@ -448,9 +455,9 @@ namespace librealsense
                 };
 
             auto gain = ( rs2_digital_gain )(int)_digital_gain->query();
-            auto laser = _hw_options[RS2_OPTION_LASER_POWER]->query();
+            auto laser_val = laser->second->query();
 
-            auto it = gain_and_laser_to_preset.find( { gain, laser } );
+            auto it = gain_and_laser_to_preset.find( { gain, laser_val } );
 
             if( it != gain_and_laser_to_preset.end() )
             {
@@ -512,24 +519,14 @@ namespace librealsense
         if( std::find( advanced_controls.begin(), advanced_controls.end(), opt )
             != advanced_controls.end() )
         {
-            if (opt == RS2_OPTION_DIGITAL_GAIN)
-            {
-                // WA for fw bug will be removed after fixed on FW
-                //std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
-                update_defaults();
-            }
-                
-
-            // when we moved to auto preset we set all controls to -1 
+            // when we moved to auto preset we set all controls to -1
             // so we have to set preset controls to defaults values now
             /*auto curr_preset = ( rs2_l500_visual_preset )(int)_preset->query();
             if( curr_preset == RS2_L500_VISUAL_PRESET_AUTOMATIC )
                set_preset_controls_to_defaults();*/
 
             move_to_custom();
-
-            if( opt != RS2_OPTION_DIGITAL_GAIN )
-                _hw_options[opt]->set_manually( true );
+            _hw_options[opt]->set_manually( true );
         }
         else
             throw wrong_api_call_sequence_exception(
@@ -876,7 +873,7 @@ namespace librealsense
 
     void digital_gain_option::set( float value ) 
     {
-        uvc_xu_option< int >::set( value );
+        super::set( value );
         _owner->update_defaults();
 
         // when we moved to auto preset we set all controls to -1
@@ -893,7 +890,7 @@ namespace librealsense
     {
         work_around_for_old_fw();
 
-        uvc_xu_option< int >::set( value );
+        super::set( value );
         _owner->update_defaults();
     }
 
