@@ -82,6 +82,17 @@ void rs2_log_to_callback( rs2_log_severity min_severity, rs2_log_callback_ptr ca
 
 void rs2_reset_logger( rs2_error ** error);
 
+/**
+* Enable rolling log file when used with rs2_log_to_file:
+* Upon reaching (max_size/2) bytes, the log will be renamed with an ".old" suffix and a new log created. Any
+* previous .old file will be erased.
+* Must have permissions to remove/rename files in log file directory.
+* \param[in] max_size   max file size in megabytes
+* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_enable_rolling_log_file( unsigned max_size, rs2_error ** error );
+
+
 unsigned rs2_get_log_message_line_number( rs2_log_message const * msg, rs2_error** error );
 const char * rs2_get_log_message_filename( rs2_log_message const * msg, rs2_error** error );
 const char * rs2_get_raw_log_message( rs2_log_message const * msg, rs2_error** error );

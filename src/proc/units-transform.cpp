@@ -51,8 +51,13 @@ namespace librealsense
     {
         update_configuration(f);
 
-        auto new_f = source.allocate_video_frame(_target_stream_profile, f,
-            _bpp, _width, _height, _stride, RS2_EXTENSION_DEPTH_FRAME);
+        auto new_f = source.allocate_video_frame( _target_stream_profile,
+                                                  f,
+                                                  (int)_bpp,
+                                                  (int)_width,
+                                                  (int)_height,
+                                                  (int)_stride,
+                                                  RS2_EXTENSION_DEPTH_FRAME );
 
         if (new_f && _depth_units)
         {

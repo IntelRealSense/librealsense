@@ -30,7 +30,7 @@ namespace librealsense
             return false;
         if (!frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID))
             return false;
-        int seq_size = frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE);
+        int seq_size = (int)frame.get_frame_metadata( RS2_FRAME_METADATA_SEQUENCE_SIZE );
         if (seq_size == 0)
             return false;
         return true;
@@ -43,7 +43,7 @@ namespace librealsense
         // if not as the option selected id, return last frame with the selected id
         // else return current frame
 
-        int seq_id = f.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
+        int seq_id = (int)f.get_frame_metadata( RS2_FRAME_METADATA_SEQUENCE_ID );
         auto unique_id = f.get_profile().unique_id();
         auto current_key = std::make_pair(seq_id, unique_id);
 

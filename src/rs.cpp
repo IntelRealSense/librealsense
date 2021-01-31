@@ -1308,7 +1308,13 @@ void rs2_reset_logger( rs2_error** error) BEGIN_API_CALL
 {
     librealsense::reset_logger();
 }
-NOARGS_HANDLE_EXCEPTIONS_AND_RETURN()
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN_VOID()
+
+void rs2_enable_rolling_log_file( unsigned max_size, rs2_error ** error ) BEGIN_API_CALL
+{
+    librealsense::enable_rolling_log_file( max_size );
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, max_size)
 
 // librealsense wrapper around a C function
 class on_log_callback : public rs2_log_callback
@@ -3214,7 +3220,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, msg)
 int rs2_fw_log_message_size(rs2_firmware_log_message* msg, rs2_error** error)BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(msg);
-    return msg->firmware_log_binary_data->logs_buffer.size();
+    return (int)msg->firmware_log_binary_data->logs_buffer.size();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, msg)
 
