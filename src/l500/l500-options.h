@@ -93,7 +93,7 @@ namespace librealsense
 
     private:
         float query_default( bool & success ) const;
-        rs2_sensor_mode query_sensor_mode() const;
+        
 
         l500_control _type;
         l500_device* _l500_dev;

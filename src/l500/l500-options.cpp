@@ -12,14 +12,14 @@ namespace librealsense
 {
     using namespace ivcam2;
 
-    rs2_sensor_mode l500_hw_options::query_sensor_mode() const
+    rs2_sensor_mode query_sensor_mode( option& resolution ) 
     {
-        return ( rs2_sensor_mode )(int)_resolution->query();
+        return ( rs2_sensor_mode )(int)resolution.query();
     }
 
     float l500_hw_options::query() const
     {
-        return query_current( query_sensor_mode() );
+        return query_current( query_sensor_mode(*_resolution) );
     }
 
     void l500_hw_options::set(float value)
@@ -44,6 +44,7 @@ namespace librealsense
 
     float l500_hw_options::query_default( bool & success ) const
     {
+        success = true;
         if(_fw_version >= firmware_version( MIN_GET_DEFAULT_FW_VERSION ) )
         {
             return query_new_fw_default( success );
@@ -118,14 +119,17 @@ namespace librealsense
     void l500_hw_options::enable_recording(std::function<void(const option&)> recording_action)
     {}
 
-    // this mathod can throw an exception if un-expected error occurred
+    // this method can throw an exception if un-expected error occurred
     // or return error by output parameter 'success' if default value not applicable
-    // on this state we return -1 as default value
+    // on this state return value is undefined
     float l500_hw_options::query_new_fw_default( bool & success ) const
     {
         success = true;
         hwmon_response response;
-        auto res = _hw_monitor->send( command{ AMCGET, _type, l500_command::get_default, (int)query_sensor_mode() },
+        auto res = _hw_monitor->send( command{ AMCGET,
+                                               _type,
+                                               l500_command::get_default,
+                                               (int)query_sensor_mode( *_resolution ) },
                                       &response );
 
         // If of digital gain is on 'auto' the gain value can change in FW internally
@@ -163,7 +167,7 @@ namespace librealsense
         //     3. Wait for the next frame (if streaming)
         //     4. Read the current value
         //     5. Restore the current value
-        auto current = query_current( ( rs2_sensor_mode )( int( _resolution->query() ) ) );
+        auto current = query_current( query_sensor_mode( *_resolution ) );
         _hw_monitor->send( command{ AMCSET, _type, -1 } );
 
         // if the sensor is streaming the value of control will update only when the next frame
@@ -171,7 +175,7 @@ namespace librealsense
         if( _l500_dev->get_depth_sensor().is_streaming() )
             std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
 
-        auto def = query_current( ( rs2_sensor_mode )( int( _resolution->query() ) ) );
+        auto def = query_current( query_sensor_mode( *_resolution ) );
 
         if( current != def )
             _hw_monitor->send( command{ AMCSET, _type, (int)current } );
@@ -643,7 +647,7 @@ namespace librealsense
     // we want to save the 50ms sleep on streaming and do it once to all the controlls
     void l500_options::update_defaults()
     {
-        auto resolution = get_depth_sensor().get_option( RS2_OPTION_SENSOR_MODE ).query();
+        auto& resolution = get_depth_sensor().get_option( RS2_OPTION_SENSOR_MODE );
 
         std::map< rs2_option, float > defaults;
         if( _fw_version >= firmware_version( MIN_GET_DEFAULT_FW_VERSION ) )
@@ -672,8 +676,7 @@ namespace librealsense
             //     5. Restore the current value
             std::map< rs2_option, float > currents;
             for( auto opt : _hw_options )
-                currents[opt.first]
-                    = opt.second->query_current( ( rs2_sensor_mode )( int( resolution ) ) );
+                currents[opt.first] = opt.second->query_current( query_sensor_mode( resolution ) );
 
             // if the sensor is streaming the value of control will update only when the next frame
             // arrive
@@ -683,8 +686,7 @@ namespace librealsense
             for( auto opt : _hw_options )
             {
                 opt.second->set_with_no_signal( -1 );
-                defaults[opt.first]
-                    = opt.second->query_current( ( rs2_sensor_mode )( int( resolution ) ) );
+                defaults[opt.first] = opt.second->query_current( query_sensor_mode( resolution ) );
             }
 
             for( auto opt : currents )
