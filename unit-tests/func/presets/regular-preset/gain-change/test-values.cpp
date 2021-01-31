@@ -8,7 +8,10 @@
 #include <l500/l500-options.h>
 
 using namespace rs2;
-TEST_CASE( "move to custom after gain changed", "[l500][live]" )
+
+// This test checks that after changing digital gain, current and default values 
+// of all the others controls are correct
+TEST_CASE( "check currents and defaults values after gain changed", "[l500][live]" )
 {
     auto devices = find_devices_by_product_line_or_exit( RS2_PRODUCT_LINE_L500 );
     auto dev = devices[0];
@@ -17,15 +20,20 @@ TEST_CASE( "move to custom after gain changed", "[l500][live]" )
 
     auto depth_sens = dev.first< rs2::depth_sensor >();
 
+    auto preset_mode_def = get_camera_preset_mode_defaults( depth_sens );
+
+    std::map< rs2_option, float > expected_values, expected_defs;
+
+    build_preset_to_expected_values_map( dev, depth_sens, preset_mode_def, expected_values, expected_defs);
+
     for( int gain = RS2_DIGITAL_GAIN_HIGH; gain < RS2_DIGITAL_GAIN_LOW; gain++ )
     {
         reset_camera_preset_mode_to_defaults( depth_sens );
+
         depth_sens.set_option( RS2_OPTION_DIGITAL_GAIN, gain );
 
-        rs2_l500_visual_preset curr_preset;
-        REQUIRE_NOTHROW( curr_preset = ( rs2_l500_visual_preset )(int)depth_sens.get_option(
-                             RS2_OPTION_VISUAL_PRESET ) );
+        expected_values[RS2_OPTION_DIGITAL_GAIN] = gain;
 
-        REQUIRE( curr_preset == RS2_L500_VISUAL_PRESET_CUSTOM );
+        compare_to_actual( depth_sens, expected_values, expected_defs);
     }
 }

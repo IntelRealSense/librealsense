@@ -18,18 +18,18 @@ TEST_CASE( "stay at the same preset after resolution changed", "[l500][live]" )
     auto depth_sens = dev.first< rs2::depth_sensor >();
 
     // print_presets_to_csv( depth_sens, preset_to_expected_map );
-    for_each_preset_mode_combination( [&]( rs2_l500_visual_preset preset, rs2_sensor_mode mode ) 
+    for_each_preset_mode_combination( [&](preset_mode_pair preset_mode)
     {
         for( int gain = RS2_DIGITAL_GAIN_HIGH; gain < RS2_DIGITAL_GAIN_LOW; gain++ )
         {
-            depth_sens.set_option( RS2_OPTION_VISUAL_PRESET, preset );
-            depth_sens.set_option( RS2_OPTION_SENSOR_MODE, mode );
+            depth_sens.set_option( RS2_OPTION_VISUAL_PRESET, preset_mode.first);
+            depth_sens.set_option( RS2_OPTION_SENSOR_MODE, preset_mode.second);
 
             rs2_l500_visual_preset curr_preset;
             REQUIRE_NOTHROW( curr_preset = ( rs2_l500_visual_preset )(int)depth_sens.get_option(
                                  RS2_OPTION_VISUAL_PRESET ) );
 
-            REQUIRE( curr_preset == preset );
+            REQUIRE( curr_preset == preset_mode.first);
         }
     } );
 }

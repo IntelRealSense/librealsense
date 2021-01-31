@@ -17,27 +17,23 @@ TEST_CASE( "presets sanity while streaming", "[l500][live]" )
 
     auto depth_sens = dev.first< rs2::depth_sensor >();
 
-    auto preset_to_expected_map = build_preset_to_expected_values_map( depth_sens );
-    auto preset_to_expected_defaults_map = build_preset_to_expected_defaults_map( dev, depth_sens );
-
-    reset_camera_preset_mode( depth_sens );
+    preset_values_map expected_values, expected_defs;
+    build_presets_to_expected_values_defs_map(dev, depth_sens, expected_values, expected_defs);
+   
+    reset_camera_preset_mode_to_defaults( depth_sens );
 
     // set preset and mode before stream start
     check_presets_values_while_streaming(
         depth_sens,
-        preset_to_expected_map,
-        preset_to_expected_defaults_map,
-        [&]( rs2_sensor_mode mode, rs2_l500_visual_preset preset ) {
-            set_mode_preset( depth_sens, mode, preset );
-        });
+        expected_values,
+        expected_defs,
+        [&]( preset_mode_pair preset_mode ) { set_mode_preset( depth_sens, preset_mode ); } );
 
     // set preset and mode after stream start
     check_presets_values_while_streaming(
         depth_sens,
-        preset_to_expected_map,
-        preset_to_expected_defaults_map,
-        []( rs2_sensor_mode mode, rs2_l500_visual_preset preset ) {},
-        [&]( rs2_sensor_mode mode, rs2_l500_visual_preset preset ) {
-            set_mode_preset( depth_sens, mode, preset );
-        } );
+        expected_values,
+        expected_defs,
+        []( preset_mode_pair preset_mode ) {},
+        [&]( preset_mode_pair preset_mode ) { set_mode_preset( depth_sens, preset_mode ); } );
 }
