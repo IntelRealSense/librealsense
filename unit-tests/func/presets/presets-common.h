@@ -6,6 +6,7 @@
 #include <types.h>
 #include "l500/l500-private.h"
 #include "l500/l500-options.h"
+#include "../send-hw-monitor-command.h"
 
 using namespace rs2;
 
@@ -44,16 +45,16 @@ std::map< rs2_option, librealsense::l500_control > option_to_code = {
 
 enum presets_useful_laser_values
 {
-    defualt_laser,
+    default_laser,
     max_laser
 };
 
 const std::map< rs2_l500_visual_preset, std::pair< rs2_digital_gain, presets_useful_laser_values > >
     preset_to_gain_and_laser_map
-    = { { RS2_L500_VISUAL_PRESET_NO_AMBIENT, { RS2_DIGITAL_GAIN_HIGH, defualt_laser } },
+    = { { RS2_L500_VISUAL_PRESET_NO_AMBIENT, { RS2_DIGITAL_GAIN_HIGH, default_laser } },
         { RS2_L500_VISUAL_PRESET_MAX_RANGE, { RS2_DIGITAL_GAIN_HIGH, max_laser } },
-        { RS2_L500_VISUAL_PRESET_LOW_AMBIENT, { RS2_DIGITAL_GAIN_LOW, defualt_laser } },
-        { RS2_L500_VISUAL_PRESET_SHORT_RANGE, { RS2_DIGITAL_GAIN_LOW, max_laser } } };
+        { RS2_L500_VISUAL_PRESET_LOW_AMBIENT, { RS2_DIGITAL_GAIN_LOW, max_laser } },
+        { RS2_L500_VISUAL_PRESET_SHORT_RANGE, { RS2_DIGITAL_GAIN_LOW, default_laser } } };
 
 // except from RS2_L500_VISUAL_PRESET_AUTOMATIC and RS2_L500_VISUAL_PRESET_CUSTOM
 void for_each_preset_mode_combination(
@@ -195,7 +196,7 @@ void build_preset_to_expected_values_map( rs2::device & dev,
 
 
     expected_values[RS2_OPTION_LASER_POWER]
-        = preset_to_gain_and_laser[preset].second == defualt_laser ? laser_range.def
+        = preset_to_gain_and_laser[preset].second == default_laser ? laser_range.def
                                                                    : laser_range.max;
 }
 
