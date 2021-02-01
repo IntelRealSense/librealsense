@@ -19,6 +19,7 @@ namespace librealsense
     const uint16_t L500_PID                     = 0x0b0d;
     const uint16_t L515_PID_PRE_PRQ             = 0x0b3d;
     const uint16_t L515_PID                     = 0x0b64;
+    const uint16_t L535_PID                     = 0x0b68;
 
     class l500_device;
 
@@ -251,6 +252,8 @@ namespace librealsense
             { L500_PID,                     "Intel RealSense L500"},
             { L515_PID_PRE_PRQ,             "Intel RealSense L515 (pre-PRQ)"},
             { L515_PID,                     "Intel RealSense L515"},
+            { L535_PID,                     "Intel RealSense L535"},
+
         };
 
         // Known FW error codes, if we poll for errors (RS2_OPTION_ERROR_POLLING_ENABLED)
