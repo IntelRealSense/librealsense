@@ -12,7 +12,7 @@ The app should add RealSense dependency in the module `build.gradle` which is cu
 >```java
 >repositories {
 >   maven{
->        url "https://dl.bintray.com/intel-realsense/librealsense"
+>        url "https://egiintel.jfrog.io/artifactory/librealsense"
 >    }
 >}
 >

@@ -30,7 +30,7 @@ dependencies {
 //The lines below add librealsense to the application's dependencies
 repositories {
     maven{
-        url "https://dl.bintray.com/intel-realsense/librealsense"
+        url "https://egiintel.jfrog.io/artifactory/librealsense"
     }
 }
 
