@@ -2,9 +2,10 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "../test.h"
-#include "librealsense2/rs.hpp"
-#include "hw-monitor.h"
+#include <librealsense2/rs.hpp>
+#include <hw-monitor.h>
 
+#pragma once
 using namespace rs2;
 
 struct hw_monitor_command
@@ -26,7 +27,7 @@ struct hw_monitor_command
     int p4;
 };
 
-std::vector< uint8_t > send_command_and_check( rs2::debug_protocol dp,
+inline std::vector< uint8_t > send_command_and_check( rs2::debug_protocol dp,
                                                hw_monitor_command command,
                                                uint32_t expected_size_return = 0 )
 {
