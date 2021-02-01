@@ -6,6 +6,7 @@
 #include <types.h>
 #include "l500/l500-private.h"
 #include "l500/l500-options.h"
+#include "../send-hw-monitor-command.h"
 
 using namespace rs2;
 
