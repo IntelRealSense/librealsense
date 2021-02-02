@@ -1,5 +1,3 @@
-#ifdef __linux__
-
 #include "catch/catch.hpp"
 #include <thread>
 #include <string>
@@ -191,4 +189,3 @@ TEST_CASE("named_mutex_processes", "[code]")
     }
 }
 
-#endif // __linux__
