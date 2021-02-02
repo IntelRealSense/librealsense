@@ -23,6 +23,10 @@ TEST_CASE( "presets sanity", "[l500][live]" )
      //print_presets_to_csv( depth_sens, preset_to_expected_defaults_map);
 
     check_presets_values(
+        { RS2_L500_VISUAL_PRESET_NO_AMBIENT,
+          RS2_L500_VISUAL_PRESET_LOW_AMBIENT,
+          RS2_L500_VISUAL_PRESET_MAX_RANGE,
+          RS2_L500_VISUAL_PRESET_SHORT_RANGE },
         depth_sens,
         expected_values,
         expected_defs,
