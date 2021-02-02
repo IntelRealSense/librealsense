@@ -34,7 +34,6 @@ public:
     }
     static long long int getStreamProfileKey(rs2::stream_profile t_profile);
     std::string getSensorName();
-    static int getStreamProfileBpp(rs2_format t_format);
     rs2::device getDevice()
     {
         return m_device;
