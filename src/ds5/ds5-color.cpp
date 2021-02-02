@@ -61,6 +61,8 @@ namespace librealsense
 
         std::vector<platform::uvc_device_info> color_devs_info;
         // end point 3 is used for color sensor
+        // except for D405, in which the color is part of the depth unit
+        // and it will then been found in end point 0 (the depth's one)
         auto color_devs_info_mi3 = filter_by_mi(group.uvc_devices, 3);
         if (color_devs_info_mi3.size() == 1)
         {
@@ -89,7 +91,8 @@ namespace librealsense
         else
         {
             auto color_devs_info_mi0 = filter_by_mi(group.uvc_devices, 0);
-            if (color_devs_info_mi0.size() == 1)
+            // one uvc device is seen over Windows and 3 uvc devices are seen over linux
+            if (color_devs_info_mi0.size() == 1 || color_devs_info_mi0.size() == 3)
             {
                 // means color end point is part of the depth sensor (e.g. D405)
                 color_devs_info = color_devs_info_mi0;
