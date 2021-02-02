@@ -10,7 +10,7 @@
 
 using namespace rs2;
 
-const librealsense::firmware_version MIN_GET_DEFAULT_FW_VERSION( "1.5.3.0" );
+const librealsense::firmware_version MIN_GET_DEFAULT_FW_VERSION( "1.5.4.0" );
 
 typedef std::pair< rs2_l500_visual_preset, rs2_sensor_mode > preset_mode_pair;
 
@@ -368,7 +368,8 @@ void check_preset_values( const rs2::sensor & sens,
     compare_to_actual( sens, expected_values, expected_defaults );
 }
 
-void check_presets_values( const rs2::sensor & sens,
+void check_presets_values( std::vector< rs2_l500_visual_preset > presets_to_check,
+                           const rs2::sensor & sens,
                            preset_values_map & preset_to_expected_values,
                            preset_values_map & preset_to_expected_defaults,
                            std::function< void( preset_mode_pair ) > do_before_check = nullptr,
@@ -376,19 +377,25 @@ void check_presets_values( const rs2::sensor & sens,
 {
     REQUIRE( sens.supports( RS2_OPTION_VISUAL_PRESET ) );
 
-    for_each_preset_mode_combination( [&]( preset_mode_pair preset_mode ) {
-        if( do_before_check )
-            do_before_check( preset_mode );
+    for (auto& preset : presets_to_check)
+    {
+        for (int sensor_mode = RS2_SENSOR_MODE_VGA; sensor_mode < RS2_SENSOR_MODE_QVGA;
+            sensor_mode++)
+        {
+            preset_mode_pair preset_mode = { preset, (rs2_sensor_mode)sensor_mode };
+            if (do_before_check)
+                do_before_check(preset_mode);
 
-        check_preset_values( sens,
-                             preset_mode.first,
-                             preset_mode.second,
-                             preset_to_expected_values[preset_mode],
-                             preset_to_expected_defaults[preset_mode] );
+            check_preset_values(sens,
+                preset_mode.first,
+                preset_mode.second,
+                preset_to_expected_values[preset_mode],
+                preset_to_expected_defaults[preset_mode]);
 
-        if( do_after_check )
-            do_after_check( preset_mode );
-    } );
+            if (do_after_check)
+                do_after_check(preset_mode);
+        }
+    }
 }
 
 void start_depth_ir_confidence( const rs2::sensor & sens,
@@ -399,7 +406,12 @@ void start_depth_ir_confidence( const rs2::sensor & sens,
     auto confidence = find_profile( sens, RS2_STREAM_CONFIDENCE, mode );
 
     REQUIRE_NOTHROW( sens.open( { depth, ir, confidence } ) );
-    REQUIRE_NOTHROW( sens.start( [&]( rs2::frame f ) {} ) );
+    
+    // Wait for the first frame to arrive: until this time, the FW is in an "undefined"
+    // streaming state, and we may get weird behavior.
+    frame_queue q;
+    REQUIRE_NOTHROW(sens.start(q));
+    q.wait_for_frame();
 }
 
 void stop_depth( const rs2::sensor & sens )
@@ -416,6 +428,7 @@ void set_mode_preset( const rs2::sensor & sens, preset_mode_pair preset_mode)
 }
 
 void check_presets_values_while_streaming(
+    std::vector<rs2_l500_visual_preset> presets_to_check,
     const rs2::sensor & sens,
     preset_values_map & preset_to_expected_values,
     preset_values_map & preset_to_expected_defaults,
@@ -425,6 +438,7 @@ void check_presets_values_while_streaming(
     REQUIRE( sens.supports( RS2_OPTION_VISUAL_PRESET ) );
 
     check_presets_values(
+        presets_to_check,
         sens,
         preset_to_expected_values,
         preset_to_expected_defaults,

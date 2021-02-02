@@ -24,6 +24,7 @@ TEST_CASE( "presets sanity while streaming", "[l500][live]" )
 
     // set preset and mode before stream start
     check_presets_values_while_streaming(
+        { RS2_L500_VISUAL_PRESET_NO_AMBIENT, RS2_L500_VISUAL_PRESET_LOW_AMBIENT },
         depth_sens,
         expected_values,
         expected_defs,
@@ -31,6 +32,7 @@ TEST_CASE( "presets sanity while streaming", "[l500][live]" )
 
     // set preset and mode after stream start
     check_presets_values_while_streaming(
+        { RS2_L500_VISUAL_PRESET_MAX_RANGE, RS2_L500_VISUAL_PRESET_SHORT_RANGE },
         depth_sens,
         expected_values,
         expected_defs,
