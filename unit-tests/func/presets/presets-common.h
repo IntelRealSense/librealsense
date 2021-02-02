@@ -407,9 +407,10 @@ void start_depth_ir_confidence( const rs2::sensor & sens,
 
     REQUIRE_NOTHROW( sens.open( { depth, ir, confidence } ) );
     
+    // Wait for the first frame to arrive: until this time, the FW is in an "undefined"
+    // streaming state, and we may get weird behavior.
     frame_queue q;
     REQUIRE_NOTHROW(sens.start(q));
-
     q.wait_for_frame();
 }
 
