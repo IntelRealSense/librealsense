@@ -559,21 +559,18 @@ namespace librealsense
             }
         }
 
-        // The delay is here as a work around to a firmware bug [RS5-5453]
-        _action_delayer.do_after_delay( [&]() {
-            synthetic_sensor::start( std::make_shared< frame_filter >( callback, _user_requests ) );
+        synthetic_sensor::start( std::make_shared< frame_filter >( callback, _user_requests ) );
 
-            _owner->start_temperatures_reader();
+        _owner->start_temperatures_reader();
 
-            if( _owner->_autocal )
-                _owner->_autocal->start();
-        } );
+        if( _owner->_autocal )
+            _owner->_autocal->start();
+
     }
 
     void l500_depth_sensor::stop()
     {
-    // The delay is here as a work around to a firmware bug [RS5-5453]
-        _action_delayer.do_after_delay([&]() { synthetic_sensor::stop(); });
+        synthetic_sensor::stop();
 
         if( _owner->_autocal )
             _owner->_autocal->stop();
@@ -652,6 +649,12 @@ namespace librealsense
         return *rgb_profile;
     }
 
+    void l500_depth_sensor::close() 
+    {
+        // The delay is here as a work around to a firmware bug [RS5-5453]
+        _action_delayer.do_after_delay( [&]() { synthetic_sensor::close(); } );
+    }
+
     void l500_depth_sensor::open(const stream_profiles& requests)
     {
         try
@@ -726,7 +729,9 @@ namespace librealsense
                     sensor_mode_option.set(float(get_resolution_from_width_height(vs->get_width(), vs->get_height())));
             }
 
-            synthetic_sensor::open(_validator_requests);
+            // The delay is here as a work around to a firmware bug [RS5-5453]
+            _action_delayer.do_after_delay(
+                [&]() { synthetic_sensor::open( _validator_requests ); } );
         }
         catch( ... )
         {

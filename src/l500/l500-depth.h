@@ -259,6 +259,8 @@ namespace librealsense
 
         void start(frame_callback_ptr callback) override;
         void open(const stream_profiles& requests) override;
+        void close() override;
+
         void stop() override;
         float get_depth_offset() const;
         bool is_max_range_preset() const;

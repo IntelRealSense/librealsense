@@ -9,7 +9,7 @@ depth_sensor = devices[0].first_depth_sensor()
 
 debug_sensor = rs.debug_stream_sensor(depth_sensor)
 debug_profiles = debug_sensor.get_debug_stream_profiles()
-
+depth_profiles = debug_sensor.get_stream_profiles()
 
 #############################################################################################
 test.start("FG isn't exposed by get_stream_profiles")
@@ -43,10 +43,26 @@ try:
 except:
     test.unexpected_exception()
 finally:
-    debug_sensor.stop()
-    debug_sensor.close()
+    depth_sensor.stop()
+    depth_sensor.close()
 test.finish()
+#############################################################################################
+test.start("verify depth frames")
 
+dp = next(p for p in depth_profiles if p.fps() == 30
+                        and p.stream_type() == rs.stream.depth
+                        and p.format() == rs.format.z16)
+
+depth_sensor.open( dp )
+depth_sensor.start(lrs_queue)
+try:
+    lrs_frame = lrs_queue.wait_for_frame(5000)
+except:
+    test.unexpected_exception()
+finally:
+    depth_sensor.stop()
+    depth_sensor.close()
+test.finish()
 #############################################################################################
 
 test.print_results_and_exit()
