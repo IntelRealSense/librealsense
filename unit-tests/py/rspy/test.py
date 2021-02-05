@@ -36,10 +36,7 @@ def set_env_vars(env_vars):
         for env_var, val in env_vars.items():
             os.environ[env_var] = val
         sys.argv.append("rerun")
-        if platform.system() == 'Linux' and "microsoft" not in platform.uname()[3].lower():
-            cmd = ["python3"]
-        else:
-            cmd = ["py", "-3"]
+        cmd = [sys.executable]
         if sys.flags.verbose:
             cmd += ["-v"]
         cmd += sys.argv
