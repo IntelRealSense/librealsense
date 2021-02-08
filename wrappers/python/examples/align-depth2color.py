@@ -15,11 +15,22 @@ import cv2
 # Create a pipeline
 pipeline = rs.pipeline()
 
-#Create a config and configure the pipeline to stream
+# Create a config and configure the pipeline to stream
 #  different resolutions of color and depth streams
 config = rs.config()
+
+# Get device product line for setting a supporting resolution
+pipeline_wrapper = rs.pipeline_wrapper(pipeline)
+pipeline_profile = config.resolve(pipeline_wrapper)
+device = pipeline_profile.get_device()
+device_product_line = str(device.get_info(rs.camera_info.product_line))
+
 config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+
+if device_product_line == 'L500':
+    config.enable_stream(rs.stream.color, 960, 540, rs.format.bgr8, 30)
+else:
+    config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
 
 # Start streaming
 profile = pipeline.start(config)
@@ -66,10 +77,13 @@ try:
         depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) #depth image is 1 channel, color is 3 channels
         bg_removed = np.where((depth_image_3d > clipping_distance) | (depth_image_3d <= 0), grey_color, color_image)
 
-        # Render images
+        # Render images:
+        #   depth align to color on left
+        #   depth on right
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
         images = np.hstack((bg_removed, depth_colormap))
-        cv2.namedWindow('Align Example', cv2.WINDOW_AUTOSIZE)
+
+        cv2.namedWindow('Align Example', cv2.WINDOW_NORMAL)
         cv2.imshow('Align Example', images)
         key = cv2.waitKey(1)
         # Press esc or 'q' to close the image window

@@ -90,17 +90,14 @@ state = AppState()
 # Configure streams
 pipeline = rs.pipeline()
 config = rs.config()
-config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-# other_stream, other_format = rs.stream.infrared, rs.format.y8
+
+config.enable_stream(rs.stream.depth, rs.format.z16, 30)
 other_stream, other_format = rs.stream.color, rs.format.rgb8
-config.enable_stream(other_stream, 640, 480, other_format, 30)
+config.enable_stream(other_stream, other_format, 30)
 
 # Start streaming
 pipeline.start(config)
 profile = pipeline.get_active_profile()
-
-depth_sensor = profile.get_device().first_depth_sensor()
-depth_scale = depth_sensor.get_depth_scale()
 
 depth_profile = rs.video_stream_profile(profile.get_stream(rs.stream.depth))
 depth_intrinsics = depth_profile.get_intrinsics()
@@ -145,8 +142,16 @@ vertex_list = pyglet.graphics.vertex_list(
     w * h, 'v3f/stream', 't2f/stream', 'n3f/stream')
 # Create and allocate memory for our color data
 other_profile = rs.video_stream_profile(profile.get_stream(other_stream))
-image_data = pyglet.image.ImageData(w, h, convert_fmt(
-    other_profile.format()), (gl.GLubyte * (w * h * 3))())
+
+image_w, image_h = w, h
+color_intrinsics = other_profile.get_intrinsics()
+color_w, color_h = color_intrinsics.width, color_intrinsics.height
+
+if state.color:
+    image_w, image_h = color_w, color_h
+
+image_data = pyglet.image.ImageData(image_w, image_h, convert_fmt(
+other_profile.format()), (gl.GLubyte * (image_w * image_h * 3))())
 
 if (pyglet.version.startswith('1.') and not pyglet.version.startswith('1.4')):
     # pyglet.clock.ClockDisplay has be removed in 1.4
@@ -422,9 +427,17 @@ def run(dt):
     # handle color source or size change
     fmt = convert_fmt(mapped_frame.profile.format())
     global image_data
+
     if (image_data.format, image_data.pitch) != (fmt, color_source.strides[0]):
-        empty = (gl.GLubyte * (w * h * 3))()
-        image_data = pyglet.image.ImageData(w, h, fmt, empty)
+        if state.color:
+            global color_w, color_h
+            image_w, image_h = color_w, color_h
+        else:
+            image_w, image_h = w, h
+
+        empty = (gl.GLubyte * (image_w * image_h * 3))()
+        image_data = pyglet.image.ImageData(image_w, image_h, fmt, empty)
+
     # copy image data to pyglet
     image_data.set_data(fmt, color_source.strides[0], color_source.ctypes.data)
 
