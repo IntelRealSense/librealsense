@@ -6380,6 +6380,12 @@ namespace rs2
                         if (ImGui::Button(label.c_str(), { 30,30 }))
                         {
                             sub->stop(viewer);
+                            std::string friendly_name = sub->s->get_info(RS2_CAMERA_INFO_NAME);
+                            if ((friendly_name.find("Tracking") != std::string::npos) ||
+                                (friendly_name.find("Motion") != std::string::npos))
+                            {
+                                viewer.synchronization_enable = true;
+                            }
 
                             if (!std::any_of(subdevices.begin(), subdevices.end(),
                                 [](const std::shared_ptr<subdevice_model>& sm)

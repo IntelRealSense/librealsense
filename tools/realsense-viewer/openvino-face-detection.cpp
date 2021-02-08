@@ -199,6 +199,10 @@ private:
             *p_mean_depth = pixel_count ? total_depth / pixel_count : 0;
         return pixel_count ? total_luminance / pixel_count : 1;
     }
+    void clear_objects() override
+    {
+        _objects->clear();
+    }
 
     void worker_body( rs2::frameset fs ) override
     {
