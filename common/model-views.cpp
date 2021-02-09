@@ -3846,6 +3846,7 @@ namespace rs2
                 if ((friendly_name.find("Tracking") != std::string::npos) ||
                     (friendly_name.find("Motion") != std::string::npos))
                 {
+                    viewer.synchronization_enable_prev_state = viewer.synchronization_enable.load();
                     viewer.synchronization_enable = false;
                 }
                 sub->play(profiles, viewer, dev_syncer);
@@ -6345,6 +6346,7 @@ namespace rs2
                                         ((friendly_name.find("Tracking") != std::string::npos) ||
                                         (friendly_name.find("Motion") != std::string::npos)))
                                     {
+                                        viewer.synchronization_enable_prev_state = viewer.synchronization_enable.load();
                                         viewer.synchronization_enable = false;
                                     }
                                     _update_readonly_options_timer.set_expired();
@@ -6384,7 +6386,7 @@ namespace rs2
                             if ((friendly_name.find("Tracking") != std::string::npos) ||
                                 (friendly_name.find("Motion") != std::string::npos))
                             {
-                                viewer.synchronization_enable = true;
+                                viewer.synchronization_enable = viewer.synchronization_enable_prev_state.load();
                             }
 
                             if (!std::any_of(subdevices.begin(), subdevices.end(),

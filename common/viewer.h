@@ -156,6 +156,7 @@ namespace rs2
         bool draw_frustrum = true;
         bool support_non_syncronized_mode = true;
         std::atomic<bool> synchronization_enable;
+        std::atomic<bool> synchronization_enable_prev_state;
         std::atomic<int> zo_sensors;
 
         int selected_depth_source_uid = -1;
