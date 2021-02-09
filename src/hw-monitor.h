@@ -321,16 +321,16 @@ namespace librealsense
         {}
 
          static void fill_usb_buffer( int opCodeNumber,
-                                     int p1,
-                                     int p2,
-                                     int p3,
-                                     int p4,
-                                     uint8_t * data,
-                                     int dataLength,
-                                     uint8_t * bufferToSend,
-                                     int & length );
+                                      int p1,
+                                      int p2,
+                                      int p3,
+                                      int p4,
+                                      uint8_t const * data,
+                                      int dataLength,
+                                      uint8_t * bufferToSend,
+                                      int & length );
 
-        std::vector<uint8_t> send(std::vector<uint8_t> data) const;
+        std::vector< uint8_t > send( std::vector< uint8_t > const & data ) const;
         std::vector<uint8_t> send( command cmd, hwmon_response * = nullptr, bool locked_transfer = false ) const;
         void get_gvd(size_t sz, unsigned char* gvd, uint8_t gvd_cmd) const;
         static std::string get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 4);
