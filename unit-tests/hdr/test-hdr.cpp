@@ -1,12 +1,17 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 /////////////////////////////////////////////////////////////////////////////
 // This set of tests is valid for any device that supports the HDR feature //
 /////////////////////////////////////////////////////////////////////////////
 
+//#cmake:add-file ../unit-tests-common.h
+//#cmake:add-file ../approx.h
 
-#include "unit-tests-common.h"
+#define CATCH_CONFIG_MAIN
+#include "../catch.h"
+#include "../unit-tests-common.h"
+
 
 using namespace rs2;
 
