@@ -203,7 +203,7 @@ private:
     void worker_body( rs2::frame f ) override
     {
         auto fs = f.as< rs2::frameset >();
-        if (!fs || !fs.get_color_frame())
+        if ((!fs && f.get_profile().stream_name() != "Color") || (fs && !fs.get_color_frame()))
         {
             _objects->clear();
             if(!_frameset_log_info) LOG(INFO) << get_context(fs) << "OpenVino requires synchronized Depth and Color frames to operate, functionality disabled";
@@ -213,6 +213,7 @@ private:
         _frameset_log_info = false;
         // A color video frame is the minimum we need for detection
         auto cf = fs.get_color_frame();
+        if (!fs) cf = f;
         if( !cf )
         {
             LOG(ERROR) << get_context( fs ) << "no color frame";
@@ -225,6 +226,7 @@ private:
         }
         // A depth frame is optional: if not enabled, we won't get it, and we simply won't provide depth info...
         auto df = fs.get_depth_frame();
+        if (!fs && f.get_profile().stream_name() != "Depth") df = f;
         if( df )
         {
             if( df  &&  df.get_profile().format() != RS2_FORMAT_Z16 )
