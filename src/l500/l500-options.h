@@ -30,31 +30,37 @@ namespace librealsense
     };
 
     class l500_options;
+    class l500_hw_options;
 
     typedef uvc_xu_option< int > super;
 
     class digital_gain_option : public super
     {
     public:
-        digital_gain_option( uvc_sensor & ep,
-                             platform::extension_unit xu,
-                             uint8_t id,
-                             std::string description,
-                             const std::map< float, std::string > & description_per_value,
-                             firmware_version fw_version,
-                             l500_options * owner )
+        digital_gain_option(
+            uvc_sensor & ep,
+            platform::extension_unit xu,
+            uint8_t id,
+            std::string description,
+            const std::map< float, std::string > & description_per_value,
+            firmware_version fw_version,
+            l500_options * owner,
+            std::map< rs2_option, std::shared_ptr< cascade_option< l500_hw_options > > >
+                hw_options )
             : super( ep, xu, id, description, description_per_value )
             , _fw_version( fw_version )
             , _owner( owner )
+            , _hw_options(hw_options)
         {
         }
+        void reset_hw_controls();
         void set( float value ) override;
         void set_by_preset( float value );
-        option_range get_range() const override;
 
     private:
         void work_around_for_old_fw();
 
+        std::map< rs2_option, std::shared_ptr< cascade_option< l500_hw_options > > > _hw_options;
         firmware_version _fw_version;
         l500_options * _owner;
     };
@@ -79,8 +85,7 @@ namespace librealsense
                          l500_control type,
                          option * resolution,
                          const std::string & description,
-                         firmware_version fw_version,
-                         std::shared_ptr< digital_gain_option > digital_gain);
+                         firmware_version fw_version );
 
         void set_default( float def );
 
@@ -107,7 +112,6 @@ namespace librealsense
         option* _resolution;
         std::string _description;
         firmware_version _fw_version;
-        std::shared_ptr< digital_gain_option > _digital_gain;
         bool _is_read_only;
         bool _was_set_manually;
     };
@@ -178,12 +182,11 @@ namespace librealsense
         rs2_l500_visual_preset calc_preset_from_controls() const;
         void update_defaults();
         void move_to_custom();
+        
     private:
         void on_set_option(rs2_option opt, float value);
-        
         void set_preset_controls_to_defaults();
 
-        
         void set_max_laser();
 
         void change_gain( rs2_l500_visual_preset preset );

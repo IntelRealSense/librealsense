@@ -60,15 +60,13 @@ namespace librealsense
                                       l500_control type,
                                       option * resolution,
                                       const std::string & description,
-                                      firmware_version fw_version,
-                                      std::shared_ptr< digital_gain_option > digital_gain )
+                                      firmware_version fw_version )
         : _l500_dev( l500_dev )
         , _hw_monitor( hw_monitor )
         , _type( type )
         , _resolution( resolution )
         , _description( description )
         , _fw_version( fw_version )
-        , _digital_gain( digital_gain )
         , _is_read_only(false)
         , _was_set_manually( false )
     {
@@ -235,19 +233,6 @@ namespace librealsense
 
             depth_sensor.register_option(RS2_OPTION_SENSOR_MODE, resolution_option);
 
-            _digital_gain = std::make_shared< digital_gain_option >(
-                raw_depth_sensor,
-                ivcam2::depth_xu,
-                ivcam2::L500_DIGITAL_GAIN,
-                "Change the depth digital gain to: 1 for high gain and 2 for low gain",
-                std::map< float, std::string >{ /*{ RS2_DIGITAL_GAIN_AUTO, "Auto Gain" },*/
-                                                { RS2_DIGITAL_GAIN_HIGH, "High Gain" },
-                                                { RS2_DIGITAL_GAIN_LOW, "Low Gain" } },
-                _fw_version,
-                this );
-
-            depth_sensor.register_option( RS2_OPTION_DIGITAL_GAIN, _digital_gain );
-
             if( _fw_version >= firmware_version( "1.5.2.0" ) )
             {
                 _alt_ir = std::make_shared< l500_hw_options >( this,
@@ -255,8 +240,7 @@ namespace librealsense
                                                                    alternate_ir,
                                                                    resolution_option.get(),
                                                                    "Enable/Disable alternate IR",
-                                                                   _fw_version,
-                                                                   _digital_gain );
+                                                                   _fw_version);
 
                 depth_sensor.register_option( RS2_OPTION_ALTERNATE_IR, _alt_ir );
             }
@@ -273,8 +257,7 @@ namespace librealsense
                 post_processing_sharpness,
                 resolution_option.get(),
                 "Changes the amount of sharpening in the post-processed image",
-                _fw_version,
-                _digital_gain );
+                _fw_version);
 
             _hw_options[RS2_OPTION_PRE_PROCESSING_SHARPENING] = register_option< l500_hw_options,
                                                                                  l500_device *,
@@ -288,8 +271,7 @@ namespace librealsense
                 pre_processing_sharpness,
                 resolution_option.get(),
                 "Changes the amount of sharpening in the pre-processed image",
-                _fw_version,
-                _digital_gain );
+                _fw_version);
 
             _hw_options[RS2_OPTION_NOISE_FILTERING]
                 = register_option< l500_hw_options,
@@ -303,8 +285,7 @@ namespace librealsense
                                                   noise_filtering,
                                                   resolution_option.get(),
                                                   "Control edges and background noise",
-                                                  _fw_version,
-                                                  _digital_gain );
+                                                  _fw_version);
 
             _hw_options[RS2_OPTION_AVALANCHE_PHOTO_DIODE] = register_option< l500_hw_options,
                                                                              l500_device *,
@@ -318,8 +299,7 @@ namespace librealsense
                 apd,
                 resolution_option.get(),
                 "Changes the exposure time of Avalanche Photo Diode in the receiver",
-                _fw_version,
-                _digital_gain );
+                _fw_version);
 
             _hw_options[RS2_OPTION_CONFIDENCE_THRESHOLD]
                 = register_option< l500_hw_options,
@@ -334,8 +314,7 @@ namespace librealsense
                                                   resolution_option.get(),
                                                   "The confidence level threshold to use to mark a "
                                                   "pixel as valid by the depth algorithm",
-                                                  _fw_version,
-                                                  _digital_gain );
+                                                  _fw_version);
 
             _hw_options[RS2_OPTION_LASER_POWER] = register_option< l500_hw_options,
                                                                    l500_device *,
@@ -349,8 +328,7 @@ namespace librealsense
                 laser_gain,
                 resolution_option.get(),
                 "Power of the laser emitter, with 0 meaning projector off",
-                _fw_version,
-                _digital_gain );
+                _fw_version );
 
             _hw_options[RS2_OPTION_MIN_DISTANCE]
                 = register_option< l500_hw_options,
@@ -364,8 +342,7 @@ namespace librealsense
                                                   min_distance,
                                                   resolution_option.get(),
                                                   "Minimal distance to the target (in mm)",
-                                                  _fw_version,
-                                                  _digital_gain );
+                                                  _fw_version);
 
             _hw_options[RS2_OPTION_INVALIDATION_BYPASS]
                 = register_option< l500_hw_options,
@@ -379,14 +356,35 @@ namespace librealsense
                                                   invalidation_bypass,
                                                   resolution_option.get(),
                                                   "Enable/disable pixel invalidation",
-                                                  _fw_version,
-                                                  _digital_gain );
+                                                  _fw_version);
+
+
+            std::map< rs2_option, std::shared_ptr< cascade_option< l500_hw_options > > >
+                gain_options;
+
+            gain_options[RS2_OPTION_LASER_POWER] = _hw_options[RS2_OPTION_LASER_POWER];
+            gain_options[RS2_OPTION_AVALANCHE_PHOTO_DIODE] = _hw_options[RS2_OPTION_AVALANCHE_PHOTO_DIODE];
+            gain_options[RS2_OPTION_MIN_DISTANCE] = _hw_options[RS2_OPTION_MIN_DISTANCE];
+
+            _digital_gain = std::make_shared< digital_gain_option >(
+                raw_depth_sensor,
+                ivcam2::depth_xu,
+                ivcam2::L500_DIGITAL_GAIN,
+                "Change the depth digital gain to: 1 for high gain and 2 for low gain",
+                std::map< float, std::string >{ { RS2_DIGITAL_GAIN_AUTO, "Auto Gain" },
+                                                { RS2_DIGITAL_GAIN_HIGH, "High Gain" },
+                                                { RS2_DIGITAL_GAIN_LOW, "Low Gain" } },
+                _fw_version,
+                this,
+                gain_options );
+
+            depth_sensor.register_option(RS2_OPTION_DIGITAL_GAIN, _digital_gain);
 
              auto preset = calc_preset_from_controls();
 
             _preset = std::make_shared< l500_preset_option >(
             option_range{ RS2_L500_VISUAL_PRESET_CUSTOM,
-                          RS2_L500_VISUAL_PRESET_SHORT_RANGE,
+                          RS2_L500_VISUAL_PRESET_AUTOMATIC,
                           1,
                           RS2_L500_VISUAL_PRESET_MAX_RANGE },
             "Preset to calibrate the camera to environment ambient, no ambient or low "
@@ -446,12 +444,13 @@ namespace librealsense
             auto def_laser = laser->second->get_range().def;
 
             std::map< std::pair< rs2_digital_gain, float >, rs2_l500_visual_preset >
-                gain_and_laser_to_preset = {
-                    { { RS2_DIGITAL_GAIN_HIGH, def_laser }, RS2_L500_VISUAL_PRESET_NO_AMBIENT },
+                gain_and_laser_to_preset
+                = { { { RS2_DIGITAL_GAIN_HIGH, def_laser }, RS2_L500_VISUAL_PRESET_NO_AMBIENT },
                     { { RS2_DIGITAL_GAIN_LOW, max_laser }, RS2_L500_VISUAL_PRESET_LOW_AMBIENT },
                     { { RS2_DIGITAL_GAIN_HIGH, max_laser }, RS2_L500_VISUAL_PRESET_MAX_RANGE },
                     { { RS2_DIGITAL_GAIN_LOW, def_laser }, RS2_L500_VISUAL_PRESET_SHORT_RANGE },
-                };
+                    { { RS2_DIGITAL_GAIN_AUTO, def_laser }, RS2_L500_VISUAL_PRESET_AUTOMATIC } };
+        
 
             auto gain = ( rs2_digital_gain )(int)_digital_gain->query();
             auto laser_val = laser->second->query();
@@ -873,18 +872,52 @@ namespace librealsense
                "Note: only active on 2D view, Visual Preset:Max Range, Resolution:VGA, ROI:20%";
     }
 
+    void digital_gain_option::reset_hw_controls()
+    {
+        for (auto & o : _hw_options)
+            if (!o.second->is_read_only())
+            {
+                o.second->set_with_no_signal(-1);
+            }
+    }
+
     void digital_gain_option::set( float value ) 
     {
-        super::set( value );
+        std::map< rs2_option, float> currs;
+
+        auto curr_val = query();
+        // when we moved to auto preset we set all controls to -1
+       // so we have to set preset controls to defaults values now
+        if (rs2_digital_gain((int)value) == RS2_DIGITAL_GAIN_AUTO)
+        {
+            reset_hw_controls();
+        }
+        else if (rs2_digital_gain((int)curr_val) == RS2_DIGITAL_GAIN_AUTO)
+        {
+            for (auto opt : _hw_options)
+            {
+                currs [opt.first] = opt.second->query();
+            }
+        }
+
+        super::set(value);
+
+        if (currs.size() > 0)
+        {
+            for (auto val : currs)
+            {
+                _hw_options[val.first]->set(val.second);
+            }
+        }
         _owner->update_defaults();
 
-        // when we moved to auto preset we set all controls to -1
-        // so we have to set preset controls to defaults values now
-        /*auto curr_preset = ( rs2_l500_visual_preset )(int)_preset->query();
-        if( curr_preset == RS2_L500_VISUAL_PRESET_AUTOMATIC )
-           set_preset_controls_to_defaults();*/
-
-        _owner->move_to_custom();
+        if (rs2_digital_gain((int)value) == RS2_DIGITAL_GAIN_AUTO)
+        {
+            auto preset = _owner->calc_preset_from_controls();
+            _owner->set_preset_value(preset);
+        }
+        else
+            _owner->move_to_custom();
     }
 
     // set gain as result of change preset
@@ -892,19 +925,11 @@ namespace librealsense
     {
         work_around_for_old_fw();
 
+        if (rs2_digital_gain((int)value) == RS2_DIGITAL_GAIN_AUTO)
+            _owner->reset_hw_controls();
+
         super::set( value );
         _owner->update_defaults();
-    }
-
-    // FW expose 'auto gain' with value 0 as one of the values of gain option in addition
-    // to 'low gain' and 'high gain'
-    // for now we don't want to expose it to user so the range starts from 1 
-    // once we want to expose it we will remove this override method
-    option_range digital_gain_option::get_range() const
-    {
-        auto range = uvc_xu_option< int >::get_range();
-        range.min = 1;
-        return range;
     }
 
     void digital_gain_option::work_around_for_old_fw() 
