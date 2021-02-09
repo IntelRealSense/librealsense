@@ -712,16 +712,6 @@ namespace librealsense
             {
                 auto&& sensor_mode_option = get_option(RS2_OPTION_SENSOR_MODE);
                 auto vs = dynamic_cast<video_stream_profile*>((*dp).get());
-                if (supports_option(RS2_OPTION_VISUAL_PRESET))
-                {
-                    auto&& preset_option = get_option(RS2_OPTION_VISUAL_PRESET);
-                    if (preset_option.query() == RS2_L500_VISUAL_PRESET_CUSTOM)
-                    {
-                        if(sensor_mode_option.query() != get_resolution_from_width_height(vs->get_width(), vs->get_height()))
-                            throw  std::runtime_error(to_string() << "sensor mode ("<< rs2_sensor_mode((int)sensor_mode_option.query())<<") with RS2_L500_VISUAL_PRESET_CUSTOM is incompatible with the requested profile resolution ("
-                                << get_resolution_from_width_height(vs->get_width(), vs->get_height())<<")");
-                    }
-                }
                 if( vs->get_format() == RS2_FORMAT_Z16 )
                     sensor_mode_option.set(float(get_resolution_from_width_height(vs->get_width(), vs->get_height())));
             }
