@@ -80,7 +80,7 @@ namespace librealsense
 
         void enable_recording(std::function<void(const option&)> recording_action) override;
 
-        l500_hw_options( l500_device* l500_dev,
+        l500_hw_options( l500_options* l500_dev,
                          hw_monitor* hw_monitor,
                          l500_control type,
                          option * resolution,
@@ -99,12 +99,11 @@ namespace librealsense
         void set_read_only( bool read_only );
         void set_manually( bool set );
 
-    private:
+    protected:
         float query_default( bool & success ) const;
-        
 
         l500_control _type;
-        l500_device* _l500_dev;
+        l500_options* _owner;
         hw_monitor* _hw_monitor;
         option_range _range;
         uint32_t _width;
@@ -114,6 +113,23 @@ namespace librealsense
         firmware_version _fw_version;
         bool _is_read_only;
         bool _was_set_manually;
+    };
+
+    class alt_ir_option : public l500_hw_options
+    {
+    public:
+        alt_ir_option( l500_options * owner,
+                       hw_monitor * hw_monitor,
+                       l500_control type,
+                       option * resolution,
+                       const std::string & description,
+                       firmware_version fw_version )
+            : l500_hw_options(owner, hw_monitor, type, resolution, description, fw_version )
+        {
+        }
+
+        void set( float value ) override;
+
     };
 
     class max_usable_range_option : public bool_option
@@ -194,7 +210,7 @@ namespace librealsense
         void change_laser_power( rs2_l500_visual_preset preset );
         std::map<rs2_option, std::shared_ptr<cascade_option<l500_hw_options>>> _hw_options;
         std::shared_ptr< digital_gain_option > _digital_gain;
-        std::shared_ptr< l500_hw_options > _alt_ir;
+        std::shared_ptr< alt_ir_option > _alt_ir;
         std::shared_ptr< l500_preset_option > _preset;
 
         template<typename T, class ... Args>

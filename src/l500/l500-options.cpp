@@ -24,16 +24,6 @@ namespace librealsense
 
     void l500_hw_options::set(float value)
     {
-        // Block activating alternate IR when IR reflectivity is on [RS5-8358]
-        auto &ds = _l500_dev->get_depth_sensor();
-        if( ( alternate_ir == _type ) && ( 1.0f == value ) )
-        {
-            if( ds.supports_option( RS2_OPTION_ENABLE_IR_REFLECTIVITY )
-                && ds.get_option( RS2_OPTION_ENABLE_IR_REFLECTIVITY ).query() == 1.0f )
-                throw librealsense::wrong_api_call_sequence_exception(
-                    "Alternate IR cannot be enabled with IR Reflectivity" );
-        }
-
         _hw_monitor->send(command{ AMCSET, _type, (int)value });
     }
 
@@ -55,39 +45,41 @@ namespace librealsense
         }
     }
 
-    l500_hw_options::l500_hw_options( l500_device* l500_dev,
+    l500_hw_options::l500_hw_options( l500_options * l500_dev,
                                       hw_monitor * hw_monitor,
                                       l500_control type,
                                       option * resolution,
                                       const std::string & description,
                                       firmware_version fw_version )
-        : _l500_dev( l500_dev )
+        : _owner( l500_dev )
         , _hw_monitor( hw_monitor )
         , _type( type )
         , _resolution( resolution )
         , _description( description )
         , _fw_version( fw_version )
-        , _is_read_only(false)
+        , _is_read_only( false )
         , _was_set_manually( false )
     {
-        auto min = _hw_monitor->send(command{ AMCGET, _type, get_min });
-        auto max = _hw_monitor->send(command{ AMCGET, _type, get_max });
-        auto step = _hw_monitor->send(command{ AMCGET, _type, get_step });
+        auto min = _hw_monitor->send( command{ AMCGET, _type, get_min } );
+        auto max = _hw_monitor->send( command{ AMCGET, _type, get_max } );
+        auto step = _hw_monitor->send( command{ AMCGET, _type, get_step } );
 
-        if (min.size() < sizeof(int32_t) || max.size() < sizeof(int32_t) || step.size() < sizeof(int32_t))
+        if( min.size() < sizeof( int32_t ) || max.size() < sizeof( int32_t )
+            || step.size() < sizeof( int32_t ) )
         {
             std::stringstream s;
-            s << "Size of data returned is not valid min size = " << min.size() << ", max size = " << max.size() << ", step size = " << step.size();
-            throw std::runtime_error(s.str());
+            s << "Size of data returned is not valid min size = " << min.size()
+              << ", max size = " << max.size() << ", step size = " << step.size();
+            throw std::runtime_error( s.str() );
         }
 
-        auto max_value = float(*(reinterpret_cast<int32_t*>(max.data())));
-        auto min_value = float(*(reinterpret_cast<int32_t*>(min.data())));
+        auto max_value = float( *( reinterpret_cast< int32_t * >( max.data() ) ) );
+        auto min_value = float( *( reinterpret_cast< int32_t * >( min.data() ) ) );
 
         bool success;
         auto res = query_default( success );
 
-        if( !success )
+        if( ! success )
         {
             _is_read_only = true;
             res = -1;
@@ -169,7 +161,7 @@ namespace librealsense
 
         // if the sensor is streaming the value of control will update only when the next frame
         // arrive
-        if( _l500_dev->get_depth_sensor().is_streaming() )
+        if( _owner->get_depth_sensor().is_streaming() )
             std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
 
         auto def = query_current( query_sensor_mode( *_resolution ) );
@@ -235,18 +227,18 @@ namespace librealsense
 
             if( _fw_version >= firmware_version( "1.5.2.0" ) )
             {
-                _alt_ir = std::make_shared< l500_hw_options >( this,
-                                                                   _hw_monitor.get(),
-                                                                   alternate_ir,
-                                                                   resolution_option.get(),
-                                                                   "Enable/Disable alternate IR",
-                                                                   _fw_version);
+                _alt_ir = std::make_shared< alt_ir_option >( this,
+                                                             _hw_monitor.get(),
+                                                             alternate_ir,
+                                                             resolution_option.get(),
+                                                             "Enable/Disable alternate IR",
+                                                             _fw_version );
 
                 depth_sensor.register_option( RS2_OPTION_ALTERNATE_IR, _alt_ir );
             }
 
             _hw_options[RS2_OPTION_POST_PROCESSING_SHARPENING] = register_option< l500_hw_options,
-                                                                                  l500_device *,
+                                                                                  l500_options *,
                                                                                   hw_monitor *,
                                                                                   l500_control,
                                                                                   option *,
@@ -257,10 +249,10 @@ namespace librealsense
                 post_processing_sharpness,
                 resolution_option.get(),
                 "Changes the amount of sharpening in the post-processed image",
-                _fw_version);
+                _fw_version );
 
             _hw_options[RS2_OPTION_PRE_PROCESSING_SHARPENING] = register_option< l500_hw_options,
-                                                                                 l500_device *,
+                                                                                 l500_options *,
                                                                                  hw_monitor *,
                                                                                  l500_control,
                                                                                  option *,
@@ -271,11 +263,11 @@ namespace librealsense
                 pre_processing_sharpness,
                 resolution_option.get(),
                 "Changes the amount of sharpening in the pre-processed image",
-                _fw_version);
+                _fw_version );
 
             _hw_options[RS2_OPTION_NOISE_FILTERING]
                 = register_option< l500_hw_options,
-                                   l500_device *,
+                                   l500_options *,
                                    hw_monitor *,
                                    l500_control,
                                    option *,
@@ -285,10 +277,10 @@ namespace librealsense
                                                   noise_filtering,
                                                   resolution_option.get(),
                                                   "Control edges and background noise",
-                                                  _fw_version);
+                                                  _fw_version );
 
             _hw_options[RS2_OPTION_AVALANCHE_PHOTO_DIODE] = register_option< l500_hw_options,
-                                                                             l500_device *,
+                                                                             l500_options *,
                                                                              hw_monitor *,
                                                                              l500_control,
                                                                              option *,
@@ -299,11 +291,11 @@ namespace librealsense
                 apd,
                 resolution_option.get(),
                 "Changes the exposure time of Avalanche Photo Diode in the receiver",
-                _fw_version);
+                _fw_version );
 
             _hw_options[RS2_OPTION_CONFIDENCE_THRESHOLD]
                 = register_option< l500_hw_options,
-                                   l500_device *,
+                                   l500_options *,
                                    hw_monitor *,
                                    l500_control,
                                    option *,
@@ -314,10 +306,10 @@ namespace librealsense
                                                   resolution_option.get(),
                                                   "The confidence level threshold to use to mark a "
                                                   "pixel as valid by the depth algorithm",
-                                                  _fw_version);
+                                                  _fw_version );
 
             _hw_options[RS2_OPTION_LASER_POWER] = register_option< l500_hw_options,
-                                                                   l500_device *,
+                                                                   l500_options *,
                                                                    hw_monitor *,
                                                                    l500_control,
                                                                    option *,
@@ -332,7 +324,7 @@ namespace librealsense
 
             _hw_options[RS2_OPTION_MIN_DISTANCE]
                 = register_option< l500_hw_options,
-                                   l500_device *,
+                                   l500_options *,
                                    hw_monitor *,
                                    l500_control,
                                    option *,
@@ -342,11 +334,11 @@ namespace librealsense
                                                   min_distance,
                                                   resolution_option.get(),
                                                   "Minimal distance to the target (in mm)",
-                                                  _fw_version);
+                                                  _fw_version );
 
             _hw_options[RS2_OPTION_INVALIDATION_BYPASS]
                 = register_option< l500_hw_options,
-                                   l500_device *,
+                                   l500_options *,
                                    hw_monitor *,
                                    l500_control,
                                    option *,
@@ -356,7 +348,7 @@ namespace librealsense
                                                   invalidation_bypass,
                                                   resolution_option.get(),
                                                   "Enable/disable pixel invalidation",
-                                                  _fw_version);
+                                                  _fw_version );
 
 
             std::map< rs2_option, std::shared_ptr< cascade_option< l500_hw_options > > >
@@ -459,6 +451,10 @@ namespace librealsense
 
             if( it != gain_and_laser_to_preset.end() )
             {
+                if(it->second == RS2_L500_VISUAL_PRESET_AUTOMATIC)
+                    if(_alt_ir->query() != 1)
+                        return RS2_L500_VISUAL_PRESET_CUSTOM;
+
                 return it->second;
             }
             
@@ -886,12 +882,16 @@ namespace librealsense
         std::map< rs2_option, float> currs;
 
         auto curr_val = query();
-        // when we moved to auto preset we set all controls to -1
-       // so we have to set preset controls to defaults values now
+
+        // when we moved to auto gain we need to set laser, apd and min distance to -1
+        // thats talls the FW to put his own values
         if (rs2_digital_gain((int)value) == RS2_DIGITAL_GAIN_AUTO)
         {
             reset_hw_controls();
         }
+        // if we get out of auto we have to set the current values of laser, apd and min distance
+        // but we cant set it when we are on auto because apd is read only
+        // so we just save the currents values
         else if (rs2_digital_gain((int)curr_val) == RS2_DIGITAL_GAIN_AUTO)
         {
             for (auto opt : _hw_options)
@@ -900,8 +900,10 @@ namespace librealsense
             }
         }
 
+        // change gain
         super::set(value);
 
+        // if we have currents values we set them now
         if (currs.size() > 0)
         {
             for (auto val : currs)
@@ -909,8 +911,11 @@ namespace librealsense
                 _hw_options[val.first]->set(val.second);
             }
         }
+
+        // update defaults values after gain changed
         _owner->update_defaults();
 
+        // if we get into auto gain we might be on RS2_L500_VISUAL_PRESET_AUTOMATIC preset
         if (rs2_digital_gain((int)value) == RS2_DIGITAL_GAIN_AUTO)
         {
             auto preset = _owner->calc_preset_from_controls();
@@ -944,5 +949,25 @@ namespace librealsense
         // preset) we won't get the correct default values
         if( _fw_version < firmware_version( MIN_GET_DEFAULT_FW_VERSION ) )
             _owner->reset_hw_controls();  // should be before gain changing as WA for old FW versions
+    }
+
+    void alt_ir_option::set(float value)
+    {
+        // Block activating alternate IR when IR reflectivity is on [RS5-8358]
+        auto &ds = _owner->get_depth_sensor();
+        if (1.0f == value)
+        {
+            if (ds.supports_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY)
+                && ds.get_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY).query() == 1.0f)
+                throw librealsense::wrong_api_call_sequence_exception(
+                    "Alternate IR cannot be enabled with IR Reflectivity");
+        }
+
+        l500_hw_options::set(value);
+
+        auto preset = _owner->calc_preset_from_controls();
+        _owner->set_preset_value(preset);
+
+        
     }
 }  // namespace librealsense
