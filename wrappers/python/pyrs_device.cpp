@@ -24,7 +24,8 @@ void init_device(py::module &m) {
              "like versions of various internal components", "info"_a)
         .def("hardware_reset", &rs2::device::hardware_reset, "Send hardware reset request to the device")
         .def(py::init<>())
-        .def("__nonzero__", &rs2::device::operator bool)
+        .def("__nonzero__", &rs2::device::operator bool) // Called to implement truth value testing in Python 2
+        .def("__bool__", &rs2::device::operator bool) // Called to implement truth value testing in Python 3
         .def(BIND_DOWNCAST(device, debug_protocol))
         .def(BIND_DOWNCAST(device, playback))
         .def(BIND_DOWNCAST(device, recorder))

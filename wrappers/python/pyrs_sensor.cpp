@@ -67,7 +67,8 @@ void init_sensor(py::module &m) {
         .def_property_readonly("profiles", &rs2::sensor::get_stream_profiles, "The list of stream profiles supported by the sensor. Identical to calling get_stream_profiles")
         .def("get_recommended_filters", &rs2::sensor::get_recommended_filters, "Return the recommended list of filters by the sensor.")
         .def(py::init<>())
-        .def("__nonzero__", &rs2::sensor::operator bool) // No docstring in C++
+        .def("__nonzero__", &rs2::sensor::operator bool) // Called to implement truth value testing in Python 2
+        .def("__bool__", &rs2::sensor::operator bool)    // Called to implement truth value testing in Python 3
         .def(BIND_DOWNCAST(sensor, roi_sensor))
         .def(BIND_DOWNCAST(sensor, depth_sensor))
         .def(BIND_DOWNCAST(sensor, color_sensor))
@@ -85,25 +86,30 @@ void init_sensor(py::module &m) {
     roi_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
         .def("set_region_of_interest", &rs2::roi_sensor::set_region_of_interest, "roi"_a) // No docstring in C++
         .def("get_region_of_interest", &rs2::roi_sensor::get_region_of_interest) // No docstring in C++
-        .def("__nonzero__", &rs2::roi_sensor::operator bool); // No docstring in C++
+        .def("__nonzero__", &rs2::roi_sensor::operator bool)  // Called to implement truth value testing in Python 2
+        .def("__bool__", &rs2::roi_sensor::operator bool);    // Called to implement truth value testing in Python 3
 
     py::class_<rs2::depth_sensor, rs2::sensor> depth_sensor(m, "depth_sensor"); // No docstring in C++
     depth_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
         .def("get_depth_scale", &rs2::depth_sensor::get_depth_scale,
              "Retrieves mapping between the units of the depth image and meters.")
-        .def("__nonzero__", &rs2::depth_sensor::operator bool); // No docstring in C++
+        .def("__nonzero__", &rs2::depth_sensor::operator bool) // Called to implement truth value testing in Python 2
+        .def("__bool__", &rs2::depth_sensor::operator bool);   // Called to implement truth value testing in Python 3
 
     py::class_<rs2::color_sensor, rs2::sensor> color_sensor(m, "color_sensor"); // No docstring in C++
     color_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
-        .def("__nonzero__", &rs2::color_sensor::operator bool); // No docstring in C++
+        .def("__nonzero__", &rs2::color_sensor::operator bool) // Called to implement truth value testing in Python 2
+        .def("__bool__", &rs2::color_sensor::operator bool);   // Called to implement 3ruth value testing in Python 2
 
     py::class_<rs2::motion_sensor, rs2::sensor> motion_sensor(m, "motion_sensor"); // No docstring in C++
     motion_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
-        .def("__nonzero__", &rs2::motion_sensor::operator bool); // No docstring in C++
+        .def("__nonzero__", &rs2::motion_sensor::operator bool)  // Called to implement truth value testing in Python 2
+        .def("__bool__", &rs2::motion_sensor::operator bool);    // Called to implement truth value testing in Python 3
 
     py::class_<rs2::fisheye_sensor, rs2::sensor> fisheye_sensor(m, "fisheye_sensor"); // No docstring in C++
     fisheye_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
-        .def("__nonzero__", &rs2::fisheye_sensor::operator bool); // No docstring in C++
+        .def("__nonzero__", &rs2::fisheye_sensor::operator bool)  // Called to implement truth value testing in Python 2
+        .def("__bool__", &rs2::fisheye_sensor::operator bool);    // Called to implement truth value testing in Python 3
 
     py::class_<rs2::calibrated_sensor, rs2::sensor> cal_sensor( m, "calibrated_sensor" );
     cal_sensor.def( py::init<rs2::sensor>(), "sensor"_a )
@@ -125,7 +131,8 @@ void init_sensor(py::module &m) {
         .def( "reset_calibration",
               &rs2::calibrated_sensor::reset_calibration,
               py::call_guard< py::gil_scoped_release >() )
-        .def( "__nonzero__", &rs2::calibrated_sensor::operator bool );
+        .def( "__nonzero__", &rs2::calibrated_sensor::operator bool ) // Called to implement truth value testing in Python 2
+        .def("__bool__", &rs2::calibrated_sensor::operator bool);     // Called to implement truth value testing in Python 3
     
     py::class_<rs2::max_usable_range_sensor, rs2::sensor> mur_sensor(m, "max_usable_range_sensor");
     mur_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
@@ -167,24 +174,26 @@ void init_sensor(py::module &m) {
             rs2_quaternion orient;
             bool res = self.get_static_node(guid, pos, orient);
             return std::make_tuple(res, pos, orient);
-        }, "Gets the current pose of a static node that was created in the current map or in an imported map.\n"
-           "Static nodes of imported maps are available after relocalizing the imported map.\n"
-           "The static node's pose is returned relative to the current origin of coordinates of device poses.\n"
-           "Thus, poses of static nodes of an imported map are consistent with current device poses after relocalization.\n"
-           "This function fails if the current tracker confidence is below 3 (high confidence).",
-           "guid"_a)
+            }, "Gets the current pose of a static node that was created in the current map or in an imported map.\n"
+            "Static nodes of imported maps are available after relocalizing the imported map.\n"
+                "The static node's pose is returned relative to the current origin of coordinates of device poses.\n"
+                "Thus, poses of static nodes of an imported map are consistent with current device poses after relocalization.\n"
+                "This function fails if the current tracker confidence is below 3 (high confidence).",
+                "guid"_a)
         .def("remove_static_node", &rs2::pose_sensor::remove_static_node,
-             "Removes a named virtual landmark in the current map, known as static node.\n"
-             "guid"_a)
-        .def("__nonzero__", &rs2::pose_sensor::operator bool); // No docstring in C++
+            "Removes a named virtual landmark in the current map, known as static node.\n"
+            "guid"_a)
+                .def("__nonzero__", &rs2::pose_sensor::operator bool) // Called to implement truth value testing in Python 2
+                .def("__bool__", &rs2::pose_sensor::operator bool); // Called to implement truth value testing in Python 3
 
     py::class_<rs2::wheel_odometer, rs2::sensor> wheel_odometer(m, "wheel_odometer"); // No docstring in C++
     wheel_odometer.def(py::init<rs2::sensor>(), "sensor"_a)
         .def("load_wheel_odometery_config", &rs2::wheel_odometer::load_wheel_odometery_config,
-             "Load Wheel odometer settings from host to device.", "odometry_config_buf"_a)
+            "Load Wheel odometer settings from host to device.", "odometry_config_buf"_a)
         .def("send_wheel_odometry", &rs2::wheel_odometer::send_wheel_odometry,
-             "Send wheel odometry data for each individual sensor (wheel)",
-             "wo_sensor_id"_a, "frame_num"_a, "translational_velocity"_a)
-        .def("__nonzero__", &rs2::wheel_odometer::operator bool);
+            "Send wheel odometry data for each individual sensor (wheel)",
+            "wo_sensor_id"_a, "frame_num"_a, "translational_velocity"_a)
+        .def("__nonzero__", &rs2::wheel_odometer::operator bool) // Called to implement truth value testing in Python 2
+        .def("__bool__", &rs2::wheel_odometer::operator bool); // Called to implement truth value testing in Python 3
     /** end rs_sensor.hpp **/
 }
