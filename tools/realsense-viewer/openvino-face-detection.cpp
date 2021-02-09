@@ -70,7 +70,7 @@ class openvino_face_detection : public post_processing_worker_filter
     size_t _id = 0;
 
     std::shared_ptr< atomic_objects_in_frame > _objects;
-    std::atomic<bool> _frameset_log_info;
+    bool _frameset_log_info;
 public:
     openvino_face_detection( std::string const & name )
         : post_processing_worker_filter( name )
@@ -200,12 +200,13 @@ private:
         return pixel_count ? total_luminance / pixel_count : 1;
     }
 
-    void worker_body( rs2::frameset fs ) override
+    void worker_body( rs2::frame f ) override
     {
-        if (!fs)
+        auto fs = f.as< rs2::frameset >();
+        if (!fs || !fs.get_color_frame())
         {
             _objects->clear();
-            if(!_frameset_log_info) LOG(INFO) << get_context(fs) << "no frameset was received - OpenVino stopped";
+            if(!_frameset_log_info) LOG(INFO) << get_context(fs) << "OpenVino requires synchronized Depth and Color frames to operate, functionality disabled";
             _frameset_log_info = true;
             return;
         }
