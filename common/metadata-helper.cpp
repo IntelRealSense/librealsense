@@ -160,6 +160,8 @@ namespace rs2
             {
                 // L500 has 3 media-pins
                 if (equal(pid, "0b0d") || equal(pid, "0b3d") || equal(pid, "0b64")) return 3;
+                // D405 has 3 media-pins
+                else if (equal(pid, "0b5b")) return 3;
                 else return 2; // D400 has two
             }
             return 1; // RGB has one
