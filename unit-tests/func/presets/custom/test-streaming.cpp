@@ -8,6 +8,10 @@
 
 using namespace rs2;
 
+// This test checks that if we are on custom preset and start streaming,
+// with profile that has different resolution than the value of the 
+// sensor mode control LRS don't throw an exception and update the
+// sensor mode according the profile
 TEST_CASE( "sensor mode change while streaming on custom", "[l500][live]" )
 {
     auto devices = find_devices_by_product_line_or_exit( RS2_PRODUCT_LINE_L500 );
