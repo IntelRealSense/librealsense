@@ -32,6 +32,10 @@ const std::vector< rs2_option > preset_dependent_options = { RS2_OPTION_POST_PRO
                                                              RS2_OPTION_AVALANCHE_PHOTO_DIODE,
                                                              RS2_OPTION_MIN_DISTANCE };
 
+// These are all the options that are changed when changing a gain
+const std::vector< rs2_option > auto_dependent_options
+    = { RS2_OPTION_LASER_POWER, RS2_OPTION_AVALANCHE_PHOTO_DIODE, RS2_OPTION_MIN_DISTANCE };
+
 std::map< rs2_option, librealsense::l500_control > option_to_code = {
     { RS2_OPTION_POST_PROCESSING_SHARPENING,
       librealsense::l500_control::post_processing_sharpness },
@@ -50,11 +54,12 @@ enum presets_useful_laser_values
 };
 
 const std::map< rs2_l500_visual_preset, std::pair< rs2_digital_gain, presets_useful_laser_values > >
-    preset_to_gain_and_laser_map
-    = { { RS2_L500_VISUAL_PRESET_NO_AMBIENT, { RS2_DIGITAL_GAIN_HIGH, default_laser } },
-        { RS2_L500_VISUAL_PRESET_MAX_RANGE, { RS2_DIGITAL_GAIN_HIGH, max_laser } },
-        { RS2_L500_VISUAL_PRESET_LOW_AMBIENT, { RS2_DIGITAL_GAIN_LOW, max_laser } },
-        { RS2_L500_VISUAL_PRESET_SHORT_RANGE, { RS2_DIGITAL_GAIN_LOW, default_laser } } };
+preset_to_gain_and_laser_map
+= { { RS2_L500_VISUAL_PRESET_NO_AMBIENT, { RS2_DIGITAL_GAIN_HIGH, default_laser } },
+    { RS2_L500_VISUAL_PRESET_MAX_RANGE, { RS2_DIGITAL_GAIN_HIGH, max_laser } },
+    { RS2_L500_VISUAL_PRESET_LOW_AMBIENT, { RS2_DIGITAL_GAIN_LOW, max_laser } },
+    { RS2_L500_VISUAL_PRESET_SHORT_RANGE, { RS2_DIGITAL_GAIN_LOW, default_laser } },
+    { RS2_L500_VISUAL_PRESET_AUTOMATIC, { RS2_DIGITAL_GAIN_AUTO, default_laser }} };
 
 // except from RS2_L500_VISUAL_PRESET_AUTOMATIC and RS2_L500_VISUAL_PRESET_CUSTOM
 void for_each_preset_mode_combination(
@@ -126,14 +131,12 @@ std::map< rs2_option, float > get_defaults_from_fw( rs2::device & dev )
                                            (int)mode,
                                            0 };
 
-        auto res = send_command_and_check( dp, command, 1 );
+        bool valid;
+        auto res = send_command_and_check(dp, command, valid, 1);
 
-        REQUIRE( ds.supports( RS2_OPTION_DIGITAL_GAIN ) );
-        float digital_gain_val;
-
-        REQUIRE_NOTHROW( digital_gain_val = ds.get_option( RS2_OPTION_DIGITAL_GAIN ) );
-
-        auto val = *reinterpret_cast< int32_t * >( (void *)res.data() );
+        float val = -1;
+        if(valid)
+            val = *reinterpret_cast< int32_t * >( (void *)res.data() );
 
         option_to_defaults[op.first] = float( val );
     }
@@ -188,7 +191,8 @@ void build_preset_to_expected_values_map( rs2::device & dev,
 
     for( auto dependent_option : preset_dependent_options )
     {
-        expected_values[dependent_option] = depth_sens.get_option_range( dependent_option ).def;
+        if (!depth_sens.is_option_read_only(dependent_option))
+            expected_values[dependent_option] = depth_sens.get_option_range(dependent_option).def;
     }
 
     expected_values[RS2_OPTION_DIGITAL_GAIN] = (float)preset_to_gain_and_laser[preset].first;
@@ -229,6 +233,15 @@ std::map< rs2_option, float > get_defaults_from_lrs( rs2::depth_sensor & depth_s
     return option_to_defaults;
 }
 
+std::map< rs2_option, float > build_gain_to_expected_defaults(rs2::device & dev,
+    rs2::depth_sensor & depth_sens, rs2_digital_gain gain, rs2_sensor_mode mode)
+{
+    depth_sens.set_option(RS2_OPTION_DIGITAL_GAIN, (float)gain);
+    depth_sens.set_option(RS2_OPTION_SENSOR_MODE, (float)mode);
+
+    return get_defaults_from_fw(dev);
+}
+
 gain_values_map build_gain_to_expected_defaults_map( rs2::device & dev,
                                                      rs2::depth_sensor & depth_sens )
 {
@@ -237,10 +250,7 @@ gain_values_map build_gain_to_expected_defaults_map( rs2::device & dev,
     auto preset_to_gain_and_laser = preset_to_gain_and_laser_map;
 
     for_each_gain_mode_combination( [&]( rs2_digital_gain gain, rs2_sensor_mode mode ) {
-        depth_sens.set_option( RS2_OPTION_DIGITAL_GAIN, (float)gain );
-        depth_sens.set_option( RS2_OPTION_SENSOR_MODE, (float)mode );
-
-        gain_to_expected_defaults_values[{ gain, mode }] = get_defaults_from_fw( dev );
+        gain_to_expected_defaults_values[{ gain, mode }] = build_gain_to_expected_defaults(dev, depth_sens, gain, mode);
     } );
 
     return gain_to_expected_defaults_values;
@@ -257,7 +267,9 @@ void reset_hw_controls( rs2::device & dev )
                                                -1,
                                                0,
                                                0 };
-        send_command_and_check( dp, set_command );
+        bool valid;
+        send_command_and_check( dp, set_command, valid);
+        REQUIRE(valid);
     }
 }
 
@@ -332,7 +344,8 @@ void compare_expected_currents_to_actual( const rs2::sensor & sens,
     for( auto & i : expected_values )
     {
         CAPTURE( i.first );
-        CHECK( sens.get_option( i.first ) == i.second );
+        if(!sens.is_option_read_only(i.first))
+            CHECK( sens.get_option( i.first ) == i.second );
     }
 }
 

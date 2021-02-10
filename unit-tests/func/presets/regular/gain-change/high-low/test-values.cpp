@@ -2,10 +2,9 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 //#cmake: static!
-//#test:device L500*
 
-#include "../../../func-common.h"
-#include "../../presets-common.h"
+#include "../../../../func-common.h"
+#include "../../../presets-common.h"
 #include <l500/l500-options.h>
 
 using namespace rs2;

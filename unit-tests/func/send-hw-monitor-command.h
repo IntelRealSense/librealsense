@@ -28,7 +28,7 @@ struct hw_monitor_command
 };
 
 inline std::vector< uint8_t > send_command_and_check( rs2::debug_protocol dp,
-                                               hw_monitor_command command,
+                                               hw_monitor_command command, bool &valid,
                                                uint32_t expected_size_return = 0 )
 {
     const int MAX_HW_MONITOR_BUFFER_SIZE = 1024;
@@ -47,11 +47,19 @@ inline std::vector< uint8_t > send_command_and_check( rs2::debug_protocol dp,
                                                size );
 
     res = dp.send_and_receive_raw_data( res );
-    REQUIRE( res.size() == sizeof( unsigned int ) * ( expected_size_return + 1 ) );  // opcode
+
+    if (res.size() != sizeof(unsigned int) * (expected_size_return + 1)) // opcode
+    {
+        auto err = *(int*)res.data();
+        REQUIRE(err == librealsense::hwmon_response::hwm_IllegalHwState);
+        valid = false;
+        return res;
+    }
 
     auto vals = reinterpret_cast< int32_t * >( (void *)res.data() );
     REQUIRE( vals[0] == command.cmd );
     res.erase( res.begin(), res.begin() + sizeof( unsigned int ) );  // remove opcode
 
+    valid = true;
     return res;
 }
