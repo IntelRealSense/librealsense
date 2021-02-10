@@ -1,0 +1,8 @@
+LIBRARY
+
+EXPORTS
+    rs2_create_net_device
+    rs2_create_server
+    rs2_start_server
+    rs2_stop_server
+    rs2_destroy_server
