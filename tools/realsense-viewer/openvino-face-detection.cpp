@@ -70,7 +70,7 @@ class openvino_face_detection : public post_processing_worker_filter
     size_t _id = 0;
 
     std::shared_ptr< atomic_objects_in_frame > _objects;
-    bool _frameset_log_info;
+    
 public:
     openvino_face_detection( std::string const & name )
         : post_processing_worker_filter( name )
@@ -203,37 +203,33 @@ private:
     void worker_body( rs2::frame f ) override
     {
         auto fs = f.as< rs2::frameset >();
-        if ((!fs && f.get_profile().stream_name() != "Color") || (fs && !fs.get_color_frame()))
+        auto cf = f;
+        rs2::depth_frame df = NULL;
+        if (fs)
+        {
+            cf = fs.get_color_frame();
+            df = fs.get_depth_frame();
+        }
+
+        if ((!fs && f.get_profile().stream_name() != "Color") || (fs && !cf))
         {
             _objects->clear();
-            if(!_frameset_log_info) LOG(INFO) << get_context(fs) << "OpenVino requires synchronized Depth and Color frames to operate, functionality disabled";
-            _frameset_log_info = true;
             return;
         }
-        _frameset_log_info = false;
 
         // A color video frame is the minimum we need for detection
-        auto cf = f;
-        if (fs) cf = fs.get_color_frame();
-        if( !cf )
-        {
-            LOG(ERROR) << get_context( fs ) << "no color frame";
-            return;
-        }
         if( cf.get_profile().format() != RS2_FORMAT_RGB8 )
         {
             LOG(ERROR) << get_context(fs) << "color format must be RGB8; it's " << cf.get_profile().format();
             return;
         }
+
         // A depth frame is optional: if not enabled, we won't get it, and we simply won't provide depth info...
-        auto df = fs.get_depth_frame();
-        if (df)
+
+        if (df && df.get_profile().format() != RS2_FORMAT_Z16)
         {
-            if (df.get_profile().format() != RS2_FORMAT_Z16)
-            {
-                LOG(ERROR) << get_context(fs) << "depth format must be Z16; it's " << df.get_profile().format();
-                return;
-            }
+            LOG(ERROR) << get_context(fs) << "depth format must be Z16; it's " << df.get_profile().format();
+            return;
         }
         try
         {
