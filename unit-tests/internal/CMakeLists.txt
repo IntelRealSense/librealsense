@@ -16,7 +16,7 @@ set (INTERNAL_TESTS_SOURCES
     ../approx.h
 )
 
-if(UNIX)
+if(UNIX AND NOT ANDROID)
 list(APPEND INTERNAL_TESTS_SOURCES internal-tests-linux.cpp)
 endif()
 
