@@ -85,54 +85,42 @@ void init_sensor(py::module &m) {
     py::class_<rs2::roi_sensor, rs2::sensor> roi_sensor(m, "roi_sensor"); // No docstring in C++
     roi_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
         .def("set_region_of_interest", &rs2::roi_sensor::set_region_of_interest, "roi"_a) // No docstring in C++
-        .def("get_region_of_interest", &rs2::roi_sensor::get_region_of_interest) // No docstring in C++
-        .def("__nonzero__", &rs2::roi_sensor::operator bool)  // Called to implement truth value testing in Python 2
-        .def("__bool__", &rs2::roi_sensor::operator bool);    // Called to implement truth value testing in Python 3
+        .def("get_region_of_interest", &rs2::roi_sensor::get_region_of_interest); // No docstring in C++
 
     py::class_<rs2::depth_sensor, rs2::sensor> depth_sensor(m, "depth_sensor"); // No docstring in C++
     depth_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
         .def("get_depth_scale", &rs2::depth_sensor::get_depth_scale,
-             "Retrieves mapping between the units of the depth image and meters.")
-        .def("__nonzero__", &rs2::depth_sensor::operator bool) // Called to implement truth value testing in Python 2
-        .def("__bool__", &rs2::depth_sensor::operator bool);   // Called to implement truth value testing in Python 3
+            "Retrieves mapping between the units of the depth image and meters.");
 
     py::class_<rs2::color_sensor, rs2::sensor> color_sensor(m, "color_sensor"); // No docstring in C++
-    color_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
-        .def("__nonzero__", &rs2::color_sensor::operator bool) // Called to implement truth value testing in Python 2
-        .def("__bool__", &rs2::color_sensor::operator bool);   // Called to implement 3ruth value testing in Python 2
+    color_sensor.def(py::init<rs2::sensor>(), "sensor"_a);
 
     py::class_<rs2::motion_sensor, rs2::sensor> motion_sensor(m, "motion_sensor"); // No docstring in C++
-    motion_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
-        .def("__nonzero__", &rs2::motion_sensor::operator bool)  // Called to implement truth value testing in Python 2
-        .def("__bool__", &rs2::motion_sensor::operator bool);    // Called to implement truth value testing in Python 3
+    motion_sensor.def(py::init<rs2::sensor>(), "sensor"_a);
 
     py::class_<rs2::fisheye_sensor, rs2::sensor> fisheye_sensor(m, "fisheye_sensor"); // No docstring in C++
-    fisheye_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
-        .def("__nonzero__", &rs2::fisheye_sensor::operator bool)  // Called to implement truth value testing in Python 2
-        .def("__bool__", &rs2::fisheye_sensor::operator bool);    // Called to implement truth value testing in Python 3
+    fisheye_sensor.def(py::init<rs2::sensor>(), "sensor"_a);
 
     py::class_<rs2::calibrated_sensor, rs2::sensor> cal_sensor( m, "calibrated_sensor" );
-    cal_sensor.def( py::init<rs2::sensor>(), "sensor"_a )
-        .def( "override_intrinsics",
-              &rs2::calibrated_sensor::override_intrinsics,
-              "intrinsics"_a,
-              py::call_guard< py::gil_scoped_release >() )
-        .def( "override_extrinsics",
-              &rs2::calibrated_sensor::override_extrinsics,
-              "extrinsics"_a,
-              py::call_guard< py::gil_scoped_release >() )
-        .def( "get_dsm_params",
-              &rs2::calibrated_sensor::get_dsm_params,
-              py::call_guard< py::gil_scoped_release >() )
-        .def( "override_dsm_params",
-              &rs2::calibrated_sensor::override_dsm_params,
-              "dsm_params"_a,
-              py::call_guard< py::gil_scoped_release >() )
-        .def( "reset_calibration",
-              &rs2::calibrated_sensor::reset_calibration,
-              py::call_guard< py::gil_scoped_release >() )
-        .def( "__nonzero__", &rs2::calibrated_sensor::operator bool ) // Called to implement truth value testing in Python 2
-        .def("__bool__", &rs2::calibrated_sensor::operator bool);     // Called to implement truth value testing in Python 3
+    cal_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
+        .def("override_intrinsics",
+            &rs2::calibrated_sensor::override_intrinsics,
+            "intrinsics"_a,
+            py::call_guard< py::gil_scoped_release >())
+        .def("override_extrinsics",
+            &rs2::calibrated_sensor::override_extrinsics,
+            "extrinsics"_a,
+            py::call_guard< py::gil_scoped_release >())
+        .def("get_dsm_params",
+            &rs2::calibrated_sensor::get_dsm_params,
+            py::call_guard< py::gil_scoped_release >())
+        .def("override_dsm_params",
+            &rs2::calibrated_sensor::override_dsm_params,
+            "dsm_params"_a,
+            py::call_guard< py::gil_scoped_release >())
+        .def("reset_calibration",
+            &rs2::calibrated_sensor::reset_calibration,
+            py::call_guard< py::gil_scoped_release >());
     
     py::class_<rs2::max_usable_range_sensor, rs2::sensor> mur_sensor(m, "max_usable_range_sensor");
     mur_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
@@ -192,8 +180,6 @@ void init_sensor(py::module &m) {
             "Load Wheel odometer settings from host to device.", "odometry_config_buf"_a)
         .def("send_wheel_odometry", &rs2::wheel_odometer::send_wheel_odometry,
             "Send wheel odometry data for each individual sensor (wheel)",
-            "wo_sensor_id"_a, "frame_num"_a, "translational_velocity"_a)
-        .def("__nonzero__", &rs2::wheel_odometer::operator bool) // Called to implement truth value testing in Python 2
-        .def("__bool__", &rs2::wheel_odometer::operator bool); // Called to implement truth value testing in Python 3
+            "wo_sensor_id"_a, "frame_num"_a, "translational_velocity"_a);
     /** end rs_sensor.hpp **/
 }
