@@ -351,7 +351,7 @@ namespace librealsense
                                                   _fw_version );
 
 
-            std::map< rs2_option, std::shared_ptr< cascade_option< l500_hw_options > > >
+            hw_options_map
                 gain_options;
 
             gain_options[RS2_OPTION_LASER_POWER] = _hw_options[RS2_OPTION_LASER_POWER];
