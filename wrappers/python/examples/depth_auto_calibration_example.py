@@ -28,6 +28,18 @@ def main(argv):
     pipeline = rs.pipeline()
     config = rs.config()
 
+    # Get device product line for setting a supporting resolution
+    pipeline_wrapper = rs.pipeline_wrapper(pipeline)
+    pipeline_profile = config.resolve(pipeline_wrapper)
+    device = pipeline_profile.get_device()
+
+    auto_calibrated_device = rs.auto_calibrated_device(device)
+
+    if not auto_calibrated_device:
+        print("The connected device does not support auto calibration")
+        return
+
+
     config.enable_stream(rs.stream.depth, 256, 144, rs.format.z16, 90)
     conf = pipeline.start(config)
     calib_dev = rs.auto_calibrated_device(conf.get_device())
