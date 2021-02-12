@@ -70,7 +70,7 @@ class openvino_face_detection : public post_processing_worker_filter
     size_t _id = 0;
 
     std::shared_ptr< atomic_objects_in_frame > _objects;
-
+    
 public:
     openvino_face_detection( std::string const & name )
         : post_processing_worker_filter( name )
@@ -200,31 +200,37 @@ private:
         return pixel_count ? total_luminance / pixel_count : 1;
     }
 
-    void worker_body( rs2::frameset fs ) override
+    void worker_body( rs2::frame f ) override
     {
-        // A color video frame is the minimum we need for detection
-        auto cf = fs.get_color_frame();
-        if( !cf )
+        auto fs = f.as< rs2::frameset >();
+        auto cf = f;
+        rs2::depth_frame df = NULL;
+        if (fs)
         {
-            LOG(ERROR) << get_context( fs ) << "no color frame";
+            cf = fs.get_color_frame();
+            df = fs.get_depth_frame();
+        }
+
+        if ((!fs && f.get_profile().stream_name() != "Color") || (fs && !cf))
+        {
+            _objects->clear();
             return;
         }
+
+        // A color video frame is the minimum we need for detection
         if( cf.get_profile().format() != RS2_FORMAT_RGB8 )
         {
             LOG(ERROR) << get_context(fs) << "color format must be RGB8; it's " << cf.get_profile().format();
             return;
         }
-        // A depth frame is optional: if not enabled, we won't get it, and we simply won't provide depth info...
-        auto df = fs.get_depth_frame();
-        if( df )
-        {
-            if( df  &&  df.get_profile().format() != RS2_FORMAT_Z16 )
-            {
-                LOG(ERROR) << get_context(fs) << "depth format must be Z16; it's " << df.get_profile().format();
-                return;
-            }
-        }
 
+        // A depth frame is optional: if not enabled, we won't get it, and we simply won't provide depth info...
+
+        if (df && df.get_profile().format() != RS2_FORMAT_Z16)
+        {
+            LOG(ERROR) << get_context(fs) << "depth format must be Z16; it's " << df.get_profile().format();
+            return;
+        }
         try
         {
             rs2_intrinsics color_intrin, depth_intrin;

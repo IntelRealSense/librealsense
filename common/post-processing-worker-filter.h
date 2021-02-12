@@ -56,9 +56,10 @@ public:
                 rs2::frame f;
                 if( !_queue.try_wait_for_frame( &f ) )
                     continue;
-                if( !f )
+                if (!f)
                     continue;
-                worker_body( f.as< rs2::frameset >() );
+
+                worker_body(f);
             }
             LOG(DEBUG) << "End of worker loop in " + get_name();
             worker_end();
@@ -75,5 +76,5 @@ protected:
     virtual void worker_start() {}
     virtual void worker_end() {}
 
-    virtual void worker_body( rs2::frameset fs ) = 0;
+    virtual void worker_body( rs2::frame fs ) = 0;
 };

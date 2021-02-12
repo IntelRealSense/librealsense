@@ -3782,7 +3782,12 @@ namespace rs2
 
         for (auto&& sub : dev.query_sensors())
         {
-            auto model = std::make_shared<subdevice_model>(dev, std::make_shared<sensor>(sub), _detected_objects, error_message, viewer, new_device_connected);
+            auto s = std::make_shared<sensor>(sub);
+            std::string friendly_name = s->get_info(RS2_CAMERA_INFO_NAME);
+            auto objects = std::make_shared< atomic_objects_in_frame >();
+            if (friendly_name.find("RGB") != std::string::npos) objects = _detected_objects;
+
+            auto model = std::make_shared<subdevice_model>(dev, std::make_shared<sensor>(sub), objects, error_message, viewer, new_device_connected);
             subdevices.push_back(model);
         }
 
@@ -3846,6 +3851,7 @@ namespace rs2
                 if ((friendly_name.find("Tracking") != std::string::npos) ||
                     (friendly_name.find("Motion") != std::string::npos))
                 {
+                    viewer.synchronization_enable_prev_state = viewer.synchronization_enable.load();
                     viewer.synchronization_enable = false;
                 }
                 sub->play(profiles, viewer, dev_syncer);
@@ -6345,6 +6351,7 @@ namespace rs2
                                         ((friendly_name.find("Tracking") != std::string::npos) ||
                                         (friendly_name.find("Motion") != std::string::npos)))
                                     {
+                                        viewer.synchronization_enable_prev_state = viewer.synchronization_enable.load();
                                         viewer.synchronization_enable = false;
                                     }
                                     _update_readonly_options_timer.set_expired();
@@ -6380,6 +6387,12 @@ namespace rs2
                         if (ImGui::Button(label.c_str(), { 30,30 }))
                         {
                             sub->stop(viewer);
+                            std::string friendly_name = sub->s->get_info(RS2_CAMERA_INFO_NAME);
+                            if ((friendly_name.find("Tracking") != std::string::npos) ||
+                                (friendly_name.find("Motion") != std::string::npos))
+                            {
+                                viewer.synchronization_enable = viewer.synchronization_enable_prev_state.load();
+                            }
 
                             if (!std::any_of(subdevices.begin(), subdevices.end(),
                                 [](const std::shared_ptr<subdevice_model>& sm)
