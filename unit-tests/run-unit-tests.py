@@ -21,7 +21,6 @@ def usage():
     print( '        -q, --quiet    Suppress output; rely on exit status (0=no failures)' )
     print( '        -r, --regex    run all tests that fit the following regular expression')
     print( '        -s, --stdout   do not redirect stdout to logs')
-    print( '        -a, --asis     do not init acroname; just run the tests as-is' )
     sys.exit(2)
 def debug(*args):
     pass
@@ -85,7 +84,7 @@ def find( dir, mask ):
     pattern = re.compile( mask )
     for leaf in filesin( dir ):
         if pattern.search( leaf ):
-            debug(leaf)
+            #debug(leaf)
             yield leaf
 
 # get os and directories for future use
@@ -109,15 +108,14 @@ def is_executable(path_to_test):
 
 # Parse command-line:
 try:
-    opts,args = getopt.getopt( sys.argv[1:], 'hvqr:sa',
-        longopts = [ 'help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'asis' ])
+    opts,args = getopt.getopt( sys.argv[1:], 'hvqr:s',
+        longopts = [ 'help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout' ])
 except getopt.GetoptError as err:
     error( err )   # something like "option -a not recognized"
     usage()
 verbose = False
 regex = None
 to_stdout = False
-asis = False
 for opt,arg in opts:
     if opt in ('-h','--help'):
         usage()
@@ -135,8 +133,6 @@ for opt,arg in opts:
         regex = arg
     elif opt in ('-s', '--stdout'):
         to_stdout = True
-    elif opt in ('-a', '--asis'):
-        asis = True
 
 if len(args) > 1:
     usage()
@@ -283,17 +279,89 @@ def check_log_for_fails(log, testname, exe):
             return True
         return False
 
-# definition of classes for tests
-class Test(ABC): # Abstract Base Class
+
+class TestConfig(ABC):  # Abstract Base Class
+    """
+    Configuration for a test, encompassing any metadata needed to control its run, like retries etc.
+    """
+    def __init__(self):
+        self._configurations = list()
+
+    @property
+    def configurations(self):
+        return self._configurations
+
+
+class TestConfigFromText(TestConfig):
+    """
+    Configuration for a test -- from any text-based syntax with a given prefix, e.g. for python:
+        #test:usb2
+        #test:device L500* D400*
+        #test:retries 3
+        #test:priority 0
+    And, for C++ the prefix could be:
+        //#test:...
+    """
+    def __init__( self, source, line_prefix ):
+        """
+        :param source: The path to the text file
+        :param line_prefix: A regex to denote a directive (must be first thing in a line), which will
+            be immediately followed by the directive itself and optional arguments
+        """
+        TestConfig.__init__(self)
+
+        # Parse the python
+        regex = r'^' + line_prefix + r'(\S+)((?:\s+\S+)*?)\s*(?:#\s*(.*))?$'
+        for context in grep( regex, source ):
+            match = context['match']
+            directive = match.group(1)
+            params = [s for s in context['match'].group(2).split()]
+            comment = match.group(3)
+            if directive == 'device':
+                debug( '    configuration:', params )
+                if not params:
+                    error( source + str(context.index) + ': device directive with no devices listed' )
+                else:
+                    self._configurations.append( params )
+            else:
+                error( source + str(context.index) + ': invalid directive "' + directive + '"; ignoring' )
+
+
+class Test(ABC):  # Abstract Base Class
     """
     Abstract class for a test. Holds the name of the test
     """
     def __init__(self, testname):
-        self.testname = testname
+        debug( 'Found', testname )
+        self._name = testname
+        self._config = None
 
     @abstractmethod
     def run_test(self):
         pass
+
+    @property
+    def config(self):
+        return self._config
+
+    @property
+    def name(self):
+        return self._name
+
+    def get_log( self ):
+        global to_stdout
+        if to_stdout:
+            log = None
+        else:
+            log = logdir + os.sep + self.name + ".log"
+        return log
+
+    def is_live(self):
+        """
+        Returns True if the test configurations specify devices (test has a 'device' directive)
+        """
+        return self._config and len(self._config.configurations) > 0
+
 
 class PyTest(Test):
     """
@@ -307,27 +375,24 @@ class PyTest(Test):
         global current_dir
         Test.__init__(self, testname)
         self.path_to_script = current_dir + os.sep + path_to_test
+        debug( '    script:', self.path_to_script )
+        self._config = TestConfigFromText( self.path_to_script, r'#\s*test:' )
 
     @property
     def command(self):
         return [sys.executable, self.path_to_script]
 
-    def run_test(self):
-        global n_tests, to_stdout
-        n_tests += 1
-        if to_stdout:
-            log = None
-        else:
-            log = logdir + os.sep + self.testname + ".log"
-        progress(self.testname, '>', log, '...')
+    def run_test( self ):
+        log = self.get_log()
         try:
-            subprocess_run(self.command, stdout=log)
+            subprocess_run( self.command, stdout=log )
         except FileNotFoundError:
-            error(red + self.testname + reset + ': executable not found! (' + self.path_to_script + ')')
+            error( red + self.name + reset + ': executable not found! (' + self.path_to_script + ')' )
         except subprocess.CalledProcessError as cpe:
-            if not check_log_for_fails(log, self.testname, self.path_to_script):
+            if not check_log_for_fails(log, self.name, self.path_to_script):
                 # An unexpected error occurred
-                error(red + self.testname + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')')
+                error(red + self.name + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')')
+
 
 class ExeTest(Test):
     """
@@ -345,22 +410,17 @@ class ExeTest(Test):
     def command(self):
         return [self.exe]
 
-    def run_test(self):
-        global n_tests, to_stdout
-        n_tests += 1
-        if to_stdout:
-            log = None
-        else:
-            log = logdir + os.sep + self.testname + ".log"
-        progress( self.testname, '>', log, '...' )
+    def run_test( self ):
+        log = self.get_log()
+        progress( self.name, '>', log, '...' )
         try:
-            subprocess_run(self.command, stdout=log)
+            subprocess_run( self.command, stdout=log )
         except FileNotFoundError:
-            error(red + self.testname + reset + ': executable not found! (' + self.exe + ')')
+            error(red + self.name + reset + ': executable not found! (' + self.exe + ')')
         except subprocess.CalledProcessError as cpe:
-            if not check_log_for_fails(log, self.testname, self.exe):
+            if not check_log_for_fails( log, self.name, self.exe ):
                 # An unexpected error occurred
-                error(red + self.testname + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')')
+                error( red + self.name + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')' )
 
 
 def get_tests():
@@ -409,27 +469,51 @@ def get_tests():
 
             yield PyTest(testname, py_test)
 
-# Before we run any tests, recycle all ports and make sure they're set to USB3
-if not asis:
-    
-    try:
-        from rspy import acroname
-        acroname.connect()
-        acroname.enable_ports()     # so ports() will return all
-        portlist = acroname.ports()
-        debug( 'Recycling found ports:', portlist )
-        acroname.set_ports_usb3( portlist )   # will recycle them, too
-        acroname.disconnect()
-        import time
-        time.sleep(5)
-    except ModuleNotFoundError:
-        # Error should have already been printed
-        # We assume there's no brainstem library, meaning no acroname either
-        pass
+
+def devices_by_test_config( test ):
+    """
+    Yield <configuration,serial-numbers> pairs for each valid configuration under which the
+    test should run.
+    The <configuration> is a list of ('test:device') designations, e.g. ['L500*', 'D415'].
+    The <serial-numbers> is a set of device serial-numbers that fit this configuration.
+    :param test: The test (of class type Test) we're interested in
+    """
+    for configuration in test.config.configurations:
+        try:
+            serial_numbers = devices.by_configuration( configuration )
+        except RuntimeError as e:
+            error( red + self.name + reset + ': ' + str(e) )
+            continue
+        yield configuration, serial_numbers
+
+
+info( 'Logs in:', logdir )
+def test_wrapper( test, configuration = None ):
+    global n_tests
+    n_tests += 1
+    if configuration:
+        progress( '[' + ' '.join( configuration ) + ']', test.name, '...' )
+    else:
+        progress( test.name, '...' )
+    test.run_test()
+
 
 # Run all tests
+import time
+sys.path.insert( 1, pyrs_path )
+from rspy import devices
+devices.query()
 for test in get_tests():
-    test.run_test()
+    if test.is_live():
+        for configuration, serial_numbers in devices_by_test_config( test ):
+            try:
+                devices.enable_only( serial_numbers, recycle = True )
+            except RuntimeError as e:
+                error( red + self.name + reset + ': ' + str(e) )
+            else:
+                test_wrapper( test, configuration )
+    else:
+        test_wrapper( test )
 
 progress()
 if n_errors:
