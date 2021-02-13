@@ -1,6 +1,8 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
+#test:device L500*
+
 import platform
 import pyrealsense2 as rs
 from rspy import test

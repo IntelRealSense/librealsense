@@ -1,3 +1,8 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+
+#test:device L500*
+
 import pyrealsense2 as rs, test
 from rspy import test, ac
 
@@ -54,7 +59,7 @@ irrelevant_statuses = [rs.calibration_status.retry,
 test.start("Depth sensor is off, should get an error")
 try:
     d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
-    ac.wait_for_calibration() 
+    ac.wait_for_calibration()
 except Exception as e:
     test.check_exception(e, RuntimeError, "not streaming")
 else:
@@ -76,9 +81,9 @@ try:
 except Exception:
     test.unexpected_exception()
 try:
-    # Since the sensor was closed before calibration started, it should have been returned to a 
+    # Since the sensor was closed before calibration started, it should have been returned to a
     # closed state
-    color_sensor.stop() 
+    color_sensor.stop()
 except Exception as e:
     test.check_exception(e, RuntimeError, "tried to stop sensor without starting it")
 else:
@@ -102,7 +107,7 @@ except:
     test.unexpected_exception()
 try:
     # This time the color sensor was on before calibration so it should remain on at the end
-    color_sensor.stop() 
+    color_sensor.stop()
 except:
     test.unexpected_exception()
 test.finish()
