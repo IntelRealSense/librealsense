@@ -39,6 +39,13 @@ task downloadFirmware() {
         println("downloading D4xx fw: " + d4xxFwVersion)
         new URL('http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/RS4xx/FW/D4XX_FW_Image-' + d4xxFwVersion + '.bin').withInputStream{ i -> d4xxFile.withOutputStream{ it << i }}
     }
+    
+    def l5xxFwVersion = getFwVersion('L5XX_RECOMMENDED_FIRMWARE_VERSION')
+    def l5xxFile = new File("$projectDir/src/main/res/raw/fw_l5xx.bin")
+    if (!l5xxFile.exists()) {
+        println("downloading L5xx fw: " + l5xxFwVersion)
+        new URL('http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/L5xx/FW/L5XX_FW_Image-' + l5xxFwVersion + '.bin').withInputStream{ i -> l5xxFile.withOutputStream{ it << i }}
+    }
 
     def sr3xxFwVersion = getFwVersion('SR3XX_RECOMMENDED_FIRMWARE_VERSION')
     def sr3xxFile = new File("$projectDir/src/main/res/raw/fw_sr3xx.bin")
