@@ -431,7 +431,7 @@ def devices_by_test_config( test ):
         try:
             serial_numbers = devices.by_configuration( configuration )
         except RuntimeError as e:
-            log.e( log.red + self.name + log.reset + ': ' + str(e) )
+            log.e( log.red + test.name + log.reset + ': ' + str(e) )
             continue
         yield configuration, serial_numbers
 
