@@ -6,6 +6,7 @@ except ModuleNotFoundError:
     acroname = None
 import pyrealsense2 as rs
 import time
+from rspy import log
 
 _device_by_sn = None
 _context = None
@@ -43,7 +44,7 @@ def _device_change_callback( info ):
     new_device_by_sn = dict()
     for sn, dev in _device_by_sn.items():
         if info.was_removed( dev ):
-            print( '-D-', 'device removed:', sn )
+            log.d( 'device removed:', sn )
         else:
             new_device_by_sn[sn] = dev
     for dev in info.get_new_devices():
@@ -51,7 +52,7 @@ def _device_change_callback( info ):
             sn = dev.get_info( rs.camera_info.firmware_update_id )
         else:
             sn = dev.get_info( rs.camera_info.serial_number )
-        print( '-D-', 'device added:', dev )
+        log.d( 'device added:', dev )
         new_device_by_sn[sn] = dev
     _device_by_sn = new_device_by_sn
 
@@ -158,7 +159,7 @@ def enable_only( serial_numbers, recycle = False, timeout = 5 ):
         #
         if recycle:
             #
-            print( '-D-', 'Recycling ports via acroname:', ports )
+            log.d( 'recycling ports via acroname:', ports )
             #
             acroname.disable_ports( acroname.ports() )
             _wait_until_removed( serial_numbers, timeout = timeout )
@@ -176,7 +177,7 @@ def enable_only( serial_numbers, recycle = False, timeout = 5 ):
         hw_reset( serial_numbers )
         #
     else:
-        print( '-D-', 'No acroname; ports left as-is' )
+        log.d( 'no acroname; ports left as-is' )
 
 
 def enable_all():
@@ -228,7 +229,7 @@ def _wait_for( serial_numbers, timeout = 5, wait_for_recycle = False ):
         if have_all_devices:
             if did_some_waiting:
                 # Wait an extra second, just in case -- let the devices properly power up
-                print( '-D-', 'All devices powered up' )
+                log.d( 'all devices powered up' )
                 time.sleep( 1 )
             return True
         #

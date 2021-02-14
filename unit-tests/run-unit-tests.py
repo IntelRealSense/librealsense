@@ -10,6 +10,8 @@ from abc import ABC, abstractmethod
 current_dir = os.path.dirname( os.path.abspath( __file__ ))
 sys.path.insert( 1, current_dir + os.sep + "py" )
 
+from rspy import log
+
 def usage():
     ourname = os.path.basename(sys.argv[0])
     ourname = os.path.basename(sys.argv[0])
@@ -22,56 +24,7 @@ def usage():
     print( '        -r, --regex    run all tests that fit the following regular expression')
     print( '        -s, --stdout   do not redirect stdout to logs')
     sys.exit(2)
-def debug(*args):
-    pass
 
-def stream_has_color( stream ):
-    if not hasattr(stream, "isatty"):
-        return False
-    if not stream.isatty():
-        return False # auto color only on TTYs
-    try:
-        import curses
-        curses.setupterm()
-        return curses.tigetnum( "colors" ) > 2
-    except:
-        # guess false in case of error
-        return False
-
-# Set up the default output system; if not a terminal, disable colors!
-if stream_has_color( sys.stdout ):
-    red = '\033[91m'
-    gray = '\033[90m'
-    reset = '\033[0m'
-    cr = '\033[G'
-    clear_eos = '\033[J'
-    clear_eol = '\033[K'
-    _progress = ''
-    def out(*args):
-        print( *args, end = clear_eol + '\n' )
-        global _progress
-        if len(_progress):
-            progress( *_progress )
-    def progress(*args):
-        print( *args, end = clear_eol + '\r' )
-        global _progress
-        _progress = args
-else:
-    red = gray = reset = cr = clear_eos = ''
-    def out(*args):
-        print( *args )
-    def progress(*args):
-        print( *args )
-
-n_errors = 0
-def error(*args):
-    global red
-    global reset
-    out( red + '-E-' + reset, *args )
-    global n_errors
-    n_errors = n_errors + 1
-def info(*args):
-    out( '-I-', *args)
 
 def filesin( root ):
     # Yield all files found in root, using relative names ('root/a' would be yielded as 'a')
@@ -84,7 +37,7 @@ def find( dir, mask ):
     pattern = re.compile( mask )
     for leaf in filesin( dir ):
         if pattern.search( leaf ):
-            #debug(leaf)
+            #log.d(leaf)
             yield leaf
 
 # get os and directories for future use
@@ -111,24 +64,19 @@ try:
     opts,args = getopt.getopt( sys.argv[1:], 'hvqr:s',
         longopts = [ 'help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout' ])
 except getopt.GetoptError as err:
-    error( err )   # something like "option -a not recognized"
+    log.e( err )   # something like "option -a not recognized"
     usage()
-verbose = False
 regex = None
 to_stdout = False
 for opt,arg in opts:
     if opt in ('-h','--help'):
         usage()
     elif opt in ('--debug'):
-        def debug(*args):
-            global gray
-            global reset
-            out( gray + '-D-', *args, reset )
+        log.debug_on()
     elif opt in ('-v','--verbose'):
-        verbose = True
+        log.verbose_on()
     elif opt in ('-q','--quiet'):
-        def out(*args):
-            pass
+        log.quiet_on()
     elif opt in ('-r', '--regex'):
         regex = arg
     elif opt in ('-s', '--stdout'):
@@ -150,7 +98,7 @@ if not target:
             continue
         dir_with_test = build + os.sep + os.path.dirname(executable)
         if target and target != dir_with_test:
-            error("Found executable tests in 2 directories:", target, "and", dir_with_test, ". Can't default to directory")
+            log.e("Found executable tests in 2 directories:", target, "and", dir_with_test, ". Can't default to directory")
             usage()
         target = dir_with_test
 
@@ -163,7 +111,7 @@ n_tests = 0
 
 # wrapper function for subprocess.run
 def subprocess_run(cmd, stdout = None):
-    debug( 'Running:', cmd )
+    log.d( 'running:', cmd )
     handle = None
     try:
         if stdout  and  stdout != subprocess.PIPE:
@@ -201,6 +149,7 @@ if pyrs:
     pyrs_path = librealsense + os.sep + pyrs
     # We need to add the directory not the file itself
     pyrs_path = os.path.dirname(pyrs_path)
+    log.d( 'found pyrealsense pyd in:', pyrs_path )
     # Add the necessary path to the PYTHONPATH environment variable so python will look for modules there
     os.environ["PYTHONPATH"] = pyrs_path
     # We also need to add the path to the python packages that the tests use
@@ -231,7 +180,7 @@ def grep_( pattern, lines, context ):
         del context['match']
 
 def grep( expr, *args ):
-    #debug( f'grep {expr} {args}' )
+    #log.d( f'grep {expr} {args}' )
     pattern = re.compile( expr )
     context = dict()
     for filename in args:
@@ -243,18 +192,18 @@ def grep( expr, *args ):
 def cat( filename ):
     with open( filename, errors = 'ignore' ) as file:
         for line in remove_newlines( file ):
-            out( line )
+            log.out( line )
 
-def check_log_for_fails(log, testname, exe):
+def check_log_for_fails( path_to_log, testname, exe ):
     # Normal logs are expected to have in last line:
     #     "All tests passed (11 assertions in 1 test case)"
     # Tests that have failures, however, will show:
     #     "test cases: 1 | 1 failed
     #      assertions: 9 | 6 passed | 3 failed"
-    if log is None:
+    if path_to_log is None:
         return False
     global verbose
-    for ctx in grep( r'^test cases:\s*(\d+) \|\s*(\d+) (passed|failed)', log ):
+    for ctx in grep( r'^test cases:\s*(\d+) \|\s*(\d+) (passed|failed)', path_to_log ):
         m = ctx['match']
         total = int(m.group(1))
         passed = int(m.group(2))
@@ -268,14 +217,14 @@ def check_log_for_fails(log, testname, exe):
                 desc = str(total - passed) + ' of ' + str(total) + ' failed'
 
             if verbose:
-                error( red + testname + reset + ': ' + desc )
-                info( 'Executable:', exe )
-                info( 'Log: >>>' )
-                out()
-                cat( log )
-                out( '<<<' )
+                log.e( log.red + testname + log.reset + ': ' + desc )
+                log.i( 'Executable:', exe )
+                log.i( 'Log: >>>' )
+                log.out()
+                cat( path_to_log )
+                log.out( '<<<' )
             else:
-                error( red + testname + reset + ': ' + desc + '; see ' + log )
+                log.e( log.red + testname + log.reset + ': ' + desc + '; see ' + path_to_log )
             return True
         return False
 
@@ -318,13 +267,13 @@ class TestConfigFromText(TestConfig):
             params = [s for s in context['match'].group(2).split()]
             comment = match.group(3)
             if directive == 'device':
-                debug( '    configuration:', params )
+                log.d( '    configuration:', params )
                 if not params:
-                    error( source + str(context.index) + ': device directive with no devices listed' )
+                    log.e( source + str(context.index) + ': device directive with no devices listed' )
                 else:
                     self._configurations.append( params )
             else:
-                error( source + str(context.index) + ': invalid directive "' + directive + '"; ignoring' )
+                log.e( source + str(context.index) + ': invalid directive "' + directive + '"; ignoring' )
 
 
 class Test(ABC):  # Abstract Base Class
@@ -332,7 +281,7 @@ class Test(ABC):  # Abstract Base Class
     Abstract class for a test. Holds the name of the test
     """
     def __init__(self, testname):
-        debug( 'Found', testname )
+        log.d( 'found', testname )
         self._name = testname
         self._config = None
 
@@ -351,10 +300,10 @@ class Test(ABC):  # Abstract Base Class
     def get_log( self ):
         global to_stdout
         if to_stdout:
-            log = None
+            path = None
         else:
-            log = logdir + os.sep + self.name + ".log"
-        return log
+            path = logdir + os.sep + self.name + ".log"
+        return path
 
     def is_live(self):
         """
@@ -375,7 +324,7 @@ class PyTest(Test):
         global current_dir
         Test.__init__(self, testname)
         self.path_to_script = current_dir + os.sep + path_to_test
-        debug( '    script:', self.path_to_script )
+        log.d( '    script:', self.path_to_script )
         self._config = TestConfigFromText( self.path_to_script, r'#\s*test:' )
 
     @property
@@ -383,15 +332,15 @@ class PyTest(Test):
         return [sys.executable, self.path_to_script]
 
     def run_test( self ):
-        log = self.get_log()
+        log_path = self.get_log()
         try:
-            subprocess_run( self.command, stdout=log )
+            subprocess_run( self.command, stdout=log_path )
         except FileNotFoundError:
-            error( red + self.name + reset + ': executable not found! (' + self.path_to_script + ')' )
+            log.e( log.red + self.name + log.reset + ': executable not found! (' + self.path_to_script + ')' )
         except subprocess.CalledProcessError as cpe:
-            if not check_log_for_fails(log, self.name, self.path_to_script):
+            if not check_log_for_fails(log_path, self.name, self.path_to_script):
                 # An unexpected error occurred
-                error(red + self.name + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')')
+                log.e( log.red + self.name + log.reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')')
 
 
 class ExeTest(Test):
@@ -411,16 +360,16 @@ class ExeTest(Test):
         return [self.exe]
 
     def run_test( self ):
-        log = self.get_log()
-        progress( self.name, '>', log, '...' )
+        log_path = self.get_log()
+        log.progress( self.name, '>', log_path, '...' )
         try:
-            subprocess_run( self.command, stdout=log )
+            subprocess_run( self.command, stdout=log_path )
         except FileNotFoundError:
-            error(red + self.name + reset + ': executable not found! (' + self.exe + ')')
+            log.e( log.red + self.name + log.reset + ': executable not found! (' + self.exe + ')')
         except subprocess.CalledProcessError as cpe:
-            if not check_log_for_fails( log, self.name, self.exe ):
+            if not check_log_for_fails( log_path, self.name, self.exe ):
                 # An unexpected error occurred
-                error( red + self.name + reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')' )
+                log.e( log.red + self.name + log.reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')' )
 
 
 def get_tests():
@@ -482,19 +431,19 @@ def devices_by_test_config( test ):
         try:
             serial_numbers = devices.by_configuration( configuration )
         except RuntimeError as e:
-            error( red + self.name + reset + ': ' + str(e) )
+            log.e( log.red + self.name + log.reset + ': ' + str(e) )
             continue
         yield configuration, serial_numbers
 
 
-info( 'Logs in:', logdir )
+log.i( 'Logs in:', logdir )
 def test_wrapper( test, configuration = None ):
     global n_tests
     n_tests += 1
     if configuration:
-        progress( '[' + ' '.join( configuration ) + ']', test.name, '...' )
+        log.progress( '[' + ' '.join( configuration ) + ']', test.name, '...' )
     else:
-        progress( test.name, '...' )
+        log.progress( test.name, '...' )
     test.run_test()
 
 
@@ -509,15 +458,16 @@ for test in get_tests():
             try:
                 devices.enable_only( serial_numbers, recycle = True )
             except RuntimeError as e:
-                error( red + self.name + reset + ': ' + str(e) )
+                log.e( log.red + self.name + log.reset + ': ' + str(e) )
             else:
                 test_wrapper( test, configuration )
     else:
         test_wrapper( test )
 
-progress()
+log.progress()
+n_errors = log.n_errors()
 if n_errors:
-    out( red + str(n_errors) + reset + ' of ' + str(n_tests) + ' test(s) failed!' + clear_eos )
+    log.out( log.red + str(n_errors) + log.reset + ' of ' + str(n_tests) + ' test(s) failed!' + log.clear_eos )
     sys.exit(1)
-out( str(n_tests) + ' unit-test(s) completed successfully' + clear_eos )
+log.out( str(n_tests) + ' unit-test(s) completed successfully' + log.clear_eos )
 sys.exit(0)
