@@ -88,8 +88,7 @@ except Exception as e:
     test.check_exception(e, RuntimeError, "tried to stop sensor without starting it")
 else:
     test.unexpected_exception()
-depth_sensor.stop()
-depth_sensor.close()
+# Leave the depth sensor open for the next test
 test.finish()
 
 #############################################################################################
@@ -112,6 +111,7 @@ try:
     color_sensor.stop()
 except:
     test.unexpected_exception()
+# Leave the depth sensor open for the next test
 test.finish()
 
 #############################################################################################
@@ -137,6 +137,8 @@ except:
     test.unexpected_exception()
 color_sensor.stop()
 color_sensor.close()
+depth_sensor.stop()
+depth_sensor.close()
 test.finish()
 
 #############################################################################################
