@@ -50,13 +50,18 @@ def quiet_on():
         pass
 
 
+_verbose_on = False
 def v(*args):
     pass
 def verbose_on():
-    global v
+    global v, _verbose_on
     def v(*args):
         global gray, reset
         out( gray + '-V-', *args, reset )
+    _verbose_on = True
+def is_verbose_on():
+    global _verbose_on
+    return _verbose_on
 
 
 _debug_on = False

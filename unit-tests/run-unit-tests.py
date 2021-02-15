@@ -202,7 +202,6 @@ def check_log_for_fails( path_to_log, testname, exe ):
     #      assertions: 9 | 6 passed | 3 failed"
     if path_to_log is None:
         return False
-    global verbose
     for ctx in grep( r'^test cases:\s*(\d+) \|\s*(\d+) (passed|failed)', path_to_log ):
         m = ctx['match']
         total = int(m.group(1))
@@ -216,7 +215,7 @@ def check_log_for_fails( path_to_log, testname, exe ):
             else:
                 desc = str(total - passed) + ' of ' + str(total) + ' failed'
 
-            if verbose:
+            if log.is_verbose_on():
                 log.e( log.red + testname + log.reset + ': ' + desc )
                 log.i( 'Executable:', exe )
                 log.i( 'Log: >>>' )
