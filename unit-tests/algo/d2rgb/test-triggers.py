@@ -1,13 +1,18 @@
-import pyrealsense2 as rs, test
-from rspy import test, ac
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-# We set the environment variables to suit this test
+#test:device L500*
+
+from rspy import test
 test.set_env_vars({"RS2_AC_DISABLE_CONDITIONS":"1",
                    "RS2_AC_DISABLE_RETRIES":"1",
                    "RS2_AC_FORCE_BAD_RESULT":"1",
                    "RS2_AC_LOG_TO_STDOUT":"1"
                    #,"RS2_AC_IGNORE_LIMITERS":"1"
                    })
+
+import pyrealsense2 as rs
+from rspy import ac
 
 # rs.log_to_file( rs.log_severity.debug, "rs.log" )
 
@@ -54,7 +59,7 @@ irrelevant_statuses = [rs.calibration_status.retry,
 test.start("Depth sensor is off, should get an error")
 try:
     d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
-    ac.wait_for_calibration() 
+    ac.wait_for_calibration()
 except Exception as e:
     test.check_exception(e, RuntimeError, "not streaming")
 else:
@@ -76,13 +81,14 @@ try:
 except Exception:
     test.unexpected_exception()
 try:
-    # Since the sensor was closed before calibration started, it should have been returned to a 
+    # Since the sensor was closed before calibration started, it should have been returned to a
     # closed state
-    color_sensor.stop() 
+    color_sensor.stop()
 except Exception as e:
     test.check_exception(e, RuntimeError, "tried to stop sensor without starting it")
 else:
     test.unexpected_exception()
+# Leave the depth sensor open for the next test
 test.finish()
 
 #############################################################################################
@@ -102,9 +108,10 @@ except:
     test.unexpected_exception()
 try:
     # This time the color sensor was on before calibration so it should remain on at the end
-    color_sensor.stop() 
+    color_sensor.stop()
 except:
     test.unexpected_exception()
+# Leave the depth sensor open for the next test
 test.finish()
 
 #############################################################################################
@@ -128,6 +135,10 @@ try:
     test.check_equal_lists(ac.status_list, successful_calibration_status_list)
 except:
     test.unexpected_exception()
+color_sensor.stop()
+color_sensor.close()
+depth_sensor.stop()
+depth_sensor.close()
 test.finish()
 
 #############################################################################################

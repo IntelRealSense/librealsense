@@ -73,7 +73,7 @@ namespace librealsense
             RGB_EXTRINSIC_GET           = 0x82,
             FALL_DETECT_ENABLE          = 0x9D, // Enable (by default) free-fall sensor shutoff (0=disable; 1=enable)
             GET_SPECIAL_FRAME           = 0xA0, // Request auto-calibration (0) special frames (#)
-            SET_AGE                     = 0x5B  // Sets the age of the unit in weeks
+            UNIT_AGE_SET                = 0x5B  // Sets the age of the unit in weeks
         };
 
 #pragma pack(push, 1)

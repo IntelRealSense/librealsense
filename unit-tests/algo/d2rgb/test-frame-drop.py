@@ -1,3 +1,8 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+
+#test:device L500*
+
 import pyrealsense2 as rs
 from rspy import test, ac
 
@@ -88,4 +93,10 @@ except:
 test.finish()
 
 #############################################################################################
+
+depth_sensor.stop()
+depth_sensor.close()
+color_sensor.stop()
+color_sensor.close()
+
 test.print_results_and_exit()

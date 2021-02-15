@@ -139,7 +139,7 @@ namespace librealsense
                     = utilities::time::l500::get_manufacture_work_week( optic_serial );
                 auto age
                     = utilities::time::get_work_weeks_since( manufacture );
-                command cmd( fw_cmd::SET_AGE, (uint8_t)age );
+                command cmd( fw_cmd::UNIT_AGE_SET, (uint8_t)age );
                 _hw_monitor->send( cmd );
             }
             catch( ... )
