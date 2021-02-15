@@ -3,16 +3,16 @@
 
 #test:device L500*
 
-import pyrealsense2 as rs, test
-from rspy import test, ac
-
-# We set the environment variables to suit this test
+from rspy import test
 test.set_env_vars({"RS2_AC_DISABLE_CONDITIONS":"1",
                    "RS2_AC_DISABLE_RETRIES":"1",
                    "RS2_AC_FORCE_BAD_RESULT":"1",
                    "RS2_AC_LOG_TO_STDOUT":"1"
                    #,"RS2_AC_IGNORE_LIMITERS":"1"
                    })
+
+import pyrealsense2 as rs
+from rspy import ac
 
 # rs.log_to_file( rs.log_severity.debug, "rs.log" )
 
@@ -88,6 +88,8 @@ except Exception as e:
     test.check_exception(e, RuntimeError, "tried to stop sensor without starting it")
 else:
     test.unexpected_exception()
+depth_sensor.stop()
+depth_sensor.close()
 test.finish()
 
 #############################################################################################
@@ -133,6 +135,8 @@ try:
     test.check_equal_lists(ac.status_list, successful_calibration_status_list)
 except:
     test.unexpected_exception()
+color_sensor.stop()
+color_sensor.close()
 test.finish()
 
 #############################################################################################
