@@ -329,7 +329,13 @@ class PyTest(Test):
 
     @property
     def command(self):
-        return [sys.executable, self.path_to_script]
+        cmd = [sys.executable]
+        if sys.flags.verbose:
+            cmd += ["-v"]
+        cmd += [self.path_to_script]
+        if log.is_debug_on():
+            cmd += ['--debug']
+        return cmd
 
     def run_test( self ):
         log_path = self.get_log()
@@ -361,7 +367,6 @@ class ExeTest(Test):
 
     def run_test( self ):
         log_path = self.get_log()
-        log.progress( self.name, '>', log_path, '...' )
         try:
             subprocess_run( self.command, stdout=log_path )
         except FileNotFoundError:
@@ -423,8 +428,10 @@ def devices_by_test_config( test ):
     """
     Yield <configuration,serial-numbers> pairs for each valid configuration under which the
     test should run.
+
     The <configuration> is a list of ('test:device') designations, e.g. ['L500*', 'D415'].
     The <serial-numbers> is a set of device serial-numbers that fit this configuration.
+
     :param test: The test (of class type Test) we're interested in
     """
     for configuration in test.config.configurations:
@@ -448,26 +455,37 @@ def test_wrapper( test, configuration = None ):
 
 
 # Run all tests
-import time
 sys.path.insert( 1, pyrs_path )
 from rspy import devices
 devices.query()
+#
+# Under Travis, we'll have no devices and no acroname
+skip_live_tests = len(devices.all()) == 0  and  not devices.acroname
+#
 for test in get_tests():
-    if test.is_live():
-        for configuration, serial_numbers in devices_by_test_config( test ):
-            try:
-                devices.enable_only( serial_numbers, recycle = True )
-            except RuntimeError as e:
-                log.e( log.red + self.name + log.reset + ': ' + str(e) )
-            else:
-                test_wrapper( test, configuration )
-    else:
+    #
+    if not test.is_live():
         test_wrapper( test )
+        continue
+    #
+    if skip_live_tests:
+        log.d( test.name + ':', 'is live and there are no cameras; skipping' )
+        continue
+    #
+    for configuration, serial_numbers in devices_by_test_config( test ):
+        try:
+            devices.enable_only( serial_numbers, recycle = True )
+        except RuntimeError as e:
+            log.e( log.red + self.name + log.reset + ': ' + str(e) )
+        else:
+            test_wrapper( test, configuration )
 
 log.progress()
 n_errors = log.n_errors()
 if n_errors:
     log.out( log.red + str(n_errors) + log.reset + ' of ' + str(n_tests) + ' test(s) failed!' + log.clear_eos )
     sys.exit(1)
+#
 log.out( str(n_tests) + ' unit-test(s) completed successfully' + log.clear_eos )
+#
 sys.exit(0)

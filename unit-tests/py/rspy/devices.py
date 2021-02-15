@@ -1,3 +1,6 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+
 try:
     from rspy import acroname
 except ModuleNotFoundError:
@@ -116,7 +119,7 @@ def by_configuration( config ):
                     break
         new_len = len(sns)
         if new_len == old_len:
-            if len(spec):
+            if old_len:
                 raise RuntimeError( 'no device matches configuration "' + spec + '" (after already matching ' + str(sns) + ')' )
             else:
                 raise RuntimeError( 'no device matches configuration "' + spec + '"' )
@@ -194,6 +197,7 @@ def _wait_until_removed( serial_numbers, timeout = 5 ):
     :param timeout: Number of seconds of maximum wait time
     :return: True if all have come offline; False if timeout was reached
     """
+    global _device_by_sn
     while True:
         have_devices = False
         for sn in serial_numbers:
@@ -217,6 +221,7 @@ def _wait_for( serial_numbers, timeout = 5, wait_for_recycle = False ):
     :param wait_for_recycle: If True, will wait until all devices are first removed
     :return: True if all have come online; False if timeout was reached
     """
+    global _device_by_sn
     did_some_waiting = False
     while True:
         #

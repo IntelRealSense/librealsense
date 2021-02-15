@@ -25,23 +25,34 @@ test_failed = False
 test_in_progress = False
 test_info = {} # Dictionary for holding additional information to print in case of a failed check.
 
+
 def set_env_vars(env_vars):
     """
-    If this is the first time running this script we set the wanted environment, however it is impossible to change the
-    current running environment so we rerun the script in a child process that inherits the environment we set
+    We want certain environment variables set when we get here. We assume they're not set.
+
+    However, it is impossible to change the current running environment to see them. Instead, we rerun ourselves
+    in a child process that inherits the environment we set.
+
+    To do this, we depend on a specific argument in sys.argv that tells us this is the rerun (meaning child
+    process). When we see it, we assume the variables are set and don't do anything else.
+
+    For this to work well, the environment variable requirement (set_env_vars call) should appear as one of the
+    first lines of the test.
+
     :param env_vars: A dictionary where the keys are the name of the environment variable and the values are the
         wanted values in string form (environment variables must be strings)
     """
-    if len(sys.argv) < 2:
+    if sys.argv[-1] != 'rerun':
         for env_var, val in env_vars.items():
             os.environ[env_var] = val
-        sys.argv.append("rerun")
         cmd = [sys.executable]
         if sys.flags.verbose:
             cmd += ["-v"]
         cmd += sys.argv
+        cmd += ["rerun"]
         p = subprocess.run( cmd, stderr=subprocess.PIPE, universal_newlines=True )
         exit(p.returncode)
+    sys.argv = sys.argv[:-1]  # Remove the rerun
 
 def find_first_device_or_exit():
     """
