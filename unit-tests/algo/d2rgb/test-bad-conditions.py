@@ -3,12 +3,13 @@
 
 #test:device L500*
 
-import pyrealsense2 as rs
-from rspy import test, ac
-# We set the environment variables to suit this test
+from rspy import test
 test.set_env_vars({"RS2_AC_DISABLE_CONDITIONS":"0",
                    "RS2_AC_LOG_TO_STDOUT":"1"
                    })
+
+import pyrealsense2 as rs
+from rspy import ac
 
 # rs.log_to_file( rs.log_severity.debug, "rs.log" )
 
@@ -55,4 +56,10 @@ test.check_equal_lists(ac.status_list, [rs.calibration_status.bad_conditions])
 depth_sensor.set_option(rs.option.receiver_gain, old_receiver_gain)
 test.finish()
 #############################################################################################
+
+color_sensor.stop()
+color_sensor.close()
+depth_sensor.stop()
+depth_sensor.close()
+
 test.print_results_and_exit()
