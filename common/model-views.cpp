@@ -3786,10 +3786,10 @@ namespace rs2
         for (auto&& sub : dev.query_sensors())
         {
             auto s = std::make_shared<sensor>(sub);
-            std::string friendly_name = s->get_info(RS2_CAMERA_INFO_NAME);
             auto objects = std::make_shared< atomic_objects_in_frame >();
-            if (friendly_name.find("RGB") != std::string::npos) objects = _detected_objects;
-
+            // checking if the sensor is color_sensor or is D405 (with integrated RGB in depth sensor)
+            if (s->is<color_sensor>() || !strcmp(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "0B5B"))
+                objects = _detected_objects;
             auto model = std::make_shared<subdevice_model>(dev, std::make_shared<sensor>(sub), objects, error_message, viewer, new_device_connected);
             subdevices.push_back(model);
         }
