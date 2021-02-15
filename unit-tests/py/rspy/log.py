@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 import sys
 
@@ -59,13 +59,18 @@ def verbose_on():
         out( gray + '-V-', *args, reset )
 
 
+_debug_on = False
 def d(*args):
     pass
 def debug_on():
-    global d
+    global d, _debug_on
     def d(*args):
         global gray, reset
         out( gray + '-D-', *args, reset )
+    _debug_on = True
+def is_debug_on():
+    global _debug_on
+    return _debug_on
 
 
 def i(*args):
