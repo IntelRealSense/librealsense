@@ -6483,6 +6483,7 @@ namespace rs2
                             RS2_OPTION_HUE,
                             RS2_OPTION_SATURATION,
                             RS2_OPTION_SHARPNESS,
+                            RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE,
                             RS2_OPTION_WHITE_BALANCE
                         };
 
