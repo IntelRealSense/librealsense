@@ -93,4 +93,10 @@ except:
 test.finish()
 
 #############################################################################################
+
+depth_sensor.stop()
+depth_sensor.close()
+color_sensor.stop()
+color_sensor.close()
+
 test.print_results_and_exit()
