@@ -18,8 +18,14 @@ def _stream_has_color( stream ):
         # guess false in case of error
         return False
 
-if _stream_has_color( sys.stdout ):
+_have_color = '--color' in sys.argv
+if _have_color:
+    sys.argv.remove( '--color' )
+else:
+    _have_color = _stream_has_color( sys.stdout )
+if _have_color:
     red = '\033[91m'
+    yellow = '\033[93m'
     gray = '\033[90m'
     reset = '\033[0m'
     cr = '\033[G'
@@ -36,11 +42,15 @@ if _stream_has_color( sys.stdout ):
         global _progress
         _progress = args
 else:
-    red = gray = reset = cr = clear_eos = ''
+    red = yellow = gray = reset = cr = clear_eos = ''
     def out(*args):
         print( *args )
     def progress(*args):
         print( *args )
+
+def is_color_on():
+    global _have_color
+    return _have_color
 
 
 def quiet_on():
@@ -97,4 +107,21 @@ def n_errors():
 def reset_errors():
     global _n_errors
     _n_errors = 0
+
+
+# We track the number of warnings
+_n_warnings = 0
+def w(*args):
+    global red, reset
+    out( yellow + '-W-' + reset, *args )
+    global _n_warnings
+    _n_warnings = _n_warnings + 1
+
+def n_warnings():
+    global _n_warnings
+    return _n_warnings
+
+def reset_warnings():
+    global _n_warnings
+    _n_warnings = 0
 
