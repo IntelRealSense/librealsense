@@ -5,6 +5,8 @@ See documentation for brainstem here:
 https://acroname.com/reference/python/index.html
 """
 
+from rspy import log
+
 
 if __name__ == '__main__':
     import os, sys, getopt
@@ -29,7 +31,7 @@ if __name__ == '__main__':
 try:
     import brainstem
 except ModuleNotFoundError:
-    print( '-E-', 'No acroname library is available!' )
+    log.w( 'No acroname library is available!' )
     raise
 
 hub = None

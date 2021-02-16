@@ -334,6 +334,8 @@ class PyTest(Test):
         cmd += [self.path_to_script]
         if log.is_debug_on():
             cmd += ['--debug']
+        if log.is_color_on():
+            cmd += ['--color']
         return cmd
 
     def run_test( self ):
@@ -461,6 +463,7 @@ devices.query()
 # Under Travis, we'll have no devices and no acroname
 skip_live_tests = len(devices.all()) == 0  and  not devices.acroname
 #
+log.reset_errors()
 for test in get_tests():
     #
     if not test.is_live():
@@ -475,14 +478,14 @@ for test in get_tests():
         try:
             devices.enable_only( serial_numbers, recycle = True )
         except RuntimeError as e:
-            log.e( log.red + self.name + log.reset + ': ' + str(e) )
+            log.w( log.red + self.name + log.reset + ': ' + str(e) )
         else:
             test_wrapper( test, configuration )
 
 log.progress()
 n_errors = log.n_errors()
 if n_errors:
-    log.out( log.red + str(n_errors) + log.reset + ' of ' + str(n_tests) + ' test(s) failed!' + log.clear_eos )
+    log.out( log.red + str(n_errors) + log.reset, 'of', n_tests, 'test(s)', log.red + 'failed!' + log.reset + log.clear_eos )
     sys.exit(1)
 #
 log.out( str(n_tests) + ' unit-test(s) completed successfully' + log.clear_eos )

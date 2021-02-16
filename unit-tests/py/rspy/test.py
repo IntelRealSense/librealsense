@@ -83,11 +83,16 @@ def print_stack():
     """
     Function for printing the current call stack. Used when an assertion fails
     """
-    test_py_path = os.sep + "unit-tests" + os.sep + "py" + os.sep + "test.py"
-    for line in traceback.format_stack():
-        if test_py_path in line: # avoid printing the lines of calling to this function
-            continue
-        print(line)
+    print( 'Traceback (most recent call last):' )
+    stack = traceback.format_stack()
+    # Avoid stack trace into format_stack():
+    #     File "C:/work/git/lrs\unit-tests\py\rspy\test.py", line 124, in check
+    #       print_stack()
+    #     File "C:/work/git/lrs\unit-tests\py\rspy\test.py", line 87, in print_stack
+    #       stack = traceback.format_stack()
+    stack = stack[:-2]
+    for line in reversed( stack ):
+        print( line, end = '' )  # format_stack() adds \n
 
 """
 The following functions are for asserting test cases:
@@ -119,9 +124,9 @@ def check(exp, abort_if_failed = False):
     global n_assertions
     n_assertions += 1
     if not exp:
+        print_stack()
         print("Check failed, received", exp)
         check_failed()
-        print_stack()
         if abort_if_failed:
             abort()
         return False
@@ -144,9 +149,10 @@ def check_equal(result, expected, abort_if_failed = False):
     global n_assertions
     n_assertions += 1
     if result != expected:
-        print("Result was:" + result + "\nBut we expected: " + expected)
-        check_failed()
         print_stack()
+        print( "Result was:", result )
+        print( "  expected:", expected )
+        check_failed()
         if abort_if_failed:
             abort()
         return False
@@ -194,10 +200,10 @@ def check_equal_lists(result, expected, abort_if_failed = False):
             print("The element of index", i, "in both lists was not equal")
         i += 1
     if failed:
+        print_stack()
         print("Result list:", result)
         print("Expected list:", expected)
         check_failed()
-        print_stack()
         if abort_if_failed:
             abort()
         return False
@@ -215,14 +221,13 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
     """
     failed = False
     if type(exception) != expected_type:
-        print("Raised exception was of type", type(exception), "and not of type", expected_type, "as expected")
-        failed = True
+        failed = [ "Raised exception was of type", type(exception), "and not of type", expected_type, "as expected" ]
     if expected_msg and str(exception) != expected_msg:
-        print("Exception had message:", str(exception), "\nBut we expected:", expected_msg)
-        failed = True
+        failed = [ "Exception had message:", str(exception), "\nBut we expected:", expected_msg ]
     if failed:
-        check_failed()
         print_stack()
+        print( *failed )
+        check_failed()
         if abort_if_failed:
             abort()
         return False
