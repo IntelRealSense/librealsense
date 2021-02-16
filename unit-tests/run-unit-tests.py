@@ -463,6 +463,7 @@ devices.query()
 # Under Travis, we'll have no devices and no acroname
 skip_live_tests = len(devices.all()) == 0  and  not devices.acroname
 #
+log.reset_errors()
 for test in get_tests():
     #
     if not test.is_live():

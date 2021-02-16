@@ -31,7 +31,7 @@ if __name__ == '__main__':
 try:
     import brainstem
 except ModuleNotFoundError:
-    log.e( 'No acroname library is available!' )
+    log.w( 'No acroname library is available!' )
     raise
 
 hub = None
