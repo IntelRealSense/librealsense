@@ -902,6 +902,7 @@ namespace librealsense
     };
 
     class rs405_device  : public ds5_color,
+                          public ds5_nonmonochrome,
                           public ds5_advanced_mode_base,
                           public firmware_logger_device
     {
@@ -912,6 +913,7 @@ namespace librealsense
             : device(ctx, group, register_device_notifications),
               ds5_device(ctx, group),
               ds5_color(ctx, group),
+              ds5_nonmonochrome(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
               firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
                 get_firmware_logs_command(),
