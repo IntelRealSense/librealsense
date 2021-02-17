@@ -676,7 +676,34 @@ int usb_device_bulk_transfer(struct usb_device *device,
     ctrl.len = length;
     ctrl.data = buffer;
     ctrl.timeout = timeout;
-    return ioctl(device->fd, USBDEVFS_BULK, &ctrl);
+
+    #ifdef MAX_USBFS_BUFFER_SIZE
+        unsigned char *data = (unsigned char*) buffer;
+        unsigned count = 0;
+        unsigned int startLength = length;
+        int n;
+
+        while(length > 0) {
+            int xfer;
+            xfer = (length > MAX_USBFS_BUFFER_SIZE) ? MAX_USBFS_BUFFER_SIZE : length;
+
+            ctrl.ep = endpoint;
+            ctrl.len = xfer;
+            ctrl.data = data;
+            ctrl.timeout = 0;
+
+            n = ioctl(device->fd, USBDEVFS_BULK, &ctrl);
+            if(n != xfer) {
+                return -1;
+            }
+            count += xfer;
+            length -= xfer;
+            data += xfer;
+        }
+        return startLength - length;
+    #else
+        return ioctl(device->fd, USBDEVFS_BULK, &ctrl);
+    #endif
 }
 
 int usb_device_reset(struct usb_device *device)

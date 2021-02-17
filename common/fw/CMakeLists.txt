@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.1.3)
 
 project(fw)
 
-file(READ "firmware-version.h" ver)
+file(READ "${CMAKE_CURRENT_LIST_DIR}/firmware-version.h" ver)
 
 message(STATUS "Fetching recommended firmwares:")
 

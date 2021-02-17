@@ -35,6 +35,7 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+    implementation fileTree(dir: '../../../librealsense/build/outputs/aar', include: ['*.aar', '*.jar'], exclude: [])
 }
 
 //The lines below add librealsense to the application's dependencies
@@ -46,13 +47,10 @@ repositories {
 
 configurations {
     downloadHeader
-    downloadSo
 }
 
 dependencies {
     def version = '2.+'
-    downloadSo 'com.intel.realsense:librealsense:' + version + '@aar'
-    implementation 'com.intel.realsense:librealsense:' + version + '@aar'
     downloadHeader 'com.intel.realsense:librealsense:' + version + '@zip'
 }
 
@@ -62,14 +60,5 @@ task extractHeaders(type: Sync) {
     into "$projectDir/src/main/cpp/include"
 }
 
-task extractSo(type: Sync) {
-    dependsOn configurations.downloadSo
-    from { configurations.downloadSo.collect { zipTree(it) } }
-    include("jni/**")
-    into "$buildDir/"
-}
 
 preBuild.dependsOn(extractHeaders)
-preBuild.dependsOn(extractSo)
-
-

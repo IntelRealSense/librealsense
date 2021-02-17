@@ -1,6 +1,8 @@
 package com.intel.realsense.librealsense;
 
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
@@ -12,6 +14,8 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.intel.realsense.librealsense.UsbUtilities.ACTION_USB_PERMISSION;
 
 class DeviceWatcher extends LrsClass {
     private static final String TAG = "librs DeviceWatcher";
@@ -60,8 +64,10 @@ class DeviceWatcher extends LrsClass {
         UsbManager usbManager = (UsbManager) mContext.getSystemService(Context.USB_SERVICE);
         HashMap<String, UsbDevice> devicesMap = usbManager.getDeviceList();
         List<String> intelDevices = new ArrayList<String>();
+        Log.d(TAG, "Enumerating USB devices...");
         for (Map.Entry<String, UsbDevice> entry : devicesMap.entrySet()) {
             UsbDevice usbDevice = entry.getValue();
+            Log.d(TAG, "    found USB device[Name: " + usbDevice.getProductName() + " Vendor Id: " + Integer.toHexString(usbDevice.getVendorId()) + " Product Id: " + Integer.toHexString(usbDevice.getProductId()) + "]");
             if (UsbUtilities.isIntel(usbDevice))
                 intelDevices.add(entry.getKey());
         }
@@ -112,6 +118,10 @@ class DeviceWatcher extends LrsClass {
             return;
 
         UsbManager usbManager = (UsbManager) mContext.getSystemService(Context.USB_SERVICE);
+        // I do not know why we need to request permissions multiple times
+        // Sometimes user need to confirm access multiple times and restart app
+        // before access is granted and device is accessible
+        usbManager.requestPermission(device, PendingIntent.getBroadcast(mContext, 0, new Intent(ACTION_USB_PERMISSION), 0));
         UsbDeviceConnection conn = usbManager.openDevice(device);
         if(conn == null)
             return;
