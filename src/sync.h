@@ -59,6 +59,7 @@ namespace librealsense
         synthetic_source_interface* source;
         //sync_lock& lock_ref;
         single_consumer_frame_queue<frame_holder>& matches;
+        bool log;
     };
 
     typedef int stream_id;
@@ -117,7 +118,7 @@ namespace librealsense
 
         virtual bool are_equivalent(frame_holder& a, frame_holder& b) = 0;
         virtual bool is_smaller_than(frame_holder& a, frame_holder& b) = 0;
-        virtual bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing) = 0;
+        virtual bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing, syncronization_environment env) = 0;
         virtual void clean_inactive_streams(frame_holder& f) = 0;
         virtual void update_last_arrived(frame_holder& f, matcher* m) = 0;
 
@@ -144,7 +145,7 @@ namespace librealsense
         void sync(frame_holder f, syncronization_environment env) override;
         virtual bool are_equivalent(frame_holder& a, frame_holder& b) override { return false; }
         virtual bool is_smaller_than(frame_holder& a, frame_holder& b) override { return false; }
-        virtual bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing) override { return false; }
+        virtual bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing, syncronization_environment env) override { return false; }
         virtual void clean_inactive_streams(frame_holder& f) override {}
         virtual void update_last_arrived(frame_holder& f, matcher* m) override {}
 
@@ -159,7 +160,7 @@ namespace librealsense
         virtual void update_last_arrived(frame_holder& f, matcher* m) override;
         bool are_equivalent(frame_holder& a, frame_holder& b) override;
         bool is_smaller_than(frame_holder& a, frame_holder& b) override;
-        bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing) override;
+        bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing, syncronization_environment env) override;
         void clean_inactive_streams(frame_holder& f) override;
         void update_next_expected(const frame_holder& f) override;
 
@@ -175,7 +176,7 @@ namespace librealsense
         bool is_smaller_than(frame_holder& a, frame_holder& b) override;
         virtual void update_last_arrived(frame_holder& f, matcher* m) override;
         void clean_inactive_streams(frame_holder& f) override;
-        bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing) override;
+        bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing, syncronization_environment env) override;
         void update_next_expected(const frame_holder & f) override;
 
     private:

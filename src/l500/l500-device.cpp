@@ -283,7 +283,7 @@ namespace librealsense
             [=]() {
                 auto z16rot = std::make_shared<rotation_transform>(RS2_FORMAT_Z16, RS2_STREAM_DEPTH, RS2_EXTENSION_DEPTH_FRAME);
                 auto y8rot = std::make_shared<rotation_transform>(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME);
-                auto sync = std::make_shared<syncer_process_unit>(); // is_zo_enabled_opt );
+                auto sync = std::make_shared<syncer_process_unit>(nullptr, false); // is_zo_enabled_opt );
 
                 auto cpb = std::make_shared<composite_processing_block>();
                 cpb->add(z16rot);
@@ -310,7 +310,7 @@ namespace librealsense
                 auto z16rot = std::make_shared<rotation_transform>(RS2_FORMAT_Z16, RS2_STREAM_DEPTH, RS2_EXTENSION_DEPTH_FRAME);
                 auto y8rot = std::make_shared<rotation_transform>(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME);
                 auto conf = std::make_shared<confidence_rotation_transform>();
-                auto sync = std::make_shared<syncer_process_unit>(); // is_zo_enabled_opt );
+                auto sync = std::make_shared<syncer_process_unit>(nullptr, false); // is_zo_enabled_opt );
 
                 auto cpb = std::make_shared<composite_processing_block>();
                 cpb->add(z16rot);
