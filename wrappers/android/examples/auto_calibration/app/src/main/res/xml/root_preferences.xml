@@ -1,0 +1,59 @@
+<!--
+  ~ Copyright 2018 The app Open Source Project
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+    <PreferenceCategory app:title="Self-Calibration Options">
+        <ListPreference
+            android:defaultValue="3"
+            app:entries="@array/calibration_speed_enteries"
+            app:entryValues="@array/calibration_speed_values"
+            app:key="speed"
+            app:summary="Configure the speed of on-chip calibration"
+            app:title="Calibration Speed"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="Tare Options">
+        <SeekBarPreference
+            android:max="30"
+            app:min="1"
+            android:defaultValue="20"
+            android:key="average step count"
+            app:showSeekBarValue="true"
+            app:summary="Number of frames to average, must be between 1 - 30"
+            app:title="Average step count" />
+        <SeekBarPreference
+            android:max="30"
+            app:min="5"
+            android:defaultValue="20"
+            app:showSeekBarValue="true"
+            app:key="step count"
+            app:title="Step count"
+            app:summary="Max iteration steps, must be between 5 - 30"/>
+
+        <ListPreference
+            app:key="accuracy"
+            app:entries="@array/accuracy_enteries"
+            app:entryValues="@array/accuracy_values"
+            android:defaultValue="0"
+            app:title="Accuracy"
+            app:summary="Subpixel accuracy level"
+            app:useSimpleSummaryProvider="true"/>
+    </PreferenceCategory>
+</PreferenceScreen>
