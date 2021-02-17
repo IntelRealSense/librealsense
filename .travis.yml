@@ -14,7 +14,7 @@ matrix:
         - |
           subst d: ../. 
         - cd d:/build
-        - cmake .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE="C:/Python38/python.exe" -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.8 -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_GRAPHICAL_EXAMPLES=false -DBUILD_WITH_TM2=false -DFORCE_RSUSB_BACKEND=true -DCHECK_FOR_UPDATES=true
+        - cmake .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE="C:/Python38/python.exe" -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.8 -DBUILD_UNIT_TESTS=true -DBUILD_INTERNAL_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_GRAPHICAL_EXAMPLES=false -DBUILD_WITH_TM2=false -DFORCE_RSUSB_BACKEND=true -DCHECK_FOR_UPDATES=true
         - cmake --build . --config $LRS_RUN_CONFIG -- -m
         - cd $LRS_RUN_CONFIG
         - ls
@@ -57,7 +57,7 @@ matrix:
       dist: xenial
       env: RS_CPP_TEST=true
       script:
-        - cmake .. -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false -DCHECK_FOR_UPDATES=true
+        - cmake .. -DBUILD_UNIT_TESTS=true -DBUILD_INTERNAL_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false -DCHECK_FOR_UPDATES=true
         - cmake --build . --config $LRS_RUN_CONFIG -- -j4
         - ./unit-tests/live-test -d yes -i [software-device]
         - for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam] from "$i"; done
