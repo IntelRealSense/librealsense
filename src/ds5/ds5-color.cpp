@@ -169,6 +169,22 @@ namespace librealsense
                 std::make_shared<auto_disabling_control>(
                     gain_option,
                     auto_exposure_option));
+
+            auto md_prop_offset = offsetof(metadata_raw, mode) +
+                offsetof(md_rgb_mode, rgb_mode) +
+                offsetof(md_rgb_normal_mode, intel_rgb_control);
+
+            color_ep.register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE, make_attribute_parser(&md_rgb_control::ae_mode, md_rgb_control_attributes::ae_mode_attribute, md_prop_offset,
+                [](rs2_metadata_type param) { return (param != 1); })); // OFF value via UVC is 1 (ON is 8)
+        }
+        else
+        {
+            // attributes of md_rgb_control
+            auto md_prop_offset = offsetof(metadata_raw, mode) +
+                offsetof(md_rgb_mode, rgb_mode) +
+                offsetof(md_rgb_normal_mode, intel_rgb_control);
+
+            color_ep.register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE, make_attribute_parser(&md_rgb_control::ae_mode, md_rgb_control_attributes::ae_mode_attribute, md_prop_offset));
         }
 
         color_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
@@ -199,8 +215,6 @@ namespace librealsense
 
         color_ep.register_metadata(RS2_FRAME_METADATA_GAIN_LEVEL, make_attribute_parser(&md_rgb_control::gain, md_rgb_control_attributes::gain_attribute, md_prop_offset));
         color_ep.register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, make_attribute_parser(&md_rgb_control::manual_exp, md_rgb_control_attributes::manual_exp_attribute, md_prop_offset));
-        color_ep.register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE, make_attribute_parser(&md_rgb_control::ae_mode, md_rgb_control_attributes::ae_mode_attribute, md_prop_offset,
-            [](rs2_metadata_type param) { return (param != 1); }));
 
         // attributes of md_capture_stats
         md_prop_offset = offsetof(metadata_raw, mode) +

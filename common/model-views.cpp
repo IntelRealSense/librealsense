@@ -6474,7 +6474,7 @@ namespace rs2
                     {
                         std::vector<rs2_option> supported_options = sub->s->get_supported_options();
 
-                        // moving the color dediacted options to the end of the vector
+                        // moving the color dedicated options to the end of the vector
                         std::vector<rs2_option> color_options = {
                             RS2_OPTION_BACKLIGHT_COMPENSATION,
                             RS2_OPTION_BRIGHTNESS,

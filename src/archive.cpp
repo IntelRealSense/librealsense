@@ -220,7 +220,7 @@ namespace librealsense
                 << get_string(get_stream()->get_stream_type()) << " stream");
         
         auto parsers = metadata_parsers->equal_range(frame_metadata);
-		if (parsers.first == metadata_parsers->end())          // Possible user error - md attribute is not supported by this frame type
+        if (parsers.first == metadata_parsers->end())          // Possible user error - md attribute is not supported by this frame type
             throw invalid_value_exception(to_string() << get_string(frame_metadata)
                 << " attribute is not applicable for "
                 << get_string(get_stream()->get_stream_type()) << " stream ");
