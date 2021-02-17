@@ -392,6 +392,10 @@ public:
         }
     }
 
+    bool is_running() {
+        return (!_stopped);
+    }
+
     ~active_object()
     {
         stop();

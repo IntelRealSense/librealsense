@@ -207,6 +207,7 @@ namespace librealsense
                 throw wrong_api_call_sequence_exception("time_diff_keeper::update_diff_time called before object started.");
             double system_time_start = duration<double, std::milli>(system_clock::now().time_since_epoch()).count();
             double sample_hw_time = _device->get_device_time_ms();
+            LOG_DEBUG("get_device_time_ms()");
             double system_time_finish = duration<double, std::milli>(system_clock::now().time_since_epoch()).count();
             double command_delay = (system_time_finish-system_time_start)/2;
 
@@ -269,14 +270,48 @@ namespace librealsense
             return crnt_hw_time;
     }
 
+    bool time_diff_keeper::is_running()
+    {
+        return _active_object.is_running();
+    }
+
     global_timestamp_reader::global_timestamp_reader(std::unique_ptr<frame_timestamp_reader> device_timestamp_reader,
                                                      std::shared_ptr<time_diff_keeper> timediff,
                                                      std::shared_ptr<global_time_option> enable_option) :
         _device_timestamp_reader(std::move(device_timestamp_reader)),
         _time_diff_keeper(timediff),
         _option_is_enabled(enable_option),
-        _ts_is_ready(false)
+        _ts_is_ready(false),
+        _is_sensor_enabled(false)
     {
+        _option_is_enabled->add_callback([this](float val)
+        {
+            if (_is_sensor_enabled)
+            {
+                enable_time_diff_keeper(static_cast<bool>(val));
+            }
+        });
+    }
+
+    void global_timestamp_reader::enable_time_diff_keeper(bool is_enable)
+    {
+        std::shared_ptr<time_diff_keeper> td_keeper = _time_diff_keeper.lock();
+        if (td_keeper)
+        {
+            if (is_enable)
+                td_keeper->start();
+            else
+                td_keeper->stop();
+        }
+    }
+
+    void global_timestamp_reader::sensor_enable_time_diff_keeper(bool is_sensor_enabled)
+    {
+        _is_sensor_enabled = is_sensor_enabled;
+        if (_option_is_enabled->is_true())
+        {
+            enable_time_diff_keeper(is_sensor_enabled);
+        }
     }
 
     double global_timestamp_reader::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
@@ -311,15 +346,14 @@ namespace librealsense
         _device_timestamp_reader->reset();
     }
 
+    void global_time_option::set(float value)
+    { 
+        bool_option::set(value);
+        for (auto callback : _callbacks)
+            callback(value);
+    }
+
     global_time_interface::global_time_interface() :
         _tf_keeper(std::make_shared<time_diff_keeper>(this, 100))
     {}
-
-    void global_time_interface::enable_time_diff_keeper(bool is_enable)
-    {
-        if (is_enable)
-            _tf_keeper->start();
-        else
-            _tf_keeper->stop();
-    }
 }
