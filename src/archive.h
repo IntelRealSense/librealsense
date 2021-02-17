@@ -15,7 +15,7 @@ namespace librealsense
     class md_attribute_parser_base;
     class frame;
 
-    typedef std::map<rs2_frame_metadata_value, std::shared_ptr<md_attribute_parser_base>> metadata_parser_map;
+    typedef std::multimap<rs2_frame_metadata_value, std::shared_ptr<md_attribute_parser_base>> metadata_parser_map;
 
     /*
         Each frame is attached with a static header

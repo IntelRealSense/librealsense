@@ -52,7 +52,6 @@ namespace librealsense
             depth_ep.register_processing_block({ {RS2_FORMAT_BGR8} }, { {RS2_FORMAT_RGB8, RS2_STREAM_INFRARED} }, []() { return std::make_shared<bgr_to_rgb>(); });
         }
 
-        depth_ep.register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_INFRARED));
         depth_ep.register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_INFRARED));
 
         if (RS455_PID != pid && RS405_PID != pid)
