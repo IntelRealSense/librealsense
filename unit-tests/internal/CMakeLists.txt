@@ -12,10 +12,13 @@ set (INTERNAL_TESTS_SOURCES
     internal-tests-types.cpp
     internal-tests-uv-map.cpp
     internal-tests-class-logic.cpp
-    internal-tests-linux.cpp
     ../catch.h
     ../approx.h
 )
+
+if(UNIX AND NOT ANDROID)
+list(APPEND INTERNAL_TESTS_SOURCES internal-tests-linux.cpp)
+endif()
 
 add_executable(${PROJECT_NAME} ${INTERNAL_TESTS_SOURCES})
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
