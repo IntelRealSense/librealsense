@@ -56,9 +56,17 @@ namespace librealsense
 
     struct syncronization_environment
     {
-        synthetic_source_interface* source;
-        //sync_lock& lock_ref;
-        single_consumer_frame_queue<frame_holder>& matches;
+        syncronization_environment( synthetic_source_interface * source,
+                                    single_consumer_frame_queue< frame_holder >& matches,
+                                    bool log )
+            : source( source )
+            , matches( matches )
+            , log( log )
+        {
+        }
+        synthetic_source_interface * source;
+        // sync_lock& lock_ref;
+        single_consumer_frame_queue< frame_holder > & matches;
         bool log = true;
     };
 

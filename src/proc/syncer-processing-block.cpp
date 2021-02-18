@@ -47,7 +47,11 @@ syncer_process_unit::syncer_process_unit( std::initializer_list< bool_option::pt
                     get_source().frame_ready(std::move(frame));
             }
             else
-                _matcher->dispatch( std::move( frame ), { source, matches, log } );
+            {
+                auto env = syncronization_environment{ source, matches, log };
+                _matcher->dispatch(std::move(frame), env);
+            }
+                
         }
 
         frame_holder f;
