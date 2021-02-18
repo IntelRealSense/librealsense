@@ -9,7 +9,7 @@ namespace librealsense
 {
     const int MAX_GAP = 1000;
 
-    std::string frame_to_string(frame_holder& f)
+    std::string frame_to_string(const frame_holder& f)
     {
         std::ostringstream s;
         auto composite = dynamic_cast<composite_frame*>(f.frame);
@@ -32,7 +32,7 @@ namespace librealsense
         return s.str();
     }
 
-    void log_if_enable(std::string str, syncronization_environment env)
+    static void log_if_enable(std::string str, const syncronization_environment& env)
     {
         if (env.log)
         {
@@ -43,7 +43,7 @@ namespace librealsense
     matcher::matcher(std::vector<stream_id> streams_id)
         : _streams_id(streams_id){}
 
-    void matcher::sync(frame_holder f, syncronization_environment env)
+    void matcher::sync(frame_holder f, const syncronization_environment& env)
     {
         auto cb = begin_callback();
         _callback(std::move(f), env);
@@ -104,7 +104,7 @@ namespace librealsense
         _name = "I " + std::string(rs2_stream_to_string(stream_type));
     }
 
-    void identity_matcher::dispatch(frame_holder f, syncronization_environment env)
+    void identity_matcher::dispatch(frame_holder f, const syncronization_environment& env)
     {
         std::stringstream s;
         s <<_name<<"--> "<< f->get_stream()->get_stream_type() << " " << f->get_frame_number() << ", "<<std::fixed<< f->get_frame_timestamp()<<"\n";
@@ -132,7 +132,7 @@ namespace librealsense
         {
             for (auto&& stream : matcher->get_streams())
             {
-                matcher->set_callback([&](frame_holder f, syncronization_environment env)
+                matcher->set_callback([&](frame_holder f, const syncronization_environment& env)
                 {
                     sync(std::move(f), env);
                 });
@@ -148,7 +148,7 @@ namespace librealsense
         _name = create_composite_name(matchers, name);
     }
 
-    void composite_matcher::dispatch(frame_holder f, syncronization_environment env)
+    void composite_matcher::dispatch(frame_holder f, const syncronization_environment& env)
     {
 
         std::stringstream s;
@@ -157,8 +157,18 @@ namespace librealsense
 
         clean_inactive_streams(f);
         auto matcher = find_matcher(f);
-        update_last_arrived(f, matcher.get());
-        matcher->dispatch(std::move(f), env);
+
+        if (matcher)
+        {
+            update_last_arrived(f, matcher.get());
+            matcher->dispatch(std::move(f), env);
+        }
+        else
+        {
+            LOG_ERROR("didn't find any matcher for " << frame_to_string(f) << " will not be syncronyzed");
+            _callback(std::move(f), env);
+        }
+        
     }
 
     std::shared_ptr<matcher> composite_matcher::find_matcher(const frame_holder& frame)
@@ -167,92 +177,15 @@ namespace librealsense
         auto stream_id = frame.frame->get_stream()->get_unique_id();
         auto stream_type = frame.frame->get_stream()->get_stream_type();
 
-        auto sensor = frame.frame->get_sensor().get(); //TODO: Potential deadlock if get_sensor() gets a hold of the last reference of that sensor
-
         auto dev_exist = false;
+        matcher = _matchers[stream_id];
 
-        if (sensor)
+        if (!matcher->get_active())
         {
-
-            const device_interface* dev = nullptr;
-            try
-            {
-                dev = sensor->get_device().shared_from_this().get();
-            }
-            catch (const std::bad_weak_ptr&)
-            {
-                LOG_WARNING("Device destroyed");
-            }
-            if (dev)
-            {
-                dev_exist = true;
-                matcher = _matchers[stream_id];
-                if (!matcher)
-                {
-                    std::ostringstream ss;
-                    for( auto const & it : _matchers )
-                        ss << ' ' << it.first;
-                    LOG_DEBUG( "stream id " << stream_id << " was not found; trying to create, existing streams=" << ss.str() );
-                    matcher = dev->create_matcher(frame);
-
-                    matcher->set_callback(
-                        [&](frame_holder f, syncronization_environment env)
-                        {
-                            sync(std::move(f), env);
-                        });
-
-                    for (auto stream : matcher->get_streams())
-                    {
-                        if (_matchers[stream])
-                        {
-                            _frames_queue.erase(_matchers[stream].get());
-                        }
-                        _matchers[stream] = matcher;
-                        _streams_id.push_back(stream);
-                    }
-                    for (auto stream : matcher->get_streams_types())
-                    {
-                        _streams_type.push_back(stream);
-                    }
-
-                    if (std::find(_streams_type.begin(), _streams_type.end(), stream_type) == _streams_type.end())
-                    {
-                        LOG_ERROR("Stream matcher not found! stream=" << rs2_stream_to_string(stream_type));
-                    }
-                }
-                else if(!matcher->get_active())
-                {
-                     matcher->set_active(true);
-                     _frames_queue[matcher.get()].start();
-                }
-            }
-        }
-        else
-        {
-            LOG_DEBUG( "sensor does not exist" );
+            matcher->set_active(true);
+            _frames_queue[matcher.get()].start();
         }
 
-        if(!dev_exist)
-        {
-            matcher = _matchers[stream_id];
-            // We don't know what device this frame came from, so just store it under device NULL with ID matcher
-            if (!matcher)
-            {
-                if (_matchers[stream_id])
-                {
-                    _frames_queue.erase(_matchers[stream_id].get());
-                }
-                 _matchers[stream_id] = std::make_shared<identity_matcher>(stream_id, stream_type);
-                _streams_id.push_back(stream_id);
-                _streams_type.push_back(stream_type);
-                matcher = _matchers[stream_id];
-
-                matcher->set_callback([&](frame_holder f, syncronization_environment env)
-                {
-                    sync(std::move(f), env);
-                });
-            }
-        }
         return matcher;
     }
 
@@ -269,7 +202,7 @@ namespace librealsense
         return str;
     }
 
-    void composite_matcher::sync(frame_holder f, syncronization_environment env)
+    void composite_matcher::sync(frame_holder f, const syncronization_environment& env)
     {
         std::ostringstream s;
         s <<"SYNC "<<_name<<"--> "<< frame_to_string(f)<<"\n";
@@ -277,6 +210,13 @@ namespace librealsense
 
         update_next_expected(f);
         auto matcher = find_matcher(f);
+        if (!matcher)
+        {
+            LOG_ERROR("didn't find any matcher for " << frame_to_string(f) << " will not be syncronyzed");
+            _callback(std::move(f), env);
+            return;
+        }
+
         _frames_queue[matcher.get()].enqueue(std::move(f));
 
         std::vector<frame_holder*> frames_arrived;
@@ -451,7 +391,7 @@ namespace librealsense
         }
     }
 
-    bool frame_number_composite_matcher::skip_missing_stream(std::vector<matcher*> synced, matcher* missing, syncronization_environment env)
+    bool frame_number_composite_matcher::skip_missing_stream(std::vector<matcher*> synced, matcher* missing, const syncronization_environment& env)
     {
         frame_holder* synced_frame;
 
@@ -472,6 +412,12 @@ namespace librealsense
     void frame_number_composite_matcher::update_next_expected(const frame_holder& f)
     {
         auto matcher = find_matcher(f);
+        if (!matcher)
+        {
+            LOG_ERROR("didn't find any matcher for " << frame_to_string(f) << " will not be syncronyzed");
+            return;
+        }
+
         _next_expected[matcher.get()] = f.frame->get_frame_number()+1.;
     }
 
@@ -542,7 +488,11 @@ namespace librealsense
         auto gap = 1000.f / (float)fps;
 
         auto matcher = find_matcher(f);
-
+        if (!matcher)
+        {
+            LOG_ERROR("didn't find any matcher for " << frame_to_string(f) );
+            return;
+        }
         _next_expected[matcher.get()] = f.frame->get_frame_timestamp() + gap;
         _next_expected_domain[matcher.get()] = f.frame->get_frame_timestamp_domain();
         LOG_DEBUG(_name << frame_to_string(const_cast<frame_holder&>(f))<<"fps " <<fps<<" gap " <<gap<<" next_expected: "<< _next_expected[matcher.get()]);
@@ -581,7 +531,7 @@ namespace librealsense
         }
     }
 
-    bool timestamp_composite_matcher::skip_missing_stream(std::vector<matcher*> synced, matcher* missing, syncronization_environment env)
+    bool timestamp_composite_matcher::skip_missing_stream(std::vector<matcher*> synced, matcher* missing, const syncronization_environment& env)
     {
         if(!missing->get_active())
             return true;
@@ -620,7 +570,7 @@ namespace librealsense
     composite_identity_matcher::composite_identity_matcher(std::vector<std::shared_ptr<matcher>> matchers) :composite_matcher(matchers, "CI: ")
     {}
 
-    void composite_identity_matcher::sync(frame_holder f, syncronization_environment env)
+    void composite_identity_matcher::sync(frame_holder f, const syncronization_environment& env)
     {
         LOG_DEBUG("by_pass_composite_matcher: " << _name << " " << frame_to_string(f));
         _callback(std::move(f), env);

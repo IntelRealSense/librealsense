@@ -34,13 +34,13 @@ namespace librealsense
             _matcher.reset();
         }
     private:
-        void create_matcher(const frame_holder& frame, bool log = true);
+        bool create_matcher(const frame_holder& frame, bool log = true);
 
         std::shared_ptr<matcher> _matcher;
         std::vector< std::weak_ptr<bool_option> > _enable_opts;
 
         single_consumer_frame_queue<frame_holder> matches;
-        std::mutex callback_mutex;
+        std::mutex _callback_mutex;
         bool _log;
     };
 }
