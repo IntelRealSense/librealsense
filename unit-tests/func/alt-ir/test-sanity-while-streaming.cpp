@@ -18,12 +18,7 @@ TEST_CASE( "AltIR", "[l500][live]" )
         option_range r;
         REQUIRE_NOTHROW( r = depth_sens.get_option_range( RS2_OPTION_ALTERNATE_IR ) );
 
-        auto depth = find_default_depth_profile( depth_sens );
-        auto ir = find_default_ir_profile( depth_sens );
-        auto confidence = find_confidence_corresponding_to_depth( depth_sens, depth );
-
-        REQUIRE_NOTHROW( depth_sens.open( { depth, ir, confidence } ) );
-        REQUIRE_NOTHROW( depth_sens.start( [&]( rs2::frame f ) {} ) );
+        start_default_l500_depth_profiles( depth_sens, [&]( rs2::frame f ) {} );
 
         for( auto i = r.min; i <= r.max; i+=r.step )
         {
