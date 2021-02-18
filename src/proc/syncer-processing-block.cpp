@@ -52,7 +52,9 @@ syncer_process_unit::syncer_process_unit( std::initializer_list< bool_option::pt
 
         frame_holder f;
         {
-            std::lock_guard< std::mutex > lock(_callback_mutex);
+            std::unique_lock< std::mutex > lock(_callback_mutex, std::try_to_lock);
+            if (!lock.owns_lock())
+                return;
 
             while( matches.try_dequeue( &f ) )
             {

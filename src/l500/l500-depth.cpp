@@ -190,19 +190,12 @@ namespace librealsense
             depth_matchers.push_back(std::make_shared<identity_matcher>(s->get_unique_id(), s->get_stream_type()));
         }
         std::vector<std::shared_ptr<matcher>> matchers;
-        if (!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
-        {
-            matchers.push_back(std::make_shared<timestamp_composite_matcher>(depth_matchers));
-        }
-        else
-        {
-            matchers.push_back(std::make_shared<timestamp_composite_matcher>(depth_matchers));
-        }
+        matchers.push_back(std::make_shared<timestamp_composite_matcher>(depth_matchers));
 
         return std::make_shared<timestamp_composite_matcher>(matchers);
     }
 
-   
+
 
 
     // If the user did not ask for IR, The open function will add it anyway. 

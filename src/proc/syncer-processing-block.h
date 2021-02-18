@@ -41,6 +41,5 @@ namespace librealsense
 
         single_consumer_frame_queue<frame_holder> matches;
         std::mutex _callback_mutex;
-        bool _log;
     };
 }

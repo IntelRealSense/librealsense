@@ -32,13 +32,13 @@ namespace librealsense
         return s.str();
     }
 
-    static void log_if_enable(std::string str, const syncronization_environment& env)
-    {
-        if (env.log)
-        {
-            LOG_DEBUG(str);
-        }
+#define LOG_IF_ENABLE( OSTREAM, ENV ) \
+    while( ENV.log ) \
+    { \
+        LOG_DEBUG( OSTREAM ); \
+        break; \
     }
+
 
     matcher::matcher(std::vector<stream_id> streams_id)
         : _streams_id(streams_id){}
@@ -106,9 +106,7 @@ namespace librealsense
 
     void identity_matcher::dispatch(frame_holder f, const syncronization_environment& env)
     {
-        std::stringstream s;
-        s <<_name<<"--> "<< f->get_stream()->get_stream_type() << " " << f->get_frame_number() << ", "<<std::fixed<< f->get_frame_timestamp()<<"\n";
-        log_if_enable(s.str(), env);
+        LOG_IF_ENABLE(_name << "--> " << f->get_stream()->get_stream_type() << " " << f->get_frame_number() << ", " << std::fixed << f->get_frame_timestamp(), env);
 
         sync(std::move(f), env);
     }
@@ -150,10 +148,7 @@ namespace librealsense
 
     void composite_matcher::dispatch(frame_holder f, const syncronization_environment& env)
     {
-
-        std::stringstream s;
-        s << "DISPATCH " << _name << "--> " << frame_to_string(f) << "\n";
-        log_if_enable(s.str(), env);
+        LOG_IF_ENABLE("DISPATCH " << _name << "--> " << frame_to_string(f), env);
 
         clean_inactive_streams(f);
         auto matcher = find_matcher(f);
@@ -165,7 +160,7 @@ namespace librealsense
         }
         else
         {
-            LOG_ERROR("didn't find any matcher for " << frame_to_string(f) << " will not be syncronyzed");
+            LOG_ERROR("didn't find any matcher for " << frame_to_string(f) << " will not be synchronized");
             _callback(std::move(f), env);
         }
         
@@ -204,15 +199,13 @@ namespace librealsense
 
     void composite_matcher::sync(frame_holder f, const syncronization_environment& env)
     {
-        std::ostringstream s;
-        s <<"SYNC "<<_name<<"--> "<< frame_to_string(f)<<"\n";
-        log_if_enable(s.str(), env);
+        LOG_IF_ENABLE("SYNC " << _name << "--> " << frame_to_string(f), env);
 
         update_next_expected(f);
         auto matcher = find_matcher(f);
         if (!matcher)
         {
-            LOG_ERROR("didn't find any matcher for " << frame_to_string(f) << " will not be syncronyzed");
+            LOG_ERROR("didn't find any matcher for " << frame_to_string(f) << " will not be synchronized");
             _callback(std::move(f), env);
             return;
         }
@@ -284,28 +277,27 @@ namespace librealsense
                 {
                     if (!skip_missing_stream(synced_frames, i, env))
                     {
-                        s <<  _name<<" "<<frames_to_string(synced_frames )<<" Wait for missing stream: ";
+                        LOG_IF_ENABLE(" "<<frames_to_string(synced_frames )<<" Wait for missing stream: ", env);
 
                         for (auto&& stream : i->get_streams())
-                            s << stream<<" next expected "<<std::fixed<< _next_expected[i];
+                            LOG_IF_ENABLE(stream << " next expected " << std::fixed << _next_expected[i]<<" " , env);
                         synced_frames.clear();
-                        log_if_enable(s.str(), env);
+                       
                         break;
                     }
                     else
                     {
-                        std::stringstream s;
-                        s << _name << " " << frames_to_string(synced_frames) << " Skipped missing stream: ";
+                        LOG_IF_ENABLE(_name << " " << frames_to_string(synced_frames) << " Skipped missing stream: ", env);
                         for (auto&& stream : i->get_streams())
-                            s << stream << " next expected " << std::fixed << _next_expected[i]<<" ";
-                        log_if_enable(s.str(), env);
+                            LOG_IF_ENABLE( stream << " next expected " << std::fixed << _next_expected[i] << " ", env);
+                        
                     }
 
                 }
             }
             else
             {
-                s << _name << " old frames: ";
+                LOG_IF_ENABLE(_name << " old frames: ", env);
             }
             if (synced_frames.size())
             {
@@ -319,14 +311,9 @@ namespace librealsense
                     _frames_queue[index].dequeue(&frame, timeout_ms);
                     if (old_frames)
                     {
-                        s  << "--> " << frame_to_string(frame) << "\n";
+                        LOG_IF_ENABLE("--> " << frame_to_string(frame) << " ", env);
                     }
                     match.push_back(std::move(frame));
-                }
-
-                if (old_frames)
-                {
-                    log_if_enable(s.str(), env);
                 }
 
                 std::sort(match.begin(), match.end(), [](const frame_holder& f1, const frame_holder& f2)
@@ -338,8 +325,6 @@ namespace librealsense
                 frame_holder composite = env.source->allocate_composite_frame(std::move(match));
                 if (composite.frame)
                 {
-                    s <<"SYNCED "<<_name<<"--> "<< frame_to_string(composite)<<"\n";
-
                     auto cb = begin_callback();
                     _callback(std::move(composite), env);
                 }
@@ -414,7 +399,7 @@ namespace librealsense
         auto matcher = find_matcher(f);
         if (!matcher)
         {
-            LOG_ERROR("didn't find any matcher for " << frame_to_string(f) << " will not be syncronyzed");
+            LOG_ERROR("didn't find any matcher for " << frame_to_string(f) << " will not be synchronized");
             return;
         }
 
@@ -554,7 +539,7 @@ namespace librealsense
         //next expected of the missing stream didn't updated yet
         if((*synced_frame)->get_frame_timestamp() > next_expected && abs((*synced_frame)->get_frame_timestamp()- next_expected)<gap*10)
         {
-            log_if_enable("next expected of the missing stream didn't updated yet", env);
+            LOG_IF_ENABLE("next expected of the missing stream didn't updated yet", env);
             return false;
         }
 
