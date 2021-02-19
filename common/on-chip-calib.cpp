@@ -745,32 +745,6 @@ namespace rs2
             }
             else
             {
-                if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB)
-                {
-                    switch (speed)
-                    {
-                    case 0:
-                        total_frames = 60;
-                        break;
-                    case 1:
-                        total_frames = 120;
-                        break;
-                    case 2:
-                        total_frames = 256;
-                        break;
-                    case 3:
-                        total_frames = 256;
-                        break;
-                    case 4:
-                        total_frames = 120;
-                        break;
-                    }
-                }
-                else
-                {
-                    total_frames = fl_step_count;
-                }
-
                 auto start_time = std::chrono::high_resolution_clock::now();
                 auto now = start_time;
                 while (frame_counter > total_frames)
@@ -795,6 +769,32 @@ namespace rs2
                         from += roi_h - 5;
 
                     to = from + 5;
+                }
+
+                if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB)
+                {
+                    switch (speed)
+                    {
+                    case 0:
+                        total_frames = 60;
+                        break;
+                    case 1:
+                        total_frames = 120;
+                        break;
+                    case 2:
+                        total_frames = 256;
+                        break;
+                    case 3:
+                        total_frames = 256;
+                        break;
+                    case 4:
+                        total_frames = 120;
+                        break;
+                    }
+                }
+                else
+                {
+                    total_frames = fl_step_count;
                 }
 
                 while (frame_counter < total_frames)
