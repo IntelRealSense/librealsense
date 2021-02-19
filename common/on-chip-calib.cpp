@@ -479,6 +479,7 @@ namespace rs2
         // version 3
         if (_version == 3)
         {
+            int start_timeout_ms = 4000;
             if (action == RS2_CALIB_ACTION_TARE_CALIB)
             {
                 int width = f.get_width();
@@ -487,8 +488,14 @@ namespace rs2
                 int counter = 0;
                 double tmp = 0.0f;
 
+                auto start_time = std::chrono::high_resolution_clock::now();
+                auto now = start_time;
                 while (frame_counter > total_frames)
                 {
+                    now = std::chrono::high_resolution_clock::now();
+                    if (now - start_time > std::chrono::milliseconds(start_timeout_ms))
+                        throw std::runtime_error("Operation timed-out when starting calibration!");
+
                     if (_progress < 40)
                         _progress += 1;
 
@@ -557,8 +564,14 @@ namespace rs2
                 float tmp = 0.0f;
                 uint16_t fill_factor[256] = { 0 };
 
+                auto start_time = std::chrono::high_resolution_clock::now();
+                auto now = start_time;
                 while (frame_counter > total_frames)
                 {
+                    now = std::chrono::high_resolution_clock::now();
+                    if (now - start_time > std::chrono::milliseconds(start_timeout_ms))
+                        throw std::runtime_error("Operation timed-out when starting calibration!");
+
                     if (_progress < 15)
                         _progress += 1;
 
@@ -655,8 +668,14 @@ namespace rs2
                 _progress = 45;
 
                 // OCC-FL
+                auto start_time = std::chrono::high_resolution_clock::now();
+                auto now = start_time;
                 while (frame_counter >= total_frames)
                 {
+                    now = std::chrono::high_resolution_clock::now();
+                    if (now - start_time > std::chrono::milliseconds(start_timeout_ms))
+                        throw std::runtime_error("Operation timed-out when starting calibration!");
+
                     if (_progress < 60)
                         _progress += 1;
 
@@ -746,23 +765,41 @@ namespace rs2
             }
             else
             {
-                switch (speed)
+                if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB)
                 {
-                case 0:
-                    total_frames = 60;
-                    break;
-                case 1:
-                    total_frames = 120;
-                    break;
-                case 2:
-                    total_frames = 256;
-                    break;
-                case 3:
-                    total_frames = 256;
-                    break;
-                case 4:
-                    total_frames = 120;
-                    break;
+                    switch (speed)
+                    {
+                    case 0:
+                        total_frames = 60;
+                        break;
+                    case 1:
+                        total_frames = 120;
+                        break;
+                    case 2:
+                        total_frames = 256;
+                        break;
+                    case 3:
+                        total_frames = 256;
+                        break;
+                    case 4:
+                        total_frames = 120;
+                        break;
+                    }
+                }
+                else
+                {
+                    switch (speed_fl)
+                    {
+                    case 0:
+                        total_frames = 41;
+                        break;
+                    case 1:
+                        total_frames = 51;
+                        break;
+                    case 2:
+                        total_frames = 41;
+                        break;
+                    }
                 }
 
                 int width = f.get_width();
@@ -772,8 +809,14 @@ namespace rs2
                 float tmp = 0.0f;
                 uint16_t fill_factor[256] = { 0 };
 
+                auto start_time = std::chrono::high_resolution_clock::now();
+                auto now = start_time;
                 while (frame_counter > total_frames)
                 {
+                    now = std::chrono::high_resolution_clock::now();
+                    if (now - start_time > std::chrono::milliseconds(start_timeout_ms))
+                        throw std::runtime_error("Operation timed-out when starting calibration!");
+
                     if (_progress < 40)
                         _progress += 1;
 
