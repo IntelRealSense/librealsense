@@ -23,12 +23,12 @@ namespace rs2
     {
     public:
         on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub,
-            device_model& model, device dev)
+            device_model& model, device dev, int version = 1)
             : process_manager("On-Chip Calibration"), _model(model),
-             _dev(dev), _sub(sub), _viewer(viewer)
+             _dev(dev), _sub(sub), _viewer(viewer), _version(version)
         {
-                auto dev_name = dev.get_info(RS2_CAMERA_INFO_NAME);
-                if (!strcmp(dev_name, "Intel RealSense D415")) { speed = 4; }
+            auto dev_name = dev.get_info(RS2_CAMERA_INFO_NAME);
+            if (!strcmp(dev_name, "Intel RealSense D415")) { speed = 4; }
         }
 
         bool allow_calib_keep() const { return true; }
@@ -71,6 +71,8 @@ namespace rs2
         };
 
         auto_calib_action action = RS2_CALIB_ACTION_ON_CHIP_OB_CALIB;
+        int _version = 1;
+        int step_count_v3 = 256;
         float laser_status_prev = 0.0f;
 
         int fl_step_count = 51;

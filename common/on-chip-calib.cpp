@@ -387,9 +387,21 @@ namespace rs2
         }
 
         std::stringstream ss;
-        if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
+        if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB)
         {
-            ss << "{\n \"calib type\":" << 1 <<
+            ss << "{\n \"calib type\":" << (_version == 3 ? 30 : 0) <<
+                ",\n \"speed\":" << speed <<
+                ",\n \"average step count\":" << average_step_count <<
+                ",\n \"scan parameter\":" << (intrinsic_scan ? 0 : 1) <<
+                ",\n \"step count\":" << step_count <<
+                ",\n \"apply preset\":" << (apply_preset ? 1 : 0) <<
+                ",\n \"accuracy\":" << accuracy <<
+                ",\n \"scan only\":" << (_version == 3 ? 1 : 0) <<
+                ",\n \"interactive scan\":" << 0 << "}";
+        }
+        else if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
+        {
+            ss << "{\n \"calib type\":" << (_version == 3 ? 31 : 1) <<
                   ",\n \"fl step count\":" << fl_step_count <<
                   ",\n \"fy scan range\":" << fy_scan_range <<
                   ",\n \"keep new value after sucessful scan\":" << keep_new_value_after_sucessful_scan <<
@@ -397,21 +409,14 @@ namespace rs2
                   ",\n \"adjust both sides\":" << adjust_both_sides <<  
                   ",\n \"fl scan location\":" << fl_scan_location <<
                   ",\n \"fy scan direction\":" << fy_scan_direction <<
-                  ",\n \"white wall mode\":" << white_wall_mode << "}";
-        }
-        else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB)
-        {
-            ss << "{\n \"calib type\":" << 0 <<
-                  ",\n \"speed\":" << speed <<
-                  ",\n \"average step count\":" << average_step_count <<
-                  ",\n \"scan parameter\":" << (intrinsic_scan ? 0 : 1) <<
-                  ",\n \"step count\":" << step_count <<
-                  ",\n \"apply preset\":" << (apply_preset ? 1 : 0) <<
-                  ",\n \"accuracy\":" << accuracy << "}";
+                  ",\n \"white wall mode\":" << white_wall_mode <<
+                  ",\n \"scan only\":" << (_version == 3 ? 1 : 0) <<
+                  ",\n \"interactive scan\":" << 0 << "}";
         }
         else
         {
-            ss << "{\n \"calib type\":" << 2 <<
+            ss << "{\n \"calib type\":" << (_version == 3 ? 32 : 2) <<
+                  ",\n \"version\":" << _version <<
                   ",\n \"fl step count\":" << fl_step_count <<
                   ",\n \"fy scan range\":" << fy_scan_range <<
                   ",\n \"keep new value after sucessful scan\":" << keep_new_value_after_sucessful_scan <<
@@ -425,10 +430,30 @@ namespace rs2
                   ",\n \"scan parameter\":" << (intrinsic_scan ? 0 : 1) <<
                   ",\n \"step count\":" << step_count <<
                   ",\n \"apply preset\":" << (apply_preset ? 1 : 0) <<
-                  ",\n \"accuracy\":" << accuracy << "}";
+                  ",\n \"accuracy\":" << accuracy <<
+                  ",\n \"scan only\":" << (_version == 3 ? 1 : 0) <<
+                  ",\n \"interactive scan\":" << 0 << "}";
         }
         std::string json = ss.str();
 
+        auto invoke = [](std::function<void()>) {};
+        rs2::depth_frame f = fetch_depth_frame(invoke);
+        rs2_metadata_type frame_counter = 0;
+        int total_frames = 256;
+        if (_version == 3) // wait enough frames
+        {
+            frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+            while (frame_counter <= total_frames)
+            {
+                if (_progress < 20)
+                    _progress += 1;
+
+                f = fetch_depth_frame(invoke);
+                frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+            }
+
+            _progress = 20;
+        }
         auto calib_dev = _dev.as<auto_calibrated_device>();
         if (action == RS2_CALIB_ACTION_TARE_CALIB)
             _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = int(progress);}, 5000);
@@ -449,6 +474,394 @@ namespace rs2
             _health_2 = h_2 / 1000.0f;
             if (sign & 2)
                 _health_2 = -_health_2;
+        }
+
+        // version 3
+        if (_version == 3)
+        {
+            if (action == RS2_CALIB_ACTION_TARE_CALIB)
+            {
+                int width = f.get_width();
+                int height = f.get_height();
+                int size = width * height;
+                int counter = 0;
+                double tmp = 0.0f;
+
+                while (frame_counter > total_frames)
+                {
+                    if (_progress < 40)
+                        _progress += 1;
+
+                    f = fetch_depth_frame(invoke);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+                }
+                _progress = 40;
+
+                int depth = 0;
+                int prev_frame_counter = total_frames;
+                while (frame_counter < total_frames)
+                {
+                    if (frame_counter != prev_frame_counter)
+                    {
+                        _progress += static_cast<int>(frame_counter * 50 / total_frames);
+
+                        tmp = 0.0;
+                        counter = 0;
+                        const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
+                        for (int i = 0; i < size; ++i)
+                        {
+                            if (*p)
+                            {
+                                ++counter;
+                                tmp += *p;
+                            }
+                            ++p;
+                        }
+
+                        if (counter)
+                        {
+                            tmp /= counter;
+                            tmp *= 10000;
+
+                            depth = static_cast<int>(tmp + 0.5);
+ 
+                            std::stringstream ss;
+                            ss << "{\n \"depth\":" << depth << "}";
+
+                            std::string json = ss.str();
+                            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = int(progress); }, 5000);
+                        }
+                    }
+
+                    f = fetch_depth_frame(invoke);
+                    prev_frame_counter = static_cast<int>(frame_counter);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+                }
+
+                _progress = 90;
+
+                std::stringstream ss;
+                ss << "{\n \"depth\":" << -1 << "}";
+
+                std::string json = ss.str();
+                _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = int(progress); }, 5000);
+                _progress = 100;
+            }
+            else if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
+            {
+                // OCC
+                int width = f.get_width();
+                int height = f.get_height();
+                int size = width * height;
+                int counter = 0;
+                float tmp = 0.0f;
+                uint16_t fill_factor[256] = { 0 };
+
+                while (frame_counter > total_frames)
+                {
+                    if (_progress < 15)
+                        _progress += 1;
+
+                    f = fetch_depth_frame(invoke);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+                }
+                _progress = 15;
+
+                switch (speed)
+                {
+                case 0:
+                    total_frames = 60;
+                    break;
+                case 1:
+                    total_frames = 120;
+                    break;
+                case 2:
+                    total_frames = 256;
+                    break;
+                case 3:
+                    total_frames = 256;
+                    break;
+                case 4:
+                    total_frames = 120;
+                    break;
+                }
+
+                while (frame_counter < total_frames)
+                {
+                    _progress += static_cast<int>(frame_counter * 30 / total_frames);
+
+                    const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
+                    for (int i = 0; i < size; ++i)
+                    {
+                        if (*p++)
+                            ++counter;
+                    }
+
+                    tmp = static_cast<float>(counter);
+                    tmp /= size;
+                    tmp *= 10000;
+                    fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5f);
+
+                    f = fetch_depth_frame(invoke);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+                }
+
+                counter = 0;
+                int start = 0;
+                while (fill_factor[start++] == 0)
+                    ++counter;
+
+                if (counter == total_frames)
+                    throw std::runtime_error(to_string() << "Failed to get scan frames!");
+
+                for (int i = 0; i < counter; ++i)
+                    fill_factor[i] = fill_factor[counter];
+
+                start = 0;
+                int end = 0;
+                for (int i = 0; i < total_frames; ++i)
+                {
+                    if (fill_factor[i] == 0)
+                        start = i;
+
+                    if (start != 0 && fill_factor[i] != 0)
+                        end = i;
+
+                    if (start != 0 && end != 0)
+                    {
+                        tmp = static_cast<float>(fill_factor[end] - fill_factor[start - 1]);
+                        tmp /= end - start + 1;
+                        for (int j = start; j < end; ++j)
+                            fill_factor[j] = static_cast<uint16_t>(tmp * (j - start + 1) + fill_factor[start - 1] + 0.5f);
+                        start = 0;
+                        end = 0;
+                    }
+                }
+
+                if (start != 0 && end == 0)
+                {
+                    for (int i = start; i < total_frames; ++i)
+                        fill_factor[i] = fill_factor[start - 1];
+                }
+
+                std::stringstream ss;
+                ss << "{\n \"calib type\":" << 33;
+                ss << ",\n \"step count v3\":" << total_frames;
+                for (int i = 0; i < total_frames; ++i)
+                    ss << ",\n \"fill factor " << i << "\":" << fill_factor[i];
+                ss << "}";
+                std::string json = ss.str();
+                _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = int(progress); }, occ_timeout_ms);
+                _progress = 45;
+
+                // OCC-FL
+                while (frame_counter >= total_frames)
+                {
+                    if (_progress < 60)
+                        _progress += 1;
+
+                    f = fetch_depth_frame(invoke);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+                }
+                _progress = 60;
+
+                total_frames = fl_step_count;
+                int from = 0;
+                int to = size;
+                if (fl_scan_location == 0)
+                    to = 5 * width;
+                else
+                    from = (height - 5) * width;
+
+                memset(fill_factor, 0, 256 * sizeof(uint16_t));
+                while (frame_counter < total_frames)
+                {
+                    _progress += static_cast<int>(frame_counter * 30 / total_frames);
+
+                    const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
+                    for (int i = from; i < to; ++i)
+                    {
+                        if (*p++)
+                            ++counter;
+                    }
+
+                    tmp = static_cast<float>(counter);
+                    tmp /= size;
+                    tmp *= 10000;
+                    fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5f);
+
+                    f = fetch_depth_frame(invoke);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+                }
+
+                counter = 0;
+                start = 0;
+                while (fill_factor[start++] == 0)
+                    ++counter;
+
+                if (counter == total_frames)
+                    throw std::runtime_error(to_string() << "Failed to get scan frames!");
+
+                for (int i = 0; i < counter; ++i)
+                    fill_factor[i] = fill_factor[counter];
+
+                start = 0;
+                end = 0;
+                for (int i = 0; i < total_frames; ++i)
+                {
+                    if (fill_factor[i] == 0)
+                        start = i;
+
+                    if (start != 0 && fill_factor[i] != 0)
+                        end = i;
+
+                    if (start != 0 && end != 0)
+                    {
+                        tmp = static_cast<float>(fill_factor[end] - fill_factor[start - 1]);
+                        tmp /= end - start + 1;
+                        for (int j = start; j < end; ++j)
+                            fill_factor[j] = static_cast<uint16_t>(tmp * (j - start + 1) + fill_factor[start - 1] + 0.5f);
+                        start = 0;
+                        end = 0;
+                    }
+                }
+
+                if (start != 0 && end == 0)
+                {
+                    for (int i = start; i < total_frames; ++i)
+                        fill_factor[i] = fill_factor[start - 1];
+                }
+
+                std::stringstream sss;
+                sss << "{\n \"calib type\":" << 33;
+                sss << ",\n \"step count v3\":" << total_frames;
+                for (int i = 0; i < total_frames; ++i)
+                    sss << ",\n \"fill factor " << i << "\":" << fill_factor[i];
+                sss << "}";
+
+                _progress = 90;
+                std::string json2 = sss.str();
+                _new_calib = calib_dev.run_on_chip_calibration(json2, &_health, [&](const float progress) {_progress = int(progress); }, occ_timeout_ms);
+                _progress = 100;
+            }
+            else
+            {
+                switch (speed)
+                {
+                case 0:
+                    total_frames = 60;
+                    break;
+                case 1:
+                    total_frames = 120;
+                    break;
+                case 2:
+                    total_frames = 256;
+                    break;
+                case 3:
+                    total_frames = 256;
+                    break;
+                case 4:
+                    total_frames = 120;
+                    break;
+                }
+
+                int width = f.get_width();
+                int height = f.get_height();
+                int size = width * height;
+                int counter = 0;
+                float tmp = 0.0f;
+                uint16_t fill_factor[256] = { 0 };
+
+                while (frame_counter > total_frames)
+                {
+                    if (_progress < 40)
+                        _progress += 1;
+
+                    f = fetch_depth_frame(invoke);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+                }
+                _progress = 40;
+
+                int from = 0;
+                int to = size;
+                if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
+                {
+                    if (fl_scan_location == 0)
+                        to = 5 * width;
+                    else
+                        from = (height - 5) * width;
+                }
+
+                while (frame_counter < total_frames)
+                {
+                    _progress += static_cast<int>(frame_counter * 50 / total_frames);
+
+                    const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
+                    for (int i = from; i < to; ++i)
+                    {
+                        if (*p++)
+                            ++counter;
+                    }
+
+                    tmp = static_cast<float>(counter);
+                    tmp /= size;
+                    tmp *= 10000;
+                    fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5f);
+
+                    f = fetch_depth_frame(invoke);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+                }
+
+                counter = 0;
+                int start = 0;
+                while (fill_factor[start++] == 0)
+                    ++counter;
+
+                if (counter == total_frames)
+                    throw std::runtime_error(to_string() << "Failed to get scan frames!");
+
+                for (int i = 0; i < counter; ++i)
+                    fill_factor[i] = fill_factor[counter];
+
+                start = 0;
+                int end = 0;
+                for (int i = 0; i < total_frames; ++i)
+                {
+                    if (fill_factor[i] == 0)
+                        start = i;
+
+                    if (start != 0 && fill_factor[i] != 0)
+                        end = i;
+
+                    if (start != 0 && end != 0)
+                    {
+                        tmp = static_cast<float>(fill_factor[end] - fill_factor[start - 1]);
+                        tmp /= end - start + 1;
+                        for (int j = start; j < end; ++j)
+                            fill_factor[j] = static_cast<uint16_t>(tmp * (j - start + 1) + fill_factor[start - 1] + 0.5f);
+                        start = 0;
+                        end = 0;
+                    }
+                }
+
+                if (start != 0 && end == 0)
+                {
+                    for (int i = start; i < total_frames; ++i)
+                        fill_factor[i] = fill_factor[start - 1];
+                }
+
+                std::stringstream ss;
+                ss << "{\n \"calib type\":" << 33;
+                ss << ",\n \"step count v3\":" << total_frames;
+                for (int i = 0; i < total_frames; ++i)
+                    ss << ",\n \"fill factor " << i << "\":" << fill_factor[i];
+                ss << "}";
+
+                _progress = 90;
+                std::string json = ss.str();
+                _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = int(progress); }, occ_timeout_ms);
+                _progress = 100;
+            }
         }
     }
 
@@ -551,7 +964,10 @@ namespace rs2
         std::this_thread::sleep_for(std::chrono::milliseconds(600));
 
         // Switch into special Auto-Calibration mode
-        try_start_viewer(256, 144, 90, invoke);
+        if (_version == 3 && action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
+            try_start_viewer(1280, 720, 30, invoke);
+        else
+            try_start_viewer(256, 144, 90, invoke);
 
         if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
             get_ground_truth();
@@ -730,16 +1146,16 @@ namespace rs2
                      update_state == RS2_CALIB_STATE_SELF_INPUT)
             {
                if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
-                   ImGui::Text("%s", "On-Chip and Focal Length Calibration");
+                   ImGui::Text("%s", (get_manager()._version == 3 ? "On-Chip and Focal Length Calibration Version 3" : "On-Chip and Focal Length Calibration"));
                else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
-                   ImGui::Text("%s", "On-Chip Focal Length Calibration");
+                   ImGui::Text("%s", (get_manager()._version == 3 ? "On-Chip Focal Length Calibration Version 3" : "On-Chip Focal Length Calibration"));
                else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB)
-                   ImGui::Text("%s", "Tare Calibration");
+                   ImGui::Text("%s", (get_manager()._version == 3 ? "Tare Calibration Version 3" : "Tare Calibration"));
                else
-                   ImGui::Text("%s", "On-Chip Calibration");
+                   ImGui::Text("%s", (get_manager()._version == 3 ? "On-Chip Calibration Version 3" : "On-Chip Calibration"));
             }
             else if (update_state == RS2_CALIB_STATE_TARE_INPUT || update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED)
-                ImGui::Text("%s", "Tare Calibration");
+                ImGui::Text("%s", (get_manager()._version == 3 ? "Tare Calibration Version 3" : "Tare Calibration"));
             else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH || update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_IN_PROCESS || update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_COMPLETE)
                 ImGui::Text("%s", "Get Tare Calibration Ground Truth");
             else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED)
@@ -1087,7 +1503,6 @@ namespace rs2
                     ImGui::PushItemWidth(width - 145.f);
                     ImGui::Combo(id.c_str(), &get_manager().speed_fl, vals_cstr.data(), int(vals.size()));
                     ImGui::PopItemWidth();
-
                 }
                 else
                 {
@@ -2192,9 +2607,9 @@ namespace rs2
         if (rec_sides[3] > 0)
             rec_sides[3] = _target_fh / rec_sides[3];
 
-        ground_truth = 0.0;
+        ground_truth = 0.0f;
         for (int i = 0; i < 4; ++i)
-            ground_truth += rec_sides[i];
+            ground_truth += static_cast<float>(rec_sides[i]);
         ground_truth /= 4.0;
     }
 
