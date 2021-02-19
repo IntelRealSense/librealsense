@@ -514,6 +514,9 @@ namespace rs2
 
             int roi_w = width / 5;
             int roi_h = height / 5;
+            int roi_size = roi_w * roi_h;
+            int roi_fl_size = roi_w * 5;
+
             int roi_start_w = 2 * roi_w;
             int roi_start_h = 2 * roi_h;
 
@@ -655,7 +658,7 @@ namespace rs2
                     }
 
                     tmp = static_cast<float>(counter);
-                    tmp /= size;
+                    tmp /= roi_size;
                     tmp *= 10000;
                     fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5);
 
@@ -722,7 +725,7 @@ namespace rs2
                     }
 
                     tmp = static_cast<float>(counter);
-                    tmp /= size;
+                    tmp /= roi_fl_size;
                     tmp *= 10000;
                     fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5);
 
@@ -765,12 +768,14 @@ namespace rs2
 
                 int from = roi_start_h;
                 int to = roi_start_h + roi_h;
+                int data_size = roi_size;
                 if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
                 {
                     if (fl_scan_location == 1)
                         from += roi_h - 5;
 
                     to = from + 5;
+                    data_size = roi_fl_size;
                 }
 
                 if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB)
@@ -819,7 +824,7 @@ namespace rs2
                     }
 
                     tmp = static_cast<float>(counter);
-                    tmp /= size;
+                    tmp /= data_size;
                     tmp *= 10000;
                     fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5f);
 
