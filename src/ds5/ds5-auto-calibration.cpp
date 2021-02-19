@@ -717,9 +717,9 @@ namespace librealsense
 
                     if (progress_callback)
                     {
-                        if (host_assistance)
+                        if (depth < 0 && count < 10)
                             progress_callback->on_update_progress(90 + count++);
-                        else
+                        else if (depth == 0)
                             progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
                     }
 

@@ -546,7 +546,8 @@ namespace rs2
                 {
                     if (frame_counter != prev_frame_counter)
                     {
-                        _progress += static_cast<int>(frame_counter * 50 / total_frames);
+                        if (_progress < 90)
+                            _progress += 1;
 
                         tmp = 0.0;
                         counter = 0;
@@ -578,7 +579,7 @@ namespace rs2
                             ss << "{\n \"depth\":" << depth << "}";
 
                             std::string json = ss.str();
-                            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = int(progress); }, 5000);
+                            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {}, 5000);
                         }
                     }
 
