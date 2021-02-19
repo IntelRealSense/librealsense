@@ -514,8 +514,8 @@ namespace rs2
 
             int roi_w = width / 5;
             int roi_h = height / 5;
-            int roi_start_w = width - 2 * roi_w;
-            int roi_start_h = height - 2 * roi_h;
+            int roi_start_w = 2 * roi_w;
+            int roi_start_h = 2 * roi_h;
 
             int counter = 0;
             double tmp = 0.0f;
@@ -550,10 +550,10 @@ namespace rs2
                             _progress += 1;
 
                         tmp = 0.0;
-                        counter = 0;
                         const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
                         p += roi_start_h * height + roi_start_w;
 
+                        counter = 0;
                         for (int j = 0; j < roi_h; ++j)
                         {
                             for (int i = 0; i < roi_w; ++i)
@@ -642,6 +642,7 @@ namespace rs2
                     const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
                     p += roi_start_h * height + roi_start_w;
 
+                    counter = 0;
                     for (int j = 0; j < roi_h; ++j)
                     {
                         for (int i = 0; i < roi_w; ++i)
@@ -708,6 +709,7 @@ namespace rs2
                     const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
                     p += from * height + roi_start_w;
 
+                    counter = 0;
                     for (int j = from; j < to; ++j)
                     {
                         for (int i = 0; i < roi_w; ++i)
@@ -804,6 +806,7 @@ namespace rs2
                     const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
                     p += from * height + roi_start_w;
 
+                    counter = 0;
                     for (int j = from; j < to; ++j)
                     {
                         for (int i = 0; i < roi_w; ++i)
