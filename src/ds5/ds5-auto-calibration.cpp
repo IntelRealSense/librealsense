@@ -340,8 +340,14 @@ namespace librealsense
                     {
                         LOG_WARNING(ex.what());
                     }
+
                     if (progress_callback)
-                        progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
+                    {
+                        if (host_assistance)
+                            if (count < 10) progress_callback->on_update_progress(90 + count++);
+                        else
+                            progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
+                    }
 
                     now = std::chrono::high_resolution_clock::now();
 
@@ -452,7 +458,12 @@ namespace librealsense
                     }
 
                     if (progress_callback)
-                        progress_callback->on_update_progress(count++ * (2.f * 3)); //curently this number does not reflect the actual progress
+                    {
+                        if (host_assistance)
+                            if (count < 10) progress_callback->on_update_progress(90 + count++);
+                        else
+                            progress_callback->on_update_progress(count++* (2.f * 3)); //curently this number does not reflect the actual progress
+                    }
 
                     now = std::chrono::high_resolution_clock::now();
 
@@ -569,8 +580,10 @@ namespace librealsense
 
                         if (progress_callback)
                         {
-                            progress = count++ * (2.f * speed);
-                            progress_callback->on_update_progress(progress); //curently this number does not reflect the actual progress
+                            if (host_assistance)
+                                if (count < 10) progress_callback->on_update_progress(90 + count++);
+                            else
+                                progress_callback->on_update_progress(count++* (2.f * speed)); //curently this number does not reflect the actual progress
                         }
 
                         now = std::chrono::high_resolution_clock::now();
@@ -703,7 +716,12 @@ namespace librealsense
                     }
 
                     if (progress_callback)
-                        progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
+                    {
+                        if (host_assistance)
+                            progress_callback->on_update_progress(90 + count++);
+                        else
+                            progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
+                    }
 
                     now = std::chrono::high_resolution_clock::now();
 

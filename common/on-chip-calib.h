@@ -126,6 +126,8 @@ namespace rs2
         void stop_viewer(invoker invoke);
         bool start_viewer(int w, int h, int fps, invoker invoke);
         void try_start_viewer(int w, int h, int fps, invoker invoke);
+
+        inline void fill_missing_data(uint16_t data[256], int size);
     };
 
     // Auto-calib notification model is managing the UI state-machine

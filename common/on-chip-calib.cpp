@@ -347,6 +347,48 @@ namespace rs2
         config_file::instance().set(id.c_str(), (long long)rawtime);
     }
 
+    void on_chip_calib_manager::fill_missing_data(uint16_t data[256], int size)
+    {
+        int counter = 0;
+        int start = 0;
+        while (data[start++] == 0)
+            ++counter;
+
+        if (start + 2 > size)
+            throw std::runtime_error(to_string() << "There is no enought valid data in the array!");
+
+        for (int i = 0; i < counter; ++i)
+            data[i] = data[counter];
+
+        start = 0;
+        int end = 0;
+        float tmp = 0;
+        for (int i = 0; i < size; ++i)
+        {
+            if (data[i] == 0)
+                start = i;
+
+            if (start != 0 && data[i] != 0)
+                end = i;
+
+            if (start != 0 && end != 0)
+            {
+                tmp = static_cast<float>(data[end] - data[start - 1]);
+                tmp /= end - start + 1;
+                for (int j = start; j < end; ++j)
+                    data[j] = static_cast<uint16_t>(tmp * (j - start + 1) + data[start - 1] + 0.5f);
+                start = 0;
+                end = 0;
+            }
+        }
+
+        if (start != 0 && end == 0)
+        {
+            for (int i = start; i < size; ++i)
+                data[i] = data[start - 1];
+        }
+    }
+
     void on_chip_calib_manager::calibrate()
     {
         int occ_timeout_ms = 9000;
@@ -466,15 +508,22 @@ namespace rs2
         // version 3
         if (host_assistance)
         {
+            int width = f.get_width();
+            int height = f.get_height();
+            int size = width * height;
+
+            int roi_w = width / 5;
+            int roi_h = height / 5;
+            int roi_start_w = width - 2 * roi_w;
+            int roi_start_h = height - 2 * roi_h;
+
+            int counter = 0;
+            double tmp = 0.0f;
+            uint16_t fill_factor[256] = { 0 };
+
             int start_timeout_ms = 4000;
             if (action == RS2_CALIB_ACTION_TARE_CALIB)
             {
-                int width = f.get_width();
-                int height = f.get_height();
-                int size = width * height;
-                int counter = 0;
-                double tmp = 0.0f;
-
                 auto start_time = std::chrono::high_resolution_clock::now();
                 auto now = start_time;
                 while (frame_counter > total_frames)
@@ -502,14 +551,20 @@ namespace rs2
                         tmp = 0.0;
                         counter = 0;
                         const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
-                        for (int i = 0; i < size; ++i)
+                        p += roi_start_h * height + roi_start_w;
+
+                        for (int j = 0; j < roi_h; ++j)
                         {
-                            if (*p)
+                            for (int i = 0; i < roi_w; ++i)
                             {
-                                ++counter;
-                                tmp += *p;
+                                if (*p)
+                                {
+                                    ++counter;
+                                    tmp += *p;
+                                }
+                                ++p;
                             }
-                            ++p;
+                            p += width;
                         }
 
                         if (counter)
@@ -544,13 +599,6 @@ namespace rs2
             else if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
             {
                 // OCC
-                int width = f.get_width();
-                int height = f.get_height();
-                int size = width * height;
-                int counter = 0;
-                float tmp = 0.0f;
-                uint16_t fill_factor[256] = { 0 };
-
                 auto start_time = std::chrono::high_resolution_clock::now();
                 auto now = start_time;
                 while (frame_counter > total_frames)
@@ -591,58 +639,29 @@ namespace rs2
                     _progress += static_cast<int>(frame_counter * 30 / total_frames);
 
                     const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
-                    for (int i = 0; i < size; ++i)
+                    p += roi_start_h * height + roi_start_w;
+
+                    for (int j = 0; j < roi_h; ++j)
                     {
-                        if (*p++)
-                            ++counter;
+                        for (int i = 0; i < roi_w; ++i)
+                        {
+                            if (*p)
+                                ++counter;
+                            ++p;
+                        }
+                        p += width;
                     }
 
                     tmp = static_cast<float>(counter);
                     tmp /= size;
                     tmp *= 10000;
-                    fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5f);
+                    fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5);
 
                     f = fetch_depth_frame(invoke);
                     frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
                 }
 
-                counter = 0;
-                int start = 0;
-                while (fill_factor[start++] == 0)
-                    ++counter;
-
-                if (counter == total_frames)
-                    throw std::runtime_error(to_string() << "Failed to get scan frames!");
-
-                for (int i = 0; i < counter; ++i)
-                    fill_factor[i] = fill_factor[counter];
-
-                start = 0;
-                int end = 0;
-                for (int i = 0; i < total_frames; ++i)
-                {
-                    if (fill_factor[i] == 0)
-                        start = i;
-
-                    if (start != 0 && fill_factor[i] != 0)
-                        end = i;
-
-                    if (start != 0 && end != 0)
-                    {
-                        tmp = static_cast<float>(fill_factor[end] - fill_factor[start - 1]);
-                        tmp /= end - start + 1;
-                        for (int j = start; j < end; ++j)
-                            fill_factor[j] = static_cast<uint16_t>(tmp * (j - start + 1) + fill_factor[start - 1] + 0.5f);
-                        start = 0;
-                        end = 0;
-                    }
-                }
-
-                if (start != 0 && end == 0)
-                {
-                    for (int i = start; i < total_frames; ++i)
-                        fill_factor[i] = fill_factor[start - 1];
-                }
+                fill_missing_data(fill_factor, total_frames);
 
                 std::stringstream ss;
                 ss << "{\n \"calib type\":" << 3 <<
@@ -673,12 +692,12 @@ namespace rs2
                 _progress = 60;
 
                 total_frames = fl_step_count;
-                int from = 0;
-                int to = size;
-                if (fl_scan_location == 0)
-                    to = 5 * width;
-                else
-                    from = (height - 5) * width;
+                
+                int from = roi_start_h;
+                if (fl_scan_location == 1)
+                    from += roi_h - 5;
+
+                int to = from + 5;
 
                 memset(fill_factor, 0, 256 * sizeof(uint16_t));
                 while (frame_counter < total_frames)
@@ -686,58 +705,29 @@ namespace rs2
                     _progress += static_cast<int>(frame_counter * 30 / total_frames);
 
                     const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
-                    for (int i = from; i < to; ++i)
+                    p += from * height + roi_start_w;
+
+                    for (int j = from; j < to; ++j)
                     {
-                        if (*p++)
-                            ++counter;
+                        for (int i = 0; i < roi_w; ++i)
+                        {
+                            if (*p)
+                                ++counter;
+                            ++p;
+                        }
+                        p += width;
                     }
 
                     tmp = static_cast<float>(counter);
                     tmp /= size;
                     tmp *= 10000;
-                    fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5f);
+                    fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5);
 
                     f = fetch_depth_frame(invoke);
                     frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
                 }
 
-                counter = 0;
-                start = 0;
-                while (fill_factor[start++] == 0)
-                    ++counter;
-
-                if (counter == total_frames)
-                    throw std::runtime_error(to_string() << "Failed to get scan frames!");
-
-                for (int i = 0; i < counter; ++i)
-                    fill_factor[i] = fill_factor[counter];
-
-                start = 0;
-                end = 0;
-                for (int i = 0; i < total_frames; ++i)
-                {
-                    if (fill_factor[i] == 0)
-                        start = i;
-
-                    if (start != 0 && fill_factor[i] != 0)
-                        end = i;
-
-                    if (start != 0 && end != 0)
-                    {
-                        tmp = static_cast<float>(fill_factor[end] - fill_factor[start - 1]);
-                        tmp /= end - start + 1;
-                        for (int j = start; j < end; ++j)
-                            fill_factor[j] = static_cast<uint16_t>(tmp * (j - start + 1) + fill_factor[start - 1] + 0.5f);
-                        start = 0;
-                        end = 0;
-                    }
-                }
-
-                if (start != 0 && end == 0)
-                {
-                    for (int i = start; i < total_frames; ++i)
-                        fill_factor[i] = fill_factor[start - 1];
-                }
+                fill_missing_data(fill_factor, total_frames);
 
                 std::stringstream sss;
                 ss << "{\n \"calib type\":" << 3 <<
@@ -780,13 +770,6 @@ namespace rs2
                     total_frames = fl_step_count;
                 }
 
-                int width = f.get_width();
-                int height = f.get_height();
-                int size = width * height;
-                int counter = 0;
-                float tmp = 0.0f;
-                uint16_t fill_factor[256] = { 0 };
-
                 auto start_time = std::chrono::high_resolution_clock::now();
                 auto now = start_time;
                 while (frame_counter > total_frames)
@@ -803,14 +786,14 @@ namespace rs2
                 }
                 _progress = 40;
 
-                int from = 0;
-                int to = size;
+                int from = roi_start_h;
+                int to = roi_start_h + roi_h;
                 if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
                 {
-                    if (fl_scan_location == 0)
-                        to = 5 * width;
-                    else
-                        from = (height - 5) * width;
+                    if (fl_scan_location == 1)
+                        from += roi_h - 5;
+
+                    to = from + 5;
                 }
 
                 while (frame_counter < total_frames)
@@ -818,10 +801,17 @@ namespace rs2
                     _progress += static_cast<int>(frame_counter * 50 / total_frames);
 
                     const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
-                    for (int i = from; i < to; ++i)
+                    p += from * height + roi_start_w;
+
+                    for (int j = from; j < to; ++j)
                     {
-                        if (*p++)
-                            ++counter;
+                        for (int i = 0; i < roi_w; ++i)
+                        {
+                            if (*p)
+                                ++counter;
+                            ++p;
+                        }
+                        p += width;
                     }
 
                     tmp = static_cast<float>(counter);
@@ -833,43 +823,7 @@ namespace rs2
                     frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
                 }
 
-                counter = 0;
-                int start = 0;
-                while (fill_factor[start++] == 0)
-                    ++counter;
-
-                if (counter == total_frames)
-                    throw std::runtime_error(to_string() << "Failed to get scan frames!");
-
-                for (int i = 0; i < counter; ++i)
-                    fill_factor[i] = fill_factor[counter];
-
-                start = 0;
-                int end = 0;
-                for (int i = 0; i < total_frames; ++i)
-                {
-                    if (fill_factor[i] == 0)
-                        start = i;
-
-                    if (start != 0 && fill_factor[i] != 0)
-                        end = i;
-
-                    if (start != 0 && end != 0)
-                    {
-                        tmp = static_cast<float>(fill_factor[end] - fill_factor[start - 1]);
-                        tmp /= end - start + 1;
-                        for (int j = start; j < end; ++j)
-                            fill_factor[j] = static_cast<uint16_t>(tmp * (j - start + 1) + fill_factor[start - 1] + 0.5f);
-                        start = 0;
-                        end = 0;
-                    }
-                }
-
-                if (start != 0 && end == 0)
-                {
-                    for (int i = start; i < total_frames; ++i)
-                        fill_factor[i] = fill_factor[start - 1];
-                }
+                fill_missing_data(fill_factor, total_frames);
 
                 std::stringstream ss;
                 ss << "{\n \"calib type\":" << (action == RS2_CALIB_ACTION_ON_CHIP_CALIB ? 0 : 1) <<
