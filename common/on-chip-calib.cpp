@@ -668,8 +668,8 @@ namespace rs2
                 _progress = 45;
 
                 // OCC-FL
-                auto start_time = std::chrono::high_resolution_clock::now();
-                auto now = start_time;
+                start_time = std::chrono::high_resolution_clock::now();
+                now = start_time;
                 while (frame_counter >= total_frames)
                 {
                     now = std::chrono::high_resolution_clock::now();
