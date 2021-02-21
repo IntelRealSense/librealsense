@@ -180,16 +180,15 @@ namespace librealsense
             librealsense::copy(calc_intrinsic.coeffs, table->distortion, sizeof(table->distortion));
             LOG_DEBUG(endl << array2str((float_4&)(calc_intrinsic.fx, calc_intrinsic.fy, calc_intrinsic.ppx, calc_intrinsic.ppy)) << endl);
 
-            static rs2_intrinsics prev;
-            if (memcmp(&calc_intrinsic,&prev,sizeof(rs2_intrinsics)))
+            static rs2_intrinsics ref{};
+            if (memcmp(&calc_intrinsic,&ref,sizeof(rs2_intrinsics)))
             {
-                LOG_WARNING("RGB Calibration recalculated. ScaleX, ScaleY = " 
+                LOG_INFO("RGB Intrinsic Matrix update. ScaleX, ScaleY = " 
                     << intrin(0, 0) << ", " << intrin(1, 1)  
                     << ". Fx,Fy = " << calc_intrinsic.fx << "," << calc_intrinsic.fy);
-                prev = calc_intrinsic;
+                ref = calc_intrinsic;
             }
 
-            LOG_INFO("RGB Fx, Fy are " << calc_intrinsic.fx << ", " << calc_intrinsic.fy);
             return calc_intrinsic;
         }
 

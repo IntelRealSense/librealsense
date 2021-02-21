@@ -77,16 +77,6 @@ namespace librealsense
         auto other_intrin = other_profile.get_intrinsics();
         auto z_to_other = depth_profile.get_extrinsics_to(other_profile);
 
-        // Evgeni - profyling
-        static rs2_intrinsics test_intrinsics;
-        if ((std::fabs(test_intrinsics.fx - other_intrin.fx) > std::numeric_limits<float>::epsilon()) ||
-            (std::fabs(test_intrinsics.fy - other_intrin.fy) > std::numeric_limits<float>::epsilon()))
-        {
-            test_intrinsics = other_intrin;
-            LOG_WARNING(__FUNCTION__ << ": RGB instrinsic is updated, new Fx,Fy are  " << test_intrinsics.fx << "," << test_intrinsics.fy);
-        }
-
-
         auto z_pixels = reinterpret_cast<const uint16_t*>(depth.get_data());
         auto out_z = (uint16_t *)(aligned_data);
 
@@ -146,15 +136,6 @@ namespace librealsense
         auto z_intrin = depth_profile.get_intrinsics();
         auto other_intrin = other_profile.get_intrinsics();
         auto z_to_other = depth_profile.get_extrinsics_to(other_profile);
-
-        // Evgeni - profyling
-        static rs2_intrinsics t3;
-        if ((std::fabs(t3.fx - other_intrin.fx) > std::numeric_limits<float>::epsilon()) ||
-            (std::fabs(t3.fy - other_intrin.fy) > std::numeric_limits<float>::epsilon()))
-        {
-            t3 = other_intrin;
-            LOG_WARNING(__FUNCTION__ << ": RGB instrinsic is updated, new Fx,Fy are  " << t3.fx << "," << t3.fy);
-        }
 
         auto z_pixels = reinterpret_cast<const uint16_t*>(depth.get_data());
         auto other_pixels = reinterpret_cast<const byte*>(other.get_data());

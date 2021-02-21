@@ -41,13 +41,8 @@ namespace librealsense
 
         active_object<> _active_object;
         unsigned int _poll_intervals_ms;
-        struct temperature_record
-        {
-            uint64_t    timestamp_ns;
-            int16_t     temp_celcius;
-        };
-        std::list<temperature_record> _temp_records;
-        int16_t _temp_base;
+        float _thermal_threshold_deg;
+        float _temp_base;
         bool _streaming_on;
         bool _control_on;
     };

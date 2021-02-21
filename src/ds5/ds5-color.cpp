@@ -54,9 +54,9 @@ namespace librealsense
         using namespace ds;
         auto&& backend = ctx->get_backend();
 
-        _color_calib_table_raw = [this]() 
+        _color_calib_table_raw = [this]()
         {
-            LOG_WARNING("Reading RGB calibration from FW");
+            LOG_DEBUG("Fetch RGB calibration from FW");
             return get_raw_calibration_table(rgb_calibration_id);
         };
 

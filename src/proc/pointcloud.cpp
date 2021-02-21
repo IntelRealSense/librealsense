@@ -216,15 +216,6 @@ namespace librealsense
         const rs2_extrinsics& extr,
         float2* pixels_ptr)
     {
-        // Evgeni - profyling
-        static rs2_intrinsics t2;
-        if ((std::fabs(t2.fx - other_intrinsics.fx) > std::numeric_limits<float>::epsilon()) ||
-            (std::fabs(t2.fy - other_intrinsics.fy) > std::numeric_limits<float>::epsilon()))
-        {
-            t2 = other_intrinsics;
-            LOG_WARNING(__FUNCTION__ << ": RGB instrinsic is updated, new Fx,Fy are  " << t2.fx << "," << t2.fy);
-        }
-
         auto tex_ptr = (float2*)output.get_texture_coordinates();
 
         for (unsigned int y = 0; y < height; ++y)

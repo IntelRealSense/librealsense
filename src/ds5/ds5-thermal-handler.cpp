@@ -14,8 +14,9 @@ namespace librealsense
             {
                 polling(cancellable_timer);
             }),
-        _poll_intervals_ms(2000),
-        _temp_base(0),
+        _poll_intervals_ms(2000), // Temperature check routine to be invoked every 2 sec
+        _thermal_threshold_deg(2.f),
+        _temp_base(0.f),
         _streaming_on(false)
      {
         _dpt_sensor = std::dynamic_pointer_cast<synthetic_sensor>(activation_sensor.shared_from_this());
@@ -36,28 +37,14 @@ namespace librealsense
 
         try {
             _control_on = static_cast<bool>(_tl_activation->query());
-            LOG_INFO("Initial TL Control state is " << (int)_control_on);
         }
         catch (...)
         {
             _control_on = true;
-            LOG_ERROR("Initial TL Control state could not be verified, assume on ");
+            LOG_WARNING("Initial TL Control state could not be verified, assume on ");
         }
 
         activation_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION, std::make_shared<thermal_compensation>(this));
-        /*if (dev.supports_info(RS2_CAMERA_INFO_FIRMWARE_VERSION))
-        {
-            auto fw_ver = dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
-            std::cout << "FW version = " << fw_ver << std::endl;
-            if (firmware_version(fw_ver) >= firmware_version("5.12.7.100"))
-            {
-                activation_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION, std::make_shared<thermal_compensation>(this));
-            }
-        }
-        else
-        {
-            LOG_ERROR("Thermal Handler disabled - cannot retrieve FW version");
-        }*/
     }
 
     ds5_thermal_handler::~ds5_thermal_handler()
@@ -69,16 +56,14 @@ namespace librealsense
     void ds5_thermal_handler::start()
     {
         _active_object.start();
-        LOG_WARNING("Thermal compensation is activated");
     }
+
     void ds5_thermal_handler::stop()
     {
         _active_object.stop();
-        _temp_records.clear();
-        _temp_base = 0;
-        LOG_WARNING("Thermal compensation is deactivated");
+        _temp_base = 0.f;
 
-        // Enforce calibration reread on deactivation
+        // Enforce calibration re-read on deactivation
         if (auto sp = _recalib_sensor.lock())
             sp->reset_calibration();
 
@@ -88,7 +73,6 @@ namespace librealsense
 
     void ds5_thermal_handler::trigger_device_calibration(rs2_calibration_type type)
     {
-        LOG_WARNING("Thermal compensation polling request for  " << type );
         bool change_required = false;
         bool activate = (RS2_CALIBRATION_THERMAL == type);
         if (_streaming_on != activate)
@@ -100,7 +84,7 @@ namespace librealsense
             }
             if (change_required)
             {
-                LOG_WARNING("Thermal compensation polling was changed from " << (int)_streaming_on << " to " << (int)activate);
+                LOG_DEBUG("Thermal compensation polling was changed from " << (int)_streaming_on << " to " << (int)activate);
                 _streaming_on = activate;
                 update_mode(true);
             }
@@ -110,7 +94,7 @@ namespace librealsense
     void ds5_thermal_handler::set_feature(bool state)
     {
         bool change_required = false;
-        LOG_WARNING(__FUNCTION__ << " state = " << state << " _control_on = " << _control_on);
+        LOG_DEBUG(__FUNCTION__ << " state = " << state << " _control_on = " << _control_on);
         if (state != _control_on)
         {
             _tl_activation->set(state);
@@ -122,7 +106,7 @@ namespace librealsense
     float ds5_thermal_handler::query()
     {
         auto ctrl_state = static_cast<bool>(_tl_activation->query());
-        LOG_WARNING(__FUNCTION__ << " _control_on = " << _control_on << " ctrl_state = " << ctrl_state);
+        LOG_DEBUG(__FUNCTION__ << " _control_on = " << _control_on << " ctrl_state = " << ctrl_state);
         if (_control_on != ctrl_state)
         {
             _control_on = ctrl_state;
@@ -136,7 +120,6 @@ namespace librealsense
     {
         if (_streaming_on && _control_on)
         {
-            LOG_WARNING("Thermal compensation polling was turned on");
             start();
             return;
         }
@@ -144,12 +127,11 @@ namespace librealsense
         if ((!_streaming_on && _control_on && on_streaming) ||
             (_streaming_on && !_control_on && !on_streaming))
         {
-            LOG_WARNING("Thermal compensation polling was turned off");
             stop();
             return;
         }
 
-        LOG_WARNING("Thermal compensation update_mode was not changed: on_streaming =" << on_streaming
+        LOG_ERROR("Thermal compensation update_mode was not changed: on_streaming =" << on_streaming
                     << ", _streaming_on=" << _streaming_on << ", _control_on=" << _control_on);
     }
 
@@ -162,33 +144,25 @@ namespace librealsense
                 auto ts = (uint64_t)std::chrono::high_resolution_clock::now().time_since_epoch().count();
                 if (auto sp = _dpt_sensor.lock())
                 {
-                    auto val = static_cast<int16_t>(sp->get_option(RS2_OPTION_ASIC_TEMPERATURE).query());
-                    LOG_WARNING("TL: polling temperature at time  " << ts << ", temp = " << val);
+                    auto cur_temp = sp->get_option(RS2_OPTION_ASIC_TEMPERATURE).query();
 
-                    if (_temp_records.empty() || fabs(_temp_base - val) >= 2.f)
+                    if (fabs(_temp_base - cur_temp) >= _thermal_threshold_deg)
                     {
                         if (auto recalib_p = _recalib_sensor.lock())
                         {
-                            LOG_WARNING("RGB Calibration reset sent");
+                            LOG_INFO("Thermal calibration adjustment is triggered on change from "
+                                << std::dec << _temp_base << " to " << cur_temp << " deg (C)");
                             recalib_p->reset_calibration();
+
+                            notify_of_calibration_change(RS2_CALIBRATION_SUCCESSFUL);
+
+                            _temp_base = cur_temp;
                         }
-
-                        auto interval_sec = (_temp_records.size()) ? (ts - _temp_records.back().timestamp_ns) / 1000000000 : 0;
-                        LOG_WARNING("Thermal compensation was triggered on change from " << std::dec << _temp_base << " to " << val
-                            << " deg (C) after " << interval_sec << " seconds");
-
-                        notify_of_calibration_change(RS2_CALIBRATION_SUCCESSFUL);
-
-                        _temp_base = val;
-                        _temp_records.push_back({ ts, val });
-                        // Keep record of the last 10 threshold events
-                        if (_temp_records.size() > 10)
-                            _temp_records.pop_front();
                     }
                 }
                 else
                 {
-                    LOG_ERROR("auto sp = _dpt_sensor.lock() failed ");
+                    LOG_ERROR("Thermal Compensation: Depth sensor is not present");
                 }
             }
             catch (const std::exception& ex)
@@ -197,12 +171,12 @@ namespace librealsense
             }
             catch (...)
             {
-                LOG_ERROR("Unresolved error during thermal compensation handling!");
+                LOG_ERROR("Unresolved error during Thermal Compensation handling!");
             }
         }
         else
         {
-            LOG_WARNING("Thermal loop polling is being shut-down");
+            LOG_DEBUG("Thermal Compensationis being shut-down");
         }
     }
 
