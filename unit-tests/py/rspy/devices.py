@@ -1,17 +1,29 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-try:
-    from rspy import acroname
-except ModuleNotFoundError:
-    # Error should have already been printed
-    # We assume there's no brainstem library, meaning no acroname either
-    acroname = None
-import pyrealsense2 as rs
-import time
 from rspy import log
 
-_device_by_sn = None
+# We need both pyrealsense2 and acroname. We can work without acroname, but
+# without rs no devices at all will be returned.
+try:
+    import pyrealsense2 as rs
+    log.d( rs )
+    try:
+        from rspy import acroname
+    except ModuleNotFoundError:
+        # Error should have already been printed
+        # We assume there's no brainstem library, meaning no acroname either
+        acroname = None
+except ModuleNotFoundError:
+    log.w( 'No pyrealsense2 library is available! Running as if no cameras available...' )
+    import sys
+    log.d( 'sys.path=', sys.path )
+    rs = None
+    acroname = None
+
+import time
+
+_device_by_sn = dict()
 _context = None
 
 
@@ -19,6 +31,8 @@ def query():
     """
     Start a new LRS context, and collect all devices
     """
+    if not rs:
+        return
     #
     # Before we can start a context and query devices, we need to enable all the ports
     # on the acroname, if any:
