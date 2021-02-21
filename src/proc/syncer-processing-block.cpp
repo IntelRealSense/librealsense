@@ -43,24 +43,25 @@ syncer_process_unit::syncer_process_unit( std::initializer_list< bool_option::pt
 
             if( !_matcher )
             {
-                if(!create_matcher( frame, log ))
+                if(!create_matcher( frame ))
                     get_source().frame_ready(std::move(frame));
             }
             else
             {
-                auto env = syncronization_environment{ source, matches, log };
+                auto env = syncronization_environment{ source, _matches, log };
                 _matcher->dispatch(std::move(frame), env);
             }
-                
         }
 
         frame_holder f;
         {
+            // Another thread has the lock, meaning will get into the following loop and dequeue all
+            // the frames. So there's nothing for us to do...
             std::unique_lock< std::mutex > lock(_callback_mutex, std::try_to_lock);
             if (!lock.owns_lock())
                 return;
 
-            while( matches.try_dequeue( &f ) )
+            while( _matches.try_dequeue( &f ) )
             {
                 get_source().frame_ready( std::move( f ) );
             }
@@ -71,7 +72,7 @@ syncer_process_unit::syncer_process_unit( std::initializer_list< bool_option::pt
         new internal_frame_processor_callback< decltype( f ) >( f ) ) );
 }
 
-bool syncer_process_unit::create_matcher( const frame_holder & frame, bool log )
+bool syncer_process_unit::create_matcher( const frame_holder & frame )
 {
     try
     {
