@@ -15,6 +15,8 @@ syncer_process_unit::syncer_process_unit( std::initializer_list< bool_option::pt
     : processing_block( "syncer" )
     , _enable_opts( enable_opts.begin(), enable_opts.end() )
 {
+    // This callback gets called by the previous processing block when it is done with a frame. We
+    // call the matchers the frame and eventually call the next callback in the list using frame_ready().
     auto f = [this, log]( frame_holder frame, synthetic_source_interface * source ) {
         // if the syncer is disabled passthrough the frame
         bool enabled = false;
@@ -92,19 +94,10 @@ bool syncer_process_unit::create_matcher( const frame_holder & frame )
             _matcher->set_callback([this](frame_holder f, const syncronization_environment& env) {
                 if (env.log)
                 {
-                    std::stringstream ss;
-                    ss << "SYNCED: ";
-                    auto composite = dynamic_cast<composite_frame *>(f.frame);
-                    for (int i = 0; i < composite->get_embedded_frames_count(); i++)
-                    {
-                        auto matched = composite->get_frame(i);
-                        ss << matched->get_stream()->get_stream_type() << " " << matched->get_frame_number()
-                            << ", " << std::fixed << matched->get_frame_timestamp() << " ";
-                    }
-
-                    LOG_DEBUG(ss.str());
+                    LOG_DEBUG("SYNCED: " << frame_to_string(f));
                 }
 
+                // We get here from within a dispatch() call, already protected by a mutex -- so only one thread can enqueue!
                 env.matches.enqueue(std::move(f));
             });
         }
@@ -117,7 +110,8 @@ bool syncer_process_unit::create_matcher( const frame_holder & frame )
     }
     catch( const std::bad_weak_ptr & )
     {
-        LOG_WARNING( "Device destroyed" );
+        LOG_DEBUG("Device was destryed while trying get shared ptr of it, couldn't create matcher, the frame will passthrough ");
+        return false;
     }
 
     return true;

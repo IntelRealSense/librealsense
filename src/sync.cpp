@@ -9,29 +9,6 @@ namespace librealsense
 {
     const int MAX_GAP = 1000;
 
-    std::string frame_to_string(const frame_holder& f)
-    {
-        std::ostringstream s;
-        auto composite = dynamic_cast<composite_frame*>(f.frame);
-        if(composite)
-        {
-            for (int i = 0; i < composite->get_embedded_frames_count(); i++)
-            {
-                auto frame = composite->get_frame(i);
-                s << frame->get_stream()->get_stream_type()<<" "<<frame->get_frame_number()<<" "<<std::fixed << frame->get_frame_timestamp()<<" ";
-            }
-        }
-        else
-        {
-            s << f->get_stream()->get_stream_type();
-            s << " " << f->get_stream()->get_unique_id();
-            s << " " << f->get_frame_number();
-            s << " " << std::fixed << (double)f->get_frame_timestamp();
-            s << " ";
-        }
-        return s.str();
-    }
-
 #define LOG_IF_ENABLE( OSTREAM, ENV ) \
     while( ENV.log ) \
     { \
@@ -168,12 +145,8 @@ namespace librealsense
 
     std::shared_ptr<matcher> composite_matcher::find_matcher(const frame_holder& frame)
     {
-        std::shared_ptr<matcher> matcher;
         auto stream_id = frame.frame->get_stream()->get_unique_id();
-        auto stream_type = frame.frame->get_stream()->get_stream_type();
-
-        auto dev_exist = false;
-        matcher = _matchers[stream_id];
+        auto matcher = _matchers[stream_id];
 
         if (!matcher->get_active())
         {
@@ -559,5 +532,29 @@ namespace librealsense
     {
         LOG_DEBUG("by_pass_composite_matcher: " << _name << " " << frame_to_string(f));
         _callback(std::move(f), env);
+    }
+    std::string frame_to_string(const frame_holder & f)
+    {
+        {
+            std::ostringstream s;
+            auto composite = dynamic_cast<composite_frame*>(f.frame);
+            if (composite)
+            {
+                for (int i = 0; i < composite->get_embedded_frames_count(); i++)
+                {
+                    auto frame = composite->get_frame(i);
+                    s << frame->get_stream()->get_stream_type() << " " << frame->get_frame_number() << " " << std::fixed << frame->get_frame_timestamp() << " ";
+                }
+            }
+            else
+            {
+                s << f->get_stream()->get_stream_type();
+                s << " " << f->get_stream()->get_unique_id();
+                s << " " << f->get_frame_number();
+                s << " " << std::fixed << (double)f->get_frame_timestamp();
+                s << " ";
+            }
+            return s.str();
+        }
     }
 }
