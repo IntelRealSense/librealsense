@@ -2,8 +2,8 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 
-#include "../func-common.h"
-#include "hw-errors-common.h"
+#include "../../func-common.h"
+#include "l500-error-common.h"
 
 using namespace rs2;
 

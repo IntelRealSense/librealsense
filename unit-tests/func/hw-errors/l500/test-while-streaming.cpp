@@ -1,9 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 
-#include "../func-common.h"
-#include "hw-errors-common.h"
+#include "../../func-common.h"
+#include "l500-error-common.h"
 
 using namespace rs2;
 

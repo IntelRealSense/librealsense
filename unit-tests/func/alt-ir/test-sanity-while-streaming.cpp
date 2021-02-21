@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #include "../func-common.h"
 #include "alt-ir-common.h"
@@ -18,7 +18,7 @@ TEST_CASE( "AltIR", "[l500][live]" )
         option_range r;
         REQUIRE_NOTHROW( r = depth_sens.get_option_range( RS2_OPTION_ALTERNATE_IR ) );
 
-        start_default_l500_depth_profiles( depth_sens, [&]( rs2::frame f ) {} );
+        start_default_l500_depth_profiles( depth_sens, [&]( rs2::frame f ) {} , true);
 
         for( auto i = r.min; i <= r.max; i+=r.step )
         {

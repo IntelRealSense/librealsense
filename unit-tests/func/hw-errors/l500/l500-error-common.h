@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#include "../../test.h"
+#include "../../../test.h"
 #include <concurrency.h>
 
 using namespace rs2;
@@ -32,13 +32,13 @@ const std::map< uint8_t, std::string > l500_error_report
         { 23, "Fatal error occurred (23)" },
         { 24, "Fatal error occurred (24)" } };
 
-void trigger_error_or_exit( const rs2::device & dev, uint8_t opcode, uint8_t num )
+void trigger_error_or_exit( const rs2::device & dev, uint8_t num )
 {
     std::vector< uint8_t > raw_data( 24, 0 );
     raw_data[0] = 0x14;
     raw_data[2] = 0xab;
     raw_data[3] = 0xcd;
-    raw_data[4] = opcode;
+    raw_data[4] = l500_trigger_error_opcode;
     raw_data[12] = num;
 
     if( auto debug = dev.as< debug_protocol >() )
@@ -55,45 +55,41 @@ void trigger_error_or_exit( const rs2::device & dev, uint8_t opcode, uint8_t num
     }
 }
 
+// This function loop over all posiable hw errors use hw-monitor command to trigger them
+// and check that we call to user callback with the error
 void validate_errors_handling( const rs2::device & dev,
-                               const std::map< uint8_t, std::string > & error_report)
+                               const std::map< uint8_t, std::string > & error_report )
 {
-    std::vector< sensor > list;
-    REQUIRE_NOTHROW( list = dev.query_sensors() );
-    REQUIRE( list.size() > 0 );
+    auto depth_sens = dev.first< rs2::depth_sensor >();
 
-    for( auto && subdevice : list )
+    REQUIRE( depth_sens.supports( RS2_OPTION_ERROR_POLLING_ENABLED ) );
+
+    std::string notification_description;
+    rs2_log_severity severity;
+    std::condition_variable cv;
+    std::mutex m;
+
+
+    depth_sens.set_notifications_callback( [&]( rs2::notification n ) {
+        std::lock_guard< std::mutex > lock( m );
+
+        notification_description = n.get_description();
+        severity = n.get_severity();
+        cv.notify_one();
+    } );
+
+    REQUIRE_NOTHROW( depth_sens.set_option( RS2_OPTION_ERROR_POLLING_ENABLED, 1 ) );
+
+    for( auto i = error_report.begin(); i != error_report.end(); i++ )
     {
-        std::string notification_description;
-        rs2_log_severity severity;
-        std::condition_variable cv;
-        std::mutex m;
+        trigger_error_or_exit( dev, i->first );
+        std::unique_lock< std::mutex > lock( m );
+        CAPTURE( i->first );
 
-        if( subdevice.supports( RS2_OPTION_ERROR_POLLING_ENABLED ) )
-        {
-            subdevice.set_notifications_callback( [&]( rs2::notification n ) {
-                std::unique_lock< std::mutex > lock( m );
-
-                notification_description = n.get_description();
-                severity = n.get_severity();
-                cv.notify_one();
-            } );
-
-            REQUIRE_NOTHROW( subdevice.set_option( RS2_OPTION_ERROR_POLLING_ENABLED, 1 ) );
-
-            // The first entry with success value cannot be emulated
-            for( auto i = error_report.begin(); i != error_report.end(); i++ )
-            {
-                trigger_error_or_exit( dev, l500_trigger_error_opcode, i->first );
-                std::unique_lock< std::mutex > lock( m );
-                CAPTURE( i->first );
-
-                auto pred = [&]() {
-                    return notification_description.compare( i->second ) == 0
-                        && severity == RS2_LOG_SEVERITY_ERROR;
-                };
-                REQUIRE( cv.wait_for( lock, std::chrono::seconds( 10 ), pred ) );
-            }
-        }
+        auto pred = [&]() {
+            return notification_description.compare( i->second ) == 0
+                && severity == RS2_LOG_SEVERITY_ERROR;
+        };
+        REQUIRE( cv.wait_for( lock, std::chrono::seconds( 5 ), pred ) );
     }
 }
