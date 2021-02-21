@@ -218,7 +218,7 @@ namespace librealsense
         if (!metadata_parsers)
             throw invalid_value_exception(to_string() << "metadata not available for "
                 << get_string(get_stream()->get_stream_type()) << " stream");
-        
+
         auto parsers = metadata_parsers->equal_range(frame_metadata);
         if (parsers.first == metadata_parsers->end())          // Possible user error - md attribute is not supported by this frame type
             throw invalid_value_exception(to_string() << get_string(frame_metadata)
@@ -226,14 +226,14 @@ namespace librealsense
                 << get_string(get_stream()->get_stream_type()) << " stream ");
 
         rs2_metadata_type result = -1;
-        bool value_retreived = false;
+        bool value_retrieved = false;
         std::string exc_str;
         for (auto it = parsers.first; it != parsers.second; ++it)
         {
             try
             {
                 result = it->second->get(*this);
-                value_retreived = true;
+                value_retrieved = true;
                 break;
             }
             catch (invalid_value_exception& e)
@@ -241,7 +241,7 @@ namespace librealsense
                 exc_str = e.what();
             }
         }
-        if (!value_retreived)
+        if (!value_retrieved)
             throw invalid_value_exception(exc_str);
 
         return result;

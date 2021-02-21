@@ -97,9 +97,7 @@ namespace librealsense
                 // means color end point is part of the depth sensor (e.g. D405)
                 color_devs_info = color_devs_info_mi0;
                 _color_device_idx = _depth_device_idx;
-                // CHECK no cyclic shared_ptr !!!
                 ds5_device::_color_stream = _color_stream;
-                //_color_stream = nullptr;
                 _separate_color = false;
             }
             else
