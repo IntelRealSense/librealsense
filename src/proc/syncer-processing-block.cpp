@@ -16,7 +16,9 @@ syncer_process_unit::syncer_process_unit( std::initializer_list< bool_option::pt
     , _enable_opts( enable_opts.begin(), enable_opts.end() )
 {
     // This callback gets called by the previous processing block when it is done with a frame. We
-    // call the matchers the frame and eventually call the next callback in the list using frame_ready().
+    // call the matchers with the frame and eventually call the next callback in the list using frame_ready().
+    // This callback can get called from multiple threads, one thread per stream -- but always in the correct
+    // frame order per stream.
     auto f = [this, log]( frame_holder frame, synthetic_source_interface * source ) {
         // if the syncer is disabled passthrough the frame
         bool enabled = false;
@@ -110,7 +112,7 @@ bool syncer_process_unit::create_matcher( const frame_holder & frame )
     }
     catch( const std::bad_weak_ptr & )
     {
-        LOG_DEBUG("Device was destryed while trying get shared ptr of it, couldn't create matcher, the frame will passthrough ");
+        LOG_DEBUG("Device was destroyed while trying get shared ptr of it, couldn't create matcher, the frame will passthrough ");
         return false;
     }
 
