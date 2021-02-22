@@ -37,10 +37,16 @@ namespace librealsense
         void check_one_button_params(int speed, int keep_new_value_after_sucessful_scan, int data_sampling, int adjust_both_sides, int fl_scan_location, int fy_scan_direction, int white_wall_mode) const;
         void get_target_rect_info(rs2_frame_queue* frames, float rect_sides[4], float& fx, float& fy, int progress, update_progress_callback_ptr progress_callback);
         void undistort(uint8_t* img, const rs2_intrinsics& intrin, int roi_ws, int roi_hs, int roi_we, int roi_he);
+        void change_preset_and_stay();
+        void restore_preset();
         void find_z_at_corners(float left_x[4], float left_y[4], rs2_frame_queue* frames, float left_z[4]);
         void get_target_dots_info(rs2_frame_queue* frames, float dots_x[4], float dots_y[4], rs2::stream_profile & profile, rs2_intrinsics & fy, int progress, update_progress_callback_ptr progress_callback);
 
         std::vector<uint8_t> _curr_calibration;
         std::shared_ptr<hw_monitor>& _hw_monitor;
+
+        bool _preset_change = false;
+        preset _old_preset_values;
+        rs2_rs400_visual_preset _old_preset;
     };
 }

@@ -885,16 +885,18 @@ void rect_gaussian_dots_target_calculator::refine_corners()
 
 bool rect_gaussian_dots_target_calculator::validate_corners(const uint8_t* img)
 {
+    bool ok = true;
+
     static const int pos_diff_threshold = 4;
     if (abs(_corners[0].x - _corners[2].x) > pos_diff_threshold ||
         abs(_corners[1].x - _corners[3].x) > pos_diff_threshold ||
         abs(_corners[0].y - _corners[1].y) > pos_diff_threshold ||
         abs(_corners[2].y - _corners[3].y) > pos_diff_threshold)
     {
-        return false;
+        ok = false;
     }
 
-    return true;
+    return ok;
 }
 
 void rect_gaussian_dots_target_calculator::calculate_rect_sides(float* rect_sides)
