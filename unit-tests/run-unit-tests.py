@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 # We want only modules in the directories we specifically provide to be found,
 # otherwise pyrs other than what we compiled might be found...
 sys.path = list()
-sys.path.append( '' )
+sys.path.append( '' )  # directs Python to search modules in the current directory first
 # Add our py/ module directory
 current_dir = os.path.dirname( os.path.abspath( __file__ ))
 sys.path.append( current_dir + os.sep + "py" )
