@@ -45,16 +45,17 @@ syncer_process_unit::syncer_process_unit( std::initializer_list< bool_option::pt
         {
             std::lock_guard< std::mutex > lock( _mutex );
 
-            if( !_matcher )
+            if( ! _matcher )
             {
-                if(!create_matcher( frame ))
-                    get_source().frame_ready(std::move(frame));
+                if( ! create_matcher( frame ) )
+                {
+                    get_source().frame_ready( std::move( frame ) );
+                    return;
+                }
             }
-            else
-            {
-                auto env = syncronization_environment{ source, _matches, log };
-                _matcher->dispatch(std::move(frame), env);
-            }
+
+            auto env = syncronization_environment{ source, _matches, log };
+            _matcher->dispatch( std::move( frame ), env );
         }
 
         frame_holder f;
@@ -67,6 +68,7 @@ syncer_process_unit::syncer_process_unit( std::initializer_list< bool_option::pt
 
             while( _matches.try_dequeue( &f ) )
             {
+                LOG_DEBUG("dequeue: " << frame_to_string(f));
                 get_source().frame_ready( std::move( f ) );
             }
         }
