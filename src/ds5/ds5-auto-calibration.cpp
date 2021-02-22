@@ -345,7 +345,7 @@ namespace librealsense
                     if (progress_callback)
                     {
                         if (host_assistance)
-                            if (count < 10) progress_callback->on_update_progress(90 + count++);
+                            if (count < 20) progress_callback->on_update_progress(80 + count++);
                         else
                             progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
                     }
@@ -462,7 +462,7 @@ namespace librealsense
                     if (progress_callback)
                     {
                         if (host_assistance)
-                            if (count < 10) progress_callback->on_update_progress(90 + count++);
+                            if (count < 20) progress_callback->on_update_progress(80 + count++);
                         else
                             progress_callback->on_update_progress(count++* (2.f * 3)); //curently this number does not reflect the actual progress
                     }
@@ -584,7 +584,7 @@ namespace librealsense
                         if (progress_callback)
                         {
                             if (host_assistance)
-                                if (count < 10) progress_callback->on_update_progress(90 + count++);
+                                if (count < 20) progress_callback->on_update_progress(80 + count++);
                             else
                                 progress_callback->on_update_progress(count++* (2.f * speed)); //curently this number does not reflect the actual progress
                         }
@@ -721,8 +721,8 @@ namespace librealsense
 
                     if (progress_callback)
                     {
-                        if (depth < 0 && count < 10)
-                            progress_callback->on_update_progress(90 + count++);
+                        if (depth < 0 && count < 20)
+                            progress_callback->on_update_progress(80 + count++);
                         else if (depth == 0)
                             progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
                     }

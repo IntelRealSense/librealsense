@@ -97,7 +97,7 @@ namespace rs2
 
         std::vector<uint8_t> safe_send_command(const std::vector<uint8_t>& cmd, const std::string& name);
 
-        rs2::depth_frame fetch_depth_frame(invoker invoke);
+        rs2::depth_frame fetch_depth_frame(invoker invoke, int timeout_ms = 5000);
 
         std::pair<float, float> get_depth_metrics(invoker invoke);
 
