@@ -211,7 +211,7 @@ When we upsample we get the lost information back (by the concatenation process)
 so we can see last-layer features in the perspective of the layer above them.
 		
 #### Training Dataset
-Download [part 1](https://librealsense.intel.com/rs-tests/ML/Depth_Learning/Dataset/part1_1_4000.zip) and [part 2](http://librealsense.intel.com/rs-tests/ML/Depth_Learning/Dataset/part2_4001_8375.zip) of the dataset. It contains 4 types of 848x480 images in uncompressed PNG format: 
+Download [part 1](https://librealsense.intel.com/rs-tests/ML/Depth_Learning/Dataset/part1_1_4000.zip) and [part 2](https://librealsense.intel.com/rs-tests/ML/Depth_Learning/Dataset/part2_4001_8375.zip) of the dataset. It contains 4 types of 848x480 images in uncompressed PNG format: 
 
 ###### 1. Simulated Left Infrared:
 - Synthetic view from left infrared sensor of the virtual camera, including infrared projection pattern

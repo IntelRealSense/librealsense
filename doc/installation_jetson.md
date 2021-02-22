@@ -54,12 +54,12 @@ Note that this method provides binary installation compiled using the `-DFORCE_R
 
   * Ubuntu 16:  
   ```
-  sudo add-apt-repository "deb http://librealsense.intel.com/Debian/apt-repo xenial main" -u
+  sudo add-apt-repository "deb https://librealsense.intel.com/Debian/apt-repo xenial main" -u
   ```
 
   * Ubuntu 18:
   ```
-  sudo add-apt-repository "deb http://librealsense.intel.com/Debian/apt-repo bionic main" -u
+  sudo add-apt-repository "deb https://librealsense.intel.com/Debian/apt-repo bionic main" -u
   ```
 
   3. Install the SDK:
