@@ -201,7 +201,7 @@ namespace librealsense
         float nest_option::query() const
         {
             auto temperature_data = _l500_depth_dev->get_temperatures();
-            return temperature_data.nest_avg;
+            return (float)(temperature_data.nest_avg);
         }
 
         rs2_sensor_mode get_resolution_from_width_height(int width, int height)
