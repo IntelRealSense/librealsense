@@ -5,7 +5,7 @@
 #include <fstream>
 #include "sql.h"
 #include <algorithm>
-#include "types.h"
+#include <src/types.h>
 #include <iostream>
 
 using namespace std;

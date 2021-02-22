@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 #include "sql.h"
-#include "../third-party/sqlite/sqlite3.h"
+#include <third-party/sqlite/sqlite3.h>
 #include <stdexcept>
 #include <cstring>
 #include <thread>

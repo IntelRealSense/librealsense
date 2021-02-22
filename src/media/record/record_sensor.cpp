@@ -2,9 +2,9 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include "record_sensor.h"
-#include "api.h"
-#include "stream.h"
-#include "l500/l500-depth.h"
+#include <src/api.h>
+#include <src/stream.h>
+#include <src/l500/l500-depth.h>
 
 using namespace librealsense;
 

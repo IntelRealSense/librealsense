@@ -2,8 +2,8 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "../backend.h"
-#include "win/win-helpers.h"
+#include <src/backend.h>
+#include <src/win/win-helpers.h>
 
 #include <Sensorsapi.h>
 #include <atlcomcli.h>

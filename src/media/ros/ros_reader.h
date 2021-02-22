@@ -2,7 +2,7 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include <core/serialization.h>
+#include <src/core/serialization.h>
 #include "rosbag/view.h"
 #include "ros_file_format.h"
 

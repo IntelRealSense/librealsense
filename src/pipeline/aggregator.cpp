@@ -2,7 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <algorithm>
-#include "stream.h"
+#include <src/stream.h>
 #include "aggregator.h"
 
 namespace librealsense

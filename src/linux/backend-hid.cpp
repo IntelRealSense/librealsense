@@ -1,10 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "metadata.h"
+#include <src/metadata.h>
 #include "backend-hid.h"
-#include "backend.h"
-#include "types.h"
+#include <src/backend.h>
+#include <src/types.h>
 
 #include <thread>
 #include <chrono>

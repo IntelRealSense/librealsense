@@ -1,19 +1,19 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
-#include "proc/decimation-filter.h"
-#include "proc/threshold.h"
-#include "proc/disparity-transform.h"
-#include "proc/spatial-filter.h"
-#include "proc/temporal-filter.h"
-#include "proc/hole-filling-filter.h"
-#include "proc/zero-order.h"
-#include "proc/depth-decompress.h"
-#include "proc/hdr-merge.h"
-#include "proc/sequence-id-filter.h"
+#include <src/proc/decimation-filter.h>
+#include <src/proc/threshold.h>
+#include <src/proc/disparity-transform.h>
+#include <src/proc/spatial-filter.h>
+#include <src/proc/temporal-filter.h>
+#include <src/proc/hole-filling-filter.h>
+#include <src/proc/zero-order.h>
+#include <src/proc/depth-decompress.h>
+#include <src/proc/hdr-merge.h>
+#include <src/proc/sequence-id-filter.h>
 #include "ros_writer.h"
-#include "l500/l500-motion.h"
-#include "l500/l500-depth.h"
+#include <src/l500/l500-motion.h>
+#include <src/l500/l500-depth.h>
 
 namespace librealsense
 {

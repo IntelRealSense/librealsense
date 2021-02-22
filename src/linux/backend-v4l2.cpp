@@ -3,10 +3,10 @@
 
 #include "backend-v4l2.h"
 #include "backend-hid.h"
-#include "backend.h"
-#include "types.h"
-#include "usb/usb-enumerator.h"
-#include "usb/usb-device.h"
+#include <src/backend.h>
+#include <src/types.h>
+#include <src/usb/usb-enumerator.h>
+#include <src/usb/usb-device.h>
 
 #include <cassert>
 #include <cstdlib>
@@ -48,7 +48,7 @@
 
 const size_t MAX_DEV_PARENT_DIR = 10;
 
-#include "../tm2/tm-boot.h"
+#include <src/tm2/tm-boot.h>
 
 #ifdef ANDROID
 

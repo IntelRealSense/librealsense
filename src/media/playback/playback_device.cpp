@@ -3,11 +3,11 @@
 
 #include <cmath>
 #include "playback_device.h"
-#include "core/motion.h"
-#include "stream.h"
-#include "media/ros/ros_reader.h"
-#include "environment.h"
-#include "sync.h"
+#include <src/core/motion.h>
+#include <src/stream.h>
+#include <src/media/ros/ros_reader.h>
+#include <src/environment.h>
+#include <src/sync.h>
 
 using namespace librealsense;
 

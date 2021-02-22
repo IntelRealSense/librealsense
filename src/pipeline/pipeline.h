@@ -6,8 +6,8 @@
 #include <map>
 #include <utility>
 
-#include "device_hub.h"
-#include "sync.h"
+#include <src/device_hub.h>
+#include <src/sync.h>
 #include "profile.h"
 #include "config.h"
 #include "resolver.h"

@@ -2,13 +2,13 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include "core/roi.h"
-#include "core/extension.h"
-#include "core/serialization.h"
-#include "core/streaming.h"
-#include "archive.h"
-#include "concurrency.h"
-#include "sensor.h"
+#include <src/core/roi.h>
+#include <src/core/extension.h>
+#include <src/core/serialization.h>
+#include <src/core/streaming.h>
+#include <src/archive.h>
+#include <src/concurrency.h>
+#include <src/sensor.h>
 
 namespace librealsense
 {

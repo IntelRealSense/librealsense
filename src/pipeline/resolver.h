@@ -9,9 +9,9 @@
 #include <algorithm>
 #include <cmath>
 #include <set>
-#include "sensor.h"
-#include "types.h"
-#include "stream.h"
+#include <src/sensor.h>
+#include <src/types.h>
+#include <src/stream.h>
 
 namespace librealsense
 {

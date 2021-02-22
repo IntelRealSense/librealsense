@@ -21,13 +21,13 @@
 #include "geometry_msgs/Transform.h"
 #include "geometry_msgs/Twist.h"
 #include "geometry_msgs/Accel.h"
-#include "metadata-parser.h"
-#include "option.h"
-#include "l500/l500-depth.h"
+#include <src/metadata-parser.h>
+#include <src/option.h>
+#include <src/l500/l500-depth.h>
 #include "rosbag/structures.h"
 #include <regex>
-#include "stream.h"
-#include "types.h"
+#include <src/stream.h>
+#include <src/types.h>
 #include <vector>
 
 enum ros_file_versions

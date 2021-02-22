@@ -9,10 +9,10 @@
 #define NOMINMAX
 #endif
 
-#include "../types.h"
+#include <src/types.h>
 #include "mf-hid.h"
-#include "win/win-helpers.h"
-#include "metadata.h"
+#include <src/win/win-helpers.h>
+#include <src/metadata.h>
 
 #include <PortableDeviceTypes.h>
 //#include <PortableDeviceClassExtension.h>

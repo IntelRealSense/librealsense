@@ -2,8 +2,8 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "profile.h"
-#include "media/record/record_device.h"
-#include "media/ros/ros_writer.h"
+#include <src/media/record/record_device.h>
+#include <src/media/ros/ros_writer.h>
 
 namespace librealsense
 {

@@ -7,16 +7,16 @@
 #include "mf-backend.h"
 #include "mf-uvc.h"
 #include "mf-hid.h"
-#include "usb/usb-device.h"
-#include "usb/usb-enumerator.h"
-#include "../types.h"
+#include <src/usb/usb-device.h>
+#include <src/usb/usb-enumerator.h>
+#include <src/types.h>
 #include <mfapi.h>
 #include <chrono>
 #include <Windows.h>
 #include <dbt.h>
 #include <cctype> // std::tolower
 
-#include "../tm2/tm-boot.h"
+#include <src/tm2/tm-boot.h>
 
 namespace librealsense
 {
