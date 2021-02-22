@@ -6,13 +6,13 @@
 #include <map>
 #include <vector>
 
-#include "proc/synthetic-stream.h"
+#include <src/proc/synthetic-stream.h>
 #include "synthetic-stream-gl.h"
 
 #include <librealsense2/rs.hpp>
-#include "opengl3.h"
+#include <opengl3.h>
 
-#include "proc/colorizer.h"
+#include <src/proc/colorizer.h>
 
 #include <memory>
 

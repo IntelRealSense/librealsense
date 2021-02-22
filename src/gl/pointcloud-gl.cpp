@@ -1,21 +1,20 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/rs.hpp"
-#include "../include/librealsense2/rsutil.h"
+#include <include/librealsense2/rs.hpp>
+#include <include/librealsense2/rsutil.h>
 
 #include "synthetic-stream-gl.h"
-#include "environment.h"
-#include "proc/occlusion-filter.h"
+#include <src/environment.h>
+#include <src/proc/occlusion-filter.h>
 #include "pointcloud-gl.h"
-#include "option.h"
-#include "environment.h"
-#include "context.h"
+#include <src/option.h>
+#include <src/context.h>
 
 #include <iostream>
 #include <chrono>
 
-#include "opengl3.h"
+#include <opengl3.h>
 
 using namespace rs2;
 using namespace librealsense;

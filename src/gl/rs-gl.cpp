@@ -1,21 +1,21 @@
 // License: Apache 2.0 See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "api.h"
+#include <src/api.h>
 #include "synthetic-stream-gl.h"
 #include "yuy2rgb-gl.h"
 #include "align-gl.h"
 #include "pointcloud-gl.h"
-#include "../include/librealsense2/h/rs_types.h"
-#include "../include/librealsense2-gl/rs_processing_gl.h"
+#include <include/librealsense2/h/rs_types.h>
+#include <include/librealsense2-gl/rs_processing_gl.h>
 #include "camera-shader.h"
 #include "upload.h"
 #include "pc-shader.h"
 #include "colorizer-gl.h"
-#include "proc/color-formats-converter.h"
-#include "proc/colorizer.h"
-#include "proc/align.h"
-#include "log.h"
+#include <src/proc/color-formats-converter.h>
+#include <src/proc/colorizer.h>
+#include <src/proc/align.h>
+#include <src/log.h>
 #include <assert.h>
 
 #include <GLFW/glfw3.h>

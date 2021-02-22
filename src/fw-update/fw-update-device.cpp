@@ -2,9 +2,9 @@
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
 #include "fw-update-device.h"
-#include "../types.h"
-#include "../context.h"
-#include "../ds5/ds5-private.h"
+#include <src/types.h>
+#include <src/context.h>
+#include <src/ds5/ds5-private.h>
 
 #include <chrono>
 #include <stdexcept>

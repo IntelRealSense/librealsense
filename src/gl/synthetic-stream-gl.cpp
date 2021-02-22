@@ -1,10 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "core/video.h"
+#include <src/core/video.h>
 #include "synthetic-stream-gl.h"
-#include "option.h"
-#include "opengl3.h"
+#include <src/option.h>
+#include <opengl3.h>
 
 #include <GLFW/glfw3.h>
 

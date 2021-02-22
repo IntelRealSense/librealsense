@@ -3,13 +3,13 @@
 
 #include "fw-update-factory.h"
 #include "fw-update-device.h"
-#include "usb/usb-enumerator.h"
-#include "ds5/ds5-private.h"
-#include "ds5/ds5-fw-update-device.h"
-#include "ivcam/sr300.h"
-#include "ivcam/sr300-fw-update-device.h"
-#include "l500/l500-private.h"
-#include "l500/l500-fw-update-device.h"
+#include <src/usb/usb-enumerator.h>
+#include <src/ds5/ds5-private.h>
+#include <src/ds5/ds5-fw-update-device.h>
+#include <src/ivcam/sr300.h>
+#include <src/ivcam/sr300-fw-update-device.h>
+#include <src/l500/l500-private.h>
+#include <src/l500/l500-fw-update-device.h>
 
 #define FW_UPDATE_INTERFACE_NUMBER 0
 #define DEFAULT_TIMEOUT 100

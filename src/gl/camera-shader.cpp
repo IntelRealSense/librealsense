@@ -3,7 +3,7 @@
 
 #include "camera-shader.h"
 #include <glad/glad.h>
-#include "option.h"
+#include <src/option.h>
 
 using namespace rs2;
 

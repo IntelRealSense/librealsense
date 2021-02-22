@@ -4,7 +4,7 @@
 #pragma once
 
 #include "fw-update-device-interface.h"
-#include "usb/usb-device.h"
+#include <src/usb/usb-device.h>
 
 namespace librealsense
 {

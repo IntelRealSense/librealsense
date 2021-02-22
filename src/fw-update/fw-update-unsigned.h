@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "hw-monitor.h"
+#include <src/hw-monitor.h>
 
 #include <stdint.h>
 #include <vector>

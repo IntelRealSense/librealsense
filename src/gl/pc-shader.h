@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include "rendering.h"
-#include "opengl3.h"
+#include <rendering.h>
+#include <opengl3.h>
 #include "synthetic-stream-gl.h"
-#include "proc/synthetic-stream.h"
+#include <src/proc/synthetic-stream.h>
 
 namespace librealsense
 {

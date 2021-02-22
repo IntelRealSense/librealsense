@@ -5,8 +5,8 @@
 #include "synthetic-stream-gl.h"
 #include <glad/glad.h>
 
-#include "option.h"
-#include "tiny-profiler.h"
+#include <src/option.h>
+#include <tiny-profiler.h>
 
 static const char* vertex_shader_text =
 "#version 130\n"

@@ -3,22 +3,22 @@
 
 #pragma once
 
-#include "core/processing.h"
-#include "image.h"
-#include "source.h"
-#include "../include/librealsense2/hpp/rs_frame.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
-#include "../include/librealsense2-gl/rs_processing_gl.hpp"
-#include "opengl3.h"
-#include "tiny-profiler.h"
+#include <src/core/processing.h>
+#include <src/image.h>
+#include <src/source.h>
+#include <include/librealsense2/hpp/rs_frame.hpp>
+#include <include/librealsense2/hpp/rs_processing.hpp>
+#include <include/librealsense2-gl/rs_processing_gl.hpp>
+#include <opengl3.h>
+#include <tiny-profiler.h>
 
-#include "concurrency.h"
+#include <src/concurrency.h>
 #include <functional>
 #include <thread>
 #include <deque>
 #include <unordered_set>
 
-#include "proc/synthetic-stream.h"
+#include <src/proc/synthetic-stream.h>
 
 #define RS2_EXTENSION_VIDEO_FRAME_GL (rs2_extension)(RS2_EXTENSION_COUNT)
 #define RS2_EXTENSION_DEPTH_FRAME_GL (rs2_extension)(RS2_EXTENSION_COUNT + 1)

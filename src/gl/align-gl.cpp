@@ -1,13 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/hpp/rs_sensor.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
-#include "../include/librealsense2-gl/rs_processing_gl.hpp"
+#include <include/librealsense2/hpp/rs_sensor.hpp>
+#include <include/librealsense2/hpp/rs_processing.hpp>
+#include <include/librealsense2-gl/rs_processing_gl.hpp>
 
-#include "proc/synthetic-stream.h"
+#include <src/proc/synthetic-stream.h>
 #include "align-gl.h"
-#include "option.h"
+#include <src/option.h>
 
 #ifndef NOMINMAX
 #define NOMINMAX

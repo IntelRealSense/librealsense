@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
-#include "../types.h"       //for rs2_firmware_log_message
+#include <src/types.h>       //for rs2_firmware_log_message
 
 namespace librealsense
 {

@@ -2,8 +2,8 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include "opengl3.h"
-#include "proc/pointcloud.h"
+#include <opengl3.h>
+#include <src/proc/pointcloud.h>
 #include "synthetic-stream-gl.h"
 
 namespace librealsense

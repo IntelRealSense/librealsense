@@ -7,7 +7,7 @@
 #include <vector>
 
 #ifdef ANDROID
-#include "../../common/android_helpers.h"
+#include <common/android_helpers.h>
 #endif
 
 

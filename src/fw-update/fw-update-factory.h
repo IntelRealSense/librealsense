@@ -4,8 +4,8 @@
 #pragma once
 
 
-#include "core/streaming.h"
-#include "context.h"
+#include <src/core/streaming.h>
+#include <src/context.h>
 
 namespace librealsense
 {
