@@ -31,6 +31,7 @@ def query():
     """
     Start a new LRS context, and collect all devices
     """
+    global rs
     if not rs:
         return
     #
