@@ -2,7 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "device-libusb.h"
-#include "types.h"
+#include <src/types.h>
 
 
 namespace librealsense

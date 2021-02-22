@@ -3,7 +3,7 @@
 
 #include "interface-libusb.h"
 #include "messenger-libusb.h"
-#include "types.h"
+#include <src/types.h>
 
 namespace librealsense
 {

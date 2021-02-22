@@ -1,10 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "usb/usb-enumerator.h"
-#include "libusb/device-libusb.h"
+#include <src/usb/usb-enumerator.h>
+#include "device-libusb.h"
 #include "context-libusb.h"
-#include "types.h"
+#include <src/types.h>
 
 #include <libusb.h>
 

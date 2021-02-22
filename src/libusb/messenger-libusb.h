@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "usb/usb-messenger.h"
+#include <src/usb/usb-messenger.h>
 #include "interface-libusb.h"
 #include "request-libusb.h"
 #include "handle-libusb.h"

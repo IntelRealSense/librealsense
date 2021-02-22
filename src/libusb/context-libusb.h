@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "usb/usb-types.h"
-#include "../concurrency.h"
+#include <src/usb/usb-types.h>
+#include <src/concurrency.h>
 
 #include <memory>
 #include <libusb.h>
