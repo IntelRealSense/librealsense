@@ -12,8 +12,8 @@
 #include "core/motion.h"
 #include "core/extension.h"
 #include "media/record/record_device.h"
-#include <media/ros/ros_writer.h>
-#include <media/ros/ros_reader.h>
+#include "media/ros/ros_writer.h"
+#include "media/ros/ros_reader.h"
 #include "core/advanced_mode.h"
 #include "source.h"
 #include "core/processing.h"
@@ -47,6 +47,7 @@
 #include "firmware_logger_device.h"
 #include "device-calibration.h"
 #include "calibrated-sensor.h"
+#include "debug-stream-sensor.h"
 ////////////////////////
 // API implementation //
 ////////////////////////

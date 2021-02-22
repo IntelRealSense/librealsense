@@ -8,7 +8,7 @@
 #include <src/core/video.h>
 #include <src/proc/synthetic-stream.h>
 #include <src/environment.h>
-#include <src/align.h>
+#include "align.h"
 #include <src/stream.h>
 
 namespace librealsense

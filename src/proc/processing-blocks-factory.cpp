@@ -4,7 +4,7 @@
 #include "processing-blocks-factory.h"
 
 #include "sse/sse-align.h"
-#include <src/cuda/cuda-align.h>
+#include "cuda/cuda-align.h"
 
 #include <src/stream.h>
 

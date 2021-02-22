@@ -9,7 +9,7 @@
 #include "core/streaming.h"
 
 #include <vector>
-#include <media/playback/playback_device.h>
+#include "media/playback/playback_device.h"
 
 namespace librealsense
 {

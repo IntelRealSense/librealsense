@@ -15,7 +15,7 @@
 #include "ds5/ds5-timestamp.h"
 #include "backend.h"
 #include "mock/recorder.h"
-#include <media/ros/ros_reader.h>
+#include "media/ros/ros_reader.h"
 #include "types.h"
 #include "stream.h"
 #include "environment.h"

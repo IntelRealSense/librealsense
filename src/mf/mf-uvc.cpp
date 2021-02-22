@@ -25,8 +25,8 @@ The library will be compiled without the metadata support!\n")
 #define DEVICE_ID_MAX_SIZE 256
 
 #include "mf-uvc.h"
-#include "../types.h"
-#include "uvc/uvc-types.h"
+#include <src/types.h>
+#include <src/uvc/uvc-types.h>
 
 #include "Shlwapi.h"
 #include <Windows.h>

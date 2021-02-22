@@ -9,7 +9,7 @@
 
 #define STB_IMAGE_STATIC
 #define STB_IMAGE_IMPLEMENTATION
-#include <src/third-party/stb_image.h>
+#include <third-party/stb_image.h>
 
 #ifdef RS2_USE_CUDA
 #include "cuda/cuda-conversion.cuh"
