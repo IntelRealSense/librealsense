@@ -2,11 +2,11 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include "../backend.h"
+#include <src/backend.h>
 #include "hid-types.h"
-#include "../usb/usb-messenger.h"
-#include "../usb/usb-enumerator.h"
-#include "../concurrency.h"
+#include <src/usb/usb-messenger.h>
+#include <src/usb/usb-enumerator.h>
+#include <src/concurrency.h>
 #include "stdio.h"
 #include "stdlib.h"
 
@@ -14,7 +14,7 @@
 #include <string>
 #include <chrono>
 #include <thread>
-#include "../types.h"
+#include <src/types.h>
 
 namespace librealsense
 {

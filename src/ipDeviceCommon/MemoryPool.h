@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <ipDeviceCommon/RsCommon.h>
+#include <src/ipDeviceCommon/RsCommon.h>
 
 #include <iostream>
 #include <mutex>

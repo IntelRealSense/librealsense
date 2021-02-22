@@ -2,17 +2,17 @@
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
 #include "sr300.h"
-#include "metadata.h"
-#include "hw-monitor.h"
-#include "proc/decimation-filter.h"
-#include "proc/threshold.h" 
-#include "proc/spatial-filter.h"
-#include "proc/temporal-filter.h"
-#include "proc/hole-filling-filter.h"
-#include "proc/depth-formats-converter.h"
-#include "ds5/ds5-device.h"
-#include "../../include/librealsense2/h/rs_sensor.h"
-#include "../common/fw/firmware-version.h"
+#include <src/metadata.h>
+#include <src/hw-monitor.h>
+#include <src/proc/decimation-filter.h>
+#include <src/proc/threshold.h> 
+#include <src/proc/spatial-filter.h>
+#include <src/proc/temporal-filter.h>
+#include <src/proc/hole-filling-filter.h>
+#include <src/proc/depth-formats-converter.h>
+#include <src/ds5/ds5-device.h>
+#include <include/librealsense2/h/rs_sensor.h>
+#include <common/fw/firmware-version.h>
 
 namespace librealsense
 {

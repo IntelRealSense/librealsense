@@ -4,8 +4,8 @@
 #include "l500-color.h"
 #include "l500-private.h"
 #include "l500-motion.h"
-#include "../backend.h"
-#include "proc/motion-transform.h"
+#include <src/backend.h>
+#include <src/proc/motion-transform.h>
 
 namespace librealsense
 {

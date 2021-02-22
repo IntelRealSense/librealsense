@@ -7,11 +7,11 @@
 #include <iterator>
 #include <cstddef>
 
-#include "device.h"
-#include "context.h"
-#include "image.h"
-#include "metadata-parser.h"
-#include "../firmware_logger_device.h"
+#include <src/device.h>
+#include <src/context.h>
+#include <src/image.h>
+#include <src/metadata-parser.h>
+#include <src/firmware_logger_device.h>
 
 #include "l500-factory.h"
 #include "l500-depth.h"
@@ -19,7 +19,7 @@
 #include "l500-color.h"
 #include "l500-serializable.h"
 
-#include "../firmware_logger_device.h"
+#include <src/firmware_logger_device.h>
 
 namespace librealsense
 {

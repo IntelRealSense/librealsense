@@ -8,20 +8,20 @@
 #include <mutex>
 #include <string>
 
-#include "device.h"
-#include "context.h"
-#include "backend.h"
+#include <src/device.h>
+#include <src/context.h>
+#include <src/backend.h>
 #include "ivcam-private.h"
-#include "hw-monitor.h"
-#include "metadata-parser.h"
-#include "image.h"
+#include <src/hw-monitor.h>
+#include <src/metadata-parser.h>
+#include <src/image.h>
 #include <cstddef>
-#include "environment.h"
-#include "core/debug.h"
-#include "stream.h"
-#include "fw-update/fw-update-device-interface.h"
-#include "proc/color-formats-converter.h"
-#include "firmware_logger_device.h"
+#include <src/environment.h>
+#include <src/core/debug.h>
+#include <src/stream.h>
+#include <src/fw-update/fw-update-device-interface.h>
+#include <src/proc/color-formats-converter.h>
+#include <src/firmware_logger_device.h>
 
 namespace librealsense
 {

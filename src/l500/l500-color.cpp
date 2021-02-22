@@ -9,10 +9,10 @@
 
 
 #include "l500-private.h"
-#include "proc/color-formats-converter.h"
+#include <src/proc/color-formats-converter.h>
 #include "ac-trigger.h"
-#include "algo/depth-to-rgb-calibration/debug.h"
-#include "algo/thermal-loop/l500-thermal-loop.h"
+#include <src/algo/depth-to-rgb-calibration/debug.h>
+#include <src/algo/thermal-loop/l500-thermal-loop.h>
 
 
 namespace librealsense

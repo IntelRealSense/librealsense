@@ -5,13 +5,13 @@
 #include "l500-device.h"
 #include "l500-color.h"
 #include "l500-depth.h"
-#include "fw-update/fw-update-unsigned.h"
-#include "context.h"
-#include "core/video.h"
-#include "depth-to-rgb-calibration.h"
-#include "log.h"
+#include <src/fw-update/fw-update-unsigned.h>
+#include <src/context.h">
+#include <src/core/video.h>
+#include <src/depth-to-rgb-calibration.h>
+#include <src/log.h>
 #include <chrono>
-#include "algo/depth-to-rgb-calibration/debug.h"
+#include <src/algo/depth-to-rgb-calibration/debug.h>
 
 using namespace std;
 

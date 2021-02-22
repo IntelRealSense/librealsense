@@ -3,11 +3,11 @@
 
 #pragma once
 
-#include "backend.h"
-#include "types.h"
-#include "option.h"
-#include "core/extension.h"
-#include "fw-update/fw-update-unsigned.h"
+#include <src/backend.h>
+#include <src/types.h>
+#include <src/option.h>
+#include <src/core/extension.h>
+#include <src/fw-update/fw-update-unsigned.h>
 
 static const int MAX_NUM_OF_RGB_RESOLUTIONS = 5;
 static const int MAX_NUM_OF_DEPTH_RESOLUTIONS = 5; 

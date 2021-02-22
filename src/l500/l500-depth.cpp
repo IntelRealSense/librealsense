@@ -2,25 +2,25 @@
 // Copyright(c) 2018 Intel Corporation. All Rights Reserved.
 
 #include <vector>
-#include "device.h"
-#include "context.h"
-#include "stream.h"
+#include <src/device.h>
+#include <src/context.h>
+#include <src/stream.h>
 #include "l500-depth.h"
 #include "l500-color.h"
 #include "l500-private.h"
-#include "proc/decimation-filter.h"
-#include "proc/threshold.h" 
-#include "proc/spatial-filter.h"
-#include "proc/temporal-filter.h"
-#include "proc/hole-filling-filter.h"
-#include "proc/zero-order.h"
+#include <src/proc/decimation-filter.h>
+#include <src/proc/threshold.h>
+#include <src/proc/spatial-filter.h>
+#include <src/proc/temporal-filter.h>
+#include <src/proc/hole-filling-filter.h>
+#include <src/proc/zero-order.h>
 #include <cstddef>
-#include "metadata-parser.h"
+#include <src/metadata-parser.h>
 #include "l500-options.h"
 #include "ac-trigger.h"
-#include "algo/depth-to-rgb-calibration/debug.h"
-#include "algo/depth-to-rgb-calibration/utils.h"  // validate_dsm_params
-#include "algo/max-usable-range/l500/max-usable-range.h" 
+#include <src/algo/depth-to-rgb-calibration/debug.h>
+#include <src/algo/depth-to-rgb-calibration/utils.h>  // validate_dsm_params
+#include <src/algo/max-usable-range/l500/max-usable-range.h>
 
 
 #define MM_TO_METER 1/1000

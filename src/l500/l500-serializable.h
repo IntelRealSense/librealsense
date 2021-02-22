@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "serializable-interface.h"
-#include "hw-monitor.h"
-#include "sensor.h"
+#include <src/serializable-interface.h>
+#include <src/hw-monitor.h>
+#include <src/sensor.h>
 
 namespace librealsense
 {

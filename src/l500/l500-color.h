@@ -8,10 +8,10 @@
 #include <map>
 
 #include "l500-device.h"
-#include "stream.h"
+#include <src/stream.h>
 #include "l500-depth.h"
-#include "calibrated-sensor.h"
-#include "algo/thermal-loop/l500-thermal-loop.h"
+#include <src/calibrated-sensor.h>
+#include <src/algo/thermal-loop/l500-thermal-loop.h>
 
 namespace librealsense
 {

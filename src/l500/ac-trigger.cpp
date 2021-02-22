@@ -2,13 +2,13 @@
 // Copyright(c) 2018 Intel Corporation. All Rights Reserved.
 
 #include "ac-trigger.h"
-#include "depth-to-rgb-calibration.h"
+#include <src/depth-to-rgb-calibration.h>
 #include "l500-device.h"
 #include "l500-color.h"
 #include "l500-depth.h"
-#include "algo/depth-to-rgb-calibration/debug.h"
-#include "algo/thermal-loop/l500-thermal-loop.h"
-#include "log.h"
+#include <src/algo/depth-to-rgb-calibration/debug.h>
+#include <src/algo/thermal-loop/l500-thermal-loop.h>
+#include <src/log.h>
 
 
 #ifdef _WIN32

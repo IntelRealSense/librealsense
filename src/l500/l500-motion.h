@@ -5,10 +5,10 @@
 
 #include <vector>
 #include <string>
-#include "device.h"
-#include "stream.h"
-#include "l500/l500-device.h"
-#include "../ds5/ds5-motion.h"
+#include <src/device.h>
+#include <src/stream.h>
+#include "l500-device.h"
+#include <src/ds5/ds5-motion.h>
 
 namespace librealsense
 {

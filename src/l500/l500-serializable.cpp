@@ -2,7 +2,7 @@
 //// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "l500-serializable.h"
-#include "../../../third-party/json.hpp"
+#include <third-party/json.hpp>
 #include <set>
 
 namespace librealsense

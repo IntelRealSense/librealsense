@@ -6,17 +6,17 @@
 #include <vector>
 #include <mutex>
 #include <string>
-#include "device.h"
-#include "context.h"
-#include "backend.h"
-#include "hw-monitor.h"
-#include "image.h"
-#include "stream.h"
+#include <src/device.h>
+#include <src/context.h>
+#include <src/backend.h>
+#include <src/hw-monitor.h>
+#include <src/image.h>
+#include <src/stream.h>
 #include "l500-private.h"
-#include "error-handling.h"
-#include "global_timestamp_reader.h"
-#include "fw-update/fw-update-device-interface.h"
-#include "device-calibration.h"
+#include <src/error-handling.h>
+#include <src/global_timestamp_reader.h>
+#include <src/fw-update/fw-update-device-interface.h>
+#include <src/device-calibration.h>
 
 namespace librealsense
 {

@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "types.h"
-#include "option.h"
+#include <src/types.h>
+#include <src/option.h>
 #include <mutex>
 #include <thread>
 
