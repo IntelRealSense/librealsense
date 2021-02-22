@@ -2,7 +2,6 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include <list>
 #include "device-calibration.h"
 
 namespace librealsense

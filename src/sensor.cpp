@@ -472,7 +472,7 @@ namespace librealsense
         {
             As<librealsense::global_time_interface>(_owner)->enable_time_diff_keeper(false);
         }
-        // TODO Evgeni - refactoring
+
         if (Is<librealsense::device_calibration>(_owner))
         {
             As<librealsense::device_calibration>(_owner)->trigger_device_calibration(RS2_CALIBRATION_TYPE_COUNT);
