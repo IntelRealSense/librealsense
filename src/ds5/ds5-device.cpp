@@ -42,6 +42,12 @@
 #include "fw-update/fw-update-unsigned.h"
 #include "../third-party/json.hpp"
 
+#ifdef HWM_OVER_XU
+constexpr bool hw_mon_over_xu = true;
+#else
+constexpr bool hw_mon_over_xu = false;
+#endif
+
 namespace librealsense
 {
     std::map<uint32_t, rs2_format> ds5_depth_fourcc_to_rs2_format = {
@@ -624,21 +630,21 @@ namespace librealsense
 
         auto&& backend = ctx->get_backend();
         auto& raw_sensor = get_raw_depth_sensor();
+        auto pid = group.uvc_devices.front().pid;
 
-        //Evgeni - Backward compatibility break - review on weekly
-        /*if (group.usb_devices.size() > 0)
-        {
-            _hw_monitor = std::make_shared<hw_monitor>(
-                std::make_shared<locked_transfer>(
-                    backend.create_usb_device(group.usb_devices.front()), raw_sensor));
-        }
-        else*/
+        if ((((hw_mon_over_xu) && (RS400_IMU_PID != pid)) || (!group.usb_devices.size())))
         {
             _hw_monitor = std::make_shared<hw_monitor>(
                 std::make_shared<locked_transfer>(
                     std::make_shared<command_transfer_over_xu>(
                         raw_sensor, depth_xu, DS5_HWMONITOR),
                     raw_sensor));
+        }
+        else
+        {
+                _hw_monitor = std::make_shared<hw_monitor>(
+                    std::make_shared<locked_transfer>(
+                        backend.create_usb_device(group.usb_devices.front()), raw_sensor));
         }
 
         // Define Left-to-Right extrinsics calculation (lazy)
@@ -665,8 +671,6 @@ namespace librealsense
         std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(_pid)) ? rs400_sku_names.at(_pid) : "RS4xx";
 
         std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
-        _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
-        // fooling tests recordings - don't remove
         _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
 
         auto optic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset);
@@ -730,19 +734,6 @@ namespace librealsense
         if (_fw_version >= firmware_version("5.6.3.0"))
         {
             _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
-
-#ifdef HWM_OVER_XU
-            //if hw_monitor was created by usb replace it with xu
-            // D400_IMU will remain using USB interface due to HW limitations
-            if ((group.usb_devices.size() > 0) && (RS400_IMU_PID != _pid))
-            {
-                _hw_monitor = std::make_shared<hw_monitor>(
-                    std::make_shared<locked_transfer>(
-                        std::make_shared<command_transfer_over_xu>(
-                            raw_depth_sensor, depth_xu, DS5_HWMONITOR),
-                        raw_depth_sensor));
-            }
-#endif
         }
 
         if (_fw_version >= firmware_version("5.5.8.0"))
