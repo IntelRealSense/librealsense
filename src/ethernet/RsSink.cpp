@@ -2,7 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "RsSink.h"
-#include <ipDeviceCommon/Statistic.h>
+#include <src/ipDeviceCommon/Statistic.h>
 
 #include "stdio.h"
 #include <string>

@@ -9,8 +9,8 @@
 #include "IRsRtsp.h"
 #include "StreamClientState.h"
 #include "common/RsRtspCommon.h"
-#include <ipDeviceCommon/MemoryPool.h>
-#include <ipDeviceCommon/RsCommon.h>
+#include <src/ipDeviceCommon/MemoryPool.h>
+#include <src/ipDeviceCommon/RsCommon.h>
 
 #include <librealsense2/hpp/rs_internal.hpp>
 

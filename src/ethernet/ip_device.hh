@@ -7,8 +7,8 @@
 #include "ip_sensor.hh"
 #include "rs_rtp_callback.hh"
 
-#include "option.h"
-#include "software-device.h"
+#include <src/option.h>
+#include <src/software-device.h>
 #include <librealsense2/hpp/rs_internal.hpp>
 #include <librealsense2/rs.hpp>
 

@@ -5,7 +5,7 @@
 
 #include "RsRtspClient.h"
 #include <RsUsageEnvironment.h>
-#include <ipDeviceCommon/RsCommon.h>
+#include <src/ipDeviceCommon/RsCommon.h>
 
 #include <algorithm>
 #include <iostream>

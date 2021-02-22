@@ -8,8 +8,8 @@
 #include "liveMedia.hh"
 
 #include "rtp_callback.hh"
-#include <compression/CompressionFactory.h>
-#include <ipDeviceCommon/MemoryPool.h>
+#include <src/compression/CompressionFactory.h>
+#include <src/ipDeviceCommon/MemoryPool.h>
 
 #include <librealsense2/hpp/rs_internal.hpp>
 

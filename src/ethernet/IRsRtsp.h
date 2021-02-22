@@ -5,7 +5,7 @@
 
 #include "RsSink.h"
 #include "rtp_callback.hh"
-#include <ipDeviceCommon/RsCommon.h>
+#include <src/ipDeviceCommon/RsCommon.h>
 
 #include <librealsense2/hpp/rs_internal.hpp>
 
