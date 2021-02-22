@@ -202,25 +202,37 @@ namespace librealsense
         thermal_compensation_guard(auto_calibrated_interface* handle) :
             restart_tl(false), snr(nullptr)
         {
-            std::cout << " abc";
             if (Is<librealsense::device>(handle))
             {
-                snr = &(As<librealsense::device>(handle)->get_sensor(0));
-
-                if (snr->supports_option(RS2_OPTION_THERMAL_COMPENSATION))
-                    restart_tl = static_cast<bool>(snr->get_option(RS2_OPTION_THERMAL_COMPENSATION).query());
-                if (restart_tl)
+                try
                 {
-                    snr->get_option(RS2_OPTION_THERMAL_COMPENSATION).set(0.f);
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Allow for FW changes to propagate
+                    // The depth sensor is assigned first by design
+                    snr = &(As<librealsense::device>(handle)->get_sensor(0));
+
+                    if (snr->supports_option(RS2_OPTION_THERMAL_COMPENSATION))
+                        restart_tl = static_cast<bool>(snr->get_option(RS2_OPTION_THERMAL_COMPENSATION).query());
+                    if (restart_tl)
+                    {
+                        snr->get_option(RS2_OPTION_THERMAL_COMPENSATION).set(0.f);
+                        // Allow for FW changes to propagate
+                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    }
+                }
+                catch(...) {
+                    LOG_WARNING("Thermal Compensation guard failed to invoke");
                 }
             }
         }
         virtual ~thermal_compensation_guard()
         {
-            std::cout << " bbc";
-            if (snr && restart_tl)
-                snr->get_option(RS2_OPTION_THERMAL_COMPENSATION).set(1.f);
+            try
+            {
+                if (snr && restart_tl)
+                    snr->get_option(RS2_OPTION_THERMAL_COMPENSATION).set(1.f);
+            }
+            catch (...) {
+                LOG_WARNING("Thermal Compensation guard failed to complete");
+            }
         }
 
     protected:
@@ -228,7 +240,8 @@ namespace librealsense
         librealsense::sensor_interface* snr;
 
     private:
-        thermal_compensation_guard(const thermal_compensation_guard&);  // Disable copy/assignment ctors
+        // Disable copy/assignment ctors
+        thermal_compensation_guard(const thermal_compensation_guard&);
         thermal_compensation_guard& operator=(const thermal_compensation_guard&);
     };
 
@@ -256,7 +269,7 @@ namespace librealsense
         float h_2 = 0.0f;
 
         //Enforce Thermal Compensation off during OCC
-        thermal_compensation_guard(this);
+        volatile thermal_compensation_guard grd(this);
 
         if (json.size() > 0)
         {
@@ -555,6 +568,9 @@ namespace librealsense
         int scan_parameter = DEFAULT_SCAN;
         int data_sampling = DEFAULT_TARE_SAMPLING;
         int apply_preset = 1;
+
+        //Enforce Thermal Compensation off during OCC
+        volatile thermal_compensation_guard grd(this);
 
         if (json.size() > 0)
         {
