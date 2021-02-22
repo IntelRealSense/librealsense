@@ -132,7 +132,7 @@ namespace librealsense
             cmd.param1 = 1;
             _hw_monitor->send(cmd);
             std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
-            for (auto i = 0; i < 25; i++)
+            for (auto i = 0; i < 50; i++)
             {
                 _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), ds::GVD);
                 this_thread::sleep_for(milliseconds(50));
