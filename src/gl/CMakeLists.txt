@@ -64,6 +64,7 @@ include_directories(${LZ4_DIR})
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE
+        ${CMAKE_SOURCE_DIR}
         ${CMAKE_CURRENT_LIST_DIR}/..
         ${CMAKE_CURRENT_LIST_DIR}/../../third-party/glad
         ${CMAKE_CURRENT_LIST_DIR}/../../common
