@@ -646,32 +646,37 @@ namespace rs2
                     break;
                 }
 
+                int prev_frame_counter = total_frames;
                 while (frame_counter < total_frames)
                 {
-                    _progress += static_cast<int>(frame_counter * 25 / total_frames);
-
-                    const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
-                    p += roi_start_h * height + roi_start_w;
-
-                    counter = 0;
-                    for (int j = 0; j < roi_h; ++j)
+                    if (frame_counter != prev_frame_counter)
                     {
-                        for (int i = 0; i < roi_w; ++i)
+                        _progress += static_cast<int>(frame_counter * 25 / total_frames);
+
+                        const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
+                        p += roi_start_h * height + roi_start_w;
+
+                        counter = 0;
+                        for (int j = 0; j < roi_h; ++j)
                         {
-                            if (*p)
-                                ++counter;
-                            ++p;
+                            for (int i = 0; i < roi_w; ++i)
+                            {
+                                if (*p)
+                                    ++counter;
+                                ++p;
+                            }
+                            p += width;
                         }
-                        p += width;
+
+                        tmp = static_cast<float>(counter);
+                        tmp /= roi_size;
+                        tmp *= 10000;
+                        fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5);
+
+                        f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
+                        prev_frame_counter = static_cast<int>(frame_counter);
+                        frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
                     }
-
-                    tmp = static_cast<float>(counter);
-                    tmp /= roi_size;
-                    tmp *= 10000;
-                    fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5);
-
-                    f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
-                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
                 }
 
                 fill_missing_data(fill_factor, total_frames);
@@ -713,32 +718,37 @@ namespace rs2
                 int to = from + 5;
 
                 memset(fill_factor, 0, 256 * sizeof(uint16_t));
+                prev_frame_counter = total_frames;
                 while (frame_counter < total_frames)
                 {
-                    _progress += static_cast<int>(frame_counter * 25 / total_frames);
-
-                    const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
-                    p += from * height + roi_start_w;
-
-                    counter = 0;
-                    for (int j = from; j < to; ++j)
+                    if (frame_counter != prev_frame_counter)
                     {
-                        for (int i = 0; i < roi_w; ++i)
+                        _progress += static_cast<int>(frame_counter * 25 / total_frames);
+
+                        const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
+                        p += from * height + roi_start_w;
+
+                        counter = 0;
+                        for (int j = from; j < to; ++j)
                         {
-                            if (*p)
-                                ++counter;
-                            ++p;
+                            for (int i = 0; i < roi_w; ++i)
+                            {
+                                if (*p)
+                                    ++counter;
+                                ++p;
+                            }
+                            p += width;
                         }
-                        p += width;
+
+                        tmp = static_cast<float>(counter);
+                        tmp /= roi_fl_size;
+                        tmp *= 10000;
+                        fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5);
+
+                        f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
+                        prev_frame_counter = static_cast<int>(frame_counter);
+                        frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
                     }
-
-                    tmp = static_cast<float>(counter);
-                    tmp /= roi_fl_size;
-                    tmp *= 10000;
-                    fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5);
-
-                    f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
-                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
                 }
 
                 fill_missing_data(fill_factor, total_frames);
@@ -812,32 +822,37 @@ namespace rs2
                     total_frames = fl_step_count;
                 }
 
+                int prev_frame_counter = total_frames;
                 while (frame_counter < total_frames)
                 {
-                    _progress += static_cast<int>(frame_counter * 60 / total_frames);
-
-                    const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
-                    p += from * height + roi_start_w;
-
-                    counter = 0;
-                    for (int j = from; j < to; ++j)
+                    if (frame_counter != prev_frame_counter)
                     {
-                        for (int i = 0; i < roi_w; ++i)
+                        _progress += static_cast<int>(frame_counter * 60 / total_frames);
+
+                        const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
+                        p += from * height + roi_start_w;
+
+                        counter = 0;
+                        for (int j = from; j < to; ++j)
                         {
-                            if (*p)
-                                ++counter;
-                            ++p;
+                            for (int i = 0; i < roi_w; ++i)
+                            {
+                                if (*p)
+                                    ++counter;
+                                ++p;
+                            }
+                            p += width;
                         }
-                        p += width;
+
+                        tmp = static_cast<float>(counter);
+                        tmp /= data_size;
+                        tmp *= 10000;
+                        fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5f);
+
+                        f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
+                        prev_frame_counter = static_cast<int>(frame_counter);
+                        frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
                     }
-
-                    tmp = static_cast<float>(counter);
-                    tmp /= data_size;
-                    tmp *= 10000;
-                    fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5f);
-
-                    f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
-                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
                 }
 
                 fill_missing_data(fill_factor, total_frames);
