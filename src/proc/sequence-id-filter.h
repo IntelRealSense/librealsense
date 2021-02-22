@@ -5,7 +5,7 @@ Copyright(c) 2020 Intel Corporation. All Rights Reserved. */
 #pragma once
 
 #include "synthetic-stream.h"
-#include "option.h"
+#include <src/option.h>
 
 namespace librealsense
 {

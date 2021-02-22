@@ -5,13 +5,13 @@
 #include <memory>
 #include <vector>
 
-#include "../device.h"
-#include "../core/video.h"
-#include "../core/motion.h"
-#include "../media/playback/playback_device.h"
+#include <src/device.h>
+#include <src/core/video.h>
+#include <src/core/motion.h>
+#include <src/media/playback/playback_device.h>
 
-#include "../usb/usb-device.h"
-#include "../usb/usb-messenger.h"
+#include <src/usb/usb-device.h>
+#include <src/usb/usb-messenger.h>
 
 #include "t265-messages.h"
 

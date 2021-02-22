@@ -1,17 +1,17 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/hpp/rs_sensor.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
+#include <include/librealsense2/hpp/rs_sensor.hpp>
+#include <include/librealsense2/hpp/rs_processing.hpp>
 
 #include <numeric>
 #include <cmath>
-#include "environment.h"
-#include "option.h"
-#include "context.h"
-#include "core/video.h"
-#include "proc/synthetic-stream.h"
-#include "proc/decimation-filter.h"
+#include <src/environment.h>
+#include <src/option.h>
+#include <src/context.h>
+#include <src/core/video.h>
+#include <src/proc/synthetic-stream.h>
+#include <src/proc/decimation-filter.h>
 
 
 #define PIX_SORT(a,b) { if ((a)>(b)) PIX_SWAP((a),(b)); }

@@ -7,8 +7,8 @@
 
 #include "messenger-winusb.h"
 #include "device-winusb.h"
-#include "usb/usb-enumerator.h"
-#include "types.h"
+#include <src/usb/usb-enumerator.h>
+#include <src/types.h>
 
 #include <atlstr.h>
 #include <Windows.h>

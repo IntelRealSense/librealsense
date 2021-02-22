@@ -2,10 +2,10 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <functional>
-#include "source.h"
-#include "sync.h"
-#include "proc/synthetic-stream.h"
-#include "proc/syncer-processing-block.h"
+#include <src/source.h>
+#include <src/sync.h>
+#include <src/proc/synthetic-stream.h>
+#include <src/proc/syncer-processing-block.h>
 
 
 namespace librealsense

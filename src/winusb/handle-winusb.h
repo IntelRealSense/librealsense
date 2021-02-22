@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "win/win-helpers.h"
-#include "types.h"
+#include <src/win/win-helpers.h>
+#include <src/types.h>
 
 #include <winusb.h>
 #include <chrono>

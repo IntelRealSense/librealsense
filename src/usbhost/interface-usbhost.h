@@ -4,8 +4,8 @@
 #pragma once
 
 #include "endpoint-usbhost.h"
-#include "../usb/usb-interface.h"
-#include "../usb/usb-device.h"
+#include <src/usb/usb-interface.h>
+#include <src/usb/usb-device.h>
 #include "usbhost.h"
 #include <map>
 

@@ -4,15 +4,15 @@
 #pragma once
 
 #include "usbhost.h"
-#include "../usb/usb-types.h"
-#include "../backend.h"
-#include "../usb/usb-messenger.h"
-#include "../usb/usb-device.h"
-#include "../usb/usb-request.h"
+#include <src/usb/usb-types.h>
+#include <src/backend.h>
+#include <src/usb/usb-messenger.h>
+#include <src/usb/usb-device.h>
+#include <src/usb/usb-request.h>
 #include "handle-usbhost.h"
 
 #include "endpoint-usbhost.h"
-#include "../concurrency.h"
+#include <src/concurrency.h>
 #include "request-usbhost.h"
 #include <mutex>
 #include <map>

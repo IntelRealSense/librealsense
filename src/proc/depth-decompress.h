@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "proc/synthetic-stream.h"
+#include <src/proc/synthetic-stream.h>
 
 namespace librealsense
 {

@@ -1,13 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "proc/synthetic-stream.h"
+#include <src/proc/synthetic-stream.h>
 
-#include "core/video.h"
-#include "option.h"
-#include "context.h"
-#include "stream.h"
-#include "types.h"
+#include <src/core/video.h>
+#include <src/option.h>
+#include <src/context.h>
+#include <src/stream.h>
+#include <src/types.h>
 
 namespace librealsense
 {

@@ -9,10 +9,10 @@
 #include <thread>
 #include <inttypes.h> // PRIu64
 #include "tm-device.h"
-#include "stream.h"
-#include "media/playback/playback_device.h"
-#include "media/ros/ros_reader.h"
-#include "usb/usb-enumerator.h"
+#include <src/stream.h>
+#include <src/media/playback/playback_device.h>
+#include <src/media/ros/ros_reader.h>
+#include <src/usb/usb-enumerator.h>
 
 // uncomment to get debug messages at info severity
 //#undef LOG_DEBUG

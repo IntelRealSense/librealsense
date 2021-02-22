@@ -1,24 +1,24 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/rs.hpp"
-#include "../include/librealsense2/rsutil.h"
-#include "environment.h"
-#include "proc/occlusion-filter.h"
-#include "proc/pointcloud.h"
-#include "option.h"
-#include "environment.h"
-#include "context.h"
-#include "../device.h"
-#include "../stream.h"
+#include <include/librealsense2/rs.hpp>
+#include <include/librealsense2/rsutil.h>
+#include <src/environment.h>
+#include <src/proc/occlusion-filter.h>
+#include <src/proc/pointcloud.h>
+#include <src/option.h>
+#include <src/environment.h>
+#include <src/context.h>
+#include <src/device.h>
+#include <src/stream.h>
 #include <iostream>
-#include "device-calibration.h"
+#include <src/device-calibration.h>
 
 #ifdef RS2_USE_CUDA
-#include "proc/cuda/cuda-pointcloud.h"
+#include <src/proc/cuda/cuda-pointcloud.h>
 #endif
 #ifdef __SSSE3__
-#include "proc/sse/sse-pointcloud.h"
+#include <src/proc/sse/sse-pointcloud.h>
 #endif
 
 namespace librealsense

@@ -5,11 +5,11 @@
 #error At least Visual Studio 2013 Update 4 is required to compile this backend
 #endif
 
-#include "usb/usb-enumerator.h"
+#include <src/usb/usb-enumerator.h>
 #include "device-winusb.h"
 #include "interface-winusb.h"
-#include "win/win-helpers.h"
-#include "types.h"
+#include <src/win/win-helpers.h>
+#include <src/types.h>
 
 #include <atlstr.h>
 #include <Windows.h>

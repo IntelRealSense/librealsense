@@ -6,11 +6,11 @@
 #endif
 
 #include "device-winusb.h"
-#include "win/win-helpers.h"
+#include <src/win/win-helpers.h>
 
 #include "endpoint-winusb.h"
 #include "interface-winusb.h"
-#include "types.h"
+#include <src/types.h>
 
 #include <atlstr.h>
 #include <Windows.h>

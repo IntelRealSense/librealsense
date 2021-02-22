@@ -5,7 +5,7 @@
 #include <memory>
 #include <vector>
 
-#include "../context.h"
+#include <src/context.h>
 #include "tm-device.h"
 
 namespace librealsense

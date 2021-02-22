@@ -3,11 +3,11 @@
 
 #pragma once
 
-#include "../usb/usb-types.h"
+#include <src/usb/usb-types.h>
 #include "messenger-usbhost.h"
-#include "../usb/usb-device.h"
+#include <src/usb/usb-device.h>
 #include "usbhost.h"
-#include "../types.h"
+#include <src/types.h>
 
 #include <string>
 #include <regex>

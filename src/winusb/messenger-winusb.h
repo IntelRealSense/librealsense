@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include "usb/usb-types.h"
-#include "usb/usb-messenger.h"
-#include "backend.h"
-#include "win/win-helpers.h"
+#include <src/usb/usb-types.h>
+#include <src/usb/usb-messenger.h>
+#include <src/backend.h>
+#include <src/win/win-helpers.h>
 #include "handle-winusb.h"
 #include "interface-winusb.h"
 #include "request-winusb.h"

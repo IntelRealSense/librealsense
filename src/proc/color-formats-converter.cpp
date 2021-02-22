@@ -3,13 +3,13 @@
 
 #include "color-formats-converter.h"
 
-#include "option.h"
-#include "image-avx.h"
-#include "image.h"
+#include <src/option.h>
+#include <src/image-avx.h>
+#include <src/image.h>
 
 #define STB_IMAGE_STATIC
 #define STB_IMAGE_IMPLEMENTATION
-#include "../third-party/stb_image.h"
+#include <src/third-party/stb_image.h>
 
 #ifdef RS2_USE_CUDA
 #include "cuda/cuda-conversion.cuh"

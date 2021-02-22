@@ -4,14 +4,14 @@
 
 #include "sse-align.h"
 #include <tmmintrin.h> // For SSE3 intrinsic used in unpack_yuy2_sse
-#include "../include/librealsense2/hpp/rs_sensor.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
-#include "../include/librealsense2/rsutil.h"
+#include <include/librealsense2/hpp/rs_sensor.hpp>
+#include <include/librealsense2/hpp/rs_processing.hpp>
+#include <include/librealsense2/rsutil.h>
 
-#include "core/video.h"
-#include "proc/synthetic-stream.h"
-#include "environment.h"
-#include "stream.h"
+#include <src/core/video.h>
+#include <src/proc/synthetic-stream.h>
+#include <src/environment.h>
+#include <src/stream.h>
 
 using namespace librealsense;
 

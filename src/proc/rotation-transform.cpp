@@ -3,11 +3,11 @@
 
 #include "rotation-transform.h"
 
-#include "../include/librealsense2/hpp/rs_sensor.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
-#include "context.h"
-#include "image.h"
-#include "stream.h"
+#include <include/librealsense2/hpp/rs_sensor.hpp>
+#include <include/librealsense2/hpp/rs_processing.hpp>
+#include <src/context.h>
+#include <src/image.h>
+#include <src/stream.h>
 
 namespace librealsense
 {

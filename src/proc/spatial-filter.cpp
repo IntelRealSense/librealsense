@@ -1,15 +1,15 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/hpp/rs_sensor.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
-#include "option.h"
-#include "environment.h"
-#include "context.h"
-#include "software-device.h"
-#include "proc/synthetic-stream.h"
-#include "proc/hole-filling-filter.h"
-#include "proc/spatial-filter.h"
+#include <include/librealsense2/hpp/rs_sensor.hpp>
+#include <include/librealsense2/hpp/rs_processing.hpp>
+#include <src/option.h>
+#include <src/environment.h>
+#include <src/context.h>
+#include <src/software-device.h>
+#include <src/proc/synthetic-stream.h>
+#include <src/proc/hole-filling-filter.h>
+#include <src/proc/spatial-filter.h>
 
 namespace librealsense
 {

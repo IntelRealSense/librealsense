@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "../usb/usb-device.h"
-#include "../usb/usb-enumerator.h"
-#include "../types.h"
+#include <src/usb/usb-device.h>
+#include <src/usb/usb-enumerator.h>
+#include <src/types.h>
 
 #ifdef WITH_TRACKING
 #include "common/fw/target.h"

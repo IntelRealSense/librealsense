@@ -2,11 +2,11 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "interface-winusb.h"
-#include "win/win-helpers.h"
+#include <src/win/win-helpers.h>
 #include "messenger-winusb.h"
 #include "handle-winusb.h"
 
-#include "types.h"
+#include <src/types.h>
 
 namespace librealsense
 {

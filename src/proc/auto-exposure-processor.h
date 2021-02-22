@@ -4,9 +4,9 @@
 #pragma once
 
 #include "synthetic-stream.h"
-#include "option.h"
-#include "image.h"
-#include "ds5/ds5-options.h"
+#include <src/option.h>
+#include <src/image.h>
+#include <src/ds5/ds5-options.h>
 
 namespace librealsense
 {

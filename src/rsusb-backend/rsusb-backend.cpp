@@ -3,13 +3,13 @@
 
 #include "rsusb-backend.h"
 
-#include "../uvc/uvc-device.h"
-#include "../types.h"
-#include "../hid/hid-types.h"
-#include "../hid/hid-device.h"
-#include "../usb/usb-enumerator.h"
+#include <src/uvc/uvc-device.h>
+#include <src/types.h>
+#include <src/hid/hid-types.h>
+#include <src/hid/hid-device.h>
+#include <src/usb/usb-enumerator.h>
 
-#include "../tm2/tm-boot.h"
+#include <src/tm2/tm-boot.h>
 
 #include <chrono>
 #include <cctype> // std::tolower

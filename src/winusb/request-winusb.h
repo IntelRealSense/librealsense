@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "../usb/usb-request.h"
-#include "../usb/usb-device.h"
+#include <src/usb/usb-request.h>
+#include <src/usb/usb-device.h>
 
 #include <Windows.h>
 

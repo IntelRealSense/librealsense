@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "../backend.h"
-#include "../command_transfer.h"
+#include <src/backend.h>
+#include <src/command_transfer.h>
 
 namespace librealsense
 {

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "types.h"
+#include <src/types.h>
 #include "usbhost.h"
 #include "interface-usbhost.h"
 

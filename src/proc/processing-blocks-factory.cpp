@@ -4,9 +4,9 @@
 #include "processing-blocks-factory.h"
 
 #include "sse/sse-align.h"
-#include "cuda/cuda-align.h"
+#include <src/cuda/cuda-align.h>
 
-#include "stream.h"
+#include <src/stream.h>
 
 namespace librealsense
 {

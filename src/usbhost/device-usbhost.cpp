@@ -7,7 +7,7 @@
 #include "endpoint-usbhost.h"
 #include "interface-usbhost.h"
 #include "usbhost.h"
-#include "../types.h"
+#include <src/types.h>
 
 #include <string>
 #include <regex>

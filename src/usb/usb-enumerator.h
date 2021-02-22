@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../usb/usb-device.h"
+#include <src/usb/usb-device.h>
 
 #include <vector>
 #include <memory>

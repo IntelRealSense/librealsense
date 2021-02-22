@@ -3,11 +3,11 @@
 
 #pragma once
 
-#include "usb/usb-types.h"
-#include "usb/usb-device.h"
+#include <src/usb/usb-types.h>
+#include <src/usb/usb-device.h>
 
 #include "device-winusb.h"
-#include "win/win-helpers.h"
+#include <src/win/win-helpers.h>
 #include "messenger-winusb.h"
 
 #include <winusb.h>

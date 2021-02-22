@@ -5,7 +5,7 @@
     #error At least Visual Studio 2013 Update 4 is required to compile this backend
 #endif
 
-#include "../types.h"
+#include <src/types.h>
 #include "win-helpers.h"
 
 #include <Cfgmgr32.h>

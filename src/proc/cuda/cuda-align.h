@@ -3,7 +3,7 @@
 #pragma once
 #ifdef RS2_USE_CUDA
 
-#include "proc/align.h"
+#include <src/proc/align.h"
 #include "cuda-align.cuh"
 #include <memory>
 #include <stdint.h>

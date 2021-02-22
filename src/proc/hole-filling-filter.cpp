@@ -2,14 +2,14 @@
 // Copyright(c) 2018 Intel Corporation. All Rights Reserved.
 // Implementation details of hole-filling modes
 
-#include "../include/librealsense2/hpp/rs_sensor.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
-#include "option.h"
-#include "environment.h"
-#include "context.h"
-#include "software-device.h"
-#include "proc/synthetic-stream.h"
-#include "proc/hole-filling-filter.h"
+#include <include/librealsense2/hpp/rs_sensor.hpp>
+#include <include/librealsense2/hpp/rs_processing.hpp>
+#include <src/option.h>
+#include <src/environment.h>
+#include <src/context.h>
+#include <src/software-device.h>
+#include <src/proc/synthetic-stream.h>
+#include <src/proc/hole-filling-filter.h>
 
 namespace librealsense
 {

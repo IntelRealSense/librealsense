@@ -3,7 +3,7 @@
 #pragma once
 #ifdef __SSSE3__
 
-#include "proc/align.h"
+#include <src/proc/align.h>
 
 namespace librealsense
 {

@@ -1,16 +1,16 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/rs.hpp"
-#include "../include/librealsense2/rsutil.h"
+#include <include/librealsense2/rs.hpp>
+#include <include/librealsense2/rsutil.h>
 
-#include "proc/synthetic-stream.h"
-#include "environment.h"
-#include "proc/occlusion-filter.h"
-#include "proc/sse/sse-pointcloud.h"
-#include "option.h"
-#include "environment.h"
-#include "context.h"
+#include <src/proc/synthetic-stream.h>
+#include <src/environment.h>
+#include <src/proc/occlusion-filter.h>
+#include <src/proc/sse/sse-pointcloud.h>
+#include <src/option.h>
+#include <src/environment.h>
+#include <src/context.h>
 
 #include <iostream>
 

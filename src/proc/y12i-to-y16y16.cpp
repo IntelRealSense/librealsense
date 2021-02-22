@@ -2,9 +2,9 @@
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
 #include "y12i-to-y16y16.h"
-#include "stream.h"
+#include <src/stream.h>
 #ifdef RS2_USE_CUDA
-#include "cuda/cuda-conversion.cuh"
+#include <src/cuda/cuda-conversion.cuh>
 #endif
 
 namespace librealsense

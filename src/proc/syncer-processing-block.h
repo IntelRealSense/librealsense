@@ -8,9 +8,9 @@
 #include <mutex>
 #include <memory>
 
-#include "types.h"
-#include "archive.h"
-#include "option.h"
+#include <src/types.h>
+#include <src/archive.h>
+#include <src/option.h>
 
 namespace librealsense
 {

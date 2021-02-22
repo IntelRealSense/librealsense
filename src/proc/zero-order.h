@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include "../include/librealsense2/hpp/rs_frame.hpp"
+#include <include/librealsense2/hpp/rs_frame.hpp>
 #include "synthetic-stream.h"
-#include "option.h"
-#include "l500/l500-private.h"
+#include <src/option.h>
+#include <src/l500/l500-private.h>
 
 #define IR_THRESHOLD 120
 #define RTD_THRESHOLD 50

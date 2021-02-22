@@ -8,7 +8,7 @@
 #include "interface-usbhost.h"
 #include "messenger-usbhost.h"
 
-#include "../types.h"
+#include <src/types.h>
 #include "usbhost.h"
 
 namespace librealsense

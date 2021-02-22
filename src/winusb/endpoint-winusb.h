@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "usb/usb-endpoint.h"
+#include <src/usb/usb-endpoint.h>
 
 #include <windows.h>
 #include <winusb.h>

@@ -2,8 +2,8 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "rsusb-backend-windows.h"
-#include "types.h"
-#include "../uvc/uvc-device.h"
+#include <src/types.h>
+#include <src/uvc/uvc-device.h>
 
 namespace librealsense
 {

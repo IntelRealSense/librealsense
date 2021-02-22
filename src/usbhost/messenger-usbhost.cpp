@@ -3,12 +3,12 @@
 
 #include "messenger-usbhost.h"
 #include "device-usbhost.h"
-#include "../usb/usb-enumerator.h"
-#include "../hw-monitor.h"
+#include <src/usb/usb-enumerator.h>
+#include <src/hw-monitor.h>
 #include "usbhost.h"
 #include "endpoint-usbhost.h"
 #include "interface-usbhost.h"
-#include "../uvc/uvc-types.h"
+#include <src/uvc/uvc-types.h>
 #include "request-usbhost.h"
 
 #include <string>

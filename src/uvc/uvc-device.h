@@ -2,12 +2,12 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include "../backend.h"
+#include <src/backend.h>
 #include "uvc-types.h"
-#include "../usb/usb-messenger.h"
-#include "../usb/usb-enumerator.h"
-#include "../concurrency.h"
-#include "../types.h"
+#include <src/usb/usb-messenger.h>
+#include <src/usb/usb-enumerator.h>
+#include <src/concurrency.h>
+#include <src/types.h>
 #include "uvc-parser.h"
 #include "uvc-streamer.h"
 

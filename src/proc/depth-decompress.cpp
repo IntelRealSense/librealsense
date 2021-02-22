@@ -2,9 +2,9 @@
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
 #include <fstream>
-#include "../common/decompress-huffman.h"
-#include "proc/depth-decompress.h"
-#include "environment.h"
+#include <common/decompress-huffman.h>
+#include <src/proc/depth-decompress.h>
+#include <src/environment.h>
 
 namespace librealsense
 {

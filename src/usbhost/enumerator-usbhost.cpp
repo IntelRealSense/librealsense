@@ -6,11 +6,11 @@
 #include <jni.h>
 #include "device-usbhost.h"
 #include "interface-usbhost.h"
-#include "../usb/usb-device.h"
-#include "../usb/usb-enumerator.h"
-#include "../types.h"
+#include <src/usb/usb-device.h>
+#include <src/usb/usb-enumerator.h>
+#include <src/types.h>
 #include "usbhost.h"
-#include "../android/device_watcher.h"
+#include <src/android/device_watcher.h>
 
 #include <string>
 #include <regex>

@@ -1,6 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
-#include "proc/cuda/cuda-pointcloud.h"
+#include <src/proc/cuda/cuda-pointcloud.h>
 
 #ifdef RS2_USE_CUDA
 #include "../../cuda/cuda-pointcloud.cuh"
