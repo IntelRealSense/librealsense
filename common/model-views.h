@@ -81,7 +81,7 @@ inline ImVec4 blend(const ImVec4& c, float a)
 
 namespace rs2
 {
-    constexpr const char* server_versions_db_url = "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/rs_versions_db.json";
+    constexpr const char* server_versions_db_url = "http://librealsense.intel.com/Releases/rs_versions_db.json";
     
     void prepare_config_file();
 

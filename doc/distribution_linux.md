@@ -21,11 +21,11 @@ In case the public key still cannot be retrieved, check and specify proxy settin
 
 - Add the server to the list of repositories:  
   Ubuntu 16 LTS:  
-`sudo add-apt-repository "deb http://realsense-hw-public.s3.amazonaws.com/Debian/apt-repo xenial main" -u`  
+`sudo add-apt-repository "deb http://librealsense.intel.com/Debian/apt-repo xenial main" -u`  
   Ubuntu 18 LTS:  
-`sudo add-apt-repository "deb http://realsense-hw-public.s3.amazonaws.com/Debian/apt-repo bionic main" -u`  
+`sudo add-apt-repository "deb http://librealsense.intel.com/Debian/apt-repo bionic main" -u`  
   Ubuntu 20 LTS:  
-`sudo add-apt-repository "deb http://realsense-hw-public.s3.amazonaws.com/Debian/apt-repo focal main" -u`
+`sudo add-apt-repository "deb http://librealsense.intel.com/Debian/apt-repo focal main" -u`
 
 - Install the libraries (see section below if upgrading packages):  
   `sudo apt-get install librealsense2-dkms`  
