@@ -965,8 +965,8 @@ namespace librealsense
               ds5_motion(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
               firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command()),
+                    get_firmware_logs_command(),
+                    get_flash_logs_command()),
             ds5_thermal_handler(get_depth_sensor())
         {}
 

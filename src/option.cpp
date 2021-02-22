@@ -215,7 +215,7 @@ std::vector<rs2_option> librealsense::options_container::get_supported_options()
 
 float librealsense::thermal_compensation::query(void) const
 {
-    auto val = _thermal_handler->query();
+    auto val = _thermal_handler->query_feature();
     _recording_function(*this);
     return val;
 }

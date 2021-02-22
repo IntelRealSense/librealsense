@@ -94,7 +94,6 @@ namespace librealsense
     void ds5_thermal_handler::set_feature(bool state)
     {
         bool change_required = false;
-        LOG_DEBUG(__FUNCTION__ << " state = " << state << " _control_on = " << _control_on);
         if (state != _control_on)
         {
             _tl_activation->set(state);
@@ -103,10 +102,9 @@ namespace librealsense
         }
     }
 
-    float ds5_thermal_handler::query()
+    float ds5_thermal_handler::query_feature()
     {
         auto ctrl_state = static_cast<bool>(_tl_activation->query());
-        LOG_DEBUG(__FUNCTION__ << " _control_on = " << _control_on << " ctrl_state = " << ctrl_state);
         if (_control_on != ctrl_state)
         {
             _control_on = ctrl_state;
@@ -176,7 +174,7 @@ namespace librealsense
         }
         else
         {
-            LOG_DEBUG("Thermal Compensationis being shut-down");
+            LOG_DEBUG("Thermal Compensation is being shut-down");
         }
     }
 

@@ -15,14 +15,14 @@ namespace librealsense
         virtual ~ds5_thermal_handler();
 
         void set_feature(bool state);
-        float query();
+        float query_feature();
 
         void register_calibration_change_callback(calibration_change_callback_ptr callback)
         {
             _calibration_change_callbacks.push_back(callback);
         }
 
-        void trigger_device_calibration(rs2_calibration_type);
+        void trigger_device_calibration(rs2_calibration_type) override;
 
     private:
         void update_mode(bool on_streaming=false);
