@@ -779,6 +779,7 @@ namespace librealsense
         }
     }
 
+    // Anything listed in l500-private.h on l500_fw_error_report is an error, and everything else is a warning
     notification l500_notification_decoder::decode(int value)
     {
         if (l500_fw_error_report.find(static_cast<uint8_t>(value)) != l500_fw_error_report.end())

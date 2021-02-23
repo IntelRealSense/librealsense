@@ -5,6 +5,9 @@
 
 using namespace rs2;
 
+// This should be define for l500 or d400
+void trigger_error_or_exit(const rs2::device & dev, uint8_t num);
+
 // This function loop over all posiable hw errors use hw-monitor command to trigger them
 // and check that we call to user callback with the error
 void validate_errors_handling( const rs2::device & dev,

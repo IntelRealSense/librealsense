@@ -16,7 +16,7 @@ TEST_CASE( "Error handling sanity", "[l500][live]" )
     auto devices = find_devices_by_product_line_or_exit( RS2_PRODUCT_LINE_L500 );
     auto dev = devices[0];
 
-    validate_errors_handling( dev, l500_error_report );
+    validate_errors_handling( dev, build_log_errors_map());
 }
 
 TEST_CASE("Error handling while streaming", "[l500][live]")
@@ -31,6 +31,6 @@ TEST_CASE("Error handling while streaming", "[l500][live]")
     auto confidence = find_confidence_corresponding_to_depth(depth_sens, depth);
 
     do_while_streaming(depth_sens, { depth, ir, confidence }, [&]() {
-        validate_errors_handling(dev, l500_error_report);
+        validate_errors_handling(dev, build_log_errors_map());
     });
 }
