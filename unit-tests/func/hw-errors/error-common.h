@@ -8,7 +8,7 @@ using namespace rs2;
 // This function loop over all posiable hw errors use hw-monitor command to trigger them
 // and check that we call to user callback with the error
 void validate_errors_handling( const rs2::device & dev,
-                               const std::map< uint8_t, std::string > & error_report )
+                               const std::map< uint8_t, std::pair< std::string, rs2_log_severity > > & error_report )
 {
     auto depth_sens = dev.first< rs2::depth_sensor >();
 
@@ -37,9 +37,11 @@ void validate_errors_handling( const rs2::device & dev,
         CAPTURE( i->first );
 
         auto pred = [&]() {
-            return notification_description.compare( i->second ) == 0
-                && severity == RS2_LOG_SEVERITY_ERROR;
+            return notification_description.compare( i->second.first ) == 0
+                && severity == i->second.second;
         };
         REQUIRE( cv.wait_for( lock, std::chrono::seconds( 5 ), pred ) );
     }
+
+    depth_sens.set_option(RS2_OPTION_ERROR_POLLING_ENABLED, 0);
 }
