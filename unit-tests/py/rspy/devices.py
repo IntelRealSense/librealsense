@@ -194,6 +194,7 @@ def _wait_until_removed( serial_numbers, timeout = 5 ):
     """
     Wait until the given serial numbers are all offline
 
+    :param serial_numbers: A collection of serial-numbers to wait until removed
     :param timeout: Number of seconds of maximum wait time
     :return: True if all have come offline; False if timeout was reached
     """
@@ -213,12 +214,12 @@ def _wait_until_removed( serial_numbers, timeout = 5 ):
         time.sleep( 1 )
 
 
-def _wait_for( serial_numbers, timeout = 5, wait_for_recycle = False ):
+def _wait_for( serial_numbers, timeout = 5 ):
     """
     Wait until the given serial numbers are all online
 
+    :param serial_numbers: A collection of serial-numbers to wait for
     :param timeout: Number of seconds of maximum wait time
-    :param wait_for_recycle: If True, will wait until all devices are first removed
     :return: True if all have come online; False if timeout was reached
     """
     global _device_by_sn

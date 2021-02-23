@@ -125,7 +125,7 @@ namespace librealsense
     {
         frame_interface* frame;
 
-        frame_interface* operator->()
+        frame_interface* operator->() const
         {
             return frame;
         }
