@@ -4,6 +4,7 @@
 
 #include "../../func-common.h"
 #include "l500-error-common.h"
+#include "../error-common.h"
 
 using namespace rs2;
 
