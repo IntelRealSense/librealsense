@@ -19,10 +19,10 @@ namespace librealsense
     class syncer_process_unit : public processing_block
     {
     public:
-        syncer_process_unit( std::initializer_list< bool_option::ptr > enable_opts );
+        syncer_process_unit(std::initializer_list< bool_option::ptr > enable_opts, bool log = true);
 
-        syncer_process_unit( bool_option::ptr is_enabled_opt = nullptr )
-            : syncer_process_unit( { is_enabled_opt } ) {}
+        syncer_process_unit( bool_option::ptr is_enabled_opt = nullptr, bool log = true)
+            : syncer_process_unit( { is_enabled_opt }, log) {}
 
         void add_enabling_option( bool_option::ptr is_enabled_opt )
         {
@@ -34,7 +34,12 @@ namespace librealsense
             _matcher.reset();
         }
     private:
-        std::unique_ptr<timestamp_composite_matcher> _matcher;
+        bool create_matcher(const frame_holder& frame);
+
+        std::shared_ptr<matcher> _matcher;
         std::vector< std::weak_ptr<bool_option> > _enable_opts;
+
+        single_consumer_frame_queue<frame_holder> _matches;
+        std::mutex _callback_mutex;
     };
 }
