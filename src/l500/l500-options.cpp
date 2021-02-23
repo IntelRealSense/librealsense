@@ -771,7 +771,7 @@ namespace librealsense
                "ambient light in the scene.\n"
                "For example, if Max Usable Range returns 5m, this means that the ambient light in "
                "the scene is reducing the maximum range from 9m down to 5m.\n"
-               "Values are between 1.5 and 9 meters, in 1.5m increments."
+               "Values are between 1.5 and 9 meters, in 1.5m increments. "
                "Max range refers to the center 10% of the frame.";
     }
 
