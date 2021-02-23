@@ -3103,10 +3103,13 @@ namespace rs2
                         {
                             show_max_range = true;
                             auto max_usable_range = mur_sensor.get_max_usable_depth_range();
-                            const float MIN_RANGE = 3.0f;
+                            const float MIN_RANGE = 1.5f;
                             const float MAX_RANGE = 9.0f;
-                            // display maximum usable range in range 3-9 [m] at 1 [m] resolution (rounded)
-                            auto max_usable_range_rounded = round(std::min(std::max(max_usable_range, MIN_RANGE), MAX_RANGE));
+                            // display maximum usable range in range 1.5-9 [m] at 1.5 [m] resolution (rounded)
+                            auto max_usable_range_limited = std::min(std::max(max_usable_range, MIN_RANGE), MAX_RANGE);
+
+                            //round to 1.5 [m]
+                            auto max_usable_range_rounded = static_cast<int>(max_usable_range_limited / 1.5f) * 1.5f;
 
                             if (viewer.metric_system)
                                 ss << std::dec << "\nMax usable range: " << std::setprecision(1) << max_usable_range_rounded << " meters";
