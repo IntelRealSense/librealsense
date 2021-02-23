@@ -672,11 +672,11 @@ namespace rs2
                         tmp /= roi_size;
                         tmp *= 10000;
                         fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5);
-
-                        f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
-                        prev_frame_counter = static_cast<int>(frame_counter);
-                        frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
                     }
+
+                    f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
+                    prev_frame_counter = static_cast<int>(frame_counter);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
                 }
 
                 fill_missing_data(fill_factor, total_frames);
@@ -744,11 +744,11 @@ namespace rs2
                         tmp /= roi_fl_size;
                         tmp *= 10000;
                         fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5);
-
-                        f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
-                        prev_frame_counter = static_cast<int>(frame_counter);
-                        frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
                     }
+
+                    f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
+                    prev_frame_counter = static_cast<int>(frame_counter);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
                 }
 
                 fill_missing_data(fill_factor, total_frames);
@@ -770,7 +770,7 @@ namespace rs2
             {
                 auto start_time = std::chrono::high_resolution_clock::now();
                 auto now = start_time;
-                while (frame_counter > start_frame_counter)
+                while (frame_counter >= start_frame_counter)
                 {
                     now = std::chrono::high_resolution_clock::now();
                     if (now - start_time > std::chrono::milliseconds(start_timeout_ms))
@@ -848,11 +848,11 @@ namespace rs2
                         tmp /= data_size;
                         tmp *= 10000;
                         fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5f);
-
-                        f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
-                        prev_frame_counter = static_cast<int>(frame_counter);
-                        frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
                     }
+
+                    f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
+                    prev_frame_counter = static_cast<int>(frame_counter);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
                 }
 
                 fill_missing_data(fill_factor, total_frames);
