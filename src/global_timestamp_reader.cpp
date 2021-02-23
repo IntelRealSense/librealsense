@@ -28,6 +28,40 @@ namespace librealsense
     {
     }
 
+    double TimestampRectifier::get(double next)
+    {
+        // Hardware timestamps are stored as uint32_t
+        static const uint64_t max_ticks = UINT32_MAX;
+        static const uint64_t low_threshold = max_ticks / 3;
+        static const uint64_t high_threshold = 2 * low_threshold;
+        static const double timestamp_msec_to_usec = 1000;
+
+        // Convert back to hardware ticks
+        uint64_t next_ticks = uint64_t(next * timestamp_msec_to_usec);
+
+        // Rectify the timestamp
+        uint64_t base = (_max_value / max_ticks) * max_ticks;
+        if ((next_ticks < low_threshold) &&
+            (_max_value - base > high_threshold))
+        {
+            // Increase base - we're wrapping around
+            base += max_ticks;
+        }
+        else if ((base != 0) &&
+                 (next_ticks > high_threshold) &&
+                 (_max_value - base < low_threshold))
+        {
+            // Decrease base temporarily - non-monotonic input?
+            base -= max_ticks;
+        }
+
+        uint64_t value = next_ticks + base;
+        _max_value = std::max<uint64_t>(_max_value, value);
+
+        // Return a floating-point timestamp
+        return value * TIMESTAMP_USEC_TO_MSEC;
+    }
+
     void CLinearCoefficients::reset()
     {
         _last_values.clear();
@@ -40,6 +74,8 @@ namespace librealsense
 
     void CLinearCoefficients::add_value(CSample val)
     {
+        val._x = _rectifier.get(val._x);
+
         while (_last_values.size() > _buffer_size)
         {
             _last_values.pop_back();
@@ -117,6 +153,8 @@ namespace librealsense
 
     double CLinearCoefficients::calc_value(double x) const
     {
+        x = _rectifier.get(x);
+
         double a, b;
         get_a_b(x, a, b);
         double y(a * (x - _base_sample._x) + b + _base_sample._y);
@@ -124,34 +162,9 @@ namespace librealsense
         return y;
     }
 
-    bool CLinearCoefficients::update_samples_base(double x)
-    {
-        static const double max_device_time(pow(2, 32) * TIMESTAMP_USEC_TO_MSEC);
-        double base_x;
-        if (_last_values.empty())
-            return false;
-        if ((_last_values.front()._x - x) > max_device_time / 2)
-            base_x = max_device_time;
-        else if ((x - _last_values.front()._x) > max_device_time / 2)
-            base_x = -max_device_time;
-        else
-            return false;
-        LOG_DEBUG(__FUNCTION__ << "(" << base_x << ")");
-
-        double a, b;
-        get_a_b(x+base_x, a, b);
-        for (auto &&sample : _last_values)
-        {
-            sample._x -= base_x;
-        }
-        _prev_time -= base_x;
-        _base_sample._y += a * base_x;
-        return true;
-    }
-
     void CLinearCoefficients::update_last_sample_time(double x)
     {
-        _last_request_time = x;
+        _last_request_time = _rectifier.get(x);
     }
 
     time_diff_keeper::time_diff_keeper(global_time_interface* dev, const unsigned int sampling_interval_ms) :
@@ -217,10 +230,6 @@ namespace librealsense
                 _min_command_delay = command_delay;
             }
             double system_time(system_time_finish - _min_command_delay);
-            if (_is_ready)
-            {
-                _coefs.update_samples_base(sample_hw_time);
-            }
             CSample crnt_sample(sample_hw_time, system_time);
             _coefs.add_value(crnt_sample);
             _is_ready = true;
@@ -261,7 +270,6 @@ namespace librealsense
         is_ready = _is_ready;
         if (_is_ready)
         {
-            _coefs.update_samples_base(crnt_hw_time);
             _coefs.update_last_sample_time(crnt_hw_time);
             return _coefs.calc_value(crnt_hw_time);
         }
