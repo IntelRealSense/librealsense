@@ -234,7 +234,7 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
     reset_info()
     return True
 
-def check_frame_drops(frame, previous_frame_number, allowed_drops = 1):
+def check_frame_drops(frame, previous_frame_number, allowed_drops = 1, allowed_repeated = False):
     """
     Used for checking frame drops while streaming
     :param frame: Current frame being checked
@@ -252,7 +252,7 @@ def check_frame_drops(frame, previous_frame_number, allowed_drops = 1):
         if dropped_frames > allowed_drops:
             print( dropped_frames, "frame(s) starting from frame", previous_frame_number + 1, "were dropped" )
             failed = True
-        if dropped_frames < 0:
+        if dropped_frames < 0 and not allowed_repeated:
             print( "Frames repeated or out of order. Got frame", frame_number, "after frame",
                    previous_frame_number)
             failed = True

@@ -431,13 +431,12 @@ namespace librealsense
 
     unsigned int timestamp_composite_matcher::get_fps(const frame_holder & f)
     {
-        uint32_t fps = 0;
+        uint32_t fps = f.frame->get_stream()->get_framerate();
         if(f.frame->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
         {
             fps = (uint32_t)f.frame->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
         }
-        LOG_DEBUG("fps " <<fps<<" "<< frame_to_string(const_cast<frame_holder&>(f)));
-        return fps?fps:f.frame->get_stream()->get_framerate();
+        return fps;
     }
 
     void timestamp_composite_matcher::update_next_expected(const frame_holder & f)

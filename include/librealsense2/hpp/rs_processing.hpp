@@ -600,7 +600,7 @@ namespace rs2
         /**
         * Sync instance to align frames from different streams
         */
-        syncer(int queue_size = 1)
+        syncer(int queue_size = 10)
             :_results(queue_size)
         {
             _sync.start(_results);

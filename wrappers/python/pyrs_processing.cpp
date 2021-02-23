@@ -100,7 +100,7 @@ void init_processing(py::module &m) {
     // rs2::asynchronous_syncer
 
     py::class_<rs2::syncer> syncer(m, "syncer", "Sync instance to align frames from different streams");
-    syncer.def(py::init<int>(), "queue_size"_a = 1)
+    syncer.def(py::init<int>(), "queue_size"_a = 10)
         .def("wait_for_frames", &rs2::syncer::wait_for_frames, "Wait until a coherent set "
              "of frames becomes available", "timeout_ms"_a = 5000, py::call_guard<py::gil_scoped_release>())
         .def("poll_for_frames", [](const rs2::syncer &self) {
