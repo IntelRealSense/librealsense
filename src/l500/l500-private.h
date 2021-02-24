@@ -280,8 +280,8 @@ namespace librealsense
             eye_safety_stuck_at_flash_otp_error = 24
         };
 
-        // Each of the above is mapped to a string -- but only for those we identify as error: warnings right now
-        // are listed below as comments and are treated as unknown warnings...
+        // Each of the above is mapped to a string -- but only for those we identify as errors: warnings are
+        // listed below as comments and are treated as unknown warnings...
         // NOTE: a unit-test in func/hw-errors/ directly uses this map and tests it
         const std::map< uint8_t, std::string > l500_fw_error_report = {
             { success,                      "Success" },
