@@ -668,26 +668,26 @@ namespace librealsense
         }
         else
         {
-            if (depth >= 0)
+            if (depth == 0)
             {
                 LOG_INFO("run_tare_calibration with parameters: speed = " << speed << " average_step_count = " << average_step_count << " step_count = " << step_count << " accuracy = " << accuracy << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
                 check_tare_params(speed, scan_parameter, data_sampling, average_step_count, step_count, accuracy);
+
+                std::shared_ptr<ds5_advanced_mode_base> preset_recover;
+                if (apply_preset)
+                    preset_recover = change_preset();
+
+                auto param2 = (int)ground_truth_mm * 100;
+
+                tare_calibration_params param3{ (byte)average_step_count, (byte)step_count, (byte)accuracy, 0 };
+
+                param4 param{ (byte)scan_parameter, 0, (byte)data_sampling };
+                if (host_assistance)
+                    param.param_4 |= (1 << 8);
+
+                if (depth == 0)
+                    _hw_monitor->send(command{ ds::AUTO_CALIB, tare_calib_begin, param2, param3.param3, param.param_4 });
             }
-
-            std::shared_ptr<ds5_advanced_mode_base> preset_recover;
-            if (apply_preset)
-                preset_recover = change_preset();
-
-            auto param2 = (int)ground_truth_mm * 100;
-
-            tare_calibration_params param3{ (byte)average_step_count, (byte)step_count, (byte)accuracy, 0 };
-
-            param4 param{ (byte)scan_parameter, 0, (byte)data_sampling };
-            if (host_assistance)
-                param.param_4 |= (1 << 8);
-
-            if (depth == 0)
-                _hw_monitor->send(command{ ds::AUTO_CALIB, tare_calib_begin, param2, param3.param3, param.param_4 });
 
             std::vector<uint8_t> res;
             if (!host_assistance || depth < 0)
@@ -704,7 +704,6 @@ namespace librealsense
                 do
                 {
                     memset(&result, 0, sizeof(DirectSearchCalibrationResult));
-
                     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
                     // Check calibration status
