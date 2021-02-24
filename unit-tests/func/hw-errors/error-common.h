@@ -3,8 +3,6 @@
 
 #include <concurrency.h>
 
-using namespace rs2;
-
 // This should be define for l500 or d400
 void trigger_error_or_exit(const rs2::device & dev, uint8_t num);
 
