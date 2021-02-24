@@ -3,11 +3,10 @@
 
 #include <concurrency.h>
 
-// This should be define for l500 or d400
-void trigger_error_or_exit(const rs2::device & dev, uint8_t num);
+// This should be defined, per device type
+void trigger_error_or_exit( const rs2::device & dev, uint8_t num );
 
-// This function loop over all posiable hw errors use hw-monitor command to trigger them
-// and check that we call to user callback with the error
+// Loop over all possible hw errors and trigger them. Check that the user callback gets the error.
 void validate_errors_handling( const rs2::device & dev,
                                const std::map< uint8_t, std::pair< std::string, rs2_log_severity > > & error_report )
 {
@@ -19,7 +18,6 @@ void validate_errors_handling( const rs2::device & dev,
     rs2_log_severity severity;
     std::condition_variable cv;
     std::mutex m;
-
 
     depth_sens.set_notifications_callback( [&]( rs2::notification n ) {
         std::lock_guard< std::mutex > lock( m );
