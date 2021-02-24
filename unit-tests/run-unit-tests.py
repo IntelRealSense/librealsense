@@ -371,8 +371,32 @@ class ExeTest(Test):
         :param testname: name of the test
         :param exe: full path to executable
         """
+        global current_dir
         Test.__init__(self, testname)
         self.exe = exe
+
+        # Finding the c/cpp file of the test to get the configuration
+        split_testname = testname.split( '-' )
+        cpp_path = current_dir
+        found_test_dir = False
+
+        while not found_test_dir:
+            found_test_dir = True
+            for i in range(2, len(split_testname) ):
+                tmp_path = cpp_path + os.sep + '-'.join(split_testname[1:i])
+                if os.path.isdir(tmp_path):
+                    cpp_path = tmp_path
+                    del split_testname[1:i]
+                    found_test_dir = False
+                    break
+
+        cpp_path += os.sep + '-'.join( split_testname )
+        if os.path.isfile( cpp_path + ".cpp" ):
+            cpp_path += ".cpp"
+        else:
+            cpp_path += ".c"
+
+        self._config = TestConfigFromText( cpp_path, r'//\s*#\s*test:' )
 
     @property
     def command(self):
