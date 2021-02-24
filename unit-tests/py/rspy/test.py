@@ -15,7 +15,6 @@ messages in case of a failed check
 """
 
 import os, sys, subprocess, traceback, platform
-import pyrealsense2 as rs
 
 n_assertions = 0
 n_failed_assertions = 0
@@ -46,12 +45,16 @@ def set_env_vars(env_vars):
         for env_var, val in env_vars.items():
             os.environ[env_var] = val
         cmd = [sys.executable]
+        if 'site' not in sys.modules:
+            #     -S     : don't imply 'import site' on initialization
+            cmd += ["-S"]
         if sys.flags.verbose:
+            #     -v     : verbose (trace import statements)
             cmd += ["-v"]
         cmd += sys.argv
         cmd += ["rerun"]
         p = subprocess.run( cmd, stderr=subprocess.PIPE, universal_newlines=True )
-        exit(p.returncode)
+        sys.exit( p.returncode )
     sys.argv = sys.argv[:-1]  # Remove the rerun
 
 def find_first_device_or_exit():
@@ -59,10 +62,11 @@ def find_first_device_or_exit():
     :return: the first device that was found, if no device is found the test is skipped. That way we can still run
         the unit-tests when no device is connected and not fail the tests that check a connected device
     """
+    import pyrealsense2 as rs
     c = rs.context()
     if not c.devices.size():  # if no device is connected we skip the test
         print("No device found, skipping test")
-        exit(0)
+        sys.exit( 0 )
     return c.devices[0]
 
 def find_devices_by_product_line_or_exit(product_line):
@@ -72,11 +76,12 @@ def find_devices_by_product_line_or_exit(product_line):
         That way we can still run the unit-tests when no device is connected
         and not fail the tests that check a connected device
     """
+    import pyrealsense2 as rs
     c = rs.context()
     devices_list = c.query_devices(product_line)
     if devices_list.size() == 0:
         print("No device of the" , product_line ,"product line was found; skipping test")
-        exit(0)
+        sys.exit( 0 )
     return devices_list
 
 def print_stack():
@@ -112,7 +117,7 @@ def check_failed():
 
 def abort():
     print("Abort was specified in a failed check. Aborting test")
-    exit(1)
+    sys.exit( 1 )
 
 def check(exp, abort_if_failed = False):
     """
@@ -365,6 +370,6 @@ def print_results_and_exit():
         passed = n_assertions - n_failed_assertions
         print("test cases:", n_tests, "|" , n_failed_tests,  "failed")
         print("assertions:", n_assertions, "|", passed, "passed |", n_failed_assertions, "failed")
-        exit(1)
+        sys.exit(1)
     print("All tests passed (" + str(n_assertions) + " assertions in " + str(n_tests) + " test cases)")
-    exit(0)
+    sys.exit(0)
