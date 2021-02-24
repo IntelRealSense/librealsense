@@ -11,6 +11,7 @@ In order to run this, ensure that your camera is streaming. This can be done usi
 |`-l <xml-path>`|xml file ful path, used to parse the logs||
 |`-p <polling-interval-in-ms>`|logs polling interval (in milliseconds)| 100 | 25-300|
 |`-f`|collect flash logs instead of firmware logs||
+|`-o <file-path>`|output file path||
 
 ## Usage
 After installing `librealsense` run `rs-fw-logger` to launch the tool. 

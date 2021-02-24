@@ -54,7 +54,6 @@ def is_color_on():
 
 
 def quiet_on():
-    print( "QUIET ON" )
     global out
     def out(*args):
         pass
@@ -86,6 +85,9 @@ def debug_on():
 def is_debug_on():
     global _debug_on
     return _debug_on
+if '--debug' in sys.argv:
+    sys.argv.remove( '--debug' )
+    debug_on()
 
 
 def i(*args):

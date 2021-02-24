@@ -1,19 +1,23 @@
 #!python3
 
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 import sys, os, subprocess, locale, re, platform, getopt
 from abc import ABC, abstractmethod
 
-# Add our py/ module directory to Python's list so we can use them
+# Remove Python's default list of places to look for modules!
+# We want only modules in the directories we specifically provide to be found,
+# otherwise pyrs other than what we compiled might be found...
+sys.path = list()
+sys.path.append( '' )  # directs Python to search modules in the current directory first
+# Add our py/ module directory
 current_dir = os.path.dirname( os.path.abspath( __file__ ))
-sys.path.insert( 1, current_dir + os.sep + "py" )
+sys.path.append( current_dir + os.sep + "py" )
 
 from rspy import log
 
 def usage():
-    ourname = os.path.basename(sys.argv[0])
     ourname = os.path.basename(sys.argv[0])
     print( 'Syntax: ' + ourname + ' [options] [dir]' )
     print( '        dir: the directory holding the executable tests to run (default to the build directory')
@@ -71,8 +75,6 @@ to_stdout = False
 for opt,arg in opts:
     if opt in ('-h','--help'):
         usage()
-    elif opt in ('--debug'):
-        log.debug_on()
     elif opt in ('-v','--verbose'):
         log.verbose_on()
     elif opt in ('-q','--quiet'):
@@ -111,7 +113,7 @@ n_tests = 0
 
 # wrapper function for subprocess.run
 def subprocess_run(cmd, stdout = None):
-    log.d( 'running:', cmd )
+    log.d( '    running:', cmd )
     handle = None
     try:
         if stdout  and  stdout != subprocess.PIPE:
@@ -150,11 +152,16 @@ if pyrs:
     # We need to add the directory not the file itself
     pyrs_path = os.path.dirname(pyrs_path)
     log.d( 'found pyrealsense pyd in:', pyrs_path )
-    # Add the necessary path to the PYTHONPATH environment variable so python will look for modules there
-    os.environ["PYTHONPATH"] = pyrs_path
-    # We also need to add the path to the python packages that the tests use
-    os.environ["PYTHONPATH"] += os.pathsep + (current_dir + os.sep + "py")
-    # We can simply change `sys.path` but any child python scripts won't see it. We change the environment instead.
+
+# Figure out which sys.path we want the tests to see, assuming we have Python tests
+#     PYTHONPATH is what Python will ADD to sys.path for the child processes
+# (We can simply change `sys.path` but any child python scripts won't see it; we change the environment instead)
+#
+# We also need to add the path to the python packages that the tests use
+os.environ["PYTHONPATH"] = current_dir + os.sep + "py"
+#
+if pyrs:
+    os.environ["PYTHONPATH"] += os.pathsep + pyrs_path
 
 def remove_newlines (lines):
     for line in lines:
@@ -329,6 +336,11 @@ class PyTest(Test):
     @property
     def command(self):
         cmd = [sys.executable]
+        # The unit-tests should only find module we've specifically added -- but Python may have site packages
+        # that are automatically made available. We want to avoid those:
+        #     -S     : don't imply 'import site' on initialization
+        # NOTE: exit() is defined in site.py and works only if the site module is imported!
+        cmd += ['-S']
         if sys.flags.verbose:
             cmd += ["-v"]
         cmd += [self.path_to_script]
@@ -390,9 +402,11 @@ def get_tests():
             manifestfile = target + '/CMakeFiles/TargetDirectories.txt'
         else:
             manifestfile = target + '/../CMakeFiles/TargetDirectories.txt'
+        #log.d( manifestfile )
         for manifest_ctx in grep(r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir$)', manifestfile):
             # We need to first create the test name so we can see if it fits the regex
             testdir = manifest_ctx['match'].group(0)  # "log/internal/test-all"
+            #log.d( testdir )
             testparent = os.path.dirname(testdir)  # "log/internal"
             if testparent:
                 testname = 'test-' + testparent.replace('/', '-') + '-' + os.path.basename(testdir)[5:]  # "test-log-internal-all"
@@ -409,20 +423,19 @@ def get_tests():
 
             yield ExeTest(testname, exe)
 
-    # If we run python tests with no .pyd/.so file they will crash. Therefore we only run them if such a file was found
-    if pyrs:
-        # unit-test scripts are in the same directory as this script
-        for py_test in find(current_dir, '(^|/)test-.*\.py'):
-            testparent = os.path.dirname(py_test)  # "log/internal" <-  "log/internal/test-all.py"
-            if testparent:
-                testname = 'test-' + testparent.replace('/', '-') + '-' + os.path.basename(py_test)[5:-3]  # remove .py
-            else:
-                testname = os.path.basename(py_test)[:-3]
+    # Python unit-test scripts are in the same directory as us... we want to consider running them
+    # (we may not if they're live and we have no pyrealsense2.pyd):
+    for py_test in find(current_dir, '(^|/)test-.*\.py'):
+        testparent = os.path.dirname(py_test)  # "log/internal" <-  "log/internal/test-all.py"
+        if testparent:
+            testname = 'test-' + testparent.replace('/', '-') + '-' + os.path.basename(py_test)[5:-3]  # remove .py
+        else:
+            testname = os.path.basename(py_test)[:-3]
 
-            if regex and not pattern.search( testname ):
-                continue
+        if regex and not pattern.search( testname ):
+            continue
 
-            yield PyTest(testname, py_test)
+        yield PyTest(testname, py_test)
 
 
 def devices_by_test_config( test ):
@@ -456,7 +469,8 @@ def test_wrapper( test, configuration = None ):
 
 
 # Run all tests
-sys.path.insert( 1, pyrs_path )
+if pyrs:
+    sys.path.append( pyrs_path )
 from rspy import devices
 devices.query()
 #
@@ -471,7 +485,7 @@ for test in get_tests():
         continue
     #
     if skip_live_tests:
-        log.d( test.name + ':', 'is live and there are no cameras; skipping' )
+        log.w( test.name + ':', 'is live and there are no cameras; skipping' )
         continue
     #
     for configuration, serial_numbers in devices_by_test_config( test ):
@@ -483,6 +497,11 @@ for test in get_tests():
             test_wrapper( test, configuration )
 
 log.progress()
+#
+if not n_tests:
+    log.e( 'No unit-tests found!' )
+    sys.exit(1)
+#
 n_errors = log.n_errors()
 if n_errors:
     log.out( log.red + str(n_errors) + log.reset, 'of', n_tests, 'test(s)', log.red + 'failed!' + log.reset + log.clear_eos )

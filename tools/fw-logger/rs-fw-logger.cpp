@@ -49,9 +49,11 @@ int main(int argc, char* argv[])
     int default_polling_interval_ms = 100;
     CmdLine cmd("librealsense rs-fw-logger example tool", ' ', RS2_API_VERSION_STR);
     ValueArg<string> xml_arg("l", "load", "Full file path of HW Logger Events XML file", false, "", "Load HW Logger Events XML file");
+    ValueArg<string> out_arg("o", "out", "Full file path of output file", false, "", "Print Fw logs to output file");
     ValueArg<int> polling_interval_arg("p", "polling_interval", "Time Interval between each log messages polling (in milliseconds)", false, default_polling_interval_ms, "");
     SwitchArg flash_logs_arg("f", "flash", "Flash Logs Request", false);
-    cmd.add(xml_arg); 
+    cmd.add(xml_arg);
+    cmd.add(out_arg);
     cmd.add(polling_interval_arg);
     cmd.add(flash_logs_arg);
     cmd.parse(argc, argv);
@@ -59,11 +61,16 @@ int main(int argc, char* argv[])
     log_to_file(RS2_LOG_SEVERITY_WARN, "librealsense.log");
 
     auto use_xml_file = false;
+    auto output_file_path = out_arg.getValue();
+    std::ofstream output_file(output_file_path);
+    // write to file if it is open, else write to console
+    std::ostream& out = (!output_file.is_open() ? std::cout : output_file);
+
     auto xml_full_file_path = xml_arg.getValue();
     auto polling_interval_ms = polling_interval_arg.getValue();
     if (polling_interval_ms < 25 || polling_interval_ms > 300)
     {
-        std::cout << "Polling interval time provided: " << polling_interval_ms << "ms, is not in the valid range [25,300]. Default value " << default_polling_interval_ms << "ms is used." << std::endl;
+        out << "Polling interval time provided: " << polling_interval_ms << "ms, is not in the valid range [25,300]. Default value " << default_polling_interval_ms << "ms is used." << std::endl;
         polling_interval_ms = default_polling_interval_ms;
     }
 
@@ -78,9 +85,9 @@ int main(int argc, char* argv[])
     {
         try
         {
-            cout << "\nWaiting for RealSense device to connect...\n";
+            out << "\nWaiting for RealSense device to connect...\n";
             auto dev = hub.wait_for_device();
-            cout << "RealSense device was connected...\n";
+            out << "RealSense device was connected...\n";
 
             setvbuf(stdout, NULL, _IONBF, 0); // unbuffering stdout
 
@@ -147,7 +154,7 @@ int main(int argc, char* argv[])
                         fw_log_lines.push_back(sstr.str());
                     }
                     for (auto& line : fw_log_lines)
-                       cout << line << endl;
+                        out << line << endl;
                 }
                 else
                 {
