@@ -253,6 +253,7 @@ namespace librealsense
             { L515_PID,                     "Intel RealSense L515"},
         };
 
+        // Known FW error codes, if we poll for errors (RS2_OPTION_ERROR_POLLING_ENABLED)
         enum l500_notifications_types
         {
             success = 0,
@@ -279,8 +280,10 @@ namespace librealsense
             eye_safety_stuck_at_flash_otp_error = 24
         };
 
-        // Elaborate FW XU report.
-        const std::map< uint8_t, std::string> l500_fw_error_report = {
+        // Each of the above is mapped to a string -- but only for those we identify as errors: warnings are
+        // listed below as comments and are treated as unknown warnings...
+        // NOTE: a unit-test in func/hw-errors/ directly uses this map and tests it
+        const std::map< uint8_t, std::string > l500_fw_error_report = {
             { success,                      "Success" },
             { depth_not_available,          "Fatal error occur and device is unable \nto run depth stream" },
             { overflow_infrared,            "Overflow occur on infrared stream" },
@@ -291,7 +294,10 @@ namespace librealsense
             { temp_warning,                 "Warning, temperature close to critical" },
             { temp_critical,                "Critical temperature reached" },
             { DFU_error,                    "DFU error" },
+            //{10 ,                         "L500 HW report - unresolved type 10"},
+            //{11 ,                         "L500 HW report - unresolved type 11"},
             { fall_detected,                "Fall detected stream stopped"  },
+            //{13 ,                         "L500 HW report - unresolved type 13"},
             { ld_alarm,                     "Fatal error occurred (14)" },
             { hard_error,                   "Fatal error occurred (15)" },
             { ld_alarm_hard_error,          "Fatal error occurred (16)" },
