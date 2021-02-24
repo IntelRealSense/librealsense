@@ -661,14 +661,18 @@ namespace librealsense
 
         if (depth > 0)
         {
+            LOG_INFO("run_tare_calibration interactive control with parameters: depth = " << depth );
             _hw_monitor->send(command{ ds::AUTO_CALIB, interactive_scan_control, 2, depth });
             std::vector<uint8_t> res;
             return res;
         }
         else
         {
-            LOG_INFO("run_tare_calibration with parameters: speed = " << speed << " average_step_count = " << average_step_count << " step_count = " << step_count << " accuracy = " << accuracy << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
-            check_tare_params(speed, scan_parameter, data_sampling, average_step_count, step_count, accuracy);
+            if (depth >= 0)
+            {
+                LOG_INFO("run_tare_calibration with parameters: speed = " << speed << " average_step_count = " << average_step_count << " step_count = " << step_count << " accuracy = " << accuracy << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
+                check_tare_params(speed, scan_parameter, data_sampling, average_step_count, step_count, accuracy);
+            }
 
             std::shared_ptr<ds5_advanced_mode_base> preset_recover;
             if (apply_preset)
@@ -890,6 +894,7 @@ namespace librealsense
         if(health)
             *health = reslt->m_dscResultParams.m_healthCheck;
 
+        LOG_INFO("Got calibration results with calib size: " << calib.size());
         return calib;
     }
 

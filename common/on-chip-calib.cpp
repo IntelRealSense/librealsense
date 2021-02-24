@@ -552,6 +552,7 @@ namespace rs2
                 _progress = 20;
 
                 int depth = 0;
+                total_frames = step_count;
                 int prev_frame_counter = total_frames;
                 while (frame_counter < total_frames)
                 {
