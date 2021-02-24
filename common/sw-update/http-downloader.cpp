@@ -11,7 +11,7 @@
 #include <mutex>
 #include <curl/curl.h>
 #include <curl/easy.h>
-#include "types.h"
+#include <src/types.h>
 #endif // CHECK_FOR_UPDATES
 
 #include "http-downloader.h"

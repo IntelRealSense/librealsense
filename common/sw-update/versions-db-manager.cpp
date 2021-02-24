@@ -7,7 +7,7 @@
 
 #include "json.hpp"
 #include "versions-db-manager.h"
-#include <types.h>
+#include <src/types.h>
 
 namespace rs2
 {
