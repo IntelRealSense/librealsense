@@ -2,9 +2,9 @@
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
-#include "../include/librealsense2/hpp/rs_sensor.hpp"
-#include "calibrated-sensor.h"
-#include "max-usable-range-sensor.h"
+#include <include/librealsense2/hpp/rs_sensor.hpp>
+#include <src/calibrated-sensor.h>
+#include <src/max-usable-range-sensor.h>
 
 void init_sensor(py::module &m) {
     /** rs_sensor.hpp **/

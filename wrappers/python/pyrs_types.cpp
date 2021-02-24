@@ -2,7 +2,7 @@
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
-#include "../include/librealsense2/hpp/rs_types.hpp"
+#include <include/librealsense2/hpp/rs_types.hpp>
 
 void init_types(py::module &m) {
     /** rs2_types.hpp **/

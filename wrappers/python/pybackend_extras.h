@@ -1,4 +1,4 @@
-#include "../src/types.h"
+#include <src/types.h>
 
 using namespace librealsense;
 

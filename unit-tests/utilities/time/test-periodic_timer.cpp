@@ -7,7 +7,7 @@
 //#cmake:add-file ../../../common/utilities/time/periodic_timer.h
 
 #include "common.h"
-#include "../common/utilities/time/periodic_timer.h"
+#include <common/utilities/time/periodic_timer.h>
 
 using namespace utilities::time;
 

@@ -4,7 +4,7 @@
 #include <string>
 #include <iostream>
 #include <easylogging++.h>
-#include "../../../src/algo/depth-to-rgb-calibration/debug.h"
+#include <src/algo/depth-to-rgb-calibration/debug.h>
 
 
 // This logger will catch all the realsense logs and output them to the

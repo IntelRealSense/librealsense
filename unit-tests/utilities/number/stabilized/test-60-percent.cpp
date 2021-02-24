@@ -4,8 +4,8 @@
 //#cmake:add-file ../../../../common/utilities/number/stabilized-value.h
 
 
-#include "../../../test.h"
-#include <../common/utilities/number/stabilized-value.h>
+#include <unit-tests/test.h>
+#include <common/utilities/number/stabilized-value.h>
 
 using namespace utilities::number;
 // Test group description:

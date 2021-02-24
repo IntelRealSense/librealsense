@@ -7,7 +7,7 @@
 
 #include <fstream>
 #include <string>
-#include "../../../src/algo/depth-to-rgb-calibration/k-to-dsm.h"
+#include <src/algo/depth-to-rgb-calibration/k-to-dsm.h>
 #include "../../filesystem.h"
 
 inline std::string bin_dir( std::string const & scene_dir )

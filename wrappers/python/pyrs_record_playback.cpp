@@ -2,7 +2,7 @@
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
-#include "../include/librealsense2/hpp/rs_record_playback.hpp"
+#include <include/librealsense2/hpp/rs_record_playback.hpp>
 
 void init_record_playback(py::module &m) {
     /** rs_record_playback.hpp **/

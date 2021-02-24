@@ -4,13 +4,13 @@
 #pragma once
 
 #include "../algo-common.h"
-#include "../../../src/algo/depth-to-rgb-calibration/optimizer.h"
+#include <src/algo/depth-to-rgb-calibration/optimizer.h>
 #include "scene-data.h"
-#include "../../../src/algo/depth-to-rgb-calibration/k-to-dsm.h"
-#include "../../../src/algo/depth-to-rgb-calibration/utils.h"
-#include "../../../src/algo/depth-to-rgb-calibration/uvmap.h"
+#include <src/algo/depth-to-rgb-calibration/k-to-dsm.h>
+#include <src/algo/depth-to-rgb-calibration/utils.h>
+#include <src/algo/depth-to-rgb-calibration/uvmap.h>
 
-#include "../../../src/algo/thermal-loop/l500-thermal-loop.h"
+#include <src/algo/thermal-loop/l500-thermal-loop.h>
 
 #include "ac-logger.h"
 #if ! defined( DISABLE_LOG_TO_STDOUT )

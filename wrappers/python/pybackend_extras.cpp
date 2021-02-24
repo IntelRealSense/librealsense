@@ -4,7 +4,7 @@
 using namespace librealsense;
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "../../third-party/stb_image_write.h"
+#include <third-party/stb_image_write.h>
 
 // 123e4567-e89b-12d3-a456-426655440000
 namespace pybackend2 {

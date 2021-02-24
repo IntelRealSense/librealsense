@@ -4,7 +4,7 @@
 //#cmake:add-file ../../../common/utilities/string/split.h
 
 #include "common.h"
-#include "../../../common/utilities/string/split.h"
+#include <common/utilities/string/split.h>
 
 using namespace utilities::string;
 

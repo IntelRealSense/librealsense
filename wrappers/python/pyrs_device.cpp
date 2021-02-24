@@ -2,9 +2,9 @@
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
-#include "../include/librealsense2/hpp/rs_internal.hpp"
-#include "../include/librealsense2/hpp/rs_device.hpp"
-#include "../include/librealsense2/hpp/rs_record_playback.hpp" // for downcasts
+#include <include/librealsense2/hpp/rs_internal.hpp>
+#include <include/librealsense2/hpp/rs_device.hpp>
+#include <include/librealsense2/hpp/rs_record_playback.hpp> // for downcasts
 
 void init_device(py::module &m) {
     /** rs_device.hpp **/

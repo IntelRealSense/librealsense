@@ -2,7 +2,7 @@
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
-#include "../include/librealsense2/hpp/rs_export.hpp"
+#include <include/librealsense2/hpp/rs_export.hpp>
 
 void init_export(py::module &m) {
     /* rs_export.hpp */

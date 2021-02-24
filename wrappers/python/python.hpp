@@ -24,7 +24,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #define NAME pyrealsense2
 #define SNAME "pyrealsense2"
 // For rs2_format
-#include "../include/librealsense2/h/rs_sensor.h"
+#include <include/librealsense2/h/rs_sensor.h>
 
 namespace py = pybind11;
 using namespace pybind11::literals;

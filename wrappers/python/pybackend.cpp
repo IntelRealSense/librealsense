@@ -14,11 +14,11 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 // makes std::function conversions work
 #include <pybind11/functional.h>
 
-#include "core/options.h"   // Workaround for the missing DLL_EXPORT template
-#include "core/info.h"   // Workaround for the missing DLL_EXPORT template
-#include "../src/backend.h"
+#include <src/core/options.h>   // Workaround for the missing DLL_EXPORT template
+#include <src/core/info.h>   // Workaround for the missing DLL_EXPORT template
+#include <src/backend.h>
 #include "pybackend_extras.h"
-#include "../../third-party/stb_image_write.h"
+#include <third-party/stb_image_write.h>
 
 #include <sstream>
 #include <vector>

@@ -6,8 +6,8 @@
 //#cmake:add-file ../../../third-party/imgui/imgui.h
 
 #include "common.h"
-#include "../../../common/utilities/imgui/wrap.h"
-#include "../../../third-party/imgui/imgui.h"
+#include <common/utilities/imgui/wrap.h>
+#include <third-party/imgui/imgui.h>
 
 namespace ImGui {
 // Mock ImGui function for test

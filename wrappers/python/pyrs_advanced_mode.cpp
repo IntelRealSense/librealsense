@@ -2,8 +2,8 @@
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
-#include "../include/librealsense2/rs_advanced_mode.hpp"
-#include "../include/librealsense2/hpp/rs_serializable_device.hpp"
+#include <include/librealsense2/rs_advanced_mode.hpp>
+#include <include/librealsense2/hpp/rs_serializable_device.hpp>
 
 void init_advanced_mode(py::module &m) {
     /** RS400 Advanced Mode commands **/

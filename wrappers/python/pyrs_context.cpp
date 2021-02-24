@@ -2,7 +2,7 @@
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
-#include "../include/librealsense2/hpp/rs_context.hpp"
+#include <include/librealsense2/hpp/rs_context.hpp>
 
 void init_context(py::module &m) {
         /* rs2_context.hpp */

@@ -2,7 +2,7 @@
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
-#include "../include/librealsense2/hpp/rs_pipeline.hpp"
+#include <include/librealsense2/hpp/rs_pipeline.hpp>
 
 void init_pipeline(py::module &m) {
         /** rs_pipeline.hpp **/

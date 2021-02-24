@@ -2,7 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "../../test.h"
-#include <concurrency.h>
+#include <src/concurrency.h>
 
 using namespace rs2;
 

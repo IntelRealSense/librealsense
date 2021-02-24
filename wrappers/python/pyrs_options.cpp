@@ -2,7 +2,7 @@
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
-#include "../include/librealsense2/hpp/rs_options.hpp"
+#include <include/librealsense2/hpp/rs_options.hpp>
 
 void init_options(py::module &m) {
     /** rs_options.hpp **/

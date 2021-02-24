@@ -89,7 +89,6 @@ def grep( expr, *args ):
                 yield context
 
 librealsense = os.path.dirname(os.path.dirname(os.path.abspath(__file__))).replace('\\', '/')
-src = librealsense + '/src'
 
 def generate_cmake( builddir, testdir, testname, filelist ):
     makefile = builddir + '/' + testdir + '/CMakeLists.txt'
@@ -112,7 +111,7 @@ target_link_libraries( ''' + testname + ''' ${DEPENDENCIES})
 
 set_target_properties( ''' + testname + ''' PROPERTIES FOLDER "Unit-Tests/''' + os.path.dirname( testdir ) + '''" )
 
-target_include_directories(''' + testname + ''' PRIVATE ''' + src + ''')
+target_include_directories(''' + testname + ''' PRIVATE ''' + librealsense + ''')
 
 ''' )
     handle.close()
