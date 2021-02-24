@@ -97,6 +97,7 @@ matrix:
       sudo: required
       osx_image: xcode7
       script:
+        - export OPENSSL_ROOT_DIR=`brew --prefix openssl` # Used by libcurl for 'CHECK_FOR_UPDATES' capability
         - cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DCHECK_FOR_UPDATES=true
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
         - ls
@@ -108,7 +109,7 @@ matrix:
       dist: xenial
       env: LRS_BUILD_ANDROID=true
       script:
-        - cmake .. -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r20b/build/cmake/android.toolchain.cmake  -DCHECK_FOR_UPDATES=true
+        - cmake .. -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r20b/build/cmake/android.toolchain.cmake
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
         - ls
 
