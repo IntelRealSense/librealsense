@@ -4,7 +4,7 @@
 #include "ip_device.hh"
 #include <src/ipDeviceCommon/Statistic.h>
 
-#include "api.h"
+#include <src/api.h>
 #include <librealsense2-net/rs_net.h>
 
 #include <chrono>

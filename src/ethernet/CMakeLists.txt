@@ -49,7 +49,7 @@ include_directories(${PROJECT_NAME}
     ${LIVE}/BasicUsageEnvironment/include
 )
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
 
 if(WIN32)
     #
