@@ -929,8 +929,8 @@ namespace librealsense
 
             int depth_width  = usb3mode ?      848 : 640;
             int depth_height = usb3mode ?      480 : 480;
-            int color_width = usb3mode ?       1280 : 640;
-            int color_height = usb3mode ?      720 : 480;
+            int color_width = usb3mode ?       848 : 640;
+            int color_height = usb3mode ?      480 : 480;
             int fps    = usb3mode ?            30 :  15;
 
             tags.push_back({ RS2_STREAM_COLOR, -1, color_width, color_height, RS2_FORMAT_RGB8, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });

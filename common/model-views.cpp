@@ -1151,7 +1151,7 @@ namespace rs2
         {
             auto sensor_profiles = s->get_stream_profiles();
             reverse(begin(sensor_profiles), end(sensor_profiles));
-            rs2_format def_format{ RS2_FORMAT_ANY };
+            std::map<int, rs2_format> def_format{ {0, RS2_FORMAT_ANY} };
             auto default_resolution = std::make_pair(1280, 720);
             auto default_fps = 30;
             for (auto&& profile : sensor_profiles)
@@ -1185,7 +1185,7 @@ namespace rs2
                 if (profile.is_default())
                 {
                     stream_enabled[profile.unique_id()] = true;
-                    def_format = profile.format();
+                    def_format[profile.unique_id()] = profile.format();
                 }
 
                 profiles.push_back(profile);
@@ -1227,10 +1227,9 @@ namespace rs2
 
             for (auto format_array : format_values)
             {
-                if (get_default_selection_index(format_array.second, def_format, &selection_index))
+                if (get_default_selection_index(format_array.second, def_format[format_array.first], &selection_index))
                 {
                     ui.selected_format_id[format_array.first] = selection_index;
-                    break;
                 }
             }
 
