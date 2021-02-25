@@ -279,16 +279,16 @@ class TestConfigFromText(TestConfig):
             if directive == 'device':
                 log.d( '    configuration:', params )
                 if not params:
-                    log.e( source + str(context.index) + ': device directive with no devices listed' )
+                    log.e( source + '+' + str(context.index) + ': device directive with no devices listed' )
                 else:
                     self._configurations.append( params )
             elif directive == 'priority':
                 if len(params) == 1 and params[0].isdigit():
                     self._priority = int( params[0] )
                 else:
-                    log.e( source + str(context.index) + ': priority directive with an invalid parameters:', params )
+                    log.e( source + '+' + str(context.index) + ': priority directive with invalid parameters:', params )
             else:
-                log.e( source + str(context.index) + ': invalid directive "' + directive + '"; ignoring' )
+                log.e( source + '+' + str(context.index) + ': invalid directive "' + directive + '"; ignoring' )
 
 
 class Test(ABC):  # Abstract Base Class
