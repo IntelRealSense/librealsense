@@ -25,8 +25,9 @@ def usage():
     print( '        --debug        Turn on debugging information' )
     print( '        -v, --verbose  Errors will dump the log to stdout' )
     print( '        -q, --quiet    Suppress output; rely on exit status (0=no failures)' )
-    print( '        -r, --regex    run all tests that fit the following regular expression')
-    print( '        -s, --stdout   do not redirect stdout to logs')
+    print( '        -r, --regex    run all tests that fit the following regular expression' )
+    print( '        -s, --stdout   do not redirect stdout to logs' )
+    print( '        -t, --tag      run all tests with the following tag' )
     sys.exit(2)
 
 
@@ -65,13 +66,14 @@ def is_executable(path_to_test):
 
 # Parse command-line:
 try:
-    opts,args = getopt.getopt( sys.argv[1:], 'hvqr:s',
-        longopts = [ 'help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout' ])
+    opts,args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
+        longopts = [ 'help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag' ])
 except getopt.GetoptError as err:
     log.e( err )   # something like "option -a not recognized"
     usage()
 regex = None
 to_stdout = False
+tag = None
 for opt,arg in opts:
     if opt in ('-h','--help'):
         usage()
@@ -83,6 +85,8 @@ for opt,arg in opts:
         regex = arg
     elif opt in ('-s', '--stdout'):
         to_stdout = True
+    elif opt in ('-t', '--tag'):
+        tag = arg
 
 if len(args) > 1:
     usage()
@@ -242,6 +246,7 @@ class TestConfig(ABC):  # Abstract Base Class
     def __init__(self):
         self._configurations = list()
         self._priority = 1000
+        self._tags = set()
 
     @property
     def configurations(self):
@@ -250,6 +255,10 @@ class TestConfig(ABC):  # Abstract Base Class
     @property
     def priority(self):
         return self._priority
+
+    @property
+    def tags(self):
+        return self._tags
 
 class TestConfigFromText(TestConfig):
     """
@@ -287,6 +296,8 @@ class TestConfigFromText(TestConfig):
                     self._priority = int( params[0] )
                 else:
                     log.e( source + '+' + str(context.index) + ': priority directive with invalid parameters:', params )
+            elif directive == 'tag':
+                self._tags.add(params)
             else:
                 log.e( source + '+' + str(context.index) + ': invalid directive "' + directive + '"; ignoring' )
 
@@ -521,6 +532,9 @@ skip_live_tests = len(devices.all()) == 0  and  not devices.acroname
 #
 log.reset_errors()
 for test in prioritize_tests( get_tests() ):
+    #
+    if tag and tag not in test.config.tags:
+        continue
     #
     if not test.is_live():
         test_wrapper( test )
