@@ -9,17 +9,20 @@ import sys, os
 try:
     import pyrealsense2 as rs
     log.d( rs )
+    #
+    # Have to add site-packages, just in case: if -S was used, or parent script played with
+    # sys.path (as run-unit-tests does), then we may not have it!
+    sys.path += [os.path.join( os.path.dirname( sys.executable ), 'lib', 'site-packages')]
+    #
     try:
-        if 'site' not in sys.modules:
-            #     -S     : don't imply 'import site' on initialization
-            sys.path += [os.path.join( os.path.dirname( sys.executable ), 'lib', 'site-packages')]
         from rspy import acroname
     except ModuleNotFoundError:
         # Error should have already been printed
         # We assume there's no brainstem library, meaning no acroname either
+        log.d( 'sys.path=', sys.path )
         acroname = None
-    if 'site' not in sys.modules:
-        sys.path = sys.path[:-1]  # remove what we added
+    #
+    sys.path = sys.path[:-1]  # remove what we added
 except ModuleNotFoundError:
     log.w( 'No pyrealsense2 library is available! Running as if no cameras available...' )
     import sys

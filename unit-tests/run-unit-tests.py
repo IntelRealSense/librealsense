@@ -506,10 +506,11 @@ log.i( 'Logs in:', logdir )
 def test_wrapper( test, configuration = None ):
     global n_tests
     n_tests += 1
-    if configuration:
-        log.progress( '[' + ' '.join( configuration ) + ']', test.name, '...' )
-    else:
-        log.progress( test.name, '...' )
+    if not log.is_debug_on()  or  log.is_color_on():
+        if configuration:
+            log.progress( '[' + ' '.join( configuration ) + ']', test.name, '...' )
+        else:
+            log.progress( test.name, '...' )
     test.run_test()
 
 
