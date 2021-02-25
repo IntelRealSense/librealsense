@@ -371,8 +371,39 @@ class ExeTest(Test):
         :param testname: name of the test
         :param exe: full path to executable
         """
+        global current_dir
         Test.__init__(self, testname)
         self.exe = exe
+
+        # Finding the c/cpp file of the test to get the configuration
+        # TODO: this is limited to a structure in which .cpp files and directories do not share names
+        # For example:
+        #     unit-tests/
+        #         func/
+        #             ...
+        #         test-func.cpp
+        # test-func.cpp will not be found!
+        split_testname = testname.split( '-' )
+        cpp_path = current_dir
+        found_test_dir = False
+
+        while not found_test_dir:
+            # index 0 should be 'test' as tests always start with it
+            found_test_dir = True
+            for i in range(2, len(split_testname) ): # Checking if the next part of the test name is a sub-directory
+                tmp_path = cpp_path + os.sep + '-'.join(split_testname[1:i]) # The next sub-directory could have several words
+                if os.path.isdir(tmp_path): 
+                    cpp_path = tmp_path
+                    del split_testname[1:i]
+                    found_test_dir = False
+                    break
+
+        cpp_path += os.sep + '-'.join( split_testname )
+        if os.path.isfile( cpp_path + ".cpp" ):
+            cpp_path += ".cpp"
+            self._config = TestConfigFromText(cpp_path, r'//#\s*test:')
+        else:
+            log.w( log.red + testname + log.reset + ':', 'No matching .cpp file was found; no configuration will be used!' )
 
     @property
     def command(self):
