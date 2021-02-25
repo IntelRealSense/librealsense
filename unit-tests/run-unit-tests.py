@@ -400,9 +400,9 @@ class ExeTest(Test):
             # index 0 should be 'test' as tests always start with it
             found_test_dir = True
             for i in range(2, len(split_testname) ): # Checking if the next part of the test name is a sub-directory
-                tmp_path = cpp_path + os.sep + '-'.join(split_testname[1:i]) # The next sub-directory could have several words
-                if os.path.isdir(tmp_path):
-                    cpp_path = tmp_path
+                sub_dir_path = cpp_path + os.sep + '-'.join(split_testname[1:i]) # The next sub-directory could have several words
+                if os.path.isdir(sub_dir_path):
+                    cpp_path = sub_dir_path
                     del split_testname[1:i]
                     found_test_dir = False
                     break
