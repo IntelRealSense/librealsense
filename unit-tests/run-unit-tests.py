@@ -286,7 +286,7 @@ class TestConfigFromText(TestConfig):
                 if len(params) == 1 and params[0].isdigit():
                     self._priority = int( params[0] )
                 else:
-                    log.e( source + str(context.index) + ': priority directive with an invalid parameters' )
+                    log.e( source + str(context.index) + ': priority directive with an invalid parameters:', params )
             else:
                 log.e( source + str(context.index) + ': invalid directive "' + directive + '"; ignoring' )
 
