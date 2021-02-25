@@ -241,11 +241,15 @@ class TestConfig(ABC):  # Abstract Base Class
     """
     def __init__(self):
         self._configurations = list()
+        self._priority = 1000
 
     @property
     def configurations(self):
         return self._configurations
 
+    @property
+    def priority(self):
+        return self._priority
 
 class TestConfigFromText(TestConfig):
     """
@@ -278,6 +282,11 @@ class TestConfigFromText(TestConfig):
                     log.e( source + str(context.index) + ': device directive with no devices listed' )
                 else:
                     self._configurations.append( params )
+            elif directive == 'priority':
+                if params[0].isdigit():
+                    self._priority = int( params[0] )
+                else:
+                    log.e( source + str(context.index) + ': priority directive with an invalid type' )
             else:
                 log.e( source + str(context.index) + ': invalid directive "' + directive + '"; ignoring' )
 
@@ -392,7 +401,7 @@ class ExeTest(Test):
             found_test_dir = True
             for i in range(2, len(split_testname) ): # Checking if the next part of the test name is a sub-directory
                 tmp_path = cpp_path + os.sep + '-'.join(split_testname[1:i]) # The next sub-directory could have several words
-                if os.path.isdir(tmp_path): 
+                if os.path.isdir(tmp_path):
                     cpp_path = tmp_path
                     del split_testname[1:i]
                     found_test_dir = False
@@ -468,6 +477,9 @@ def get_tests():
 
         yield PyTest(testname, py_test)
 
+def prioritize_tests( tests ):
+    for test in sorted(tests, key= lambda t: t.config.priority):
+        yield test
 
 def devices_by_test_config( test ):
     """
@@ -509,7 +521,7 @@ devices.query()
 skip_live_tests = len(devices.all()) == 0  and  not devices.acroname
 #
 log.reset_errors()
-for test in get_tests():
+for test in prioritize_tests( get_tests() ):
     #
     if not test.is_live():
         test_wrapper( test )
@@ -523,7 +535,7 @@ for test in get_tests():
         try:
             devices.enable_only( serial_numbers, recycle = True )
         except RuntimeError as e:
-            log.w( log.red + self.name + log.reset + ': ' + str(e) )
+            log.w( log.red + test.name + log.reset + ': ' + str(e) )
         else:
             test_wrapper( test, configuration )
 
