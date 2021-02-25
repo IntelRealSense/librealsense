@@ -197,7 +197,7 @@ def grep( expr, *args ):
         context['filename'] = filename
         with open( filename, errors = 'ignore' ) as file:
             for line in grep_( pattern, remove_newlines( file ), context ):
-                yield context
+                yield line
 
 def cat( filename ):
     with open( filename, errors = 'ignore' ) as file:
@@ -282,16 +282,16 @@ class TestConfigFromText(TestConfig):
             if directive == 'device':
                 log.d( '    configuration:', params )
                 if not params:
-                    log.e( source + '+' + str(context.index) + ': device directive with no devices listed' )
+                    log.e( source + '+' + str(context['index']) + ': device directive with no devices listed' )
                 else:
                     self._configurations.append( params )
             elif directive == 'priority':
                 if len(params) == 1 and params[0].isdigit():
                     self._priority = int( params[0] )
                 else:
-                    log.e( source + '+' + str(context.index) + ': priority directive with invalid parameters:', params )
+                    log.e( source + '+' + str(context['index']) + ': priority directive with invalid parameters:', params )
             else:
-                log.e( source + '+' + str(context.index) + ': invalid directive "' + directive + '"; ignoring' )
+                log.e( source + '+' + str(context['index']) + ': invalid directive "' + directive + '"; ignoring' )
 
 
 class Test(ABC):  # Abstract Base Class
