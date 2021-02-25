@@ -283,10 +283,10 @@ class TestConfigFromText(TestConfig):
                 else:
                     self._configurations.append( params )
             elif directive == 'priority':
-                if params[0].isdigit():
+                if len(params) == 1 and params[0].isdigit():
                     self._priority = int( params[0] )
                 else:
-                    log.e( source + str(context.index) + ': priority directive with an invalid type' )
+                    log.e( source + str(context.index) + ': priority directive with an invalid parameters' )
             else:
                 log.e( source + str(context.index) + ': invalid directive "' + directive + '"; ignoring' )
 
@@ -478,8 +478,7 @@ def get_tests():
         yield PyTest(testname, py_test)
 
 def prioritize_tests( tests ):
-    for test in sorted(tests, key= lambda t: t.config.priority):
-        yield test
+    return sorted(tests, key= lambda t: t.config.priority)
 
 def devices_by_test_config( test ):
     """
