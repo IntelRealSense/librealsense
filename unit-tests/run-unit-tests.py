@@ -11,6 +11,9 @@ from abc import ABC, abstractmethod
 # otherwise pyrs other than what we compiled might be found...
 sys.path = list()
 sys.path.append( '' )  # directs Python to search modules in the current directory first
+sys.path.append( os.path.dirname( sys.executable ))
+sys.path.append( os.path.join( os.path.dirname( sys.executable ), 'DLLs' ))
+sys.path.append( os.path.join( os.path.dirname( sys.executable ), 'lib' ))
 # Add our py/ module directory
 current_dir = os.path.dirname( os.path.abspath( __file__ ))
 sys.path.append( current_dir + os.sep + "py" )

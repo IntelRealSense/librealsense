@@ -2,6 +2,7 @@
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 from rspy import log
+import sys, os
 
 # We need both pyrealsense2 and acroname. We can work without acroname, but
 # without rs no devices at all will be returned.
@@ -9,11 +10,16 @@ try:
     import pyrealsense2 as rs
     log.d( rs )
     try:
+        if 'site' not in sys.modules:
+            #     -S     : don't imply 'import site' on initialization
+            sys.path += [os.path.join( os.path.dirname( sys.executable ), 'lib', 'site-packages')]
         from rspy import acroname
     except ModuleNotFoundError:
         # Error should have already been printed
         # We assume there's no brainstem library, meaning no acroname either
         acroname = None
+    if 'site' not in sys.modules:
+        sys.path = sys.path[:-1]  # remove what we added
 except ModuleNotFoundError:
     log.w( 'No pyrealsense2 library is available! Running as if no cameras available...' )
     import sys
