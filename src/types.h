@@ -473,15 +473,6 @@ namespace librealsense
             }
         }
 
-        void reload() const
-        {
-            std::lock_guard<std::mutex> lock(_mtx);
-            if (_was_init)
-            {
-                _was_init = false;
-            }
-        }
-
     private:
         T* operate() const
         {

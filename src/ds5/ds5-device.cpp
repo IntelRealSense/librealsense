@@ -38,6 +38,7 @@
 #include "proc/hdr-merge.h"
 #include "proc/sequence-id-filter.h"
 #include "hdr-config.h"
+#include "ds5-thermal-monitor.h"
 #include "../common/fw/firmware-version.h"
 #include "fw-update/fw-update-unsigned.h"
 #include "../third-party/json.hpp"
@@ -346,6 +347,19 @@ namespace librealsense
             // needed in order to restore the HDR sub-preset when streaming is turned off and on
             if (_hdr_cfg && _hdr_cfg->is_enabled())
                 get_option(RS2_OPTION_HDR_ENABLED).set(1.f);
+
+            // Activate Thermal Compensation tracking
+            if (supports_option(RS2_OPTION_THERMAL_COMPENSATION) && (get_option(RS2_OPTION_THERMAL_COMPENSATION).query()>0.f))
+                this->_owner->_thermal_monitor->start();
+        }
+
+        void close() override
+        {
+            // Deactivate Thermal Compensation tracking
+            if (supports_option(RS2_OPTION_THERMAL_COMPENSATION))
+                _owner->_thermal_monitor->stop();
+
+            synthetic_sensor::close();
         }
 
         /*
@@ -632,7 +646,7 @@ namespace librealsense
         auto& raw_sensor = get_raw_depth_sensor();
         auto pid = group.uvc_devices.front().pid;
 
-        if ((((hw_mon_over_xu) && (RS400_IMU_PID != pid)) || (!group.usb_devices.size())))
+        if (((hw_mon_over_xu) && (RS400_IMU_PID != pid)) || (!group.usb_devices.size()))
         {
             _hw_monitor = std::make_shared<hw_monitor>(
                 std::make_shared<locked_transfer>(
@@ -642,20 +656,20 @@ namespace librealsense
         }
         else
         {
-                _hw_monitor = std::make_shared<hw_monitor>(
-                    std::make_shared<locked_transfer>(
-                        backend.create_usb_device(group.usb_devices.front()), raw_sensor));
+            _hw_monitor = std::make_shared<hw_monitor>(
+                std::make_shared<locked_transfer>(
+                    backend.create_usb_device(group.usb_devices.front()), raw_sensor));
         }
 
         // Define Left-to-Right extrinsics calculation (lazy)
         // Reference CS - Right-handed; positive [X,Y,Z] point to [Left,Up,Forward] accordingly.
         _left_right_extrinsics = std::make_shared<lazy<rs2_extrinsics>>([this]()
-        {
-            rs2_extrinsics ext = identity_matrix();
-            auto table = check_calib<coefficients_table>(*_coefficients_table_raw);
-            ext.translation[0] = 0.001f * table->baseline; // mm to meters
-            return ext;
-        });
+            {
+                rs2_extrinsics ext = identity_matrix();
+                auto table = check_calib<coefficients_table>(*_coefficients_table_raw);
+                ext.translation[0] = 0.001f * table->baseline; // mm to meters
+                return ext;
+            });
 
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_left_ir_stream);
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_right_ir_stream, _left_right_extrinsics);
@@ -713,8 +727,8 @@ namespace librealsense
         ); // L+R
 
         depth_sensor.register_processing_block(
-            {RS2_FORMAT_Y12I},
-            {{RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2}},
+            { RS2_FORMAT_Y12I },
+            { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
             []() {return std::make_shared<y12i_to_y16y16>(); }
         );
 
@@ -756,6 +770,19 @@ namespace librealsense
                     RS2_OPTION_ASIC_TEMPERATURE));
         }
 
+        if ((val_in_range(pid, { RS455_PID })) && (_fw_version >= firmware_version("5.12.11.0")))
+        {
+            auto thermal_compensation_toggle = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, 
+                ds::DS5_THERMAL_COMPENSATION, "Toggle Thermal Compensation Mechanism");
+
+            auto temperature_sensor = depth_sensor.get_option_handler(RS2_OPTION_ASIC_TEMPERATURE);
+
+            _thermal_monitor = std::make_shared<ds5_thermal_monitor>(depth_sensor,temperature_sensor);
+
+            depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
+                std::make_shared<thermal_compensation>(_thermal_monitor,thermal_compensation_toggle));
+
+        }
         // minimal firmware version in which hdr feature is supported
         firmware_version hdr_firmware_version("5.12.8.100");
 

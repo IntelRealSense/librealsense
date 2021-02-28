@@ -569,11 +569,48 @@ namespace rs2
         void release() override { delete this; }
     };
 
+    class device_passive_calibration : public device
+    {
+    public:
+        device_passive_calibration(device d)
+            : device(d.get())
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_DEVICE_PASSIVE_CALIBRATION, &e) == 0 && !e)
+            {
+                _dev.reset();
+            }
+            error::handle(e);
+        }
+
+        /*
+        Your callback should look like this, for example:
+            sensor.register_calibration_change_callback(
+                []( rs2_calibration_status ) noexcept
+                {
+                    ...
+                })
+        */
+        template< typename T >
+        void register_calibration_change_callback(T callback)
+        {
+            // We wrap the callback with an interface and pass it to librealsense, who will
+            // now manage its lifetime. Rather than deleting it, though, it will call its
+            // release() function, where (back in our context) it can be safely deleted:
+            rs2_error* e = nullptr;
+            rs2_register_calibration_change_callback_cpp(
+                _dev.get(),
+                new calibration_change_callback< T >(std::move(callback)),
+                &e);
+            error::handle(e);
+        }
+    };
+
     class device_calibration : public device
     {
     public:
         device_calibration( device d )
-            : device( d.get() )
+            : device(d.get())
         {
             rs2_error* e = nullptr;
             if( rs2_is_device_extendable_to( _dev.get(), RS2_EXTENSION_DEVICE_CALIBRATION, &e ) == 0 && !e )

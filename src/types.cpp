@@ -326,6 +326,7 @@ namespace librealsense
             CASE(HDR_MERGE)
             CASE(MAX_USABLE_RANGE_SENSOR)
             CASE(DEBUG_STREAM_SENSOR)
+            CASE(DEVICE_PASSIVE_CALIBRATION)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

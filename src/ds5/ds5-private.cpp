@@ -183,8 +183,8 @@ namespace librealsense
             static rs2_intrinsics ref{};
             if (memcmp(&calc_intrinsic,&ref,sizeof(rs2_intrinsics)))
             {
-                LOG_INFO("RGB Intrinsic Matrix update. ScaleX, ScaleY = " 
-                    << intrin(0, 0) << ", " << intrin(1, 1)  
+                LOG_DEBUG("RGB Intrinsic Matrix: ScaleX, ScaleY = "
+                    << std::setprecision(3) << intrin(0, 0) << ", " << intrin(1, 1)
                     << ". Fx,Fy = " << calc_intrinsic.fx << "," << calc_intrinsic.fy);
                 ref = calc_intrinsic;
             }

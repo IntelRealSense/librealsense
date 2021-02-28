@@ -6,7 +6,7 @@
 #include "../third-party/json.hpp"
 #include "ds5-device.h"
 #include "ds5-private.h"
-#include "ds5-thermal-handler.h"
+#include "ds5-thermal-monitor.h"
 #include "ds5-auto-calibration.h"
 
 namespace librealsense

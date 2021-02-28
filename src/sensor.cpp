@@ -444,10 +444,6 @@ namespace librealsense
         {
             As<librealsense::global_time_interface>(_owner)->enable_time_diff_keeper(true);
         }
-        if (Is<librealsense::device_calibration>(_owner))
-        {
-            As<librealsense::device_calibration>(_owner)->trigger_device_calibration(RS2_CALIBRATION_THERMAL);
-        }
         set_active_streams(requests);
     }
 
@@ -471,11 +467,6 @@ namespace librealsense
         if (Is<librealsense::global_time_interface>(_owner))
         {
             As<librealsense::global_time_interface>(_owner)->enable_time_diff_keeper(false);
-        }
-
-        if (Is<librealsense::device_calibration>(_owner))
-        {
-            As<librealsense::device_calibration>(_owner)->trigger_device_calibration(RS2_CALIBRATION_TYPE_COUNT);
         }
         _power.reset();
         _is_opened = false;

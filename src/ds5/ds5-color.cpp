@@ -1,16 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
-#include <mutex>
-#include <chrono>
-#include <vector>
-#include <iterator>
-#include <cstddef>
-#include <functional>
-
 #include "device.h"
 #include "context.h"
-#include "image.h"
 #include "metadata-parser.h"
 #include "global_timestamp_reader.h"
 #include "environment.h"
@@ -19,6 +11,7 @@
 #include "ds5-private.h"
 #include "ds5-options.h"
 #include "ds5-timestamp.h"
+#include "ds5-thermal-monitor.h"
 
 #include "proc/color-formats-converter.h"
 
@@ -181,6 +174,14 @@ namespace librealsense
                     roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor, ds::fw_cmd::SETRGBAEROI));
             }
 
+            // Register for tracking of thermal compensation changes
+            if (val_in_range(color_devices_info.front().pid, { ds::RS455_PID }))
+            {
+                if (_thermal_monitor)
+                    _thermal_monitor->add_observer([&](float){
+                        _color_calib_table_raw.reset(); } );
+            }
+
             auto md_prop_offset = offsetof(metadata_raw, mode) +
                 offsetof(md_rgb_mode, rgb_mode) +
                 offsetof(md_rgb_normal_mode, intel_rgb_control);
@@ -226,9 +227,6 @@ namespace librealsense
 
         color_ep.register_metadata(RS2_FRAME_METADATA_WHITE_BALANCE, make_attribute_parser(&md_capture_stats::white_balance, md_capture_stat_attributes::white_balance_attribute, md_prop_offset));
 
-        
-
-           
         // attributes of md_rgb_control
         md_prop_offset = offsetof(metadata_raw, mode) +
             offsetof(md_rgb_mode, rgb_mode) +
@@ -254,7 +252,7 @@ namespace librealsense
         color_ep.register_metadata(RS2_FRAME_METADATA_MANUAL_WHITE_BALANCE, make_attribute_parser(&md_rgb_control::manual_wb, md_rgb_control_attributes::manual_wb_attribute, md_prop_offset));
         color_ep.register_metadata(RS2_FRAME_METADATA_POWER_LINE_FREQUENCY, make_attribute_parser(&md_rgb_control::power_line_frequency, md_rgb_control_attributes::power_line_frequency_attribute, md_prop_offset));
         color_ep.register_metadata(RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION, make_attribute_parser(&md_rgb_control::low_light_comp, md_rgb_control_attributes::low_light_comp_attribute, md_prop_offset));
-        
+
 
         color_ep.register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
         color_ep.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_COLOR));
