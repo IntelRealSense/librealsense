@@ -503,6 +503,7 @@ namespace librealsense
             data[0] = static_cast<float>(msg->angular_velocity.x);
             data[1] = static_cast<float>(msg->angular_velocity.y);
             data[2] = static_cast<float>(msg->angular_velocity.z);
+            LOG_DEBUG("RS2_STREAM_GYRO " << motion_frame->get_frame_number()<<" "<< motion_frame->get_frame_timestamp());
         }
         else
         {

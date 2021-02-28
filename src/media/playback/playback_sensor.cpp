@@ -30,7 +30,7 @@ playback_sensor::playback_sensor(device_interface& parent_device, const device_s
     m_sensor_description(sensor_description),
     m_sensor_id(sensor_description.get_sensor_index()),
     m_parent_device(parent_device),
-    _default_queue_size(1)
+    _default_queue_size(2)
 {
     register_sensor_streams(m_sensor_description.get_stream_profiles());
     register_sensor_infos(m_sensor_description);
@@ -45,10 +45,10 @@ bool playback_sensor::streams_contains_one_frame_or_more()
 {
     for (auto&& d : m_dispatchers)
     {
-        if (d.second->empty())
-            return false;
+        if (!d.second->empty())
+            return true;
     }
-    return true;
+    return false;
 }
 
 stream_profiles playback_sensor::get_stream_profiles(int tag) const
