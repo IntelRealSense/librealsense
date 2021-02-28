@@ -11,6 +11,9 @@ from abc import ABC, abstractmethod
 # otherwise pyrs other than what we compiled might be found...
 sys.path = list()
 sys.path.append( '' )  # directs Python to search modules in the current directory first
+sys.path.append( os.path.dirname( sys.executable ))
+sys.path.append( os.path.join( os.path.dirname( sys.executable ), 'DLLs' ))
+sys.path.append( os.path.join( os.path.dirname( sys.executable ), 'lib' ))
 # Add our py/ module directory
 current_dir = os.path.dirname( os.path.abspath( __file__ ))
 sys.path.append( current_dir + os.sep + "py" )
@@ -194,7 +197,7 @@ def grep( expr, *args ):
         context['filename'] = filename
         with open( filename, errors = 'ignore' ) as file:
             for line in grep_( pattern, remove_newlines( file ), context ):
-                yield context
+                yield line
 
 def cat( filename ):
     with open( filename, errors = 'ignore' ) as file:
@@ -279,16 +282,16 @@ class TestConfigFromText(TestConfig):
             if directive == 'device':
                 log.d( '    configuration:', params )
                 if not params:
-                    log.e( source + '+' + str(context.index) + ': device directive with no devices listed' )
+                    log.e( source + '+' + str(context['index']) + ': device directive with no devices listed' )
                 else:
                     self._configurations.append( params )
             elif directive == 'priority':
                 if len(params) == 1 and params[0].isdigit():
                     self._priority = int( params[0] )
                 else:
-                    log.e( source + '+' + str(context.index) + ': priority directive with invalid parameters:', params )
+                    log.e( source + '+' + str(context['index']) + ': priority directive with invalid parameters:', params )
             else:
-                log.e( source + '+' + str(context.index) + ': invalid directive "' + directive + '"; ignoring' )
+                log.e( source + '+' + str(context['index']) + ': invalid directive "' + directive + '"; ignoring' )
 
 
 class Test(ABC):  # Abstract Base Class
@@ -503,10 +506,11 @@ log.i( 'Logs in:', logdir )
 def test_wrapper( test, configuration = None ):
     global n_tests
     n_tests += 1
-    if configuration:
-        log.progress( '[' + ' '.join( configuration ) + ']', test.name, '...' )
-    else:
-        log.progress( test.name, '...' )
+    if not log.is_debug_on()  or  log.is_color_on():
+        if configuration:
+            log.progress( '[' + ' '.join( configuration ) + ']', test.name, '...' )
+        else:
+            log.progress( test.name, '...' )
     test.run_test()
 
 
