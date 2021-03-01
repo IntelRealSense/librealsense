@@ -300,7 +300,7 @@ class TestConfigFromText(TestConfig):
                 else:
                     log.e( source + '+' + str(context['index']) + ': priority directive with invalid parameters:', params )
             elif directive == 'tag':
-                self._tags.add(params)
+                self._tags.update(params)
             else:
                 log.e( source + '+' + str(context['index']) + ': invalid directive "' + directive + '"; ignoring' )
 
