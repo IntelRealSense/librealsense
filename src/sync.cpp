@@ -125,7 +125,7 @@ namespace librealsense
 
     void composite_matcher::dispatch(frame_holder f, const syncronization_environment& env)
     {
-        LOG_IF_ENABLE("DISPATCH " << _name << "--> " << frame_holder_to_string(f), env);
+        LOG_IF_ENABLE("DISPATCH " << _name << "--> " <<*f.frame, env);
 
         clean_inactive_streams(f);
         auto matcher = find_matcher(f);
@@ -137,7 +137,7 @@ namespace librealsense
         }
         else
         {
-            LOG_ERROR("didn't find any matcher for " << frame_holder_to_string(f) << " will not be synchronized");
+            LOG_ERROR("didn't find any matcher for " << *f.frame << " will not be synchronized");
             _callback(std::move(f), env);
         }
         
@@ -165,14 +165,14 @@ namespace librealsense
         {
             frame_holder* f;
             if(_frames_queue[m].peek(&f))
-                str += frame_holder_to_string(*f);
+                str += frame_to_string(*f->frame);
         }
         return str;
     }
 
     void composite_matcher::sync(frame_holder f, const syncronization_environment& env)
     {
-        LOG_IF_ENABLE("SYNC " << _name << "--> " << frame_holder_to_string(f), env);
+        LOG_IF_ENABLE("SYNC " << _name << "--> " << *f.frame, env);
 
         update_next_expected(f);
         auto matcher = find_matcher(f);

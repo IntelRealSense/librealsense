@@ -26,10 +26,10 @@ class single_consumer_queue
     // when need to stop
     std::atomic<bool> _need_to_flush;
     std::atomic<bool> _was_flushed;
-    std::function<void(T)> _print_on_drop;
+    std::function<void(T const &)> _on_drop_callback;
 public:
-    explicit single_consumer_queue<T>(unsigned int cap = QUEUE_MAX_SIZE, std::function<void(T)> print_on_drop = nullptr)
-        : _queue(), _mutex(), _deq_cv(), _enq_cv(), _cap(cap), _accepting(true), _need_to_flush(false), _was_flushed(false), _print_on_drop(print_on_drop)
+    explicit single_consumer_queue<T>(unsigned int cap = QUEUE_MAX_SIZE, std::function<void(T const &)> on_drop_callback = nullptr)
+        : _queue(), _mutex(), _deq_cv(), _enq_cv(), _cap(cap), _accepting(true), _need_to_flush(false), _was_flushed(false), _on_drop_callback(on_drop_callback)
     {}
 
     void enqueue(T&& item)
@@ -40,9 +40,9 @@ public:
             _queue.push_back(std::move(item));
             if (_queue.size() > _cap)
             {
-                if (_print_on_drop)
+                if (_on_drop_callback)
                 {
-                    _print_on_drop(std::move(_queue.front()));
+                    _on_drop_callback(std::move(_queue.front()));
                 }
                 _queue.pop_front();
             }
@@ -213,9 +213,9 @@ public:
     private:
         dispatcher* _owner;
     };
-    typedef std::function<void(cancellable_timer)> action;
-    dispatcher(unsigned int cap, std::function <void(action)> print_on_drop = nullptr)
-        : _queue(cap, print_on_drop),
+    typedef std::function<void(cancellable_timer const &)> action;
+    dispatcher(unsigned int cap, std::function <void(action)> on_drop_callback = nullptr)
+        : _queue(cap, on_drop_callback),
           _was_stopped(true),
           _was_flushed(false),
           _is_alive(true)
