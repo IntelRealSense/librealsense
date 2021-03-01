@@ -83,7 +83,7 @@ namespace librealsense
 
     void identity_matcher::dispatch(frame_holder f, const syncronization_environment& env)
     {
-        LOG_IF_ENABLE(_name << "--> " << f, env);
+        LOG_IF_ENABLE(_name << "--> " << *f.frame, env);
 
         sync(std::move(f), env);
     }
