@@ -507,6 +507,8 @@ void playback_device::do_loop(T action)
     });
 }
 
+// Called in real-time only
+// Return should indicate whether any frames are available: if there are, we need to sleep before proceeding
 bool playback_device::prefetch_done()
 {
     for (auto s : m_active_sensors)

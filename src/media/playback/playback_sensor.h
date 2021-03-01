@@ -120,14 +120,7 @@ namespace librealsense
                     if (sleep_for.count() > 0)
                         t.try_sleep(sleep_for.count() * 1e-6);
 
-                    std::stringstream s;
-                    s << (*pf)->get_stream()->get_stream_type();
-                    s << " " << (*pf)->get_stream()->get_unique_id();
-                    s << " " << (*pf)->get_frame_number();
-                    s << " " << std::fixed << (double)(*pf)->get_frame_timestamp();
-                    s << " ";
-
-                    LOG_DEBUG("callback--> "<< s.str());
+                    LOG_DEBUG("callback--> "<< pf);
                     if(is_paused())
                         return;
 

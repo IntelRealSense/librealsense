@@ -11,6 +11,7 @@
 
 #include "core/streaming.h"
 #include "../include/librealsense2/hpp/rs_processing.hpp"
+#include "archive.h"
 
 #define STRCASE(T, X) case RS2_##T##_##X: {\
         static const std::string s##T##_##X##_str = make_less_screamy(#X);\
@@ -829,5 +830,33 @@ namespace librealsense
     void color_sensor::create_snapshot(std::shared_ptr<color_sensor>& snapshot) const
     {
         snapshot = std::make_shared<color_sensor_snapshot>();
+    }
+
+    std::string frame_to_string(const frame_interface * f)
+    {
+        std::ostringstream s;
+        auto composite = dynamic_cast<const composite_frame *>(f);
+        if (composite)
+        {
+            for (int i = 0; i < composite->get_embedded_frames_count(); i++)
+            {
+                s << "[" <<
+                    frame_to_string(composite->get_frame(i)) << "] ";
+            }
+        }
+        else
+        {
+            s << "[" << f->get_stream()->get_stream_type();
+            s << " " << f->get_stream()->get_unique_id();
+            s << " " << f->get_frame_number();
+            s << " " << std::fixed << (double)f->get_frame_timestamp();
+            s << "] ";
+        }
+        return s.str();
+    }
+
+    std::string frame_holder_to_string(const frame_holder & f)
+    {
+        return frame_to_string(f.frame);
     }
 }

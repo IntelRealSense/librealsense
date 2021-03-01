@@ -1782,6 +1782,16 @@ namespace librealsense
         T _value;
     };
 
+    struct frame_holder;
+    std::string frame_holder_to_string(const frame_holder & f);
+
+    class frame_interface;
+    std::string frame_to_string(const frame_interface * f);
+
+    inline std::ostream& operator<<(std::ostream& out, const frame_holder& f)
+    {
+        return out << frame_holder_to_string(f);
+    }
 }
 
 inline std::ostream& operator<<( std::ostream& out, rs2_extrinsics const & e )
