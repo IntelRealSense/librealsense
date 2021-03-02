@@ -54,9 +54,12 @@ irrelevant_statuses = [rs.calibration_status.retry,
                        rs.calibration_status.scene_invalid,
                        rs.calibration_status.bad_result]
 
-# removes consecutive special frame statuses from the status list to ignore any number of repeated special frames
+#
 def filter_special_frames( list ):
-    i = 0
+    """
+    removes consecutive special frame statuses from the status list to ignore any number of repeated special frames
+    """
+    i = 1
     while i < len(list):
         if list[i - 1] == list[i] == rs.calibration_status.special_frame:
             del list[i]
