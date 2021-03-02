@@ -54,10 +54,11 @@ irrelevant_statuses = [rs.calibration_status.retry,
                        rs.calibration_status.scene_invalid,
                        rs.calibration_status.bad_result]
 
-#
 def filter_special_frames( list ):
     """
-    removes consecutive special frame statuses from the status list to ignore any number of repeated special frames
+    Removes consecutive special frame statuses from the status list since we have a built-in
+    retry mechanism and more than one request can be made.
+    E.g., [triggered, special_frame, special_frame, started, successful]
     """
     i = 1
     while i < len(list):
