@@ -4408,7 +4408,6 @@ namespace rs2
         auto ss = duration_cast<seconds>(duration);
         duration -= ss;
         auto ms = duration_cast<milliseconds>(duration);
-        duration -= ss;
 
         std::ostringstream stream;
         stream << std::setfill('0') << std::setw(hhh.count() >= 10 ? 2 : 1) << hhh.count() << ':' <<
