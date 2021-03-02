@@ -33,8 +33,8 @@ struct toggle
     // Move from [0,1] space to pixel space of specific frame
     pixel get_pixel(rs2::depth_frame frm) const
     {
-        int px = x * frm.get_width();
-        int py = y * frm.get_height();
+        int px = static_cast<int>(x * frm.get_width());
+        int py = static_cast<int>(y * frm.get_height());
         return{ px, py };
     }
 
@@ -53,7 +53,7 @@ struct toggle
         glBegin(GL_TRIANGLE_STRIP);
         for (auto i = 0; i <= segments; i++)
         {
-            auto t = 2 * M_PI * float(i) / segments;
+            auto t = 2 * PI_FL * float(i) / segments;
 
             glVertex2f(x * app.width() + cos(t) * r,
                 y * app.height() + sin(t) * r);
@@ -69,7 +69,7 @@ struct toggle
     // Since we are only comparing this distance, sqrt can be safely skipped
     float dist_2d(const toggle& other) const
     {
-        return pow(x - other.x, 2) + pow(y - other.y, 2);
+        return static_cast<float>(pow(x - other.x, 2) + pow(y - other.y, 2));
     }
 
     float x;
@@ -265,18 +265,18 @@ float dist_3d(const rs2::depth_frame& frame, pixel u, pixel v)
     float vpoint[3]; // To point (in 3D)
 
     // Copy pixels into the arrays (to match rsutil signatures)
-    upixel[0] = u.first;
-    upixel[1] = u.second;
-    vpixel[0] = v.first;
-    vpixel[1] = v.second;
+    upixel[0] = static_cast<float>(u.first);
+    upixel[1] = static_cast<float>(u.second);
+    vpixel[0] = static_cast<float>(v.first);
+    vpixel[1] = static_cast<float>(v.second);
 
     // Query the frame for distance
     // Note: this can be optimized
     // It is not recommended to issue an API call for each pixel
     // (since the compiler can't inline these)
     // However, in this example it is not one of the bottlenecks
-    auto udist = frame.get_distance(upixel[0], upixel[1]);
-    auto vdist = frame.get_distance(vpixel[0], vpixel[1]);
+    auto udist = frame.get_distance(static_cast<int>(upixel[0]), static_cast<int>(upixel[1]));
+    auto vdist = frame.get_distance(static_cast<int>(vpixel[0]), static_cast<int>(vpixel[1]));
 
     // Deproject from pixel to point in 3D
     rs2_intrinsics intr = frame.get_profile().as<rs2::video_stream_profile>().get_intrinsics(); // Calibration data
@@ -284,9 +284,9 @@ float dist_3d(const rs2::depth_frame& frame, pixel u, pixel v)
     rs2_deproject_pixel_to_point(vpoint, &intr, vpixel, vdist);
 
     // Calculate euclidean distance between the two points
-    return sqrt(pow(upoint[0] - vpoint[0], 2) +
-                pow(upoint[1] - vpoint[1], 2) +
-                pow(upoint[2] - vpoint[2], 2));
+    return sqrt(pow(upoint[0] - vpoint[0], 2.f) +
+                pow(upoint[1] - vpoint[1], 2.f) +
+                pow(upoint[2] - vpoint[2], 2.f));
 }
 
 void draw_line(float x0, float y0, float x1, float y1, int width)
@@ -294,7 +294,7 @@ void draw_line(float x0, float y0, float x1, float y1, int width)
     glPushAttrib(GL_ENABLE_BIT);
     glLineStipple(1, 0x00ff);
     glEnable(GL_LINE_STIPPLE);
-    glLineWidth(width);
+    glLineWidth(static_cast<float>(width));
     glBegin(GL_LINE_STRIP);
     glVertex2f(x0, y0);
     glVertex2f(x1, y1);
@@ -354,10 +354,10 @@ void render_simple_distance(const rs2::depth_frame& depth,
 
     // Draw white text label
     glColor4f(1.f, 1.f, 1.f, 1.f);
-    draw_text(x, y, str.c_str());
+    draw_text(static_cast<int>(x), static_cast<int>(y), str.c_str());
 }
 
-// Implement drag&drop behaviour for the buttons:
+// Implement drag & drop behavior for the buttons:
 void register_glfw_callbacks(window& app, state& app_state)
 {
     app.on_left_mouse = [&](bool pressed)
