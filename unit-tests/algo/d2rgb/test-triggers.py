@@ -54,6 +54,19 @@ irrelevant_statuses = [rs.calibration_status.retry,
                        rs.calibration_status.scene_invalid,
                        rs.calibration_status.bad_result]
 
+def filter_special_frames( list ):
+    """
+    Removes consecutive special frame statuses from the status list since we have a built-in
+    retry mechanism and more than one request can be made.
+    E.g., [triggered, special_frame, special_frame, started, successful]
+    """
+    i = 1
+    while i < len(list):
+        if list[i - 1] == list[i] == rs.calibration_status.special_frame:
+            del list[i]
+        else:
+            i += 1
+
 #############################################################################################
 # Test #1
 test.start("Depth sensor is off, should get an error")
@@ -77,6 +90,7 @@ try:
     d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
     ac.wait_for_calibration()
     ac.trim_irrelevant_statuses(irrelevant_statuses)
+    filter_special_frames( ac.status_list )
     test.check_equal_lists(ac.status_list, successful_calibration_status_list)
 except Exception:
     test.unexpected_exception()
@@ -103,6 +117,7 @@ try:
     d2r.trigger_device_calibration( rs.calibration_type.manual_depth_to_rgb )
     ac.wait_for_calibration()
     ac.trim_irrelevant_statuses(irrelevant_statuses)
+    filter_special_frames( ac.status_list )
     test.check_equal_lists(ac.status_list, successful_calibration_status_list)
 except:
     test.unexpected_exception()
@@ -132,6 +147,7 @@ try:
         test.unexpected_exception()
     ac.wait_for_calibration() # First trigger should continue and finish successfully
     ac.trim_irrelevant_statuses(irrelevant_statuses)
+    filter_special_frames( ac.status_list )
     test.check_equal_lists(ac.status_list, successful_calibration_status_list)
 except:
     test.unexpected_exception()
