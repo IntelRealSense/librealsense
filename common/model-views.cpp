@@ -1125,6 +1125,20 @@ namespace rs2
             [=](rs2::frame f) { return depth_colorizer->colorize(f); }, error_message);
         const_effects.push_back(colorizer);
 
+        if (s->supports(RS2_CAMERA_INFO_PRODUCT_ID))
+        {
+            std::string device_pid = s->get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+            
+            // using short range for D405
+            if (device_pid == "0B5B")
+            {
+                std::string error_msg;
+                depth_colorizer->set_option(RS2_OPTION_MIN_DISTANCE, 0.05f);
+                depth_colorizer->set_option(RS2_OPTION_MAX_DISTANCE, 1.5f);
+            }
+        }
+        
+
         ss.str("");
         ss << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
             << "/" << s->get_info(RS2_CAMERA_INFO_NAME)
