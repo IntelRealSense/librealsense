@@ -6,7 +6,7 @@
 #include "l500-error-common.h"
 #include "../error-common.h"
 
-//#test:device L515
+//#test:device L500*
 
 using namespace rs2;
 
