@@ -2,10 +2,12 @@
 # Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #test:device L500*
+#test:device D400*
 
 import platform
 import pyrealsense2 as rs
 from rspy import test
+from rspy import log
 import time
 
 dev = test.find_first_device_or_exit()
@@ -14,7 +16,7 @@ color_sensor = dev.first_color_sensor()
 
 previous_depth_frame_number = -1
 previous_color_frame_number = -1
-after_set_option = 0
+after_set_option = False
 
 
 def get_allowed_drops(): 
@@ -22,17 +24,17 @@ def get_allowed_drops():
     # On Linux, there is a known issue (RS5-7148) where up to 4 frame drops can occur
     # sequentially after setting control values during streaming... on Windows this
     # does not occur.
-    # Our KPI is to prevent sequential frame drops, therefore single frame drop is allowed.
-    if platform.system() == 'Linux' and after_set_option == 1:
+    if platform.system() == 'Linux' and after_set_option:
         return 4
+    # Our KPI is to prevent sequential frame drops, therefore single frame drop is allowed.
     return 1
 
 def set_new_value(sensor, option, value): 
     global after_set_option
-    after_set_option = 1
+    after_set_option = True
     sensor.set_option(option, value)
-    time.sleep(0.5) #collect frames for 0.5 seconds
-    after_set_option = 0
+    time.sleep( 0.5 )  # collect frames
+    after_set_option = False
 
 def check_depth_frame_drops(frame):
     global previous_depth_frame_number
@@ -78,10 +80,17 @@ for i in range(1,5):
     new_value = current_laser_control + 10*i
     set_new_value(depth_sensor, laser_power, new_value)
 
-
 test.finish()
+
+# reset everything back
+depth_sensor.set_option( rs.option.visual_preset, int(rs.l500_visual_preset.max_range) )
+
+
+
 #############################################################################################
 # Test #2
+
+time.sleep(0.5)  # jic
 
 depth_options = depth_sensor.get_supported_options()
 color_options = color_sensor.get_supported_options()
@@ -92,13 +101,20 @@ for option in depth_options:
     try:
         if depth_sensor.is_option_read_only(option): 
             continue
-        new_value = depth_sensor.get_option_range(option).min
-        set_new_value(depth_sensor, option, new_value)
+        old_value = depth_sensor.get_option( option )
+        range = depth_sensor.get_option_range( option )
+        new_value = range.min
+        if old_value == new_value:
+            new_value = range.max
+        if not log.d( str(option), old_value, '->', new_value ):
+            test.info( str(option), new_value, persistent = True )
+        set_new_value( depth_sensor, option, new_value )
+        depth_sensor.set_option( option, old_value )
     except: 
-        option_name = "Depth sensor - " + str(option)
-        test.info(option_name, new_value)
         test.unexpected_exception()
         test.abort()
+    finally:
+        test.reset_info( persistent = True )
 
 for option in color_options:
     try:
@@ -113,6 +129,8 @@ for option in color_options:
         test.abort()
 
 test.finish()
+
+
 #############################################################################################
 depth_sensor.stop()
 depth_sensor.close()
