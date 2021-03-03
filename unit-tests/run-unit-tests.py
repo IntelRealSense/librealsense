@@ -120,9 +120,10 @@ n_tests = 0
 
 # wrapper function for subprocess.run
 def subprocess_run(cmd, stdout = None):
-    log.d( '    running:', cmd )
+    log.d( 'running:', cmd )
     handle = None
     try:
+        log.debug_indent()
         if stdout  and  stdout != subprocess.PIPE:
             handle = open( stdout, "w" )
             stdout = handle
@@ -140,6 +141,7 @@ def subprocess_run(cmd, stdout = None):
     finally:
         if handle:
             handle.close()
+        log.debug_unindent()
 
 # Python scripts should be able to find the pyrealsense2 .pyd or else they won't work. We don't know
 # if the user (Travis included) has pyrealsense2 installed but even if so, we want to use the one we compiled.
@@ -251,6 +253,15 @@ class TestConfig(ABC):  # Abstract Base Class
         self._priority = 1000
         self._tags = set()
 
+    def debug_dump(self):
+        if self._priority != 1000:
+            log.d( 'priority:', self._priority )
+        if self._tags:
+            log.d( 'tags:', self._tags )
+        if len(self._configurations) > 1:
+            log.d( len( self._configurations ), 'configurations' )
+            # don't show them... they are output separately
+
     @property
     def configurations(self):
         return self._configurations
@@ -289,7 +300,7 @@ class TestConfigFromText(TestConfig):
             params = [s for s in context['match'].group(2).split()]
             comment = match.group(3)
             if directive == 'device':
-                log.d( '    configuration:', params )
+                #log.d( '    configuration:', params )
                 if not params:
                     log.e( source + '+' + str(context['index']) + ': device directive with no devices listed' )
                 else:
@@ -310,13 +321,17 @@ class Test(ABC):  # Abstract Base Class
     Abstract class for a test. Holds the name of the test
     """
     def __init__(self, testname):
-        log.d( 'found', testname )
+        #log.d( 'found', testname )
         self._name = testname
         self._config = None
 
     @abstractmethod
     def run_test(self):
         pass
+
+    def debug_dump(self):
+        if self._config:
+            self._config.debug_dump()
 
     @property
     def config(self):
@@ -353,8 +368,11 @@ class PyTest(Test):
         global current_dir
         Test.__init__(self, testname)
         self.path_to_script = current_dir + os.sep + path_to_test
-        log.d( '    script:', self.path_to_script )
         self._config = TestConfigFromText( self.path_to_script, r'#\s*test:' )
+
+    def debug_dump(self):
+        log.d( 'script:', self.path_to_script )
+        Test.debug_dump(self)
 
     @property
     def command(self):
@@ -537,24 +555,37 @@ skip_live_tests = len(devices.all()) == 0  and  not devices.acroname
 log.reset_errors()
 for test in prioritize_tests( get_tests() ):
     #
-    if tag and tag not in test.config.tags:
-        continue
-    #
-    if not test.is_live():
-        test_wrapper( test )
-        continue
-    #
-    if skip_live_tests:
-        log.w( test.name + ':', 'is live and there are no cameras; skipping' )
-        continue
-    #
-    for configuration, serial_numbers in devices_by_test_config( test ):
-        try:
-            devices.enable_only( serial_numbers, recycle = True )
-        except RuntimeError as e:
-            log.w( log.red + test.name + log.reset + ': ' + str(e) )
-        else:
-            test_wrapper( test, configuration )
+    log.d( 'found', test.name, '...' )
+    try:
+        log.debug_indent()
+        test.debug_dump()
+        #
+        if tag and tag not in test.config.tags:
+            log.d( 'does not fit --tag:', test.tags )
+            continue
+        #
+        if not test.is_live():
+            test_wrapper( test )
+            continue
+        #
+        if skip_live_tests:
+            log.w( test.name + ':', 'is live and there are no cameras; skipping' )
+            continue
+        #
+        for configuration, serial_numbers in devices_by_test_config( test ):
+            try:
+                log.d( 'configuration:', configuration )
+                log.debug_indent()
+                devices.enable_only( serial_numbers, recycle = True )
+            except RuntimeError as e:
+                log.w( log.red + test.name + log.reset + ': ' + str(e) )
+            else:
+                test_wrapper( test, configuration )
+            finally:
+                log.debug_unindent()
+        #
+    finally:
+        log.debug_unindent()
 
 log.progress()
 #
