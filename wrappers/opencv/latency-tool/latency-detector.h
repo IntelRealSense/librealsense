@@ -172,7 +172,7 @@ public:
     void end_render()
     {
         auto duration = std::chrono::high_resolution_clock::now() - _render_start;
-        _render_time.add(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
+        _render_time.add(static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count()));
     }
 
     ~detector()
@@ -193,7 +193,7 @@ public:
         // to this point in time (when it is first accessible to the application)
         auto toa = f.get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
         rs2_error* e;
-        _processing_time.add(rs2_get_time(&e) - toa);
+        _processing_time.add(static_cast<int>(rs2_get_time(&e) - toa));
 
         auto duration = std::chrono::high_resolution_clock::now() - _start_time;
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
@@ -212,7 +212,7 @@ public:
         {
             auto now = std::chrono::high_resolution_clock::now();
             auto duration = now - _start_time;
-            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+            auto ms = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
             auto next = ms % (1 << (_digits - 2));
             if (next == _next_value) next++;
             _next_value = next;
@@ -333,8 +333,8 @@ private:
                 });
                 if (circles.size() > 1)
                 {
-                    int min_x = circles[0][0];
-                    int max_x = circles[circles.size() - 1][0];
+                    int min_x = static_cast<int>(circles[0][0]);
+                    int max_x = static_cast<int>(circles[circles.size() - 1][0]);
 
                     int circle_est_size = (max_x - min_x) / (_digits + 1);
                     min_x += circle_est_size / 2;
@@ -343,8 +343,8 @@ private:
                     _packer.reset();
                     for (int i = 1; i < circles.size() - 1; i++)
                     {
-                        const int x = circles[i][0];
-                        const int idx = _digits * ((float)(x - min_x) / (max_x - min_x));
+                        const int x = static_cast<int>(circles[i][0]);
+                        const int idx = static_cast<int>(_digits * ((float)(x - min_x) / (max_x - min_x)));
                         if (idx >= 0 && idx < _packer.get().size())
                             _packer.get()[idx] = true;
                     }
@@ -354,11 +354,11 @@ private:
                     {
                         if (res == _next_value)
                         {
-                            auto cropped = r.ms % (1 << (_digits - 2));
+                            auto cropped = static_cast<int>(r.ms) % (1 << (_digits - 2));
                             if (cropped > res)
                             {
                                 auto avg_render_time = _render_time.avg();
-                                _latency.add((cropped - res) - avg_render_time);
+                                _latency.add(static_cast<int>((cropped - res) - avg_render_time));
                                 update_instructions();
                             }
                         }

@@ -63,7 +63,7 @@ int main(int argc, char * argv[]) try
         if (rs2::pose_frame fp = frame.as<rs2::pose_frame>()) {
             rs2_pose pose_data = fp.get_pose_data();
             auto now = std::chrono::system_clock::now().time_since_epoch();
-            double now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+            double now_ms = static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(now).count());
             double pose_time_ms = fp.get_timestamp();
             float dt_s = static_cast<float>(std::max(0., (now_ms - pose_time_ms)/1000.));
             rs2_pose predicted_pose = predict_pose(pose_data, dt_s);
