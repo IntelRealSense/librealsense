@@ -176,8 +176,9 @@ public class SettingsActivity extends AppCompatActivity {
                     case INDEX_ADVANCE_MODE: device.toggleAdvancedMode(!device.isInAdvancedMode());
                         break;
                     case INDEX_PRESETS: {
-                        Intent intent = new Intent(SettingsActivity.this, PresetsActivity.class);
-                        startActivity(intent);
+                        PresetsDialog cd = new PresetsDialog();
+                        cd.setCancelable(true);
+                        cd.show(getFragmentManager(), null);
                         break;
                     }
                     case INDEX_UPDATE: {
