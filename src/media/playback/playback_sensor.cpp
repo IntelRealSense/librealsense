@@ -86,7 +86,7 @@ void playback_sensor::open(const stream_profiles& requests)
     for (auto&& profile : requests)
     {
         auto on_drop_callback = [profile]( dispatcher::action act ) {
-            LOG_DEBUG( "Droping frame from dispatcher " << profile_to_string( profile ) );
+            LOG_DEBUG( "Dropping frame from dispatcher " << profile_to_string( profile ) );
         };
 
         m_dispatchers.emplace( std::make_pair(

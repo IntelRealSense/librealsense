@@ -42,7 +42,7 @@ public:
             {
                 if (_on_drop_callback)
                 {
-                    _on_drop_callback(std::move(_queue.front()));
+                    _on_drop_callback(_queue.front());
                 }
                 _queue.pop_front();
             }
