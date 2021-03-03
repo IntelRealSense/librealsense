@@ -4407,12 +4407,13 @@ namespace rs2
         duration -= mm;
         auto ss = duration_cast<seconds>(duration);
         duration -= ss;
+        auto ms = duration_cast<milliseconds>(duration);
 
         std::ostringstream stream;
         stream << std::setfill('0') << std::setw(hhh.count() >= 10 ? 2 : 1) << hhh.count() << ':' <<
             std::setfill('0') << std::setw(2) << mm.count() << ':' <<
-            std::setfill('0') << std::setw(2) << ss.count();// << '.' <<
-            //std::setfill('0') << std::setw(3) << ms.count();
+            std::setfill('0') << std::setw(2) << ss.count() << '.' <<
+            std::setfill('0') << std::setw(3) << ms.count();
         return stream.str();
     }
 
