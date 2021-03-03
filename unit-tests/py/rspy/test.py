@@ -16,6 +16,8 @@ messages in case of a failed check
 
 import os, sys, subprocess, traceback, platform
 
+from rspy import log
+
 n_assertions = 0
 n_failed_assertions = 0
 n_tests = 0
@@ -42,6 +44,7 @@ def set_env_vars( env_vars ):
         wanted values in string form (environment variables must be strings)
     """
     if sys.argv[-1] != 'rerun':
+        log.d( 'environment variables needed:', env_vars )
         for env_var, val in env_vars.items():
             os.environ[env_var] = val
         cmd = [sys.executable]
@@ -51,10 +54,12 @@ def set_env_vars( env_vars ):
         if sys.flags.verbose:
             #     -v     : verbose (trace import statements)
             cmd += ["-v"]
-        cmd += sys.argv
+        cmd += sys.argv  # --debug, or any other args
         cmd += ["rerun"]
+        log.d( 'running:', cmd )
         p = subprocess.run( cmd, stderr=subprocess.PIPE, universal_newlines=True )
         sys.exit( p.returncode )
+    log.d( 'rerun detected' )
     sys.argv = sys.argv[:-1]  # Remove the rerun
 
 
@@ -122,7 +127,7 @@ def check_failed():
 
 
 def abort():
-    print("Abort was specified in a failed check. Aborting test")
+    log.e( "Aborting test" )
     sys.exit( 1 )
 
 
@@ -270,7 +275,7 @@ def check_frame_drops(frame, previous_frame_number, allowed_drops = 1):
         if dropped_frames > allowed_drops:
             print( dropped_frames, "frame(s) starting from frame", previous_frame_number + 1, "were dropped" )
             failed = True
-        if dropped_frames < 0:
+        elif dropped_frames < 0:
             print( "Frames repeated or out of order. Got frame", frame_number, "after frame",
                    previous_frame_number)
             failed = True
