@@ -168,6 +168,14 @@ namespace librealsense
                     gain_option,
                     auto_exposure_option));
 
+            // Starting with firmware 5.10.9, auto-exposure ROI is available for color sensor
+            if (_fw_version >= firmware_version("5.10.9.0"))
+            {
+                roi_sensor_interface* roi_sensor;
+                if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&color_ep)))
+                    roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor, ds::fw_cmd::SETRGBAEROI));
+            }
+
             auto md_prop_offset = offsetof(metadata_raw, mode) +
                 offsetof(md_rgb_mode, rgb_mode) +
                 offsetof(md_rgb_normal_mode, intel_rgb_control);
@@ -197,14 +205,6 @@ namespace librealsense
         color_ep.register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, make_attribute_parser(&md_capture_timing::frame_counter, md_capture_timing_attributes::frame_counter_attribute, md_prop_offset));
         color_ep.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, make_rs400_sensor_ts_parser(make_uvc_header_parser(&platform::uvc_header::timestamp),
             make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
-
-        // Starting with firmware 5.10.9, auto-exposure ROI is available for color sensor
-        if (_fw_version >= firmware_version("5.10.9.0"))
-        {
-            roi_sensor_interface* roi_sensor;
-            if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&color_ep)))
-                roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor, ds::fw_cmd::SETRGBAEROI));
-        }
 
         // attributes of md_rgb_control
         md_prop_offset = offsetof(metadata_raw, mode) +
