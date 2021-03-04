@@ -19,7 +19,7 @@
 using namespace librealsense;
 using namespace librealsense::platform;
 
-constexpr int ITERATIONS_PER_CONFIG = 40;
+constexpr int ITERATIONS_PER_CONFIG = 100;
 constexpr int INNER_ITERATIONS_PER_CONFIG = 10;
 constexpr int DELAY_INCREMENT_THRESHOLD = 3; //[%]
 constexpr int DELAY_INCREMENT_THRESHOLD_IMU = 8; //[%]
@@ -208,7 +208,6 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
             std::vector<size_t> extrinsics_table_size;
             std::map<std::string, std::vector<double>> streams_delay; // map to vector to collect all data
             std::map<std::string, std::vector<std::map<unsigned long long, size_t >>> unique_streams_delay;
-            //std::map<std::string, std::vector<unsigned long long>> frame_number;
             std::map<std::string, size_t> new_frame;
             std::map<std::string, size_t> extrinsic_graph_at_sensor;
 
@@ -271,16 +270,12 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
                     auto frame_num = f.get_frame_number();
                     auto time_of_arrival = f.get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
 
-                    //if (std::find(frame_number[stream_type].begin(), frame_number[stream_type].end(), frame_num) == frame_number[stream_type].end())
-                    //{
-                        if (!new_frame[stream_type])
-                        {
-                            //frame_number[stream_type].push_back(frame_num);
-                            streams_delay[stream_type].push_back(time_of_arrival - start_time_milli);
-                            new_frame[stream_type] = true;
-                        }
-                        new_frame[stream_type] += 1;
-                    //}
+                    if (!new_frame[stream_type])
+                    {
+                        streams_delay[stream_type].push_back(time_of_arrival - start_time_milli);
+                        new_frame[stream_type] = true;
+                    }
+                    new_frame[stream_type] += 1;
                 };
                 auto frame_callback = [&](const rs2::frame& f)
                 {
