@@ -496,6 +496,7 @@ namespace librealsense
             data[0] = static_cast<float>(msg->linear_acceleration.x);
             data[1] = static_cast<float>(msg->linear_acceleration.y);
             data[2] = static_cast<float>(msg->linear_acceleration.z);
+            LOG_DEBUG("RS2_STREAM_ACCEL " << motion_frame);
         }
         else if (stream_id.stream_type == RS2_STREAM_GYRO)
         {
@@ -503,6 +504,7 @@ namespace librealsense
             data[0] = static_cast<float>(msg->angular_velocity.x);
             data[1] = static_cast<float>(msg->angular_velocity.y);
             data[2] = static_cast<float>(msg->angular_velocity.z);
+            LOG_DEBUG("RS2_STREAM_GYRO " << motion_frame);
         }
         else
         {

@@ -16,8 +16,6 @@ namespace librealsense
 
     typedef int stream_id;
 
-    std::string frame_to_string(const frame_holder& f);
-
     class sync_lock
     {
     public:

@@ -1781,7 +1781,6 @@ namespace librealsense
         bool _valid;
         T _value;
     };
-
 }
 
 inline std::ostream& operator<<( std::ostream& out, rs2_extrinsics const & e )

@@ -45,10 +45,10 @@ bool playback_sensor::streams_contains_one_frame_or_more()
 {
     for (auto&& d : m_dispatchers)
     {
-        if (d.second->empty())
-            return false;
+        if (!d.second->empty())
+            return true;
     }
-    return true;
+    return false;
 }
 
 stream_profiles playback_sensor::get_stream_profiles(int tag) const
@@ -85,7 +85,14 @@ void playback_sensor::open(const stream_profiles& requests)
     //For each stream, create a dedicated dispatching thread
     for (auto&& profile : requests)
     {
-        m_dispatchers.emplace(std::make_pair(profile->get_unique_id(), std::make_shared<dispatcher>(_default_queue_size)));
+        auto on_drop_callback = [profile]( dispatcher::action act ) {
+            LOG_DEBUG( "Dropping frame from dispatcher " << profile_to_string( profile ) );
+        };
+
+        m_dispatchers.emplace( std::make_pair(
+            profile->get_unique_id(),
+            std::make_shared< dispatcher >( _default_queue_size, on_drop_callback ) ) );
+
         m_dispatchers[profile->get_unique_id()]->start();
         device_serializer::stream_identifier f{ get_device_index(), m_sensor_id, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) };
         opened_streams.push_back(f);
