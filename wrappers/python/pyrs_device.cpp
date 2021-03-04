@@ -34,6 +34,7 @@ void init_device(py::module &m) {
         .def(BIND_DOWNCAST(device, update_device))
         .def(BIND_DOWNCAST(device, auto_calibrated_device))
         .def(BIND_DOWNCAST(device, device_calibration))
+        .def(BIND_DOWNCAST(device, device_passive_calibration))
         .def(BIND_DOWNCAST(device, firmware_logger))
         .def("__repr__", [](const rs2::device &self) {
             std::stringstream ss;
@@ -126,6 +127,30 @@ void init_device(py::module &m) {
             },
             "Register (only once!) a callback that gets called for each change in calibration", "callback"_a );
 
+
+    py::class_<rs2::device_passive_calibration, rs2::device> device_passive_calibration(m, "device_passive_calibration");
+    device_passive_calibration.def(py::init<rs2::device>(), "device"_a)
+        .def("register_calibration_change_callback",
+            [](rs2::device_passive_calibration& self, std::function<void(rs2_calibration_status)> callback)
+            {
+                self.register_calibration_change_callback(
+                    [callback](rs2_calibration_status status)
+                    {
+                        try
+                        {
+                            // "When calling a C++ function from Python, the GIL is always held"
+                            // -- since we're not being called from Python but instead are calling it,
+                            // we need to acquire it to not have issues with other threads...
+                            py::gil_scoped_acquire gil;
+                            callback(status);
+                        }
+                        catch (...)
+                        {
+                            std::cerr << "?!?!?!!? exception in python register_calibration_change_callback ?!?!?!?!?" << std::endl;
+                        }
+                    });
+            },
+            "Register (only once!) a callback that gets called for each change in calibration", "callback"_a);
 
     py::class_<rs2::debug_protocol> debug_protocol(m, "debug_protocol"); // No docstring in C++
     debug_protocol.def(py::init<rs2::device>())
