@@ -81,13 +81,15 @@ def is_verbose_on():
 _debug_on = False
 _debug_indent = ''
 def d(*args):
-    pass
+    # Return whether info was output
+    return False
 def debug_on():
     global d, _debug_on, _debug_indent
     def d( *args ):
         global gray, reset
         out( gray, '-D- ', _debug_indent, sep = '', end = '' )  # continue in next statement
         out( *args, end = reset + '\n' )
+        return True
     _debug_on = True
 def is_debug_on():
     global _debug_on
