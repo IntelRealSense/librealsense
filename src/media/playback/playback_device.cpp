@@ -581,7 +581,7 @@ void playback_device::try_looping()
                 LOG_ERROR(error_msg);
                 throw invalid_value_exception(error_msg);
             }
-            LOG_DEBUG("Dispatching frame " << frame->stream_id<<" "<< frame->frame->get_stream()->get_stream_type()<<" "<< frame->frame->get_frame_number());
+            LOG_DEBUG("Dispatching frame " << frame_holder_to_string(frame->frame));
 
             if (data->is<serialized_invalid_frame>())
             {
