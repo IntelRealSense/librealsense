@@ -27,7 +27,7 @@ constexpr int SPIKE_THRESHOLD = 2; //[stdev]
 // Input:     vector that represent samples of delay to first frame of one stream
 // Output:  - slope of the fitted line
 // reference: https://en.wikipedia.org/wiki/Least_squares
-double line_fitting(const std::vector<double>& y_vec, std::vector<double>& y_fit = std::vector<double>())
+double line_fitting(const std::vector<double>& y_vec, std::vector<double> y_fit = std::vector<double>())
 {
     double ysum = std::accumulate(y_vec.begin(), y_vec.end(), 0.0);  //calculate sigma(yi)
     double xsum = 0;
@@ -309,7 +309,7 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
             {
                 CAPTURE(extrinsics_table_size);
                 // 1. extrinsics table preserve its size over iterations
-                CHECK(std::adjacent_find(extrinsics_table_size.begin(), extrinsics_table_size.end(), std::not_equal_to<>()) == extrinsics_table_size.end());
+                CHECK(std::adjacent_find(extrinsics_table_size.begin(), extrinsics_table_size.end(), std::not_equal_to<size_t>()) == extrinsics_table_size.end());
             }
             // 2.  no delay increment over iterations 
             // filter spikes : calc stdev for each half and filter out samples that are not close 
