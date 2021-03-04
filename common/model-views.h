@@ -676,6 +676,10 @@ namespace rs2
         std::vector<std::shared_ptr<processing_block_model>> post_processing;
         bool post_processing_enabled = true;
         std::vector<std::shared_ptr<processing_block_model>> const_effects;
+
+    private:
+        const float SHORT_RANGE_MIN_DISTANCE = 0.05f; // 5 cm
+        const float SHORT_RANGE_MAX_DISTANCE = 4.0f;  // 4 meters
     };
 
     class viewer_model;

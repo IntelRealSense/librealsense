@@ -1091,6 +1091,22 @@ namespace rs2
                     model->enable(false);
             }
 
+            if (shared_filter->is<threshold_filter>())
+            {
+                if (s->supports(RS2_CAMERA_INFO_PRODUCT_ID))
+                {
+                // using short range for D405
+                    std::string device_pid = s->get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+                    if (device_pid == "0B5B")
+                    {
+                        std::string error_msg;
+                        auto threshold_pb = shared_filter->as<threshold_filter>();
+                        threshold_pb.set_option(RS2_OPTION_MIN_DISTANCE, SHORT_RANGE_MIN_DISTANCE);
+                        threshold_pb.set_option(RS2_OPTION_MAX_DISTANCE, SHORT_RANGE_MAX_DISTANCE);
+                    }
+                }
+            }
+
             if (shared_filter->is<hdr_merge>())
             {
                 // processing block will be skipped if the requested option is not supported
@@ -1123,21 +1139,21 @@ namespace rs2
         auto colorizer = std::make_shared<processing_block_model>(
             this, "Depth Visualization", depth_colorizer,
             [=](rs2::frame f) { return depth_colorizer->colorize(f); }, error_message);
-        const_effects.push_back(colorizer);
+        const_effects.push_back(colorizer);        
+
 
         if (s->supports(RS2_CAMERA_INFO_PRODUCT_ID))
         {
             std::string device_pid = s->get_info(RS2_CAMERA_INFO_PRODUCT_ID);
-            
+
             // using short range for D405
             if (device_pid == "0B5B")
             {
                 std::string error_msg;
-                depth_colorizer->set_option(RS2_OPTION_MIN_DISTANCE, 0.05f);
-                depth_colorizer->set_option(RS2_OPTION_MAX_DISTANCE, 1.5f);
+                depth_colorizer->set_option(RS2_OPTION_MIN_DISTANCE, SHORT_RANGE_MIN_DISTANCE);
+                depth_colorizer->set_option(RS2_OPTION_MAX_DISTANCE, SHORT_RANGE_MAX_DISTANCE);
             }
         }
-        
 
         ss.str("");
         ss << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
