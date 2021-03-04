@@ -25,8 +25,7 @@ constexpr int DELAY_INCREMENT_THRESHOLD_IMU = 8; //[%]
 constexpr int SPIKE_THRESHOLD = 2; //[stdev]
 
 // Input:     vector that represent samples of delay to first frame of one stream
-// Output:  - vector of line fitting data according to least squares algorithm 
-//          - slope of the fitted line
+// Output:  - slope of the fitted line
 // reference: https://en.wikipedia.org/wiki/Least_squares
 double line_fitting(const std::vector<double>& y_vec, std::vector<double>& y_fit = std::vector<double>())
 {
