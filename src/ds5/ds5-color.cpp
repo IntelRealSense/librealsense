@@ -1,19 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
-#include "device.h"
-#include "context.h"
-#include "metadata-parser.h"
-#include "global_timestamp_reader.h"
-#include "environment.h"
+#include <cstddef>
+#include "metadata.h"
 
-#include "ds5-color.h"
-#include "ds5-private.h"
-#include "ds5-options.h"
 #include "ds5-timestamp.h"
 #include "ds5-thermal-monitor.h"
-
 #include "proc/color-formats-converter.h"
+#include "ds5-color.h"
 
 namespace librealsense
 {
@@ -149,7 +143,7 @@ namespace librealsense
             {
                 color_ep.register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
             }
-       
+
             auto gain_option = std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_GAIN);
             auto exposure_option = std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_EXPOSURE);
             auto auto_exposure_option = std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_ENABLE_AUTO_EXPOSURE);
