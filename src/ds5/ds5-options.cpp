@@ -669,6 +669,12 @@ namespace librealsense
 
     void auto_exposure_limit_option::set(float value)
     {
+        if (value < get_range().min || value > get_range().max)
+        {
+            LOG_ERROR("Auto Exposure new value - " << value << " - is outside the limit : min = "
+                << get_range().min << ", max = " << get_range().max << ".\n");
+            return;
+        }
         command cmd_get(ds::AUTO_CALIB);
         cmd_get.param1 = 5;
         std::vector<uint8_t> ret = _hwm.send(cmd_get);
