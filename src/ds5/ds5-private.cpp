@@ -181,12 +181,11 @@ namespace librealsense
             LOG_DEBUG(endl << array2str((float_4&)(calc_intrinsic.fx, calc_intrinsic.fy, calc_intrinsic.ppx, calc_intrinsic.ppy)) << endl);
 
             static rs2_intrinsics ref{};
-            if (memcmp(&calc_intrinsic,&ref,sizeof(rs2_intrinsics)))
+            if (memcmp(&calc_intrinsic, &ref, sizeof(rs2_intrinsics)))
             {
-                LOG_DEBUG("RGB Intrinsic Matrix: ScaleX, ScaleY = "
+                LOG_DEBUG_THERMAL_LOOP("RGB Intrinsic: ScaleX, ScaleY = "
                     << std::setprecision(3) << intrin(0, 0) << ", " << intrin(1, 1)
                     << ". Fx,Fy = " << calc_intrinsic.fx << "," << calc_intrinsic.fy);
-                ref = calc_intrinsic;
             }
 
             return calc_intrinsic;

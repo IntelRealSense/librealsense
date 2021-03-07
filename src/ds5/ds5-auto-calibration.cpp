@@ -1,8 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
-
-
 #include "../third-party/json.hpp"
 #include "ds5-device.h"
 #include "ds5-private.h"
@@ -569,7 +567,7 @@ namespace librealsense
         int data_sampling = DEFAULT_TARE_SAMPLING;
         int apply_preset = 1;
 
-        //Enforce Thermal Compensation off during OCC
+        //Enforce Thermal Compensation off during Tare calibration
         volatile thermal_compensation_guard grd(this);
 
         if (json.size() > 0)

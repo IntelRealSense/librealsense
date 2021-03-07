@@ -49,7 +49,6 @@ namespace librealsense
 
         _color_calib_table_raw = [this]()
         {
-            LOG_DEBUG("Fetch RGB calibration from FW");
             return get_raw_calibration_table(rgb_calibration_id);
         };
 

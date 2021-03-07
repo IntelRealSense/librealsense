@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include "sensor.h"
@@ -13,24 +13,20 @@ namespace librealsense
         ds5_thermal_monitor(synthetic_sensor& activation_sensor, std::shared_ptr<option> temp_option);
         ~ds5_thermal_monitor();
 
-        void start();
-        void stop();
         void update(bool on);
         bool is_running() const { return _is_running; }
         void add_observer(std::function<void(float)> callback)
         {
             _thermal_changes_callbacks.push_back(callback);
         }
-        /*void register_thermal_notification(calibration_change_callback_ptr callback)
-        {
-            _thermal_changes_callbacks.push_back(callback);
-        }*/
 
     private:
         ds5_thermal_monitor(const ds5_thermal_monitor&) = delete;       // disable copy and assignment ctors
         ds5_thermal_monitor& operator=(const ds5_thermal_monitor&) = delete;
 
         // Active Object's main routine
+        void start();
+        void stop();
         void polling(dispatcher::cancellable_timer cancellable_timer);
         void notify(float  temperature) const;
 

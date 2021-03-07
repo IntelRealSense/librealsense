@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #include <iostream>
 #include <chrono>
@@ -22,32 +22,6 @@ namespace librealsense
         _temperature_sensor(temp_option)
      {
         _dpt_sensor = std::dynamic_pointer_cast<synthetic_sensor>(activation_sensor.shared_from_this());
-        /*_dpt_sensor = std::dynamic_pointer_cast<synthetic_sensor>(activation_sensor.shared_from_this());
-
-        auto& dev = activation_sensor.get_device();
-
-        for (size_t i = 0; i < dev.get_sensors_count(); ++i)
-        {
-            if (auto s = dynamic_cast<ds5_recalibrable_color_sensor*>(&(dev.get_sensor(i))))
-            {
-                _recalib_sensor = std::dynamic_pointer_cast<ds5_recalibrable_color_sensor>(s->shared_from_this());
-                break;
-            }
-        }
-
-        _tl_activation = std::make_shared<uvc_xu_option<uint8_t>>(dynamic_cast<uvc_sensor&>(*activation_sensor.get_raw_sensor()),
-            ds::depth_xu, ds::DS5_THERMAL_COMPENSATION, "Toggle Thermal Compensation Mechanism");
-
-        try {
-            _control_on = static_cast<bool>(_tl_activation->query());
-        }
-        catch (...)
-        {
-            _control_on = true;
-            LOG_WARNING("Initial TL Control state could not be verified, assume on ");
-        }
-
-        activation_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION, std::make_shared<thermal_compensation>(this));*/
     }
 
     ds5_thermal_monitor::~ds5_thermal_monitor()
@@ -72,11 +46,6 @@ namespace librealsense
             _temp_base = 0.f;
             _is_running = false;
         }
-        // Enforce calibration re-read on deactivation
-        /*if (auto sp = _recalib_sensor.lock())
-            sp->reset_calibration();*/
-
-        //notify_of_calibration_change(RS2_CALIBRATION_SUCCESSFUL);
     }
 
     void ds5_thermal_monitor::update(bool on)
@@ -92,7 +61,9 @@ namespace librealsense
                 }
                 else
                     if (snr->is_opened())
+                    {
                         start();
+                    }
             }
         }
     }
@@ -110,7 +81,7 @@ namespace librealsense
 
                     if (fabs(_temp_base - cur_temp) >= _thermal_threshold_deg)
                     {
-                        LOG_DEBUG("Thermal calibration adjustment is triggered on change from "
+                        LOG_DEBUG_THERMAL_LOOP("Thermal calibration adjustment is triggered on change from "
                             << std::dec << std::setprecision(1) << _temp_base << " to " << cur_temp << " deg (C)");
 
                         notify(cur_temp);
@@ -133,7 +104,7 @@ namespace librealsense
         }
         else
         {
-            LOG_DEBUG("Thermal Compensation is being shut-down");
+            LOG_DEBUG_THERMAL_LOOP("Thermal Compensation is being shut-down");
         }
     }
 

@@ -792,5 +792,4 @@ namespace librealsense
             return "Enable thermal compensation";
         }
     }
-
 }
