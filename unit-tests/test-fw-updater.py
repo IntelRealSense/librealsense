@@ -5,8 +5,22 @@
 #test:device L500*
 #test:device D400*
 
-import pyrealsense2 as rs, sys, os, subprocess
+import pyrealsense2 as rs, sys, os, subprocess, re
 from rspy import devices, log, test
+
+def filesin( root ):
+    # Yield all files found in root, using relative names ('root/a' would be yielded as 'a')
+    for (path,subdirs,leafs) in os.walk( root ):
+        for leaf in leafs:
+            # We have to stick to Unix conventions because CMake on Windows is fubar...
+            yield os.path.relpath( path + '/' + leaf, root ).replace( '\\', '/' )
+
+def find( dir, mask ):
+    pattern = re.compile( mask )
+    for leaf in filesin( dir ):
+        if pattern.search( leaf ):
+            #log.d(leaf)
+            yield leaf
 
 def get_bundled_fw_version( product_line ):
     """
@@ -44,9 +58,9 @@ def has_newer_fw( current_fw, bundled_fw ):
     return False
 
 
-if not devices.acroname:
-    log.i("No acroname found, not updating device FW")
-    sys.exit(0)
+# if not devices.acroname:
+#     log.i("No acroname found, not updating device FW")
+#     sys.exit(0)
 
 # this script is in unit-tests directory
 librealsense = os.path.dirname( os.path.dirname( os.path.abspath( __file__ )) )
@@ -55,14 +69,13 @@ fw_versions_file = os.path.join( librealsense, 'common', 'fw', 'firmware-version
 if not os.path.isfile( fw_versions_file ):
     log.e( "Expected to find a file containing FW versions at", fw_versions_file, ", but the file was not found" )
     sys.exit(1)
-# build/RelWithDebInfo/rs-fw-update.exe performs a FW update for a connected device
-fw_updater_exe = os.path.join( librealsense, 'build', 'RelWithDebInfo', 'rs-fw-update.exe' )
-if not os.path.isfile( fw_updater_exe ):
-    log.e("Expected to find FW update tool at", fw_updater_exe, ", but the file was not found")
+# find the update tool exe
+fw_updater_exe = None
+for file in find( librealsense, '(^|/)rs-fw-update.exe$' ):
+    fw_updater_exe = os.path.join( librealsense, file)
+if not fw_updater_exe :
+    log.e( "Could not find the update tool file (rs-fw-update.exe)" )
     sys.exit(1)
-# build/common/fw contains the image files for the FW. Needed as an argument for fw_updater_exe
-fw_image_dir = os.path.join( librealsense, 'build', 'common', 'fw' )
-
 
 devices.query()
 sn_list = devices.all()
@@ -80,12 +93,16 @@ if not bundled_fw_version:
 if not has_newer_fw( current_fw_version, bundled_fw_version ):
     log.i( "No update needed: FW version is already", current_fw_version)
     sys.exit(0)
-image_file = fw_image_dir + os.sep + product_line[0:2] + "XX_FW_Image-" + bundled_fw_version + ".bin"
-if not os.path.isfile( image_file ):
-    log.e("Expected to find file containing image for FW at", fw_updater_exe, ", but the file was not found")
+# finding file containing image for FW update
+image_name = product_line[0:2] + "XX_FW_Image-" + bundled_fw_version + ".bin"
+image_mask = '(^|/)' + image_name + '$'
+image_file = None
+for file in find( librealsense, image_mask ):
+    image_file = os.path.join( librealsense, file)
+if not image_file:
+    log.e( "Could not find image file for " + product_line + " device with FW version: " + bundled_fw_version )
     sys.exit(1)
 try:
     subprocess.run([fw_updater_exe, '-f', image_file])
 except Exception as e:
     test.unexpected_exception()
-
