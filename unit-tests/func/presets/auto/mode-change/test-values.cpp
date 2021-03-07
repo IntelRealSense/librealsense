@@ -1,7 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 //#cmake: static!
+//#test:device L515
 
 #include "../../../func-common.h"
 #include "../../presets-common.h"
@@ -9,8 +10,8 @@
 
 using namespace rs2;
 
-// This test is check that after changing resolution on auto preset
-// the current and defaults values updates according to resolution
+// This test checks that after changing resolution on auto preset
+// the current and default values update according to resolution
 TEST_CASE( "auto preset - current values and defaults are correct after resolution changed", "[l500][live]" )
 {
     auto devices = find_devices_by_product_line_or_exit( RS2_PRODUCT_LINE_L500 );

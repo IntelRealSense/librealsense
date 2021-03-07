@@ -1,7 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 //#cmake: static!
+//#test:device L515
 
 #include "../../../func-common.h"
 #include "../../presets-common.h"

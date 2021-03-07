@@ -1,8 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 //#cmake: static!
-//#test:device L500*
+//#test:device L515
 
 #include "../../../func-common.h"
 #include "../../presets-common.h"
@@ -11,7 +11,7 @@
 using namespace rs2;
 
 // This test checks that after changing one of the hw control, current and default values 
-// of all the others controls are correct
+// of all the others controls have not changed
 TEST_CASE( "check values after hw control changed", "[l500][live]" )
 {
     auto devices = find_devices_by_product_line_or_exit( RS2_PRODUCT_LINE_L500 );
@@ -28,6 +28,8 @@ TEST_CASE( "check values after hw control changed", "[l500][live]" )
 
     for( auto & o : preset_dependent_options )
     {
+        // we check only hw-controls on this test
+        // gain has a dedicated tests
         if( o == RS2_OPTION_DIGITAL_GAIN )
             continue;
 

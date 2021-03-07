@@ -2,7 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 //#cmake: static!
-//#test:device L500*
+//#test:device L515
 
 #include "../func-common.h"
 #include "presets-common.h"

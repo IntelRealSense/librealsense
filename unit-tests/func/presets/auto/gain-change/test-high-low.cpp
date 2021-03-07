@@ -1,7 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 //#cmake: static!
+//#test:device L515
 
 #include "../../../func-common.h"
 #include "../../presets-common.h"
@@ -9,7 +10,7 @@
 
 using namespace rs2;
 
-// This test is check that after setting gain high or low on automatic preset
+// This test checks that after setting gain high or low on automatic preset
 // the current values don't change and the default vaules are update according to gain
 TEST_CASE( "gain changed after preset auto ", "[l500][live]" )
 {

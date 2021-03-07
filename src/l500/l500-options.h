@@ -44,7 +44,7 @@ namespace librealsense
                              const std::map< float, std::string > & description_per_value,
                              firmware_version fw_version,
                              l500_options * owner,
-                             hw_options_map hw_options )
+                             const hw_options_map & hw_options )
             : super( ep, xu, id, description, description_per_value )
             , _fw_version( fw_version )
             , _owner( owner )
@@ -106,8 +106,6 @@ namespace librealsense
         l500_options* _owner;
         hw_monitor* _hw_monitor;
         option_range _range;
-        uint32_t _width;
-        uint32_t _height;
         option* _resolution;
         std::string _description;
         firmware_version _fw_version;
