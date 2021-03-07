@@ -83,7 +83,7 @@ namespace rs2
         frame get_3d_texture_source(frame f);
 
         bool is_3d_depth_source(frame f);
-        bool is_3d_texture_source(frame f);
+        bool is_3d_texture_source(frame f) const;
 
         std::shared_ptr<texture_buffer> upload_frame(frame&& f);
 

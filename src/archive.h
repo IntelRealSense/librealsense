@@ -15,7 +15,9 @@ namespace librealsense
     class md_attribute_parser_base;
     class frame;
 
-    typedef std::map<rs2_frame_metadata_value, std::shared_ptr<md_attribute_parser_base>> metadata_parser_map;
+    // multimap is necessary here in order to permit registration to some metadata value in multiple places in metadata
+    // as it is required for D405, in which exposure should be available from the same sensor both for depth and color frames    
+    typedef std::multimap<rs2_frame_metadata_value, std::shared_ptr<md_attribute_parser_base>> metadata_parser_map;
 
     /*
         Each frame is attached with a static header

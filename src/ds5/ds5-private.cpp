@@ -279,13 +279,13 @@ namespace librealsense
                     case RS400_IMU_PID:
                         found = (result.mi == 3);
                         break;
+                    case RS405_PID:
                     case RS430I_PID:
                         found = (result.mi == 4);
                         break;
                     case RS430_MM_PID:
                     case RS420_MM_PID:
                     case RS435I_PID:
-                    case RS405_PID:
                     case RS455_PID:
                         found = (result.mi == 6);
                         break;
