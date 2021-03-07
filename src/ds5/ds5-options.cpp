@@ -671,8 +671,8 @@ namespace librealsense
     {
         if (value < get_range().min || value > get_range().max)
         {
-            LOG_ERROR("Auto Exposure new value - " << value << " - is outside the limit : min = "
-                << get_range().min << ", max = " << get_range().max << ".\n");
+            LOG_ERROR("Auto Exposure new value " << value << " is outside the range ["
+                << get_range().min << ", " << get_range().max << "].\n");
             return;
         }
         command cmd_get(ds::AUTO_CALIB);
