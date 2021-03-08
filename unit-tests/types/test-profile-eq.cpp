@@ -12,7 +12,7 @@ TEST_CASE("test video_stream_profile operator==", "[live]")
     // Test that for 2 video_stream_profile objects, if width and height are different
     // then, video_stream_profile.operator== returns false.
 
-    auto devices = find_devices_by_product_line_or_exit(RS2_PRODUCT_LINE_ANY_INTEL);
+    auto devices = find_devices_by_product_line_or_exit(RS2_PRODUCT_LINE_DEPTH);
     if (devices.size() == 0) return;
     auto dev = devices[0];
 
