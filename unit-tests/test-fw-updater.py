@@ -62,16 +62,16 @@ def pretty_fw_version( fw_version_as_string ):
     return '.'.join( [str(int(c)) for c in fw_version_as_string.split( '.' )] )
 
 
-# if not devices.acroname:
-#     log.i( "No Acroname library found; skipping device FW update" )
-#     sys.exit(0)
-# # Following will throw if no acroname module is found
-# from rspy import acroname
-# try:
-#     devices.acroname.discover()
-# except acroname.NoneFoundError as e:
-#     log.e( e )
-#     sys.exit( 1 )
+if not devices.acroname:
+    log.i( "No Acroname library found; skipping device FW update" )
+    sys.exit(0)
+# Following will throw if no acroname module is found
+from rspy import acroname
+try:
+    devices.acroname.discover()
+except acroname.NoneFoundError as e:
+    log.e( e )
+    sys.exit( 1 )
 # Remove acroname -- we're likely running inside run-unit-tests in which case the
 # acroname hub is likely already connected-to from there and we'll get an error
 # thrown ('failed to connect to acroname (result=11)'). We do not need it -- just
