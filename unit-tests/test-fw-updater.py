@@ -62,16 +62,16 @@ def pretty_fw_version( fw_version_as_string ):
     return '.'.join( [str(int(c)) for c in fw_version_as_string.split( '.' )] )
 
 
-if not devices.acroname:
-    log.i( "No Acroname library found; skipping device FW update" )
-    sys.exit(0)
-# Following will throw if no acroname module is found
-from rspy import acroname
-try:
-    devices.acroname.discover()
-except acroname.NoneFoundError as e:
-    log.e( e )
-    sys.exit( 1 )
+# if not devices.acroname:
+#     log.i( "No Acroname library found; skipping device FW update" )
+#     sys.exit(0)
+# # Following will throw if no acroname module is found
+# from rspy import acroname
+# try:
+#     devices.acroname.discover()
+# except acroname.NoneFoundError as e:
+#     log.e( e )
+#     sys.exit( 1 )
 # Remove acroname -- we're likely running inside run-unit-tests in which case the
 # acroname hub is likely already connected-to from there and we'll get an error
 # thrown ('failed to connect to acroname (result=11)'). We do not need it -- just
@@ -123,9 +123,19 @@ for file in find( librealsense, image_mask ):
 if not image_file:
     log.e( "Could not find image file for" + product_line + "device with FW version:" + bundled_fw_version )
     sys.exit(1)
+test.start( "Update FW" )
 try:
     cmd = [fw_updater_exe, '-f', image_file]
     log.d( 'running:', cmd )
     subprocess.run( cmd )
 except Exception as e:
     test.unexpected_exception()
+
+# make sure update worked
+devices.query( monitor_changes = False )
+sn_list = devices.all()
+device = devices.get( list( sn_list )[0] )
+current_fw_version = pretty_fw_version( device.get_info( rs.camera_info.firmware_version ))
+test.check_equal( current_fw_version, bundled_fw_version )
+test.finish()
+test.print_results_and_exit()
