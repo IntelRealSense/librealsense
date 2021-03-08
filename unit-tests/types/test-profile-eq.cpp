@@ -13,6 +13,7 @@ TEST_CASE("test video_stream_profile operator==", "[live]")
     // then, video_stream_profile.operator== returns false.
 
     auto devices = find_devices_by_product_line_or_exit(RS2_PRODUCT_LINE_ANY_INTEL);
+    if (devices.size() == 0) return;
     auto dev = devices[0];
 
     auto depth_sens = dev.first< rs2::depth_sensor >();
@@ -20,12 +21,19 @@ TEST_CASE("test video_stream_profile operator==", "[live]")
     stream_profile profile0, profile1;
     std::vector< stream_profile > stream_profiles;
     REQUIRE_NOTHROW(stream_profiles = depth_sens.get_stream_profiles());
-    REQUIRE_NOTHROW(stream_profiles.size() > 1);
-    profile0 = stream_profiles[0];
+    for (auto profile : stream_profiles)
+    {
+        if (profile.is<video_stream_profile>())
+        {
+            profile0 = profile;
+        }
+    }
+    if (!profile0) return;
     video_stream_profile vprofile0 = profile0.as<video_stream_profile>();
 
     for (auto profile : stream_profiles)
     {
+        if (!profile.is<video_stream_profile>()) continue;
         if (profile == profile0)
         {
             video_stream_profile vprofile = profile.as<video_stream_profile>();
