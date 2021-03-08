@@ -36,9 +36,10 @@ _device_by_sn = dict()
 _context = None
 
 
-def query():
+def query( monitor_changes = True ):
     """
     Start a new LRS context, and collect all devices
+    :param monitor_changes: If True, devices will update dynamically as they are removed/added
     """
     global rs
     if not rs:
@@ -53,7 +54,8 @@ def query():
     # Get all devices, and store by serial-number
     global _device_by_sn, _context, _port_to_sn
     _context = rs.context()
-    _context.set_devices_changed_callback( _device_change_callback )
+    if monitor_changes:
+        _context.set_devices_changed_callback( _device_change_callback )
     _device_by_sn = dict()
     for dev in _context.query_devices():
         if dev.is_update_device():
