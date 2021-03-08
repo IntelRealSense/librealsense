@@ -354,7 +354,7 @@ namespace librealsense
         std::shared_ptr<option> _hdr_option;
     };
 
-    class auto_exposure_limit_option : public option
+    class auto_exposure_limit_option : public option_base
     {
     public:
         auto_exposure_limit_option(hw_monitor& hwm, sensor_base* depth_ep);

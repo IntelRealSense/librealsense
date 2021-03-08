@@ -659,7 +659,7 @@ namespace librealsense
     }
 
     auto_exposure_limit_option::auto_exposure_limit_option(hw_monitor& hwm, sensor_base* ep)
-        : _hwm(hwm), _sensor(ep)
+        : option_base(option_range{ 0, 165000, 1, 0 }), _hwm(hwm), _sensor(ep)
     {
         _range = [this]()
         {
@@ -669,12 +669,9 @@ namespace librealsense
 
     void auto_exposure_limit_option::set(float value)
     {
-        if (value < get_range().min || value > get_range().max)
-        {
-            LOG_ERROR("Auto Exposure new value " << value << " is outside the range ["
-                << get_range().min << ", " << get_range().max << "].\n");
-            return;
-        }
+        if (!is_valid(value))
+            throw invalid_value_exception("set(enable_auto_exposure) failed! Invalid Auto-Exposure mode request " + std::to_string(value));
+
         command cmd_get(ds::AUTO_CALIB);
         cmd_get.param1 = 5;
         std::vector<uint8_t> ret = _hwm.send(cmd_get);
