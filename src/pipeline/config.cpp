@@ -17,6 +17,9 @@ namespace librealsense
             std::lock_guard<std::mutex> lock(_mtx);
             _resolved_profile.reset();
             _stream_requests[{stream, index}] = { format, stream, index, width, height, fps };
+            // check if enabled stream is in _streams_to_disable vector and remove it if still there
+            auto position = std::find(_streams_to_disable.begin(), _streams_to_disable.end(), stream);
+            if (position != _streams_to_disable.end()) _streams_to_disable.erase(position); //means the element was found
         }
 
         void config::enable_all_stream()
@@ -25,6 +28,8 @@ namespace librealsense
             _resolved_profile.reset();
             _stream_requests.clear();
             _enable_all_streams = true;
+            _disable_all_streams = false;
+            _streams_to_disable.clear();
         }
 
         void config::enable_device(const std::string& serial)
@@ -66,6 +71,8 @@ namespace librealsense
         void config::disable_stream(rs2_stream stream, int index)
         {
             std::lock_guard<std::mutex> lock(_mtx);
+            _streams_to_disable.push_back(stream);
+
             auto itr = std::begin(_stream_requests);
             while (itr != std::end(_stream_requests))
             {
@@ -88,6 +95,36 @@ namespace librealsense
             _stream_requests.clear();
             _enable_all_streams = false;
             _resolved_profile.reset();
+            _disable_all_streams = true;
+            _streams_to_disable.clear();
+        }
+
+        void config::enable_only_selected_profiles(util::config& config, stream_profiles& profiles)
+        {
+            if (!_streams_to_disable.empty())
+            {
+                for (auto prof : profiles)
+                {
+                    bool disable_stream = false;
+                    auto p = prof.get();
+                    auto vp = dynamic_cast<video_stream_profile*>(p);
+                    for (auto& st : _streams_to_disable)
+                    {
+                        if (st == p->get_stream_type())
+                        {
+                            disable_stream = true;
+                            break;
+                        }
+                    }
+                    if (disable_stream) continue;
+                    if (vp) config.enable_stream(vp->get_stream_type(), vp->get_stream_index(), vp->get_width(), vp->get_height(), vp->get_format(), vp->get_framerate());
+                    config.enable_stream(p->get_stream_type(), p->get_stream_index(), 0, 0, p->get_format(), p->get_framerate());
+                }
+            }
+            else
+            {
+                config.enable_streams(profiles);
+            }
         }
 
         std::shared_ptr<profile> config::resolve(std::shared_ptr<device_interface> dev)
@@ -101,7 +138,7 @@ namespace librealsense
                 {
                     auto&& sub = dev->get_sensor(i);
                     auto profiles = sub.get_stream_profiles(PROFILE_TAG_SUPERSET);
-                    config.enable_streams(profiles);
+                    enable_only_selected_profiles(config, profiles);  //config.enable_streams(profiles);
                 }
                 return std::make_shared<profile>(dev, config, _device_request.record_output);
             }
@@ -110,14 +147,24 @@ namespace librealsense
             if (_stream_requests.empty())
             {
                 auto default_profiles = get_default_configuration(dev);
-                config.enable_streams(default_profiles);
+                enable_only_selected_profiles(config, default_profiles);  //config.enable_streams(default_profiles);
                 return std::make_shared<profile>(dev, config, _device_request.record_output);
             }
 
             //Enabled requested streams
             for (auto&& req : _stream_requests)
             {
+                bool disable_stream = false;
                 auto r = req.second;
+                for (auto& st : _streams_to_disable)
+                {
+                    if (st == r.stream)
+                    {
+                        disable_stream = true;
+                        break;
+                    }
+                }
+                if (disable_stream) continue;
                 config.enable_stream(r.stream, r.index, r.width, r.height, r.format, r.fps);
             }
             return std::make_shared<profile>(dev, config, _device_request.record_output);
