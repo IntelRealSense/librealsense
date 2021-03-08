@@ -18,7 +18,7 @@ sys.path.append( os.path.join( os.path.dirname( sys.executable ), 'lib' ))
 current_dir = os.path.dirname( os.path.abspath( __file__ ))
 sys.path.append( current_dir + os.sep + "py" )
 
-from rspy import log
+from rspy import log, file, repo
 
 def usage():
     ourname = os.path.basename(sys.argv[0])
@@ -33,21 +33,6 @@ def usage():
     print( '        -t, --tag      run all tests with the following tag' )
     sys.exit(2)
 
-
-def filesin( root ):
-    # Yield all files found in root, using relative names ('root/a' would be yielded as 'a')
-    for (path,subdirs,leafs) in os.walk( root ):
-        for leaf in leafs:
-            # We have to stick to Unix conventions because CMake on Windows is fubar...
-            yield os.path.relpath( path + '/' + leaf, root ).replace( '\\', '/' )
-
-def find( dir, mask ):
-    pattern = re.compile( mask )
-    for leaf in filesin( dir ):
-        if pattern.search( leaf ):
-            #log.d(leaf)
-            yield leaf
-
 # get os and directories for future use
 # NOTE: WSL will read as 'Linux' but the build is Windows-based!
 system = platform.system()
@@ -55,17 +40,6 @@ if system == 'Linux'  and  "microsoft" not in platform.uname()[3].lower():
     linux = True
 else:
     linux = False
-
-# this script is located in librealsense/unit-tests, so one directory up is the main repository
-librealsense = os.path.dirname(current_dir)
-
-# function for checking if a file is an executable
-
-def is_executable(path_to_test):
-    if linux:
-        return os.access(path_to_test, os.X_OK)
-    else:
-        return path_to_test.endswith('.exe')
 
 # Parse command-line:
 try:
@@ -101,9 +75,9 @@ if len(args) == 1:
         usage()
 # Trying to assume target directory from inside build directory. Only works if there is only one location with tests
 if not target:
-    build = librealsense + os.sep + 'build'
-    for executable in find(build, '(^|/)test-.*'):
-        if not is_executable(executable):
+    build = repo.source + os.sep + 'build'
+    for executable in file.find(build, '(^|/)test-.*'):
+        if not file.is_executable(executable):
             continue
         dir_with_test = build + os.sep + os.path.dirname(executable)
         if target and target != dir_with_test:
@@ -114,50 +88,25 @@ if not target:
 if target:
     logdir = target + os.sep + 'unit-tests'
 else: # no test executables were found. We put the logs directly in build directory
-    logdir = librealsense + os.sep + 'build' + os.sep + 'unit-tests'
+    logdir = repo.source + os.sep + 'build' + os.sep + 'unit-tests'
 os.makedirs( logdir, exist_ok = True )
 n_tests = 0
-
-# wrapper function for subprocess.run
-def subprocess_run(cmd, stdout = None):
-    log.d( 'running:', cmd )
-    handle = None
-    try:
-        log.debug_indent()
-        if stdout  and  stdout != subprocess.PIPE:
-            handle = open( stdout, "w" )
-            stdout = handle
-        rv = subprocess.run( cmd,
-                             stdout = stdout,
-                             stderr = subprocess.STDOUT,
-                             universal_newlines = True,
-                             check = True)
-        result = rv.stdout
-        if not result:
-            result = []
-        else:
-            result = result.split( '\n' )
-        return result
-    finally:
-        if handle:
-            handle.close()
-        log.debug_unindent()
 
 # Python scripts should be able to find the pyrealsense2 .pyd or else they won't work. We don't know
 # if the user (Travis included) has pyrealsense2 installed but even if so, we want to use the one we compiled.
 # we search the librealsense repository for the .pyd file (.so file in linux)
 pyrs = ""
 if linux:
-    for so in find(librealsense, '(^|/)pyrealsense2.*\.so$'):
+    for so in file.find(repo.source, '(^|/)pyrealsense2.*\.so$'):
         pyrs = so
 else:
-    for pyd in find(librealsense, '(^|/)pyrealsense2.*\.pyd$'):
+    for pyd in file.find(repo.source, '(^|/)pyrealsense2.*\.pyd$'):
         pyrs = pyd
 
 if pyrs:
     # After use of find, pyrs contains the path from librealsense to the pyrealsense that was found
     # We append it to the librealsense path to get an absolute path to the file to add to PYTHONPATH so it can be found by the tests
-    pyrs_path = librealsense + os.sep + pyrs
+    pyrs_path = repo.source + os.sep + pyrs
     # We need to add the directory not the file itself
     pyrs_path = os.path.dirname(pyrs_path)
     log.d( 'found pyrealsense pyd in:', pyrs_path )
@@ -172,44 +121,6 @@ os.environ["PYTHONPATH"] = current_dir + os.sep + "py"
 if pyrs:
     os.environ["PYTHONPATH"] += os.pathsep + pyrs_path
 
-def remove_newlines (lines):
-    for line in lines:
-        if line[-1] == '\n':
-            line = line[:-1]    # excluding the endline
-        yield line
-
-def grep_( pattern, lines, context ):
-    index = 0
-    matches = 0
-    for line in lines:
-        index = index + 1
-        match = pattern.search( line )
-        if match:
-            context['index'] = index
-            context['line']  = line
-            context['match'] = match
-            yield context
-            matches = matches + 1
-    if matches:
-        del context['index']
-        del context['line']
-        del context['match']
-
-def grep( expr, *args ):
-    #log.d( f'grep {expr} {args}' )
-    pattern = re.compile( expr )
-    context = dict()
-    for filename in args:
-        context['filename'] = filename
-        with open( filename, errors = 'ignore' ) as file:
-            for line in grep_( pattern, remove_newlines( file ), context ):
-                yield line
-
-def cat( filename ):
-    with open( filename, errors = 'ignore' ) as file:
-        for line in remove_newlines( file ):
-            log.out( line )
-
 def check_log_for_fails( path_to_log, testname, exe ):
     # Normal logs are expected to have in last line:
     #     "All tests passed (11 assertions in 1 test case)"
@@ -218,7 +129,7 @@ def check_log_for_fails( path_to_log, testname, exe ):
     #      assertions: 9 | 6 passed | 3 failed"
     if path_to_log is None:
         return False
-    for ctx in grep( r'^test cases:\s*(\d+) \|\s*(\d+) (passed|failed)', path_to_log ):
+    for ctx in file.grep( r'^test cases:\s*(\d+) \|\s*(\d+) (passed|failed)', path_to_log ):
         m = ctx['match']
         total = int(m.group(1))
         passed = int(m.group(2))
@@ -236,7 +147,7 @@ def check_log_for_fails( path_to_log, testname, exe ):
                 log.i( 'Executable:', exe )
                 log.i( 'Log: >>>' )
                 log.out()
-                cat( path_to_log )
+                file.cat( path_to_log )
                 log.out( '<<<' )
             else:
                 log.e( log.red + testname + log.reset + ': ' + desc + '; see ' + path_to_log )
@@ -294,7 +205,7 @@ class TestConfigFromText(TestConfig):
 
         # Parse the python
         regex = r'^' + line_prefix + r'(\S+)((?:\s+\S+)*?)\s*(?:#\s*(.*))?$'
-        for context in grep( regex, source ):
+        for context in file.grep( regex, source ):
             match = context['match']
             directive = match.group(1)
             params = [s for s in context['match'].group(2).split()]
@@ -394,7 +305,7 @@ class PyTest(Test):
     def run_test( self ):
         log_path = self.get_log()
         try:
-            subprocess_run( self.command, stdout=log_path )
+            file.subprocess_run( self.command, stdout=log_path )
         except FileNotFoundError:
             log.e( log.red + self.name + log.reset + ': executable not found! (' + self.path_to_script + ')' )
         except subprocess.CalledProcessError as cpe:
@@ -453,7 +364,7 @@ class ExeTest(Test):
     def run_test( self ):
         log_path = self.get_log()
         try:
-            subprocess_run( self.command, stdout=log_path )
+            file.subprocess_run( self.command, stdout=log_path )
         except FileNotFoundError:
             log.e( log.red + self.name + log.reset + ': executable not found! (' + self.exe + ')')
         except subprocess.CalledProcessError as cpe:
@@ -475,7 +386,7 @@ def get_tests():
         else:
             manifestfile = target + '/../CMakeFiles/TargetDirectories.txt'
         #log.d( manifestfile )
-        for manifest_ctx in grep(r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir$)', manifestfile):
+        for manifest_ctx in file.grep(r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir$)', manifestfile):
             # We need to first create the test name so we can see if it fits the regex
             testdir = manifest_ctx['match'].group(0)  # "log/internal/test-all"
             #log.d( testdir )
@@ -497,7 +408,7 @@ def get_tests():
 
     # Python unit-test scripts are in the same directory as us... we want to consider running them
     # (we may not if they're live and we have no pyrealsense2.pyd):
-    for py_test in find(current_dir, '(^|/)test-.*\.py'):
+    for py_test in file.find(current_dir, '(^|/)test-.*\.py'):
         testparent = os.path.dirname(py_test)  # "log/internal" <-  "log/internal/test-all.py"
         if testparent:
             testname = 'test-' + testparent.replace('/', '-') + '-' + os.path.basename(py_test)[5:-3]  # remove .py
