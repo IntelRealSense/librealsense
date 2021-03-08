@@ -43,7 +43,7 @@ namespace librealsense
     //// The class allows to track and calibration updates on the fly
     //// Specifically for D400 the calibration adjustments are generated in FW
     //// and retrieved on demand when a certain (thermal) trigger is invoked
-    class ds5_thermal_tracking : public device_passive_calibration
+    class ds5_thermal_tracking : public calibration_change_notifier
     {
     public:
         ds5_thermal_tracking(std::shared_ptr<ds5_thermal_monitor> monitor):

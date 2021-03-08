@@ -569,14 +569,14 @@ namespace rs2
         void release() override { delete this; }
     };
 
-    class device_passive_calibration : public device
+    class calibration_change_notifier : public device
     {
     public:
-        device_passive_calibration(device d)
+        calibration_change_notifier(device d)
             : device(d.get())
         {
             rs2_error* e = nullptr;
-            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_DEVICE_PASSIVE_CALIBRATION, &e) == 0 && !e)
+            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_CALIBRATION_CHANGE_NOTIFIER, &e) == 0 && !e)
             {
                 _dev.reset();
             }

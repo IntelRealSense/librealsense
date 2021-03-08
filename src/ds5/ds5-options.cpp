@@ -785,11 +785,11 @@ namespace librealsense
     {
         if (value == 0)
         {
-            return "Disable thermal compensation";
+            return "Thermal compensation is disabled";
         }
         else
         {
-            return "Enable thermal compensation";
+            return "Thermal compensation is enabled";
         }
     }
 }

@@ -186,6 +186,7 @@ namespace librealsense
                 LOG_DEBUG_THERMAL_LOOP("RGB Intrinsic: ScaleX, ScaleY = "
                     << std::setprecision(3) << intrin(0, 0) << ", " << intrin(1, 1)
                     << ". Fx,Fy = " << calc_intrinsic.fx << "," << calc_intrinsic.fy);
+                ref = calc_intrinsic;
             }
 
             return calc_intrinsic;
