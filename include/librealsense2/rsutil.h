@@ -96,6 +96,15 @@ static void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrin
         x = ux;
         y = uy;
     }
+    if (intrin->model == RS2_DISTORTION_BROWN_CONRADY)
+    {
+        float r2 = x * x + y * y;
+        auto icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1])*r2 + intrin->coeffs[0])*r2);
+        auto delta_x = 2 * intrin->coeffs[2] * x*y + intrin->coeffs[3] * (r2 + 2 * x*x);
+        auto delta_y = 2 * intrin->coeffs[3] * x*y + intrin->coeffs[2] * (r2 + 2 * y*y);
+        x = (x - delta_x)*icdist;
+        y = (y - delta_y)*icdist;
+    }
     if (intrin->model == RS2_DISTORTION_KANNALA_BRANDT4)
     {
         float rd = sqrtf(x*x + y*y);
