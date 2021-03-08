@@ -57,10 +57,27 @@ def has_newer_fw( current_fw, bundled_fw ):
             return False
     return False
 
+def pretty_fw_version( fw_version_as_string ):
+    """ return a version with zeros removed """
+    return '.'.join( [str(int(c)) for c in fw_version_as_string.split( '.' )] )
 
-# if not devices.acroname:
-#     log.i("No acroname found, not updating device FW")
-#     sys.exit(0)
+
+if not devices.acroname:
+    log.i( "No Acroname library found; skipping device FW update" )
+    sys.exit(0)
+# Following will throw if no acroname module is found
+from rspy import acroname
+try:
+    devices.acroname.discover()
+except acroname.NoneFoundError as e:
+    log.e( e )
+    sys.exit( 1 )
+# Remove acroname -- we're likely running inside run-unit-tests in which case the
+# acroname hub is likely already connected-to from there and we'll get an error
+# thrown ('failed to connect to acroname (result=11)'). We do not need it -- just
+# needed to verify it is available above...
+devices.acroname = None
+
 
 # this script is in unit-tests directory
 librealsense = os.path.dirname( os.path.dirname( os.path.abspath( __file__ )) )
@@ -73,23 +90,27 @@ if not os.path.isfile( fw_versions_file ):
 fw_updater_exe = None
 for file in find( librealsense, '(^|/)rs-fw-update.exe$' ):
     fw_updater_exe = os.path.join( librealsense, file)
-if not fw_updater_exe :
+if not fw_updater_exe:
     log.e( "Could not find the update tool file (rs-fw-update.exe)" )
     sys.exit(1)
 
-devices.query()
+devices.query( monitor_changes = False )
 sn_list = devices.all()
-# acroname should insure there is always 1 available device
+# acroname should ensure there is always 1 available device
 if len( sn_list ) != 1:
     log.e( "Expected 1 device, got", len( sn_list ) )
     sys.exit(1)
 device = devices.get( list( sn_list )[0] )
-current_fw_version = device.get_info( rs.camera_info.firmware_version )
+log.d( 'found:', device )
+current_fw_version = pretty_fw_version( device.get_info( rs.camera_info.firmware_version ))
+log.d( 'FW version:', current_fw_version )
 product_line =  device.get_info( rs.camera_info.product_line )
+log.d( 'product line:', product_line )
 bundled_fw_version = get_bundled_fw_version( product_line )
 if not bundled_fw_version:
-    log.e( "No FW version found in", fw_versions_file, "for product line", product_line )
+    log.e( "No FW version found for", product_line, "product line in:", fw_versions_file )
     sys.exit(1)
+log.d( 'bundled FW version:', bundled_fw_version )
 if not has_newer_fw( current_fw_version, bundled_fw_version ):
     log.i( "No update needed: FW version is already", current_fw_version)
     sys.exit(0)
@@ -100,9 +121,11 @@ image_file = None
 for file in find( librealsense, image_mask ):
     image_file = os.path.join( librealsense, file)
 if not image_file:
-    log.e( "Could not find image file for " + product_line + " device with FW version: " + bundled_fw_version )
+    log.e( "Could not find image file for" + product_line + "device with FW version:" + bundled_fw_version )
     sys.exit(1)
 try:
-    subprocess.run([fw_updater_exe, '-f', image_file])
+    cmd = [fw_updater_exe, '-f', image_file]
+    log.d( 'running:', cmd )
+    subprocess.run( cmd )
 except Exception as e:
     test.unexpected_exception()
