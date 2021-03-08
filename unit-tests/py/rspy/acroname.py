@@ -37,18 +37,53 @@ except ModuleNotFoundError:
 hub = None
 
 
-def connect():
+class NoneFoundError( RuntimeError ):
+    """
+    """
+    def __init__( self, message = None ):
+        super().__init__( self, message  or  'no Acroname module found' )
+
+
+def discover():
+    """
+    Return all Acroname module specs in a list. Raise NoneFoundError if one is not found!
+    """
+
+    log.d( 'discovering Acroname modules ...' )
+    # see https://acroname.com/reference/_modules/brainstem/module.html#Module.discoverAndConnect
+    try:
+        log.debug_indent()
+        specs = brainstem.discover.findAllModules( brainstem.link.Spec.USB )
+        if not specs:
+            raise NoneFoundError()
+        for spec in specs:
+            log.d( '...', spec )
+    finally:
+        log.debug_unindent()
+
+    return specs
+
+
+def connect( spec = None ):
     """
     Connect to the hub. Raises RuntimeError on failure
     """
-    
+
     global hub
     if not hub:
         hub = brainstem.stem.USBHub3p()
 
-    result = hub.discoverAndConnect( brainstem.link.Spec.USB )
+    if spec:
+        specs = [spec]
+    else:
+        specs = discover()
+        spec = specs[0]
+
+    result = hub.connectFromSpec( spec )
     if result != brainstem.result.Result.NO_ERROR:
         raise RuntimeError( "failed to connect to acroname (result={})".format( result ))
+    elif len(specs) > 1:
+        log.d( 'connected to', spec )
 
 
 def is_connected():
