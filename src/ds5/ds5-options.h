@@ -421,7 +421,7 @@ namespace librealsense
         }
 
     private:
-        mutable std::shared_ptr<ds5_thermal_monitor>  _thermal_monitor;
+        std::shared_ptr<ds5_thermal_monitor>  _thermal_monitor;
         std::shared_ptr<option> _thermal_toggle;
 
         std::function<void(const option&)> _recording_function = [](const option&) {};

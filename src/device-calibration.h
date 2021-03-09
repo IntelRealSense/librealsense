@@ -10,16 +10,16 @@ namespace librealsense
 {
     // This extension should allow generic calibrations using the same interface
     // by adding to rs2_calibration_type instead of adding new function calls
-    class calibration_change_notifier
+    class calibration_change_device
     {
     public:
         virtual void register_calibration_change_callback(calibration_change_callback_ptr) = 0;
     };
-    MAP_EXTENSION(RS2_EXTENSION_CALIBRATION_CHANGE_NOTIFIER, calibration_change_notifier);
+    MAP_EXTENSION(RS2_EXTENSION_CALIBRATION_CHANGE_DEVICE, calibration_change_device);
 
     // This extension should allow generic calibrations using the same interface
     // by adding to rs2_calibration_type instead of adding new function calls
-    class device_calibration : public calibration_change_notifier
+    class device_calibration : public calibration_change_device
     {
     public:
         virtual void trigger_device_calibration( rs2_calibration_type ) = 0;

@@ -10,11 +10,12 @@ namespace librealsense
     class  ds5_thermal_monitor
     {
     public:
-        ds5_thermal_monitor(synthetic_sensor& activation_sensor, std::shared_ptr<option> temp_option);
+        ds5_thermal_monitor(synthetic_sensor& activation_sensor,
+            std::shared_ptr<option> temp_option,
+            std::shared_ptr<option> tl_toggle);
         ~ds5_thermal_monitor();
 
         void update(bool on);
-        bool is_running() const { return _is_running; }
         void add_observer(std::function<void(float)> callback)
         {
             _thermal_changes_callbacks.push_back(callback);
@@ -35,15 +36,15 @@ namespace librealsense
         unsigned int _poll_intervals_ms;
         float _thermal_threshold_deg;
         float _temp_base;
-        bool _is_running = false;
         std::weak_ptr<option> _temperature_sensor;
+        std::weak_ptr<option> _tl_activation;
         std::vector<std::function<void(float)>>  _thermal_changes_callbacks;   // Distribute notifications on device thermal changes
     };
 
     //// The class allows to track and calibration updates on the fly
     //// Specifically for D400 the calibration adjustments are generated in FW
     //// and retrieved on demand when a certain (thermal) trigger is invoked
-    class ds5_thermal_tracking : public calibration_change_notifier
+    class ds5_thermal_tracking : public calibration_change_device
     {
     public:
         ds5_thermal_tracking(std::shared_ptr<ds5_thermal_monitor> monitor):

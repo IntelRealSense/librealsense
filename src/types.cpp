@@ -326,7 +326,7 @@ namespace librealsense
             CASE(HDR_MERGE)
             CASE(MAX_USABLE_RANGE_SENSOR)
             CASE(DEBUG_STREAM_SENSOR)
-            CASE(CALIBRATION_CHANGE_NOTIFIER)
+            CASE(CALIBRATION_CHANGE_DEVICE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

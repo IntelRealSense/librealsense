@@ -350,7 +350,7 @@ namespace librealsense
 
             // Activate Thermal Compensation tracking
             if (supports_option(RS2_OPTION_THERMAL_COMPENSATION) && (get_option(RS2_OPTION_THERMAL_COMPENSATION).query()>0.f))
-                this->_owner->_thermal_monitor->update(true);
+                _owner->_thermal_monitor->update(true);
         }
 
         void close() override

@@ -401,6 +401,11 @@ public:
     {
         stop();
     }
+
+    bool is_active() const
+    {
+        return !_stopped;
+    }
 private:
     void do_loop()
     {

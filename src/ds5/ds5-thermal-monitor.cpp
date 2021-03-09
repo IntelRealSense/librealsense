@@ -10,7 +10,8 @@
 namespace librealsense
 {
     ds5_thermal_monitor::ds5_thermal_monitor(synthetic_sensor& activation_sensor,
-                                            std::shared_ptr<option> temp_option) :
+                                            std::shared_ptr<option> temp_option,
+                                            std::shared_ptr<option> tl_toggle) :
         _monitor([this](dispatcher::cancellable_timer cancellable_timer)
             {
                 polling(cancellable_timer);
@@ -18,8 +19,8 @@ namespace librealsense
         _poll_intervals_ms(2000), // Temperature check routine to be invoked every 2 sec
         _thermal_threshold_deg(2.f),
         _temp_base(0.f),
-        _is_running(false),
-        _temperature_sensor(temp_option)
+        _temperature_sensor(temp_option),
+        _tl_activation(tl_toggle)
      {
         _dpt_sensor = std::dynamic_pointer_cast<synthetic_sensor>(activation_sensor.shared_from_this());
     }
@@ -31,26 +32,22 @@ namespace librealsense
 
     void ds5_thermal_monitor::start()
     {
-        if (!_is_running)
-        {
+        if (!_monitor.is_active())
             _monitor.start();
-            _is_running = true;
-        }
     }
 
     void ds5_thermal_monitor::stop()
     {
-        if (_is_running)
+        if (_monitor.is_active())
         {
             _monitor.stop();
             _temp_base = 0.f;
-            _is_running = false;
         }
     }
 
     void ds5_thermal_monitor::update(bool on)
     {
-        if (on != is_running())
+        if (on != _monitor.is_active())
         {
             if (auto snr = _dpt_sensor.lock())
             {
@@ -74,6 +71,14 @@ namespace librealsense
         {
             try
             {
+                // Verify TL is active on FW level
+                if (auto tl_active = _tl_activation.lock())
+                {
+                    if (std::fabs(tl_active->query()) < std::numeric_limits< float >::epsilon())
+                        return;
+                }
+
+                // Track temperature and update on temperature changes
                 auto ts = (uint64_t)std::chrono::high_resolution_clock::now().time_since_epoch().count();
                 if (auto temp = _temperature_sensor.lock())
                 {

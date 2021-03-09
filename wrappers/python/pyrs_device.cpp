@@ -34,7 +34,7 @@ void init_device(py::module &m) {
         .def(BIND_DOWNCAST(device, update_device))
         .def(BIND_DOWNCAST(device, auto_calibrated_device))
         .def(BIND_DOWNCAST(device, device_calibration))
-        .def(BIND_DOWNCAST(device, calibration_change_notifier))
+        .def(BIND_DOWNCAST(device, calibration_change_device))
         .def(BIND_DOWNCAST(device, firmware_logger))
         .def("__repr__", [](const rs2::device &self) {
             std::stringstream ss;
@@ -128,10 +128,10 @@ void init_device(py::module &m) {
             "Register (only once!) a callback that gets called for each change in calibration", "callback"_a );
 
 
-    py::class_<rs2::calibration_change_notifier, rs2::device> calibration_change_notifier(m, "calibration_change_notifier");
-    calibration_change_notifier.def(py::init<rs2::device>(), "device"_a)
+    py::class_<rs2::calibration_change_device, rs2::device> calibration_change_device(m, "calibration_change_device");
+    calibration_change_device.def(py::init<rs2::device>(), "device"_a)
         .def("register_calibration_change_callback",
-            [](rs2::calibration_change_notifier& self, std::function<void(rs2_calibration_status)> callback)
+            [](rs2::calibration_change_device& self, std::function<void(rs2_calibration_status)> callback)
             {
                 self.register_calibration_change_callback(
                     [callback](rs2_calibration_status status)

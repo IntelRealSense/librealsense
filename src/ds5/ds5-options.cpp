@@ -748,7 +748,8 @@ namespace librealsense
         _thermal_monitor(monitor),
         _thermal_toggle(toggle)
     {
-        try {
+        try
+        {
             auto on = static_cast<bool>(_thermal_toggle->query());
             _thermal_monitor->update(on);
         }
@@ -761,7 +762,6 @@ namespace librealsense
     float librealsense::thermal_compensation::query(void) const
     {
         auto val = _thermal_toggle->query();
-        _thermal_monitor->update(static_cast<bool>(val));
         _recording_function(*this);
         return val;
     }
