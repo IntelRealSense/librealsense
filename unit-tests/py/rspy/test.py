@@ -280,7 +280,7 @@ def check_frame_drops(frame, previous_frame_number, allowed_drops = 1):
                    previous_frame_number)
             failed = True
     if failed:
-        check_failed()
+        fail() 
         return False
     reset_info()
     return True
