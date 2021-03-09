@@ -80,7 +80,6 @@ namespace librealsense
                     }
                 }
             }
-            
             assert(profile);
             if (!profile->_multistream.get_profiles().size())
                 throw librealsense::wrong_api_call_sequence_exception("No streams are selected!");
