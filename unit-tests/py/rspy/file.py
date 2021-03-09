@@ -3,6 +3,7 @@
 
 import os, re, platform, subprocess, sys
 
+# Remove Python's default list of places to look for modules so that we use our log module
 sys.path = list()
 sys.path.append( '' )  # directs Python to search modules in the current directory first
 sys.path.append( os.path.dirname( sys.executable ))
@@ -23,28 +24,41 @@ else:
     linux = False
 
 def filesin( root ):
-    # Yield all files found in root, using relative names ('root/a' would be yielded as 'a')
+    """
+    Yield all files found in root, using relative names ('root/a' would be yielded as 'a')
+    """
     for (path,subdirs,leafs) in os.walk( root ):
         for leaf in leafs:
             # We have to stick to Unix conventions because CMake on Windows is fubar...
             yield os.path.relpath( path + '/' + leaf, root ).replace( '\\', '/' )
 
 def find( dir, mask ):
+    """
+    Yield all files in given directory (including sub-directories) that fit the given mask
+    :param dir: directory in which to search
+    :param mask: mask to compare file names to
+    """
     pattern = re.compile( mask )
     for leaf in filesin( dir ):
         if pattern.search( leaf ):
             #log.d(leaf)
             yield leaf
 
-def is_executable(path_to_test):
+def is_executable(path_to_file):
+    """
+    :param path_to_file: path to a file
+    :return: whether the file is an executable or not
+    """
     global linux
     if linux:
-        return os.access(path_to_test, os.X_OK)
+        return os.access(path_to_file, os.X_OK)
     else:
-        return path_to_test.endswith('.exe')
+        return path_to_file.endswith('.exe')
 
-# wrapper function for subprocess.run
 def subprocess_run(cmd, stdout = None):
+    """
+    wrapper function for subprocess.run
+    """
     log.d( 'running:', cmd )
     handle = None
     try:
@@ -75,6 +89,9 @@ def remove_newlines (lines):
         yield line
 
 def grep_( pattern, lines, context ):
+    """
+    helper function for grep
+    """
     index = 0
     matches = 0
     for line in lines:

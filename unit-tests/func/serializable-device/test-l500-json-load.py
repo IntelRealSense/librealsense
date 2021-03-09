@@ -67,6 +67,7 @@ try:
     visual_preset_name = rs.l500_visual_preset(int(visual_preset_number))
 
     test.check_equal(visual_preset_name, rs.l500_visual_preset.low_ambient_light)
+    test.check_equal(visual_preset_name, rs.l500_visual_preset.low_ambient_light)
 except:
     test.unexpected_exception()
 test.finish()

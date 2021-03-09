@@ -3,7 +3,7 @@
 
 import os
 
-# this script is located in librealsense/unit-tests/py/rspy, so one directory up is the main repository
+# this script is located in librealsense/unit-tests/py/rspy, so main repository is:
 source = os.path.dirname( os.path.dirname( os.path.dirname( os.path.dirname( os.path.abspath( __file__ )))))
 
 def get_bundled_fw_version( product_line ):
