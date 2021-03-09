@@ -977,8 +977,10 @@ namespace librealsense
         // Auto exposure and gain limit
         if (_fw_version >= firmware_version("5.12.10.11"))
         {
-            depth_sensor.register_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT, std::make_shared<auto_exposure_limit_option>(*_hw_monitor, &depth_sensor));
-            depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT, std::make_shared<auto_gain_limit_option>(*_hw_monitor, &depth_sensor));
+            auto exposure_range = depth_sensor.get_option(RS2_OPTION_EXPOSURE).get_range();
+            auto gain_range = depth_sensor.get_option(RS2_OPTION_GAIN).get_range();
+            depth_sensor.register_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT, std::make_shared<auto_exposure_limit_option>(*_hw_monitor, &depth_sensor, exposure_range));
+            depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT, std::make_shared<auto_gain_limit_option>(*_hw_monitor, &depth_sensor, gain_range));
         }
 
         // attributes of md_capture_timing

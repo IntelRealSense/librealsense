@@ -357,7 +357,7 @@ namespace librealsense
     class auto_exposure_limit_option : public option_base
     {
     public:
-        auto_exposure_limit_option(hw_monitor& hwm, sensor_base* depth_ep);
+        auto_exposure_limit_option(hw_monitor& hwm, sensor_base* depth_ep, option_range range);
         virtual ~auto_exposure_limit_option() = default;
         virtual void set(float value) override;
         virtual float query() const override;
@@ -379,7 +379,7 @@ namespace librealsense
     class auto_gain_limit_option : public option_base
     {
     public:
-        auto_gain_limit_option(hw_monitor& hwm, sensor_base* depth_ep);
+        auto_gain_limit_option(hw_monitor& hwm, sensor_base* depth_ep, option_range range);
         virtual ~auto_gain_limit_option() = default;
         virtual void set(float value) override;
         virtual float query() const override;

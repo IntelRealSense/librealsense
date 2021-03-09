@@ -658,12 +658,12 @@ namespace librealsense
             return _uvc_option->is_enabled();
     }
 
-    auto_exposure_limit_option::auto_exposure_limit_option(hw_monitor& hwm, sensor_base* ep)
-        : option_base(option_range{ 0, 165000, 1, 0 }), _hwm(hwm), _sensor(ep)
+    auto_exposure_limit_option::auto_exposure_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range)
+        : option_base(range), _hwm(hwm), _sensor(ep)
     {
-        _range = [this]()
+        _range = [this, range]()
         {
-            return option_range{ 0, 165000, 1, 0 };
+            return range;
         };
     }
 
@@ -703,12 +703,12 @@ namespace librealsense
         return *_range;
     }
 
-    auto_gain_limit_option::auto_gain_limit_option(hw_monitor& hwm, sensor_base* ep)
-        : option_base(option_range{ 0, 248, 1, 0 }), _hwm(hwm), _sensor(ep)
+    auto_gain_limit_option::auto_gain_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range)
+        : option_base(range), _hwm(hwm), _sensor(ep)
     {
-        _range = [this]()
+        _range = [this, range]()
         {
-            return option_range{ 0, 248, 1, 0 };
+            return range;
         };
     }
 
