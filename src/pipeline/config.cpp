@@ -138,7 +138,7 @@ namespace librealsense
                 {
                     auto&& sub = dev->get_sensor(i);
                     auto profiles = sub.get_stream_profiles(PROFILE_TAG_SUPERSET);
-                    enable_only_selected_profiles(config, profiles);  //config.enable_streams(profiles);
+                    enable_only_selected_profiles(config, profiles);
                 }
                 return std::make_shared<profile>(dev, config, _device_request.record_output);
             }
@@ -147,7 +147,7 @@ namespace librealsense
             if (_stream_requests.empty())
             {
                 auto default_profiles = get_default_configuration(dev);
-                enable_only_selected_profiles(config, default_profiles);  //config.enable_streams(default_profiles);
+                enable_only_selected_profiles(config, default_profiles);
                 return std::make_shared<profile>(dev, config, _device_request.record_output);
             }
 
