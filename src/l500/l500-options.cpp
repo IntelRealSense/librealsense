@@ -72,33 +72,37 @@ namespace librealsense
         , _is_read_only(false)
         , _was_set_manually( false )
     {
-        auto min = _hw_monitor->send(command{ AMCGET, _type, get_min });
-        auto max = _hw_monitor->send(command{ AMCGET, _type, get_max });
-        auto step = _hw_monitor->send(command{ AMCGET, _type, get_step });
+        // Keep the USB power on while triggering multiple calls on it.
+        _l500_dev->get_raw_depth_sensor().invoke_powered([&](platform::uvc_device& dev)
+            {
+                auto min = _hw_monitor->send(command{ AMCGET, _type, get_min });
+                auto max = _hw_monitor->send(command{ AMCGET, _type, get_max });
+                auto step = _hw_monitor->send(command{ AMCGET, _type, get_step });
 
-        if (min.size() < sizeof(int32_t) || max.size() < sizeof(int32_t) || step.size() < sizeof(int32_t))
-        {
-            std::stringstream s;
-            s << "Size of data returned is not valid min size = " << min.size() << ", max size = " << max.size() << ", step size = " << step.size();
-            throw std::runtime_error(s.str());
-        }
+                if (min.size() < sizeof(int32_t) || max.size() < sizeof(int32_t) || step.size() < sizeof(int32_t))
+                {
+                    std::stringstream s;
+                    s << "Size of data returned is not valid min size = " << min.size() << ", max size = " << max.size() << ", step size = " << step.size();
+                    throw std::runtime_error(s.str());
+                }
 
-        auto max_value = float(*(reinterpret_cast<int32_t*>(max.data())));
-        auto min_value = float(*(reinterpret_cast<int32_t*>(min.data())));
+                auto max_value = float(*(reinterpret_cast<int32_t*>(max.data())));
+                auto min_value = float(*(reinterpret_cast<int32_t*>(min.data())));
 
-        bool success;
-        auto res = query_default( success );
+                bool success;
+                auto res = query_default(success);
 
-        if( !success )
-        {
-            _is_read_only = true;
-            res = -1;
-        }
+                if (!success)
+                {
+                    _is_read_only = true;
+                    res = -1;
+                }
 
-        _range = option_range{ min_value,
-                               max_value,
-                               float( *( reinterpret_cast< int32_t * >( step.data() ) ) ),
-                               res };
+                _range = option_range{ min_value,
+                                       max_value,
+                                       float(*(reinterpret_cast<int32_t*>(step.data()))),
+                                       res };
+            });
     }
 
     void l500_hw_options::set_default( float def )
@@ -204,53 +208,69 @@ namespace librealsense
         auto& raw_depth_sensor = get_raw_depth_sensor();
         auto& depth_sensor = get_depth_sensor();
 
-        if (_fw_version < firmware_version(MIN_CONTROLS_FW_VERSION))
-        {
-            depth_sensor.register_option
-            (RS2_OPTION_VISUAL_PRESET, std::make_shared<uvc_xu_option<int >>(raw_depth_sensor, ivcam2::depth_xu, ivcam2::L500_DIGITAL_GAIN,
-                "Change the depth digital gain to: 1 for high gain and 2 for low gain",
-                std::map<float, std::string>{ { float(RS2_DIGITAL_GAIN_HIGH), "High Gain"},
-                { float(RS2_DIGITAL_GAIN_LOW), "Low Gain" }}));
-        }
-        else
-        {
-            // On USB2 we have only QVGA sensor mode
-            bool usb3mode = (_usb_mode >= platform::usb3_type || _usb_mode == platform::usb_undefined);
+        // Keep the USB power on while triggering multiple HW monitor commands on it.
+        raw_depth_sensor.invoke_powered( [&]( platform::uvc_device & dev ) {
+            if( _fw_version < firmware_version( MIN_CONTROLS_FW_VERSION ) )
+            {
+                depth_sensor.register_option(
+                    RS2_OPTION_VISUAL_PRESET,
+                    std::make_shared< uvc_xu_option< int > >(
+                        raw_depth_sensor,
+                        ivcam2::depth_xu,
+                        ivcam2::L500_DIGITAL_GAIN,
+                        "Change the depth digital gain to: 1 for high gain and 2 for low gain",
+                        std::map< float, std::string >{
+                            { float( RS2_DIGITAL_GAIN_HIGH ), "High Gain" },
+                            { float( RS2_DIGITAL_GAIN_LOW ), "Low Gain" } } ) );
+            }
+            else
+            {
+                // On USB2 we have only QVGA sensor mode
+                bool usb3mode
+                    = ( _usb_mode >= platform::usb3_type || _usb_mode == platform::usb_undefined );
 
-            auto default_sensor_mode = static_cast<float>(usb3mode ? RS2_SENSOR_MODE_VGA : RS2_SENSOR_MODE_QVGA);
+                auto default_sensor_mode
+                    = static_cast< float >( usb3mode ? RS2_SENSOR_MODE_VGA : RS2_SENSOR_MODE_QVGA );
 
-            auto resolution_option = std::make_shared<sensor_mode_option>(this, option_range{ RS2_SENSOR_MODE_VGA,RS2_SENSOR_MODE_COUNT - 1,1, default_sensor_mode }, "Notify the sensor about the intended streaming mode. Required for preset ");
+                auto resolution_option = std::make_shared< sensor_mode_option >(
+                    this,
+                    option_range{ RS2_SENSOR_MODE_VGA,
+                                  RS2_SENSOR_MODE_COUNT - 1,
+                                  1,
+                                  default_sensor_mode },
+                    "Notify the sensor about the intended streaming mode. Required for preset " );
 
-            // changing the resolution affects the defaults
-            resolution_option->add_observer( [&]( float ) {
-                update_defaults();
+                // changing the resolution affects the defaults
+                resolution_option->add_observer( [&]( float ) {
+                    update_defaults();
 
-                auto curr_preset = ( rs2_l500_visual_preset )(int)_preset->query();
-                if( curr_preset != RS2_L500_VISUAL_PRESET_AUTOMATIC && curr_preset != RS2_L500_VISUAL_PRESET_CUSTOM)
-                {
-                    change_preset( curr_preset );
-                }
-            } );
+                    auto curr_preset = ( rs2_l500_visual_preset )(int)_preset->query();
+                    if( curr_preset != RS2_L500_VISUAL_PRESET_AUTOMATIC
+                        && curr_preset != RS2_L500_VISUAL_PRESET_CUSTOM )
+                    {
+                        change_preset( curr_preset );
+                    }
+                } );
 
 
-            depth_sensor.register_option(RS2_OPTION_SENSOR_MODE, resolution_option);
+                depth_sensor.register_option( RS2_OPTION_SENSOR_MODE, resolution_option );
 
-            _digital_gain = std::make_shared< digital_gain_option >(
-                raw_depth_sensor,
-                ivcam2::depth_xu,
-                ivcam2::L500_DIGITAL_GAIN,
-                "Change the depth digital gain to: 1 for high gain and 2 for low gain",
-                std::map< float, std::string >{ /*{ RS2_DIGITAL_GAIN_AUTO, "Auto Gain" },*/
+                _digital_gain = std::make_shared< digital_gain_option >(
+                    raw_depth_sensor,
+                    ivcam2::depth_xu,
+                    ivcam2::L500_DIGITAL_GAIN,
+                    "Change the depth digital gain to: 1 for high gain and 2 for low gain",
+                    std::map< float, std::string >{ /*{ RS2_DIGITAL_GAIN_AUTO, "Auto Gain" },*/
                                                 { (float)(RS2_DIGITAL_GAIN_HIGH), "High Gain" },
                                                 { (float)(RS2_DIGITAL_GAIN_LOW), "Low Gain" } },
-                _fw_version,
-                this );
+                    _fw_version,
+                    this );
 
-            depth_sensor.register_option( RS2_OPTION_DIGITAL_GAIN, _digital_gain );
+                depth_sensor.register_option( RS2_OPTION_DIGITAL_GAIN, _digital_gain );
 
-            if( _fw_version >= firmware_version( "1.5.2.0" ) )
-            {
-                _alt_ir = std::make_shared< l500_hw_options >( this,
+                if( _fw_version >= firmware_version( "1.5.2.0" ) )
+                {
+                    _alt_ir = std::make_shared< l500_hw_options >( this,
                                                                    _hw_monitor.get(),
                                                                    alternate_ir,
                                                                    resolution_option.get(),
@@ -258,148 +278,151 @@ namespace librealsense
                                                                    _fw_version,
                                                                    _digital_gain );
 
-                depth_sensor.register_option( RS2_OPTION_ALTERNATE_IR, _alt_ir );
-            }
+                    depth_sensor.register_option( RS2_OPTION_ALTERNATE_IR, _alt_ir );
+                }
 
-            _hw_options[RS2_OPTION_POST_PROCESSING_SHARPENING] = register_option< l500_hw_options,
-                                                                                  l500_device *,
-                                                                                  hw_monitor *,
-                                                                                  l500_control,
-                                                                                  option *,
-                                                                                  std::string >(
-                RS2_OPTION_POST_PROCESSING_SHARPENING,
-                this,
-                _hw_monitor.get(),
-                post_processing_sharpness,
-                resolution_option.get(),
-                "Changes the amount of sharpening in the post-processed image",
-                _fw_version,
-                _digital_gain );
+                _hw_options[RS2_OPTION_POST_PROCESSING_SHARPENING]
+                    = register_option< l500_hw_options,
+                                       l500_device *,
+                                       hw_monitor *,
+                                       l500_control,
+                                       option *,
+                                       std::string >(
+                        RS2_OPTION_POST_PROCESSING_SHARPENING,
+                        this,
+                        _hw_monitor.get(),
+                        post_processing_sharpness,
+                        resolution_option.get(),
+                        "Changes the amount of sharpening in the post-processed image",
+                        _fw_version,
+                        _digital_gain );
 
-            _hw_options[RS2_OPTION_PRE_PROCESSING_SHARPENING] = register_option< l500_hw_options,
+                _hw_options[RS2_OPTION_PRE_PROCESSING_SHARPENING]
+                    = register_option< l500_hw_options,
+                                       l500_device *,
+                                       hw_monitor *,
+                                       l500_control,
+                                       option *,
+                                       std::string >(
+                        RS2_OPTION_PRE_PROCESSING_SHARPENING,
+                        this,
+                        _hw_monitor.get(),
+                        pre_processing_sharpness,
+                        resolution_option.get(),
+                        "Changes the amount of sharpening in the pre-processed image",
+                        _fw_version,
+                        _digital_gain );
+
+                _hw_options[RS2_OPTION_NOISE_FILTERING]
+                    = register_option< l500_hw_options,
+                                       l500_device *,
+                                       hw_monitor *,
+                                       l500_control,
+                                       option *,
+                                       std::string >( RS2_OPTION_NOISE_FILTERING,
+                                                      this,
+                                                      _hw_monitor.get(),
+                                                      noise_filtering,
+                                                      resolution_option.get(),
+                                                      "Control edges and background noise",
+                                                      _fw_version,
+                                                      _digital_gain );
+
+                _hw_options[RS2_OPTION_AVALANCHE_PHOTO_DIODE] = register_option< l500_hw_options,
                                                                                  l500_device *,
                                                                                  hw_monitor *,
                                                                                  l500_control,
                                                                                  option *,
                                                                                  std::string >(
-                RS2_OPTION_PRE_PROCESSING_SHARPENING,
-                this,
-                _hw_monitor.get(),
-                pre_processing_sharpness,
-                resolution_option.get(),
-                "Changes the amount of sharpening in the pre-processed image",
-                _fw_version,
-                _digital_gain );
+                    RS2_OPTION_AVALANCHE_PHOTO_DIODE,
+                    this,
+                    _hw_monitor.get(),
+                    apd,
+                    resolution_option.get(),
+                    "Changes the exposure time of Avalanche Photo Diode in the receiver",
+                    _fw_version,
+                    _digital_gain );
 
-            _hw_options[RS2_OPTION_NOISE_FILTERING]
-                = register_option< l500_hw_options,
-                                   l500_device *,
-                                   hw_monitor *,
-                                   l500_control,
-                                   option *,
-                                   std::string >( RS2_OPTION_NOISE_FILTERING,
-                                                  this,
-                                                  _hw_monitor.get(),
-                                                  noise_filtering,
-                                                  resolution_option.get(),
-                                                  "Control edges and background noise",
-                                                  _fw_version,
-                                                  _digital_gain );
+                _hw_options[RS2_OPTION_CONFIDENCE_THRESHOLD] = register_option< l500_hw_options,
+                                                                                l500_device *,
+                                                                                hw_monitor *,
+                                                                                l500_control,
+                                                                                option *,
+                                                                                std::string >(
+                    RS2_OPTION_CONFIDENCE_THRESHOLD,
+                    this,
+                    _hw_monitor.get(),
+                    confidence,
+                    resolution_option.get(),
+                    "The confidence level threshold to use to mark a "
+                    "pixel as valid by the depth algorithm",
+                    _fw_version,
+                    _digital_gain );
 
-            _hw_options[RS2_OPTION_AVALANCHE_PHOTO_DIODE] = register_option< l500_hw_options,
-                                                                             l500_device *,
-                                                                             hw_monitor *,
-                                                                             l500_control,
-                                                                             option *,
-                                                                             std::string >(
-                RS2_OPTION_AVALANCHE_PHOTO_DIODE,
-                this,
-                _hw_monitor.get(),
-                apd,
-                resolution_option.get(),
-                "Changes the exposure time of Avalanche Photo Diode in the receiver",
-                _fw_version,
-                _digital_gain );
+                _hw_options[RS2_OPTION_LASER_POWER] = register_option< l500_hw_options,
+                                                                       l500_device *,
+                                                                       hw_monitor *,
+                                                                       l500_control,
+                                                                       option *,
+                                                                       std::string >(
+                    RS2_OPTION_LASER_POWER,
+                    this,
+                    _hw_monitor.get(),
+                    laser_gain,
+                    resolution_option.get(),
+                    "Power of the laser emitter, with 0 meaning projector off",
+                    _fw_version,
+                    _digital_gain );
 
-            _hw_options[RS2_OPTION_CONFIDENCE_THRESHOLD]
-                = register_option< l500_hw_options,
-                                   l500_device *,
-                                   hw_monitor *,
-                                   l500_control,
-                                   option *,
-                                   std::string >( RS2_OPTION_CONFIDENCE_THRESHOLD,
-                                                  this,
-                                                  _hw_monitor.get(),
-                                                  confidence,
-                                                  resolution_option.get(),
-                                                  "The confidence level threshold to use to mark a "
-                                                  "pixel as valid by the depth algorithm",
-                                                  _fw_version,
-                                                  _digital_gain );
+                _hw_options[RS2_OPTION_MIN_DISTANCE]
+                    = register_option< l500_hw_options,
+                                       l500_device *,
+                                       hw_monitor *,
+                                       l500_control,
+                                       option *,
+                                       std::string >( RS2_OPTION_MIN_DISTANCE,
+                                                      this,
+                                                      _hw_monitor.get(),
+                                                      min_distance,
+                                                      resolution_option.get(),
+                                                      "Minimal distance to the target (in mm)",
+                                                      _fw_version,
+                                                      _digital_gain );
 
-            _hw_options[RS2_OPTION_LASER_POWER] = register_option< l500_hw_options,
-                                                                   l500_device *,
-                                                                   hw_monitor *,
-                                                                   l500_control,
-                                                                   option *,
-                                                                   std::string >(
-                RS2_OPTION_LASER_POWER,
-                this,
-                _hw_monitor.get(),
-                laser_gain,
-                resolution_option.get(),
-                "Power of the laser emitter, with 0 meaning projector off",
-                _fw_version,
-                _digital_gain );
+                _hw_options[RS2_OPTION_INVALIDATION_BYPASS]
+                    = register_option< l500_hw_options,
+                                       l500_device *,
+                                       hw_monitor *,
+                                       l500_control,
+                                       option *,
+                                       std::string >( RS2_OPTION_INVALIDATION_BYPASS,
+                                                      this,
+                                                      _hw_monitor.get(),
+                                                      invalidation_bypass,
+                                                      resolution_option.get(),
+                                                      "Enable/disable pixel invalidation",
+                                                      _fw_version,
+                                                      _digital_gain );
 
-            _hw_options[RS2_OPTION_MIN_DISTANCE]
-                = register_option< l500_hw_options,
-                                   l500_device *,
-                                   hw_monitor *,
-                                   l500_control,
-                                   option *,
-                                   std::string >( RS2_OPTION_MIN_DISTANCE,
-                                                  this,
-                                                  _hw_monitor.get(),
-                                                  min_distance,
-                                                  resolution_option.get(),
-                                                  "Minimal distance to the target (in mm)",
-                                                  _fw_version,
-                                                  _digital_gain );
+                auto preset = calc_preset_from_controls();
 
-            _hw_options[RS2_OPTION_INVALIDATION_BYPASS]
-                = register_option< l500_hw_options,
-                                   l500_device *,
-                                   hw_monitor *,
-                                   l500_control,
-                                   option *,
-                                   std::string >( RS2_OPTION_INVALIDATION_BYPASS,
-                                                  this,
-                                                  _hw_monitor.get(),
-                                                  invalidation_bypass,
-                                                  resolution_option.get(),
-                                                  "Enable/disable pixel invalidation",
-                                                  _fw_version,
-                                                  _digital_gain );
+                _preset = std::make_shared< l500_preset_option >(
+                    option_range{ RS2_L500_VISUAL_PRESET_CUSTOM,
+                                  RS2_L500_VISUAL_PRESET_SHORT_RANGE,
+                                  1,
+                                  RS2_L500_VISUAL_PRESET_MAX_RANGE },
+                    "Preset to calibrate the camera to environment ambient, no ambient or low "
+                    "ambient.",
+                    this );
 
-             auto preset = calc_preset_from_controls();
+                _preset->set_value( (float)preset );
 
-            _preset = std::make_shared< l500_preset_option >(
-            option_range{ RS2_L500_VISUAL_PRESET_CUSTOM,
-                          RS2_L500_VISUAL_PRESET_SHORT_RANGE,
-                          1,
-                          RS2_L500_VISUAL_PRESET_MAX_RANGE },
-            "Preset to calibrate the camera to environment ambient, no ambient or low "
-            "ambient.",
-            this );
+                depth_sensor.register_option( RS2_OPTION_VISUAL_PRESET, _preset );
 
-            _preset->set_value( (float)preset );
-
-            depth_sensor.register_option( RS2_OPTION_VISUAL_PRESET, _preset );
-
-            _advanced_options = get_advanced_controls();
+                _advanced_options = get_advanced_controls();
+            }
+        } );
     }
-}
 
     std::vector<rs2_option> l500_options::get_advanced_controls()
     {
@@ -571,34 +594,37 @@ namespace librealsense
 
     void l500_options::change_preset( rs2_l500_visual_preset preset )
     {
-        // we need to reset the controls before change gain because after moving to auto gain APD is
-        // read only. This will tell the FW that the control values are defaults and therefore can
-        // be overriden automatically according to gain
-        if( preset == RS2_L500_VISUAL_PRESET_AUTOMATIC )
-        {
-            auto curr_preset = ( rs2_l500_visual_preset )(int)_preset->query();
-            if( curr_preset == RS2_L500_VISUAL_PRESET_AUTOMATIC )
+        // Keep the USB power on while triggering multiple calls on it.
+        get_raw_depth_sensor().invoke_powered( [&]( platform::uvc_device & dev ) {
+            // we need to reset the controls before change gain because after moving to auto gain
+            // APD is read only. This will tell the FW that the control values are defaults and
+            // therefore can be overriden automatically according to gain
+            if( preset == RS2_L500_VISUAL_PRESET_AUTOMATIC )
+            {
+                auto curr_preset = ( rs2_l500_visual_preset )(int)_preset->query();
+                if( curr_preset == RS2_L500_VISUAL_PRESET_AUTOMATIC )
+                    return;
+                reset_hw_controls();
+            }
+
+            // if the user set preset custom we should not change the controls default or current
+            // values the values should stay the same
+            if( preset == RS2_L500_VISUAL_PRESET_CUSTOM )
+            {
+                move_to_custom();
                 return;
-            reset_hw_controls();
-        }
+            }
 
-        // if the user set preset custom we should not change the controls default or current values
-        // the values should stay the same
-        if( preset == RS2_L500_VISUAL_PRESET_CUSTOM )
-        {
-            move_to_custom();
-            return;
-        }
+            // digital gain must be the first option that is set because it
+            // impacts the default values of some of the hw controls
+            change_gain( preset );
+            change_alt_ir( preset );
 
-        // digital gain must be the first option that is set because it
-        // impacts the default values of some of the hw controls
-        change_gain( preset );
-        change_alt_ir( preset );
+            if( preset != RS2_L500_VISUAL_PRESET_AUTOMATIC )
+                set_preset_controls_to_defaults();
 
-        if( preset != RS2_L500_VISUAL_PRESET_AUTOMATIC )
-            set_preset_controls_to_defaults();
-
-        change_laser_power( preset );
+            change_laser_power( preset );
+        } );
     }
 
     void l500_options::set_preset_value( rs2_l500_visual_preset preset ) 
@@ -626,11 +652,14 @@ namespace librealsense
 
     void l500_options::reset_hw_controls()
     {
-        for( auto & o : _hw_options )
-            if( ! o.second->is_read_only() )
-            {
-                o.second->set_with_no_signal( -1 );
-            }
+        // Keep the USB power on while triggering multiple calls on it.
+        get_raw_depth_sensor().invoke_powered([&](platform::uvc_device& dev) {
+            for (auto& o : _hw_options)
+                if (!o.second->is_read_only())
+                {
+                    o.second->set_with_no_signal(-1);
+                }
+            });
     }
 
     void l500_options::set_max_laser()
@@ -643,58 +672,62 @@ namespace librealsense
     // we want to save the 50ms sleep on streaming and do it once to all the controlls
     void l500_options::update_defaults()
     {
-        auto& resolution = get_depth_sensor().get_option( RS2_OPTION_SENSOR_MODE );
+        // Keep the USB power on while triggering multiple calls on it.
+        get_raw_depth_sensor().invoke_powered([&](platform::uvc_device& dev) {
 
-        std::map< rs2_option, float > defaults;
-        if( _fw_version >= firmware_version( MIN_GET_DEFAULT_FW_VERSION ) )
-        {
-            for( auto opt : _hw_options )
+            auto& resolution = get_depth_sensor().get_option(RS2_OPTION_SENSOR_MODE);
+
+            std::map< rs2_option, float > defaults;
+            if (_fw_version >= firmware_version(MIN_GET_DEFAULT_FW_VERSION))
             {
-                bool success;
-                defaults[opt.first] = opt.second->query_new_fw_default( success );
-
-                if( ! success )
+                for (auto opt : _hw_options)
                 {
-                    defaults[opt.first] = -1;
-                    opt.second->set_read_only( true );
+                    bool success;
+                    defaults[opt.first] = opt.second->query_new_fw_default(success);
+
+                    if (!success)
+                    {
+                        defaults[opt.first] = -1;
+                        opt.second->set_read_only(true);
+                    }
+                    else
+                        opt.second->set_read_only(false);
                 }
-                else
-                    opt.second->set_read_only( false );
             }
-        }
-        else
-        {
-            // For older FW without support for get_default, we have to:
-            //     1. Save the current value
-            //     2. Wait for the next frame (if streaming)
-            //     3. Change to -1
-            //     4. Read the current value and store as default value
-            //     5. Restore the current value
-            std::map< rs2_option, float > currents;
-            for( auto opt : _hw_options )
-                currents[opt.first] = opt.second->query_current( query_sensor_mode( resolution ) );
-
-            // if the sensor is streaming the value of control will update only when the next frame
-            // arrive
-            if( get_depth_sensor().is_streaming() )
-                std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
-
-            for( auto opt : _hw_options )
+            else
             {
-                opt.second->set_with_no_signal( -1 );
-                defaults[opt.first] = opt.second->query_current( query_sensor_mode( resolution ) );
+                // For older FW without support for get_default, we have to:
+                //     1. Save the current value
+                //     2. Wait for the next frame (if streaming)
+                //     3. Change to -1
+                //     4. Read the current value and store as default value
+                //     5. Restore the current value
+                std::map< rs2_option, float > currents;
+                for (auto opt : _hw_options)
+                    currents[opt.first] = opt.second->query_current(query_sensor_mode(resolution));
+
+                // if the sensor is streaming the value of control will update only when the next frame
+                // arrive
+                if (get_depth_sensor().is_streaming())
+                    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+                for (auto opt : _hw_options)
+                {
+                    opt.second->set_with_no_signal(-1);
+                    defaults[opt.first] = opt.second->query_current(query_sensor_mode(resolution));
+                }
+
+                for (auto opt : currents)
+                {
+                    _hw_options[opt.first]->set_with_no_signal(opt.second);
+                }
             }
 
-            for( auto opt : currents )
+            for (auto opt : _hw_options)
             {
-                _hw_options[opt.first]->set_with_no_signal( opt.second );
+                opt.second->set_default(defaults[opt.first]);
             }
-        }
-
-        for( auto opt : _hw_options )
-        {
-            opt.second->set_default( defaults[opt.first] );
-        }
+            });
     }
 
     void max_usable_range_option::set( float value )
@@ -744,6 +777,8 @@ namespace librealsense
 
     void sensor_mode_option::set(float value)
     {
+        if (_value == value) return;
+
         // Restrictions for sensor mode option as required on [RS5-8358]
         auto &ds = _l500_depth_dev->get_depth_sensor();
 
@@ -764,7 +799,10 @@ namespace librealsense
         }
 
         float_option_with_description::set(value);
-        notify( value );
+
+        // Keep the USB power on while triggering multiple calls on it.
+        _l500_depth_dev->get_raw_depth_sensor().invoke_powered(
+            [&]( platform::uvc_device & dev ) { notify( value ); } );
     }
 
     const char * max_usable_range_option::get_description() const
