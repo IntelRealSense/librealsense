@@ -194,9 +194,6 @@ namespace librealsense
         return std::make_shared<timestamp_composite_matcher>(matchers);
     }
 
-
-
-
     // If the user did not ask for IR, The open function will add it anyway. 
     // This class filters the IR frames is this case so they will not get to the user callback function
     // Note: This is a workaround , theoretically we did not need to add manually the IR profile to the "open" function,

@@ -189,6 +189,7 @@ namespace librealsense
         {
         CASE( AUTO_DEPTH_TO_RGB )
         CASE( MANUAL_DEPTH_TO_RGB )
+        CASE( THERMAL )
         default: assert( !is_valid( type ) ); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -325,6 +326,7 @@ namespace librealsense
             CASE(HDR_MERGE)
             CASE(MAX_USABLE_RANGE_SENSOR)
             CASE(DEBUG_STREAM_SENSOR)
+            CASE(CALIBRATION_CHANGE_DEVICE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

@@ -1623,7 +1623,7 @@ namespace rs2
         float inverse = 1.f / distances.size();
         for (auto elem : distances)
         {
-            e += pow(elem - mean, 2);
+            e += static_cast<float>(pow(elem - mean, 2));
         }
 
         auto standard_deviation = sqrt(inverse * e);

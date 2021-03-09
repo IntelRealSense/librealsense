@@ -1,26 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
-#include <mutex>
-#include <chrono>
-#include <vector>
-#include <iterator>
 #include <cstddef>
-#include <functional>
+#include "metadata.h"
 
-#include "device.h"
-#include "context.h"
-#include "image.h"
-#include "metadata-parser.h"
-#include "global_timestamp_reader.h"
-#include "environment.h"
-
-#include "ds5-color.h"
-#include "ds5-private.h"
-#include "ds5-options.h"
 #include "ds5-timestamp.h"
-
+#include "ds5-thermal-monitor.h"
 #include "proc/color-formats-converter.h"
+#include "ds5-color.h"
 
 namespace librealsense
 {
@@ -54,7 +41,11 @@ namespace librealsense
         using namespace ds;
         auto&& backend = ctx->get_backend();
 
-        _color_calib_table_raw = [this]() { return get_raw_calibration_table(rgb_calibration_id); };
+        _color_calib_table_raw = [this]()
+        {
+            return get_raw_calibration_table(rgb_calibration_id);
+        };
+
         _color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>([this]() { return from_pose(get_color_stream_extrinsic(*_color_calib_table_raw)); });
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
         register_stream_to_extrinsic_group(*_color_stream, 0);
@@ -152,7 +143,7 @@ namespace librealsense
             {
                 color_ep.register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
             }
-       
+
             auto gain_option = std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_GAIN);
             auto exposure_option = std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_EXPOSURE);
             auto auto_exposure_option = std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_ENABLE_AUTO_EXPOSURE);
@@ -174,6 +165,14 @@ namespace librealsense
                 roi_sensor_interface* roi_sensor;
                 if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&color_ep)))
                     roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor, ds::fw_cmd::SETRGBAEROI));
+            }
+
+            // Register for tracking of thermal compensation changes
+            if (val_in_range(_pid, { ds::RS455_PID }))
+            {
+                if (_thermal_monitor)
+                    _thermal_monitor->add_observer([&](float){
+                        _color_calib_table_raw.reset(); } );
             }
 
             auto md_prop_offset = offsetof(metadata_raw, mode) +
@@ -221,9 +220,6 @@ namespace librealsense
 
         color_ep.register_metadata(RS2_FRAME_METADATA_WHITE_BALANCE, make_attribute_parser(&md_capture_stats::white_balance, md_capture_stat_attributes::white_balance_attribute, md_prop_offset));
 
-        
-
-           
         // attributes of md_rgb_control
         md_prop_offset = offsetof(metadata_raw, mode) +
             offsetof(md_rgb_mode, rgb_mode) +
@@ -249,7 +245,7 @@ namespace librealsense
         color_ep.register_metadata(RS2_FRAME_METADATA_MANUAL_WHITE_BALANCE, make_attribute_parser(&md_rgb_control::manual_wb, md_rgb_control_attributes::manual_wb_attribute, md_prop_offset));
         color_ep.register_metadata(RS2_FRAME_METADATA_POWER_LINE_FREQUENCY, make_attribute_parser(&md_rgb_control::power_line_frequency, md_rgb_control_attributes::power_line_frequency_attribute, md_prop_offset));
         color_ep.register_metadata(RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION, make_attribute_parser(&md_rgb_control::low_light_comp, md_rgb_control_attributes::low_light_comp_attribute, md_prop_offset));
-        
+
 
         color_ep.register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
         color_ep.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_COLOR));

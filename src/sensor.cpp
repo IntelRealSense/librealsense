@@ -16,6 +16,7 @@
 #include "proc/decimation-filter.h"
 #include "proc/depth-decompress.h"
 #include "global_timestamp_reader.h"
+#include "device-calibration.h"
 
 namespace librealsense
 {
@@ -1504,7 +1505,7 @@ namespace librealsense
             auto&& composite = dynamic_cast<composite_frame*>(f.frame);
             if (composite)
             {
-                for (int i = 0; i < composite->get_embedded_frames_count(); i++)
+                for (size_t i = 0; i < composite->get_embedded_frames_count(); i++)
                 {
                     processed_frames.push_back(composite->get_frame(i));
                 }

@@ -241,8 +241,8 @@ namespace librealsense
                 ivcam2::L500_DIGITAL_GAIN,
                 "Change the depth digital gain to: 1 for high gain and 2 for low gain",
                 std::map< float, std::string >{ /*{ RS2_DIGITAL_GAIN_AUTO, "Auto Gain" },*/
-                                                { RS2_DIGITAL_GAIN_HIGH, "High Gain" },
-                                                { RS2_DIGITAL_GAIN_LOW, "Low Gain" } },
+                                                { (float)(RS2_DIGITAL_GAIN_HIGH), "High Gain" },
+                                                { (float)(RS2_DIGITAL_GAIN_LOW), "Low Gain" } },
                 _fw_version,
                 this );
 
@@ -603,7 +603,7 @@ namespace librealsense
 
     void l500_options::set_preset_value( rs2_l500_visual_preset preset ) 
     {
-        _preset->set_value( preset );
+        _preset->set_value( (float)preset );
     }
 
     void l500_options::set_preset_controls_to_defaults()

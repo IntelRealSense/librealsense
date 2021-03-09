@@ -20,9 +20,11 @@
 #include "ds5-active.h"
 #include "ds5-color.h"
 #include "ds5-motion.h"
+#include "ds5-thermal-monitor.h"
 #include "sync.h"
 
 #include "../firmware_logger_device.h"
+#include "device-calibration.h"
 
 namespace librealsense
 {
@@ -948,7 +950,8 @@ namespace librealsense
                                public ds5_color,
                                public ds5_motion,
                                public ds5_advanced_mode_base,
-                               public firmware_logger_device
+                               public firmware_logger_device,
+                               public ds5_thermal_tracking
     {
     public:
         rs455_device(std::shared_ptr<context> ctx,
@@ -962,8 +965,9 @@ namespace librealsense
               ds5_motion(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
               firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command())
+                    get_firmware_logs_command(),
+                    get_flash_logs_command()),
+              ds5_thermal_tracking(ds5_device::_thermal_monitor)
         {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
@@ -974,11 +978,11 @@ namespace librealsense
             auto usb_spec = get_usb_spec();
             bool usb3mode = (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined);
 
-            int depth_width = usb3mode ? 848 : 640;
-            int depth_height = usb3mode ?      480 : 480;
-            int color_width = usb3mode ?       1280 : 640;
-            int color_height = usb3mode ?      720 : 480;
-            int fps    = usb3mode ?            30 :  15;
+            int depth_width  = usb3mode ?    848 : 640;
+            int depth_height = usb3mode ?    480 : 480;
+            int color_width  = usb3mode ?   1280 : 640;
+            int color_height = usb3mode ?    720 : 480;
+            int fps          = usb3mode ?     30 :  15;
 
             tags.push_back({ RS2_STREAM_COLOR, -1, color_width, color_height, RS2_FORMAT_RGB8, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             tags.push_back({ RS2_STREAM_DEPTH, -1, depth_width, depth_height, RS2_FORMAT_Z16, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
@@ -991,6 +995,7 @@ namespace librealsense
         }
 
         bool compress_while_record() const override { return false; }
+
     };
 
     std::shared_ptr<device_interface> ds5_info::create(std::shared_ptr<context> ctx,

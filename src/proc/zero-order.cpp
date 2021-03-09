@@ -211,10 +211,10 @@ namespace librealsense
         register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_RTD_LOW_THRESHOLD), rtd_low_threshold);
 
         auto baseline = std::make_shared<ptr_option<float>>(
-            -50,
-            50,
-            1,
-            -10,
+            -50.f,
+            50.f,
+            1.f,
+            -10.f,
             &_options.baseline,
             "Baseline");
         baseline->on_set([baseline](float val)
@@ -376,7 +376,7 @@ namespace librealsense
     std::pair<int, int> zero_order::get_zo_point(const rs2::frame& frame)
     {
         auto intrinsics = try_read_intrinsics(frame);
-        return { intrinsics.zo.x, intrinsics.zo.y };
+        return { (int)(intrinsics.zo.x), (int)(intrinsics.zo.y) };
     }
 
     rs2::frame zero_order::process_frame(const rs2::frame_source& source, const rs2::frame& f)

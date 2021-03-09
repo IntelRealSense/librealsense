@@ -595,7 +595,7 @@ namespace rs2
                                             auto depth_profile = dev.get_stream(RS2_STREAM_DEPTH);
                                             auto w = depth_profile.as<video_stream_profile>().width();
                                             auto h = depth_profile.as<video_stream_profile>().height();
-                                            depth_sensor.set_option(RS2_OPTION_SENSOR_MODE, resolution_from_width_height(w, h));
+                                            depth_sensor.set_option(RS2_OPTION_SENSOR_MODE, (float)(resolution_from_width_height(w, h)));
                                         }
 
                                         auto profile = _pipe.start(cfg);

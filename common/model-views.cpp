@@ -5803,7 +5803,7 @@ namespace rs2
                     ///////////////////////////////////////////
                     //TODO: make this a member function
                     std::vector<const char*> labels;
-                    std::vector< int > counters;
+                    std::vector< float > counters;
                     auto selected = 0, counter = 0;
                     for (auto i = opt_model.range.min; i <= opt_model.range.max; i += opt_model.range.step)
                     {
@@ -5811,7 +5811,7 @@ namespace rs2
 
                         // Default is only there for backwards compatibility and will throw an
                         // exception if used
-                        if( product == "L500" && i == RS2_L500_VISUAL_PRESET_DEFAULT )
+                        if( product == "L500" && (size_t)(i) == RS2_L500_VISUAL_PRESET_DEFAULT )
                             continue;
 
                         if (std::fabs(i - opt_model.value) < 0.001f)

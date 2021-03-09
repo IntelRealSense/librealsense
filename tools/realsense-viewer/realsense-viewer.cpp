@@ -321,7 +321,7 @@ int main(int argc, const char** argv) try
         {
             if (auto not_model = notifications.lock())
             {
-                not_model->output.add_log(severity, msg.filename(), msg.line_number(), msg.raw());
+                not_model->output.add_log(severity, msg.filename(), (int)(msg.line_number()), msg.raw());
             }
         });
 #endif 

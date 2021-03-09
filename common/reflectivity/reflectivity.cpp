@@ -105,7 +105,7 @@ float reflectivity::get_reflectivity( float raw_noise_estimation,
 
         if( 0.0f < i_dist_85 )  // protect devision by zero
         {
-            i_ref = 0.85f * std::pow( ( range / i_dist_85 ), 2 );
+            i_ref = static_cast<float>(0.85f * std::pow( ( range / i_dist_85 ), 2 ));
 
             if( i_ref > 0.95f )
             {

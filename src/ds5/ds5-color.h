@@ -63,7 +63,7 @@ namespace librealsense
         stream_profiles init_stream_profiles() override;
         processing_blocks get_recommended_processing_blocks() const override;
 
-    private:
+    protected:
         const ds5_color* _owner;
     };
 

@@ -442,7 +442,7 @@ namespace librealsense
                     // will only read from the currently selected
                     // block, setting an option will propogate
                     // to all blocks in the group
-                    for(int i = 0; i < _parent->_blocks.size(); i++)
+                    for(size_t i = 0; i < _parent->_blocks.size(); i++)
                     {
                         if (_parent->_blocks[i]->supports_option(_opt))
                         {
@@ -469,7 +469,7 @@ namespace librealsense
 
             processing_block& get() 
             { 
-                for(int i = 0; i < _blocks.size(); i++)
+                for(size_t i = 0; i < _blocks.size(); i++)
                 {
                     index = i;
                     if (_blocks[i]->supports_option(RS2_OPTION_COUNT))

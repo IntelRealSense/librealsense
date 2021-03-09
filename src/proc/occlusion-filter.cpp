@@ -128,13 +128,13 @@ namespace librealsense
 
        if (_occlusion_scanning == horizontal)
        {
-           for( size_t y = 0; y < points_height; ++y )
+           for( int y = 0; y < points_height; ++y )
            {
                maxInLine = -1;
                maxZ = 0;
                int occDilationLeft = 0;
 
-               for( size_t x = 0; x < points_width; ++x )
+               for(int x = 0; x < points_width; ++x )
                {
                    if( points_ptr->z )
                    {
@@ -197,7 +197,7 @@ namespace librealsense
 
                        if (j >= scan_win_size) {
                            maxInLine = (uv_map_ptr - 1 * points_width)->y;
-                           for (size_t y = 0; y <= scan_win_size; ++y)
+                           for (int y = 0; y <= scan_win_size; ++y)
                            {
                                if (((uv_map_ptr + y * points_width)->y < maxInLine))
                                {

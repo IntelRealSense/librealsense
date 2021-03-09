@@ -128,7 +128,7 @@ namespace librealsense
                         = std::shared_ptr< pointcloud >( this, []( pointcloud * p ) {} );
 
                     auto dev = sensor->get_device().shared_from_this();
-                    device_calibration * d2r = dynamic_cast<device_calibration*>(dev.get());
+                    auto * d2r = dynamic_cast<calibration_change_device*>(dev.get());
                     if( d2r )
                         try
                         {

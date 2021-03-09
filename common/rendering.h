@@ -1542,6 +1542,7 @@ namespace rs2
         animated(T def, std::chrono::system_clock::duration duration = std::chrono::milliseconds(200))
             : _duration(duration), _old(def), _new(def)
         {
+            static_assert((std::is_arithmetic<T>::value), "animated class supports arithmetic built-in types only");
             _last_update = std::chrono::system_clock::now();
         }
         animated& operator=(const T& other)
@@ -1561,7 +1562,7 @@ namespace rs2
             auto duration_ms = std::chrono::duration_cast<std::chrono::microseconds>(_duration).count();
             auto t = (float)ms / duration_ms;
             t = std::max(0.f, std::min(rs2::smoothstep(t, 0.f, 1.f), 1.f));
-            return _old * (1.f - t) + _new * t;
+            return static_cast<T>(_old * (1.f - t) + _new * t);
         }
         operator T() const { return get(); }
         T value() const { return _new; }

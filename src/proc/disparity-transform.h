@@ -35,8 +35,8 @@ namespace librealsense
 
             float input{};
             //TODO SSE optimize
-            for (auto i = 0; i < _height; i++)
-                for (auto j = 0; j < _width; j++)
+            for (size_t i = 0; i < _height; i++)
+                for (size_t j = 0; j < _width; j++)
                 {
                     input = *in;
                     if (std::isnormal(input))
