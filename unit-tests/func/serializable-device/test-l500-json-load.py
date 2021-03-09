@@ -64,9 +64,6 @@ test.start("Trying to load default settings from json")
 try:
     sd.load_json(data)
     visual_preset_number = depth_sensor.get_option(rs.option.visual_preset)
-    visual_preset_name = rs.l500_visual_preset(int(visual_preset_number))
-
-    test.check_equal(visual_preset_name, rs.l500_visual_preset.low_ambient_light)
 except:
     test.unexpected_exception()
 test.finish()
