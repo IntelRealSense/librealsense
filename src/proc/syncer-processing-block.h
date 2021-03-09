@@ -29,6 +29,11 @@ namespace librealsense
             _enable_opts.push_back( is_enabled_opt );
         }
 
+        void stop()
+        {
+            _matcher->stop();
+        }
+
         ~syncer_process_unit()
         {
             _matcher.reset();

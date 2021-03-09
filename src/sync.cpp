@@ -238,6 +238,13 @@ namespace librealsense
         return matcher;
     }
 
+    void composite_matcher::stop()
+    {
+        for (auto& fq : _frames_queue)
+        {
+            fq.second.clear();
+        }
+    }
 
     std::string composite_matcher::frames_to_string(std::vector<librealsense::matcher*> matchers)
     {
