@@ -74,6 +74,13 @@ inline bool string_to_int(const std::string& str, float& result)
     }
 }
 
+inline bool is_number(const std::string& str)
+{
+    std::string::const_iterator it = str.begin();
+    while (it != str.end() && std::isdigit(*it)) ++it;
+    return !str.empty() && it == str.end();
+}
+
 template<class T, class S>
 inline void slider_int(std::string& error_message, const char* id, T* val, S T::* field, bool& to_set)
 {

@@ -683,7 +683,16 @@ namespace rs2
                                 float new_value;
                                 if (!string_to_int(buff, new_value))
                                 {
-                                    error_message = "Invalid numeric input!";
+                                    if (is_number(buff)) //in case a number bigger than integer was given
+                                    { 
+                                        error_message = to_string() << new_value
+                                            << " is out of bounds [" << range.min << ", "
+                                            << range.max << "]";
+                                    }
+                                    else
+                                    {
+                                        error_message = "Invalid numeric input!";
+                                    }
                                 }
                                 else if (new_value < range.min || new_value > range.max)
                                 {
