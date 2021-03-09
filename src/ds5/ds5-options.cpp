@@ -748,15 +748,6 @@ namespace librealsense
         _thermal_monitor(monitor),
         _thermal_toggle(toggle)
     {
-        try
-        {
-            auto on = static_cast<bool>(_thermal_toggle->query());
-            _thermal_monitor->update(on);
-        }
-        catch (...)
-        {
-            LOG_WARNING("Initial Thermal Compensation control state could not be established");
-        }
     }
 
     float librealsense::thermal_compensation::query(void) const
@@ -772,7 +763,6 @@ namespace librealsense
             throw invalid_value_exception("Invalid input for thermal compensation toggle: " + std::to_string(value));
 
         _thermal_toggle->set(value);
-        _thermal_monitor->update(static_cast<bool>(value));
         _recording_function(*this);
     }
 

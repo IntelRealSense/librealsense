@@ -10,9 +10,8 @@ namespace librealsense
     class  ds5_thermal_monitor
     {
     public:
-        ds5_thermal_monitor(synthetic_sensor& activation_sensor,
-            std::shared_ptr<option> temp_option,
-            std::shared_ptr<option> tl_toggle);
+        ds5_thermal_monitor(std::shared_ptr<option> temp_option,
+                            std::shared_ptr<option> tl_toggle);
         ~ds5_thermal_monitor();
 
         void update(bool on);
@@ -26,16 +25,14 @@ namespace librealsense
         ds5_thermal_monitor& operator=(const ds5_thermal_monitor&) = delete;
 
         // Active Object's main routine
-        void start();
-        void stop();
         void polling(dispatcher::cancellable_timer cancellable_timer);
-        void notify(float  temperature) const;
+        void notify(float  temperature);
 
-        std::weak_ptr<synthetic_sensor> _dpt_sensor;
         active_object<> _monitor;
         unsigned int _poll_intervals_ms;
         float _thermal_threshold_deg;
         float _temp_base;
+        bool _hw_loop_on;
         std::weak_ptr<option> _temperature_sensor;
         std::weak_ptr<option> _tl_activation;
         std::vector<std::function<void(float)>>  _thermal_changes_callbacks;   // Distribute notifications on device thermal changes

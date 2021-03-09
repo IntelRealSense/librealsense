@@ -349,7 +349,7 @@ namespace librealsense
                 get_option(RS2_OPTION_HDR_ENABLED).set(1.f);
 
             // Activate Thermal Compensation tracking
-            if (supports_option(RS2_OPTION_THERMAL_COMPENSATION) && (get_option(RS2_OPTION_THERMAL_COMPENSATION).query()>0.f))
+            if (supports_option(RS2_OPTION_THERMAL_COMPENSATION))
                 _owner->_thermal_monitor->update(true);
         }
 
@@ -777,7 +777,7 @@ namespace librealsense
 
             auto temperature_sensor = depth_sensor.get_option_handler(RS2_OPTION_ASIC_TEMPERATURE);
 
-            _thermal_monitor = std::make_shared<ds5_thermal_monitor>(depth_sensor,temperature_sensor);
+            _thermal_monitor = std::make_shared<ds5_thermal_monitor>(temperature_sensor, thermal_compensation_toggle);
 
             depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
                 std::make_shared<thermal_compensation>(_thermal_monitor,thermal_compensation_toggle));
