@@ -704,7 +704,7 @@ namespace librealsense
     }
 
     auto_gain_limit_option::auto_gain_limit_option(hw_monitor& hwm, sensor_base* ep)
-        : _hwm(hwm), _sensor(ep)
+        : option_base(option_range{ 0, 248, 1, 0 }), _hwm(hwm), _sensor(ep)
     {
         _range = [this]()
         {
@@ -714,6 +714,9 @@ namespace librealsense
 
     void auto_gain_limit_option::set(float value)
     {
+        if (!is_valid(value))
+            throw invalid_value_exception("set(enable_auto_exposure) failed! Invalid Auto-Exposure mode request " + std::to_string(value));
+
         command cmd_get(ds::AUTO_CALIB);
         cmd_get.param1 = 5;
         std::vector<uint8_t> ret = _hwm.send(cmd_get);

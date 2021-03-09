@@ -376,7 +376,7 @@ namespace librealsense
         sensor_base* _sensor;
     };
 
-    class auto_gain_limit_option : public option
+    class auto_gain_limit_option : public option_base
     {
     public:
         auto_gain_limit_option(hw_monitor& hwm, sensor_base* depth_ep);
