@@ -3271,9 +3271,18 @@ namespace rs2
         auto index = f.get_profile().unique_id();
 
         std::lock_guard<std::mutex> lock(streams_mutex);
-        if (streams.find(streams_origin[index]) != streams.end())
-            return streams[streams_origin[index]].upload_frame(std::move(f));
-        else return nullptr;
+        try
+        {
+            if (streams.find(streams_origin[index]) != streams.end())
+                return streams[streams_origin[index]].upload_frame(std::move(f));
+            else return nullptr;
+        }
+        catch (...)
+        {
+            ppf.start();
+            return nullptr;
+        }
+        
     }
 
     void viewer_model::draw_viewport(const rect& viewer_rect, 
