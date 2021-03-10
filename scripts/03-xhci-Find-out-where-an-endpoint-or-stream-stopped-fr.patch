@@ -1,0 +1,73 @@
+From 38140af8d8644b2ff8dd15fd4c2b60dd2812e96e Mon Sep 17 00:00:00 2001
+
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+
+Subject: [PATCH 3/4] xhci: Find out where an endpoint or stream stopped from
+ its context.
+
+When xHC is asked to stop an endpoint it will save the position it
+stopped on in the endpoint or stream context dequeue field.
+
+xhci driver needs to know on what TRB the ring stopped when we
+want to cancel a tranfer because xHC hardware may cache TRBs and we
+can't write over the stopped TRB with a no-op TRB.
+we need to as xHC to hop over it and flush caches.
+
+xhci driver used to get the stopped position from a "stopped" transfer
+event got before the stop endpoint command completed, but if the ring
+is already stopped, or in a halted or error state this event is missing.
+
+Get the stopped position from the endpoint or stream context instead
+
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+---
+ drivers/usb/host/xhci-ring.c |   19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index cfe9072..a7ad61a 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -733,7 +733,9 @@ static void xhci_handle_cmd_stop_ep(struct xhci_hcd *xhci, int slot_id,
+ 	struct list_head *entry;
+ 	struct xhci_td *cur_td = NULL;
+ 	struct xhci_td *last_unlinked_td;
++	struct xhci_virt_device *vdev;
+ 
++	u64 hw_deq;
+ 	struct xhci_dequeue_state deq_state;
+ 
+ 	if (unlikely(TRB_TO_SUSPEND_PORT(le32_to_cpu(trb->generic.field[3])))) {
+@@ -746,6 +748,8 @@ static void xhci_handle_cmd_stop_ep(struct xhci_hcd *xhci, int slot_id,
+ 
+ 	memset(&deq_state, 0, sizeof(deq_state));
+ 	ep_index = TRB_TO_EP_INDEX(le32_to_cpu(trb->generic.field[3]));
++
++	vdev = xhci->devs[slot_id];
+ 	ep = &xhci->devs[slot_id]->eps[ep_index];
+ 
+ 	if (list_empty(&ep->cancelled_td_list)) {
+@@ -789,12 +793,19 @@ static void xhci_handle_cmd_stop_ep(struct xhci_hcd *xhci, int slot_id,
+ 		 * If we stopped on the TD we need to cancel, then we have to
+ 		 * move the xHC endpoint ring dequeue pointer past this TD.
+ 		 */
+-		if (cur_td == ep->stopped_td)
++		hw_deq = xhci_get_hw_deq(xhci, vdev, ep_index,
++					 cur_td->urb->stream_id);
++		hw_deq &= ~0xf;
++
++		if (trb_in_td(xhci, cur_td->start_seg, cur_td->first_trb,
++			      cur_td->last_trb, hw_deq, false)) {
+ 			xhci_find_new_dequeue_state(xhci, slot_id, ep_index,
+-					cur_td->urb->stream_id,
+-					cur_td, &deq_state);
+-		else
++						    cur_td->urb->stream_id,
++						    cur_td, &deq_state);
++		} else {
+ 			td_to_noop(xhci, ep_ring, cur_td, false);
++		}
++
+ remove_finished_td:
+ 		/*
+ 		 * The event handler won't see a completion for this TD anymore,

@@ -1,0 +1,256 @@
+﻿; License: Apache 2.0. See LICENSE file in root directory.
+; Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+;
+
+[Version]
+Signature = "$Windows NT$"
+Class     = USBDevice
+ClassGUID = {88BAE032-5A81-49f0-BC3D-A4FF138216D6}
+Provider = %ManufacturerName%
+CatalogFile=IntelRealSense_D400_series_win7.cat
+DriverVer=10/31/2019,2.30.00.0
+
+; ========== Manufacturer/Models sections ===========
+; Supported Camera: D410, D415, D430, D435, DS5U
+
+[Manufacturer]
+%ManufacturerName% = Standard,NTx86,NTamd64
+
+[Standard.NTx86]
+%DeviceNameDepthD410% =UVC_Install, USB\VID_8086&PID_0AD2&MI_00
+%DeviceNameHMD410% =USB_Install, USB\VID_8086&PID_0AD2&MI_03
+%DeviceNameDepthD415% =UVC_Install, USB\VID_8086&PID_0AD3&MI_00
+%DeviceNameColorD415% =UVC_Install, USB\VID_8086&PID_0AD3&MI_03
+%DeviceNameHMD415% =USB_Install, USB\VID_8086&PID_0AD3&MI_05
+%DeviceNameDepthD430% =UVC_Install, USB\VID_8086&PID_0AD4&MI_00
+%DeviceNameHMD430% =USB_Install, USB\VID_8086&PID_0AD4&MI_03
+%DeviceNameDepthD435% =UVC_Install, USB\VID_8086&PID_0B07&MI_00
+%DeviceNameColorD435% =UVC_Install, USB\VID_8086&PID_0B07&MI_03
+%DeviceNameHMD435% =USB_Install, USB\VID_8086&PID_0B07&MI_05
+%DeviceNameDepthDS5U% =UVC_Install, USB\VID_8086&PID_0B03&MI_00
+%DeviceNameHMDS5U% =USB_Install, USB\VID_8086&PID_0B03&MI_03
+%DeviceNameDepthD435I% =UVC_Install, USB\VID_8086&PID_0B3A&MI_00
+%DeviceNameColorD435I% =UVC_Install, USB\VID_8086&PID_0B3A&MI_03
+%DeviceNameIMUD435I% =HID_Install, USB\VID_8086&PID_0B3A&MI_05
+%DeviceNameHMD435I% =USB_Install, USB\VID_8086&PID_0B3A&MI_06
+%DeviceNameDepthD465% =UVC_Install, USB\VID_8086&PID_0B4D&MI_00
+%DeviceNameColorD465% =UVC_Install, USB\VID_8086&PID_0B4D&MI_03
+%DeviceNameIMUD465% =HID_Install, USB\VID_8086&PID_0B4D&MI_05
+%DeviceNameHMD465% =USB_Install, USB\VID_8086&PID_0B4D&MI_06
+%DeviceNameDepthL515% =UVC_Install, USB\VID_8086&PID_0B3D&MI_00
+%DeviceNameColorL515% =UVC_Install, USB\VID_8086&PID_0B3D&MI_04
+%DeviceNameIMUL515% =USB_Install, USB\VID_8086&PID_0B3D&MI_07
+%DeviceNameHMDL515% =HID_Install, USB\VID_8086&PID_0B3D&MI_06
+
+%DeviceNameDepthSR300% =UVC_Install, USB\VID_8086&PID_0AA5&MI_02
+%DeviceNameColorSR300% =UVC_Install, USB\VID_8086&PID_0AA5&MI_00
+%DeviceNameHMSR300% =USB_Install, USB\VID_8086&PID_0AA5&MI_04
+%DeviceNameDepthSR305% =UVC_Install, USB\VID_8086&PID_0B48&MI_02
+%DeviceNameColorSR305% =UVC_Install, USB\VID_8086&PID_0B48&MI_00
+%DeviceNameHMSR305% =USB_Install, USB\VID_8086&PID_0B48&MI_04
+
+%DeviceNameDFU_USB3% =USB_Install, USB\VID_8086&PID_0ADB
+%DeviceNameDFU_USB2% =USB_Install, USB\VID_8086&PID_0ADC
+%DeviceNameL515_DFU_USB3% =USB_Install, USB\VID_8086&PID_0B55
+
+%DeviceNameMOVIDIUS_BOOTLOADER% =USB_Install, USB\VID_03E7&PID_2150
+%DeviceNameT265% =USB_Install, USB\VID_8087&PID_0B37
+
+[Standard.NTamd64]
+%DeviceNameDepthD410% =UVC_Install, USB\VID_8086&PID_0AD2&MI_00
+%DeviceNameHMD410% =USB_Install, USB\VID_8086&PID_0AD2&MI_03
+%DeviceNameDepthD415% =UVC_Install, USB\VID_8086&PID_0AD3&MI_00
+%DeviceNameColorD415% =UVC_Install, USB\VID_8086&PID_0AD3&MI_03
+%DeviceNameHMD415% =USB_Install, USB\VID_8086&PID_0AD3&MI_05
+%DeviceNameDepthD430% =UVC_Install, USB\VID_8086&PID_0AD4&MI_00
+%DeviceNameHMD430% =USB_Install, USB\VID_8086&PID_0AD4&MI_03
+%DeviceNameDepthD435% =UVC_Install, USB\VID_8086&PID_0B07&MI_00
+%DeviceNameColorD435% =UVC_Install, USB\VID_8086&PID_0B07&MI_03
+%DeviceNameHMD435% =USB_Install, USB\VID_8086&PID_0B07&MI_05
+%DeviceNameDepthDS5U% =UVC_Install, USB\VID_8086&PID_0B03&MI_00
+%DeviceNameHMDS5U% =USB_Install, USB\VID_8086&PID_0B03&MI_03
+%DeviceNameDepthD435I% =UVC_Install, USB\VID_8086&PID_0B3A&MI_00
+%DeviceNameColorD435I% =UVC_Install, USB\VID_8086&PID_0B3A&MI_03
+%DeviceNameIMUD435I% =HID_Install, USB\VID_8086&PID_0B3A&MI_05
+%DeviceNameHMD435I% =USB_Install, USB\VID_8086&PID_0B3A&MI_06
+%DeviceNameDepthD465% =UVC_Install, USB\VID_8086&PID_0B4D&MI_00
+%DeviceNameColorD465% =UVC_Install, USB\VID_8086&PID_0B4D&MI_03
+%DeviceNameIMUD465% =HID_Install, USB\VID_8086&PID_0B4D&MI_05
+%DeviceNameHMD465% =USB_Install, USB\VID_8086&PID_0B4D&MI_06
+%DeviceNameDepthL515% =UVC_Install, USB\VID_8086&PID_0B3D&MI_00
+%DeviceNameColorL515% =UVC_Install, USB\VID_8086&PID_0B3D&MI_04
+%DeviceNameIMUL515% =USB_Install, USB\VID_8086&PID_0B3D&MI_07
+%DeviceNameHMDL515% =HID_Install, USB\VID_8086&PID_0B3D&MI_06
+
+%DeviceNameDepthSR300% =UVC_Install, USB\VID_8086&PID_0AA5&MI_02
+%DeviceNameColorSR300% =UVC_Install, USB\VID_8086&PID_0AA5&MI_00
+%DeviceNameHMSR300% =USB_Install, USB\VID_8086&PID_0AA5&MI_04
+%DeviceNameDepthSR305% =UVC_Install, USB\VID_8086&PID_0B48&MI_02
+%DeviceNameColorSR305% =UVC_Install, USB\VID_8086&PID_0B48&MI_00
+%DeviceNameHMSR305% =USB_Install, USB\VID_8086&PID_0B48&MI_04
+
+%DeviceNameDFU_USB3% =USB_Install, USB\VID_8086&PID_0ADB
+%DeviceNameDFU_USB2% =USB_Install, USB\VID_8086&PID_0ADC
+%DeviceNameL515_DFU_USB3% =USB_Install, USB\VID_8086&PID_0B55
+
+%DeviceNameMOVIDIUS_BOOTLOADER% =USB_Install, USB\VID_03E7&PID_2150
+%DeviceNameT265% =USB_Install, USB\VID_8087&PID_0B37
+; ========== Class definition ===========
+
+[ClassInstall32]
+AddReg = ClassInstall_AddReg
+
+[ClassInstall_AddReg]
+HKR,,,,%ClassName%
+HKR,,NoInstallClass,,1
+HKR,,IconPath,%REG_MULTI_SZ%,"%systemroot%\system32\setupapi.dll,-20"
+HKR,,LowerLogoVersion,,5.2
+
+; =================== Installation ===================
+
+[UVC_Install]
+Include=winusb.inf
+Needs=WINUSB.NT
+
+[UVC_Install.Services]
+Include=winusb.inf
+AddService=WinUsb,0x00000002,WinUsb_ServiceInstall
+
+[HID_Install]
+Include=winusb.inf
+Needs=WINUSB.NT
+
+[HID_Install.Services]
+Include=winusb.inf
+AddService=WinUsb,0x00000002,WinUsb_ServiceInstall
+
+[USB_Install]
+Include=winusb.inf
+Needs=WINUSB.NT
+
+[USB_Install.Services]
+Include=winusb.inf
+AddService=WinUsb,0x00000002,WinUsb_ServiceInstall
+
+[WinUsb_ServiceInstall]
+DisplayName     = %WinUsb_SvcDesc%
+ServiceType     = 1
+StartType       = 3
+ErrorControl    = 1
+ServiceBinary   = %12%\WinUSB.sys
+
+[UVC_Install.Wdf]
+KmdfService=WINUSB, WinUsb_Install
+
+[UVC_Install]
+KmdfLibraryVersion=1.11
+
+[UVC_Install.HW]
+AddReg=UVC_AddReg
+
+[UVC_AddReg]
+; By default, USBDevice class uses iProduct descriptor to name the device in
+; Device Manager on Windows 8 and higher.
+; Uncomment for this device to use %DeviceName% on Windows 8 and higher:
+HKR,,DeviceInterfaceGUIDs,0x10000,"{68f2c451-0c22-415e-8293-7a903437e725}"
+
+[UVC_Install.CoInstallers]
+AddReg=CoInstallers_AddReg
+CopyFiles=CoInstallers_CopyFiles
+
+[USB_Install.Wdf]
+KmdfService=WINUSB, WinUsb_Install
+
+[WinUsb_Install]
+KmdfLibraryVersion=1.11
+
+[HID_Install.HW]
+AddReg=HID_AddReg
+
+[HID_AddReg]
+HKR,,DeviceInterfaceGUIDs,0x10000,"{ee390e5d-4f81-4543-a405-3686e712dc7b}"
+
+[HID_Install.CoInstallers]
+AddReg=CoInstallers_AddReg
+CopyFiles=CoInstallers_CopyFiles
+
+[HID_Install.Wdf]
+KmdfService=WINUSB, WinUsb_Install
+
+[WinUsb_Install]
+KmdfLibraryVersion=1.11
+
+[USB_Install.HW]
+AddReg=USB_AddReg
+
+[USB_AddReg]
+HKR,,DeviceInterfaceGUIDs,0x10000,"{2f8549de-7dc3-4e5c-9821-d71ba00bec8c}"
+
+[USB_Install.CoInstallers]
+AddReg=CoInstallers_AddReg
+CopyFiles=CoInstallers_CopyFiles
+
+[CoInstallers_AddReg]
+HKR,,CoInstallers32,0x00010000,"WdfCoInstaller01011.dll,WdfCoInstaller","WinUsbCoInstaller2.dll"
+[CoInstallers_CopyFiles]
+WinUsbCoInstaller2.dll
+WdfCoInstaller01011.dll
+
+[DestinationDirs]
+CoInstallers_CopyFiles=11
+
+; ================= Source Media Section =====================
+
+[SourceDisksNames]
+1 = %DiskName%
+
+[SourceDisksFiles]
+WinUsbCoInstaller2.dll=1
+WdfCoInstaller01011.dll=1
+
+; =================== Strings ===================
+
+[Strings]
+ManufacturerName="Intel(R) Corporation"
+ClassName="Universal Serial Bus devices"
+DiskName="Intel D400 Driver Installation Disk"
+WinUsb_SvcDesc="WinUSB Driver"
+DeviceNameDepthD410="Intel(R) RealSense(TM) Camera D410 Depth"
+DeviceNameHMD410="Intel(R) RealSense(TM) Camera D410 HW Monitor"
+DeviceNameColorD415="Intel(R) RealSense(TM) Camera D415 RGB"
+DeviceNameDepthD415="Intel(R) RealSense(TM) Camera D415 Depth"
+DeviceNameHMD415="Intel(R) RealSense(TM) Camera D415 HW Monitor"
+DeviceNameDepthD430="Intel(R) RealSense(TM) Camera D430 Depth"
+DeviceNameHMD430="Intel(R) RealSense(TM) Camera D430 HW Monitor"
+DeviceNameColorD435="Intel(R) RealSense(TM) Camera D435 RGB"
+DeviceNameDepthD435="Intel(R) RealSense(TM) Camera D435 Depth"
+DeviceNameHMD435="Intel(R) RealSense(TM) Camera D435 HW Monitor"
+DeviceNameDepthDS5U="Intel(R) RealSense(TM) Camera DS5U Depth"
+DeviceNameHMDS5U="Intel(R) RealSense(TM) Camera DS5U HW Monitor"
+DeviceNameDepthD435I="Intel(R) RealSense(TM) Camera D435i Depth"
+DeviceNameColorD435I="Intel(R) RealSense(TM) Camera D435i RGB"
+DeviceNameIMUD435I="Intel(R) RealSense(TM) Camera D435i HID Sensor Collection"
+DeviceNameHMD435I="Intel(R) RealSense(TM) Camera D435i HW Monitor"
+DeviceNameDepthD465="Intel(R) RealSense(TM) Camera D465 Depth"
+DeviceNameColorD465="Intel(R) RealSense(TM) Camera D465 RGB"
+DeviceNameHMD465="Intel(R) RealSense(TM) Camera D465 HW Monitor"
+DeviceNameIMUD465="Intel(R) RealSense(TM) Camera D465 HID Sensor Collection"
+DeviceNameDepthL515="Intel(R) RealSense(TM) Camera L515 Depth"
+DeviceNameColorL515="Intel(R) RealSense(TM) Camera L515 RGB"
+DeviceNameHMDL515="Intel(R) RealSense(TM) Camera L515 HW Monitor"
+DeviceNameIMUL515="Intel(R) RealSense(TM) Camera L515 HID Sensor Collection"
+
+DeviceNameColorSR300="Intel(R) RealSense(TM) Camera SR300 RGB"
+DeviceNameDepthSR300="Intel(R) RealSense(TM) Camera SR300 Depth"
+DeviceNameHMSR300="Intel(R) RealSense(TM) Camera SR300 HW Monitor"
+DeviceNameColorSR305="Intel(R) RealSense(TM) Camera SR305 RGB"
+DeviceNameDepthSR305="Intel(R) RealSense(TM) Camera SR305 Depth"
+DeviceNameHMSR305="Intel(R) RealSense(TM) Camera SR305 HW Monitor"
+
+DeviceNameDFU_USB3 = "Intel(R) RealSense(TM) DFU USB3 Device"
+DeviceNameDFU_USB2 = "Intel(R) RealSense(TM) DFU USB2 Device"
+
+DeviceNameMOVIDIUS_BOOTLOADER = "Movidius MA2X5X Bootloader"
+DeviceNameT265 = "Intel(R) RealSense(TM) T265 Tracking Camera"
+
+REG_MULTI_SZ = 0x00010000

@@ -1,0 +1,20 @@
+target_sources(${LRS_DOTNET_TARGET}
+    PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/Distortion.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/ExceptionType.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/Extension.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/Format.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/FrameMetadataValue.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/LogSeverity.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/Matchers.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/NotificationCategory.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/Option.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/PlaybackStatus.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/RecordingMode.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/Rs400VisualPreset.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/Sr300VisualPreset.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/L500VisualPreset.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/Stream.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/TimestampDomain.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/CameraInfo.cs"
+)

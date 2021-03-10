@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_Name: DepthMat
+  m_Shader: {fileID: 4800000, guid: f8395e4599857704d889f76eb8a306b5, type: 3}
+  m_ShaderKeywords: _COLORMAP_VIRIDIS
+  m_LightmapFlags: 1
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _Colormaps:
+        m_Texture: {fileID: 2800000, guid: e79aa3df081152e4c9d99bcef47e9474, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Floats:
+    - _Colormap: 3
+    - _DepthScale: 0.001
+    - _MaxRange: 7.714286
+    - _MinRange: 0
+    m_Colors: []

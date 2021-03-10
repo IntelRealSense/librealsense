@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">RS Multicam</string>
+    <string name="connect_camera">"Connect a RealSense camera"</string>
+    <string name="restart_camera">"Wait, restarting cameras"</string>
+</resources>

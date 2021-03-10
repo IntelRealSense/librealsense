@@ -1,0 +1,15 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.intel.realsense.librealsense">
+    <application android:allowBackup="true" android:supportsRtl="true">
+        <activity android:name=".DeviceWatcherActivity"
+            android:theme="@android:style/Theme.NoDisplay"
+            android:directBootAware="true">
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
+                android:resource="@xml/usb_filter" />
+        </activity>
+    </application>
+</manifest>

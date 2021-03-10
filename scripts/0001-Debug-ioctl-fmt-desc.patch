@@ -1,0 +1,28 @@
+From 72064c30574df63d52c3d0baeb9f9b585064f548 Mon Sep 17 00:00:00 2001
+From: Evgeni Raikhel <evgeni.raikhel@intel.com>
+Date: Thu, 30 Aug 2018 17:29:13 +0300
+Subject: [PATCH] Debug ioctl fmt desc
+
+The patch is useful to profile kernel calls invocation after applying kernel patches
+
+---
+ drivers/media/v4l2-core/v4l2-ioctl.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/media/v4l2-core/v4l2-ioctl.c b/drivers/media/v4l2-core/v4l2-ioctl.c
+index cab63bb..e8b6590 100644
+--- a/drivers/media/v4l2-core/v4l2-ioctl.c
++++ b/drivers/media/v4l2-core/v4l2-ioctl.c
+@@ -1105,6 +1105,9 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
+ 	const char *descr = NULL;
+ 	u32 flags = 0;
+ 
++	printk(KERN_DEBUG "LRS dbg: read format description for pixel_format: %x\n",
++					fmt->pixelformat);
++
+ 	/*
+ 	 * We depart from the normal coding style here since the descriptions
+ 	 * should be aligned so it is easy to see which descriptions will be
+-- 
+2.7.4
+

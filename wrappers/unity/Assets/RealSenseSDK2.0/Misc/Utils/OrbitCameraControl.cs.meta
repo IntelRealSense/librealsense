@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 039e78b41f0eb704990fe2db1b3df336
+timeCreated: 1527154292
+licenseType: Pro
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - OrbitCursor: {fileID: 2800000, guid: 060e148624d6bb145942cb272dcb589b, type: 3}
+  - PanCursor: {fileID: 2800000, guid: ad8b7b54f38a87441a12f9d70126b777, type: 3}
+  - ZoomCursor: {fileID: 2800000, guid: 32a0faa869d56b94f839dcba748fdce3, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

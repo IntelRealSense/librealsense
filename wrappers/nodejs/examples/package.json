@@ -1,0 +1,13 @@
+{
+  "name": "node-librealsense2-examples",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "fsm-as-promised": "^0.15.1",
+    "input": "^1.0.1",
+    "node-glfw-3": "^0.3.4",
+    "performance-now": "^2.1.0"
+  }
+}
