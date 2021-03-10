@@ -4,7 +4,7 @@
 #test:device L500*
 
 import pyrealsense2 as rs
-from rspy import test
+from rspy import test, log
 
 devices = test.find_devices_by_product_line_or_exit(rs.product_line.L500)
 device = devices[0]
@@ -41,7 +41,7 @@ data = """
     "Laser Power": 100,
     "Ma Temperature": 39.667610168457,
     "Mc Temperature": 31.6955661773682,
-    "Min Distance": 95,
+    "Min Distance": 190,
     "Noise Estimation": 0.0,
     "Noise Filtering": 4,
     "Post Processing Sharpening": 1,
@@ -60,13 +60,37 @@ data = """
 }
 """
 
+def log_settings_differences():
+    global data, depth_sensor, sd
+    depth_sensor.set_option(rs.option.visual_preset, int(rs.l500_visual_preset.low_ambient_light))
+    actual_data = str( sd.serialize_json() )
+    log.debug_indent()
+    # logging the differences in the settings between the expected and the actual values
+    log.d( "Printing differences between expected and actual settings values:" )
+    for expected_line, actual_line in zip( data.splitlines()[2:-1], actual_data.splitlines()[1:-1] ):
+        # data starts with an empty line and a '{' and ends with a '}', so we cut out the first 2 lines and the last
+        # line to ignore them. Same with the actual data ony it doesn't start with an empty line
+        if "Visual Preset" in expected_line or "Temperature" in expected_line or "temperature" in expected_line:
+            # the line regarding the visual preset will always be different because we load 1 from data but set it to
+            # 3 for low ambient. Also all lines regarding temperatures depend on the camera and don't affect the preset
+            continue
+        if expected_line != actual_line:
+            log.d( "Expected to find line:", expected_line)
+            log.d( "But found:            ", actual_line)
+    log.debug_unindent()
+
+
 test.start("Trying to load default settings from json")
 try:
     sd.load_json(data)
     visual_preset_number = depth_sensor.get_option(rs.option.visual_preset)
     visual_preset_name = rs.l500_visual_preset(int(visual_preset_number))
 
-    test.check_equal(visual_preset_name, rs.l500_visual_preset.low_ambient_light)
+    # if this check fails it is most likely because FW changed the default settings
+    equal = test.check_equal(visual_preset_name, rs.l500_visual_preset.low_ambient_light)
+    if not equal:
+        log.w( "It is possible that FW changed the default settings of the camera." )
+        log_settings_differences()
 except:
     test.unexpected_exception()
 test.finish()
