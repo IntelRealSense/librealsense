@@ -84,7 +84,7 @@ test.start( "Update FW" )
 try:
     cmd = [fw_updater_exe, '-f', image_file]
     log.d( 'running:', cmd )
-    file.subprocess_run( cmd )
+    subprocess.run( cmd )
 except Exception as e:
     test.unexpected_exception()
 

@@ -121,6 +121,33 @@ os.environ["PYTHONPATH"] = current_dir + os.sep + "py"
 if pyrs:
     os.environ["PYTHONPATH"] += os.pathsep + pyrs_path
 
+def subprocess_run(cmd, stdout = None):
+    """
+    wrapper function for subprocess.run
+    """
+    log.d( 'running:', cmd )
+    handle = None
+    try:
+        log.debug_indent()
+        if stdout  and  stdout != subprocess.PIPE:
+            handle = open( stdout, "w" )
+            stdout = handle
+        rv = subprocess.run( cmd,
+                             stdout = stdout,
+                             stderr = subprocess.STDOUT,
+                             universal_newlines = True,
+                             check = True)
+        result = rv.stdout
+        if not result:
+            result = []
+        else:
+            result = result.split( '\n' )
+        return result
+    finally:
+        if handle:
+            handle.close()
+        log.debug_unindent()
+
 def check_log_for_fails( path_to_log, testname, exe ):
     # Normal logs are expected to have in last line:
     #     "All tests passed (11 assertions in 1 test case)"
@@ -305,7 +332,7 @@ class PyTest(Test):
     def run_test( self ):
         log_path = self.get_log()
         try:
-            file.subprocess_run( self.command, stdout=log_path )
+            subprocess_run( self.command, stdout=log_path )
         except FileNotFoundError:
             log.e( log.red + self.name + log.reset + ': executable not found! (' + self.path_to_script + ')' )
         except subprocess.CalledProcessError as cpe:
@@ -364,7 +391,7 @@ class ExeTest(Test):
     def run_test( self ):
         log_path = self.get_log()
         try:
-            file.subprocess_run( self.command, stdout=log_path )
+            subprocess_run( self.command, stdout=log_path )
         except FileNotFoundError:
             log.e( log.red + self.name + log.reset + ': executable not found! (' + self.exe + ')')
         except subprocess.CalledProcessError as cpe:

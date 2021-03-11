@@ -4,7 +4,7 @@
 import os
 
 # this script is located in librealsense/unit-tests/py/rspy, so main repository is:
-source = os.path.dirname( os.path.dirname( os.path.dirname( os.path.dirname( os.path.abspath( __file__ )))))
+root = os.path.dirname( os.path.dirname( os.path.dirname( os.path.dirname( os.path.abspath( __file__ )))))
 
 def get_bundled_fw_version( product_line ):
     """
@@ -12,7 +12,7 @@ def get_bundled_fw_version( product_line ):
     :return: the bundled FW version for this device
     """
     # common/fw/firmware-version.h contains the bundled FW versions for all product lines
-    fw_versions_file = os.path.join(librealsense, 'common', 'fw', 'firmware-version.h')
+    fw_versions_file = os.path.join(root, 'common', 'fw', 'firmware-version.h')
     if not os.path.isfile(fw_versions_file):
         log.e("Expected to find a file containing FW versions at", fw_versions_file, ", but the file was not found")
         sys.exit(1)

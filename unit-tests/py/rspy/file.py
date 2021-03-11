@@ -3,16 +3,6 @@
 
 import os, re, platform, subprocess, sys
 
-# Remove Python's default list of places to look for modules so that we use our log module
-sys.path = list()
-sys.path.append( '' )  # directs Python to search modules in the current directory first
-sys.path.append( os.path.dirname( sys.executable ))
-sys.path.append( os.path.join( os.path.dirname( sys.executable ), 'DLLs' ))
-sys.path.append( os.path.join( os.path.dirname( sys.executable ), 'lib' ))
-# Add our py/ module directory
-current_dir = os.path.dirname( os.path.abspath( __file__ ))
-sys.path.append( os.path.dirname( current_dir ) )
-
 from rspy import log
 
 # get os and directories for future use
@@ -23,7 +13,7 @@ if system == 'Linux'  and  "microsoft" not in platform.uname()[3].lower():
 else:
     linux = False
 
-def filesin( root ):
+def inside_dir( root ):
     """
     Yield all files found in root, using relative names ('root/a' would be yielded as 'a')
     """
@@ -39,9 +29,8 @@ def find( dir, mask ):
     :param mask: mask to compare file names to
     """
     pattern = re.compile( mask )
-    for leaf in filesin( dir ):
+    for leaf in inside_dir( dir ):
         if pattern.search( leaf ):
-            #log.d(leaf)
             yield leaf
 
 def is_executable(path_to_file):
@@ -55,40 +44,13 @@ def is_executable(path_to_file):
     else:
         return path_to_file.endswith('.exe')
 
-def subprocess_run(cmd, stdout = None):
-    """
-    wrapper function for subprocess.run
-    """
-    log.d( 'running:', cmd )
-    handle = None
-    try:
-        log.debug_indent()
-        if stdout  and  stdout != subprocess.PIPE:
-            handle = open( stdout, "w" )
-            stdout = handle
-        rv = subprocess.run( cmd,
-                             stdout = stdout,
-                             stderr = subprocess.STDOUT,
-                             universal_newlines = True,
-                             check = True)
-        result = rv.stdout
-        if not result:
-            result = []
-        else:
-            result = result.split( '\n' )
-        return result
-    finally:
-        if handle:
-            handle.close()
-        log.debug_unindent()
-
 def remove_newlines (lines):
     for line in lines:
         if line[-1] == '\n':
             line = line[:-1]    # excluding the endline
         yield line
 
-def grep_( pattern, lines, context ):
+def _grep( pattern, lines, context ):
     """
     helper function for grep
     """
@@ -109,13 +71,12 @@ def grep_( pattern, lines, context ):
         del context['match']
 
 def grep( expr, *args ):
-    #log.d( f'grep {expr} {args}' )
     pattern = re.compile( expr )
     context = dict()
     for filename in args:
         context['filename'] = filename
         with open( filename, errors = 'ignore' ) as file:
-            for line in grep_( pattern, remove_newlines( file ), context ):
+            for line in _grep( pattern, remove_newlines( file ), context ):
                 yield line
 
 def cat( filename ):
