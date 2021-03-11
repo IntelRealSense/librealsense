@@ -25,8 +25,7 @@ namespace librealsense
 {
     using namespace ivcam2;
 
-    // l515
-    class rs515_device : public l500_depth,
+    class l515_device : public l500_depth,
         public l500_options,
         public l500_color,
         public l500_motion,
@@ -34,7 +33,7 @@ namespace librealsense
         public firmware_logger_device
     {
     public:
-        rs515_device(std::shared_ptr<context> ctx,
+        l515_device(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group,
             bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
@@ -65,8 +64,7 @@ namespace librealsense
         };
     };
 
-    // l515
-    class rs535_device : public l500_depth,
+    class l535_device : public l500_depth,
         public l500_options,
         public l500_color,
         public l500_motion,
@@ -74,7 +72,7 @@ namespace librealsense
         public firmware_logger_device
     {
     public:
-        rs535_device(std::shared_ptr<context> ctx,
+        l535_device(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group,
             bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
@@ -105,7 +103,6 @@ namespace librealsense
         };
     };
 
-    // l500
     class rs500_device : public l500_depth,
         public firmware_logger_device
     {
@@ -139,9 +136,9 @@ namespace librealsense
             return std::make_shared<rs500_device>(ctx, group, register_device_notifications);
         case L515_PID_PRE_PRQ:
         case L515_PID:
-            return std::make_shared<rs515_device>(ctx, group, register_device_notifications);
+            return std::make_shared<l515_device>(ctx, group, register_device_notifications);
         case L535_PID:
-            return std::make_shared<rs535_device>(ctx, group, register_device_notifications);
+            return std::make_shared<l535_device>(ctx, group, register_device_notifications);
        default:
             throw std::runtime_error(to_string() << "Unsupported L500 model! 0x"
                 << std::hex << std::setw(4) << std::setfill('0') << (int)pid);
@@ -191,19 +188,14 @@ namespace librealsense
         return results;
     }
 
-    inline std::shared_ptr<matcher> create_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers)
-    {
-        return std::make_shared<timestamp_composite_matcher>(matchers);
-    }
-
     std::shared_ptr<matcher> rs500_device::create_matcher(const frame_holder& frame) const
     {
         return l500_depth::create_matcher(frame);
     }
 
-    std::shared_ptr<matcher> rs515_device::create_matcher(const frame_holder & frame) const
+    std::shared_ptr<matcher> l515_device::create_matcher(const frame_holder & frame) const
     {
-        LOG_DEBUG( "rs515_device::create_matcher" );
+        LOG_DEBUG( "l515_device::create_matcher" );
         std::vector<std::shared_ptr<matcher>> depth_rgb_matchers = { l500_depth::create_matcher(frame),
             std::make_shared<identity_matcher>(_color_stream->get_unique_id(), _color_stream->get_stream_type())};
 
@@ -216,9 +208,9 @@ namespace librealsense
         return std::make_shared<composite_identity_matcher>(depth_rgb_imu_matchers);
     }
 
-    std::shared_ptr<matcher> rs535_device::create_matcher(const frame_holder & frame) const
+    std::shared_ptr<matcher> l535_device::create_matcher(const frame_holder & frame) const
     {
-        LOG_DEBUG("rs515_device::create_matcher");
+        LOG_DEBUG("l535_device::create_matcher");
         std::vector<std::shared_ptr<matcher>> depth_rgb_matchers = { l500_depth::create_matcher(frame),
             std::make_shared<identity_matcher>(_color_stream->get_unique_id(), _color_stream->get_stream_type()) };
         
