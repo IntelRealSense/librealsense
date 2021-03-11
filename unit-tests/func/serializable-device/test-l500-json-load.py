@@ -78,7 +78,6 @@ def log_settings_differences():
             if expected_line != actual_line:
                 log.d( "Expected to find line:", expected_line)
                 log.d( "But found:            ", actual_line)
-        log.debug_unindent()
     finally:
         log.debug_unindent()
 
