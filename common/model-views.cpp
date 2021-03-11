@@ -681,20 +681,32 @@ namespace rs2
                                 ImGuiInputTextFlags_EnterReturnsTrue))
                             {
                                 float new_value;
-                                if (!string_to_int(buff, new_value))
+                                bool is_valid = true;
+                                bool is_in_range = true;
+
+                                try
                                 {
-                                    if (is_number(buff)) //in case a number bigger than integer was given
-                                    { 
-                                        error_message = to_string() << new_value
-                                            << " is out of bounds [" << range.min << ", "
-                                            << range.max << "]";
-                                    }
-                                    else
+                                    std::size_t lastChar;
+                                    new_value = std::stof(std::string(buff), &lastChar);
+                                    if (!lastChar == std::string(buff).size())
                                     {
-                                        error_message = "Invalid numeric input!";
+                                        is_valid = false; // not an integer
                                     }
                                 }
-                                else if (new_value < range.min || new_value > range.max)
+                                catch (std::invalid_argument&)
+                                {
+                                    is_valid = false; // not a number
+                                }
+                                catch (std::out_of_range&)
+                                {
+                                    is_in_range = false;
+                                }
+
+                                if (!is_valid)
+                                {
+                                    error_message = "Invalid numeric input!";
+                                }
+                                else if (!is_in_range || new_value < range.min || new_value > range.max)
                                 {
                                     error_message = to_string() << new_value
                                         << " is out of bounds [" << range.min << ", "
