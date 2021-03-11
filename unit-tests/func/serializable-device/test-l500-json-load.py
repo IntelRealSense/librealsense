@@ -65,20 +65,22 @@ def log_settings_differences():
     depth_sensor.set_option(rs.option.visual_preset, int(rs.l500_visual_preset.low_ambient_light))
     actual_data = str( sd.serialize_json() )
     log.debug_indent()
-    # logging the differences in the settings between the expected and the actual values
-    log.d( "Printing differences between expected and actual settings values:" )
-    for expected_line, actual_line in zip( data.splitlines()[2:-1], actual_data.splitlines()[1:-1] ):
-        # data starts with an empty line and a '{' and ends with a '}', so we cut out the first 2 lines and the last
-        # line to ignore them. Same with the actual data ony it doesn't start with an empty line
-        if "Visual Preset" in expected_line or "Temperature" in expected_line or "temperature" in expected_line:
-            # the line regarding the visual preset will always be different because we load 1 from data but set it to
-            # 3 for low ambient. Also all lines regarding temperatures depend on the camera and don't affect the preset
-            continue
-        if expected_line != actual_line:
-            log.d( "Expected to find line:", expected_line)
-            log.d( "But found:            ", actual_line)
-    log.debug_unindent()
-
+    try:
+        # logging the differences in the settings between the expected and the actual values
+        log.d( "Printing differences between expected and actual settings values:" )
+        for expected_line, actual_line in zip( data.splitlines()[2:-1], actual_data.splitlines()[1:-1] ):
+            # data starts with an empty line and a '{' and ends with a '}', so we cut out the first 2 lines and the last
+            # line to ignore them. Same with the actual data ony it doesn't start with an empty line
+            if "Visual Preset" in expected_line or "Temperature" in expected_line or "temperature" in expected_line:
+                # the line regarding the visual preset will always be different because we load 1 from data but set it to
+                # 3 for low ambient. Also all lines regarding temperatures depend on the camera and don't affect the preset
+                continue
+            if expected_line != actual_line:
+                log.d( "Expected to find line:", expected_line)
+                log.d( "But found:            ", actual_line)
+        log.debug_unindent()
+    finally:
+        log.debug_unindent()
 
 test.start("Trying to load default settings from json")
 try:
