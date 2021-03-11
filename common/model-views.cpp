@@ -2108,12 +2108,12 @@ namespace rs2
                     }
                 }
 
-                if (next_option == RS2_OPTION_DEPTH_UNITS)
+                if (next == RS2_OPTION_DEPTH_UNITS)
                 {
                     opt_md.dev->depth_units = opt_md.value;
                 }
 
-                if (next_option == RS2_OPTION_STEREO_BASELINE)
+                if (next == RS2_OPTION_STEREO_BASELINE)
                     opt_md.dev->stereo_baseline = opt_md.value;
             }
 
