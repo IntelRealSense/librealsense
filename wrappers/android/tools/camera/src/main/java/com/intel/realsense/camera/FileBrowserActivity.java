@@ -29,7 +29,7 @@ public class FileBrowserActivity extends AppCompatActivity {
 
         TextView message = findViewById(R.id.list_view_title);
 
-        File folder = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + mFolder);
+        File folder = new File(getExternalFilesDir(null).getAbsolutePath() + File.separator + mFolder);
         if(!folder.exists()) {
             message.setText("No RealSense files found");
             return;
