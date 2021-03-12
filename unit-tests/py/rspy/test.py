@@ -1,13 +1,13 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 """
 This module is for formatting and writing unit-tests in python. The general format is as follows
-1. Use start to start a test and give it, as an argument, the name of the test
+1. Use start() to start a test and give it, as an argument, the name of the test
 2. Use whatever check functions are relevant to test the run
-3. Use finish to signal the end of the test
+3. Use finish() to signal the end of the test
 4. Repeat stages 1-3 as the number of tests you want to run in the file
-5. Use print_results_and_exit to print the number of tests and assertions that passed/failed in the correct format
+5. Use print_results_and_exit() to print the number of tests and assertions that passed/failed in the correct format
    before exiting with 0 if all tests passed or with 1 if there was a failed test
 
 In addition you may want to use the 'info' functions in this module to add more detailed
@@ -15,6 +15,8 @@ messages in case of a failed check
 """
 
 import os, sys, subprocess, traceback, platform
+
+from rspy import log
 
 n_assertions = 0
 n_failed_assertions = 0
@@ -25,7 +27,7 @@ test_in_progress = False
 test_info = {} # Dictionary for holding additional information to print in case of a failed check.
 
 
-def set_env_vars(env_vars):
+def set_env_vars( env_vars ):
     """
     We want certain environment variables set when we get here. We assume they're not set.
 
@@ -42,6 +44,7 @@ def set_env_vars(env_vars):
         wanted values in string form (environment variables must be strings)
     """
     if sys.argv[-1] != 'rerun':
+        log.d( 'environment variables needed:', env_vars )
         for env_var, val in env_vars.items():
             os.environ[env_var] = val
         cmd = [sys.executable]
@@ -51,11 +54,14 @@ def set_env_vars(env_vars):
         if sys.flags.verbose:
             #     -v     : verbose (trace import statements)
             cmd += ["-v"]
-        cmd += sys.argv
+        cmd += sys.argv  # --debug, or any other args
         cmd += ["rerun"]
+        log.d( 'running:', cmd )
         p = subprocess.run( cmd, stderr=subprocess.PIPE, universal_newlines=True )
         sys.exit( p.returncode )
+    log.d( 'rerun detected' )
     sys.argv = sys.argv[:-1]  # Remove the rerun
+
 
 def find_first_device_or_exit():
     """
@@ -69,6 +75,7 @@ def find_first_device_or_exit():
         sys.exit( 0 )
     return c.devices[0]
 
+
 def find_devices_by_product_line_or_exit(product_line):
     """
     :param product_line: The product line of the wanted devices
@@ -80,9 +87,10 @@ def find_devices_by_product_line_or_exit(product_line):
     c = rs.context()
     devices_list = c.query_devices(product_line)
     if devices_list.size() == 0:
-        print("No device of the" , product_line ,"product line was found; skipping test")
+        print( "No device of the", product_line, "product line was found; skipping test" )
         sys.exit( 0 )
     return devices_list
+
 
 def print_stack():
     """
@@ -99,12 +107,14 @@ def print_stack():
     for line in reversed( stack ):
         print( line, end = '' )  # format_stack() adds \n
 
+
 """
 The following functions are for asserting test cases:
 The check family of functions tests an expression and continues the test whether the assertion succeeded or failed.
 The require family are equivalent but execution is aborted if the assertion fails. In this module, the require family
 is used by sending abort=True to check functions
 """
+
 
 def check_failed():
     """
@@ -115,9 +125,11 @@ def check_failed():
     test_failed = True
     print_info()
 
+
 def abort():
-    print("Abort was specified in a failed check. Aborting test")
+    log.e( "Aborting test" )
     sys.exit( 1 )
+
 
 def check(exp, abort_if_failed = False):
     """
@@ -137,6 +149,7 @@ def check(exp, abort_if_failed = False):
         return False
     reset_info()
     return True
+
 
 def check_equal(result, expected, abort_if_failed = False):
     """
@@ -164,12 +177,14 @@ def check_equal(result, expected, abort_if_failed = False):
     reset_info()
     return True
 
+
 def unreachable( abort_if_failed = False ):
     """
     Used to assert that a certain section of code (exp: an if block) is not reached
     :param abort_if_failed: If True and this function is reached the test will be aborted
     """
     check(False, abort_if_failed)
+
 
 def unexpected_exception():
     """
@@ -180,6 +195,7 @@ def unexpected_exception():
     n_assertions += 1
     traceback.print_exc( file = sys.stdout )
     check_failed()
+
 
 def check_equal_lists(result, expected, abort_if_failed = False):
     """
@@ -215,6 +231,7 @@ def check_equal_lists(result, expected, abort_if_failed = False):
     reset_info()
     return True
 
+
 def check_exception(exception, expected_type, expected_msg = None, abort_if_failed = False):
     """
     Used to assert a certain type of exception was raised, placed in the except block
@@ -239,6 +256,7 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
     reset_info()
     return True
 
+
 def check_frame_drops(frame, previous_frame_number, allowed_drops = 1):
     """
     Used for checking frame drops while streaming
@@ -257,19 +275,16 @@ def check_frame_drops(frame, previous_frame_number, allowed_drops = 1):
         if dropped_frames > allowed_drops:
             print( dropped_frames, "frame(s) starting from frame", previous_frame_number + 1, "were dropped" )
             failed = True
-        if dropped_frames < 0:
+        elif dropped_frames < 0:
             print( "Frames repeated or out of order. Got frame", frame_number, "after frame",
                    previous_frame_number)
             failed = True
     if failed:
-        check_failed()
+        fail() 
         return False
     reset_info()
     return True
 
-"""
-The following functions are for adding additional information to the printed messages in case of a failed check.
-"""
 
 class Information:
     """
@@ -279,7 +294,8 @@ class Information:
         self.value = value
         self.persistent = persistent
 
-def info(name, value, persistent = False):
+
+def info( name, value, persistent = False ):
     """
     This function is used to store additional information to print in case of a failed test. This information is
     erased after the next check. The information is stored in the dictionary test_info, Keys are names (strings)
@@ -292,6 +308,7 @@ def info(name, value, persistent = False):
     """
     global test_info
     test_info[name] = Information(value, persistent)
+
 
 def reset_info(persistent = False):
     """
@@ -306,6 +323,7 @@ def reset_info(persistent = False):
             if not information.persistent:
                 test_info.pop(name)
 
+
 def print_info():
     global test_info
     if not test_info: # No information is stored
@@ -315,56 +333,73 @@ def print_info():
         print("Name:", name, "        value:", information.value)
     reset_info()
 
-"""
-The following functions are for formatting tests in a file
-"""
 
 def fail():
     """
     Function for manually failing a test in case you want a specific test that does not fit any check function
     """
-    global test_in_progress, n_failed_tests, test_failed
-    if not test_in_progress:
-        raise RuntimeError("Tried to fail a test with no test running")
+    check_test_in_progress()
+    global n_failed_tests, test_failed
     if not test_failed:
         n_failed_tests += 1
         test_failed = True
+
+
+def check_test_in_progress( in_progress = True ):
+    global test_in_progress
+    if test_in_progress != in_progress:
+        if test_in_progress:
+            raise RuntimeError( "test case is already running" )
+        else:
+            raise RuntimeError( "no test case is running" )
+
 
 def start(*test_name):
     """
     Used at the beginning of each test to reset the global variables
     :param test_name: Any number of arguments that combined give the name of this test
-    :return:
     """
+    print_separator()
     global n_tests, test_failed, test_in_progress
-    if test_in_progress:
-        raise RuntimeError("Tried to start test before previous test finished. Aborting test")
     n_tests += 1
     test_failed = False
     test_in_progress = True
-    reset_info(persistent=True)
-    print(*test_name)
+    reset_info( persistent = True )
+    print( *test_name )
+
 
 def finish():
     """
     Used at the end of each test to check if it passed and print the answer
     """
+    check_test_in_progress()
     global test_failed, n_failed_tests, test_in_progress
-    if not test_in_progress:
-        raise RuntimeError("Tried to finish a test without starting one")
     if test_failed:
         n_failed_tests += 1
         print("Test failed")
     else:
         print("Test passed")
-    print()
     test_in_progress = False
+
+
+def print_separator():
+    """
+    For use only in-between test-cases, this will separate them in some visual way so as
+    to be easier to differentiate.
+    """
+    check_test_in_progress( False )
+    global n_tests
+    if n_tests:
+        print()
+        print( '___' )
+
 
 def print_results_and_exit():
     """
     Used to print the results of the tests in the file. The format has to agree with the expected format in check_log()
     in run-unit-tests and with the C++ format using Catch
     """
+    print_separator()
     global n_assertions, n_tests, n_failed_assertions, n_failed_tests
     if n_failed_tests:
         passed = n_assertions - n_failed_assertions

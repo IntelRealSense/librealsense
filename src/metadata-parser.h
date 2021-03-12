@@ -372,7 +372,7 @@ namespace librealsense
                         }
                         else
                         {
-                            for (auto i = 0; i < _fps_values.size() - 1; i++)
+                            for (size_t i = 0; i < _fps_values.size() - 1; i++)
                             {
                                 if (fps < _fps_values[i + 1])
                                 {

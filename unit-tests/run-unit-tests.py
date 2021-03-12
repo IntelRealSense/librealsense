@@ -11,6 +11,9 @@ from abc import ABC, abstractmethod
 # otherwise pyrs other than what we compiled might be found...
 sys.path = list()
 sys.path.append( '' )  # directs Python to search modules in the current directory first
+sys.path.append( os.path.dirname( sys.executable ))
+sys.path.append( os.path.join( os.path.dirname( sys.executable ), 'DLLs' ))
+sys.path.append( os.path.join( os.path.dirname( sys.executable ), 'lib' ))
 # Add our py/ module directory
 current_dir = os.path.dirname( os.path.abspath( __file__ ))
 sys.path.append( current_dir + os.sep + "py" )
@@ -25,8 +28,9 @@ def usage():
     print( '        --debug        Turn on debugging information' )
     print( '        -v, --verbose  Errors will dump the log to stdout' )
     print( '        -q, --quiet    Suppress output; rely on exit status (0=no failures)' )
-    print( '        -r, --regex    run all tests that fit the following regular expression')
-    print( '        -s, --stdout   do not redirect stdout to logs')
+    print( '        -r, --regex    run all tests that fit the following regular expression' )
+    print( '        -s, --stdout   do not redirect stdout to logs' )
+    print( '        -t, --tag      run all tests with the following tag' )
     sys.exit(2)
 
 
@@ -65,13 +69,14 @@ def is_executable(path_to_test):
 
 # Parse command-line:
 try:
-    opts,args = getopt.getopt( sys.argv[1:], 'hvqr:s',
-        longopts = [ 'help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout' ])
+    opts,args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
+        longopts = [ 'help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag' ])
 except getopt.GetoptError as err:
     log.e( err )   # something like "option -a not recognized"
     usage()
 regex = None
 to_stdout = False
+tag = None
 for opt,arg in opts:
     if opt in ('-h','--help'):
         usage()
@@ -83,6 +88,8 @@ for opt,arg in opts:
         regex = arg
     elif opt in ('-s', '--stdout'):
         to_stdout = True
+    elif opt in ('-t', '--tag'):
+        tag = arg
 
 if len(args) > 1:
     usage()
@@ -113,9 +120,10 @@ n_tests = 0
 
 # wrapper function for subprocess.run
 def subprocess_run(cmd, stdout = None):
-    log.d( '    running:', cmd )
+    log.d( 'running:', cmd )
     handle = None
     try:
+        log.debug_indent()
         if stdout  and  stdout != subprocess.PIPE:
             handle = open( stdout, "w" )
             stdout = handle
@@ -133,6 +141,7 @@ def subprocess_run(cmd, stdout = None):
     finally:
         if handle:
             handle.close()
+        log.debug_unindent()
 
 # Python scripts should be able to find the pyrealsense2 .pyd or else they won't work. We don't know
 # if the user (Travis included) has pyrealsense2 installed but even if so, we want to use the one we compiled.
@@ -194,7 +203,7 @@ def grep( expr, *args ):
         context['filename'] = filename
         with open( filename, errors = 'ignore' ) as file:
             for line in grep_( pattern, remove_newlines( file ), context ):
-                yield context
+                yield line
 
 def cat( filename ):
     with open( filename, errors = 'ignore' ) as file:
@@ -241,11 +250,29 @@ class TestConfig(ABC):  # Abstract Base Class
     """
     def __init__(self):
         self._configurations = list()
+        self._priority = 1000
+        self._tags = set()
+
+    def debug_dump(self):
+        if self._priority != 1000:
+            log.d( 'priority:', self._priority )
+        if self._tags:
+            log.d( 'tags:', self._tags )
+        if len(self._configurations) > 1:
+            log.d( len( self._configurations ), 'configurations' )
+            # don't show them... they are output separately
 
     @property
     def configurations(self):
         return self._configurations
 
+    @property
+    def priority(self):
+        return self._priority
+
+    @property
+    def tags(self):
+        return self._tags
 
 class TestConfigFromText(TestConfig):
     """
@@ -273,13 +300,20 @@ class TestConfigFromText(TestConfig):
             params = [s for s in context['match'].group(2).split()]
             comment = match.group(3)
             if directive == 'device':
-                log.d( '    configuration:', params )
+                #log.d( '    configuration:', params )
                 if not params:
-                    log.e( source + str(context.index) + ': device directive with no devices listed' )
+                    log.e( source + '+' + str(context['index']) + ': device directive with no devices listed' )
                 else:
                     self._configurations.append( params )
+            elif directive == 'priority':
+                if len(params) == 1 and params[0].isdigit():
+                    self._priority = int( params[0] )
+                else:
+                    log.e( source + '+' + str(context['index']) + ': priority directive with invalid parameters:', params )
+            elif directive == 'tag':
+                self._tags.update(params)
             else:
-                log.e( source + str(context.index) + ': invalid directive "' + directive + '"; ignoring' )
+                log.e( source + '+' + str(context['index']) + ': invalid directive "' + directive + '"; ignoring' )
 
 
 class Test(ABC):  # Abstract Base Class
@@ -287,13 +321,17 @@ class Test(ABC):  # Abstract Base Class
     Abstract class for a test. Holds the name of the test
     """
     def __init__(self, testname):
-        log.d( 'found', testname )
+        #log.d( 'found', testname )
         self._name = testname
         self._config = None
 
     @abstractmethod
     def run_test(self):
         pass
+
+    def debug_dump(self):
+        if self._config:
+            self._config.debug_dump()
 
     @property
     def config(self):
@@ -330,8 +368,11 @@ class PyTest(Test):
         global current_dir
         Test.__init__(self, testname)
         self.path_to_script = current_dir + os.sep + path_to_test
-        log.d( '    script:', self.path_to_script )
         self._config = TestConfigFromText( self.path_to_script, r'#\s*test:' )
+
+    def debug_dump(self):
+        log.d( 'script:', self.path_to_script )
+        Test.debug_dump(self)
 
     @property
     def command(self):
@@ -371,8 +412,39 @@ class ExeTest(Test):
         :param testname: name of the test
         :param exe: full path to executable
         """
+        global current_dir
         Test.__init__(self, testname)
         self.exe = exe
+
+        # Finding the c/cpp file of the test to get the configuration
+        # TODO: this is limited to a structure in which .cpp files and directories do not share names
+        # For example:
+        #     unit-tests/
+        #         func/
+        #             ...
+        #         test-func.cpp
+        # test-func.cpp will not be found!
+        split_testname = testname.split( '-' )
+        cpp_path = current_dir
+        found_test_dir = False
+
+        while not found_test_dir:
+            # index 0 should be 'test' as tests always start with it
+            found_test_dir = True
+            for i in range(2, len(split_testname) ): # Checking if the next part of the test name is a sub-directory
+                sub_dir_path = cpp_path + os.sep + '-'.join(split_testname[1:i]) # The next sub-directory could have several words
+                if os.path.isdir(sub_dir_path):
+                    cpp_path = sub_dir_path
+                    del split_testname[1:i]
+                    found_test_dir = False
+                    break
+
+        cpp_path += os.sep + '-'.join( split_testname )
+        if os.path.isfile( cpp_path + ".cpp" ):
+            cpp_path += ".cpp"
+            self._config = TestConfigFromText(cpp_path, r'//#\s*test:')
+        else:
+            log.w( log.red + testname + log.reset + ':', 'No matching .cpp file was found; no configuration will be used!' )
 
     @property
     def command(self):
@@ -437,6 +509,8 @@ def get_tests():
 
         yield PyTest(testname, py_test)
 
+def prioritize_tests( tests ):
+    return sorted(tests, key= lambda t: t.config.priority)
 
 def devices_by_test_config( test ):
     """
@@ -452,7 +526,10 @@ def devices_by_test_config( test ):
         try:
             serial_numbers = devices.by_configuration( configuration )
         except RuntimeError as e:
-            log.e( log.red + test.name + log.reset + ': ' + str(e) )
+            if devices.acroname:
+                log.e( log.red + test.name + log.reset + ': ' + str(e) )
+            else:
+                log.w( log.yellow + test.name + log.reset + ': ' + str(e) )
             continue
         yield configuration, serial_numbers
 
@@ -461,10 +538,11 @@ log.i( 'Logs in:', logdir )
 def test_wrapper( test, configuration = None ):
     global n_tests
     n_tests += 1
-    if configuration:
-        log.progress( '[' + ' '.join( configuration ) + ']', test.name, '...' )
-    else:
-        log.progress( test.name, '...' )
+    if not log.is_debug_on()  or  log.is_color_on():
+        if configuration:
+            log.progress( '[' + ' '.join( configuration ) + ']', test.name, '...' )
+        else:
+            log.progress( test.name, '...' )
     test.run_test()
 
 
@@ -478,23 +556,39 @@ devices.query()
 skip_live_tests = len(devices.all()) == 0  and  not devices.acroname
 #
 log.reset_errors()
-for test in get_tests():
+for test in prioritize_tests( get_tests() ):
     #
-    if not test.is_live():
-        test_wrapper( test )
-        continue
-    #
-    if skip_live_tests:
-        log.w( test.name + ':', 'is live and there are no cameras; skipping' )
-        continue
-    #
-    for configuration, serial_numbers in devices_by_test_config( test ):
-        try:
-            devices.enable_only( serial_numbers, recycle = True )
-        except RuntimeError as e:
-            log.w( log.red + self.name + log.reset + ': ' + str(e) )
-        else:
-            test_wrapper( test, configuration )
+    log.d( 'found', test.name, '...' )
+    try:
+        log.debug_indent()
+        test.debug_dump()
+        #
+        if tag and tag not in test.config.tags:
+            log.d( 'does not fit --tag:', test.tags )
+            continue
+        #
+        if not test.is_live():
+            test_wrapper( test )
+            continue
+        #
+        if skip_live_tests:
+            log.w( test.name + ':', 'is live and there are no cameras; skipping' )
+            continue
+        #
+        for configuration, serial_numbers in devices_by_test_config( test ):
+            try:
+                log.d( 'configuration:', configuration )
+                log.debug_indent()
+                devices.enable_only( serial_numbers, recycle = True )
+            except RuntimeError as e:
+                log.w( log.red + test.name + log.reset + ': ' + str(e) )
+            else:
+                test_wrapper( test, configuration )
+            finally:
+                log.debug_unindent()
+        #
+    finally:
+        log.debug_unindent()
 
 log.progress()
 #

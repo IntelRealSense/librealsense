@@ -2,10 +2,8 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
-#include "example.hpp"          // Include short list of convenience functions for rendering
+#include "example-imgui.hpp"    // Include short list of convenience functions for rendering
 #include <iostream>
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
 
 
 // HDR Example demonstrates how to use the HDR feature - only for D400 product line devices

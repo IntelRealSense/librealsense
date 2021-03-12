@@ -81,7 +81,7 @@ inline ImVec4 blend(const ImVec4& c, float a)
 
 namespace rs2
 {
-    constexpr const char* server_versions_db_url = "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/rs_versions_db.json";
+    constexpr const char* server_versions_db_url = "https://librealsense.intel.com/Releases/rs_versions_db.json";
     
     void prepare_config_file();
 
@@ -676,6 +676,10 @@ namespace rs2
         std::vector<std::shared_ptr<processing_block_model>> post_processing;
         bool post_processing_enabled = true;
         std::vector<std::shared_ptr<processing_block_model>> const_effects;
+
+    private:
+        const float SHORT_RANGE_MIN_DISTANCE = 0.05f; // 5 cm
+        const float SHORT_RANGE_MAX_DISTANCE = 4.0f;  // 4 meters
     };
 
     class viewer_model;

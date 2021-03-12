@@ -81,14 +81,14 @@ public:
 
         glPushMatrix();
         // Set the rotation, converting theta to degrees
-        glRotatef(theta.x * 180 / PI, 0, 0, -1);
-        glRotatef(theta.y * 180 / PI, 0, -1, 0);
-        glRotatef((theta.z - PI / 2) * 180 / PI, -1, 0, 0);
+        glRotatef(theta.x * 180 / PI_FL, 0, 0, -1);
+        glRotatef(theta.y * 180 / PI_FL, 0, -1, 0);
+        glRotatef((theta.z - PI_FL / 2) * 180 / PI_FL, -1, 0, 0);
 
         draw_axes();
 
         // Scale camera drawing
-        glScalef(0.035, 0.035, 0.035);
+        glScalef(0.035f, 0.035f, 0.035f);
 
         glBegin(GL_TRIANGLES);
         // Draw the camera
@@ -116,7 +116,7 @@ class rotation_estimator
     std::mutex theta_mtx;
     /* alpha indicates the part that gyro and accelerometer take in computation of theta; higher alpha gives more weight to gyro, but too high
     values cause drift; lower alpha gives more weight to accelerometer, which is more sensitive to disturbances */
-    float alpha = 0.98;
+    float alpha = 0.98f;
     bool firstGyro = true;
     bool firstAccel = true;
     // Keeps the arrival time of previous gyro frame
@@ -144,7 +144,7 @@ public:
         last_ts_gyro = ts;
 
         // Change in angle equals gyro measures * time passed since last measurement
-        gyro_angle = gyro_angle * dt_gyro;
+        gyro_angle = gyro_angle * static_cast<float>(dt_gyro);
 
         // Apply the calculated change of angle to the current angle (theta)
         std::lock_guard<std::mutex> lock(theta_mtx);
@@ -167,7 +167,7 @@ public:
             firstAccel = false;
             theta = accel_angle;
             // Since we can't infer the angle around Y axis using accelerometer data, we'll use PI as a convetion for the initial pose
-            theta.y = PI;
+            theta.y = PI_FL;
         }
         else
         {

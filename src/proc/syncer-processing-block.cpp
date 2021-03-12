@@ -68,7 +68,7 @@ syncer_process_unit::syncer_process_unit( std::initializer_list< bool_option::pt
 
             while( _matches.try_dequeue( &f ) )
             {
-                LOG_DEBUG("dequeue: " << frame_to_string(f));
+                LOG_DEBUG("dequeue: " << *f.frame);
                 get_source().frame_ready( std::move( f ) );
             }
         }
@@ -98,7 +98,7 @@ bool syncer_process_unit::create_matcher( const frame_holder & frame )
             _matcher->set_callback([this](frame_holder f, const syncronization_environment& env) {
                 if (env.log)
                 {
-                    LOG_DEBUG("SYNCED: " << frame_to_string(f));
+                    LOG_DEBUG("SYNCED: " << *f.frame);
                 }
 
                 // We get here from within a dispatch() call, already protected by a mutex -- so only one thread can enqueue!

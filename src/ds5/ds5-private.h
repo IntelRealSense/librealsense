@@ -11,6 +11,13 @@
 #include <iomanip>
 #include <string>
 
+//#define DEBUG_THERMAL_LOOP
+#ifdef DEBUG_THERMAL_LOOP
+#define LOG_DEBUG_THERMAL_LOOP(...)   do { CLOG(WARNING   ,"librealsense") << __VA_ARGS__; } while(false)
+#else
+#define LOG_DEBUG_THERMAL_LOOP(...)
+#endif //DEBUG_THERMAL_LOOP
+
 namespace librealsense
 {
     namespace ds
@@ -90,7 +97,6 @@ namespace librealsense
             ds::RS435_RGB_PID,
             ds::RS435I_PID,
             ds::RS465_PID,
-            ds::RS405_PID,
             ds::RS455_PID,
         };
 
@@ -98,14 +104,12 @@ namespace librealsense
             ds::RS435I_PID,
             ds::RS430I_PID,
             ds::RS465_PID,
-            ds::RS405_PID,
             ds::RS455_PID,
         };
 
         static const std::set<std::uint16_t> hid_bmi_055_pid = {
             ds::RS435I_PID,
             ds::RS430I_PID,
-            ds::RS405_PID,
             ds::RS455_PID
         };
 

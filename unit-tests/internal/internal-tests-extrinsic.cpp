@@ -29,7 +29,7 @@ constexpr int SPIKE_THRESHOLD = 2; //[stdev]
 // Output:  - vector of line fitting data according to least squares algorithm 
 //          - slope of the fitted line
 // reference: https://en.wikipedia.org/wiki/Least_squares
-double line_fitting(const std::vector<double>& y_vec, std::vector<double>& y_fit = std::vector<double>())
+double line_fitting(const std::vector<double>& y_vec, std::vector<double>y_fit = std::vector<double>())
 {
     double ysum = std::accumulate(y_vec.begin(), y_vec.end(), 0.0);  //calculate sigma(yi)
     double xsum = 0;
@@ -208,7 +208,6 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
             std::vector<size_t> extrinsics_table_size;
             std::map<std::string, std::vector<double>> streams_delay; // map to vector to collect all data
             std::map<std::string, std::vector<std::map<unsigned long long, size_t >>> unique_streams_delay;
-            std::map<std::string, std::vector<unsigned long long>> frame_number;
             std::map<std::string, size_t> new_frame;
             std::map<std::string, size_t> extrinsic_graph_at_sensor;
 
@@ -271,16 +270,12 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
                     auto frame_num = f.get_frame_number();
                     auto time_of_arrival = f.get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
 
-                    if (std::find(frame_number[stream_type].begin(), frame_number[stream_type].end(), frame_num) == frame_number[stream_type].end())
+                    if (!new_frame[stream_type])
                     {
-                        if (!new_frame[stream_type])
-                        {
-                            frame_number[stream_type].push_back(frame_num);
-                            streams_delay[stream_type].push_back(time_of_arrival - start_time_milli);
-                            new_frame[stream_type] = true;
-                        }
-                        new_frame[stream_type] += 1;
+                        streams_delay[stream_type].push_back(time_of_arrival - start_time_milli);
+                        new_frame[stream_type] = true;
                     }
+                    new_frame[stream_type] += 1;
                 };
                 auto frame_callback = [&](const rs2::frame& f)
                 {
@@ -374,7 +369,7 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
             {
                 CAPTURE(extrinsics_table_size);
                 // 1. extrinsics table preserve its size over iterations
-                CHECK(std::adjacent_find(extrinsics_table_size.begin(), extrinsics_table_size.end(), std::not_equal_to<>()) == extrinsics_table_size.end());
+                CHECK(std::adjacent_find(extrinsics_table_size.begin(), extrinsics_table_size.end(), std::not_equal_to<size_t>()) == extrinsics_table_size.end());
             }
             // 2.  no delay increment over iterations 
             // filter spikes : calc stdev for each half and filter out samples that are not close 

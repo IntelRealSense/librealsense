@@ -366,8 +366,8 @@ namespace librealsense
         register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_ACTUAL_EXPOSURE));
         register_metadata(RS2_FRAME_METADATA_TEMPERATURE    , std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_TEMPERATURE));
         //Replacing md parser for RS2_FRAME_METADATA_TIME_OF_ARRIVAL
-        _metadata_parsers->operator[](RS2_FRAME_METADATA_TIME_OF_ARRIVAL) = std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
-        _metadata_parsers->operator[](RS2_FRAME_METADATA_FRAME_TIMESTAMP) = std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
+        _metadata_parsers->find(RS2_FRAME_METADATA_TIME_OF_ARRIVAL)->second = std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
+        _metadata_parsers->find(RS2_FRAME_METADATA_FRAME_TIMESTAMP)->second = std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
 
         // Set log level
         bulk_message_request_log_control log_request = {{ sizeof(log_request), DEV_LOG_CONTROL }};

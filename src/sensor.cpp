@@ -16,6 +16,7 @@
 #include "proc/decimation-filter.h"
 #include "proc/depth-decompress.h"
 #include "global_timestamp_reader.h"
+#include "device-calibration.h"
 
 namespace librealsense
 {
@@ -120,9 +121,12 @@ namespace librealsense
     void sensor_base::register_metadata(rs2_frame_metadata_value metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const
     {
         if (_metadata_parsers.get()->end() != _metadata_parsers.get()->find(metadata))
-            throw invalid_value_exception(to_string() << "Metadata attribute parser for " << rs2_frame_metadata_to_string(metadata)
-                << " is already defined");
-
+        {
+            std::string metadata_type_str(rs2_frame_metadata_to_string(metadata));
+            std::string metadata_found_str = "Metadata attribute parser for " + metadata_type_str + " is already defined";
+            LOG_INFO(metadata_found_str.c_str());
+        }
+            
         _metadata_parsers.get()->insert(std::pair<rs2_frame_metadata_value, std::shared_ptr<md_attribute_parser_base>>(metadata, metadata_parser));
     }
 
@@ -1501,7 +1505,7 @@ namespace librealsense
             auto&& composite = dynamic_cast<composite_frame*>(f.frame);
             if (composite)
             {
-                for (int i = 0; i < composite->get_embedded_frames_count(); i++)
+                for (size_t i = 0; i < composite->get_embedded_frames_count(); i++)
                 {
                     processed_frames.push_back(composite->get_frame(i));
                 }

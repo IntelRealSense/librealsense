@@ -219,14 +219,32 @@ namespace librealsense
             throw invalid_value_exception(to_string() << "metadata not available for "
                 << get_string(get_stream()->get_stream_type()) << " stream");
 
-        auto it = metadata_parsers.get()->find(frame_metadata);
-        if (it == metadata_parsers.get()->end())          // Possible user error - md attribute is not supported by this frame type
+        auto parsers = metadata_parsers->equal_range(frame_metadata);
+        if (parsers.first == metadata_parsers->end())          // Possible user error - md attribute is not supported by this frame type
             throw invalid_value_exception(to_string() << get_string(frame_metadata)
                 << " attribute is not applicable for "
                 << get_string(get_stream()->get_stream_type()) << " stream ");
 
-        // Proceed to parse and extract the required data attribute
-        return it->second->get(*this);
+        rs2_metadata_type result = -1;
+        bool value_retrieved = false;
+        std::string exc_str;
+        for (auto it = parsers.first; it != parsers.second; ++it)
+        {
+            try
+            {
+                result = it->second->get(*this);
+                value_retrieved = true;
+                break;
+            }
+            catch (invalid_value_exception& e)
+            {
+                exc_str = e.what();
+            }
+        }
+        if (!value_retrieved)
+            throw invalid_value_exception(exc_str);
+
+        return result;
     }
 
     bool frame::supports_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const
@@ -235,11 +253,19 @@ namespace librealsense
         if (!metadata_parsers)
             return false;                         // No parsers are available or no metadata was attached
 
-        auto it = metadata_parsers.get()->find(frame_metadata);
-        if (it == metadata_parsers.get()->end())          // Possible user error - md attribute is not supported by this frame type
+        bool ret = false;
+        auto found = metadata_parsers->equal_range(frame_metadata);
+        if (found.first == metadata_parsers->end())
             return false;
 
-        return it->second->supports(*this);
+        for (auto it = found.first; it != found.second; ++it)
+            if (it->second->supports(*this))
+            {
+                ret = true;
+                break;
+            }
+
+        return ret;
     }
 
     int frame::get_frame_data_size() const

@@ -75,7 +75,7 @@ public:
         {
             _last_stable_percentage = stabilization_percent;
             std::unordered_map< T, int > values_count_map;
-            std::pair< T, int > most_stable_value = { 0, 0 };
+            std::pair< T, int > most_stable_value = { 0.f, 0 };
             for( T val : _values )
             {
                 auto current_val = ++values_count_map[val];

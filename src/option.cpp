@@ -3,7 +3,6 @@
 #include "option.h"
 #include "sensor.h"
 
-
 bool librealsense::option_base::is_valid(float value) const
 {
     if (!std::isnormal(_opt_range.step) && _opt_range.step != 0)

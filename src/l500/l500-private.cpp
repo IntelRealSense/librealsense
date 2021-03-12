@@ -74,7 +74,7 @@ namespace librealsense
         float l500_temperature_options::query() const
         {
             if (!is_enabled())
-                throw wrong_api_call_sequence_exception("query option is allow only in streaming!");
+                throw wrong_api_call_sequence_exception("query is available during streaming only");
             
             auto temperature_data = _l500_depth_dev->get_temperatures();
 
@@ -201,7 +201,7 @@ namespace librealsense
         float nest_option::query() const
         {
             auto temperature_data = _l500_depth_dev->get_temperatures();
-            return temperature_data.nest_avg;
+            return (float)(temperature_data.nest_avg);
         }
 
         rs2_sensor_mode get_resolution_from_width_height(int width, int height)

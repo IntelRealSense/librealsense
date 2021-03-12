@@ -355,6 +355,7 @@ typedef enum rs2_calibration_type
 {
     RS2_CALIBRATION_AUTO_DEPTH_TO_RGB,
     RS2_CALIBRATION_MANUAL_DEPTH_TO_RGB,
+    RS2_CALIBRATION_THERMAL,
     RS2_CALIBRATION_TYPE_COUNT
 } rs2_calibration_type;
 const char* rs2_calibration_type_to_string( rs2_calibration_type );

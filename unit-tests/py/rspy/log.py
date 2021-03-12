@@ -32,19 +32,24 @@ if _have_color:
     clear_eos = '\033[J'
     clear_eol = '\033[K'
     _progress = ''
-    def out(*args):
-        print( *args, end = clear_eol + '\n' )
+    def out( *args, sep = ' ', end = '\n' ):
         global _progress
-        if len(_progress):
+        clear_to_eol = end  and  end[-1] == '\n'  and  len(_progress) > 0
+        if clear_to_eol:
+            print( *args, sep = sep, end = clear_eol + end )
             progress( *_progress )
+        else:
+            print( *args, sep = sep, end = end )
     def progress(*args):
-        print( *args, end = clear_eol + '\r' )
         global _progress
+        sys.stdout.write( '\0337' )  # save cursor
+        print( *args, end = clear_eol )
+        sys.stdout.write( '\0338' )  # restore cursor
         _progress = args
 else:
     red = yellow = gray = reset = cr = clear_eos = ''
-    def out(*args):
-        print( *args )
+    def out( *args, sep = ' ', end = '\n' ):
+        print( *args, sep = sep, end = end )
     def progress(*args):
         print( *args )
 
@@ -74,13 +79,17 @@ def is_verbose_on():
 
 
 _debug_on = False
+_debug_indent = ''
 def d(*args):
-    pass
+    # Return whether info was output
+    return False
 def debug_on():
-    global d, _debug_on
-    def d(*args):
+    global d, _debug_on, _debug_indent
+    def d( *args ):
         global gray, reset
-        out( gray + '-D-', *args, reset )
+        out( gray, '-D- ', _debug_indent, sep = '', end = '' )  # continue in next statement
+        out( *args, end = reset + '\n' )
+        return True
     _debug_on = True
 def is_debug_on():
     global _debug_on
@@ -88,6 +97,12 @@ def is_debug_on():
 if '--debug' in sys.argv:
     sys.argv.remove( '--debug' )
     debug_on()
+def debug_indent( n = 1, indentation = '    ' ):
+    global _debug_indent
+    _debug_indent += n * indentation
+def debug_unindent( n = 1, indentation = '    ' ):
+    global _debug_indent
+    _debug_indent = _debug_indent[:-n * len(indentation)]
 
 
 def i(*args):

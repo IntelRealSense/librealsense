@@ -60,8 +60,8 @@ int main(int argc, char * argv[]) try
 
     // Declare threshold filter for work with dots in range
     rs2::threshold_filter threshold;
-    float threshold_min = 0.3;
-    float threshold_max = 1.5;
+    float threshold_min = 0.3f;
+    float threshold_max = 1.5f;
 
     // Keep dots on the depth frame in range
     threshold.set_option(RS2_OPTION_MIN_DISTANCE, threshold_min);
@@ -84,7 +84,7 @@ int main(int argc, char * argv[]) try
             rotated = image;
 
         if ( is_yaw ) {
-            int rotWidth(threshold_max * 1000);
+            int rotWidth(static_cast<int>(threshold_max * 1000));
 
             rotated = cv::Mat::zeros(cv::Size(rotWidth, image.size().height), CV_16UC1 );
 

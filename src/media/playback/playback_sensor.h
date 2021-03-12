@@ -119,6 +119,8 @@ namespace librealsense
                     device_serializer::nanoseconds sleep_for = calc_sleep();
                     if (sleep_for.count() > 0)
                         t.try_sleep(sleep_for.count() * 1e-6);
+
+                    LOG_DEBUG("callback--> "<< frame_holder_to_string(*pf));
                     if(is_paused())
                         return;
 
