@@ -1326,8 +1326,8 @@ namespace librealsense
     void tm2_sensor::stop_interrupt()
     {
         if (_interrupt_request) {
+            _interrupt_callback->cancel();
             if (_device->cancel_request(_interrupt_request)) {
-                _interrupt_callback->cancel();
                 _interrupt_request.reset();
             }
         }
@@ -1387,8 +1387,8 @@ namespace librealsense
     void tm2_sensor::stop_stream()
     {
         if (_stream_request) {
+            _stream_callback->cancel();
             if (_device->cancel_request(_stream_request)) {
-                _stream_callback->cancel();
                 _stream_request.reset();
             }
         }
