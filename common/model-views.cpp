@@ -686,16 +686,11 @@ namespace rs2
 
                                 try
                                 {
-                                    std::size_t lastChar;
-                                    new_value = std::stof(std::string(buff), &lastChar);
-                                    if (!lastChar == std::string(buff).size())
-                                    {
-                                        is_valid = false; // not an integer
-                                    }
+                                    new_value = std::stol(std::string(buff));
                                 }
                                 catch (std::invalid_argument&)
                                 {
-                                    is_valid = false; // not a number
+                                    is_valid = false;
                                 }
                                 catch (std::out_of_range&)
                                 {
