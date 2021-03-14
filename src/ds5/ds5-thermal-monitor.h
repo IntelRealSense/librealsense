@@ -13,23 +13,23 @@ namespace librealsense
     {
     public:
         protected_xu_option(uvc_sensor& ep, platform::extension_unit xu, uint8_t id, std::string description)
-            : uvc_xu_option(ep, xu, id, description)
+            : uvc_xu_option<T>(ep, xu, id, description)
         {}
 
         protected_xu_option(uvc_sensor& ep, platform::extension_unit xu, uint8_t id, std::string description, const std::map<float, std::string>& description_per_value)
-            : uvc_xu_option( ep, xu, id, description, description_per_value)
+            : uvc_xu_option<T>( ep, xu, id, description, description_per_value)
         {}
 
         void set(float value) override
         {
             std::lock_guard<std::mutex> lk(_mtx);
-            uvc_xu_option::set(value);
+            uvc_xu_option<T>::set(value);
         }
 
         float query() const override
         {
             std::lock_guard<std::mutex> lk(_mtx);
-            return uvc_xu_option::query();
+            return uvc_xu_option<T>::query();
         }
 
     protected:
