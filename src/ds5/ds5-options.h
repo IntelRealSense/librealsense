@@ -414,7 +414,6 @@ namespace librealsense
 
         const char* get_description() const override;
         const char* get_value_description(float value) const override;
-        void create_snapshot(std::shared_ptr<option>& snapshot) const override;
 
         void enable_recording(std::function<void(const option&)> record_action) override
         {

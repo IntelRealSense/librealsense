@@ -753,7 +753,6 @@ namespace librealsense
     float librealsense::thermal_compensation::query(void) const
     {
         auto val = _thermal_toggle->query();
-        _recording_function(*this);
         return val;
     }
 
@@ -781,11 +780,5 @@ namespace librealsense
         {
             return "Thermal compensation is enabled";
         }
-    }
-
-    //Work-around the control latency
-    void librealsense::thermal_compensation::create_snapshot(std::shared_ptr<option>& snapshot) const
-    {
-        snapshot = std::make_shared<const_value_option>(get_description(), 0.f);
     }
 }
