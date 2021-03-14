@@ -611,9 +611,10 @@ namespace librealsense
 
     void composite_identity_matcher::sync(frame_holder f, const syncronization_environment& env)
     {
-        LOG_DEBUG("by_pass_composite_matcher: " << _name << " " << frame_holder_to_string(f));
+        LOG_DEBUG("composite_identity_matcher: " << _name << " " << frame_holder_to_string(f));
 
         auto composite = dynamic_cast<const composite_frame *>(f.frame);
+        // Syncer have to output composite frame 
         if (!composite)
         {
             std::vector<frame_holder> match;
