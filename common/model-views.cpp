@@ -5226,18 +5226,12 @@ namespace rs2
 
                 if (dev.is<rs2::updatable>() && !is_locked)
                 {
-                    // L515 do not support update unsigned image currently
-                    bool is_l515_device = false;
-                    if (dev.supports(RS2_CAMERA_INFO_NAME))
-                    {
-                        std::string dev_name = dev.get_info(RS2_CAMERA_INFO_NAME);
-                        if (dev_name.find("L515") != std::string::npos)
-                        {
-                            is_l515_device = true;
-                        }
-                    }
+                    // L500 devices do not support update unsigned image currently
+                    bool is_l500_device = false;
+                    if( dev.supports( RS2_CAMERA_INFO_PRODUCT_LINE ) )
+                        is_l500_device = ( dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE ) == "L500" );
 
-                    if (!is_l515_device)
+                    if( ! is_l500_device )
                     {
                         if (ImGui::Selectable("Update Unsigned Firmware...", false, updateFwFlags))
                         {
