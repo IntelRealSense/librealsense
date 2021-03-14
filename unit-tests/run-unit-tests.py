@@ -75,7 +75,7 @@ if len(args) == 1:
         usage()
 # Trying to assume target directory from inside build directory. Only works if there is only one location with tests
 if not target:
-    build = repo.source + os.sep + 'build'
+    build = repo.root + os.sep + 'build'
     for executable in file.find(build, '(^|/)test-.*'):
         if not file.is_executable(executable):
             continue
@@ -88,7 +88,7 @@ if not target:
 if target:
     logdir = target + os.sep + 'unit-tests'
 else: # no test executables were found. We put the logs directly in build directory
-    logdir = repo.source + os.sep + 'build' + os.sep + 'unit-tests'
+    logdir = os.path.join( repo.root, 'build', 'unit-tests' )
 os.makedirs( logdir, exist_ok = True )
 n_tests = 0
 
@@ -97,16 +97,16 @@ n_tests = 0
 # we search the librealsense repository for the .pyd file (.so file in linux)
 pyrs = ""
 if linux:
-    for so in file.find(repo.source, '(^|/)pyrealsense2.*\.so$'):
+    for so in file.find(repo.root, '(^|/)pyrealsense2.*\.so$'):
         pyrs = so
 else:
-    for pyd in file.find(repo.source, '(^|/)pyrealsense2.*\.pyd$'):
+    for pyd in file.find(repo.root, '(^|/)pyrealsense2.*\.pyd$'):
         pyrs = pyd
 
 if pyrs:
     # After use of find, pyrs contains the path from librealsense to the pyrealsense that was found
     # We append it to the librealsense path to get an absolute path to the file to add to PYTHONPATH so it can be found by the tests
-    pyrs_path = repo.source + os.sep + pyrs
+    pyrs_path = repo.root + os.sep + pyrs
     # We need to add the directory not the file itself
     pyrs_path = os.path.dirname(pyrs_path)
     log.d( 'found pyrealsense pyd in:', pyrs_path )

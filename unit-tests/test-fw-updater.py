@@ -45,8 +45,8 @@ devices.acroname = None
 
 # find the update tool exe
 fw_updater_exe = None
-for tool in file.find( repo.source, '(^|/)rs-fw-update.exe$' ):
-    fw_updater_exe = os.path.join( repo.source, tool)
+for tool in file.find( repo.root, '(^|/)rs-fw-update.exe$' ):
+    fw_updater_exe = os.path.join( repo.root, tool)
 if not fw_updater_exe:
     log.e( "Could not find the update tool file (rs-fw-update.exe)" )
     sys.exit(1)
@@ -75,8 +75,8 @@ if not has_newer_fw( current_fw_version, bundled_fw_version ):
 image_name = product_line[0:2] + "XX_FW_Image-" + bundled_fw_version + ".bin"
 image_mask = '(^|/)' + image_name + '$'
 image_file = None
-for image in file.find( repo.source, image_mask ):
-    image_file = os.path.join( repo.source, image)
+for image in file.find( repo.root, image_mask ):
+    image_file = os.path.join( repo.root, image)
 if not image_file:
     log.e( "Could not find image file for" + product_line + "device with FW version:" + bundled_fw_version )
     sys.exit(1)
