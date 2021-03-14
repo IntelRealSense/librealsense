@@ -34,8 +34,6 @@ namespace librealsense
             _matcher.reset();
         }
     private:
-        bool create_matcher(const frame_holder& frame);
-
         std::shared_ptr<matcher> _matcher;
         std::vector< std::weak_ptr<bool_option> > _enable_opts;
 
