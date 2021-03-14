@@ -235,13 +235,14 @@ namespace librealsense
 
     rs2::frame colorizer::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
+        auto snr = ((frame_interface*)f.get())->get_sensor().get();
+        auto depth_sensor = As< librealsense::depth_sensor >(snr);
+
         if (f.get_profile().get() != _source_stream_profile.get())
         {
             _source_stream_profile = f.get_profile();
             _target_stream_profile = f.get_profile().clone(RS2_STREAM_DEPTH, f.get_profile().stream_index(), RS2_FORMAT_RGB8);
 
-            auto snr = ( (frame_interface *)f.get() )->get_sensor().get();
-            auto depth_sensor = As< librealsense::depth_sensor >( snr );
             if( depth_sensor )
                 _depth_units = depth_sensor->get_depth_scale();
             else
@@ -289,7 +290,7 @@ namespace librealsense
             }
         };
 
-        auto make_value_cropped_frame = [this](const rs2::video_frame& depth, rs2::video_frame rgb)
+        auto make_value_cropped_frame = [this, depth_sensor](const rs2::video_frame& depth, rs2::video_frame rgb)
         {
             auto depth_format = depth.get_profile().format();
             const auto w = depth.get_width(), h = depth.get_height();
@@ -316,6 +317,7 @@ namespace librealsense
                 auto max = _max;
                 auto coloring_function = [&, this](float data) {
                     if (min >= max) return 0.f;
+                    _depth_units = depth_sensor->get_depth_scale();
                     return (data * _depth_units - min) / (max - min);
                 };
                 make_rgb_data<uint16_t>(depth_data, rgb_data, w, h, coloring_function);
