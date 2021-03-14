@@ -27,6 +27,7 @@ add_subdirectory("${CMAKE_BINARY_DIR}/third-party/pybind11"
 set(PYBIND11_CPP_STANDARD -std=c++11)
 # Force Pybind11 not to share pyrealsense2 resources with other pybind modules.
 # With this definition we force the ABI version to be unique and not risk crashes on different modules.
+# (workaround for RS5-10582)
 add_definitions(-DPYBIND11_COMPILER_TYPE="_librs_abi")
 include_directories(${CMAKE_BINARY_DIR}/third-party/pybind11/include)
 
