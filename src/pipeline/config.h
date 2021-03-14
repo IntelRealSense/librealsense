@@ -54,7 +54,7 @@ namespace librealsense
             std::shared_ptr<device_interface> resolve_device_requests(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout);
             stream_profiles get_default_configuration(std::shared_ptr<device_interface> dev);
             std::shared_ptr<profile> resolve(std::shared_ptr<device_interface> dev);
-            void enable_only_selected_profiles(util::config& config, stream_profiles& profiles);
+            util::config filtered_stream_requests(util::config& config, stream_profiles& profiles);
 
             device_request _device_request;
             std::map<std::pair<rs2_stream, int>, stream_profile> _stream_requests;
@@ -64,7 +64,7 @@ namespace librealsense
             std::shared_ptr<profile> _resolved_profile;
             bool _playback_loop;
 
-            std::vector<rs2_stream> _streams_to_disable;
+            std::vector<std::pair<rs2_stream, int>> _streams_to_disable;
             bool _disable_all_streams = false;
         };
     }
