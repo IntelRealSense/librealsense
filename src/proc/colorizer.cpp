@@ -295,6 +295,7 @@ namespace librealsense
             auto depth_format = depth.get_profile().format();
             const auto w = depth.get_width(), h = depth.get_height();
             auto rgb_data = reinterpret_cast<uint8_t*>(const_cast<void *>(rgb.get_data()));
+            _depth_units = depth_sensor->get_depth_scale();
 
             if (depth_format == RS2_FORMAT_DISPARITY32)
             {
@@ -317,7 +318,6 @@ namespace librealsense
                 auto max = _max;
                 auto coloring_function = [&, this](float data) {
                     if (min >= max) return 0.f;
-                    _depth_units = depth_sensor->get_depth_scale();
                     return (data * _depth_units - min) / (max - min);
                 };
                 make_rgb_data<uint16_t>(depth_data, rgb_data, w, h, coloring_function);
