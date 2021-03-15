@@ -244,7 +244,7 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
     failed = False
     if type(exception) != expected_type:
         failed = [ "    raised exception was of type", type(exception), "\n    but expected type", expected_type ]
-    if expected_msg and str(exception) != expected_msg:
+    elif expected_msg and str(exception) != expected_msg:
         failed = [ "    exception message:", str(exception), "\n    but we expected:", expected_msg ]
     if failed:
         print_stack()
