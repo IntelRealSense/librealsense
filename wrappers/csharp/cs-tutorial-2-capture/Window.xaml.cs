@@ -53,7 +53,6 @@ namespace Intel.RealSense
 
                 using (var ctx = new Context())
                 {
-
                     var devices = ctx.QueryDevices();
                     var dev = devices[0];
 
@@ -83,26 +82,25 @@ namespace Intel.RealSense
                     var pp = pipeline.Start(cfg);
 
                     SetupWindow(pp, out updateDepth, out updateColor);
-
                 }
 
                 Task.Factory.StartNew(() =>
                 {
                     while (!tokenSource.Token.IsCancellationRequested)
                     {
-                    // We wait for the next available FrameSet and using it as a releaser object that would track
-                    // all newly allocated .NET frames, and ensure deterministic finalization
-                    // at the end of scope. 
-                    using (var frames = pipeline.WaitForFrames())
+                        // We wait for the next available FrameSet and using it as a releaser object that would track
+                        // all newly allocated .NET frames, and ensure deterministic finalization
+                        // at the end of scope. 
+                        using (var frames = pipeline.WaitForFrames())
                         {
                             var colorFrame = frames.ColorFrame.DisposeWith(frames);
                             var depthFrame = frames.DepthFrame.DisposeWith(frames);
 
-                        // We colorize the depth frame for visualization purposes
-                        var colorizedDepth = colorizer.Process<VideoFrame>(depthFrame).DisposeWith(frames);
+                            // We colorize the depth frame for visualization purposes
+                            var colorizedDepth = colorizer.Process<VideoFrame>(depthFrame).DisposeWith(frames);
 
-                        // Render the frames.
-                        Dispatcher.Invoke(DispatcherPriority.Render, updateDepth, colorizedDepth);
+                            // Render the frames.
+                            Dispatcher.Invoke(DispatcherPriority.Render, updateDepth, colorizedDepth);
                             Dispatcher.Invoke(DispatcherPriority.Render, updateColor, colorFrame);
 
                             Dispatcher.Invoke(new Action(() =>
@@ -113,7 +111,6 @@ namespace Intel.RealSense
                         }
                     }
                 }, tokenSource.Token);
-                
             }
             catch (Exception ex)
             {
