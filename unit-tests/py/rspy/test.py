@@ -142,7 +142,7 @@ def check(exp, abort_if_failed = False):
     n_assertions += 1
     if not exp:
         print_stack()
-        print("Check failed, received", exp)
+        print( "    check failed; received", exp )
         check_failed()
         if abort_if_failed:
             abort()
@@ -168,8 +168,8 @@ def check_equal(result, expected, abort_if_failed = False):
     n_assertions += 1
     if result != expected:
         print_stack()
-        print( "Result was:", result )
-        print( "  expected:", expected )
+        print( "    result  :", result )
+        print( "    expected:", expected )
         check_failed()
         if abort_if_failed:
             abort()
@@ -222,8 +222,8 @@ def check_equal_lists(result, expected, abort_if_failed = False):
         i += 1
     if failed:
         print_stack()
-        print("Result list:", result)
-        print("Expected list:", expected)
+        print( "    result list  :", result )
+        print( "    expected list:", expected )
         check_failed()
         if abort_if_failed:
             abort()
@@ -243,9 +243,9 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
     """
     failed = False
     if type(exception) != expected_type:
-        failed = [ "Raised exception was of type", type(exception), "and not of type", expected_type, "as expected" ]
-    if expected_msg and str(exception) != expected_msg:
-        failed = [ "Exception had message:", str(exception), "\nBut we expected:", expected_msg ]
+        failed = [ "    raised exception was of type", type(exception), "\n    but expected type", expected_type ]
+    elif expected_msg and str(exception) != expected_msg:
+        failed = [ "    exception message:", str(exception), "\n    but we expected:", expected_msg ]
     if failed:
         print_stack()
         print( *failed )
