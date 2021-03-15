@@ -132,26 +132,38 @@ def port_state( port ):
     return "Unknown Error ({})".format( status.value )
 
 
-def enable_ports( ports = None, disable_other_ports = False ):
+def enable_ports( ports = None, disable_other_ports = False, sleep_on_change = 0 ):
     """
     Set enable state to provided ports
     :param ports: List of port numbers; if not provided, enable all ports
     :param disable_other_ports: if True, the ports not in the list will be disabled
+    :param sleep_on_change: Number of seconds to sleep if any change is made
     :return: True if no errors found, False otherwise
     """
     global hub
     result = True
+    changed = False
     for port in range(0, 8):
         #
         if ports is None or port in ports:
-            action_result = hub.usb.setPortEnable( port )
-            if action_result != brainstem.result.Result.NO_ERROR:
-                result = False
+            if not is_port_enabled( port ):
+                action_result = hub.usb.setPortEnable( port )
+                if action_result != brainstem.result.Result.NO_ERROR:
+                    result = False
+                else:
+                    changed = True
         #
         elif disable_other_ports:
-            action_result = hub.usb.setPortDisable( port )
-            if action_result != brainstem.result.Result.NO_ERROR:
-                result = False
+            if is_port_enabled( port ):
+                action_result = hub.usb.setPortDisable( port )
+                if action_result != brainstem.result.Result.NO_ERROR:
+                    result = False
+                else:
+                    changed = True
+    #
+    if changed and sleep_on_change:
+        import time
+        time.sleep( sleep_on_change )
     #
     return result
 
