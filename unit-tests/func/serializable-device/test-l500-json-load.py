@@ -19,12 +19,15 @@ def json_to_dict( json ):
     :param json: a string representing a json file
     :return: a dictionary with all settings
     """
+    translation_table = dict.fromkeys(map(ord, '",\''), None)
     json_dict = {}
     for line in json.splitlines():
         if ':' not in line: # ignoring lines that are not for settings such as empty lines
             continue
         setting, value = line.split(':')
-        json_dict[ setting.strip() ] = value.strip()
+        setting = setting.strip().translate(translation_table)
+        value = value.strip().translate(translation_table)
+        json_dict[ setting ] = value
     return json_dict
 
 def log_settings_differences( data ):
@@ -77,7 +80,7 @@ low_ambient_data_with_default_preset = """
     "Laser Power": 100,
     "Ma Temperature": 39.667610168457,
     "Mc Temperature": 31.6955661773682,
-    "Min Distance": 190,
+    "Min Distance": 95,
     "Noise Estimation": 0.0,
     "Noise Filtering": 4,
     "Post Processing Sharpening": 1,
