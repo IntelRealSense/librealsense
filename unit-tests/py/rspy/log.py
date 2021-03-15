@@ -105,13 +105,18 @@ def debug_unindent( n = 1, indentation = '    ' ):
     _debug_indent = _debug_indent[:-n * len(indentation)]
 
 
-def i(*args):
+def i( *args ):
     out( '-I-', *args)
+
+
+def f( *args ):
+    out( '-F-', *args )
+    sys.exit(1)
 
 
 # We track the number of errors
 _n_errors = 0
-def e(*args):
+def e( *args ):
     global red, reset
     out( red + '-E-' + reset, *args )
     global _n_errors

@@ -50,8 +50,34 @@ namespace Intel.RealSense
             try
             {
                 var cfg = new Config();
-                cfg.EnableStream(Stream.Depth, 640, 480);
-                cfg.EnableStream(Stream.Color, Format.Rgb8);
+
+                using (var ctx = new Context())
+                {
+
+                    var devices = ctx.QueryDevices();
+                    var dev = devices[0];
+
+                    Console.WriteLine("\nUsing device 0, an {0}", dev.Info[CameraInfo.Name]);
+                    Console.WriteLine("    Serial number: {0}", dev.Info[CameraInfo.SerialNumber]);
+                    Console.WriteLine("    Firmware version: {0}", dev.Info[CameraInfo.FirmwareVersion]);
+
+                    var sensors = dev.QuerySensors();
+                    var depthSensor = sensors[0];
+                    var colorSensor = sensors[1];
+
+                    var depthProfile = depthSensor.StreamProfiles
+                                        .Where(p => p.Stream == Stream.Depth)
+                                        .OrderBy(p => p.Framerate)
+                                        .Select(p => p.As<VideoStreamProfile>()).First();
+
+                    var colorProfile = colorSensor.StreamProfiles
+                                        .Where(p => p.Stream == Stream.Color)
+                                        .OrderBy(p => p.Framerate)
+                                        .Select(p => p.As<VideoStreamProfile>()).First();
+
+                    cfg.EnableStream(Stream.Depth, depthProfile.Width, depthProfile.Height, depthProfile.Format, depthProfile.Framerate);
+                    cfg.EnableStream(Stream.Color, colorProfile.Width, colorProfile.Height, colorProfile.Format, colorProfile.Framerate);
+                }
                 var pp = pipeline.Start(cfg);
 
                 // Get the recommended processing blocks for the depth sensor
