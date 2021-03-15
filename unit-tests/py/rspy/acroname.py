@@ -132,12 +132,12 @@ def port_state( port ):
     return "Unknown Error ({})".format( status.value )
 
 
-def enable_ports( ports = None, disable_other_ports = False, timeout = 3 ):
+def enable_ports( ports = None, disable_other_ports = False, sleep_on_change = 0 ):
     """
     Set enable state to provided ports
     :param ports: List of port numbers; if not provided, enable all ports
     :param disable_other_ports: if True, the ports not in the list will be disabled
-    :param timeout: Number of seconds to sleep if any change is made
+    :param sleep_on_change: Number of seconds to sleep if any change is made
     :return: True if no errors found, False otherwise
     """
     global hub
@@ -161,9 +161,9 @@ def enable_ports( ports = None, disable_other_ports = False, timeout = 3 ):
                 else:
                     changed = True
     #
-    if changed:
+    if changed and sleep_on_change:
         import time
-        time.sleep( timeout )
+        time.sleep( sleep_on_change )
     #
     return result
 

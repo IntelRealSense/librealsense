@@ -86,48 +86,41 @@ test.finish()
 depth_sensor.set_option( rs.option.visual_preset, int(rs.l500_visual_preset.max_range) )
 
 
+#############################################################################################
+def test_option_changes( sensor ):
+    options = sensor.get_supported_options()
+    for option in options:
+        try:
+            if sensor.is_option_read_only(option): 
+                continue
+            old_value = sensor.get_option( option )
+            range = sensor.get_option_range( option )
+            new_value = range.min
+            if old_value == new_value:
+                new_value = range.max
+            if not log.d( str(option), old_value, '->', new_value ):
+                test.info( str(option), new_value, persistent = True )
+            set_new_value( sensor, option, new_value )
+            sensor.set_option( option, old_value )
+        except: 
+            test.unexpected_exception()
+            test.fail()
+            break
+        finally:
+            test.reset_info( persistent = True )
+
+            
+#############################################################################################
+time.sleep(0.5)  # jic
+test.start("Checking frame drops when setting options on depth")
+test_option_changes( depth_sensor )
+test.finish()
+
 
 #############################################################################################
-# Test #2
-
 time.sleep(0.5)  # jic
-
-depth_options = depth_sensor.get_supported_options()
-color_options = color_sensor.get_supported_options()
-
-test.start("Checking for frame drops when setting any option")
-
-for option in depth_options:
-    try:
-        if depth_sensor.is_option_read_only(option): 
-            continue
-        old_value = depth_sensor.get_option( option )
-        range = depth_sensor.get_option_range( option )
-        new_value = range.min
-        if old_value == new_value:
-            new_value = range.max
-        if not log.d( str(option), old_value, '->', new_value ):
-            test.info( str(option), new_value, persistent = True )
-        set_new_value( depth_sensor, option, new_value )
-        depth_sensor.set_option( option, old_value )
-    except: 
-        test.unexpected_exception()
-        test.abort()
-    finally:
-        test.reset_info( persistent = True )
-
-for option in color_options:
-    try:
-        if color_sensor.is_option_read_only(option): 
-            continue
-        new_value = color_sensor.get_option_range(option).min
-        set_new_value(color_sensor, option, new_value)
-    except: 
-        option_name = "Color sensor - " + str(option)
-        test.info(option_name, new_value)
-        test.unexpected_exception()
-        test.abort()
-
+test.start("Checking frame drops when setting options on color")
+test_option_changes( color_sensor )
 test.finish()
 
 

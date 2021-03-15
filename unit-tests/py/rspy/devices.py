@@ -89,7 +89,7 @@ def query( monitor_changes = True ):
     # on the acroname, if any:
     if acroname:
         acroname.connect()  # MAY THROW!
-        acroname.enable_ports()
+        acroname.enable_ports( sleep_on_change = 5 )  # make sure all connected!
     #
     # Get all devices, and store by serial-number
     global _device_by_sn, _context, _port_to_sn
@@ -274,11 +274,11 @@ def _wait_until_removed( serial_numbers, timeout = 5 ):
     :param timeout: Number of seconds of maximum wait time
     :return: True if all have come offline; False if timeout was reached
     """
-    global _device_by_sn
     while True:
         have_devices = False
+        enabled_sns = enabled()
         for sn in serial_numbers:
-            if sn in _device_by_sn:
+            if sn in enabled_sns:
                 have_devices = True
                 break
         if not have_devices:
@@ -298,13 +298,13 @@ def _wait_for( serial_numbers, timeout = 5 ):
     :param timeout: Number of seconds of maximum wait time
     :return: True if all have come online; False if timeout was reached
     """
-    global _device_by_sn
     did_some_waiting = False
     while True:
         #
         have_all_devices = True
+        enabled_sns = enabled()
         for sn in serial_numbers:
-            if sn not in _device_by_sn:
+            if sn not in enabled_sns:
                 have_all_devices = False
                 break
         #
