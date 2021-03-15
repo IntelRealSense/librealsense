@@ -104,7 +104,6 @@ def test_option_changes( sensor ):
             sensor.set_option( option, old_value )
         except: 
             test.unexpected_exception()
-            test.fail()
             break
         finally:
             test.reset_info( persistent = True )

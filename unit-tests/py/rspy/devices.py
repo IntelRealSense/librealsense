@@ -43,8 +43,8 @@ class Device:
         self._sn = sn
         self._dev = dev
         self._name = None
-        if dev.supports( rs.camera_info.product_line ):
-            self._name = dev.get_info( rs.camera_info.product_line )
+        if dev.supports( rs.camera_info.name ):
+            self._name = dev.get_info( rs.camera_info.name )
         self._product_line = None
         if dev.supports( rs.camera_info.product_line ):
             self._product_line = dev.get_info( rs.camera_info.product_line )
@@ -95,12 +95,18 @@ def query( monitor_changes = True ):
     global _device_by_sn, _context, _port_to_sn
     _context = rs.context()
     _device_by_sn = dict()
-    for dev in _context.query_devices():
-        if dev.is_update_device():
-            sn = dev.get_info( rs.camera_info.firmware_update_id )
-        else:
-            sn = dev.get_info( rs.camera_info.serial_number )
-        _device_by_sn[sn] = Device( sn, dev )
+    try:
+        log.d( 'discovering devices ...' )
+        log.debug_indent()
+        for dev in _context.query_devices():
+            if dev.is_update_device():
+                sn = dev.get_info( rs.camera_info.firmware_update_id )
+            else:
+                sn = dev.get_info( rs.camera_info.serial_number )
+            _device_by_sn[sn] = Device( sn, dev )
+            log.d( '...', dev )
+    finally:
+        log.debug_unindent()
     #
     if monitor_changes:
         _context.set_devices_changed_callback( _device_change_callback )
