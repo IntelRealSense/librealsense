@@ -57,6 +57,11 @@ def log_settings_differences( data ):
 # This test checks backward compatibility to old json files that saved with default preset
 # The default preset is deprecated but json files that saved with default preset
 # should be supported
+# Here, we expect the data to fit a pre-defined "low-ambient" preset
+# Note that, because FW defines them, the defaults can change from version to version and we need to keep this
+# up-to-date with the latest. If the FW changes, this test will fail and output (in debug mode) any settings that
+# changed...
+
 
 low_ambient_data_with_default_preset = """
 {
@@ -93,7 +98,7 @@ low_ambient_data_with_default_preset = """
 }
 """
 
-test.start("Trying to load default settings from json")
+test.start("Trying to load settings with default preset from json")
 try:
     sd.load_json( low_ambient_data_with_default_preset )
     visual_preset_number = depth_sensor.get_option(rs.option.visual_preset)
@@ -109,8 +114,8 @@ except:
 test.finish()
 
 #############################################################################################
-# this test checks that if the given settings are wrong (don't fit any preset), and we use default preset
-# we get custom preset
+# There is no default preset: so when one is specified, the code should calculate the preset!
+# Here, we intentionally should not fit into any of the defined presets, and check that the result is CUSTOM
 
 wrong_data_with_default_preset = """
 {
@@ -159,8 +164,9 @@ except:
 test.finish()
 
 #############################################################################################
-# this test checks that if the given settings are wrong (don't fit any preset) but low-ambient-light preset is specified
-# we get low-ambient-light preset
+# Here, the json specifies a "low-ambient" preset -- so the values of the individual controls (that are part of this preset)
+# should not matter. The result of loading the following should still result in LOW_AMBIENT even when the controls
+# do not fit (because they're overridden).
 
 wrong_data_with_low_ambient_preset = """
 {
