@@ -15,6 +15,7 @@
 #include <unit-tests-common.h>
 #include <numeric>
 #include <stdlib.h> 
+#include "./../src/core/streaming.h"
 
 using namespace librealsense;
 using namespace librealsense::platform;
@@ -439,6 +440,25 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
         }
     }
 }
+
+std::vector<profile> random_profiles(std::vector<profile>& all_profiles, rs2::config& cfg, size_t num, bool enable_streams = true)
+{
+    std::vector<profile> filtered_profiles;
+    //auto num = std::rand() % (all_profiles.size()+ 1); // number of profiles to disable : random number between 0 - all_profiles.size()
+    std::set<int> indexes;
+    while (indexes.size() < num)
+    {
+        indexes.insert(rand() % all_profiles.size()); // random indexes 
+    }
+    std::vector<profile>::iterator it = all_profiles.begin();
+    for (auto idx : indexes) 
+    {
+        filtered_profiles.push_back(*(it + idx));
+        if (enable_streams) cfg.enable_stream((it + idx)->stream, (it + idx)->index);
+        else cfg.disable_stream((it + idx)->stream, (it + idx)->index);
+    }
+    return filtered_profiles;
+}
 TEST_CASE("Enable disable all streams GITHUB", "[live]")
 {
     // Require at least one device to be plugged in
@@ -472,9 +492,11 @@ TEST_CASE("Enable disable all streams GITHUB", "[live]")
             width = 640;
         }
         auto res = configure_all_supported_streams(dev, width, height, fps);
+        
 
         std::map<int, int> counters;
         std::map<int, std::string> stream_names;
+        std::map<int, rs2_stream> stream_types;
         std::mutex mutex;
 
         // Define frame callback
@@ -497,36 +519,65 @@ TEST_CASE("Enable disable all streams GITHUB", "[live]")
         };
 
         // Declare RealSense pipeline, encapsulating the actual device and sensors.
+        std::vector<profile> en;
+        std::vector<profile> dis;
         rs2::pipeline pipe;
         rs2::config cfg;
+        std::map<rs2_stream, int> filtered_streams;
+        std::map<rs2_stream, int> filtered_streams_init;
+        int enable_first = 1;
 
-        for (auto& profile : res.second)
+        for (auto &p : res.second)
         {
+            filtered_streams_init[p.stream] = p.index;
+        }
+        for (auto i = 0; i < res.second.size(); i++)
+        {
+            rs2::config cfg;
             counters.clear();
             stream_names.clear();
-            cfg.disable_all_streams();
-            cfg.enable_stream(profile.stream, profile.index);
-            //auto id = profile.unique_id();
+            stream_types.clear();
+            en.clear();
+            dis.clear();
+            filtered_streams = filtered_streams_init;
+
+            //cfg.disable_all_streams();
+
+            enable_first = 1 - enable_first; // 1 or 0 
+            //en = random_profiles(res.second, cfg, i);
+            dis = random_profiles(res.second, cfg, std::max(0,i-1), false); // at least 1 enabled stream
+            /*for (auto& p : en)
+            {
+                if (dis.size() > 0 && std::find(dis.begin(), dis.end(), p) != dis.end()) continue; // continue id stream is disable
+                filtered_streams[p.stream] = p.index;
+            }*/
+            for (auto& p : dis)
+            {
+                filtered_streams.erase(p.stream);
+            }
+
             // Collect the enabled streams names
             rs2::pipeline_profile profiles = pipe.start(cfg, callback);
             for (auto p : profiles.get_streams())
+            {
                 stream_names[p.unique_id()] = p.stream_name();
+                stream_types[p.unique_id()] = p.stream_type();
+            }
 
             std::cout << "RealSense callback sample" << std::endl << std::endl;
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            std::lock_guard<std::mutex> lock(mutex);
+            for (auto p : counters)
+            {
+                CAPTURE(p.first);
+                CHECK(stream_names.count(p.first) > 0);
+                CAPTURE(stream_names[p.first]);
+                CHECK(filtered_streams.count(stream_types[p.first]) > 0);
 
-            //while (true)
-            //{
-                std::this_thread::sleep_for(std::chrono::seconds(1));
-
-                std::lock_guard<std::mutex> lock(mutex);
-                for (auto p : counters)
-                {
-                    CAPTURE(p.first);
-                    CHECK(stream_names.count(p.first));
-                    std::cout << stream_names[p.first] << "[" << p.first << "]: " << p.second << " [frames] || ";
-                }
-                std::cout << std::endl;
-            //}
+                std::cout << stream_names[p.first] << "[" << p.first << "]: " << p.second << " [frames] || ";
+            }
+            std::cout << std::endl;
+            pipe.stop();
         }
         // 1. enable
         // 2. disable
@@ -539,7 +590,7 @@ TEST_CASE("Enable disable all streams GITHUB", "[live]")
         //cfg.disable_stream(RS2_STREAM_COLOR);
         //cfg.enable_stream(RS2_STREAM_COLOR);
 
-        cfg.disable_all_streams();   // <-- Instead of this call ...
+        //cfg.disable_all_streams();   // <-- Instead of this call ...
         //cfg.disable_stream(RS2_STREAM_COLOR);   // we can also do this ...
         //cfg.disable_stream(RS2_STREAM_DEPTH);   // or this ...
         //cfg.disable_stream(RS2_STREAM_INFRARED);  // or this...
