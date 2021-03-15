@@ -439,3 +439,121 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
         }
     }
 }
+TEST_CASE("Enable disable all streams GITHUB", "[live]")
+{
+    // Require at least one device to be plugged in
+
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        rs2::log_to_file(RS2_LOG_SEVERITY_DEBUG, "C:\\work\\LRS_Validation\\en_dis_streams.log");
+
+        std::cout << "Enable disable all streams GITHUB started" << std::endl;
+
+        auto list = ctx.query_devices();
+        REQUIRE(list.size());
+        auto dev = list.front();
+        auto sensors = dev.query_sensors();
+
+        std::string device_type = "L500";
+        if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D400") device_type = "D400";
+        if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "SR300") device_type = "SR300";
+
+        bool usb3_device = is_usb3(dev);
+        int fps = usb3_device ? 30 : 15; // In USB2 Mode the devices will switch to lower FPS rates
+        int req_fps = usb3_device ? 60 : 30; // USB2 Mode has only a single resolution for 60 fps which is not sufficient to run the test
+
+        int width = 848;
+        int height = 480;
+
+        if (device_type == "L500")
+        {
+            req_fps = 30;
+            width = 640;
+        }
+        auto res = configure_all_supported_streams(dev, width, height, fps);
+
+        std::map<int, int> counters;
+        std::map<int, std::string> stream_names;
+        std::mutex mutex;
+
+        // Define frame callback
+        // The callback is executed on a sensor thread and can be called simultaneously from multiple sensors
+        // Therefore any modification to common memory should be done under lock
+        auto callback = [&](const rs2::frame& frame)
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            if (rs2::frameset fs = frame.as<rs2::frameset>())
+            {
+                // With callbacks, all synchronized stream will arrive in a single frameset
+                for (const rs2::frame& f : fs)
+                    counters[f.get_profile().unique_id()]++;
+            }
+            else
+            {
+                // Stream that bypass synchronization (such as IMU) will produce single frames
+                counters[frame.get_profile().unique_id()]++;
+            }
+        };
+
+        // Declare RealSense pipeline, encapsulating the actual device and sensors.
+        rs2::pipeline pipe;
+        rs2::config cfg;
+
+        for (auto& profile : res.second)
+        {
+            counters.clear();
+            stream_names.clear();
+            cfg.disable_all_streams();
+            cfg.enable_stream(profile.stream, profile.index);
+            //auto id = profile.unique_id();
+            // Collect the enabled streams names
+            rs2::pipeline_profile profiles = pipe.start(cfg, callback);
+            for (auto p : profiles.get_streams())
+                stream_names[p.unique_id()] = p.stream_name();
+
+            std::cout << "RealSense callback sample" << std::endl << std::endl;
+
+            //while (true)
+            //{
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+
+                std::lock_guard<std::mutex> lock(mutex);
+                for (auto p : counters)
+                {
+                    CAPTURE(p.first);
+                    CHECK(stream_names.count(p.first));
+                    std::cout << stream_names[p.first] << "[" << p.first << "]: " << p.second << " [frames] || ";
+                }
+                std::cout << std::endl;
+            //}
+        }
+        // 1. enable
+        // 2. disable
+        // 3. keep the same
+        
+        // 1. enable all streams
+        // 2. disable all streams
+
+        //cfg.enable_all_streams();
+        //cfg.disable_stream(RS2_STREAM_COLOR);
+        //cfg.enable_stream(RS2_STREAM_COLOR);
+
+        cfg.disable_all_streams();   // <-- Instead of this call ...
+        //cfg.disable_stream(RS2_STREAM_COLOR);   // we can also do this ...
+        //cfg.disable_stream(RS2_STREAM_DEPTH);   // or this ...
+        //cfg.disable_stream(RS2_STREAM_INFRARED);  // or this...
+        // .. or all of them, the effect is the same (no effect).
+
+        //cfg.enable_stream(RS2_STREAM_COLOR);
+        //cfg.enable_stream(RS2_STREAM_INFRARED, 1);
+        //cfg.enable_stream(RS2_STREAM_INFRARED, 2);
+        //cfg.disable_stream(RS2_STREAM_INFRARED, 1);
+        // Start streaming through the callback with default recommended configuration
+        // The default video configuration contains Depth and Color streams
+        // If a device is capable to stream IMU data, both Gyro and Accelerometer are enabled by default
+
+        
+
+    }
+}
