@@ -87,23 +87,43 @@ static void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrin
 
     float x = (pixel[0] - intrin->ppx) / intrin->fx;
     float y = (pixel[1] - intrin->ppy) / intrin->fy;
+
     if(intrin->model == RS2_DISTORTION_INVERSE_BROWN_CONRADY)
     {
-        float r2  = x*x + y*y;
-        float f = 1 + intrin->coeffs[0]*r2 + intrin->coeffs[1]*r2*r2 + intrin->coeffs[4]*r2*r2*r2;
-        float ux = x*f + 2*intrin->coeffs[2]*x*y + intrin->coeffs[3]*(r2 + 2*x*x);
-        float uy = y*f + 2*intrin->coeffs[3]*x*y + intrin->coeffs[2]*(r2 + 2*y*y);
-        x = ux;
-        y = uy;
+        auto x_0 = x;
+        auto y_0 = y;
+
+        // need to loop until convergence 
+        // 10 iterations determined empirically
+        for (auto i = 0; i < 10; i++)
+        {
+            float r2 = x * x + y * y;
+            float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1])*r2 + intrin->coeffs[0])*r2);
+            auto xq = x / icdist;
+            auto yq = y / icdist;
+            float delta_x = 2 * intrin->coeffs[2] * xq*yq + intrin->coeffs[3] * (r2 + 2 * xq*xq);
+            float delta_y = 2 * intrin->coeffs[3] * xq*yq + intrin->coeffs[2] * (r2 + 2 * yq*yq);
+            x = (x_0 - delta_x)*icdist;
+            y = (y_0 - delta_y)*icdist;
+        }
     }
     if (intrin->model == RS2_DISTORTION_BROWN_CONRADY)
     {
-        float r2 = x * x + y * y;
-        float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1])*r2 + intrin->coeffs[0])*r2);
-        float delta_x = 2 * intrin->coeffs[2] * x*y + intrin->coeffs[3] * (r2 + 2 * x*x);
-        float delta_y = 2 * intrin->coeffs[3] * x*y + intrin->coeffs[2] * (r2 + 2 * y*y);
-        x = (x - delta_x)*icdist;
-        y = (y - delta_y)*icdist;
+        auto x_0 = x;
+        auto y_0 = y;
+
+        // need to loop until convergence 
+        // 10 iterations determined empirically
+        for (auto i = 0; i < 10; i++)
+        {
+            float r2 = x * x + y * y;
+            float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1])*r2 + intrin->coeffs[0])*r2);
+            float delta_x = 2 * intrin->coeffs[2] * x*y + intrin->coeffs[3] * (r2 + 2 * x*x);
+            float delta_y = 2 * intrin->coeffs[3] * x*y + intrin->coeffs[2] * (r2 + 2 * y*y);
+            x = (x_0 - delta_x)*icdist;
+            y = (y_0 - delta_y)*icdist;
+        }
+        
     }
     if (intrin->model == RS2_DISTORTION_KANNALA_BRANDT4)
     {

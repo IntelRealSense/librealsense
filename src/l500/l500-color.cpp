@@ -19,6 +19,13 @@ namespace librealsense
 {
     using namespace ivcam2;
 
+// brown conrady distortion model doesn't implemented yet on sse code
+#ifdef __SSSE3__
+    const rs2_distortion l500_distortion = RS2_DISTORTION_INVERSE_BROWN_CONRADY;
+#else
+    const rs2_distortion l500_distortion = RS2_DISTORTION_BROWN_CONRADY;
+#endif
+
     std::map<uint32_t, rs2_format> l500_color_fourcc_to_rs2_format = {
         {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
         {rs_fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
@@ -258,11 +265,8 @@ namespace librealsense
                     intrinsics.coeffs[3] = model.distort.tangential_p2;
                     intrinsics.coeffs[4] = model.distort.radial_k3;
 
-#ifdef __SSSE3__
-                    intrinsics.model = RS2_DISTORTION_INVERSE_BROWN_CONRADY;
-#else
-                    intrinsics.model = RS2_DISTORTION_BROWN_CONRADY;
-#endif
+                    intrinsics.model = l500_distortion;
+
                 }
 
                 return intrinsics;
@@ -349,12 +353,10 @@ namespace librealsense
         // The distortion model is not part of the table. The FW assumes it is brown,
         // but in LRS we (mistakenly) use INVERSE brown. We therefore make sure the user
         // has not tried to change anything from the intrinsics reported:
-#ifdef __SSSE3__
-        if( intr.model != RS2_DISTORTION_INVERSE_BROWN_CONRADY)
-#else
-        if (intr.model != RS2_DISTORTION_BROWN_CONRADY)
-#endif
+
+        if( intr.model != l500_distortion)
             throw invalid_value_exception("invalid intrinsics distortion model");
+
         rgb_calibration_table table;
         AC_LOG( DEBUG, "Reading RGB calibration table 0x" << std::hex << table.table_id );
         ivcam2::read_fw_table( *_owner->_hw_monitor, table.table_id, &table );
