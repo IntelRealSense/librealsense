@@ -56,19 +56,27 @@ bool* draw_edit_button(const char* id, T val, std::string*& val_str)
     return &edit_mode[id];
 }
 
-inline bool string_to_int(const std::string& str, float& result)
+template<class T>
+inline bool string_to_value(const std::string& str, T& result)
 {
     try
     {
-        std::size_t lastChar;
-        result = std::stof(str, &lastChar);
-        return lastChar == str.size();
+        size_t last_char_idx;
+        if (std::is_same<T, int>::value)
+        {
+            result = std::stoi(str, &last_char_idx);
+        }
+        else if (std::is_same<T, float>::value)
+        {
+            result = std::stof(str, &last_char_idx);
+        }
+        return str.size() == last_char_idx;
     }
-    catch (std::invalid_argument&)
+    catch (const std::invalid_argument&)
     {
         return false;
     }
-    catch (std::out_of_range&)
+    catch (const std::out_of_range&)
     {
         return false;
     }
@@ -95,10 +103,10 @@ inline void slider_int(std::string& error_message, const char* id, T* val, S T::
         if (ImGui::InputText(slider_id.c_str(), buff, TEXT_BUFF_SIZE,
             ImGuiInputTextFlags_EnterReturnsTrue))
         {
-            float new_value;
-            if (!string_to_int(buff, new_value))
+            int new_value;
+            if (!string_to_value<int>(buff, new_value))
             {
-                error_message = "Invalid numeric input!";
+                error_message = "Invalid integer input!";
             }
             else
             {
@@ -151,10 +159,10 @@ inline void slider_float(std::string& error_message, const char* id, T* val, S T
         if (ImGui::InputText(slider_id.c_str(), buff, TEXT_BUFF_SIZE,
             ImGuiInputTextFlags_EnterReturnsTrue))
         {
-            float new_value;
-            if (!string_to_int(buff, new_value))
+            int new_value;
+            if (!string_to_value<int>(buff, new_value))
             {
-                error_message = "Invalid numeric input!";
+                error_message = "Invalid integer input!";
             }
             else
             {

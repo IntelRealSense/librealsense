@@ -681,28 +681,13 @@ namespace rs2
                                 ImGuiInputTextFlags_EnterReturnsTrue))
                             {
                                 float new_value;
-                                bool is_valid = true;
-                                bool is_in_range = true;
+                                if(!string_to_value<float>(buff, new_value))
+                                {
+                                    error_message = "Invalid float input!";
+                                }
+                                else if (new_value < range.min || new_value > range.max)
+                                {
 
-                                try
-                                {
-                                    new_value = std::stol(std::string(buff));
-                                }
-                                catch (std::invalid_argument&)
-                                {
-                                    is_valid = false;
-                                }
-                                catch (std::out_of_range&)
-                                {
-                                    is_in_range = false;
-                                }
-
-                                if (!is_valid)
-                                {
-                                    error_message = "Invalid numeric input!";
-                                }
-                                else if (!is_in_range || new_value < range.min || new_value > range.max)
-                                {
                                     error_message = to_string() << new_value
                                         << " is out of bounds [" << range.min << ", "
                                         << range.max << "]";
