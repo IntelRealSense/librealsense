@@ -24,17 +24,24 @@ namespace Intel.RealSense
                 var depthSensor = dev.QuerySensors()[0];
 
                 var sp = depthSensor.StreamProfiles
-                                    .Where(p => p.Stream == Stream.Depth)
-                                    .OrderByDescending(p => p.Framerate)
-                                    .Select(p => p.As<VideoStreamProfile>())
-                                    .First(p => p.Width == 640 && p.Height == 480);
+                    .Where(p => p.Stream == Stream.Depth)
+                    .OrderBy(p => p.Framerate)
+                    .Select(p => p.As<VideoStreamProfile>())
+                    .FirstOrDefault();
+
+                if (sp ==null)
+                {
+                    Console.WriteLine("No default profile found for sensor");
+                    return;
+                }
 
                 depthSensor.Open(sp);
 
+
                 int one_meter = (int)(1f / depthSensor.DepthScale);
-                ushort[] depth = new ushort[640 * 480];
-                char[] buffer = new char[(640 / 10 + 1) * (480 / 20)];
-                int[] coverage = new int[64];
+                ushort[] depth = new ushort[sp.Width * sp.Height];
+                char[] buffer = new char[(sp.Width/ 10 + 1) * (sp.Height/ 20)];
+                int[] coverage = new int[sp.Width / 10]; 
 
                 depthSensor.Start(f =>
                 {
@@ -42,21 +49,25 @@ namespace Intel.RealSense
                         vf.CopyTo(depth);
                     
                     int b = 0;
-                    for (int y = 0; y < 480; ++y)
+                    for (int y = 0; y < sp.Height; ++y)
                     {
-                        for (int x = 0; x < 640; ++x)
+                        for (int x = 0; x < sp.Width; ++x)
                         {
-                            ushort d = depth[x + y * 640];
+                            ushort d = depth[x + y * sp.Width];
                             if (d > 0 && d < one_meter)
-                                ++coverage[x / 10];
+                            {
+                                var ind = x / 10;
+                                ++coverage[ind >= coverage.Length ? coverage.Length-1 : ind];
+                            }
                         }
 
                         if (y % 20 == 19)
                         {
-                            for (int i = 0; i < coverage.Length; i++)
+                            for (int i = 0; i < coverage.Length ; i++)
                             {
                                 int c = coverage[i];
-                                buffer[b++] = " .:nhBXWW"[c / 25];
+                                var depthChars = " .:nhBXWW";
+                                buffer[b++] = depthChars[c/25 >= depthChars.Length ? depthChars.Length-1: c/25];
                                 coverage[i] = 0;
                             }
                             buffer[b++] = '\n';
