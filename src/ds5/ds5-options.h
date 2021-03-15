@@ -228,12 +228,23 @@ namespace librealsense
         {
             _record_action = record_action;
         }
-    private:
+    protected:
         std::function<void(const option &)> _record_action = [](const option&) {};
         lazy<option_range> _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
     };
+
+    class external_sync_mode3 : public external_sync_mode2
+    {
+    public:
+        external_sync_mode3(hw_monitor& hwm, sensor_base* depth_ep);
+        virtual ~external_sync_mode3() = default;
+        const char* get_description() const override
+        {
+            return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave, 3:Full Salve, 4-258:Genlock with burst count of 1-255 frames for each trigger, 259 and 260 for two frames per trigger with laser ON-OFF and OFF-ON.";
+        }
+   };
 
     class emitter_on_and_off_option : public option
     {

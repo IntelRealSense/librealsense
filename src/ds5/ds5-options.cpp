@@ -415,7 +415,7 @@ namespace librealsense
         _range = [this]()
         {
             return option_range{ ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT,
-                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_MAX,
+                                 258,
                                  1,
                                  ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT };
         };
@@ -455,6 +455,12 @@ namespace librealsense
     option_range external_sync_mode2::get_range() const
     {
         return *_range;
+    }
+
+    external_sync_mode3::external_sync_mode3(hw_monitor& hwm, sensor_base* ep)
+        : external_sync_mode2(hwm, ep)
+    {
+        _range->max = ds::inter_cam_sync_mode::INTERCAM_SYNC_MAX;
     }
 
     emitter_on_and_off_option::emitter_on_and_off_option(hw_monitor& hwm, sensor_base* ep)
