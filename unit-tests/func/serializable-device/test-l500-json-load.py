@@ -14,12 +14,48 @@ sd = rs.serializable_device(device)
 visual_preset_number = depth_sensor.get_option(rs.option.visual_preset)
 visual_preset_name = rs.l500_visual_preset(int(visual_preset_number))
 
+def json_to_dict( json ):
+    """
+    :param json: a string representing a json file
+    :return: a dictionary with all settings
+    """
+    json_dict = {}
+    for line in json.splitlines():
+        if ':' not in line: # ignoring lines that are not for settings such as empty lines
+            continue
+        setting, value = line.split(':')
+        json_dict[ setting.strip() ] = value.strip()
+    return json_dict
+
+def log_settings_differences( data ):
+    global depth_sensor, sd
+    depth_sensor.set_option(rs.option.visual_preset, int(rs.l500_visual_preset.low_ambient_light))
+    actual_data = str( sd.serialize_json() )
+    data_dict = json_to_dict( data )
+    actual_data_dict = json_to_dict( actual_data )
+    log.debug_indent()
+    try:
+        # logging the differences in the settings between the expected and the actual values
+        log.d( "Printing differences between expected and actual settings values:" )
+        for key in actual_data_dict.keys():
+            if key not in data_dict:
+                log.d( "New setting added to json:", key)
+            elif "Visual Preset" in key or "Temperature" in key or "temperature" in key:
+                # the line regarding the visual preset will always be different because we load 1 from data but set it to
+                # 3 for low ambient. Also all lines regarding temperatures depend on the camera and don't affect the preset
+                continue
+            elif data_dict[ key ] != actual_data_dict[ key ]:
+                log.d( "Setting", key, "was expected to have value of", data_dict[ key ],
+                       "but actually had value of", actual_data_dict[ key ])
+    finally:
+        log.debug_unindent()
+
 #############################################################################################
 # This test checks backward compatibility to old json files that saved with default preset
 # The default preset is deprecated but json files that saved with default preset
-# should be support
+# should be supported
 
-data = """
+low_ambient_data_with_default_preset = """
 {
     "Alternate IR": 0.0,
     "Apd Temperature": -9999,
@@ -50,40 +86,13 @@ data = """
     "Reset Camera Accuracy Health": 0.0,
     "Sensor Mode": 0.0,
     "Trigger Camera Accuracy Health": 0.0,
-    "Visual Preset": 1,
-    "Zero Order Enabled": 0.0,
-    "stream-depth-format": "Z16",
-    "stream-fps": "30",
-    "stream-height": "480",
-    "stream-ir-format": "Y8",
-    "stream-width": "640"
+    "Visual Preset": 1
 }
 """
 
-def log_settings_differences():
-    global data, depth_sensor, sd
-    depth_sensor.set_option(rs.option.visual_preset, int(rs.l500_visual_preset.low_ambient_light))
-    actual_data = str( sd.serialize_json() )
-    log.debug_indent()
-    try:
-        # logging the differences in the settings between the expected and the actual values
-        log.d( "Printing differences between expected and actual settings values:" )
-        for expected_line, actual_line in zip( data.splitlines()[2:-1], actual_data.splitlines()[1:-1] ):
-            # data starts with an empty line and a '{' and ends with a '}', so we cut out the first 2 lines and the last
-            # line to ignore them. Same with the actual data ony it doesn't start with an empty line
-            if "Visual Preset" in expected_line or "Temperature" in expected_line or "temperature" in expected_line:
-                # the line regarding the visual preset will always be different because we load 1 from data but set it to
-                # 3 for low ambient. Also all lines regarding temperatures depend on the camera and don't affect the preset
-                continue
-            if expected_line != actual_line:
-                log.d( "Expected to find line:", expected_line)
-                log.d( "But found:            ", actual_line)
-    finally:
-        log.debug_unindent()
-
 test.start("Trying to load default settings from json")
 try:
-    sd.load_json(data)
+    sd.load_json( low_ambient_data_with_default_preset )
     visual_preset_number = depth_sensor.get_option(rs.option.visual_preset)
     visual_preset_name = rs.l500_visual_preset(int(visual_preset_number))
 
@@ -91,7 +100,107 @@ try:
     equal = test.check_equal(visual_preset_name, rs.l500_visual_preset.low_ambient_light)
     if not equal:
         log.w( "It is possible that FW changed the default settings of the camera." )
-        log_settings_differences()
+        log_settings_differences( low_ambient_data_with_default_preset )
+except:
+    test.unexpected_exception()
+test.finish()
+
+#############################################################################################
+# this test checks that if the given settings are wrong (don't fit any preset), and we use default preset
+# we get custom preset
+
+wrong_data_with_default_preset = """
+{
+    "Alternate IR": 0.0,
+    "Apd Temperature": -9999,
+    "Confidence Threshold": 1,
+    "Depth Offset": 4.5,
+    "Depth Units": 0.000250000011874363,
+    "Digital Gain": 2,
+    "Enable IR Reflectivity": 0.0,
+    "Enable Max Usable Range": 0.0,
+    "Error Polling Enabled": 1,
+    "Frames Queue Size": 16,
+    "Freefall Detection Enabled": 1,
+    "Global Time Enabled": 0.0,
+    "Host Performance": 0.0,
+    "Humidity Temperature": 32.8908233642578,
+    "Inter Cam Sync Mode": 0.0,
+    "Invalidation Bypass": 0.0,
+    "LDD temperature": 32.1463623046875,
+    "Laser Power": 100,
+    "Ma Temperature": 39.667610168457,
+    "Mc Temperature": 31.6955661773682,
+    "Min Distance": 490,
+    "Noise Estimation": 0.0,
+    "Noise Filtering": 4,
+    "Post Processing Sharpening": 1,
+    "Pre Processing Sharpening": 0.0,
+    "Receiver Gain": 18,
+    "Reset Camera Accuracy Health": 0.0,
+    "Sensor Mode": 0.0,
+    "Trigger Camera Accuracy Health": 0.0,
+    "Visual Preset": 1
+}
+"""
+
+test.start("Trying to load wrong settings, should get custom preset")
+try:
+    sd.load_json( wrong_data_with_default_preset )
+    visual_preset_number = depth_sensor.get_option(rs.option.visual_preset)
+    visual_preset_name = rs.l500_visual_preset(int(visual_preset_number))
+
+    test.check_equal(visual_preset_name, rs.l500_visual_preset.custom)
+except:
+    test.unexpected_exception()
+test.finish()
+
+#############################################################################################
+# this test checks that if the given settings are wrong (don't fit any preset) but low-ambient-light preset is specified
+# we get low-ambient-light preset
+
+wrong_data_with_low_ambient_preset = """
+{
+    "Alternate IR": 0.0,
+    "Apd Temperature": -9999,
+    "Confidence Threshold": 1,
+    "Depth Offset": 4.5,
+    "Depth Units": 0.000250000011874363,
+    "Digital Gain": 2,
+    "Enable IR Reflectivity": 0.0,
+    "Enable Max Usable Range": 0.0,
+    "Error Polling Enabled": 1,
+    "Frames Queue Size": 16,
+    "Freefall Detection Enabled": 1,
+    "Global Time Enabled": 0.0,
+    "Host Performance": 0.0,
+    "Humidity Temperature": 32.8908233642578,
+    "Inter Cam Sync Mode": 0.0,
+    "Invalidation Bypass": 0.0,
+    "LDD temperature": 32.1463623046875,
+    "Laser Power": 100,
+    "Ma Temperature": 39.667610168457,
+    "Mc Temperature": 31.6955661773682,
+    "Min Distance": 490,
+    "Noise Estimation": 0.0,
+    "Noise Filtering": 4,
+    "Post Processing Sharpening": 1,
+    "Pre Processing Sharpening": 0.0,
+    "Receiver Gain": 18,
+    "Reset Camera Accuracy Health": 0.0,
+    "Sensor Mode": 0.0,
+    "Trigger Camera Accuracy Health": 0.0,
+    "Visual Preset": 3
+}
+"""
+
+test.start("Trying to load wrong settings with specified preset")
+try:
+    sd.load_json( wrong_data_with_low_ambient_preset )
+    visual_preset_number = depth_sensor.get_option(rs.option.visual_preset)
+    visual_preset_name = rs.l500_visual_preset(int(visual_preset_number))
+
+    test.check_equal(visual_preset_name, rs.l500_visual_preset.low_ambient_light)
 except:
     test.unexpected_exception()
 test.finish()
