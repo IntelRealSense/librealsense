@@ -88,8 +88,8 @@ static void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrin
     float x = (pixel[0] - intrin->ppx) / intrin->fx;
     float y = (pixel[1] - intrin->ppy) / intrin->fy;
 
-    auto xo = x;
-    auto yo = y;
+    float xo = x;
+    float yo = y;
 
     if(intrin->model == RS2_DISTORTION_INVERSE_BROWN_CONRADY)
     {
