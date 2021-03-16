@@ -339,9 +339,8 @@ def fail():
     Function for manually failing a test in case you want a specific test that does not fit any check function
     """
     check_test_in_progress()
-    global n_failed_tests, test_failed
+    global test_failed
     if not test_failed:
-        n_failed_tests += 1
         test_failed = True
 
 
