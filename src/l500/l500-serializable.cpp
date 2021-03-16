@@ -18,27 +18,27 @@ namespace librealsense
 
     std::vector<uint8_t> l500_serializable::serialize_json() const
     {
-        auto l500_uvc_sensor = std::dynamic_pointer_cast<uvc_sensor>(_depth_sensor.get_raw_sensor());
-        if (!l500_uvc_sensor)
+        auto l500_uvc_sensor
+            = std::dynamic_pointer_cast< uvc_sensor >( _depth_sensor.get_raw_sensor() );
+        if( ! l500_uvc_sensor )
             throw invalid_value_exception(
                 to_string() << "Failed to get raw depth sensor from serializable device" );
 
-        
-            return l500_uvc_sensor->invoke_powered([&](platform::uvc_device& dev) {
 
-                json j;
-                auto options = _depth_sensor.get_supported_options();
+        return l500_uvc_sensor->invoke_powered( [&]( platform::uvc_device & dev ) {
+            json j;
+            auto options = _depth_sensor.get_supported_options();
 
-                for (auto o : options)
-                {
-                    auto&& opt = _depth_sensor.get_option(o);
-                    auto val = opt.query();
-                    j[get_string(o)] = val;
-                }
+            for( auto o : options )
+            {
+                auto && opt = _depth_sensor.get_option( o );
+                auto val = opt.query();
+                j[get_string( o )] = val;
+            }
 
-                auto str = j.dump(4);
-                return std::vector<uint8_t>(str.begin(), str.end());
-                });
+            auto str = j.dump( 4 );
+            return std::vector< uint8_t >( str.begin(), str.end() );
+        } );
         
     }
 
