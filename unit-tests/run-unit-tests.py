@@ -148,7 +148,15 @@ def subprocess_run(cmd, stdout = None):
             handle.close()
         log.debug_unindent()
 
-def check_log_for_fails( path_to_log, testname, exe ):
+
+def configuration_str( configuration, prefix = '', suffix = '' ):
+    """ Return a string repr (with a prefix and/or suffix) of the configuration or '' if it's None """
+    if configuration is None:
+        return ''
+    return prefix + '[' + ' '.join( configuration ) + ']' + suffix
+
+
+def check_log_for_fails( path_to_log, testname, configuration = None ):
     # Normal logs are expected to have in last line:
     #     "All tests passed (11 assertions in 1 test case)"
     # Tests that have failures, however, will show:
@@ -170,14 +178,13 @@ def check_log_for_fails( path_to_log, testname, exe ):
                 desc = str(total - passed) + ' of ' + str(total) + ' failed'
 
             if log.is_verbose_on():
-                log.e( log.red + testname + log.reset + ': ' + desc )
-                log.i( 'Executable:', exe )
+                log.e( log.red + testname + log.reset + ': ' + configuration_str( configuration, suffix = ' ' ) + desc )
                 log.i( 'Log: >>>' )
                 log.out()
                 file.cat( path_to_log )
                 log.out( '<<<' )
             else:
-                log.e( log.red + testname + log.reset + ': ' + desc + '; see ' + path_to_log )
+                log.e( log.red + testname + log.reset + ': ' + configuration_str( configuration, suffix = ' ' ) + desc + '; see ' + path_to_log )
             return True
         return False
 
@@ -264,7 +271,7 @@ class Test(ABC):  # Abstract Base Class
         self._config = None
 
     @abstractmethod
-    def run_test(self):
+    def run_test( self, configuration = None, log_path = None ):
         pass
 
     def debug_dump(self):
@@ -329,16 +336,8 @@ class PyTest(Test):
             cmd += ['--color']
         return cmd
 
-    def run_test( self ):
-        log_path = self.get_log()
-        try:
-            subprocess_run( self.command, stdout=log_path )
-        except FileNotFoundError:
-            log.e( log.red + self.name + log.reset + ': executable not found! (' + self.path_to_script + ')' )
-        except subprocess.CalledProcessError as cpe:
-            if not check_log_for_fails(log_path, self.name, self.path_to_script):
-                # An unexpected error occurred
-                log.e( log.red + self.name + log.reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')')
+    def run_test( self, configuration = None, log_path = None ):
+        subprocess_run( self.command, stdout=log_path )
 
 
 class ExeTest(Test):
@@ -388,16 +387,8 @@ class ExeTest(Test):
     def command(self):
         return [self.exe]
 
-    def run_test( self ):
-        log_path = self.get_log()
-        try:
-            subprocess_run( self.command, stdout=log_path )
-        except FileNotFoundError:
-            log.e( log.red + self.name + log.reset + ': executable not found! (' + self.exe + ')')
-        except subprocess.CalledProcessError as cpe:
-            if not check_log_for_fails( log_path, self.name, self.exe ):
-                # An unexpected error occurred
-                log.e( log.red + self.name + log.reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')' )
+    def run_test( self, configuration = None, log_path = None ):
+        subprocess_run( self.command, stdout=log_path )
 
 
 def get_tests():
@@ -476,12 +467,19 @@ log.i( 'Logs in:', logdir )
 def test_wrapper( test, configuration = None ):
     global n_tests
     n_tests += 1
+    #
     if not log.is_debug_on()  or  log.is_color_on():
-        if configuration:
-            log.progress( '[' + ' '.join( configuration ) + ']', test.name, '...' )
-        else:
-            log.progress( test.name, '...' )
-    test.run_test()
+        log.progress( configuration_str( configuration, suffix = ' ' ) + test.name, '...' )
+    #
+    log_path = test.get_log()
+    try:
+        test.run_test( configuration = configuration, log_path = log_path )
+    except FileNotFoundError:
+        log.e( log.red + test.name + log.reset + ':', str(e) + configuration_str( configuration, prefix = ' ' ) )
+    except subprocess.CalledProcessError as cpe:
+        if not check_log_for_fails( log_path, test.name, configuration ):
+            # An unexpected error occurred
+            log.e( log.red + test.name + log.reset + ':', configuration_str( configuration, suffix = ' ' ) + 'exited with non-zero value (' + str(cpe.returncode) + ')' )
 
 
 # Run all tests
