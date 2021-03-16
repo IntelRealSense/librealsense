@@ -113,7 +113,7 @@ namespace librealsense
                         auto st_index = p->get_stream_index();
                         if (st.first == p->get_stream_type())
                         {
-                            if (st.second != -1 && st.second != p->get_stream_index()) break; // don't disable stream if indexes don't match
+                            if (st.second > 0 && st.second != p->get_stream_index()) break; // don't disable stream if indexes don't match
                             disable_stream = true;
                             break;
                         }
@@ -168,7 +168,7 @@ namespace librealsense
                 {
                     if (st.first == r.stream)
                     {
-                        if (st.second != -1 && st.second != r.index) break; // don't disable stream if indexes don't match
+                        if (st.second > 0 && st.second != r.index) break; // don't disable stream if indexes don't match
                         disable_stream = true;
                         break;
                     }

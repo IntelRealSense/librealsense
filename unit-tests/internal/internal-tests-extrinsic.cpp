@@ -526,66 +526,89 @@ TEST_CASE("Enable disable all streams GITHUB", "[live]")
         std::map<rs2_stream, int> filtered_streams;
         std::map<rs2_stream, int> filtered_streams_init;
         int enable_first = 1;
-
+        std::vector<int> states = { 0, 1, 2 }; // 0 - default, 1- disable all, 2 - enable all
         for (auto &p : res.second)
         {
-            filtered_streams_init[p.stream] = p.index;
+            auto idx = p.index;
+            if (filtered_streams_init[p.stream]) idx = 0;
+            filtered_streams_init[p.stream] =idx;
         }
         for (auto i = 0; i < res.second.size(); i++)
         {
-            rs2::config cfg;
-            counters.clear();
-            stream_names.clear();
-            stream_types.clear();
-            en.clear();
-            dis.clear();
-            filtered_streams = filtered_streams_init;
-
-            //cfg.disable_all_streams();
-
-            enable_first = 1 - enable_first; // 1 or 0 
-            //en = random_profiles(res.second, cfg, i);
-            dis = random_profiles(res.second, cfg, std::max(0,i-1), false); // at least 1 enabled stream
-            /*for (auto& p : en)
+            for (auto j = 0; j < res.second.size() - 1; j++)
             {
-                if (dis.size() > 0 && std::find(dis.begin(), dis.end(), p) != dis.end()) continue; // continue id stream is disable
-                filtered_streams[p.stream] = p.index;
-            }*/
-            for (auto& p : dis)
-            {
-                filtered_streams.erase(p.stream);
+                std::cout << "NOHA :: ================== Iteration (" << i << ","<< j << " ) ==================" << std::endl;
+                rs2::config cfg;
+                rs2::pipeline_profile profiles;
+                counters.clear();
+                stream_names.clear();
+                stream_types.clear();
+                en.clear();
+                dis.clear();
+                filtered_streams = filtered_streams_init;
+
+                //cfg.enable_all_streams();
+                // Collect the enabled streams names
+                profiles = pipe.start(cfg, callback);
+                for (auto p : profiles.get_streams())
+                {
+                    stream_names[p.unique_id()] = p.stream_name();
+                    stream_types[p.unique_id()] = p.stream_type();
+                }
+                stream_names.clear();
+                stream_types.clear();
+                pipe.stop();
+
+                enable_first = 1 - enable_first; // 1 or 0 
+                en = random_profiles(res.second, cfg, i);
+                dis = random_profiles(res.second, cfg, j, false); // at least 1 enabled stream
+                std::vector<profile> en_tmp;
+                for (auto& p : en)
+                {
+                    if (dis.size() > 0 && std::find(dis.begin(), dis.end(), p) != dis.end()) continue;
+                    en_tmp.push_back(p);
+                     
+                }
+                en = en_tmp;
+                if (!en.empty())
+                {
+                    filtered_streams.clear();
+                    for (auto& en_p : en)
+                    {
+                        auto idx = en_p.index;
+                        if (filtered_streams[en_p.stream]) idx = 0;
+                        filtered_streams[en_p.stream] = idx;
+                    }
+                }
+                
+                for (auto& p : dis)
+                {
+                    filtered_streams.erase(p.stream);
+                }
+
+                // Collect the enabled streams names
+                profiles = pipe.start(cfg, callback);
+                for (auto p : profiles.get_streams())
+                {
+                    stream_names[p.unique_id()] = p.stream_name();
+                    stream_types[p.unique_id()] = p.stream_type();
+                }
+
+                std::this_thread::sleep_for(std::chrono::seconds(3));
+                for (auto p : counters)
+                {
+                    CAPTURE(p.first);
+                    CHECK(stream_names.count(p.first) > 0);
+                    CAPTURE(stream_names[p.first]);
+                    CAPTURE(filtered_streams);
+                    CHECK(filtered_streams.count(stream_types[p.first]) > 0);
+
+                    std::cout << stream_names[p.first] << "[" << p.first << "]: " << p.second << " [frames] || ";
+                }
+                std::cout << std::endl;
+                pipe.stop();
             }
-
-            // Collect the enabled streams names
-            rs2::pipeline_profile profiles = pipe.start(cfg, callback);
-            for (auto p : profiles.get_streams())
-            {
-                stream_names[p.unique_id()] = p.stream_name();
-                stream_types[p.unique_id()] = p.stream_type();
-            }
-
-            std::cout << "RealSense callback sample" << std::endl << std::endl;
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-            std::lock_guard<std::mutex> lock(mutex);
-            for (auto p : counters)
-            {
-                CAPTURE(p.first);
-                CHECK(stream_names.count(p.first) > 0);
-                CAPTURE(stream_names[p.first]);
-                CHECK(filtered_streams.count(stream_types[p.first]) > 0);
-
-                std::cout << stream_names[p.first] << "[" << p.first << "]: " << p.second << " [frames] || ";
-            }
-            std::cout << std::endl;
-            pipe.stop();
         }
-        // 1. enable
-        // 2. disable
-        // 3. keep the same
-        
-        // 1. enable all streams
-        // 2. disable all streams
-
         //cfg.enable_all_streams();
         //cfg.disable_stream(RS2_STREAM_COLOR);
         //cfg.enable_stream(RS2_STREAM_COLOR);
