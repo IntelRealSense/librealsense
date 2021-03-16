@@ -3,7 +3,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-import sys, os, subprocess, locale, re, platform, getopt
+import sys, os, subprocess, locale, re, platform, getopt, time
 from abc import ABC, abstractmethod
 
 # Remove Python's default list of places to look for modules!
@@ -132,11 +132,14 @@ def subprocess_run(cmd, stdout = None):
         if stdout  and  stdout != subprocess.PIPE:
             handle = open( stdout, "w" )
             stdout = handle
+        start_time = time.time()
         rv = subprocess.run( cmd,
                              stdout = stdout,
                              stderr = subprocess.STDOUT,
                              universal_newlines = True,
+                             timeout=200,
                              check = True)
+        log.d("Test took", time.time() - start_time, "seconds")
         result = rv.stdout
         if not result:
             result = []
