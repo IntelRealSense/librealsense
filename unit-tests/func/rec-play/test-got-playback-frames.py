@@ -30,7 +30,7 @@ def depth_frame_call_back( frame ):
 
 def restart_profiles():
     """
-    you can't use the same profile twice, but we need the same profile several times. So this function resets the
+    You can't use the same profile twice, but we need the same profile several times. So this function resets the
     profiles with the given parameters to allow quick profile creation
     """
     global cp, dp, color_sensor, depth_sensor
