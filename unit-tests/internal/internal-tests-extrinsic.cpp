@@ -539,13 +539,10 @@ TEST_CASE("Enable disable all streams GITHUB", "[live]")
                     enabled_streams.clear();
                     disabled_streams.clear();
                     filtered_streams = filtered_streams_init;
-
                     if (enable_all_streams) cfg.enable_all_streams();
                     else cfg.disable_all_streams();
-
                     enabled_streams = select_profiles(res.second, cfg, i);
                     disabled_streams = select_profiles(res.second, cfg, j, false); 
-
                     std::vector<profile> tmp;
                     for (auto& p : enabled_streams)
                     {
@@ -553,7 +550,6 @@ TEST_CASE("Enable disable all streams GITHUB", "[live]")
                         tmp.push_back(p);
                     }
                     enabled_streams = tmp;
-
                     // Update filtered streams according to requested streams and current state (enable all streams or disable all streams)
                     if (!enabled_streams.empty() && !enable_all_streams)
                     {
