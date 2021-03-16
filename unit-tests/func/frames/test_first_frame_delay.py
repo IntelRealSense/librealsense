@@ -52,10 +52,10 @@ if dev.supports(rs.camera_info.product_line):
     product_line = dev.get_info(rs.camera_info.product_line)
     if product_line == "D400":
         max_delay_for_depth_frame = 1.5
-        max_delay_for_color_frame = 1.0
+        max_delay_for_color_frame = 1.5
     elif product_line == "L500":
         max_delay_for_depth_frame = 2.5 # depth frame has a 1.5 seconds built in delay at the FW side + 1.0 second for LRS
-        max_delay_for_color_frame = 1.0
+        max_delay_for_color_frame = 1.5
 
 ds = dev.first_depth_sensor()
 cs = dev.first_color_sensor()

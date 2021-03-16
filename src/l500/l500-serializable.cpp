@@ -18,14 +18,8 @@ namespace librealsense
 
     std::vector<uint8_t> l500_serializable::serialize_json() const
     {
-        auto l500_uvc_sensor
-            = std::dynamic_pointer_cast< uvc_sensor >( _depth_sensor.get_raw_sensor() );
-        if( ! l500_uvc_sensor )
-            throw invalid_value_exception(
-                to_string() << "Failed to get raw depth sensor from serializable device" );
+        return ivcam2::group_multiple_fw_calls( _depth_sensor, [&]() {
 
-
-        return l500_uvc_sensor->invoke_powered( [&]( platform::uvc_device & dev ) {
             json j;
             auto options = _depth_sensor.get_supported_options();
 
@@ -44,14 +38,7 @@ namespace librealsense
 
     void l500_serializable::load_json( const std::string & json_content )
     {
-        auto l500_uvc_sensor
-            = std::dynamic_pointer_cast< uvc_sensor >( _depth_sensor.get_raw_sensor() );
-        if( ! l500_uvc_sensor )
-            throw invalid_value_exception(
-                to_string() << "Failed to get raw depth sensor from serializable device" );
-
-
-        l500_uvc_sensor->invoke_powered( [&]( platform::uvc_device & dev ) {
+        return ivcam2::group_multiple_fw_calls(_depth_sensor, [&]() {
             json j = json::parse( json_content );
 
             // Set of options that should not be set in the loop

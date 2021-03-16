@@ -73,36 +73,37 @@ namespace librealsense
         , _was_set_manually( false )
     {
         // Keep the USB power on while triggering multiple calls on it.
-        _l500_dev->get_raw_depth_sensor().invoke_powered([&](platform::uvc_device& dev)
+        ivcam2::group_multiple_fw_calls( _l500_dev->get_depth_sensor(), [&]() {
+            auto min = _hw_monitor->send( command{ AMCGET, _type, get_min } );
+            auto max = _hw_monitor->send( command{ AMCGET, _type, get_max } );
+            auto step = _hw_monitor->send( command{ AMCGET, _type, get_step } );
+
+            if( min.size() < sizeof( int32_t ) || max.size() < sizeof( int32_t )
+                || step.size() < sizeof( int32_t ) )
             {
-                auto min = _hw_monitor->send(command{ AMCGET, _type, get_min });
-                auto max = _hw_monitor->send(command{ AMCGET, _type, get_max });
-                auto step = _hw_monitor->send(command{ AMCGET, _type, get_step });
+                std::stringstream s;
+                s << "Size of data returned is not valid min size = " << min.size()
+                  << ", max size = " << max.size() << ", step size = " << step.size();
+                throw std::runtime_error( s.str() );
+            }
 
-                if (min.size() < sizeof(int32_t) || max.size() < sizeof(int32_t) || step.size() < sizeof(int32_t))
-                {
-                    std::stringstream s;
-                    s << "Size of data returned is not valid min size = " << min.size() << ", max size = " << max.size() << ", step size = " << step.size();
-                    throw std::runtime_error(s.str());
-                }
+            auto max_value = float( *( reinterpret_cast< int32_t * >( max.data() ) ) );
+            auto min_value = float( *( reinterpret_cast< int32_t * >( min.data() ) ) );
 
-                auto max_value = float(*(reinterpret_cast<int32_t*>(max.data())));
-                auto min_value = float(*(reinterpret_cast<int32_t*>(min.data())));
+            bool success;
+            auto res = query_default( success );
 
-                bool success;
-                auto res = query_default(success);
+            if( ! success )
+            {
+                _is_read_only = true;
+                res = -1;
+            }
 
-                if (!success)
-                {
-                    _is_read_only = true;
-                    res = -1;
-                }
-
-                _range = option_range{ min_value,
-                                       max_value,
-                                       float(*(reinterpret_cast<int32_t*>(step.data()))),
-                                       res };
-            });
+            _range = option_range{ min_value,
+                                   max_value,
+                                   float( *( reinterpret_cast< int32_t * >( step.data() ) ) ),
+                                   res };
+        } );
     }
 
     void l500_hw_options::set_default( float def )
@@ -209,7 +210,7 @@ namespace librealsense
         auto& depth_sensor = get_depth_sensor();
 
         // Keep the USB power on while triggering multiple HW monitor commands on it.
-        raw_depth_sensor.invoke_powered( [&]( platform::uvc_device & dev ) {
+        ivcam2::group_multiple_fw_calls( depth_sensor, [&]() {
             if( _fw_version < firmware_version( MIN_CONTROLS_FW_VERSION ) )
             {
                 depth_sensor.register_option(
@@ -595,10 +596,10 @@ namespace librealsense
     void l500_options::change_preset( rs2_l500_visual_preset preset )
     {
         // Keep the USB power on while triggering multiple calls on it.
-        get_raw_depth_sensor().invoke_powered( [&]( platform::uvc_device & dev ) {
+        ivcam2::group_multiple_fw_calls( get_depth_sensor(), [&]() {
             // we need to reset the controls before change gain because after moving to auto gain
             // APD is read only. This will tell the FW that the control values are defaults and
-            // therefore can be overriden automatically according to gain
+            // therefore can be overridden automatically according to gain
             if( preset == RS2_L500_VISUAL_PRESET_AUTOMATIC )
             {
                 auto curr_preset = ( rs2_l500_visual_preset )(int)_preset->query();
@@ -653,7 +654,7 @@ namespace librealsense
     void l500_options::reset_hw_controls()
     {
         // Keep the USB power on while triggering multiple calls on it.
-        get_raw_depth_sensor().invoke_powered([&](platform::uvc_device& dev) {
+        ivcam2::group_multiple_fw_calls( get_depth_sensor(), [&]() {
             for (auto& o : _hw_options)
                 if (!o.second->is_read_only())
                 {
@@ -673,7 +674,7 @@ namespace librealsense
     void l500_options::update_defaults()
     {
         // Keep the USB power on while triggering multiple calls on it.
-        get_raw_depth_sensor().invoke_powered([&](platform::uvc_device& dev) {
+        ivcam2::group_multiple_fw_calls( get_depth_sensor(), [&]() {
 
             auto& resolution = get_depth_sensor().get_option(RS2_OPTION_SENSOR_MODE);
 
@@ -801,8 +802,7 @@ namespace librealsense
         float_option_with_description::set(value);
 
         // Keep the USB power on while triggering multiple calls on it.
-        _l500_depth_dev->get_raw_depth_sensor().invoke_powered(
-            [&]( platform::uvc_device & dev ) { notify( value ); } );
+        ivcam2::group_multiple_fw_calls( ds, [&]() { notify( value ); } );
     }
 
     const char * max_usable_range_option::get_description() const

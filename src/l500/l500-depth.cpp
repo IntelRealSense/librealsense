@@ -516,7 +516,7 @@ namespace librealsense
 
                 try {
                     // Keep the USB power on while triggering multiple calls on it.
-                    _owner->get_raw_depth_sensor().invoke_powered([&](platform::uvc_device& dev) {
+                    ivcam2::group_multiple_fw_calls(*this, [&]() {
                         // endpoint 2 (depth)
                         command cmdTprocGranEp2(ivcam2::TPROC_USB_GRAN_SET, 2, ep2_usb_trb);
                         _owner->_hw_monitor->send(cmdTprocGranEp2);
