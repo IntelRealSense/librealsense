@@ -136,7 +136,7 @@ def _device_change_callback( info ):
 
 def all():
     """
-    :return: A list of all device serial-numbers at the time of query()
+    :return: A set of all device serial-numbers at the time of query()
     """
     global _device_by_sn
     return _device_by_sn.keys()
@@ -153,7 +153,7 @@ def enabled():
 def by_product_line( product_line ):
     """
     :param product_line: The product line we're interested in, as a string ("L500", etc.)
-    :return: A list of device serial-numbers
+    :return: A set of device serial-numbers
     """
     global _device_by_sn
     return { device.serial_number for device in _device_by_sn.values() if device.product_line == product_line }
@@ -162,7 +162,7 @@ def by_product_line( product_line ):
 def by_name( name ):
     """
     :param name: Part of the product name to search for ("L515" would match "Intel RealSense L515")
-    :return: A list of device serial-numbers
+    :return: A set of device serial-numbers
     """
     global _device_by_sn
     return { device.serial_number for device in _device_by_sn.values() if device.name  and  device.name.find( name ) >= 0 }
