@@ -12,6 +12,7 @@ import platform
 
 # Start depth + color streams and measure the time from stream opened until first frame arrived.
 # Verify that the time do not exceeds the maximum time allowed
+# Note - Using Windows Media Foundation to handle power management between USB actions take time (~27 ms)
 open_call_stopwatch = Stopwatch()
 
 # Function will wait for the first frame for 'max_delay_allowed' + 1 extra second
@@ -43,7 +44,7 @@ def time_to_first_frame(sensor, profile, max_delay_allowed):
 
 
 dev = test.find_first_device_or_exit()
-
+time.sleep(3) # The device starts at D0 (Operational) state, allow time for it to get into idle state
 max_delay_for_depth_frame = 5
 max_delay_for_color_frame = 5
 
