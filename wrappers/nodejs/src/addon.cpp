@@ -3013,7 +3013,7 @@ class RSPointCloud : public Nan::ObjectWrap, Options {
 
     CallNativeFunc(rs2_set_option, &me->error_,
         reinterpret_cast<rs2_options*>(me->processing_block_),
-        RS2_OPTION_STREAM_FORMAT_FILTER,
+        RS2_OPTION_STREAM_INDEX_FILTER,
         static_cast<float>(extrator.index_),
         &me->error_);
 
