@@ -5228,8 +5228,11 @@ namespace rs2
                 {
                     // L500 devices do not support update unsigned image currently
                     bool is_l500_device = false;
-                    if( dev.supports( RS2_CAMERA_INFO_PRODUCT_LINE ) )
-                        is_l500_device = ( dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE ) == "L500" );
+                    if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
+                    {
+                        auto pl = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
+                        is_l500_device = (std::string(pl) == "L500");
+                    }
 
                     if( ! is_l500_device )
                     {
