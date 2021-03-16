@@ -12,18 +12,17 @@ import platform
 
 # Start depth + color streams and measure the time from stream opened until first frame arrived.
 # Verify that the time do not exceeds the maximum time allowed
-MAX_TIME_TO_WAIT_FOR_FIRST_FRAME = 2.5  # [sec]
 open_call_stopwatch = Stopwatch()
-first_frame_time = None
 
-
-def time_to_first_frame(sensor, profile):
-    global first_frame_time
-    first_frame_time = MAX_TIME_TO_WAIT_FOR_FIRST_FRAME
+# Function will wait for the first frame for 'max_delay_allowed' + 1 extra second
+# If the frame arrive it will return the time it took since open() call
+# If no frame it will return 'max_delay_allowed'
+def time_to_first_frame(sensor, profile, max_delay_allowed):
+    first_frame_time = max_delay_allowed
 
     def frame_cb(frame):
-        global first_frame_time
-        if first_frame_time == MAX_TIME_TO_WAIT_FOR_FIRST_FRAME:
+        nonlocal first_frame_time
+        if first_frame_time == max_delay_allowed:
             global open_call_stopwatch
             first_frame_time = open_call_stopwatch.get_elapsed()
 
@@ -31,7 +30,10 @@ def time_to_first_frame(sensor, profile):
     sensor.open(profile)
     sensor.start(frame_cb)
 
-    while first_frame_time == MAX_TIME_TO_WAIT_FOR_FIRST_FRAME and open_call_stopwatch.get_elapsed() < MAX_TIME_TO_WAIT_FOR_FIRST_FRAME:
+    # Wait condition:
+    # 1. first frame did not arrive yet
+    # 2. timeout of 'max_delay_allowed' + 1 extra second reached.
+    while first_frame_time == max_delay_allowed and open_call_stopwatch.get_elapsed() < max_delay_allowed + 1:
         time.sleep(0.05)
 
     sensor.stop()
@@ -41,6 +43,19 @@ def time_to_first_frame(sensor, profile):
 
 
 dev = test.find_first_device_or_exit()
+
+max_delay_for_depth_frame = 5
+max_delay_for_color_frame = 5
+
+# Set maximum delay for first frame according to product line
+if dev.supports(rs.camera_info.product_line):
+    product_line = dev.get_info(rs.camera_info.product_line)
+    if product_line == "D400":
+        max_delay_for_depth_frame = 1.5
+        max_delay_for_color_frame = 1.0
+    elif product_line == "L500":
+        max_delay_for_depth_frame = 2.5 # depth frame has a 1.5 seconds built in delay at the FW side + 1.0 second for LRS
+        max_delay_for_color_frame = 1.0
 
 ds = dev.first_depth_sensor()
 cs = dev.first_color_sensor()
@@ -56,13 +71,13 @@ cp = next(p for p in
           and p.format() == rs.format.rgb8)
 
 test.start("Testing first depth frame delay on " + platform.system())
-first_depth_frame_delay = time_to_first_frame(ds, dp)
-print("Time until first depth frame is: {:.3f} [sec]".format(first_depth_frame_delay))
-test.check(first_depth_frame_delay < MAX_TIME_TO_WAIT_FOR_FIRST_FRAME)
+first_depth_frame_delay = time_to_first_frame(ds, dp, max_delay_for_depth_frame)
+print("Time until first depth frame is: {:.3f} [sec] max allowed is: {:.1f} [sec] ".format(first_depth_frame_delay, max_delay_for_depth_frame))
+test.check(first_depth_frame_delay < max_delay_for_depth_frame)
 test.finish()
 
 test.start("Testing first color frame delay on " + platform.system())
-first_color_frame_delay = time_to_first_frame(cs, cp)
-print("Time until first color frame is: {:.3f} [sec]".format(first_color_frame_delay))
-test.check(first_color_frame_delay < MAX_TIME_TO_WAIT_FOR_FIRST_FRAME)
+first_color_frame_delay = time_to_first_frame(cs, cp, max_delay_for_color_frame)
+print("Time until first color frame is: {:.3f} [sec] max allowed is: {:.1f} [sec] ".format(first_color_frame_delay, max_delay_for_color_frame))
+test.check(first_color_frame_delay < max_delay_for_color_frame)
 test.finish()
