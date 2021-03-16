@@ -15,7 +15,6 @@
 #include <unit-tests-common.h>
 #include <numeric>
 #include <stdlib.h> 
-#include "./../src/core/streaming.h"
 
 using namespace librealsense;
 using namespace librealsense::platform;
