@@ -57,7 +57,7 @@ pipeline = rs.pipeline()
 cfg = rs.config()
 cfg.enable_record_to_file( file_name )
 pipeline.start( cfg )
-time.sleep(0)
+time.sleep(3)
 pipeline.stop()
 pipeline = rs.pipeline()
 cfg = rs.config()
@@ -71,6 +71,7 @@ except Exception:
 
 pipeline.stop()
 del cfg
+
 test.finish()
 
 ################################################################################################
