@@ -2912,6 +2912,7 @@ void rs2_update_firmware(const rs2_device* device, const void* fw_image, int fw_
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(fw_image);
+    VALIDATE_FIXED_SIZE(fw_image_size, signed_fw_size); // check if the given FW size matches the expected FW size
 
     if (fw_image_size <= 0)
         throw std::runtime_error("invlid firmware image size provided to rs2_update");
@@ -2994,6 +2995,7 @@ void rs2_update_firmware_unsigned(const rs2_device* device, const void* image, i
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(image);
+    VALIDATE_FIXED_SIZE(image_size, unsigned_fw_size); // check if the given FW size matches the expected FW size
 
     if (image_size <= 0)
         throw std::runtime_error("invlid firmware image size provided to rs2_update_firmware_unsigned");
