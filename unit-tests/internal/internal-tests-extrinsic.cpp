@@ -93,6 +93,18 @@ void data_filter(const std::vector<double>& stream_vec, std::vector<double>& fil
         filtered_stream_vec.push_back(*(stream_vec_it + i));
     }
 }
+std::vector<profile> select_profiles(std::vector<profile>& all_profiles, rs2::config& cfg, size_t n, bool enable_streams = true)
+{
+    std::vector<profile> filtered_profiles;
+    std::vector<profile>::iterator it = all_profiles.begin();
+    for (auto idx = 0; idx < n; idx++)
+    {
+        filtered_profiles.push_back(*(it + idx));
+        if (enable_streams) cfg.enable_stream((it + idx)->stream, (it + idx)->index);
+        else cfg.disable_stream((it + idx)->stream, (it + idx)->index);
+    }
+    return filtered_profiles;
+}
 TEST_CASE("Extrinsic graph management", "[live][multicam]")
 {
     // Require at least one device to be plugged in
@@ -440,34 +452,12 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
         }
     }
 }
-
-std::vector<profile> random_profiles(std::vector<profile>& all_profiles, rs2::config& cfg, size_t num, bool enable_streams = true)
-{
-    std::vector<profile> filtered_profiles;
-    //auto num = std::rand() % (all_profiles.size()+ 1); // number of profiles to disable : random number between 0 - all_profiles.size()
-    std::set<int> indexes;
-    while (indexes.size() < num)
-    {
-        indexes.insert(rand() % all_profiles.size()); // random indexes 
-    }
-    std::vector<profile>::iterator it = all_profiles.begin();
-    for (auto idx : indexes) 
-    {
-        filtered_profiles.push_back(*(it + idx));
-        if (enable_streams) cfg.enable_stream((it + idx)->stream, (it + idx)->index);
-        else cfg.disable_stream((it + idx)->stream, (it + idx)->index);
-    }
-    return filtered_profiles;
-}
 TEST_CASE("Enable disable all streams GITHUB", "[live]")
 {
     // Require at least one device to be plugged in
-
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        rs2::log_to_file(RS2_LOG_SEVERITY_DEBUG, "C:\\work\\LRS_Validation\\en_dis_streams.log");
-
         std::cout << "Enable disable all streams GITHUB started" << std::endl;
 
         auto list = ctx.query_devices();
@@ -475,7 +465,9 @@ TEST_CASE("Enable disable all streams GITHUB", "[live]")
         auto dev = list.front();
         auto sensors = dev.query_sensors();
 
-        std::string device_type = "L500";
+        REQUIRE(dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE));
+        std::string device_type = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
+
         if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D400") device_type = "D400";
         if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "SR300") device_type = "SR300";
 
@@ -493,7 +485,6 @@ TEST_CASE("Enable disable all streams GITHUB", "[live]")
         }
         auto res = configure_all_supported_streams(dev, width, height, fps);
         
-
         std::map<int, int> counters;
         std::map<int, std::string> stream_names;
         std::map<int, rs2_stream> stream_types;
@@ -519,115 +510,90 @@ TEST_CASE("Enable disable all streams GITHUB", "[live]")
         };
 
         // Declare RealSense pipeline, encapsulating the actual device and sensors.
-        std::vector<profile> en;
-        std::vector<profile> dis;
         rs2::pipeline pipe;
-        rs2::config cfg;
+        std::vector<profile> enabled_streams;
+        std::vector<profile> disabled_streams;
         std::map<rs2_stream, int> filtered_streams;
         std::map<rs2_stream, int> filtered_streams_init;
-        int enable_first = 1;
-        std::vector<int> states = { 0, 1, 2 }; // 0 - default, 1- disable all, 2 - enable all
-        for (auto &p : res.second)
+        bool streams_state[2] = { false, true};
+
+        for (auto& p : res.second)
         {
             auto idx = p.index;
             if (filtered_streams_init[p.stream]) idx = 0;
-            filtered_streams_init[p.stream] =idx;
+            filtered_streams_init[p.stream] = idx;
         }
-        for (auto i = 0; i < res.second.size(); i++)
+        for (auto& enable_all_streams : streams_state)
         {
-            for (auto j = 0; j < res.second.size() - 1; j++)
+            if(enable_all_streams) std::cout << "==================================== Enable All Streams ====================================" << std::endl;
+            else std::cout << "==================================== Disable All Streams ====================================" << std::endl;
+            for (auto i = 0; i < res.second.size(); i++)
             {
-                std::cout << "NOHA :: ================== Iteration (" << i << ","<< j << " ) ==================" << std::endl;
-                rs2::config cfg;
-                rs2::pipeline_profile profiles;
-                counters.clear();
-                stream_names.clear();
-                stream_types.clear();
-                en.clear();
-                dis.clear();
-                filtered_streams = filtered_streams_init;
+                for (auto j = 0; j < res.second.size() - 1; j++) // -1 needed to keep at least 1 enabled stream
+                {
+                    std::cout << "----------------- Iteration (" << i << "," << j << ") ----------------" << std::endl;
+                    rs2::config cfg;
+                    counters.clear();
+                    stream_names.clear();
+                    stream_types.clear();
+                    enabled_streams.clear();
+                    disabled_streams.clear();
+                    filtered_streams = filtered_streams_init;
 
-                //cfg.enable_all_streams();
-                // Collect the enabled streams names
-                profiles = pipe.start(cfg, callback);
-                for (auto p : profiles.get_streams())
-                {
-                    stream_names[p.unique_id()] = p.stream_name();
-                    stream_types[p.unique_id()] = p.stream_type();
-                }
-                stream_names.clear();
-                stream_types.clear();
-                pipe.stop();
+                    if (enable_all_streams) cfg.enable_all_streams();
+                    else cfg.disable_all_streams();
 
-                enable_first = 1 - enable_first; // 1 or 0 
-                en = random_profiles(res.second, cfg, i);
-                dis = random_profiles(res.second, cfg, j, false); // at least 1 enabled stream
-                std::vector<profile> en_tmp;
-                for (auto& p : en)
-                {
-                    if (dis.size() > 0 && std::find(dis.begin(), dis.end(), p) != dis.end()) continue;
-                    en_tmp.push_back(p);
-                     
-                }
-                en = en_tmp;
-                if (!en.empty())
-                {
-                    filtered_streams.clear();
-                    for (auto& en_p : en)
+                    enabled_streams = select_profiles(res.second, cfg, i);
+                    disabled_streams = select_profiles(res.second, cfg, j, false); 
+
+                    std::vector<profile> tmp;
+                    for (auto& p : enabled_streams)
                     {
-                        auto idx = en_p.index;
-                        if (filtered_streams[en_p.stream]) idx = 0;
-                        filtered_streams[en_p.stream] = idx;
+                        if (disabled_streams.size() > 0 && std::find(disabled_streams.begin(), disabled_streams.end(), p) != disabled_streams.end()) continue; // skip disabled streams
+                        tmp.push_back(p);
                     }
-                }
-                
-                for (auto& p : dis)
-                {
-                    if(filtered_streams[p.stream] && filtered_streams[p.stream] == p.index) filtered_streams.erase(p.stream);
-                }
+                    enabled_streams = tmp;
 
-                // Collect the enabled streams names
-                profiles = pipe.start(cfg, callback);
-                for (auto p : profiles.get_streams())
-                {
-                    stream_names[p.unique_id()] = p.stream_name();
-                    stream_types[p.unique_id()] = p.stream_type();
+                    // Update filtered streams according to requested streams and current state (enable all streams or disable all streams)
+                    if (!enabled_streams.empty() && !enable_all_streams)
+                    {
+                        filtered_streams.clear();
+                        for (auto& en_p : enabled_streams)
+                        {
+                            auto idx = en_p.index;
+                            if (filtered_streams[en_p.stream]) idx = 0; // if IR-1 and IR-2 are enabled, change index to 0
+                            filtered_streams[en_p.stream] = idx;
+                        }
+                    }
+                    // Filter out disabled streams
+                    for (auto& p : disabled_streams)
+                    {
+                        if (filtered_streams[p.stream] && filtered_streams[p.stream] == p.index) filtered_streams.erase(p.stream);
+                    }
+                    // Start streaming through the callback with default recommended configuration
+                    // The default video configuration contains Depth and Color streams
+                    // If a device is capable to stream IMU data, both Gyro and Accelerometer are enabled by default
+                    auto profiles = pipe.start(cfg, callback);
+                    for (auto p : profiles.get_streams())
+                    {
+                        stream_names[p.unique_id()] = p.stream_name();
+                        stream_types[p.unique_id()] = p.stream_type();
+                    }
+                    std::this_thread::sleep_for(std::chrono::seconds(1));
+                    // Collect the enabled streams names
+                    for (auto p : counters)
+                    {
+                        CAPTURE(p.first);
+                        CHECK(stream_names.count(p.first) > 0);
+                        CAPTURE(stream_names[p.first]);
+                        CAPTURE(filtered_streams);
+                        CHECK(filtered_streams.count(stream_types[p.first]) > 0);
+                        std::cout << stream_names[p.first] << "[" << p.first << "]: " << p.second << " [frames] || ";
+                    }
+                    std::cout << std::endl;
+                    pipe.stop();
                 }
-
-                std::this_thread::sleep_for(std::chrono::seconds(3));
-                for (auto p : counters)
-                {
-                    CAPTURE(p.first);
-                    CHECK(stream_names.count(p.first) > 0);
-                    CAPTURE(stream_names[p.first]);
-                    CAPTURE(filtered_streams);
-                    CHECK(filtered_streams.count(stream_types[p.first]) > 0);
-
-                    std::cout << stream_names[p.first] << "[" << p.first << "]: " << p.second << " [frames] || ";
-                }
-                std::cout << std::endl;
-                pipe.stop();
             }
         }
-        //cfg.enable_all_streams();
-        //cfg.disable_stream(RS2_STREAM_COLOR);
-        //cfg.enable_stream(RS2_STREAM_COLOR);
-
-        //cfg.disable_all_streams();   // <-- Instead of this call ...
-        //cfg.disable_stream(RS2_STREAM_COLOR);   // we can also do this ...
-        //cfg.disable_stream(RS2_STREAM_DEPTH);   // or this ...
-        //cfg.disable_stream(RS2_STREAM_INFRARED);  // or this...
-        // .. or all of them, the effect is the same (no effect).
-
-        //cfg.enable_stream(RS2_STREAM_COLOR);
-        //cfg.enable_stream(RS2_STREAM_INFRARED, 1);
-        //cfg.enable_stream(RS2_STREAM_INFRARED, 2);
-        //cfg.disable_stream(RS2_STREAM_INFRARED, 1);
-        // Start streaming through the callback with default recommended configuration
-        // The default video configuration contains Depth and Color streams
-        // If a device is capable to stream IMU data, both Gyro and Accelerometer are enabled by default
-
-        
-
     }
 }
