@@ -44,7 +44,7 @@ else:
 # Parse command-line:
 try:
     opts,args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
-        longopts = [ 'help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag' ])
+        longopts = [ 'help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=' ])
 except getopt.GetoptError as err:
     log.e( err )   # something like "option -a not recognized"
     usage()
@@ -139,7 +139,7 @@ def subprocess_run(cmd, stdout = None):
                              universal_newlines = True,
                              timeout=200,
                              check = True)
-        log.d("Test took", time.time() - start_time, "seconds")
+        run_time = time.time() - start_time
         result = rv.stdout
         if not result:
             result = []
@@ -150,6 +150,7 @@ def subprocess_run(cmd, stdout = None):
         if handle:
             handle.close()
         log.debug_unindent()
+        log.d("test took", run_time, "seconds")
 
 
 def configuration_str( configuration, prefix = '', suffix = '' ):
@@ -479,6 +480,8 @@ def test_wrapper( test, configuration = None ):
         test.run_test( configuration = configuration, log_path = log_path )
     except FileNotFoundError:
         log.e( log.red + test.name + log.reset + ':', str(e) + configuration_str( configuration, prefix = ' ' ) )
+    except subprocess.TimeoutExpired:
+        log.e(log.red + test.name + log.reset + ':', configuration_str(configuration, suffix=' ') + 'timed out')
     except subprocess.CalledProcessError as cpe:
         if not check_log_for_fails( log_path, test.name, configuration ):
             # An unexpected error occurred
