@@ -53,130 +53,191 @@ file_name = temp_dir.name + os.sep + 'rec.bag'
 
 ################################################################################################
 test.start("Trying to record and playback using pipeline interface")
-pipeline = rs.pipeline()
-cfg = rs.config()
-cfg.enable_record_to_file( file_name )
-pipeline.start( cfg )
-time.sleep(3)
-pipeline.stop()
-pipeline = rs.pipeline()
-cfg = rs.config()
-cfg.enable_device_from_file( file_name )
-pipeline.start( cfg )
 
+cfg = pipeline = None
 try:
+    # creating a pipeline and recording to a file
+    pipeline = rs.pipeline()
+    cfg = rs.config()
+    cfg.enable_record_to_file( file_name )
+    pipeline.start( cfg )
+    time.sleep(3)
+    pipeline.stop()
+    # we create a new pipeline and use it to playback from the file we just recoded to
+    pipeline = rs.pipeline()
+    cfg = rs.config()
+    cfg.enable_device_from_file(file_name)
+    pipeline.start(cfg)
+    # if the record-playback worked we will get frames, otherwise the next line will timeout and throw
     pipeline.wait_for_frames()
 except Exception:
     test.unexpected_exception()
-
-pipeline.stop()
-del cfg
+finally: # we must remove all references to the file so we can use it again in the next test
+    cfg = None
+    if pipeline:
+        try:
+            pipeline.stop()
+        except RuntimeError as rte:
+            # if the error Occurred because the pipeline wasn't started we ignore it
+            if str( rte ) != "stop() cannot be called before start()":
+                test.unexpected_exception()
+        except Exception:
+            test.unexpected_exception()
 
 test.finish()
 
 ################################################################################################
 test.start("Trying to record and playback using sensor interface")
-dev = test.find_first_device_or_exit()
-recorder = rs.recorder( file_name, dev )
-depth_sensor = dev.first_depth_sensor()
-color_sensor = dev.first_color_sensor()
 
-restart_profiles()
+recorder = depth_sensor = color_sensor = playback = None
+try:
+    dev = test.find_first_device_or_exit()
+    recorder = rs.recorder( file_name, dev )
+    depth_sensor = dev.first_depth_sensor()
+    color_sensor = dev.first_color_sensor()
 
-depth_sensor.open( dp )
-depth_sensor.start( lambda f: None )
-color_sensor.open( cp )
-color_sensor.start( lambda f: None )
+    restart_profiles()
 
-time.sleep(3)
+    depth_sensor.open( dp )
+    depth_sensor.start( lambda f: None )
+    color_sensor.open( cp )
+    color_sensor.start( lambda f: None )
 
-recorder.pause()
-del recorder
-color_sensor.stop()
-color_sensor.close()
-depth_sensor.stop()
-depth_sensor.close()
+    time.sleep(3)
 
-ctx = rs.context()
-playback = ctx.load_device( file_name )
+    recorder.pause()
+    recorder = None
+    color_sensor.stop()
+    color_sensor.close()
+    depth_sensor.stop()
+    depth_sensor.close()
 
-depth_sensor = playback.first_depth_sensor()
-color_sensor = playback.first_color_sensor()
+    ctx = rs.context()
+    playback = ctx.load_device( file_name )
 
-restart_profiles()
+    depth_sensor = playback.first_depth_sensor()
+    color_sensor = playback.first_color_sensor()
 
-depth_sensor.open( dp )
-depth_sensor.start( depth_frame_call_back )
-color_sensor.open( cp )
-color_sensor.start( color_frame_call_back )
+    restart_profiles()
 
-time.sleep(3)
+    depth_sensor.open( dp )
+    depth_sensor.start( depth_frame_call_back )
+    color_sensor.open( cp )
+    color_sensor.start( color_frame_call_back )
 
-color_sensor.stop()
-color_sensor.close()
-depth_sensor.stop()
-depth_sensor.close()
-playback.pause()
+    time.sleep(3)
 
-test.check( got_frames )
-
-del playback
-del depth_sensor
-del color_sensor
+    # if record and playback worked we will receive frames, the callback functions will be called and got-frames
+    # will be True. If the record and playback failed it will be false
+    test.check( got_frames )
+except Exception:
+    test.unexpected_exception()
+finally: # we must remove all references to the file so we can use it again in the next test
+    if recorder:
+        recorder.pause()
+        recorder = None
+    if playback:
+        playback.pause()
+        playback = None
+    # if the sensor is already closed get_active_streams returns an empty list
+    if depth_sensor:
+        if depth_sensor.get_active_streams():
+            try:
+                depth_sensor.stop()
+            except RuntimeError as rte:
+                if str( rte ) != "stop_streaming() failed. UVC device is not streaming!":
+                    test.unexpected_exception()
+            except Exception:
+                test.unexpected_exception()
+            depth_sensor.close()
+        depth_sensor = None
+    if color_sensor:
+        if color_sensor.get_active_streams():
+            try:
+                color_sensor.stop()
+            except RuntimeError as rte:
+                if str(rte) != "stop_streaming() failed. UVC device is not streaming!":
+                    test.unexpected_exception()
+            except Exception:
+                test.unexpected_exception()
+            color_sensor.close()
+        color_sensor = None
 
 test.finish()
 
 #####################################################################################################
 test.start("Trying to record and playback using sensor interface with syncer")
 
-sync = rs.syncer()
-dev = test.find_first_device_or_exit()
-recorder = rs.recorder( file_name, dev )
-depth_sensor = dev.first_depth_sensor()
-color_sensor = dev.first_color_sensor()
-
-restart_profiles()
-
-depth_sensor.open( dp )
-depth_sensor.start( sync )
-color_sensor.open( cp )
-color_sensor.start( sync )
-
-time.sleep(3)
-
-recorder.pause()
-del recorder
-color_sensor.stop()
-color_sensor.close()
-depth_sensor.stop()
-depth_sensor.close()
-
-ctx = rs.context()
-playback = ctx.load_device( file_name )
-
-depth_sensor = playback.first_depth_sensor()
-color_sensor = playback.first_color_sensor()
-
-restart_profiles()
-
-depth_sensor.open( dp )
-depth_sensor.start( sync )
-color_sensor.open( cp )
-color_sensor.start( sync )
-
 try:
+    sync = rs.syncer()
+    dev = test.find_first_device_or_exit()
+    recorder = rs.recorder(file_name, dev)
+    depth_sensor = dev.first_depth_sensor()
+    color_sensor = dev.first_color_sensor()
+
+    restart_profiles()
+
+    depth_sensor.open(dp)
+    depth_sensor.start(sync)
+    color_sensor.open(cp)
+    color_sensor.start(sync)
+
+    time.sleep(3)
+
+    recorder.pause()
+    recorder = None
+    color_sensor.stop()
+    color_sensor.close()
+    depth_sensor.stop()
+    depth_sensor.close()
+
+    ctx = rs.context()
+    playback = ctx.load_device(file_name)
+
+    depth_sensor = playback.first_depth_sensor()
+    color_sensor = playback.first_color_sensor()
+
+    restart_profiles()
+
+    depth_sensor.open(dp)
+    depth_sensor.start(sync)
+    color_sensor.open(cp)
+    color_sensor.start(sync)
+
+    # if the record-playback worked we will get frames, otherwise the next line will timeout and throw
     sync.wait_for_frames()
 except Exception:
     test.unexpected_exception()
-
-color_sensor.stop()
-color_sensor.close()
-depth_sensor.stop()
-depth_sensor.close()
-playback.pause()
-del playback
-del depth_sensor
-del color_sensor
+finally: # we must remove all references to the file so the temporary folder can be deleted
+    if recorder:
+        recorder.pause()
+        recorder = None
+    if playback:
+        playback.pause()
+        playback = None
+    # if the sensor is already closed get_active_streams returns an empty list
+    if depth_sensor:
+        if depth_sensor.get_active_streams():
+            try:
+                depth_sensor.stop()
+            except RuntimeError as rte:
+                if str( rte ) != "stop_streaming() failed. UVC device is not streaming!":
+                    test.unexpected_exception()
+            except Exception:
+                test.unexpected_exception()
+            depth_sensor.close()
+        depth_sensor = None
+    if color_sensor:
+        if color_sensor.get_active_streams():
+            try:
+                color_sensor.stop()
+            except RuntimeError as rte:
+                if str(rte) != "stop_streaming() failed. UVC device is not streaming!":
+                    test.unexpected_exception()
+            except Exception:
+                test.unexpected_exception()
+            color_sensor.close()
+        color_sensor = None
 
 test.finish()
 
