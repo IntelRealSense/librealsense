@@ -583,7 +583,7 @@ TEST_CASE("Enable disable all streams GITHUB", "[live]")
                 
                 for (auto& p : dis)
                 {
-                    filtered_streams.erase(p.stream);
+                    if(filtered_streams[p.stream] && filtered_streams[p.stream] == p.index) filtered_streams.erase(p.stream);
                 }
 
                 // Collect the enabled streams names
