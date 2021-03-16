@@ -109,8 +109,8 @@ static void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrin
     }
     if (intrin->model == RS2_DISTORTION_BROWN_CONRADY)
     {
-        auto x_0 = x;
-        auto y_0 = y;
+        auto xo = x;
+        auto yo = y;
 
         // need to loop until convergence 
         // 10 iterations determined empirically
@@ -120,8 +120,8 @@ static void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrin
             float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1])*r2 + intrin->coeffs[0])*r2);
             float delta_x = 2 * intrin->coeffs[2] * x*y + intrin->coeffs[3] * (r2 + 2 * x*x);
             float delta_y = 2 * intrin->coeffs[3] * x*y + intrin->coeffs[2] * (r2 + 2 * y*y);
-            x = (x_0 - delta_x)*icdist;
-            y = (y_0 - delta_y)*icdist;
+            x = (xo - delta_x)*icdist;
+            y = (yo - delta_y)*icdist;
         }
         
     }
