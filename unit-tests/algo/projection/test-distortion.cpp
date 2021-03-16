@@ -1,8 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #include "../algo-common.h"
-#include "../../../include/librealsense2/rsutil.h"
+#include <librealsense2/rsutil.h>
 
 void compare(float pixel1[2], float pixel2[2])
 {

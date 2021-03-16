@@ -248,7 +248,7 @@ public:
     {
         rs2::float2 focal{ intr.fx, intr.fy };
         rs2::float2 principal{ intr.ppx, intr.ppy };
-        float is_bc = (intr.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY ? 1.f : 0.f);
+        float is_bc = (intr.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY || intr.model == RS2_DISTORTION_BROWN_CONRADY ? 1.f : 0.f);
         _shader->load_uniform(_focal_location[idx], focal);
         _shader->load_uniform(_principal_location[idx], principal);
         _shader->load_uniform(_is_bc_location[idx], is_bc);
