@@ -121,25 +121,29 @@ os.environ["PYTHONPATH"] = current_dir + os.sep + "py"
 if pyrs:
     os.environ["PYTHONPATH"] += os.pathsep + pyrs_path
 
-def subprocess_run(cmd, stdout = None):
+def subprocess_run(cmd, stdout = None, timeout = 200):
     """
     wrapper function for subprocess.run
+    :param cmd: the command to run in the child process
+    :param stdout: where to direct the output of the process to
+    :param timeout: amount of seconds to give the process before forcefully ending it
+    :return: the output written to the given stdout. If the process times out or ends with a non-zero exit status
+             an exception is raised
     """
     log.d( 'running:', cmd )
     handle = None
+    start_time = time.time()
     try:
         log.debug_indent()
         if stdout  and  stdout != subprocess.PIPE:
             handle = open( stdout, "w" )
             stdout = handle
-        start_time = time.time()
         rv = subprocess.run( cmd,
                              stdout = stdout,
                              stderr = subprocess.STDOUT,
                              universal_newlines = True,
-                             timeout=200,
+                             timeout=timeout,
                              check = True)
-        run_time = time.time() - start_time
         result = rv.stdout
         if not result:
             result = []
@@ -150,6 +154,7 @@ def subprocess_run(cmd, stdout = None):
         if handle:
             handle.close()
         log.debug_unindent()
+        run_time = time.time() - start_time
         log.d("test took", run_time, "seconds")
 
 
