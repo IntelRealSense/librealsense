@@ -15,6 +15,7 @@ import platform
 # Note - Using Windows Media Foundation to handle power management between USB actions take time (~27 ms)
 open_call_stopwatch = Stopwatch()
 
+
 # Function will wait for the first frame for 'max_delay_allowed' + 1 extra second
 # If the frame arrive it will return the time it took since open() call
 # If no frame it will return 'max_delay_allowed'
@@ -42,11 +43,20 @@ def time_to_first_frame(sensor, profile, max_delay_allowed):
 
     return first_frame_time
 
-
-dev = test.find_first_device_or_exit()
 time.sleep(3) # The device starts at D0 (Operational) state, allow time for it to get into idle state
+
+max_time_for_device_creation = 1.5
 max_delay_for_depth_frame = 5
 max_delay_for_color_frame = 5
+
+test.start("Testing device creation time on " + platform.system() + " OS")
+device_creation_stopwatch = Stopwatch()
+dev = test.find_first_device_or_exit()
+device_creation_time = device_creation_stopwatch.get_elapsed()
+print("Device creation time is: {:.3f} [sec] max allowed is: {:.1f} [sec] ".format(device_creation_time, max_time_for_device_creation))
+test.check(device_creation_time < max_time_for_device_creation)
+test.finish()
+
 
 product_line = "Unknown"
 # Set maximum delay for first frame according to product line
