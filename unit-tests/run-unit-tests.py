@@ -3,7 +3,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-import sys, os, subprocess, locale, re, platform, getopt
+import sys, os, subprocess, locale, re, platform, getopt, time
 from abc import ABC, abstractmethod
 
 # Remove Python's default list of places to look for modules!
@@ -44,7 +44,7 @@ else:
 # Parse command-line:
 try:
     opts,args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
-        longopts = [ 'help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag' ])
+        longopts = [ 'help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=' ])
 except getopt.GetoptError as err:
     log.e( err )   # something like "option -a not recognized"
     usage()
@@ -121,12 +121,19 @@ os.environ["PYTHONPATH"] = current_dir + os.sep + "py"
 if pyrs:
     os.environ["PYTHONPATH"] += os.pathsep + pyrs_path
 
-def subprocess_run(cmd, stdout = None):
+def subprocess_run(cmd, stdout = None, timeout = 200):
     """
-    wrapper function for subprocess.run
+    Wrapper function for subprocess.run.
+    If the child process times out or ends with a non-zero exit status an exception is raised!
+    
+    :param cmd: the command and argument for the child process, as a list
+    :param stdout: path of file to direct the output of the process to (None to disable)
+    :param timeout: number of seconds to give the process before forcefully ending it (None to disable)
+    :return: the output written by the child, if stdout is None -- otherwise N/A
     """
     log.d( 'running:', cmd )
     handle = None
+    start_time = time.time()
     try:
         log.debug_indent()
         if stdout  and  stdout != subprocess.PIPE:
@@ -136,7 +143,8 @@ def subprocess_run(cmd, stdout = None):
                              stdout = stdout,
                              stderr = subprocess.STDOUT,
                              universal_newlines = True,
-                             check = True)
+                             timeout = timeout,
+                             check = True )
         result = rv.stdout
         if not result:
             result = []
@@ -147,6 +155,8 @@ def subprocess_run(cmd, stdout = None):
         if handle:
             handle.close()
         log.debug_unindent()
+        run_time = time.time() - start_time
+        log.d("test took", run_time, "seconds")
 
 
 def configuration_str( configuration, prefix = '', suffix = '' ):
@@ -476,6 +486,8 @@ def test_wrapper( test, configuration = None ):
         test.run_test( configuration = configuration, log_path = log_path )
     except FileNotFoundError:
         log.e( log.red + test.name + log.reset + ':', str(e) + configuration_str( configuration, prefix = ' ' ) )
+    except subprocess.TimeoutExpired:
+        log.e(log.red + test.name + log.reset + ':', configuration_str(configuration, suffix=' ') + 'timed out')
     except subprocess.CalledProcessError as cpe:
         if not check_log_for_fails( log_path, test.name, configuration ):
             # An unexpected error occurred
