@@ -6,7 +6,7 @@
 
 import pyrealsense2 as rs
 from rspy.stopwatch import Stopwatch
-from rspy import test
+from rspy import test, log
 import time
 import platform
 
