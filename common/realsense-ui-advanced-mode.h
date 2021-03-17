@@ -6,6 +6,7 @@
 #include <librealsense2/rs_advanced_mode.hpp>
 #include <types.h>
 #include <type_traits>
+#include "../../../common/utilities/string/string-utilities.h"
 
 #define TEXT_BUFF_SIZE 1024
 
@@ -57,63 +58,6 @@ bool* draw_edit_button(const char* id, T val, std::string*& val_str)
     return &edit_mode[id];
 }
 
-
-template<class T>
-inline bool string_to_value(const std::string& str, T& result)
-{
-    try
-    {
-        size_t last_char_idx;
-        if (std::is_arithmetic_v<T>)
-        {
-            if (std::is_integral_v<T>)
-            {
-                result = std::stoi(str, &last_char_idx);
-            }
-            else if (std::is_floating_point_v<T>)
-            {
-                result = std::stof(str, &last_char_idx);
-            }
-        }
-        return str.size() == last_char_idx;
-    }
-    catch (const std::invalid_argument&)
-    {
-        return false;
-    }
-    catch (const std::out_of_range&)
-    {
-        return false;
-    }
-}
-
-
-//template<class T>
-//inline bool string_to_value(const std::string& str, T& result)
-//{
-//    try
-//    {
-//        size_t last_char_idx;
-//        if (std::is_same<T, int>::value)
-//        {
-//            result = std::stoi(str, &last_char_idx);
-//        }
-//        else if (std::is_same<T, float>::value)
-//        {
-//            result = std::stof(str, &last_char_idx);
-//        }
-//        return str.size() == last_char_idx;
-//    }
-//    catch (const std::invalid_argument&)
-//    {
-//        return false;
-//    }
-//    catch (const std::out_of_range&)
-//    {
-//        return false;
-//    }
-//}
-
 template<class T, class S>
 inline void slider_int(std::string& error_message, const char* id, T* val, S T::* field, bool& to_set)
 {
@@ -136,7 +80,7 @@ inline void slider_int(std::string& error_message, const char* id, T* val, S T::
             ImGuiInputTextFlags_EnterReturnsTrue))
         {
             int new_value;
-            if (!string_to_value<int>(buff, new_value))
+            if (!utilities::string::string_to_value<int>(buff, new_value))
             {
                 error_message = "Invalid integer input!";
             }
@@ -192,7 +136,7 @@ inline void slider_float(std::string& error_message, const char* id, T* val, S T
             ImGuiInputTextFlags_EnterReturnsTrue))
         {
             int new_value;
-            if (!string_to_value<int>(buff, new_value))
+            if (!utilities::string::string_to_value<int>(buff, new_value))
             {
                 error_message = "Invalid integer input!";
             }

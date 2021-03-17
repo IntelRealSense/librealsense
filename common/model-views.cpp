@@ -681,7 +681,7 @@ namespace rs2
                                 ImGuiInputTextFlags_EnterReturnsTrue))
                             {
                                 float new_value;
-                                if(!string_to_value<float>(buff, new_value))
+                                if(!utilities::string::string_to_value<float>(buff, new_value))
                                 {
                                     error_message = "Invalid float input!";
                                 }
