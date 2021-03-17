@@ -123,12 +123,13 @@ if pyrs:
 
 def subprocess_run(cmd, stdout = None, timeout = 200):
     """
-    wrapper function for subprocess.run
-    :param cmd: the command to run in the child process
-    :param stdout: where to direct the output of the process to
-    :param timeout: amount of seconds to give the process before forcefully ending it
-    :return: the output written to the given stdout. If the process times out or ends with a non-zero exit status
-             an exception is raised
+    Wrapper function for subprocess.run.
+    If the child process times out or ends with a non-zero exit status an exception is raised!
+    
+    :param cmd: the command and argument for the child process, as a list
+    :param stdout: path of file to direct the output of the process to (None to disable)
+    :param timeout: number of seconds to give the process before forcefully ending it (None to disable)
+    :return: the output written by the child, if stdout is None -- otherwise N/A
     """
     log.d( 'running:', cmd )
     handle = None
@@ -142,8 +143,8 @@ def subprocess_run(cmd, stdout = None, timeout = 200):
                              stdout = stdout,
                              stderr = subprocess.STDOUT,
                              universal_newlines = True,
-                             timeout=timeout,
-                             check = True)
+                             timeout = timeout,
+                             check = True )
         result = rv.stdout
         if not result:
             result = []
