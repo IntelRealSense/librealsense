@@ -95,7 +95,7 @@ static void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrin
     {
         // need to loop until convergence 
         // 10 iterations determined empirically
-        for (auto i = 0; i < 10; i++)
+        for (int i = 0; i < 10; i++)
         {
             float r2 = x * x + y * y;
             float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1])*r2 + intrin->coeffs[0])*r2);
@@ -111,7 +111,7 @@ static void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrin
     {
         // need to loop until convergence 
         // 10 iterations determined empirically
-        for (auto i = 0; i < 10; i++)
+        for (int i = 0; i < 10; i++)
         {
             float r2 = x * x + y * y;
             float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1])*r2 + intrin->coeffs[0])*r2);
