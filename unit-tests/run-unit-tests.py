@@ -121,7 +121,7 @@ os.environ["PYTHONPATH"] = current_dir + os.sep + "py"
 if pyrs:
     os.environ["PYTHONPATH"] += os.pathsep + pyrs_path
 
-def subprocess_run(cmd, stdout = None, timeout = 200):
+def subprocess_run(cmd, stdout = None, timeout = 200, append = False):
     """
     Wrapper function for subprocess.run.
     If the child process times out or ends with a non-zero exit status an exception is raised!
@@ -129,6 +129,8 @@ def subprocess_run(cmd, stdout = None, timeout = 200):
     :param cmd: the command and argument for the child process, as a list
     :param stdout: path of file to direct the output of the process to (None to disable)
     :param timeout: number of seconds to give the process before forcefully ending it (None to disable)
+    :param append: if True and stdout is not None, the log of the test will be appended to the file instead of
+                   overwriting it
     :return: the output written by the child, if stdout is None -- otherwise N/A
     """
     log.d( 'running:', cmd )
@@ -137,7 +139,11 @@ def subprocess_run(cmd, stdout = None, timeout = 200):
     try:
         log.debug_indent()
         if stdout  and  stdout != subprocess.PIPE:
-            handle = open( stdout, "w" )
+            if append:
+                handle = open(stdout, "a" )
+                handle.write("----------------------------------------------------------------------------------------")
+            else:
+                handle = open( stdout, "w" )
             stdout = handle
         rv = subprocess.run( cmd,
                              stdout = stdout,
@@ -279,22 +285,27 @@ class Test(ABC):  # Abstract Base Class
         #log.d( 'found', testname )
         self._name = testname
         self._config = None
+        self._ran_before = False
 
     @abstractmethod
     def run_test( self, configuration = None, log_path = None ):
         pass
 
-    def debug_dump(self):
+    def debug_dump( self ):
         if self._config:
             self._config.debug_dump()
 
     @property
-    def config(self):
+    def config( self ):
         return self._config
 
     @property
-    def name(self):
+    def name( self ):
         return self._name
+
+    @property
+    def ran_before( self ):
+        return self._ran_before
 
     def get_log( self ):
         global to_stdout
@@ -304,7 +315,7 @@ class Test(ABC):  # Abstract Base Class
             path = logdir + os.sep + self.name + ".log"
         return path
 
-    def is_live(self):
+    def is_live( self ):
         """
         Returns True if the test configurations specify devices (test has a 'device' directive)
         """
@@ -347,7 +358,10 @@ class PyTest(Test):
         return cmd
 
     def run_test( self, configuration = None, log_path = None ):
-        subprocess_run( self.command, stdout=log_path )
+        try:
+            subprocess_run( self.command, stdout=log_path, append=self.ran_before )
+        finally:
+            self._ran_before = True
 
 
 class ExeTest(Test):
@@ -398,8 +412,10 @@ class ExeTest(Test):
         return [self.exe]
 
     def run_test( self, configuration = None, log_path = None ):
-        subprocess_run( self.command, stdout=log_path )
-
+        try:
+            subprocess_run( self.command, stdout=log_path, append=self.ran_before )
+        finally:
+            self._ran_before = True
 
 def get_tests():
     global regex, target, pyrs, current_dir, linux
