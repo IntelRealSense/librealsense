@@ -524,7 +524,7 @@ namespace librealsense
         // Block changing visual preset while Max Usable Range is on [RS5-8358]
         if( _owner->get_depth_sensor().supports_option( RS2_OPTION_ENABLE_MAX_USABLE_RANGE )
             && ( _owner->get_depth_sensor().get_option( RS2_OPTION_ENABLE_MAX_USABLE_RANGE ).query()
-                 == 1.0 ) )
+                 == 1.0f ) )
         {
             if( ( RS2_OPTION_VISUAL_PRESET == opt )
                 && ( value == RS2_L500_VISUAL_PRESET_MAX_RANGE ) )
@@ -792,7 +792,7 @@ namespace librealsense
         }
 
         if( ds.supports_option( RS2_OPTION_ENABLE_MAX_USABLE_RANGE )
-            && ( ds.get_option( RS2_OPTION_ENABLE_MAX_USABLE_RANGE ).query() == 1.0 )
+            && ( ds.get_option( RS2_OPTION_ENABLE_MAX_USABLE_RANGE ).query() == 1.0f )
             && ( value != rs2_sensor_mode::RS2_SENSOR_MODE_VGA ) )
         {
             ds.get_option( RS2_OPTION_ENABLE_MAX_USABLE_RANGE ).set( 0.0f );
