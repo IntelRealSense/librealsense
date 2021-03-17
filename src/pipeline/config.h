@@ -38,7 +38,6 @@ namespace librealsense
                 _device_request = other._device_request;
                 _stream_requests = other._stream_requests;
                 _enable_all_streams = other._enable_all_streams;
-                _disable_all_streams = other._disable_all_streams;
                 _stream_requests = other._stream_requests;
                 _resolved_profile = nullptr;
                 _playback_loop = other._playback_loop;
@@ -54,18 +53,15 @@ namespace librealsense
             std::shared_ptr<device_interface> resolve_device_requests(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout);
             stream_profiles get_default_configuration(std::shared_ptr<device_interface> dev);
             std::shared_ptr<profile> resolve(std::shared_ptr<device_interface> dev);
-            util::config filtered_stream_requests(util::config& config, stream_profiles& profiles);
+            util::config filter_stream_requests(const stream_profiles& profiles) const;
 
             device_request _device_request;
             std::map<std::pair<rs2_stream, int>, stream_profile> _stream_requests;
             std::mutex _mtx;
             bool _enable_all_streams = false;
-
             std::shared_ptr<profile> _resolved_profile;
             bool _playback_loop;
-
             std::vector<std::pair<rs2_stream, int>> _streams_to_disable;
-            bool _disable_all_streams = false;
         };
     }
 }

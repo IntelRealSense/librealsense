@@ -99,8 +99,10 @@ std::vector<profile> select_profiles(std::vector<profile>& all_profiles, rs2::co
     for (auto idx = 0; idx < n; idx++)
     {
         filtered_profiles.push_back(*(it + idx));
-        if (enable_streams) cfg.enable_stream((it + idx)->stream, (it + idx)->index);
-        else cfg.disable_stream((it + idx)->stream, (it + idx)->index);
+        if (enable_streams) 
+            cfg.enable_stream((it + idx)->stream, (it + idx)->index);
+        else 
+            cfg.disable_stream((it + idx)->stream, (it + idx)->index);
     }
     return filtered_profiles;
 }
@@ -451,14 +453,12 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
         }
     }
 }
-TEST_CASE("Enable disable all streams GITHUB", "[live]")
+TEST_CASE("Enable disable all streams", "[live]")
 {
     // Require at least one device to be plugged in
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        std::cout << "Enable disable all streams GITHUB started" << std::endl;
-
         auto list = ctx.query_devices();
         REQUIRE(list.size());
         auto dev = list.front();
@@ -466,9 +466,6 @@ TEST_CASE("Enable disable all streams GITHUB", "[live]")
 
         REQUIRE(dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE));
         std::string device_type = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-
-        if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D400") device_type = "D400";
-        if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "SR300") device_type = "SR300";
 
         bool usb3_device = is_usb3(dev);
         int fps = usb3_device ? 30 : 15; // In USB2 Mode the devices will switch to lower FPS rates
@@ -524,13 +521,12 @@ TEST_CASE("Enable disable all streams GITHUB", "[live]")
         }
         for (auto& enable_all_streams : streams_state)
         {
-            if(enable_all_streams) std::cout << "==================================== Enable All Streams ====================================" << std::endl;
-            else std::cout << "==================================== Disable All Streams ====================================" << std::endl;
+            CAPTURE(enable_all_streams);
             for (auto i = 0; i < res.second.size(); i++)
             {
                 for (auto j = 0; j < res.second.size() - 1; j++) // -1 needed to keep at least 1 enabled stream
                 {
-                    std::cout << "----------------- Iteration (" << i << "," << j << ") ----------------" << std::endl;
+                    CAPTURE("(" , i , ", " , j , ")");
                     rs2::config cfg;
                     counters.clear();
                     stream_names.clear();
@@ -538,8 +534,10 @@ TEST_CASE("Enable disable all streams GITHUB", "[live]")
                     enabled_streams.clear();
                     disabled_streams.clear();
                     filtered_streams = filtered_streams_init;
-                    if (enable_all_streams) cfg.enable_all_streams();
-                    else cfg.disable_all_streams();
+                    if (enable_all_streams) 
+                        cfg.enable_all_streams();
+                    else 
+                        cfg.disable_all_streams();
                     enabled_streams = select_profiles(res.second, cfg, i);
                     disabled_streams = select_profiles(res.second, cfg, j, false); 
                     std::vector<profile> tmp;
@@ -583,9 +581,8 @@ TEST_CASE("Enable disable all streams GITHUB", "[live]")
                         CAPTURE(stream_names[p.first]);
                         CAPTURE(filtered_streams);
                         CHECK(filtered_streams.count(stream_types[p.first]) > 0);
-                        std::cout << stream_names[p.first] << "[" << p.first << "]: " << p.second << " [frames] || ";
+                        CAPTURE( stream_names[p.first] , "[" , p.first , "]: " , p.second , " [frames] || ");
                     }
-                    std::cout << std::endl;
                     pipe.stop();
                 }
             }
