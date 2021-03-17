@@ -34,18 +34,15 @@ def restart_profiles():
     profiles with the given parameters to allow quick profile creation
     """
     global cp, dp, color_sensor, depth_sensor
-    cp = next(p for p in color_sensor.profiles if p.fps() == 30
-              and p.stream_type() == rs.stream.color
-              and p.format() == rs.format.yuyv
-              and p.as_video_stream_profile().width() == 1280
-              and p.as_video_stream_profile().height() == 720)
-
-    dp = next(p for p in
-              depth_sensor.profiles if p.fps() == 30
-              and p.stream_type() == rs.stream.depth
-              and p.format() == rs.format.z16
-              and p.as_video_stream_profile().width() == 1024
-              and p.as_video_stream_profile().height() == 768)
+    for p in color_sensor.profiles:
+        if p.is_default() and p.stream_type() == rs.stream.color:
+            cp = p
+            break
+    for p in depth_sensor.profiles:
+        if p.is_default() and p.stream_type() == rs.stream.depth:
+            dp = p
+            break
+    
 
 # create temporary folder to record to that will be deleted automatically at the end of the script
 temp_dir = tempfile.TemporaryDirectory(prefix='recordings_')
