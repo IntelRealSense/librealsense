@@ -99,8 +99,8 @@ static void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrin
         {
             float r2 = x * x + y * y;
             float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1])*r2 + intrin->coeffs[0])*r2);
-            auto xq = x / icdist;
-            auto yq = y / icdist;
+            float xq = x / icdist;
+            float yq = y / icdist;
             float delta_x = 2 * intrin->coeffs[2] * xq*yq + intrin->coeffs[3] * (r2 + 2 * xq*xq);
             float delta_y = 2 * intrin->coeffs[3] * xq*yq + intrin->coeffs[2] * (r2 + 2 * yq*yq);
             x = (xo - delta_x)*icdist;
