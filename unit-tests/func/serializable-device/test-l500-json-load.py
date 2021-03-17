@@ -39,7 +39,6 @@ def log_settings_differences( data ):
     log.debug_indent()
     try:
         # logging the differences in the settings between the expected and the actual values
-        log.d( "Printing differences between expected and actual settings values:" )
         for key in actual_data_dict.keys():
             if key not in data_dict:
                 log.d( "New setting added to json:", key)
@@ -48,7 +47,7 @@ def log_settings_differences( data ):
                 # 3 for low ambient. Also all lines regarding temperatures depend on the camera and don't affect the preset
                 continue
             elif data_dict[ key ] != actual_data_dict[ key ]:
-                log.d( "Setting", key, "was expected to have value of", data_dict[ key ],
+                log.d( key, "was expected to have value of", data_dict[ key ],
                        "but actually had value of", actual_data_dict[ key ])
     finally:
         log.debug_unindent()
@@ -85,7 +84,7 @@ low_ambient_data_with_default_preset = """
     "Laser Power": 100,
     "Ma Temperature": 39.667610168457,
     "Mc Temperature": 31.6955661773682,
-    "Min Distance": 95,
+    "Min Distance": 190,
     "Noise Estimation": 0.0,
     "Noise Filtering": 4,
     "Post Processing Sharpening": 1,
