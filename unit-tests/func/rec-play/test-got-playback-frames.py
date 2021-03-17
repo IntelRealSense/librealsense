@@ -4,7 +4,7 @@
 #test:device L500*
 #test:device D400*
 
-import pyrealsense2 as rs, os, time, tempfile, sys
+import pyrealsense2 as rs, os, time, tempfile
 from rspy import devices, log, test
 
 cp = dp = None
