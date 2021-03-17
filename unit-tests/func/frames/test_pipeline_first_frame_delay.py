@@ -6,7 +6,8 @@
 
 import pyrealsense2 as rs
 from rspy.stopwatch import Stopwatch
-from rspy import test
+import sys
+from rspy import test, log
 import time
 import platform
 
@@ -42,8 +43,7 @@ elif product_line == "L500":
     max_delay_for_depth_frame = 3  # Includes L515 depth frame FW delay of 1.5 [sec]
     max_delay_for_color_frame = 1.5
 else:
-    print("This test support only D400 + L515 devices")
-    exit (0)
+    log.f("This test support only D400 + L515 devices")
 
 test.start("Testing pipeline first depth frame delay on " + product_line + " device - " + platform.system() + " OS")
 depth_cfg = rs.config()
