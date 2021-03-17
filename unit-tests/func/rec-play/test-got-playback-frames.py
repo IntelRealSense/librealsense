@@ -8,6 +8,10 @@ import pyrealsense2 as rs, os, time, tempfile, sys
 from rspy import devices, log, test
 
 cp = dp = None
+color_format = depth_format = None
+color_fps = depth_fps = None
+color_width = depth_width = None
+color_height = depth_height = None
 previous_depth_frame_number = -1
 previous_color_frame_number = -1
 got_frames = False
@@ -16,13 +20,27 @@ dev = test.find_first_device_or_exit()
 depth_sensor = dev.first_depth_sensor()
 color_sensor = dev.first_color_sensor()
 
+# finding the wanted profile settings. We want to use default settings except for color fps where we want
+# the lowest value available
 for p in color_sensor.profiles:
     if p.is_default() and p.stream_type() == rs.stream.color:
-        cp = p
+        color_format = p.format()
+        color_fps = p.fps()
+        color_width = p.as_video_stream_profile().width()
+        color_height = p.as_video_stream_profile().height()
         break
+for p in color_sensor.profiles:
+    if p.stream_type() == rs.stream.color and p.format() == color_format and \
+       p.fps() < color_fps and\
+       p.as_video_stream_profile().width() == color_width and \
+       p.as_video_stream_profile().height() == color_height:
+        color_fps = p.fps()
 for p in depth_sensor.profiles:
     if p.is_default() and p.stream_type() == rs.stream.depth:
-        dp = p
+        depth_format = p.format()
+        depth_fps = p.fps()
+        depth_width = p.as_video_stream_profile().width()
+        depth_height = p.as_video_stream_profile().height()
         break
 
 def got_frame():
@@ -47,27 +65,20 @@ def restart_profiles():
     profiles with the given parameters to allow quick profile creation
     """
     global cp, dp, color_sensor, depth_sensor
-    # for p in color_sensor.profiles:
-    #     if p.is_default() and p.stream_type() == rs.stream.color:
-    #         color_default = p
-    #         break
-    # for p in depth_sensor.profiles:
-    #     if p.is_default() and p.stream_type() == rs.stream.depth:
-    #         depth_default = p
-    #         break
-    # for p in color_sensor.profiles:
-    #     if p.stream_type() == color_default.stream_type() and p.format() == color_default.format() and \
-    #     p.as_video_stream_profile().width() == color_default.as_video_stream_profile().width() and \
-    #     p.as_video_stream_profile().height() == color_default.as_video_stream_profile().height():
-    #         print(p.fps)
-    # for p in depth_sensor.profiles:
-    #     if p.stream_type() == depth_default.stream_type() and p.format() == depth_default.format() and \
-    #     p.as_video_stream_profile().width() == depth_default.as_video_stream_profile().width() and \
-    #     p.as_video_stream_profile().height() == depth_default.as_video_stream_profile().height():
-    #         print(p.fps)
-    # sys.exit(0)
+    global color_format, color_fps, color_width, color_height
+    global depth_format, depth_fps, depth_width, depth_height
+    cp = next( p for p in color_sensor.profiles if p.fps() == color_fps
+               and p.stream_type() == rs.stream.color
+               and p.format() == color_format
+               and p.as_video_stream_profile().width() == color_width
+               and p.as_video_stream_profile().height() == color_height )
 
-    
+    dp = next( p for p in depth_sensor.profiles if p.fps() == depth_fps
+               and p.stream_type() == rs.stream.depth
+               and p.format() == p.format() == depth_format
+               and p.as_video_stream_profile().width() == depth_width
+               and p.as_video_stream_profile().height() == depth_height )
+
 
 # create temporary folder to record to that will be deleted automatically at the end of the script
 temp_dir = tempfile.TemporaryDirectory(prefix='recordings_')
@@ -193,16 +204,16 @@ test.start("Trying to record and playback using sensor interface with syncer")
 try:
     sync = rs.syncer()
     dev = test.find_first_device_or_exit()
-    recorder = rs.recorder(file_name, dev)
+    recorder = rs.recorder( file_name, dev )
     depth_sensor = dev.first_depth_sensor()
     color_sensor = dev.first_color_sensor()
 
     restart_profiles()
 
-    depth_sensor.open(dp)
-    depth_sensor.start(sync)
-    color_sensor.open(cp)
-    color_sensor.start(sync)
+    depth_sensor.open( dp )
+    depth_sensor.start( sync )
+    color_sensor.open( cp )
+    color_sensor.start( sync )
 
     time.sleep(3)
 
@@ -214,17 +225,17 @@ try:
     depth_sensor.close()
 
     ctx = rs.context()
-    playback = ctx.load_device(file_name)
+    playback = ctx.load_device( file_name )
 
     depth_sensor = playback.first_depth_sensor()
     color_sensor = playback.first_color_sensor()
 
     restart_profiles()
 
-    depth_sensor.open(dp)
-    depth_sensor.start(sync)
-    color_sensor.open(cp)
-    color_sensor.start(sync)
+    depth_sensor.open( dp )
+    depth_sensor.start( sync )
+    color_sensor.open( cp )
+    color_sensor.start( sync )
 
     # if the record-playback worked we will get frames, otherwise the next line will timeout and throw
     sync.wait_for_frames()
