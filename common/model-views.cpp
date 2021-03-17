@@ -3117,7 +3117,17 @@ namespace rs2
 
                 if (viewer.metric_system)
                 {
-                    if (meters > 0.f && meters < 0.2f)
+                    // depth is displayed in mm when distance is below 20 cm and gets back to meters when above 30 cm
+                    static bool display_in_mm = false;
+                    if (!display_in_mm && meters > 0.f && meters < 0.2f)
+                    {
+                        display_in_mm = true;
+                    }
+                    else if (display_in_mm && meters > 0.3f)
+                    {
+                        display_in_mm = false;
+                    }
+                    if (display_in_mm)
                         ss << std::dec << " = " << std::setprecision(3) << meters * 1000 << " millimeters";
                     else
                         ss << std::dec << " = " << std::setprecision(3) << meters << " meters";
