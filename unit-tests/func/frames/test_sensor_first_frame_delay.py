@@ -13,19 +13,20 @@ import platform
 # Start depth + color streams and measure the time from stream opened until first frame arrived using sensor API.
 # Verify that the time do not exceeds the maximum time allowed
 # Note - Using Windows Media Foundation to handle power management between USB actions take time (~27 ms)
-open_call_stopwatch = Stopwatch()
 
 
-# Function will wait for the first frame for 'max_delay_allowed' + 1 extra second
-# If the frame arrive it will return the time it took since open() call
-# If no frame it will return 'max_delay_allowed'
 def time_to_first_frame(sensor, profile, max_delay_allowed):
+    """
+    Wait for the first frame for 'max_delay_allowed' + 1 extra second
+    If the frame arrives it will return the seconds it took since open() call
+    If no frame it will return 'max_delay_allowed'
+    """
     first_frame_time = max_delay_allowed
+    open_call_stopwatch = Stopwatch()
 
     def frame_cb(frame):
-        nonlocal first_frame_time
+        nonlocal first_frame_time, open_call_stopwatch
         if first_frame_time == max_delay_allowed:
-            global open_call_stopwatch
             first_frame_time = open_call_stopwatch.get_elapsed()
 
     open_call_stopwatch.reset()
@@ -43,32 +44,34 @@ def time_to_first_frame(sensor, profile, max_delay_allowed):
 
     return first_frame_time
 
-time.sleep(3) # The device starts at D0 (Operational) state, allow time for it to get into idle state
 
-max_time_for_device_creation = 1.5
-max_delay_for_depth_frame = 5
-max_delay_for_color_frame = 5
+# The device starts at D0 (Operational) state, allow time for it to get into idle state
+time.sleep(3)
 
+
+#####################################################################################################
 test.start("Testing device creation time on " + platform.system() + " OS")
 device_creation_stopwatch = Stopwatch()
 dev = test.find_first_device_or_exit()
 device_creation_time = device_creation_stopwatch.get_elapsed()
+max_time_for_device_creation = 1.5
 print("Device creation time is: {:.3f} [sec] max allowed is: {:.1f} [sec] ".format(device_creation_time, max_time_for_device_creation))
 test.check(device_creation_time < max_time_for_device_creation)
 test.finish()
 
 
-product_line = "Unknown"
 # Set maximum delay for first frame according to product line
-if dev.supports(rs.camera_info.product_line):
-    product_line = dev.get_info(rs.camera_info.product_line)
-    if product_line == "D400":
-        max_delay_for_depth_frame = 1.5
-        max_delay_for_color_frame = 1.5
-    elif product_line == "L500":
-        max_delay_for_depth_frame = 2.5 # L515 depth frame has a 1.5 seconds built in delay at the FW side + 1.0 second for LRS
-        max_delay_for_color_frame = 1.5
+product_line = dev.get_info(rs.camera_info.product_line)
+if product_line == "D400":
+    max_delay_for_depth_frame = 1.5
+    max_delay_for_color_frame = 1.5
+elif product_line == "L500":
+    max_delay_for_depth_frame = 2.5 # L515 depth frame has a 1.5 seconds built in delay at the FW side + 1.0 second for LRS
+    max_delay_for_color_frame = 1.5
+else:
+    log.f( "This test support only D400 + L515 devices" )
 
+    
 ds = dev.first_depth_sensor()
 cs = dev.first_color_sensor()
 
@@ -82,14 +85,22 @@ cp = next(p for p in
           and p.stream_type() == rs.stream.color
           and p.format() == rs.format.rgb8)
 
+
+#####################################################################################################
 test.start("Testing first depth frame delay on " + product_line + " device - "+ platform.system() + " OS")
 first_depth_frame_delay = time_to_first_frame(ds, dp, max_delay_for_depth_frame)
 print("Time until first depth frame is: {:.3f} [sec] max allowed is: {:.1f} [sec] ".format(first_depth_frame_delay, max_delay_for_depth_frame))
 test.check(first_depth_frame_delay < max_delay_for_depth_frame)
 test.finish()
 
+
+#####################################################################################################
 test.start("Testing first color frame delay on " + product_line + " device - "+ platform.system() + " OS")
 first_color_frame_delay = time_to_first_frame(cs, cp, max_delay_for_color_frame)
 print("Time until first color frame is: {:.3f} [sec] max allowed is: {:.1f} [sec] ".format(first_color_frame_delay, max_delay_for_color_frame))
 test.check(first_color_frame_delay < max_delay_for_color_frame)
 test.finish()
+
+
+#####################################################################################################
+test.print_results_and_exit()
