@@ -34,15 +34,16 @@ max_delay_for_color_frame = 5
 # Set maximum delay for first frame according to product line
 dev = test.find_first_device_or_exit()
 
-product_line = "Unknown"
-if dev.supports(rs.camera_info.product_line):
-    product_line = dev.get_info(rs.camera_info.product_line)
-    if product_line == "D400":
-        max_delay_for_depth_frame = 2
-        max_delay_for_color_frame = 2
-    elif product_line == "L500":
-        max_delay_for_depth_frame = 3  # L515 depth frame has a 1.5 seconds built in delay at the FW side + 1.0 second for LRS
-        max_delay_for_color_frame = 1.5
+product_line = dev.get_info(rs.camera_info.product_line)
+if product_line == "D400":
+    max_delay_for_depth_frame = 2
+    max_delay_for_color_frame = 2
+elif product_line == "L500":
+    max_delay_for_depth_frame = 3  # Includes L515 depth frame FW delay of 1.5 [sec]
+    max_delay_for_color_frame = 1.5
+else:
+    print("This test support only D400 + L515 devices")
+    exit (0)
 
 test.start("Testing pipeline first depth frame delay on " + product_line + " device - " + platform.system() + " OS")
 depth_cfg = rs.config()
