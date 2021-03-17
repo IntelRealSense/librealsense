@@ -4,13 +4,26 @@
 #test:device L500*
 #test:device D400*
 
-import pyrealsense2 as rs, os, time, tempfile
+import pyrealsense2 as rs, os, time, tempfile, sys
 from rspy import devices, log, test
 
 cp = dp = None
 previous_depth_frame_number = -1
 previous_color_frame_number = -1
 got_frames = False
+
+dev = test.find_first_device_or_exit()
+depth_sensor = dev.first_depth_sensor()
+color_sensor = dev.first_color_sensor()
+
+for p in color_sensor.profiles:
+    if p.is_default() and p.stream_type() == rs.stream.color:
+        cp = p
+        break
+for p in depth_sensor.profiles:
+    if p.is_default() and p.stream_type() == rs.stream.depth:
+        dp = p
+        break
 
 def got_frame():
     global got_frames
@@ -34,14 +47,26 @@ def restart_profiles():
     profiles with the given parameters to allow quick profile creation
     """
     global cp, dp, color_sensor, depth_sensor
-    for p in color_sensor.profiles:
-        if p.is_default() and p.stream_type() == rs.stream.color:
-            cp = p
-            break
-    for p in depth_sensor.profiles:
-        if p.is_default() and p.stream_type() == rs.stream.depth:
-            dp = p
-            break
+    # for p in color_sensor.profiles:
+    #     if p.is_default() and p.stream_type() == rs.stream.color:
+    #         color_default = p
+    #         break
+    # for p in depth_sensor.profiles:
+    #     if p.is_default() and p.stream_type() == rs.stream.depth:
+    #         depth_default = p
+    #         break
+    # for p in color_sensor.profiles:
+    #     if p.stream_type() == color_default.stream_type() and p.format() == color_default.format() and \
+    #     p.as_video_stream_profile().width() == color_default.as_video_stream_profile().width() and \
+    #     p.as_video_stream_profile().height() == color_default.as_video_stream_profile().height():
+    #         print(p.fps)
+    # for p in depth_sensor.profiles:
+    #     if p.stream_type() == depth_default.stream_type() and p.format() == depth_default.format() and \
+    #     p.as_video_stream_profile().width() == depth_default.as_video_stream_profile().width() and \
+    #     p.as_video_stream_profile().height() == depth_default.as_video_stream_profile().height():
+    #         print(p.fps)
+    # sys.exit(0)
+
     
 
 # create temporary folder to record to that will be deleted automatically at the end of the script
