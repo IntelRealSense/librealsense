@@ -111,7 +111,7 @@ namespace librealsense
                     {
                         if (st.first == p->get_stream_type())
                         {
-                            if (st.second > 0 && st.second != p->get_stream_index()) break; // don't disable stream if indexes don't match
+                            if (st.second != p->get_stream_index()) break; // don't disable stream if indexes don't match
                             disable_stream = true;
                             break;
                         }
