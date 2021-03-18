@@ -8,86 +8,90 @@
 namespace utilities {
     namespace string {
 
-        // Converts string to number
-        // returns true if conversion succeeded, false otherwise
+        // Converts string to value via a given argument with desire type
         // Input: 
         //      - string of a number
-        //      - parameter T - the number's type
+        //      - argument with T type
+        // returns true if conversion succeeded
 
-        template<class T>
+        // NOTE for unsigned types:
+        // if the minus sign was part of the input sequence, 
+        // the numeric value calculated from the sequence of digits is negated as if 
+        // by unary minus in the result type, which applies unsigned integer wraparound rules.
+        // for example - when stoul gets'-4', it will return -(unsigned long)4
+
+        template <typename T, typename std::enable_if <std::is_arithmetic<T>::value>::type* = nullptr> // check if T is arithmetic during compile
         inline bool string_to_value(const std::string& str, T& result)
         {
             try
             {
                 size_t last_char_idx;
-                if (std::is_arithmetic_v<T>)
+                if (std::is_integral<T>::value)
                 {
-                    if (std::is_integral_v<T>)
+                        if (std::is_same<T, unsigned long>::value)
                     {
-                         if (std::is_same<T, unsigned long>::value)
-                        {
-                            result = std::stoul(str, &last_char_idx);
-                        }
-                        else if (std::is_same<T, unsigned long long>::value)
-                        {
-                            result = std::stoull(str, &last_char_idx);
-                        }
-                        else if (std::is_same<T, long>::value)
-                        {
-                            result = std::stol(str, &last_char_idx);
-                        }
-                        else if (std::is_same<T, long long>::value)
-                        {
-                            result = std::stoll(str, &last_char_idx);
-                        }
-                        else if (std::is_same<T, int>::value)
-                        {
+                        if (str[0] == '-') return false; //for explanation see 'NOTE for unsigned types'
+                        result = std::stoul(str, &last_char_idx);
+                    }
+                    else if (std::is_same<T, unsigned long long>::value)
+                    {
+                            if (str[0] == '-') return false;
+                        result = std::stoull(str, &last_char_idx);
+                    }
+                    else if (std::is_same<T, long>::value)
+                    {
+                        result = std::stol(str, &last_char_idx);
+                    }
+                    else if (std::is_same<T, long long>::value)
+                    {
+                        result = std::stoll(str, &last_char_idx);
+                    }
+                    else if (std::is_same<T, int>::value)
+                    {
+                        result = std::stoi(str, &last_char_idx);
+                    }
+                    else if (std::is_same<T, short>::value)
+                        { // no dedicated function in std
                             result = std::stoi(str, &last_char_idx);
                         }
-                        else if (std::is_same<T, short>::value)
-                         { // no dedicated function in std
-                             result = std::stoi(str, &last_char_idx);
-                         }
-                        else if (std::is_same<T, unsigned short>::value)
-                         { // no dedicated function in std
-                             result = std::stoul(str, &last_char_idx);
-                         }
-                        else if (std::is_same<T, unsigned int>::value)
-                         { // no dedicated function in std - unsgined in corresponds to 16 bit, and unsigned long  corresponds to 32 bit
-                             result = std::stoul(str, &last_char_idx);
-                         }
-                        else
-                        {
-                            return false;
+                    else if (std::is_same<T, unsigned short>::value)
+                        { // no dedicated function in std
+                            if (str[0] == '-') return false;
+                            result = std::stoul(str, &last_char_idx);
                         }
-                    }
-                    else if (std::is_floating_point_v<T>)
+                    else if (std::is_same<T, unsigned int>::value)
+                        { // no dedicated function in std - unsgined in corresponds to 16 bit, and unsigned long corresponds to 32 bit
+                            if (str[0] == '-') return false; 
+                            result = std::stoul(str, &last_char_idx);
+                        }
+                    else
                     {
-                        if (std::is_same<T, double>::value)
-                        {
-                            result = std::stod(str, &last_char_idx);
-                        }
-                        else if (std::is_same<T, long double>::value)
-                        {
-                            result = std::stold(str, &last_char_idx);
-                        }
-                        else if (std::is_same<T, float>::value)
-                        {
-                            result = std::stof(str, &last_char_idx);
-                        }
-                        else
-                        {
                             return false;
-                        }
                     }
-
-                    return str.size() == last_char_idx; // all the chars in the string are converted to the value (thus there are no other chars other than numbers)
-
                 }
-                else // T is not arithmetic  
+                else if (std::is_floating_point<T>::value)
                 {
-                    return false;
+                    if (std::is_same<T, float>::value)
+                    {
+                        result = std::stof(str, &last_char_idx);
+                        if (std::isnan((float)result) || std::isinf((float)result)) return false; // if value is NaN or inf (or -inf), return false
+                    }
+                    else if (std::is_same<T, double>::value)
+                    {
+                        result = std::stod(str, &last_char_idx);
+                        if (std::isnan((double)result) || std::isinf((double)result)) return false;
+                    }
+                    else if (std::is_same<T, long double>::value)
+                    {
+                        result = std::stold(str, &last_char_idx);
+                        if (std::isnan((long double)result) || std::isinf((long double)result)) return false;
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
+                return str.size() == last_char_idx; // all the chars in the string are converted to the value (thus there are no other chars other than numbers)
             }
             catch (const std::invalid_argument&)
             {
@@ -98,6 +102,5 @@ namespace utilities {
                 return false;
             }
         }
-
     }  // namespace string
 }  // namespace utilities
