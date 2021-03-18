@@ -447,29 +447,66 @@ TEST_CASE("Enable disable all streams", "[live]")
     class streams_cfg
     {
     public:
-        streams_cfg(std::pair<std::vector<rs2::sensor>, std::vector<profile>> res, bool enable_all_streams) :_res(res) ,_enable_all_streams(enable_all_streams)
+        streams_cfg(std::pair<std::vector<rs2::sensor>, std::vector<profile>> res) :_res(res)
         {
             for (auto& p : res.second)
             {
                 auto idx = p.index;
-                if (_filtered_streams_init[p.stream]) idx = 0;
-                _filtered_streams_init[p.stream] = idx;
+                if (_filtered_streams[p.stream]) idx = 0;
+                _filtered_streams[p.stream] = idx;
             }
-            _filtered_streams = _filtered_streams_init;
         }
-        rs2::config get_cfg() { return _cfg; };
-        std::map<rs2_stream, int> get_filtered_streams() {
-            return _filtered_streams;
-        };
-        std::map<rs2_stream, int> filter_streams(int i, int j)
+
+        void test_configuration(int i, int j, bool enable_all_streams)
         {
-            _filtered_streams = _filtered_streams_init;
-            if (_enable_all_streams)
+            filter_streams(i, j, enable_all_streams);
+
+            // Define frame callback
+            // The callback is executed on a sensor thread and can be called simultaneously from multiple sensors
+            // Therefore any modification to common memory should be done under lock
+            std::mutex mutex;
+            auto callback = [&](const rs2::frame& frame)
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                if (rs2::frameset fs = frame.as<rs2::frameset>())
+                {
+                    // With callbacks, all synchronized stream will arrive in a single frameset
+                    for (const rs2::frame& f : fs)
+                        _counters[f.get_profile().unique_id()]++;
+                }
+                else
+                {
+                    // Stream that bypass synchronization (such as IMU) will produce single frames
+                    _counters[frame.get_profile().unique_id()]++;
+                }
+            };
+
+            // Start streaming through the callback with default recommended configuration
+            // The default video configuration contains Depth and Color streams
+            // If a device is capable to stream IMU data, both Gyro and Accelerometer are enabled by default
+            auto profiles = _pipe.start(_cfg, callback);
+            for (auto p : profiles.get_streams())
+                _stream_names_types[p.unique_id()] = { p.stream_name(), p.stream_type() };
+
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            // Collect the enabled streams names
+            for (auto p : _counters)
+            {
+                CAPTURE(_stream_names_types[p.first].first);
+                CHECK(_filtered_streams.count(_stream_names_types[p.first].second) > 0);
+            }
+            _pipe.stop();
+        }
+
+    private:
+        void filter_streams(int i, int j, bool enable_all_streams)
+        {
+            if (enable_all_streams)
                 _cfg.enable_all_streams();
             else
                 _cfg.disable_all_streams();
-            enabled_streams = select_profiles(_cfg, i);
-            disabled_streams = select_profiles(_cfg, j, false);
+            auto enabled_streams = select_profiles(_cfg, i);
+            auto disabled_streams = select_profiles(_cfg, j, false);
             std::vector<profile> tmp;
             for (auto& p : enabled_streams)
             {
@@ -478,7 +515,7 @@ TEST_CASE("Enable disable all streams", "[live]")
             }
             enabled_streams = tmp;
             // Update filtered streams according to requested streams and current state (enable all streams or disable all streams)
-            if (!enabled_streams.empty() && !_enable_all_streams)
+            if (!enabled_streams.empty() && !enable_all_streams)
             {
                 _filtered_streams.clear();
                 for (auto& en_p : enabled_streams)
@@ -491,11 +528,11 @@ TEST_CASE("Enable disable all streams", "[live]")
             // Filter out disabled streams
             for (auto& p : disabled_streams)
             {
-                if (_filtered_streams[p.stream] && _filtered_streams[p.stream] == p.index) _filtered_streams.erase(p.stream);
+                if (_filtered_streams[p.stream] && _filtered_streams[p.stream] == p.index)
+                    _filtered_streams.erase(p.stream);
             }
-
-            return _filtered_streams;
         }
+
         std::vector<profile> select_profiles(rs2::config& cfg, size_t n, bool enable_streams = true)
         {
             std::vector<profile> filtered_profiles;
@@ -510,17 +547,13 @@ TEST_CASE("Enable disable all streams", "[live]")
             }
             return filtered_profiles;
         }
-    private:
+
         std::pair<std::vector<rs2::sensor>, std::vector<profile>> _res;
         rs2::config _cfg;
-        
-        //std::map<int, std::string> stream_names;
-        //std::map<int, rs2_stream> stream_types;
-        std::vector<profile> enabled_streams;
-        std::vector<profile> disabled_streams;
         std::map<rs2_stream, int> _filtered_streams;
-        std::map<rs2_stream, int> _filtered_streams_init;
-        bool _enable_all_streams;
+        std::map<int, int> _counters;
+        std::map<int, std::pair < std::string, rs2_stream>> _stream_names_types;
+        rs2::pipeline _pipe;
     };
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -546,15 +579,13 @@ TEST_CASE("Enable disable all streams", "[live]")
             width = 640;
         }
         auto res = configure_all_supported_streams(dev, width, height, fps);
-        
+
+        // github test : https://github.com/IntelRealSense/librealsense/issues/3919
+        rs2::config cfg;
         std::map<int, int> counters;
-        std::map<int, std::string> stream_names;
-        std::map<int, rs2_stream> stream_types;
+        rs2::pipeline pipe;
         std::mutex mutex;
-        //streams_cfg st_cfg(res);
-        // Define frame callback
-        // The callback is executed on a sensor thread and can be called simultaneously from multiple sensors
-        // Therefore any modification to common memory should be done under lock
+        std::map<int, std::pair < std::string, rs2_stream>> stream_names_types;
         auto callback = [&](const rs2::frame& frame)
         {
             std::lock_guard<std::mutex> lock(mutex);
@@ -570,21 +601,24 @@ TEST_CASE("Enable disable all streams", "[live]")
                 counters[frame.get_profile().unique_id()]++;
             }
         };
+        
+        CAPTURE("Github test");
+        cfg.enable_all_streams();
+        //cfg.disable_stream(RS2_STREAM_COLOR);
 
-        // Declare RealSense pipeline, encapsulating the actual device and sensors.
-        rs2::pipeline pipe;
-        /*std::vector<profile> enabled_streams;
-        std::vector<profile> disabled_streams;
-        std::map<rs2_stream, int> filtered_streams;
-        std::map<rs2_stream, int> filtered_streams_init;*/
-        bool streams_state[2] = { false, true};
-
-        /*for (auto& p : res.second)
+        auto profiles = pipe.start(cfg, callback);
+        for (auto p : profiles.get_streams())
+            stream_names_types[p.unique_id()] = { p.stream_name(), p.stream_type() };
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        for (auto p : counters)
         {
-            auto idx = p.index;
-            if (st_cfg.filtered_streams_init[p.stream]) idx = 0;
-            st_cfg.filtered_streams_init[p.stream] = idx;
-        }*/
+            CAPTURE(stream_names_types[p.first].first);
+            CHECK(stream_names_types[p.first].second != RS2_STREAM_COLOR);
+        }
+        pipe.stop();
+
+
+        bool streams_state[2] = { true, false};
         for (auto& enable_all_streams : streams_state)
         {
             CAPTURE(enable_all_streams);
@@ -592,30 +626,9 @@ TEST_CASE("Enable disable all streams", "[live]")
             {
                 for (auto j = 0; j < res.second.size() - 1; j++) // -1 needed to keep at least 1 enabled stream
                 {
-                    CAPTURE("(" , i , ", " , j , ")");
-                    streams_cfg st_cfg(res, enable_all_streams);
-                    auto filtered_streams = st_cfg.filter_streams(i, j);
-                    // Start streaming through the callback with default recommended configuration
-                    // The default video configuration contains Depth and Color streams
-                    // If a device is capable to stream IMU data, both Gyro and Accelerometer are enabled by default
-                    auto profiles = pipe.start(st_cfg.get_cfg(), callback);
-                    for (auto p : profiles.get_streams())
-                    {
-                        stream_names[p.unique_id()] = p.stream_name();
-                        stream_types[p.unique_id()] = p.stream_type();
-                    }
-                    std::this_thread::sleep_for(std::chrono::seconds(1));
-                    // Collect the enabled streams names
-                    for (auto p : counters)
-                    {
-                        CAPTURE(p.first);
-                        CHECK(stream_names.count(p.first) > 0);
-                        CAPTURE(stream_names[p.first]);
-                        CAPTURE(filtered_streams);
-                        CHECK(filtered_streams.count(stream_types[p.first]) > 0);
-                        CAPTURE(stream_names[p.first] , "[" , p.first , "]: " , p.second , " [frames] || ");
-                    }
-                    pipe.stop();
+                    CAPTURE(i,j);
+                    streams_cfg st_cfg(res);
+                    st_cfg.test_configuration(i, j, enable_all_streams);
                 }
             }
         }
