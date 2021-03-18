@@ -141,7 +141,7 @@ def subprocess_run(cmd, stdout = None, timeout = 200, append = False):
         if stdout  and  stdout != subprocess.PIPE:
             if append:
                 handle = open(stdout, "a" )
-                handle.write("----------------------------------------------------------------------------------------")
+                handle.write("----------------------------------------------------------------------------------------\n")
                 handle.flush()
             else:
                 handle = open( stdout, "w" )
