@@ -142,6 +142,7 @@ def subprocess_run(cmd, stdout = None, timeout = 200, append = False):
             if append:
                 handle = open(stdout, "a" )
                 handle.write("----------------------------------------------------------------------------------------")
+                handle.flush()
             else:
                 handle = open( stdout, "w" )
             stdout = handle
@@ -172,7 +173,7 @@ def configuration_str( configuration, prefix = '', suffix = '' ):
     return prefix + '[' + ' '.join( configuration ) + ']' + suffix
 
 
-def check_log_for_fails( path_to_log, testname, configuration = None ):
+def check_log_for_fails( path_to_log, testname, runs, configuration = None ):
     # Normal logs are expected to have in last line:
     #     "All tests passed (11 assertions in 1 test case)"
     # Tests that have failures, however, will show:
@@ -180,8 +181,14 @@ def check_log_for_fails( path_to_log, testname, configuration = None ):
     #      assertions: 9 | 6 passed | 3 failed"
     if path_to_log is None:
         return False
-    for ctx in file.grep( r'^test cases:\s*(\d+) \|\s*(\d+) (passed|failed)', path_to_log ):
+    i = 1
+    for ctx in file.grep( r'^test cases:\s*(\d+) \|\s*(\d+) (passed|failed)|^-+$', current_dir + '/regex-testing.txt' ):
         m = ctx['match']
+        if m == "----------------------------------------------------------------------------------------":
+            i += 1
+            continue
+        if i < runs:
+            continue
         total = int(m.group(1))
         passed = int(m.group(2))
         if m.group(3) == 'failed':
@@ -285,7 +292,7 @@ class Test(ABC):  # Abstract Base Class
         #log.d( 'found', testname )
         self._name = testname
         self._config = None
-        self._ran_before = False
+        self._runs = 0
 
     @abstractmethod
     def run_test( self, configuration = None, log_path = None ):
@@ -304,8 +311,8 @@ class Test(ABC):  # Abstract Base Class
         return self._name
 
     @property
-    def ran_before( self ):
-        return self._ran_before
+    def runs( self ):
+        return self._runs
 
     def get_log( self ):
         global to_stdout
@@ -358,10 +365,8 @@ class PyTest(Test):
         return cmd
 
     def run_test( self, configuration = None, log_path = None ):
-        try:
-            subprocess_run( self.command, stdout=log_path, append=self.ran_before )
-        finally:
-            self._ran_before = True
+        self._runs += 1
+        subprocess_run( self.command, stdout=log_path, append=( self.runs > 1 ) )
 
 
 class ExeTest(Test):
@@ -412,10 +417,9 @@ class ExeTest(Test):
         return [self.exe]
 
     def run_test( self, configuration = None, log_path = None ):
-        try:
-            subprocess_run( self.command, stdout=log_path, append=self.ran_before )
-        finally:
-            self._ran_before = True
+        self._runs += 1
+        subprocess_run( self.command, stdout=log_path, append= ( self.runs > 1 ) )
+
 
 def get_tests():
     global regex, target, pyrs, current_dir, linux
@@ -505,7 +509,7 @@ def test_wrapper( test, configuration = None ):
     except subprocess.TimeoutExpired:
         log.e(log.red + test.name + log.reset + ':', configuration_str(configuration, suffix=' ') + 'timed out')
     except subprocess.CalledProcessError as cpe:
-        if not check_log_for_fails( log_path, test.name, configuration ):
+        if not check_log_for_fails( log_path, test.name, test.runs, configuration ):
             # An unexpected error occurred
             log.e( log.red + test.name + log.reset + ':', configuration_str( configuration, suffix = ' ' ) + 'exited with non-zero value (' + str(cpe.returncode) + ')' )
 
