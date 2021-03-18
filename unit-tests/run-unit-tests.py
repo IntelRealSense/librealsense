@@ -141,7 +141,7 @@ def subprocess_run(cmd, stdout = None, timeout = 200, append = False):
         if stdout  and  stdout != subprocess.PIPE:
             if append:
                 handle = open(stdout, "a" )
-                handle.write("----------------------------------------------------------------------------------------\n")
+                handle.write("\n---------------------------------------------------------------------------------\n\n")
                 handle.flush()
             else:
                 handle = open( stdout, "w" )
@@ -181,14 +181,19 @@ def check_log_for_fails( path_to_log, testname, runs, configuration = None ):
     #      assertions: 9 | 6 passed | 3 failed"
     if path_to_log is None:
         return False
+    # because several runs log to the same file we need to insure that we check the part of the log that was
+    # printed by the last run.
     i = 1
     for ctx in file.grep( r'^test cases:\s*(\d+) \|\s*(\d+) (passed|failed)|^-+$', path_to_log ):
         m = ctx['match']
-        if m == "----------------------------------------------------------------------------------------":
+        if m.string == "---------------------------------------------------------------------------------":
+            # this means we have moves to the section of the log written by a different run
             i += 1
             continue
         if i < runs:
+            # we are if a section of the log written by a previous run, we ignore it
             continue
+        # reaching this point means you are currently at the last section of the log written by the last run
         total = int(m.group(1))
         passed = int(m.group(2))
         if m.group(3) == 'failed':
