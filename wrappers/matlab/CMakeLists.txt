@@ -25,7 +25,7 @@ set(MATLAB_M align.m camera_info.m colorizer.m config.m context.m
              syncer.m temporal_filter.m timestamp_domain.m video_frame.m
              video_stream_profile.m
    )
-set(MATLAB_EXAMPLES depth_example.m pointcloud_example.m rosbag_example.m)
+set(MATLAB_EXAMPLES depth_example.m pointcloud_example.m rosbag_example.m depth_view_example.m capture_example.m)
 
 matlab_add_mex(NAME librealsense_mex
                SRC ${MATLAB_CPP} ${MATLAB_H}
