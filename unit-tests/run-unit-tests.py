@@ -173,48 +173,48 @@ def configuration_str( configuration, prefix = '', suffix = '' ):
     return prefix + '[' + ' '.join( configuration ) + ']' + suffix
 
 
-def check_log_for_fails( path_to_log, testname, runs, configuration = None ):
+def check_log_for_fails( path_to_log, testname, configuration = None ):
     # Normal logs are expected to have in last line:
     #     "All tests passed (11 assertions in 1 test case)"
     # Tests that have failures, however, will show:
     #     "test cases: 1 | 1 failed
     #      assertions: 9 | 6 passed | 3 failed"
+    # We make sure we look at the log written by the last run of the test by ignoring anything before the last
+    # line with "----...---" that separate between 2 separate runs of he test
     if path_to_log is None:
         return False
-    # because several runs log to the same file we need to insure that we check the part of the log that was
-    # printed by the last run.
-    i = 1
+    results = None
     for ctx in file.grep( r'^test cases:\s*(\d+) \|\s*(\d+) (passed|failed)|^-+$', path_to_log ):
         m = ctx['match']
         if m.string == "---------------------------------------------------------------------------------":
-            # this means we have moves to the section of the log written by a different run
-            i += 1
-            continue
-        if i < runs:
-            # we are if a section of the log written by a previous run, we ignore it
-            continue
-        # reaching this point means you are currently at the last section of the log written by the last run
-        total = int(m.group(1))
-        passed = int(m.group(2))
-        if m.group(3) == 'failed':
-            # "test cases: 1 | 1 failed"
-            passed = total - passed
-        if passed < total:
-            if total == 1  or  passed == 0:
-                desc = 'failed'
-            else:
-                desc = str(total - passed) + ' of ' + str(total) + ' failed'
+            results = None
+        else:
+            results = m
 
-            if log.is_verbose_on():
-                log.e( log.red + testname + log.reset + ': ' + configuration_str( configuration, suffix = ' ' ) + desc )
-                log.i( 'Log: >>>' )
-                log.out()
-                file.cat( path_to_log )
-                log.out( '<<<' )
-            else:
-                log.e( log.red + testname + log.reset + ': ' + configuration_str( configuration, suffix = ' ' ) + desc + '; see ' + path_to_log )
-            return True
+    if not results:
         return False
+
+    total = int(results.group(1))
+    passed = int(results.group(2))
+    if results.group(3) == 'failed':
+        # "test cases: 1 | 1 failed"
+        passed = total - passed
+    if passed < total:
+        if total == 1  or  passed == 0:
+            desc = 'failed'
+        else:
+            desc = str(total - passed) + ' of ' + str(total) + ' failed'
+
+        if log.is_verbose_on():
+            log.e( log.red + testname + log.reset + ': ' + configuration_str( configuration, suffix = ' ' ) + desc )
+            log.i( 'Log: >>>' )
+            log.out()
+            file.cat( path_to_log )
+            log.out( '<<<' )
+        else:
+            log.e( log.red + testname + log.reset + ': ' + configuration_str( configuration, suffix = ' ' ) + desc + '; see ' + path_to_log )
+        return True
+    return False
 
 
 class TestConfig(ABC):  # Abstract Base Class
@@ -297,7 +297,7 @@ class Test(ABC):  # Abstract Base Class
         #log.d( 'found', testname )
         self._name = testname
         self._config = None
-        self._runs = 0
+        self._ran = False
 
     @abstractmethod
     def run_test( self, configuration = None, log_path = None ):
@@ -316,8 +316,8 @@ class Test(ABC):  # Abstract Base Class
         return self._name
 
     @property
-    def runs( self ):
-        return self._runs
+    def ran( self ):
+        return self._ran
 
     def get_log( self ):
         global to_stdout
@@ -370,8 +370,10 @@ class PyTest(Test):
         return cmd
 
     def run_test( self, configuration = None, log_path = None ):
-        self._runs += 1
-        subprocess_run( self.command, stdout=log_path, append=( self.runs > 1 ) )
+        try:
+            subprocess_run( self.command, stdout=log_path, append=self.ran )
+        finally:
+            self._ran = True
 
 
 class ExeTest(Test):
@@ -422,8 +424,10 @@ class ExeTest(Test):
         return [self.exe]
 
     def run_test( self, configuration = None, log_path = None ):
-        self._runs += 1
-        subprocess_run( self.command, stdout=log_path, append= ( self.runs > 1 ) )
+        try:
+            subprocess_run( self.command, stdout=log_path, append=self.ran )
+        finally:
+            self._ran = True
 
 
 def get_tests():
@@ -514,7 +518,7 @@ def test_wrapper( test, configuration = None ):
     except subprocess.TimeoutExpired:
         log.e(log.red + test.name + log.reset + ':', configuration_str(configuration, suffix=' ') + 'timed out')
     except subprocess.CalledProcessError as cpe:
-        if not check_log_for_fails( log_path, test.name, test.runs, configuration ):
+        if not check_log_for_fails( log_path, test.name, test.ran, configuration ):
             # An unexpected error occurred
             log.e( log.red + test.name + log.reset + ':', configuration_str( configuration, suffix = ' ' ) + 'exited with non-zero value (' + str(cpe.returncode) + ')' )
 
