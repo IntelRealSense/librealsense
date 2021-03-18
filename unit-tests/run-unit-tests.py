@@ -182,7 +182,7 @@ def check_log_for_fails( path_to_log, testname, runs, configuration = None ):
     if path_to_log is None:
         return False
     i = 1
-    for ctx in file.grep( r'^test cases:\s*(\d+) \|\s*(\d+) (passed|failed)|^-+$', current_dir + '/regex-testing.txt' ):
+    for ctx in file.grep( r'^test cases:\s*(\d+) \|\s*(\d+) (passed|failed)|^-+$', path_to_log ):
         m = ctx['match']
         if m == "----------------------------------------------------------------------------------------":
             i += 1
