@@ -20,9 +20,9 @@ namespace utilities {
             try
             {
                 size_t last_char_idx;
-                if (std::is_arithmetic_v<T>)
+                if (std::is_arithmetic<T>::value)
                 {
-                    if (std::is_integral_v<T>)
+                    if (std::is_integral<T>::value)
                     {
                          if (std::is_same<T, unsigned long>::value)
                         {
@@ -61,7 +61,7 @@ namespace utilities {
                             return false;
                         }
                     }
-                    else if (std::is_floating_point_v<T>)
+                    else if (std::is_floating_point<T>::value)
                     {
                         if (std::is_same<T, double>::value)
                         {
