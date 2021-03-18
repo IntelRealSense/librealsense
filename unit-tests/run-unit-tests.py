@@ -518,7 +518,7 @@ def test_wrapper( test, configuration = None ):
     except subprocess.TimeoutExpired:
         log.e(log.red + test.name + log.reset + ':', configuration_str(configuration, suffix=' ') + 'timed out')
     except subprocess.CalledProcessError as cpe:
-        if not check_log_for_fails( log_path, test.name, test.ran, configuration ):
+        if not check_log_for_fails( log_path, test.name, configuration ):
             # An unexpected error occurred
             log.e( log.red + test.name + log.reset + ':', configuration_str( configuration, suffix = ' ' ) + 'exited with non-zero value (' + str(cpe.returncode) + ')' )
 
