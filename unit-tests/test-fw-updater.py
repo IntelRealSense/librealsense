@@ -45,7 +45,7 @@ def send_hardware_monitor_command( device, command ):
 
     return raw_result[4:]
 
-def get_updates_counter( device ):
+def get_update_counter( device ):
     product_line = device.get_info( rs.camera_info.product_line )
     cmd = None
 
@@ -54,12 +54,12 @@ def get_updates_counter( device ):
     elif product_line == "D400":
         cmd = "14 00 AB CD 09 00 00 00 30 00 00 00 02 00 00 00 00 00 00 00 00 00 00 00"
     else:
-        log.f( "Received Incompatible product line:", product_line)
+        log.f( "Incompatible product line:", product_line )
 
     counter = send_hardware_monitor_command( device, cmd )
     return counter[0]
 
-def reset_updates_counter( device ):
+def reset_update_counter( device ):
     product_line = device.get_info( rs.camera_info.product_line )
     cmd = None
 
@@ -68,7 +68,7 @@ def reset_updates_counter( device ):
     elif product_line == "D400":
         cmd = "14 00 AB CD 86 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
     else:
-        log.f( "Received Incompatible product line:", product_line )
+        log.f( "Incompatible product line:", product_line )
 
     send_hardware_monitor_command( device, cmd )
 
@@ -87,17 +87,18 @@ if len( sn_list ) != 1:
     log.f( "Expected 1 device, got", len( sn_list ) )
 device = devices.get( list( sn_list )[0] )
 log.d( 'found:', device )
-updates_counter = get_updates_counter( device )
-log.d( 'updates counter is:', updates_counter)
-if get_updates_counter( device ) >= 19:
-    log.d( 'resetting updates counter' )
-    reset_updates_counter( device )
 current_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.firmware_version ))
 log.d( 'FW version:', current_fw_version )
 product_line =  device.get_info( rs.camera_info.product_line )
 log.d( 'product line:', product_line )
 bundled_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.recommended_firmware_version ) )
 log.d( 'bundled FW version:', bundled_fw_version )
+
+update_counter = get_update_counter( device )
+log.d( 'update counter:', update_counter )
+if get_update_counter( device ) >= 19:
+    log.d( 'resetting update counter' )
+    reset_update_counter( device )
 
 # finding file containing image for FW update
 image_name = product_line[0:2] + "XX_FW_Image-" + bundled_fw_version + ".bin"
@@ -121,10 +122,10 @@ sn_list = devices.all()
 device = devices.get( list( sn_list )[0] )
 current_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.firmware_version ))
 test.check_equal( current_fw_version, bundled_fw_version )
-if updates_counter < 19:
-    test.check_equal( get_updates_counter( device ), updates_counter + 1)
+if update_counter < 19:
+    test.check_equal( get_update_counter( device ), update_counter + 1)
 else:
-    test.check_equal( get_updates_counter( device ), 1)
+    test.check_equal( get_update_counter( device ), 1)
 
 test.finish()
 
