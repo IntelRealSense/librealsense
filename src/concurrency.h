@@ -225,6 +225,11 @@ public:
             int timeout_ms = 5000;
             while (_is_alive)
             {
+                {
+                    std::unique_lock<std::mutex> lock(_was_flushed_mutex);
+                    _was_flushed = false;
+                }
+
                 std::function<void(cancellable_timer)> item;
 
                 if (_queue.dequeue(&item, timeout_ms))
@@ -304,11 +309,6 @@ public:
         }
 
         _queue.clear();
-
-        {
-            std::unique_lock<std::mutex> lock(_was_flushed_mutex);
-            _was_flushed = false;
-        }
 
         std::unique_lock<std::mutex> lock_was_flushed(_was_flushed_mutex);
         _was_flushed_cv.wait_for(lock_was_flushed, std::chrono::hours(999999), [&]() { return _was_flushed.load(); });
