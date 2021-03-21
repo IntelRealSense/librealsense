@@ -92,20 +92,6 @@ void data_filter(const std::vector<double>& stream_vec, std::vector<double>& fil
         filtered_stream_vec.push_back(*(stream_vec_it + i));
     }
 }
-
-{
-    std::vector<profile> filtered_profiles;
-    std::vector<profile>::iterator it = all_profiles.begin();
-    for (auto idx = 0; idx < n; idx++)
-    {
-        filtered_profiles.push_back(*(it + idx));
-        if (enable_streams) 
-            cfg.enable_stream((it + idx)->stream, (it + idx)->index);
-        else 
-            cfg.disable_stream((it + idx)->stream, (it + idx)->index);
-    }
-    return filtered_profiles;
-}
 TEST_CASE("Extrinsic graph management", "[live][multicam]")
 {
     // Require at least one device to be plugged in
@@ -617,7 +603,7 @@ TEST_CASE("Enable disable all streams", "[live]")
         
         CAPTURE("Github test");
         cfg.enable_all_streams();
-        //cfg.disable_stream(RS2_STREAM_COLOR);
+        cfg.disable_stream(RS2_STREAM_COLOR);
 
         auto profiles = pipe.start(cfg, callback);
         for (auto p : profiles.get_streams())

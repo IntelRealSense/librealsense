@@ -69,7 +69,7 @@ namespace librealsense
         void config::disable_stream(rs2_stream stream, int index)
         {
             std::lock_guard<std::mutex> lock(_mtx);
-            _streams_to_disable.push_back({ stream, index });
+            _streams_to_disable.push_back({ stream, std::max(index, 0) }); // for this DB default index should be 0 not -1 because it is compared to get_stream_index() API that returns 0 as default index
 
             auto itr = std::begin(_stream_requests);
             while (itr != std::end(_stream_requests))
@@ -96,10 +96,8 @@ namespace librealsense
             _streams_to_disable.clear();
         }
 
-        util::config config::filter_stream_requests(const stream_profiles& profiles) const
+        util::config config::filter_stream_requests(const stream_profiles& profiles, util::config& config) const
         {
-            util::config config;
-
             if (!_streams_to_disable.empty())
             {
                 for (auto prof : profiles)
@@ -143,7 +141,7 @@ namespace librealsense
                 {
                     auto&& sub = dev->get_sensor(i);
                     auto profiles = sub.get_stream_profiles(PROFILE_TAG_SUPERSET);
-                    filtered_config = filter_stream_requests(profiles);
+                    filtered_config = filter_stream_requests(profiles, config);
                 }
                 return std::make_shared<profile>(dev, filtered_config, _device_request.record_output);
             }
@@ -152,7 +150,7 @@ namespace librealsense
             if (_stream_requests.empty())
             {
                 auto default_profiles = get_default_configuration(dev);
-                filtered_config = filter_stream_requests(default_profiles);
+                filtered_config = filter_stream_requests(default_profiles, config);
                 return std::make_shared<profile>(dev, filtered_config, _device_request.record_output);
             }
 
