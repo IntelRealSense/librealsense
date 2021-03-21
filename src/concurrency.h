@@ -293,6 +293,7 @@ public:
 
     void stop()
     {
+        _is_alive = false;
         {
             std::unique_lock<std::mutex> lock(_was_stopped_mutex);
 
@@ -319,7 +320,6 @@ public:
     {
         stop();
         _queue.clear();
-        _is_alive = false;
 
         if (_thread.joinable())
         _thread.join();
