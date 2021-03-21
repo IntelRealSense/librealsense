@@ -9,23 +9,6 @@
 import pyrealsense2 as rs, sys, os, subprocess, re
 from rspy import devices, log, test, file, repo
 
-def has_newer_fw( current_fw, bundled_fw ):
-    """
-    :param current_fw: current FW version of a device
-    :param bundled_fw: bundled FW version of the same device
-    :return: True if the bundled version is newer than the current one
-    """
-    current_fw_digits = current_fw.split( '.' )
-    bundled_fw_digits = bundled_fw.split( '.' )
-    if len( current_fw_digits ) != len( bundled_fw_digits ):
-        log.f( "Either the devices FW (", current_fw, ") or the bundled FW(", bundled_fw, ") was of an invalid format")
-    for curr, bundled in zip( current_fw_digits, bundled_fw_digits ):
-        if int(bundled) > int(curr):
-            return True
-        if int(bundled) < int(curr):
-            return False
-    return False
-
 if not devices.acroname:
     log.i( "No Acroname library found; skipping device FW update" )
     sys.exit(0)
@@ -59,13 +42,9 @@ current_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.fir
 log.d( 'FW version:', current_fw_version )
 product_line =  device.get_info( rs.camera_info.product_line )
 log.d( 'product line:', product_line )
-bundled_fw_version = repo.get_bundled_fw_version( product_line )
-if not bundled_fw_version:
-    log.f( "No FW version found for", product_line, "product line in:", fw_versions_file )
+bundled_fw_version = device.get_info( rs.camera_info.recommended_firmware_version )
 log.d( 'bundled FW version:', bundled_fw_version )
-if not has_newer_fw( current_fw_version, bundled_fw_version ):
-    log.i( "No update needed: FW version is already", current_fw_version)
-    sys.exit(0)
+
 # finding file containing image for FW update
 image_name = product_line[0:2] + "XX_FW_Image-" + bundled_fw_version + ".bin"
 image_mask = '(^|/)' + image_name + '$'
