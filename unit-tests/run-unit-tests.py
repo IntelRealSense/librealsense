@@ -486,25 +486,6 @@ def get_tests():
         yield PyTest(testname, py_test)
 
 
-if list_tags:
-    tags = set()
-    for test in get_tests():
-        tags.update(test.config.tags)
-    tags = sorted( list( tags ))
-    print( "Available tags:" )
-    for t in tags:
-        print( t )
-    sys.exit( 0 )
-
-if list_tests:
-    tests = []
-    for test in get_tests():
-        tests.append( test )
-    print( "Available tests:" )
-    for test in sorted( tests, key=lambda t: t.name):
-        print( test.name )
-    sys.exit( 0 )
-
 def prioritize_tests( tests ):
     return sorted(tests, key= lambda t: t.config.priority)
 
@@ -561,6 +542,8 @@ devices.query()
 skip_live_tests = len(devices.all()) == 0  and  not devices.acroname
 #
 log.reset_errors()
+tags = set()
+tests = []
 for test in prioritize_tests( get_tests() ):
     #
     log.d( 'found', test.name, '...' )
@@ -570,6 +553,14 @@ for test in prioritize_tests( get_tests() ):
         #
         if tag and tag not in test.config.tags:
             log.d( 'does not fit --tag:', test.tags )
+            continue
+        #
+        if list_tags:
+            tags.update( test.config.tags )
+            continue
+        #
+        if list_tests:
+            tests.append( test.name )
             continue
         #
         if not test.is_live():
@@ -594,6 +585,17 @@ for test in prioritize_tests( get_tests() ):
         #
     finally:
         log.debug_unindent()
+
+if list_tags:
+    print( "Available tags:" )
+    for t in sorted( list( tags )):
+        print( t )
+    sys.exit(0)
+if list_tests:
+    print( "Available tests:" )
+    for t in sorted( tests ):
+        print( t )
+    sys.exit( 0 )
 
 log.progress()
 #
