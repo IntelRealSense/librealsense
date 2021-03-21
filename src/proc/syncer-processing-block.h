@@ -29,7 +29,8 @@ namespace librealsense
             _enable_opts.push_back( is_enabled_opt );
         }
 
-        // This will clear all the queues, as result some frames may be dropped
+        // Stopping the syncer means no more frames will be enqueued, and any existing frames
+        // pending dispatch will be lost!
         void stop()
         {
             _matcher->stop();
