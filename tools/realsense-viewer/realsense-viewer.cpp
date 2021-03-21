@@ -118,7 +118,7 @@ void add_playback_device(context& ctx, device_models_list& device_models,
                             {
                                 if (sub->streaming)
                                 {
-                                    sub->stop(viewer_model);
+                                    sub->stop(viewer_model.not_model);
                                 }
                             }
                         }
@@ -738,7 +738,7 @@ int main(int argc, const char** argv) try
         for (auto&& sub : device_model->subdevices)
         {
             if (sub->streaming)
-                sub->stop(viewer_model);
+                sub->stop(viewer_model.not_model);
         }
 
     return EXIT_SUCCESS;

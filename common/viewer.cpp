@@ -2520,14 +2520,15 @@ namespace rs2
 
                 ImGui::PushStyleColor(ImGuiCol_Text, tab != 3 ? light_grey : light_blue);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, tab != 3 ? light_grey : light_blue);
+
                 if (ImGui::Button("Updates", { 120, 30 }))
                 {
                     tab = 3;
                     config_file::instance().set(configurations::viewer::settings_tab, tab);
                     temp_cfg.set(configurations::viewer::settings_tab, tab);
                 }
-                ImGui::PopStyleColor(2);
 
+                ImGui::PopStyleColor(2);
                 ImGui::PopFont();
                 ImGui::PopStyleColor(2); // button color
 
@@ -2841,7 +2842,9 @@ namespace rs2
                     {
                         ImGui::SetTooltip("%s", "When firmware of the device is below the version bundled with this software release\nsuggest firmware update");
                     }
+#ifdef CHECK_FOR_UPDATES 
                     ImGui::Separator();
+
                     ImGui::Text("%s", "SW/FW Updates From Server:");
                     if (ImGui::IsItemHovered())
                     {
@@ -2882,6 +2885,7 @@ namespace rs2
                             temp_cfg.set(configurations::update::sw_updates_official_server, false);
                         }
                     }
+#endif
                 }
 
                 ImGui::Separator();
@@ -3316,7 +3320,7 @@ namespace rs2
         std::shared_ptr<texture_buffer> texture, points points)
     {
         if (!modal_notification_on)
-            updates->draw(*this, window, error_message);
+            updates->draw(not_model, window, error_message);
 
         static bool first = true;
         if (first)

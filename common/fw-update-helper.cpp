@@ -182,7 +182,21 @@ namespace rs2
         else
             serial = _dev.query_sensors().front().get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
 
-        _model.related_notifications.clear();
+        // Clear FW update related notification to avoid dismissing the notification on ~device_model()
+        // We want the notification alive during the whole process.
+        _model.related_notifications.erase(
+            std::remove_if( _model.related_notifications.begin(),
+                            _model.related_notifications.end(),
+                            []( std::shared_ptr< notification_model > n ) {
+                                return n->is< fw_update_notification_model >();
+                            } ) , end(_model.related_notifications));
+
+        for (auto&& n : _model.related_notifications)
+        {
+            if (n->is< fw_update_notification_model >()
+                || n->is< sw_recommended_update_alert_model >())
+                n->dismiss(false);
+        }
 
         _progress = 5;
 
@@ -213,16 +227,22 @@ namespace rs2
             }
             catch (const std::exception& e)
             {
-                log_backup_status = "WARNING: backup failed; continuing without it...";
-                _viewer.not_model->output.add_log(RS2_LOG_SEVERITY_WARN,
-                    __FILE__,
-                    __LINE__,
-                    log_backup_status + ", Error: " + e.what());
+                if (auto not_model_protected = get_protected_notification_model())
+                {
+                    log_backup_status = "WARNING: backup failed; continuing without it...";
+                    not_model_protected->output.add_log(RS2_LOG_SEVERITY_WARN,
+                        __FILE__,
+                        __LINE__,
+                        log_backup_status + ", Error: " + e.what());
+                }
             }
             catch ( ... )
             {
-                log_backup_status = "WARNING: backup failed; continuing without it...";
-                _viewer.not_model->add_log(log_backup_status + ", Unknown error occurred");
+                if (auto not_model_protected = get_protected_notification_model())
+                {
+                    log_backup_status = "WARNING: backup failed; continuing without it...";
+                    not_model_protected->add_log(log_backup_status + ", Unknown error occurred");
+                }
             }
 
             log(log_backup_status);
@@ -261,10 +281,13 @@ namespace rs2
                             }
                         }
                         catch (std::exception &e) {
-                            _viewer.not_model->output.add_log( RS2_LOG_SEVERITY_WARN,
-                                __FILE__,
-                                __LINE__,
-                                to_string() << "Exception caught in FW Update process-flow: " << e.what() << "; Retrying..." );
+                            if (auto not_model_protected = get_protected_notification_model())
+                            {
+                                not_model_protected->output.add_log(RS2_LOG_SEVERITY_WARN,
+                                    __FILE__,
+                                    __LINE__,
+                                    to_string() << "Exception caught in FW Update process-flow: " << e.what() << "; Retrying...");
+                            }
                         }
                         catch (...) {}
                     }
@@ -414,7 +437,7 @@ namespace rs2
                             {
                                 try
                                 {
-                                    sm->stop(fw_update_manager->get_viewer_model());
+                                    sm->stop(fw_update_manager->get_protected_notification_model());
                                 }
                                 catch (...) 
                                 { 
@@ -603,7 +626,7 @@ namespace rs2
         message = name;
         this->severity = RS2_LOG_SEVERITY_INFO;
         this->category = RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED;
-
         pinned = true;
+        forced = true;
     }
 }
