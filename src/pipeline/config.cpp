@@ -96,8 +96,9 @@ namespace librealsense
             _streams_to_disable.clear();
         }
 
-        util::config config::filter_stream_requests(const stream_profiles& profiles, util::config& config) const
+        util::config config::filter_stream_requests(const stream_profiles& profiles) const
         {
+            util::config config;
             if (!_streams_to_disable.empty())
             {
                 for (auto prof : profiles)
@@ -137,12 +138,14 @@ namespace librealsense
             //if the user requested all streams
             if (_enable_all_streams)
             {
+                stream_profiles profiles;
                 for (size_t i = 0; i < dev->get_sensors_count(); ++i)
                 {
                     auto&& sub = dev->get_sensor(i);
-                    auto profiles = sub.get_stream_profiles(PROFILE_TAG_SUPERSET);
-                    filtered_config = filter_stream_requests(profiles, config);
+                    auto p = sub.get_stream_profiles(PROFILE_TAG_SUPERSET);
+                    profiles.insert(profiles.end(), p.begin(), p.end());
                 }
+                filtered_config = filter_stream_requests(profiles);
                 return std::make_shared<profile>(dev, filtered_config, _device_request.record_output);
             }
 
@@ -150,7 +153,7 @@ namespace librealsense
             if (_stream_requests.empty())
             {
                 auto default_profiles = get_default_configuration(dev);
-                filtered_config = filter_stream_requests(default_profiles, config);
+                filtered_config = filter_stream_requests(default_profiles);
                 return std::make_shared<profile>(dev, filtered_config, _device_request.record_output);
             }
 
