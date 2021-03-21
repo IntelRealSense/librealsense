@@ -79,9 +79,34 @@ def restart_profiles():
                and p.as_video_stream_profile().width() == depth_width
                and p.as_video_stream_profile().height() == depth_height )
 
+def stop_pipeline( pipeline ):
+    if pipeline:
+        try:
+            pipeline.stop()
+        except RuntimeError as rte:
+            # if the error Occurred because the pipeline wasn't started we ignore it
+            if str( rte ) != "stop() cannot be called before start()":
+                test.unexpected_exception()
+        except Exception:
+            test.unexpected_exception()
+
+def stop_sensor( sensor ):
+    if sensor:
+        # if the sensor is already closed get_active_streams returns an empty list
+        if sensor.get_active_streams():
+            try:
+                sensor.stop()
+            except RuntimeError as rte:
+                if str( rte ) != "stop_streaming() failed. UVC device is not streaming!":
+                    test.unexpected_exception()
+            except Exception:
+                test.unexpected_exception()
+            sensor.close()
 
 # create temporary folder to record to that will be deleted automatically at the end of the script
-temp_dir = tempfile.TemporaryDirectory(prefix='recordings_')
+# (requires that no files are being held open inside this directory. Important to not keep any handle open to a file
+# in this directory, any handle as such must be set to None)
+temp_dir = tempfile.TemporaryDirectory( prefix='recordings_' )
 file_name = temp_dir.name + os.sep + 'rec.bag'
 
 ################################################################################################
@@ -107,15 +132,7 @@ except Exception:
     test.unexpected_exception()
 finally: # we must remove all references to the file so we can use it again in the next test
     cfg = None
-    if pipeline:
-        try:
-            pipeline.stop()
-        except RuntimeError as rte:
-            # if the error Occurred because the pipeline wasn't started we ignore it
-            if str( rte ) != "stop() cannot be called before start()":
-                test.unexpected_exception()
-        except Exception:
-            test.unexpected_exception()
+    stop_pipeline( pipeline )
 
 test.finish()
 
@@ -172,29 +189,10 @@ finally: # we must remove all references to the file so we can use it again in t
     if playback:
         playback.pause()
         playback = None
-    # if the sensor is already closed get_active_streams returns an empty list
-    if depth_sensor:
-        if depth_sensor.get_active_streams():
-            try:
-                depth_sensor.stop()
-            except RuntimeError as rte:
-                if str( rte ) != "stop_streaming() failed. UVC device is not streaming!":
-                    test.unexpected_exception()
-            except Exception:
-                test.unexpected_exception()
-            depth_sensor.close()
-        depth_sensor = None
-    if color_sensor:
-        if color_sensor.get_active_streams():
-            try:
-                color_sensor.stop()
-            except RuntimeError as rte:
-                if str(rte) != "stop_streaming() failed. UVC device is not streaming!":
-                    test.unexpected_exception()
-            except Exception:
-                test.unexpected_exception()
-            color_sensor.close()
-        color_sensor = None
+    stop_sensor( depth_sensor )
+    depth_sensor = None
+    stop_sensor( color_sensor )
+    color_sensor = None
 
 test.finish()
 
@@ -248,29 +246,10 @@ finally: # we must remove all references to the file so the temporary folder can
     if playback:
         playback.pause()
         playback = None
-    # if the sensor is already closed get_active_streams returns an empty list
-    if depth_sensor:
-        if depth_sensor.get_active_streams():
-            try:
-                depth_sensor.stop()
-            except RuntimeError as rte:
-                if str( rte ) != "stop_streaming() failed. UVC device is not streaming!":
-                    test.unexpected_exception()
-            except Exception:
-                test.unexpected_exception()
-            depth_sensor.close()
-        depth_sensor = None
-    if color_sensor:
-        if color_sensor.get_active_streams():
-            try:
-                color_sensor.stop()
-            except RuntimeError as rte:
-                if str(rte) != "stop_streaming() failed. UVC device is not streaming!":
-                    test.unexpected_exception()
-            except Exception:
-                test.unexpected_exception()
-            color_sensor.close()
-        color_sensor = None
+    stop_sensor( depth_sensor )
+    depth_sensor = None
+    stop_sensor( color_sensor )
+    color_sensor = None
 
 test.finish()
 
