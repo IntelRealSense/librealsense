@@ -616,6 +616,9 @@ TEST_CASE("Enable disable all streams", "[live]")
         }
         pipe.stop();
 
+        // Generic tests, in each configuration:
+        // 1. enable or disable all streams, then :
+        // 2. enable/ disable different number of streams. At least 1 stream should be enabled
 
         bool streams_state[2] = { true, false};
         for (auto& enable_all_streams : streams_state)
