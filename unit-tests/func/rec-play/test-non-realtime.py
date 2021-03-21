@@ -1,17 +1,20 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 import os
 import pyrealsense2 as rs2
 from rspy import test
+import tempfile
 
 # This test checks that stop of pipeline with playback file
 # and non realtime mode is not stuck due to deadlock of
 # pipeline stop thread and syncer blocking enqueue thread (DSO-15157)
 #############################################################################################
-test.start("Playback with non realtime doesn't stuck at stop")
-current_dir = os.path.dirname( os.path.abspath( __file__ ))
-filename = current_dir + os.sep + 'recording.bag'
+test.start("Playback with non realtime isn't stuck at stop")
+# DSO-15157
+
+filename = tempfile.gettempdir() + os.sep + 'recording_deadlock.bag'
+
 pipeline = rs2.pipeline()
 config = rs2.config()
 config.enable_all_streams()

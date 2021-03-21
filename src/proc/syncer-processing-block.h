@@ -29,6 +29,7 @@ namespace librealsense
             _enable_opts.push_back( is_enabled_opt );
         }
 
+        // This will clear all the queues, as result some frames may be dropped
         void stop()
         {
             _matcher->stop();
