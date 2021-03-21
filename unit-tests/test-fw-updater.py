@@ -9,15 +9,15 @@
 import pyrealsense2 as rs, sys, os, subprocess, re
 from rspy import devices, log, test, file, repo
 
-# if not devices.acroname:
-#     log.i( "No Acroname library found; skipping device FW update" )
-#     sys.exit(0)
-# # Following will throw if no acroname module is found
-# from rspy import acroname
-# try:
-#     devices.acroname.discover()
-# except acroname.NoneFoundError as e:
-#     log.f( e )
+if not devices.acroname:
+    log.i( "No Acroname library found; skipping device FW update" )
+    sys.exit(0)
+# Following will throw if no acroname module is found
+from rspy import acroname
+try:
+    devices.acroname.discover()
+except acroname.NoneFoundError as e:
+    log.f( e )
 # Remove acroname -- we're likely running inside run-unit-tests in which case the
 # acroname hub is likely already connected-to from there and we'll get an error
 # thrown ('failed to connect to acroname (result=11)'). We do not need it -- just
