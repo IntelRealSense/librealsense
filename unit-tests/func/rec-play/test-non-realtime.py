@@ -11,7 +11,6 @@ import tempfile
 # pipeline stop thread and syncer blocking enqueue thread (DSO-15157)
 #############################################################################################
 test.start("Playback with non realtime isn't stuck at stop")
-# DSO-15157
 
 filename = tempfile.gettempdir() + os.sep + 'recording_deadlock.bag'
 
