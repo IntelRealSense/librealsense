@@ -31,6 +31,8 @@ def usage():
     print( '        -r, --regex    run all tests that fit the following regular expression' )
     print( '        -s, --stdout   do not redirect stdout to logs' )
     print( '        -t, --tag      run all tests with the following tag' )
+    print( '        --list-tags    print out all available tags. This option will not run any tests')
+    print( '        --list-tests   print out all available tests. This option will not run any tests')
     sys.exit(2)
 
 # get os and directories for future use
@@ -44,13 +46,15 @@ else:
 # Parse command-line:
 try:
     opts,args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
-        longopts = [ 'help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=' ])
+        longopts = [ 'help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags', 'list-tests' ])
 except getopt.GetoptError as err:
     log.e( err )   # something like "option -a not recognized"
     usage()
 regex = None
 to_stdout = False
 tag = None
+list_tags = False
+list_tests = False
 for opt,arg in opts:
     if opt in ('-h','--help'):
         usage()
@@ -64,6 +68,10 @@ for opt,arg in opts:
         to_stdout = True
     elif opt in ('-t', '--tag'):
         tag = arg
+    elif opt == '--list-tags':
+        list_tags = True
+    elif opt == '--list-tests':
+        list_tests = True
 
 if len(args) > 1:
     usage()
@@ -533,12 +541,22 @@ devices.query()
 skip_live_tests = len(devices.all()) == 0  and  not devices.acroname
 #
 log.reset_errors()
+tags = set()
+tests = []
 for test in prioritize_tests( get_tests() ):
     #
     log.d( 'found', test.name, '...' )
     try:
         log.debug_indent()
         test.debug_dump()
+        #
+        if list_tags:
+            tags.update( test.config.tags )
+            continue
+        #
+        if list_tests:
+            tests.append( test.name )
+            continue
         #
         if tag and tag not in test.config.tags:
             log.d( 'does not fit --tag:', test.tags )
@@ -566,6 +584,17 @@ for test in prioritize_tests( get_tests() ):
         #
     finally:
         log.debug_unindent()
+
+if list_tags:
+    print( "Available tags:" )
+    for t in sorted( list( tags )):
+        print( t )
+    sys.exit(0)
+if list_tests:
+    print( "Available tests:" )
+    for t in sorted( tests ):
+        print( t )
+    sys.exit( 0 )
 
 log.progress()
 #
