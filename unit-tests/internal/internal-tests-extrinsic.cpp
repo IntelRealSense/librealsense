@@ -93,6 +93,19 @@ void data_filter(const std::vector<double>& stream_vec, std::vector<double>& fil
     }
 }
 
+{
+    std::vector<profile> filtered_profiles;
+    std::vector<profile>::iterator it = all_profiles.begin();
+    for (auto idx = 0; idx < n; idx++)
+    {
+        filtered_profiles.push_back(*(it + idx));
+        if (enable_streams) 
+            cfg.enable_stream((it + idx)->stream, (it + idx)->index);
+        else 
+            cfg.disable_stream((it + idx)->stream, (it + idx)->index);
+    }
+    return filtered_profiles;
+}
 TEST_CASE("Extrinsic graph management", "[live][multicam]")
 {
     // Require at least one device to be plugged in
