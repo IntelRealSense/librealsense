@@ -7,6 +7,7 @@
 
 namespace librealsense
 {
+
     class  ds5_thermal_monitor
     {
     public:

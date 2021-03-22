@@ -772,7 +772,7 @@ namespace librealsense
 
         if ((val_in_range(pid, { RS455_PID })) && (_fw_version >= firmware_version("5.12.11.0")))
         {
-            auto thermal_compensation_toggle = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, 
+            auto thermal_compensation_toggle = std::make_shared<protected_xu_option<uint8_t>>(raw_depth_sensor, depth_xu,
                 ds::DS5_THERMAL_COMPENSATION, "Toggle Thermal Compensation Mechanism");
 
             auto temperature_sensor = depth_sensor.get_option_handler(RS2_OPTION_ASIC_TEMPERATURE);

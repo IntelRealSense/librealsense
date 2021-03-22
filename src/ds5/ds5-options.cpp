@@ -753,7 +753,6 @@ namespace librealsense
     float librealsense::thermal_compensation::query(void) const
     {
         auto val = _thermal_toggle->query();
-        _recording_function(*this);
         return val;
     }
 
