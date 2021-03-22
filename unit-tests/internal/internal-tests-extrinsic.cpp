@@ -451,7 +451,8 @@ TEST_CASE("Enable disable all streams", "[live]")
             for (auto& p : res.second)
             {
                 auto idx = p.index;
-                if (_filtered_streams[p.stream]) idx = 0;
+                if (_filtered_streams[p.stream]) 
+                    idx = 0;
                 _filtered_streams[p.stream] = idx;
             }
         }

@@ -18,7 +18,8 @@ namespace librealsense
             _resolved_profile.reset();
             _stream_requests[{stream, index}] = { format, stream, index, width, height, fps };
             auto position = std::find(_streams_to_disable.begin(), _streams_to_disable.end(), std::pair<rs2_stream, int>{stream, index});
-            if (position != _streams_to_disable.end()) _streams_to_disable.erase(position); //means the element was found
+            if (position != _streams_to_disable.end()) 
+                _streams_to_disable.erase(position); //means the element was found
         }
 
         void config::enable_all_stream()
@@ -110,7 +111,8 @@ namespace librealsense
                     {
                         if (st.first == p->get_stream_type())
                         {
-                            if (st.second != p->get_stream_index()) break; // don't disable stream if indexes don't match
+                            if (st.second != p->get_stream_index()) 
+                                break; // don't disable stream if indexes don't match
                             disable_stream = true;
                             break;
                         }
