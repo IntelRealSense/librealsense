@@ -2108,12 +2108,12 @@ namespace rs2
                     }
                 }
 
-                if (next_option == RS2_OPTION_DEPTH_UNITS)
+                if (next == RS2_OPTION_DEPTH_UNITS)
                 {
                     opt_md.dev->depth_units = opt_md.value;
                 }
 
-                if (next_option == RS2_OPTION_STEREO_BASELINE)
+                if (next == RS2_OPTION_STEREO_BASELINE)
                     opt_md.dev->stereo_baseline = opt_md.value;
             }
 
@@ -5226,18 +5226,15 @@ namespace rs2
 
                 if (dev.is<rs2::updatable>() && !is_locked)
                 {
-                    // L515 do not support update unsigned image currently
-                    bool is_l515_device = false;
-                    if (dev.supports(RS2_CAMERA_INFO_NAME))
+                    // L500 devices do not support update unsigned image currently
+                    bool is_l500_device = false;
+                    if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
                     {
-                        std::string dev_name = dev.get_info(RS2_CAMERA_INFO_NAME);
-                        if (dev_name.find("L515") != std::string::npos)
-                        {
-                            is_l515_device = true;
-                        }
+                        auto pl = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
+                        is_l500_device = (std::string(pl) == "L500");
                     }
 
-                    if (!is_l515_device)
+                    if( ! is_l500_device )
                     {
                         if (ImGui::Selectable("Update Unsigned Firmware...", false, updateFwFlags))
                         {

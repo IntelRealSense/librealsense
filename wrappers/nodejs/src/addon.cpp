@@ -3001,9 +3001,22 @@ class RSPointCloud : public Nan::ObjectWrap, Options {
     StreamProfileExtrator extrator(profile);
     CallNativeFunc(rs2_set_option, &me->error_,
         reinterpret_cast<rs2_options*>(me->processing_block_),
-        RS2_OPTION_TEXTURE_SOURCE,
-        static_cast<float>(extrator.unique_id_),
+        RS2_OPTION_STREAM_FILTER,
+        static_cast<float>(extrator.stream_),
         &me->error_);
+
+    CallNativeFunc(rs2_set_option, &me->error_,
+        reinterpret_cast<rs2_options*>(me->processing_block_),
+        RS2_OPTION_STREAM_FORMAT_FILTER,
+        static_cast<float>(extrator.format_),
+        &me->error_);
+
+    CallNativeFunc(rs2_set_option, &me->error_,
+        reinterpret_cast<rs2_options*>(me->processing_block_),
+        RS2_OPTION_STREAM_INDEX_FILTER,
+        static_cast<float>(extrator.index_),
+        &me->error_);
+
     if (extrator.stream_ == RS2_STREAM_DEPTH) return;
 
     // rs2_process_frame will release the input frame, so we need to addref

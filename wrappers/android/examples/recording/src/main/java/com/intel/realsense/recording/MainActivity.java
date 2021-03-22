@@ -127,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String getFilePath(){
-        File folder = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "rs_bags");
+        File folder = new File(getExternalFilesDir(null).getAbsolutePath() + File.separator + "rs_bags");
         folder.mkdir();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
         String currentDateAndTime = sdf.format(new Date());
