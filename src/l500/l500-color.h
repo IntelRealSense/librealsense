@@ -15,11 +15,10 @@
 
 namespace librealsense
 {
-    // brown conrady distortion model isn't yet implemented on sse code
-#ifdef __SSSE3__
-    const rs2_distortion l500_distortion = RS2_DISTORTION_INVERSE_BROWN_CONRADY;
-#else
+#ifdef RS2_USE_CUDA
     const rs2_distortion l500_distortion = RS2_DISTORTION_BROWN_CONRADY;
+#else
+    const rs2_distortion l500_distortion = RS2_DISTORTION_INVERSE_BROWN_CONRADY;
 #endif
 
     class l500_color
