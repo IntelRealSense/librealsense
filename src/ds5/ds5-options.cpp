@@ -661,7 +661,7 @@ namespace librealsense
     auto_exposure_limit_option::auto_exposure_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range)
         : option_base(range), _hwm(hwm), _sensor(ep)
     {
-        _range = [this, range]()
+        _range = [range]()
         {
             return range;
         };
@@ -706,7 +706,7 @@ namespace librealsense
     auto_gain_limit_option::auto_gain_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range)
         : option_base(range), _hwm(hwm), _sensor(ep)
     {
-        _range = [this, range]()
+        _range = [range]()
         {
             return range;
         };

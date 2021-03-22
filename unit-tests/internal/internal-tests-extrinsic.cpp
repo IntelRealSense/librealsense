@@ -642,31 +642,38 @@ TEST_CASE("Controls limits validation", "[live]")
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        auto&& device = ctx.query_devices()[0];
-        auto sensors = device.query_sensors();
-        rs2::sensor depth_sensor;
-        float ae_limit;
-        rs2_option controls[2] = { RS2_OPTION_AUTO_GAIN_LIMIT, RS2_OPTION_AUTO_EXPOSURE_LIMIT };
-        for (auto& control : controls)
+        auto list = ctx.query_devices();
+        REQUIRE(list.size());
+
+        for (auto&& device : list)
         {
-            for (auto& s : sensors)
+            if (std::string(device.get_info(RS2_CAMERA_INFO_PRODUCT_LINE))  != "D400")
+                continue;
+            auto sensors = device.query_sensors();
+            float ae_limit;
+            rs2_option controls[2] = { RS2_OPTION_AUTO_GAIN_LIMIT, RS2_OPTION_AUTO_EXPOSURE_LIMIT };
+            for (auto& control : controls)
             {
-                std::string val = s.get_info(RS2_CAMERA_INFO_NAME);
-                if (!val.compare("Stereo Module")) {
-                    depth_sensor = s;
-                    auto range = s.get_option_range(control);
-                    float set_value[3] = { range.min - 10, range.max + 10, std::floor((range.max + range.min) / 2) };
-                    for (auto& val : set_value)
-                    {
-                        CAPTURE(val);
-                        CAPTURE(range);
-                        if (val < range.min || val > range.max)
-                            REQUIRE_THROWS(s.set_option(control, val));
-                        else
+                for (auto& s : sensors)
+                {
+                    std::string val = s.get_info(RS2_CAMERA_INFO_NAME);
+                    if (!val.compare("Stereo Module")) {
+                    if (!s.supports(control))
+                        return;
+                        auto range = s.get_option_range(control);
+                        float set_value[3] = { range.min - 10, range.max + 10, std::floor((range.max + range.min) / 2) };
+                        for (auto& val : set_value)
                         {
-                            s.set_option(control, val);
-                            ae_limit = s.get_option(control);
-                            REQUIRE(ae_limit == val);
+                            CAPTURE(val);
+                            CAPTURE(range);
+                            if (val < range.min || val > range.max)
+                                REQUIRE_THROWS(s.set_option(control, val));
+                            else
+                            {
+                                s.set_option(control, val);
+                                ae_limit = s.get_option(control);
+                                REQUIRE(ae_limit == val);
+                            }
                         }
                     }
                 }
