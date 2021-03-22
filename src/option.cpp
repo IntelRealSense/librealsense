@@ -148,24 +148,16 @@ librealsense::polling_errors_disable::~polling_errors_disable()
 
 void librealsense::polling_errors_disable::set(float value)
 {
-    if (value < 0)
-        throw invalid_value_exception("Invalid polling errors disable request " + std::to_string(value));
+    if( value < 0 )
+        throw invalid_value_exception("invalid polling errors value " + std::to_string(value));
 
-    if (value == 0)
+    if( auto handler = _polling_error_handler.lock() )
     {
-        if (auto handler = _polling_error_handler.lock())
-        {
+        _value = value;
+        if( value <= std::numeric_limits< float >::epsilon() )
             handler->stop();
-            _value = 0;
-        }
-    }
-    else
-    {
-        if (auto handler = _polling_error_handler.lock())
-        {
-            handler->start();
-            _value = 1;
-        }
+        else
+            handler->start(( unsigned int )( value * 1000.f ));
     }
     _recording_function(*this);
 }
