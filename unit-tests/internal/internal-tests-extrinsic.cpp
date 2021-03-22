@@ -647,7 +647,7 @@ TEST_CASE("Controls limits validation", "[live]")
 
         for (auto&& device : list)
         {
-            if (std::string(device.get_info(RS2_CAMERA_INFO_PRODUCT_LINE))  != "D400")
+            if (std::string(device.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) != "D400")
                 continue;
             auto sensors = device.query_sensors();
             float ae_limit;
@@ -657,23 +657,21 @@ TEST_CASE("Controls limits validation", "[live]")
                 for (auto& s : sensors)
                 {
                     std::string val = s.get_info(RS2_CAMERA_INFO_NAME);
-                    if (!val.compare("Stereo Module")) {
                     if (!s.supports(control))
                         return;
-                        auto range = s.get_option_range(control);
-                        float set_value[3] = { range.min - 10, range.max + 10, std::floor((range.max + range.min) / 2) };
-                        for (auto& val : set_value)
+                    auto range = s.get_option_range(control);
+                    float set_value[3] = { range.min - 10, range.max + 10, std::floor((range.max + range.min) / 2) };
+                    for (auto& val : set_value)
+                    {
+                        CAPTURE(val);
+                        CAPTURE(range);
+                        if (val < range.min || val > range.max)
+                            REQUIRE_THROWS(s.set_option(control, val));
+                        else
                         {
-                            CAPTURE(val);
-                            CAPTURE(range);
-                            if (val < range.min || val > range.max)
-                                REQUIRE_THROWS(s.set_option(control, val));
-                            else
-                            {
-                                s.set_option(control, val);
-                                ae_limit = s.get_option(control);
-                                REQUIRE(ae_limit == val);
-                            }
+                            s.set_option(control, val);
+                            ae_limit = s.get_option(control);
+                            REQUIRE(ae_limit == val);
                         }
                     }
                 }
