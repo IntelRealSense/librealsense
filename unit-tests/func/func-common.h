@@ -21,12 +21,6 @@ inline rs2::device find_first_device_or_exit()
     return devices_list[0];
 }
 
-inline rs2::device find_same_first_device()
-{
-    static rs2::device dev = find_first_device_or_exit();
-    return dev;
-}
-
 inline rs2::device_list find_devices_by_product_line_or_exit( int product )
 {
     rs2::context ctx;
