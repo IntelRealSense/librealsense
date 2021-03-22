@@ -24,7 +24,6 @@
 #include "../common/utilities/string/trim-newlines.h"
 #include "../common/utilities/imgui/wrap.h"
 
-
 namespace rs2
 {
     template <typename T>
@@ -925,6 +924,7 @@ namespace rs2
         selected_shader = (shader_type)config_file::instance().get_or_default(
             configurations::viewer::shading_mode, 2);
 
+#ifdef BUILD_EASYLOGGINGPP
         auto min_severity = (rs2_log_severity)config_file::instance().get_or_default(
             configurations::viewer::log_severity, 2);
 
@@ -941,6 +941,7 @@ namespace rs2
 
             rs2::log_to_file(min_severity, filename.c_str());
         }
+#endif
 
         show_skybox = config_file::instance().get_or_default(
             configurations::performance::show_skybox, true);

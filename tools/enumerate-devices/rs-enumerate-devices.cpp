@@ -203,7 +203,9 @@ int main(int argc, char** argv) try
 
     cmd.parse(argc, argv);
 
+#ifdef BUILD_EASYLOGGINGPP
     log_to_console(RS2_LOG_SEVERITY_ERROR);
+#endif
 
     bool short_view = short_view_arg.getValue();
     bool compact_view = compact_view_arg.getValue();
