@@ -207,6 +207,7 @@ list(APPEND PP_Rosbag_Recordings_List
     [pointcloud]_all_combinations_depth_color.bag
     single_depth_color_640x480.bag
     D435i_Depth_and_IMU.bag
+    recording_deadlock.bag
 )
  set(PP_Rosbag_Recordings_URL https://librealsense.intel.com/rs-tests/Rosbag_unit_test_records/)
 foreach(i ${PP_Rosbag_Recordings_List})
