@@ -637,3 +637,44 @@ TEST_CASE("Enable disable all streams", "[live]")
         }
     }
 }
+TEST_CASE("Controls limits validation", "[live]")
+{
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        auto&& device = ctx.query_devices()[0];
+        auto sensors = device.query_sensors();
+        rs2::sensor depth_sensor;
+        float current_set_value;
+        float ae_limit;
+        float prev_ae_limit;
+        //rs2::option_range range;
+
+        for (auto& s : sensors)
+        {
+            std::string val = s.get_info(RS2_CAMERA_INFO_NAME);
+            if (!val.compare("Stereo Module")) {
+                depth_sensor = s;
+                auto range = s.get_option_range(RS2_OPTION_AUTO_EXPOSURE_LIMIT);
+                float set_value[3] = { range.min - 10, range.max + 10, (range.max - range.min) / 2 };
+                for (auto& val : set_value)
+                {
+                    try
+                    {
+                        current_set_value = val;
+                        CAPTURE(val);
+                        CAPTURE(range);
+                        s.set_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT, val);
+                        prev_ae_limit = ae_limit;
+                        ae_limit = s.get_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT);
+                        REQUIRE_THROWS(ae_limit == val);
+                    }
+                    catch (const rs2::error& e)
+                    {
+                        REQUIRE_THROWS(ae_limit == prev_ae_limit);
+                    }
+                }
+            }
+        }
+    }
+}
