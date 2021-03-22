@@ -10,27 +10,27 @@
 
 using namespace rs2;
 
-TEST_CASE( "Error handling sanity", "[l500][live]" )
+TEST_CASE( "Create device", "[l500][live]" )
 {
-    // Require at least one device to be plugged in
-    auto devices = find_devices_by_product_line_or_exit( RS2_PRODUCT_LINE_L500 );
-    auto dev = devices[0];
-
-    validate_errors_handling( dev, build_log_errors_map());
+    find_same_first_device();
 }
 
-TEST_CASE("Error handling while streaming", "[l500][live]")
+TEST_CASE( "Non-streaming", "[l500][live]" )
+{
+    validate_errors_handling( find_same_first_device(), build_log_errors_map() );
+}
+
+TEST_CASE( "Streaming", "[l500][live]")
 {
     // Require at least one device to be plugged in
-    auto devices = find_devices_by_product_line_or_exit(RS2_PRODUCT_LINE_L500);
-    auto dev = devices[0];
+    auto dev = find_same_first_device();
     auto depth_sens = dev.first< rs2::depth_sensor >();
 
-    auto depth = find_default_depth_profile(depth_sens);
-    auto ir = find_default_ir_profile(depth_sens);
-    auto confidence = find_confidence_corresponding_to_depth(depth_sens, depth);
+    auto depth = find_default_depth_profile( depth_sens );
+    auto ir = find_default_ir_profile( depth_sens );
+    auto confidence = find_confidence_corresponding_to_depth( depth_sens, depth );
 
-    do_while_streaming(depth_sens, { depth, ir, confidence }, [&]() {
-        validate_errors_handling(dev, build_log_errors_map());
-    });
+    do_while_streaming( depth_sens, { depth, ir, confidence }, [&]() {
+        validate_errors_handling( dev, build_log_errors_map() );
+    } );
 }
