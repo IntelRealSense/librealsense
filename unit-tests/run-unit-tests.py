@@ -225,12 +225,15 @@ class TestConfig(ABC):  # Abstract Base Class
         self._configurations = list()
         self._priority = 1000
         self._tags = set()
+        self._flags = set()
 
     def debug_dump(self):
         if self._priority != 1000:
             log.d( 'priority:', self._priority )
         if self._tags:
             log.d( 'tags:', self._tags )
+        if self._flags:
+            log.d( 'flags:', self._flags )
         if len(self._configurations) > 1:
             log.d( len( self._configurations ), 'configurations' )
             # don't show them... they are output separately
@@ -246,6 +249,11 @@ class TestConfig(ABC):  # Abstract Base Class
     @property
     def tags(self):
         return self._tags
+
+    @property
+    def flags(self):
+        return self._flags
+
 
 class TestConfigFromText(TestConfig):
     """
@@ -285,6 +293,8 @@ class TestConfigFromText(TestConfig):
                     log.e( source + '+' + str(context['index']) + ': priority directive with invalid parameters:', params )
             elif directive == 'tag':
                 self._tags.update(params)
+            elif directive == 'flag':
+                self._flags.update( params )
             else:
                 log.e( source + '+' + str(context['index']) + ': invalid directive "' + directive + '"; ignoring' )
 
@@ -363,10 +373,11 @@ class PyTest(Test):
         if sys.flags.verbose:
             cmd += ["-v"]
         cmd += [self.path_to_script]
-        if log.is_debug_on():
-            cmd += ['--debug']
-        if log.is_color_on():
-            cmd += ['--color']
+        if 'custom-args' not in self.config.flags:
+            if log.is_debug_on():
+                cmd += ['--debug']
+            if log.is_color_on():
+                cmd += ['--color']
         return cmd
 
     def run_test( self, configuration = None, log_path = None ):
@@ -421,7 +432,17 @@ class ExeTest(Test):
 
     @property
     def command(self):
-        return [self.exe]
+        cmd = [self.exe]
+        if 'custom-args' not in self.config.flags:
+            # Assume we're a Catch2 exe, so:
+            #if sys.flags.verbose:
+            #    cmd += 
+            if log.is_debug_on():
+                cmd += ['-d', 'yes']  # show durations for each test-case
+                #cmd += ['--success']  # show successful assertions in output
+            #if log.is_color_on():
+            #    cmd += ['--use-colour', 'yes']
+        return cmd
 
     def run_test( self, configuration = None, log_path = None ):
         try:

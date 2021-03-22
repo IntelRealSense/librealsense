@@ -27,7 +27,7 @@ void validate_errors_handling( const rs2::device & dev,
         cv.notify_one();
     } );
 
-    REQUIRE_NOTHROW( depth_sens.set_option( RS2_OPTION_ERROR_POLLING_ENABLED, 1 ) );
+    REQUIRE_NOTHROW( depth_sens.set_option( RS2_OPTION_ERROR_POLLING_ENABLED, 0.1f ) );
 
     for( auto i = error_report.begin(); i != error_report.end(); i++ )
     {
