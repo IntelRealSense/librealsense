@@ -9,6 +9,24 @@
 using namespace rs2;
 
 
+inline rs2::device find_first_device_or_exit()
+{
+    rs2::context ctx;
+    rs2::device_list devices_list = ctx.query_devices();
+    if( devices_list.size() == 0 )
+    {
+        std::cout << "No device was found; skipping test" << std::endl;
+        exit( 0 );
+    }
+    return devices_list[0];
+}
+
+inline rs2::device find_same_first_device()
+{
+    static rs2::device dev = find_first_device_or_exit();
+    return dev;
+}
+
 inline rs2::device_list find_devices_by_product_line_or_exit( int product )
 {
     rs2::context ctx;
