@@ -421,7 +421,16 @@ class ExeTest(Test):
 
     @property
     def command(self):
-        return [self.exe]
+        cmd = [self.exe]
+        # Assume we're a Catch2 exe, so:
+        #if sys.flags.verbose:
+        #    cmd += 
+        if log.is_debug_on():
+            cmd += ['-d', 'yes']  # show durations for each test-case
+            #cmd += ['--success']  # show successful assertions in output
+        #if log.is_color_on():
+        #    cmd += ['--use-colour', 'yes']
+        return cmd
 
     def run_test( self, configuration = None, log_path = None ):
         try:
