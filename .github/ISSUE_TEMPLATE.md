@@ -1,3 +1,4 @@
+
 * Before opening a new issue, we wanted to provide you with some useful suggestions (Click "Preview" above for a better view):
 
     * Consider checking out SDK [examples](https://github.com/IntelRealSense/librealsense/tree/master/examples#sample-code-for-intel-realsense-cameras).
