@@ -17,7 +17,7 @@ namespace Intel.RealSense
             Console.WriteLine($"Device model: '{model}'");
             
             var jsonFileName = $"ADP_{model}_TEST_JSON_USB{usbType}.json";
-            var jsonPath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), jsonFileName);
+            var jsonPath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "JsonConfigs", jsonFileName);
             Console.WriteLine($"Searching for a json test file: '{jsonFileName}'");
             if (!File.Exists(jsonPath))
             {
