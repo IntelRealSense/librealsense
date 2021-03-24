@@ -290,8 +290,8 @@ public:
 
     void start()
     {
-        _is_alive = true;
         std::unique_lock<std::mutex> lock(_was_stopped_mutex);
+        _is_alive = true;
         _was_stopped = false;
 
         _queue.start();
@@ -299,9 +299,9 @@ public:
 
     void stop()
     {
-        _is_alive = false;
         {
             std::unique_lock<std::mutex> lock(_was_stopped_mutex);
+            _is_alive = false;
 
             if (_was_stopped.load()) return;
 
