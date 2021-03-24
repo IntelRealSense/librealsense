@@ -555,14 +555,12 @@ for test in prioritize_tests( get_tests() ):
             log.d( 'does not fit --tag:', test.config.tags )
             continue
         #
-        if list_tags:
-            tags.update( test.config.tags )
-            continue
+        tags.update( test.config.tags )
         #
-        if list_tests:
-            tests.append( test.name )
-            continue
+        tests.append( test.name )
         #
+        if list_tags or list_tests:
+            continue
         if not test.is_live():
             test_wrapper( test )
             continue
@@ -586,22 +584,24 @@ for test in prioritize_tests( get_tests() ):
     finally:
         log.debug_unindent()
 
-if list_tags:
-    print( "Available tags:" )
-    for t in sorted( list( tags )):
-        print( t )
-    sys.exit(0)
-if list_tests:
-    print( "Available tests:" )
-    for t in sorted( tests ):
-        print( t )
-    sys.exit( 0 )
 
 log.progress()
 #
 if not n_tests:
     log.e( 'No unit-tests found!' )
     sys.exit(1)
+#
+if list_tags:
+    print( "Available tags:" )
+    for t in sorted( list( tags )):
+        print( t )
+    sys.exit(0)
+#
+if list_tests:
+    print( "Available tests:" )
+    for t in sorted( tests ):
+        print( t )
+    sys.exit( 0 )
 #
 n_errors = log.n_errors()
 if n_errors:
