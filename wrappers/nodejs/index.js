@@ -2616,7 +2616,23 @@ class Pipeline {
     }
 
     if (ownCtx === true) {
-      this.ctx = new Context();
+      this.ctx = new Context();    
+      // get existing sensors params
+      let sensores = this.ctx.querySensors();
+      if (sensores.length>=2) {
+        let depthSensor = sensores[0];
+        let colorSensor = sensores[1];
+        let cfg = new Config();
+        let depthProfiles = depthSensor.getStreamProfiles().filter(s=>s.streamType == stream.STREAM_DEPTH);
+        let depthProfile = depthProfiles.find(x=>x.width == 640 && x.height==480) || depthProfiles[depthProfiles.length-1];
+        let colorProfiles = colorSensor.getStreamProfiles().filter(s=>s.streamType == stream.STREAM_COLOR);
+        let colorProfile = colorProfiles.find(x=>x.width == 640 && x.height==480) ||colorProfiles[colorProfiles.length-1];
+        console.log(`depth: w: ${depthProfile.width}, h: ${depthProfile.height}, format: ${depthProfile.format}, fps: ${depthProfile.fps}`);
+        console.log(`color: w: ${colorProfile.width}, h: ${colorProfile.height}, format: ${colorProfile.format}, fps: ${colorProfile.fps}`);
+        cfg.enableStream(stream.STREAM_DEPTH, -1, depthProfile.width, depthProfile.height, depthProfile.format, depthProfile.fps);
+        cfg.enableStream(stream.STREAM_COLOR, -1, colorProfile.width, colorProfile.height, format.FORMAT_RGB8, colorProfile.fps);        
+        this.autoConfig = cfg;
+      }            
     }
 
     this.cxxPipeline = new RS2.RSPipeline();
@@ -2675,6 +2691,7 @@ class Pipeline {
     } else {
       checkArgumentType(arguments, Config, 0, funcName);
       this.started = true;
+      console.log(`Pipeline started with config`);
       return new PipelineProfile(this.cxxPipeline.startWithConfig(arguments[0].cxxConfig));
     }
   }
