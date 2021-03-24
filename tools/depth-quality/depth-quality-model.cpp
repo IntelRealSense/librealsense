@@ -900,7 +900,7 @@ namespace rs2
             if (right_sensor != profiles.end())
             {
                 auto left_sensor = std::find_if(profiles.begin(), profiles.end(), [](rs2::stream_profile& p)
-                { return (p.stream_index() == 0) && (p.stream_type() == RS2_STREAM_DEPTH); });
+                { return (p.stream_index() == 1) && (p.stream_type() == RS2_STREAM_INFRARED); });
                 try
                 {
                     auto extrin = (*left_sensor).get_extrinsics_to(*right_sensor);
