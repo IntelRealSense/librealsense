@@ -364,7 +364,7 @@ if 'windows' in platform.system().lower():
         # u'\\\\?\\usb#vid_8086&pid_0b07&mi_00#6&8bfcab3&0&0000#{e5323777-f976-4f5b-9b55-b94699c46e44}\\global'
         #
         import re
-        re_result = re.match( r'.*\\(.*)#vid_(.*)&pid_(.*)&mi_(.*)#(.*)#', usb_location )
+        re_result = re.match( r'.*\\(.*)#vid_(.*)&pid_(.*)(?:&mi_(.*))?#(.*)#', usb_location, flags = re.IGNORECASE )
         dev_type = re_result.group(1)
         vid = re_result.group(2)
         pid = re_result.group(3)
@@ -372,10 +372,20 @@ if 'windows' in platform.system().lower():
         unique_identifier = re_result.group(5)
         #
         import winreg
-        registry_path = "SYSTEM\CurrentControlSet\Enum\{}\VID_{}&PID_{}&MI_{}\{}".format(
-            dev_type, vid, pid, mi, unique_identifier
-            )
-        reg_key = winreg.OpenKey( winreg.HKEY_LOCAL_MACHINE, registry_path )
+        if mi:
+            registry_path = "SYSTEM\CurrentControlSet\Enum\{}\VID_{}&PID_{}&MI_{}\{}".format(
+                dev_type, vid, pid, mi, unique_identifier
+                )
+        else:
+            registry_path = "SYSTEM\CurrentControlSet\Enum\{}\VID_{}&PID_{}\{}".format(
+                dev_type, vid, pid, unique_identifier
+                )
+        try:
+            reg_key = winreg.OpenKey( winreg.HKEY_LOCAL_MACHINE, registry_path )
+        except FileNotFoundError:
+            log.e( 'Could not find registry key for port:', registry_path )
+            log.e( '    usb location:', usb_location )
+            return None
         result = winreg.QueryValueEx( reg_key, "LocationInformation" )
         # location example: 0000.0014.0000.016.003.004.003.000.000
         return result[0]
