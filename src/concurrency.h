@@ -290,6 +290,7 @@ public:
 
     void start()
     {
+        _is_alive = true;
         std::unique_lock<std::mutex> lock(_was_stopped_mutex);
         _was_stopped = false;
 
