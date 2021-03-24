@@ -552,7 +552,7 @@ for test in prioritize_tests( get_tests() ):
         test.debug_dump()
         #
         if tag and tag not in test.config.tags:
-            log.d( 'does not fit --tag:', test.tags )
+            log.d( 'does not fit --tag:', test.config.tags )
             continue
         #
         if list_tags:
