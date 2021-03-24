@@ -43,7 +43,7 @@ void init_device(py::module &m) {
             if (self.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION))
                 ss << "  FW: " << self.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
             if (self.supports(RS2_CAMERA_INFO_CAMERA_LOCKED))
-                ss << "  " << (self.get_info(RS2_CAMERA_INFO_CAMERA_LOCKED) ? "LOCKED" : "UNLOCKED");
+                ss << "  LOCKED: " << self.get_info(RS2_CAMERA_INFO_CAMERA_LOCKED);
             ss << ")>";
             return ss.str();
         });
