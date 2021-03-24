@@ -591,23 +591,23 @@ if not n_tests:
     log.e( 'No unit-tests found!' )
     sys.exit(1)
 #
-if list_tags:
-    print( "Available tags:" )
-    for t in sorted( list( tags )):
-        print( t )
-    sys.exit(0)
+if list_tags or list_tests:
+    if list_tags:
+        print( "Available tags:" )
+        for t in sorted( list( tags )):
+            print( t )
+    #
+    if list_tests:
+        print( "Available tests:" )
+        for t in sorted( tests ):
+            print( t )
 #
-if list_tests:
-    print( "Available tests:" )
-    for t in sorted( tests ):
-        print( t )
-    sys.exit( 0 )
-#
-n_errors = log.n_errors()
-if n_errors:
-    log.out( log.red + str(n_errors) + log.reset, 'of', n_tests, 'test(s)', log.red + 'failed!' + log.reset + log.clear_eos )
-    sys.exit(1)
-#
-log.out( str(n_tests) + ' unit-test(s) completed successfully' + log.clear_eos )
+else:
+    n_errors = log.n_errors()
+    if n_errors:
+        log.out( log.red + str(n_errors) + log.reset, 'of', n_tests, 'test(s)', log.red + 'failed!' + log.reset + log.clear_eos )
+        sys.exit(1)
+    #
+    log.out( str(n_tests) + ' unit-test(s) completed successfully' + log.clear_eos )
 #
 sys.exit(0)
