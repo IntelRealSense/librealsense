@@ -650,7 +650,7 @@ TEST_CASE("Controls limits validation", "[live]")
             if (std::string(device.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) != "D400")
                 continue;
             auto sensors = device.query_sensors();
-            float ae_limit;
+            float limit;
             rs2_option controls[2] = { RS2_OPTION_AUTO_GAIN_LIMIT, RS2_OPTION_AUTO_EXPOSURE_LIMIT };
             for (auto& control : controls)
             {
@@ -658,7 +658,7 @@ TEST_CASE("Controls limits validation", "[live]")
                 {
                     std::string val = s.get_info(RS2_CAMERA_INFO_NAME);
                     if (!s.supports(control))
-                        return;
+                        break;
                     auto range = s.get_option_range(control);
                     float set_value[3] = { range.min - 10, range.max + 10, std::floor((range.max + range.min) / 2) };
                     for (auto& val : set_value)
@@ -670,8 +670,8 @@ TEST_CASE("Controls limits validation", "[live]")
                         else
                         {
                             s.set_option(control, val);
-                            ae_limit = s.get_option(control);
-                            REQUIRE(ae_limit == val);
+                            limit = s.get_option(control);
+                            REQUIRE(limit == val);
                         }
                     }
                 }
