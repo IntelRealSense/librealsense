@@ -110,6 +110,9 @@ if pyrs:
     # We need to add the directory not the file itself
     pyrs_path = os.path.dirname(pyrs_path)
     log.d( 'found pyrealsense pyd in:', pyrs_path )
+    if not target:
+        target = pyrs_path
+        log.d( 'assuming executable path same as pyd path' )
 
 # Figure out which sys.path we want the tests to see, assuming we have Python tests
 #     PYTHONPATH is what Python will ADD to sys.path for the child processes
