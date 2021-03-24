@@ -226,10 +226,13 @@ class TestConfig(ABC):  # Abstract Base Class
         self._priority = 1000
         self._tags = set()
         self._flags = set()
+        self._timeout = 200
 
     def debug_dump(self):
         if self._priority != 1000:
             log.d( 'priority:', self._priority )
+        if self._timeout != 200:
+            log.d( 'timeout:', self._timeout)
         if self._tags:
             log.d( 'tags:', self._tags )
         if self._flags:
@@ -239,19 +242,23 @@ class TestConfig(ABC):  # Abstract Base Class
             # don't show them... they are output separately
 
     @property
-    def configurations(self):
+    def configurations( self ):
         return self._configurations
 
     @property
-    def priority(self):
+    def priority( self ):
         return self._priority
 
     @property
-    def tags(self):
+    def timeout( self ):
+        return self._timeout
+
+    @property
+    def tags( self ):
         return self._tags
 
     @property
-    def flags(self):
+    def flags( self ):
         return self._flags
 
 
@@ -291,6 +298,11 @@ class TestConfigFromText(TestConfig):
                     self._priority = int( params[0] )
                 else:
                     log.e( source + '+' + str(context['index']) + ': priority directive with invalid parameters:', params )
+            elif directive == 'timeout':
+                if len(params) == 1 and params[0].isdigit():
+                    self._timeout = int( params[0] )
+                else:
+                    log.e( source + '+' + str(context['index']) + ': timeout directive with invalid parameters:', params )
             elif directive == 'tag':
                 self._tags.update(params)
             elif directive == 'flag':
@@ -382,7 +394,7 @@ class PyTest(Test):
 
     def run_test( self, configuration = None, log_path = None ):
         try:
-            subprocess_run( self.command, stdout=log_path, append=self.ran )
+            subprocess_run( self.command, stdout=log_path, append=self.ran, timeout=self.config.timeout )
         finally:
             self._ran = True
 
@@ -446,7 +458,7 @@ class ExeTest(Test):
 
     def run_test( self, configuration = None, log_path = None ):
         try:
-            subprocess_run( self.command, stdout=log_path, append=self.ran )
+            subprocess_run( self.command, stdout=log_path, append=self.ran, timeout=self.config.timeout )
         finally:
             self._ran = True
 
