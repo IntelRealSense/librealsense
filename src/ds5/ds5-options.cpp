@@ -658,17 +658,20 @@ namespace librealsense
             return _uvc_option->is_enabled();
     }
 
-    auto_exposure_limit_option::auto_exposure_limit_option(hw_monitor& hwm, sensor_base* ep)
-        : _hwm(hwm), _sensor(ep)
+    auto_exposure_limit_option::auto_exposure_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range)
+        : option_base(range), _hwm(hwm), _sensor(ep)
     {
-        _range = [this]()
+        _range = [range]()
         {
-            return option_range{ 0, 165000, 1, 0 };
+            return range;
         };
     }
 
     void auto_exposure_limit_option::set(float value)
     {
+        if (!is_valid(value))
+            throw invalid_value_exception("set(enable_auto_exposure) failed! Invalid Auto-Exposure mode request " + std::to_string(value));
+
         command cmd_get(ds::AUTO_CALIB);
         cmd_get.param1 = 5;
         std::vector<uint8_t> ret = _hwm.send(cmd_get);
@@ -700,17 +703,20 @@ namespace librealsense
         return *_range;
     }
 
-    auto_gain_limit_option::auto_gain_limit_option(hw_monitor& hwm, sensor_base* ep)
-        : _hwm(hwm), _sensor(ep)
+    auto_gain_limit_option::auto_gain_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range)
+        : option_base(range), _hwm(hwm), _sensor(ep)
     {
-        _range = [this]()
+        _range = [range]()
         {
-            return option_range{ 0, 248, 1, 0 };
+            return range;
         };
     }
 
     void auto_gain_limit_option::set(float value)
     {
+        if (!is_valid(value))
+            throw invalid_value_exception("set(enable_auto_gain) failed! Invalid Auto-Gain mode request " + std::to_string(value));
+
         command cmd_get(ds::AUTO_CALIB);
         cmd_get.param1 = 5;
         std::vector<uint8_t> ret = _hwm.send(cmd_get);
