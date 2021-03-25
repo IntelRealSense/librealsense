@@ -1,6 +1,6 @@
 cmake_minimum_required( VERSION 3.8.0 )
 
-project(cs-tutorial-5-software-dev-processing)
+project(cs-tutorial-6-software-dev-processing)
 
 add_executable(${PROJECT_NAME} 
 	Program.cs
