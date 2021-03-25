@@ -160,6 +160,10 @@ namespace Intel.RealSense
 
                 var sync = new Syncer();
 
+                // The raw depth->metric units translation scale is required for Colorizer to work
+                var realDepthSensor = profile.Device.QuerySensors().First(s => s.Is(Extension.DepthSensor));
+                depth_sensor.AddReadOnlyOption(Option.DepthUnits, realDepthSensor.DepthScale);
+
                 depth_sensor.Open(depth_profile);
                 color_sensor.Open(color_profile);
 
