@@ -39,8 +39,12 @@ void init_device(py::module &m) {
         .def("__repr__", [](const rs2::device &self) {
             std::stringstream ss;
             ss << "<" SNAME ".device: " << self.get_info(RS2_CAMERA_INFO_NAME)
-                << " (S/N: " << self.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)
-                << ")>";
+                << " (S/N: " << self.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+            if (self.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION))
+                ss << "  FW: " << self.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
+            if (self.supports(RS2_CAMERA_INFO_CAMERA_LOCKED))
+                ss << "  LOCKED: " << self.get_info(RS2_CAMERA_INFO_CAMERA_LOCKED);
+            ss << ")>";
             return ss.str();
         });
 
