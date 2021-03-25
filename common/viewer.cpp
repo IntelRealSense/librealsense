@@ -3123,7 +3123,7 @@ namespace rs2
                 arcball_camera_update(
                 (float*)&pos, (float*)&target, (float*)&up, view,
                 sec_since_update,
-                0.2f, // zoom per tick
+                zoom_per_tick,
                 -0.1f, // pan speed
                 3.0f, // rotation multiplier
                 static_cast<int>(viewer_rect.w), static_cast<int>(viewer_rect.h), // screen (window) size
