@@ -25,6 +25,20 @@ namespace librealsense
         register_extrinsics(from, to, _id);
     }
 
+    void extrinsics_graph::register_profile(const stream_interface& profile)
+    {
+        std::lock_guard<std::mutex> lock(_mutex); 
+        
+        // First, trim any dead stream, to make sure we are not keep gaining memory
+        cleanup_extrinsics();
+
+        // Second, register new extrinsics
+        auto profile_idx = find_stream_profile(profile);
+
+        if (_extrinsics.find(profile_idx) == _extrinsics.end())
+            _extrinsics.insert({ profile_idx, {} });
+    }
+
     void extrinsics_graph::register_extrinsics(const stream_interface& from, const stream_interface& to, std::weak_ptr<lazy<rs2_extrinsics>> extr)
     {
         std::lock_guard<std::mutex> lock(_mutex);

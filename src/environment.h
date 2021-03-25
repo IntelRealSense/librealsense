@@ -14,6 +14,7 @@ namespace librealsense
     public:
         extrinsics_graph();
         void register_same_extrinsics(const stream_interface& from, const stream_interface& to);
+        void register_profile(const stream_interface& profile);
         void register_extrinsics(const stream_interface& from, const stream_interface& to, std::weak_ptr<lazy<rs2_extrinsics>> extr);
         void register_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics extr);
         void override_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics const & extr);

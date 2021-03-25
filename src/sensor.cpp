@@ -167,6 +167,11 @@ namespace librealsense
         _active_profiles = requests;
     }
 
+    void sensor_base::register_profile(std::shared_ptr<stream_profile_interface> target) const
+    {
+        environment::get_instance().get_extrinsics_graph().register_profile(*target);
+    }
+
     void sensor_base::assign_stream(const std::shared_ptr<stream_interface>& stream, std::shared_ptr<stream_profile_interface> target) const
     {
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*stream, *target);
@@ -1154,7 +1159,7 @@ namespace librealsense
             cloned = std::make_shared<motion_stream_profile>(platform::stream_profile{});
         }
 
-        assign_stream(profile, cloned);
+        register_profile(cloned);
         cloned->set_unique_id(profile->get_unique_id());
         cloned->set_format(profile->get_format());
         cloned->set_stream_index(profile->get_stream_index());
