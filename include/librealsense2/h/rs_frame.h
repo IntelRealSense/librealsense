@@ -70,6 +70,14 @@ typedef enum rs2_frame_metadata_value
 const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata);
 const char* rs2_frame_metadata_value_to_string(rs2_frame_metadata_value metadata);
 
+/** \brief Calibration target type. */
+typedef enum rs2_calib_target_type
+{
+    RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES, /**< Flat rectangle with vertices as the centers of Gaussian dots */
+    RS2_CALIB_TARGET_COUNT           /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+} rs2_calib_target_type;
+const char* rs2_calib_target_type_to_string(rs2_calib_target_type type);
+
 /**
 * retrieve metadata from frame handle
 * \param[in] frame      handle returned from a callback
@@ -338,6 +346,14 @@ void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error**
 * \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_pose_frame_get_pose_data(const rs2_frame* frame, rs2_pose* pose, rs2_error** error);
+
+/**
+* Calculate the rectangle size on the specific target
+* \param[in] frame         Left or right camera frame of size 256x144
+* \param[out] rect_sides   The four rectangle side sizes in pixels with the order of top, bottom, left, and right
+* \param[out] error        If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_extract_target_dimensions(const rs2_frame* frame, rs2_calib_target_type calib_type, float * target_dims, unsigned int target_dims_size, rs2_error** error);
 
 #ifdef __cplusplus
 }

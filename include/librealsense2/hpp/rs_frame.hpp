@@ -705,6 +705,20 @@ namespace rs2
         * \return            number of bytes per one pixel
         */
         int get_bytes_per_pixel() const { return get_bits_per_pixel() / 8; }
+
+        /**
+        * Calculate the rectangle size on the specific target
+        * \param[in] frame          Left or right camera frame of size 256x144
+        * \param[out] rec_sides     The four rectangle side sizes in pixels with the order of top, bottom, left, and right
+        * \return                   true if succeeded
+        */
+        bool extract_target_dimensions(rs2_calib_target_type calib_type, float* target_dims, unsigned int target_dims_size) const
+        {
+            rs2_error* e = nullptr;
+            rs2_extract_target_dimensions(get(), calib_type, target_dims, target_dims_size, &e);
+            error::handle(e);
+            return (e == nullptr);
+        }
     };
 
     struct vertex {

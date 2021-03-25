@@ -456,12 +456,16 @@ namespace rs2
     {
         try
         {
-            std::shared_ptr<tare_ground_truth_calculator> gt_calculator;
+            std::shared_ptr<rect_calculator> gt_calculator;
             bool created = false;
 
             int counter = 0;
-            int limit = tare_ground_truth_calculator::_frame_num << 1;
-            int step = 100 / tare_ground_truth_calculator::_frame_num;
+            int limit = rect_calculator::_frame_num << 1;
+            int step = 100 / rect_calculator::_frame_num;
+
+            float rect_sides[4] = { 0 };
+            float target_fw = 0;
+            float target_fh = 0;
 
             int ret = 0;
             rs2::frame f;
@@ -475,13 +479,13 @@ namespace rs2
                         stream_profile profile = f.get_profile();
                         auto vsp = profile.as<video_stream_profile>();
 
-                        gt_calculator = std::make_shared<tare_ground_truth_calculator>(vsp.width(), vsp.height(), vsp.get_intrinsics().fx,
-                            config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f),
-                            config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f));
+                        gt_calculator = std::make_shared<rect_calculator>();
+                        target_fw = vsp.get_intrinsics().fx * config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f);
+                        target_fh = vsp.get_intrinsics().fy * config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f);
                         created = true;
                     }
 
-                    ret = gt_calculator->calculate(reinterpret_cast<const uint8_t*> (f.get_data()), ground_truth);
+                    ret = gt_calculator->calculate(f.get(), rect_sides);
                     if (ret == 0)
                         ++counter;
                     else if (ret == 1)
@@ -489,7 +493,6 @@ namespace rs2
                     else if (ret == 2)
                     {
                         _progress += step;
-                        config_file::instance().set(configurations::viewer::ground_truth_r, ground_truth);
                         break;
                     }
                 }
@@ -497,6 +500,32 @@ namespace rs2
 
             if (ret != 2)
                 fail("Please adjust the camera position \nand make sure the specific target is \nin the middle of the camera image!");
+            else
+            {
+                float gt[4] = { 0 };
+
+                if (rect_sides[0] > 0)
+                    gt[0] = target_fw / rect_sides[0];
+
+                if (rect_sides[1] > 0)
+                    gt[1] = target_fw / rect_sides[1];
+
+                if (rect_sides[2] > 0)
+                    gt[2] = target_fh / rect_sides[2];
+
+                if (rect_sides[3] > 0)
+                    gt[3] = target_fh / rect_sides[3];
+
+                if (gt[0] <= 0.1f || gt[1] <= 0.1f || gt[2] <= 0.1f || gt[3] <= 0.1f)
+                    fail("Bad target rectangle side sizes returned!");
+
+                ground_truth = 0.0;
+                for (int i = 0; i < 4; ++i)
+                    ground_truth += gt[i];
+                ground_truth /= 4.0;
+
+                config_file::instance().set(configurations::viewer::ground_truth_r, ground_truth);
+            }
         }
         catch (const std::runtime_error& error)
         {
@@ -1787,357 +1816,31 @@ namespace rs2
         pinned = true;
     }
 
-    tare_ground_truth_calculator::tare_ground_truth_calculator(int width, int height, float focal_length, float target_width, float target_height)
-        : _width(width), _height(height), _target_fw(focal_length* target_width), _target_fh(focal_length* target_height)
-    {
-        if (width != 256 || height != 144)
-            throw std::runtime_error(to_string() << "Only 256x144 resolution is supported!");
-
-        _wt = _width - _tsize;
-        _ht = _height - _tsize;
-        _size = _width * _height;
-
-        _hwidth = _width >> 1;
-        _hheight = _height >> 1;
-
-        _imgt.resize(_tsize2);
-        _img.resize(_size);
-        _ncc.resize(_size);
-        memset(_ncc.data(), 0, _size * sizeof(double));
-
-        _buf.resize(40);
-    }
-
-    tare_ground_truth_calculator::~tare_ground_truth_calculator()
-    {
-    }
-
-    int tare_ground_truth_calculator::calculate(const uint8_t* img, float& ground_truth)
-    {
-        std::lock_guard<std::mutex> lock(_mtx);
-
-        normalize(img);
-        calculate_ncc();
-
-        _corners_found = find_corners();
-
-        if (_corners_found)
-        {
-            uint8_t peaks[4] = { 0 };
-            int idx = 0;
-            int x = 0;
-            int y = 0;
-            for (int i = 0; i < 4; ++i)
-            {
-                y = static_cast<int>(_corners[_corners_idx][i].y + 0.5f);
-                x = static_cast<int>(_corners[_corners_idx][i].x + 0.5f);
-                idx = y * _width + x;
-                peaks[i] = img[idx];
-            }
-
-            static const int peak_diff_thresh = 12;
-            bool ok = true;
-            for (int j = 0; j < 4; ++j)
-            {
-                for (int i = 0; i < 4; ++i)
-                {
-                    if (abs(peaks[i] - peaks[j]) > peak_diff_thresh)
-                    {
-                        ok = false;
-                        break;
-                    }
-
-                    if (!ok)
-                        break;
-                }
-            }
-
-            if (!ok)
-                _corners_found = false;
-        }
-
-        return smooth_corner_locations(ground_truth);
-    }
-
-    void tare_ground_truth_calculator::normalize(const uint8_t* img)
-    {
-        uint8_t min_val = 255;
-        uint8_t max_val = 0;
-        const uint8_t* p = img;
-        for (int i = 0; i < _size; ++i)
-        {
-            if (*p < min_val)
-                min_val = *p;
-
-            if (*p > max_val)
-                max_val = *p;
-
-            ++p;
-        }
-
-        if (max_val > min_val)
-        {
-            double factor = 1.0f / (max_val - min_val);
-
-            p = img;
-            double* q = _img.data();
-            for (int i = 0; i < _size; ++i)
-                *q++ = 1.0f - (*p++ - min_val) * factor;
-        }
-    }
-
-    void tare_ground_truth_calculator::calculate_ncc()
-    {
-        double* pncc = _ncc.data() + (_htsize * _width + _htsize);
-        double* pi = _img.data();
-        double* pit = _imgt.data();
-
-        const double* pt = nullptr;
-        const double* qi = nullptr;
-
-        double sum = 0.0f;
-        double mean = 0.0f;
-        double norm = 0.0f;
-
-        double min_val = 2.0;
-        double max_val = -2.0;
-        double tmp = 0.0;
-
-        for (int j = 0; j < _ht; ++j)
-        {
-            for (int i = 0; i < _wt; ++i)
-            {
-                qi = pi;
-                sum = 0.0f;
-                for (int m = 0; m < _tsize; ++m)
-                {
-                    for (int n = 0; n < _tsize; ++n)
-                        sum += *qi++;
-
-                    qi += _wt;
-                }
-
-                mean = sum / _tsize2;
-
-                qi = pi;
-                sum = 0.0f;
-                pit = _imgt.data();
-                for (int m = 0; m < _tsize; ++m)
-                {
-                    for (int n = 0; n < _tsize; ++n)
-                    {
-                        *pit = *qi++ - mean;
-                        sum += *pit * *pit;
-                        ++pit;
-                    }
-                    qi += _wt;
-                }
-
-                norm = sqrt(sum);
-
-                pt = _template.data();
-                pit = _imgt.data();
-                sum = 0.0f;
-                for (int k = 0; k < _tsize2; ++k)
-                    sum += *pit++ * *pt++;
-
-                tmp = sum / norm;
-                if (tmp < min_val)
-                    min_val = tmp;
-
-                if (tmp > max_val)
-                    max_val = tmp;
-
-                *pncc++ = tmp;
-                ++pi;
-            }
-
-            pncc += _tsize;
-            pi += _tsize;
-        }
-
-        if (max_val > min_val)
-        {
-            double factor = 1.0f / (max_val - min_val);
-            double div = 1.0 - _thresh;
-            pncc = _ncc.data();
-            for (int i = 0; i < _size; ++i)
-            {
-                tmp = (*pncc - min_val) * factor;
-                *pncc++ = (tmp < _thresh ? 0 : (tmp - _thresh) / div);
-            }
-        }
-    }
-
-    bool tare_ground_truth_calculator::find_corners()
-    {
-        static const int edge = 20;
-
-        // upper left
-        _pts[0].x = 0;
-        _pts[0].y = 0;
-        double peak = 0.0f;
-        double* p = _ncc.data() + _htsize * _width;
-        for (int j = _htsize; j < _hheight; ++j)
-        {
-            p += _htsize;
-            for (int i = _htsize; i < _hwidth; ++i)
-            {
-                if (*p > peak)
-                {
-                    peak = *p;
-                    _pts[0].x = i;
-                    _pts[0].y = j;
-                }
-                ++p;
-            }
-            p += _hwidth;
-        }
-
-        if (peak < _thresh || _pts[0].x < edge || _pts[0].y < edge)
-            return false;
-
-        // upper right
-        _pts[1].x = 0;
-        _pts[1].y = 0;
-        peak = 0.0f;
-        p = _ncc.data() + _htsize * _width;
-        for (int j = _htsize; j < _hheight; ++j)
-        {
-            p += _hwidth;
-            for (int i = _hwidth; i < _width - _htsize; ++i)
-            {
-                if (*p > peak)
-                {
-                    peak = *p;
-                    _pts[1].x = i;
-                    _pts[1].y = j;
-                }
-                ++p;
-            }
-            p += _htsize;
-        }
-
-        if (peak < _thresh || _pts[1].x + edge > _width || _pts[1].y < edge || _pts[1].x - _pts[0].x < edge)
-            return false;
-
-        // lower left
-        _pts[2].x = 0;
-        _pts[2].y = 0;
-        peak = 0.0f;
-        p = _ncc.data() + _hheight * _width;
-        for (int j = _hheight; j < _height - _htsize; ++j)
-        {
-            p += _htsize;
-            for (int i = _htsize; i < _hwidth; ++i)
-            {
-                if (*p > peak)
-                {
-                    peak = *p;
-                    _pts[2].x = i;
-                    _pts[2].y = j;
-                }
-                ++p;
-            }
-            p += _hwidth;
-        }
-
-        if (peak < _thresh || _pts[2].x < edge || _pts[2].y + edge > _height || _pts[2].y - _pts[1].y < edge)
-            return false;
-
-        // lower right
-        _pts[3].x = 0;
-        _pts[3].y = 0;
-        peak = 0.0f;
-        p = _ncc.data() + _hheight * _width;
-        for (int j = _hheight; j < _height - _htsize; ++j)
-        {
-            p += _hwidth;
-            for (int i = _hwidth; i < _width - _htsize; ++i)
-            {
-                if (*p > peak)
-                {
-                    peak = *p;
-                    _pts[3].x = i;
-                    _pts[3].y = j;
-                }
-                ++p;
-            }
-            p += _htsize;
-        }
-
-        if (peak < _thresh || _pts[3].x + edge > _width || _pts[3].y + edge > _height || _pts[3].x - _pts[2].x < edge || _pts[3].y - _pts[1].y < edge)
-            return false;
-
-        refine_corners();
-        return true;
-    }
-
-    void tare_ground_truth_calculator::refine_corners()
-    {
-        double* f = _buf.data();
-        int hs = _patch_size >> 1;
-
-        // upper left
-        int pos = (_pts[0].y - hs) * _width + _pts[0].x - hs;
-
-        _corners[_corners_idx][0].x = static_cast<double>(_pts[0].x - hs);
-        minimize_x(_ncc.data() + pos, _patch_size, f, _corners[_corners_idx][0].x);
-
-        _corners[_corners_idx][0].y = static_cast<double>(_pts[0].y - hs);
-        minimize_y(_ncc.data() + pos, _patch_size, f, _corners[_corners_idx][0].y);
-
-        // upper right
-        pos = (_pts[1].y - hs) * _width + _pts[1].x - hs;
-
-        _corners[_corners_idx][1].x = static_cast<double>(_pts[1].x - hs);
-        minimize_x(_ncc.data() + pos, _patch_size, f, _corners[_corners_idx][1].x);
-
-        _corners[_corners_idx][1].y = static_cast<double>(_pts[1].y - hs);
-        minimize_y(_ncc.data() + pos, _patch_size, f, _corners[_corners_idx][1].y);
-
-        // lower left
-        pos = (_pts[2].y - hs) * _width + _pts[2].x - hs;
-
-        _corners[_corners_idx][2].x = static_cast<double>(_pts[2].x - hs);
-        minimize_x(_ncc.data() + pos, _patch_size, f, _corners[_corners_idx][2].x);
-
-        _corners[_corners_idx][2].y = static_cast<double>(_pts[2].y - hs);
-        minimize_y(_ncc.data() + pos, _patch_size, f, _corners[_corners_idx][2].y);
-
-        // lower right
-        pos = (_pts[3].y - hs) * _width + _pts[3].x - hs;
-
-        _corners[_corners_idx][3].x = static_cast<double>(_pts[3].x - hs);
-        minimize_x(_ncc.data() + pos, _patch_size, f, _corners[_corners_idx][3].x);
-
-        _corners[_corners_idx][3].y = static_cast<double>(_pts[3].y - hs);
-        minimize_y(_ncc.data() + pos, _patch_size, f, _corners[_corners_idx][3].y);
-    }
-
-    int tare_ground_truth_calculator::smooth_corner_locations(float& ground_truth)
+    int rect_calculator::calculate(const rs2_frame* frame_ref, float rect_sides[4])
     {
         static int reset_counter = 0;
         if (reset_counter > _reset_limit)
         {
             reset_counter = 0;
-            _corners_idx = 0;
-            _corners_num = 0;
+            _rec_idx = 0;
+            _rec_num = 0;
         }
 
         int ret = 0;
-        if (_corners_found)
+        rs2_error* e = nullptr;
+        rs2_extract_target_dimensions(frame_ref, RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES, _rec_sides[_rec_idx], 4, &e);
+        if (e == nullptr)
         {
             ret = 1;
             reset_counter = 0;
-            _corners_idx = ++_corners_idx % _frame_num;
-            ++_corners_num;
+            _rec_idx = (++_rec_idx) % _frame_num;
+            ++_rec_num;
 
-            if (_corners_num == _frame_num)
+            if (_rec_num == _frame_num)
             {
                 ret = 2;
-                calculate_ground_truth(ground_truth);
-                --_corners_num;
+                calculate_rect_sides(rect_sides);
+                --_rec_num;
             }
         }
         else
@@ -2146,150 +1849,18 @@ namespace rs2
         return ret;
     }
 
-    void tare_ground_truth_calculator::calculate_ground_truth(float& ground_truth)
+    void rect_calculator::calculate_rect_sides(float rect_sides[4])
     {
-        // avarage corners
-        point<double> corners_avg[4];
         for (int i = 0; i < 4; ++i)
-        {
-            corners_avg[i].x = _corners[0][i].x;
-            corners_avg[i].y = _corners[0][i].y;
-        }
+            rect_sides[i] = _rec_sides[0][i];
 
         for (int j = 1; j < _frame_num; ++j)
         {
             for (int i = 0; i < 4; ++i)
-            {
-                corners_avg[i].x += _corners[j][i].x;
-                corners_avg[i].y += _corners[j][i].y;
-            }
+                rect_sides[i] += _rec_sides[j][i];
         }
 
         for (int i = 0; i < 4; ++i)
-        {
-            corners_avg[i].x /= _frame_num;
-            corners_avg[i].y /= _frame_num;
-        }
-
-        double rec_sides[4] = { 0 };
-        double lx = corners_avg[1].x - corners_avg[0].x;
-        double ly = corners_avg[1].y - corners_avg[0].y;
-        rec_sides[0] = static_cast<float>(sqrt(lx * lx + ly * ly)); // uppper
-        if (rec_sides[0] > 0)
-            rec_sides[0] = _target_fw / rec_sides[0];
-
-        lx = corners_avg[3].x - corners_avg[2].x;
-        ly = corners_avg[3].y - corners_avg[2].y;
-        rec_sides[1] = static_cast<float>(sqrt(lx * lx + ly * ly)); // lower
-        if (rec_sides[1] > 0)
-            rec_sides[1] = _target_fw / rec_sides[1];
-
-        lx = corners_avg[2].x - corners_avg[0].x;
-        ly = corners_avg[2].y - corners_avg[0].y;
-        rec_sides[2] = static_cast<float>(sqrt(lx * lx + ly * ly)); // left
-        if (rec_sides[2] > 0)
-            rec_sides[2] = _target_fh / rec_sides[2];
-
-        lx = corners_avg[3].x - corners_avg[1].x;
-        ly = corners_avg[3].y - corners_avg[1].y;
-        rec_sides[3] = static_cast<float>(sqrt(lx * lx + ly * ly)); // right
-        if (rec_sides[3] > 0)
-            rec_sides[3] = _target_fh / rec_sides[3];
-
-        ground_truth = 0.f;
-        for (int i = 0; i < 4; ++i)
-            ground_truth += (float)(rec_sides[i]);
-        ground_truth /= 4.f;
-    }
-
-    void tare_ground_truth_calculator::minimize_x(const double* p, int s, double* f, double& x)
-    {
-        int ws = _width - s;
-
-        for (int i = 0; i < s; ++i)
-            f[i] = 0;
-
-        for (int j = 0; j < s; ++j)
-        {
-            for (int i = 0; i < s; ++i)
-                f[i] += *p++;
-            p += ws;
-        }
-
-        x += subpixel_agj(f, s);
-    }
-
-    void tare_ground_truth_calculator::minimize_y(const double* p, int s, double* f, double& y)
-    {
-        int ws = _width - s;
-
-        for (int i = 0; i < s; ++i)
-            f[i] = 0;
-
-        for (int j = 0; j < s; ++j)
-        {
-            for (int i = 0; i < s; ++i)
-                f[j] += *p++;
-            p += ws;
-        }
-
-        y += subpixel_agj(f, s);
-    }
-
-    double tare_ground_truth_calculator::subpixel_agj(double* f, int s)
-    {
-        int mi = 0;
-        double mv = f[mi];
-        for (int i = 1; i < s; ++i)
-        {
-            if (f[i] > mv)
-            {
-                mi = i;
-                mv = f[mi];
-            }
-        }
-
-        double half_mv = 0.5f * mv;
-
-        int x_0 = 0;
-        int x_1 = 0;
-        for (int i = 0; i < s; ++i)
-        {
-            if (f[i] > half_mv)
-            {
-                x_1 = i;
-                break;
-            }
-        }
-
-        double left_mv = 0.0f;
-        if (x_1 > 0)
-        {
-            x_0 = x_1 - 1;
-            left_mv = x_0 + (half_mv - f[x_0]) / (f[x_1] - f[x_0]);
-        }
-        else
-            left_mv = static_cast<double>(0);
-
-        x_0 = s - 1;
-        for (int i = s - 1; i >= 0; --i)
-        {
-            if (f[i] > half_mv)
-            {
-                x_0 = i;
-                break;
-            }
-        }
-
-        double right_mv = 0.0f;
-        if (x_0 == s - 1)
-            right_mv = static_cast<double>(s - 1);
-        else
-        {
-            x_1 = x_0 + 1;
-            right_mv = x_0 + (half_mv - f[x_0]) / (f[x_1] - f[x_0]);
-        }
-
-        return (left_mv + right_mv) / 2;
+            rect_sides[i] /= _frame_num;
     }
 }
