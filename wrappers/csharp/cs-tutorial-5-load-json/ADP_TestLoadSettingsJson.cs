@@ -18,9 +18,7 @@ namespace Intel.RealSense
             var model = deviceNameParts.Last().Trim();
 
 
-            AdvancedDevice adv=null;
             SerializableDevice ser = null;
-
             Console.WriteLine($"Device model: '{model}'");
             
             var jsonFileName = $"ADP_{model}_TEST_JSON_USB{usbType}.json";
@@ -33,37 +31,18 @@ namespace Intel.RealSense
             }
 
             Console.WriteLine($"Json test file found: {jsonPath}. Loading it...");
-            if (model == "L515")
+            Console.WriteLine($"Loading by using of SerialiazableDevice...");
+            ser = SerializableDevice.FromDevice(device);
+            try
             {
-                Console.WriteLine($"Loading by using of SerialiazableDevice...");
-                ser = SerializableDevice.FromDevice(device);
-                try
-                {
-                    ser.JsonConfiguration = File.ReadAllText(jsonPath);
-                    Console.WriteLine($"Loaded");
-                    Console.WriteLine(ser.JsonConfiguration);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Failed to load json file: {ex.Message}");
-                    return false;
-                }
+                ser.JsonConfiguration = File.ReadAllText(jsonPath);
+                Console.WriteLine($"Loaded");
+                Console.WriteLine(ser.JsonConfiguration);
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine($"Loading by using of AdvancedDevice...");
-                adv = AdvancedDevice.FromDevice(device);
-                try
-                {
-                    adv.JsonConfiguration = File.ReadAllText(jsonPath);
-                    Console.WriteLine($"Loaded");
-                    Console.WriteLine(adv.JsonConfiguration);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Failed to load json file: {ex.Message}");
-                    return false;
-                }
+                Console.WriteLine($"Failed to load json file: {ex.Message}");
+                return false;
             }
 
             // check for manual options setting
@@ -110,7 +89,7 @@ namespace Intel.RealSense
                             Console.Write($"\nCheck if we can set option manually: {opt.Key}: from {opt.Value} to {newValue}...");                            
                             opt.Value = newValue;
                             
-                            var optionsJson = adv !=  null ? Regex.Replace(adv.JsonConfiguration, @" ", ""): Regex.Replace(ser.JsonConfiguration, @" ", "");
+                            var optionsJson = Regex.Replace(ser.JsonConfiguration, @" ", "");
                             // if we can read brightness from json settings (not all cameras returns all params), use it
                             if (optionsJson.IndexOf("controls-color-brightness") > 0)
                             {
