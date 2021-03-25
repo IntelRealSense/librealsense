@@ -1,6 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
+
+#include "ds5/ds5-thermal-monitor.h"
 #include "ds5-options.h"
 
 namespace librealsense
@@ -38,7 +40,7 @@ namespace librealsense
     float asic_and_projector_temperature_options::query() const
     {
         if (!is_enabled())
-            throw wrong_api_call_sequence_exception("query option is allow only in streaming!");
+            throw wrong_api_call_sequence_exception("query is available during streaming only");
 
         #pragma pack(push, 1)
         struct temperature
@@ -118,7 +120,7 @@ namespace librealsense
     float motion_module_temperature_option::query() const
     {
         if (!is_enabled())
-            throw wrong_api_call_sequence_exception("query option is allow only in streaming!");
+            throw wrong_api_call_sequence_exception("query is available during streaming only");
 
         static const auto report_field = platform::custom_sensor_report_field::value;
         auto data = _ep.get_custom_report_data(custom_sensor_name, report_name, report_field);
@@ -132,7 +134,7 @@ namespace librealsense
     option_range motion_module_temperature_option::get_range() const
     {
         if (!is_enabled())
-            throw wrong_api_call_sequence_exception("get option range is allow only in streaming!");
+            throw wrong_api_call_sequence_exception("get option range is available during streaming only");
 
         static const auto min_report_field = platform::custom_sensor_report_field::minimum;
         static const auto max_report_field = platform::custom_sensor_report_field::maximum;
@@ -656,4 +658,133 @@ namespace librealsense
             return _uvc_option->is_enabled();
     }
 
+    auto_exposure_limit_option::auto_exposure_limit_option(hw_monitor& hwm, sensor_base* ep)
+        : _hwm(hwm), _sensor(ep)
+    {
+        _range = [this]()
+        {
+            return option_range{ 0, 165000, 1, 0 };
+        };
+    }
+
+    void auto_exposure_limit_option::set(float value)
+    {
+        command cmd_get(ds::AUTO_CALIB);
+        cmd_get.param1 = 5;
+        std::vector<uint8_t> ret = _hwm.send(cmd_get);
+        if (ret.empty())
+            throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
+
+        command cmd(ds::AUTO_CALIB);
+        cmd.param1 = 4;
+        cmd.param2 = static_cast<int>(value);
+        cmd.param3 = *(reinterpret_cast<uint32_t*>(ret.data() + 4));
+        _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float auto_exposure_limit_option::query() const
+    {
+        command cmd(ds::AUTO_CALIB);
+        cmd.param1 = 5;
+
+        auto res = _hwm.send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
+
+        return static_cast<float>(*(reinterpret_cast<uint32_t*>(res.data())));
+    }
+
+    option_range auto_exposure_limit_option::get_range() const
+    {
+        return *_range;
+    }
+
+    auto_gain_limit_option::auto_gain_limit_option(hw_monitor& hwm, sensor_base* ep)
+        : _hwm(hwm), _sensor(ep)
+    {
+        _range = [this]()
+        {
+            return option_range{ 0, 248, 1, 0 };
+        };
+    }
+
+    void auto_gain_limit_option::set(float value)
+    {
+        command cmd_get(ds::AUTO_CALIB);
+        cmd_get.param1 = 5;
+        std::vector<uint8_t> ret = _hwm.send(cmd_get);
+        if (ret.empty())
+            throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
+
+        command cmd(ds::AUTO_CALIB);
+        cmd.param1 = 4;
+        cmd.param2 = *(reinterpret_cast<uint32_t*>(ret.data()));
+        cmd.param3 = static_cast<int>(value);
+        _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float auto_gain_limit_option::query() const
+    {
+        command cmd(ds::AUTO_CALIB);
+        cmd.param1 = 5;
+
+        auto res = _hwm.send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
+
+        return static_cast<float>(*(reinterpret_cast<uint32_t*>(res.data() + 4)));
+    }
+
+    option_range auto_gain_limit_option::get_range() const
+    {
+        return *_range;
+    }
+
+    librealsense::thermal_compensation::thermal_compensation(
+        std::shared_ptr<ds5_thermal_monitor> monitor,
+        std::shared_ptr<option> toggle) :
+        _thermal_monitor(monitor),
+        _thermal_toggle(toggle)
+    {
+    }
+
+    float librealsense::thermal_compensation::query(void) const
+    {
+        auto val = _thermal_toggle->query();
+        return val;
+    }
+
+    void librealsense::thermal_compensation::set(float value)
+    {
+        if (value < 0)
+            throw invalid_value_exception("Invalid input for thermal compensation toggle: " + std::to_string(value));
+
+        _thermal_toggle->set(value);
+        _recording_function(*this);
+    }
+
+    const char* librealsense::thermal_compensation::get_description() const
+    {
+        return "Toggle thermal compensation adjustments mechanism";
+    }
+
+    const char* librealsense::thermal_compensation::get_value_description(float value) const
+    {
+        if (value == 0)
+        {
+            return "Thermal compensation is disabled";
+        }
+        else
+        {
+            return "Thermal compensation is enabled";
+        }
+    }
+
+    //Work-around the control latency
+    void librealsense::thermal_compensation::create_snapshot(std::shared_ptr<option>& snapshot) const
+    {
+        snapshot = std::make_shared<const_value_option>(get_description(), 0.f);
+    }
 }

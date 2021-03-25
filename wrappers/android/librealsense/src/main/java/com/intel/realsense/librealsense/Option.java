@@ -62,7 +62,7 @@ public enum Option {
     ENABLE_DYNAMIC_CALIBRATION(58),
     DEPTH_OFFSET(59),
     LED_POWER(60),
-    ZERO_ORDER_ENABLED(61),
+    ZERO_ORDER_ENABLED(61), // Deprecated
     ENABLE_MAP_PRESERVATION(62),
     FREEFALL_DETECTION_ENABLED(63),
     AVALANCHE_PHOTO_DIODE(64),
@@ -86,7 +86,9 @@ public enum Option {
     ENABLE_MAX_USABLE_RANGE(81),
     ALTERNATE_IR(82),
     NOISE_ESTIMATION(83),
-    ENABLE_IR_REFLECTIVITY(84);
+    ENABLE_IR_REFLECTIVITY(84),
+    AUTO_EXPOSURE_LIMIT(85),
+    AUTO_GAIN_LIMIT(86);
     private final int mValue;
 
     private Option(int value) { mValue = value; }

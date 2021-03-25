@@ -2616,7 +2616,23 @@ class Pipeline {
     }
 
     if (ownCtx === true) {
-      this.ctx = new Context();
+      this.ctx = new Context();    
+      // get existing sensors params
+      let sensores = this.ctx.querySensors();
+      if (sensores.length>=2) {
+        let depthSensor = sensores[0];
+        let colorSensor = sensores[1];
+        let cfg = new Config();
+        let depthProfiles = depthSensor.getStreamProfiles().filter(s=>s.streamType == stream.STREAM_DEPTH);
+        let depthProfile = depthProfiles.find(x=>x.width == 640 && x.height==480) || depthProfiles[depthProfiles.length-1];
+        let colorProfiles = colorSensor.getStreamProfiles().filter(s=>s.streamType == stream.STREAM_COLOR);
+        let colorProfile = colorProfiles.find(x=>x.width == 640 && x.height==480) ||colorProfiles[colorProfiles.length-1];
+        console.log(`depth: w: ${depthProfile.width}, h: ${depthProfile.height}, format: ${depthProfile.format}, fps: ${depthProfile.fps}`);
+        console.log(`color: w: ${colorProfile.width}, h: ${colorProfile.height}, format: ${colorProfile.format}, fps: ${colorProfile.fps}`);
+        cfg.enableStream(stream.STREAM_DEPTH, -1, depthProfile.width, depthProfile.height, depthProfile.format, depthProfile.fps);
+        cfg.enableStream(stream.STREAM_COLOR, -1, colorProfile.width, colorProfile.height, format.FORMAT_RGB8, colorProfile.fps);        
+        this.autoConfig = cfg;
+      }            
     }
 
     this.cxxPipeline = new RS2.RSPipeline();
@@ -2675,6 +2691,7 @@ class Pipeline {
     } else {
       checkArgumentType(arguments, Config, 0, funcName);
       this.started = true;
+      console.log(`Pipeline started with config`);
       return new PipelineProfile(this.cxxPipeline.startWithConfig(arguments[0].cxxConfig));
     }
   }
@@ -4656,8 +4673,8 @@ const option = {
   option_stream_format_filter: 'stream-format-filter',
   option_stream_index_filter: 'stream-index-filter',
   option_emitter_on_off: 'emitter-on-off',
-  option_zero_order_point_x: 'zero-order-point-x',
-  option_zero_order_point_y: 'zero-order-point-y',
+  option_zero_order_point_x: 'zero-order-point-x', /* Deprecated */
+  option_zero_order_point_y: 'zero-order-point-y', /* Deprecated */
   option_lld_temperature: 'lld-temperature',
   option_mc_temperature: 'mc-temperature',
   option_ma_temperature: 'ma-temperature',
@@ -4670,7 +4687,7 @@ const option = {
   option_enable_dynamic_calibration: 'enable-dynamic-calibration',
   option_depth_offset: 'depth-offset',
   option_led_power: 'led-power',
-  option_zero_order_enabled: 'zero-order-enabled',
+  option_zero_order_enabled: 'zero-order-enabled', /* Deprecated */
   option_enable_map_preservation: 'enable-map-preservation',
   /**
    * Enable / disable color backlight compensatio.<br>Equivalent to its lowercase counterpart.
@@ -4959,6 +4976,16 @@ const option = {
   OPTION_ALTERNATE_IR: RS2.RS2_OPTION_ALTERNATE_IR,
   OPTION_NOISE_ESTIMATION: RS2.RS2_OPTION_NOISE_ESTIMATION,
   OPTION_ENABLE_IR_REFLECTIVITY: RS2.RS2_OPTION_ENABLE_IR_REFLECTIVITY,
+  /**
+   * Set or get auto exposure limit in microsecond.
+   * @type {Integer}
+   */
+  OPTION_AUTO_EXPOSURE_LIMIT: RS2.RS2_OPTION_AUTO_EXPOSURE_LIMIT,
+  /**
+   * Set or get auto gain limit.
+   * @type {Integer}
+   */
+  OPTION_AUTO_GAIN_LIMIT: RS2.RS2_OPTION_AUTO_GAIN_LIMIT,
   /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}

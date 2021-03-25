@@ -1,0 +1,25 @@
+From 6640bf79fbce00f056de09d065b2ee34556f04cd Mon Sep 17 00:00:00 2001
+From: Evgeni Raikhel <evgeni.raikhel@intel.com>
+Date: Tue, 1 Dec 2020 22:37:05 +0200
+Subject: [PATCH] Change UVC_URBS 5->16
+
+---
+ drivers/media/usb/uvc/uvcvideo.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
+index c7c1baa90dea..22d43d3f5873 100644
+--- a/drivers/media/usb/uvc/uvcvideo.h
++++ b/drivers/media/usb/uvc/uvcvideo.h
+@@ -173,7 +173,7 @@
+ #define DRIVER_VERSION		"1.1.1"
+ 
+ /* Number of isochronous URBs. */
+-#define UVC_URBS		5
++#define UVC_URBS		16
+ /* Maximum number of packets per URB. */
+ #define UVC_MAX_PACKETS		32
+ /* Maximum status buffer size in bytes of interrupt URB. */
+-- 
+2.17.1
+

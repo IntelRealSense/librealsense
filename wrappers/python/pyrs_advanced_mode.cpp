@@ -3,6 +3,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
 #include "../include/librealsense2/rs_advanced_mode.hpp"
+#include "../include/librealsense2/hpp/rs_serializable_device.hpp"
 
 void init_advanced_mode(py::module &m) {
     /** RS400 Advanced Mode commands **/
@@ -252,4 +253,11 @@ void init_advanced_mode(py::module &m) {
         .def("get_amp_factor", &rs400::advanced_mode::get_amp_factor, "mode"_a = 0) //STAFactor
         .def("serialize_json", &rs400::advanced_mode::serialize_json)
         .def("load_json", &rs400::advanced_mode::load_json, "json_content"_a);
+}
+
+void init_serializable_device(py::module& m) {
+    py::class_<rs2::serializable_device> serializable_device(m, "serializable_device");
+    serializable_device.def(py::init<rs2::device>(), "device"_a)
+        .def("serialize_json", &rs2::serializable_device::serialize_json)
+        .def("load_json", &rs2::serializable_device::load_json, "json_content"_a);
 }

@@ -16,6 +16,7 @@
 #include "proc/decimation-filter.h"
 #include "proc/depth-decompress.h"
 #include "global_timestamp_reader.h"
+#include "device-calibration.h"
 
 namespace librealsense
 {
@@ -120,9 +121,11 @@ namespace librealsense
     void sensor_base::register_metadata(rs2_frame_metadata_value metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const
     {
         if (_metadata_parsers.get()->end() != _metadata_parsers.get()->find(metadata))
-            throw invalid_value_exception(to_string() << "Metadata attribute parser for " << rs2_frame_metadata_to_string(metadata)
-                << " is already defined");
-
+        {
+            std::string metadata_type_str(rs2_frame_metadata_to_string(metadata));
+            std::string metadata_found_str = "Metadata attribute parser for " + metadata_type_str + " was previously defined";
+            LOG_DEBUG(metadata_found_str.c_str());
+        }
         _metadata_parsers.get()->insert(std::pair<rs2_frame_metadata_value, std::shared_ptr<md_attribute_parser_base>>(metadata, metadata_parser));
     }
 
@@ -359,6 +362,10 @@ namespace librealsense
                     int height = vsp ? vsp->get_height() : 0;
 
                     frame_holder fh = _source.alloc_frame(stream_to_frame_types(req_profile_base->get_stream_type()), width * height * bpp / 8, fr->additional_data, requires_processing);
+                    auto diff = environment::get_instance().get_time_service()->get_time() - system_time;
+                    if (diff >10 )
+                        LOG_DEBUG("!! Frame allocation took " << diff << " msec");
+
                     if (fh.frame)
                     {
                         memcpy((void*)fh->get_frame_data(), fr->data.data(), sizeof(byte)*fr->data.size());
@@ -373,6 +380,9 @@ namespace librealsense
                         return;
                     }
 
+                    diff = environment::get_instance().get_time_service()->get_time() - system_time;
+                    if (diff >10 )
+                        LOG_DEBUG("!! Frame memcpy took " << diff << " msec");
                     if (!requires_processing)
                     {
                         fh->attach_continuation(std::move(release_and_enqueue));
@@ -766,8 +776,10 @@ namespace librealsense
         {
             return static_cast<rs2_stream>(RS2_STREAM_GPIO);
         }
-
+#ifndef __APPLE__
+        // TODO to be refactored/tested
         LOG_ERROR("custom_gpio " << std::to_string(custom_gpio) << " is incorrect!");
+#endif
         return RS2_STREAM_ANY;
     }
 
@@ -1492,7 +1504,7 @@ namespace librealsense
             auto&& composite = dynamic_cast<composite_frame*>(f.frame);
             if (composite)
             {
-                for (int i = 0; i < composite->get_embedded_frames_count(); i++)
+                for (size_t i = 0; i < composite->get_embedded_frames_count(); i++)
                 {
                     processed_frames.push_back(composite->get_frame(i));
                 }

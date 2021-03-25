@@ -51,7 +51,7 @@ std::vector<double> gauss_convolution(std::vector<T> const& image,
             ind = first_rows[row] * mask_width * lines[row]; // skip first 1/2 rows in sub-image for padding - start from 2nd/3rd line
             for (auto l = first_rows[row] * lines[row]; l < mask_height - last_rows[row] * lines[row]; l++)
             {
-                for (auto k = 0; k < mask_width; k++)
+                for (size_t k = 0; k < mask_width; k++)
                 {
                     auto p = (l - first_rows[row] * lines[row] + last_rows[row] * (-2 + row_bound[row])) * image_width + jj + k;
                     sub_image[ind++] = (image[p]);
@@ -60,7 +60,7 @@ std::vector<double> gauss_convolution(std::vector<T> const& image,
             // fill first 2 lines to same values as 3rd line
             ind = first_rows[row] * mask_width * lines[row] + last_rows[row] * (mask_width * (mask_height - lines[row]));
             auto ind_pad = last_rows[row] * (mask_width * (mask_height - lines[row] - 1)); // previous line
-            for (auto k = 0; k < mask_width * lines[row]; k++)
+            for (size_t k = 0; k < mask_width * lines[row]; k++)
             {
                 auto idx1 = last_rows[row] * ind;
                 auto idx2 = last_rows[row] * ind_pad + first_rows[row] * ind;
@@ -80,7 +80,7 @@ std::vector<double> gauss_convolution(std::vector<T> const& image,
         for (size_t ii = 0; ii < image_height - mask_height + 1; ii++)
         {
             ind = 0; 
-            for (auto l = 0; l < mask_height; l++)
+            for (size_t l = 0; l < mask_height; l++)
             {
                 ind += left_column[col] * columns[col];
                 for (auto k = left_column[col] * columns[col]; k < mask_width - right_column[col] * columns[col]; k++)
@@ -92,10 +92,10 @@ std::vector<double> gauss_convolution(std::vector<T> const& image,
             }
             // fill first 2 columns to same values as 3rd column
             ind = columns[col];
-            for (auto l = 0; l < mask_height; l++)
+            for (size_t l = 0; l < mask_height; l++)
             {
                 ind = left_column[col] * columns[col] + right_column[col] * (mask_height - columns[col] - 1) + l * mask_width;
-                for (auto k = 1; k <= columns[col]; k++)
+                for (size_t k = 1; k <= columns[col]; k++)
                 {
                     auto idx = left_column[col] * (ind - k) + right_column[col] * (ind + k);
                     sub_image[idx] = sub_image[ind];
@@ -147,17 +147,17 @@ std::vector<double> gauss_convolution(std::vector<T> const& image,
         {
             ind = up_rows[corner] * (corner_rows[corner] * mask_width) + down_rows[corner] * (mask_height - corner_rows[corner] - 1) * mask_width; // start with padding first 2 rows
             auto ind2 = l * mask_width;
-            for (auto k = 0; k < mask_width; k++)
+            for (size_t k = 0; k < mask_width; k++)
             {
                 sub_image[k + ind2] = sub_image[ind++];
             }
         }
         // 3.2. columns
-        for (auto l = 0; l < mask_height; l++)
+        for (size_t l = 0; l < mask_height; l++)
         {
             ind = l * mask_width + left_col[corner] * corner_columns[corner] + right_col[corner] * (mask_width - 1 - corner_columns[corner]);
             auto ind2 = l * mask_width + right_col[corner] * (mask_width - corner_columns[corner]);
-            for (auto k = 0; k < corner_columns[corner]; k++)
+            for (size_t k = 0; k < corner_columns[corner]; k++)
             {
                 sub_image[k + ind2] = sub_image[ind];
             }
@@ -209,9 +209,9 @@ std::vector<uint8_t> dilation_convolution(std::vector<T> const& image,
         for (auto jj = 0; jj < image_width - mask_width + 1; jj++)
         {
             ind = 0;
-            for (auto l = 0; l < mask_height; l++)
+            for (size_t l = 0; l < mask_height; l++)
             {
-                for (auto k = 0; k < mask_width; k++)
+                for (size_t k = 0; k < mask_width; k++)
                 {
                     size_t p = (l + rows[rows_i]) * image_width + jj + k;
                     if (rows_i != 0)
@@ -390,7 +390,7 @@ static bool is_grad_dir_balanced( std::vector< double > const & weights,
     std::vector< double > weights_per_dir( 4, 0. );  // 4 = deg_non is number of directions
     for (auto dir = 0; dir < 4; ++dir)
     {
-        for( auto ii = 0; ii < directions.size(); ++ii )
+        for(size_t ii = 0; ii < directions.size(); ++ii )
         {
             if( directions[ii] == dir + 1 )  // avoid direction 0
                 weights_per_dir[dir] += weights[ii];
@@ -520,7 +520,7 @@ uint8_t dilation_calc(std::vector<T> const& sub_image, std::vector<uint8_t> cons
 {
     uint8_t res = 0;
 
-    for (auto i = 0; i < sub_image.size(); i++)
+    for (size_t i = 0; i < sub_image.size(); i++)
     {
         res = res || (uint8_t)(sub_image[i] * mask[i]);
     }
@@ -586,7 +586,7 @@ diffIm = imgaussfilt(im1-im2,params.moveGaussSigma);*/
 
     auto yuy_iter = lum_frame.begin();
     auto yuy_prev_iter = prev_lum_frame.begin();
-    for (auto i = 0; i < area; i++, yuy_iter++, yuy_prev_iter++)
+    for (auto i = 0UL; i < area; i++, yuy_iter++, yuy_prev_iter++)
     {
         yuy_diff.push_back((double)(*yuy_prev_iter) - (double)(*yuy_iter)); // used for testing only
     }
@@ -617,7 +617,7 @@ static void gaussian_dilation_mask( std::vector< double > & gauss_diff,
 {
     auto gauss_it = gauss_diff.begin();
     auto dilation_it = dilation_mask.begin();
-    for( auto i = 0; i < gauss_diff.size(); i++, gauss_it++, dilation_it++ )
+    for(size_t i = 0; i < gauss_diff.size(); i++, gauss_it++, dilation_it++ )
     {
         if( *dilation_it )
             *gauss_it = 0;
@@ -798,7 +798,7 @@ bool check_edges_dir_spread(const std::vector<double>& directions,
 
     std::vector<double> val_per_dir[N_BASIC_DIRECTIONS];
 
-    for (auto i = 0; i < subpixels_x.size(); i++)
+    for (size_t i = 0; i < subpixels_x.size(); i++)
     {
         auto dir = (int)directions[i] - 1;
         auto val = subpixels_x[i] * dir_vecs[dir].x + subpixels_y[i] * dir_vecs[dir].y;
@@ -909,7 +909,7 @@ bool check_edges_spatial_spread(const std::vector<byte>& section_map,
     std::vector<double> num_pix_per_sec_over_area(n_sections, 0);
     std::vector<bool> num_sections_with_enough_edges(n_sections, false);
 
-    for (auto i = 0; i < n_sections; i++)
+    for (size_t i = 0; i < n_sections; i++)
     {
         num_pix_per_sec_over_area[i] = (double)num_pix_per_sec[i] / (width*height)*n_sections;
         num_sections_with_enough_edges[i] = num_pix_per_sec_over_area[i] > th;

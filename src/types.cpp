@@ -189,6 +189,7 @@ namespace librealsense
         {
         CASE( AUTO_DEPTH_TO_RGB )
         CASE( MANUAL_DEPTH_TO_RGB )
+        CASE( THERMAL )
         default: assert( !is_valid( type ) ); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -325,6 +326,7 @@ namespace librealsense
             CASE(HDR_MERGE)
             CASE(MAX_USABLE_RANGE_SENSOR)
             CASE(DEBUG_STREAM_SENSOR)
+            CASE(CALIBRATION_CHANGE_DEVICE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -451,6 +453,8 @@ namespace librealsense
             case RS2_OPTION_ALTERNATE_IR:       return "Alternate IR";
             CASE(NOISE_ESTIMATION)
             case RS2_OPTION_ENABLE_IR_REFLECTIVITY: return "Enable IR Reflectivity";
+            CASE(AUTO_EXPOSURE_LIMIT)
+            CASE(AUTO_GAIN_LIMIT)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -651,6 +655,7 @@ namespace librealsense
             case RS2_L500_VISUAL_PRESET_LOW_AMBIENT: return "Low Ambient Light";
             CASE(MAX_RANGE)
             CASE(SHORT_RANGE)
+            CASE(AUTOMATIC)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

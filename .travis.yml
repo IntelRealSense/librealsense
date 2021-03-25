@@ -72,7 +72,7 @@ matrix:
         - cd ../scripts && ./pr_check.sh && cd ../build
         - cmake .. -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.5
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
-        - python3 ../unit-tests/run-unit-tests.py --verbose .
+        # python3 ../unit-tests/run-unit-tests.py --verbose .
 
     - name: "Linux - python & nodejs"
       os: linux
@@ -89,7 +89,7 @@ matrix:
         - cd ../wrappers/nodejs/
         - npm install
         - cd test
-        - wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/nodejs_records.rec
+        - wget https://librealsense.intel.com/rs-tests/nodejs_records.rec
 
     - name: "Mac - cpp"
       os: osx
@@ -97,6 +97,7 @@ matrix:
       sudo: required
       osx_image: xcode7
       script:
+        - export OPENSSL_ROOT_DIR=`brew --prefix openssl` # Used by libcurl for 'CHECK_FOR_UPDATES' capability
         - cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DCHECK_FOR_UPDATES=true
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
         - ls
@@ -108,7 +109,7 @@ matrix:
       dist: xenial
       env: LRS_BUILD_ANDROID=true
       script:
-        - cmake .. -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r16b/build/cmake/android.toolchain.cmake  -DCHECK_FOR_UPDATES=true
+        - cmake .. -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r20b/build/cmake/android.toolchain.cmake
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
         - ls
 
@@ -126,13 +127,13 @@ before_install:
       export PATH=$OLDPATH && unset OLDPATH && cd ../../;
     fi
   - if [[ "$LRS_BUILD_ANDROID" == "true" ]]; then
-      wget https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip;
-      unzip -q android-ndk-r16b-linux-x86_64.zip -d ./;
+      wget https://dl.google.com/android/repository/android-ndk-r20b-linux-x86_64.zip;
+      unzip -q android-ndk-r20b-linux-x86_64.zip -d ./;
     fi
   - mkdir build && cd build
   - if [[ "$RS_CPP_TEST" == "true" ]]; then
       export LRS_LOG_LEVEL="DEBUG";
-      url_records_path="http://realsense-hw-public.s3.amazonaws.com/rs-tests/lrs_2.8.3/";
+      url_records_path="https://librealsense.intel.com/rs-tests/lrs_2.8.3/";
       records_name="records_test.txt";
       url_records_list=$url_records_path$records_name;
       wget $url_records_path$records_name;

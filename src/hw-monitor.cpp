@@ -29,7 +29,7 @@ namespace librealsense
     }
 
     void hw_monitor::fill_usb_buffer(int opCodeNumber, int p1, int p2, int p3, int p4,
-        uint8_t* data, int dataLength, uint8_t* bufferToSend, int& length)
+        uint8_t const * data, int dataLength, uint8_t* bufferToSend, int& length)
     {
         auto preHeaderData = IVCAM_MONITOR_MAGIC_NUMBER;
 
@@ -112,12 +112,13 @@ namespace librealsense
         update_cmd_details(details, receivedCmdLen, outputBuffer);
     }
 
-    std::vector<uint8_t> hw_monitor::send(std::vector<uint8_t> data) const
+    std::vector< uint8_t > hw_monitor::send( std::vector< uint8_t > const & data ) const
     {
         return _locked_transfer->send_receive(data);
     }
 
-    std::vector<uint8_t> hw_monitor::send( command cmd, hwmon_response * p_response , bool locked_transfer) const
+    std::vector< uint8_t >
+    hw_monitor::send( command cmd, hwmon_response * p_response, bool locked_transfer ) const
     {
         hwmon_cmd newCommand(cmd);
         auto opCodeXmit = static_cast<uint32_t>(newCommand.cmd);

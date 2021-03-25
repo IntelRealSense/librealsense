@@ -3001,9 +3001,22 @@ class RSPointCloud : public Nan::ObjectWrap, Options {
     StreamProfileExtrator extrator(profile);
     CallNativeFunc(rs2_set_option, &me->error_,
         reinterpret_cast<rs2_options*>(me->processing_block_),
-        RS2_OPTION_TEXTURE_SOURCE,
-        static_cast<float>(extrator.unique_id_),
+        RS2_OPTION_STREAM_FILTER,
+        static_cast<float>(extrator.stream_),
         &me->error_);
+
+    CallNativeFunc(rs2_set_option, &me->error_,
+        reinterpret_cast<rs2_options*>(me->processing_block_),
+        RS2_OPTION_STREAM_FORMAT_FILTER,
+        static_cast<float>(extrator.format_),
+        &me->error_);
+
+    CallNativeFunc(rs2_set_option, &me->error_,
+        reinterpret_cast<rs2_options*>(me->processing_block_),
+        RS2_OPTION_STREAM_INDEX_FILTER,
+        static_cast<float>(extrator.index_),
+        &me->error_);
+
     if (extrator.stream_ == RS2_STREAM_DEPTH) return;
 
     // rs2_process_frame will release the input frame, so we need to addref
@@ -4727,8 +4740,8 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_OPTION_STREAM_FORMAT_FILTER);
   _FORCE_SET_ENUM(RS2_OPTION_STREAM_INDEX_FILTER);
   _FORCE_SET_ENUM(RS2_OPTION_EMITTER_ON_OFF);
-  _FORCE_SET_ENUM(RS2_OPTION_ZERO_ORDER_POINT_X);
-  _FORCE_SET_ENUM(RS2_OPTION_ZERO_ORDER_POINT_Y);
+  _FORCE_SET_ENUM(RS2_OPTION_ZERO_ORDER_POINT_X); // Deprecated
+  _FORCE_SET_ENUM(RS2_OPTION_ZERO_ORDER_POINT_Y); // Deprecated
   _FORCE_SET_ENUM(RS2_OPTION_LLD_TEMPERATURE);
   _FORCE_SET_ENUM(RS2_OPTION_MC_TEMPERATURE);
   _FORCE_SET_ENUM(RS2_OPTION_MA_TEMPERATURE);
@@ -4741,7 +4754,7 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_OPTION_ENABLE_DYNAMIC_CALIBRATION);
   _FORCE_SET_ENUM(RS2_OPTION_DEPTH_OFFSET);
   _FORCE_SET_ENUM(RS2_OPTION_LED_POWER);
-  _FORCE_SET_ENUM(RS2_OPTION_ZERO_ORDER_ENABLED);
+  _FORCE_SET_ENUM(RS2_OPTION_ZERO_ORDER_ENABLED); // Deprecated
   _FORCE_SET_ENUM(RS2_OPTION_ENABLE_MAP_PRESERVATION);
   _FORCE_SET_ENUM(RS2_OPTION_FREEFALL_DETECTION_ENABLED);
   _FORCE_SET_ENUM(RS2_OPTION_AVALANCHE_PHOTO_DIODE);
@@ -4766,6 +4779,8 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_OPTION_ALTERNATE_IR);
   _FORCE_SET_ENUM(RS2_OPTION_NOISE_ESTIMATION);
   _FORCE_SET_ENUM(RS2_OPTION_ENABLE_IR_REFLECTIVITY);
+  _FORCE_SET_ENUM(RS2_OPTION_AUTO_EXPOSURE_LIMIT);
+  _FORCE_SET_ENUM(RS2_OPTION_AUTO_GAIN_LIMIT);
   _FORCE_SET_ENUM(RS2_OPTION_COUNT);
 
   // rs2_camera_info
@@ -4910,6 +4925,7 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_EXTENSION_SEQUENCE_ID_FILTER);
   _FORCE_SET_ENUM(RS2_EXTENSION_MAX_USABLE_RANGE_SENSOR);
   _FORCE_SET_ENUM(RS2_EXTENSION_DEBUG_STREAM_SENSOR);
+  _FORCE_SET_ENUM(RS2_EXTENSION_CALIBRATION_CHANGE_DEVICE);
   _FORCE_SET_ENUM(RS2_EXTENSION_COUNT);
 
 
@@ -4928,6 +4944,7 @@ void InitModule(v8::Local<v8::Object> exports) {
   // rs2_calibration_type
   _FORCE_SET_ENUM(RS2_CALIBRATION_AUTO_DEPTH_TO_RGB)
   _FORCE_SET_ENUM(RS2_CALIBRATION_MANUAL_DEPTH_TO_RGB)
+  _FORCE_SET_ENUM(RS2_CALIBRATION_THERMAL)
   _FORCE_SET_ENUM(RS2_CALIBRATION_TYPE_COUNT)
 
 
@@ -4968,6 +4985,7 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_L500_VISUAL_PRESET_LOW_AMBIENT)
   _FORCE_SET_ENUM(RS2_L500_VISUAL_PRESET_MAX_RANGE)
   _FORCE_SET_ENUM(RS2_L500_VISUAL_PRESET_SHORT_RANGE)
+  _FORCE_SET_ENUM(RS2_L500_VISUAL_PRESET_AUTOMATIC)
   _FORCE_SET_ENUM(RS2_L500_VISUAL_PRESET_COUNT)
 
 
@@ -4990,6 +5008,7 @@ void InitModule(v8::Local<v8::Object> exports) {
 
 
   // rs2_digital_gain
+  _FORCE_SET_ENUM(RS2_DIGITAL_GAIN_AUTO)
   _FORCE_SET_ENUM(RS2_DIGITAL_GAIN_HIGH)
   _FORCE_SET_ENUM(RS2_DIGITAL_GAIN_LOW)
 }

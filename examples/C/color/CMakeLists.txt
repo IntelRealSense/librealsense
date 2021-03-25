@@ -9,6 +9,7 @@ project(RealsenseExamples-Color)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 add_executable(rs-color rs-color.c ../example.h)
+include_directories(../../common ../../third-party/imgui ../../C)
 target_link_libraries(rs-color ${DEPENDENCIES})
 set_target_properties (rs-color PROPERTIES
 FOLDER "Examples/C"

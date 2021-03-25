@@ -21,6 +21,8 @@
 
 #define ARCBALL_CAMERA_IMPLEMENTATION
 #include <arcball_camera.h>
+#include "../common/utilities/string/trim-newlines.h"
+#include "../common/utilities/imgui/wrap.h"
 
 namespace rs2
 {
@@ -939,12 +941,14 @@ namespace rs2
 
   
 
-    viewer_model::viewer_model(context &ctx_)
-            : ppf(*this),
-              ctx(ctx_),
-              frameset_alloc(this),
-              synchronization_enable(true),
-              zo_sensors(0)
+    viewer_model::viewer_model( context & ctx_ )
+        : ppf( *this )
+        , ctx( ctx_ )
+        , frameset_alloc( this )
+        , synchronization_enable( true )
+        , synchronization_enable_prev_state(true)
+        , zo_sensors( 0 )
+        , _support_ir_reflectivity( false )
     {
 
         syncer = std::make_shared<syncer_model>();
@@ -1067,9 +1071,24 @@ namespace rs2
         auto custom_command = [&]()
         {
             auto msg = _active_popups.front().message;
+
+            // Wrap the text to feet the error pop-up window
+            std::string wrapped_msg;
+            try
+            {
+                auto trimmed_msg = utilities::string::trim_newlines(msg);  
+                wrapped_msg = utilities::imgui::wrap(trimmed_msg, 500);
+            }
+            catch (...)
+            {
+                wrapped_msg = msg; // Revert to original text on wrapping failure
+                not_model->output.add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__,
+                    to_string() << "Wrapping of error message text failed!");
+            }
+
             ImGui::Text("RealSense error calling:");
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
-            ImGui::InputTextMultiline("##error", const_cast<char*>(msg.c_str()),
+            ImGui::InputTextMultiline("##error", const_cast<char*>(wrapped_msg.c_str()),
                 msg.size() + 1, { 500,95 }, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
             ImGui::PopStyleColor();
 
@@ -1604,7 +1623,7 @@ namespace rs2
         float inverse = 1.f / distances.size();
         for (auto elem : distances)
         {
-            e += pow(elem - mean, 2);
+            e += static_cast<float>(pow(elem - mean, 2));
         }
 
         auto standard_deviation = sqrt(inverse * e);
@@ -3175,11 +3194,11 @@ namespace rs2
         ppf.frames_queue.emplace(p.unique_id(), rs2::frame_queue(5));
     }
 
-    bool viewer_model::is_3d_texture_source(frame f)
+    bool viewer_model::is_3d_texture_source(frame f) const
     {
         auto profile = f.get_profile().as<video_stream_profile>();
         auto index = profile.unique_id();
-        auto mapped_index = streams_origin[index];
+        auto mapped_index = streams_origin.at(index);
 
         if (!is_rasterizeable(profile.format()))
             return false;

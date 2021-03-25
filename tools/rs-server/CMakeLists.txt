@@ -36,8 +36,9 @@ else()
   add_executable(${PROJECT_NAME} ${RS_SERVER_SOURCES})
   add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 
-  include_directories(${PROJECT_NAME}
+  include_directories(
     ../../common
+    ../../src
     ../../src/ipDeviceCommon
     ../../include/librealsense2
     ../../third-party/tclap/include

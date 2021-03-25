@@ -163,7 +163,7 @@ While TensorFlow is convenient to install and use, it is not as convinient as Op
 
 [Example 3](example3%20-%20opencv%20deploy.py) is functionally equal to Example 2, but instead of using TensorFlow APIs directly it is loading and running inference using OpenCV.
 
-In addition to the model file, you will need `pbtxt` file accompanying the model. This file can be found [at this link]([TensorFlow-Object-Detection-API](https://github.com/opencv/opencv/wiki/TensorFlow-Object-Detection-API#use-existing-config-file-for-your-model)).
+In addition to the model file, you will need `pbtxt` file accompanying the model. This file can be found [at this link](https://github.com/opencv/opencv_extra/blob/master/testdata/dnn/faster_rcnn_inception_v2_coco_2018_01_28.pbtxt).
 
 ```py
 net = cv2.dnn.readNetFromTensorflow(r"frozen_inference_graph.pb", 
@@ -211,7 +211,7 @@ When we upsample we get the lost information back (by the concatenation process)
 so we can see last-layer features in the perspective of the layer above them.
 		
 #### Training Dataset
-Download [part 1](http://realsense-hw-public.s3.eu-west-1.amazonaws.com/rs-tests/ML/Depth_Learning/Dataset/part1_1_4000.zip) and [part 2](http://realsense-hw-public.s3.eu-west-1.amazonaws.com/rs-tests/ML/Depth_Learning/Dataset/part2_4001_8375.zip) of the dataset. It contains 4 types of 848x480 images in uncompressed PNG format: 
+Download [part 1](https://librealsense.intel.com/rs-tests/ML/Depth_Learning/Dataset/part1_1_4000.zip) and [part 2](https://librealsense.intel.com/rs-tests/ML/Depth_Learning/Dataset/part2_4001_8375.zip) of the dataset. It contains 4 types of 848x480 images in uncompressed PNG format: 
 
 ###### 1. Simulated Left Infrared:
 - Synthetic view from left infrared sensor of the virtual camera, including infrared projection pattern
@@ -327,10 +327,10 @@ The output is a BAG file that could be opened by RealSense viewer.
 
 
 ## Part 5 - Applying trained network to real data:
-[Example 5](https://github.com/nohayassin/librealsense/blob/tensorflow/wrappers/tensorflow/example5%20-%20denoise.py) is showing how to use trained network from Part 4 ([Keras Unet model](http://realsense-hw-public.s3.eu-west-1.amazonaws.com/rs-tests/ML/Depth_Learning/DEPTH_Keras_Unet.model.zip)) on live data from Intel RealSense Camera. It can be invoke as follows: 
+[Example 5](https://github.com/nohayassin/librealsense/blob/tensorflow/wrappers/tensorflow/example5%20-%20denoise.py) is showing how to use trained network from Part 4 ([Keras Unet model](https://librealsense.intel.com/rs-tests/ML/Depth_Learning/DEPTH_Keras_Unet.model.zip)) on live data from Intel RealSense Camera. It can be invoke as follows: 
 
 ```py
-python camera_simulation.py <path to the model>
+python example5-denoised.py <path to the model>
 ```
 
 For prediction, both IR and depth frames are streamed.

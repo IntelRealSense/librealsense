@@ -67,7 +67,7 @@ int main(int argc, char** argv) try
         // but the color did not update, continue
         static int last_frame_number = 0;
         if (color_frame.get_frame_number() == last_frame_number) continue;
-        last_frame_number = color_frame.get_frame_number();
+        last_frame_number = static_cast<int>(color_frame.get_frame_number());
 
         // Convert RealSense frame to OpenCV matrix:
         auto color_mat = frame_to_mat(color_frame);

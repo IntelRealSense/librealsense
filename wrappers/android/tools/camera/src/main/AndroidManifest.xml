@@ -40,9 +40,6 @@
             android:label="@string/title_activity_file_browser"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
-            android:name=".PresetsActivity"
-            android:theme="@style/AppTheme.NoActionBar" />
-        <activity
             android:name=".InfoActivity"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity

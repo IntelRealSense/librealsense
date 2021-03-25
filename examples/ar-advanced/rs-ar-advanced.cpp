@@ -201,7 +201,7 @@ int main(int argc, char * argv[]) try
                 }
             }
             // Display the line in the image
-            render_line(projected_line, i);
+            render_line(projected_line, int(i));
         }
 
         // Display text in the image

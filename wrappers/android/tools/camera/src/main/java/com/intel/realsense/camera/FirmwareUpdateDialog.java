@@ -34,11 +34,16 @@ public class FirmwareUpdateDialog extends DialogFragment {
     private TextView mTitle;
 
     private boolean mDontShowAgain = false;
+    private boolean mAlreadyLatestInstalled = false;
 
-    static private String getFirmwareUpdateMessage(Device device){
+    private String getFirmwareUpdateMessage(Device device){
         final String recFw = device.supportsInfo(CameraInfo.RECOMMENDED_FIRMWARE_VERSION) ?
                 device.getInfo(CameraInfo.RECOMMENDED_FIRMWARE_VERSION) : "unknown";
         final String fw = device.getInfo(CameraInfo.FIRMWARE_VERSION);
+        if (recFw.equals(fw)){
+            mAlreadyLatestInstalled = true;
+            return "The recommended firmware is already installed";
+        }
         return "The firmware of the connected device is: " + fw +
                 "\n\nThe recommended firmware for this device is: " + recFw;
     }
@@ -92,6 +97,9 @@ public class FirmwareUpdateDialog extends DialogFragment {
                 }
             }
         });
+
+        if (mAlreadyLatestInstalled)
+            mFwUpdateButton.setEnabled(false);
 
         mSkipFwUpdateButton = fragmentView.findViewById(R.id.skipFwUpdateButton);
         mSkipFwUpdateButton.setOnClickListener(new View.OnClickListener() {

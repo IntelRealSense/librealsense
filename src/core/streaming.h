@@ -125,7 +125,7 @@ namespace librealsense
     {
         frame_interface* frame;
 
-        frame_interface* operator->()
+        frame_interface* operator->() const
         {
             return frame;
         }
@@ -172,6 +172,15 @@ namespace librealsense
             os << rs2_format_to_string(p->get_format()) << " " << rs2_stream_to_string(p->get_stream_type()) << ", ";
         }
         return os;
+    }
+
+    std::string frame_holder_to_string(const frame_holder & f);
+
+    std::string frame_to_string(const frame_interface & f);
+
+    inline std::ostream& operator<<(std::ostream& out, const frame_interface & f)
+    {
+        return out << frame_to_string(f);
     }
 
     class recommended_proccesing_blocks_interface

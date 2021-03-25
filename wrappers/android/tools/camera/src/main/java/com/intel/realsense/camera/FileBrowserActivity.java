@@ -3,7 +3,7 @@ package com.intel.realsense.camera;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -29,7 +29,7 @@ public class FileBrowserActivity extends AppCompatActivity {
 
         TextView message = findViewById(R.id.list_view_title);
 
-        File folder = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + mFolder);
+        File folder = new File(getExternalFilesDir(null).getAbsolutePath() + File.separator + mFolder);
         if(!folder.exists()) {
             message.setText("No RealSense files found");
             return;

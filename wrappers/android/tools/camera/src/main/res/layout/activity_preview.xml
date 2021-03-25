@@ -108,7 +108,7 @@
             android:textSize="14dp"
             android:textColor="#ffffff"
             android:backgroundTint="#000000"
-            android:text="controls"/>
+            android:text="Controls"/>
 
         <Space
             android:layout_width="0dp"
@@ -117,7 +117,7 @@
 
     </LinearLayout>
 
-    <android.support.design.widget.FloatingActionButton
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/start_record_fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

@@ -235,6 +235,7 @@ set_target_properties (realsense-viewer PROPERTIES
     FOLDER Tools
 )
 
+target_include_directories(realsense-viewer PRIVATE ../../src)
 
 install(
     TARGETS

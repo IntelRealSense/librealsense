@@ -4,7 +4,7 @@
 #pragma once
 
 #include <librealsense2/rs_advanced_mode.hpp>
-#include "types.h"
+#include <types.h>
 
 #define TEXT_BUFF_SIZE 1024
 

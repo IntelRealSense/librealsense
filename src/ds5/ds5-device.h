@@ -30,6 +30,7 @@ namespace librealsense
     };
 
     class hdr_config;
+    class ds5_thermal_monitor;
 
     class ds5_device : public virtual device, public debug_interface, public global_time_interface, public updatable, public auto_calibrated
     {
@@ -72,7 +73,7 @@ namespace librealsense
 
         float get_stereo_baseline_mm() const;
 
-        ds::d400_caps  parse_device_capabilities(const uint16_t pid) const;
+        ds::d400_caps parse_device_capabilities() const;
 
         //TODO - add these to device class as pure virtual methods
         command get_firmware_logs_command() const;
@@ -91,14 +92,19 @@ namespace librealsense
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _left_ir_stream;
         std::shared_ptr<stream_interface> _right_ir_stream;
+        std::shared_ptr<stream_interface> _color_stream;
 
         uint8_t _depth_device_idx;
+        uint16_t _pid;
 
         lazy<std::vector<uint8_t>> _coefficients_table_raw;
         lazy<std::vector<uint8_t>> _new_calib_table_raw;
 
         std::shared_ptr<polling_error_handler> _polling_error_handler;
+        std::shared_ptr<ds5_thermal_monitor> _thermal_monitor;
         std::shared_ptr<lazy<rs2_extrinsics>> _left_right_extrinsics;
+        lazy<std::vector<uint8_t>> _color_calib_table_raw;
+        std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
         bool _is_locked = true;
     };
 

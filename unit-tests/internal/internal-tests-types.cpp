@@ -22,7 +22,7 @@ TEST_CASE("copy_array", "[code]")
     float src_float[]   = { 1.1f, 2.2f, 3.3f, -5.5f, 0.f, 123534.f };
     double src_double[] = { 0.00000000000000000001, -2222222222222222222222222.222222, 334529087543.30875246784, -5.51234533524532345254645234256, 5888985940.4535, -0.0000000000001 };
 
-    constexpr size_t src_size = arr_size(src_float);
+    const size_t src_size = 6;
 
     float       tgt_float[src_size]     = { 0 };
     double      tgt_double[src_size]    = { 0 };
@@ -64,7 +64,7 @@ TEST_CASE("copy_2darray", "[code]")
     double src_double[2][6] = { { -254354352341.1, 765732052.21124, 3.4432007654764633233554, -524432.5432650645, 0.0000000000000000112, 123534.4234254673 },
                                 { 764.07654343263, -242675463465342.243, -9876322453.6342453, -42315432545.2153542, 0.1345521543251324, -0.0000123413242329 } };
 
-    constexpr size_t src_size = arr_size(src_float);
+    const size_t src_size = arr_size(src_float);
 
     // Get the internal dimension sizes
     auto h = std::extent<decltype(src_float),0>::value;

@@ -82,7 +82,7 @@ namespace rs2
         {
             path = get_folder_path(special_folder::user_documents);
         }
-        catch (const std::exception& e)
+        catch (const std::exception&)
         {
             std::string msg = "Failed to get Documents folder";
             rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());

@@ -26,6 +26,8 @@
 #include "ac-trigger.h"
 #include "algo/depth-to-rgb-calibration/debug.h"
 #include "../common/utilities/time/periodic_timer.h"
+#include "../common/utilities/time/work_week.h"
+#include "../common/utilities/time/l500/get-mfr-ww.h"
 
 
 
@@ -103,7 +105,7 @@ namespace librealsense
         _fw_version = firmware_version(fwv);
         firmware_version recommended_fw_version(L5XX_RECOMMENDED_FIRMWARE_VERSION);
 
-        _is_locked = _hw_monitor->get_gvd_field<bool>(gvd_buff, is_camera_locked_offset);
+        _is_locked = _hw_monitor->get_gvd_field<uint8_t>(gvd_buff, is_camera_locked_offset) != 0;
 
         auto pid_hex_str = hexify(group.uvc_devices.front().pid);
 
@@ -127,6 +129,24 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "L500");
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
+
+        // If FW supportes the SET_AGE command, we update the age of the device in weeks to aid projection of aging
+        if( ( _fw_version >= firmware_version( "1.5.4.0" ) ) )
+        {
+            try
+            {
+                auto manufacture
+                    = utilities::time::l500::get_manufacture_work_week( optic_serial );
+                auto age
+                    = utilities::time::get_work_weeks_since( manufacture );
+                command cmd( fw_cmd::UNIT_AGE_SET, (uint8_t)age );
+                _hw_monitor->send( cmd );
+            }
+            catch( ... )
+            {
+                LOG_ERROR( "Failed to set units age" );
+            }
+        }
 
         configure_depth_options();
     }
@@ -205,11 +225,6 @@ namespace librealsense
     {
         synthetic_sensor & depth_sensor = get_depth_sensor();
 
-        auto is_zo_enabled_opt = std::make_shared<bool_option>();
-        auto weak_is_zo_enabled_opt = std::weak_ptr<bool_option>(is_zo_enabled_opt);
-        is_zo_enabled_opt->set(false);
-        depth_sensor.register_option(RS2_OPTION_ZERO_ORDER_ENABLED, is_zo_enabled_opt);
-
         if( _fw_version >= firmware_version( "1.5.0.0" ) )
         {
             bool usb3mode = (_usb_mode >= platform::usb3_type || _usb_mode == platform::usb_undefined);
@@ -231,14 +246,23 @@ namespace librealsense
                 {
                     if( status == RS2_CALIBRATION_SUCCESSFUL )
                     {
+                        rs2_dsm_params new_dsm_params = _autocal->get_dsm_params();
+                        // We update the age of the device in weeks and the time between factory
+                        // calibration and last AC to aid projection
+                        auto manufacture = utilities::time::l500::get_manufacture_work_week(
+                            get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) );
+                        auto age
+                            = utilities::time::get_work_weeks_since( manufacture );
+                        new_dsm_params.weeks_since_calibration = (uint8_t)age;
+                        new_dsm_params.ac_weeks_since_calibaration = (uint8_t)age;
+
                         // We override the DSM params first, because it can throw if the parameters
                         // are exceeding spec! This may throw!!
-                        get_depth_sensor().override_dsm_params( _autocal->get_dsm_params() );
-                     
+                        get_depth_sensor().override_dsm_params( new_dsm_params );
                         auto & color_sensor = *get_color_sensor();
                         color_sensor.override_intrinsics( _autocal->get_raw_intrinsics() );
                         color_sensor.override_extrinsics( _autocal->get_extrinsics() );
-                        color_sensor.set_k_thermal_intrinsics(_autocal->get_thermal_intrinsics());
+                        color_sensor.set_k_thermal_intrinsics( _autocal->get_thermal_intrinsics() );
                     }
                     notify_of_calibration_change( status );
                 } );
@@ -257,17 +281,14 @@ namespace librealsense
             { {RS2_FORMAT_Z16}, {RS2_FORMAT_Y8} },
             { {RS2_FORMAT_Z16, RS2_STREAM_DEPTH, 0, 0, 0, 0, &rotate_resolution} },
             [=]() {
-                auto is_zo_enabled_opt = weak_is_zo_enabled_opt.lock();
                 auto z16rot = std::make_shared<rotation_transform>(RS2_FORMAT_Z16, RS2_STREAM_DEPTH, RS2_EXTENSION_DEPTH_FRAME);
                 auto y8rot = std::make_shared<rotation_transform>(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME);
-                auto sync = std::make_shared<syncer_process_unit>(); // is_zo_enabled_opt );
-                auto zo = std::make_shared<zero_order>(is_zo_enabled_opt);
+                auto sync = std::make_shared<syncer_process_unit>(nullptr, false); // disable logging on this internal syncer
 
                 auto cpb = std::make_shared<composite_processing_block>();
                 cpb->add(z16rot);
                 cpb->add(y8rot);
                 cpb->add(sync);
-                cpb->add(zo);
                 if( _autocal )
                 {
                     //sync->add_enabling_option( _autocal->get_enabler_opt() );
@@ -286,19 +307,16 @@ namespace librealsense
                 {RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE, 0, 0, 0, 0, &l500_confidence_resolution}
             },
             [=]() {
-                auto is_zo_enabled_opt = weak_is_zo_enabled_opt.lock();
                 auto z16rot = std::make_shared<rotation_transform>(RS2_FORMAT_Z16, RS2_STREAM_DEPTH, RS2_EXTENSION_DEPTH_FRAME);
                 auto y8rot = std::make_shared<rotation_transform>(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME);
                 auto conf = std::make_shared<confidence_rotation_transform>();
-                auto sync = std::make_shared<syncer_process_unit>(); // is_zo_enabled_opt );
-                auto zo = std::make_shared<zero_order>(is_zo_enabled_opt);
+                auto sync = std::make_shared<syncer_process_unit>(nullptr, false); // disable logging on this internal syncer
 
                 auto cpb = std::make_shared<composite_processing_block>();
                 cpb->add(z16rot);
                 cpb->add(y8rot);
                 cpb->add(conf);
                 cpb->add(sync);
-                cpb->add(zo);
                 if( _autocal )
                 {
                     //sync->add_enabling_option( _autocal->get_enabler_opt() );
@@ -435,12 +453,26 @@ namespace librealsense
     {
         // Stop all data streaming/exchange pipes with HW
         stop_activity();
+        using namespace std;
+        using namespace std::chrono;
 
         try {
             LOG_INFO("entering to update state, device disconnect is expected");
             command cmd(ivcam2::DFU);
             cmd.param1 = 1;
             _hw_monitor->send(cmd);
+            std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
+            for (auto i = 0; i < 50; i++)
+            {
+
+                _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
+                this_thread::sleep_for(milliseconds(50));
+            }
+            throw std::runtime_error("Device still connected!");
+
+        }
+        catch (std::exception& e) {
+            LOG_WARNING(e.what());
         }
         catch (...) {
             // The set command returns a failure because switching to DFU resets the device while the command is running.
@@ -763,6 +795,7 @@ namespace librealsense
 
     notification l500_notification_decoder::decode(int value)
     {
+        // Anything listed in l500-private.h on l500_fw_error_report is an error; everything else is a warning
         if (l500_fw_error_report.find(static_cast<uint8_t>(value)) != l500_fw_error_report.end())
             return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, l500_fw_error_report.at(static_cast<uint8_t>(value)) };
 

@@ -5,11 +5,13 @@
 
 #include <deque>
 #include <atomic>
+#include <stddef.h>
 
 namespace rs2
 {
     // This class calculate the IR pixel reflectivity. 
     // It uses depth value history, current IR value , maximum usable depth range and noise estimation.
+    // Note: This class is not thread safe
     class reflectivity 
     {
     public:
@@ -25,11 +27,23 @@ namespace rs2
         // Reset depth samples history (queue history will reset only if needed (if add_depth_sample was called since last reset/construction)
         void reset_history();
 
+        // Return the samples history ratio size / capacity [0-1]
+        float get_samples_ratio() const;
+
+        // Return true if the history queue is full
+        bool is_history_full() const;
+
+        // Return the history queue capacity
+        size_t history_capacity() const;
+
+        // Return the history queue current size
+        size_t history_size() const;
+
     private:
         // Implement a cyclic queue for depth samples
         std::deque<float> _dist_queue; 
 
-        // Use to indicate reset() that the queue contain samples
-        std::atomic_bool _is_empty;
+        // Holds the current history size
+        size_t _history_size;
     };
 }

@@ -1305,6 +1305,18 @@ void rs2_log_to_callback_cpp( rs2_log_severity min_severity, rs2_log_callback * 
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , min_severity, callback )
 
+void rs2_reset_logger( rs2_error** error) BEGIN_API_CALL
+{
+    librealsense::reset_logger();
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN_VOID()
+
+void rs2_enable_rolling_log_file( unsigned max_size, rs2_error ** error ) BEGIN_API_CALL
+{
+    librealsense::enable_rolling_log_file( max_size );
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, max_size)
+
 // librealsense wrapper around a C function
 class on_log_callback : public rs2_log_callback
 {
@@ -1400,8 +1412,8 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
     case RS2_EXTENSION_MOTION_SENSOR           : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::motion_sensor)          != nullptr;
     case RS2_EXTENSION_FISHEYE_SENSOR          : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::fisheye_sensor)         != nullptr;
     case RS2_EXTENSION_CALIBRATED_SENSOR       : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::calibrated_sensor)      != nullptr;
-    case RS2_EXTENSION_MAX_USABLE_RANGE_SENSOR : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::max_usable_range_sensor) != nullptr;
-    case RS2_EXTENSION_DEBUG_STREAM_SENSOR     : return VALIDATE_INTERFACE_NO_THROW( sensor->sensor, librealsense::debug_stream_sensor ) != nullptr;
+    case RS2_EXTENSION_MAX_USABLE_RANGE_SENSOR : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::max_usable_range_sensor)!= nullptr;
+    case RS2_EXTENSION_DEBUG_STREAM_SENSOR     : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::debug_stream_sensor )   != nullptr;
 
 
     default:
@@ -1437,6 +1449,7 @@ int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension, 
         case RS2_EXTENSION_DEVICE_CALIBRATION    : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::device_calibration)          != nullptr;
         case RS2_EXTENSION_SERIALIZABLE          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::serializable_interface)      != nullptr;
         case RS2_EXTENSION_FW_LOGGER             : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::firmware_logger_extensions)  != nullptr;
+        case RS2_EXTENSION_CALIBRATION_CHANGE_DEVICE: return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::calibration_change_device)  != nullptr;
 
         default:
             return false;
@@ -2905,9 +2918,7 @@ void rs2_update_firmware_cpp(const rs2_device* device, const void* fw_image, int
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(fw_image);
-
-    if(fw_image_size <= 0)
-        throw std::runtime_error("invlid firmware image size provided to rs2_update_cpp");
+    VALIDATE_FIXED_SIZE(fw_image_size, signed_fw_size); // check if the given FW size matches the expected FW size
 
     auto fwu = VALIDATE_INTERFACE(device->device, librealsense::update_device_interface);
 
@@ -2922,6 +2933,7 @@ void rs2_update_firmware(const rs2_device* device, const void* fw_image, int fw_
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(fw_image);
+    VALIDATE_FIXED_SIZE(fw_image_size, signed_fw_size); // check if the given FW size matches the expected FW size
 
     if (fw_image_size <= 0)
         throw std::runtime_error("invlid firmware image size provided to rs2_update");
@@ -2985,9 +2997,7 @@ void rs2_update_firmware_unsigned_cpp(const rs2_device* device, const void* imag
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(image);
-
-    if (image_size <= 0)
-        throw std::runtime_error("invlid firmware image size provided to rs2_update_firmware_unsigned_cpp");
+    VALIDATE_FIXED_SIZE(image_size, unsigned_fw_size); // check if the given FW size matches the expected FW size
 
     auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
     if (!fwud)
@@ -3006,6 +3016,7 @@ void rs2_update_firmware_unsigned(const rs2_device* device, const void* image, i
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(image);
+    VALIDATE_FIXED_SIZE(image_size, unsigned_fw_size); // check if the given FW size matches the expected FW size
 
     if (image_size <= 0)
         throw std::runtime_error("invlid firmware image size provided to rs2_update_firmware_unsigned");
@@ -3229,7 +3240,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, msg)
 int rs2_fw_log_message_size(rs2_firmware_log_message* msg, rs2_error** error)BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(msg);
-    return msg->firmware_log_binary_data->logs_buffer.size();
+    return (int)msg->firmware_log_binary_data->logs_buffer.size();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, msg)
 

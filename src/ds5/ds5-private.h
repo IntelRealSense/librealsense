@@ -11,6 +11,13 @@
 #include <iomanip>
 #include <string>
 
+//#define DEBUG_THERMAL_LOOP
+#ifdef DEBUG_THERMAL_LOOP
+#define LOG_DEBUG_THERMAL_LOOP(...)   do { CLOG(WARNING   ,"librealsense") << __VA_ARGS__; } while(false)
+#else
+#define LOG_DEBUG_THERMAL_LOOP(...)
+#endif //DEBUG_THERMAL_LOOP
+
 namespace librealsense
 {
     namespace ds
@@ -90,7 +97,6 @@ namespace librealsense
             ds::RS435_RGB_PID,
             ds::RS435I_PID,
             ds::RS465_PID,
-            ds::RS405_PID,
             ds::RS455_PID,
         };
 
@@ -98,14 +104,12 @@ namespace librealsense
             ds::RS435I_PID,
             ds::RS430I_PID,
             ds::RS465_PID,
-            ds::RS405_PID,
             ds::RS455_PID,
         };
 
         static const std::set<std::uint16_t> hid_bmi_055_pid = {
             ds::RS435I_PID,
             ds::RS430I_PID,
-            ds::RS405_PID,
             ds::RS455_PID
         };
 
@@ -622,12 +626,16 @@ namespace librealsense
             module_asic_serial_offset       = 64,
             fisheye_sensor_lb               = 112,
             fisheye_sensor_hb               = 113,
+            imu_acc_chip_id                 = 124,
             depth_sensor_type               = 166,
             active_projector                = 170,
             rgb_sensor                      = 174,
             imu_sensor                      = 178,
             motion_module_fw_version_offset = 212
         };
+
+        const uint8_t I2C_IMU_BMI055_ID_ACC = 0xfa;
+        const uint8_t I2C_IMU_BMI085_ID_ACC = 0x1f;
 
         enum gvd_fields_size
         {

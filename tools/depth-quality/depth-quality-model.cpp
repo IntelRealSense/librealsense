@@ -33,9 +33,10 @@ namespace rs2
             _viewer_model.draw_plane = true;
             _viewer_model.synchronization_enable = false;
             _viewer_model.support_non_syncronized_mode = false; //pipeline outputs only syncronized frameset
-
+            _viewer_model._support_ir_reflectivity = true;
             // Hide options from the DQT application
             _viewer_model._hidden_options.emplace(RS2_OPTION_ENABLE_MAX_USABLE_RANGE);
+            _viewer_model._hidden_options.emplace(RS2_OPTION_ENABLE_IR_REFLECTIVITY);
         }
 
         bool tool_model::start(ux_window& window)
@@ -586,6 +587,17 @@ namespace rs2
                                 {
                                     try // Retries are needed to cope with HW stability issues
                                     {
+
+                                        auto dev = cfg.resolve(_pipe);
+                                        auto depth_sensor = dev.get_device().first< rs2::depth_sensor >();
+                                        if (depth_sensor.supports(RS2_OPTION_SENSOR_MODE))
+                                        {
+                                            auto depth_profile = dev.get_stream(RS2_STREAM_DEPTH);
+                                            auto w = depth_profile.as<video_stream_profile>().width();
+                                            auto h = depth_profile.as<video_stream_profile>().height();
+                                            depth_sensor.set_option(RS2_OPTION_SENSOR_MODE, (float)(resolution_from_width_height(w, h)));
+                                        }
+
                                         auto profile = _pipe.start(cfg);
                                         success = profile;
                                     }
@@ -646,6 +658,48 @@ namespace rs2
 
                         ImGui::PopStyleColor();
                         ImGui::PopItemWidth();
+
+                        try
+                        {
+                            if (_depth_sensor_model)
+                            {
+                                auto && ds = _depth_sensor_model->dev.first< depth_sensor >();
+                                if (ds.supports(RS2_OPTION_ENABLE_IR_REFLECTIVITY))
+                                {
+                                    ImGui::SetCursorPosX(col0);
+                                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+
+                                    bool current_ir_reflectivity_opt
+                                        = ds.get_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY);
+
+                                    if (ImGui::Checkbox("IR Reflectivity",
+                                        &current_ir_reflectivity_opt))
+                                    {
+                                        // Deny enabling IR Reflectivity on ROI != 20% [RS5-8358]
+                                        if (0.2f == _roi_percent)
+                                            ds.set_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY,
+                                                current_ir_reflectivity_opt);
+                                        else
+                                            _error_message
+                                            = "Please set 'VGA' resolution, 'Max Range' preset and "
+                                            "20% ROI before enabling IR Reflectivity";
+                                    }
+
+                                    if (ImGui::IsItemHovered())
+                                    {
+                                        ImGui::SetTooltip(
+                                            "%s",
+                                            ds.get_option_description(
+                                                RS2_OPTION_ENABLE_IR_REFLECTIVITY ) );
+                                    }
+                                }
+                            }
+                        }
+                        catch (const std::exception& e)
+                        {
+                            _error_message = e.what();
+                        }
+
                         ImGui::SetCursorPosX(col0);
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
@@ -798,10 +852,15 @@ namespace rs2
             bool save = false;
             subdevice_ui_selection prev_ui;
 
-            if (_depth_sensor_model)
+            auto dev = _pipe.get_active_profile().get_device();
+
+            if (_device_model && _depth_sensor_model)
             {
-                prev_ui = _depth_sensor_model->last_valid_ui;
-                save = true;
+                if( ! _first_frame )
+                {
+                    prev_ui = _depth_sensor_model->last_valid_ui;
+                    save = true;
+                }
 
                 // Clean-up the models for new configuration
                 for (auto&& s : _device_model->subdevices)
@@ -811,28 +870,37 @@ namespace rs2
                 _viewer_model.selected_depth_source_uid = -1;
                 _viewer_model.selected_tex_source_uid = -1;
             }
-
-            auto dev = _pipe.get_active_profile().get_device();
-            auto dpt_sensor = std::make_shared<sensor>(dev.first<depth_sensor>());
-            _device_model = std::shared_ptr<rs2::device_model>(new device_model(dev, _error_message, _viewer_model,false));
+            // Create a new device model - reset all UI the new device
+            _device_model = std::shared_ptr<rs2::device_model>(new device_model(dev, _error_message, _viewer_model, _first_frame, false));
+            
+            // Get device depth sensor model
+            for (auto&& sub : _device_model->subdevices)
+            {
+                if (sub->s->is<depth_sensor>())
+                {
+                    _depth_sensor_model = sub;
+                    break;
+                }
+            }
+        
             _device_model->show_depth_only = true;
             _device_model->show_stream_selection = false;
-            std::shared_ptr< atomic_objects_in_frame > no_detected_objects;
-            _depth_sensor_model = std::make_shared<rs2::subdevice_model>(dev, dpt_sensor, no_detected_objects, _error_message, _viewer_model);
 
             _depth_sensor_model->draw_streams_selector = false;
             _depth_sensor_model->draw_fps_selector = true;
+            _depth_sensor_model->allow_change_resolution_while_streaming = true;
+            _depth_sensor_model->allow_change_fps_while_streaming = true;
 
             // Retrieve stereo baseline for supported devices
             auto baseline_mm = -1.f;
-            auto profiles = dpt_sensor->get_stream_profiles();
+            auto profiles = _depth_sensor_model->s->get_stream_profiles();
             auto right_sensor = std::find_if(profiles.begin(), profiles.end(), [](rs2::stream_profile& p)
             { return (p.stream_index() == 2) && (p.stream_type() == RS2_STREAM_INFRARED); });
 
             if (right_sensor != profiles.end())
             {
                 auto left_sensor = std::find_if(profiles.begin(), profiles.end(), [](rs2::stream_profile& p)
-                { return (p.stream_index() == 0) && (p.stream_type() == RS2_STREAM_DEPTH); });
+                { return (p.stream_index() == 1) && (p.stream_type() == RS2_STREAM_INFRARED); });
                 try
                 {
                     auto extrin = (*left_sensor).get_extrinsics_to(*right_sensor);

@@ -28,6 +28,18 @@ def main(argv):
     pipeline = rs.pipeline()
     config = rs.config()
 
+    # Get device product line for setting a supporting resolution
+    pipeline_wrapper = rs.pipeline_wrapper(pipeline)
+    pipeline_profile = config.resolve(pipeline_wrapper)
+    device = pipeline_profile.get_device()
+
+    auto_calibrated_device = rs.auto_calibrated_device(device)
+
+    if not auto_calibrated_device:
+        print("The connected device does not support auto calibration")
+        return
+
+
     config.enable_stream(rs.stream.depth, 256, 144, rs.format.z16, 90)
     conf = pipeline.start(config)
     calib_dev = rs.auto_calibrated_device(conf.get_device())
@@ -41,14 +53,14 @@ def main(argv):
 
             if input == 'c':
                 print("Starting on chip calibration")
-                new_calib, health = calib_dev.run_on_chip_calibration(5000, file_cnt, on_chip_calib_cb)
+                new_calib, health = calib_dev.run_on_chip_calibration(file_cnt, on_chip_calib_cb, 5000)
                 print("Calibration completed")
                 print("health factor = ", health)
 
             if input == 't':
                 print("Starting tare calibration")
                 ground_truth = float(raw_input("Please enter ground truth in mm\n"))
-                new_calib, health = calib_dev.run_tare_calibration(ground_truth, 5000, file_cnt, on_chip_calib_cb)
+                new_calib, health = calib_dev.run_tare_calibration(ground_truth, file_cnt, on_chip_calib_cb, 5000)
                 print("Calibration completed")
                 print("health factor = ", health)
 
@@ -67,10 +79,8 @@ def main(argv):
 
             print("Done\n")
         except Exception as e:
-            pipeline.stop()
             print(e)
         except:
-            pipeline.stop()
             print("A different Error")
 
 

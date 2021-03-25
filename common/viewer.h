@@ -63,7 +63,7 @@ namespace rs2
         const float panel_width = 340.f;
         const float panel_y = 50.f;
 
-        float get_output_height() const { return not_model->output.get_output_height(); }
+        float get_output_height() const { return (float)(not_model->output.get_output_height()); }
 
         rs2::frame handle_ready_frames(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message);
 
@@ -83,7 +83,7 @@ namespace rs2
         frame get_3d_texture_source(frame f);
 
         bool is_3d_depth_source(frame f);
-        bool is_3d_texture_source(frame f);
+        bool is_3d_texture_source(frame f) const;
 
         std::shared_ptr<texture_buffer> upload_frame(frame&& f);
 
@@ -156,6 +156,7 @@ namespace rs2
         bool draw_frustrum = true;
         bool support_non_syncronized_mode = true;
         std::atomic<bool> synchronization_enable;
+        std::atomic<bool> synchronization_enable_prev_state;
         std::atomic<int> zo_sensors;
 
         int selected_depth_source_uid = -1;
@@ -192,6 +193,7 @@ namespace rs2
         std::shared_ptr<updates_model> updates;
 
         std::unordered_set<int> _hidden_options;
+        bool _support_ir_reflectivity;
     private:
 
         void check_permissions();

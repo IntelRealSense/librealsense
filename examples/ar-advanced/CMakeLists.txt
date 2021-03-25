@@ -19,7 +19,7 @@ endif()
 
 if(BUILD_GRAPHICAL_EXAMPLES)
     add_executable(rs-ar-advanced rs-ar-advanced.cpp ../example.hpp)
-    target_include_directories(rs-ar-advanced PUBLIC ../)
+    target_include_directories(rs-ar-advanced PUBLIC ../../examples)
     target_link_libraries(rs-ar-advanced ${DEPENDENCIES})
     set_target_properties (rs-ar-advanced PROPERTIES FOLDER Examples)
     install(TARGETS rs-ar-advanced RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

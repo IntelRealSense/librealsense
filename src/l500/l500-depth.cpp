@@ -184,26 +184,15 @@ namespace librealsense
 
         std::vector<stream_interface*> streams = { _depth_stream.get(), _ir_stream.get(), _confidence_stream.get() };
 
-        // TODO
         for (auto& s : streams)
         {
             depth_matchers.push_back(std::make_shared<identity_matcher>(s->get_unique_id(), s->get_stream_type()));
         }
         std::vector<std::shared_ptr<matcher>> matchers;
-        if (!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
-        {
-            matchers.push_back(std::make_shared<timestamp_composite_matcher>(depth_matchers));
-        }
-        else
-        {
-            matchers.push_back(std::make_shared<timestamp_composite_matcher>(depth_matchers));
-        }
+        matchers.push_back(std::make_shared<timestamp_composite_matcher>(depth_matchers));
 
         return std::make_shared<timestamp_composite_matcher>(matchers);
     }
-
-   
-
 
     // If the user did not ask for IR, The open function will add it anyway. 
     // This class filters the IR frames is this case so they will not get to the user callback function
@@ -526,27 +515,29 @@ namespace librealsense
                 }
 
                 try {
-                    // endpoint 2 (depth)
-                    command cmdTprocGranEp2(ivcam2::TPROC_USB_GRAN_SET, 2, ep2_usb_trb);
-                    _owner->_hw_monitor->send(cmdTprocGranEp2);
+                    // Keep the USB power on while triggering multiple calls on it.
+                    ivcam2::group_multiple_fw_calls(*this, [&]() {
+                        // endpoint 2 (depth)
+                        command cmdTprocGranEp2(ivcam2::TPROC_USB_GRAN_SET, 2, ep2_usb_trb);
+                        _owner->_hw_monitor->send(cmdTprocGranEp2);
 
-                    command cmdTprocThresholdEp2(ivcam2::TPROC_TRB_THRSLD_SET, 2, 1);
-                    _owner->_hw_monitor->send(cmdTprocThresholdEp2);
+                        command cmdTprocThresholdEp2(ivcam2::TPROC_TRB_THRSLD_SET, 2, 1);
+                        _owner->_hw_monitor->send(cmdTprocThresholdEp2);
 
-                    // endpoint 3 (IR)
-                    command cmdTprocGranEp3(ivcam2::TPROC_USB_GRAN_SET, 3, ep3_usb_trb);
-                    _owner->_hw_monitor->send(cmdTprocGranEp3);
+                        // endpoint 3 (IR)
+                        command cmdTprocGranEp3(ivcam2::TPROC_USB_GRAN_SET, 3, ep3_usb_trb);
+                        _owner->_hw_monitor->send(cmdTprocGranEp3);
 
-                    command cmdTprocThresholdEp3(ivcam2::TPROC_TRB_THRSLD_SET, 3, 1);
-                    _owner->_hw_monitor->send(cmdTprocThresholdEp3);
+                        command cmdTprocThresholdEp3(ivcam2::TPROC_TRB_THRSLD_SET, 3, 1);
+                        _owner->_hw_monitor->send(cmdTprocThresholdEp3);
 
-                    // endpoint 4 (confidence)
-                    command cmdTprocGranEp4(ivcam2::TPROC_USB_GRAN_SET, 4, ep4_usb_trb);
-                    _owner->_hw_monitor->send(cmdTprocGranEp4);
+                        // endpoint 4 (confidence)
+                        command cmdTprocGranEp4(ivcam2::TPROC_USB_GRAN_SET, 4, ep4_usb_trb);
+                        _owner->_hw_monitor->send(cmdTprocGranEp4);
 
-                    command cmdTprocThresholdEp4(ivcam2::TPROC_TRB_THRSLD_SET, 4, 1);
-                    _owner->_hw_monitor->send(cmdTprocThresholdEp4);
-
+                        command cmdTprocThresholdEp4(ivcam2::TPROC_TRB_THRSLD_SET, 4, 1);
+                        _owner->_hw_monitor->send(cmdTprocThresholdEp4);
+                        });
                     LOG_DEBUG("Depth and IR usb tproc granularity and TRB threshold updated.");
                 } catch (...)
                 {
@@ -712,16 +703,6 @@ namespace librealsense
             {
                 auto&& sensor_mode_option = get_option(RS2_OPTION_SENSOR_MODE);
                 auto vs = dynamic_cast<video_stream_profile*>((*dp).get());
-                if (supports_option(RS2_OPTION_VISUAL_PRESET))
-                {
-                    auto&& preset_option = get_option(RS2_OPTION_VISUAL_PRESET);
-                    if (preset_option.query() == RS2_L500_VISUAL_PRESET_CUSTOM)
-                    {
-                        if(sensor_mode_option.query() != get_resolution_from_width_height(vs->get_width(), vs->get_height()))
-                            throw  std::runtime_error(to_string() << "sensor mode ("<< rs2_sensor_mode((int)sensor_mode_option.query())<<") with RS2_L500_VISUAL_PRESET_CUSTOM is incompatible with the requested profile resolution ("
-                                << get_resolution_from_width_height(vs->get_width(), vs->get_height())<<")");
-                    }
-                }
                 if( vs->get_format() == RS2_FORMAT_Z16 )
                     sensor_mode_option.set(float(get_resolution_from_width_height(vs->get_width(), vs->get_height())));
             }

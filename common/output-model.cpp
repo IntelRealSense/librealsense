@@ -156,7 +156,7 @@ void output_model::open(ux_window& win)
 {
     is_output_open = true;
     config_file::instance().set(configurations::viewer::output_open, true);
-    default_log_h = (win.height() - 100) / 2;
+    default_log_h = (int)((win.height() - 100) / 2);
     new_log = true;
 }
 
@@ -217,8 +217,9 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             ImGui::SetTooltip("%s", "Collapse Debug Console Window");
         }
 
-        if (default_log_h.value() != (win.height() - 100) / 2)
-            default_log_h = (win.height() - 100) / 2;
+        int h_val = (int)((win.height() - 100) / 2);
+        if (default_log_h.value() != h_val)
+            default_log_h = h_val;
     }
 
     ImGui::SameLine();
@@ -275,7 +276,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
     ImGui::SetCursorPosX(curr_x - 5);
 
 
-    int percent = total_frames ? 100 * ((double)number_of_drops / (total_frames)) : 0;
+    int percent = total_frames ? (int)(100 * ((double)number_of_drops / (total_frames))) : 0;
 
     std::stringstream ss;
     ss << u8"\uF043";
@@ -287,10 +288,10 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
     buff[search_line.size()] = 0;
 
     auto actual_search_width = w - size.x - 100 - curr_x;
-    if (focus_search) search_width = actual_search_width;
+    if (focus_search) search_width = (int)(actual_search_width);
 
     if (search_open && search_width.value() != actual_search_width)
-        search_width = actual_search_width;
+        search_width = (int)(actual_search_width);
 
     // if (is_output_open && search_width < 1)
     // {
@@ -301,7 +302,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
     {
         ImGui::PushFont(win.get_monofont());
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 4);
-        ImGui::PushItemWidth(search_width);
+        ImGui::PushItemWidth(static_cast<float>(search_width));
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
         if (ImGui::InputText("##SearchInLogs",buff, 1023))
         {
@@ -422,7 +423,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             auto margin = ImGui::GetTextLineHeightWithSpacing() - ImGui::GetTextLineHeight();
             auto size = ImGui::CalcTextSize(line.c_str());
             
-            auto t = single_wave(time_now - log.time_added + 0.3f) * 0.2f;
+            auto t = single_wave(static_cast<float>(time_now - log.time_added + 0.3f)) * 0.2f;
             if (log.selected) t = 0.2f;
 
             auto pos = ImGui::GetCursorScreenPos();
@@ -1142,7 +1143,7 @@ void frame_drops_dashboard::draw(ux_window& win, rect r)
     methods.push_back("Camera Timestamp Rate");
 
     ImGui::PushItemWidth(r.w - 207);
-    if (ImGui::Combo("##fps_method", &method, methods.data(), methods.size()))
+    if (ImGui::Combo("##fps_method", &method, methods.data(), (int)(methods.size())))
     {
         clear(false);
     }
@@ -1151,7 +1152,7 @@ void frame_drops_dashboard::draw(ux_window& win, rect r)
 
 int frame_drops_dashboard::get_height() const 
 { 
-    return 160.f + ImGui::GetTextLineHeightWithSpacing(); 
+    return (int)(160 + ImGui::GetTextLineHeightWithSpacing());
 }
 
 void frame_drops_dashboard::clear(bool full) 

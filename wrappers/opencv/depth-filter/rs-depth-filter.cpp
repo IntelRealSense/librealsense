@@ -10,7 +10,7 @@
 #include "tiny-profiler.h"
 #include "downsample.h"
 
-rs2_intrinsics operator/(const rs2_intrinsics& i, float f)
+rs2_intrinsics operator/(const rs2_intrinsics& i, int f)
 {
     rs2_intrinsics  res = i;
     res.width /= f; res.height /= f;

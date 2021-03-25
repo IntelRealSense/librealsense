@@ -485,13 +485,15 @@ namespace librealsense
                 }
 
                 try {
-                    // endpoint 5 - 32KB
-                    command cmdTprocGranEp5(ivcam2::TPROC_USB_GRAN_SET, 5, usb_trb);
-                    _owner->_hw_monitor->send(cmdTprocGranEp5);
+                    // Keep the USB power on while triggering multiple calls on it.
+                    ivcam2::group_multiple_fw_calls(*this, [&]() {
+                        // endpoint 5 - 32KB
+                        command cmdTprocGranEp5(ivcam2::TPROC_USB_GRAN_SET, 5, usb_trb);
+                        _owner->_hw_monitor->send(cmdTprocGranEp5);
 
-                    command cmdTprocThresholdEp5(ivcam2::TPROC_TRB_THRSLD_SET, 5, 1);
-                    _owner->_hw_monitor->send(cmdTprocThresholdEp5);
-
+                        command cmdTprocThresholdEp5(ivcam2::TPROC_TRB_THRSLD_SET, 5, 1);
+                        _owner->_hw_monitor->send(cmdTprocThresholdEp5);
+                        });
                     LOG_DEBUG("Color usb tproc granularity and TRB threshold updated.");
                 } catch (...)
                 {

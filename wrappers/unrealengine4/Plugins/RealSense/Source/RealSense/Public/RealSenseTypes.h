@@ -114,7 +114,7 @@ enum class ERealSenseOptionType : uint8
     ENABLE_DYNAMIC_CALIBRATION                 , /**< Enable dynamic calibration */
     DEPTH_OFFSET                               , /**< Offset from sensor to depth origin in millimetrers */
     LED_POWER                                  , /**< Power of the LED (light emitting diode), with 0 meaning LED off */
-    ZERO_ORDER_ENABLED                         , /**< Zero-order mode */
+    ZERO_ORDER_ENABLED                         , /**< Deprecated!! -  Zero-order mode */
     ENABLE_MAP_PRESERVATION                    , /**< Preserve map from the previous run */
     FREEFALL_DETECTION_ENABLED                 , /**< Enable/disable sensor shutdown when a free-fall is detected (on by default) */
     AVALANCHE_PHOTO_DIODE                      , /**< Changes the exposure time of Avalanche Photo Diode in the receiver */
@@ -139,7 +139,8 @@ enum class ERealSenseOptionType : uint8
     ALTERNATE_IR                               , /**< Turn on/off the alternate IR, When enabling alternate IR, the IR image is holding the amplitude of the depth correlation. */
     NOISE_ESTIMATION                           , /**< Noise estimation - indicates the noise on the IR image */
     ENABLE_IR_REFLECTIVITY                     , /**< Enables data collection for calculating IR pixel reflectivity */
-
+    AUTO_EXPOSURE_LIMIT                        , /**< Set and get auto exposure limit in microseconds. Default is 0 which means full exposure range. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session. */
+    AUTO_GAIN_LIMIT                            , /**< Set and get auto gain limits ranging from 16 to 248. Default is 0 which means full gain. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session. */
 };
 
 UENUM(Blueprintable)

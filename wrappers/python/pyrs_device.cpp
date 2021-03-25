@@ -24,7 +24,8 @@ void init_device(py::module &m) {
              "like versions of various internal components", "info"_a)
         .def("hardware_reset", &rs2::device::hardware_reset, "Send hardware reset request to the device")
         .def(py::init<>())
-        .def("__nonzero__", &rs2::device::operator bool)
+        .def("__nonzero__", &rs2::device::operator bool) // Called to implement truth value testing in Python 2
+        .def("__bool__", &rs2::device::operator bool) // Called to implement truth value testing in Python 3
         .def(BIND_DOWNCAST(device, debug_protocol))
         .def(BIND_DOWNCAST(device, playback))
         .def(BIND_DOWNCAST(device, recorder))
@@ -33,6 +34,7 @@ void init_device(py::module &m) {
         .def(BIND_DOWNCAST(device, update_device))
         .def(BIND_DOWNCAST(device, auto_calibrated_device))
         .def(BIND_DOWNCAST(device, device_calibration))
+        .def(BIND_DOWNCAST(device, calibration_change_device))
         .def(BIND_DOWNCAST(device, firmware_logger))
         .def("__repr__", [](const rs2::device &self) {
             std::stringstream ss;
@@ -125,6 +127,30 @@ void init_device(py::module &m) {
             },
             "Register (only once!) a callback that gets called for each change in calibration", "callback"_a );
 
+
+    py::class_<rs2::calibration_change_device, rs2::device> calibration_change_device(m, "calibration_change_device");
+    calibration_change_device.def(py::init<rs2::device>(), "device"_a)
+        .def("register_calibration_change_callback",
+            [](rs2::calibration_change_device& self, std::function<void(rs2_calibration_status)> callback)
+            {
+                self.register_calibration_change_callback(
+                    [callback](rs2_calibration_status status)
+                    {
+                        try
+                        {
+                            // "When calling a C++ function from Python, the GIL is always held"
+                            // -- since we're not being called from Python but instead are calling it,
+                            // we need to acquire it to not have issues with other threads...
+                            py::gil_scoped_acquire gil;
+                            callback(status);
+                        }
+                        catch (...)
+                        {
+                            std::cerr << "?!?!?!!? exception in python register_calibration_change_callback ?!?!?!?!?" << std::endl;
+                        }
+                    });
+            },
+            "Register (only once!) a callback that gets called for each change in calibration", "callback"_a);
 
     py::class_<rs2::debug_protocol> debug_protocol(m, "debug_protocol"); // No docstring in C++
     debug_protocol.def(py::init<rs2::device>())

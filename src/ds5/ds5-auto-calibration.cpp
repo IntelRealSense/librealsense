@@ -1,10 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
-#include "ds5-auto-calibration.h"
 #include "../third-party/json.hpp"
 #include "ds5-device.h"
 #include "ds5-private.h"
+#include "ds5-thermal-monitor.h"
+#include "ds5-auto-calibration.h"
 
 namespace librealsense
 {
@@ -192,6 +193,56 @@ namespace librealsense
         }
     }
 
+    // RAII to handle auto-calibration with the thermal compensation disabled
+    class thermal_compensation_guard
+    {
+    public:
+        thermal_compensation_guard(auto_calibrated_interface* handle) :
+            restart_tl(false), snr(nullptr)
+        {
+            if (Is<librealsense::device>(handle))
+            {
+                try
+                {
+                    // The depth sensor is assigned first by design
+                    snr = &(As<librealsense::device>(handle)->get_sensor(0));
+
+                    if (snr->supports_option(RS2_OPTION_THERMAL_COMPENSATION))
+                        restart_tl = static_cast<bool>(snr->get_option(RS2_OPTION_THERMAL_COMPENSATION).query());
+                    if (restart_tl)
+                    {
+                        snr->get_option(RS2_OPTION_THERMAL_COMPENSATION).set(0.f);
+                        // Allow for FW changes to propagate
+                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    }
+                }
+                catch(...) {
+                    LOG_WARNING("Thermal Compensation guard failed to invoke");
+                }
+            }
+        }
+        virtual ~thermal_compensation_guard()
+        {
+            try
+            {
+                if (snr && restart_tl)
+                    snr->get_option(RS2_OPTION_THERMAL_COMPENSATION).set(1.f);
+            }
+            catch (...) {
+                LOG_WARNING("Thermal Compensation guard failed to complete");
+            }
+        }
+
+    protected:
+        bool restart_tl;
+        librealsense::sensor_interface* snr;
+
+    private:
+        // Disable copy/assignment ctors
+        thermal_compensation_guard(const thermal_compensation_guard&);
+        thermal_compensation_guard& operator=(const thermal_compensation_guard&);
+    };
+
     std::vector<uint8_t> auto_calibrated::run_on_chip_calibration(int timeout_ms, std::string json, float* health, update_progress_callback_ptr progress_callback)
     {
         int calib_type = DEFAULT_CALIB_TYPE;
@@ -207,13 +258,16 @@ namespace librealsense
         int keep_new_value_after_sucessful_scan = DEFAULT_KEEP_NEW_VALUE_AFTER_SUCESSFUL_SCAN;
         int fl_data_sampling = DEFAULT_FL_SAMPLING;
         int adjust_both_sides = DEFAULT_ADJUST_BOTH_SIDES;
-        
+
         int fl_scan_location = DEFAULT_OCC_FL_SCAN_LOCATION;
         int fy_scan_direction = DEFAULT_FY_SCAN_DIRECTION;
         int white_wall_mode = DEFAULT_WHITE_WALL_MODE;
-        
+
         float h_1 = 0.0f;
         float h_2 = 0.0f;
+
+        //Enforce Thermal Compensation off during OCC
+        volatile thermal_compensation_guard grd(this);
 
         if (json.size() > 0)
         {
@@ -394,9 +448,9 @@ namespace librealsense
         }
         else
         {
-            LOG_INFO("run_on_chip_calibration with parameters: speed = " << speed_fl 
-                << ", keep new value after sucessful scan = " << keep_new_value_after_sucessful_scan 
-                << " data_sampling = " << data_sampling << ", adjust both sides = " << adjust_both_sides 
+            LOG_INFO("run_on_chip_calibration with parameters: speed = " << speed_fl
+                << ", keep new value after sucessful scan = " << keep_new_value_after_sucessful_scan
+                << " data_sampling = " << data_sampling << ", adjust both sides = " << adjust_both_sides
                 << ", fl scan location = " << fl_scan_location << ", fy scan direction = " << fy_scan_direction << ", white wall mode = " << white_wall_mode);
             check_one_button_params(speed, keep_new_value_after_sucessful_scan, data_sampling, adjust_both_sides, fl_scan_location, fy_scan_direction, white_wall_mode);
 
@@ -499,7 +553,7 @@ namespace librealsense
             h |= sign << 24;
             *health = static_cast<float>(h);
         }
-        
+
         return res;
     }
 
@@ -512,6 +566,9 @@ namespace librealsense
         int scan_parameter = DEFAULT_SCAN;
         int data_sampling = DEFAULT_TARE_SAMPLING;
         int apply_preset = 1;
+
+        //Enforce Thermal Compensation off during Tare calibration
+        volatile thermal_compensation_guard grd(this);
 
         if (json.size() > 0)
         {

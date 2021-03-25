@@ -93,8 +93,8 @@ namespace rs2
                         break;
                     }
                 }
-
-                _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
+                if (_sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                    _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
             }
             else
             {
@@ -863,7 +863,8 @@ namespace rs2
                 {
                     get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB;
                     update_state = update_state_prev;
-                    get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);
+                    if (get_manager().laser_status_prev = get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                        get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);
                 }
 
                 ImGui::SetCursorScreenPos({ float(x + 85), float(y + height - 25) });
@@ -899,7 +900,8 @@ namespace rs2
             {
                 get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB;
                 update_state = update_state_prev;
-                get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);
+                if (get_manager().laser_status_prev = get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                    get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);          
             }
             else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED)
             {
@@ -1065,7 +1067,9 @@ namespace rs2
 
                 if (ImGui::Button(get_button_name.c_str(), { 42.0f, 20.f }))
                 {
-                    get_manager().laser_status_prev = get_manager()._sub->s->get_option(RS2_OPTION_EMITTER_ENABLED);
+                    if (get_manager().laser_status_prev = get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                        get_manager().laser_status_prev = get_manager()._sub->s->get_option(RS2_OPTION_EMITTER_ENABLED);
+
                     update_state_prev = update_state;
                     update_state = RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH;
                 }

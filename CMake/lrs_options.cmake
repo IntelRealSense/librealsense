@@ -23,6 +23,7 @@ option(BUILD_CV_EXAMPLES "Build OpenCV examples" OFF)
 option(BUILD_DLIB_EXAMPLES "Build DLIB examples - requires DLIB_DIR" OFF)
 option(BUILD_OPENVINO_EXAMPLES "Build Intel OpenVINO Toolkit examples - requires INTEL_OPENVINO_DIR" OFF)
 option(BUILD_PCL_EXAMPLES "Build PCL examples" OFF)
+option(BUILD_OPEN3D_EXAMPLES "Build Open3D examples" OFF)
 option(BUILD_NODEJS_BINDINGS "Build Node.js bindings" OFF)
 option(BUILD_OPENNI2_BINDINGS "Build OpenNI bindings" OFF)
 option(IMPORT_DEPTH_CAM_FW "Download the latest firmware for the depth cameras" ON)
@@ -33,3 +34,10 @@ option(FORCE_LIBUVC "Explicitly turn-on libuvc backend - deprecated, use FORCE_R
 option(FORCE_WINUSB_UVC "Explicitly turn-on winusb_uvc (for win7) backend - deprecated, use FORCE_RSUSB_BACKEND instead" OFF)
 option(ANDROID_USB_HOST_UVC "Build UVC backend for Android - deprecated, use FORCE_RSUSB_BACKEND instead" OFF)
 option(CHECK_FOR_UPDATES "Checks for versions updates" OFF)
+#Performance improvement with Ubuntu 18/20
+if(UNIX AND (NOT ANDROID_NDK_TOOLCHAIN_INCLUDED))
+    option(ENABLE_EASYLOGGINGPP_ASYNC "Switch Logger to Asynchronous Mode (set OFF for Synchronous Mode)"  ON)
+else()
+    option(ENABLE_EASYLOGGINGPP_ASYNC "Switch Logger to Asynchronous Mode (set OFF for Synchronous Mode)" OFF)
+endif()
+ 

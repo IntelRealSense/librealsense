@@ -73,12 +73,12 @@ if(BUILD_GRAPHICAL_EXAMPLES)
             depth-metrics.h
             ${COMMON_SRC})
 
-        include_directories(rs-depth-quality ../../common  ../../third-party
-                                             ../../third-party/imgui
-                                             ../../third-party/glad
-                                             ../../third-party/tclap/include
-                                             ../../third-party/tinyfiledialogs
-                                             ${CMAKE_CURRENT_SOURCE_DIR}/res/)
+        include_directories(../../common  ../../third-party
+                            ../../third-party/imgui
+                            ../../third-party/glad
+                            ../../third-party/tclap/include
+                            ../../third-party/tinyfiledialogs
+                            ${CMAKE_CURRENT_SOURCE_DIR}/res/)
 
         #list(TRANSFORM DELAYED PREPEND " /DELAYLOAD:")
         PREPEND(DELAYED " /DELAYLOAD:" ${DELAYED})
@@ -92,11 +92,11 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         ${ELPP_FILES}
         )
 
-        include_directories(rs-depth-quality ../../common  ../../third-party
-                                             ../../third-party/imgui
-                                             ../../third-party/glad
-                                             ../../third-party/tinyfiledialogs
-                                             ../../third-party/tclap/include)
+        include_directories(../../common  ../../third-party
+                            ../../third-party/imgui
+                            ../../third-party/glad
+                            ../../third-party/tinyfiledialogs
+                            ../../third-party/tclap/include)
     endif()
 
     source_group("EasyLogging++" FILES ${ELPP_FILES})
@@ -124,6 +124,8 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     set_target_properties (rs-depth-quality PROPERTIES
         FOLDER Tools
     )
+
+    target_include_directories(rs-depth-quality PRIVATE ../../src)
 
     install(
         TARGETS

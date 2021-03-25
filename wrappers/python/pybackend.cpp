@@ -146,8 +146,8 @@ PYBIND11_MODULE(NAME, m) {
         .value("stream_format_filter", RS2_OPTION_STREAM_FORMAT_FILTER)
         .value("stream_index_filter", RS2_OPTION_STREAM_INDEX_FILTER)
         .value("emitter_on_off", RS2_OPTION_EMITTER_ON_OFF)
-        .value("zero_order_point_x", RS2_OPTION_ZERO_ORDER_POINT_X)
-        .value("zero_order_point_y", RS2_OPTION_ZERO_ORDER_POINT_Y)
+        .value("zero_order_point_x", RS2_OPTION_ZERO_ORDER_POINT_X) // Deprecated
+        .value("zero_order_point_y", RS2_OPTION_ZERO_ORDER_POINT_Y) // Deprecated
         .value("lld_temperature", RS2_OPTION_LLD_TEMPERATURE)
         .value("mc_temperature", RS2_OPTION_MC_TEMPERATURE)
         .value("ma_temperature", RS2_OPTION_MA_TEMPERATURE)
@@ -160,7 +160,7 @@ PYBIND11_MODULE(NAME, m) {
         .value("enable_dynamic_calibration", RS2_OPTION_ENABLE_DYNAMIC_CALIBRATION)
         .value("enable_depth_offset", RS2_OPTION_DEPTH_OFFSET)
         .value("enable_led_power", RS2_OPTION_LED_POWER)
-        .value("zero_order_enabled", RS2_OPTION_ZERO_ORDER_ENABLED)
+        .value("zero_order_enabled", RS2_OPTION_ZERO_ORDER_ENABLED) // Deprecated
         .value("enable_map_preservation", RS2_OPTION_ENABLE_MAP_PRESERVATION)
         .value("enable_freefall_detection", RS2_OPTION_FREEFALL_DETECTION_ENABLED)
         .value("exposure_time_receiver_APD", RS2_OPTION_AVALANCHE_PHOTO_DIODE)
@@ -185,6 +185,8 @@ PYBIND11_MODULE(NAME, m) {
         .value("alternate_ir", RS2_OPTION_ALTERNATE_IR)
         .value("noise_estimation", RS2_OPTION_NOISE_ESTIMATION)
         .value("enable_ir_reflectivity", RS2_OPTION_ENABLE_IR_REFLECTIVITY)
+        .value("auto_exposure_limit", RS2_OPTION_AUTO_EXPOSURE_LIMIT)
+        .value("auto_gain_limit", RS2_OPTION_AUTO_GAIN_LIMIT)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");
@@ -292,7 +294,7 @@ PYBIND11_MODULE(NAME, m) {
 
     hid_device.def("open", &platform::hid_device::open, "hid_profiles"_a)
               .def("close", &platform::hid_device::close)
-              .def("stop_capture", &platform::hid_device::stop_capture)
+              .def("stop_capture", &platform::hid_device::stop_capture, py::call_guard<py::gil_scoped_release>())
               .def("start_capture", &platform::hid_device::start_capture, "callback"_a)
               .def("get_sensors", &platform::hid_device::get_sensors)
               .def("get_custom_report_data", &platform::hid_device::get_custom_report_data,
@@ -303,7 +305,7 @@ PYBIND11_MODULE(NAME, m) {
     multi_pins_hid_device.def(py::init<std::vector<std::shared_ptr<platform::hid_device>>&>())
                          .def("open", &platform::multi_pins_hid_device::open, "hid_profiles"_a)
                          .def("close", &platform::multi_pins_hid_device::close)
-                         .def("stop_capture", &platform::multi_pins_hid_device::stop_capture)
+                         .def("stop_capture", &platform::multi_pins_hid_device::stop_capture, py::call_guard<py::gil_scoped_release>())
                          .def("start_capture", &platform::multi_pins_hid_device::start_capture, "callback"_a)
                          .def("get_sensors", &platform::multi_pins_hid_device::get_sensors)
                          .def("get_custom_report_data", &platform::multi_pins_hid_device::get_custom_report_data,
