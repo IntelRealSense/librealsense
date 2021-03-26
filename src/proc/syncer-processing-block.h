@@ -29,13 +29,18 @@ namespace librealsense
             _enable_opts.push_back( is_enabled_opt );
         }
 
+        // Stopping the syncer means no more frames will be enqueued, and any existing frames
+        // pending dispatch will be lost!
+        void stop()
+        {
+            _matcher->stop();
+        }
+
         ~syncer_process_unit()
         {
             _matcher.reset();
         }
     private:
-        bool create_matcher(const frame_holder& frame);
-
         std::shared_ptr<matcher> _matcher;
         std::vector< std::weak_ptr<bool_option> > _enable_opts;
 

@@ -96,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
     Thread mStreaming = new Thread() {
         @Override
         public void run() {
-            String filePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + mUri.getPath().split(":")[1];
+            String filePath = getExternalFilesDir(null).getAbsolutePath() + "/" + mUri.getPath().split(":")[1];
             try(Colorizer colorizer = new Colorizer()) {
                 try (Config config = new Config()) {
                     config.enableDeviceFromFile(filePath);

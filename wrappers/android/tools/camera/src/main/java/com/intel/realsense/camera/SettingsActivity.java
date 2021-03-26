@@ -66,7 +66,7 @@ public class SettingsActivity extends AppCompatActivity {
         mContext = this;
 
         // Advanced features are enabled if xml files exists in the device.
-        String advancedFeaturesPath = FileUtilities.getExternalStorageDir() +
+        String advancedFeaturesPath = FileUtilities.getExternalStorageDir(mContext) +
                 File.separator +
                 getString(R.string.realsense_folder) +
                 File.separator +
@@ -176,8 +176,9 @@ public class SettingsActivity extends AppCompatActivity {
                     case INDEX_ADVANCE_MODE: device.toggleAdvancedMode(!device.isInAdvancedMode());
                         break;
                     case INDEX_PRESETS: {
-                        Intent intent = new Intent(SettingsActivity.this, PresetsActivity.class);
-                        startActivity(intent);
+                        PresetsDialog cd = new PresetsDialog();
+                        cd.setCancelable(true);
+                        cd.show(getFragmentManager(), null);
                         break;
                     }
                     case INDEX_UPDATE: {
@@ -205,7 +206,7 @@ public class SettingsActivity extends AppCompatActivity {
                         break;
                     }
                     case INDEX_CREATE_FLASH_BACKUP: {
-                        new FlashBackupTask(device).execute();
+                        new FlashBackupTask(device, mContext).execute();
                         break;
                     }
                     default:
@@ -220,15 +221,17 @@ public class SettingsActivity extends AppCompatActivity {
         private ProgressDialog mProgressDialog;
         private Device mDevice;
         String mBackupFileName = "fwdump.bin";
+        private Context mContext;
 
-        public FlashBackupTask(Device mDevice) {
+        public FlashBackupTask(Device mDevice, Context context) {
             this.mDevice = mDevice;
+            this.mContext = context;
         }
 
         @Override
         protected Void doInBackground(Void... voids) {
             try(final Updatable upd = mDevice.as(Extension.UPDATABLE)){
-                FileUtilities.saveFileToExternalDir(mBackupFileName, upd.createFlashBackup());
+                FileUtilities.saveFileToExternalDir(mContext, mBackupFileName, upd.createFlashBackup());
                 return null;
             }
         }
@@ -255,7 +258,7 @@ public class SettingsActivity extends AppCompatActivity {
                 public void run() {
                     new AlertDialog.Builder(mContext)
                             .setTitle("Firmware Backup Success")
-                            .setMessage("Saved into: " + FileUtilities.getExternalStorageDir() + File.separator + mBackupFileName)
+                            .setMessage("Saved into: " + FileUtilities.getExternalStorageDir(mContext) + File.separator + mBackupFileName)
                             .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {

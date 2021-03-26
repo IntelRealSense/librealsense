@@ -145,18 +145,106 @@ namespace librealsense
 
     std::shared_ptr<matcher> composite_matcher::find_matcher(const frame_holder& frame)
     {
+        std::shared_ptr<matcher> matcher;
         auto stream_id = frame.frame->get_stream()->get_unique_id();
-        auto matcher = _matchers[stream_id];
+        auto stream_type = frame.frame->get_stream()->get_stream_type();
 
-        if (!matcher->get_active())
+        auto sensor = frame.frame->get_sensor().get(); //TODO: Potential deadlock if get_sensor() gets a hold of the last reference of that sensor
+
+        auto dev_exist = false;
+
+        if (sensor)
         {
-            matcher->set_active(true);
-            _frames_queue[matcher.get()].start();
+
+            const device_interface* dev = nullptr;
+            try
+            {
+                dev = sensor->get_device().shared_from_this().get();
+            }
+            catch (const std::bad_weak_ptr&)
+            {
+                LOG_WARNING("Device destroyed");
+            }
+            if (dev)
+            {
+                dev_exist = true;
+                matcher = _matchers[stream_id];
+                if (!matcher)
+                {
+                    std::ostringstream ss;
+                    for (auto const & it : _matchers)
+                        ss << ' ' << it.first;
+                    LOG_DEBUG("stream id " << stream_id << " was not found; trying to create, existing streams=" << ss.str());
+                    matcher = dev->create_matcher(frame);
+
+                    matcher->set_callback(
+                        [&](frame_holder f, syncronization_environment env)
+                    {
+                        sync(std::move(f), env);
+                    });
+
+                    for (auto stream : matcher->get_streams())
+                    {
+                        if (_matchers[stream])
+                        {
+                            _frames_queue.erase(_matchers[stream].get());
+                        }
+                        _matchers[stream] = matcher;
+                        _streams_id.push_back(stream);
+                    }
+                    for (auto stream : matcher->get_streams_types())
+                    {
+                        _streams_type.push_back(stream);
+                    }
+
+                    if (std::find(_streams_type.begin(), _streams_type.end(), stream_type) == _streams_type.end())
+                    {
+                        LOG_ERROR("Stream matcher not found! stream=" << rs2_stream_to_string(stream_type));
+                    }
+                }
+                else if (!matcher->get_active())
+                {
+                    matcher->set_active(true);
+                    _frames_queue[matcher.get()].start();
+                }
+            }
+        }
+        else
+        {
+            LOG_DEBUG("sensor does not exist");
         }
 
+        if (!dev_exist)
+        {
+            matcher = _matchers[stream_id];
+            // We don't know what device this frame came from, so just store it under device NULL with ID matcher
+            if (!matcher)
+            {
+                if (_matchers[stream_id])
+                {
+                    _frames_queue.erase(_matchers[stream_id].get());
+                }
+                _matchers[stream_id] = std::make_shared<identity_matcher>(stream_id, stream_type);
+                _streams_id.push_back(stream_id);
+                _streams_type.push_back(stream_type);
+                matcher = _matchers[stream_id];
+
+                matcher->set_callback([&](frame_holder f, syncronization_environment env)
+                {
+                    sync(std::move(f), env);
+                });
+            }
+        }
         return matcher;
     }
 
+    void composite_matcher::stop()
+    {
+        for (auto& fq : _frames_queue)
+        {
+            fq.second.clear();
+        }
+    }
 
     std::string composite_matcher::frames_to_string(std::vector<librealsense::matcher*> matchers)
     {
@@ -530,7 +618,27 @@ namespace librealsense
 
     void composite_identity_matcher::sync(frame_holder f, const syncronization_environment& env)
     {
-        LOG_DEBUG("by_pass_composite_matcher: " << _name << " " << frame_holder_to_string(f));
-        _callback(std::move(f), env);
+        LOG_DEBUG("composite_identity_matcher: " << _name << " " << frame_holder_to_string(f));
+
+        auto composite = dynamic_cast<const composite_frame *>(f.frame);
+        // Syncer have to output composite frame 
+        if (!composite)
+        {
+            std::vector<frame_holder> match;
+            match.push_back(std::move(f));
+            frame_holder composite = env.source->allocate_composite_frame(std::move(match));
+            if (composite.frame)
+            {
+                auto cb = begin_callback();
+                _callback(std::move(composite), env);
+            }
+            else
+            {
+                LOG_ERROR("composite_identity_matcher: " << _name << " " << frame_holder_to_string(f) << " faild to create composite_frame, user callback will not be called");
+            }
+        }
+        else
+            _callback(std::move(f), env);
+        
     }
 }  // namespace librealsense

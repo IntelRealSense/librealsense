@@ -73,10 +73,12 @@ def find_first_device_or_exit():
     if not c.devices.size():  # if no device is connected we skip the test
         print("No device found, skipping test")
         sys.exit( 0 )
-    return c.devices[0]
+    dev = c.devices[0]
+    log.d( 'found', dev )
+    return dev
 
 
-def find_devices_by_product_line_or_exit(product_line):
+def find_devices_by_product_line_or_exit( product_line ):
     """
     :param product_line: The product line of the wanted devices
     :return: A list of devices of specific product line that was found, if no device is found the test is skipped.
@@ -89,6 +91,7 @@ def find_devices_by_product_line_or_exit(product_line):
     if devices_list.size() == 0:
         print( "No device of the", product_line, "product line was found; skipping test" )
         sys.exit( 0 )
+    log.d( 'found', devices_list.size(), product_line, 'devices:', [dev for dev in devices_list] )
     return devices_list
 
 
@@ -142,7 +145,7 @@ def check(exp, abort_if_failed = False):
     n_assertions += 1
     if not exp:
         print_stack()
-        print("Check failed, received", exp)
+        print( "    check failed; received", exp )
         check_failed()
         if abort_if_failed:
             abort()
@@ -168,8 +171,8 @@ def check_equal(result, expected, abort_if_failed = False):
     n_assertions += 1
     if result != expected:
         print_stack()
-        print( "Result was:", result )
-        print( "  expected:", expected )
+        print( "    result  :", result )
+        print( "    expected:", expected )
         check_failed()
         if abort_if_failed:
             abort()
@@ -222,8 +225,8 @@ def check_equal_lists(result, expected, abort_if_failed = False):
         i += 1
     if failed:
         print_stack()
-        print("Result list:", result)
-        print("Expected list:", expected)
+        print( "    result list  :", result )
+        print( "    expected list:", expected )
         check_failed()
         if abort_if_failed:
             abort()
@@ -243,9 +246,9 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
     """
     failed = False
     if type(exception) != expected_type:
-        failed = [ "Raised exception was of type", type(exception), "and not of type", expected_type, "as expected" ]
-    if expected_msg and str(exception) != expected_msg:
-        failed = [ "Exception had message:", str(exception), "\nBut we expected:", expected_msg ]
+        failed = [ "    raised exception was of type", type(exception), "\n    but expected type", expected_type ]
+    elif expected_msg and str(exception) != expected_msg:
+        failed = [ "    exception message:", str(exception), "\n    but we expected:", expected_msg ]
     if failed:
         print_stack()
         print( *failed )
@@ -339,9 +342,8 @@ def fail():
     Function for manually failing a test in case you want a specific test that does not fit any check function
     """
     check_test_in_progress()
-    global n_failed_tests, test_failed
+    global test_failed
     if not test_failed:
-        n_failed_tests += 1
         test_failed = True
 
 

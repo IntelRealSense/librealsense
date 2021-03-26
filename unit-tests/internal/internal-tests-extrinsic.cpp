@@ -439,3 +439,243 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
         }
     }
 }
+TEST_CASE("Enable disable all streams", "[live]")
+{
+    // Require at least one device to be plugged in
+    rs2::context ctx;
+    class streams_cfg
+    {
+    public:
+        streams_cfg(std::pair<std::vector<rs2::sensor>, std::vector<profile>> res) :_res(res)
+        {
+            for (auto& p : res.second)
+            {
+                auto idx = p.index;
+                if (_filtered_streams[p.stream])
+                    idx = 0;
+                _filtered_streams[p.stream] = idx;
+            }
+        }
+
+        void test_configuration(int i, int j, bool enable_all_streams)
+        {
+            filter_streams(i, j, enable_all_streams);
+
+            // Define frame callback
+            // The callback is executed on a sensor thread and can be called simultaneously from multiple sensors
+            // Therefore any modification to common memory should be done under lock
+            std::mutex mutex;
+            auto callback = [&](const rs2::frame& frame)
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                if (rs2::frameset fs = frame.as<rs2::frameset>())
+                {
+                    // With callbacks, all synchronized stream will arrive in a single frameset
+                    for (const rs2::frame& f : fs)
+                        _counters[f.get_profile().unique_id()]++;
+                }
+                else
+                {
+                    // Stream that bypass synchronization (such as IMU) will produce single frames
+                    _counters[frame.get_profile().unique_id()]++;
+                }
+            };
+
+            // Start streaming through the callback with default recommended configuration
+            // The default video configuration contains Depth and Color streams
+            // If a device is capable to stream IMU data, both Gyro and Accelerometer are enabled by default
+            auto profiles = _pipe.start(_cfg, callback);
+            for (auto p : profiles.get_streams())
+                _stream_names_types[p.unique_id()] = { p.stream_name(), p.stream_type() };
+
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            // Collect the enabled streams names
+            for (auto p : _counters)
+            {
+                CAPTURE(_stream_names_types[p.first].first);
+                CHECK(_filtered_streams.count(_stream_names_types[p.first].second) > 0);
+            }
+            _pipe.stop();
+        }
+
+    private:
+        void filter_streams(int i, int j, bool enable_all_streams)
+        {
+            if (enable_all_streams)
+                _cfg.enable_all_streams();
+            else
+                _cfg.disable_all_streams();
+            auto enabled_streams = select_profiles(_cfg, i);
+            auto disabled_streams = select_profiles(_cfg, j, false);
+            std::vector<profile> tmp;
+            for (auto& p : enabled_streams)
+            {
+                if (disabled_streams.size() > 0 && std::find(disabled_streams.begin(), disabled_streams.end(), p) != disabled_streams.end()) continue; // skip disabled streams
+                tmp.push_back(p);
+            }
+            enabled_streams = tmp;
+            // Update filtered streams according to requested streams and current state (enable all streams or disable all streams)
+            if (!enabled_streams.empty() && !enable_all_streams)
+            {
+                _filtered_streams.clear();
+                for (auto& en_p : enabled_streams)
+                {
+                    auto idx = en_p.index;
+                    if (_filtered_streams[en_p.stream]) idx = 0; // if IR-1 and IR-2 are enabled, change index to 0
+                    _filtered_streams[en_p.stream] = idx;
+                }
+            }
+            // Filter out disabled streams
+            for (auto& p : disabled_streams)
+            {
+                if (_filtered_streams[p.stream] && _filtered_streams[p.stream] == p.index)
+                    _filtered_streams.erase(p.stream);
+            }
+        }
+
+        std::vector<profile> select_profiles(rs2::config& cfg, size_t n, bool enable_streams = true)
+        {
+            std::vector<profile> filtered_profiles;
+            std::vector<profile>::iterator it = _res.second.begin();
+            for (auto idx = 0; idx < n; idx++)
+            {
+                filtered_profiles.push_back(*(it + idx));
+                if (enable_streams)
+                    cfg.enable_stream((it + idx)->stream, (it + idx)->index);
+                else
+                    cfg.disable_stream((it + idx)->stream, (it + idx)->index);
+            }
+            return filtered_profiles;
+        }
+
+        std::pair<std::vector<rs2::sensor>, std::vector<profile>> _res;
+        rs2::config _cfg;
+        std::map<rs2_stream, int> _filtered_streams;
+        std::map<int, int> _counters;
+        std::map<int, std::pair < std::string, rs2_stream>> _stream_names_types;
+        rs2::pipeline _pipe;
+    };
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        auto list = ctx.query_devices();
+        REQUIRE(list.size());
+        auto dev = list.front();
+        auto sensors = dev.query_sensors();
+
+        REQUIRE(dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE));
+        std::string device_type = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
+
+        bool usb3_device = is_usb3(dev);
+        int fps = usb3_device ? 30 : 15; // In USB2 Mode the devices will switch to lower FPS rates
+        int req_fps = usb3_device ? 60 : 30; // USB2 Mode has only a single resolution for 60 fps which is not sufficient to run the test
+
+        int width = 848;
+        int height = 480;
+
+        if (device_type == "L500")
+        {
+            req_fps = 30;
+            width = 640;
+        }
+        auto res = configure_all_supported_streams(dev, width, height, fps);
+
+        // github test : https://github.com/IntelRealSense/librealsense/issues/3919
+        rs2::config cfg;
+        std::map<int, int> counters;
+        rs2::pipeline pipe;
+        std::mutex mutex;
+        std::map<int, std::pair < std::string, rs2_stream>> stream_names_types;
+        auto callback = [&](const rs2::frame& frame)
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            if (rs2::frameset fs = frame.as<rs2::frameset>())
+            {
+                // With callbacks, all synchronized stream will arrive in a single frameset
+                for (const rs2::frame& f : fs)
+                    counters[f.get_profile().unique_id()]++;
+            }
+            else
+            {
+                // Stream that bypass synchronization (such as IMU) will produce single frames
+                counters[frame.get_profile().unique_id()]++;
+            }
+        };
+
+        CAPTURE("Github test");
+        cfg.enable_all_streams();
+        cfg.disable_stream(RS2_STREAM_COLOR);
+
+        auto profiles = pipe.start(cfg, callback);
+        for (auto p : profiles.get_streams())
+            stream_names_types[p.unique_id()] = { p.stream_name(), p.stream_type() };
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        for (auto p : counters)
+        {
+            CAPTURE(stream_names_types[p.first].first);
+            CHECK(stream_names_types[p.first].second != RS2_STREAM_COLOR);
+        }
+        pipe.stop();
+
+        // Generic tests, in each configuration:
+        // 1. enable or disable all streams, then :
+        // 2. enable/ disable different number of streams. At least 1 stream should be enabled
+
+        bool streams_state[2] = { true, false };
+        for (auto& enable_all_streams : streams_state)
+        {
+            CAPTURE(enable_all_streams);
+            for (auto i = 0; i < res.second.size(); i++)
+            {
+                for (auto j = 0; j < res.second.size() - 1; j++) // -1 needed to keep at least 1 enabled stream
+                {
+                    CAPTURE(i, j);
+                    streams_cfg st_cfg(res);
+                    st_cfg.test_configuration(i, j, enable_all_streams);
+                }
+            }
+        }
+    }
+}
+TEST_CASE("Controls limits validation", "[live]")
+{
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        auto list = ctx.query_devices();
+        REQUIRE(list.size());
+
+        for (auto&& device : list)
+        {
+            if (std::string(device.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) != "D400")
+                continue;
+            auto sensors = device.query_sensors();
+            float limit;
+            rs2_option controls[2] = { RS2_OPTION_AUTO_GAIN_LIMIT, RS2_OPTION_AUTO_EXPOSURE_LIMIT };
+            for (auto& control : controls)
+            {
+                for (auto& s : sensors)
+                {
+                    std::string val = s.get_info(RS2_CAMERA_INFO_NAME);
+                    if (!s.supports(control))
+                        break;
+                    auto range = s.get_option_range(control);
+                    float set_value[3] = { range.min - 10, range.max + 10, std::floor((range.max + range.min) / 2) };
+                    for (auto& val : set_value)
+                    {
+                        CAPTURE(val);
+                        CAPTURE(range);
+                        if (val < range.min || val > range.max)
+                            REQUIRE_THROWS(s.set_option(control, val));
+                        else
+                        {
+                            s.set_option(control, val);
+                            limit = s.get_option(control);
+                            REQUIRE(limit == val);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

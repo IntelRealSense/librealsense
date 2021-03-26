@@ -4,6 +4,8 @@
 //#cmake:add-file ../../../src/algo/depth-to-rgb-calibration/*.cpp
 //#cmake:add-file ../../../src/algo/thermal-loop/*.cpp
 
+//#test:flag custom-args    # disable passing in of catch2 arguments
+
 #define DISABLE_LOG_TO_STDOUT
 #include "d2rgb-common.h"
 #include "compare-to-bin-file.h"

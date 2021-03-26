@@ -3001,9 +3001,22 @@ class RSPointCloud : public Nan::ObjectWrap, Options {
     StreamProfileExtrator extrator(profile);
     CallNativeFunc(rs2_set_option, &me->error_,
         reinterpret_cast<rs2_options*>(me->processing_block_),
-        RS2_OPTION_TEXTURE_SOURCE,
-        static_cast<float>(extrator.unique_id_),
+        RS2_OPTION_STREAM_FILTER,
+        static_cast<float>(extrator.stream_),
         &me->error_);
+
+    CallNativeFunc(rs2_set_option, &me->error_,
+        reinterpret_cast<rs2_options*>(me->processing_block_),
+        RS2_OPTION_STREAM_FORMAT_FILTER,
+        static_cast<float>(extrator.format_),
+        &me->error_);
+
+    CallNativeFunc(rs2_set_option, &me->error_,
+        reinterpret_cast<rs2_options*>(me->processing_block_),
+        RS2_OPTION_STREAM_INDEX_FILTER,
+        static_cast<float>(extrator.index_),
+        &me->error_);
+
     if (extrator.stream_ == RS2_STREAM_DEPTH) return;
 
     // rs2_process_frame will release the input frame, so we need to addref
@@ -4813,6 +4826,10 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME);
   _FORCE_SET_ENUM(RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME);
   _FORCE_SET_ENUM(RS2_TIMESTAMP_DOMAIN_COUNT);
+
+  // rs2_calib_target_type
+  _FORCE_SET_ENUM(RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES);
+  _FORCE_SET_ENUM(RS2_CALIB_TARGET_COUNT);
 
   // rs2_recording_mode
   _FORCE_SET_ENUM(RS2_RECORDING_MODE_BLANK_FRAMES);

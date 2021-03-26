@@ -17,7 +17,9 @@ namespace librealsense
 
         polling_error_handler(const polling_error_handler& h);
 
-        void start();
+        unsigned int get_polling_interval() const { return _poll_intervals_ms; }
+
+        void start( unsigned int poll_intervals_ms = 0 );
         void stop();
 
     private:

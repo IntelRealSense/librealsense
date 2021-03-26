@@ -2616,7 +2616,23 @@ class Pipeline {
     }
 
     if (ownCtx === true) {
-      this.ctx = new Context();
+      this.ctx = new Context();    
+      // get existing sensors params
+      let sensores = this.ctx.querySensors();
+      if (sensores.length>=2) {
+        let depthSensor = sensores[0];
+        let colorSensor = sensores[1];
+        let cfg = new Config();
+        let depthProfiles = depthSensor.getStreamProfiles().filter(s=>s.streamType == stream.STREAM_DEPTH);
+        let depthProfile = depthProfiles.find(x=>x.width == 640 && x.height==480) || depthProfiles[depthProfiles.length-1];
+        let colorProfiles = colorSensor.getStreamProfiles().filter(s=>s.streamType == stream.STREAM_COLOR);
+        let colorProfile = colorProfiles.find(x=>x.width == 640 && x.height==480) ||colorProfiles[colorProfiles.length-1];
+        console.log(`depth: w: ${depthProfile.width}, h: ${depthProfile.height}, format: ${depthProfile.format}, fps: ${depthProfile.fps}`);
+        console.log(`color: w: ${colorProfile.width}, h: ${colorProfile.height}, format: ${colorProfile.format}, fps: ${colorProfile.fps}`);
+        cfg.enableStream(stream.STREAM_DEPTH, -1, depthProfile.width, depthProfile.height, depthProfile.format, depthProfile.fps);
+        cfg.enableStream(stream.STREAM_COLOR, -1, colorProfile.width, colorProfile.height, format.FORMAT_RGB8, colorProfile.fps);        
+        this.autoConfig = cfg;
+      }            
     }
 
     this.cxxPipeline = new RS2.RSPipeline();
@@ -2675,6 +2691,7 @@ class Pipeline {
     } else {
       checkArgumentType(arguments, Config, 0, funcName);
       this.started = true;
+      console.log(`Pipeline started with config`);
       return new PipelineProfile(this.cxxPipeline.startWithConfig(arguments[0].cxxConfig));
     }
   }
@@ -6036,6 +6053,43 @@ const timestamp_domain = {
         throw new TypeError('timestamp_domain.timestampDomainToString() expects a valid value as the 1st argument'); // eslint-disable-line
     }
   },
+};
+
+/**
+ * Enum for calibration target type.
+ * @readonly
+ * @enum {String}
+ */
+const calib_target_type = {
+    /**
+     * String literal of <code>'rect-gaussian-dot-vertices'</code>. <br>Target with rectangle vertices as 
+     * the centers of gaussuian dots <br>Equivalent to its uppercase counterpart.
+     */
+    calib_target_rect_gaussian_dot_vertices: 'rect-gaussian-dot-vertices',
+
+    /**
+     * Frame timestamp was measured in relation to the camera clock <br>Equivalent to its lowercase
+     * counterpart.
+     * @type {Integer}
+     */
+    CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES: RS2.RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES,
+    /**
+     * Number of enumeration values. Not a valid input: intended to be used in for-loops.
+     * @type {Integer}
+     */
+    CALIB_TARGET_COUNT: RS2.RS2_CALIB_TARGET_COUNT,
+
+    calibTargetTypeToString: function (domainVal) {
+        const funcName = 'calib_target_type.calibTargetTypeToString()';
+        checkArgumentLength(1, 1, arguments.length, funcName);
+        const i = checkArgumentType(arguments, constants.calib_target_type, 0, funcName);
+        switch (i) {
+            case this.CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES:
+                return this.calib_target_rect_gaussian_dot_vertices;
+            default:
+                throw new TypeError('calib_target_type.calibTargetTypeToString() expects a valid value as the 1st argument'); // eslint-disable-line
+        }
+    },
 };
 
 /**

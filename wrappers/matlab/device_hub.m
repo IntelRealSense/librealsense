@@ -19,7 +19,7 @@ classdef device_hub < handle
 
         % Functions
         function device = wait_for_device(this)
-            out = realsense.librealsense_mex('rs2::device_hub', 'wait_for_device', this.objectHandle)
+            out = realsense.librealsense_mex('rs2::device_hub', 'wait_for_device', this.objectHandle);
             device = realsense.device(out(1), out(2));
         end
         function value = is_connected(this, dev)

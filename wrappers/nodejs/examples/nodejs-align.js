@@ -51,7 +51,7 @@ const colorizer = new rs2.Colorizer();
 const renderer = new Texture();
 const align = new rs2.Align(rs2.stream.STREAM_COLOR);
 const pipeline = new rs2.Pipeline();
-const profile = pipeline.start();
+const profile = pipeline.start(pipeline.autoConfig);
 
 const depthScale = tryGetDepthScale(profile.getDevice());
 if (depthScale === undefined) {

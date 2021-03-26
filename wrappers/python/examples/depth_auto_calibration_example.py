@@ -53,14 +53,14 @@ def main(argv):
 
             if input == 'c':
                 print("Starting on chip calibration")
-                new_calib, health = calib_dev.run_on_chip_calibration(5000, file_cnt, on_chip_calib_cb)
+                new_calib, health = calib_dev.run_on_chip_calibration(file_cnt, on_chip_calib_cb, 5000)
                 print("Calibration completed")
                 print("health factor = ", health)
 
             if input == 't':
                 print("Starting tare calibration")
                 ground_truth = float(raw_input("Please enter ground truth in mm\n"))
-                new_calib, health = calib_dev.run_tare_calibration(ground_truth, 5000, file_cnt, on_chip_calib_cb)
+                new_calib, health = calib_dev.run_tare_calibration(ground_truth, file_cnt, on_chip_calib_cb, 5000)
                 print("Calibration completed")
                 print("health factor = ", health)
 
@@ -79,10 +79,8 @@ def main(argv):
 
             print("Done\n")
         except Exception as e:
-            pipeline.stop()
             print(e)
         except:
-            pipeline.stop()
             print("A different Error")
 
 

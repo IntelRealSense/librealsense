@@ -1266,6 +1266,7 @@ const char* rs2_option_to_string(rs2_option option)                             
 const char* rs2_camera_info_to_string(rs2_camera_info info)                               { return librealsense::get_string(info);         }
 const char* rs2_timestamp_domain_to_string(rs2_timestamp_domain info)                     { return librealsense::get_string(info);         }
 const char* rs2_notification_category_to_string(rs2_notification_category category)       { return librealsense::get_string(category);     }
+const char* rs2_calib_target_type_to_string(rs2_calib_target_type type)                   { return librealsense::get_string(type);         }
 const char* rs2_sr300_visual_preset_to_string(rs2_sr300_visual_preset preset)             { return librealsense::get_string(preset);       }
 const char* rs2_log_severity_to_string(rs2_log_severity severity)                         { return librealsense::get_string(severity);     }
 const char* rs2_exception_type_to_string(rs2_exception_type type)                         { return librealsense::get_string(type);         }
@@ -2398,6 +2399,26 @@ void rs2_pose_frame_get_pose_data(const rs2_frame* frame, rs2_pose* pose, rs2_er
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, frame, pose)
 
+void rs2_extract_target_dimensions(const rs2_frame* frame_ref, rs2_calib_target_type calib_type, float* target_dims, unsigned int target_dims_size, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(frame_ref);
+    VALIDATE_NOT_NULL(target_dims_size);
+
+    auto vf = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::video_frame);
+    if (vf->get_stream()->get_format() != RS2_FORMAT_Y8)
+        throw std::runtime_error("wrong video frame format");
+
+    std::shared_ptr<target_calculator_interface> target_calculator;
+    if (calib_type == RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES)
+        target_calculator = std::make_shared<rect_gaussian_dots_target_calculator>(vf->get_width(), vf->get_height());
+    else
+        throw std::runtime_error("unsupported calibration target type");
+
+    if (!target_calculator->calculate(vf->get_frame_data(), target_dims, target_dims_size))
+        throw std::runtime_error("Failed to find the four rectangle side sizes on the frame");
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, frame_ref, calib_type, target_dims, target_dims_size)
+
 rs2_time_t rs2_get_time(rs2_error** error) BEGIN_API_CALL
 {
     return environment::get_instance().get_time_service()->get_time();
@@ -2897,9 +2918,7 @@ void rs2_update_firmware_cpp(const rs2_device* device, const void* fw_image, int
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(fw_image);
-
-    if(fw_image_size <= 0)
-        throw std::runtime_error("invlid firmware image size provided to rs2_update_cpp");
+    VALIDATE_FIXED_SIZE(fw_image_size, signed_fw_size); // check if the given FW size matches the expected FW size
 
     auto fwu = VALIDATE_INTERFACE(device->device, librealsense::update_device_interface);
 
@@ -2914,6 +2933,7 @@ void rs2_update_firmware(const rs2_device* device, const void* fw_image, int fw_
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(fw_image);
+    VALIDATE_FIXED_SIZE(fw_image_size, signed_fw_size); // check if the given FW size matches the expected FW size
 
     if (fw_image_size <= 0)
         throw std::runtime_error("invlid firmware image size provided to rs2_update");
@@ -2977,9 +2997,7 @@ void rs2_update_firmware_unsigned_cpp(const rs2_device* device, const void* imag
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(image);
-
-    if (image_size <= 0)
-        throw std::runtime_error("invlid firmware image size provided to rs2_update_firmware_unsigned_cpp");
+    VALIDATE_FIXED_SIZE(image_size, unsigned_fw_size); // check if the given FW size matches the expected FW size
 
     auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
     if (!fwud)
@@ -2998,6 +3016,7 @@ void rs2_update_firmware_unsigned(const rs2_device* device, const void* image, i
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(image);
+    VALIDATE_FIXED_SIZE(image_size, unsigned_fw_size); // check if the given FW size matches the expected FW size
 
     if (image_size <= 0)
         throw std::runtime_error("invlid firmware image size provided to rs2_update_firmware_unsigned");
@@ -3388,6 +3407,4 @@ rs2_raw_data_buffer* rs2_terminal_parse_response(rs2_terminal_parser* terminal_p
     return new rs2_raw_data_buffer{ result };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, terminal_parser, command, response)
-
-
 

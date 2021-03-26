@@ -11,7 +11,7 @@ It walks through the sensor configuration phase and visualizes the algorithm inp
 
 
 ## Expected Output
- ![](https://github.com/Tomertech/librealsense/blob/hdr_demo/examples/hdr/hdr_demo.gif)
+ ![](https://github.com/IntelRealSense/librealsense/blob/master/examples/hdr/hdr_demo.gif)
  
 ## Code Overview 
 

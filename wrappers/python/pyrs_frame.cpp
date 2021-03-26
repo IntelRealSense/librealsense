@@ -165,7 +165,17 @@ void init_frame(py::module &m) {
         .def("get_bits_per_pixel", &rs2::video_frame::get_bits_per_pixel, "Retrieve bits per pixel.")
         .def_property_readonly("bits_per_pixel", &rs2::video_frame::get_bits_per_pixel, "Bits per pixel. Identical to calling get_bits_per_pixel.")
         .def("get_bytes_per_pixel", &rs2::video_frame::get_bytes_per_pixel, "Retrieve bytes per pixel.")
-        .def_property_readonly("bytes_per_pixel", &rs2::video_frame::get_bytes_per_pixel, "Bytes per pixel. Identical to calling get_bytes_per_pixel.");
+        .def_property_readonly("bytes_per_pixel", &rs2::video_frame::get_bytes_per_pixel, "Bytes per pixel. Identical to calling get_bytes_per_pixel.")
+        .def("extract_target_dimensions", [](const rs2::video_frame& self, rs2_calib_target_type target_type)->std::vector<float>
+        {
+            std::vector<float> target_dims;
+            if (target_type == RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES)
+            {
+                target_dims.resize(4);
+                self.extract_target_dimensions(RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES, target_dims.data(), 4);
+            }
+            return target_dims;
+        }, "This will calculate the four target dimenson size(s) in millimeter on the specific target.");
 
     py::class_<rs2::vertex> vertex(m, "vertex"); // No docstring in C++
     vertex.def_readwrite("x", &rs2::vertex::x)

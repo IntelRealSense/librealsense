@@ -82,6 +82,7 @@ namespace librealsense
         virtual const std::vector<stream_id>& get_streams() const = 0;
         virtual const std::vector<rs2_stream>& get_streams_types() const = 0;
         virtual std::string get_name() const = 0;
+        virtual void stop() = 0;
     };
 
     class matcher: public matcher_interface
@@ -99,6 +100,7 @@ namespace librealsense
         virtual std::string get_name() const override;
         bool get_active() const;
         void set_active(const bool active);
+        virtual void stop() override {}
 
     protected:
        std::vector<stream_id> _streams_id;
@@ -134,6 +136,8 @@ namespace librealsense
         std::string frames_to_string(std::vector<librealsense::matcher*> matchers);
         void sync(frame_holder f, const syncronization_environment& env) override;
         std::shared_ptr<matcher> find_matcher(const frame_holder& f);
+        virtual void stop() override;
+
 
     protected:
         virtual void update_next_expected(const frame_holder& f) = 0;
