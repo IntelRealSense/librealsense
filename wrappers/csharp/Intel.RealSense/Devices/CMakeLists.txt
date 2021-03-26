@@ -12,4 +12,5 @@ target_sources(${LRS_DOTNET_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/UpdatableDevice.cs"
         "${CMAKE_CURRENT_LIST_DIR}/UpdateDevice.cs"
         "${CMAKE_CURRENT_LIST_DIR}/FirmwareLogsDevice.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/NetDevice.cs"
 )
