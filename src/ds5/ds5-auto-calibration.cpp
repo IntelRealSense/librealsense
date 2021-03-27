@@ -716,6 +716,11 @@ namespace librealsense
         }
 
         std::shared_ptr<ds5_advanced_mode_base> preset_recover;
+        if (apply_preset)
+        {
+            preset_recover = change_preset();
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        }
 
         if (depth > 0)
         {
@@ -730,12 +735,6 @@ namespace librealsense
             {
                 LOG_INFO("run_tare_calibration with parameters: speed = " << speed << " average_step_count = " << average_step_count << " step_count = " << step_count << " accuracy = " << accuracy << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
                 check_tare_params(speed, scan_parameter, data_sampling, average_step_count, step_count, accuracy);
-
-                if (apply_preset)
-                {
-                    preset_recover = change_preset();
-                    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-                }
 
                 auto param2 = (int)ground_truth_mm * 100;
 
