@@ -46,9 +46,13 @@ if(WIN32)
         PRIVATE ${CMAKE_BINARY_DIR}/libjpeg-turbo/lib/turbojpeg-static.lib
     )
 else()
+    set(LJ-T_DIR "lib")
+    if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "8")
+        set(LJ-T_DIR "lib64")
+    endif()
     target_link_libraries(${PROJECT_NAME}
         PRIVATE ${DEPENDENCIES}
-        PRIVATE ${CMAKE_BINARY_DIR}/libjpeg-turbo/lib/libturbojpeg.a
+        PRIVATE ${CMAKE_BINARY_DIR}/libjpeg-turbo/${LJ-T_DIR}/libturbojpeg.a
     )
 endif()
 
