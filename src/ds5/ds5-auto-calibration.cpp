@@ -320,6 +320,8 @@ namespace librealsense
             }
         }
 
+        std::shared_ptr<ds5_advanced_mode_base> preset_recover;
+
         std::vector<uint8_t> res;
         if (calib_type == 0)
         {
@@ -338,7 +340,6 @@ namespace librealsense
             if (interactive_scan_v3)
                 p4 |= (1 << 9);
 
-            std::shared_ptr<ds5_advanced_mode_base> preset_recover;
             if (speed == speed_white_wall && apply_preset)
             {
                 preset_recover = change_preset();
@@ -456,7 +457,6 @@ namespace librealsense
             if (interactive_scan_v3)
                 p4 |= (1 << 9);
 
-            std::shared_ptr<ds5_advanced_mode_base> preset_recover;
             if (speed == speed_white_wall && apply_preset)
             {
                 preset_recover = change_preset();
@@ -574,7 +574,6 @@ namespace librealsense
             if (interactive_scan_v3)
                 p4 |= (1 << 9);
 
-            std::shared_ptr<ds5_advanced_mode_base> preset_recover;
             if (speed == speed_white_wall && apply_preset)
             {
                 preset_recover = change_preset();
@@ -716,6 +715,8 @@ namespace librealsense
             try_fetch(jsn, "depth", &depth);
         }
 
+        std::shared_ptr<ds5_advanced_mode_base> preset_recover;
+
         if (depth > 0)
         {
             LOG_INFO("run_tare_calibration interactive control with parameters: depth = " << depth );
@@ -730,9 +731,11 @@ namespace librealsense
                 LOG_INFO("run_tare_calibration with parameters: speed = " << speed << " average_step_count = " << average_step_count << " step_count = " << step_count << " accuracy = " << accuracy << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
                 check_tare_params(speed, scan_parameter, data_sampling, average_step_count, step_count, accuracy);
 
-                std::shared_ptr<ds5_advanced_mode_base> preset_recover;
                 if (apply_preset)
+                {
                     preset_recover = change_preset();
+                    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                }
 
                 auto param2 = (int)ground_truth_mm * 100;
 
