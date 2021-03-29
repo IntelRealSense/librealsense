@@ -863,33 +863,15 @@ void rect_gaussian_dots_target_calculator::refine_corners()
 
 bool rect_gaussian_dots_target_calculator::validate_corners(const uint8_t* img)
 {
-    uint8_t peaks[4] = { 0 };
-    int idx = 0;
-    int x = 0;
-    int y = 0;
-    for (int i = 0; i < 4; ++i)
-    {
-        y = static_cast<int>(_corners[i].y + 0.5f);
-        x = static_cast<int>(_corners[i].x + 0.5f);
-        idx = y * _width + x;
-        peaks[i] = img[idx];
-    }
-
-    static const int peak_diff_thresh = 12;
     bool ok = true;
-    for (int j = 0; j < 4; ++j)
-    {
-        for (int i = 0; i < 4; ++i)
-        {
-            if (std::abs(peaks[i] - peaks[j]) > peak_diff_thresh)
-            {
-                ok = false;
-                break;
-            }
 
-            if (!ok)
-                break;
-        }
+    static const int pos_diff_threshold = 4;
+    if (abs(_corners[0].x - _corners[2].x) > pos_diff_threshold ||
+        abs(_corners[1].x - _corners[3].x) > pos_diff_threshold ||
+        abs(_corners[0].y - _corners[1].y) > pos_diff_threshold ||
+        abs(_corners[2].y - _corners[3].y) > pos_diff_threshold)
+    {
+        ok = false;
     }
 
     return ok;
