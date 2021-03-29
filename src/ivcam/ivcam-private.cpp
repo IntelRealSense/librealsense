@@ -13,11 +13,12 @@ namespace librealsense
         {
             for (auto it = devices.begin(); it != devices.end(); ++it)
             {
-                if (it->unique_id == info.unique_id)
+                auto pid = it->pid;
+                if (it->unique_id == info.unique_id || pid == 0x7089)
                 {
 
                     result = *it;
-                    if(result.mi == 4)
+                    if(result.mi == 4 )
                     {
                         devices.erase(it);
                         return true;

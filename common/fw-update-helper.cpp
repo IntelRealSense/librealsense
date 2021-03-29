@@ -242,7 +242,7 @@ namespace rs2
 
                 if (!check_for([this, serial, &dfu]() {
                     auto devs = _ctx.query_devices();
-
+                    auto val = devs.size();
                     for (uint32_t j = 0; j < devs.size(); j++)
                     {
                         try
