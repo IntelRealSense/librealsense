@@ -48,7 +48,7 @@ class Device:
         self._product_line = None
         if dev.supports( rs.camera_info.product_line ):
             self._product_line = dev.get_info( rs.camera_info.product_line )
-        self._port = _get_port_by_dev( dev )
+        self._port = acroname and _get_port_by_dev( dev )
         self._removed = False
 
     @property
@@ -136,7 +136,7 @@ def _device_change_callback( info ):
 
 def all():
     """
-    :return: A list of all device serial-numbers at the time of query()
+    :return: A set of all device serial-numbers at the time of query()
     """
     global _device_by_sn
     return _device_by_sn.keys()
@@ -144,36 +144,28 @@ def all():
 
 def enabled():
     """
-    :return: A list of all device serial-numbers that are currently enabled
+    :return: A set of all device serial-numbers that are currently enabled
     """
     global _device_by_sn
-    return set( [device.serial_number for device in _device_by_sn.values() if device.enabled] )
+    return { device.serial_number for device in _device_by_sn.values() if device.enabled }
 
 
 def by_product_line( product_line ):
     """
     :param product_line: The product line we're interested in, as a string ("L500", etc.)
-    :return: A list of device serial-numbers
+    :return: A set of device serial-numbers
     """
-    sns = set()
     global _device_by_sn
-    for device in _device_by_sn.values():
-        if device.product_line == product_line:
-            sns.add( device.serial_number )
-    return sns
+    return { device.serial_number for device in _device_by_sn.values() if device.product_line == product_line }
 
 
 def by_name( name ):
     """
     :param name: Part of the product name to search for ("L515" would match "Intel RealSense L515")
-    :return: A list of device serial-numbers
+    :return: A set of device serial-numbers
     """
-    sns = set()
     global _device_by_sn
-    for device in _device_by_sn.values():
-        if device.name  and  device.name.find( name ) >= 0:
-            sns.add( device.serial_number )
-    return sns
+    return { device.serial_number for device in _device_by_sn.values() if device.name  and  device.name.find( name ) >= 0 }
 
 
 def by_configuration( config ):
@@ -210,6 +202,8 @@ def by_configuration( config ):
 
 def get( sn ):
     """
+    NOTE: will raise an exception if the SN is unknown!
+
     :param sn: The serial-number of the requested device
     :return: The pyrealsense2.device object with the given SN, or None
     """
@@ -219,9 +213,12 @@ def get( sn ):
 
 def get_port( sn ):
     """
+    NOTE: will raise an exception if the SN is unknown!
+
     :param sn: The serial-number of the requested device
-    :return: The port number (0-7) the device is on
+    :return: The port number (0-7) the device is on, or None if Acroname interface is unavailable
     """
+    global _device_by_sn
     return _device_by_sn.get(sn).port
 
 
@@ -230,6 +227,8 @@ def enable_only( serial_numbers, recycle = False, timeout = 5 ):
     Enable only the devices corresponding to the given serial-numbers. This can work either
     with or without Acroname: without, the devices will simply be HW-reset, but other devices
     will still be present.
+
+    NOTE: will raise an exception if any SN is unknown!
 
     :param serial_numbers: A collection of serial-numbers to enable - all others' ports are
                            disabled and will no longer be usable!
@@ -267,6 +266,7 @@ def enable_only( serial_numbers, recycle = False, timeout = 5 ):
 
 def enable_all():
     """
+    Enables all ports on an Acroname -- without an Acroname, this does nothing!
     """
     if acroname:
         acroname.enable_ports()
@@ -334,6 +334,8 @@ def hw_reset( serial_numbers, timeout = 5 ):
     reset). The devices are sent a HW-reset command and then we'll wait until they come back
     online.
 
+    NOTE: will raise an exception if any SN is unknown!
+
     :param serial_numbers: A collection of serial-numbers to reset
     :param timeout: Maximum # of seconds to wait for the devices to come back online
     :return: True if all devices have come back online before timeout
@@ -362,7 +364,7 @@ if 'windows' in platform.system().lower():
         # u'\\\\?\\usb#vid_8086&pid_0b07&mi_00#6&8bfcab3&0&0000#{e5323777-f976-4f5b-9b55-b94699c46e44}\\global'
         #
         import re
-        re_result = re.match( r'.*\\(.*)#vid_(.*)&pid_(.*)&mi_(.*)#(.*)#', usb_location )
+        re_result = re.match( r'.*\\(.*)#vid_(.*)&pid_(.*)(?:&mi_(.*))?#(.*)#', usb_location, flags = re.IGNORECASE )
         dev_type = re_result.group(1)
         vid = re_result.group(2)
         pid = re_result.group(3)
@@ -370,10 +372,20 @@ if 'windows' in platform.system().lower():
         unique_identifier = re_result.group(5)
         #
         import winreg
-        registry_path = "SYSTEM\CurrentControlSet\Enum\{}\VID_{}&PID_{}&MI_{}\{}".format(
-            dev_type, vid, pid, mi, unique_identifier
-            )
-        reg_key = winreg.OpenKey( winreg.HKEY_LOCAL_MACHINE, registry_path )
+        if mi:
+            registry_path = "SYSTEM\CurrentControlSet\Enum\{}\VID_{}&PID_{}&MI_{}\{}".format(
+                dev_type, vid, pid, mi, unique_identifier
+                )
+        else:
+            registry_path = "SYSTEM\CurrentControlSet\Enum\{}\VID_{}&PID_{}\{}".format(
+                dev_type, vid, pid, unique_identifier
+                )
+        try:
+            reg_key = winreg.OpenKey( winreg.HKEY_LOCAL_MACHINE, registry_path )
+        except FileNotFoundError:
+            log.e( 'Could not find registry key for port:', registry_path )
+            log.e( '    usb location:', usb_location )
+            return None
         result = winreg.QueryValueEx( reg_key, "LocationInformation" )
         # location example: 0000.0014.0000.016.003.004.003.000.000
         return result[0]

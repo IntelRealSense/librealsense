@@ -3,7 +3,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-import sys, os, subprocess, locale, re, platform, getopt
+import sys, os, subprocess, locale, re, platform, getopt, time
 from abc import ABC, abstractmethod
 
 # Remove Python's default list of places to look for modules!
@@ -31,6 +31,8 @@ def usage():
     print( '        -r, --regex    run all tests that fit the following regular expression' )
     print( '        -s, --stdout   do not redirect stdout to logs' )
     print( '        -t, --tag      run all tests with the following tag' )
+    print( '        --list-tags    print out all available tags. This option will not run any tests')
+    print( '        --list-tests   print out all available tests. This option will not run any tests')
     sys.exit(2)
 
 # get os and directories for future use
@@ -44,13 +46,15 @@ else:
 # Parse command-line:
 try:
     opts,args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
-        longopts = [ 'help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag' ])
+        longopts = [ 'help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags', 'list-tests' ])
 except getopt.GetoptError as err:
     log.e( err )   # something like "option -a not recognized"
     usage()
 regex = None
 to_stdout = False
 tag = None
+list_tags = False
+list_tests = False
 for opt,arg in opts:
     if opt in ('-h','--help'):
         usage()
@@ -64,6 +68,10 @@ for opt,arg in opts:
         to_stdout = True
     elif opt in ('-t', '--tag'):
         tag = arg
+    elif opt == '--list-tags':
+        list_tags = True
+    elif opt == '--list-tests':
+        list_tests = True
 
 if len(args) > 1:
     usage()
@@ -110,6 +118,9 @@ if pyrs:
     # We need to add the directory not the file itself
     pyrs_path = os.path.dirname(pyrs_path)
     log.d( 'found pyrealsense pyd in:', pyrs_path )
+    if not target:
+        target = pyrs_path
+        log.d( 'assuming executable path same as pyd path' )
 
 # Figure out which sys.path we want the tests to see, assuming we have Python tests
 #     PYTHONPATH is what Python will ADD to sys.path for the child processes
@@ -121,22 +132,37 @@ os.environ["PYTHONPATH"] = current_dir + os.sep + "py"
 if pyrs:
     os.environ["PYTHONPATH"] += os.pathsep + pyrs_path
 
-def subprocess_run(cmd, stdout = None):
+def subprocess_run(cmd, stdout = None, timeout = 200, append = False):
     """
-    wrapper function for subprocess.run
+    Wrapper function for subprocess.run.
+    If the child process times out or ends with a non-zero exit status an exception is raised!
+    
+    :param cmd: the command and argument for the child process, as a list
+    :param stdout: path of file to direct the output of the process to (None to disable)
+    :param timeout: number of seconds to give the process before forcefully ending it (None to disable)
+    :param append: if True and stdout is not None, the log of the test will be appended to the file instead of
+                   overwriting it
+    :return: the output written by the child, if stdout is None -- otherwise N/A
     """
     log.d( 'running:', cmd )
     handle = None
+    start_time = time.time()
     try:
         log.debug_indent()
         if stdout  and  stdout != subprocess.PIPE:
-            handle = open( stdout, "w" )
+            if append:
+                handle = open(stdout, "a" )
+                handle.write("\n---------------------------------------------------------------------------------\n\n")
+                handle.flush()
+            else:
+                handle = open( stdout, "w" )
             stdout = handle
         rv = subprocess.run( cmd,
                              stdout = stdout,
                              stderr = subprocess.STDOUT,
                              universal_newlines = True,
-                             check = True)
+                             timeout = timeout,
+                             check = True )
         result = rv.stdout
         if not result:
             result = []
@@ -147,39 +173,59 @@ def subprocess_run(cmd, stdout = None):
         if handle:
             handle.close()
         log.debug_unindent()
+        run_time = time.time() - start_time
+        log.d("test took", run_time, "seconds")
 
-def check_log_for_fails( path_to_log, testname, exe ):
+
+def configuration_str( configuration, prefix = '', suffix = '' ):
+    """ Return a string repr (with a prefix and/or suffix) of the configuration or '' if it's None """
+    if configuration is None:
+        return ''
+    return prefix + '[' + ' '.join( configuration ) + ']' + suffix
+
+
+def check_log_for_fails( path_to_log, testname, configuration = None ):
     # Normal logs are expected to have in last line:
     #     "All tests passed (11 assertions in 1 test case)"
     # Tests that have failures, however, will show:
     #     "test cases: 1 | 1 failed
     #      assertions: 9 | 6 passed | 3 failed"
+    # We make sure we look at the log written by the last run of the test by ignoring anything before the last
+    # line with "----...---" that separate between 2 separate runs of he test
     if path_to_log is None:
         return False
-    for ctx in file.grep( r'^test cases:\s*(\d+) \|\s*(\d+) (passed|failed)', path_to_log ):
+    results = None
+    for ctx in file.grep( r'^test cases:\s*(\d+) \|\s*(\d+) (passed|failed)|^-+$', path_to_log ):
         m = ctx['match']
-        total = int(m.group(1))
-        passed = int(m.group(2))
-        if m.group(3) == 'failed':
-            # "test cases: 1 | 1 failed"
-            passed = total - passed
-        if passed < total:
-            if total == 1  or  passed == 0:
-                desc = 'failed'
-            else:
-                desc = str(total - passed) + ' of ' + str(total) + ' failed'
+        if m.string == "---------------------------------------------------------------------------------":
+            results = None
+        else:
+            results = m
 
-            if log.is_verbose_on():
-                log.e( log.red + testname + log.reset + ': ' + desc )
-                log.i( 'Executable:', exe )
-                log.i( 'Log: >>>' )
-                log.out()
-                file.cat( path_to_log )
-                log.out( '<<<' )
-            else:
-                log.e( log.red + testname + log.reset + ': ' + desc + '; see ' + path_to_log )
-            return True
+    if not results:
         return False
+
+    total = int(results.group(1))
+    passed = int(results.group(2))
+    if results.group(3) == 'failed':
+        # "test cases: 1 | 1 failed"
+        passed = total - passed
+    if passed < total:
+        if total == 1  or  passed == 0:
+            desc = 'failed'
+        else:
+            desc = str(total - passed) + ' of ' + str(total) + ' failed'
+
+        if log.is_verbose_on():
+            log.e( log.red + testname + log.reset + ': ' + configuration_str( configuration, suffix = ' ' ) + desc )
+            log.i( 'Log: >>>' )
+            log.out()
+            file.cat( path_to_log )
+            log.out( '<<<' )
+        else:
+            log.e( log.red + testname + log.reset + ': ' + configuration_str( configuration, suffix = ' ' ) + desc + '; see ' + path_to_log )
+        return True
+    return False
 
 
 class TestConfig(ABC):  # Abstract Base Class
@@ -190,27 +236,42 @@ class TestConfig(ABC):  # Abstract Base Class
         self._configurations = list()
         self._priority = 1000
         self._tags = set()
+        self._flags = set()
+        self._timeout = 200
 
     def debug_dump(self):
         if self._priority != 1000:
             log.d( 'priority:', self._priority )
+        if self._timeout != 200:
+            log.d( 'timeout:', self._timeout)
         if self._tags:
             log.d( 'tags:', self._tags )
+        if self._flags:
+            log.d( 'flags:', self._flags )
         if len(self._configurations) > 1:
             log.d( len( self._configurations ), 'configurations' )
             # don't show them... they are output separately
 
     @property
-    def configurations(self):
+    def configurations( self ):
         return self._configurations
 
     @property
-    def priority(self):
+    def priority( self ):
         return self._priority
 
     @property
-    def tags(self):
+    def timeout( self ):
+        return self._timeout
+
+    @property
+    def tags( self ):
         return self._tags
+
+    @property
+    def flags( self ):
+        return self._flags
+
 
 class TestConfigFromText(TestConfig):
     """
@@ -248,8 +309,15 @@ class TestConfigFromText(TestConfig):
                     self._priority = int( params[0] )
                 else:
                     log.e( source + '+' + str(context['index']) + ': priority directive with invalid parameters:', params )
+            elif directive == 'timeout':
+                if len(params) == 1 and params[0].isdigit():
+                    self._timeout = int( params[0] )
+                else:
+                    log.e( source + '+' + str(context['index']) + ': timeout directive with invalid parameters:', params )
             elif directive == 'tag':
                 self._tags.update(params)
+            elif directive == 'flag':
+                self._flags.update( params )
             else:
                 log.e( source + '+' + str(context['index']) + ': invalid directive "' + directive + '"; ignoring' )
 
@@ -262,22 +330,27 @@ class Test(ABC):  # Abstract Base Class
         #log.d( 'found', testname )
         self._name = testname
         self._config = None
+        self._ran = False
 
     @abstractmethod
-    def run_test(self):
+    def run_test( self, configuration = None, log_path = None ):
         pass
 
-    def debug_dump(self):
+    def debug_dump( self ):
         if self._config:
             self._config.debug_dump()
 
     @property
-    def config(self):
+    def config( self ):
         return self._config
 
     @property
-    def name(self):
+    def name( self ):
         return self._name
+
+    @property
+    def ran( self ):
+        return self._ran
 
     def get_log( self ):
         global to_stdout
@@ -287,7 +360,7 @@ class Test(ABC):  # Abstract Base Class
             path = logdir + os.sep + self.name + ".log"
         return path
 
-    def is_live(self):
+    def is_live( self ):
         """
         Returns True if the test configurations specify devices (test has a 'device' directive)
         """
@@ -323,22 +396,18 @@ class PyTest(Test):
         if sys.flags.verbose:
             cmd += ["-v"]
         cmd += [self.path_to_script]
-        if log.is_debug_on():
-            cmd += ['--debug']
-        if log.is_color_on():
-            cmd += ['--color']
+        if 'custom-args' not in self.config.flags:
+            if log.is_debug_on():
+                cmd += ['--debug']
+            if log.is_color_on():
+                cmd += ['--color']
         return cmd
 
-    def run_test( self ):
-        log_path = self.get_log()
+    def run_test( self, configuration = None, log_path = None ):
         try:
-            subprocess_run( self.command, stdout=log_path )
-        except FileNotFoundError:
-            log.e( log.red + self.name + log.reset + ': executable not found! (' + self.path_to_script + ')' )
-        except subprocess.CalledProcessError as cpe:
-            if not check_log_for_fails(log_path, self.name, self.path_to_script):
-                # An unexpected error occurred
-                log.e( log.red + self.name + log.reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')')
+            subprocess_run( self.command, stdout=log_path, append=self.ran, timeout=self.config.timeout )
+        finally:
+            self._ran = True
 
 
 class ExeTest(Test):
@@ -386,18 +455,23 @@ class ExeTest(Test):
 
     @property
     def command(self):
-        return [self.exe]
+        cmd = [self.exe]
+        if 'custom-args' not in self.config.flags:
+            # Assume we're a Catch2 exe, so:
+            #if sys.flags.verbose:
+            #    cmd += 
+            if log.is_debug_on():
+                cmd += ['-d', 'yes']  # show durations for each test-case
+                #cmd += ['--success']  # show successful assertions in output
+            #if log.is_color_on():
+            #    cmd += ['--use-colour', 'yes']
+        return cmd
 
-    def run_test( self ):
-        log_path = self.get_log()
+    def run_test( self, configuration = None, log_path = None ):
         try:
-            subprocess_run( self.command, stdout=log_path )
-        except FileNotFoundError:
-            log.e( log.red + self.name + log.reset + ': executable not found! (' + self.exe + ')')
-        except subprocess.CalledProcessError as cpe:
-            if not check_log_for_fails( log_path, self.name, self.exe ):
-                # An unexpected error occurred
-                log.e( log.red + self.name + log.reset + ': exited with non-zero value! (' + str(cpe.returncode) + ')' )
+            subprocess_run( self.command, stdout=log_path, append=self.ran, timeout=self.config.timeout )
+        finally:
+            self._ran = True
 
 
 def get_tests():
@@ -447,6 +521,7 @@ def get_tests():
 
         yield PyTest(testname, py_test)
 
+
 def prioritize_tests( tests ):
     return sorted(tests, key= lambda t: t.config.priority)
 
@@ -476,12 +551,21 @@ log.i( 'Logs in:', logdir )
 def test_wrapper( test, configuration = None ):
     global n_tests
     n_tests += 1
+    #
     if not log.is_debug_on()  or  log.is_color_on():
-        if configuration:
-            log.progress( '[' + ' '.join( configuration ) + ']', test.name, '...' )
-        else:
-            log.progress( test.name, '...' )
-    test.run_test()
+        log.progress( configuration_str( configuration, suffix = ' ' ) + test.name, '...' )
+    #
+    log_path = test.get_log()
+    try:
+        test.run_test( configuration = configuration, log_path = log_path )
+    except FileNotFoundError:
+        log.e( log.red + test.name + log.reset + ':', str(e) + configuration_str( configuration, prefix = ' ' ) )
+    except subprocess.TimeoutExpired:
+        log.e(log.red + test.name + log.reset + ':', configuration_str(configuration, suffix=' ') + 'timed out')
+    except subprocess.CalledProcessError as cpe:
+        if not check_log_for_fails( log_path, test.name, configuration ):
+            # An unexpected error occurred
+            log.e( log.red + test.name + log.reset + ':', configuration_str( configuration, suffix = ' ' ) + 'exited with non-zero value (' + str(cpe.returncode) + ')' )
 
 
 # Run all tests
@@ -494,6 +578,8 @@ devices.query()
 skip_live_tests = len(devices.all()) == 0  and  not devices.acroname
 #
 log.reset_errors()
+tags = set()
+tests = []
 for test in prioritize_tests( get_tests() ):
     #
     log.d( 'found', test.name, '...' )
@@ -502,9 +588,15 @@ for test in prioritize_tests( get_tests() ):
         test.debug_dump()
         #
         if tag and tag not in test.config.tags:
-            log.d( 'does not fit --tag:', test.tags )
+            log.d( 'does not fit --tag:', test.config.tags )
             continue
         #
+        tags.update( test.config.tags )
+        #
+        tests.append( test.name )
+        #
+        if list_tags or list_tests:
+            continue
         if not test.is_live():
             test_wrapper( test )
             continue
@@ -528,17 +620,30 @@ for test in prioritize_tests( get_tests() ):
     finally:
         log.debug_unindent()
 
+
 log.progress()
 #
 if not n_tests:
     log.e( 'No unit-tests found!' )
     sys.exit(1)
 #
-n_errors = log.n_errors()
-if n_errors:
-    log.out( log.red + str(n_errors) + log.reset, 'of', n_tests, 'test(s)', log.red + 'failed!' + log.reset + log.clear_eos )
-    sys.exit(1)
+if list_tags or list_tests:
+    if list_tags:
+        print( "Available tags:" )
+        for t in sorted( list( tags )):
+            print( t )
+    #
+    if list_tests:
+        print( "Available tests:" )
+        for t in sorted( tests ):
+            print( t )
 #
-log.out( str(n_tests) + ' unit-test(s) completed successfully' + log.clear_eos )
+else:
+    n_errors = log.n_errors()
+    if n_errors:
+        log.out( log.red + str(n_errors) + log.reset, 'of', n_tests, 'test(s)', log.red + 'failed!' + log.reset + log.clear_eos )
+        sys.exit(1)
+    #
+    log.out( str(n_tests) + ' unit-test(s) completed successfully' + log.clear_eos )
 #
 sys.exit(0)

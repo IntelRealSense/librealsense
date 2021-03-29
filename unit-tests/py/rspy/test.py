@@ -73,10 +73,12 @@ def find_first_device_or_exit():
     if not c.devices.size():  # if no device is connected we skip the test
         print("No device found, skipping test")
         sys.exit( 0 )
-    return c.devices[0]
+    dev = c.devices[0]
+    log.d( 'found', dev )
+    return dev
 
 
-def find_devices_by_product_line_or_exit(product_line):
+def find_devices_by_product_line_or_exit( product_line ):
     """
     :param product_line: The product line of the wanted devices
     :return: A list of devices of specific product line that was found, if no device is found the test is skipped.
@@ -89,6 +91,7 @@ def find_devices_by_product_line_or_exit(product_line):
     if devices_list.size() == 0:
         print( "No device of the", product_line, "product line was found; skipping test" )
         sys.exit( 0 )
+    log.d( 'found', devices_list.size(), product_line, 'devices:', [dev for dev in devices_list] )
     return devices_list
 
 
@@ -339,9 +342,8 @@ def fail():
     Function for manually failing a test in case you want a specific test that does not fit any check function
     """
     check_test_in_progress()
-    global n_failed_tests, test_failed
+    global test_failed
     if not test_failed:
-        n_failed_tests += 1
         test_failed = True
 
 

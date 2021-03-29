@@ -303,8 +303,8 @@ void grid_xy(
     {
         for (size_t j = 1; j <= width; j++)
         {
-            gridx.push_back(j);
-            gridy.push_back(i);
+            gridx.push_back( double( j ) );
+            gridy.push_back( double( i ) );
         }
     }
 }

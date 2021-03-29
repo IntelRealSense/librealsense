@@ -4,6 +4,8 @@
 //#cmake:add-file ../../../src/algo/depth-to-rgb-calibration/*.cpp
 //#cmake:add-file ../../../src/algo/thermal-loop/*.cpp
 
+//#test:flag custom-args    # disable passing in of catch2 arguments
+
 // We have our own main
 #define NO_CATCH_CONFIG_MAIN
 #define CATCH_CONFIG_RUNNER

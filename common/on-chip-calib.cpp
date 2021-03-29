@@ -49,11 +49,12 @@ namespace rs2
     }
 
     // Wait for next depth frame and return it
-    rs2::depth_frame on_chip_calib_manager::fetch_depth_frame(invoker invoke)
+    rs2::depth_frame on_chip_calib_manager::fetch_depth_frame(invoker invoke, int timeout_ms)
     {
         auto profiles = _sub->get_selected_profiles();
         bool frame_arrived = false;
         rs2::depth_frame res = rs2::frame{};
+        auto start_time = std::chrono::high_resolution_clock::now();
         while (!frame_arrived)
         {
             for (auto&& stream : _viewer.streams)
@@ -62,6 +63,9 @@ namespace rs2
                     stream.second.original_profile) != profiles.end())
                 {
                     auto now = std::chrono::high_resolution_clock::now();
+                    if (now - start_time > std::chrono::milliseconds(timeout_ms))
+                        throw std::runtime_error(to_string() << "Failed to fetch depth frame within " << timeout_ms << "ms");
+
                     if (now - stream.second.last_frame < std::chrono::milliseconds(100))
                     {
                         if (auto f = stream.second.texture->get_last_frame(false).as<rs2::depth_frame>())
@@ -93,8 +97,8 @@ namespace rs2
                         break;
                     }
                 }
-
-                _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
+                if (_sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                    _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
             }
             else
             {
@@ -347,6 +351,48 @@ namespace rs2
         config_file::instance().set(id.c_str(), (long long)rawtime);
     }
 
+    void on_chip_calib_manager::fill_missing_data(uint16_t data[256], int size)
+    {
+        int counter = 0;
+        int start = 0;
+        while (data[start++] == 0)
+            ++counter;
+
+        if (start + 2 > size)
+            throw std::runtime_error(to_string() << "There is no enought valid data in the array!");
+
+        for (int i = 0; i < counter; ++i)
+            data[i] = data[counter];
+
+        start = 0;
+        int end = 0;
+        float tmp = 0;
+        for (int i = 0; i < size; ++i)
+        {
+            if (data[i] == 0)
+                start = i;
+
+            if (start != 0 && data[i] != 0)
+                end = i;
+
+            if (start != 0 && end != 0)
+            {
+                tmp = static_cast<float>(data[end] - data[start - 1]);
+                tmp /= end - start + 1;
+                for (int j = start; j < end; ++j)
+                    data[j] = static_cast<uint16_t>(tmp * (j - start + 1) + data[start - 1] + 0.5f);
+                start = 0;
+                end = 0;
+            }
+        }
+
+        if (start != 0 && end == 0)
+        {
+            for (int i = start; i < size; ++i)
+                data[i] = data[start - 1];
+        }
+    }
+
     void on_chip_calib_manager::calibrate()
     {
         int occ_timeout_ms = 9000;
@@ -387,9 +433,23 @@ namespace rs2
         }
 
         std::stringstream ss;
-        if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
+        if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB)
+        {
+            ss << "{\n \"calib type\":" << 0 <<
+                  ",\n \"host assistance\":" << host_assistance <<
+                  ",\n \"speed\":" << speed <<
+                  ",\n \"average step count\":" << average_step_count <<
+                  ",\n \"scan parameter\":" << (intrinsic_scan ? 0 : 1) <<
+                  ",\n \"step count\":" << step_count <<
+                  ",\n \"apply preset\":" << (apply_preset ? 1 : 0) <<
+                  ",\n \"accuracy\":" << accuracy <<
+                  ",\n \"scan only\":" << (host_assistance ? 1 : 0) <<
+                  ",\n \"interactive scan\":" << 0 << "}";
+        }
+        else if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
         {
             ss << "{\n \"calib type\":" << 1 <<
+                  ",\n \"host assistance\":" << host_assistance <<
                   ",\n \"fl step count\":" << fl_step_count <<
                   ",\n \"fy scan range\":" << fy_scan_range <<
                   ",\n \"keep new value after sucessful scan\":" << keep_new_value_after_sucessful_scan <<
@@ -397,21 +457,14 @@ namespace rs2
                   ",\n \"adjust both sides\":" << adjust_both_sides <<  
                   ",\n \"fl scan location\":" << fl_scan_location <<
                   ",\n \"fy scan direction\":" << fy_scan_direction <<
-                  ",\n \"white wall mode\":" << white_wall_mode << "}";
-        }
-        else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB)
-        {
-            ss << "{\n \"calib type\":" << 0 <<
-                  ",\n \"speed\":" << speed <<
-                  ",\n \"average step count\":" << average_step_count <<
-                  ",\n \"scan parameter\":" << (intrinsic_scan ? 0 : 1) <<
-                  ",\n \"step count\":" << step_count <<
-                  ",\n \"apply preset\":" << (apply_preset ? 1 : 0) <<
-                  ",\n \"accuracy\":" << accuracy << "}";
+                  ",\n \"white wall mode\":" << white_wall_mode <<
+                  ",\n \"scan only\":" << (host_assistance ? 1 : 0) <<
+                  ",\n \"interactive scan\":" << 0 << "}";
         }
         else
         {
             ss << "{\n \"calib type\":" << 2 <<
+                  ",\n \"host assistance\":" << host_assistance <<
                   ",\n \"fl step count\":" << fl_step_count <<
                   ",\n \"fy scan range\":" << fy_scan_range <<
                   ",\n \"keep new value after sucessful scan\":" << keep_new_value_after_sucessful_scan <<
@@ -425,15 +478,403 @@ namespace rs2
                   ",\n \"scan parameter\":" << (intrinsic_scan ? 0 : 1) <<
                   ",\n \"step count\":" << step_count <<
                   ",\n \"apply preset\":" << (apply_preset ? 1 : 0) <<
-                  ",\n \"accuracy\":" << accuracy << "}";
+                  ",\n \"accuracy\":" << accuracy <<
+                  ",\n \"scan only\":" << (host_assistance ? 1 : 0) <<
+                  ",\n \"interactive scan\":" << 0 <<
+                  ",\n \"depth\":" << 0 << "}";
         }
         std::string json = ss.str();
 
+        auto invoke = [](std::function<void()>) {};
+        int frame_fetch_timeout_ms = 3000;
+        rs2::depth_frame f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
+        rs2_metadata_type frame_counter = 0;
+        _progress = 0;
+        if (host_assistance) // wait enough frames
+        {
+            frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+            while (frame_counter <= 2)
+            {
+                if (_progress < 7)
+                    _progress += 3;
+
+                f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
+                frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+            }
+
+            _progress = 10;
+        }
         auto calib_dev = _dev.as<auto_calibrated_device>();
         if (action == RS2_CALIB_ACTION_TARE_CALIB)
             _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = int(progress);}, 5000);
         else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
             _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = int(progress);}, occ_timeout_ms);
+
+        // version 3
+        if (host_assistance)
+        {
+            int total_frames = 256;
+            int start_frame_counter = frame_counter;
+
+            int width = f.get_width();
+            int height = f.get_height();
+            int size = width * height;
+
+            int roi_w = width / 5;
+            int roi_h = height / 5;
+            int roi_size = roi_w * roi_h;
+            int roi_fl_size = roi_w * 5;
+
+            int roi_start_w = 2 * roi_w;
+            int roi_start_h = 2 * roi_h;
+
+            int counter = 0;
+            double tmp = 0.0f;
+            uint16_t fill_factor[256] = { 0 };
+
+            int start_timeout_ms = 4000;
+            if (action == RS2_CALIB_ACTION_TARE_CALIB)
+            {
+                auto start_time = std::chrono::high_resolution_clock::now();
+                auto now = start_time;
+                while (frame_counter > start_frame_counter)
+                {
+                    now = std::chrono::high_resolution_clock::now();
+                    if (now - start_time > std::chrono::milliseconds(start_timeout_ms))
+                        throw std::runtime_error("Operation timed-out when starting calibration!");
+
+                    if (_progress < 18)
+                        _progress += 2;
+
+                    f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+                }
+                _progress = 20;
+
+                int depth = 0;
+                total_frames = step_count;
+                int prev_frame_counter = total_frames;
+                while (frame_counter < total_frames)
+                {
+                    if (frame_counter != prev_frame_counter)
+                    {
+                        if (_progress < 80)
+                            _progress += 1;
+
+                        tmp = 0.0;
+                        const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
+                        p += roi_start_h * height + roi_start_w;
+
+                        counter = 0;
+                        for (int j = 0; j < roi_h; ++j)
+                        {
+                            for (int i = 0; i < roi_w; ++i)
+                            {
+                                if (*p)
+                                {
+                                    ++counter;
+                                    tmp += *p;
+                                }
+                                ++p;
+                            }
+                            p += width;
+                        }
+
+                        if (counter)
+                        {
+                            tmp /= counter;
+                            tmp *= 10000;
+
+                            depth = static_cast<int>(tmp + 0.5);
+ 
+                            std::stringstream ss;
+                            ss << "{\n \"depth\":" << depth << "}";
+
+                            std::string json = ss.str();
+                            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {}, 5000);
+                        }
+                    }
+
+                    f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
+                    prev_frame_counter = static_cast<int>(frame_counter);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+                }
+
+                _progress = 80;
+
+                std::stringstream ss;
+                ss << "{\n \"depth\":" << -1 << "}";
+
+                std::string json = ss.str();
+                _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = int(progress); }, 5000);
+                _progress = 100;
+            }
+            else if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
+            {
+                // OCC
+                auto start_time = std::chrono::high_resolution_clock::now();
+                auto now = start_time;
+                while (frame_counter > start_frame_counter)
+                {
+                    now = std::chrono::high_resolution_clock::now();
+                    if (now - start_time > std::chrono::milliseconds(start_timeout_ms))
+                        throw std::runtime_error("Operation timed-out when starting calibration!");
+
+                    if (_progress < 18)
+                        _progress += 2;
+
+                    f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+                }
+                _progress = 20;
+
+                switch (speed)
+                {
+                case 0:
+                    total_frames = 60;
+                    break;
+                case 1:
+                    total_frames = 120;
+                    break;
+                case 2:
+                    total_frames = 256;
+                    break;
+                case 3:
+                    total_frames = 256;
+                    break;
+                case 4:
+                    total_frames = 120;
+                    break;
+                }
+
+                int prev_frame_counter = total_frames;
+                int cur_progress = _progress;
+                while (frame_counter < total_frames)
+                {
+                    if (frame_counter != prev_frame_counter)
+                    {
+                        _progress = cur_progress + static_cast<int>(frame_counter * 25 / total_frames);
+
+                        const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
+                        p += roi_start_h * height + roi_start_w;
+
+                        counter = 0;
+                        for (int j = 0; j < roi_h; ++j)
+                        {
+                            for (int i = 0; i < roi_w; ++i)
+                            {
+                                if (*p)
+                                    ++counter;
+                                ++p;
+                            }
+                            p += width;
+                        }
+
+                        tmp = static_cast<float>(counter);
+                        tmp /= roi_size;
+                        tmp *= 10000;
+                        fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5);
+                    }
+
+                    f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
+                    prev_frame_counter = static_cast<int>(frame_counter);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+                }
+
+                fill_missing_data(fill_factor, total_frames);
+
+                std::stringstream ss;
+                ss << "{\n \"calib type\":" << 2 <<
+                      ",\n \"host assistance\":" << 2 <<
+                      ",\n \"step count v3\":" << total_frames;
+                for (int i = 0; i < total_frames; ++i)
+                    ss << ",\n \"fill factor " << i << "\":" << fill_factor[i];
+                ss << "}";
+                std::string json = ss.str();
+                _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {}, occ_timeout_ms);
+                _progress = 45;
+
+                // OCC-FL
+                start_time = std::chrono::high_resolution_clock::now();
+                now = start_time;
+                while (frame_counter >= total_frames)
+                {
+                    now = std::chrono::high_resolution_clock::now();
+                    if (now - start_time > std::chrono::milliseconds(start_timeout_ms))
+                        throw std::runtime_error("Operation timed-out when starting calibration!");
+
+                    if (_progress < 53)
+                        _progress += 2;
+
+                    f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+                }
+                _progress = 55;
+
+                total_frames = fl_step_count;
+                
+                int from = roi_start_h;
+                if (fl_scan_location == 1)
+                    from += roi_h - 5;
+
+                int to = from + 5;
+
+                memset(fill_factor, 0, 256 * sizeof(uint16_t));
+                prev_frame_counter = total_frames;
+                cur_progress = _progress;
+                while (frame_counter < total_frames)
+                {
+                    if (frame_counter != prev_frame_counter)
+                    {
+                        _progress = cur_progress + static_cast<int>(frame_counter * 25 / total_frames);
+
+                        const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
+                        p += from * height + roi_start_w;
+
+                        counter = 0;
+                        for (int j = from; j < to; ++j)
+                        {
+                            for (int i = 0; i < roi_w; ++i)
+                            {
+                                if (*p)
+                                    ++counter;
+                                ++p;
+                            }
+                            p += width;
+                        }
+
+                        tmp = static_cast<float>(counter);
+                        tmp /= roi_fl_size;
+                        tmp *= 10000;
+                        fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5);
+                    }
+
+                    f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
+                    prev_frame_counter = static_cast<int>(frame_counter);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+                }
+
+                fill_missing_data(fill_factor, total_frames);
+
+                std::stringstream sss;
+                sss << "{\n \"calib type\":" << 2 <<
+                       ",\n \"host assistance\":" << 3 <<
+                       ",\n \"step count v3\":" << total_frames;
+                for (int i = 0; i < total_frames; ++i)
+                    sss << ",\n \"fill factor " << i << "\":" << fill_factor[i];
+                sss << "}";
+
+                _progress = 80;
+                std::string json2 = sss.str();
+                _new_calib = calib_dev.run_on_chip_calibration(json2, &_health, [&](const float progress) {_progress = int(progress); }, occ_timeout_ms);
+                _progress = 100;
+            }
+            else
+            {
+                auto start_time = std::chrono::high_resolution_clock::now();
+                auto now = start_time;
+                while (frame_counter >= start_frame_counter)
+                {
+                    now = std::chrono::high_resolution_clock::now();
+                    if (now - start_time > std::chrono::milliseconds(start_timeout_ms))
+                        throw std::runtime_error("Operation timed-out when starting calibration!");
+
+                    if (_progress < 18)
+                        _progress += 2;
+
+                    f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+                }
+                _progress = 20;
+
+                int from = roi_start_h;
+                int to = roi_start_h + roi_h;
+                int data_size = roi_size;
+                if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
+                {
+                    if (fl_scan_location == 1)
+                        from += roi_h - 5;
+
+                    to = from + 5;
+                    data_size = roi_fl_size;
+                }
+
+                if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB)
+                {
+                    switch (speed)
+                    {
+                    case 0:
+                        total_frames = 60;
+                        break;
+                    case 1:
+                        total_frames = 120;
+                        break;
+                    case 2:
+                        total_frames = 256;
+                        break;
+                    case 3:
+                        total_frames = 256;
+                        break;
+                    case 4:
+                        total_frames = 120;
+                        break;
+                    }
+                }
+                else
+                {
+                    total_frames = fl_step_count;
+                }
+
+                int prev_frame_counter = total_frames;
+                int cur_progress = _progress;
+                while (frame_counter < total_frames)
+                {
+                    if (frame_counter != prev_frame_counter)
+                    {
+                        _progress = cur_progress + static_cast<int>(frame_counter * 60 / total_frames);
+
+                        const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
+                        p += from * height + roi_start_w;
+
+                        counter = 0;
+                        for (int j = from; j < to; ++j)
+                        {
+                            for (int i = 0; i < roi_w; ++i)
+                            {
+                                if (*p)
+                                    ++counter;
+                                ++p;
+                            }
+                            p += width;
+                        }
+
+                        tmp = static_cast<float>(counter);
+                        tmp /= data_size;
+                        tmp *= 10000;
+                        fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5f);
+                    }
+
+                    f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
+                    prev_frame_counter = static_cast<int>(frame_counter);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+                }
+
+                fill_missing_data(fill_factor, total_frames);
+
+                std::stringstream ss;
+                ss << "{\n \"calib type\":" << (action == RS2_CALIB_ACTION_ON_CHIP_CALIB ? 0 : 1) <<
+                      ",\n \"host assistance\":" << 2 <<
+                      ",\n \"step count v3\":" << total_frames;
+                for (int i = 0; i < total_frames; ++i)
+                    ss << ",\n \"fill factor " << i << "\":" << fill_factor[i];
+                ss << "}";
+
+                _progress = 80;
+                std::string json = ss.str();
+                _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = int(progress); }, occ_timeout_ms);
+                _progress = 100;
+            }
+        }
 
         if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
         {
@@ -456,12 +897,16 @@ namespace rs2
     {
         try
         {
-            std::shared_ptr<tare_ground_truth_calculator> gt_calculator;
+            std::shared_ptr<rect_calculator> gt_calculator;
             bool created = false;
 
             int counter = 0;
-            int limit = tare_ground_truth_calculator::_frame_num << 1;
-            int step = 100 / tare_ground_truth_calculator::_frame_num;
+            int limit = rect_calculator::_frame_num << 1;
+            int step = 100 / rect_calculator::_frame_num;
+
+            float rect_sides[4] = { 0 };
+            float target_fw = 0;
+            float target_fh = 0;
 
             int ret = 0;
             rs2::frame f;
@@ -475,13 +920,13 @@ namespace rs2
                         stream_profile profile = f.get_profile();
                         auto vsp = profile.as<video_stream_profile>();
 
-                        gt_calculator = std::make_shared<tare_ground_truth_calculator>(vsp.width(), vsp.height(), vsp.get_intrinsics().fx,
-                            config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f),
-                            config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f));
+                        gt_calculator = std::make_shared<rect_calculator>();
+                        target_fw = vsp.get_intrinsics().fx * config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f);
+                        target_fh = vsp.get_intrinsics().fy * config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f);
                         created = true;
                     }
 
-                    ret = gt_calculator->calculate(reinterpret_cast<const uint8_t*> (f.get_data()), ground_truth);
+                    ret = gt_calculator->calculate(f.get(), rect_sides);
                     if (ret == 0)
                         ++counter;
                     else if (ret == 1)
@@ -489,7 +934,6 @@ namespace rs2
                     else if (ret == 2)
                     {
                         _progress += step;
-                        config_file::instance().set(configurations::viewer::ground_truth_r, ground_truth);
                         break;
                     }
                 }
@@ -497,6 +941,32 @@ namespace rs2
 
             if (ret != 2)
                 fail("Please adjust the camera position \nand make sure the specific target is \nin the middle of the camera image!");
+            else
+            {
+                float gt[4] = { 0 };
+
+                if (rect_sides[0] > 0)
+                    gt[0] = target_fw / rect_sides[0];
+
+                if (rect_sides[1] > 0)
+                    gt[1] = target_fw / rect_sides[1];
+
+                if (rect_sides[2] > 0)
+                    gt[2] = target_fh / rect_sides[2];
+
+                if (rect_sides[3] > 0)
+                    gt[3] = target_fh / rect_sides[3];
+
+                if (gt[0] <= 0.1f || gt[1] <= 0.1f || gt[2] <= 0.1f || gt[3] <= 0.1f)
+                    fail("Bad target rectangle side sizes returned!");
+
+                ground_truth = 0.0;
+                for (int i = 0; i < 4; ++i)
+                    ground_truth += gt[i];
+                ground_truth /= 4.0;
+
+                config_file::instance().set(configurations::viewer::ground_truth_r, ground_truth);
+            }
         }
         catch (const std::runtime_error& error)
         {
@@ -551,7 +1021,10 @@ namespace rs2
         std::this_thread::sleep_for(std::chrono::milliseconds(600));
 
         // Switch into special Auto-Calibration mode
-        try_start_viewer(256, 144, 90, invoke);
+        if (host_assistance && action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
+            try_start_viewer(0, 0, 0, invoke);
+        else
+            try_start_viewer(256, 144, 90, invoke);
 
         if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
             get_ground_truth();
@@ -834,7 +1307,8 @@ namespace rs2
                 {
                     get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB;
                     update_state = update_state_prev;
-                    get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);
+                    if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                        get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);
                 }
 
                 ImGui::SetCursorScreenPos({ float(x + 85), float(y + height - 25) });
@@ -870,7 +1344,8 @@ namespace rs2
             {
                 get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB;
                 update_state = update_state_prev;
-                get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);
+                if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                    get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);          
             }
             else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED)
             {
@@ -1036,13 +1511,21 @@ namespace rs2
 
                 if (ImGui::Button(get_button_name.c_str(), { 42.0f, 20.f }))
                 {
-                    get_manager().laser_status_prev = get_manager()._sub->s->get_option(RS2_OPTION_EMITTER_ENABLED);
+                    if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                        get_manager().laser_status_prev = get_manager()._sub->s->get_option(RS2_OPTION_EMITTER_ENABLED);
+
                     update_state_prev = update_state;
                     update_state = RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH;
                 }
-
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("%s", "Calculate ground truth for the specific target");
+
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 30) });
+                bool assistance = (get_manager().host_assistance != 0);
+                if (ImGui::Checkbox("Host Assistance", &assistance))
+                    get_manager().host_assistance = (assistance ? 1 : 0);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "check = host assitance for statistics data, uncheck = no host assistance");
 
                 std::string button_name = to_string() << "Calibrate" << "##tare" << index;
 
@@ -1087,7 +1570,6 @@ namespace rs2
                     ImGui::PushItemWidth(width - 145.f);
                     ImGui::Combo(id.c_str(), &get_manager().speed_fl, vals_cstr.data(), int(vals.size()));
                     ImGui::PopItemWidth();
-
                 }
                 else
                 {
@@ -1134,6 +1616,13 @@ namespace rs2
                     get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB;
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("%s", "On-chip focal length calibration");
+
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 30) });
+                bool assistance = (get_manager().host_assistance != 0);
+                if (ImGui::Checkbox("Host Assistance", &assistance))
+                    get_manager().host_assistance = (assistance ? 1 : 0);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "check = host assitance for statistics data, uncheck = no host assistance");
 
                 auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
                 ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
@@ -1733,9 +2222,9 @@ namespace rs2
             if (get_manager().allow_calib_keep()) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 190 : 170);
             else return 80;
         }
-        else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 160 : 140);
-        else if (update_state == RS2_CALIB_STATE_TARE_INPUT) return 85;
-        else if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED) return 210;
+        else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 180 : 160);
+        else if (update_state == RS2_CALIB_STATE_TARE_INPUT) return 105;
+        else if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED) return 230;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH) return 110;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED) return 115;
         else if (update_state == RS2_CALIB_STATE_FAILED) return ((get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB) ? (get_manager().retry_times < 3 ? 0 : 80) : 110);
@@ -1783,357 +2272,31 @@ namespace rs2
         pinned = true;
     }
 
-    tare_ground_truth_calculator::tare_ground_truth_calculator(int width, int height, float focal_length, float target_width, float target_height)
-        : _width(width), _height(height), _target_fw(focal_length* target_width), _target_fh(focal_length* target_height)
-    {
-        if (width != 256 || height != 144)
-            throw std::runtime_error(to_string() << "Only 256x144 resolution is supported!");
-
-        _wt = _width - _tsize;
-        _ht = _height - _tsize;
-        _size = _width * _height;
-
-        _hwidth = _width >> 1;
-        _hheight = _height >> 1;
-
-        _imgt.resize(_tsize2);
-        _img.resize(_size);
-        _ncc.resize(_size);
-        memset(_ncc.data(), 0, _size * sizeof(double));
-
-        _buf.resize(40);
-    }
-
-    tare_ground_truth_calculator::~tare_ground_truth_calculator()
-    {
-    }
-
-    int tare_ground_truth_calculator::calculate(const uint8_t* img, float& ground_truth)
-    {
-        std::lock_guard<std::mutex> lock(_mtx);
-
-        normalize(img);
-        calculate_ncc();
-
-        _corners_found = find_corners();
-
-        if (_corners_found)
-        {
-            uint8_t peaks[4] = { 0 };
-            int idx = 0;
-            int x = 0;
-            int y = 0;
-            for (int i = 0; i < 4; ++i)
-            {
-                y = static_cast<int>(_corners[_corners_idx][i].y + 0.5f);
-                x = static_cast<int>(_corners[_corners_idx][i].x + 0.5f);
-                idx = y * _width + x;
-                peaks[i] = img[idx];
-            }
-
-            static const int peak_diff_thresh = 12;
-            bool ok = true;
-            for (int j = 0; j < 4; ++j)
-            {
-                for (int i = 0; i < 4; ++i)
-                {
-                    if (abs(peaks[i] - peaks[j]) > peak_diff_thresh)
-                    {
-                        ok = false;
-                        break;
-                    }
-
-                    if (!ok)
-                        break;
-                }
-            }
-
-            if (!ok)
-                _corners_found = false;
-        }
-
-        return smooth_corner_locations(ground_truth);
-    }
-
-    void tare_ground_truth_calculator::normalize(const uint8_t* img)
-    {
-        uint8_t min_val = 255;
-        uint8_t max_val = 0;
-        const uint8_t* p = img;
-        for (int i = 0; i < _size; ++i)
-        {
-            if (*p < min_val)
-                min_val = *p;
-
-            if (*p > max_val)
-                max_val = *p;
-
-            ++p;
-        }
-
-        if (max_val > min_val)
-        {
-            double factor = 1.0f / (max_val - min_val);
-
-            p = img;
-            double* q = _img.data();
-            for (int i = 0; i < _size; ++i)
-                *q++ = 1.0f - (*p++ - min_val) * factor;
-        }
-    }
-
-    void tare_ground_truth_calculator::calculate_ncc()
-    {
-        double* pncc = _ncc.data() + (_htsize * _width + _htsize);
-        double* pi = _img.data();
-        double* pit = _imgt.data();
-
-        const double* pt = nullptr;
-        const double* qi = nullptr;
-
-        double sum = 0.0f;
-        double mean = 0.0f;
-        double norm = 0.0f;
-
-        double min_val = 2.0;
-        double max_val = -2.0;
-        double tmp = 0.0;
-
-        for (int j = 0; j < _ht; ++j)
-        {
-            for (int i = 0; i < _wt; ++i)
-            {
-                qi = pi;
-                sum = 0.0f;
-                for (int m = 0; m < _tsize; ++m)
-                {
-                    for (int n = 0; n < _tsize; ++n)
-                        sum += *qi++;
-
-                    qi += _wt;
-                }
-
-                mean = sum / _tsize2;
-
-                qi = pi;
-                sum = 0.0f;
-                pit = _imgt.data();
-                for (int m = 0; m < _tsize; ++m)
-                {
-                    for (int n = 0; n < _tsize; ++n)
-                    {
-                        *pit = *qi++ - mean;
-                        sum += *pit * *pit;
-                        ++pit;
-                    }
-                    qi += _wt;
-                }
-
-                norm = sqrt(sum);
-
-                pt = _template.data();
-                pit = _imgt.data();
-                sum = 0.0f;
-                for (int k = 0; k < _tsize2; ++k)
-                    sum += *pit++ * *pt++;
-
-                tmp = sum / norm;
-                if (tmp < min_val)
-                    min_val = tmp;
-
-                if (tmp > max_val)
-                    max_val = tmp;
-
-                *pncc++ = tmp;
-                ++pi;
-            }
-
-            pncc += _tsize;
-            pi += _tsize;
-        }
-
-        if (max_val > min_val)
-        {
-            double factor = 1.0f / (max_val - min_val);
-            double div = 1.0 - _thresh;
-            pncc = _ncc.data();
-            for (int i = 0; i < _size; ++i)
-            {
-                tmp = (*pncc - min_val) * factor;
-                *pncc++ = (tmp < _thresh ? 0 : (tmp - _thresh) / div);
-            }
-        }
-    }
-
-    bool tare_ground_truth_calculator::find_corners()
-    {
-        static const int edge = 20;
-
-        // upper left
-        _pts[0].x = 0;
-        _pts[0].y = 0;
-        double peak = 0.0f;
-        double* p = _ncc.data() + _htsize * _width;
-        for (int j = _htsize; j < _hheight; ++j)
-        {
-            p += _htsize;
-            for (int i = _htsize; i < _hwidth; ++i)
-            {
-                if (*p > peak)
-                {
-                    peak = *p;
-                    _pts[0].x = i;
-                    _pts[0].y = j;
-                }
-                ++p;
-            }
-            p += _hwidth;
-        }
-
-        if (peak < _thresh || _pts[0].x < edge || _pts[0].y < edge)
-            return false;
-
-        // upper right
-        _pts[1].x = 0;
-        _pts[1].y = 0;
-        peak = 0.0f;
-        p = _ncc.data() + _htsize * _width;
-        for (int j = _htsize; j < _hheight; ++j)
-        {
-            p += _hwidth;
-            for (int i = _hwidth; i < _width - _htsize; ++i)
-            {
-                if (*p > peak)
-                {
-                    peak = *p;
-                    _pts[1].x = i;
-                    _pts[1].y = j;
-                }
-                ++p;
-            }
-            p += _htsize;
-        }
-
-        if (peak < _thresh || _pts[1].x + edge > _width || _pts[1].y < edge || _pts[1].x - _pts[0].x < edge)
-            return false;
-
-        // lower left
-        _pts[2].x = 0;
-        _pts[2].y = 0;
-        peak = 0.0f;
-        p = _ncc.data() + _hheight * _width;
-        for (int j = _hheight; j < _height - _htsize; ++j)
-        {
-            p += _htsize;
-            for (int i = _htsize; i < _hwidth; ++i)
-            {
-                if (*p > peak)
-                {
-                    peak = *p;
-                    _pts[2].x = i;
-                    _pts[2].y = j;
-                }
-                ++p;
-            }
-            p += _hwidth;
-        }
-
-        if (peak < _thresh || _pts[2].x < edge || _pts[2].y + edge > _height || _pts[2].y - _pts[1].y < edge)
-            return false;
-
-        // lower right
-        _pts[3].x = 0;
-        _pts[3].y = 0;
-        peak = 0.0f;
-        p = _ncc.data() + _hheight * _width;
-        for (int j = _hheight; j < _height - _htsize; ++j)
-        {
-            p += _hwidth;
-            for (int i = _hwidth; i < _width - _htsize; ++i)
-            {
-                if (*p > peak)
-                {
-                    peak = *p;
-                    _pts[3].x = i;
-                    _pts[3].y = j;
-                }
-                ++p;
-            }
-            p += _htsize;
-        }
-
-        if (peak < _thresh || _pts[3].x + edge > _width || _pts[3].y + edge > _height || _pts[3].x - _pts[2].x < edge || _pts[3].y - _pts[1].y < edge)
-            return false;
-
-        refine_corners();
-        return true;
-    }
-
-    void tare_ground_truth_calculator::refine_corners()
-    {
-        double* f = _buf.data();
-        int hs = _patch_size >> 1;
-
-        // upper left
-        int pos = (_pts[0].y - hs) * _width + _pts[0].x - hs;
-
-        _corners[_corners_idx][0].x = static_cast<double>(_pts[0].x - hs);
-        minimize_x(_ncc.data() + pos, _patch_size, f, _corners[_corners_idx][0].x);
-
-        _corners[_corners_idx][0].y = static_cast<double>(_pts[0].y - hs);
-        minimize_y(_ncc.data() + pos, _patch_size, f, _corners[_corners_idx][0].y);
-
-        // upper right
-        pos = (_pts[1].y - hs) * _width + _pts[1].x - hs;
-
-        _corners[_corners_idx][1].x = static_cast<double>(_pts[1].x - hs);
-        minimize_x(_ncc.data() + pos, _patch_size, f, _corners[_corners_idx][1].x);
-
-        _corners[_corners_idx][1].y = static_cast<double>(_pts[1].y - hs);
-        minimize_y(_ncc.data() + pos, _patch_size, f, _corners[_corners_idx][1].y);
-
-        // lower left
-        pos = (_pts[2].y - hs) * _width + _pts[2].x - hs;
-
-        _corners[_corners_idx][2].x = static_cast<double>(_pts[2].x - hs);
-        minimize_x(_ncc.data() + pos, _patch_size, f, _corners[_corners_idx][2].x);
-
-        _corners[_corners_idx][2].y = static_cast<double>(_pts[2].y - hs);
-        minimize_y(_ncc.data() + pos, _patch_size, f, _corners[_corners_idx][2].y);
-
-        // lower right
-        pos = (_pts[3].y - hs) * _width + _pts[3].x - hs;
-
-        _corners[_corners_idx][3].x = static_cast<double>(_pts[3].x - hs);
-        minimize_x(_ncc.data() + pos, _patch_size, f, _corners[_corners_idx][3].x);
-
-        _corners[_corners_idx][3].y = static_cast<double>(_pts[3].y - hs);
-        minimize_y(_ncc.data() + pos, _patch_size, f, _corners[_corners_idx][3].y);
-    }
-
-    int tare_ground_truth_calculator::smooth_corner_locations(float& ground_truth)
+    int rect_calculator::calculate(const rs2_frame* frame_ref, float rect_sides[4])
     {
         static int reset_counter = 0;
         if (reset_counter > _reset_limit)
         {
             reset_counter = 0;
-            _corners_idx = 0;
-            _corners_num = 0;
+            _rec_idx = 0;
+            _rec_num = 0;
         }
 
         int ret = 0;
-        if (_corners_found)
+        rs2_error* e = nullptr;
+        rs2_extract_target_dimensions(frame_ref, RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES, _rec_sides[_rec_idx], 4, &e);
+        if (e == nullptr)
         {
             ret = 1;
             reset_counter = 0;
-            _corners_idx = ++_corners_idx % _frame_num;
-            ++_corners_num;
+            _rec_idx = (++_rec_idx) % _frame_num;
+            ++_rec_num;
 
-            if (_corners_num == _frame_num)
+            if (_rec_num == _frame_num)
             {
                 ret = 2;
-                calculate_ground_truth(ground_truth);
-                --_corners_num;
+                calculate_rect_sides(rect_sides);
+                --_rec_num;
             }
         }
         else
@@ -2142,150 +2305,18 @@ namespace rs2
         return ret;
     }
 
-    void tare_ground_truth_calculator::calculate_ground_truth(float& ground_truth)
+    void rect_calculator::calculate_rect_sides(float rect_sides[4])
     {
-        // avarage corners
-        point<double> corners_avg[4];
         for (int i = 0; i < 4; ++i)
-        {
-            corners_avg[i].x = _corners[0][i].x;
-            corners_avg[i].y = _corners[0][i].y;
-        }
+            rect_sides[i] = _rec_sides[0][i];
 
         for (int j = 1; j < _frame_num; ++j)
         {
             for (int i = 0; i < 4; ++i)
-            {
-                corners_avg[i].x += _corners[j][i].x;
-                corners_avg[i].y += _corners[j][i].y;
-            }
+                rect_sides[i] += _rec_sides[j][i];
         }
 
         for (int i = 0; i < 4; ++i)
-        {
-            corners_avg[i].x /= _frame_num;
-            corners_avg[i].y /= _frame_num;
-        }
-
-        double rec_sides[4] = { 0 };
-        double lx = corners_avg[1].x - corners_avg[0].x;
-        double ly = corners_avg[1].y - corners_avg[0].y;
-        rec_sides[0] = static_cast<float>(sqrt(lx * lx + ly * ly)); // uppper
-        if (rec_sides[0] > 0)
-            rec_sides[0] = _target_fw / rec_sides[0];
-
-        lx = corners_avg[3].x - corners_avg[2].x;
-        ly = corners_avg[3].y - corners_avg[2].y;
-        rec_sides[1] = static_cast<float>(sqrt(lx * lx + ly * ly)); // lower
-        if (rec_sides[1] > 0)
-            rec_sides[1] = _target_fw / rec_sides[1];
-
-        lx = corners_avg[2].x - corners_avg[0].x;
-        ly = corners_avg[2].y - corners_avg[0].y;
-        rec_sides[2] = static_cast<float>(sqrt(lx * lx + ly * ly)); // left
-        if (rec_sides[2] > 0)
-            rec_sides[2] = _target_fh / rec_sides[2];
-
-        lx = corners_avg[3].x - corners_avg[1].x;
-        ly = corners_avg[3].y - corners_avg[1].y;
-        rec_sides[3] = static_cast<float>(sqrt(lx * lx + ly * ly)); // right
-        if (rec_sides[3] > 0)
-            rec_sides[3] = _target_fh / rec_sides[3];
-
-        ground_truth = 0.f;
-        for (int i = 0; i < 4; ++i)
-            ground_truth += (float)(rec_sides[i]);
-        ground_truth /= 4.f;
-    }
-
-    void tare_ground_truth_calculator::minimize_x(const double* p, int s, double* f, double& x)
-    {
-        int ws = _width - s;
-
-        for (int i = 0; i < s; ++i)
-            f[i] = 0;
-
-        for (int j = 0; j < s; ++j)
-        {
-            for (int i = 0; i < s; ++i)
-                f[i] += *p++;
-            p += ws;
-        }
-
-        x += subpixel_agj(f, s);
-    }
-
-    void tare_ground_truth_calculator::minimize_y(const double* p, int s, double* f, double& y)
-    {
-        int ws = _width - s;
-
-        for (int i = 0; i < s; ++i)
-            f[i] = 0;
-
-        for (int j = 0; j < s; ++j)
-        {
-            for (int i = 0; i < s; ++i)
-                f[j] += *p++;
-            p += ws;
-        }
-
-        y += subpixel_agj(f, s);
-    }
-
-    double tare_ground_truth_calculator::subpixel_agj(double* f, int s)
-    {
-        int mi = 0;
-        double mv = f[mi];
-        for (int i = 1; i < s; ++i)
-        {
-            if (f[i] > mv)
-            {
-                mi = i;
-                mv = f[mi];
-            }
-        }
-
-        double half_mv = 0.5f * mv;
-
-        int x_0 = 0;
-        int x_1 = 0;
-        for (int i = 0; i < s; ++i)
-        {
-            if (f[i] > half_mv)
-            {
-                x_1 = i;
-                break;
-            }
-        }
-
-        double left_mv = 0.0f;
-        if (x_1 > 0)
-        {
-            x_0 = x_1 - 1;
-            left_mv = x_0 + (half_mv - f[x_0]) / (f[x_1] - f[x_0]);
-        }
-        else
-            left_mv = static_cast<double>(0);
-
-        x_0 = s - 1;
-        for (int i = s - 1; i >= 0; --i)
-        {
-            if (f[i] > half_mv)
-            {
-                x_0 = i;
-                break;
-            }
-        }
-
-        double right_mv = 0.0f;
-        if (x_0 == s - 1)
-            right_mv = static_cast<double>(s - 1);
-        else
-        {
-            x_1 = x_0 + 1;
-            right_mv = x_0 + (half_mv - f[x_0]) / (f[x_1] - f[x_0]);
-        }
-
-        return (left_mv + right_mv) / 2;
+            rect_sides[i] /= _frame_num;
     }
 }

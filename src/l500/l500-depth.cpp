@@ -515,27 +515,29 @@ namespace librealsense
                 }
 
                 try {
-                    // endpoint 2 (depth)
-                    command cmdTprocGranEp2(ivcam2::TPROC_USB_GRAN_SET, 2, ep2_usb_trb);
-                    _owner->_hw_monitor->send(cmdTprocGranEp2);
+                    // Keep the USB power on while triggering multiple calls on it.
+                    ivcam2::group_multiple_fw_calls(*this, [&]() {
+                        // endpoint 2 (depth)
+                        command cmdTprocGranEp2(ivcam2::TPROC_USB_GRAN_SET, 2, ep2_usb_trb);
+                        _owner->_hw_monitor->send(cmdTprocGranEp2);
 
-                    command cmdTprocThresholdEp2(ivcam2::TPROC_TRB_THRSLD_SET, 2, 1);
-                    _owner->_hw_monitor->send(cmdTprocThresholdEp2);
+                        command cmdTprocThresholdEp2(ivcam2::TPROC_TRB_THRSLD_SET, 2, 1);
+                        _owner->_hw_monitor->send(cmdTprocThresholdEp2);
 
-                    // endpoint 3 (IR)
-                    command cmdTprocGranEp3(ivcam2::TPROC_USB_GRAN_SET, 3, ep3_usb_trb);
-                    _owner->_hw_monitor->send(cmdTprocGranEp3);
+                        // endpoint 3 (IR)
+                        command cmdTprocGranEp3(ivcam2::TPROC_USB_GRAN_SET, 3, ep3_usb_trb);
+                        _owner->_hw_monitor->send(cmdTprocGranEp3);
 
-                    command cmdTprocThresholdEp3(ivcam2::TPROC_TRB_THRSLD_SET, 3, 1);
-                    _owner->_hw_monitor->send(cmdTprocThresholdEp3);
+                        command cmdTprocThresholdEp3(ivcam2::TPROC_TRB_THRSLD_SET, 3, 1);
+                        _owner->_hw_monitor->send(cmdTprocThresholdEp3);
 
-                    // endpoint 4 (confidence)
-                    command cmdTprocGranEp4(ivcam2::TPROC_USB_GRAN_SET, 4, ep4_usb_trb);
-                    _owner->_hw_monitor->send(cmdTprocGranEp4);
+                        // endpoint 4 (confidence)
+                        command cmdTprocGranEp4(ivcam2::TPROC_USB_GRAN_SET, 4, ep4_usb_trb);
+                        _owner->_hw_monitor->send(cmdTprocGranEp4);
 
-                    command cmdTprocThresholdEp4(ivcam2::TPROC_TRB_THRSLD_SET, 4, 1);
-                    _owner->_hw_monitor->send(cmdTprocThresholdEp4);
-
+                        command cmdTprocThresholdEp4(ivcam2::TPROC_TRB_THRSLD_SET, 4, 1);
+                        _owner->_hw_monitor->send(cmdTprocThresholdEp4);
+                        });
                     LOG_DEBUG("Depth and IR usb tproc granularity and TRB threshold updated.");
                 } catch (...)
                 {
