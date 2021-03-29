@@ -715,13 +715,6 @@ namespace librealsense
             try_fetch(jsn, "depth", &depth);
         }
 
-        std::shared_ptr<ds5_advanced_mode_base> preset_recover;
-        if (apply_preset)
-        {
-            preset_recover = change_preset();
-            std::this_thread::sleep_for(std::chrono::milliseconds(200));
-        }
-
         if (depth > 0)
         {
             LOG_INFO("run_tare_calibration interactive control with parameters: depth = " << depth );
@@ -731,8 +724,18 @@ namespace librealsense
         }
         else
         {
+            std::shared_ptr<ds5_advanced_mode_base> preset_recover;
             if (depth == 0)
             {
+                if (apply_preset)
+                {
+                    if (host_assistance)
+                        change_preset_and_stay();
+                    else
+                        preset_recover = change_preset();
+                    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                }
+
                 LOG_INFO("run_tare_calibration with parameters: speed = " << speed << " average_step_count = " << average_step_count << " step_count = " << step_count << " accuracy = " << accuracy << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
                 check_tare_params(speed, scan_parameter, data_sampling, average_step_count, step_count, accuracy);
 
@@ -770,7 +773,11 @@ namespace librealsense
                     {
                         auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, tare_calib_check_status });
                         if (res.size() < sizeof(DirectSearchCalibrationResult))
+                        {
+                            if (depth < 0)
+                                restore_preset();
                             throw std::runtime_error("Not enough data from CALIB_STATUS!");
+                        }
 
                         result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
                         done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
@@ -796,6 +803,9 @@ namespace librealsense
                 // If we exit due to timeout, report timeout
                 if (!done)
                 {
+                    if (depth < 0)
+                        restore_preset();
+
                     throw std::runtime_error("Operation timed-out!\n"
                         "Calibration state did not converged in time");
                 }
@@ -809,6 +819,9 @@ namespace librealsense
                 }
 
                 res = get_calibration_results();
+
+                if (depth < 0)
+                    restore_preset();
             }
 
             return res;
@@ -841,6 +854,35 @@ namespace librealsense
         });
 
         return recover_preset;
+    }
+
+    void auto_calibrated::change_preset_and_stay()
+    {
+        auto advanced_mode = dynamic_cast<ds5_advanced_mode_base*>(this);
+        if (advanced_mode)
+        {
+            _old_preset = (rs2_rs400_visual_preset)(int)advanced_mode->_preset_opt->query();
+            if (_old_preset == RS2_RS400_VISUAL_PRESET_CUSTOM)
+                _old_preset_values = advanced_mode->get_all();
+            advanced_mode->_preset_opt->set(RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY);
+            _preset_change = true;
+        }
+    }
+
+    void auto_calibrated::restore_preset()
+    {
+        if (_preset_change)
+        {
+            auto advanced_mode = dynamic_cast<ds5_advanced_mode_base*>(this);
+            if (_old_preset == RS2_RS400_VISUAL_PRESET_CUSTOM)
+            {
+                advanced_mode->_preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
+                advanced_mode->set_all(_old_preset_values);
+            }
+            else
+                advanced_mode->_preset_opt->set(static_cast<float>(_old_preset));
+        }
+        _preset_change = false;
     }
 
     void auto_calibrated::check_params(int speed, int scan_parameter, int data_sampling) const
