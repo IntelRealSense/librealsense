@@ -27,12 +27,14 @@ namespace librealsense
 {
     const uint16_t SR300_PID = 0x0aa5;
     const uint16_t SR300v2_PID = 0x0B48;
-    const uint16_t SR306_PID = 0x7089;
+    const uint16_t SR306_PID = 0x0B48;
+    //const uint16_t SR306_PID =  0x0aa3;
     const uint16_t SR300_RECOVERY = 0x0ab3;
 
     const double TIMESTAMP_10NSEC_TO_MSEC = 0.00001;
 
     class sr300_camera;
+    class sr300_depth_camera;
 
     class sr300_timestamp_reader : public frame_timestamp_reader
     {
@@ -158,7 +160,35 @@ namespace librealsense
         rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const override;
     };
 
-    class sr300_info : public device_info
+    class sr300_depth_info : public device_info
+    {
+    public:
+        std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx,
+            bool register_device_notifications) const override;
+
+        sr300_depth_info(std::shared_ptr<context> ctx,
+            platform::uvc_device_info depth,
+            platform::usb_device_info hwm)
+            : device_info(ctx),
+            _depth(std::move(depth)), _hwm(std::move(hwm)) {}
+
+        static std::vector<std::shared_ptr<device_info>> pick_sr300_devices(
+            std::shared_ptr<context> ctx,
+            std::vector<platform::uvc_device_info>& platform,
+            std::vector<platform::usb_device_info>& usb);
+
+        platform::backend_device_group get_device_data() const override
+        {
+            auto val =  platform::backend_device_group({ _depth }, { _hwm });
+            return val;
+        }
+
+    protected:
+        platform::uvc_device_info _depth;
+        platform::usb_device_info _hwm;
+    };
+
+    class sr300_info : public sr300_depth_info
     {
     public:
         std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx,
@@ -168,8 +198,7 @@ namespace librealsense
             platform::uvc_device_info color,
             platform::uvc_device_info depth,
             platform::usb_device_info hwm)
-            : device_info(ctx), _color(std::move(color)),
-            _depth(std::move(depth)), _hwm(std::move(hwm)) {}
+            : sr300_depth_info(ctx, depth, hwm), _color(std::move(color)) {}
 
         static std::vector<std::shared_ptr<device_info>> pick_sr300_devices(
             std::shared_ptr<context> ctx,
@@ -183,10 +212,8 @@ namespace librealsense
 
     private:
         platform::uvc_device_info _color;
-        platform::uvc_device_info _depth;
-        platform::usb_device_info _hwm;
-    };
 
+    };
     class sr300_depth_camera : public virtual device,
         public debug_interface,
         public updatable,
@@ -196,7 +223,6 @@ namespace librealsense
         std::vector<tagged_profile> get_profiles_tags() const override
         {
             std::vector<tagged_profile> tags;
-            //tags.push_back({ RS2_STREAM_COLOR, -1, 1920, 1080, RS2_FORMAT_RGB8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             tags.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             tags.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 30, profile_tag::PROFILE_TAG_SUPERSET });
             return tags;
@@ -340,7 +366,6 @@ namespace librealsense
         }
 
         sr300_depth_camera(std::shared_ptr<context> ctx,
-            //const platform::uvc_device_info& color,
             const platform::uvc_device_info& depth,
             const platform::usb_device_info& hwm_device,
             const platform::backend_device_group& group,
@@ -419,10 +444,7 @@ namespace librealsense
         std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback) override;
         void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode) override;
 
-        //virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
         virtual void create_matcher(const frame_holder& frame, std::vector<std::shared_ptr<matcher>> &depth_matchers) const ;
-
-        std::shared_ptr<stream_interface> get_depth_stream() { return _depth_stream; };
 
     private:
         const uint8_t _depth_device_idx;
@@ -458,7 +480,6 @@ namespace librealsense
         }
 
         static rs2_intrinsics make_depth_intrinsics(const ivcam::camera_calib_params& c, const int2& dims);
-        //static rs2_intrinsics make_color_intrinsics(const ivcam::camera_calib_params& c, const int2& dims);
         float read_mems_temp() const;
         int read_ir_temp() const;
 
@@ -468,20 +489,14 @@ namespace librealsense
 
         ivcam::camera_calib_params get_calibration() const;
 
-        std::shared_ptr<stream_interface> _depth_stream;
-        std::shared_ptr<stream_interface> _ir_stream;
-        //std::shared_ptr<stream_interface> _color_stream;
-        //std::shared_ptr<lazy<rs2_extrinsics>> _depth_to_color_extrinsics;
-
-        //lazy<ivcam::camera_calib_params> _camer_calib_params;
-
     protected:
 
         //TODO - add these to device class as pure virtual methods
         command get_firmware_logs_command() const;
         command get_flash_logs_command() const;
 
-        //const uint8_t _color_device_idx; // NOHA :: deleted
+        std::shared_ptr<stream_interface> _depth_stream;
+        std::shared_ptr<stream_interface> _ir_stream;
         std::shared_ptr<hw_monitor> _hw_monitor;
         std::shared_ptr<lazy<rs2_extrinsics>> _depth_to_color_extrinsics;
         lazy<ivcam::camera_calib_params> _camer_calib_params;
@@ -572,7 +587,6 @@ namespace librealsense
 
     protected:
         const uint8_t _color_device_idx;
-        //std::shared_ptr<lazy<rs2_extrinsics>> _depth_to_color_extrinsics;
     };
 
     class sr305_camera final : public sr300_camera {

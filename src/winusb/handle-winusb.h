@@ -23,6 +23,7 @@ namespace librealsense
             case ERROR_ACCESS_DENIED: return RS2_USB_STATUS_ACCESS;
             case ERROR_DRIVE_LOCKED: return RS2_USB_STATUS_BUSY;
             case ERROR_SEM_TIMEOUT: return RS2_USB_STATUS_TIMEOUT;
+            case ERROR_NOT_ENOUGH_MEMORY: return RS2_USB_STATUS_OVERFLOW;
             default: return RS2_USB_STATUS_OTHER;
             }
         }

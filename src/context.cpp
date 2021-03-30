@@ -348,6 +348,11 @@ namespace librealsense
 
         if (mask & RS2_PRODUCT_LINE_SR300)
         {
+            // first create depth device
+            auto sr300_depth_devices = sr300_depth_info::pick_sr300_devices(ctx, devices.uvc_devices, devices.usb_devices);
+            std::copy(begin(sr300_depth_devices), end(sr300_depth_devices), std::back_inserter(list));
+
+            // if sr300_depth_devices are found then no sr300_devices will be available
             auto sr300_devices = sr300_info::pick_sr300_devices(ctx, devices.uvc_devices, devices.usb_devices);
             std::copy(begin(sr300_devices), end(sr300_devices), std::back_inserter(list));
         }
