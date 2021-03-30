@@ -2,7 +2,7 @@
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 from rspy import log
-import sys, os
+import sys, os, re
 
 
 
@@ -382,7 +382,6 @@ if 'windows' in platform.system().lower():
         # physical port example:
         #   \\?\usb#vid_8086&pid_0b07&mi_00#6&8bfcab3&0&0000#{e5323777-f976-4f5b-9b55-b94699c46e44}\global
         #
-        import re
         re_result = re.match( r'.*\\(.*)#vid_(.*)&pid_(.*)(?:&mi_(.*))?#(.*)#', physical_port, flags = re.IGNORECASE )
         dev_type = re_result.group(1)
         vid = re_result.group(2)
@@ -414,7 +413,6 @@ if 'windows' in platform.system().lower():
         """
         """
         if usb_location:
-            import re
             #
             # T265 locations look differently...
             match = re.fullmatch( r'Port_#(\d+)\.Hub_#(\d+)', usb_location, re.IGNORECASE )
