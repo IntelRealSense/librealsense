@@ -186,10 +186,25 @@ def by_name( name ):
     return { device.serial_number for device in _device_by_sn.values() if device.name  and  device.name.find( name ) >= 0 }
 
 
+def _get_sns_from_spec( spec ):
+    """
+    helper function for by_configuration. Yields all devices matching the given spec
+    """
+    if spec.endswith( '*' ):
+        # By product line
+        for sn in by_product_line( spec[:-1] ):
+            yield sn
+    else:
+        # By name
+        for sn in by_name( spec ):
+            yield sn
+
+
 def by_configuration( config ):
     """
     :param config: A test:device line collection of arguments (e.g., [L515 D400*])
-    :return: A set of device serial-numbers matching
+    :return: A set of device serial-numbers matching. One matching serial number for every device in config.
+             If 'each' directive is used then yields a set of one device for every matching device available
 
     If no device matches the configuration devices specified, a RuntimeError will be
     raised!
@@ -197,15 +212,12 @@ def by_configuration( config ):
     sns = set()
     for spec in config:
         old_len = len(sns)
-        if spec.endswith( '*' ):
-            # By product line
-            for sn in by_product_line( spec[:-1] ):
-                if sn not in sns:
-                    sns.add( sn )
-                    break
+        if len( config ) == 1 and config[0].startswith('each(') and config[0].endswith(')'):
+            spec = spec[5:-1]
+            for sn in _get_sns_from_spec( spec ):
+                yield { sn }
         else:
-            # By name
-            for sn in by_name( spec ):
+            for sn in _get_sns_from_spec( spec ):
                 if sn not in sns:
                     sns.add( sn )
                     break
@@ -215,7 +227,8 @@ def by_configuration( config ):
                 raise RuntimeError( 'no device matches configuration "' + spec + '" (after already matching ' + str(sns) + ')' )
             else:
                 raise RuntimeError( 'no device matches configuration "' + spec + '"' )
-    return sns
+    if sns:
+        yield sns
 
 
 def get( sn ):
