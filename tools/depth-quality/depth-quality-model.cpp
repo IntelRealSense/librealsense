@@ -842,7 +842,28 @@ namespace rs2
                 if (dpt)
                     _metrics_model.begin_process_frame(dpt);
             }
-            catch (...){} // on device disconnect
+            catch( const error & e )
+            {
+                // Can occur on device disconnect
+                _viewer_model.not_model->output.add_log( RS2_LOG_SEVERITY_DEBUG,
+                                                         __FILE__,
+                                                         __LINE__,
+                                                         error_to_string( e ) );
+            }
+            catch( const std::exception & e )
+            {
+                _viewer_model.not_model->output.add_log( RS2_LOG_SEVERITY_ERROR,
+                                                         __FILE__,
+                                                         __LINE__,
+                                                         e.what() );
+            }
+            catch( ... )
+            {
+                _viewer_model.not_model->output.add_log( RS2_LOG_SEVERITY_ERROR,
+                                                         __FILE__,
+                                                         __LINE__,
+                                                         "Unknown error occurred" );
+            }
 
         }
 

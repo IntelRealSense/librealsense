@@ -5,6 +5,7 @@
 // We need WinMain on Windows to offer proper Windows application and not console application
 // Should not be used in CMake on Linux
 
+
 #include <Windows.h>
 #include <memory>
 #include <vector>
