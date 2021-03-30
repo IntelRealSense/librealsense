@@ -25,6 +25,24 @@ namespace librealsense
         float rightRotation[9]; // Right rotation
     };
 
+    struct TareCalibrationResult
+    {
+      uint16_t status;  // DscStatus
+      uint32_t tareDepth;  // Tare depth in 1/100 of depth unit
+      uint32_t aveDepth;  // Average depth in 1/100 of depth unit
+      int32_t curPx;    // Current Px in 1/1000000 of normalized unit
+      int32_t calPx;    // Calibrated Px in 1/1000000 of normalized unit
+      float curRightRotation[9]; // Current right rotation
+      float calRightRotation[9]; // Calibrated right rotation
+      uint16_t accuracyLevel;  // [0-3] (Very High/High/Medium/Low)
+      uint16_t iterations;        // Number of iterations it took to converge
+      //int32_t errors[iterations];  // Array of errors in 1/1000000 of a percent
+      //int32_t x[iterations];    // Intrinsic scan: array of Px in 1/1000000 normalized unit
+      //                         // Extrinsic scan: array of Ry in 1/100000 radian
+      //float beforeHealthCheck; // Before health check number
+      //float afterHealthCheck;  // After health check number
+    };
+
     struct FocalLengthCalibrationResult
     {
         uint16_t status;    // DscStatus
@@ -697,6 +715,7 @@ namespace librealsense
         int apply_preset = 1;
         int depth = 0;
         int host_assistance = 0;
+        std::vector<uint8_t> res;
 
         //Enforce Thermal Compensation off during Tare calibration
         volatile thermal_compensation_guard grd(this);
@@ -717,10 +736,8 @@ namespace librealsense
 
         if (depth > 0)
         {
-            LOG_INFO("run_tare_calibration interactive control with parameters: depth = " << depth );
+            LOG_INFO("run_tare_calibration interactive control with parameters: depth = " << depth);
             _hw_monitor->send(command{ ds::AUTO_CALIB, interactive_scan_control, 2, depth });
-            std::vector<uint8_t> res;
-            return res;
         }
         else
         {
@@ -751,10 +768,9 @@ namespace librealsense
                     _hw_monitor->send(command{ ds::AUTO_CALIB, tare_calib_begin, param2, param3.param3, param.param_4 });
             }
 
-            std::vector<uint8_t> res;
             if (!host_assistance || depth < 0)
             {
-                DirectSearchCalibrationResult result;
+                TareCalibrationResult result;
 
                 // While not ready...
                 int count = 0;
@@ -765,21 +781,21 @@ namespace librealsense
 
                 do
                 {
-                    memset(&result, 0, sizeof(DirectSearchCalibrationResult));
+                    memset(&result, 0, sizeof(TareCalibrationResult));
                     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
                     // Check calibration status
                     try
                     {
                         auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, tare_calib_check_status });
-                        if (res.size() < sizeof(DirectSearchCalibrationResult))
+                        if (res.size() < sizeof(TareCalibrationResult))
                         {
                             if (depth < 0)
                                 restore_preset();
                             throw std::runtime_error("Not enough data from CALIB_STATUS!");
                         }
 
-                        result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
+                        result = *reinterpret_cast<TareCalibrationResult*>(res.data());
                         done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
                     }
 
@@ -825,9 +841,9 @@ namespace librealsense
                     std::this_thread::sleep_for(std::chrono::milliseconds(200));
                 }
             }
-
-            return res;
         }
+
+        return res;
     }
 
     std::shared_ptr<ds5_advanced_mode_base> auto_calibrated::change_preset()
