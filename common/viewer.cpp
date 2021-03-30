@@ -24,8 +24,15 @@
 #include "../common/utilities/string/trim-newlines.h"
 #include "../common/utilities/imgui/wrap.h"
 
+
 namespace rs2
 {
+    template <typename T>
+    T non_negative(const T& input)
+    {
+        return std::max(static_cast<T>(0), input);
+    }
+
     // Allocates a frameset from points and texture frames
     frameset_allocator::frameset_allocator(viewer_model* viewer) : owner(viewer),
         filter([this](frame f, frame_source& s)
@@ -1392,9 +1399,6 @@ namespace rs2
             error_message = ex.what();
         }
 
-
-        
-
         window.begin_viewport();
 
         auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove 
@@ -1410,11 +1414,23 @@ namespace rs2
 
         ImGui::Begin("Viewport", nullptr, { viewer_rect.w, viewer_rect.h }, 0.f, flags);
 
-        draw_viewport(viewer_rect, window, devices, error_message, texture_frame, p);
+        try
+        {
+            draw_viewport( viewer_rect, window, devices, error_message, texture_frame, p );
 
-        modal_notification_on = not_model->draw(window,
-            static_cast<int>(window.width()), static_cast<int>(window.height()),
-            error_message);
+            modal_notification_on = not_model->draw( window,
+                                                     static_cast< int >( window.width() ),
+                                                     static_cast< int >( window.height() ),
+                                                     error_message );
+        }
+        catch( const error & e )
+        {
+            error_message = error_to_string( e );
+        }
+        catch( const std::exception & e )
+        {
+            error_message = e.what();
+        }
 
         popup_if_error(window, error_message);
 
@@ -1930,8 +1946,8 @@ namespace rs2
 
         auto bottom_y = win.framebuf_height() - viewer_rect.y - viewer_rect.h;
         
-        glViewport(static_cast<GLint>(viewer_rect.x), static_cast<GLint>(bottom_y),
-            static_cast<GLsizei>(viewer_rect.w), static_cast<GLsizei>(viewer_rect.h - top_bar_height));
+        glViewport(static_cast<GLint>(non_negative(viewer_rect.x)), static_cast<GLint>(non_negative(bottom_y)),
+            static_cast<GLsizei>(non_negative(viewer_rect.w)), static_cast<GLsizei>(non_negative(viewer_rect.h - top_bar_height)));
 
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1940,7 +1956,7 @@ namespace rs2
 
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
-        gluPerspective(45, viewer_rect.w / win.framebuf_height(), 0.001f, 100.0f);
+        gluPerspective(45, non_negative(viewer_rect.w / win.framebuf_height()), 0.001f, 100.0f);
         matrix4 perspective_mat;
         glGetFloatv(GL_PROJECTION_MATRIX, perspective_mat);
         glPopMatrix();
