@@ -290,7 +290,10 @@ bool refresh_devices(std::mutex& m,
 
 int main(int argc, const char** argv) try
 {
+
+#ifdef BUILD_EASYLOGGINGPP
     rs2::log_to_console(RS2_LOG_SEVERITY_WARN);
+#endif
 
     context ctx;
     ux_window window("Intel RealSense Viewer", ctx);
