@@ -945,7 +945,7 @@ namespace rs2
         }
         auto calib_dev = _dev.as<auto_calibrated_device>();
         if (action == RS2_CALIB_ACTION_TARE_CALIB)
-            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = progress;}, 5000);
+            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, &_health, [&](const float progress) {_progress = int(progress);}, 5000);
         else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
             _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = progress;}, occ_timeout_ms);
 
@@ -953,7 +953,7 @@ namespace rs2
         if (host_assistance)
         {
             int total_frames = 256;
-            int start_frame_counter = frame_counter;
+            int start_frame_counter = static_cast<int>(frame_counter);
 
             int width = f.get_width();
             int height = f.get_height();
@@ -974,9 +974,11 @@ namespace rs2
             int start_timeout_ms = 4000;
             if (action == RS2_CALIB_ACTION_TARE_CALIB)
             {
+               //_viewer.not_model->add_log(to_string() << "TARE, start_frame_counter=" << start_frame_counter << ", frame_counter=" << frame_counter);
+
                 auto start_time = std::chrono::high_resolution_clock::now();
                 auto now = start_time;
-                while (frame_counter > start_frame_counter)
+                while (frame_counter >= start_frame_counter)
                 {
                     now = std::chrono::high_resolution_clock::now();
                     if (now - start_time > std::chrono::milliseconds(start_timeout_ms))
@@ -987,12 +989,17 @@ namespace rs2
 
                     f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
                     frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+
+                    //_viewer.not_model->add_log(to_string() << "frame_counter=" << frame_counter);
                 }
                 _progress = 20;
 
                 int depth = 0;
                 total_frames = step_count;
                 int prev_frame_counter = total_frames;
+
+                //_viewer.not_model->add_log(to_string() << "Interavtive starts with total_frames=" << total_frames << ", frame_counter=" << frame_counter);
+
                 while (frame_counter < total_frames)
                 {
                     if (frame_counter != prev_frame_counter)
@@ -1030,13 +1037,15 @@ namespace rs2
                             ss << "{\n \"depth\":" << depth << "}";
 
                             std::string json = ss.str();
-                            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {}, 5000);
+                            calib_dev.run_tare_calibration(ground_truth, json, &_health, [&](const float progress) {}, 5000);
                         }
                     }
 
                     f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
                     prev_frame_counter = static_cast<int>(frame_counter);
                     frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+
+                    //_viewer.not_model->add_log(to_string() << "frame_counter=" << frame_counter);
                 }
 
                 _progress = 80;
@@ -1045,7 +1054,7 @@ namespace rs2
                 ss << "{\n \"depth\":" << -1 << "}";
 
                 std::string json = ss.str();
-                _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = int(progress); }, 5000);
+                _new_calib = calib_dev.run_tare_calibration(ground_truth, json, &_health, [&](const float progress) {_progress = int(progress); }, 5000);
                 _progress = 100;
             }
             else if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
@@ -1053,7 +1062,7 @@ namespace rs2
                 // OCC
                 auto start_time = std::chrono::high_resolution_clock::now();
                 auto now = start_time;
-                while (frame_counter > start_frame_counter)
+                while (frame_counter >= start_frame_counter)
                 {
                     now = std::chrono::high_resolution_clock::now();
                     if (now - start_time > std::chrono::milliseconds(start_timeout_ms))
@@ -2531,27 +2540,71 @@ namespace rs2
 
                     auto health = get_manager().get_health();
 
-                    auto recommend_keep = fabs(health) < 0.25f;
-                    if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
-                        recommend_keep = fabs(health) < 0.15f;
+                auto recommend_keep = fabs(health) < 0.25f;
+                if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
+                    recommend_keep = fabs(health) < 0.15f;
 
-                    float health_1 = -1.0f;
-                    float health_2 = -1.0f;
-                    bool recommend_keep_1 = false;
-                    bool recommend_keep_2 = false;
-                    if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
+                float health_1 = -1.0f;
+                float health_2 = -1.0f;
+                bool recommend_keep_1 = false;
+                bool recommend_keep_2 = false;
+                if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
+                {
+                    health_1 = get_manager().get_health_1();
+                    health_2 = get_manager().get_health_2();
+                    recommend_keep_1 = fabs(health_1) < 0.25f;
+                    recommend_keep_2 = fabs(health_2) < 0.15f;
+                    recommend_keep = (recommend_keep_1 && recommend_keep_2);
+                }
+
+                ImGui::SetCursorScreenPos({ float(x + 10), float(y + 33) });
+
+                if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB)
+                {
+                    ImGui::Text("%s", "Health-Check: ");
+
+                    std::stringstream ss; ss << std::fixed << std::setprecision(2) << health;
+                    auto health_str = ss.str();
+
+                    std::string text_name = to_string() << "##notification_text_" << index;
+
+                    ImGui::SetCursorScreenPos({ float(x + 125), float(y + 30) });
+                    ImGui::PushStyleColor(ImGuiCol_Text, white);
+                    ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+                    ImGui::InputTextMultiline(text_name.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 66, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
+                    ImGui::PopStyleColor(7);
+
+                    ImGui::SetCursorScreenPos({ float(x + 177), float(y + 33) });
+
+                    if (recommend_keep)
                     {
-                        health_1 = get_manager().get_health_1();
-                        health_2 = get_manager().get_health_2();
-                        recommend_keep_1 = fabs(health_1) < 0.25f;
-                        recommend_keep_2 = fabs(health_2) < 0.15f;
-                        recommend_keep = (recommend_keep_1 && recommend_keep_2);
+                        ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                        ImGui::Text("%s", "(Good)");
                     }
-
-                    ImGui::SetCursorScreenPos({ float(x + 10), float(y + 33) });
-
-                    if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
+                    else if (fabs(health) < 0.75f)
                     {
+                        ImGui::PushStyleColor(ImGuiCol_Text, yellowish);
+                        ImGui::Text("%s", "(Can be Improved)");
+                    }
+                    else
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Text, redish);
+                        ImGui::Text("%s", "(Requires Calibration)");
+                    }
+                    ImGui::PopStyleColor();
+
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("%s", "Calibration Health-Check captures how far camera calibration is from the optimal one\n"
+                            "[0, 0.25) - Good\n"
+                            "[0.25, 0.75) - Can be Improved\n"
+                            "[0.75, ) - Requires Calibration");
+                    }
                         ImGui::Text("%s", "Health-Check: ");
 
                         std::stringstream ss_1;

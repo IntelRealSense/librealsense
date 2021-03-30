@@ -710,7 +710,7 @@ namespace librealsense
         return res;
     }
 
-    std::vector<uint8_t> auto_calibrated::run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, update_progress_callback_ptr progress_callback)
+    std::vector<uint8_t> auto_calibrated::run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* health, update_progress_callback_ptr progress_callback)
     {
         int average_step_count = DEFAULT_AVERAGE_STEP_COUNT;
         int step_count = DEFAULT_STEP_COUNT;
@@ -839,7 +839,7 @@ namespace librealsense
                     handle_calibration_error(status);
                 }
 
-                res = get_calibration_results();
+                res = get_calibration_results(health);
 
                 if (depth < 0)
                 {
