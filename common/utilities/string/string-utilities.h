@@ -75,25 +75,21 @@ namespace utilities {
                     {
                         result = std::stof(str, &last_char_idx);
                         if (std::isnan((float)result) || std::isinf((float)result)) return false; // if value is NaN or inf (or -inf), return false
-                        
                     }
                     else if (std::is_same<T, double>::value)
                     {
                         result = std::stod(str, &last_char_idx);
                         if (std::isnan((double)result) || std::isinf((double)result)) return false;
-                        
                     }
                     else if (std::is_same<T, long double>::value)
                     {
                         result = std::stold(str, &last_char_idx);
                         if (std::isnan((long double)result) || std::isinf((long double)result)) return false;
-
                     }
                     else
                     {
                         return false;
                     }
-
                 }
                 return str.size() == last_char_idx; // all the chars in the string are converted to the value (thus there are no other chars other than numbers)
             }
@@ -106,6 +102,5 @@ namespace utilities {
                 return false;
             }
         }
-
     }  // namespace string
 }  // namespace utilities
