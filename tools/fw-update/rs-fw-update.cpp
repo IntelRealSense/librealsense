@@ -105,7 +105,9 @@ void list_devices(rs2::context ctx)
 
 int main(int argc, char** argv) try
 {
+#ifdef BUILD_EASYLOGGINGPP
     rs2::log_to_console(RS2_LOG_SEVERITY_ERROR);
+#endif
 
     rs2::context ctx;
 

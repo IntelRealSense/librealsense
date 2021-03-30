@@ -23,7 +23,9 @@ using namespace TCLAP;
 
 int main(int argc, char** argv) try
 {
+#ifdef BUILD_EASYLOGGINGPP
     rs2::log_to_file(RS2_LOG_SEVERITY_WARN);
+#endif
 
     // Parse command line arguments
     CmdLine cmd("librealsense rs-convert tool", ' ');
