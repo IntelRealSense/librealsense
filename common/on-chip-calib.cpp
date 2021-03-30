@@ -506,7 +506,7 @@ namespace rs2
         }
         auto calib_dev = _dev.as<auto_calibrated_device>();
         if (action == RS2_CALIB_ACTION_TARE_CALIB)
-            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = int(progress);}, 5000);
+            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, &_health, [&](const float progress) {_progress = int(progress);}, 5000);
         else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
             _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = int(progress);}, occ_timeout_ms);
 
@@ -514,7 +514,7 @@ namespace rs2
         if (host_assistance)
         {
             int total_frames = 256;
-            int start_frame_counter = frame_counter;
+            int start_frame_counter = static_cast<int>(frame_counter);
 
             int width = f.get_width();
             int height = f.get_height();
@@ -591,7 +591,7 @@ namespace rs2
                             ss << "{\n \"depth\":" << depth << "}";
 
                             std::string json = ss.str();
-                            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {}, 5000);
+                            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, &_health, [&](const float progress) {}, 5000);
                         }
                     }
 
@@ -606,7 +606,7 @@ namespace rs2
                 ss << "{\n \"depth\":" << -1 << "}";
 
                 std::string json = ss.str();
-                _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = int(progress); }, 5000);
+                _new_calib = calib_dev.run_tare_calibration(ground_truth, json, &_health, [&](const float progress) {_progress = int(progress); }, 5000);
                 _progress = 100;
             }
             else if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
@@ -1726,7 +1726,50 @@ namespace rs2
 
                 if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB)
                 {
-                    ImGui::Text("%s", "Tare calibration complete:");
+                    ImGui::Text("%s", "Health-Check: ");
+
+                    std::stringstream ss; ss << std::fixed << std::setprecision(2) << health;
+                    auto health_str = ss.str();
+
+                    std::string text_name = to_string() << "##notification_text_" << index;
+
+                    ImGui::SetCursorScreenPos({ float(x + 125), float(y + 30) });
+                    ImGui::PushStyleColor(ImGuiCol_Text, white);
+                    ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+                    ImGui::InputTextMultiline(text_name.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 66, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
+                    ImGui::PopStyleColor(7);
+
+                    ImGui::SetCursorScreenPos({ float(x + 177), float(y + 33) });
+
+                    if (recommend_keep)
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                        ImGui::Text("%s", "(Good)");
+                    }
+                    else if (fabs(health) < 0.75f)
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Text, yellowish);
+                        ImGui::Text("%s", "(Can be Improved)");
+                    }
+                    else
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Text, redish);
+                        ImGui::Text("%s", "(Requires Calibration)");
+                    }
+                    ImGui::PopStyleColor();
+
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("%s", "Calibration Health-Check captures how far camera calibration is from the optimal one\n"
+                            "[0, 0.25) - Good\n"
+                            "[0.25, 0.75) - Can be Improved\n"
+                            "[0.75, ) - Requires Calibration");
+                    }
                 }
                 else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
                 {

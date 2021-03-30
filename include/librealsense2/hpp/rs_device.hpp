@@ -457,18 +457,22 @@ namespace rs2
                                             depth: 0 for not relating to depth, > 0 for feeding depth from host to firmware, -1 for ending to feed depth from host to firmware
                                             if json is nullptr it will be ignored and calibration will use the default parameters
         * \param[in]  content_size        Json string size if its 0 the json will be ignored and calibration will use the default parameters
+         * \param[out] health           The absolute value of regular calibration Health-Check captures how far camera calibration is from the optimal one
+                                            [0, 0.25) - Good
+                                            [0.25, 0.75) - Can be Improved
+                                            [0.75, ) - Requires Calibration
         * \param[in]  callback            Optional callback to get progress notifications
         * \param[in] timeout_ms           Timeout in ms
         * \return                         New calibration table
         */
         template<class T>
-        calibration_table run_tare_calibration(float ground_truth_mm, std::string json_content, T callback, int timeout_ms = 5000) const
+        calibration_table run_tare_calibration(float ground_truth_mm, std::string json_content, float* health, T callback, int timeout_ms = 5000) const
         {
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, json_content.data(), int(json_content.size()), new update_progress_callback<T>(std::move(callback)), timeout_ms, &e),
+                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, json_content.data(), int(json_content.size()), health, new update_progress_callback<T>(std::move(callback)), timeout_ms, &e),
                 rs2_delete_raw_data);
             error::handle(e);
 
@@ -504,16 +508,20 @@ namespace rs2
                                              depth: 0 for not relating to depth, > 0 for feeding depth from host to firmware, -1 for ending to feed depth from host to firmware
                                              if json is nullptr it will be ignored and calibration will use the default parameters
          * \param[in]  content_size        Json string size if its 0 the json will be ignored and calibration will use the default parameters
+         * \param[out] health           The absolute value of regular calibration Health-Check captures how far camera calibration is from the optimal one
+                                            [0, 0.25) - Good
+                                            [0.25, 0.75) - Can be Improved
+                                            [0.75, ) - Requires Calibration
          * \param[in] timeout_ms           Timeout in ms
          * \return                         New calibration table
          */
-        calibration_table run_tare_calibration(float ground_truth_mm, std::string json_content, int timeout_ms = 5000) const
+        calibration_table run_tare_calibration(float ground_truth_mm, std::string json_content, float * health, int timeout_ms = 5000) const
         {
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, json_content.data(), static_cast< int >( json_content.size() ), nullptr, timeout_ms, &e),
+                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, json_content.data(), static_cast< int >( json_content.size() ), health, nullptr, timeout_ms, &e),
                 rs2_delete_raw_data);
             error::handle(e);
 
