@@ -210,28 +210,26 @@ def by_configuration( config ):
     If no device matches the configuration devices specified, a RuntimeError will be
     raised!
     """
-    each_syntax = re.compile( r'^each\(.+\)$', re.IGNORECASE )
-    sns = set()
-    for spec in config:
-        old_len = len(sns)
-        if len( config ) == 1 and each_syntax.match( config ):
-            spec = spec[5:-1]
-            for sn in _get_sns_from_spec( spec ):
-                yield { sn }
-            break
-        else:
+    if len( config ) == 1 and re.fullmatch( r'each\(.+\)', config[0], re.IGNORECASE ):
+        spec = config[0][5:-1]
+        for sn in _get_sns_from_spec( spec ):
+            yield { sn }
+    else:
+        sns = set()
+        for spec in config:
+            old_len = len(sns)
             for sn in _get_sns_from_spec( spec ):
                 if sn not in sns:
                     sns.add( sn )
                     break
-        new_len = len(sns)
-        if new_len == old_len:
-            if old_len:
-                raise RuntimeError( 'no device matches configuration "' + spec + '" (after already matching ' + str(sns) + ')' )
-            else:
-                raise RuntimeError( 'no device matches configuration "' + spec + '"' )
-    if sns:
-        yield sns
+            new_len = len(sns)
+            if new_len == old_len:
+                if old_len:
+                    raise RuntimeError( 'no device matches configuration "' + spec + '" (after already matching ' + str(sns) + ')' )
+                else:
+                    raise RuntimeError( 'no device matches configuration "' + spec + '"' )
+        if sns:
+            yield sns
 
 
 def get( sn ):

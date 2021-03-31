@@ -293,7 +293,6 @@ class TestConfigFromText(TestConfig):
 
         # Parse the python
         regex = r'^' + line_prefix + r'(\S+)((?:\s+\S+)*?)\s*(?:#\s*(.*))?$'
-        each_syntax = re.compile( r'^each\(.+\)$', re.IGNORECASE )
         for context in file.grep( regex, source ):
             match = context['match']
             directive = match.group(1)
@@ -307,8 +306,8 @@ class TestConfigFromText(TestConfig):
                 elif 'each' in text_params.lower():
                     if len(params) > 1:
                         log.e( source + '+' + str(context['index']) + ': each() cannot be used in combination with other specs', params )
-                    if not each_syntax.match( text_params ):
-                        log.e( source + '+' + str( context['index'] ) + ': device directive invalid syntax:', params )
+                    elif not re.fullmatch( r'each\(.+\)', text_params, re.IGNORECASE ):
+                        log.e( source + '+' + str( context['index'] ) + ': invalid \'each\' syntax:', params )
                 else:
                     self._configurations.append( params )
             elif directive == 'priority':
