@@ -2,7 +2,7 @@
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 from rspy import log
-import sys, os
+import sys, os, re
 
 
 
@@ -48,7 +48,16 @@ class Device:
         self._product_line = None
         if dev.supports( rs.camera_info.product_line ):
             self._product_line = dev.get_info( rs.camera_info.product_line )
-        self._port = acroname and _get_port_by_dev( dev )
+        self._physical_port = dev.supports( rs.camera_info.physical_port ) and dev.get_info( rs.camera_info.physical_port ) or None
+        self._usb_location = _get_usb_location( self._physical_port )
+        self._port = None
+        if acroname:
+            try:
+                self._port = _get_port_by_loc( self._usb_location )
+            except Exception as e:
+                log.e( 'Failed to get device port:', e )
+                log.d( '    physical port is', self._physical_port )
+                log.d( '    USB location is', self._usb_location )
         self._removed = False
 
     @property
@@ -62,6 +71,14 @@ class Device:
     @property
     def product_line( self ):
         return self._product_line
+
+    @property
+    def physical_port( self ):
+        return self._physical_port
+
+    @property
+    def usb_location( self ):
+        return self._usb_location
 
     @property
     def port( self ):
@@ -103,8 +120,9 @@ def query( monitor_changes = True ):
                 sn = dev.get_info( rs.camera_info.firmware_update_id )
             else:
                 sn = dev.get_info( rs.camera_info.serial_number )
-            _device_by_sn[sn] = Device( sn, dev )
-            log.d( '...', dev )
+            device = Device( sn, dev )
+            _device_by_sn[sn] = device
+            log.d( '... port {}:'.format( device.port is None and '?' or device.port ), dev )
     finally:
         log.debug_unindent()
     #
@@ -317,11 +335,13 @@ def _wait_for( serial_numbers, timeout = 5 ):
         if have_all_devices:
             if did_some_waiting:
                 # Wait an extra second, just in case -- let the devices properly power up
-                log.d( 'all devices powered up' )
+                #log.d( 'all devices powered up' )
                 time.sleep( 1 )
             return True
         #
         if timeout <= 0:
+            if did_some_waiting:
+                log.d( 'timed out' )
             return False
         timeout -= 1
         time.sleep( 1 )
@@ -353,18 +373,16 @@ def hw_reset( serial_numbers, timeout = 5 ):
 import platform
 if 'windows' in platform.system().lower():
     #
-    def _get_usb_location( dev ):
+    def _get_usb_location( physical_port ):
         """
         Helper method to get windows USB location from registry
         """
-        if not dev.supports( rs.camera_info.physical_port ):
+        if not physical_port:
             return None
-        usb_location = dev.get_info( rs.camera_info.physical_port )
-        # location example:
-        # u'\\\\?\\usb#vid_8086&pid_0b07&mi_00#6&8bfcab3&0&0000#{e5323777-f976-4f5b-9b55-b94699c46e44}\\global'
+        # physical port example:
+        #   \\?\usb#vid_8086&pid_0b07&mi_00#6&8bfcab3&0&0000#{e5323777-f976-4f5b-9b55-b94699c46e44}\global
         #
-        import re
-        re_result = re.match( r'.*\\(.*)#vid_(.*)&pid_(.*)(?:&mi_(.*))?#(.*)#', usb_location, flags = re.IGNORECASE )
+        re_result = re.match( r'.*\\(.*)#vid_(.*)&pid_(.*)(?:&mi_(.*))?#(.*)#', physical_port, flags = re.IGNORECASE )
         dev_type = re_result.group(1)
         vid = re_result.group(2)
         pid = re_result.group(3)
@@ -384,44 +402,50 @@ if 'windows' in platform.system().lower():
             reg_key = winreg.OpenKey( winreg.HKEY_LOCAL_MACHINE, registry_path )
         except FileNotFoundError:
             log.e( 'Could not find registry key for port:', registry_path )
-            log.e( '    usb location:', usb_location )
+            log.e( '    usb location:', physical_port )
             return None
         result = winreg.QueryValueEx( reg_key, "LocationInformation" )
         # location example: 0000.0014.0000.016.003.004.003.000.000
+        # and, for T265: Port_#0002.Hub_#0006
         return result[0]
     #
-    def _get_port_by_dev( dev ):
+    def _get_port_by_loc( usb_location ):
         """
         """
-        usb_location = _get_usb_location( dev )
         if usb_location:
-            split_location = [int(x) for x in usb_location.split('.') if int(x) > 0]
-            # only the last two digits are necessary
-            return acroname.get_port_from_usb( split_location[-2], split_location[-1] )
+            #
+            # T265 locations look differently...
+            match = re.fullmatch( r'Port_#(\d+)\.Hub_#(\d+)', usb_location, re.IGNORECASE )
+            if match:
+                # We don't know how to get the port from these yet!
+                return None #int(match.group(2))
+            else:
+                split_location = [int(x) for x in usb_location.split('.') if int(x) > 0]
+                # only the last two digits are necessary
+                return acroname.get_port_from_usb( split_location[-2], split_location[-1] )
     #
 else:
     #
-    def _get_usb_location( dev ):
+    def _get_usb_location( physical_port ):
         """
         """
-        if not dev.supports( rs.camera_info.physical_port ):
+        if not physical_port:
             return None
-        usb_location = dev.get_info( rs.camera_info.physical_port )
-        # location example:
+        # physical port example:
         # u'/sys/devices/pci0000:00/0000:00:14.0/usb2/2-3/2-3.3/2-3.3.1/2-3.3.1:1.0/video4linux/video0'
         #
-        split_location = usb_location.split( '/' )
+        split_location = physical_port.split( '/' )
         port_location = split_location[-4]
         # location example: 2-3.3.1
         return port_location
     #
-    def _get_port_by_dev( dev ):
+    def _get_port_by_loc( usb_location ):
         """
         """
-        usb_location = _get_usb_location( dev )
-        split_port_location = usb_location.split( '.' )
-        first_port_coordinate = int( split_port_location[-2] )
-        second_port_coordinate = int( split_port_location[-1] )
-        port = acroname.get_port_from_usb( first_port_coordinate, second_port_coordinate )
-        return port
+        if usb_location:
+            split_port_location = usb_location.split( '.' )
+            first_port_coordinate = int( split_port_location[-2] )
+            second_port_coordinate = int( split_port_location[-1] )
+            port = acroname.get_port_from_usb( first_port_coordinate, second_port_coordinate )
+            return port
 
