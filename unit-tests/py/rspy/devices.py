@@ -216,6 +216,7 @@ def by_configuration( config ):
             spec = spec[5:-1]
             for sn in _get_sns_from_spec( spec ):
                 yield { sn }
+            break
         else:
             for sn in _get_sns_from_spec( spec ):
                 if sn not in sns:
