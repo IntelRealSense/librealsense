@@ -202,17 +202,19 @@ def _get_sns_from_spec( spec ):
 
 def by_configuration( config ):
     """
+    Yields the serial numbers fitting the given configuration. If configuration includes an 'each' directive
+    will yield all fitting serial numbers one at a time. Otherwise yields one set of serial numbers fitting the configuration
+
     :param config: A test:device line collection of arguments (e.g., [L515 D400*])
-    :return: A set of device serial-numbers matching. One matching serial number for every device in config.
-             If 'each' directive is used then yields a set of one device for every matching device available
 
     If no device matches the configuration devices specified, a RuntimeError will be
     raised!
     """
+    each_syntax = re.compile( r'^each\(.+\)$', re.IGNORECASE )
     sns = set()
     for spec in config:
         old_len = len(sns)
-        if len( config ) == 1 and config[0].startswith('each(') and config[0].endswith(')'):
+        if len( config ) == 1 and each_syntax.match( config ):
             spec = spec[5:-1]
             for sn in _get_sns_from_spec( spec ):
                 yield { sn }
