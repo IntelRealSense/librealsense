@@ -20,6 +20,16 @@ using namespace TCLAP;
 
 #define WAIT_FOR_DEVICE_TIMEOUT 10
 
+#if _WIN32
+#include <io.h>
+#define ISATTY _isatty
+#define FILENO _fileno
+#else
+#include <unistd.h>
+#define ISATTY isatty
+#define FILENO fileno
+#endif
+
 std::vector<uint8_t> read_fw_file(std::string file_path)
 {
     std::vector<uint8_t> rv;
@@ -78,7 +88,8 @@ void update(rs2::update_device fwu_dev, std::vector<uint8_t> fw_image)
 
     fwu_dev.update(fw_image, [&](const float progress)
     {
-        printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
+        if (ISATTY(FILENO(stdout)))
+            printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
     });
     std::cout << std::endl << std::endl << "firmware update done" << std::endl;
 }
@@ -249,7 +260,8 @@ int main(int argc, char** argv) try
 
             auto flash = d.as<rs2::updatable>().create_flash_backup([&](const float progress)
             {
-                printf("\rflash backup progress: %d[%%]", (int)(progress * 100));
+                if (ISATTY(FILENO(stdout)))
+                    printf("\rflash backup progress: %d[%%]", (int)(progress * 100));
             });
 
             auto temp = backup_arg.getValue();
@@ -271,7 +283,8 @@ int main(int argc, char** argv) try
 
             d.as<rs2::updatable>().update_unsigned(fw_image, [&](const float progress)
             {
-                printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
+                if (ISATTY(FILENO(stdout)))
+                    printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
             });
             std::cout << std::endl << std::endl << "firmware update done" << std::endl;
         }
