@@ -296,7 +296,7 @@ class TestConfigFromText(TestConfig):
         for context in file.grep( regex, source ):
             match = context['match']
             directive = match.group(1)
-            text_params = match.group(2)
+            text_params = match.group(2).strip()
             params = [s for s in text_params.split()]
             comment = match.group(3)
             if directive == 'device':
