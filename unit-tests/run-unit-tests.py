@@ -303,11 +303,10 @@ class TestConfigFromText(TestConfig):
                 #log.d( '    configuration:', params )
                 if not params:
                     log.e( source + '+' + str(context['index']) + ': device directive with no devices listed' )
-                elif 'each' in text_params.lower():
-                    if len(params) > 1:
-                        log.e( source + '+' + str(context['index']) + ': each() cannot be used in combination with other specs', params )
-                    elif not re.fullmatch( r'each\(.+\)', text_params, re.IGNORECASE ):
-                        log.e( source + '+' + str(context['index']) + ': invalid \'each\' syntax:', params )
+                elif 'each' in text_params.lower() and len(params) > 1:
+                    log.e( source + '+' + str(context['index']) + ': each() cannot be used in combination with other specs', params )
+                elif 'each' in text_params.lower() and not re.fullmatch( r'each\(.+\)', text_params, re.IGNORECASE ):
+                    log.e( source + '+' + str(context['index']) + ': invalid \'each\' syntax:', params )
                 else:
                     self._configurations.append( params )
             elif directive == 'priority':
