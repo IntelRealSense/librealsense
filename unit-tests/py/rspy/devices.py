@@ -188,14 +188,12 @@ def by_name( name ):
 
 def _get_sns_from_spec( spec ):
     """
-    helper function for by_configuration. Yields all devices matching the given spec
+    Helper function for by_configuration. Yields all serial-numbers matching the given spec
     """
     if spec.endswith( '*' ):
-        # By product line
         for sn in by_product_line( spec[:-1] ):
             yield sn
     else:
-        # By name
         for sn in by_name( spec ):
             yield sn
 
