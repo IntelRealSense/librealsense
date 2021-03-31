@@ -535,9 +535,11 @@ namespace rs2
             int start_timeout_ms = 4000;
             if (action == RS2_CALIB_ACTION_TARE_CALIB)
             {
+               _viewer.not_model->add_log(to_string() << "TARE, start_frame_counter=" << start_frame_counter << ", frame_counter=" << frame_counter);
+
                 auto start_time = std::chrono::high_resolution_clock::now();
                 auto now = start_time;
-                while (frame_counter > start_frame_counter)
+                while (frame_counter >= start_frame_counter)
                 {
                     now = std::chrono::high_resolution_clock::now();
                     if (now - start_time > std::chrono::milliseconds(start_timeout_ms))
@@ -548,12 +550,17 @@ namespace rs2
 
                     f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
                     frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+
+                    _viewer.not_model->add_log(to_string() << "frame_counter=" << frame_counter);
                 }
                 _progress = 20;
 
                 int depth = 0;
                 total_frames = step_count;
                 int prev_frame_counter = total_frames;
+
+                _viewer.not_model->add_log(to_string() << "Interavtive starts with total_frames=" << total_frames << ", frame_counter=" << frame_counter);
+
                 while (frame_counter < total_frames)
                 {
                     if (frame_counter != prev_frame_counter)
@@ -591,13 +598,15 @@ namespace rs2
                             ss << "{\n \"depth\":" << depth << "}";
 
                             std::string json = ss.str();
-                            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, &_health, [&](const float progress) {}, 5000);
+                            calib_dev.run_tare_calibration(ground_truth, json, &_health, [&](const float progress) {}, 5000);
                         }
                     }
 
                     f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
                     prev_frame_counter = static_cast<int>(frame_counter);
                     frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+
+                    _viewer.not_model->add_log(to_string() << "frame_counter=" << frame_counter);
                 }
 
                 _progress = 80;
@@ -614,7 +623,7 @@ namespace rs2
                 // OCC
                 auto start_time = std::chrono::high_resolution_clock::now();
                 auto now = start_time;
-                while (frame_counter > start_frame_counter)
+                while (frame_counter >= start_frame_counter)
                 {
                     now = std::chrono::high_resolution_clock::now();
                     if (now - start_time > std::chrono::milliseconds(start_timeout_ms))

@@ -292,7 +292,7 @@ int main(int argc, const char** argv) try
 {
 
 #ifdef BUILD_EASYLOGGINGPP
-    rs2::log_to_console(RS2_LOG_SEVERITY_WARN);
+    rs2::log_to_console(RS2_LOG_SEVERITY_INFO);
 #endif
 
     context ctx;
