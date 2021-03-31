@@ -297,7 +297,7 @@ class TestConfigFromText(TestConfig):
             match = context['match']
             directive = match.group(1)
             text_params = match.group(2)
-            params = [s for s in context['match'].group(2).split()]
+            params = [s for s in text_params.split()]
             comment = match.group(3)
             if directive == 'device':
                 #log.d( '    configuration:', params )
@@ -307,7 +307,7 @@ class TestConfigFromText(TestConfig):
                     if len(params) > 1:
                         log.e( source + '+' + str(context['index']) + ': each() cannot be used in combination with other specs', params )
                     elif not re.fullmatch( r'each\(.+\)', text_params, re.IGNORECASE ):
-                        log.e( source + '+' + str( context['index'] ) + ': invalid \'each\' syntax:', params )
+                        log.e( source + '+' + str(context['index']) + ': invalid \'each\' syntax:', params )
                 else:
                     self._configurations.append( params )
             elif directive == 'priority':
