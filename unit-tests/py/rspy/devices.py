@@ -186,36 +186,48 @@ def by_name( name ):
     return { device.serial_number for device in _device_by_sn.values() if device.name  and  device.name.find( name ) >= 0 }
 
 
+def _get_sns_from_spec( spec ):
+    """
+    Helper function for by_configuration. Yields all serial-numbers matching the given spec
+    """
+    if spec.endswith( '*' ):
+        for sn in by_product_line( spec[:-1] ):
+            yield sn
+    else:
+        for sn in by_name( spec ):
+            yield sn
+
+
 def by_configuration( config ):
     """
+    Yields the serial numbers fitting the given configuration. If configuration includes an 'each' directive
+    will yield all fitting serial numbers one at a time. Otherwise yields one set of serial numbers fitting the configuration
+
     :param config: A test:device line collection of arguments (e.g., [L515 D400*])
-    :return: A set of device serial-numbers matching
 
     If no device matches the configuration devices specified, a RuntimeError will be
     raised!
     """
-    sns = set()
-    for spec in config:
-        old_len = len(sns)
-        if spec.endswith( '*' ):
-            # By product line
-            for sn in by_product_line( spec[:-1] ):
+    if len( config ) == 1 and re.fullmatch( r'each\(.+\)', config[0], re.IGNORECASE ):
+        spec = config[0][5:-1]
+        for sn in _get_sns_from_spec( spec ):
+            yield { sn }
+    else:
+        sns = set()
+        for spec in config:
+            old_len = len(sns)
+            for sn in _get_sns_from_spec( spec ):
                 if sn not in sns:
                     sns.add( sn )
                     break
-        else:
-            # By name
-            for sn in by_name( spec ):
-                if sn not in sns:
-                    sns.add( sn )
-                    break
-        new_len = len(sns)
-        if new_len == old_len:
-            if old_len:
-                raise RuntimeError( 'no device matches configuration "' + spec + '" (after already matching ' + str(sns) + ')' )
-            else:
-                raise RuntimeError( 'no device matches configuration "' + spec + '"' )
-    return sns
+            new_len = len(sns)
+            if new_len == old_len:
+                if old_len:
+                    raise RuntimeError( 'no device matches configuration "' + spec + '" (after already matching ' + str(sns) + ')' )
+                else:
+                    raise RuntimeError( 'no device matches configuration "' + spec + '"' )
+        if sns:
+            yield sns
 
 
 def get( sn ):
