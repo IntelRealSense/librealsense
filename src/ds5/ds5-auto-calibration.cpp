@@ -829,6 +829,7 @@ namespace librealsense
                 nnn;
                 uint8_t* p = res.data() + sizeof(TareCalibrationResult) + 2 * result.iterations * sizeof(uint32_t);
                 float* ph = reinterpret_cast<float*>(p);
+                //LOG_INFO("Health_check from TareCalibrationResult(0x0C): before=" << ph[0] << ", after=" << ph[1]);
 
                 int health_1 = static_cast<int>(abs(ph[0]) * 1000.0f + 0.5f);
                 health_1 &= 0xFFF;
@@ -853,6 +854,9 @@ namespace librealsense
                     handle_calibration_error(status);
                 }
 
+                //float health_from_calibration_results = 0.0f;
+                //res = get_calibration_results(&health_from_calibration_results);
+                //LOG_INFO("Health_check from CalibrationResult(0x0D): health=" << health_from_calibration_results);
                 res = get_calibration_results();
 
                 if (depth < 0)
