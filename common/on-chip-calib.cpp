@@ -1005,9 +1005,9 @@ namespace rs2
         if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
             log(to_string() << "Starting focal length calibration");
         else if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
-            log(to_string() << "Starting one button calibration");
+            log(to_string() << "Starting OCC extended calibration");
         else
-            log(to_string() << "Starting calibration at speed " << speed);
+            log(to_string() << "Starting OCC calibration at speed " << speed);
 
         _in_3d_view = _viewer.is_3d_view;
         _viewer.is_3d_view = (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH ? false : true);
@@ -1223,7 +1223,7 @@ namespace rs2
                      update_state == RS2_CALIB_STATE_SELF_INPUT)
             {
                if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
-                   ImGui::Text("%s", "On-Chip and Focal Length Calibration");
+                   ImGui::Text("%s", "On-Chip Calibration Extended");
                else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
                    ImGui::Text("%s", "On-Chip Focal Length Calibration");
                else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB)
@@ -1618,26 +1618,21 @@ namespace rs2
                 }
 
                 float tmp_y = (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 
-                    float(y + 45 + 3 * ImGui::GetTextLineHeightWithSpacing()) : float(y + 40 + 2 * ImGui::GetTextLineHeightWithSpacing()));
-                ImGui::SetCursorScreenPos({ float(x + 9),  tmp_y });
-                if (ImGui::RadioButton("OCC All", (int *)&(get_manager().action), 0))
-                    get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB;
-                if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", "Both OCC Py/Rx calibration and OCC FL calibration in order");
+                    float(y + 45 + 3 * ImGui::GetTextLineHeightWithSpacing()) : float(y + 41 + 2 * ImGui::GetTextLineHeightWithSpacing()));
 
-                ImGui::SetCursorScreenPos({ float(x + 6 + width / 3), tmp_y });
-                if (ImGui::RadioButton("OCC Py/Rx", (int*)&(get_manager().action), 1))
+                ImGui::SetCursorScreenPos({ float(x + 9), tmp_y });
+                if (ImGui::RadioButton("OCC", (int*)&(get_manager().action), 1))
                     get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB;
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", "On-chip Py/Rx calibration");
+                    ImGui::SetTooltip("%s", "On-chip calibration");
 
-                ImGui::SetCursorScreenPos({ float(x + 3 + 2 * width / 3), tmp_y });
-                if (ImGui::RadioButton("OCC FL", (int*)&(get_manager().action), 2))
-                    get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB;
+                ImGui::SetCursorScreenPos({ float(x + 135),  tmp_y });
+                if (ImGui::RadioButton("OCC Extended", (int *)&(get_manager().action), 0))
+                    get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB;
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", "On-chip focal length calibration");
+                    ImGui::SetTooltip("%s", "On-Chip Calibration Extended");
 
-                ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 30) });
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 31) });
                 bool assistance = (get_manager().host_assistance != 0);
                 if (ImGui::Checkbox("Host Assistance", &assistance))
                     get_manager().host_assistance = (assistance ? 1 : 0);
@@ -2225,7 +2220,7 @@ namespace rs2
         if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
             title = "On-Chip Focal Length Calibration";
         else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
-            title = "One Button On-Chip Calibration";
+            title = "On-Chip Calibration Extended";
         else
             title = "On-Chip Calibration";
         if (update_manager->failed()) title += " Failed";
