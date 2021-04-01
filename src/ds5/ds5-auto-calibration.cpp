@@ -793,7 +793,7 @@ namespace librealsense
                     // Check calibration status
                     try
                     {
-                        auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, tare_calib_check_status });
+                        res = _hw_monitor->send(command{ ds::AUTO_CALIB, tare_calib_check_status });
                         if (res.size() < sizeof(TareCalibrationResult))
                         {
                             if (depth < 0)
@@ -832,14 +832,24 @@ namespace librealsense
                 }
 
                 auto status = (rs2_dsc_status)result.status;
+                
+                uint8_t* p = res.data() + sizeof(TareCalibrationResult) + 2 * result.iterations * sizeof(uint32_t);
+                float* ph = reinterpret_cast<float*>(p);
+                health[0] = ph[0];
+                health[1] = ph[1];
+
+                LOG_INFO("Ground truth: " << ground_truth_mm << "mm");
+                LOG_INFO("Health check numbers from TareCalibrationResult(0x0C): before=" << ph[0] << ", after=" << ph[1]);
+                LOG_INFO("Z calculated from health check numbers : before=" << (ph[0] + 1) * ground_truth_mm << ", after=" << (ph[1] + 1) * ground_truth_mm);
 
                 // Handle errors from firmware
                 if (status != RS2_DSC_STATUS_SUCCESS)
-                {
                     handle_calibration_error(status);
-                }
 
-                res = get_calibration_results(health);
+                //float health_from_calibration_results = 0.0f;
+                //res = get_calibration_results(&health_from_calibration_results);
+                //LOG_INFO("Health_check from CalibrationResult(0x0D): health=" << health_from_calibration_results);
+                res = get_calibration_results();
 
                 if (depth < 0)
                 {
