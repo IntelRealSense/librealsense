@@ -22,7 +22,6 @@ using namespace std;
 using namespace chrono;
 using namespace TCLAP;
 using namespace rs2;
-//using namespace librealsense;
 
 #if (defined(_WIN32) || defined(_WIN64))
 #include <intrin.h>
@@ -235,13 +234,15 @@ int main(int argc, char** argv) try
     suites.push_back(make_shared<gl_blocks>());
 #endif
 
+    rs2::context ctx;
+    auto list = ctx.query_devices();
+    auto dev = list.front();
     pipeline p;
     config cfg;
     cfg.enable_stream(RS2_STREAM_DEPTH);
-    
-    //cfg.enable_stream(RS2_STREAM_COLOR, RS2_FORMAT_YUYV, 30); // TODO :: remove it when running sr306
+    if (std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID)) != "0AA3") // pid of sr306
+        cfg.enable_stream(RS2_STREAM_COLOR, RS2_FORMAT_YUYV, 30);
     auto prof = p.start(cfg);
-    auto dev = prof.get_device();
     auto name = dev.get_info(RS2_CAMERA_INFO_NAME);
     cout << "|**Device Name** |" << name << " |" << endl << endl;
     cout.precision(3);

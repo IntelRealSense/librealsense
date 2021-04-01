@@ -514,6 +514,7 @@ namespace librealsense
 
         auto fw_version = _hw_monitor->get_firmware_version_string(gvd_buff, fw_version_offset);
         auto serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset);
+        auto pid_hex_str = hexify(depth.pid);
 
         _camer_calib_params = [this]() { return get_calibration(); };
         enable_timestamp(true, true);
@@ -525,6 +526,7 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, fw_version);
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, depth.device_path);
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
+        register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "SR300");
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
 
