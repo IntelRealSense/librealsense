@@ -214,11 +214,12 @@ public:
         dispatcher* _owner;
     };
     typedef std::function<void(cancellable_timer const &)> action;
-    dispatcher(unsigned int cap, std::function <void(action)> on_drop_callback = nullptr)
+    dispatcher(unsigned int cap, std::string name = "", std::function <void(action)> on_drop_callback = nullptr)
         : _queue(cap, on_drop_callback),
           _was_stopped(true),
           _was_flushed(false),
-          _is_alive(true)
+          _is_alive(true),
+          _name(name)
     {
         _thread = std::thread([&]()
         {
@@ -291,7 +292,6 @@ public:
     void start()
     {
         std::unique_lock<std::mutex> lock(_was_stopped_mutex);
-        _is_alive = true;
         _was_stopped = false;
 
         _queue.start();
@@ -301,8 +301,6 @@ public:
     {
         {
             std::unique_lock<std::mutex> lock(_was_stopped_mutex);
-            _is_alive = false;
-
             if (_was_stopped.load()) return;
 
             _was_stopped = true;
@@ -320,6 +318,7 @@ public:
     ~dispatcher()
     {
         stop();
+        _is_alive = false;
         _queue.clear();
 
         if (_thread.joinable())
@@ -371,14 +370,15 @@ private:
     std::mutex _blocking_invoke_mutex;
 
     std::atomic<bool> _is_alive;
+    std::string _name;
 };
 
 template<class T = std::function<void(dispatcher::cancellable_timer)>>
 class active_object
 {
 public:
-    active_object(T operation)
-        : _operation(std::move(operation)), _dispatcher(1), _stopped(true)
+    active_object(T operation, std::string name = "")
+        : _operation(std::move(operation)), _dispatcher(1, name), _stopped(true)
     {
     }
 
