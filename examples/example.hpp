@@ -1070,3 +1070,21 @@ void register_glfw_callbacks(window& app, glfw_state& app_state)
         }
     };
 }
+
+// Find devices with specified streams
+std::string depth_with_stream_type_present(rs2_stream type)
+{
+    rs2::context ctx;
+    for (auto dev : ctx.query_devices(RS2_PRODUCT_LINE_DEPTH))
+    {    
+        for (auto sensor : dev.query_sensors())
+        {
+            for (auto profile : sensor.get_stream_profiles())
+            {
+                if (profile.stream_type() == type)
+                    return dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+            }
+        }
+    }
+    return "";
+}

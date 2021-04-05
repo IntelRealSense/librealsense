@@ -91,22 +91,18 @@ namespace librealsense
                     return results;
                 }
             }
-
             if (mi_present(group, 2))
             {
                 depth = get_mi(group, 2);
                 chosen.push_back(depth);
             }
+            if (!depth.pid) // SR306 : only mi=0 is defined
+                std::swap(color, depth);
+            auto info = std::make_shared<sr300_info>(ctx, color, depth, hwm);
+            results.push_back(info);
 
             if (!color.pid && !depth.pid)
                 LOG_WARNING("SR300 group_devices is empty.");
-            else
-            {
-                if (!depth.pid) // SR306 : only mi=0 is defined
-                    std::swap(color, depth);
-                auto info = std::make_shared<sr300_info>(ctx, color, depth, hwm);
-                results.push_back(info);
-            }
         }
 
         trim_device_list(uvc, chosen);
@@ -545,9 +541,9 @@ namespace librealsense
         device(ctx, group, register_device_notifications) {
 
         static auto device_name = "Intel RealSense SR305";
-        //auto recommended_fw_version = firmware_version(SR3XX_RECOMMENDED_FIRMWARE_VERSION);
+        auto recommended_fw_version = firmware_version(SR305_RECOMMENDED_FIRMWARE_VERSION);
         update_info(RS2_CAMERA_INFO_NAME, device_name);
-        //register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, recommended_fw_version);
+        register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, recommended_fw_version);
 
         roi_sensor_interface* roi_sensor;
         if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&get_sensor(_color_device_idx))))

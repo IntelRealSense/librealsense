@@ -33,6 +33,13 @@ void render_slider(rect location, float* alpha, direction* dir);
 
 int main(int argc, char * argv[]) try
 {
+    auto serial = depth_with_stream_type_present(RS2_STREAM_COLOR);
+    if (serial.empty())
+    {
+        std::cerr << "The demo requires Realsense Depth camera with RGB sensor";
+        return EXIT_SUCCESS;;
+    }
+
     // Create and initialize GUI related objects
     window app(1280, 720, "RealSense Align Example"); // Simple window handling
     ImGui_ImplGlfw_Init(app, false);      // ImGui library intializition
@@ -42,6 +49,7 @@ int main(int argc, char * argv[]) try
     // Create a pipeline to easily configure and start the camera
     rs2::pipeline pipe;
     rs2::config cfg;
+    cfg.enable_device(serial);
     cfg.enable_stream(RS2_STREAM_DEPTH);
     cfg.enable_stream(RS2_STREAM_COLOR);
     pipe.start(cfg);

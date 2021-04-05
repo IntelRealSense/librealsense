@@ -54,6 +54,12 @@ std::vector<uint8_t> bytes_from_raw_file(const std::string& filename);
 
 int main(int argc, char * argv[]) try
 {
+    auto serial = depth_with_stream_type_present(RS2_STREAM_POSE);
+    if (serial.empty())
+    {
+        std::cerr << "The demo requires Realsense Depth camera with POSE sensor";
+        return EXIT_SUCCESS;;
+    }
     std::string out_map_filepath, in_map_filepath, default_filepath = "map.raw";
     for (int c = 1; c < argc; ++c) {
         if (!std::strcmp(argv[c], "-m") || !std::strcmp(argv[c], "--load_map")) {
@@ -76,6 +82,7 @@ int main(int argc, char * argv[]) try
     rs2::pipeline pipe;
     // Create a configuration for configuring the pipeline with a non default profile
     rs2::config cfg;
+    cfg.enable_device(serial);
     // Enable fisheye and pose streams
     cfg.enable_stream(RS2_STREAM_POSE, RS2_FORMAT_6DOF);
     cfg.enable_stream(RS2_STREAM_FISHEYE, 1);

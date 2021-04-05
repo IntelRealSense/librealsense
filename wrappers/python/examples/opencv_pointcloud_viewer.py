@@ -67,6 +67,15 @@ state = AppState()
 pipeline = rs.pipeline()
 config = rs.config()
 
+# Get device product id to skip SR306
+pipeline_wrapper = rs.pipeline_wrapper(pipeline)
+pipeline_profile = config.resolve(pipeline_wrapper)
+device = pipeline_profile.get_device()
+device_product_id = str(device.get_info(rs.camera_info.product_id))
+if device_product_id == "0AA3":
+    print("The connected device does not support RGB stream")
+    exit(0)
+
 config.enable_stream(rs.stream.depth, rs.format.z16, 30)
 config.enable_stream(rs.stream.color, rs.format.bgr8, 30)
 

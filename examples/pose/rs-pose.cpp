@@ -3,9 +3,17 @@
 #include <librealsense2/rs.hpp>
 #include <iostream>
 #include <iomanip>
+#include "../example.hpp"
 
 int main(int argc, char * argv[]) try
 {
+    auto serial = depth_with_stream_type_present(RS2_STREAM_POSE);
+    if (serial.empty())
+    {
+        std::cerr << "The demo requires Realsense Depth camera with POSE sensor";
+        return EXIT_SUCCESS;;
+    }
+
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
     // Create a configuration for configuring the pipeline with a non default profile

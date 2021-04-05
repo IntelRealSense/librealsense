@@ -439,6 +439,13 @@ private:
 // In this example, we show how to track the camera's motion using a T265 device
 int main(int argc, char * argv[]) try
 {
+    auto serial = depth_with_stream_type_present(RS2_STREAM_POSE);
+    if (serial.empty())
+    {
+        std::cerr << "The demo requires Realsense Depth camera with POSE sensor";
+        return EXIT_SUCCESS;;
+    }
+
     // Initialize window for rendering
     window app(1280, 720, "RealSense Trajectory Example");
 
