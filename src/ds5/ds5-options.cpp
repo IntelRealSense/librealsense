@@ -399,13 +399,13 @@ namespace librealsense
 
             if (value < 4)
                 cmd.param1 = static_cast<int>(value);
-            else if (value == 259)
+            else if (value == 259) // For Sending two frame - First with laser ON, and the other with laser OFF.
             {
-                cmd.param1 = 0x00010204;
+                cmd.param1 = 0x00010204; // genlock, two frames, on-off
             }
-            else if (value == 260)
+            else if (value == 260) // For Sending two frame - First with laser OFF, and the other with laser ON.
             {
-                cmd.param1 = 0x00030204;
+                cmd.param1 = 0x00030204; // genlock, two frames, off-on
             }
             else
             {
