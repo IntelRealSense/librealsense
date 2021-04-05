@@ -111,8 +111,6 @@ namespace librealsense {
         };
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
             const platform::uvc_device_info& info, platform::usb_device_info& result);
-        bool try_fetch_usb_depth_device(std::vector<platform::usb_device_info>& devices,
-            const platform::uvc_device_info& info, platform::usb_device_info& result);
 
     } // librealsense::ivcam
 } // namespace librealsense
