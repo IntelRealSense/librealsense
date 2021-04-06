@@ -756,7 +756,7 @@ namespace rs2
 
                     ImGui::SameLine();
                     if (new_line)
-                        ImGui::SetCursorPosX(pos_x + 135);
+                        ImGui::SetCursorPosX(pos_x + 120);
 
                     ImGui::PushItemWidth(new_line ? -1.f : 100.f);
 
@@ -773,6 +773,7 @@ namespace rs2
                     {
                         int tmp_selected = selected;
                         float tmp_value = value;
+                        ImGui::PushItemWidth(135.f);
                         if (ImGui::Combo(id.c_str(), &tmp_selected, labels.data(),
                             static_cast<int>(labels.size())))
                         {
