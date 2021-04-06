@@ -197,7 +197,7 @@ namespace librealsense
         virtual void set(float value) override;
         virtual float query() const override;
         virtual option_range get_range() const override;
-        virtual bool is_enabled() const override { return true; }
+        virtual bool is_enabled() const override { return _sensor && !_sensor->is_streaming(); }
         const char* get_description() const override;
 
         void enable_recording(std::function<void(const option &)> record_action) override
