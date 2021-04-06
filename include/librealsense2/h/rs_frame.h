@@ -348,10 +348,12 @@ void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error**
 void rs2_pose_frame_get_pose_data(const rs2_frame* frame, rs2_pose* pose, rs2_error** error);
 
 /**
-* Calculate the rectangle size on the specific target
-* \param[in] frame         Left or right camera frame of size 256x144
-* \param[out] rect_sides   The four rectangle side sizes in pixels with the order of top, bottom, left, and right
-* \param[out] error        If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* Extract the target dimensions on the specific target
+* \param[in] frame            Left or right camera frame of specified size based on the target type
+* \param[in] calib_type       Calibration target type
+* \param[in] target_dims_size Target dimension array size
+* \param[out] target_dims     The array to hold the result target dimensions calculated. For type RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES, the four rectangle side sizes in pixels with the order of top, bottom, left, and right
+* \param[out] error           If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_extract_target_dimensions(const rs2_frame* frame, rs2_calib_target_type calib_type, float * target_dims, unsigned int target_dims_size, rs2_error** error);
 

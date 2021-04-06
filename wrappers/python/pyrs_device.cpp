@@ -38,8 +38,11 @@ void init_device(py::module &m) {
         .def(BIND_DOWNCAST(device, firmware_logger))
         .def("__repr__", [](const rs2::device &self) {
             std::stringstream ss;
-            ss << "<" SNAME ".device: " << self.get_info(RS2_CAMERA_INFO_NAME)
-                << " (S/N: " << self.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+            ss << "<" SNAME ".device: " << self.get_info(RS2_CAMERA_INFO_NAME);
+            if (self.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
+                ss << " (S/N: " << self.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+            else
+                ss << " (FW update id: " << self.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
             if (self.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION))
                 ss << "  FW: " << self.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
             if (self.supports(RS2_CAMERA_INFO_CAMERA_LOCKED))

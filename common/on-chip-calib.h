@@ -64,14 +64,14 @@ namespace rs2
 
         enum auto_calib_action
         {
-            RS2_CALIB_ACTION_ON_CHIP_OB_CALIB,  // One button On-Chip calibration for both
+            RS2_CALIB_ACTION_ON_CHIP_OB_CALIB,  // On-Chip calibration extended
             RS2_CALIB_ACTION_ON_CHIP_CALIB,     // On-Chip calibration
             RS2_CALIB_ACTION_ON_CHIP_FL_CALIB,  // On-Chip focal length calibration
             RS2_CALIB_ACTION_TARE_CALIB,        // Tare calibration
             RS2_CALIB_ACTION_TARE_GROUND_TRUTH, // Tare ground truth
         };
 
-        auto_calib_action action = RS2_CALIB_ACTION_ON_CHIP_OB_CALIB;
+        auto_calib_action action = RS2_CALIB_ACTION_ON_CHIP_CALIB;
         float laser_status_prev = 0.0f;
 
         int fl_step_count = 51;

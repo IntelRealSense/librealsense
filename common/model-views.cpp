@@ -756,7 +756,7 @@ namespace rs2
 
                     ImGui::SameLine();
                     if (new_line)
-                        ImGui::SetCursorPosX(pos_x + 135);
+                        ImGui::SetCursorPosX(pos_x + 120);
 
                     ImGui::PushItemWidth(new_line ? -1.f : 100.f);
 
@@ -773,6 +773,7 @@ namespace rs2
                     {
                         int tmp_selected = selected;
                         float tmp_value = value;
+                        ImGui::PushItemWidth(135.f);
                         if (ImGui::Combo(id.c_str(), &tmp_selected, labels.data(),
                             static_cast<int>(labels.size())))
                         {
@@ -3817,7 +3818,7 @@ namespace rs2
             auto s = std::make_shared<sensor>(sub);
             auto objects = std::make_shared< atomic_objects_in_frame >();
             // checking if the sensor is color_sensor or is D405 (with integrated RGB in depth sensor)
-            if (s->is<color_sensor>() || !strcmp(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "0B5B"))
+            if (s->is<color_sensor>() || (dev.supports(RS2_CAMERA_INFO_PRODUCT_ID) && !strcmp(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "0B5B")))
                 objects = _detected_objects;
             auto model = std::make_shared<subdevice_model>(dev, std::make_shared<sensor>(sub), objects, error_message, viewer, new_device_connected);
             subdevices.push_back(model);

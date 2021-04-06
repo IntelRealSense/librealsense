@@ -3,8 +3,8 @@
 
 # we want this test to run first so that all tests run with updated FW versions, so we give it priority 0
 #test:priority 0
-#test:device L500*
-#test:device D400*
+#test:device each(L500*)
+#test:device each(D400*)
 
 import pyrealsense2 as rs, sys, os, subprocess, re
 from rspy import devices, log, test, file, repo
