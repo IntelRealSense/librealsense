@@ -86,11 +86,16 @@ void update(rs2::update_device fwu_dev, std::vector<uint8_t> fw_image)
 {  
     std::cout << std::endl << "firmware update started"<< std::endl << std::endl;
 
-    fwu_dev.update(fw_image, [&](const float progress)
+    if (ISATTY(FILENO(stdout)))
     {
-        if (ISATTY(FILENO(stdout)))
-            printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
-    });
+        fwu_dev.update(fw_image, [&](const float progress)
+            {
+                printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
+            });
+    }
+    else
+        fwu_dev.update(fw_image, [&](const float progress){});
+    
     std::cout << std::endl << std::endl << "firmware update done" << std::endl;
 }
 
@@ -258,11 +263,15 @@ int main(int argc, char** argv) try
         {
             std::cout << std::endl << "backing-up device flash: " << std::endl;
 
-            auto flash = d.as<rs2::updatable>().create_flash_backup([&](const float progress)
+            if (ISATTY(FILENO(stdout)))
             {
-                if (ISATTY(FILENO(stdout)))
-                    printf("\rflash backup progress: %d[%%]", (int)(progress * 100));
-            });
+                auto flash = d.as<rs2::updatable>().create_flash_backup([&](const float progress)
+                    {
+                        printf("\rflash backup progress: %d[%%]", (int)(progress * 100));
+                    });
+            }
+            else
+                auto flash = d.as<rs2::updatable>().create_flash_backup([&](const float progress){});
 
             auto temp = backup_arg.getValue();
             std::ofstream file(temp.c_str(), std::ios::binary);
@@ -281,11 +290,16 @@ int main(int argc, char** argv) try
         {
             std::cout << std::endl << "firmware update started" << std::endl << std::endl;
 
-            d.as<rs2::updatable>().update_unsigned(fw_image, [&](const float progress)
+            if (ISATTY(FILENO(stdout)))
             {
-                if (ISATTY(FILENO(stdout)))
-                    printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
-            });
+                d.as<rs2::updatable>().update_unsigned(fw_image, [&](const float progress)
+                    {
+                        printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
+                    });
+            }
+            else
+                d.as<rs2::updatable>().update_unsigned(fw_image, [&](const float progress){});
+                
             std::cout << std::endl << std::endl << "firmware update done" << std::endl;
         }
         else
