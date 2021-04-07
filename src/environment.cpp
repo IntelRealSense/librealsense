@@ -25,6 +25,10 @@ namespace librealsense
         register_extrinsics(from, to, _id);
     }
 
+    // The aim of this method is to add the profile to the graph extrinsics - as a leaf not connected to any other at this stage
+    // It is used when a profile is cloned
+    // The cloned profile will later on be connected to its owning stream by the method register_extrinsics 
+    // (starting from init_stream_profiles method in the device's contructor)
     void extrinsics_graph::register_profile(const stream_interface& profile)
     {
         std::lock_guard<std::mutex> lock(_mutex); 
