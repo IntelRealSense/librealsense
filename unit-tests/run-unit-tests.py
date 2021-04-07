@@ -574,13 +574,15 @@ def test_wrapper( test, configuration = None ):
 
 
 # Run all tests
-if pyrs:
-    sys.path.append( pyrs_path )
-from rspy import devices
-devices.query()
-#
-# Under Travis, we'll have no devices and no acroname
-skip_live_tests = len(devices.all()) == 0  and  not devices.acroname
+list_only = list_tags or list_tests
+if not list_only:
+    if pyrs:
+        sys.path.append( pyrs_path )
+    from rspy import devices
+    devices.query()
+    #
+    # Under Travis, we'll have no devices and no acroname
+    skip_live_tests = len(devices.all()) == 0  and  not devices.acroname
 #
 log.reset_errors()
 tags = set()
@@ -597,11 +599,11 @@ for test in prioritize_tests( get_tests() ):
             continue
         #
         tags.update( test.config.tags )
-        #
         tests.append( test.name )
-        #
-        if list_tags or list_tests:
+        if list_only:
+            n_tests += 1
             continue
+        #
         if not test.is_live():
             test_wrapper( test )
             continue
@@ -632,7 +634,7 @@ if not n_tests:
     log.e( 'No unit-tests found!' )
     sys.exit(1)
 #
-if list_tags or list_tests:
+if list_only:
     if list_tags:
         print( "Available tags:" )
         for t in sorted( list( tags )):
