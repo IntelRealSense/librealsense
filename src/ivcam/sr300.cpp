@@ -78,14 +78,14 @@ namespace librealsense
         for (auto& group : group_devices)
         {
             platform::usb_device_info hwm;
-            platform::uvc_device_info dev0;
-            platform::uvc_device_info dev2;
+            platform::uvc_device_info color;
+            platform::uvc_device_info depth;
 
             if (mi_present(group, 0))
             {
-                dev0 = get_mi(group, 0);
-                chosen.push_back(dev0);
-                if (!ivcam::try_fetch_usb_device(usb, dev0, hwm))
+                color = get_mi(group, 0);
+                chosen.push_back(color);
+                if (!ivcam::try_fetch_usb_device(usb, color, hwm))
                 {
                     LOG_WARNING("try_fetch_usb_device(...) failed.");
                     return results;
@@ -93,15 +93,15 @@ namespace librealsense
             }
             if (mi_present(group, 2))
             {
-                dev2 = get_mi(group, 2);
-                chosen.push_back(dev2);
+                depth = get_mi(group, 2);
+                chosen.push_back(depth);
             }
-            if (!dev2.pid)
-                std::swap(dev0, dev2);
-            auto info = std::make_shared<sr300_info>(ctx, dev0, dev2, hwm);
+            if (!depth.pid) // SR306 : only mi=0 is defined
+                std::swap(color, depth);
+            auto info = std::make_shared<sr300_info>(ctx, color, depth, hwm);
             results.push_back(info);
 
-            if (!dev0.pid && !dev2.pid)
+            if (!color.pid && !depth.pid)
                 LOG_WARNING("SR300 group_devices is empty.");
         }
 
@@ -530,7 +530,7 @@ namespace librealsense
         device(ctx, group, register_device_notifications) {
 
         static auto device_name = "Intel RealSense SR305";
-        auto recommended_fw_version = firmware_version(SR3XX_RECOMMENDED_FIRMWARE_VERSION);
+        auto recommended_fw_version = firmware_version(SR305_RECOMMENDED_FIRMWARE_VERSION);
         update_info(RS2_CAMERA_INFO_NAME, device_name);
         register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, recommended_fw_version);
 
@@ -550,9 +550,9 @@ namespace librealsense
         device(ctx, group, register_device_notifications) {
 
         static auto device_name = "Intel RealSense SR306";
-        auto recommended_fw_version = firmware_version(SR3XX_RECOMMENDED_FIRMWARE_VERSION);
+        //auto recommended_fw_version = firmware_version(SR306_RECOMMENDED_FIRMWARE_VERSION);
         update_info(RS2_CAMERA_INFO_NAME, device_name);
-        register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, recommended_fw_version);
+        //register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, recommended_fw_version);
     }
 
     command sr3xx_camera::get_firmware_logs_command() const
