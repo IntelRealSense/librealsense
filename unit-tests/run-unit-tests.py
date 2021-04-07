@@ -583,17 +583,32 @@ devices.query()
 skip_live_tests = len(devices.all()) == 0  and  not devices.acroname
 #
 # Recovering devices
-if devices.acroname and len(devices.recovery()) > 0:
+if devices.acroname and len(devices.recovery()) > 0 and pyrs:
+    import pyrealsense2 as rs
     # find the update tool exe
     fw_updater_exe = None
     for tool in file.find( repo.root, '(^|/)rs-fw-update.exe$' ):
         fw_updater_exe = os.path.join( repo.root, tool )
     if not fw_updater_exe:
         log.e( "Could not find the update tool file (rs-fw-update.exe), can't recover devices" )
+
+    # get all necessary image files
+    image_files = set()
+    for sn in devices.recovery():
+        device = devices.get( sn )
+        product_line = device.get_info( rs.camera_info.product_line )
+        bundled_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.recommended_firmware_version ) )
+        image_name = product_line[0:2] + "XX_FW_Image-" + bundled_fw_version + ".bin"
+        image_mask = '(^|/)' + image_name + '$'
+        image_file = None
+        for image in file.find( repo.root, image_mask ):
+            image_files.add( os.path.join( repo.root, image ) )
+
     try:
-        cmd = [fw_updater_exe, '-r']
-        log.d( 'running:', cmd )
-        subprocess.run( cmd )
+        for image_file in image_files:
+            cmd = [fw_updater_exe, '-r', '-f', image_file]
+            log.d( 'running:', cmd )
+            subprocess.run( cmd )
     except Exception as e:
         log.e( "Unexpected error while trying to recover devices:", e )
     else:
