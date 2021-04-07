@@ -482,10 +482,8 @@ namespace librealsense
     public:
         std::vector<tagged_profile> get_profiles_tags() const override
         {
-            std::vector<tagged_profile> tags;
+            std::vector<tagged_profile> tags = sr3xx_camera::get_profiles_tags();
             tags.push_back({ RS2_STREAM_COLOR, -1, 1920, 1080, RS2_FORMAT_RGB8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 30, profile_tag::PROFILE_TAG_SUPERSET });
             return tags;
         };
 

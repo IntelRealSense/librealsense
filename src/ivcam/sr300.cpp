@@ -228,7 +228,7 @@ namespace librealsense
         depth_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp,
             [](rs2_metadata_type param) { return static_cast<rs2_metadata_type>(param * TIMESTAMP_10NSEC_TO_MSEC); }));
         depth_ep->register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, make_sr300_attribute_parser(&md_sr300_depth::frame_counter, md_offset));
-        depth_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, make_sr300_attribute_parser(&md_sr300_depth::actual_exposure, md_offset, 
+        depth_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, make_sr300_attribute_parser(&md_sr300_depth::actual_exposure, md_offset,
             [](rs2_metadata_type param) { return param * 100; }));
         depth_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_FPS, make_sr300_attribute_parser(&md_sr300_depth::actual_fps, md_offset));
 
@@ -461,7 +461,6 @@ namespace librealsense
         _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
 
         auto fw_version = _hw_monitor->get_firmware_version_string(gvd_buff, fw_version_offset);
-        auto recommended_fw_version = firmware_version(SR3XX_RECOMMENDED_FIRMWARE_VERSION);
         auto serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset);
         auto pid_hex_str = hexify(depth.pid);
 
@@ -478,7 +477,6 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "SR300");
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
-        //register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, recommended_fw_version);
 
         register_autorange_options();
 
@@ -519,7 +517,6 @@ namespace librealsense
     {
         static auto device_name = "Intel RealSense SR300";
         update_info(RS2_CAMERA_INFO_NAME, device_name);
-
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_color_stream, _depth_to_color_extrinsics);
         register_stream_to_extrinsic_group(*_color_stream, 0);
     }
@@ -533,7 +530,9 @@ namespace librealsense
         device(ctx, group, register_device_notifications) {
 
         static auto device_name = "Intel RealSense SR305";
+        auto recommended_fw_version = firmware_version(SR3XX_RECOMMENDED_FIRMWARE_VERSION);
         update_info(RS2_CAMERA_INFO_NAME, device_name);
+        register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, recommended_fw_version);
 
         roi_sensor_interface* roi_sensor;
         if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&get_sensor(_color_device_idx))))
@@ -551,7 +550,9 @@ namespace librealsense
         device(ctx, group, register_device_notifications) {
 
         static auto device_name = "Intel RealSense SR306";
+        auto recommended_fw_version = firmware_version(SR3XX_RECOMMENDED_FIRMWARE_VERSION);
         update_info(RS2_CAMERA_INFO_NAME, device_name);
+        register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, recommended_fw_version);
     }
 
     command sr3xx_camera::get_firmware_logs_command() const

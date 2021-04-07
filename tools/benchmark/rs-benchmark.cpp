@@ -234,27 +234,12 @@ int main(int argc, char** argv) try
     suites.push_back(make_shared<gl_blocks>());
 #endif
 
-    rs2::context ctx;
-    auto list = ctx.query_devices();
-    auto dev = list.front();
-    auto sensors = dev.query_sensors();
     pipeline p;
     config cfg;
-    for (auto& s : sensors)
-    {
-        auto streams = s.get_stream_profiles();
-        for (auto stream : streams)
-        {
-            if (stream.stream_type() == RS2_STREAM_COLOR)
-            {
-                cfg.enable_stream(RS2_STREAM_COLOR, RS2_FORMAT_YUYV, 30);
-                break;
-            }
-        }
-    }
-    
     cfg.enable_stream(RS2_STREAM_DEPTH);
+    cfg.enable_stream(RS2_STREAM_COLOR, RS2_FORMAT_YUYV, 30);
     auto prof = p.start(cfg);
+    auto dev = prof.get_device();
     auto name = dev.get_info(RS2_CAMERA_INFO_NAME);
     cout << "|**Device Name** |" << name << " |" << endl << endl;
     cout.precision(3);
