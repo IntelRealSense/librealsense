@@ -115,7 +115,18 @@ def query( monitor_changes = True ):
     try:
         log.d( 'discovering devices ...' )
         log.debug_indent()
-        for dev in _context.query_devices():
+        for retry in range(3):
+            try:
+                devices = _context.query_devices()
+                break
+            except RuntimeError as e:
+                log.d( 'FAILED to query devices:', e )
+                if retry > 1:
+                    log.e( 'FAILED to query devices', retry + 1, 'times!' )
+                    raise
+                else:
+                    time.sleep( 1 )
+        for dev in devices:
             if dev.is_update_device():
                 sn = dev.get_info( rs.camera_info.firmware_update_id )
             else:
