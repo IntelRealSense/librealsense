@@ -136,7 +136,7 @@ def subprocess_run(cmd, stdout = None, timeout = 200, append = False):
     """
     Wrapper function for subprocess.run.
     If the child process times out or ends with a non-zero exit status an exception is raised!
-    
+
     :param cmd: the command and argument for the child process, as a list
     :param stdout: path of file to direct the output of the process to (None to disable)
     :param timeout: number of seconds to give the process before forcefully ending it (None to disable)
@@ -464,7 +464,7 @@ class ExeTest(Test):
         if 'custom-args' not in self.config.flags:
             # Assume we're a Catch2 exe, so:
             #if sys.flags.verbose:
-            #    cmd += 
+            #    cmd +=
             if log.is_debug_on():
                 cmd += ['-d', 'yes']  # show durations for each test-case
                 #cmd += ['--success']  # show successful assertions in output
@@ -583,6 +583,43 @@ if not list_only:
     #
     # Under Travis, we'll have no devices and no acroname
     skip_live_tests = len(devices.all()) == 0  and  not devices.acroname
+#
+# Recovering devices
+if devices.acroname and len(devices.recovery()) > 0 and pyrs:
+    import pyrealsense2 as rs
+    # find the update tool exe
+    fw_updater_exe = None
+    for tool in file.find( repo.root, '(^|/)rs-fw-update.exe$' ):
+        fw_updater_exe = os.path.join( repo.root, tool )
+    if not fw_updater_exe:
+        log.e( "Could not find the update tool file (rs-fw-update.exe), can't recover devices" )
+
+    # get all necessary image files
+    product_line_and_image_file = {}
+    for sn in devices.recovery():
+        device = devices.get( sn )
+        product_line = device.get_info( rs.camera_info.product_line )
+        if product_line in product_line_and_image_file.keys():
+            continue
+        image_name = product_line[:-2] + "XX_FW_Image-"
+        image_mask = '(^|/)' + image_name + '(\d+\.){4}bin$'
+        image_file = None
+        for image in file.find( repo.root, image_mask ):
+            image_file = image
+        product_line_and_image_file[product_line] = os.path.join( repo.root, image_file )
+
+    try:
+        for product_line, image_file in product_line_and_image_file.items():
+            recovery_devices_by_product_line = [sn for sn in devices.recovery() if
+                                devices.get( sn ).get_info( rs.camera_info.product_line ) == product_line]
+            devices.enable_only( recovery_devices_by_product_line )
+            cmd = [fw_updater_exe, '-r', '-f', image_file]
+            log.d( 'running:', cmd )
+            subprocess.run( cmd )
+    except Exception as e:
+        log.e( "Unexpected error while trying to recover devices:", e )
+    else:
+        devices.query()
 #
 log.reset_errors()
 tags = set()
