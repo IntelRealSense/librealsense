@@ -252,6 +252,19 @@ def get_port( sn ):
     return _device_by_sn.get(sn).port
 
 
+def recovery():
+    """
+    :return: A set of all device serial-numbers that are in recovery mode
+    """
+    global _device_by_sn
+    recovery_devices = set()
+    for sn in all():
+        dev = get( sn )
+        if dev.is_update_device():
+            recovery_devices.add( sn )
+    return recovery_devices
+
+
 def enable_only( serial_numbers, recycle = False, timeout = 5 ):
     """
     Enable only the devices corresponding to the given serial-numbers. This can work either

@@ -583,26 +583,21 @@ devices.query()
 skip_live_tests = len(devices.all()) == 0  and  not devices.acroname
 #
 # Recovering devices
-if devices.acroname:
-    need_to_recover = False
-    for dev in devices.all():
-        if dev.is_update_device():
-            need_to_recover = True
-    if need_to_recover:
-        # find the update tool exe
-        fw_updater_exe = None
-        for tool in file.find( repo.root, '(^|/)rs-fw-update.exe$' ):
-            fw_updater_exe = os.path.join( repo.root, tool )
-        if not fw_updater_exe:
-            log.e( "Could not find the update tool file (rs-fw-update.exe), can't recover devices" )
-        try:
-            cmd = [fw_updater_exe, '-r']
-            log.d( 'running:', cmd )
-            subprocess.run( cmd )
-        except Exception as e:
-            log.e( "Unexpected error while trying to recover devices:", e )
-        else:
-            devices.query()
+if devices.acroname and len(devices.recovery()) > 0:
+    # find the update tool exe
+    fw_updater_exe = None
+    for tool in file.find( repo.root, '(^|/)rs-fw-update.exe$' ):
+        fw_updater_exe = os.path.join( repo.root, tool )
+    if not fw_updater_exe:
+        log.e( "Could not find the update tool file (rs-fw-update.exe), can't recover devices" )
+    try:
+        cmd = [fw_updater_exe, '-r']
+        log.d( 'running:', cmd )
+        subprocess.run( cmd )
+    except Exception as e:
+        log.e( "Unexpected error while trying to recover devices:", e )
+    else:
+        devices.query()
 #
 log.reset_errors()
 tags = set()
