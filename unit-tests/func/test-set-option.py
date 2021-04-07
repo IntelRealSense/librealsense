@@ -88,14 +88,19 @@ depth_sensor.set_option( rs.option.visual_preset, int(rs.l500_visual_preset.max_
 
 #############################################################################################
 
-ignore_options = [rs.option.host_performance, rs.option.trigger_camera_accuracy_health, rs.option.reset_camera_accuracy_health]
+product_line = dev.get_info(rs.camera_info.product_line)
+options_to_ignore = [] 
+
+if product_line == "L500":
+    options_to_ignore = [rs.option.host_performance, rs.option.trigger_camera_accuracy_health, rs.option.reset_camera_accuracy_health]
 
 def test_option_changes( sensor ):
-    global ignore_options
-    sensor_options = sensor.get_supported_options()
-    options = [option for option in sensor_options if option not in ignore_options]
+    global options_to_ignore
+    options = sensor.get_supported_options()
     for option in options:
         try:
+            if option in options_to_ignore: 
+                continue
             if sensor.is_option_read_only(option): 
                 continue
             old_value = sensor.get_option( option )
