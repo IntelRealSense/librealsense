@@ -530,9 +530,9 @@ namespace librealsense
         device(ctx, group, register_device_notifications) {
 
         static auto device_name = "Intel RealSense SR305";
-        auto recommended_fw_version = firmware_version(SR305_RECOMMENDED_FIRMWARE_VERSION);
+        //auto recommended_fw_version = firmware_version(SR3XX_RECOMMENDED_FIRMWARE_VERSION);
         update_info(RS2_CAMERA_INFO_NAME, device_name);
-        register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, recommended_fw_version);
+        //register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, recommended_fw_version);
 
         roi_sensor_interface* roi_sensor;
         if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&get_sensor(_color_device_idx))))
