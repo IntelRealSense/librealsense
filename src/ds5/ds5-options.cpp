@@ -373,13 +373,13 @@ namespace librealsense
         return *_range;
     }
 
-    external_sync_mode::external_sync_mode(hw_monitor& hwm)
-        : _hwm(hwm)
+    external_sync_mode::external_sync_mode(hw_monitor& hwm, sensor_base* ep, int ver)
+        : _hwm(hwm), _sensor(ep), _ver(ver)
     {
         _range = [this]()
         {
             return option_range{ ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT,
-                                 2,
+                                 static_cast<float>(_ver == 3 ? ds::inter_cam_sync_mode::INTERCAM_SYNC_MAX : (_ver == 2 ? 258 : 2)),
                                  1,
                                  ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT};
         };
@@ -388,7 +388,31 @@ namespace librealsense
     void external_sync_mode::set(float value)
     {
         command cmd(ds::SET_CAM_SYNC);
-        cmd.param1 = static_cast<int>(value);
+        if (_ver == 1)
+        {
+            cmd.param1 = static_cast<int>(value);
+        }
+        else
+        {
+            if (_sensor->is_streaming())
+                throw std::runtime_error("Cannot change Inter-camera HW synchronization mode while streaming!");
+
+            if (value < 4)
+                cmd.param1 = static_cast<int>(value);
+            else if (value == 259) // For Sending two frame - First with laser ON, and the other with laser OFF.
+            {
+                cmd.param1 = 0x00010204; // genlock, two frames, on-off
+            }
+            else if (value == 260) // For Sending two frame - First with laser OFF, and the other with laser ON.
+            {
+                cmd.param1 = 0x00030204; // genlock, two frames, off-on
+            }
+            else
+            {
+                cmd.param1 = 4;
+                cmd.param1 |= (static_cast<int>(value - 3)) << 8;
+            }
+        }
 
         _hwm.send(cmd);
         _record_action(*this);
@@ -401,58 +425,21 @@ namespace librealsense
         if (res.empty())
             throw invalid_value_exception("external_sync_mode::query result is empty!");
 
-        return (res.front());
-    }
-
-    option_range external_sync_mode::get_range() const
-    {
-        return *_range;
-    }
-
-    external_sync_mode2::external_sync_mode2(hw_monitor& hwm, sensor_base* ep)
-        : _hwm(hwm), _sensor(ep)
-    {
-        _range = [this]()
-        {
-            return option_range{ ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT,
-                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_MAX,
-                                 1,
-                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT };
-        };
-    }
-
-    void external_sync_mode2::set(float value)
-    {
-        if (_sensor->is_streaming())
-            throw std::runtime_error("Cannot change Inter-camera HW synchronization mode while streaming!");
-
-        command cmd(ds::SET_CAM_SYNC);
-        if (value < 4)
-            cmd.param1 = static_cast<int>(value);
-        else
-        {
-            cmd.param1 = 4;
-            cmd.param1 |= (static_cast<int>(value - 3)) << 8;
-        }
-
-        _hwm.send(cmd);
-        _record_action(*this);
-    }
-
-    float external_sync_mode2::query() const
-    {
-        command cmd(ds::GET_CAM_SYNC);
-        auto res = _hwm.send(cmd);
-        if (res.empty())
-            throw invalid_value_exception("external_sync_mode::query result is empty!");
-
         if (res.front() < 4)
             return (res.front());
+        else if (res[2] == 0x01)
+        {
+            return 259.0f;
+        }
+        else if (res[2] == 0x03)
+        {
+            return 260.0f;
+        }
         else
             return (static_cast<float>(res[1]) + 3.0f);
     }
 
-    option_range external_sync_mode2::get_range() const
+    option_range external_sync_mode::get_range() const
     {
         return *_range;
     }
@@ -491,6 +478,16 @@ namespace librealsense
     option_range emitter_on_and_off_option::get_range() const
     {
         return *_range;
+    }
+
+    const char* external_sync_mode::get_description() const
+    {
+        if (_ver == 3)
+            return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave, 3:Full Salve, 4-258:Genlock with burst count of 1-255 frames for each trigger, 259 and 260 for two frames per trigger with laser ON-OFF and OFF-ON.";
+        else if (_ver == 2)
+            return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave, 3:Full Salve, 4-258:Genlock with burst count of 1-255 frames for each trigger";
+        else
+            return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave";
     }
 
     alternating_emitter_option::alternating_emitter_option(hw_monitor& hwm, sensor_base* ep, bool is_fw_version_using_id)
