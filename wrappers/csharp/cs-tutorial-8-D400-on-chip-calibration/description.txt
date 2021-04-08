@@ -1,0 +1,37 @@
+an example of calling on-chip calibration from C#
+
+This example based on cs-tutorial-2-capture
+Works like viewer for colored depth and color streams.
+
+when in console press C, then:
+- stops rendering pipeline
+- starts calibration pipeline
+
+dialog in console:
+
+If you want to start calibration mode, switch to opened application console and press C
+Stopping rendering pipeline...
+Please choose:
+1 - Calibrate
+2 - Reset calibration to factory defaults
+3 - Exit
+Getting context...
+Calibration device
+   Serial number:
+   Firmware version:
+Starting pipeline for calibration mode
+1. Calibration table before running on-chip calibration.
+Step 1 :  done
+2. Runs the on-chip self-calibration routine that returns pointer to new calibration table.
+2. Runs the on-chip self-calibration routine that returns pointer to new calibration table.
+Accept calibration? (Y\N)
+Step 2 :  done
+3. Toggle between calibration tables to assess which is better. This is optional.
+Compare and select better calibration table between current and FW device (Y\N)
+Step 3 :  done
+4. Burns the new calibration to FW persistently. (Y\N)
+Step 4 :  done
+Calibration complete
+Stopping calibration pipeline...
+Starting rendering pipeline...
+If you want to start calibration mode, switch to opened application console and press C
