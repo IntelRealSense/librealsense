@@ -52,7 +52,7 @@ try:
     cv2.namedWindow("Depth Stream", cv2.WINDOW_AUTOSIZE)
     
     # Create colorizer object
-    colorizer = rs.colorizer();
+    colorizer = rs.colorizer()
 
     # Streaming loop
     while True:

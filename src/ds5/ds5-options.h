@@ -189,41 +189,17 @@ namespace librealsense
     class external_sync_mode : public option
     {
     public:
-        external_sync_mode(hw_monitor& hwm);
+        external_sync_mode(hw_monitor& hwm, sensor_base* depth_ep = nullptr, int ver = 1); // ver = 1, for firmware 5.9.15.1 and later, INTERCAM_SYNC_MAX is 2 with master and slave mode only.
+                                                                                           // ver = 2, for firmware 5.12.4.0 and later, INTERCAM_SYNC_MAX is 258 by adding FULL SLAVE mode and genlock with trigger frequency 1 - 255.
+                                                                                           // ver = 3  for firmware 5.12.12.100 and later, INTERCAM_SYNC_MAX is 260 by adding genlock with laser on-off and Off-On two frames.
+
         virtual ~external_sync_mode() = default;
         virtual void set(float value) override;
         virtual float query() const override;
         virtual option_range get_range() const override;
-        virtual bool is_enabled() const override { return true; }
+        virtual bool is_enabled() const override { return _sensor && !_sensor->is_streaming(); }
+        const char* get_description() const override;
 
-        const char* get_description() const override
-        {
-            return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave";
-        }
-        void enable_recording(std::function<void(const option &)> record_action) override
-        {
-            _record_action = record_action;
-        }
-    private:
-        std::function<void(const option &)> _record_action = [](const option&) {};
-        lazy<option_range> _range;
-        hw_monitor& _hwm;
-    };
-
-    class external_sync_mode2 : public option
-    {
-    public:
-        external_sync_mode2(hw_monitor& hwm, sensor_base* depth_ep);
-        virtual ~external_sync_mode2() = default;
-        virtual void set(float value) override;
-        virtual float query() const override;
-        virtual option_range get_range() const override;
-        virtual bool is_enabled() const override { return _sensor && !_sensor ->is_streaming(); }
-
-        const char* get_description() const override
-        {
-            return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave, 3:Full Salve, 4-258:Genlock with burst count of 1-255 frames for each trigger";
-        }
         void enable_recording(std::function<void(const option &)> record_action) override
         {
             _record_action = record_action;
@@ -233,6 +209,7 @@ namespace librealsense
         lazy<option_range> _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
+        int _ver;
     };
 
     class emitter_on_and_off_option : public option
