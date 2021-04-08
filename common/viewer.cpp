@@ -3117,12 +3117,30 @@ namespace rs2
             // This can work poorly when the app FPS is really terrible (< 10)
             // but overall works resonably well
             const auto MAX_MOUSE_JUMP = 200;
+            const auto SCROLL_SLOW_MAX_TIME_MS = 50;
+            const auto SCROLL_FAST_MIN_TIME_MS = 500;
+            float zoom_per_tick = 0.2f;
+            static auto prev_scroll_time = std::chrono::high_resolution_clock::now();
+            if (mouse.mouse_wheel != 0)
+            {
+                auto scroll_time = std::chrono::high_resolution_clock::now();
+                auto delta_scroll_time = std::chrono::duration_cast<std::chrono::milliseconds>(scroll_time - prev_scroll_time).count();
+                prev_scroll_time = scroll_time;
+
+                // scrolling impact is scaled up / down if the scrolling speed is fast / slow
+                if (delta_scroll_time < SCROLL_SLOW_MAX_TIME_MS)
+                    zoom_per_tick *= 2.f;
+                else if (delta_scroll_time > SCROLL_FAST_MIN_TIME_MS)
+                    zoom_per_tick *= 0.5f;
+            }
+            
+            
             if (std::abs(cx - px) < MAX_MOUSE_JUMP && 
                 std::abs(cy - py) < MAX_MOUSE_JUMP )
                 arcball_camera_update(
                 (float*)&pos, (float*)&target, (float*)&up, view,
                 sec_since_update,
-                0.2f, // zoom per tick
+                zoom_per_tick,
                 -0.1f, // pan speed
                 3.0f, // rotation multiplier
                 static_cast<int>(viewer_rect.w), static_cast<int>(viewer_rect.h), // screen (window) size
