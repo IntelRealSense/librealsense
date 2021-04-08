@@ -153,7 +153,7 @@ if state.color:
 image_data = pyglet.image.ImageData(image_w, image_h, convert_fmt(
 other_profile.format()), (gl.GLubyte * (image_w * image_h * 3))())
 
-if (pyglet.version.startswith('1.') and not pyglet.version.startswith('1.4')):
+if (pyglet.version <  '1.4' ):
     # pyglet.clock.ClockDisplay has be removed in 1.4
     fps_display = pyglet.clock.ClockDisplay()
 else:
