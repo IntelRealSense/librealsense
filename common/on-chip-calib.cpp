@@ -11,7 +11,8 @@
 #include <condition_variable>
 #include <model-views.h>
 #include <viewer.h>
-
+#include "calibration-model.h"
+#include "../src/ds5/ds5-private.h"
 #include "../tools/depth-quality/depth-metrics.h"
 
 namespace rs2
@@ -82,6 +83,7 @@ namespace rs2
         bool frame_arrived = false;
         try
         {
+            bool run_fl_calib = action == RS2_CALIB_ACTION_FL_CALIB && w == 256 && h == 144 && fps == 90;
             if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
             {
                 _uid = 1;
@@ -93,13 +95,37 @@ namespace rs2
                         break;
                     }
                 }
-                if (_sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
-                    _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
+
+                _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
+            }
+            else if (run_fl_calib)
+            {
+                _uid = 1;
+                _uid2 = 2;
+                bool first_done = 0;
+                for (const auto& format : _sub->formats)
+                {
+                    if (format.second[0] == "Y8")
+                    {
+                        if (!first_done)
+                        {
+                            _uid = format.first;
+                            first_done = true;
+                        }
+                        else
+                        {
+                            _uid2 = format.first;
+                            break;
+                        }
+                    }
+                }
+
+                _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
             }
             else
             {
                 _uid = 0;
-                for (const auto & format : _sub->formats)
+                for (const auto& format : _sub->formats)
                 {
                     if (format.second[0] == "Z16")
                     {
@@ -112,9 +138,13 @@ namespace rs2
             // Select stream
             _sub->stream_enabled.clear();
             _sub->stream_enabled[_uid] = true;
+            if (run_fl_calib)
+                _sub->stream_enabled[_uid2] = true;
 
             _sub->ui.selected_format_id.clear();
             _sub->ui.selected_format_id[_uid] = 0;
+            if (run_fl_calib)
+                _sub->ui.selected_format_id[_uid2] = 0;
 
             // Select FPS value
             for (int i = 0; i < _sub->shared_fps_values.size(); i++)
@@ -137,8 +167,8 @@ namespace rs2
                 for (int i = 0; i < _sub->shared_fps_values.size(); i++)
                 {
                     //if (_sub->shared_fps_values[i] == 30)
-                        _sub->ui.selected_shared_fps_id = i;
-                        if (_sub->is_selected_combination_supported()) break;
+                    _sub->ui.selected_shared_fps_id = i;
+                    if (_sub->is_selected_combination_supported()) break;
                 }
 
                 // If still not supported, try VGA30
@@ -155,7 +185,7 @@ namespace rs2
 
             auto profiles = _sub->get_selected_profiles();
 
-            invoke([&](){
+            invoke([&]() {
                 if (!_model.dev_syncer)
                     _model.dev_syncer = _viewer.syncer->create_syncer();
 
@@ -165,7 +195,7 @@ namespace rs2
                 {
                     _viewer.begin_stream(_sub, profile);
                 }
-            });
+                });
 
             // Wait for frames to arrive
             int count = 0;
@@ -537,6 +567,166 @@ namespace rs2
         }
     }
 
+    void on_chip_calib_manager::calibrate_fl()
+    {
+        try
+        {
+            auto sensor = _sub->s->as<rs2::depth_stereo_sensor>();
+            float stereo_baseline = 0.0f;
+            if (sensor)
+                stereo_baseline = sensor.get_option(RS2_OPTION_STEREO_BASELINE);
+
+            std::shared_ptr<rect_calculator> gt_calculator[2];
+            bool created[2] = { false, false };
+
+            int counter = 0;
+            int limit = rect_calculator::_frame_num << 1;
+            int step = 50 / rect_calculator::_frame_num;
+
+            int ret = { 0 };
+            int id[2] = { _uid, _uid2 };
+            float fx[2] = { 0 };
+            float fy[2] = { 0 };
+            float rec_sides[2][4] = { 0 };
+            float target_fw[2] = { 0 };
+            float target_fh[2] = { 0 };
+
+            rs2::frame f;
+            bool done[2] = { false, false };
+            while (counter < limit)
+            {
+                for (int i = 0; i < 2; ++i)
+                {
+                    if (!done[i])
+                    {
+                        f = _viewer.ppf.frames_queue[id[i]].wait_for_frame();
+                        if (f)
+                        {
+                            if (!created[i])
+                            {
+                                stream_profile profile = f.get_profile();
+                                auto vsp = profile.as<video_stream_profile>();
+
+                                gt_calculator[i] = std::make_shared<rect_calculator>();
+                                fx[i] = vsp.get_intrinsics().fx;
+                                fy[i] = vsp.get_intrinsics().fy;
+                                target_fw[i] = vsp.get_intrinsics().fx * config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f);
+                                target_fh[i] = vsp.get_intrinsics().fy * config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f);
+                                created[i] = true;
+                            }
+
+                            ret = gt_calculator[i]->calculate(f.get(), rec_sides[i]);
+                            if (ret == 0)
+                                ++counter;
+                            else if (ret == 1)
+                                _progress += step;
+                            else if (ret == 2)
+                            {
+                                _progress += step;
+                                done[i] = true;
+                            }
+                        }
+                    }
+                }
+
+                if (done[0] && done[1])
+                    break;
+            }
+
+            if (ret == 2 && fx[1] > 0.1f && fy[1] > 0.1f)
+            {
+                float ar[2] = { 0 };
+                float tmp = rec_sides[0][2] + rec_sides[0][3];
+                if (tmp > 0.1f)
+                    ar[0] = (rec_sides[0][0] + rec_sides[0][1]) / tmp;
+
+                tmp = rec_sides[1][2] + rec_sides[1][3];
+                if (tmp > 0.1f)
+                    ar[1] = (rec_sides[1][0] + rec_sides[1][1]) / tmp;
+
+                if (ar[0] > 0.0f)
+                    align = ar[1] / ar[0] - 1.0f;
+
+                float ta[2] = { 0 };
+                float gt[4] = { 0 };
+                float ave_gt = 0.0f;
+                for (int i = 0; i < 2; ++i)
+                {
+                    if (rec_sides[i][0] > 0)
+                        gt[0] = target_fw[i] / rec_sides[i][0];
+
+                    if (rec_sides[i][1] > 0)
+                        gt[1] = target_fw[i] / rec_sides[i][1];
+
+                    if (rec_sides[i][2] > 0)
+                        gt[2] = target_fh[i] / rec_sides[i][2];
+
+                    if (rec_sides[i][3] > 0)
+                        gt[3] = target_fh[i] / rec_sides[i][3];
+
+                    ave_gt = 0.0f;
+                    for (int i = 0; i < 4; ++i)
+                        ave_gt += gt[i];
+                    ave_gt /= 4.0;
+
+                    ta[i] = atanf(align * ave_gt / stereo_baseline);
+                    ta[i] = rad2deg(ta[i]);
+                }
+
+                tilt_angle = (ta[0] + ta[1]) / 2;
+
+                align *= 100;
+
+                float r[4] = { 0 };
+                float c = fx[0] / fx[1];
+
+                if (rec_sides[0][0] > 0.1f)
+                    r[0] = c * rec_sides[1][0] / rec_sides[0][0];
+
+                if (rec_sides[0][1] > 0.1f)
+                    r[1] = c * rec_sides[1][1] / rec_sides[0][1];
+
+                c = fy[0] / fy[1];
+                if (rec_sides[0][2] > 0.1f)
+                    r[2] = c * rec_sides[1][2] / rec_sides[0][2];
+
+                if (rec_sides[0][3] > 0.1f)
+                    r[3] = c * rec_sides[1][3] / rec_sides[0][3];
+
+                ratio = 0.0f;
+                for (int i = 0; i < 4; ++i)
+                    ratio += r[i];
+                ratio /= 4;
+
+                ratio -= 1.0f;
+                ratio *= 100;
+
+                corrected_ratio = ratio - correction_factor * align;
+
+                float ratio_to_apply = corrected_ratio / 100.0f + 1.0f;
+                _new_calib = _old_calib;
+                auto table = (librealsense::ds::coefficients_table*)_new_calib.data();
+                table->intrinsic_right.x.x *= ratio_to_apply;
+                table->intrinsic_right.x.y *= ratio_to_apply;
+
+                auto actual_data = _new_calib.data() + sizeof(librealsense::ds::table_header);
+                auto actual_data_size = _new_calib.size() - sizeof(librealsense::ds::table_header);
+                auto crc = helpers::calc_crc32(actual_data, actual_data_size);
+                table->header.crc32 = crc;
+            }
+            else
+                fail("Please adjust the camera position \nand make sure the specific target is \nin the middle of the camera image!");
+        }
+        catch (const std::runtime_error& error)
+        {
+            fail(error.what());
+        }
+        catch (...)
+        {
+            fail("Getting ground truth failed!");
+        }
+    }
+
     void on_chip_calib_manager::process_flow(std::function<void()> cleanup, invoker invoke)
     {
         update_last_used();
@@ -580,6 +770,9 @@ namespace rs2
         std::this_thread::sleep_for(std::chrono::milliseconds(600));
 
         // Switch into special Auto-Calibration mode
+        if (action == RS2_CALIB_ACTION_FL_CALIB)
+            _viewer.is_3d_view = false;
+
         try_start_viewer(256, 144, 90, invoke);
 
         if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
@@ -588,7 +781,7 @@ namespace rs2
         {
             try
             {
-                calibrate();
+                (action == RS2_CALIB_ACTION_FL_CALIB ? calibrate_fl() : calibrate());
             }
             catch (...)
             {
@@ -604,6 +797,8 @@ namespace rs2
 
         if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
             log(to_string() << "Tare ground truth is got: " << ground_truth);
+        else if (action == RS2_CALIB_ACTION_FL_CALIB)
+            log(to_string() << "Focal length ratio is got: " << ratio);
         else
             log(to_string() << "Calibration completed, health factor = " << _health);
 
@@ -613,6 +808,9 @@ namespace rs2
 
         if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
         {
+            if (action == RS2_CALIB_ACTION_FL_CALIB)
+                _viewer.is_3d_view = true;
+
             try_start_viewer(0, 0, 0, invoke); // Start with default settings
 
             // Make new calibration active
@@ -764,9 +962,13 @@ namespace rs2
                    ImGui::Text("%s", "On-Chip Focal Length Calibration");
                else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB)
                    ImGui::Text("%s", "Tare Calibration");
+               else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB)
+                   ImGui::Text("%s", "Focal Length Calibration");
                else
                    ImGui::Text("%s", "On-Chip Calibration");
             }
+            else if (update_state == RS2_CALIB_STATE_FL_INPUT)
+                ImGui::Text("%s", "Focal Length Calibration");
             else if (update_state == RS2_CALIB_STATE_TARE_INPUT || update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED)
                 ImGui::Text("%s", "Tare Calibration");
             else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH || update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_IN_PROCESS || update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_COMPLETE)
@@ -1186,6 +1388,42 @@ namespace rs2
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("%s", "Begin On-Chip Calibration");
             }
+            else if (update_state == RS2_CALIB_STATE_FL_INPUT)
+            {
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 33) });
+                ImGui::Text("%s", "Please point the camera to the specific target");
+
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - 25) });
+                auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
+                ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
+
+                std::string button_name = to_string() << "Calibrate" << "##fl" << index;
+
+                ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
+                if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
+                {
+                    get_manager().laser_status_prev = get_manager()._sub->s->get_option(RS2_OPTION_EMITTER_ENABLED);
+                    get_manager().restore_workspace([this](std::function<void()> a) { a(); });
+                    get_manager().reset();
+                    get_manager().retry_times = 0;
+                    get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB;
+                    auto _this = shared_from_this();
+                    auto invoke = [_this](std::function<void()> action) {
+                        _this->invoke(action);
+                    };
+                    get_manager().start(invoke);
+                    update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
+                    enable_dismiss = false;
+                }
+
+                ImGui::PopStyleColor(2);
+
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("%s", "Focal Length Calibration Calibration");
+                }
+            }
             else if (update_state == RS2_CALIB_STATE_FAILED)
             {
                 if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB
@@ -1241,6 +1479,9 @@ namespace rs2
             }
             else if (update_state == RS2_CALIB_STATE_CALIB_COMPLETE)
             {
+                if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB)
+                    get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);
+            
                 auto health = get_manager().get_health();
 
                 auto recommend_keep = fabs(health) < 0.25f;
@@ -1360,6 +1601,49 @@ namespace rs2
                             "[0.15, 0.75) - Can be Improved\n"
                             "[0.75, ) - Requires Calibration");
                     }
+                }
+                else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB)
+                {
+                    ImGui::Text("%s", "Focal Length Imbalance: ");
+
+                    std::stringstream ss_1;
+                    ss_1 << std::fixed << std::setprecision(3) << get_manager().corrected_ratio;
+                    auto ratio_str = ss_1.str();
+                    ratio_str += " %";
+
+                    std::string text_name = to_string() << "##notification_text_1_" << index;
+
+                    ImGui::SetCursorScreenPos({ float(x + 175), float(y + 30) });
+                    ImGui::PushStyleColor(ImGuiCol_Text, white);
+                    ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+                    ImGui::InputTextMultiline(text_name.c_str(), const_cast<char*>(ratio_str.c_str()), strlen(ratio_str.c_str()) + 1, { 86, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
+                    ImGui::PopStyleColor(7);
+
+                    ImGui::SetCursorScreenPos({ float(x + 10), float(y + 38) + ImGui::GetTextLineHeightWithSpacing() });
+                    ImGui::Text("%s", "Estimated Tilt Angle: ");
+
+                    std::stringstream ss_2;
+                    ss_2 << std::fixed << std::setprecision(3) << get_manager().tilt_angle;
+                    auto align_str = ss_2.str();
+                    align_str += " deg";
+
+                    text_name = to_string() << "##notification_text_2_" << index;
+
+                    ImGui::SetCursorScreenPos({ float(x + 175), float(y + 35) + ImGui::GetTextLineHeightWithSpacing() });
+                    ImGui::PushStyleColor(ImGuiCol_Text, white);
+                    ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+                    ImGui::InputTextMultiline(text_name.c_str(), const_cast<char*>(align_str.c_str()), strlen(align_str.c_str()) + 1, { 86, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
+                    ImGui::PopStyleColor(7);
                 }
                 else
                 {
@@ -1500,11 +1784,11 @@ namespace rs2
                 }
                 else
                 {
-                    ImGui::SetCursorScreenPos({ float(x + 7), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? float(y + 105) + ImGui::GetTextLineHeightWithSpacing() : float(y + 100)) });
+                    ImGui::SetCursorScreenPos({ float(x + 7), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ? float(y + 105) + ImGui::GetTextLineHeightWithSpacing() : float(y + 100)) });
                     ImGui::Text("%s", "Please compare new vs old calibration\nand decide if to keep or discard the result...");
                 }
 
-                ImGui::SetCursorScreenPos({ float(x + 20), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? float(y + 70) + ImGui::GetTextLineHeightWithSpacing() : float(y + 60)) });
+                ImGui::SetCursorScreenPos({ float(x + 20), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ? float(y + 70) + ImGui::GetTextLineHeightWithSpacing() : float(y + 60)) });
 
                 if (ImGui::RadioButton("New", use_new_calib))
                 {
@@ -1512,7 +1796,7 @@ namespace rs2
                     get_manager().apply_calib(true);
                 }
 
-                ImGui::SetCursorScreenPos({ float(x + 150), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? float(y + 70) + ImGui::GetTextLineHeightWithSpacing() : float(y + 60)) });
+                ImGui::SetCursorScreenPos({ float(x + 150), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ? float(y + 70) + ImGui::GetTextLineHeightWithSpacing() : float(y + 60)) });
                 if (ImGui::RadioButton("Original", !use_new_calib))
                 {
                     use_new_calib = false;
@@ -1527,11 +1811,41 @@ namespace rs2
                     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
                 }
                 
-                std::string button_name = to_string() << "Apply New" << "##apply" << index;
+                float scale = float(bar_width) / 3;
+                std::string button_name;
+                
+                if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB)
+                {
+                    scale = float(bar_width) / 7;
+
+                    button_name = to_string() << "Recalibrate" << "##refl" << index;
+
+                    ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
+                    if (ImGui::Button(button_name.c_str(), { scale * 3, 20.f }))
+                    {
+                        get_manager().laser_status_prev = get_manager()._sub->s->get_option(RS2_OPTION_EMITTER_ENABLED);
+                        get_manager().restore_workspace([this](std::function<void()> a) { a(); });
+                        get_manager().reset();
+                        get_manager().retry_times = 0;
+                        get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB;
+                        auto _this = shared_from_this();
+                        auto invoke = [_this](std::function<void()> action) {
+                            _this->invoke(action);
+                        };
+                        get_manager().start(invoke);
+                        update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
+                        enable_dismiss = false;
+                    }
+
+                    ImGui::SetCursorScreenPos({ float(x + 5) + 4 * scale, float(y + height - 25) });
+                }
+                else
+                    ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
+
+                button_name = to_string() << "Apply New" << "##apply" << index;
                 if (!use_new_calib) button_name = to_string() << "Keep Original" << "##original" << index;
 
-                ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
-                if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
+                if (ImGui::Button(button_name.c_str(), { scale * 3, 20.f }))
                 {
                     if (use_new_calib)
                     {
@@ -1757,7 +2071,7 @@ namespace rs2
         else if (update_state == RS2_CALIB_STATE_INITIAL_PROMPT) return 120;
         else if (update_state == RS2_CALIB_STATE_CALIB_COMPLETE)
         {
-            if (get_manager().allow_calib_keep()) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 190 : 170);
+            if (get_manager().allow_calib_keep()) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ? 190 : 170);
             else return 80;
         }
         else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 160 : 140);

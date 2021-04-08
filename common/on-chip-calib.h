@@ -69,6 +69,7 @@ namespace rs2
             RS2_CALIB_ACTION_ON_CHIP_FL_CALIB,  // On-Chip focal length calibration
             RS2_CALIB_ACTION_TARE_CALIB,        // Tare calibration
             RS2_CALIB_ACTION_TARE_GROUND_TRUTH, // Tare ground truth
+            RS2_CALIB_ACTION_FL_CALIB,          // Focal length calibration
         };
 
         auto_calib_action action = RS2_CALIB_ACTION_ON_CHIP_CALIB;
@@ -87,10 +88,18 @@ namespace rs2
         int retry_times = 0;
         bool toggle = false;
 
+        float ratio = 0.0f;
+        float align = 0.0f;
+
+        const float correction_factor = 0.50f;
+        float corrected_ratio = 0.0f;
+        float tilt_angle = 0.0f;
+
         std::shared_ptr<subdevice_model> _sub;
 
         void calibrate();
         void get_ground_truth();
+        void calibrate_fl();
 
     private:
 
@@ -113,6 +122,7 @@ namespace rs2
         std::shared_ptr<subdevice_ui_selection> _ui { nullptr };
         bool _in_3d_view = false;
         int _uid = 0;
+        int _uid2 = 0;
 
         viewer_model& _viewer;
 
@@ -145,6 +155,7 @@ namespace rs2
             RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_IN_PROCESS, // Calculating ground truth in process... Shows progressbar
             RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_COMPLETE,   // Calculating ground truth complete, show succeeded or failed
             RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED,     // Failed to calculating the ground truth
+            RS2_CALIB_STATE_FL_INPUT,        // Collect input parameters for fpcal length calib
         };
 
         autocalib_notification_model(std::string name,
