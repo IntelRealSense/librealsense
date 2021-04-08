@@ -628,7 +628,7 @@ int main(int argc, const char** argv) try
 
         auto output_rect = rect{ viewer_model.panel_width,
             window.height() - viewer_model.get_output_height(),
-            window.width() - viewer_model.panel_width, viewer_model.get_output_height() };
+            window.width() - viewer_model.panel_width, float(viewer_model.get_output_height()) };
 
         viewer_model.not_model->output.draw(window, output_rect, *device_models);
 
