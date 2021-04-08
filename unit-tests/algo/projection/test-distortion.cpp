@@ -1,6 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
+//#cmake: static!
 //#cmake:add-file ../../../src/proc/sse/sse-pointcloud.cpp
 
 #include "../algo-common.h"
@@ -8,6 +9,16 @@
 #include "../src/proc/sse/sse-pointcloud.h"
 #include "../src/cuda/cuda-pointcloud.cuh"
 #include "../src/types.h"
+
+rs2_intrinsics intrin
+= { 1280,
+    720,
+    643.720581f,
+    357.821259f,
+    904.170471f,
+    905.155090f,
+    RS2_DISTORTION_INVERSE_BROWN_CONRADY,
+    { 0.180086836f, -0.534179211f, -0.00139013783f, 0.000118769123f, 0.470662683f } };
 
 void compare(librealsense::float2 pixel1, librealsense::float2 pixel2)
 {
@@ -21,16 +32,6 @@ void compare(librealsense::float2 pixel1, librealsense::float2 pixel2)
 TEST_CASE( "inverse_brown_conrady_deproject" )
 {
     float point[3] = { 0 };
-
-    rs2_intrinsics intrin
-        = { 1280,
-            720,
-            643.720581,
-            357.821259,
-            904.170471,
-            905.155090,
-            RS2_DISTORTION_INVERSE_BROWN_CONRADY,
-            { 0.180086836, -0.534179211, -0.00139013783, 0.000118769123, 0.470662683 } };
     librealsense::float2 pixel1 = { 1, 1 };
     librealsense::float2 pixel2 = { 0, 0 };
     float depth = 10.5;
@@ -44,15 +45,6 @@ TEST_CASE( "brown_conrady_deproject" )
 {
     float point[3] = { 0 };
 
-    rs2_intrinsics intrin
-        = { 1280,
-            720,
-            643.720581,
-            357.821259,
-            904.170471,
-            905.155090,
-            RS2_DISTORTION_BROWN_CONRADY,
-            { 0.180086836, -0.534179211, -0.00139013783, 0.000118769123, 0.470662683 } };
     librealsense::float2 pixel1 = { 1, 1 };
     librealsense::float2 pixel2 = { 0, 0 };
     float depth = 10.5;
@@ -62,19 +54,10 @@ TEST_CASE( "brown_conrady_deproject" )
     compare(pixel1, pixel2);
 }
 
+#ifdef __SSSE3__
 TEST_CASE("inverse_brown_conrady_sse_deproject")
 {
     std::shared_ptr<librealsense::pointcloud_sse> pc_sse = std::make_shared<librealsense::pointcloud_sse >();
-
-    rs2_intrinsics intrin
-        = { 1280,
-            720,
-            643.720581,
-            357.821259,
-            904.170471,
-            905.155090,
-            RS2_DISTORTION_INVERSE_BROWN_CONRADY,
-            { 0.180086836, -0.534179211, -0.00139013783, 0.000118769123, 0.470662683 } };
 
     librealsense::float2 pixel[4] = { {1, 1}, {0,2},{1,3},{1,4} };
     float depth = 10.5;
@@ -104,16 +87,6 @@ TEST_CASE("brown_conrady_sse_deproject")
 {
     std::shared_ptr<librealsense::pointcloud_sse> pc_sse = std::make_shared<librealsense::pointcloud_sse >();
 
-    rs2_intrinsics intrin
-        = { 1280,
-            720,
-            643.720581,
-            357.821259,
-            904.170471,
-            905.155090,
-            RS2_DISTORTION_BROWN_CONRADY,
-            { 0.180086836, -0.534179211, -0.00139013783, 0.000118769123, 0.470662683 } };
-
     librealsense::float2 pixel[4] = { {1, 1}, {0,2},{1,3},{1,4} };
     float depth = 10.5;
     librealsense::float3 points[4] = {};
@@ -137,21 +110,12 @@ TEST_CASE("brown_conrady_sse_deproject")
         compare(unnormalized_res[i], pixel[i]);
     }
 }
+#endif
 
 #ifdef RS2_USE_CUDA
 TEST_CASE("inverse_brown_conrady_cuda_deproject")
 {
     std::vector<float3> point(1280 * 720, { 0,0,0 });
-
-    rs2_intrinsics intrin
-        = { 1280,
-            720,
-            643.720581,
-            357.821259,
-            904.170471,
-            905.155090,
-            RS2_DISTORTION_INVERSE_BROWN_CONRADY,
-            { 0.180086836, -0.534179211, -0.00139013783, 0.000118769123, 0.470662683 } };
 
     librealsense::float2 pixel = { 0, 0 };
 
@@ -171,16 +135,6 @@ TEST_CASE("inverse_brown_conrady_cuda_deproject")
 TEST_CASE("brown_conrady_cuda_deproject")
 {
     std::vector<float3> point(1280 * 720, { 0,0,0 });
-
-    rs2_intrinsics intrin
-        = { 1280,
-            720,
-            643.720581,
-            357.821259,
-            904.170471,
-            905.155090,
-            RS2_DISTORTION_BROWN_CONRADY,
-            { 0.180086836, -0.534179211, -0.00139013783, 0.000118769123, 0.470662683 } };
 
     librealsense::float2 pixel = { 0, 0 };
 
