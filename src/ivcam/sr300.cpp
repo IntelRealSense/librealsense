@@ -98,11 +98,14 @@ namespace librealsense
             }
             if (!depth.pid) // SR306 : only mi=0 is defined
                 std::swap(color, depth);
-            auto info = std::make_shared<sr300_info>(ctx, color, depth, hwm);
-            results.push_back(info);
 
             if (!color.pid && !depth.pid)
                 LOG_WARNING("SR300 group_devices is empty.");
+            else
+            {
+                auto info = std::make_shared<sr300_info>(ctx, color, depth, hwm);
+                results.push_back(info);
+            }
         }
 
         trim_device_list(uvc, chosen);
