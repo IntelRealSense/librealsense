@@ -91,18 +91,19 @@ namespace librealsense
                     return results;
                 }
             }
+
             if (mi_present(group, 2))
             {
                 depth = get_mi(group, 2);
                 chosen.push_back(depth);
             }
-            if (!depth.pid) // SR306 : only mi=0 is defined
-                std::swap(color, depth);
 
             if (!color.pid && !depth.pid)
                 LOG_WARNING("SR300 group_devices is empty.");
             else
             {
+                if (!depth.pid) // SR306 : only mi=0 is defined
+                    std::swap(color, depth);
                 auto info = std::make_shared<sr300_info>(ctx, color, depth, hwm);
                 results.push_back(info);
             }
