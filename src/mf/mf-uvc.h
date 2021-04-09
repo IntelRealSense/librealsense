@@ -111,6 +111,7 @@ namespace librealsense
             void stop_stream_cleanup(const stream_profile& profile, std::vector<profile_and_callback>::iterator& elem);
             void flush(int sIndex);
             void check_connection() const;
+            void close_all();
             IKsControl* get_ks_control(const extension_unit& xu) const;
             CComPtr<IMFAttributes> create_device_attrs();
             CComPtr<IMFAttributes> create_reader_attrs();
