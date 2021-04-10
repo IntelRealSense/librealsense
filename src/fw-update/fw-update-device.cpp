@@ -271,9 +271,10 @@ namespace librealsense
     {
         switch (info)
         {
-        case RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID: return get_serial_number();
-        case RS2_CAMERA_INFO_NAME: return get_name();
-        case RS2_CAMERA_INFO_PRODUCT_LINE: return get_product_line();
+        case RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID:    return get_serial_number();
+        case RS2_CAMERA_INFO_NAME:                  return get_name();
+        case RS2_CAMERA_INFO_PRODUCT_LINE:          return get_product_line();
+        case RS2_CAMERA_INFO_PHYSICAL_PORT:         return _usb_device->get_info().id;
         default:
             throw std::runtime_error("update_device does not support " + std::string(rs2_camera_info_to_string(info)));
         }
@@ -285,8 +286,12 @@ namespace librealsense
         {
         case RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID:
         case RS2_CAMERA_INFO_NAME:
-        case RS2_CAMERA_INFO_PRODUCT_LINE:return true;
-        default: return false;
+        case RS2_CAMERA_INFO_PRODUCT_LINE:
+        case RS2_CAMERA_INFO_PHYSICAL_PORT:
+            return true;
+        
+        default:
+            return false;
         }
     }
 
