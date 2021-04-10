@@ -81,12 +81,11 @@ function choose_kernel_branch {
 			echo Ubuntu-hwe-4.18.0-25.26_18.04.1
 			;;
 		"5.0")									# kernel 5.0 for Ubuntu 18/Bionic Beaver
-			#echo hwe-5.0
             echo 5
 			;;
 		"5.3")									# kernel 5.3
-			#echo hwe
-            echo Ubuntu-hwe-5.3.0-64.58_18.04.1
+            #echo Ubuntu-hwe-5.3.0-64.58_18.04.1
+            echo 5
 			;;
 		"5.4")									# kernel 5.4
 			echo hwe-5.4
