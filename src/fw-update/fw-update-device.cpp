@@ -110,7 +110,7 @@ namespace librealsense
     }
 
     update_device::update_device(const std::shared_ptr<context>& ctx, bool register_device_notifications, std::shared_ptr<platform::usb_device> usb_device)
-        : _context(ctx), _usb_device(usb_device)
+        : _context(ctx), _usb_device(usb_device), _physical_port( usb_device->get_info().id )
     {
         if (auto messenger = _usb_device->open(FW_UPDATE_INTERFACE_NUMBER))
         {
@@ -274,7 +274,7 @@ namespace librealsense
         case RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID:    return get_serial_number();
         case RS2_CAMERA_INFO_NAME:                  return get_name();
         case RS2_CAMERA_INFO_PRODUCT_LINE:          return get_product_line();
-        case RS2_CAMERA_INFO_PHYSICAL_PORT:         return _usb_device->get_info().id;
+        case RS2_CAMERA_INFO_PHYSICAL_PORT:         return _physical_port;
         default:
             throw std::runtime_error("update_device does not support " + std::string(rs2_camera_info_to_string(info)));
         }
