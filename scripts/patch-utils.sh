@@ -86,7 +86,7 @@ function choose_kernel_branch {
 			;;
 		"5.3")									# kernel 5.3
 			#echo hwe
-            echo 5
+            echo Ubuntu-hwe-5.3.0-64.58_18.04.1
 			;;
 		"5.4")									# kernel 5.4
 			echo hwe-5.4
@@ -106,6 +106,9 @@ function choose_kernel_branch {
 		case "${kernel_version[0]}.${kernel_version[1]}" in
 		"5.4")									# kernel 5.4
 			echo master
+			;;
+		"5.8")									# kernel 5.8
+			echo hwe-5.8
 			;;
 		*)
 			#error message shall be redirected to stderr to be printed properly

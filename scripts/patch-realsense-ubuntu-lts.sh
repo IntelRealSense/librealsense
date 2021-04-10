@@ -150,11 +150,11 @@ then
 		# Patching kernel for RealSense devices
 		echo -e "\e[32mApplying patches for \e[36m${ubuntu_codename}-${kernel_branch}\e[32m line\e[0m"
 		echo -e "\e[32mApplying realsense-uvc patch\e[0m"
-		patch -p1 < ../scripts/realsense-camera-formats-${ubuntu_codename}-${kernel_branch}.patch
+		patch -p1 < ../scripts/realsense-camera-formats-${ubuntu_codename}-${kernel_branch}.patch || patch -p1 < ../scripts/realsense-camera-formats-${ubuntu_codename}-master.patch
 		echo -e "\e[32mApplying realsense-metadata patch\e[0m"
-		patch -p1 < ../scripts/realsense-metadata-${ubuntu_codename}-${kernel_branch}.patch
+		patch -p1 < ../scripts/realsense-metadata-${ubuntu_codename}-${kernel_branch}.patch || patch -p1 < ../scripts/realsense-metadata-${ubuntu_codename}-master.patch
 		echo -e "\e[32mApplying realsense-hid patch\e[0m"
-		patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-${kernel_branch}.patch
+		patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-${kernel_branch}.patch || patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-master.patch
 		echo -e "\e[32mApplying realsense-powerlinefrequency-fix patch\e[0m"
 		patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix.patch
 		# Applying 3rd-party patch that affects USB2 behavior
