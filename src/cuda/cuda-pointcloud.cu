@@ -37,7 +37,7 @@ void deproject_pixel_to_point_cuda(float points[3], const struct rs2_intrinsics 
             y = (yo - delta_y)*icdist;
         }
     }
-    if (intrin->model == RS2_DISTORTION_BROWN_CONRADY)
+    else if (intrin->model == RS2_DISTORTION_BROWN_CONRADY)
     {
         // need to loop until convergence 
         // 10 iterations determined empirically
