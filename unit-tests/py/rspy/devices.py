@@ -112,6 +112,8 @@ def query( monitor_changes = True ):
     global _device_by_sn, _context, _port_to_sn
     _context = rs.context()
     _device_by_sn = dict()
+    all_ports = acroname.ports()
+    known_ports = []
     try:
         log.d( 'discovering devices ...' )
         log.debug_indent()
@@ -132,8 +134,41 @@ def query( monitor_changes = True ):
             else:
                 sn = dev.get_info( rs.camera_info.serial_number )
             device = Device( sn, dev )
+            if device.port:
+                known_ports.append(device.port)
             _device_by_sn[sn] = device
             log.d( '... port {}:'.format( device.port is None and '?' or device.port ), dev )
+
+        if len( all_ports ) > len( known_ports ):
+            log.d( 'trying do discover unknown ports' )
+            unknown_ports = [port for port in all_ports if port not in known_ports]
+            if len( unknown_ports ) == 1:
+                for device in _device_by_sn.values():
+                    if not device.port:
+                        log.d( 'port', port, 'has device', sn )
+                        log.d( 'try print dev:', device )
+                        device._port = unknown_ports[0]
+            else:
+                for port in unknown_ports:
+                    device = None
+                    acroname.enable_ports( port, disable_other_ports = True )
+                    for retry in range(5):
+                        time.sleep(1)
+                        try:
+                            device = rs.context().query_devices()[0]
+                            break
+                        except RuntimeError as e:
+                            log.d( 'FAILED to query device:', e )
+                    if not device:
+                        log.e( 'Failed to discover device in port', port )
+                        continue
+                    sn = device.get_info( rs.camera_info.serial_number )
+                    device = _device_by_sn.get(sn)
+                    if device:
+                        log.d( 'port', port, 'has device', sn)
+                        log.d('try print dev:', device)
+                        device._port = port
+
     finally:
         log.debug_unindent()
     #
