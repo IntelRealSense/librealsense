@@ -75,6 +75,12 @@ namespace rs2
                 it->profile.dev_active = active;
         }
 
+        bool has_updates() const
+        {
+            std::lock_guard<std::mutex> lock(_lock);
+            return !_updates.empty();
+        }
+
         void draw(std::shared_ptr<notifications_model> not_model, ux_window& window, std::string& error_message);
     private:
         struct position_params
@@ -98,7 +104,7 @@ namespace rs2
         bool ignore = false;
         std::vector<update_profile_model> _updates;
         std::shared_ptr<texture_buffer> _icon = nullptr;
-        std::mutex _lock;
+        mutable std::mutex _lock;
         bool emphasize_dismiss_text = false;
 
         std::shared_ptr<firmware_update_manager> _fw_update = nullptr;
