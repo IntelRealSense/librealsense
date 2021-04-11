@@ -155,14 +155,15 @@ def query( monitor_changes = True ):
                     for retry in range(5):
                         time.sleep(1)
                         try:
-                            device = rs.context().query_devices()[0]
+                            devices = rs.context().query_devices()
+                            print("check:", devices )
                             break
                         except RuntimeError as e:
                             log.d( 'FAILED to query device:', e )
-                    if not device:
+                    if not devices:
                         log.e( 'Failed to discover device in port', port )
                         continue
-                    sn = device.get_info( rs.camera_info.serial_number )
+                    sn = devices[0].get_info( rs.camera_info.serial_number )
                     device = _device_by_sn.get(sn)
                     if device:
                         log.d( 'port', port, 'has device', sn)
