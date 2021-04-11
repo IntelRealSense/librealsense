@@ -1,41 +1,24 @@
-From ee8d2d09ab3492665a8ca5fb7fb6727a279392b2 Mon Sep 17 00:00:00 2001
-From: Evgeni <evgeni.raikhel@intel.com>
-From: icarpis <itay.carpis@intel.com>
-Date: Sun, 13 May 2018 10:37:44 -0400
-Subject: [PATCH] Streaming formats for Ubuntu 18.04 (Bionic Beaver), Kernel 4.15
-
+Subject: [PATCH] Streaming formats for Ubuntu 20.04. Kernel 5.8
+From 120e2ef648e5f906555407ff7265ce729fc6d503 Mon Sep 17 00:00:00 2001
+From: Evgeni Raikhel <evgeni.raikhel@intel.com>
 Signed-off-by: Evgeni Raikhel <evgeni.raikhel@intel.com>
+Date: Mon, 10 Apr 2021 19:21:14 +0200
+
 ---
- drivers/media/usb/uvc/Makefile       |  1 +
  drivers/media/usb/uvc/uvc_driver.c   | 37 ++++++++++++++++++++++++++++
  drivers/media/usb/uvc/uvcvideo.h     | 22 +++++++++++++++++
- drivers/media/v4l2-core/v4l2-ioctl.c |  3 +++
- include/uapi/linux/videodev2.h       |  3 +++
- 5 files changed, 66 insertions(+)
+ drivers/media/v4l2-core/v4l2-ioctl.c |  8 ++++++
+ include/uapi/linux/videodev2.h       |  8 ++++++
+ 4 files changed, 75 insertions(+)
 
-diff --git a/drivers/media/usb/uvc/Makefile b/drivers/media/usb/uvc/Makefile
-index a4fe5b5d5..cb5ee0955 100644
---- a/drivers/media/usb/uvc/Makefile
-+++ b/drivers/media/usb/uvc/Makefile
-@@ -1,4 +1,5 @@
- # SPDX-License-Identifier: GPL-2.0
-+CONFIG_MODULE_SIG=n
- uvcvideo-objs  := uvc_driver.o uvc_queue.o uvc_v4l2.o uvc_video.o uvc_ctrl.o \
- 		  uvc_status.o uvc_isight.o uvc_debugfs.o
- ifeq ($(CONFIG_MEDIA_CONTROLLER),y)
 diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index 28b91b7d7..f50a2b148 100644
+index 99883550375e..443ecea63bd8 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -208,6 +208,63 @@ static struct uvc_format_desc uvc_fmts[] = {
- 		.guid		= UVC_GUID_FORMAT_INZI,
- 		.fcc		= V4L2_PIX_FMT_INZI,
+@@ -219,6 +219,58 @@ static struct uvc_format_desc uvc_fmts[] = {
+ 		.guid		= UVC_GUID_FORMAT_CNF4,
+ 		.fcc		= V4L2_PIX_FMT_CNF4,
  	},
-+	{
-+		.name		= "Luminosity data 8-bit (L8)",
-+		.guid		= UVC_GUID_FORMAT_L8,
-+		.fcc		= V4L2_PIX_FMT_GREY,
-+	},
 +	{
 +		.name		= "Depth data 16-bit (D16)",
 +		.guid		= UVC_GUID_FORMAT_D16,
@@ -89,38 +72,35 @@ index 28b91b7d7..f50a2b148 100644
 +		.fcc		= V4L2_PIX_FMT_PAIR,
 +	},
  };
-
+ 
  /* ------------------------------------------------------------------------
 diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
-index 05398784d..8c99aabef 100644
+index 24e3d8c647e7..1aa8493a24d1 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
-@@ -156,6 +156,40 @@
- #define UVC_GUID_FORMAT_HEVC \
-	{ 'H',  'E',  'V',  'C', 0x00, 0x00, 0x10, 0x00, \
-	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
-+	#define UVC_GUID_FORMAT_L8 \
-+	{ '2', 0x00,  0x00,  0x00, 0x00, 0x00, 0x10, 0x00, \
-+	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
+@@ -169,6 +169,37 @@
+ 	{0x32, 0x00, 0x00, 0x00, 0x02, 0x00, 0x10, 0x00, \
+ 	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
+ 
 +	#define UVC_GUID_FORMAT_D16 \
 +	{ 'P', 0x00,  0x00,  0x00, 0x00, 0x00, 0x10, 0x00, \
-+	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++		0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
 +	#define UVC_GUID_FORMAT_W10 \
 +	{ 'W',  '1',  '0',  ' ', 0x00, 0x00, 0x10, 0x00, \
-+	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++		0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
 +	#define UVC_GUID_FORMAT_RAW8 \
 +	{ 'R',  'A',  'W',  '8', 0x66, 0x1a, 0x42, 0xa2, \
-+	0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a}
++		0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a}
 +	#define UVC_GUID_FORMAT_CONFIDENCE_MAP \
 +	{ 'C',  ' ',  ' ',  ' ', 0x00, 0x00, 0x10, 0x00, \
-+	0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++		0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
 +	/* Legacy formats */
 +	#define UVC_GUID_FORMAT_RW16 \
 +	{ 'R',  'W',  '1',  '6', 0x00, 0x00, 0x10, 0x00, \
-+	0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++		0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
 +	#define UVC_GUID_FORMAT_BAYER16 \
 +	{ 'R',  'W',  '1',  '6', 0x66, 0x1a, 0x42, 0xa2, \
-+	0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a}
++		0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a}
 +	#define UVC_GUID_FORMAT_Z16H \
 +	{ 'Z',  '1',  '6',  'H', 0x00, 0x00, 0x10, 0x00, \
 +	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
@@ -133,36 +113,36 @@ index 05398784d..8c99aabef 100644
 +	#define UVC_GUID_FORMAT_PAIR \
 +	{ 'P',  'A',  'I',  'R', 0x36, 0x85, 0x41, 0x48, \
 +	0xb6, 0xbf, 0x8f, 0xc6, 0xff, 0xb0, 0x83, 0xa8}
-
+ 
  /* ------------------------------------------------------------------------
   * Driver specific constants.
 diff --git a/drivers/media/v4l2-core/v4l2-ioctl.c b/drivers/media/v4l2-core/v4l2-ioctl.c
-index 89e0878ce..c422d70a2 100644
+index 58868d7129eb..c29033b8439c 100644
 --- a/drivers/media/v4l2-core/v4l2-ioctl.c
 +++ b/drivers/media/v4l2-core/v4l2-ioctl.c
-@@ -1248,6 +1248,14 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
- 	case V4L2_TCH_FMT_TU08:		descr = "8-bit unsigned touch data"; break;
- 	case V4L2_META_FMT_VSP1_HGO:	descr = "R-Car VSP1 1-D Histogram"; break;
- 	case V4L2_META_FMT_VSP1_HGT:	descr = "R-Car VSP1 2-D Histogram"; break;
+@@ -1398,6 +1398,14 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
+ 	case V4L2_META_FMT_UVC:		descr = "UVC Payload Header Metadata"; break;
+	case V4L2_META_FMT_D4XX:	descr = "Intel D4xx UVC Metadata"; break;
+	case V4L2_META_FMT_VIVID:       descr = "Vivid Metadata"; break;
 +	/* Librealsense formats*/
 +	case V4L2_PIX_FMT_RW16:		descr = "16-bit Raw data"; break;
 +	case V4L2_PIX_FMT_W10:		descr = "10-bit packed 8888[2222]"; break;
-+	case V4L2_PIX_FMT_CONFIDENCE_MAP:	descr = "4-bit per pixel packed"; break;
++	case V4L2_PIX_FMT_CONFIDENCE_MAP:	descr = "Packed [44] confidence data"; break;
 +	case V4L2_PIX_FMT_FG:		descr = "Frame Grabber (FG  )"; break;
 +	case V4L2_PIX_FMT_INZC:		descr = "Planar Depth/Confidence (INZC)"; break;
 +	case V4L2_PIX_FMT_PAIR:		descr = "Relative IR (PAIR)"; break;
 +	case V4L2_PIX_FMT_Z16H:		descr = "Z16 Huffman Compression"; break;
-
+ 
  	default:
  		/* Compressed formats */
 diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
-index 1c095b5a9..3e20f2b8a 100644
+index 530638dffd93..d7c85713e32c 100644
 --- a/include/uapi/linux/videodev2.h
 +++ b/include/uapi/linux/videodev2.h
-@@ -679,6 +679,14 @@ struct v4l2_pix_format {
- #define V4L2_PIX_FMT_Z16      v4l2_fourcc('Z', '1', '6', ' ') /* Depth data 16-bit */
- #define V4L2_PIX_FMT_MT21C    v4l2_fourcc('M', 'T', '2', '1') /* Mediatek compressed block mode  */
+@@ -738,6 +738,14 @@ struct v4l2_pix_format {
  #define V4L2_PIX_FMT_INZI     v4l2_fourcc('I', 'N', 'Z', 'I') /* Intel Planar Greyscale 10-bit and Depth 16-bit */
+ #define V4L2_PIX_FMT_SUNXI_TILED_NV12 v4l2_fourcc('S', 'T', '1', '2') /* Sunxi Tiled NV12 Format */
+ #define V4L2_PIX_FMT_CNF4     v4l2_fourcc('C', 'N', 'F', '4') /* Intel 4-bit packed depth confidence information */
 +#define V4L2_PIX_FMT_RW16     v4l2_fourcc('R', 'W', '1', '6') /* Raw data 16-bit */
 +#define V4L2_PIX_FMT_W10      v4l2_fourcc('W', '1', '0', ' ') /* Packed raw data 10-bit */
 +#define V4L2_PIX_FMT_CONFIDENCE_MAP	v4l2_fourcc('C', ' ', ' ', ' ') /* Two pixels in one byte */
@@ -171,8 +151,9 @@ index 1c095b5a9..3e20f2b8a 100644
 +#define V4L2_PIX_FMT_INZC     v4l2_fourcc('I', 'N', 'Z', 'C') /* Planar Depth/Confidence */
 +#define V4L2_PIX_FMT_PAIR     v4l2_fourcc('P', 'A', 'I', 'R') /* Relative IR */
 +#define V4L2_PIX_FMT_Z16H     v4l2_fourcc('Z', '1', '6', 'H') /* Depth Z16 custom Huffman Code compression*/
+ 
+ /* 10bit raw bayer packed, 32 bytes for every 25 pixels, last LSB 6 bits unused */
+ #define V4L2_PIX_FMT_IPU3_SBGGR10	v4l2_fourcc('i', 'p', '3', 'b') /* IPU3 packed 10-bit BGGR bayer */
+-- 
+2.17.1
 
- /* SDR formats - used only for Software Defined Radio devices */
- #define V4L2_SDR_FMT_CU8          v4l2_fourcc('C', 'U', '0', '8') /* IQ u8 */
---
-2.17.0
