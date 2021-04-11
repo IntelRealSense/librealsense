@@ -258,7 +258,8 @@ namespace librealsense
                     intrinsics.coeffs[3] = model.distort.tangential_p2;
                     intrinsics.coeffs[4] = model.distort.radial_k3;
 
-                    intrinsics.model = RS2_DISTORTION_INVERSE_BROWN_CONRADY;
+                    intrinsics.model = l500_distortion;
+
                 }
 
                 return intrinsics;
@@ -345,8 +346,9 @@ namespace librealsense
         // The distortion model is not part of the table. The FW assumes it is brown,
         // but in LRS we (mistakenly) use INVERSE brown. We therefore make sure the user
         // has not tried to change anything from the intrinsics reported:
-        if( intr.model != RS2_DISTORTION_INVERSE_BROWN_CONRADY )
-            throw invalid_value_exception( "invalid intrinsics distortion model" );
+
+        if( intr.model != l500_distortion)
+            throw invalid_value_exception("invalid intrinsics distortion model");
 
         rgb_calibration_table table;
         AC_LOG( DEBUG, "Reading RGB calibration table 0x" << std::hex << table.table_id );
