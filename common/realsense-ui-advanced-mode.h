@@ -105,8 +105,8 @@ inline void slider_int(std::string& error_message, const char* id, T* val, S T::
                 if ((new_value > max) || (new_value < min))
                 {
                     std::stringstream ss;
-                    ss << "New value " << new_value << " to be within [" << min << ", " << max << "] range";
-                    error_message = ss.str().c_str();
+                    ss << "New value " << new_value << " must be within [" << min << ", " << max << "] range";
+                    error_message = ss.str();
                 }
                 else
                 {
@@ -170,8 +170,8 @@ inline void slider_float(std::string& error_message, const char* id, T* val, S T
                 if ((new_value > max) || (new_value<min))
                 {
                     std::stringstream ss;
-                    ss << "New value " << new_value << " to be within [" << min << ", " << max << "] range";
-                    error_message = ss.str().c_str();
+                    ss << "New value " << new_value << " must be within [" << min << ", " << max << "] range";
+                    error_message = ss.str();
                 }
                 else
                 {
