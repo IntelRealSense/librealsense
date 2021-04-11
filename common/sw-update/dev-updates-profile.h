@@ -38,9 +38,8 @@ namespace rs2
                 sw_update::version software_version;
                 sw_update::version firmware_version;
 
-                typedef std::map< const sw_update::version, version_info > version_to_info;
-                version_to_info software_versions;
-                version_to_info firmware_versions;
+                std::map< sw_update::version, version_info > software_versions;
+                std::map< sw_update::version, version_info > firmware_versions;
 
                 device dev;
                 bool dev_active;

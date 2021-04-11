@@ -107,11 +107,12 @@ namespace rs2
         bool dev_updates_profile::update_profile::get_sw_update( update_policy_type policy,
                                                                  version_info & info ) const
         {
-            auto found = std::find_if( software_versions.begin(),
-                                       software_versions.end(),
-                                       [policy]( const version_to_info::value_type & ver_info ) {
-                                           return ver_info.second.policy == policy;
-                                       } );
+            auto found = std::find_if(
+                software_versions.begin(),
+                software_versions.end(),
+                [policy]( const std::pair<  sw_update::version, version_info > & ver_info ) {
+                    return ver_info.second.policy == policy;
+                } );
             if( found != software_versions.end() )
             {
                 info = found->second;
@@ -123,11 +124,12 @@ namespace rs2
         bool dev_updates_profile::update_profile::get_fw_update( update_policy_type policy,
                                                                  version_info & info ) const
         {
-            auto found = std::find_if( firmware_versions.begin(),
-                                       firmware_versions.end(),
-                                       [policy]( const version_to_info::value_type & ver_info ) {
-                                           return ver_info.second.policy == policy;
-                                       } );
+            auto found = std::find_if(
+                firmware_versions.begin(),
+                firmware_versions.end(),
+                [policy](const std::pair<  sw_update::version, version_info >& ver_info) {
+                    return ver_info.second.policy == policy;
+                } );
             if( found != firmware_versions.end() )
             {
                 info = found->second;
