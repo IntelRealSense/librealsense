@@ -68,7 +68,7 @@ inline rs2::device find_first_device_by_name_or_exit( const std::string & dev_na
         return *dev_iter;
     }
 
-    std::cout << "No " << dev_name << " device was found; skipping test" << std::endl;
+    std::cout << "No " << dev_name << " device was found" << std::endl;
     exit( 1 );
 }
 
