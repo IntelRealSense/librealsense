@@ -151,7 +151,7 @@ def query( monitor_changes = True ):
             else:
                 for port in unknown_ports:
                     device = None
-                    acroname.enable_ports( port, disable_other_ports = True )
+                    acroname.enable_ports( [port], disable_other_ports = True )
                     for retry in range(5):
                         time.sleep(1)
                         try:
