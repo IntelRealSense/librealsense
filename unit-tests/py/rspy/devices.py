@@ -142,6 +142,9 @@ def query( monitor_changes = True ):
         if len( all_ports ) > len( known_ports ):
             log.d( 'trying do discover unknown ports' )
             unknown_ports = [port for port in all_ports if port not in known_ports]
+            print("ports:", all_ports)
+            print("known ports:", known_ports)
+            print("unknown ports:", unknown_ports)
             if len( unknown_ports ) == 1:
                 for device in _device_by_sn.values():
                     if not device.port:
