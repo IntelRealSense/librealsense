@@ -54,7 +54,7 @@ TEST_CASE( "brown_conrady_deproject" )
     compare(pixel1, pixel2);
 }
 
-#ifdef false
+#if 0 //TODO: check why sse tests fails on LibCi
 TEST_CASE("inverse_brown_conrady_sse_deproject")
 {
     std::shared_ptr<librealsense::pointcloud_sse> pc_sse = std::make_shared<librealsense::pointcloud_sse >();
