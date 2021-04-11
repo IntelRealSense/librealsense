@@ -10,6 +10,15 @@ namespace librealsense
     {
     public:
         pointcloud_sse();
+
+        void get_texture_map_sse(float2 * texture_map,
+            const float3 * points,
+            const unsigned int width,
+            const unsigned int height,
+            const rs2_intrinsics & other_intrinsics,
+            const rs2_extrinsics & extr,
+            float2 * pixels_ptr);
+
     private:
         void preprocess() override;
         const float3 * depth_to_points(

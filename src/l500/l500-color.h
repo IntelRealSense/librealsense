@@ -16,6 +16,8 @@
 namespace librealsense
 {
 
+    const rs2_distortion l500_distortion = RS2_DISTORTION_BROWN_CONRADY;
+
     class l500_color
         : public virtual l500_device
     {
