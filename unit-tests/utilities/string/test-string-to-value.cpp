@@ -80,7 +80,7 @@ TEST_CASE("string to value", "[string]")
     l_tests.push_back(string_checker<long>{ "-123456789", -123456789, true });
     l_tests.push_back(string_checker<long>{ "123456789123456789123456789", 0, false });
     l_tests.push_back(string_checker<long>{ "-123456789123456789123456789", 0, false });
-    l_tests.push_back(string_checker<long>{ "abc", 0l, false });
+    l_tests.push_back(string_checker<long>{ "abc", 0, false });
 
     check_tests<long>(l_tests);
 
