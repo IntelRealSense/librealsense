@@ -82,9 +82,7 @@ endif()
 if(BUILD_EXAMPLES)
     add_subdirectory(examples)
     add_subdirectory(tools)
-endif()
-
-if(BUILD_TOOLS AND NOT BUILD_EXAMPLES)
+elseif(BUILD_TOOLS)
     add_subdirectory(tools)
 endif()
 
