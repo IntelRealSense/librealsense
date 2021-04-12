@@ -5339,9 +5339,8 @@ namespace rs2
                                     || n->is< sw_recommended_update_alert_model >() )
                                     n->dismiss( false ); // No need for snooze, if needed a new notification will be popped 
                             }
-                            // Inhibit on DQT
-                            if (_allow_remove)
-                                check_for_device_updates( viewer );
+
+                            check_for_device_updates( viewer );
                         }
                     }
 
