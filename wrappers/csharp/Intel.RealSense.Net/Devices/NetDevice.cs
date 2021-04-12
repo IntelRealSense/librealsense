@@ -1,15 +1,15 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-namespace Intel.RealSense
+namespace Intel.RealSense.Net
 {
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Runtime.InteropServices;
+    using Intel.RealSense;
 
-
-    public class NetDevice : Device
+    public class NetDevice : ProxyDevice
     {
         public NetDevice(string address) : base(init(address))
         {

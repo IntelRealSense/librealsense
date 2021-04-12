@@ -14,6 +14,7 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION 
 # set_property(TARGET ${PROJECT_NAME} PROPERTY WIN32_EXECUTABLE TRUE)
 
 add_dependencies(${PROJECT_NAME} Intel.RealSense)
+add_dependencies(${PROJECT_NAME} Intel.RealSense.Net)
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DOTNET_REFERENCES
 	"System"
