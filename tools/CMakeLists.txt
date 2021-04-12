@@ -11,12 +11,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 set(DEPENDENCIES ${DEPENDENCIES} realsense2)
 
+if(BUILD_TOOLS)
 add_subdirectory(convert)
 add_subdirectory(enumerate-devices)
 add_subdirectory(fw-logger)
 add_subdirectory(terminal)
 add_subdirectory(recorder)
 add_subdirectory(fw-update)
+endif()
 
 if(NOT WIN32)
     if(BUILD_NETWORK_DEVICE)
