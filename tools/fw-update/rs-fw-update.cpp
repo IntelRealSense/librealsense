@@ -263,15 +263,15 @@ int main(int argc, char** argv) try
         {
             std::cout << std::endl << "backing-up device flash: " << std::endl;
 
-            if (ISATTY(FILENO(stdout)))
+            std::vector< uint8_t > flash;
+            if( ISATTY( FILENO( stdout )))
             {
-                auto flash = d.as<rs2::updatable>().create_flash_backup([&](const float progress)
-                    {
-                        printf("\rflash backup progress: %d[%%]", (int)(progress * 100));
-                    });
+                flash = d.as< rs2::updatable >().create_flash_backup( [&]( const float progress ) {
+                    printf( "\rflash backup progress: %d[%%]", (int)( progress * 100 ) );
+                } );
             }
             else
-                auto flash = d.as<rs2::updatable>().create_flash_backup([&](const float progress){});
+                flash = d.as<rs2::updatable>().create_flash_backup([&](const float progress){});
 
             auto temp = backup_arg.getValue();
             std::ofstream file(temp.c_str(), std::ios::binary);
