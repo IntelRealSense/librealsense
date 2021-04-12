@@ -84,6 +84,10 @@ if(BUILD_EXAMPLES)
     add_subdirectory(tools)
 endif()
 
+if(BUILD_TOOLS AND NOT BUILD_EXAMPLES)
+    add_subdirectory(tools)
+endif()
+
 if(BUILD_UNIT_TESTS)
     add_subdirectory(unit-tests)
 endif()
