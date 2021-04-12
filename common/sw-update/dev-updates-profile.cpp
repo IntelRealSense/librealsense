@@ -110,8 +110,8 @@ namespace rs2
             auto found = std::find_if(
                 software_versions.begin(),
                 software_versions.end(),
-                [policy]( const std::pair<  sw_update::version, version_info > & ver_info ) {
-                    return ver_info.second.policy == policy;
+                [&]( const std::pair<  sw_update::version, version_info > & ver_info ) {
+                    return ver_info.second.policy == policy && software_version < ver_info.first;
                 } );
             if( found != software_versions.end() )
             {
@@ -127,8 +127,8 @@ namespace rs2
             auto found = std::find_if(
                 firmware_versions.begin(),
                 firmware_versions.end(),
-                [policy](const std::pair<  sw_update::version, version_info >& ver_info) {
-                    return ver_info.second.policy == policy;
+                [&](const std::pair<  sw_update::version, version_info >& ver_info) {
+                    return ver_info.second.policy == policy && firmware_version < ver_info.first;
                 } );
             if( found != firmware_versions.end() )
             {
