@@ -46,22 +46,13 @@ namespace utilities {
                     {
                         result = std::stoll(str, &last_char_idx);
                     }
-                    else if (std::is_same<T, int>::value)
-                    {
+                    else if (std::is_same<T, int>::value || std::is_same<T, short>::value)
+                    {// no dedicated function fot short in std
                         result = std::stoi(str, &last_char_idx);
                     }
-                    else if (std::is_same<T, short>::value)
-                        { // no dedicated function in std
-                            result = std::stoi(str, &last_char_idx);
-                        }
-                    else if (std::is_same<T, unsigned short>::value)
-                        { // no dedicated function in std
+                    else if (std::is_same<T, unsigned short>::value || std::is_same<T, unsigned int>::value)
+                        { // no dedicated function in std - unsgined corresponds to 16 bit, and unsigned long corresponds to 32 bit
                             if (str[0] == '-') return false;
-                            result = std::stoul(str, &last_char_idx);
-                        }
-                    else if (std::is_same<T, unsigned int>::value)
-                        { // no dedicated function in std - unsgined in corresponds to 16 bit, and unsigned long corresponds to 32 bit
-                            if (str[0] == '-') return false; 
                             result = std::stoul(str, &last_char_idx);
                         }
                     else
@@ -70,21 +61,23 @@ namespace utilities {
                     }
                 }
                 else if (std::is_floating_point<T>::value)
-                {
+                {/*== !std::isfinite((long double)result)*/ 
                     if (std::is_same<T, float>::value)
                     {
                         result = std::stof(str, &last_char_idx);
-                        if (std::isnan((float)result) || std::isinf((float)result)) return false; // if value is NaN or inf (or -inf), return false
+                        if (std::isnan((float)result) || std::isinf((float)result) || !std::isfinite((float)result)) return false; // if value is NaN or inf (or -inf), return false
                     }
                     else if (std::is_same<T, double>::value)
                     {
-                        result = std::stod(str, &last_char_idx);
-                        if (std::isnan((double)result) || std::isinf((double)result)) return false;
+                        result = std::stod(str, &last_char_idx); 
+                        int res = std::isfinite((double)result);
+                        if (std::isnan((double)result) || std::isinf((double)result) || !std::isfinite((double)result)) 
+                            return false; // if value is NaN or inf (or -inf) or ( 0 < value < min_float/double), return false
                     }
                     else if (std::is_same<T, long double>::value)
                     {
                         result = std::stold(str, &last_char_idx);
-                        if (std::isnan((long double)result) || std::isinf((long double)result)) return false;
+                        if (std::isnan((long double)result) || std::isinf((long double)result) || !std::isfinite((long double)result)) return false;
                     }
                     else
                     {

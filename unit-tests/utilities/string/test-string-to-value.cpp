@@ -115,9 +115,13 @@ TEST_CASE("string to value", "[string]")
     f_tests.push_back(string_checker<float>{ "-2.12121212", -2.12121212f, true });
     f_tests.push_back(string_checker<float>{ "INF", 0.f, false });
     f_tests.push_back(string_checker<float>{ "-INF", 0.f, false });
+    f_tests.push_back(string_checker<float>{ "1.1e+60", 0.f, false });
+    f_tests.push_back(string_checker<float>{ "-1.1e+60", 0.f, false });
+    f_tests.push_back(string_checker<float>{ "1.1e-60", 0.f, false });
+    f_tests.push_back(string_checker<float>{ "-1.1e-60", 0.f, false });
     f_tests.push_back(string_checker<float>{ "NaN", 0.f, false });
     f_tests.push_back(string_checker<float>{ "abc", 0.f, false });
-
+    
     check_tests<float>(f_tests);
     
     // double
@@ -128,6 +132,10 @@ TEST_CASE("string to value", "[string]")
     d_tests.push_back(string_checker<double>{ "-2.12121212", -2.12121212, true });
     d_tests.push_back(string_checker<double>{ "INF", 0., false });
     d_tests.push_back(string_checker<double>{ "-INF", 0., false });
+    d_tests.push_back(string_checker<double>{ "2.5e+600", 0., false });
+    d_tests.push_back(string_checker<double>{ "-2.5e+600", 0., false });
+    d_tests.push_back(string_checker<double>{ "2.5e-600", 0., false });
+    d_tests.push_back(string_checker<double>{ "-2.5e-600", 0., false });
     d_tests.push_back(string_checker<double>{ "NaN", 0., false });
     d_tests.push_back(string_checker<double>{ "abc", 0., false });
 
@@ -141,6 +149,10 @@ TEST_CASE("string to value", "[string]")
     ld_tests.push_back(string_checker<long double>{ "-2.12121212", -2.12121212, true });
     ld_tests.push_back(string_checker<long double>{ "INF", 0., false });
     ld_tests.push_back(string_checker<long double>{ "-INF", 0., false });
+    ld_tests.push_back(string_checker<long double>{ "2.5e+600", 0., false });
+    ld_tests.push_back(string_checker<long double>{ "-2.5e+600", 0., false });
+    ld_tests.push_back(string_checker<long double>{ "2.5e-600", 0., false });
+    ld_tests.push_back(string_checker<long double>{ "-2.5e-600", 0., false });
     ld_tests.push_back(string_checker<long double>{ "NaN", 0., false });
     ld_tests.push_back(string_checker<long double>{ "abc", 0., false });
 
