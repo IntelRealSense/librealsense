@@ -607,205 +607,215 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
     auto current_fw_ver_str = std::string(selected_profile.profile.firmware_version);
     ImGui::Text("%s", current_fw_ver_str.c_str());
 
-    if (_fw_update_state != fw_update_states::completed)
+    
+    
+    if (essential_fw_update_needed)
     {
-        if (essential_fw_update_needed)
-        {
-            ImGui::SameLine();
-            ImGui::PushStyleColor(ImGuiCol_Text, yellowish);
-            ImGui::Text("%s", " (Your version is older than the minimum version required for the proper functioning of your device)");
-            ImGui::PopStyleColor();
-        }
+        ImGui::SameLine();
+        ImGui::PushStyleColor(ImGuiCol_Text, yellowish);
+        ImGui::Text("%s", " (Your version is older than the minimum version required for the proper functioning of your device)");
+        ImGui::PopStyleColor();
+    }
 
-        if ( selected_firmware_update.ver )
-        {
-            fw_text_pos.y += 25;
-            ImGui::SetCursorScreenPos(fw_text_pos);
-            ImGui::PushStyleColor(ImGuiCol_Text, white);
+    if ( selected_firmware_update.ver )
+    {
+        fw_text_pos.y += 25;
+        ImGui::SetCursorScreenPos(fw_text_pos);
+        ImGui::PushStyleColor(ImGuiCol_Text, white);
 
-            ImGui::Text("%s", (firmware_updates.size() >= 2) ?
-                "Versions available:" :
-                "Version to download:");
-            ImGui::SameLine();
-            ImGui::PopStyleColor();
-            // Combo box for multiple versions
-            if (firmware_updates.size() >= 2)
+        ImGui::Text("%s", (firmware_updates.size() >= 2) ?
+            "Versions available:" :
+            "Version to download:");
+        ImGui::SameLine();
+        ImGui::PopStyleColor();
+        // Combo box for multiple versions
+        if (firmware_updates.size() >= 2)
+        {
+            std::vector<const char*> fwu_labels;
+            for (auto&& fwu : firmware_updates)
             {
-                std::vector<const char*> fwu_labels;
-                for (auto&& fwu : firmware_updates)
-                {
-                    fwu_labels.push_back(fwu.name_for_display.c_str());
-                }
-
-                ImGui::PushStyleColor(ImGuiCol_BorderShadow, dark_grey);
-                ImGui::PushStyleColor(ImGuiCol_FrameBg, sensor_bg);
-
-                std::string combo_id = "##Firmware Update Version";
-                ImGui::PushItemWidth(200);
-                ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 3);
-                ImGui::Combo(combo_id.c_str(), &selected_firmware_update_index, fwu_labels.data(), static_cast<int>(fwu_labels.size()));
-                ImGui::PopItemWidth();
-                ImGui::PopStyleColor(2);
-                ImGui::SetWindowFontScale(1.);
+                fwu_labels.push_back(fwu.name_for_display.c_str());
             }
-            else
-            {   // Single version
-                ImGui::Text("%s", std::string(selected_firmware_update.ver).c_str());
-            }
-        }
 
-        if (selected_firmware_update.release_page != "")
-        {
-            fw_text_pos.y += 25;
-            ImGui::SetCursorScreenPos(fw_text_pos);
-            ImGui::PushStyleColor(ImGuiCol_Text, white);
-            ImGui::Text("%s", "Release Link:"); ImGui::SameLine();
-            ImGui::PopStyleColor();
-            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-            ImGui::Text("%s", selected_firmware_update.release_page.c_str());
+            ImGui::PushStyleColor(ImGuiCol_BorderShadow, dark_grey);
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, sensor_bg);
 
-            ImGui::SameLine();
-            auto underline_start = ImVec2(ImGui::GetCursorScreenPos().x - (ImGui::CalcTextSize(selected_firmware_update.release_page.c_str()).x + 8), ImGui::GetCursorScreenPos().y + ImGui::GetFontSize());
-            auto underline_end = ImVec2(ImGui::GetCursorScreenPos().x - 8, ImGui::GetCursorScreenPos().y + ImGui::GetFontSize());
-            ImGui::GetWindowDrawList()->AddLine(underline_start, underline_end, ImColor(light_grey));
-
-
-            ImGui::PopStyleColor();
-            if (ImGui::IsItemHovered())
-                window.link_hovered();
-            if (ImGui::IsItemClicked())
-            {
-                try
-                {
-                    open_url(selected_firmware_update.release_page.c_str());
-                }
-                catch (...)
-                {
-                    LOG_ERROR("Error opening URL: " + selected_firmware_update.release_page);
-                }
-            }
-        }
-
-        if (selected_firmware_update.description != "")
-        {
-            fw_text_pos.y += 25;
-            ImGui::SetCursorScreenPos(fw_text_pos);
-            ImGui::PushStyleColor(ImGuiCol_Text, white);
-            ImGui::Text("%s", "Description:");
-            ImGui::PopStyleColor();
-
-            ImGui::PushTextWrapPos(pos.w - 150);
-            ImGui::PushStyleColor(ImGuiCol_Border, transparent);
-            ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
-            ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
-            ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
-            ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
-            ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
-            auto msg = selected_firmware_update.description.c_str();
-            fw_text_pos.x -= 4;
-            fw_text_pos.y += 15;
-            ImGui::SetCursorScreenPos(fw_text_pos);
-            ImGui::InputTextMultiline("##Firmware Update Description", const_cast<char*>(msg),
-                strlen(msg) + 1, ImVec2(ImGui::GetContentRegionAvailWidth() - 150, 75),
-                ImGuiInputTextFlags_ReadOnly);
-            ImGui::PopStyleColor(7);
-            ImGui::PopTextWrapPos();
-        }
-
-
-        if ((_fw_update_state == fw_update_states::ready) &&
-            (essential_fw_update_needed || recommended_fw_update_needed))
-        {
-            ImGui::SetCursorScreenPos({ pos.orig_pos.x + pos.w - 150, pos.orig_pos.y + pos.h - 115 });
-            ImGui::PushStyleColor(ImGuiCol_Text, white);
-            ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
-
-            if (ImGui::Button("Download &\n   Install", ImVec2(120, 40)) || _retry)
-            {
-                _retry = false;
-                auto link = selected_firmware_update.download_link;
-                std::thread download_thread([link, this]() {
-                    std::vector<uint8_t> vec;
-                    http_downloader client;
-
-                    if (!client.download_to_bytes_vector(link, vec,
-                        [this](uint64_t dl_current_bytes, uint64_t dl_total_bytes) -> callback_result {
-                        _fw_download_progress = static_cast<int>((dl_current_bytes * 100) / dl_total_bytes);
-                        return callback_result::CONTINUE_DOWNLOAD;
-                    }))
-                    {
-                        _fw_update_state = fw_update_states::failed_downloading;
-                        LOG_ERROR("Error in download firmware version from: " + link);
-                    }
-
-                    _fw_image = vec;
-
-                    _fw_download_progress = 100;
-                });
-                download_thread.detach();
-
-                _fw_update_state = fw_update_states::downloading;
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("This will download selected firmware and install it to the device");
-                window.link_hovered();
-            }
+            std::string combo_id = "##Firmware Update Version";
+            ImGui::PushItemWidth(200);
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 3);
+            ImGui::Combo(combo_id.c_str(), &selected_firmware_update_index, fwu_labels.data(), static_cast<int>(fwu_labels.size()));
+            ImGui::PopItemWidth();
             ImGui::PopStyleColor(2);
+            ImGui::SetWindowFontScale(1.);
         }
-        else if (_fw_update_state == fw_update_states::downloading)
-        {
-            ImGui::SetCursorScreenPos({ pos.orig_pos.x + 150, pos.orig_pos.y + pos.h - 95 });
-            _progress.draw(window, static_cast<int>(pos.w) - 170, _fw_download_progress / 3);
-            if (_fw_download_progress == 100)
-            {
-                _fw_update_state = fw_update_states::started;
+        else
+        {   // Single version
+            ImGui::Text("%s", std::string(selected_firmware_update.ver).c_str());
+        }
+    }
 
-                _update_manager = std::make_shared<firmware_update_manager>(not_model,
-                    *selected_profile.dev_model, selected_profile.profile.dev, selected_profile.ctx, _fw_image, true
-                    );
-                auto invoke = [](std::function<void()> action) { action(); };
-                _update_manager->start(invoke);
-            }
-        }
-        else if (_fw_update_state == fw_update_states::started)
-        {
-            ImGui::SetCursorScreenPos({ pos.orig_pos.x + 150, pos.orig_pos.y + pos.h - 95 });
-            _progress.draw(window, static_cast<int>(pos.w) - 170, static_cast<int>(_update_manager->get_progress() * 0.66 + 33));
-            if (_update_manager->done()) {
-                _fw_update_state = fw_update_states::completed;
-                _fw_image.clear();
-            }
+    if (selected_firmware_update.release_page != "")
+    {
+        fw_text_pos.y += 25;
+        ImGui::SetCursorScreenPos(fw_text_pos);
+        ImGui::PushStyleColor(ImGuiCol_Text, white);
+        ImGui::Text("%s", "Release Link:"); ImGui::SameLine();
+        ImGui::PopStyleColor();
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::Text("%s", selected_firmware_update.release_page.c_str());
 
-            if (_update_manager->failed()) {
-                _fw_update_state = fw_update_states::failed_updating;
-                _fw_image.clear();
-                _fw_download_progress = 0;
-            }
-            // Verify an error window will not pop up. ImGui cannot handle 2 PopUpModals in parallel.
-            if (!error_message.empty())
-            {
-                LOG_ERROR("error caught during update process, details: " + error_message);
-                error_message.clear();
-            }
+        ImGui::SameLine();
+        auto underline_start = ImVec2(ImGui::GetCursorScreenPos().x - (ImGui::CalcTextSize(selected_firmware_update.release_page.c_str()).x + 8), ImGui::GetCursorScreenPos().y + ImGui::GetFontSize());
+        auto underline_end = ImVec2(ImGui::GetCursorScreenPos().x - 8, ImGui::GetCursorScreenPos().y + ImGui::GetFontSize());
+        ImGui::GetWindowDrawList()->AddLine(underline_start, underline_end, ImColor(light_grey));
 
-        }
-        else if (_fw_update_state == fw_update_states::failed_downloading ||
-            _fw_update_state == fw_update_states::failed_updating)
+
+        ImGui::PopStyleColor();
+        if (ImGui::IsItemHovered())
+            window.link_hovered();
+        if (ImGui::IsItemClicked())
         {
-            ImGui::SetCursorScreenPos({ pos.orig_pos.x + 150, pos.orig_pos.y + pos.h - 95 });
-            ImGui::PushStyleColor(ImGuiCol_Text, white);
-            std::string text = _fw_update_state == fw_update_states::failed_downloading ?
-                "Firmware download failed, check connection and press to retry" :
-                "Firmware update process failed, press to retry";
-            if (ImGui::Button(text.c_str(), ImVec2(pos.w - 170, 25)))
+            try
             {
-                _fw_update_state = fw_update_states::ready;
-                _retry = true;
+                open_url(selected_firmware_update.release_page.c_str());
             }
-            ImGui::PopStyleColor();
+            catch (...)
+            {
+                LOG_ERROR("Error opening URL: " + selected_firmware_update.release_page);
+            }
         }
+    }
+
+    if (selected_firmware_update.description != "")
+    {
+        fw_text_pos.y += 25;
+        ImGui::SetCursorScreenPos(fw_text_pos);
+        ImGui::PushStyleColor(ImGuiCol_Text, white);
+        ImGui::Text("%s", "Description:");
+        ImGui::PopStyleColor();
+
+        ImGui::PushTextWrapPos(pos.w - 150);
+        ImGui::PushStyleColor(ImGuiCol_Border, transparent);
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
+        ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
+        ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
+        ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
+        ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
+        auto msg = selected_firmware_update.description.c_str();
+        fw_text_pos.x -= 4;
+        fw_text_pos.y += 15;
+        ImGui::SetCursorScreenPos(fw_text_pos);
+        ImGui::InputTextMultiline("##Firmware Update Description", const_cast<char*>(msg),
+            strlen(msg) + 1, ImVec2(ImGui::GetContentRegionAvailWidth() - 150, 75),
+            ImGuiInputTextFlags_ReadOnly);
+        ImGui::PopStyleColor(7);
+        ImGui::PopTextWrapPos();
+    }
+
+
+    if( ( _fw_update_state == fw_update_states::ready || _fw_update_state == fw_update_states::completed )
+        && ( essential_fw_update_needed || recommended_fw_update_needed ) )
+    {
+        ImGui::SetCursorScreenPos({ pos.orig_pos.x + pos.w - 150, pos.orig_pos.y + pos.h - 115 });
+        ImGui::PushStyleColor(ImGuiCol_Text, white);
+        ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
+
+        if (ImGui::Button("Download &\n   Install", ImVec2(120, 40)) || _retry)
+        {
+            _retry = false;
+            auto link = selected_firmware_update.download_link;
+            std::thread download_thread([link, this]() {
+                std::vector<uint8_t> vec;
+                http_downloader client;
+
+                if (!client.download_to_bytes_vector(link, vec,
+                    [this](uint64_t dl_current_bytes, uint64_t dl_total_bytes) -> callback_result {
+                    _fw_download_progress = static_cast<int>((dl_current_bytes * 100) / dl_total_bytes);
+                    return callback_result::CONTINUE_DOWNLOAD;
+                }))
+                {
+                    _fw_update_state = fw_update_states::failed_downloading;
+                    LOG_ERROR("Error in download firmware version from: " + link);
+                }
+
+                _fw_image = vec;
+
+                _fw_download_progress = 100;
+            });
+            download_thread.detach();
+
+            _fw_update_state = fw_update_states::downloading;
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("This will download selected firmware and install it to the device");
+            window.link_hovered();
+        }
+        ImGui::PopStyleColor(2);
+    }
+    else if (_fw_update_state == fw_update_states::downloading)
+    {
+        ImGui::SetCursorScreenPos({ pos.orig_pos.x + 150, pos.orig_pos.y + pos.h - 95 });
+        _progress.draw(window, static_cast<int>(pos.w) - 170, _fw_download_progress / 3);
+        if (_fw_download_progress == 100 && !_fw_image.empty())
+        {
+            _fw_download_progress = 0;
+            _fw_update_state = fw_update_states::started;
+
+            _update_manager = std::make_shared<firmware_update_manager>(not_model,
+                *selected_profile.dev_model, selected_profile.profile.dev, selected_profile.ctx, _fw_image, true
+                );
+            auto invoke = [](std::function<void()> action) { action(); };
+            _update_manager->start(invoke);
+        }
+    }
+    else if (_fw_update_state == fw_update_states::started)
+    {
+        ImGui::SetCursorScreenPos({ pos.orig_pos.x + 150, pos.orig_pos.y + pos.h - 95 });
+        _progress.draw(window, static_cast<int>(pos.w) - 170, static_cast<int>(_update_manager->get_progress() * 0.66 + 33));
+        if (_update_manager->done()) {
+            _fw_update_state = fw_update_states::completed;
+            _fw_image.clear();
+        }
+
+        if (_update_manager->failed()) {
+            _fw_update_state = fw_update_states::failed_updating;
+            _fw_image.clear();
+            _fw_download_progress = 0;
+        }
+        // Verify an error window will not pop up. ImGui cannot handle 2 PopUpModals in parallel.
+        if (!error_message.empty())
+        {
+            LOG_ERROR("error caught during update process, details: " + error_message);
+            error_message.clear();
+        }
+
+    }
+    else if (_fw_update_state == fw_update_states::failed_downloading ||
+        _fw_update_state == fw_update_states::failed_updating)
+    {
+        ImGui::SetCursorScreenPos({ pos.orig_pos.x + 150, pos.orig_pos.y + pos.h - 95 });
+        ImGui::PushStyleColor(ImGuiCol_Text, white);
+        std::string text = _fw_update_state == fw_update_states::failed_downloading ?
+            "Firmware download failed, check connection and press to retry" :
+            "Firmware update process failed, press to retry";
+        if (ImGui::Button(text.c_str(), ImVec2(pos.w - 170, 25)))
+        {
+            _fw_update_state = fw_update_states::ready;
+            _update_manager.reset();
+            _fw_image.clear();
+            _retry = true;
+        }
+        ImGui::PopStyleColor();
+        _fw_download_progress = 0;
+    }
+    else if (_fw_update_state == fw_update_states::completed)
+    {
+        _fw_update_state = fw_update_states::ready;
+        _update_manager.reset();
+        _fw_image.clear();
+        _fw_download_progress = 0;
     }
 
     ImGui::PopStyleColor();

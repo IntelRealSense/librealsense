@@ -851,7 +851,14 @@ namespace rs2
 
         void load_viewer_configurations(const std::string& json_str);
         void save_viewer_configurations(std::ofstream& outfile, nlohmann::json& j);
+        void handle_online_sw_update(
+            std::shared_ptr < notifications_model > nm,
+            std::shared_ptr< sw_update::dev_updates_profile::update_profile > update_profile );
 
+        bool handle_online_fw_update(
+            const context & ctx,
+            std::shared_ptr< notifications_model > nm,
+            std::shared_ptr< sw_update::dev_updates_profile::update_profile > update_profile );
 
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;

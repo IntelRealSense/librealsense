@@ -6,7 +6,7 @@
 #test:device each(L500*)
 #test:device each(D400*)
 
-import pyrealsense2 as rs, sys, os, subprocess, re
+import pyrealsense2 as rs, sys, os, subprocess
 from rspy import devices, log, test, file, repo
 
 if not devices.acroname:
@@ -112,6 +112,7 @@ test.start( "Update FW" )
 try:
     cmd = [fw_updater_exe, '-f', image_file]
     log.d( 'running:', cmd )
+    sys.stdout.flush()
     subprocess.run( cmd )
 except Exception as e:
     test.unexpected_exception()

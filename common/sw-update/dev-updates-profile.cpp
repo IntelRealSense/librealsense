@@ -49,22 +49,31 @@ namespace rs2
                     version_info experimental_update;
                     if (try_parse_update(_versions_db, _update_profile.device_name, EXPERIMENTAL, comp, experimental_update))
                     {
-                        versions_vec[experimental_update.ver] = experimental_update;
-                        update_available = update_available || current_version < experimental_update.ver;
+                        if (current_version < experimental_update.ver)
+                        {
+                            versions_vec[experimental_update.ver] = experimental_update;
+                            update_available = true;
+                        }
                     }
 
                     version_info recommened_update;
                     if (try_parse_update(_versions_db, _update_profile.device_name, RECOMMENDED, comp, recommened_update))
                     {
-                        versions_vec[recommened_update.ver] = recommened_update;
-                        update_available = update_available || current_version < recommened_update.ver;
+                        if (current_version < recommened_update.ver)
+                        {
+                            versions_vec[recommened_update.ver] = recommened_update;
+                            update_available = true;
+                        }
                     }
 
                     version_info required_update;
                     if (try_parse_update(_versions_db, _update_profile.device_name, ESSENTIAL, comp, required_update))
                     {
-                        versions_vec[required_update.ver] = required_update;
-                        update_available = update_available || (current_version < required_update.ver);
+                        if (current_version < required_update.ver)
+                        {
+                            versions_vec[required_update.ver] = required_update;
+                            update_available = true;
+                        }
                     }
                 }
             }
@@ -107,12 +116,11 @@ namespace rs2
         bool dev_updates_profile::update_profile::get_sw_update( update_policy_type policy,
                                                                  version_info & info ) const
         {
-            auto found = std::find_if(
-                software_versions.begin(),
-                software_versions.end(),
-                [&]( const std::pair<  sw_update::version, version_info > & ver_info ) {
-                    return ver_info.second.policy == policy && software_version < ver_info.first;
-                } );
+            auto found = std::find_if( software_versions.begin(),
+                                       software_versions.end(),
+                                       [policy]( const version_to_info::value_type & ver_info ) {
+                                           return ver_info.second.policy == policy;
+                                       } );
             if( found != software_versions.end() )
             {
                 info = found->second;
@@ -124,12 +132,11 @@ namespace rs2
         bool dev_updates_profile::update_profile::get_fw_update( update_policy_type policy,
                                                                  version_info & info ) const
         {
-            auto found = std::find_if(
-                firmware_versions.begin(),
-                firmware_versions.end(),
-                [&](const std::pair<  sw_update::version, version_info >& ver_info) {
-                    return ver_info.second.policy == policy && firmware_version < ver_info.first;
-                } );
+            auto found = std::find_if( firmware_versions.begin(),
+                                       firmware_versions.end(),
+                                       [policy]( const version_to_info::value_type & ver_info ) {
+                                           return ver_info.second.policy == policy;
+                                       } );
             if( found != firmware_versions.end() )
             {
                 info = found->second;
