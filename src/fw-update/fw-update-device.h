@@ -150,6 +150,7 @@ namespace librealsense
         std::vector<uint8_t> _serial_number_buffer;
         std::string _highest_fw_version;
         std::string _last_fw_version;
+        std::string _physical_port;
         bool _is_dfu_locked = false;
     };
 }
