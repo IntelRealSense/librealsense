@@ -48,7 +48,7 @@ namespace librealsense
             usb_request_winusb(rs_usb_device device, rs_usb_endpoint endpoint);
             virtual ~usb_request_winusb();
 
-            virtual unsigned __int64 get_actual_length() const override;
+            virtual uint64_t get_actual_length() const override;
             virtual void* get_native_request() const override;
 
         protected:

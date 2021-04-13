@@ -23,7 +23,7 @@ namespace librealsense
 
         }
 
-        unsigned __int64 usb_request_winusb::get_actual_length() const
+        uint64_t usb_request_winusb::get_actual_length() const
         {
             return _overlapped->InternalHigh;// _request->actual_length;
         }
