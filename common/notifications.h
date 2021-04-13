@@ -36,6 +36,13 @@ namespace rs2
     {
         notification_model();
         notification_model(const notification_data& n);
+
+        template <class dst_type>
+        bool is()
+        {
+            return dynamic_cast<const dst_type*>(this) != nullptr;
+        }
+
         double get_age_in_ms(bool total = false) const;
         bool interacted() const;
         std::function<void()> draw(ux_window& win, int w, int y, 
@@ -192,20 +199,20 @@ namespace rs2
     {
         std::shared_ptr<notification_model> add_notification(const notification_data& n);
         std::shared_ptr<notification_model> add_notification(const notification_data& n,
-                              std::function<void()> custom_action, 
-                              bool use_custom_action = true);
+            std::function<void()> custom_action,
+            bool use_custom_action = true);
         void add_notification(std::shared_ptr<notification_model> model);
         bool draw(ux_window& win, int w, int h, std::string& error_message);
 
         notifications_model() {}
 
-        void add_log(std::string message) 
-        {            
-            output.add_log(RS2_LOG_SEVERITY_INFO, "", 0, message); 
+        void add_log(std::string message)
+        {
+            output.add_log(RS2_LOG_SEVERITY_INFO, "", 0, message);
         }
 
         output_model output;
-        
+
     private:
         std::vector<std::shared_ptr<notification_model>> pending_notifications;
         int index = 1;
@@ -213,6 +220,20 @@ namespace rs2
         std::recursive_mutex m;
 
         std::shared_ptr<notification_model> selected;
+    };
+
+    struct sw_recommended_update_alert_model : public notification_model
+    {
+        sw_recommended_update_alert_model(const std::string & current_version, const std::string & recommended_version, const std::string &recommended_version_link);
+
+        void set_color_scheme( float t ) const override;
+        void draw_content(
+            ux_window & win, int x, int y, float t, std::string & error_message ) override;
+        int calc_height() override { return 150; }
+        int get_max_lifetime_ms() const override { return 10000; }
+        const std::string _current_version;
+        const std::string _recommended_version;
+        const std::string _recommended_version_link;
     };
 
     inline ImVec4 saturate(const ImVec4& a, float f)

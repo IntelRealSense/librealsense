@@ -25,7 +25,7 @@ namespace rs2
 
             invoke([&](){
                 // Stop viewer UI
-                _sub->stop(_viewer);
+                _sub->stop(_viewer.not_model);
             });
 
             // Wait until frames from all active profiles stop arriving

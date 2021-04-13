@@ -53,11 +53,11 @@ PATCHES_REV=""
 #Select the kernel patches revision that matches the paltform configuration
 case ${JETSON_L4T_VERSION} in
 
-  "32.2.1" | "32.3.1" | "32.4.3")
+  "32.2.1" | "32.2.3" | "32.3.1" | "32.4.3")
     PATCHES_REV="4.4"		# Baseline for the patches
     echo -e "\e[32mNote: the patch makes changes to kernel device tree to support HID IMU sensors\e[0m"
     ;;
-  "32.4.4" | "32.5")
+  "32.4.4" | "32.5" | "32.5.1")
     PATCHES_REV="4.4.1"	# JP 4.4.1
     ;;
   *)
