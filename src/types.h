@@ -567,13 +567,70 @@ namespace librealsense
     ////////////////////////////////////////////
     // World's tiniest linear algebra library //
     ////////////////////////////////////////////
-#pragma pack(push, 1)
-    struct int2 { int x, y; };
-    struct float2 { float x, y; float & operator [] (int i) { return (&x)[i]; } };
-    struct float3 { float x, y, z; float & operator [] (int i) { return (&x)[i]; } };
-    struct float4 { float x, y, z, w; float & operator [] (int i) { return (&x)[i]; } };
-    struct float3x3 { float3 x, y, z; float & operator () (int i, int j) { return (&x)[j][i]; } }; // column-major
-    struct pose { float3x3 orientation; float3 position; };
+#pragma pack( push, 1 )
+    struct int2
+    {
+        int x, y;
+    };
+    struct float2
+    {
+        float x, y;
+        float & operator[]( int i )
+        {
+#ifdef _DEBUG
+
+            assert( i >= 0 );
+            assert( i < 2 );
+#endif
+            return *( &x + i );
+        }
+    };
+    struct float3
+    {
+        float x, y, z;
+        float & operator[]( int i )
+        {
+#ifdef _DEBUG
+
+            assert( i >= 0 );
+            assert( i < 3 );
+#endif
+            return ( *( &x + i ) );
+        }
+    };
+    struct float4
+    {
+        float x, y, z, w;
+        float & operator[]( int i )
+        {
+#ifdef _DEBUG
+
+            assert( i >= 0 );
+            assert( i < 4 );
+#endif
+            return ( *( &x + i ) );
+        }
+    };
+    struct float3x3
+    {
+        float3 x, y, z;
+        float & operator()( int i, int j )
+        {
+#ifdef _DEBUG
+
+            assert( i >= 0 );
+            assert( i < 3 );
+            assert( j >= 0 );
+            assert( j < 3 );
+#endif
+            return ( *( &x[0] + j * sizeof( float3 ) / sizeof( float ) + i ) );
+        }
+    };  // column-major
+    struct pose
+    {
+        float3x3 orientation;
+        float3 position;
+    };
 #pragma pack(pop)
     inline bool operator == (const float3 & a, const float3 & b) { return a.x == b.x && a.y == b.y && a.z == b.z; }
     inline float3 operator + (const float3 & a, const float3 & b) { return{ a.x + b.x, a.y + b.y, a.z + b.z }; }
