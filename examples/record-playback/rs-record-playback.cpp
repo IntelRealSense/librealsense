@@ -12,7 +12,7 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
-
+#include <fs.h>
 
 // Helper function for dispaying time conveniently
 std::string pretty_time(std::chrono::nanoseconds duration);
@@ -215,22 +215,12 @@ catch (const std::exception& e)
 std::string bag_file()
 {
     char sep = '/';
-    std::string tmp_path = std::getenv("TEMP");
+    std::string tmp_path = rs2::get_folder_path(rs2::special_folder::temp_folder);
     std::string bag = "a.bag";
-
-    #ifdef _WIN32
-        sep = '\\';
-    #endif
-
     if (tmp_path == "")
     {
         return bag;
     }
-    if (tmp_path[tmp_path.length()] != sep) 
-    { 
-        tmp_path += sep;        
-    }
-
     return tmp_path + bag;
 }
 
