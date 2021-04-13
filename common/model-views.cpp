@@ -3775,8 +3775,8 @@ namespace rs2
 
         auto name = get_device_name(dev);
 
-        // Inhibit on DQT
-        if ( _allow_remove )
+        // Inhibit on DQT / Playback device
+        if( _allow_remove && ( ! dev.is< playback >() ) )
             check_for_device_updates(viewer);
 
         if ((bool)config_file::instance().get(configurations::update::recommend_calibration))
