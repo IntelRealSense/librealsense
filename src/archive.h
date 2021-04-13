@@ -198,7 +198,7 @@ namespace librealsense
     public:
         composite_frame() : frame() {}
 
-        frame_interface* get_frame(size_t i) const
+        frame_interface* get_frame(int i) const
         {
             auto frames = get_frames();
             return frames[i];

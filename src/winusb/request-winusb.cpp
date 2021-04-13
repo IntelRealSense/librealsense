@@ -23,7 +23,7 @@ namespace librealsense
 
         }
 
-        int usb_request_winusb::get_actual_length() const
+        unsigned __int64 usb_request_winusb::get_actual_length() const
         {
             return _overlapped->InternalHigh;// _request->actual_length;
         }
@@ -33,7 +33,7 @@ namespace librealsense
 
         }
 
-        int usb_request_winusb::get_native_buffer_length()
+        std::size_t usb_request_winusb::get_native_buffer_length()
         {
             return _buffer.size();
         }
