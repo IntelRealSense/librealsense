@@ -54,7 +54,8 @@ public enum Extension {
     CALIBRATED_SENSOR(50),
     HDR_MERGE(51),
     SEQUENCE_ID_FILTER(52),
-    MAX_USABLE_RANGE_SENSOR(53);
+    MAX_USABLE_RANGE_SENSOR(53),
+    FRAMESET(54);
 
 
     private final int mValue;
