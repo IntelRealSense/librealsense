@@ -1,10 +1,7 @@
 #include <jni.h>
 #include "error.h"
 #include "../../../include/librealsense2/rs.h"
-#include "../../../include/librealsense2/h/rs_pipeline.h"
-#include "../../../include/librealsense2/hpp/rs_device.hpp"
 #include "../../../include/librealsense2/hpp/rs_frame.hpp"
-#include "../../api.h"
 
 #include "jni_logging.h"
 #include "jni_user.h"

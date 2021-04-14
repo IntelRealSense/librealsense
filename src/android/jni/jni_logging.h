@@ -8,9 +8,9 @@
 
 #define  LRS_JNI_LOG_TAG    "librs jni api"
 
-#define  LRS_JNI_LOGE(...)  __android_log_print(librealsense::ANDROID_LOG_INFO,LRS_JNI_LOG_TAG,__VA_ARGS__)
-#define  LRS_JNI_LOGW(...)  __android_log_print(librealsense::ANDROID_LOG_WARN,LRS_JNI_LOG_TAG,__VA_ARGS__)
-#define  LRS_JNI_LOGD(...)  __android_log_print(librealsense::ANDROID_LOG_DEBUG,LRS_JNI_LOG_TAG,__VA_ARGS__)
-#define  LRS_JNI_LOGI(...)  __android_log_print(librealsense::ANDROID_LOG_INFO,LRS_JNI_LOG_TAG,__VA_ARGS__)
+#define  LRS_JNI_LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LRS_JNI_LOG_TAG,__VA_ARGS__)
+#define  LRS_JNI_LOGW(...)  __android_log_print(ANDROID_LOG_WARN,LRS_JNI_LOG_TAG,__VA_ARGS__)
+#define  LRS_JNI_LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,LRS_JNI_LOG_TAG,__VA_ARGS__)
+#define  LRS_JNI_LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LRS_JNI_LOG_TAG,__VA_ARGS__)
 
 #endif

@@ -5,9 +5,6 @@
 #include "error.h"
 #include "../../../include/librealsense2/rs.h"
 #include "../../../include/librealsense2/h/rs_pipeline.h"
-#include "../../../include/librealsense2/hpp/rs_device.hpp"
-#include "../../../include/librealsense2/hpp/rs_frame.hpp"
-#include "../../api.h"
 
 #include "jni_logging.h"
 #include "jni_user.h"
@@ -43,8 +40,6 @@ Java_com_intel_realsense_librealsense_Pipeline_nStartWithCallback(JNIEnv *env, j
         rs_jni_cb(f, &pdata);
         return NULL;
     };
-
-    LRS_JNI_LOGD("Java_com_intel_realsense_librealsense_Sensor_nStart at line %d", __LINE__);
 
     auto rv = rs2_pipeline_start_with_callback_cpp(reinterpret_cast<rs2_pipeline *>(handle), new rs2::frame_callback<decltype(cb)>(cb), &e);
     handle_error(env, e);
