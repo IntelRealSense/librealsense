@@ -148,8 +148,7 @@ def query( monitor_changes = True ):
             if len( unknown_ports ) == 1:
                 for device in _device_by_sn.values():
                     if not device.port:
-                        log.d( 'port', port, 'has device', sn )
-                        log.d( 'try print dev:', device )
+                        log.d( 'port', unknown_ports[0], 'has device', device.serial_number )
                         device._port = unknown_ports[0]
             else:
                 for port in unknown_ports:
@@ -170,7 +169,6 @@ def query( monitor_changes = True ):
                     device = _device_by_sn.get(sn)
                     if device:
                         log.d( 'port', port, 'has device', sn)
-                        log.d('try print dev:', device)
                         device._port = port
 
     finally:
