@@ -156,7 +156,7 @@ void output_model::open(ux_window& win)
 {
     is_output_open = true;
     config_file::instance().set(configurations::viewer::output_open, true);
-    default_log_h = (int)((win.height() - 100) / 2);
+    default_log_h = static_cast<int>((win.height() - 100) / 2);
     new_log = true;
 }
 
