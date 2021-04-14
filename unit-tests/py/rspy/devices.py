@@ -143,15 +143,17 @@ def query( monitor_changes = True ):
     #
     if monitor_changes:
         _context.set_devices_changed_callback( _device_change_callback )
-    if len( all_ports ) > len( known_ports ):
+    # only if acroname is available (if acroname)
+    if len( all_ports ) > len( known_ports ): # only if there is a device with unknown ports
         log.d( 'trying do discover unknown ports' )
         unknown_ports = [port for port in all_ports if port not in known_ports]
         print( "ports:", all_ports )
         print( "known ports:", known_ports )
         print( "unknown ports:", unknown_ports )
+        # error if known port is not in all ports
         if len( unknown_ports ) == 1:
             for device in _device_by_sn.values():
-                if not device.port:
+                if device.port is None:
                     log.d( 'port', unknown_ports[0], 'has device', device.serial_number )
                     device._port = unknown_ports[0]
         else:
