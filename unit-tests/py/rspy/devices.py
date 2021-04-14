@@ -134,7 +134,7 @@ def query( monitor_changes = True ):
             else:
                 sn = dev.get_info( rs.camera_info.serial_number )
             device = Device( sn, dev )
-            if device.port:
+            if device.port is not None:
                 known_ports.append(device.port)
             _device_by_sn[sn] = device
             log.d( '... port {}:'.format( device.port is None and '?' or device.port ), dev )
@@ -156,7 +156,14 @@ def query( monitor_changes = True ):
                     device._port = unknown_ports[0]
         else:
             for port in unknown_ports:
-                device = None
+                acroname.disable_ports( all_ports )
+                for retry in range( 5 ):
+                    if len( enabled()) == 0:
+                        break
+                    time.sleep( 1 )
+                if len( enabled()) != 0:
+                    log.w( 'Could not disable ports, can\'t infer ports for recovery devices' )
+                    break
                 acroname.enable_ports( [port], disable_other_ports=True )
                 sn = None
                 for retry in range( 5 ):
