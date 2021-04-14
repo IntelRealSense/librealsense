@@ -138,44 +138,39 @@ def query( monitor_changes = True ):
                 known_ports.append(device.port)
             _device_by_sn[sn] = device
             log.d( '... port {}:'.format( device.port is None and '?' or device.port ), dev )
-
-        if len( all_ports ) > len( known_ports ):
-            log.d( 'trying do discover unknown ports' )
-            unknown_ports = [port for port in all_ports if port not in known_ports]
-            print("ports:", all_ports)
-            print("known ports:", known_ports)
-            print("unknown ports:", unknown_ports)
-            if len( unknown_ports ) == 1:
-                for device in _device_by_sn.values():
-                    if not device.port:
-                        log.d( 'port', unknown_ports[0], 'has device', device.serial_number )
-                        device._port = unknown_ports[0]
-            else:
-                for port in unknown_ports:
-                    device = None
-                    acroname.enable_ports( [port], disable_other_ports = True )
-                    for retry in range(5):
-                        time.sleep(1)
-                        try:
-                            devices = rs.context().query_devices()
-                            print("check:", devices )
-                            break
-                        except RuntimeError as e:
-                            log.d( 'FAILED to query device:', e )
-                    if not devices:
-                        log.e( 'Failed to discover device in port', port )
-                        continue
-                    sn = devices[0].get_info( rs.camera_info.serial_number )
-                    device = _device_by_sn.get(sn)
-                    if device:
-                        log.d( 'port', port, 'has device', sn)
-                        device._port = port
-
     finally:
         log.debug_unindent()
     #
     if monitor_changes:
         _context.set_devices_changed_callback( _device_change_callback )
+    if len( all_ports ) > len( known_ports ):
+        log.d( 'trying do discover unknown ports' )
+        unknown_ports = [port for port in all_ports if port not in known_ports]
+        print( "ports:", all_ports )
+        print( "known ports:", known_ports )
+        print( "unknown ports:", unknown_ports )
+        if len( unknown_ports ) == 1:
+            for device in _device_by_sn.values():
+                if not device.port:
+                    log.d( 'port', unknown_ports[0], 'has device', device.serial_number )
+                    device._port = unknown_ports[0]
+        else:
+            for port in unknown_ports:
+                device = None
+                acroname.enable_ports( [port], disable_other_ports=True )
+                sn = None
+                for retry in range( 5 ):
+                    if len( enabled()) == 1:
+                        sn = list( enabled())[0]
+                        break
+                    time.sleep( 1 )
+                if not sn:
+                    log.w( 'Could not recognise device in port', port)
+                else:
+                    device = _device_by_sn.get( sn )
+                    if device:
+                        log.d( 'port', port, 'has device', sn )
+                        device._port = port
 
 
 def _device_change_callback( info ):
