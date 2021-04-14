@@ -14,15 +14,6 @@
 #include "jni_logging.h"
 #include "jni_user.h"
 
-void check_error(rs2_error* e)
-{
-    if (e)
-    {
-        LRS_JNI_LOGE("check_error at line %d. rs_error was raised when calling %s(%s):", __LINE__, rs2_get_failed_function(e), rs2_get_failed_args(e));
-        LRS_JNI_LOGE("check_error at line %d.     %s", __LINE__, rs2_get_error_message(e));
-    }
-}
-
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_Sensor_nOpen(JNIEnv *env, jclass type, jlong handle, jlong sp) {
@@ -46,8 +37,6 @@ Java_com_intel_realsense_librealsense_Sensor_nStart(JNIEnv *env, jclass type, jl
         rs_jni_cb(f, &sdata);
         return NULL;
     };
-
-    LRS_JNI_LOGD("Java_com_intel_realsense_librealsense_Sensor_nStart at line %d", __LINE__);
 
     rs2_start_cpp(reinterpret_cast<rs2_sensor *>(handle), new rs2::frame_callback<decltype(cb)>(cb), &e);
     handle_error(env, e);
