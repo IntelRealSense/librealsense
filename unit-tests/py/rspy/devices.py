@@ -155,15 +155,17 @@ def query( monitor_changes = True ):
                     log.d( 'port', unknown_ports[0], 'has device', device.serial_number )
                     device._port = unknown_ports[0]
         else:
-            for port in unknown_ports:
-                acroname.disable_ports( all_ports )
-                for retry in range( 5 ):
-                    if len( enabled()) == 0:
-                        break
-                    time.sleep( 1 )
-                if len( enabled()) != 0:
-                    log.w( 'Could not disable ports, can\'t infer ports for recovery devices' )
+            # disabling all ports
+            acroname.disable_ports( all_ports )
+            for retry in range( 5 ):
+                if len( enabled() ) == 0:
                     break
+                time.sleep( 1 )
+            if len( enabled() ) != 0:
+                log.w( 'Could not disable ports, can\'t infer ports for recovery devices' )
+                return
+            # enabling one port at a time to try and find what device is connected to it
+            for port in unknown_ports:
                 acroname.enable_ports( [port], disable_other_ports=True )
                 sn = None
                 for retry in range( 5 ):
@@ -178,6 +180,14 @@ def query( monitor_changes = True ):
                     if device:
                         log.d( 'port', port, 'has device', sn )
                         device._port = port
+                acroname.disable_ports( [port] )
+                for retry in range( 5 ):
+                    if len( enabled() ) == 0:
+                        break
+                    time.sleep( 1 )
+                if len( enabled() ) != 0:
+                    log.w( 'Could not disable port', port, 'may not be able to infer some ports for recovery devices' )
+                    break
 
 
 def _device_change_callback( info ):
