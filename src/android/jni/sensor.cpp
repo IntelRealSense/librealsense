@@ -38,104 +38,12 @@ JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_Sensor_nStart(JNIEnv *env, jclass type, jlong handle, jobject jcb) {
     rs2_error* e = nullptr;
 
-    // get the Java VM interface associated with the current thread
-    int status = env->GetJavaVM(&(sdata.jvm));
-    if (status != 0)
-    {
-        LRS_JNI_LOGE("Failed to get JVM in Java_com_intel_realsense_librealsense_Sensor_nStart at line %d", __LINE__);
-        return;
-    }
-
-    // get JVM version
-    sdata.version = env->GetVersion();
-
-    // Creates a new global reference to the java callback object referred to by the jcb argument
-    jobject callback = env->NewGlobalRef(jcb);
-    if (callback == NULL)
-    {
-        LRS_JNI_LOGE("Failed to create global reference to java callback in Java_com_intel_realsense_librealsense_Sensor_nStart at line %d", __LINE__);
-        return;
-    }
-    sdata.jcb = callback;
-
-    // find Frame class
-    jclass frameclass = env->FindClass("com/intel/realsense/librealsense/Frame");
-    if(frameclass == NULL)
-    {
-        LRS_JNI_LOGE("Failed to find Frame java class in Java_com_intel_realsense_librealsense_Sensor_nStart at line %d", __LINE__);
-        return;
-    }
-
-    // Creates a new global reference to the java Frame class
-    jclass fclass = (jclass) env->NewGlobalRef(frameclass);
-    if (fclass == NULL)
-    {
-        LRS_JNI_LOGE("Failed to global reference to the Frame java class in Java_com_intel_realsense_librealsense_Sensor_nStart at line %d", __LINE__);
-        return;
-    }
-    sdata.frameclass = fclass;
+    if (rs_jni_callback_init(env, jcb, &sdata) != true) return;
 
     auto cb = [&](rs2::frame f) {
         rs2_error* e = nullptr;
 
-        unsigned long long int fn = f.get_frame_number();
-        check_error(e);
-
-        int size = f.get_data_size();
-        check_error(e);
-
-        LRS_JNI_LOGD("on_frame at line %d. frame number:%llu, size:%d", __LINE__, fn, size);
-
-        JNIEnv *cb_thread_env = NULL;
-        int env_state = sdata.jvm->GetEnv((void **)&cb_thread_env,sdata.version);
-
-        if(env_state == JNI_EDETACHED){
-             if(sdata.jvm->AttachCurrentThread(&cb_thread_env,NULL) != JNI_OK){
-                return NULL;
-            }
-            sdata.attached = JNI_TRUE;
-        }
-
-        jobject callback = sdata.jcb;
-
-        if(cb_thread_env){
-            jclass usercb = cb_thread_env->GetObjectClass(callback);
-            if(usercb == NULL){
-                LRS_JNI_LOGE("cannot find user callback class ...");
-                sdata.jvm->DetachCurrentThread();
-                return NULL;
-            }
-
-            jmethodID methodid = cb_thread_env->GetMethodID(usercb, "onFrame", "(Lcom/intel/realsense/librealsense/Frame;)V");
-            if(methodid == NULL){
-                LRS_JNI_LOGE("cannot find method onFrame in user callback");
-                sdata.jvm->DetachCurrentThread();
-                return NULL;
-            }
-
-            jclass frameclass = sdata.frameclass;
-            if(frameclass == NULL){
-                LRS_JNI_LOGE("cannot find Frame class...");
-                sdata.jvm->DetachCurrentThread();
-                return NULL;
-            }
-
-            // get the Frame class constructor
-            jmethodID frame_constructor = cb_thread_env->GetMethodID(frameclass, "<init>", "(J)V");
-
-            // create a Frame object
-            jobject frame = cb_thread_env->NewObject(frameclass, frame_constructor, (jlong) f.get());
-
-            // invoke the java callback with the frame
-            cb_thread_env->CallVoidMethod(callback,methodid, frame);
-        }
-
-        if(sdata.attached){
-            sdata.jvm->DetachCurrentThread();
-        }
-
-        LRS_JNI_LOGD("after DetachCurrentThread...");
-        cb_thread_env = NULL;
+        rs_jni_cb(f, &sdata);
         return NULL;
     };
 
