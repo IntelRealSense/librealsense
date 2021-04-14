@@ -274,7 +274,7 @@ namespace rs2
 
                         for (auto& option : curr_exporter->second.options)
                         {
-                            exporter->set_option(option.first, option.second);
+                            exporter->set_option(option.first, static_cast<float>(option.second));
                         }
 
                         export_frame(fname, std::move(exporter), *not_model, data);
