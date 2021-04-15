@@ -16,6 +16,49 @@
 
 namespace rs2
 {
+    on_chip_calib_manager::on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub, device_model& model, device dev, std::shared_ptr<subdevice_model> sub_color)
+        : process_manager("On-Chip Calibration"), _model(model), _dev(dev), _sub(sub), _viewer(viewer), _sub_color(sub_color)
+    {
+        auto dev_name = dev.get_info(RS2_CAMERA_INFO_NAME);
+        if (!strcmp(dev_name, "Intel RealSense D415"))
+            speed = 4;
+    }
+
+    on_chip_calib_manager::~on_chip_calib_manager()
+    {
+        turn_roi_off();
+    }
+
+    void on_chip_calib_manager::turn_roi_on()
+    {
+        if (_sub)
+        {
+            _sub->show_algo_roi = true;
+            _sub->algo_roi = { _roi_ws, _roi_hs, _roi_we, _roi_he };
+        }
+
+        if (_sub_color)
+        {
+            _sub_color->show_algo_roi = true;
+            _sub_color->algo_roi = { _roi_ws, _roi_hs, _roi_we, _roi_he };
+        }
+    }
+
+    void on_chip_calib_manager::turn_roi_off()
+    {
+        if (_sub)
+        {
+            _sub->show_algo_roi = false;
+            _sub->algo_roi = { 0, 0, 0, 0 };
+        }
+
+        if (_sub_color)
+        {
+            _sub_color->show_algo_roi = false;
+            _sub_color->algo_roi = { 0, 0, 0, 0 };
+        }
+    }
+
     void on_chip_calib_manager::stop_viewer(invoker invoke)
     {
         try
@@ -742,6 +785,11 @@ namespace rs2
         using namespace std;
         using namespace chrono;
 
+        if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT)
+            get_manager().turn_roi_on();
+        else
+            get_manager().turn_roi_off();
+
         const auto bar_width = width - 115;
 
         ImGui::SetCursorScreenPos({ float(x + 9), float(y + 4) });
@@ -754,6 +802,8 @@ namespace rs2
         {
             if (update_state == RS2_CALIB_STATE_INITIAL_PROMPT)
                 ImGui::Text("%s", "Calibration Health-Check");
+            else if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT)
+                ImGui::Text("%s", "UVMapping Calibration");
             else if (update_state == RS2_CALIB_STATE_CALIB_IN_PROCESS ||
                      update_state == RS2_CALIB_STATE_CALIB_COMPLETE ||
                      update_state == RS2_CALIB_STATE_SELF_INPUT)
@@ -803,6 +853,36 @@ namespace rs2
             {
                 enable_dismiss = false;
                 ImGui::Text("%s", "Camera is being calibrated...\nKeep the camera stationary pointing at a wall");
+            }
+            else if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT)
+            {
+                ImGui::SetCursorScreenPos({ float(x + 15), float(y + 33) });
+                ImGui::Text("%s", "Please start left and color streaming with\nresolution 1280x720 and adjust camera\nposition if necessary to make sure the target\nis in the middle of both left and color images.");
+
+                auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
+                ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - 25) });
+                std::string button_name = to_string() << "Calibrate" << "##uvmapping" << index;
+                if (ImGui::Button(button_name.c_str(), { float(bar_width - 60), 20.f }))
+                {
+                    get_manager().restore_workspace([this](std::function<void()> a) { a(); });
+                    get_manager().reset();
+                    get_manager().retry_times = 0;
+                    get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB;
+                    auto _this = shared_from_this();
+                    auto invoke = [_this](std::function<void()> action) {
+                        _this->invoke(action);
+                    };
+                    get_manager().start(invoke);
+                    update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
+                    enable_dismiss = false;
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("%s", "Begin UVMapping calibration after adjusting camera position");
+                }
+                ImGui::PopStyleColor(2);
             }
             else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH)
             {
@@ -1670,6 +1750,8 @@ namespace rs2
 
         if (update_state != RS2_CALIB_STATE_TARE_INPUT)
             update_state = RS2_CALIB_STATE_INITIAL_PROMPT;
+
+        get_manager().turn_roi_off();
         get_manager().reset();
 
         notification_model::dismiss(snooze);
@@ -1766,6 +1848,7 @@ namespace rs2
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH) return 110;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED) return 115;
         else if (update_state == RS2_CALIB_STATE_FAILED) return ((get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB) ? (get_manager().retry_times < 3 ? 0 : 80) : 110);
+        else if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT) return 135;
         else return 100;
     }
 

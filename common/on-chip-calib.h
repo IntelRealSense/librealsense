@@ -23,14 +23,8 @@ namespace rs2
     class on_chip_calib_manager : public process_manager
     {
     public:
-        on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub,
-            device_model& model, device dev)
-            : process_manager("On-Chip Calibration"), _model(model),
-             _dev(dev), _sub(sub), _viewer(viewer)
-        {
-                auto dev_name = dev.get_info(RS2_CAMERA_INFO_NAME);
-                if (!strcmp(dev_name, "Intel RealSense D415")) { speed = 4; }
-        }
+        on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub, device_model& model, device dev, std::shared_ptr<subdevice_model> sub_color = nullptr);
+        ~on_chip_calib_manager();
 
         bool allow_calib_keep() const { return true; }
 
@@ -69,6 +63,7 @@ namespace rs2
             RS2_CALIB_ACTION_ON_CHIP_FL_CALIB,  // On-Chip focal length calibration
             RS2_CALIB_ACTION_TARE_CALIB,        // Tare calibration
             RS2_CALIB_ACTION_TARE_GROUND_TRUTH, // Tare ground truth
+            RS2_CALIB_ACTION_UVMAPPING_CALIB,   // UVMapping calibration
         };
 
         auto_calib_action action = RS2_CALIB_ACTION_ON_CHIP_CALIB;
@@ -88,9 +83,18 @@ namespace rs2
         bool toggle = false;
 
         std::shared_ptr<subdevice_model> _sub;
+        std::shared_ptr<subdevice_model> _sub_color;
+
+        const int _roi_ws = 480;
+        const int _roi_we = 800;
+        const int _roi_hs = 240;
+        const int _roi_he = 480;
 
         void calibrate();
         void get_ground_truth();
+
+        void turn_roi_on();
+        void turn_roi_off();
 
     private:
 
@@ -145,6 +149,7 @@ namespace rs2
             RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_IN_PROCESS, // Calculating ground truth in process... Shows progressbar
             RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_COMPLETE,   // Calculating ground truth complete, show succeeded or failed
             RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED,     // Failed to calculating the ground truth
+            RS2_CALIB_STATE_UVMAPPING_INPUT, // Collect input parameters for UVMapping calibration with specific target
         };
 
         autocalib_notification_model(std::string name,
