@@ -495,6 +495,12 @@ namespace rs2
         }
     }
 
+    void on_chip_calib_manager::calibrate_uvmapping()
+    {
+        int n = 0;
+        n++;
+    }
+
     void on_chip_calib_manager::get_ground_truth()
     {
         try
@@ -582,12 +588,17 @@ namespace rs2
 
     void on_chip_calib_manager::process_flow(std::function<void()> cleanup, invoker invoke)
     {
+        if (action == RS2_CALIB_ACTION_UVMAPPING)
+            stop_viewer(invoke);
+
         update_last_used();
 
         if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
             log(to_string() << "Starting focal length calibration");
         else if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
             log(to_string() << "Starting OCC Extended");
+        else if (action == RS2_CALIB_ACTION_UVMAPPING)
+            log(to_string() << "Starting UVMapping calibration");
         else
             log(to_string() << "Starting OCC at speed " << speed);
 
@@ -610,7 +621,12 @@ namespace rs2
         if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
         {
             if (!_was_streaming)
-                try_start_viewer(0, 0, 0, invoke);
+            {
+                if (action == RS2_CALIB_ACTION_UVMAPPING)
+                    try_start_viewer(848, 480, 30, invoke);
+                else
+                    try_start_viewer(0, 0, 0, invoke);
+            }
 
             // Capture metrics before
             auto metrics_before = get_depth_metrics(invoke);
@@ -623,7 +639,10 @@ namespace rs2
         std::this_thread::sleep_for(std::chrono::milliseconds(600));
 
         // Switch into special Auto-Calibration mode
-        try_start_viewer(256, 144, 90, invoke);
+        if (action == RS2_CALIB_ACTION_UVMAPPING)
+            try_start_viewer(1280, 720, 30, invoke);
+        else
+            try_start_viewer(256, 144, 90, invoke);
 
         if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
             get_ground_truth();
@@ -631,7 +650,10 @@ namespace rs2
         {
             try
             {
-                calibrate();
+                if (action == RS2_CALIB_ACTION_UVMAPPING)
+                    calibrate_uvmapping();
+                else
+                    calibrate();
             }
             catch (...)
             {
@@ -647,6 +669,8 @@ namespace rs2
 
         if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
             log(to_string() << "Tare ground truth is got: " << ground_truth);
+        else if (action == RS2_CALIB_ACTION_UVMAPPING)
+            log(to_string() << "UVMapping calibration completed.");
         else
             log(to_string() << "Calibration completed, health factor = " << _health);
 
@@ -869,7 +893,7 @@ namespace rs2
                     get_manager().restore_workspace([this](std::function<void()> a) { a(); });
                     get_manager().reset();
                     get_manager().retry_times = 0;
-                    get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB;
+                    get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING;
                     auto _this = shared_from_this();
                     auto invoke = [_this](std::function<void()> action) {
                         _this->invoke(action);
