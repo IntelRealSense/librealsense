@@ -150,11 +150,11 @@ then
 		# Patching kernel for RealSense devices
 		echo -e "\e[32mApplying patches for \e[36m${ubuntu_codename}-${kernel_branch}\e[32m line\e[0m"
 		echo -e "\e[32mApplying realsense-uvc patch\e[0m"
-		patch -p1 < ../scripts/realsense-camera-formats-${ubuntu_codename}-${kernel_branch}.patch
+		patch -p1 < ../scripts/realsense-camera-formats-${ubuntu_codename}-${kernel_branch}.patch || patch -p1 < ../scripts/realsense-camera-formats-${ubuntu_codename}-master.patch
 		echo -e "\e[32mApplying realsense-metadata patch\e[0m"
-		patch -p1 < ../scripts/realsense-metadata-${ubuntu_codename}-${kernel_branch}.patch
+		patch -p1 < ../scripts/realsense-metadata-${ubuntu_codename}-${kernel_branch}.patch || patch -p1 < ../scripts/realsense-metadata-${ubuntu_codename}-master.patch
 		echo -e "\e[32mApplying realsense-hid patch\e[0m"
-		patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-${kernel_branch}.patch
+		patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-${kernel_branch}.patch || patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-master.patch
 		echo -e "\e[32mApplying realsense-powerlinefrequency-fix patch\e[0m"
 		patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix.patch
 		# Applying 3rd-party patch that affects USB2 behavior
@@ -276,10 +276,8 @@ try_unload_module videobuf2_v4l2
 [ ${k_maj_min} -ge 500 ] && try_unload_module videobuf2_common
 try_unload_module videodev
 
-
-
-echo build_usbcore_modules=${build_usbcore_modules}
 if [ $build_usbcore_modules -eq 1 ]; then
+	echo -e "\e[32mReplacing USB Core modules\e[0m"
 
 	try_unload_module videobuf2_core
 	try_unload_module v4l2_common
@@ -305,8 +303,9 @@ if [ $build_usbcore_modules -eq 1 ]; then
 fi
 
 try_module_insert videodev				~/$LINUX_BRANCH-videodev.ko 			/lib/modules/`uname -r`/kernel/drivers/media/v4l2-core/videodev.ko
-[ ${k_maj_min} -ge 500 ] && try_module_insert videobuf2-common		~/$LINUX_BRANCH-videobuf2-common.ko 	/lib/modules/`uname -r`/kernel/drivers/media/common/videobuf2/videobuf2-common.ko
-[ ${k_maj_min} -ge 500 ] && try_module_insert videobuf2-v4l2		~/$LINUX_BRANCH-videobuf2-v4l2.ko 		/lib/modules/`uname -r`/kernel/drivers/media/common/videobuf2/videobuf2-v4l2.ko
+if [[ ( ${k_maj_min} -ge 500 ) && ( $debug_uvc -eq 1 ) ]]; then
+	try_module_insert videobuf2-common		~/$LINUX_BRANCH-videobuf2-common.ko 	/lib/modules/`uname -r`/kernel/drivers/media/common/videobuf2/videobuf2-common.ko
+fi
 try_module_insert uvcvideo				~/$LINUX_BRANCH-uvcvideo.ko 			/lib/modules/`uname -r`/kernel/drivers/media/usb/uvc/uvcvideo.ko
 try_module_insert hid_sensor_accel_3d 	~/$LINUX_BRANCH-hid-sensor-accel-3d.ko 	/lib/modules/`uname -r`/kernel/drivers/iio/accel/hid-sensor-accel-3d.ko
 try_module_insert hid_sensor_gyro_3d	~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko 	/lib/modules/`uname -r`/kernel/drivers/iio/gyro/hid-sensor-gyro-3d.ko

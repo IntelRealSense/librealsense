@@ -1,23 +1,12 @@
-From 91f4e0a84b9754fd98a8b8a086fdc628bf4a6493 Mon Sep 17 00:00:00 2001
-From: ev-mp <ev_mp@yahoo.com>
-Date: Fri, 19 Jun 2020 12:34:08 +0300
-Signed-off-by: Evgeni <evgeni.raikhel@intel.com>
-Subject: [PATCH] Enabling UVC Metadata attributes with Ubuntu 18.04. Kernel 5.4
-
----
- drivers/media/usb/uvc/uvc_driver.c | 234 +++++++++++++++++++++++++++++
- drivers/media/usb/uvc/uvcvideo.h   |   2 +-
- 2 files changed, 235 insertions(+), 1 deletion(-)
-
 diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index 443ecea63bd8..d3a5c5f8abb9 100644
+index 00198d327f9e..7f45aa0ccf29 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -2945,6 +2945,240 @@ static const struct usb_device_id uvc_ids[] = {
- 	  .bInterfaceSubClass	= 1,
- 	  .bInterfaceProtocol	= 0,
- 	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
-+	  /* Intel SR300 depth camera */
+@@ -2429,6 +2429,240 @@ static const struct uvc_device_info uvc_quirk_force_y8 = {
+  * though they are compliant.
+  */
+ static const struct usb_device_id uvc_ids[] = {
++	/* Intel SR300 depth camera */
 +	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
 +				| USB_DEVICE_ID_MATCH_INT_INFO,
 +	  .idVendor			= 0x8086,
@@ -251,14 +240,14 @@ index 443ecea63bd8..d3a5c5f8abb9 100644
 +	  .bInterfaceSubClass	= 1,
 +	  .bInterfaceProtocol	= 0,
 +	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
- 	/* Generic USB Video Class */
- 	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, UVC_PC_PROTOCOL_UNDEFINED) },
- 	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, UVC_PC_PROTOCOL_15) },
+ 	/* LogiLink Wireless Webcam */
+ 	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
+ 				| USB_DEVICE_ID_MATCH_INT_INFO,
 diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
-index 1aa8493a24d1..2b22379756d8 100644
+index 6141465b747f..a69f33d5d88a 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
-@@ -199,7 +199,7 @@
+@@ -181,7 +181,7 @@
  /* Maximum number of packets per URB. */
  #define UVC_MAX_PACKETS		32
  /* Maximum status buffer size in bytes of interrupt URB. */
@@ -267,6 +256,3 @@ index 1aa8493a24d1..2b22379756d8 100644
  
  #define UVC_CTRL_CONTROL_TIMEOUT	500
  #define UVC_CTRL_STREAMING_TIMEOUT	5000
--- 
-2.17.1
-
