@@ -69,12 +69,14 @@ namespace Intel.RealSense
                                             .SelectMany(s => s.StreamProfiles)
                                             .Where(sp => sp.Stream == Stream.Depth)
                                             .Select(sp => sp.As<VideoStreamProfile>())
+                                            .OrderBy(p => p.Framerate)
                                             .First();
 
                     var colorProfile = sensors
                                             .SelectMany(s => s.StreamProfiles)
                                             .Where(sp => sp.Stream == Stream.Color)
                                             .Select(sp => sp.As<VideoStreamProfile>())
+                                            .OrderBy(p => p.Framerate)
                                             .First();
 
 
