@@ -729,9 +729,12 @@ namespace rs2
 
     void on_chip_calib_manager::process_flow(std::function<void()> cleanup, invoker invoke)
     {
+        if (action == RS2_CALIB_ACTION_FL_CALIB)
+            stop_viewer(invoke);
+
         update_last_used();
 
-        if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
+        if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB || action == RS2_CALIB_ACTION_FL_CALIB)
             log(to_string() << "Starting focal length calibration");
         else if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
             log(to_string() << "Starting OCC Extended");
@@ -757,7 +760,12 @@ namespace rs2
         if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
         {
             if (!_was_streaming)
-                try_start_viewer(0, 0, 0, invoke);
+            {
+                if (action == RS2_CALIB_ACTION_FL_CALIB)
+                    try_start_viewer(848, 480, 30, invoke);
+                else
+                    try_start_viewer(0, 0, 0, invoke);
+            }
 
             // Capture metrics before
             auto metrics_before = get_depth_metrics(invoke);
@@ -1390,8 +1398,8 @@ namespace rs2
             }
             else if (update_state == RS2_CALIB_STATE_FL_INPUT)
             {
-                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 33) });
-                ImGui::Text("%s", "Please point the camera to the specific target");
+                ImGui::SetCursorScreenPos({ float(x + 15), float(y + 33) });
+                ImGui::Text("%s", "Please start left and right streaming with\nresolution 256x144 and adjust camera\nposition if necessary to make sure the target\nis in the middle of both left and right images.");
 
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - 25) });
                 auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
@@ -1416,13 +1424,9 @@ namespace rs2
                     update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
                     enable_dismiss = false;
                 }
-
-                ImGui::PopStyleColor(2);
-
                 if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("%s", "Focal Length Calibration Calibration");
-                }
+                    ImGui::SetTooltip("%s", "Start focal length calibration after setting up camera position correctly.");
+                ImGui::PopStyleColor(2);
             }
             else if (update_state == RS2_CALIB_STATE_FAILED)
             {
@@ -2080,6 +2084,7 @@ namespace rs2
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH) return 110;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED) return 115;
         else if (update_state == RS2_CALIB_STATE_FAILED) return ((get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB) ? (get_manager().retry_times < 3 ? 0 : 80) : 110);
+        else if (update_state == RS2_CALIB_STATE_FL_INPUT) return 135;
         else return 100;
     }
 
