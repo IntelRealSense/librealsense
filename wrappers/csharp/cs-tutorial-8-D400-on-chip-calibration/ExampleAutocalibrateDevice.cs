@@ -1,8 +1,13 @@
-﻿using System;
+﻿//#define CalibrationTestAndBurns2FW
+
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+
 
 namespace Intel.RealSense
 {
@@ -27,22 +32,37 @@ namespace Intel.RealSense
             Windows,        // Windows it is possible to select 1 which is interrupt data sampling which is slightly faster
         }
         private Dictionary<CalibrationSpeed, int> _timeoutForCalibrationSpeed = new Dictionary<CalibrationSpeed, int> {
-                                { CalibrationSpeed.VeryFast,    Convert.ToInt32(System.Math.Round(0.66*10e3)) },
-                                { CalibrationSpeed.Fast,        Convert.ToInt32(System.Math.Round(1.33*10e3)) },
-                                { CalibrationSpeed.Medium,      Convert.ToInt32(System.Math.Round(2.84*10e3)) },
-                                { CalibrationSpeed.Slow,        Convert.ToInt32(System.Math.Round(2.84*10e3)) },
+                                { CalibrationSpeed.VeryFast,    Convert.ToInt32(TimeSpan.FromSeconds(0.66).TotalMilliseconds) },
+                                { CalibrationSpeed.Fast,        Convert.ToInt32(TimeSpan.FromMinutes(1.33).TotalMilliseconds) },
+                                { CalibrationSpeed.Medium,      Convert.ToInt32(TimeSpan.FromMinutes(2.84).TotalMilliseconds) },
+                                { CalibrationSpeed.Slow,        Convert.ToInt32(TimeSpan.FromMinutes(2.84).TotalMilliseconds) },
+                            };
+        private enum DeviceHealth
+        {
+            Good,
+            CouldBePerformed,
+            NeedRecalibration,
+            Failed
+        }
+        private Dictionary<DeviceHealth, string> _deviceHealthDescription = new Dictionary<DeviceHealth, string> {
+                                {DeviceHealth.Good,              "Good" },
+                                {DeviceHealth.CouldBePerformed,  "Could be performed" },
+                                {DeviceHealth.NeedRecalibration, "Need recalibration" },
+                                {DeviceHealth.Failed,            "Failed" },
                             };
         #endregion Consts
 
         public void Start(Device dev = null)
         {
+            PrintStartProdures();
 
-            var key = ConsoleGetKey(new[] { ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.D3 },
+            var key = ConsoleGetKey(new[] { ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.D3, ConsoleKey.D4 },
                     $"{Environment.NewLine}" +
                     $"Please choose:{Environment.NewLine}" +
                     $"1 - Calibrate{Environment.NewLine}" +
                     $"2 - Reset calibration to factory defaults{Environment.NewLine}" +
-                    $"3 - Exit{Environment.NewLine}");
+                    $"3 - Calibration modes test{Environment.NewLine}" +
+                    $"4 - Exit{Environment.NewLine}");
             switch (key)
             {
                 case ConsoleKey.D1:
@@ -50,6 +70,9 @@ namespace Intel.RealSense
                     break;
                 case ConsoleKey.D2:
                     ResetToFactoryCalibration(dev);
+                    break;
+                case ConsoleKey.D3:
+                    TestCalibrationModes(dev);
                     break;
                 default:
                     return;
@@ -79,12 +102,10 @@ namespace Intel.RealSense
 
             try
             {
-                PrintStartProdures();
-                
-                if (dev == null) 
+                if (dev == null)
                 {
                     Console.WriteLine($"{Environment.NewLine}Getting context...");
-                    dev = new Context().QueryDevices()[0]; 
+                    dev = new Context().QueryDevices().First();
                 }
 
                 if (!IsTheDeviceD400Series(dev))
@@ -94,7 +115,16 @@ namespace Intel.RealSense
                                   $"{Environment.NewLine}\tSerial number: {dev.Info[CameraInfo.SerialNumber]}" +
                                   $"{Environment.NewLine}\tFirmware version: {dev.Info[CameraInfo.FirmwareVersion]}");
 
-                VideoStreamProfile depthProfile = GetDepthProfile4CalibrationMode(dev);
+                VideoStreamProfile depthProfile = dev.QuerySensors()
+                    .SelectMany(s => s.StreamProfiles)
+                    .Where(sp => sp.Stream == Stream.Depth)
+                    .Select(sp => sp.As<VideoStreamProfile>())
+                    .Where(p =>
+                        p.Width == 256
+                        && p.Height == 144
+                        && p.Framerate == 90
+                        && p.Format == Format.Z16
+                        ).Last();
 
                 Console.WriteLine($"{Environment.NewLine}Starting pipeline for calibration mode");
                 using (var pipeline = StartPipeline(depthProfile, dev))
@@ -108,7 +138,6 @@ namespace Intel.RealSense
                     Console.WriteLine("Step 1 :  done");
 
                     // 2. Runs the on-chip self-calibration routine that returns pointer to new calibration table.
-                    Console.WriteLine($"{Environment.NewLine}2. Runs the on-chip self-calibration routine that returns pointer to new calibration table.");
 
                     //calibratoin config
                     var calibrationSpeed = CalibrationSpeed.Slow;
@@ -122,22 +151,37 @@ namespace Intel.RealSense
                     byte[] calTableAfter = null;
                     while (!succeedOnChipCalibration)
                     {
+                        Console.WriteLine($"{Environment.NewLine}2. Runs the on-chip self-calibration routine that returns pointer to new calibration table.");
+                        Console.WriteLine($"\t Format                    : {depthProfile.Format}");
+                        Console.WriteLine($"\t Framerate                 : {depthProfile.Framerate}");
+                        Console.WriteLine($"\t Width                     : {depthProfile.Width}");
+                        Console.WriteLine($"\t Height                    : {depthProfile.Height}");
+                        Console.WriteLine($"\t Calibration Speed         : {calibrationSpeed}");
+                        Console.WriteLine($"\t Calibration Scan Parameter: {calibrationScanParameter}");
+                        Console.WriteLine($"\t Calibration Data Sampling : {calibrationDataSampling}");
+                        Console.WriteLine($"\t Calibration Timeout       : {TimeSpan.FromMilliseconds(timeout).ToString(@"mm\:ss\.fff")} (min:sec.millisec)");
+
+                        var sw = new Stopwatch();
                         var thisCalibrationfault = false;
                         try
                         {
+                            sw.Start();
                             calTableAfter = aCalibratedDevice.RunOnChipCalibration(calibrationConfig, out health, timeout);
+                            sw.Stop();
                         }
                         catch (Exception ex)
                         {
+                            sw.Stop();
                             thisCalibrationfault = true;
-                            Console.WriteLine($"{Environment.NewLine} Error during calibration:{Environment.NewLine} {ex.Message}");
-                            Console.WriteLine($"Please try to change distance to target{Environment.NewLine}");
+                            Console.WriteLine($"\t Error during calibration: {ex.Message.Replace("\n", "\t")}");
+                            Console.WriteLine($"\t Please try to change distance to target or light conditions{Environment.NewLine}");
                             if (ConsoleKey.N == ConsoleGetKey(new[] { ConsoleKey.Y, ConsoleKey.N },
                                                                 @"Let's try calibrate one more time? (Y\N)"
                                                                 ))
                             {
-                                Console.WriteLine($"{Environment.NewLine}Calibration fault");
-                                Console.WriteLine($"{Environment.NewLine}Stopping calibration pipeline...");
+                                Console.WriteLine("");
+                                Console.WriteLine($"Calibration fault");
+                                Console.WriteLine($"Stopping calibration pipeline...");
                                 pipeline.Stop();
                                 return;
                             }
@@ -145,7 +189,9 @@ namespace Intel.RealSense
 
                         if (!thisCalibrationfault)
                         {
-                            Console.WriteLine($"Device health={health} (< 0.25 Good < 0.75 Could be performed < 0.75 Need Recalibration)");
+                            Console.WriteLine($"\t Time spend: {sw.Elapsed.ToString(@"mm\:ss\.fff")}  (min:sec.millisec)");
+                            Console.WriteLine($"\t Device health: {health} ({_deviceHealthDescription[GetDeviceHealth(health)]})");
+
                             if (ConsoleKey.Y == ConsoleGetKey(new[] { ConsoleKey.Y, ConsoleKey.N },
                                                       @"Accept calibration? (Y\N)"))
                                 succeedOnChipCalibration = true;
@@ -155,15 +201,9 @@ namespace Intel.RealSense
                     Console.WriteLine("Step 2 :  done");
 
                     // 3. Toggle between calibration tables to assess which is better. This is optional.   
-                    Console.WriteLine($"{Environment.NewLine}3. Toggle between calibration tables to assess which is better. This is optional. ");
-                    if (ConsoleKey.Y == ConsoleGetKey(new[] { ConsoleKey.Y, ConsoleKey.N },
-                                                      @"Compare and select better calibration table between current and FW device (Y\N)"))
-                    {
-                        aCalibratedDevice.CalibrationTable = calTableAfter;
-                        Console.WriteLine("Step 3 :  done");
-                    }
-                    else
-                        Console.WriteLine("Step 3 :  skipped");
+                    Console.WriteLine($"{Environment.NewLine}3. Toggle between calibration tables to assess which is better.");
+                    aCalibratedDevice.CalibrationTable = calTableAfter;
+                    Console.WriteLine("Step 3 :  done");
 
                     // 4. burns the new calibration to FW persistently. 
                     Console.WriteLine("");
@@ -182,7 +222,7 @@ namespace Intel.RealSense
                     pipeline.Stop();
                 }
 
-            //}
+                //}
             }
             catch (Exception ex)
             {
@@ -192,33 +232,248 @@ namespace Intel.RealSense
 
         }
 
-        /// <summary>
-        /// Get recomended calibration config according suggestions on
-        /// https://dev.intelrealsense.com/docs/self-calibration-for-depth-cameras
-        /// </summary>
-        /// <returns></returns>
-        private string GetCalibrationConfig(CalibrationSpeed calibrationSpeed, CalibrationScanParameter calibrationScanParameter, CalibrationDataSampling calibrationDataSampling)
-        =>
-                        $@"{{
-	                        ""speed"": {(int)calibrationSpeed},
-	                        ""scan parameter"": {(int)calibrationScanParameter},
-	                        ""data sampling"": {(int)calibrationDataSampling}
-                        }}";
-        /// <summary>
-        /// Get the device depth profile, which using in calibration mode
-        /// note: the calibration will afects also to other profiles
-        /// </summary>
-        private VideoStreamProfile GetDepthProfile4CalibrationMode(Device dev)
-            => dev.QuerySensors()
+
+        #region TestCalibrationModes
+        public void TestCalibrationModes(Device dev = null)
+        {
+
+            try
+            {
+
+                if (dev == null)
+                {
+                    Console.WriteLine($"{Environment.NewLine}Getting context...");
+                    dev = new Context().QueryDevices().First();
+                }
+
+                if (!IsTheDeviceD400Series(dev))
+                    return;
+
+                Console.WriteLine($"{Environment.NewLine}Test calibration modes using device {dev.Info[CameraInfo.Name]}" +
+                                  $"{Environment.NewLine}\tSerial number: {dev.Info[CameraInfo.SerialNumber]}" +
+                                  $"{Environment.NewLine}\tFirmware version: {dev.Info[CameraInfo.FirmwareVersion]}");
+                var depthProfiles = dev.QuerySensors()
                     .SelectMany(s => s.StreamProfiles)
                     .Where(sp => sp.Stream == Stream.Depth)
                     .Select(sp => sp.As<VideoStreamProfile>())
-                    .Where(p =>
-                        p.Width == 256
-                        && p.Height == 144
-                        && p.Framerate == 90
-                        && p.Format == Format.Z16
-                        ).Last();
+                    .OrderByDescending(p => p.Height)
+                    .OrderByDescending(p => p.Width)
+                    .OrderByDescending(p => p.Framerate)
+                    .OrderByDescending(p => p.Format)
+                    .ToList();
+
+                var fileName = Path.Combine(Directory.GetCurrentDirectory(), "ReportTestCalibrationModes.csv");
+                Console.WriteLine($"Report about testing calibration modes will be written to file:\n\t{fileName}");
+
+                var calibrationSetCount = 0;
+                if (IsLinux)
+                    calibrationSetCount = CountEnumEntries<CalibrationSpeed>() * CountEnumEntries<CalibrationScanParameter>();
+                else
+                    calibrationSetCount = CountEnumEntries<CalibrationSpeed>() * CountEnumEntries<CalibrationScanParameter>() * CountEnumEntries<CalibrationDataSampling>();
+
+                var depthProfileSet = 0;
+                var depthProfileSetCount = depthProfiles.Count;
+                using (var file = new StreamWriter(fileName))
+                {
+                    var headers = GetHeader4FileReport();
+                    file.WriteLine(headers);
+                    file.Flush();
+
+                    foreach (var depthProfile in depthProfiles)
+                    {
+                        Console.WriteLine($"{Environment.NewLine}Starting pipeline for calibration mode, depth profile set {++depthProfileSet} of {depthProfiles.Count}");
+                        Console.WriteLine($"\t Format:\t {depthProfile.Format}");
+                        Console.WriteLine($"\t Framerate:\t {depthProfile.Framerate}");
+                        Console.WriteLine($"\t Width:\t\t {depthProfile.Width}");
+                        Console.WriteLine($"\t Height:\t {depthProfile.Height}");
+                        using (var pipeline = StartPipeline(depthProfile, dev))
+                        {
+                            var aCalibratedDevice = AutoCalibratedDevice.FromDevice(dev);
+
+                            //calibratoin config set
+                            var calibrationSet = 0;
+                            foreach (var calibrationSpeed in GetEnumEntries<CalibrationSpeed>())
+                            {
+                                foreach (var calibrationScanParameter in GetEnumEntries<CalibrationScanParameter>())
+                                {
+                                    foreach (var calibrationDataSampling in GetEnumEntries<CalibrationDataSampling>())
+                                    {
+                                        if (calibrationDataSampling == CalibrationDataSampling.Windows && IsLinux)
+                                            continue;
+                                        Console.WriteLine("");
+#if (CalibrationTestAndBurns2FW)
+                                        // 1. Calibration table before running on-chip calibration. 
+                                        Console.WriteLine($"{Environment.NewLine}1. Calibration table before running on-chip calibration.");
+                                        var calTableBefore = aCalibratedDevice.CalibrationTable;
+                                        Console.WriteLine("\t Step 1 :  done");
+#endif
+                                        // 2. Runs the on-chip self-calibration routine that returns pointer to new calibration table.
+                                        Console.WriteLine($"2. Runs the on-chip self-calibration routine for depth profile {depthProfileSet} of {depthProfileSetCount} calibration, set {++calibrationSet} of {calibrationSetCount} ");
+                                        Console.WriteLine($"\t Format                    : {depthProfile.Format}");
+                                        Console.WriteLine($"\t Framerate                 : {depthProfile.Framerate}");
+                                        Console.WriteLine($"\t Width                     : {depthProfile.Width}");
+                                        Console.WriteLine($"\t Height                    : {depthProfile.Height}");
+                                        Console.WriteLine($"\t Calibration Speed         : {calibrationSpeed}");
+                                        Console.WriteLine($"\t Calibration Scan Parameter: {calibrationScanParameter}");
+                                        Console.WriteLine($"\t Calibration Data Sampling : {calibrationDataSampling}");
+
+                                        string calibrationConfig = GetCalibrationConfig(calibrationSpeed, calibrationScanParameter, calibrationDataSampling);
+
+                                        //var timeout = _timeoutForCalibrationSpeed[calibrationSpeed];
+                                        var timeout = Convert.ToInt32(TimeSpan.FromMinutes(2).TotalMilliseconds);
+                                        float health = 888;
+                                        var deviceHealth = DeviceHealth.Failed;
+                                        byte[] calTableAfter = null;
+                                        var sw = new Stopwatch();
+                                        try
+                                        {
+                                            sw.Start();
+                                            calTableAfter = aCalibratedDevice.RunOnChipCalibration(calibrationConfig, out health, timeout);
+                                            sw.Stop();
+                                            deviceHealth = GetDeviceHealth(health);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            sw.Stop();
+                                            //write to report file
+                                            file.WriteLine(GetRow4FileReport(depthProfileSet, depthProfile, calibrationSet, calibrationSpeed, calibrationScanParameter, calibrationDataSampling, timeout, sw.Elapsed, "", _deviceHealthDescription[DeviceHealth.Failed], ex.Message.Replace("\n", "\t")));
+                                            file.Flush();
+
+                                            Console.WriteLine($"\t Time spend: {sw.Elapsed.ToString(@"mm\:ss\.fff")}");
+                                            Console.WriteLine($"\t Calibration failed: {ex.Message.Replace("\n", "\t")}");
+                                            Console.WriteLine("\t Step 2: failed");
+                                            continue;
+                                        }
+                                        file.WriteLine(GetRow4FileReport(depthProfileSet, depthProfile, calibrationSet, calibrationSpeed, calibrationScanParameter, calibrationDataSampling, timeout, sw.Elapsed, health.ToString(), _deviceHealthDescription[GetDeviceHealth(health)]));
+                                        file.Flush();
+
+                                        Console.WriteLine($"\t Time spend: {sw.Elapsed.ToString(@"mm\:ss\.fff")}");
+                                        Console.WriteLine($"\t Device health: {health} ({_deviceHealthDescription[GetDeviceHealth(health)]})");
+                                        Console.WriteLine("\t Step 2: done");
+
+#if (CalibrationTestAndBurns2FW)
+                                        // 3. Toggle between calibration tables to assess which is better. This is optional.   
+                                        Console.WriteLine("3. Toggle between calibration tables to assess which is better.");
+                                        if (deviceHealth <= DeviceHealth.CouldBePerformed)
+                                        {
+                                            aCalibratedDevice.CalibrationTable = calTableAfter;
+                                            Console.WriteLine("\t Step 3: done");
+                                        }
+                                        else
+                                            Console.WriteLine("\t Step 3: skipped");
+
+                                        // 4. burns the new calibration to FW persistently.
+                                        Console.WriteLine("4. Burns the new calibration to FW persistently.");
+                                        if (deviceHealth <= DeviceHealth.CouldBePerformed)
+                                        {
+                                            aCalibratedDevice.WriteCalibration();
+                                            Console.WriteLine("\t Step 4: done");
+                                        }
+                                        else
+                                            Console.WriteLine("\t Step 4: skipped");
+#endif
+                                    }
+                                }
+                            }
+
+                            Console.WriteLine($"{Environment.NewLine}Stopping calibration pipeline for depth profile set {depthProfileSet} of {depthProfiles.Count}...");
+                            pipeline.Stop();
+                        }
+                    }
+                }
+                Console.WriteLine($"Report about testing calibration modes has been written to file:\n\t{fileName}");
+                Console.WriteLine("Testing calibration modes complete");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{Environment.NewLine} Error during calibration:{Environment.NewLine} {ex.Message}");
+            }
+
+        }
+
+        private string GetHeader4FileReport()
+        {
+            var row = new List<string>();
+            row.Add("depthProfileSet");
+            row.Add("Width");
+            row.Add("Height");
+            row.Add("Framerate");
+            row.Add("Format");
+            row.Add("calibrationSet");
+            row.Add("(int)CalibrationSpeed");
+            row.Add("(int)CalibrationScanParameter");
+            row.Add("(int)CalibrationDataSampling");
+            row.Add("CalibrationSpeed");
+            row.Add("CalibrationScanParameter");
+            row.Add("CalibrationDataSampling");
+            //row.Add("timeout (min:sec.millisec)");
+            row.Add("calibrationTakes (min:sec.millisec)");
+            row.Add("Device health");
+            row.Add("Device health description");
+            row.Add("Comments");
+
+            return string.Join(",", row);
+        }
+        private string GetRow4FileReport(
+            int depthProfileSet,
+            VideoStreamProfile profile,
+            int calibrationSet,
+            CalibrationSpeed calibrationSpeed,
+            CalibrationScanParameter calibrationScanParameter,
+            CalibrationDataSampling calibrationDataSampling,
+            int timeout,
+            TimeSpan calibrationTakes,
+            string deviceHealth,
+            string deviceHealthDescription,
+            string comments = ""
+            )
+        {
+            var row = new List<string>();
+            row.Add($"{depthProfileSet}");
+            row.Add($"{profile.Width}");
+            row.Add($"{profile.Height}");
+            row.Add($"{profile.Framerate}");
+            row.Add($"{profile.Format}");
+            row.Add($"{calibrationSet}");
+            row.Add($"{(int)calibrationSpeed}");
+            row.Add($"{(int)calibrationScanParameter}");
+            row.Add($"{(int)calibrationDataSampling}");
+            row.Add($"{calibrationSpeed}");
+            row.Add($"{calibrationScanParameter}");
+            row.Add($"{calibrationDataSampling}");
+            //row.Add($@"{timeout:mm\:ss\.fff}"); 
+            row.Add($@"{calibrationTakes:mm\:ss\.fff}");
+            row.Add($"{deviceHealth}");
+            row.Add($"{deviceHealthDescription}");
+            row.Add($"{comments}");
+
+            return string.Join(",", row);
+        }
+        private static bool IsLinux
+        {
+            get
+            {
+                int p = (int)Environment.OSVersion.Platform;
+                return (p == 4) || (p == 6) || (p == 128);
+            }
+        }
+        private static int CountEnumEntries<T>() where T : struct, IConvertible
+        {
+            if (!typeof(T).IsEnum)
+                throw new ArgumentException("T must be an enumerated type");
+
+            return Enum.GetNames(typeof(T)).Length;
+        }
+        private static T[] GetEnumEntries<T>() where T : struct, IConvertible
+        {
+            if (!typeof(T).IsEnum)
+                throw new ArgumentException("T must be an enumerated type");
+
+            return (T[])Enum.GetValues(typeof(T));
+        }
+
+        #endregion CalibrationModesTest
+
         private Pipeline StartPipeline(VideoStreamProfile depthProfile, Device dev)
         {
             var cfg = new Config();
@@ -230,6 +485,23 @@ namespace Intel.RealSense
 
             return pipeline;
         }
+        private DeviceHealth GetDeviceHealth(double health)
+        {
+            health = System.Math.Abs(health);
+            if (health < 0.25)
+                return DeviceHealth.Good;
+            else if (health < 0.75)
+                return DeviceHealth.CouldBePerformed;
+            else
+                return DeviceHealth.NeedRecalibration;
+        }
+        private string GetCalibrationConfig(CalibrationSpeed calibrationSpeed, CalibrationScanParameter calibrationScanParameter, CalibrationDataSampling calibrationDataSampling)
+        =>
+                        $@"{{
+	                        ""speed"": {(int)calibrationSpeed},
+	                        ""scan parameter"": {(int)calibrationScanParameter},
+	                        ""data sampling"": {(int)calibrationDataSampling}
+                        }}";
 
         public static ConsoleKey ConsoleGetKey(ConsoleKey[] possibleKeys, string prompt)
         {
@@ -256,8 +528,6 @@ namespace Intel.RealSense
             Console.WriteLine("\tRead carefully: https://dev.intelrealsense.com/docs/self-calibration-for-depth-cameras");
             Console.WriteLine("\tPrint the target: https://dev.intelrealsense.com/docs/self-calibration-for-depth-cameras#section-appendix-a-example-target");
             Console.WriteLine("\tPlace statically target around 1-1.5m away from your camera");
-            Console.WriteLine("Press enter...");
-            Console.ReadLine();
         }
     }
 }
