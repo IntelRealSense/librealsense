@@ -70,8 +70,6 @@ Java_com_intel_realsense_librealsense_Pipeline_nStartWithConfigAndCallback(JNIEn
         return NULL;
     };
 
-    LRS_JNI_LOGD("Java_com_intel_realsense_librealsense_Sensor_nStart at line %d", __LINE__);
-
     auto rv = rs2_pipeline_start_with_config_and_callback_cpp(reinterpret_cast<rs2_pipeline *>(handle),
                                              reinterpret_cast<rs2_config *>(configHandle), new rs2::frame_callback<decltype(cb)>(cb), &e);
     handle_error(env, e);

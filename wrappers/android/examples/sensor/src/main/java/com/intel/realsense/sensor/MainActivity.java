@@ -120,11 +120,14 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         if(mRsContext != null)
             mRsContext.close();
-        stop();
-        mColorizer.close();
 
+        stop();
+
+        if (mColorizer != null) mColorizer.close();
         if (depth_sensor != null) {depth_sensor.close();}
         if (color_sensor != null) {color_sensor.close();}
+
+        if (mDevice != null) mDevice.close();
     }
 
     private FrameCallback mFrameHandler = new FrameCallback()
@@ -132,7 +135,6 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onFrame(final Frame f) {
             frames_received++;
-            Log.e(TAG, "received depth frames:" + frames_received + ", id: " + f.getNumber() + ", size: " + f.getDataSize());
 
             Frame cf = f.clone();
 
@@ -143,8 +145,6 @@ public class MainActivity extends AppCompatActivity {
             {
                 frames_dropped++;
             }
-
-            Log.d(TAG, "depth frames received: " + frames_received + ", frames dropped: " + frames_dropped);
         }
     };
 
@@ -153,7 +153,6 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onFrame(final Frame f) {
             color_frames_received++;
-            Log.e(TAG, "received color frames:" + color_frames_received + ", id: " + f.getNumber() + ", size: " + f.getDataSize());
 
             Frame cf = f.clone();
 
@@ -164,8 +163,6 @@ public class MainActivity extends AppCompatActivity {
             {
                 color_frames_dropped++;
             }
-
-            Log.d(TAG, "color frames received: " + color_frames_received + ", frames dropped: " + color_frames_dropped);
         }
     };
 
@@ -182,18 +179,10 @@ public class MainActivity extends AppCompatActivity {
 
         try(DeviceList dl = mRsContext.queryDevices()){
             int num_devices = dl.getDeviceCount();
-            Log.e(TAG, "devices found: " + num_devices);
+            Log.d(TAG, "devices found: " + num_devices);
 
             if( num_devices> 0) {
                 mDevice = dl.createDevice(0);
-                String pid = mDevice.getInfo(CameraInfo.PRODUCT_ID);
-                String sn = mDevice.getInfo(CameraInfo.SERIAL_NUMBER);
-                String fw = mDevice.getInfo(CameraInfo.FIRMWARE_VERSION);
-
-                Log.d(TAG, "device pid: " + pid);
-                Log.d(TAG, "device sn: " + sn);
-                Log.d(TAG, "device fw: " + fw);
-
                 showConnectLabel(false);
                 start();
             }
@@ -228,10 +217,8 @@ public class MainActivity extends AppCompatActivity {
             synchronized(this) {
                 while(mIsStreaming) {
                     try {
-                        Log.d(TAG, "XXX taking frame from queue ...");
                         Frame mFrame = frameQueue.take();
                         frames_displayed++;
-                        Log.d(TAG, "XXX processing frames:" + frames_displayed + ", id: " + mFrame.getNumber());
 
                         if (mFrame != null) {
                             if (mFrame.is(Extension.DEPTH_FRAME)) {
@@ -244,7 +231,6 @@ public class MainActivity extends AppCompatActivity {
 
                             mFrame.close();
                         }
-                        Log.d(TAG, "XXX frame processed.");
                     } catch (Exception e) {
                         Log.e(TAG, "streaming, error: " + e.getMessage());
                     }
@@ -341,7 +327,7 @@ public class MainActivity extends AppCompatActivity {
                         int fps = video_stream_profile.getFrameRate();
 
                         if (w == 640 && fps == 30) {
-                            Log.e(TAG, "color stream: " + index + ":" + st.name() + ":" + sf.name() + ":" + w + "x" + h + "@" + fps + "HZ");
+                            Log.d(TAG, "color stream: " + index + ":" + st.name() + ":" + sf.name() + ":" + w + "x" + h + "@" + fps + "HZ");
 
                             sp = sp2;
                             break;
@@ -374,7 +360,7 @@ public class MainActivity extends AppCompatActivity {
 
             Log.d(TAG, "streaming started successfully");
         } catch (Exception e) {
-            Log.d(TAG, "failed to start streaming");
+            Log.e(TAG, "failed to start streaming");
         }
     }
 
@@ -384,15 +370,15 @@ public class MainActivity extends AppCompatActivity {
         try {
             Log.d(TAG, "try stop streaming");
             mIsStreaming = false;
-
-            color_sensor.stop();
-            depth_sensor.stop();
-
             streaming.join();
+
+            if (color_sensor != null) color_sensor.stop();
+            if (depth_sensor != null) depth_sensor.stop();
+
             mGLSurfaceView.clear();
             Log.d(TAG, "streaming stopped successfully");
         } catch (Exception e) {
-            Log.d(TAG, "failed to stop streaming");
+            Log.e(TAG, "failed to stop streaming");
         }
     }
 }

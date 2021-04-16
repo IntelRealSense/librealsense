@@ -50,9 +50,6 @@ public class Sensor extends Options {
     @Override
     public void close() {
         nClose(mHandle);
-
-        if(mOwner)
-            nRelease(mHandle);
     }
 
     public void delete() {
