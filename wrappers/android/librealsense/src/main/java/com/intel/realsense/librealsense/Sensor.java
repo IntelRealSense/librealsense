@@ -55,6 +55,11 @@ public class Sensor extends Options {
             nRelease(mHandle);
     }
 
+    public void delete() {
+        if(mOwner)
+            nRelease(mHandle);
+    }
+
     private static native long[] nGetStreamProfiles(long handle);
     private static native void nRelease(long handle);
     private static native boolean nIsSensorExtendableTo(long handle, int extension);
