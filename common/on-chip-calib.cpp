@@ -598,7 +598,7 @@ namespace rs2
                     break;
             }
 
-            if (ret == 2 && fx[1] > 0.1f && fy[1] > 0.1f)
+            if (done[0] && done[1] && fx[1] > 0.1f && fy[1] > 0.1f)
             {
                 float ar[2] = { 0 };
                 float tmp = rec_sides[0][2] + rec_sides[0][3];
@@ -705,8 +705,7 @@ namespace rs2
 
             int ret = { 0 };
             int id[2] = { _uid, _uid2 }; // 0 for left and 1 for color
-            float fx[2] = { 0 };
-            float fy[2] = { 0 };
+            rs2_intrinsics intrin[2] = { 0 };
             float dots_x[2][4] = { 0 };
             float dots_y[2][4] = { 0 };
 
@@ -727,8 +726,7 @@ namespace rs2
                                 auto vsp = profile.as<video_stream_profile>();
 
                                 gt_calculator[i] = std::make_shared<dots_calculator>();
-                                fx[i] = vsp.get_intrinsics().fx;
-                                fy[i] = vsp.get_intrinsics().fy;
+                                intrin[i] = vsp.get_intrinsics();
                                 created[i] = true;
                             }
 
@@ -750,7 +748,7 @@ namespace rs2
                     break;
             }
 
-            if (ret == 2 && fx[1] > 0.1f && fy[1] > 0.1f)
+            if (done[0] && done[1])
             {
 
 
