@@ -61,9 +61,6 @@ public class MainActivity extends AppCompatActivity {
     Thread streaming = null;
 
     BlockingQueue<Frame> frameQueue = new ArrayBlockingQueue<Frame>(4);
-    int frames_received = 0;
-    int frames_dropped = 0;
-    int frames_displayed = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -126,15 +123,10 @@ public class MainActivity extends AppCompatActivity {
     {
         @Override
         public void onFrame(final Frame f) {
-            frames_received++;
             Frame cf = f.clone();
 
             if (frameQueue.remainingCapacity() > 0) {
                 frameQueue.add(cf);
-            }
-            else
-            {
-                frames_dropped++;
             }
         }
     };
@@ -197,7 +189,6 @@ public class MainActivity extends AppCompatActivity {
 
                         if (mFrame != null) {
                             FrameSet frames = mFrame.as(Extension.FRAMESET);
-                            frames_displayed++;
 
                             if (frames != null) {
                                 try (FrameSet processed = frames.applyFilter(mColorizer)) {
@@ -240,9 +231,6 @@ public class MainActivity extends AppCompatActivity {
         try{
             Log.d(TAG, "try start streaming");
             mGLSurfaceView.clear();
-            frames_received = 0;
-            frames_dropped = 0;
-            frames_displayed = 0;
 
             mIsStreaming = true;
 
