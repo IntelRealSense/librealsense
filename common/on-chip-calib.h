@@ -14,7 +14,6 @@ namespace rs2
     class viewer_model;
     class subdevice_model;
     struct subdevice_ui_selection;
-    class rect_calculator;
 
     // On-chip Calibration manager owns the background thread
     // leading the calibration process
@@ -93,15 +92,10 @@ namespace rs2
         std::shared_ptr<subdevice_model> _sub;
         std::shared_ptr<subdevice_model> _sub_color;
 
-        const int _roi_ws = 480;
-        const int _roi_we = 800;
-        const int _roi_hs = 240;
-        const int _roi_he = 480;
-
         void calibrate();
+        void calibrate_fl();
         void calibrate_uvmapping();
         void get_ground_truth();
-        void calibrate_fl();
 
         void turn_roi_on();
         void turn_roi_off();
@@ -202,6 +196,31 @@ namespace rs2
         int _height = 0;
 
         float _rec_sides[_frame_num][4];
+        int _rec_idx = 0;
+        int _rec_num = 0;
+        const int _reset_limit = 10;
+    };
+
+    // Class for calculating the four Gaussian dot center locations on the specific target
+    class dots_calculator
+    {
+    public:
+        dots_calculator() {}
+        virtual ~dots_calculator() {}
+
+        int calculate(const rs2_frame* frame_ref, float dots_x[4], float dots_y[4]); // return 0 if the target is not in the center, 1 if found, 2 if dots positions are updated
+
+    public:
+        static const int _frame_num = 25;
+
+    private:
+        void calculate_dots_position(float dots_x[4], float dots_y[4]);
+
+        int _width = 0;
+        int _height = 0;
+
+        float _dots_x[_frame_num][4];
+        float _dots_y[_frame_num][4];
         int _rec_idx = 0;
         int _rec_num = 0;
         const int _reset_limit = 10;

@@ -12,6 +12,7 @@
 #include <model-views.h>
 #include <viewer.h>
 #include "calibration-model.h"
+#include "../src/algo.h"
 #include "../src/ds5/ds5-private.h"
 #include "../tools/depth-quality/depth-metrics.h"
 
@@ -35,13 +36,19 @@ namespace rs2
         if (_sub)
         {
             _sub->show_algo_roi = true;
-            _sub->algo_roi = { _roi_ws, _roi_hs, _roi_we, _roi_he };
+            _sub->algo_roi = { librealsense::rect_gaussian_dots_target_calculator::_roi_ws, 
+                               librealsense::rect_gaussian_dots_target_calculator::_roi_hs, 
+                               librealsense::rect_gaussian_dots_target_calculator::_roi_we, 
+                               librealsense::rect_gaussian_dots_target_calculator::_roi_he };
         }
 
         if (_sub_color)
         {
             _sub_color->show_algo_roi = true;
-            _sub_color->algo_roi = { _roi_ws, _roi_hs, _roi_we, _roi_he };
+            _sub_color->algo_roi = { librealsense::rect_gaussian_dots_target_calculator::_roi_ws, 
+                                     librealsense::rect_gaussian_dots_target_calculator::_roi_hs, 
+                                     librealsense::rect_gaussian_dots_target_calculator::_roi_we, 
+                                     librealsense::rect_gaussian_dots_target_calculator::_roi_he };
         }
     }
 
@@ -525,97 +532,6 @@ namespace rs2
         }
     }
 
-    void on_chip_calib_manager::calibrate_uvmapping()
-    {
-        int n = 0;
-        n++;
-    }
-
-    void on_chip_calib_manager::get_ground_truth()
-    {
-        try
-        {
-            std::shared_ptr<rect_calculator> gt_calculator;
-            bool created = false;
-
-            int counter = 0;
-            int limit = rect_calculator::_frame_num << 1;
-            int step = 100 / rect_calculator::_frame_num;
-
-            float rect_sides[4] = { 0 };
-            float target_fw = 0;
-            float target_fh = 0;
-
-            int ret = 0;
-            rs2::frame f;
-            while (counter < limit)
-            {
-                f = _viewer.ppf.frames_queue[_uid].wait_for_frame();
-                if (f)
-                {
-                    if (!created)
-                    {
-                        stream_profile profile = f.get_profile();
-                        auto vsp = profile.as<video_stream_profile>();
-
-                        gt_calculator = std::make_shared<rect_calculator>();
-                        target_fw = vsp.get_intrinsics().fx * config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f);
-                        target_fh = vsp.get_intrinsics().fy * config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f);
-                        created = true;
-                    }
-
-                    ret = gt_calculator->calculate(f.get(), rect_sides);
-                    if (ret == 0)
-                        ++counter;
-                    else if (ret == 1)
-                        _progress += step;
-                    else if (ret == 2)
-                    {
-                        _progress += step;
-                        break;
-                    }
-                }
-            }
-
-            if (ret != 2)
-                fail("Please adjust the camera position \nand make sure the specific target is \nin the middle of the camera image!");
-            else
-            {
-                float gt[4] = { 0 };
-
-                if (rect_sides[0] > 0)
-                    gt[0] = target_fw / rect_sides[0];
-
-                if (rect_sides[1] > 0)
-                    gt[1] = target_fw / rect_sides[1];
-
-                if (rect_sides[2] > 0)
-                    gt[2] = target_fh / rect_sides[2];
-
-                if (rect_sides[3] > 0)
-                    gt[3] = target_fh / rect_sides[3];
-
-                if (gt[0] <= 0.1f || gt[1] <= 0.1f || gt[2] <= 0.1f || gt[3] <= 0.1f)
-                    fail("Bad target rectangle side sizes returned!");
-
-                ground_truth = 0.0;
-                for (int i = 0; i < 4; ++i)
-                    ground_truth += gt[i];
-                ground_truth /= 4.0;
-
-                config_file::instance().set(configurations::viewer::ground_truth_r, ground_truth);
-            }
-        }
-        catch (const std::runtime_error& error)
-        {
-            fail(error.what());
-        }
-        catch (...)
-        {
-            fail("Getting ground truth failed!");
-        }
-    }
-
     void on_chip_calib_manager::calibrate_fl()
     {
         try
@@ -630,7 +546,7 @@ namespace rs2
 
             int counter = 0;
             int limit = rect_calculator::_frame_num << 1;
-            int step = 50 / rect_calculator::_frame_num;
+            int step = limit / rect_calculator::_frame_num;
 
             int ret = { 0 };
             int id[2] = { _uid, _uid2 };
@@ -765,6 +681,168 @@ namespace rs2
             }
             else
                 fail("Please adjust the camera position \nand make sure the specific target is \nin the middle of the camera image!");
+        }
+        catch (const std::runtime_error& error)
+        {
+            fail(error.what());
+        }
+        catch (...)
+        {
+            fail("Focal length calibration failed!");
+        }
+    }
+
+    void on_chip_calib_manager::calibrate_uvmapping()
+    {
+        try
+        {
+            std::shared_ptr<dots_calculator> gt_calculator[2];
+            bool created[2] = { false, false };
+
+            int counter = 0;
+            int limit = dots_calculator::_frame_num << 1;
+            int step = limit / dots_calculator::_frame_num;
+
+            int ret = { 0 };
+            int id[2] = { _uid, _uid2 }; // 0 for left and 1 for color
+            float fx[2] = { 0 };
+            float fy[2] = { 0 };
+            float dots_x[2][4] = { 0 };
+            float dots_y[2][4] = { 0 };
+
+            rs2::frame f;
+            bool done[2] = { false, false };
+            while (counter < limit)
+            {
+                for (int i = 0; i < 2; ++i)
+                {
+                    if (!done[i])
+                    {
+                        f = _viewer.ppf.frames_queue[id[i]].wait_for_frame();
+                        if (f)
+                        {
+                            if (!created[i])
+                            {
+                                stream_profile profile = f.get_profile();
+                                auto vsp = profile.as<video_stream_profile>();
+
+                                gt_calculator[i] = std::make_shared<dots_calculator>();
+                                fx[i] = vsp.get_intrinsics().fx;
+                                fy[i] = vsp.get_intrinsics().fy;
+                                created[i] = true;
+                            }
+
+                            ret = gt_calculator[i]->calculate(f.get(), dots_x[i], dots_y[i]);
+                            if (ret == 0)
+                                ++counter;
+                            else if (ret == 1)
+                                _progress += step;
+                            else if (ret == 2)
+                            {
+                                _progress += step;
+                                done[i] = true;
+                            }
+                        }
+                    }
+                }
+
+                if (done[0] && done[1])
+                    break;
+            }
+
+            if (ret == 2 && fx[1] > 0.1f && fy[1] > 0.1f)
+            {
+
+
+
+            }
+            else
+                fail("Please adjust the camera position\nand make sure the specific target is\nin the middle of the camera images!");
+        }
+        catch (const std::runtime_error& error)
+        {
+            fail(error.what());
+        }
+        catch (...)
+        {
+            fail("UVMapping calibration failed!");
+        }
+    }
+
+    void on_chip_calib_manager::get_ground_truth()
+    {
+        try
+        {
+            std::shared_ptr<rect_calculator> gt_calculator;
+            bool created = false;
+
+            int counter = 0;
+            int limit = rect_calculator::_frame_num << 1;
+            int step = 100 / rect_calculator::_frame_num;
+
+            float rect_sides[4] = { 0 };
+            float target_fw = 0;
+            float target_fh = 0;
+
+            int ret = 0;
+            rs2::frame f;
+            while (counter < limit)
+            {
+                f = _viewer.ppf.frames_queue[_uid].wait_for_frame();
+                if (f)
+                {
+                    if (!created)
+                    {
+                        stream_profile profile = f.get_profile();
+                        auto vsp = profile.as<video_stream_profile>();
+
+                        gt_calculator = std::make_shared<rect_calculator>();
+                        target_fw = vsp.get_intrinsics().fx * config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f);
+                        target_fh = vsp.get_intrinsics().fy * config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f);
+                        created = true;
+                    }
+
+                    ret = gt_calculator->calculate(f.get(), rect_sides);
+                    if (ret == 0)
+                        ++counter;
+                    else if (ret == 1)
+                        _progress += step;
+                    else if (ret == 2)
+                    {
+                        _progress += step;
+                        break;
+                    }
+                }
+            }
+
+            if (ret != 2)
+                fail("Please adjust the camera position \nand make sure the specific target is \nin the middle of the camera image!");
+            else
+            {
+                float gt[4] = { 0 };
+
+                if (rect_sides[0] > 0)
+                    gt[0] = target_fw / rect_sides[0];
+
+                if (rect_sides[1] > 0)
+                    gt[1] = target_fw / rect_sides[1];
+
+                if (rect_sides[2] > 0)
+                    gt[2] = target_fh / rect_sides[2];
+
+                if (rect_sides[3] > 0)
+                    gt[3] = target_fh / rect_sides[3];
+
+                if (gt[0] <= 0.1f || gt[1] <= 0.1f || gt[2] <= 0.1f || gt[3] <= 0.1f)
+                    fail("Bad target rectangle side sizes returned!");
+
+                ground_truth = 0.0;
+                for (int i = 0; i < 4; ++i)
+                    ground_truth += gt[i];
+                ground_truth /= 4.0;
+
+                config_file::instance().set(configurations::viewer::ground_truth_r, ground_truth);
+            }
         }
         catch (const std::runtime_error& error)
         {
@@ -2275,5 +2353,71 @@ namespace rs2
 
         for (int i = 0; i < 4; ++i)
             rect_sides[i] /= _frame_num;
+    }
+
+    int dots_calculator::calculate(const rs2_frame* frame_ref, float dots_x[4], float dots_y[4])
+    {
+        static int reset_counter = 0;
+        if (reset_counter > _reset_limit)
+        {
+            reset_counter = 0;
+            _rec_idx = 0;
+            _rec_num = 0;
+        }
+
+        int ret = 0;
+        rs2_error* e = nullptr;
+        float dim[8] = { 0 };
+        rs2_extract_target_dimensions(frame_ref, RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES, dim, 8, &e);
+        if (e == nullptr)
+        {
+            ret = 1;
+            int j = 0;
+            for (int i = 0; i < 4; ++i)
+            {
+                j = i << 1;
+                _dots_x[_rec_idx][i] = dim[j];
+                _dots_y[_rec_idx][i] = dim[j + 1];
+            }
+
+            reset_counter = 0;
+            _rec_idx = (++_rec_idx) % _frame_num;
+            ++_rec_num;
+
+            if (_rec_num == _frame_num)
+            {
+                ret = 2;
+                calculate_dots_position(dots_x, dots_y);
+                --_rec_num;
+            }
+        }
+        else
+            ++reset_counter;
+
+        return ret;
+    }
+
+    void dots_calculator::calculate_dots_position(float dots_x[4], float dots_y[4])
+    {
+        for (int i = 0; i < 4; ++i)
+        {
+            dots_x[i] = _dots_x[0][i];
+            dots_y[i] = _dots_y[0][i];
+        }
+
+        for (int j = 1; j < _frame_num; ++j)
+        {
+            for (int i = 0; i < 4; ++i)
+            {
+                dots_x[i] += _dots_x[j][i];
+                dots_y[i] += _dots_y[j][i];
+            }
+        }
+
+        for (int i = 0; i < 4; ++i)
+        {
+            dots_x[i] /= _frame_num;
+            dots_y[i] /= _frame_num;
+        }
     }
 }

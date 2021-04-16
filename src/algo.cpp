@@ -561,12 +561,9 @@ void auto_exposure_algorithm::histogram_score(std::vector<int>& h, const int tot
     }
 }
 
-rect_gaussian_dots_target_calculator::rect_gaussian_dots_target_calculator(int width, int height)
-    : _width(width), _height(height)
+rect_gaussian_dots_target_calculator::rect_gaussian_dots_target_calculator(int width, int height, int roi_start_x, int roi_start_y, int roi_width, int roi_height)
+    : _full_width(width), _full_height(height), _roi_start_x(roi_start_x), _roi_start_y(roi_start_y), _width(roi_width), _height(roi_height)
 {
-    if (width != 256 || height != 144)
-        throw std::runtime_error(to_string() << "Only 256x144 resolution is supported!");
-
     _wt = _width - _tsize;
     _ht = _height - _tsize;
     _size = _width * _height;
@@ -579,7 +576,7 @@ rect_gaussian_dots_target_calculator::rect_gaussian_dots_target_calculator(int w
     _ncc.resize(_size);
     memset(_ncc.data(), 0, _size * sizeof(double));
 
-    _buf.resize(_patch_size * _patch_size);
+    _buf.resize(_patch_size);
 }
 
 rect_gaussian_dots_target_calculator::~rect_gaussian_dots_target_calculator()
@@ -599,7 +596,19 @@ bool rect_gaussian_dots_target_calculator::calculate(const uint8_t* img, float* 
         ret = validate_corners(img);
 
     if (ret)
-        calculate_rect_sides(target_dims);
+    {
+        if (target_dims_size == 4)
+            calculate_rect_sides(target_dims);
+        else if (target_dims_size == 8)
+        {
+            int j = 0;
+            for (int i = 0; i < 4; ++i)
+            {
+                target_dims[j++] = static_cast<float>(_corners[i].x + _roi_start_x);
+                target_dims[j++] = static_cast<float>(_corners[i].y + _roi_start_y);
+            }
+        }
+    }
 
     return ret;
 }
@@ -863,36 +872,16 @@ void rect_gaussian_dots_target_calculator::refine_corners()
 
 bool rect_gaussian_dots_target_calculator::validate_corners(const uint8_t* img)
 {
-    uint8_t peaks[4] = { 0 };
-    int idx = 0;
-    int x = 0;
-    int y = 0;
-    for (int i = 0; i < 4; ++i)
+    static const int pos_diff_threshold = 4;
+    if (abs(_corners[0].x - _corners[2].x) > pos_diff_threshold ||
+        abs(_corners[1].x - _corners[3].x) > pos_diff_threshold ||
+        abs(_corners[0].y - _corners[1].y) > pos_diff_threshold ||
+        abs(_corners[2].y - _corners[3].y) > pos_diff_threshold)
     {
-        y = static_cast<int>(_corners[i].y + 0.5f);
-        x = static_cast<int>(_corners[i].x + 0.5f);
-        idx = y * _width + x;
-        peaks[i] = img[idx];
+        return false;
     }
 
-    static const int peak_diff_thresh = 12;
-    bool ok = true;
-    for (int j = 0; j < 4; ++j)
-    {
-        for (int i = 0; i < 4; ++i)
-        {
-            if (std::abs(peaks[i] - peaks[j]) > peak_diff_thresh)
-            {
-                ok = false;
-                break;
-            }
-
-            if (!ok)
-                break;
-        }
-    }
-
-    return ok;
+    return true;
 }
 
 void rect_gaussian_dots_target_calculator::calculate_rect_sides(float* rect_sides)
