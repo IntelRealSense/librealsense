@@ -20,13 +20,11 @@ import java.util.concurrent.BlockingQueue;
 import com.intel.realsense.librealsense.CameraInfo;
 import com.intel.realsense.librealsense.Colorizer;
 import com.intel.realsense.librealsense.Config;
-import com.intel.realsense.librealsense.DepthSensor;
+
 import com.intel.realsense.librealsense.DeviceList;
 import com.intel.realsense.librealsense.Device;
 import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.Frame;
-import com.intel.realsense.librealsense.Sensor;
-import com.intel.realsense.librealsense.ColorSensor;
 
 import com.intel.realsense.librealsense.StreamProfile;
 import com.intel.realsense.librealsense.StreamFormat;
@@ -36,8 +34,6 @@ import com.intel.realsense.librealsense.Extension;
 import com.intel.realsense.librealsense.VideoStreamProfile;
 import com.intel.realsense.librealsense.FrameCallback;
 
-import com.intel.realsense.librealsense.Sensor;
-
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
 import com.intel.realsense.librealsense.Pipeline;
@@ -46,7 +42,7 @@ import com.intel.realsense.librealsense.RsContext;
 import com.intel.realsense.librealsense.StreamType;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG = "librs streamming example with pipeline and callback";
+    private static final String TAG = "librs pipeline callback";
     private static final int PERMISSIONS_REQUEST_CAMERA = 0;
 
     private boolean mPermissionsGranted = false;
@@ -132,25 +128,15 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onFrame(final Frame f) {
             frames_received++;
-//            Log.e(TAG, "received frames:" + frames_received + ", id: " + f.getNumber() + ", size: " + f.getDataSize());
+            Frame cf = f.clone();
 
- //           synchronized (mStreaming) {
-                Frame cf = f.clone();
-
-                if (frameQueue.remainingCapacity() > 0) {
-                    frameQueue.add(cf);
-                    Log.d(TAG, "frame added to queue");
-                }
-                else
-                {
-                    frames_dropped++;
-                    Log.d(TAG, "frame dropped");
-                }
-
-            Log.d(TAG, "frames received for rendering: " + frames_received + ", frames dropped in rendering: " + frames_dropped);
-
- //               mStreaming.notify();
- //           }
+            if (frameQueue.remainingCapacity() > 0) {
+                frameQueue.add(cf);
+            }
+            else
+            {
+                frames_dropped++;
+            }
         }
     };
 
@@ -172,14 +158,6 @@ public class MainActivity extends AppCompatActivity {
 
             if( num_devices> 0) {
                 mDevice = dl.createDevice(0);
-                String pid = mDevice.getInfo(CameraInfo.PRODUCT_ID);
-                String sn = mDevice.getInfo(CameraInfo.SERIAL_NUMBER);
-                String fw = mDevice.getInfo(CameraInfo.FIRMWARE_VERSION);
-
-                Log.d(TAG, "device pid: " + pid);
-                Log.d(TAG, "device sn: " + sn);
-                Log.d(TAG, "device fw: " + fw);
-
                 showConnectLabel(false);
                 start();
             }
@@ -214,38 +192,19 @@ public class MainActivity extends AppCompatActivity {
             synchronized(this) {
                 while(mIsStreaming) {
                     try {
- //                       Log.e(TAG, "XXX wait ...");
- //                       wait();
- //                       Log.e(TAG, "XXX received");
-
- //                       int qsize = frameQueue.size();
- //                       Frame mFrame = null;
-
-                        //if (qsize > 0)
-                        Log.d(TAG, "XXX taking frame from queue ...");
                         Frame mFrame = frameQueue.take();
                         FrameSet frames = mFrame.as(Extension.FRAMESET);
                         frames_displayed++;
-                        Log.d(TAG, "XXX processing frames:" + frames_displayed);// + ", id: " + mFrames.getNumber());
 
                         if (frames != null) {
- //                           if (mFrame.is(Extension.DEPTH_FRAME)) {
- //                               Frame cf = mFrame.applyFilter(mColorizer);
- //                               mGLSurfaceView.upload(cf);
- //                               cf.close();
- //                           } else {
- //                               mGLSurfaceView.upload(mFrame);
- //                           }
-
                             try(FrameSet processed = frames.applyFilter(mColorizer)) {
                                 mGLSurfaceView.upload(processed);
                             }
 
                             frames.close();
-
-                            mFrame.close();
                         }
-                        Log.d(TAG, "XXX frame processed.");
+
+                        if (mFrame != null) mFrame.close();
                     } catch (Exception e) {
                         Log.e(TAG, "streaming, error: " + e.getMessage());
                     }
@@ -257,12 +216,18 @@ public class MainActivity extends AppCompatActivity {
     private void configAndStart() throws Exception {
         try(Config config  = new Config())
         {
-//            config.enableStream(StreamType.DEPTH, 640, 480);
-//            config.enableStream(StreamType.COLOR, 640, 480);
+            // streaming pipeline with default configuration or custom configuration and user callback
+            // the user callback must be a class implements the FrameCallback interface
+
+            // default configuration
             //try statement needed here to release resources allocated by the Pipeline:start() method
             try(PipelineProfile pp = mPipeline.start(mFrameHandler)){}
-        }
 
+            // custom configuration
+            //    config.enableStream(StreamType.DEPTH, 640, 480);
+            //    config.enableStream(StreamType.COLOR, 640, 480);
+            //    try(PipelineProfile pp = mPipeline.start(config, mFrameHandler)){}
+        }
     }
 
     private synchronized void start() {
