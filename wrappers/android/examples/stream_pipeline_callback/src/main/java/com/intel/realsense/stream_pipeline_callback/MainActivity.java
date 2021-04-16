@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import com.intel.realsense.librealsense.CameraInfo;
 import com.intel.realsense.librealsense.Colorizer;
@@ -119,8 +120,6 @@ public class MainActivity extends AppCompatActivity {
         if(mRsContext != null)
             mRsContext.close();
         stop();
-        if (mColorizer != null) mColorizer.close();
-        if (mPipeline != null) mPipeline.close();
     }
 
     private FrameCallback  mFrameHandler = new FrameCallback()
@@ -190,21 +189,26 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
             synchronized(this) {
+                frameQueue.clear();
+
                 while(mIsStreaming) {
                     try {
-                        Frame mFrame = frameQueue.take();
-                        FrameSet frames = mFrame.as(Extension.FRAMESET);
-                        frames_displayed++;
+                        Frame mFrame = frameQueue.poll(1000, TimeUnit.MILLISECONDS);
 
-                        if (frames != null) {
-                            try(FrameSet processed = frames.applyFilter(mColorizer)) {
-                                mGLSurfaceView.upload(processed);
+                        if (mFrame != null) {
+                            FrameSet frames = mFrame.as(Extension.FRAMESET);
+                            frames_displayed++;
+
+                            if (frames != null) {
+                                try (FrameSet processed = frames.applyFilter(mColorizer)) {
+                                    mGLSurfaceView.upload(processed);
+                                }
+
+                                frames.close();
                             }
 
-                            frames.close();
+                            mFrame.close();
                         }
-
-                        if (mFrame != null) mFrame.close();
                     } catch (Exception e) {
                         Log.e(TAG, "streaming, error: " + e.getMessage());
                     }
@@ -259,11 +263,16 @@ public class MainActivity extends AppCompatActivity {
         try {
             Log.d(TAG, "try stop streaming");
             mIsStreaming = false;
-            streaming.join();
+            streaming.join(1000);
+
             mPipeline.stop();
+
+            if (mColorizer != null) mColorizer.close();
+            if (mPipeline != null) mPipeline.close();
             mGLSurfaceView.clear();
             Log.d(TAG, "streaming stopped successfully");
         } catch (Exception e) {
+            mGLSurfaceView.clear();
             Log.e(TAG, "failed to stop streaming");
         }
     }

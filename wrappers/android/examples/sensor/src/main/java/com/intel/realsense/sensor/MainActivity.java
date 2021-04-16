@@ -15,6 +15,7 @@ import android.widget.TextView;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import com.intel.realsense.librealsense.CameraInfo;
 import com.intel.realsense.librealsense.Colorizer;
@@ -122,12 +123,6 @@ public class MainActivity extends AppCompatActivity {
             mRsContext.close();
 
         stop();
-
-        if (mColorizer != null) mColorizer.close();
-        if (depth_sensor != null) {depth_sensor.close();}
-        if (color_sensor != null) {color_sensor.close();}
-
-        if (mDevice != null) mDevice.close();
     }
 
     private FrameCallback mFrameHandler = new FrameCallback()
@@ -215,9 +210,11 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
             synchronized(this) {
+                frameQueue.clear();
+
                 while(mIsStreaming) {
                     try {
-                        Frame mFrame = frameQueue.take();
+                        Frame mFrame = frameQueue.poll(1000, TimeUnit.MILLISECONDS);
                         frames_displayed++;
 
                         if (mFrame != null) {
@@ -370,10 +367,16 @@ public class MainActivity extends AppCompatActivity {
         try {
             Log.d(TAG, "try stop streaming");
             mIsStreaming = false;
-            streaming.join();
+            streaming.join(1000);
 
             if (color_sensor != null) color_sensor.stop();
             if (depth_sensor != null) depth_sensor.stop();
+
+            if (mColorizer != null) mColorizer.close();
+            if (depth_sensor != null) {depth_sensor.close();}
+            if (color_sensor != null) {color_sensor.close();}
+
+            if (mDevice != null) mDevice.close();
 
             mGLSurfaceView.clear();
             Log.d(TAG, "streaming stopped successfully");
