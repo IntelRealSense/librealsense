@@ -1,14 +1,6 @@
 apply plugin: 'com.android.application'
 
 android {
-    signingConfigs {
-        debug {
-            storeFile file('C:\\Intel\\ds\\key\\d400.jks')
-            storePassword 'intelrs400'
-            keyAlias 'key0'
-            keyPassword 'intel123'
-        }
-    }
     compileSdkVersion 30
     defaultConfig {
         applicationId "com.intel.realsense.stream_pipeline_callback"

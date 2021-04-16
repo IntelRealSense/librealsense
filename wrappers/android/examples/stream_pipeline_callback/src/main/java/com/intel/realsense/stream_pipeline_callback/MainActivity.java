@@ -42,7 +42,7 @@ import com.intel.realsense.librealsense.RsContext;
 import com.intel.realsense.librealsense.StreamType;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG = "librs pipeline callback";
+    private static final String TAG = "librs stream callback";
     private static final int PERMISSIONS_REQUEST_CAMERA = 0;
 
     private boolean mPermissionsGranted = false;
