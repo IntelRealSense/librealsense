@@ -213,6 +213,7 @@ server::server(rs2::device dev, std::string addr, int port) : m_dev(dev)
                 profile.format() == RS2_FORMAT_UYVY || 
                 profile.format() == RS2_FORMAT_Z16  ||
                 profile.format() == RS2_FORMAT_Y8   ||
+                profile.format() == RS2_FORMAT_RAW8 ||
                 profile.format() == RS2_FORMAT_MOTION_XYZ32F) 
             {
                 // Count unique streams and save one profile of each kind to calculate extrinsics later

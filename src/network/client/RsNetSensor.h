@@ -42,10 +42,10 @@ public:
         rs2_video_stream  vstream = slib::key2stream(key);
         rs2_motion_stream mstream;
         switch (vstream.type) {
-        case RS2_STREAM_DEPTH    :
-        case RS2_STREAM_COLOR    :
-        case RS2_STREAM_INFRARED :
-        case RS2_STREAM_FISHEYE  :
+        case RS2_STREAM_DEPTH      :
+        case RS2_STREAM_COLOR      :
+        case RS2_STREAM_INFRARED   :
+        case RS2_STREAM_CONFIDENCE :
             vstream.intrinsics = intrinsics;
             m_sw_sensor->add_video_stream(vstream, slib::is_default(key));
 
