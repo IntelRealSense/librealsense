@@ -103,3 +103,7 @@ if(IMPORT_DEPTH_CAM_FW)
 endif()
 
 include(CMake/embedd_udev_rules.cmake)
+
+SET(CPACK_GENERATOR "DEB")
+SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "lrs@intel.com")
+INCLUDE(CPack)

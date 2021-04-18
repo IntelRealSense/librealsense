@@ -184,11 +184,11 @@ install(EXPORT realsense2-netTargets
     DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
 )
 
-install(FILES "${CMAKE_BINARY_DIR}/src/ethernet/realsense2-netConfig.cmake"
+install(FILES "${CMAKE_BINARY_DIR}/src/network/realsense2-netConfig.cmake"
     DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
 )
 
-install(FILES "${CMAKE_BINARY_DIR}/src/ethernet/realsense2-netConfigVersion.cmake"
+install(FILES "${CMAKE_BINARY_DIR}/src/network/realsense2-netConfigVersion.cmake"
     DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
 )
 
