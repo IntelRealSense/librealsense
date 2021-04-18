@@ -1371,7 +1371,6 @@ namespace rs2
             {
                 auto f = frame.second;
 
-
                 if( f.is< points >()
                     && ! paused )  // find and store the 3d points frame for later use
                 {
@@ -1395,11 +1394,6 @@ namespace rs2
                     || ( f.get_profile().format() != RS2_FORMAT_ANY && is_3d_texture_source( f ) ) )
                 {
                     texture_frame = texture;
-                }
-
-                if( ! p )
-                {
-                    upload_frame( std::move( f ) );
                 }
             }
         }
