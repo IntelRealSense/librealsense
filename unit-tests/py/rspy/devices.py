@@ -93,17 +93,16 @@ class Device:
         return self._removed is False
 
 
-def wait_until_all_ports_disabled( timeout = 5):
+def wait_until_all_ports_disabled( timeout = 5 ):
     """
-    waits for all ports to be disabled
+    Waits for all ports to be disabled
     """
     for retry in range( timeout ):
         if len( enabled() ) == 0:
-            break
+            return True
         time.sleep( 1 )
-    if len( enabled() ) != 0:
-        log.w( 'Could not disable ports, can\'t infer ports for recovery devices' )
-        return
+    log.w( 'Timed out waiting for 0 devices' )
+    return False
 
 
 def map_devices_with_unknown_ports():
@@ -113,54 +112,61 @@ def map_devices_with_unknown_ports():
     """
     global _device_by_sn
     devices_with_unknown_ports = [device for device in _device_by_sn.values() if device.port is None]
-    if devices_with_unknown_ports:
-        log.d( 'trying do discover unknown ports' )
-        ports = acroname.ports()
-        known_ports = [device.port for device in _device_by_sn.values() if device.port is not None]
-        unknown_ports = [port for port in ports if port not in known_ports]
+    if not devices_with_unknown_ports:
+        return
+    #
+    ports = acroname.ports()
+    known_ports = [device.port for device in _device_by_sn.values() if device.port is not None]
+    unknown_ports = [port for port in ports if port not in known_ports]
+    try:
+        log.d( 'mapping devices to unknown ports', unknown_ports, '...' )
         log.debug_indent()
-        try:
-            log.d( "active ports:", ports )
-            log.d( "- known ports:", known_ports )
-            log.d( "= unknown ports:", unknown_ports )
-            for known_port in known_ports:
-                if known_port not in ports:
-                    log.e( "A device was found on port", known_port, "but the port is not reported as used by Acroname!" )
-            if len( unknown_ports ) == 1:
-                device = devices_with_unknown_ports[0]
-                log.d( 'port', unknown_ports[0], 'has device', device.handle )
-                device._port = unknown_ports[0]
+        #log.d( "active ports:", ports )
+        #log.d( "- known ports:", known_ports )
+        #log.d( "= unknown ports:", unknown_ports )
+        #
+        for known_port in known_ports:
+            if known_port not in ports:
+                log.e( "A device was found on port", known_port, "but the port is not reported as used by Acroname!" )
+        #
+        if len( unknown_ports ) == 1:
+            device = devices_with_unknown_ports[0]
+            log.d( '... port', unknown_ports[0], 'has', device.handle )
+            device._port = unknown_ports[0]
+            return
+        #
+        acroname.disable_ports( ports )
+        wait_until_all_ports_disabled()
+        #
+        # Enable one port at a time to try and find what device is connected to it
+        n_identified_ports = 0
+        for port in unknown_ports:
+            #
+            acroname.enable_ports( [port], disable_other_ports=True )
+            sn = None
+            for retry in range( 5 ):
+                if len( enabled() ) == 1:
+                    sn = list( enabled() )[0]
+                    break
+                time.sleep( 1 )
+            if not sn:
+                log.d( 'could not recognize device in port', port )
             else:
-                # disabling all ports
-                acroname.disable_ports( ports )
-                wait_until_all_ports_disabled()
-                # enabling one port at a time to try and find what device is connected to it
-                n_identified_ports = 0
-                for port in unknown_ports:
-                    acroname.enable_ports( [port], disable_other_ports=True )
-                    sn = None
-                    for retry in range( 5 ):
-                        if len( enabled() ) == 1:
-                            sn = list( enabled() )[0]
-                            break
-                        time.sleep( 1 )
-                    if not sn:
-                        log.d( 'could not recognise device in port', port )
-                    else:
-                        device = _device_by_sn.get( sn )
-                        if device:
-                            log.d( 'port', port, 'has device', device.handle )
-                            device._port = port
-                            n_identified_ports += 1
-                            if len( devices_with_unknown_ports ) == n_identified_ports: # identified ports of all devices
-                                break
-                        else:
-                            log.w( "Device with serial number", sn, "was found in port", port,
-                                   "but was not in context" )
-                    acroname.disable_ports( [port] )
-                    wait_until_all_ports_disabled()
-        finally:
-            log.debug_unindent()
+                device = _device_by_sn.get( sn )
+                if device:
+                    log.d( '... port', port, 'has', device.handle )
+                    device._port = port
+                    n_identified_ports += 1
+                    if len( devices_with_unknown_ports ) == n_identified_ports:
+                        #log.d( 'no more devices; stopping' )
+                        break
+                else:
+                    log.w( "Device with serial number", sn, "was found in port", port,
+                            "but was not in context" )
+            acroname.disable_ports( [port] )
+            wait_until_all_ports_disabled()
+    finally:
+        log.debug_unindent()
 
 
 def query( monitor_changes = True ):
@@ -209,6 +215,7 @@ def query( monitor_changes = True ):
     #
     if monitor_changes:
         _context.set_devices_changed_callback( _device_change_callback )
+    #
     if acroname:
         map_devices_with_unknown_ports()
 
