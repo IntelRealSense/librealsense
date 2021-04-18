@@ -106,17 +106,17 @@ def wait_until_all_ports_disabled( timeout = 5):
         return
 
 
-def map_devices_with_unknown_ports( known_ports ):
+def map_devices_with_unknown_ports():
     """
     Fill in unknown ports in devices by enabling one port at a time, finding out which device
     is there.
-    :param known_ports: A list of ports with known devices
     """
     global _device_by_sn
     devices_with_unknown_ports = [device for device in _device_by_sn.values() if device.port is None]
     if devices_with_unknown_ports:
         log.d( 'trying do discover unknown ports' )
         ports = acroname.ports()
+        known_ports = [device.port for device in _device_by_sn.values() if device.port is not None]
         unknown_ports = [port for port in ports if port not in known_ports]
         log.debug_indent()
         try:
@@ -182,7 +182,6 @@ def query( monitor_changes = True ):
     global _device_by_sn, _context, _port_to_sn
     _context = rs.context()
     _device_by_sn = dict()
-    known_ports = []
     try:
         log.d( 'discovering devices ...' )
         log.debug_indent()
@@ -203,8 +202,6 @@ def query( monitor_changes = True ):
             else:
                 sn = dev.get_info( rs.camera_info.serial_number )
             device = Device( sn, dev )
-            if device.port is not None:
-                known_ports.append(device.port)
             _device_by_sn[sn] = device
             log.d( '... port {}:'.format( device.port is None and '?' or device.port ), dev )
     finally:
@@ -213,7 +210,7 @@ def query( monitor_changes = True ):
     if monitor_changes:
         _context.set_devices_changed_callback( _device_change_callback )
     if acroname:
-        map_devices_with_unknown_ports( known_ports )
+        map_devices_with_unknown_ports()
 
 
 def _device_change_callback( info ):
