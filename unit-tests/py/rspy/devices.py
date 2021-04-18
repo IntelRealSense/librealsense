@@ -112,7 +112,7 @@ def query( monitor_changes = True ):
     global _device_by_sn, _context, _port_to_sn
     _context = rs.context()
     _device_by_sn = dict()
-    all_ports = acroname.ports()
+    ports = acroname.ports()
     known_ports = []
     try:
         log.d( 'discovering devices ...' )
@@ -143,53 +143,59 @@ def query( monitor_changes = True ):
     #
     if monitor_changes:
         _context.set_devices_changed_callback( _device_change_callback )
-    # only if acroname is available (if acroname)
-    if len( all_ports ) > len( known_ports ): # only if there is a device with unknown ports
-        log.d( 'trying do discover unknown ports' )
-        unknown_ports = [port for port in all_ports if port not in known_ports]
-        print( "ports:", all_ports )
-        print( "known ports:", known_ports )
-        print( "unknown ports:", unknown_ports )
-        # error if known port is not in all ports
-        if len( unknown_ports ) == 1:
-            for device in _device_by_sn.values():
-                if device.port is None:
-                    log.d( 'port', unknown_ports[0], 'has device', device.serial_number )
-                    device._port = unknown_ports[0]
-        else:
-            # disabling all ports
-            acroname.disable_ports( all_ports )
-            for retry in range( 5 ):
-                if len( enabled() ) == 0:
-                    break
-                time.sleep( 1 )
-            if len( enabled() ) != 0:
-                log.w( 'Could not disable ports, can\'t infer ports for recovery devices' )
-                return
-            # enabling one port at a time to try and find what device is connected to it
-            for port in unknown_ports:
-                acroname.enable_ports( [port], disable_other_ports=True )
-                sn = None
-                for retry in range( 5 ):
-                    if len( enabled()) == 1:
-                        sn = list( enabled())[0]
-                        break
-                    time.sleep( 1 )
-                if not sn:
-                    log.w( 'Could not recognise device in port', port)
-                else:
-                    device = _device_by_sn.get( sn )
-                    if device:
-                        log.d( 'port', port, 'has device', sn )
-                        device._port = port
-                acroname.disable_ports( [port] )
+    if acroname:
+        need_recover = False
+        for dev in _device_by_sn.values():
+            if dev.port is None:
+                need_recover = True
+        if need_recover:
+            log.d( 'trying do discover unknown ports' )
+            unknown_ports = [port for port in ports if port not in known_ports]
+            print( "ports:", ports )
+            print( "known ports:", known_ports )
+            print( "unknown ports:", unknown_ports )
+            for known_port in known_ports:
+                if known_port not in ports:
+                    log.e( "ERROR MESSAGE" ) # log.f?
+            if len( unknown_ports ) == 1:
+                for device in _device_by_sn.values():
+                    if device.port is None:
+                        log.d( 'port', unknown_ports[0], 'has device', device.serial_number )
+                        device._port = unknown_ports[0]
+            else:
+                # disabling all ports
+                acroname.disable_ports( ports )
                 for retry in range( 5 ):
                     if len( enabled() ) == 0:
                         break
                     time.sleep( 1 )
                 if len( enabled() ) != 0:
-                    log.w( 'Could not disable port', port, 'may not be able to infer some ports for recovery devices' )
-                    break
+                    log.w( 'Could not disable ports, can\'t infer ports for recovery devices' )
+                    return
+                # enabling one port at a time to try and find what device is connected to it
+                for port in unknown_ports:
+                    acroname.enable_ports( [port], disable_other_ports=True )
+                    sn = None
+                    for retry in range( 5 ):
+                        if len( enabled()) == 1:
+                            sn = list( enabled())[0]
+                            break
+                        time.sleep( 1 )
+                    if not sn:
+                        log.w( 'Could not recognise device in port', port)
+                    else:
+                        device = _device_by_sn.get( sn )
+                        if device:
+                            log.d( 'port', port, 'has device', sn )
+                            device._port = port
+                    acroname.disable_ports( [port] )
+                    for retry in range( 5 ):
+                        if len( enabled() ) == 0:
+                            break
+                        time.sleep( 1 )
+                    if len( enabled() ) != 0:
+                        log.w( 'Could not disable port', port, 'may not be able to infer some ports for recovery devices' )
+                        break
 
 
 def _device_change_callback( info ):
@@ -494,9 +500,9 @@ if 'windows' in platform.system().lower():
                 # We don't know how to get the port from these yet!
                 return None #int(match.group(2))
             else:
-                split_location = [int(x) for x in usb_location.split('.') if int(x) > 0]
+                split_location = [int(x) for x in usb_location.split('.')]
                 # only the last two digits are necessary
-                return acroname.get_port_from_usb( split_location[-2], split_location[-1] )
+                return acroname.get_port_from_usb( split_location[-5], split_location[-4] )
     #
 else:
     #
