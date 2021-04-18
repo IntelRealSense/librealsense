@@ -143,20 +143,20 @@ def query( monitor_changes = True ):
     if monitor_changes:
         _context.set_devices_changed_callback( _device_change_callback )
     if acroname:
-        need_recover = False
-        for dev in _device_by_sn.values():
-            if dev.port is None:
-                need_recover = True
-        if need_recover:
+        devices_with_unknown_ports = [device for device in _device_by_sn.values() if device.port is None]
+        if devices_with_unknown_ports:
             log.d( 'trying do discover unknown ports' )
             ports = acroname.ports()
             unknown_ports = [port for port in ports if port not in known_ports]
-            print( "ports:", ports )
-            print( "known ports:", known_ports )
-            print( "unknown ports:", unknown_ports )
+            log.d( "printing active ports" )
+            log.debug_indent()
+            log.d( "all active ports:", ports )
+            log.d( "ports with known devices:", known_ports )
+            log.d( "unknown ports:", unknown_ports )
+            log.debug_unindent()
             for known_port in known_ports:
                 if known_port not in ports:
-                    log.e( "ERROR MESSAGE" ) # log.f?
+                    log.e( "A device was found on port <#> but the port is not reported as used by Acroname!" ) # log.f?
             if len( unknown_ports ) == 1:
                 for device in _device_by_sn.values():
                     if device.port is None:
@@ -173,6 +173,7 @@ def query( monitor_changes = True ):
                     log.w( 'Could not disable ports, can\'t infer ports for recovery devices' )
                     return
                 # enabling one port at a time to try and find what device is connected to it
+                identified_ports = []
                 for port in unknown_ports:
                     acroname.enable_ports( [port], disable_other_ports=True )
                     sn = None
@@ -182,7 +183,7 @@ def query( monitor_changes = True ):
                             break
                         time.sleep( 1 )
                     if not sn:
-                        log.w( 'Could not recognise device in port', port)
+                        log.d( 'could not recognise device in port', port)
                     else:
                         device = _device_by_sn.get( sn )
                         if device:
