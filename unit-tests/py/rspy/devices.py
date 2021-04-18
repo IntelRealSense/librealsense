@@ -112,7 +112,6 @@ def query( monitor_changes = True ):
     global _device_by_sn, _context, _port_to_sn
     _context = rs.context()
     _device_by_sn = dict()
-    ports = acroname.ports()
     known_ports = []
     try:
         log.d( 'discovering devices ...' )
@@ -150,6 +149,7 @@ def query( monitor_changes = True ):
                 need_recover = True
         if need_recover:
             log.d( 'trying do discover unknown ports' )
+            ports = acroname.ports()
             unknown_ports = [port for port in ports if port not in known_ports]
             print( "ports:", ports )
             print( "known ports:", known_ports )
