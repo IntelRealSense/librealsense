@@ -54,11 +54,12 @@ std::vector<uint8_t> bytes_from_raw_file(const std::string& filename);
 
 int main(int argc, char * argv[]) try
 {
-    auto serial = depth_with_stream_type_present(RS2_STREAM_POSE);
+    std::string serial;
+    device_with_streams(RS2_STREAM_POSE, serial);
     if (serial.empty())
     {
-        std::cerr << "The demo requires Realsense Depth camera with POSE sensor";
-        return EXIT_SUCCESS;;
+        std::cerr << "Connect T26X and rerun the demo";
+        return EXIT_SUCCESS;
     }
     std::string out_map_filepath, in_map_filepath, default_filepath = "map.raw";
     for (int c = 1; c < argc; ++c) {

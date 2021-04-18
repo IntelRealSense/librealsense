@@ -33,11 +33,12 @@ void render_slider(rect location, float* alpha, direction* dir);
 
 int main(int argc, char * argv[]) try
 {
-    auto serial = depth_with_stream_type_present(RS2_STREAM_COLOR);
+    std::string serial;
+    device_with_streams(RS2_STREAM_COLOR, serial);
     if (serial.empty())
     {
         std::cerr << "The demo requires Realsense Depth camera with RGB sensor";
-        return EXIT_SUCCESS;;
+        return EXIT_SUCCESS;
     }
 
     // Create and initialize GUI related objects

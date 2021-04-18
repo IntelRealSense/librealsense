@@ -12,15 +12,19 @@ import cv2
 # Configure depth and color streams
 pipeline = rs.pipeline()
 config = rs.config()
+context = rs.context()
 
 # Get device product line for setting a supporting resolution
-# And product id to skip SR306
 pipeline_wrapper = rs.pipeline_wrapper(pipeline)
 pipeline_profile = config.resolve(pipeline_wrapper)
 device = pipeline_profile.get_device()
 device_product_line = str(device.get_info(rs.camera_info.product_line))
-device_product_id = str(device.get_info(rs.camera_info.product_id))
-if device_product_id == "0AA3":
+deviceList = context.query_devices()
+dev = deviceList.front()
+sensorsList = dev.query_sensors()
+try:
+    next(s for s in sensorsList if s.get_info(rs.camera_info.name) == 'RGB Camera')
+except Exception as e:
     print("The connected device does not support RGB stream")
     exit(0)
 

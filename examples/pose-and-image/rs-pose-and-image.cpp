@@ -10,11 +10,12 @@
 
 int main(int argc, char * argv[]) try
 {
-    auto serial = depth_with_stream_type_present(RS2_STREAM_POSE);
+    std::string serial;
+    device_with_streams(RS2_STREAM_POSE, serial);
     if (serial.empty())
     {
-        std::cerr << "The demo requires Realsense Depth camera with POSE sensor";
-        return EXIT_SUCCESS;;
+        std::cerr << "Connect T26X and rerun the demo";
+        return EXIT_SUCCESS;
     }
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;

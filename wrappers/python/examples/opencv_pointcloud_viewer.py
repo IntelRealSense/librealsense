@@ -30,7 +30,7 @@ import time
 import cv2
 import numpy as np
 import pyrealsense2 as rs
-
+context = rs.context()
 
 class AppState:
 
@@ -71,11 +71,14 @@ config = rs.config()
 pipeline_wrapper = rs.pipeline_wrapper(pipeline)
 pipeline_profile = config.resolve(pipeline_wrapper)
 device = pipeline_profile.get_device()
-device_product_id = str(device.get_info(rs.camera_info.product_id))
-if device_product_id == "0AA3":
+deviceList = context.query_devices()
+dev = deviceList.front()
+sensorsList = dev.query_sensors()
+try:
+    next(s for s in sensorsList if s.get_info(rs.camera_info.name) == 'RGB Camera')
+except Exception as e:
     print("The connected device does not support RGB stream")
     exit(0)
-
 config.enable_stream(rs.stream.depth, rs.format.z16, 30)
 config.enable_stream(rs.stream.color, rs.format.bgr8, 30)
 
