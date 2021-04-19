@@ -4,7 +4,7 @@
 //#cmake:add-file ../../../common/utilities/string/string-utilities.h
 
 #include "common.h"
-#include "../../../common/utilities/string/string-utilities.h"
+#include "utilities/string/string-utilities.h"
 #include <ostream>
 using namespace utilities::string;
 

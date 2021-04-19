@@ -6,7 +6,7 @@
 #include <librealsense2/rs_advanced_mode.hpp>
 #include <types.h>
 #include <type_traits>
-#include "../../../common/utilities/string/string-utilities.h"
+#include "utilities/string/string-utilities.h"
 
 #define TEXT_BUFF_SIZE 1024
 
@@ -79,7 +79,7 @@ inline void slider_int(std::string& error_message, const char* id, T* val, S T::
         if (ImGui::InputText(slider_id.c_str(), buff, TEXT_BUFF_SIZE,
             ImGuiInputTextFlags_EnterReturnsTrue))
         {
-            int new_value;
+            int new_value{};
             if (!utilities::string::string_to_value<int>(buff, new_value))
             {
                 error_message = "Invalid integer input!";
