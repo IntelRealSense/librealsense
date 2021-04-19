@@ -8,13 +8,14 @@ import android.view.ViewGroup;
 import android.widget.BaseExpandableListAdapter;
 import android.widget.TextView;
 
-public class SettingsExListAdapter extends BaseExpandableListAdapter {
+// The 'SettingsViewAdapter'' class is in charge of the UI and behaviour of the ExpandableList inside the settings page.
+public class SettingsViewAdapter extends BaseExpandableListAdapter {
 
     private Context context;
     private List<String> expandableListTitle;
     private HashMap<String, List<String>> expandableListDetail;
 
-    public SettingsExListAdapter(Context context, List<String> expandableListTitle,
+    public SettingsViewAdapter(Context context, List<String> expandableListTitle,
                                        HashMap<String, List<String>> expandableListDetail) {
         this.context = context;
         this.expandableListTitle = expandableListTitle;

@@ -22,7 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class StreamProfileAdapter extends SettingsExListAdapter {
+public class StreamProfileAdapter extends SettingsViewAdapter {
     private static final int mLayoutResourceId = R.layout.stream_profile_list_view;
     private final StreamProfileSelector mStreamProfileCells[];
     private final LayoutInflater mLayoutInflater;

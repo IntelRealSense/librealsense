@@ -127,8 +127,8 @@ public class SettingsActivity extends AppCompatActivity {
 
         ExpandableListView expandableListView = findViewById(R.id.info_ex_list_view);
         List<String> expandableListTitle = new ArrayList<String>(expandableListDetail.keySet());
-        SettingsExListAdapter expandableListAdapter = new SettingsExListAdapter(this, expandableListTitle, expandableListDetail);
-        expandableListView.setAdapter(expandableListAdapter);
+        SettingsViewAdapter infoViewAdapter = new SettingsViewAdapter(this, expandableListTitle, expandableListDetail);
+        expandableListView.setAdapter(infoViewAdapter);
         // Expand Software information by default
         expandableListView.expandGroup(0);
     }
@@ -176,11 +176,8 @@ public class SettingsActivity extends AppCompatActivity {
         List<String> settings_group = Arrays.asList(settings);
         expandableListDetail.put("Device Settings",settings_group);
         List<String> expandableListTitle = new ArrayList<String>(expandableListDetail.keySet());
-
-        SettingsExListAdapter expandableListAdapter = new SettingsExListAdapter(this, expandableListTitle, expandableListDetail);
-
-        expandableListView.setAdapter(expandableListAdapter);
-
+        SettingsViewAdapter deviceSettingsViewAdapter = new SettingsViewAdapter(this, expandableListTitle, expandableListDetail);
+        expandableListView.setAdapter(deviceSettingsViewAdapter);
         expandableListView.setOnChildClickListener(new ExpandableListView.OnChildClickListener() {
 
             @Override
