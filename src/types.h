@@ -395,8 +395,9 @@ namespace librealsense
         operator T () const
         {
             T le_value = 0;
-            for (unsigned int i = 0; i < sizeof(T); ++i) reinterpret_cast<char *>(&le_value)[i] = reinterpret_cast<const char *>(&be_value)[sizeof(T) - i - 1];
+            for (unsigned int i = 0; i < sizeof(T); ++i) *(reinterpret_cast<char*>(&le_value) + i) = *(reinterpret_cast<const char*>(&be_value) + sizeof(T) - i - 1);
             return le_value;
+
         }
     };
 #pragma pack(pop)
