@@ -17,6 +17,8 @@
 
 #include <iostream>
 
+#include "inttypes.h"
+
 class RsServerMediaSubsession : public OnDemandServerMediaSubsession
 {
 public:
@@ -36,7 +38,7 @@ protected:
         const char* auxSDPLine = OnDemandServerMediaSubsession::getAuxSDPLine(rtpSink, inputSource);
         if (auxSDPLine == NULL) auxSDPLine = "";
 
-        sprintf(privateAuxSDPLine, "%sactive=%s;key=%lu\r\n", auxSDPLine, 
+        sprintf(privateAuxSDPLine, "%sactive=%s;key=%" PRIu64 "\r\n", auxSDPLine, 
             m_queue->is_streaming(m_stream) ? "yes" : "no", slib::profile2key(m_stream)
         );
 
