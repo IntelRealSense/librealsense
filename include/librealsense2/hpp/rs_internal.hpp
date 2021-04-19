@@ -465,6 +465,14 @@ namespace rs2
             return timestamp;
         }
 
+        uint32_t sequence_id() const
+        {
+            rs2_error* e = nullptr;
+            uint32_t sequence(rs2_get_fw_log_parsed_sequence_id(_parsed_fw_log.get(), &e));
+            error::handle(e);
+            return sequence;
+        }
+
         const std::shared_ptr<rs2_firmware_log_parsed_message> get_message() const { return _parsed_fw_log; }
 
     private:
@@ -550,6 +558,15 @@ namespace rs2
 
             return parsingResult;
         }
+
+        unsigned int get_number_of_fw_logs() const
+        {
+            rs2_error* e = nullptr;
+            unsigned int num_of_fw_logs = rs2_get_number_of_fw_logs(_dev.get(), &e);
+            error::handle(e);
+
+            return num_of_fw_logs;
+        }
     };
 
     class terminal_parser
@@ -570,7 +587,7 @@ namespace rs2
             rs2_error* e = nullptr;
 
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_terminal_parse_command(_terminal_parser.get(), command.c_str(), command.size(), &e),
+                rs2_terminal_parse_command(_terminal_parser.get(), command.c_str(), (unsigned int)command.size(), &e),
                 rs2_delete_raw_data);
             error::handle(e);
 
@@ -590,8 +607,8 @@ namespace rs2
             rs2_error* e = nullptr;
 
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_terminal_parse_response(_terminal_parser.get(), command.c_str(), command.size(),
-                (void*)response.data(), response.size(), &e),
+                rs2_terminal_parse_response(_terminal_parser.get(), command.c_str(), (unsigned int)command.size(),
+                (void*)response.data(), (unsigned int)response.size(), &e),
                 rs2_delete_raw_data);
             error::handle(e);
 

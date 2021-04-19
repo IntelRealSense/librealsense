@@ -20,5 +20,8 @@ PYBIND11_MODULE(NAME, m) {
     m.doc() = "Wrapper for the librealsense ethernet device extension module";
 
     py::class_<rs2::net_device> net_device(m, "net_device", device);
-    net_device.def(py::init<std::string>(), "address"_a);
+    net_device.def(py::init<std::string>(), "address"_a)
+        .def("add_to", &rs2::net_device::add_to, "Add net device to existing context.\n"
+             "Any future queries on the context will return this device.\n"
+             "This operation cannot be undone (except for destroying the context)", "ctx"_a);
 }

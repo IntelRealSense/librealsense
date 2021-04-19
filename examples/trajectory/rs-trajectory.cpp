@@ -134,7 +134,7 @@ public:
         glBlendFunc(GL_ONE, GL_ONE);
 
         // Scale camera drawing to match view
-        glScalef(0.001, 0.001, 0.001);
+        glScalef(0.001f, 0.001f, 0.001f);
 
         glBegin(GL_TRIANGLES);
         // Draw the camera
@@ -213,7 +213,7 @@ float display_scale(float scale_factor, float x_pos, float y_pos)
 {
     glColor3f(1.0f, 1.0f, 1.0f);
     // Set default width for the scale bar (in OpenGL units)
-    float bar_width = 0.1;
+    float bar_width = 0.1f;
     // Calculate the ratio of the default width to the current scale factor
     float bar_scale = bar_width / scale_factor;
     // If scale is less than 1 meter, display it as is
@@ -234,7 +234,7 @@ float display_scale(float scale_factor, float x_pos, float y_pos)
     std::stringstream ss;
     ss << bar_scale << " m";
     auto str = ss.str();
-    draw_text(x_pos, y_pos, str.c_str());
+    draw_text(int(x_pos), int(y_pos), str.c_str());
     ss.clear(); ss.str("");
     return bar_width;
 }
@@ -266,9 +266,9 @@ public:
         aspect = height / width;
 
         // Set viewport to 1/4 of the app window and enable scissor test to avoid rendering outside the current viewport
-        glViewport(pos.x, pos.y, width / 2, height / 2);
+        glViewport(int(pos.x), int(pos.y), int(width / 2), int(height / 2));
         glEnable(GL_SCISSOR_TEST);
-        glScissor(pos.x, pos.y, width / 2, height / 2);
+        glScissor(int(pos.x), int(pos.y), int(width / 2), int(height / 2));
 
         // Setup orthogonal projection matrix
         glMatrixMode(GL_PROJECTION);
@@ -289,7 +289,7 @@ public:
         glMatrixMode(GL_PROJECTION);
         glPopMatrix();
         // Set viewport back to full screen
-        glViewport(0, 0, width, height);
+        glViewport(0, 0, int(width), int(height));
         glDisable(GL_SCISSOR_TEST);
     }
 
@@ -335,7 +335,7 @@ public:
         glBegin(GL_LINES);
         // Draw scale bar
         glColor3f(1.0f, 1.0f, 1.0f); 
-        glVertex3f(0.8, -0.9 * aspect, 0); glVertex3f(0.8 + bar_width, -0.9 * aspect, 0);
+        glVertex3f(0.8f, -0.9f * aspect, 0); glVertex3f(0.8f + bar_width, -0.9f * aspect, 0);
         glEnd();
         // Set a 2D view using OpenGL's LookAt matrix
         gluLookAt(lookat_eye.x, lookat_eye.y, lookat_eye.z, 0, 0, 0, 0, 1, 0);
@@ -412,21 +412,21 @@ public:
 
         // Draw viewport titles
         glColor3f(1.0f, 1.0f, 1.0f);
-        draw_text(0.005 * app_width, 0.02 * app_height, "TOP");
-        draw_text(0.005 * app_width, 0.52 * app_height, "FRONT");
-        draw_text(0.505 * app_width, 0.52 * app_height, "SIDE");
-        draw_text(0.505 * app_width, 0.02 * app_height, "3D");
+        draw_text(int(0.005f * app_width), int(0.02f * app_height), "TOP");
+        draw_text(int(0.005f * app_width), int(0.52f * app_height), "FRONT");
+        draw_text(int(0.505f * app_width), int(0.52f * app_height), "SIDE");
+        draw_text(int(0.505f * app_width), int(0.02f * app_height), "3D");
 
         // Label axes
         glColor3f(1.0f, 0.0f, 0.0f);
-        draw_text(0.494 * app_width, 0.261 * app_height, "x");
-        draw_text(0.494 * app_width, 0.761 * app_height, "x");
+        draw_text(int(0.494f * app_width), int(0.261f * app_height), "x");
+        draw_text(int(0.494f * app_width), int(0.761f * app_height), "x");
         glColor3f(0.0f, 0.0f, 1.0f);
-        draw_text(0.245 * app_width, 0.01 * app_height, "z");
-        draw_text(0.503 * app_width, 0.761 * app_height, "z");
+        draw_text(int(0.245f * app_width), int(0.01f * app_height), "z");
+        draw_text(int(0.503f * app_width), int(0.761f * app_height), "z");
         glColor3f(0.0f, 1.0f, 0.0f);
-        draw_text(0.245 * app_width, 0.995 * app_height, "y");
-        draw_text(0.745 * app_width, 0.995 * app_height, "y");
+        draw_text(int(0.245f * app_width), int(0.995f * app_height), "y");
+        draw_text(int(0.745f * app_width), int(0.995f * app_height), "y");
 
         // Draw lines bounding each viewport
         draw_borders();

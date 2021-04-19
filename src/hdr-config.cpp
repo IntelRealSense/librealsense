@@ -27,18 +27,10 @@ namespace librealsense
         _hdr_sequence_params.resize(DEFAULT_HDR_SEQUENCE_SIZE);
 
         // restoring current HDR configuration if such subpreset is active
-        command cmd(ds::GETSUBPRESET);
         bool existing_subpreset_restored = false;
-        try {
-            auto res = _hwm.send(cmd);
-            if (res.size() && is_current_subpreset_hdr(res))
-            {
-                existing_subpreset_restored = configure_hdr_as_in_fw(res);
-            }
-        }
-        catch (std::exception ex) {
-            LOG_WARNING("In hdr_config::hdr_config() - hw command failed: " << ex.what());
-        }
+        std::vector<byte> res;
+        if (is_hdr_enabled_in_device(res))
+            existing_subpreset_restored = configure_hdr_as_in_fw(res);
 
         if (!existing_subpreset_restored)
         {
@@ -53,6 +45,20 @@ namespace librealsense
             hdr_params params_1(1, exposure_low_value, gain_min_value);
             _hdr_sequence_params[1] = params_1;
         }
+    }
+
+    bool hdr_config::is_hdr_enabled_in_device(std::vector<byte>& result) const
+    {
+        command cmd(ds::GETSUBPRESET);
+        bool hdr_enabled_in_device = false;
+        try {
+            result = _hwm.send(cmd);
+            hdr_enabled_in_device = (result.size() && is_current_subpreset_hdr(result));
+        }
+        catch (std::exception ex) {
+            LOG_WARNING("In hdr_config::hdr_config() - hw command failed: " << ex.what());
+        }
+        return hdr_enabled_in_device;
     }
 
     bool hdr_config::is_current_subpreset_hdr(const std::vector<byte>& current_subpreset) const
@@ -95,13 +101,15 @@ namespace librealsense
         if (current_subpreset[offset] != CONTROL_ID_EXPOSURE)
             return false;
         offset += size_of_control_id;
-        float exposure_0 = *reinterpret_cast<const uint32_t*>(&(current_subpreset[offset]));
+        float exposure_0
+            = (float)*reinterpret_cast< const uint32_t * >( &( current_subpreset[offset] ) );
         offset += size_of_control_value;
 
         if (current_subpreset[offset] != CONTROL_ID_GAIN)
             return false;
         offset += size_of_control_id;
-        float gain_0 = *reinterpret_cast<const uint32_t*>(&(current_subpreset[offset]));
+        float gain_0
+            = (float)*reinterpret_cast< const uint32_t * >( &( current_subpreset[offset] ) );
         offset += size_of_control_value;
 
         offset += size_of_subpreset_item_header;
@@ -109,13 +117,15 @@ namespace librealsense
         if (current_subpreset[offset] != CONTROL_ID_EXPOSURE)
             return false;
         offset += size_of_control_id;
-        float exposure_1 = *reinterpret_cast<const uint32_t*>(&(current_subpreset[offset]));
+        float exposure_1
+            = (float)*reinterpret_cast< const uint32_t * >( &( current_subpreset[offset] ) );
         offset += size_of_control_value;
 
         if (current_subpreset[offset] != CONTROL_ID_GAIN)
             return false;
         offset += size_of_control_id;
-        float gain_1 = *reinterpret_cast<const uint32_t*>(&(current_subpreset[offset]));
+        float gain_1
+            = (float)*reinterpret_cast< const uint32_t * >( &( current_subpreset[offset] ) );
         offset += size_of_control_value;
 
         _hdr_sequence_params[0]._exposure = exposure_0;
@@ -242,25 +252,30 @@ namespace librealsense
         {
             if (validate_config())
             {
-                // saving status of options that are not compatible with hdr,
-                // so that they could be reenabled after hdr disable
-                set_options_to_be_restored_after_disable();
-
-                if (_use_workaround)
+                std::vector<byte> res;
+                _is_enabled = is_hdr_enabled_in_device(res);
+                if (!_is_enabled)
                 {
-                    try {
-                        // the following statement is needed in order to get/set the UVC exposure 
-                        // instead of one of the hdr's configuration exposure
-                        set_sequence_index(0.f);
-                        _pre_hdr_exposure = _sensor->get_option(RS2_OPTION_EXPOSURE).query();
-                        _sensor->get_option(RS2_OPTION_EXPOSURE).set(PRE_ENABLE_HDR_EXPOSURE);
-                    } catch (...) {
-                        LOG_WARNING("HDR: enforced exposure failed");
-                    }
-                }
+                    // saving status of options that are not compatible with hdr,
+                // so that they could be reenabled after hdr disable
+                    set_options_to_be_restored_after_disable();
 
-                _is_enabled = send_sub_preset_to_fw();
-                _has_config_changed = false;
+                    if (_use_workaround)
+                    {
+                        try {
+                            // the following statement is needed in order to get/set the UVC exposure 
+                            // instead of one of the hdr's configuration exposure
+                            set_sequence_index(0.f);
+                            _pre_hdr_exposure = _sensor.lock()->get_option(RS2_OPTION_EXPOSURE).query();
+                            _sensor.lock()->get_option(RS2_OPTION_EXPOSURE).set(PRE_ENABLE_HDR_EXPOSURE);
+                        } catch (...) {
+                            LOG_WARNING("HDR: enforced exposure failed");
+                        }
+                    }
+
+                    _is_enabled = send_sub_preset_to_fw();
+                    _has_config_changed = false;
+                }
             }
             else
                 // msg to user to be improved later on
@@ -275,13 +290,14 @@ namespace librealsense
             {
                 // this sleep is needed to let the fw restore the manual exposure
                 std::this_thread::sleep_for(std::chrono::milliseconds(70));
+
                 if (_pre_hdr_exposure >= _exposure_range.min && _pre_hdr_exposure <= _exposure_range.max)
                 {
                     try {
                         // the following statement is needed in order to get the UVC exposure 
                         // instead of one of the hdr's configuration exposure
                         set_sequence_index(0.f);
-                        _sensor->get_option(RS2_OPTION_EXPOSURE).set(_pre_hdr_exposure);
+                        _sensor.lock()->get_option(RS2_OPTION_EXPOSURE).set(_pre_hdr_exposure);
                     } catch (...) {
                         LOG_WARNING("HDR failed to restore manual exposure");
                     }
@@ -297,22 +313,22 @@ namespace librealsense
     void hdr_config::set_options_to_be_restored_after_disable()
     {
         // AUTO EXPOSURE
-        if (_sensor->supports_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+        if (_sensor.lock()->supports_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
         {
-            if (_sensor->get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE).query())
+            if (_sensor.lock()->get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE).query())
             {
-                _sensor->get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE).set(0.f);
+                _sensor.lock()->get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE).set(0.f);
                 _auto_exposure_to_be_restored = true;
             }
         }
 
 
         // EMITTER ON OFF
-        if (_sensor->supports_option(RS2_OPTION_EMITTER_ON_OFF))
+        if (_sensor.lock()->supports_option(RS2_OPTION_EMITTER_ON_OFF))
         {
-            if (_sensor->get_option(RS2_OPTION_EMITTER_ON_OFF).query())
+            if (_sensor.lock()->get_option(RS2_OPTION_EMITTER_ON_OFF).query())
             {
-                _sensor->get_option(RS2_OPTION_EMITTER_ON_OFF).set(0.f);
+                _sensor.lock()->get_option(RS2_OPTION_EMITTER_ON_OFF).set(0.f);
                 _emitter_on_off_to_be_restored = true;
             }
         }
@@ -323,14 +339,14 @@ namespace librealsense
         // AUTO EXPOSURE
         if (_auto_exposure_to_be_restored)
         {
-            _sensor->get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE).set(1.f);
+            _sensor.lock()->get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE).set(1.f);
             _auto_exposure_to_be_restored = false;
         }
 
         // EMITTER ON OFF
         if (_emitter_on_off_to_be_restored)
         {
-            _sensor->get_option(RS2_OPTION_EMITTER_ON_OFF).set(1.f);
+            _sensor.lock()->get_option(RS2_OPTION_EMITTER_ON_OFF).set(1.f);
             _emitter_on_off_to_be_restored = false;
         }
     }
@@ -470,7 +486,7 @@ namespace librealsense
 
         if (new_index <= _hdr_sequence_params.size())
         {
-            _current_hdr_sequence_index = new_index - 1;
+            _current_hdr_sequence_index = (int)new_index - 1;
         }
         else
             throw invalid_value_exception(to_string() << "hdr_config::set_sequence_index(...) failed! Index above sequence size.");

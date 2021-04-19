@@ -1,18 +1,16 @@
 package com.intel.realsense.camera;
 
-import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Pair;
 import android.view.View;
@@ -68,7 +66,7 @@ public class SettingsActivity extends AppCompatActivity {
         mContext = this;
 
         // Advanced features are enabled if xml files exists in the device.
-        String advancedFeaturesPath = FileUtilities.getExternalStorageDir() +
+        String advancedFeaturesPath = FileUtilities.getExternalStorageDir(mContext) +
                 File.separator +
                 getString(R.string.realsense_folder) +
                 File.separator +
@@ -91,7 +89,8 @@ public class SettingsActivity extends AppCompatActivity {
                 _device = devices.createDevice(0);
                 loadInfosList();
                 loadSettingsList(_device);
-                StreamProfileSelector[] profilesList = createSettingList(_device);
+                List<StreamProfileSelector> profilesList = createSettingList(_device);
+                RemoveUnsupportedProfiles(profilesList);
                 loadStreamList(_device, profilesList);
                 return;
             } catch(Exception e){
@@ -127,18 +126,23 @@ public class SettingsActivity extends AppCompatActivity {
 
         final Map<Integer,String> settingsMap = new TreeMap<>();
         settingsMap.put(INDEX_DEVICE_INFO,"Device info");
-        settingsMap.put(INDEX_ADVANCE_MODE,"Enable advanced mode");
+
+        if(device.supportsInfo(CameraInfo.ADVANCED_MODE)) {
+            if (device.isInAdvancedMode()) {
+                settingsMap.put(INDEX_ADVANCE_MODE, "Disable advanced mode");
+                settingsMap.put(INDEX_PRESETS, "Presets");
+            }
+            else {
+                settingsMap.put(INDEX_ADVANCE_MODE, "Enable advanced mode");
+            }
+        }
+
         if(device.is(Extension.UPDATABLE)){
             settingsMap.put(INDEX_UPDATE,"Firmware update");
             try(Updatable fwud = device.as(Extension.UPDATABLE)){
                 if(fwud != null && fwud.supportsInfo(CameraInfo.CAMERA_LOCKED) && fwud.getInfo(CameraInfo.CAMERA_LOCKED).equals("NO"))
                     settingsMap.put(INDEX_UPDATE_UNSIGNED,"Firmware update (unsigned)");
             }
-        }
-
-        if(device.supportsInfo(CameraInfo.ADVANCED_MODE) && device.isInAdvancedMode()){
-            settingsMap.put(INDEX_ADVANCE_MODE,"Disable advanced mode");
-            settingsMap.put(INDEX_PRESETS,"Presets");
         }
 
         if (areAdvancedFeaturesEnabled) {
@@ -172,8 +176,9 @@ public class SettingsActivity extends AppCompatActivity {
                     case INDEX_ADVANCE_MODE: device.toggleAdvancedMode(!device.isInAdvancedMode());
                         break;
                     case INDEX_PRESETS: {
-                        Intent intent = new Intent(SettingsActivity.this, PresetsActivity.class);
-                        startActivity(intent);
+                        PresetsDialog cd = new PresetsDialog();
+                        cd.setCancelable(true);
+                        cd.show(getFragmentManager(), null);
                         break;
                     }
                     case INDEX_UPDATE: {
@@ -201,7 +206,7 @@ public class SettingsActivity extends AppCompatActivity {
                         break;
                     }
                     case INDEX_CREATE_FLASH_BACKUP: {
-                        new FlashBackupTask(device).execute();
+                        new FlashBackupTask(device, mContext).execute();
                         break;
                     }
                     default:
@@ -216,15 +221,17 @@ public class SettingsActivity extends AppCompatActivity {
         private ProgressDialog mProgressDialog;
         private Device mDevice;
         String mBackupFileName = "fwdump.bin";
+        private Context mContext;
 
-        public FlashBackupTask(Device mDevice) {
+        public FlashBackupTask(Device mDevice, Context context) {
             this.mDevice = mDevice;
+            this.mContext = context;
         }
 
         @Override
         protected Void doInBackground(Void... voids) {
             try(final Updatable upd = mDevice.as(Extension.UPDATABLE)){
-                FileUtilities.saveFileToExternalDir(mBackupFileName, upd.createFlashBackup());
+                FileUtilities.saveFileToExternalDir(mContext, mBackupFileName, upd.createFlashBackup());
                 return null;
             }
         }
@@ -251,7 +258,7 @@ public class SettingsActivity extends AppCompatActivity {
                 public void run() {
                     new AlertDialog.Builder(mContext)
                             .setTitle("Firmware Backup Success")
-                            .setMessage("Saved into: " + FileUtilities.getExternalStorageDir() + File.separator + mBackupFileName)
+                            .setMessage("Saved into: " + FileUtilities.getExternalStorageDir(mContext) + File.separator + mBackupFileName)
                             .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
@@ -294,11 +301,13 @@ public class SettingsActivity extends AppCompatActivity {
         return rv;
     }
 
-    private void loadStreamList(Device device, StreamProfileSelector[] lines){
-        if(device == null || lines == null)
+    private void loadStreamList(Device device, List<StreamProfileSelector> streamProfiles){
+        if(device == null || streamProfiles.size() == 0)
             return;
         if(!device.supportsInfo(CameraInfo.PRODUCT_ID))
             throw new RuntimeException("try to config unknown device");
+
+        StreamProfileSelector[] lines = streamProfiles.toArray(new StreamProfileSelector[streamProfiles.size()]);
         final String pid = device.getInfo(CameraInfo.PRODUCT_ID);
         final StreamProfileAdapter adapter = new StreamProfileAdapter(this, lines, new StreamProfileAdapter.Listener() {
             @Override
@@ -317,7 +326,7 @@ public class SettingsActivity extends AppCompatActivity {
         adapter.notifyDataSetChanged();
     }
 
-    private StreamProfileSelector[] createSettingList(final Device device){
+    private List<StreamProfileSelector> createSettingList(final Device device){
         Map<Integer, List<StreamProfile>> profilesMap = createProfilesMap(device);
 
         SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);
@@ -335,7 +344,22 @@ public class SettingsActivity extends AppCompatActivity {
 
         Collections.sort(lines);
 
-        return lines.toArray(new StreamProfileSelector[lines.size()]);
+        return lines;
+    }
+
+    private void RemoveUnsupportedProfiles(List<StreamProfileSelector> streamProfiles){
+        StreamProfileSelector confidenceProfile = null;
+        for (StreamProfileSelector streamProfile : streamProfiles){
+            if (streamProfile.getProfile().getType() == StreamType.CONFIDENCE){
+                confidenceProfile = streamProfile;
+                break;
+            }
+        }
+
+    // Confidence stream format is RAW8, and it is not supported for display.
+    // Its removal is necessary until format RAW8 display is enabled.
+        if (confidenceProfile != null)
+            streamProfiles.remove(confidenceProfile);
     }
 
     void toggleFwLogging(){

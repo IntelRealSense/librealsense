@@ -140,7 +140,8 @@ cloud_pointer PCL_Conversion(const rs2::points& points, const rs2::video_frame& 
    return cloud; // PCL RGB Point Cloud generated
 }
 
-int main() {
+int main() try 
+{
 
     //======================
     // Variable Declaration
@@ -163,11 +164,11 @@ int main() {
     rs2::config cfg;
 
     //======================
-    // Stream configuration
+    // Stream configuration with parameters resolved internally. See enable_stream() overloads for extended usage
     //======================
-    cfg.enable_stream(RS2_STREAM_COLOR, 1280, 720, RS2_FORMAT_BGR8, 30);
-    cfg.enable_stream(RS2_STREAM_INFRARED, 1280, 720, RS2_FORMAT_Y8, 30);
-    cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16, 30);
+    cfg.enable_stream(RS2_STREAM_COLOR);
+    cfg.enable_stream(RS2_STREAM_INFRARED);
+    cfg.enable_stream(RS2_STREAM_DEPTH);
     
     rs2::pipeline_profile selection = pipe.start(cfg); 
 
@@ -177,16 +178,19 @@ int main() {
     if (depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
     {
         depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 1.f); // Enable emitter
+        pipe.wait_for_frames();
         depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f); // Disable emitter
     }
+
     if (depth_sensor.supports(RS2_OPTION_LASER_POWER))
     {
         // Query min and max values:
         auto range = depth_sensor.get_option_range(RS2_OPTION_LASER_POWER);
         depth_sensor.set_option(RS2_OPTION_LASER_POWER, range.max); // Set max power
+        sleep(1);
         depth_sensor.set_option(RS2_OPTION_LASER_POWER, 0.f); // Disable laser
     }
-    
+
     // Begin Stream with default configs
 
     // Loop and take frame captures upon user input
@@ -244,6 +248,17 @@ int main() {
     cout << "Exiting Program... " << endl; 
     return EXIT_SUCCESS;
 }
+catch (const rs2::error & e)
+{
+    std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+    return EXIT_FAILURE;
+}
+catch (const std::exception & e)
+{
+    std::cerr << e.what() << std::endl;
+    return EXIT_FAILURE;
+}
+
 
 void Load_PCDFile(void)
 {

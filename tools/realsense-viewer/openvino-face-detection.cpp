@@ -3,14 +3,15 @@
 
 // NOTE: This file will be compiled only with INTEL_OPENVINO_DIR pointing to an OpenVINO install!
 
-
 #include "post-processing-filters-list.h"
 #include "post-processing-worker-filter.h"
+
 #include <rs-vino/object-detection.h>
 #include <rs-vino/age-gender-detection.h>
 #include <rs-vino/detected-object.h>
 #include <cv-helpers.hpp>
 
+namespace openvino = InferenceEngine;
 
 /* We need to extend the basic detected_object to include facial characteristics
 */
@@ -69,7 +70,7 @@ class openvino_face_detection : public post_processing_worker_filter
     size_t _id = 0;
 
     std::shared_ptr< atomic_objects_in_frame > _objects;
-
+    
 public:
     openvino_face_detection( std::string const & name )
         : post_processing_worker_filter( name )
@@ -89,6 +90,12 @@ public:
     {
     }
 
+    ~openvino_face_detection()
+    {
+        // Complete background worker to ensure it releases the instance's resources in controlled manner
+        release_background_worker();
+    }
+
 public:
     void start( rs2::subdevice_model & model ) override
     {
@@ -100,9 +107,14 @@ private:
     void worker_start() override
     {
         LOG(INFO) << "Loading CPU extensions...";
-        _ie.AddExtension( std::make_shared< InferenceEngine::Extensions::Cpu::CpuExtensions >(), "CPU" );
-        _face_detector.load_into( _ie, "CPU" );
-        _age_detector.load_into( _ie, "CPU" );
+        std::string const device_name{ "CPU" };
+
+#ifdef OPENVINO2019
+        _ie.AddExtension(std::make_shared< openvino::Extensions::Cpu::CpuExtensions >(), device_name);
+#endif
+
+        _face_detector.load_into( _ie, device_name);
+        _age_detector.load_into( _ie, device_name);
     }
 
     /*
@@ -188,31 +200,37 @@ private:
         return pixel_count ? total_luminance / pixel_count : 1;
     }
 
-    void worker_body( rs2::frameset fs ) override
+    void worker_body( rs2::frame f ) override
     {
-        // A color video frame is the minimum we need for detection
-        auto cf = fs.get_color_frame();
-        if( !cf )
+        auto fs = f.as< rs2::frameset >();
+        auto cf = f;
+        rs2::depth_frame df = NULL;
+        if (fs)
         {
-            LOG(ERROR) << get_context( fs ) << "no color frame";
+            cf = fs.get_color_frame();
+            df = fs.get_depth_frame();
+        }
+
+        if ((!fs && f.get_profile().stream_name() != "Color") || (fs && !cf))
+        {
+            _objects->clear();
             return;
         }
+
+        // A color video frame is the minimum we need for detection
         if( cf.get_profile().format() != RS2_FORMAT_RGB8 )
         {
             LOG(ERROR) << get_context(fs) << "color format must be RGB8; it's " << cf.get_profile().format();
             return;
         }
-        // A depth frame is optional: if not enabled, we won't get it, and we simply won't provide depth info...
-        auto df = fs.get_depth_frame();
-        if( df )
-        {
-            if( df  &&  df.get_profile().format() != RS2_FORMAT_Z16 )
-            {
-                LOG(ERROR) << get_context(fs) << "depth format must be Z16; it's " << df.get_profile().format();
-                return;
-            }
-        }
 
+        // A depth frame is optional: if not enabled, we won't get it, and we simply won't provide depth info...
+
+        if (df && df.get_profile().format() != RS2_FORMAT_Z16)
+        {
+            LOG(ERROR) << get_context(fs) << "depth format must be Z16; it's " << df.get_profile().format();
+            return;
+        }
         try
         {
             rs2_intrinsics color_intrin, depth_intrin;

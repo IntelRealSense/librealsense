@@ -9,7 +9,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 set(DEPENDENCIES ${DEPENDENCIES} realsense2)
 
-file(GLOB COMPRESSION_SOURCES 
+file(GLOB COMPRESSION_SOURCES
     "*.h"
     "*.cpp"
     "../ipDeviceCommon/*.h"
@@ -19,24 +19,26 @@ set(COMPRESSION_SOURCES ${COMPRESSION_SOURCES} ${LZ4_DIR}/lz4.h ${LZ4_DIR}/lz4.c
 
 add_library(${PROJECT_NAME} STATIC ${COMPRESSION_SOURCES})
 
-include_directories(${PROJECT_NAME}
+include_directories(
     ../../common
     ../ipDeviceCommon
-    ../../third-party/easyloggingpp/src    
+    ../../third-party/easyloggingpp/src
 )
 
 #Disabled due to CMake 3.5.1 compatibility
 #target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_11)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 
-add_dependencies(${PROJECT_NAME} 
+add_dependencies(${PROJECT_NAME}
     libjpeg-turbo
 )
 
-include_directories(${PROJECT_NAME}
+include_directories(
     ${CMAKE_BINARY_DIR}/libjpeg-turbo/include
     ${LZ4_DIR}
 )
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
 if(WIN32)
     target_link_libraries(${PROJECT_NAME}
@@ -48,7 +50,7 @@ else()
         PRIVATE ${DEPENDENCIES}
         PRIVATE ${CMAKE_BINARY_DIR}/libjpeg-turbo/lib/libturbojpeg.a
     )
-endif()    
+endif()
 
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "Library")
 

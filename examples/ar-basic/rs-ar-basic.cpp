@@ -81,7 +81,7 @@ int main(int argc, char * argv[]) try
     // Create the vertices of a simple virtual object.
     // This virtual object is 4 points in 3D space that describe 3 XYZ 20cm long axes.
     // These vertices are relative to the object's own coordinate system.
-    const float length = 0.20;
+    const float length = 0.20f;
     const object virtual_object = {{
         { 0, 0, 0 },      // origin
         { length, 0, 0 }, // X
@@ -139,7 +139,7 @@ int main(int argc, char * argv[]) try
         for (size_t i = 1; i < object_in_sensor.size(); ++i)
         {
             // Discretize the virtual object line into smaller 1cm long segments
-            std::vector<point3d> points_in_sensor = raster_line(object_in_sensor[0], object_in_sensor[i], 0.01);
+            std::vector<point3d> points_in_sensor = raster_line(object_in_sensor[0], object_in_sensor[i], 0.01f);
             std::vector<pixel> projected_line;
             projected_line.reserve(points_in_sensor.size());
             for (auto& point : points_in_sensor)
@@ -153,11 +153,11 @@ int main(int argc, char * argv[]) try
                 }
             }
             // Display the line in the image
-            render_line(projected_line, i);
+            render_line(projected_line, static_cast<int>(i));
         }
 
         // Display text in the image
-        render_text(app.height(), "Press spacebar to reset the pose of the virtual object. Press ESC to exit");
+        render_text(static_cast<int>(app.height()), "Press spacebar to reset the pose of the virtual object. Press ESC to exit");
 
         // Check if some key is pressed
         switch (key_watcher.get_key())
@@ -289,7 +289,7 @@ std::vector<point3d> raster_line(const point3d& a, const point3d& b, float step)
 {
     rs2_vector direction = { b.x() - a.x(), b.y() - a.y(), b.z() - a.z() };
     float distance = std::sqrt(direction.x*direction.x + direction.y*direction.y + direction.z*direction.z);
-    int npoints = distance / step + 1;
+    int npoints = static_cast<int>(distance / step + 1);
 
     std::vector<point3d> points;
     if (npoints > 0)

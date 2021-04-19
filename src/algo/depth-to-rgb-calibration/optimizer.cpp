@@ -21,7 +21,7 @@ namespace
     {
         std::vector<double> res( image1.size(), 0 );
 
-        for( auto i = 0; i < image1.size(); i++ )
+        for(size_t i = 0; i < image1.size(); i++ )
         {
             res[i] = sqrt( pow( image1[i], 2 ) + pow( image2[i], 2 ) );
         }
@@ -50,7 +50,7 @@ namespace
     {
         std::vector<double> res(image.size(), 0);
 
-        for (auto i = 0; i < image_height - mask_height + 1; i++)
+        for (size_t i = 0; i < image_height - mask_height + 1; i++)
         {
             for (size_t j = 0; j < image_width - mask_width + 1; j++)
             {
@@ -147,7 +147,7 @@ static std::vector< double > get_direction_deg(
 {
     std::vector<double> res( gradient_x.size(), deg_none );
 
-    for( auto i = 0; i < gradient_x.size(); i++ )
+    for(size_t i = 0; i < gradient_x.size(); i++ )
     {
         int closest = -1;
         auto angle = atan2( gradient_y[i], gradient_x[i] )* 180.f / M_PI;
@@ -166,7 +166,7 @@ static std::vector< double > get_direction_deg2(
 {
     std::vector<double> res(gradient_x.size(), deg_none);
 
-    for (auto i = 0; i < gradient_x.size(); i++)
+    for (size_t i = 0; i < gradient_x.size(); i++)
     {
         int closest = -1;
         auto angle = atan2(gradient_y[i], gradient_x[i])*180.f  / M_PI;
@@ -237,15 +237,15 @@ std::pair< int, int > get_next_index(
 void zero_margin( std::vector< double > & gradient, size_t margin, size_t width, size_t height )
 {
     auto it = gradient.begin();
-    for( auto m = 0; m < margin; ++m )
+    for(size_t m = 0; m < margin; ++m )
     {
-        for( auto i = 0; i < width; i++ )
+        for(size_t i = 0; i < width; i++ )
         {
             // zero mask of 2nd row, and row before the last
             *( it + m * width + i ) = 0;
             *( it + width * ( height - m - 1 ) + i ) = 0;
         }
-        for( auto i = 0; i < height; i++ )
+        for(size_t i = 0; i < height; i++ )
         {
             // zero mask of 2nd column, and column before the last
             *( it + i * width + m ) = 0;
@@ -267,7 +267,7 @@ void sample_by_mask( std::vector< T > & filtered,
     //%    I = I';
     //%    values = I(binMask');
     //end
-    for( auto x = 0; x < origin.size(); ++x )
+    for(size_t x = 0; x < origin.size(); ++x )
         if( valid_edge_by_ir[x] )
             filtered.push_back( origin[x] );
 }
@@ -280,9 +280,9 @@ void depth_filter( std::vector< T > & filtered,
                    size_t const height )
 {
     // origin and valid_edge_by_ir are of same size
-    for( auto j = 0; j < width; j++ )
+    for(size_t j = 0; j < width; j++ )
     {
-        for( auto i = 0; i < height; i++ )
+        for(size_t i = 0; i < height; i++ )
         {
             auto idx = i * width + j;
             if( valid_edge_by_ir[idx] )
@@ -299,12 +299,12 @@ void grid_xy(
     size_t width,
     size_t height)
 {
-    for (auto i = 1; i <= height; i++)
+    for (size_t i = 1; i <= height; i++)
     {
-        for (auto j = 1; j <= width; j++)
+        for (size_t j = 1; j <= width; j++)
         {
-            gridx.push_back(j);
-            gridy.push_back(i);
+            gridx.push_back( double( j ) );
+            gridy.push_back( double( i ) );
         }
     }
 }
@@ -327,9 +327,9 @@ std::vector< double > interpolation( std::vector< T > const & grid_points,
         loc_reg_x[i] = x[i].begin();
         loc_reg_y[i] = y[i].begin();
     }
-    for (auto i = 0; i < valid_size; i++)
+    for (size_t i = 0; i < valid_size; i++)
     {
-        for (auto k = 0; k < dim; k++)
+        for (size_t k = 0; k < dim; k++)
         {
             auto idx = *(loc_reg_x[k] + i) - 1;
             auto idy = *(loc_reg_y[k] + i) - 1;
@@ -344,7 +344,7 @@ std::vector<uint8_t> is_suppressed(std::vector<double> const & local_edges, size
 {
     std::vector<uint8_t> is_supressed;
     auto loc_edg_it = local_edges.begin();
-    for (auto i = 0; i < valid_size; i++)
+    for (size_t i = 0; i < valid_size; i++)
     {
         //isSupressed = localEdges(:,3) >= localEdges(:,2) & localEdges(:,3) >= localEdges(:,4);
         auto vec2 = *(loc_edg_it + 1);
@@ -365,7 +365,7 @@ static std::vector< double > depth_mean( std::vector< double > const & local_x,
     size_t size = local_x.size() / 2;
     auto itx = local_x.begin();
     auto ity = local_y.begin();
-    for (auto i = 0; i < size; i++, ity += 2, itx += 2)
+    for (size_t i = 0; i < size; i++, ity += 2, itx += 2)
     {
         double valy = (*ity + *(ity + 1)) / 2;
         double valx = (*itx + *(itx + 1)) / 2;
@@ -384,7 +384,7 @@ static std::vector< double > sum_gradient_depth( std::vector< double > const & g
     res.reserve( size );
     auto it_dir = direction_per_pixel.begin();
     auto it_grad = gradient.begin();
-    for (auto i = 0; i < size; i++, it_dir+=2, it_grad+=2)
+    for (size_t i = 0; i < size; i++, it_dir+=2, it_grad+=2)
     {
         // normalize : res = val/sqrt(row_sum)
         auto rorm_dir1 = *it_dir / sqrt(abs(*it_dir) + abs(*(it_dir + 1)));
@@ -407,7 +407,7 @@ std::vector< byte > find_valid_depth_edges( std::vector< double > const & grad_i
     //%validEdgePixels = zGradInDirection > params.gradZTh & isSupressed & zValuesForSubEdges > 0;
     if (p.use_enhanced_preprocessing)
     {
-        for (int i = 0; i < grad_in_direction.size(); i++)
+        for (size_t i = 0; i < grad_in_direction.size(); i++)
         {
             bool cond1 = (grad_in_direction[i] > p.grad_z_low_th  && ir_local_edges[i * 4 + 2] > p.grad_ir_high_th) ||
                          (grad_in_direction[i] > p.grad_z_high_th && ir_local_edges[i * 4 + 2] > p.grad_ir_low_th);
@@ -419,7 +419,7 @@ std::vector< byte > find_valid_depth_edges( std::vector< double > const & grad_i
     }
     else
     {
-        for (int i = 0; i < grad_in_direction.size(); i++)
+        for (size_t i = 0; i < grad_in_direction.size(); i++)
         {
             bool cond1 = grad_in_direction[i] > p.grad_z_threshold;
             bool cond2 = is_supressed[i];
@@ -438,7 +438,7 @@ static std::vector< double > find_local_values_min( std::vector< double > const 
     size_t size = local_values.size() / 4;
     res.reserve( size );
     auto it = local_values.begin();
-    for (auto i = 0; i < size; i++)
+    for (size_t i = 0; i < size; i++)
     {
         auto val1 = *it;
         auto val2 = *(it + 1);
@@ -548,7 +548,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     auto ity = valid_location_rc_y.begin();
 
     std::vector< double > valid_location_rc;
-    for (auto i = 0; i < valid_location_rc_x.size(); i++)
+    for (size_t i = 0; i < valid_location_rc_x.size(); i++)
     {
         auto x = *(itx + i);
         auto y = *(ity + i);
@@ -585,7 +585,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     std::vector< double > direction_per_pixel;
     std::vector< double > direction_per_pixel_x;  //used later when finding valid direction per pixel
 
-    for( auto i = 0; i < dirs.size(); i++ )
+    for(size_t i = 0; i < dirs.size(); i++ )
     {
         int idx = dirs[i];
         direction_per_pixel.push_back(directions[idx][0]);
@@ -601,7 +601,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     for( auto k = 0; k < 4; k++ )
     {
         local_region[k].reserve( direction_per_pixel.size() );
-        for( auto i = 0; i < direction_per_pixel.size(); i++ )
+        for(size_t i = 0; i < direction_per_pixel.size(); i++ )
         {
             double val = *( loc_it + i ) + *( dir_pp_it + i ) * vec[k];
             local_region[k].push_back( val );
@@ -613,7 +613,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     {
         local_region_x[k].reserve( 2 * valid_location_rc_x.size() );
         local_region_y[k].reserve( 2 * valid_location_rc_x.size() );
-        for( auto i = 0; i < 2 * valid_location_rc_x.size(); i++ )
+        for(size_t i = 0; i < 2 * valid_location_rc_x.size(); i++ )
         {
             local_region_y[k].push_back( *( local_region[k].begin() + i ) );
             i++;
@@ -653,7 +653,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     std::vector< double > local_rc_subpixel;  // debug only
     std::vector< double > edge_sub_pixel;     // debug only
 
-    for( auto i = 0; i < valid_location_rc_x.size(); i++ )
+    for(size_t i = 0; i < valid_location_rc_x.size(); i++ )
     {
         double vec2 = *(loc_edg_it + 1);
         double vec3 = *(loc_edg_it + 2);
@@ -814,7 +814,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
                 std::vector< double > valid_edge_sub_pixel;
                 if( _debug_mode )
                     valid_edge_sub_pixel.reserve( valid_edge_sub_pixel_x.size() );
-                for( auto i = 0; i < valid_edge_sub_pixel_x.size(); i++ )
+                for(size_t i = 0; i < valid_edge_sub_pixel_x.size(); i++ )
                 {
                     if( _debug_mode )
                     {
@@ -831,7 +831,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
             }
 
             vertices_all.reserve( valid_edge_sub_pixel_x.size() );
-            for( auto i = 0; i < sub_points.size(); i += 3 )
+            for(size_t i = 0; i < sub_points.size(); i += 3 )
             {
                 //% vertices = subPoints * pinv(params.Kdepth)' .* zValuesForSubEdges /
                 //params.zMaxSubMM;
@@ -857,7 +857,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
         std::vector< double2 > uvmap = get_texture_map( vertices_all,
                                                         _original_calibration,
                                                         _original_calibration.calc_p_mat() );
-        for( auto i = 0; i < uvmap.size(); i++ )
+        for(size_t i = 0; i < uvmap.size(); i++ )
         {
             //%isInside = xy(:,1) >= 0 & ...
             //%           xy(:,1) <= res(2) - 1 & ...
@@ -896,7 +896,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
         {
             std::vector< double > edited_ir_directions;
             edited_ir_directions.reserve( dirs.size() );
-            for( auto i = 0; i < dirs.size(); i++ )
+            for(size_t i = 0; i < dirs.size(); i++ )
             {
                 auto val = double( *( dirs.begin() + i ) );
                 val = val + 1;  // +1 to align with matlab
@@ -927,7 +927,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     {
         std::vector< double > valid_weights;
         valid_weights.reserve( is_inside.size() );
-        for( auto i = 0; i < is_inside.size(); i++ )
+        for(size_t i = 0; i < is_inside.size(); i++ )
             valid_weights.push_back( _params.constant_weights );
         depth_filter( _z.weights, valid_weights, is_inside, 1, is_inside.size() );
     }
@@ -946,7 +946,7 @@ void optimizer::set_z_data( std::vector< z_t > && depth_data,
     transform(_z.subpixels_x.begin(), _z.subpixels_x.end(), sub_pixel_x.begin(), [](double x) {return round(x + 1); });
     transform(_z.subpixels_y.begin(), _z.subpixels_y.end(), sub_pixel_y.begin(), [](double x) {return round(x + 1); });
 
-    for (auto i = 0; i < sub_pixel_x.size(); i++)
+    for (size_t i = 0; i < sub_pixel_x.size(); i++)
     {
         auto x = sub_pixel_x[i];
         auto y = sub_pixel_y[i];
@@ -1113,7 +1113,7 @@ std::vector< direction > optimizer::get_direction( std::vector<double> gradient_
 
     std::map<int, direction> angle_dir_map = { {0, deg_0}, {45,deg_45} , {90,deg_90}, {135,deg_135} };
 
-    for( auto i = 0; i < gradient_x.size(); i++ )
+    for(size_t i = 0; i < gradient_x.size(); i++ )
     {
         int closest = -1;
         auto angle = atan2( gradient_y[i], gradient_x[i] )* 180.f / M_PI;
@@ -1136,7 +1136,7 @@ std::vector< direction > optimizer::get_direction2(std::vector<double> gradient_
 
 
 
-    for (auto i = 0; i < gradient_x.size(); i++)
+    for (size_t i = 0; i < gradient_x.size(); i++)
     {
         int closest = -1;
         auto angle = atan2(gradient_y[i], gradient_x[i]) * 180.f / M_PI;
@@ -1234,8 +1234,8 @@ std::vector<double> optimizer::blur_edges(std::vector<double> const & edges, siz
 {
     std::vector<double> res = edges;
 
-    for( auto i = 0; i < image_height; i++ )
-        for( auto j = 0; j < image_width; j++ )
+    for(size_t i = 0; i < image_height; i++ )
+        for(size_t j = 0; j < image_width; j++ )
         {
             if( i == 0 && j == 0 )
                 continue;
@@ -1267,8 +1267,8 @@ std::vector<double> optimizer::blur_edges(std::vector<double> const & edges, siz
                 res[i*image_width + j] = std::max( res[i*image_width + j], (std::max( res[i*image_width + j + 1] * _params.gamma, res[(i + 1)*image_width + j] * _params.gamma )) );
         }
 
-    for( auto i = 0; i < image_height; i++ )
-        for( auto j = 0; j < image_width; j++ )
+    for(size_t i = 0; i < image_height; i++ )
+        for(size_t j = 0; j < image_width; j++ )
             res[i*image_width + j] = _params.alpha * edges[i*image_width + j] + (1 - _params.alpha) * res[i*image_width + j];
     return res;
 }
@@ -1278,7 +1278,7 @@ std::vector< byte > optimizer::get_luminance_from_yuy2( std::vector< yuy_t > con
 {
     std::vector<byte> res( yuy2_imagh.size(), 0 );
     auto yuy2 = (uint8_t*)yuy2_imagh.data();
-    for( auto i = 0; i < res.size(); i++ )
+    for(size_t i = 0; i < res.size(); i++ )
         res[i] = yuy2[i * 2];
 
     return res;
@@ -1290,7 +1290,7 @@ std::vector< uint8_t > optimizer::get_logic_edges( std::vector< double > const &
     auto max = std::max_element( edges.begin(), edges.end() );
     auto thresh = *max * _params.edge_thresh4_logic_lum;
 
-    for( auto i = 0; i < edges.size(); i++ )
+    for(size_t i = 0; i < edges.size(); i++ )
     {
         logic_edges[i] = abs( edges[i] ) > thresh ? 1 : 0;
     }
@@ -1404,7 +1404,7 @@ static p_matrix calc_p_gradients(const z_frame_data & z_data,
     p_matrix sums = { 0 };
     auto sum_of_valids = 0;
 
-    for (auto i = 0; i < coefs.x_coeffs.size(); i++)
+    for (size_t i = 0; i < coefs.x_coeffs.size(); i++)
     {
         if (interp_IDT_x[i] == std::numeric_limits<double>::max() || interp_IDT_y[i] == std::numeric_limits<double>::max())
             continue;
@@ -1456,7 +1456,7 @@ std::pair< std::vector<double2>, std::vector<double>> calc_rc(
         r[2], r[5], r[8], t[2] };
 */
     auto mat = p_mat.vals;
-    for( auto i = 0; i < z_data.vertices.size(); ++i )
+    for(size_t i = 0; i < z_data.vertices.size(); ++i )
     {
         double x = v[i].x;
         double y = v[i].y;

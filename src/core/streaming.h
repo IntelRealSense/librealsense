@@ -31,18 +31,19 @@ namespace librealsense
 
     typedef enum profile_tag
     {
-        PROFILE_TAG_ANY = 0,
         PROFILE_TAG_SUPERSET = 1, // to be included in enable_all
         PROFILE_TAG_DEFAULT = 2,  // to be included in default pipeline start
+        PROFILE_TAG_ANY = 4,      // does not include PROFILE_TAG_DEBUG
+        PROFILE_TAG_DEBUG = 8,    // tag for debug formats
     } profile_tag;
 
     struct tagged_profile
     {
         rs2_stream stream;
         int stream_index;
-        uint32_t width, height;
+        int width, height;
         rs2_format format;
-        uint32_t fps;
+        int fps;
         int tag;
     };
 
@@ -124,7 +125,7 @@ namespace librealsense
     {
         frame_interface* frame;
 
-        frame_interface* operator->()
+        frame_interface* operator->() const
         {
             return frame;
         }
@@ -171,6 +172,15 @@ namespace librealsense
             os << rs2_format_to_string(p->get_format()) << " " << rs2_stream_to_string(p->get_stream_type()) << ", ";
         }
         return os;
+    }
+
+    std::string frame_holder_to_string(const frame_holder & f);
+
+    std::string frame_to_string(const frame_interface & f);
+
+    inline std::ostream& operator<<(std::ostream& out, const frame_interface & f)
+    {
+        return out << frame_to_string(f);
     }
 
     class recommended_proccesing_blocks_interface

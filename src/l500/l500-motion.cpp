@@ -143,7 +143,6 @@ namespace librealsense
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
             [&, mm_correct_opt]() { return std::make_shared<gyroscope_transform>(_mm_calib, mm_correct_opt); }
         );
-
         return hid_ep;
     }
 

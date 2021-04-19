@@ -28,7 +28,9 @@
 #include "updates-model.h"
 #include "calibration-model.h"
 #include "cah-model.h"
-#include "../common/utilities/time/periodic_timer.h"
+#include <utilities/time/periodic_timer.h>
+#include "reflectivity/reflectivity.h"
+#include <utilities/number/stabilized-value.h>
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);
@@ -79,7 +81,7 @@ inline ImVec4 blend(const ImVec4& c, float a)
 
 namespace rs2
 {
-    constexpr const char* server_versions_db_url = "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/rs_versions_db.json";
+    constexpr const char* server_versions_db_url = "https://librealsense.intel.com/Releases/rs_versions_db.json";
     
     void prepare_config_file();
 
@@ -144,6 +146,8 @@ namespace rs2
         {
             static const char* is_3d_view          { "viewer_model.is_3d_view" };
             static const char* ground_truth_r      { "viewer_model.ground_truth_r" };
+            static const char* target_width_r      { "viewer_model.target_width_r" };
+            static const char* target_height_r     { "viewer_model.target_height_r" };
             static const char* continue_with_ui_not_aligned { "viewer_model.continue_with_ui_not_aligned" };
             static const char* continue_with_current_fw{ "viewer_model.continue_with_current_fw" };
             static const char* settings_tab        { "viewer_model.settings_tab" };
@@ -264,19 +268,7 @@ namespace rs2
 
     void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18, ImFont*& monofont);
 
-    // avoid display the following options
-    bool static skip_option(rs2_option opt)
-    {
-        if (opt == RS2_OPTION_STREAM_FILTER ||
-            opt == RS2_OPTION_STREAM_FORMAT_FILTER ||
-            opt == RS2_OPTION_STREAM_INDEX_FILTER ||
-            opt == RS2_OPTION_FRAMES_QUEUE_SIZE ||
-            opt == RS2_OPTION_SENSOR_MODE || 
-            opt == RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH ||
-            opt == RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH)
-            return true;
-        return false;
-    }
+    rs2_sensor_mode resolution_from_width_height(int width, int height);
 
     template<class T>
     void sort_together(std::vector<T>& vec, std::vector<std::string>& names)
@@ -322,7 +314,7 @@ namespace rs2
         void update_supported(std::string& error_message);
         void update_read_only_status(std::string& error_message);
         void update_all_fields(std::string& error_message, notifications_model& model);
-
+        void set_option(rs2_option opt, float value, std::string &error_message);
         bool draw_option(bool update_read_only_options, bool is_streaming,
             std::string& error_message, notifications_model& model);
 
@@ -343,6 +335,7 @@ namespace rs2
         bool is_all_integers() const;
         bool is_enum() const;
         bool is_checkbox() const;
+        bool allow_change(float val, std::string& error_message) const; 
     };
 
     class frame_queues
@@ -559,16 +552,16 @@ namespace rs2
             bool* options_invalidated,
             std::string& error_message);
 
-        subdevice_model(device& dev, std::shared_ptr<sensor> s, std::shared_ptr< atomic_objects_in_frame > objects, std::string& error_message, viewer_model& viewer);
+        subdevice_model(device& dev, std::shared_ptr<sensor> s, std::shared_ptr< atomic_objects_in_frame > objects, std::string& error_message, viewer_model& viewer, bool new_device_connected = true);
         ~subdevice_model();
 
         bool is_there_common_fps() ;
         bool supports_on_chip_calib();
-        bool draw_stream_selection();
+        bool draw_stream_selection(std::string& error_message);
         bool is_selected_combination_supported();
         std::vector<stream_profile> get_selected_profiles();
         std::vector<stream_profile> get_supported_profiles();
-        void stop(viewer_model& viewer);
+        void stop(std::shared_ptr<notifications_model> not_model);
         void play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer>);
         bool is_synchronized_frame(viewer_model& viewer, const frame& f);
         void update(std::string& error_message, notifications_model& model);
@@ -655,7 +648,8 @@ namespace rs2
         int next_option = 0;
         std::vector<rs2_option> supported_options;
         bool streaming = false;
-
+        bool allow_change_resolution_while_streaming = false;
+        bool allow_change_fps_while_streaming = false;
         rect normalized_zoom{0, 0, 1, 1};
         rect roi_rect;
         bool auto_exposure_enabled = false;
@@ -672,6 +666,7 @@ namespace rs2
 
         region_of_interest algo_roi;
         bool show_algo_roi = false;
+        float roi_percentage;
 
         std::shared_ptr<rs2::colorizer> depth_colorizer;
         std::shared_ptr<rs2::yuy_decoder> yuy2rgb;
@@ -681,13 +676,16 @@ namespace rs2
         std::vector<std::shared_ptr<processing_block_model>> post_processing;
         bool post_processing_enabled = true;
         std::vector<std::shared_ptr<processing_block_model>> const_effects;
+
+    private:
+        const float SHORT_RANGE_MIN_DISTANCE = 0.05f; // 5 cm
+        const float SHORT_RANGE_MAX_DISTANCE = 4.0f;  // 4 meters
     };
 
     class viewer_model;
 
     void outline_rect(const rect& r);
     void draw_rect(const rect& r, int line_width = 1);
-
 
     class stream_model
     {
@@ -700,8 +698,7 @@ namespace rs2
         rect get_normalized_zoom(const rect& stream_rect, const mouse_info& g, bool is_middle_clicked, float zoom_val);
 
         bool is_stream_alive();
-
-        void show_stream_footer(ImFont* font, const rect& stream_rect,const mouse_info& mouse, viewer_model& viewer);
+        void show_stream_footer(ImFont* font, const rect &stream_rect, const mouse_info& mouse, const std::map<int, stream_model> &streams, viewer_model& viewer);
         void show_stream_header(ImFont* font, const rect& stream_rect, viewer_model& viewer);
         void show_stream_imu(ImFont* font, const rect& stream_rect, const rs2_vector& axis, const mouse_info& mouse);
         void show_stream_pose(ImFont* font, const rect& stream_rect, const rs2_pose& pose_data, 
@@ -709,7 +706,8 @@ namespace rs2
 
         void snapshot_frame(const char* filename,viewer_model& viewer) const;
 
-        void begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p);
+        void begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p, const viewer_model& viewer);
+        bool draw_reflectivity(int x, int y, rs2::depth_sensor ds, const std::map<int, stream_model> &streams, std::stringstream &ss, bool same_line = false);
         rect layout;
         std::shared_ptr<texture_buffer> texture;
         float2 size;
@@ -725,6 +723,7 @@ namespace rs2
         fps_calc            fps, view_fps;
         int                 count = 0;
         rect                roi_display_rect{};
+        float               roi_percentage = 0.4f;
         frame_metadata      frame_md;
         bool                capturing_roi       = false;    // active modification of roi
         std::shared_ptr<subdevice_model> dev;
@@ -742,6 +741,13 @@ namespace rs2
         bool show_metadata = false;
 
         animated<float> _info_height{ 0.f };
+        int _prev_mouse_pos_x = 0;
+        int _prev_mouse_pos_y = 0;
+
+    private:
+        std::unique_ptr< reflectivity > _reflectivity; 
+        utilities::number::stabilized_value<float> _stabilized_reflectivity;
+
     };
 
     std::pair<std::string, std::string> get_device_name(const device& dev);
@@ -754,14 +760,15 @@ namespace rs2
         typedef std::function<void(std::function<void()> load)> json_loading_func;
 
         void reset();
-        explicit device_model(device& dev, std::string& error_message, viewer_model& viewer, bool allow_remove=true);
+        explicit device_model(device& dev, std::string& error_message, viewer_model& viewer, bool new_device_connected = true, bool allow_remove=true);
         ~device_model();
         void start_recording(const std::string& path, std::string& error_message);
         void stop_recording(viewer_model& viewer);
         void pause_record();
         void resume_record();
-
+        
         void refresh_notifications(viewer_model& viewer);
+        void check_for_bundled_fw_update(const rs2::context& ctx, std::shared_ptr<notifications_model> not_model);
 
         int draw_playback_panel(ux_window& window, ImFont* font, viewer_model& view);
         bool draw_advanced_controls(viewer_model& view, ux_window& window, std::string& error_message);
@@ -778,7 +785,7 @@ namespace rs2
         void begin_update(std::vector<uint8_t> data,
             viewer_model& viewer, std::string& error_message);
         void begin_update_unsigned(viewer_model& viewer, std::string& error_message);
-        void check_for_device_updates(rs2::context& ctx, std::shared_ptr<updates_model> updates);
+        void check_for_device_updates(viewer_model& viewer);
 
 
         std::shared_ptr< atomic_objects_in_frame > get_detected_objects() const { return _detected_objects; }
@@ -844,7 +851,14 @@ namespace rs2
 
         void load_viewer_configurations(const std::string& json_str);
         void save_viewer_configurations(std::ofstream& outfile, nlohmann::json& j);
+        void handle_online_sw_update(
+            std::shared_ptr < notifications_model > nm,
+            std::shared_ptr< sw_update::dev_updates_profile::update_profile > update_profile );
 
+        bool handle_online_fw_update(
+            const context & ctx,
+            std::shared_ptr< notifications_model > nm,
+            std::shared_ptr< sw_update::dev_updates_profile::update_profile > update_profile );
 
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;

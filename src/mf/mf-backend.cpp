@@ -24,7 +24,15 @@ namespace librealsense
     {
         wmf_backend::wmf_backend()
         {
+            // In applications that have COM initializations on other threads using
+            // COINIT_APARTMENTTHREADED (like the Qt framework, for example), using
+            // COINIT_MULTITHREADED can lead to a deadlock inside COM functions.
+#ifdef COM_MULTITHREADED
             CoInitializeEx(nullptr, COINIT_MULTITHREADED); // when using COINIT_APARTMENTTHREADED, calling _pISensor->SetEventSink(NULL) to stop sensor can take several seconds
+#else
+            CoInitializeEx( nullptr, COINIT_APARTMENTTHREADED ); // Apartment model
+#endif
+
             MFStartup(MF_VERSION, MFSTARTUP_NOSOCKET);
         }
 

@@ -20,7 +20,7 @@ const colorizer = new rs2.Colorizer();
 const pipeline = new rs2.Pipeline();
 
 // Start the camera
-pipeline.start();
+pipeline.start(pipeline.autoConfig);
 
 while (! win.shouldWindowClose()) {
   const frameset = pipeline.waitForFrames();

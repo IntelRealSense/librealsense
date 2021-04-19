@@ -31,12 +31,14 @@ void init_c_files(py::module &m) {
     BIND_ENUM(m, rs2_format, RS2_FORMAT_COUNT, "A stream's format identifies how binary data is encoded within a frame.")
     BIND_ENUM(m, rs2_timestamp_domain, RS2_TIMESTAMP_DOMAIN_COUNT, "Specifies the clock in relation to which the frame timestamp was measured.")
     BIND_ENUM(m, rs2_frame_metadata_value, RS2_FRAME_METADATA_COUNT, "Per-Frame-Metadata is the set of read-only properties that might be exposed for each individual frame.")
-    BIND_ENUM(m, rs2_option, RS2_OPTION_COUNT, "Defines general configuration controls. These can generally be mapped to camera UVC controls, and can be set / queried at any time unless stated otherwise.")
-    // Force binding of ambient light deprecated option (replaced by digital gain option) 
-    py_rs2_option.value("ambient_light", RS2_OPTION_AMBIENT_LIGHT);
+    BIND_ENUM(m, rs2_calib_target_type, RS2_CALIB_TARGET_COUNT, "Calibration target type.")
 
-    // rs2_sr300_visual_preset
-    // rs2_rs400_visual_preset
+    BIND_ENUM(m, rs2_option, RS2_OPTION_COUNT, "Defines general configuration controls. These can generally be mapped to camera UVC controls, and can be set / queried at any time unless stated otherwise.")
+    // Force binding of deprecated (renamed) options that we still want to expose for backwards compatibility
+    py_rs2_option.value("ambient_light", RS2_OPTION_AMBIENT_LIGHT);
+    py_rs2_option.value( "lld_temperature", RS2_OPTION_LLD_TEMPERATURE );
+
+    BIND_ENUM(m, rs2_l500_visual_preset, RS2_L500_VISUAL_PRESET_COUNT, "For L500 devices: provides optimized settings (presets) for specific types of usage.")
     BIND_ENUM(m, rs2_playback_status, RS2_PLAYBACK_STATUS_COUNT, "") // No docstring in C++
     BIND_ENUM(m, rs2_calibration_type, RS2_CALIBRATION_TYPE_COUNT, "Calibration type for use in device_calibration")
     BIND_ENUM_CUSTOM(m, rs2_calibration_status, RS2_CALIBRATION_STATUS_FIRST, RS2_CALIBRATION_STATUS_LAST, "Calibration callback status for use in device_calibration.trigger_device_calibration")

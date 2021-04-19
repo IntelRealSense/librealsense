@@ -398,10 +398,11 @@ return __p.invoke(func);\
 #define NOEXCEPT_RETURN(R, ...) catch(...) { std::ostringstream ss; librealsense::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rs2_error* e; librealsense::translate_exception(__FUNCTION__, ss.str(), &e); LOG_WARNING(rs2_get_error_message(e)); rs2_free_error(e); return R; }
 #define HANDLE_EXCEPTIONS_AND_RETURN(R, ...) catch(...) { std::ostringstream ss; librealsense::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); librealsense::translate_exception(__FUNCTION__, ss.str(), error); return R; }
 #define NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(R) catch(...) { librealsense::translate_exception(__FUNCTION__, "", error); return R; }
+#define NOARGS_HANDLE_EXCEPTIONS_AND_RETURN_VOID() catch(...) { librealsense::translate_exception(__FUNCTION__, "", error); }
 
 #endif
 
-
+    #define VALIDATE_FIXED_SIZE(ARG, SIZE) if((ARG) != (SIZE)) { std::ostringstream ss; ss << "Unsupported size provided { " << ARG << " }," " expecting { " << SIZE << " }"; throw librealsense::invalid_value_exception(ss.str()); }
     #define VALIDATE_NOT_NULL(ARG) if(!(ARG)) throw std::runtime_error("null pointer passed for argument \"" #ARG "\"");
     #define VALIDATE_ENUM(ARG) if(!librealsense::is_valid(ARG)) { std::ostringstream ss; ss << "invalid enum value for argument \"" #ARG "\""; throw librealsense::invalid_value_exception(ss.str()); }
     #define VALIDATE_OPTION(OBJ, OPT_ID) if(!OBJ->options->supports_option(OPT_ID)) { std::ostringstream ss; ss << "object doesn't support option #" << std::to_string(OPT_ID); throw librealsense::invalid_value_exception(ss.str()); }

@@ -84,7 +84,7 @@ namespace librealsense
         // with frame n as basis
         if (_framesets.size() == depth_seq_id)
         {
-            _framesets[depth_seq_id] = fs;
+            _framesets[(int)depth_seq_id] = fs;
         }
 
         // discard merged frame if not relevant

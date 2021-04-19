@@ -586,8 +586,8 @@ namespace ivcam2 {
             if( stdOut != NULL && stdOut != INVALID_HANDLE_VALUE )
             {
                 DWORD written = 0;
-                WriteConsoleA( stdOut, s.c_str(), (DWORD)s.length(), &written, NULL );
-                WriteConsoleA( stdOut, "\n\r", 2, &written, NULL );
+                WriteFile( stdOut, s.c_str(), (DWORD)s.length(), &written, NULL );
+                WriteFile( stdOut, "\n", 1, &written, NULL );
             }
 #else
             std::cout << s << std::endl;
@@ -1236,11 +1236,7 @@ namespace ivcam2 {
 
     double ac_trigger::read_temperature()
     {
-        auto hwm = _hwm.lock();
-        if( ! hwm )
-            throw std::runtime_error( "HW monitor is inaccessible - stopping algo" );
-
-        return _dev.get_color_sensor()->read_temperature();
+        return _dev.get_temperatures().HUM_temperature;
     }
 
 
@@ -1264,6 +1260,25 @@ namespace ivcam2 {
         }
 
         std::string invalid_reason;
+
+        auto alt_ir_is_on = false;
+        try
+        {
+            auto & depth_sensor = _dev.get_depth_sensor();
+            alt_ir_is_on = depth_sensor.supports_option( RS2_OPTION_ALTERNATE_IR )
+                        && depth_sensor.get_option( RS2_OPTION_ALTERNATE_IR ).query() == 1.f;
+        }
+        catch( std::exception const & e )
+        {
+            AC_LOG( DEBUG,
+                    std::string( to_string() << "Error while checking alternate IR option: " << e.what() ) );
+        }
+        if( alt_ir_is_on )
+        {
+            if( ! invalid_reason.empty() )
+                invalid_reason += ", ";
+            invalid_reason += to_string() << "alternate IR is on";
+        }
 
         _temp = read_temperature();
 

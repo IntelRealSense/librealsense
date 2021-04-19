@@ -21,6 +21,10 @@ add_executable(rs-face-vino
     ${ELPP_FILES}
 )
 
+if(OPENVINO2019)
+	target_compile_definitions(rs-face-vino PRIVATE OPENVINO2019)
+endif()
+
 source_group("OpenVINO" FILES ${OPENVINO_FILES})
 source_group("EasyLogging++" FILES ${ELPP_FILES})
 

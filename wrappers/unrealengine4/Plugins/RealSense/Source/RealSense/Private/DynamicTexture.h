@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Texture2DResource.h"
+
 struct FTextureUpdateData
 {
 	class FDynamicTexture* Context;

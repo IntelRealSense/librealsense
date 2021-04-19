@@ -6,14 +6,13 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.v7.app.AppCompatActivity;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Pair;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.widget.RadioButton;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -28,7 +27,6 @@ import com.intel.realsense.librealsense.RsContext;
 import com.intel.realsense.librealsense.Sensor;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class PreviewActivity extends AppCompatActivity {

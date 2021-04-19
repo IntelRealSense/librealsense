@@ -16,6 +16,7 @@
 #include "proc/decimation-filter.h"
 #include "proc/depth-decompress.h"
 #include "global_timestamp_reader.h"
+#include "device-calibration.h"
 
 namespace librealsense
 {
@@ -120,9 +121,11 @@ namespace librealsense
     void sensor_base::register_metadata(rs2_frame_metadata_value metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const
     {
         if (_metadata_parsers.get()->end() != _metadata_parsers.get()->find(metadata))
-            throw invalid_value_exception(to_string() << "Metadata attribute parser for " << rs2_frame_metadata_to_string(metadata)
-                << " is already defined");
-
+        {
+            std::string metadata_type_str(rs2_frame_metadata_to_string(metadata));
+            std::string metadata_found_str = "Metadata attribute parser for " + metadata_type_str + " was previously defined";
+            LOG_DEBUG(metadata_found_str.c_str());
+        }
         _metadata_parsers.get()->insert(std::pair<rs2_frame_metadata_value, std::shared_ptr<md_attribute_parser_base>>(metadata, metadata_parser));
     }
 
@@ -138,34 +141,20 @@ namespace librealsense
 
     rs2_format sensor_base::fourcc_to_rs2_format(uint32_t fourcc_format) const
     {
-        rs2_format f = RS2_FORMAT_ANY;
+        auto it = _fourcc_to_rs2_format->find( fourcc_format );
+        if( it != _fourcc_to_rs2_format->end() )
+            return it->second;
 
-        std::find_if(_fourcc_to_rs2_format->begin(), _fourcc_to_rs2_format->end(), [&fourcc_format, &f](const std::pair<uint32_t, rs2_format>& p) {
-            if (p.first == fourcc_format)
-            {
-                f = p.second;
-                return true;
-            }
-            return false;
-        });
-
-        return f;
+        return RS2_FORMAT_ANY;
     }
 
     rs2_stream sensor_base::fourcc_to_rs2_stream(uint32_t fourcc_format) const
     {
-        rs2_stream s = RS2_STREAM_ANY;
+        auto it = _fourcc_to_rs2_stream->find( fourcc_format );
+        if( it != _fourcc_to_rs2_stream->end() )
+            return it->second;
 
-        std::find_if(_fourcc_to_rs2_stream->begin(), _fourcc_to_rs2_stream->end(), [&fourcc_format, &s](const std::pair<uint32_t, rs2_stream>& p) {
-            if (p.first == fourcc_format)
-            {
-                s = p.second;
-                return true;
-            }
-            return false;
-        });
-
-        return s;
+        return RS2_STREAM_ANY;
     }
 
     void sensor_base::raise_on_before_streaming_changes(bool streaming)
@@ -190,17 +179,21 @@ namespace librealsense
         _source_owner = owner;
     }
 
-    stream_profiles sensor_base::get_stream_profiles(int tag) const
+    stream_profiles sensor_base::get_stream_profiles( int tag ) const
     {
-        if (tag == profile_tag::PROFILE_TAG_ANY)
-            return *_profiles;
-
         stream_profiles results;
-        for (auto p : *_profiles)
+        bool const need_debug = tag & profile_tag::PROFILE_TAG_DEBUG;
+        bool const need_any = tag & profile_tag::PROFILE_TAG_ANY;
+        for( auto p : *_profiles )
         {
             auto curr_tag = p->get_tag();
-            if (curr_tag & tag)
-                results.push_back(p);
+            if( ! need_debug && ( curr_tag & profile_tag::PROFILE_TAG_DEBUG ) )
+                continue;
+
+            if( curr_tag & tag || need_any )
+            {
+                results.push_back( p );
+            }
         }
 
         return results;
@@ -262,7 +255,7 @@ namespace librealsense
             last_timestamp,
             last_frame_number,
             false,
-            fo.frame_size);
+            (uint32_t)fo.frame_size );
         fr->additional_data = additional_data;
 
         // update additional data
@@ -355,6 +348,10 @@ namespace librealsense
                     int height = vsp ? vsp->get_height() : 0;
 
                     frame_holder fh = _source.alloc_frame(stream_to_frame_types(req_profile_base->get_stream_type()), width * height * bpp / 8, fr->additional_data, requires_processing);
+                    auto diff = environment::get_instance().get_time_service()->get_time() - system_time;
+                    if (diff >10 )
+                        LOG_DEBUG("!! Frame allocation took " << diff << " msec");
+
                     if (fh.frame)
                     {
                         memcpy((void*)fh->get_frame_data(), fr->data.data(), sizeof(byte)*fr->data.size());
@@ -369,6 +366,9 @@ namespace librealsense
                         return;
                     }
 
+                    diff = environment::get_instance().get_time_service()->get_time() - system_time;
+                    if (diff >10 )
+                        LOG_DEBUG("!! Frame memcpy took " << diff << " msec");
                     if (!requires_processing)
                     {
                         fh->attach_continuation(std::move(release_and_enqueue));
@@ -500,17 +500,46 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_power_lock);
         if (_user_count.fetch_add(1) == 0)
         {
-            _device->set_power_state(platform::D0);
-            for (auto&& xu : _xus) _device->init_xu(xu);
+            try
+            {
+                _device->set_power_state( platform::D0 );
+                for( auto && xu : _xus )
+                    _device->init_xu( xu );
+            }
+            catch( std::exception const & e )
+            {
+                _user_count.fetch_add( -1 );
+                LOG_ERROR( "acquire_power failed: " << e.what() );
+                throw;
+            }
+            catch( ... )
+            {
+                _user_count.fetch_add( -1 );
+                LOG_ERROR( "acquire_power failed" );
+                throw;
+            }
         }
     }
 
     void uvc_sensor::release_power()
     {
-        std::lock_guard<std::mutex> lock(_power_lock);
-        if (_user_count.fetch_add(-1) == 1)
+        std::lock_guard< std::mutex > lock( _power_lock );
+        if( _user_count.fetch_add( -1 ) == 1 )
         {
-            _device->set_power_state(platform::D3);
+            try
+            {
+                _device->set_power_state( platform::D3 );
+            }
+            catch( std::exception const & e )
+            {
+                // TODO may need to change the user-count?
+                LOG_ERROR( "release_power failed: " << e.what() );
+            }
+            catch( ... )
+            {
+                // TODO may need to change the user-count?
+                LOG_ERROR( "release_power failed" );
+            }
         }
     }
 
@@ -519,7 +548,6 @@ namespace librealsense
         std::unordered_set<std::shared_ptr<video_stream_profile>> profiles;
         power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
 
-        if (_uvc_profiles.empty()) {}
         _uvc_profiles = _device->get_profiles();
 
         for (auto&& p : _uvc_profiles)
@@ -611,26 +639,6 @@ namespace librealsense
     void uvc_sensor::register_pu(rs2_option id)
     {
         register_option(id, std::make_shared<uvc_pu_option>(*this, id));
-    }
-
-    void uvc_sensor::try_register_pu(rs2_option id)
-    {
-        auto opt = std::make_shared<uvc_pu_option>(*this, id);
-        try
-        {
-            auto range = opt->get_range();
-            if (range.max <= range.min || range.step <= 0 || range.def < range.min || range.def > range.max) return;
-
-            auto val = opt->query();
-            if (val < range.min || val > range.max) return;
-            opt->set(val);
-
-            register_option(id, opt);
-        }
-        catch (...)
-        {
-            LOG_WARNING("Exception was thrown when inspecting " << this->get_info(RS2_CAMERA_INFO_NAME) << " property " << opt->get_description());
-        }
     }
 
     //////////////////////////////////////////////////////
@@ -754,8 +762,10 @@ namespace librealsense
         {
             return static_cast<rs2_stream>(RS2_STREAM_GPIO);
         }
-
+#ifndef __APPLE__
+        // TODO to be refactored/tested
         LOG_ERROR("custom_gpio " << std::to_string(custom_gpio) << " is incorrect!");
+#endif
         return RS2_STREAM_ANY;
     }
 
@@ -1042,11 +1052,55 @@ namespace librealsense
         }
     }
 
+    // Register the option to both raw sensor and synthetic sensor.
     void synthetic_sensor::register_option(rs2_option id, std::shared_ptr<option> option)
     {
-        // Register the option to both raw sensor and synthetic sensor.
         _raw_sensor->register_option(id, option);
         sensor_base::register_option(id, option);
+    }
+
+    // Used in dynamic discovery of supported controls in generic UVC devices
+    bool synthetic_sensor::try_register_option(rs2_option id, std::shared_ptr<option> option)
+    {
+        bool res=false;
+        try
+        {
+            auto range = option->get_range();
+            bool invalid_opt = (range.max < range.min || range.step < 0 || range.def < range.min || range.def > range.max) ||
+                    (range.max == range.min && range.min == range.def && range.def == range.step);
+            bool readonly_opt = ((range.max == range.min ) && (0.f != range.min ) && ( 0.f == range.step));
+
+            if (invalid_opt)
+            {
+                LOG_WARNING(this->get_info(RS2_CAMERA_INFO_NAME) << ": skipping " << rs2_option_to_string(id)
+                            << " control. descriptor: [min/max/step/default]= ["
+                            << range.min << "/" << range.max << "/" << range.step << "/" << range.def << "]");
+                return res;
+            }
+
+            if (readonly_opt)
+            {
+                LOG_INFO(this->get_info(RS2_CAMERA_INFO_NAME) << ": " << rs2_option_to_string(id)
+                        << " control was added as read-only. descriptor: [min/max/step/default]= ["
+                        << range.min << "/" << range.max << "/" << range.step << "/" << range.def << "]");
+            }
+
+            // Check getter only due to options coupling (e.g. Exposure<->AutoExposure)
+            auto val = option->query();
+            if (val < range.min || val > range.max)
+            {
+                LOG_WARNING(this->get_info(RS2_CAMERA_INFO_NAME) << ": Invalid reading for " << rs2_option_to_string(id)
+                            << ", val = " << val << " range [min..max] = [" << range.min << "/" << range.max << "]");
+            }
+
+            register_option(id, option);
+            res = true;
+        }
+        catch (...)
+        {
+            LOG_WARNING("Failed to add " << rs2_option_to_string(id)<< " control for " << this->get_info(RS2_CAMERA_INFO_NAME));
+        }
+        return res;
     }
 
     void synthetic_sensor::unregister_option(rs2_option id)
@@ -1059,6 +1113,12 @@ namespace librealsense
     {
         const auto&& raw_uvc_sensor = As<uvc_sensor, sensor_base>(_raw_sensor);
         register_option(id, std::make_shared<uvc_pu_option>(*raw_uvc_sensor.get(), id));
+    }
+
+    bool synthetic_sensor::try_register_pu(rs2_option id)
+    {
+        const auto&& raw_uvc_sensor = As<uvc_sensor, sensor_base>(_raw_sensor);
+        return try_register_option(id, std::make_shared<uvc_pu_option>(*raw_uvc_sensor.get(), id));
     }
 
     void synthetic_sensor::sort_profiles(stream_profiles* profiles)
@@ -1151,7 +1211,7 @@ namespace librealsense
     stream_profiles synthetic_sensor::init_stream_profiles()
     {
         stream_profiles result_profiles;
-        auto profiles = _raw_sensor->get_stream_profiles();
+        auto profiles = _raw_sensor->get_stream_profiles( PROFILE_TAG_ANY | PROFILE_TAG_DEBUG );
 
         for (auto&& pbf : _pb_factories)
         {
@@ -1231,13 +1291,13 @@ namespace librealsense
         for (auto&& pbf : _pb_factories)
         {
             auto satisfied_req = pbf->find_satisfied_requests(requests, _pbf_supported_profiles[pbf.get()]);
-            satisfied_count = satisfied_req.size();
+            satisfied_count = (int)satisfied_req.size();
             if (satisfied_count > max_satisfied_req
                 || (satisfied_count == max_satisfied_req
                     && pbf->get_source_info().size() < best_source_size))
             {
                 max_satisfied_req = satisfied_count;
-                best_source_size = pbf->get_source_info().size();
+                best_source_size = (int)pbf->get_source_info().size();
                 best_match_processing_block_factory = pbf;
                 best_match_requests = satisfied_req;
             }
@@ -1430,9 +1490,9 @@ namespace librealsense
             auto&& composite = dynamic_cast<composite_frame*>(f.frame);
             if (composite)
             {
-                for (int i = 0; i < composite->get_embedded_frames_count(); i++)
+                for (size_t i = 0; i < composite->get_embedded_frames_count(); i++)
                 {
-                    processed_frames.push_back(composite->get_frame(i));
+                    processed_frames.push_back( composite->get_frame( (int)i ) );
                 }
             }
 

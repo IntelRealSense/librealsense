@@ -1,7 +1,7 @@
 
 # OpenVINO model files are not included in our distribution. Define a function for easy
 # downloading at CMake time:
-set(OPENVINO_MODEL_SRC_URL "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/rs-tests/OpenVINO_data")
+set(OPENVINO_MODEL_SRC_URL "https://librealsense.intel.com/rs-tests/OpenVINO_data")
 function(dl_vino_model filename sha1)
     set(path "${CMAKE_CURRENT_BINARY_DIR}/${filename}")
     if(NOT EXISTS "${path}")

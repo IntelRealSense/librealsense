@@ -107,7 +107,15 @@ namespace rs2
 
     inline float smoothstep(float x, float min, float max)
     {
-        x = clamp((x - min) / (max - min), 0.0, 1.0);
+        if (max == min)
+        {
+            x = clamp((x - min) , 0.0, 1.0);
+        }
+        else
+        {
+            x = clamp((x - min) / (max - min), 0.0, 1.0);
+        }
+        
         return x*x*(3 - 2 * x);
     }
 
@@ -475,6 +483,7 @@ namespace rs2
     template<typename T>
     T normalizeT(const T& in_val, const T& min, const T& max)
     {
+        if (min >= max) return 0;
         return ((in_val - min)/(max - min));
     }
 
@@ -1022,6 +1031,9 @@ namespace rs2
                     }
                     else glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, data);
                     break;
+                case RS2_FORMAT_FG:
+                    glTexImage2D( GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
+                    break;
                 case RS2_FORMAT_XYZ32F:
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, data);
                     break;
@@ -1530,6 +1542,7 @@ namespace rs2
         animated(T def, std::chrono::system_clock::duration duration = std::chrono::milliseconds(200))
             : _duration(duration), _old(def), _new(def)
         {
+            static_assert((std::is_arithmetic<T>::value), "animated class supports arithmetic built-in types only");
             _last_update = std::chrono::system_clock::now();
         }
         animated& operator=(const T& other)
@@ -1549,7 +1562,7 @@ namespace rs2
             auto duration_ms = std::chrono::duration_cast<std::chrono::microseconds>(_duration).count();
             auto t = (float)ms / duration_ms;
             t = std::max(0.f, std::min(rs2::smoothstep(t, 0.f, 1.f), 1.f));
-            return _old * (1.f - t) + _new * t;
+            return static_cast<T>(_old * (1.f - t) + _new * t);
         }
         operator T() const { return get(); }
         T value() const { return _new; }

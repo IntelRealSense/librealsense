@@ -1,14 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 30
     defaultConfig {
         applicationId "com.intel.realsense.camera"
         minSdkVersion 19
-        targetSdkVersion 28
+        targetSdkVersion 30
         versionCode 5
         versionName "0.0.5"
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
     buildTypes {
         release {
@@ -37,24 +37,31 @@ task downloadFirmware() {
     def d4xxFile = new File("$projectDir/src/main/res/raw/fw_d4xx.bin")
     if (!d4xxFile.exists()) {
         println("downloading D4xx fw: " + d4xxFwVersion)
-        new URL('http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/RS4xx/FW/D4XX_FW_Image-' + d4xxFwVersion + '.bin').withInputStream{ i -> d4xxFile.withOutputStream{ it << i }}
+        new URL('https://librealsense.intel.com/Releases/RS4xx/FW/D4XX_FW_Image-' + d4xxFwVersion + '.bin').withInputStream{ i -> d4xxFile.withOutputStream{ it << i }}
+    }
+    
+    def l5xxFwVersion = getFwVersion('L5XX_RECOMMENDED_FIRMWARE_VERSION')
+    def l5xxFile = new File("$projectDir/src/main/res/raw/fw_l5xx.bin")
+    if (!l5xxFile.exists()) {
+        println("downloading L5xx fw: " + l5xxFwVersion)
+        new URL('https://librealsense.intel.com/Releases/L5xx/FW/L5XX_FW_Image-' + l5xxFwVersion + '.bin').withInputStream{ i -> l5xxFile.withOutputStream{ it << i }}
     }
 
     def sr3xxFwVersion = getFwVersion('SR3XX_RECOMMENDED_FIRMWARE_VERSION')
     def sr3xxFile = new File("$projectDir/src/main/res/raw/fw_sr3xx.bin")
     if (!sr3xxFile.exists()) {
         println("downloading SR3xx fw: " + sr3xxFwVersion)
-        new URL('http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/SR300/FW/SR3XX_FW_Image-' + sr3xxFwVersion + '.bin').withInputStream{ i -> sr3xxFile.withOutputStream{ it << i }}
+        new URL('https://librealsense.intel.com/Releases/SR300/FW/SR3XX_FW_Image-' + sr3xxFwVersion + '.bin').withInputStream{ i -> sr3xxFile.withOutputStream{ it << i }}
     }
 }
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation 'com.android.support:appcompat-v7:26.0.0'
-    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
+    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
     testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'com.android.support.test:runner:1.0.2'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
     implementation project(':librealsense')
-    implementation 'com.android.support:design:26.0.0'
+    implementation 'com.google.android.material:material:1.2.1'
 }

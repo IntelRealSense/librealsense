@@ -536,7 +536,7 @@ void compare_scene( std::string const & scene_dir,
 
     camera_params ci = read_camera_params( scene_dir, "camera_params" );
     dsm_params dsm = read_dsm_params( scene_dir, "DSM_params" );
-    ci.dsm_params = dsm.dsm_params;
+    ci.dsm_params = dsm.params;
     ci.cal_info = dsm.regs;
     ci.cal_regs = dsm.algo_calibration_registers;
 

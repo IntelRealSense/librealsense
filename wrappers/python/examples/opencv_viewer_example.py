@@ -12,8 +12,19 @@ import cv2
 # Configure depth and color streams
 pipeline = rs.pipeline()
 config = rs.config()
+
+# Get device product line for setting a supporting resolution
+pipeline_wrapper = rs.pipeline_wrapper(pipeline)
+pipeline_profile = config.resolve(pipeline_wrapper)
+device = pipeline_profile.get_device()
+device_product_line = str(device.get_info(rs.camera_info.product_line))
+
 config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+
+if device_product_line == 'L500':
+    config.enable_stream(rs.stream.color, 960, 540, rs.format.bgr8, 30)
+else:
+    config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
 
 # Start streaming
 pipeline.start(config)
@@ -35,8 +46,15 @@ try:
         # Apply colormap on depth image (image must be converted to 8-bit per pixel first)
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
 
-        # Stack both images horizontally
-        images = np.hstack((color_image, depth_colormap))
+        depth_colormap_dim = depth_colormap.shape
+        color_colormap_dim = color_image.shape
+
+        # If depth and color resolutions are different, resize color image to match depth image for display
+        if depth_colormap_dim != color_colormap_dim:
+            resized_color_image = cv2.resize(color_image, dsize=(depth_colormap_dim[1], depth_colormap_dim[0]), interpolation=cv2.INTER_AREA)
+            images = np.hstack((resized_color_image, depth_colormap))
+        else:
+            images = np.hstack((color_image, depth_colormap))
 
         # Show images
         cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)

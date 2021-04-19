@@ -148,7 +148,7 @@ MAP_FMT_TO_TYPE(RS2_FORMAT_Y8I, uint8_t);
 //MAP_FMT_TO_TYPE(RS2_FORMAT_INZI, );
 MAP_FMT_TO_TYPE(RS2_FORMAT_INVI, uint8_t);
 //MAP_FMT_TO_TYPE(RS2_FORMAT_W10, );
-
+MAP_FMT_TO_TYPE(RS2_FORMAT_FG, uint16_t);
 template <rs2_format FMT> struct itemsize {
     static constexpr size_t func() { return sizeof(typename FmtToType<FMT>::type); }
 };
@@ -186,6 +186,7 @@ template<template<rs2_format> class F>
     case RS2_FORMAT_INZI: return F<RS2_FORMAT_INZI>::func();
     case RS2_FORMAT_INVI: return F<RS2_FORMAT_INVI>::func();
     case RS2_FORMAT_W10: return F<RS2_FORMAT_W10>::func();
+    case RS2_FORMAT_FG: return F<RS2_FORMAT_FG>::func();
     // c++11 standard doesn't allow throw in constexpr function switch case
     case RS2_FORMAT_COUNT: throw std::runtime_error("format.count is not a valid value for arguments of type format!");
     default: return F<RS2_FORMAT_ANY>::func();
@@ -230,6 +231,7 @@ void init_pipeline(py::module &m);
 void init_internal(py::module &m);
 void init_export(py::module &m);
 void init_advanced_mode(py::module &m);
+void init_serializable_device(py::module& m);
 void init_util(py::module &m);
 
 #endif // LIBREALSENSE_PYTHON_HPP

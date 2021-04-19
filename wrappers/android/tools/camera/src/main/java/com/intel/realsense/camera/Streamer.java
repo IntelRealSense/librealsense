@@ -144,7 +144,7 @@ public class Streamer {
             mHandler.post(mStreaming);
             Log.d(TAG, "streaming started successfully");
         } catch (Exception e) {
-            Log.e(TAG, "failed to start streaming");
+            Log.e(TAG, "failed to start streaming: " + e.getMessage());
             mPipeline.close();
             throw e;
         }

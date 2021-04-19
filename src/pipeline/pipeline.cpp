@@ -82,7 +82,8 @@ namespace librealsense
             }
 
             assert(profile);
-            assert(profile->_multistream.get_profiles().size() > 0);
+            if (!profile->_multistream.get_profiles().size())
+                throw librealsense::wrong_api_call_sequence_exception("No streams are selected!");
 
             auto synced_streams_ids = on_start(profile);
 
@@ -132,6 +133,7 @@ namespace librealsense
             {
                 try
                 {
+                    _syncer->stop();
                     _aggregator->stop();
                     auto dev = _active_profile->get_device();
                     if (auto playback = As<librealsense::playback_device>(dev))

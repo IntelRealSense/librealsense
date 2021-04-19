@@ -3,3 +3,4 @@
 
 include(${CMAKE_CURRENT_LIST_DIR}/depth-to-rgb-calibration/CMakeLists.txt)
 include(${CMAKE_CURRENT_LIST_DIR}/thermal-loop/CMakeLists.txt)
+include(${CMAKE_CURRENT_LIST_DIR}/max-usable-range/CMakeLists.txt)

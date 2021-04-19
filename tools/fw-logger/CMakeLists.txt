@@ -12,7 +12,7 @@ if(WIN32 OR ANDROID)
 else()
     target_link_libraries(rs-fw-logger -lpthread ${DEPENDENCIES})
 endif()
-include_directories(rs-fw-logger ../../third-party/tclap/include cpp-fw-logger-helpers)
+include_directories(../../third-party/tclap/include cpp-fw-logger-helpers)
 set_target_properties (rs-fw-logger PROPERTIES
     FOLDER Tools
 )

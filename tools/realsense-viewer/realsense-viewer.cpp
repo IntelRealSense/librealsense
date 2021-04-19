@@ -50,6 +50,12 @@ using namespace rs400;
 
 #define MIN_IP_SIZE 7 //TODO: Ester - update size when host name is supported
 
+void update_viewer_configuration(viewer_model& viewer_model)
+{
+    // Hide options from the Viewer application
+    viewer_model._hidden_options.emplace(RS2_OPTION_ENABLE_IR_REFLECTIVITY);
+}
+
 bool add_remote_device(context& ctx, std::string address)
 {
 #ifdef NETWORK_DEVICE
@@ -112,7 +118,7 @@ void add_playback_device(context& ctx, device_models_list& device_models,
                             {
                                 if (sub->streaming)
                                 {
-                                    sub->stop(viewer_model);
+                                    sub->stop(viewer_model.not_model);
                                 }
                             }
                         }
@@ -284,7 +290,10 @@ bool refresh_devices(std::mutex& m,
 
 int main(int argc, const char** argv) try
 {
+
+#ifdef BUILD_EASYLOGGINGPP
     rs2::log_to_console(RS2_LOG_SEVERITY_WARN);
+#endif
 
     context ctx;
     ux_window window("Intel RealSense Viewer", ctx);
@@ -303,6 +312,8 @@ int main(int argc, const char** argv) try
 
     viewer_model viewer_model(ctx);
 
+    update_viewer_configuration(viewer_model);
+
     std::vector<device> connected_devs;
     std::mutex m;
 
@@ -313,7 +324,7 @@ int main(int argc, const char** argv) try
         {
             if (auto not_model = notifications.lock())
             {
-                not_model->output.add_log(severity, msg.filename(), msg.line_number(), msg.raw());
+                not_model->output.add_log(severity, msg.filename(), (int)(msg.line_number()), msg.raw());
             }
         });
 #endif 
@@ -617,7 +628,7 @@ int main(int argc, const char** argv) try
 
         auto output_rect = rect{ viewer_model.panel_width,
             window.height() - viewer_model.get_output_height(),
-            window.width() - viewer_model.panel_width, viewer_model.get_output_height() };
+            window.width() - viewer_model.panel_width, float(viewer_model.get_output_height()) };
 
         viewer_model.not_model->output.draw(window, output_rect, *device_models);
 
@@ -727,7 +738,7 @@ int main(int argc, const char** argv) try
         for (auto&& sub : device_model->subdevices)
         {
             if (sub->streaming)
-                sub->stop(viewer_model);
+                sub->stop(viewer_model.not_model);
         }
 
     return EXIT_SUCCESS;

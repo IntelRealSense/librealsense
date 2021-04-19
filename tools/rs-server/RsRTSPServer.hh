@@ -29,7 +29,7 @@ public:
     {
 
     protected:
-        RsRTSPClientConnection(RsRTSPServer& t_ourServer, int t_clientSocket, struct sockaddr_in t_clientAddr);
+        RsRTSPClientConnection(RsRTSPServer& t_ourServer, int t_clientSocket, struct sockaddr_storage const& t_clientAddr);
         virtual ~RsRTSPClientConnection();
         virtual void handleCmd_GET_PARAMETER(char const* fullRequestStr);
         virtual void handleCmd_SET_PARAMETER(char const* fullRequestStr);
@@ -67,7 +67,7 @@ public:
     };
 
 protected:
-    virtual ClientConnection* createNewClientConnection(int t_clientSocket, struct sockaddr_in t_clientAddr);
+    virtual ClientConnection* createNewClientConnection(int t_clientSocket, struct sockaddr_storage const& t_clientAddr);
 
 protected:
     virtual ClientSession* createNewClientSession(u_int32_t t_sessionId);

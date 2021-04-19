@@ -4,7 +4,7 @@
 #pragma once
 
 #include <librealsense2/rs_advanced_mode.hpp>
-#include "types.h"
+#include <types.h>
 
 #define TEXT_BUFF_SIZE 1024
 
@@ -102,8 +102,17 @@ inline void slider_int(std::string& error_message, const char* id, T* val, S T::
             }
             else
             {
-                val->*field = static_cast<S>(new_value);
-                to_set = true;
+                if ((new_value > max) || (new_value < min))
+                {
+                    std::stringstream ss;
+                    ss << "New value " << new_value << " must be within [" << min << ", " << max << "] range";
+                    error_message = ss.str();
+                }
+                else
+                {
+                    val->*field = static_cast<S>(new_value);
+                    to_set = true;
+                }
             }
 
             *edit_mode = false;
@@ -158,8 +167,17 @@ inline void slider_float(std::string& error_message, const char* id, T* val, S T
             }
             else
             {
-                val->*field = static_cast<S>(new_value);
-                to_set = true;
+                if ((new_value > max) || (new_value<min))
+                {
+                    std::stringstream ss;
+                    ss << "New value " << new_value << " must be within [" << min << ", " << max << "] range";
+                    error_message = ss.str();
+                }
+                else
+                {
+                    val->*field = static_cast<S>(new_value);
+                    to_set = true;
+                }
             }
 
             *edit_mode = false;

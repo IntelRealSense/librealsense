@@ -198,11 +198,11 @@ struct scene_metadata
         f.read( (char *)&n_valid_pixels, sizeof( n_valid_pixels ) );
         f.read((char *)&n_relevant_pixels, sizeof(n_relevant_pixels));
         f.read( (char *)&n_cycles, sizeof( n_cycles ) );
-        byte b;
-        f.read( (char *)&b, 1 );
-        is_scene_valid = b;
-        f.read( (char *)&b, 1 );
-        is_output_valid = b;
+        char b;
+        f.read( &b, 1 );
+        is_scene_valid = b != 0;
+        f.read( &b, 1 );
+        is_output_valid = b != 0;
         f.close();
     }
 };
@@ -270,7 +270,7 @@ camera_params read_camera_params( std::string const &scene_dir, std::string cons
 
 struct dsm_params
 {
-    rs2_dsm_params dsm_params;
+    rs2_dsm_params params;
     librealsense::algo::depth_to_rgb_calibration::algo_calibration_registers algo_calibration_registers;
     librealsense::algo::depth_to_rgb_calibration::algo_calibration_info regs;
 };
@@ -295,7 +295,6 @@ dsm_params read_dsm_params(std::string const &scene_dir, std::string const &file
     };
 #pragma pack(pop)
 
-    rs2_dsm_params dsm_params;
     librealsense::algo::depth_to_rgb_calibration::algo_calibration_registers algo_calibration_registers;
     algo_calibration algo_calib;
 
@@ -303,13 +302,13 @@ dsm_params read_dsm_params(std::string const &scene_dir, std::string const &file
     std::fstream f = std::fstream(dsmparams, std::ios::in | std::ios::binary );
     if( !f )
         throw std::runtime_error( "failed to read file:\n" + dsmparams);
-    f.read( (char *)&dsm_params, sizeof(rs2_dsm_params) );
-    f.read((char *)&algo_calibration_registers, sizeof(librealsense::algo::depth_to_rgb_calibration::algo_calibration_registers));
-    f.read((char *)&algo_calib, sizeof(algo_calibration));
+    f.read( (char *)&res.params, sizeof(rs2_dsm_params) );
+    f.read( (char *)&algo_calibration_registers,
+            sizeof( librealsense::algo::depth_to_rgb_calibration::algo_calibration_registers ) );
+    f.read( (char *)&algo_calib, sizeof( algo_calibration ) );
 
     f.close();
 
-    res.dsm_params = dsm_params;
     res.algo_calibration_registers = algo_calibration_registers;
 
 

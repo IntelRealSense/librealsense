@@ -1,8 +1,8 @@
 # Unity Wrapper for RealSense SDK 2.0
 
-<p align="center"><img src="http://realsense-hw-public.s3.amazonaws.com/rs-tests/unity_screenshot.PNG" height="400"/></p>
+<p align="center"><img src="https://librealsense.intel.com/rs-tests/unity_screenshot.PNG" height="400"/></p>
 
-> [Download **realsense.unitypackage**](https://github.com/IntelRealSense/librealsense/releases/download/v2.20.0/realsense.unitypackage) and go to `Assets > Scenes > Start Here` to see the home screen above
+> [Download **realsense.unitypackage**](https://github.com/IntelRealSense/librealsense/releases) and go to `Assets > Scenes > Start Here` to see the home screen above
 
 ## Overview
 

@@ -13,7 +13,7 @@
 #include <limits.h>
 #include <atomic>
 #include <functional>
-#include <core/debug.h>
+#include "core/debug.h"
 
 #include "archive.h"
 #include "core/streaming.h"
@@ -197,8 +197,10 @@ namespace librealsense
         ~synthetic_sensor() override;
 
         virtual void register_option(rs2_option id, std::shared_ptr<option> option);
+        virtual bool try_register_option(rs2_option id, std::shared_ptr<option> option);
         void unregister_option(rs2_option id);
         void register_pu(rs2_option id);
+        bool try_register_pu(rs2_option id);
 
         virtual stream_profiles init_stream_profiles() override;
 
@@ -331,7 +333,6 @@ namespace librealsense
         void stop() override;
         void register_xu(platform::extension_unit xu);
         void register_pu(rs2_option id);
-        void try_register_pu(rs2_option id);
 
         std::vector<platform::stream_profile> get_configuration() const { return _internal_config; }
         std::shared_ptr<platform::uvc_device> get_uvc_device() { return _device; }

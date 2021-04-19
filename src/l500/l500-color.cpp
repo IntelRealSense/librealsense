@@ -258,7 +258,8 @@ namespace librealsense
                     intrinsics.coeffs[3] = model.distort.tangential_p2;
                     intrinsics.coeffs[4] = model.distort.radial_k3;
 
-                    intrinsics.model = RS2_DISTORTION_INVERSE_BROWN_CONRADY;
+                    intrinsics.model = l500_distortion;
+
                 }
 
                 return intrinsics;
@@ -266,35 +267,6 @@ namespace librealsense
         }
         throw std::runtime_error( to_string() << "intrinsics for resolution " << width << ","
                                               << height << " don't exist" );
-    }
-
-    double l500_color_sensor::read_temperature() const
-    {
-        auto & hwm = *_owner->_hw_monitor;
-
-        std::vector< byte > res;
-
-        try
-        {
-            res = hwm.send( command{ TEMPERATURES_GET } );
-        }
-        catch( std::exception const & e )
-        {
-            AC_LOG( ERROR,
-                    "Failed to get temperatures; hardware monitor in inaccessible: " << e.what() );
-            return 0.;
-        }
-
-        if( res.size() < sizeof( temperatures ) )  // New temperatures may get added by FW...
-        {
-            AC_LOG( ERROR,
-                    "Failed to get temperatures; result size= "
-                        << res.size() << "; expecting at least " << sizeof( temperatures ) );
-            return 0.;
-        }
-        auto const & ts = *( reinterpret_cast< temperatures * >( res.data() ) );
-        AC_LOG( DEBUG, "HUM temperture is currently " << ts.HUM_temperature << " degrees Celsius" );
-        return ts.HUM_temperature;
     }
 
     rs2_intrinsics normalize( const rs2_intrinsics & intr )
@@ -374,8 +346,9 @@ namespace librealsense
         // The distortion model is not part of the table. The FW assumes it is brown,
         // but in LRS we (mistakenly) use INVERSE brown. We therefore make sure the user
         // has not tried to change anything from the intrinsics reported:
-        if( intr.model != RS2_DISTORTION_INVERSE_BROWN_CONRADY )
-            throw invalid_value_exception( "invalid intrinsics distortion model" );
+
+        if( intr.model != l500_distortion)
+            throw invalid_value_exception("invalid intrinsics distortion model");
 
         rgb_calibration_table table;
         AC_LOG( DEBUG, "Reading RGB calibration table 0x" << std::hex << table.table_id );
@@ -514,13 +487,15 @@ namespace librealsense
                 }
 
                 try {
-                    // endpoint 5 - 32KB
-                    command cmdTprocGranEp5(ivcam2::TPROC_USB_GRAN_SET, 5, usb_trb);
-                    _owner->_hw_monitor->send(cmdTprocGranEp5);
+                    // Keep the USB power on while triggering multiple calls on it.
+                    ivcam2::group_multiple_fw_calls(*this, [&]() {
+                        // endpoint 5 - 32KB
+                        command cmdTprocGranEp5(ivcam2::TPROC_USB_GRAN_SET, 5, usb_trb);
+                        _owner->_hw_monitor->send(cmdTprocGranEp5);
 
-                    command cmdTprocThresholdEp5(ivcam2::TPROC_TRB_THRSLD_SET, 5, 1);
-                    _owner->_hw_monitor->send(cmdTprocThresholdEp5);
-
+                        command cmdTprocThresholdEp5(ivcam2::TPROC_TRB_THRSLD_SET, 5, 1);
+                        _owner->_hw_monitor->send(cmdTprocThresholdEp5);
+                        });
                     LOG_DEBUG("Color usb tproc granularity and TRB threshold updated.");
                 } catch (...)
                 {
@@ -743,8 +718,8 @@ namespace librealsense
 
         bool usb3mode = (_usb_mode >= platform::usb3_type || _usb_mode == platform::usb_undefined);
 
-        uint32_t width = usb3mode ? 1280 : 960;
-        uint32_t height = usb3mode ? 720 : 540;
+        int width = usb3mode ? 1280 : 960;
+        int height = usb3mode ? 720 : 540;
 
         tags.push_back({ RS2_STREAM_COLOR, -1, width, height, RS2_FORMAT_RGB8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
 

@@ -28,6 +28,18 @@ def main(argv):
     pipeline = rs.pipeline()
     config = rs.config()
 
+    # Get device product line for setting a supporting resolution
+    pipeline_wrapper = rs.pipeline_wrapper(pipeline)
+    pipeline_profile = config.resolve(pipeline_wrapper)
+    device = pipeline_profile.get_device()
+
+    auto_calibrated_device = rs.auto_calibrated_device(device)
+
+    if not auto_calibrated_device:
+        print("The connected device does not support auto calibration")
+        return
+
+
     config.enable_stream(rs.stream.depth, 256, 144, rs.format.z16, 90)
     conf = pipeline.start(config)
     calib_dev = rs.auto_calibrated_device(conf.get_device())
@@ -37,40 +49,38 @@ def main(argv):
 
     while True:
         try:
-            input = raw_input("Please select what the operation you want to do\nc - on chip calibration\nt - tare calibration\ng - get the active calibration\nw - write new calibration\ne - exit\n")
+            operation = input("Please select what the operation you want to do\nc - on chip calibration\nt - tare calibration\ng - get the active calibration\nw - write new calibration\ne - exit\n")
 
-            if input == 'c':
+            if operation == 'c':
                 print("Starting on chip calibration")
-                new_calib, health = calib_dev.run_on_chip_calibration(5000, file_cnt, on_chip_calib_cb)
+                new_calib, health = calib_dev.run_on_chip_calibration(file_cnt, on_chip_calib_cb, 5000)
                 print("Calibration completed")
                 print("health factor = ", health)
 
-            if input == 't':
+            if operation == 't':
                 print("Starting tare calibration")
-                ground_truth = float(raw_input("Please enter ground truth in mm\n"))
-                new_calib, health = calib_dev.run_tare_calibration(ground_truth, 5000, file_cnt, on_chip_calib_cb)
+                ground_truth = float(input("Please enter ground truth in mm\n"))
+                new_calib, health = calib_dev.run_tare_calibration(ground_truth, file_cnt, on_chip_calib_cb, 5000)
                 print("Calibration completed")
                 print("health factor = ", health)
 
-            if input == 'g':
+            if operation == 'g':
                 calib = calib_dev.get_calibration_table()
                 print("Calibration", calib)
 
-            if input == 'w':
+            if operation == 'w':
                 print("Writing the new calibration")
                 calib_dev.set_calibration_table(new_calib)
                 calib_dev.write_calibration()
 
-            if input == 'e':
+            if operation == 'e':
                 pipeline.stop()
                 return
 
             print("Done\n")
         except Exception as e:
-            pipeline.stop()
             print(e)
         except:
-            pipeline.stop()
             print("A different Error")
 
 

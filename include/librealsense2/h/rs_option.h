@@ -68,9 +68,9 @@ extern "C" {
         RS2_OPTION_STREAM_FORMAT_FILTER, /**< Select a stream format to process */
         RS2_OPTION_STREAM_INDEX_FILTER, /**< Select a stream index to process */
         RS2_OPTION_EMITTER_ON_OFF, /**< When supported, this option make the camera to switch the emitter state every frame. 0 for disabled, 1 for enabled */
-        RS2_OPTION_ZERO_ORDER_POINT_X, /**< Zero order point x*/
-        RS2_OPTION_ZERO_ORDER_POINT_Y, /**< Zero order point y*/
-        RS2_OPTION_LLD_TEMPERATURE, /**< LLD temperature*/
+        RS2_OPTION_ZERO_ORDER_POINT_X, /**< Deprecated!!! - Zero order point x*/
+        RS2_OPTION_ZERO_ORDER_POINT_Y, /**< Deprecated!!! - Zero order point y*/
+        RS2_OPTION_LLD_TEMPERATURE, /**< LDD temperature*/
         RS2_OPTION_MC_TEMPERATURE, /**< MC temperature*/
         RS2_OPTION_MA_TEMPERATURE, /**< MA temperature*/
         RS2_OPTION_HARDWARE_PRESET, /**< Hardware stream configuration */
@@ -82,7 +82,7 @@ extern "C" {
         RS2_OPTION_ENABLE_DYNAMIC_CALIBRATION, /**< Enable dynamic calibration */
         RS2_OPTION_DEPTH_OFFSET, /**< Offset from sensor to depth origin in millimetrers*/
         RS2_OPTION_LED_POWER, /**< Power of the LED (light emitting diode), with 0 meaning LED off*/
-        RS2_OPTION_ZERO_ORDER_ENABLED, /**< Toggle Zero-Order mode */
+        RS2_OPTION_ZERO_ORDER_ENABLED, /**< DEPRECATED! - Toggle Zero-Order mode */
         RS2_OPTION_ENABLE_MAP_PRESERVATION, /**< Preserve previous map when starting */
         RS2_OPTION_FREEFALL_DETECTION_ENABLED, /**< Enable/disable sensor shutdown when a free-fall is detected (on by default) */
         RS2_OPTION_AVALANCHE_PHOTO_DIODE, /**< Changes the exposure time of Avalanche Photo Diode in the receiver */
@@ -103,6 +103,12 @@ extern "C" {
         RS2_OPTION_SEQUENCE_SIZE, /**< HDR Sequence size */
         RS2_OPTION_SEQUENCE_ID, /**< HDR Sequence ID - 0 is not HDR; sequence ID for HDR configuration starts from 1 */
         RS2_OPTION_HUMIDITY_TEMPERATURE, /**< Humidity temperature [Deg Celsius]*/
+        RS2_OPTION_ENABLE_MAX_USABLE_RANGE, /**< Turn on/off the maximum usable depth sensor range given the amount of ambient light in the scene */
+        RS2_OPTION_ALTERNATE_IR, /**< Turn on/off the alternate IR, When enabling alternate IR, the IR image is holding the amplitude of the depth correlation. */
+        RS2_OPTION_NOISE_ESTIMATION,  /**< Noise estimation - indicates the noise on the IR image */
+        RS2_OPTION_ENABLE_IR_REFLECTIVITY, /**< Enables data collection for calculating IR pixel reflectivity  */
+        RS2_OPTION_AUTO_EXPOSURE_LIMIT, /**< Set and get auto exposure limit in microseconds. Default is 0 which means full exposure range. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session. */
+        RS2_OPTION_AUTO_GAIN_LIMIT, /**< Set and get auto gain limits ranging from 16 to 248. Default is 0 which means full gain. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session. */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
@@ -150,6 +156,7 @@ extern "C" {
         RS2_L500_VISUAL_PRESET_LOW_AMBIENT,
         RS2_L500_VISUAL_PRESET_MAX_RANGE,
         RS2_L500_VISUAL_PRESET_SHORT_RANGE,
+        RS2_L500_VISUAL_PRESET_AUTOMATIC,
         RS2_L500_VISUAL_PRESET_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_l500_visual_preset;
     const char* rs2_l500_visual_preset_to_string(rs2_l500_visual_preset preset);
@@ -175,6 +182,7 @@ extern "C" {
     /** \brief digital gain for RS2_OPTION_DIGITAL_GAIN option. */
     typedef enum rs2_digital_gain
     {
+        RS2_DIGITAL_GAIN_AUTO = 0,
         RS2_DIGITAL_GAIN_HIGH = 1,
         RS2_DIGITAL_GAIN_LOW = 2,
     } rs2_digital_gain;

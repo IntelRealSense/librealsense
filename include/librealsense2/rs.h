@@ -23,7 +23,7 @@ extern "C" {
 #include "h/rs_sensor.h"
 
 #define RS2_API_MAJOR_VERSION    2
-#define RS2_API_MINOR_VERSION    39
+#define RS2_API_MINOR_VERSION    44
 #define RS2_API_PATCH_VERSION    0
 #define RS2_API_BUILD_VERSION    0
 
@@ -79,6 +79,18 @@ void rs2_log_to_file(rs2_log_severity min_severity, const char * file_path, rs2_
 void rs2_log_to_callback_cpp( rs2_log_severity min_severity, rs2_log_callback * callback, rs2_error ** error );
 
 void rs2_log_to_callback( rs2_log_severity min_severity, rs2_log_callback_ptr callback, void * arg, rs2_error** error );
+
+void rs2_reset_logger( rs2_error ** error);
+
+/**
+* Enable rolling log file when used with rs2_log_to_file:
+* Upon reaching (max_size/2) bytes, the log will be renamed with an ".old" suffix and a new log created. Any
+* previous .old file will be erased.
+* Must have permissions to remove/rename files in log file directory.
+* \param[in] max_size   max file size in megabytes
+* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_enable_rolling_log_file( unsigned max_size, rs2_error ** error );
 
 
 unsigned rs2_get_log_message_line_number( rs2_log_message const * msg, rs2_error** error );

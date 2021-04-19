@@ -42,6 +42,7 @@ namespace librealsense
 
     private:
         bool is_hdr_id(int id) const;
+        bool is_hdr_enabled_in_device(std::vector<byte>& result) const;
         bool is_current_subpreset_hdr(const std::vector<byte>& current_subpreset) const;
         bool configure_hdr_as_in_fw(const std::vector<byte>& current_subpreset);
         command prepare_hdr_sub_preset_command() const;
@@ -82,7 +83,7 @@ namespace librealsense
         bool _auto_exposure_to_be_restored;
         bool _emitter_on_off_to_be_restored;
         hw_monitor& _hwm;
-        std::shared_ptr<sensor_base> _sensor;
+        std::weak_ptr<sensor_base> _sensor;
         option_range _exposure_range;
         option_range _gain_range;
         bool _use_workaround;

@@ -14,7 +14,7 @@ namespace librealsense
     public:
         global_time_option() {}
         // TODO: expose this outwards
-        const char* get_description() const override { return "Enable/Disable global timestamp."; }
+        const char* get_description() const override { return "Enable/Disable global timestamp"; }
     };
 
     class CSample

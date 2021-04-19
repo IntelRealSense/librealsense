@@ -4,11 +4,10 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.os.Environment;
-import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.appcompat.app.AppCompatActivity;
 import android.view.View;
 import android.view.WindowManager;
 
@@ -102,10 +101,10 @@ public class RecordingActivity extends AppCompatActivity {
     }
 
     private String getFilePath(){
-        File rsFolder = new File(Environment.getExternalStorageDirectory().getAbsolutePath() +
+        File rsFolder = new File(getExternalFilesDir(null).getAbsolutePath() +
                 File.separator + getString(R.string.realsense_folder));
         rsFolder.mkdir();
-        File folder = new File(Environment.getExternalStorageDirectory().getAbsolutePath() +
+        File folder = new File(getExternalFilesDir(null).getAbsolutePath() +
                 File.separator + getString(R.string.realsense_folder) + File.separator + "video");
         folder.mkdir();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");

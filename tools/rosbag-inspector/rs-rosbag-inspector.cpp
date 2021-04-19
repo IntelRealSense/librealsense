@@ -236,8 +236,8 @@ void draw_bag_content(rosbag_content& bag, int flags)
     ImGui::Text("\t%s", std::string(tmpstringstream() << std::left << std::setw(20) << "Duration: " << pretty_time(bag.file_duration)).c_str());
     ImGui::Text("\t%s", std::string(tmpstringstream() << std::left << std::setw(20) << "Size: " << bag.size << " MB").c_str());
     ImGui::Text("\t%s", std::string(tmpstringstream() << std::left << std::setw(20) << "Compression: " << bag.compression_info.compression_type).c_str());
-    ImGui::Text("\t%s", std::string(tmpstringstream() << std::left << std::setw(20) << "uncompressed: " << bag.compression_info.compressed).c_str());
-    ImGui::Text("\t%s", std::string(tmpstringstream() << std::left << std::setw(20) << "compressed: " << bag.compression_info.uncompressed).c_str());
+    ImGui::Text("\t%s", std::string(tmpstringstream() << std::left << std::setw(20) << "uncompressed: " << bag.compression_info.uncompressed).c_str());
+    ImGui::Text("\t%s", std::string(tmpstringstream() << std::left << std::setw(20) << "compressed: " << bag.compression_info.compressed).c_str());
     if (ImGui::CollapsingHeader("Topics"))
     {
         for (auto&& topic_to_message_type : bag.topics_to_message_types)

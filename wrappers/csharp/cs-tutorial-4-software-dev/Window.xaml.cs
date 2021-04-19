@@ -33,7 +33,7 @@ namespace Intel.RealSense
             return new Action<VideoFrame>(frame =>
             {
                 var rect = new Int32Rect(0, 0, frame.Width, frame.Height);
-                wbmp.WritePixels(rect, frame.Data, frame.Stride * frame.Height, frame.Stride);
+                wbmp.WritePixels(rect, frame.Data, frame.Stride * frame.Height, frame.Stride);                
             });
         }
 
@@ -49,9 +49,75 @@ namespace Intel.RealSense
                 pipeline = new Pipeline();
                 colorizer = new Colorizer();
 
+                var depthWidth = 640; 
+                var depthHeight = 480;
+                var depthFrames = 30;
+                var depthFormat = Format.Z16;
+
+                var colorWidth = 640;
+                var colorHeight = 480;
+                var colorFrames = 30;                
+                using (var ctx = new Context())
+                {
+                    var devices = ctx.QueryDevices();
+                    var dev = devices[0];
+
+                    Console.WriteLine("\nUsing device 0, an {0}", dev.Info[CameraInfo.Name]);
+                    Console.WriteLine("    Serial number: {0}", dev.Info[CameraInfo.SerialNumber]);
+                    Console.WriteLine("    Firmware version: {0}", dev.Info[CameraInfo.FirmwareVersion]);
+
+                    var sensors = dev.QuerySensors();
+                    var depthSensor = sensors[0];
+                    var colorSensor = sensors[1];
+                   
+                    var depthProfiles = depthSensor.StreamProfiles
+                                        .Where(p => p.Stream == Stream.Depth)
+                                        .OrderBy(p => p.Framerate)
+                                        .Select(p => p.As<VideoStreamProfile>());
+                    VideoStreamProfile colorProfile = null;
+                    
+                    // select color profile to have frameset equal or closer to depth frameset to syncer work smooth
+                    foreach (var depthProfile in depthProfiles)
+                    {
+                        depthWidth = depthProfile.Width;
+                        depthHeight = depthProfile.Height;
+                        depthFrames = depthProfile.Framerate;
+                        depthFormat = depthProfile.Format;
+                        colorProfile = colorSensor.StreamProfiles
+                                            .Where(p => p.Stream == Stream.Color)
+                                            .OrderByDescending(p => p.Framerate)
+                                            .Select(p => p.As<VideoStreamProfile>())
+                                            .FirstOrDefault(p => p.Framerate == depthFrames);
+                        if (colorProfile != null)
+                        {
+                            colorWidth = colorProfile.Width;
+                            colorHeight = colorProfile.Height;
+                            colorFrames = colorProfile.Framerate;
+                            break;
+                        }
+                    }
+                    if (colorProfile == null)
+                    {
+                        // if no profile with the same framerate found, takes the first
+                        colorProfile = colorSensor.StreamProfiles
+                                        .Where(p => p.Stream == Stream.Color)
+                                        .OrderByDescending(p => p.Framerate)
+                                        .Select(p => p.As<VideoStreamProfile>()).FirstOrDefault();
+                        if (colorProfile == null)
+                        {
+                            throw new InvalidOperationException($"Error while finding appropriate depth and color profiles");
+                        }
+                        colorWidth = colorProfile.Width;
+                        colorHeight = colorProfile.Height;
+                        colorFrames = colorProfile.Framerate;
+
+                    }
+
+                }
+
                 var cfg = new Config();
-                cfg.EnableStream(Stream.Depth, 640, 480, Format.Z16, 30);
-                cfg.EnableStream(Stream.Color, 640, 480, Format.Rgb8, 30);
+                cfg.EnableStream(Stream.Depth, depthWidth, depthHeight, depthFormat, depthFrames);
+                cfg.EnableStream(Stream.Color, colorWidth, colorHeight, Format.Rgb8, colorFrames);
 
                 var profile = pipeline.Start(cfg);
 
@@ -65,24 +131,26 @@ namespace Intel.RealSense
                     type = Stream.Depth,
                     index = 0,
                     uid = 100,
-                    width = 640,
-                    height = 480,
-                    fps = 30,
+                    width = depthWidth,
+                    height = depthHeight,
+                    fps = depthFrames,
                     bpp = 2,
-                    format = Format.Z16,
+                    format = depthFormat,
                     intrinsics = profile.GetStream(Stream.Depth).As<VideoStreamProfile>().GetIntrinsics()
-                });
+                });                
+                depth_sensor.AddReadOnlyOption(Option.DepthUnits, 1.0f / 5000);
+
                 var color_sensor = software_dev.AddSensor("Color");
                 var color_profile = color_sensor.AddVideoStream(new SoftwareVideoStream
                 {
                     type = Stream.Color,
                     index = 0,
                     uid = 101,
-                    width = 640,
-                    height = 480,
-                    fps = 30,
+                    width = colorWidth,
+                    height = colorHeight,
+                    fps = colorFrames,
                     bpp = 3,
-                    format = Format.Rgb8,
+                    format = Format.Rgb8, 
                     intrinsics = profile.GetStream(Stream.Color).As<VideoStreamProfile>().GetIntrinsics()
                 });
 
@@ -91,6 +159,10 @@ namespace Intel.RealSense
                 software_dev.SetMatcher(Matchers.Default);
 
                 var sync = new Syncer();
+
+                // The raw depth->metric units translation scale is required for Colorizer to work
+                var realDepthSensor = profile.Device.QuerySensors().First(s => s.Is(Extension.DepthSensor));
+                depth_sensor.AddReadOnlyOption(Option.DepthUnits, realDepthSensor.DepthScale);
 
                 depth_sensor.Open(depth_profile);
                 color_sensor.Open(color_profile);
@@ -130,11 +202,10 @@ namespace Intel.RealSense
                         {
                             if (new_frames.Count == 2)
                             {
-                                var depthFrame = new_frames.DepthFrame.DisposeWith(new_frames);
                                 var colorFrame = new_frames.ColorFrame.DisposeWith(new_frames);
+                                var depthFrame = new_frames.DepthFrame.DisposeWith(new_frames);
 
-                                var colorizedDepth = colorizer.Process<VideoFrame>(depthFrame).DisposeWith(new_frames);
-
+                                var colorizedDepth = colorizer.Process<VideoFrame>(depthFrame).DisposeWith(new_frames);                                
                                 // Render the frames.
                                 Dispatcher.Invoke(DispatcherPriority.Render, updateDepth, colorizedDepth);
                                 Dispatcher.Invoke(DispatcherPriority.Render, updateColor, colorFrame);

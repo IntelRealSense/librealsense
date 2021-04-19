@@ -83,6 +83,7 @@ EXPORTS
     rs2_keep_frame
     rs2_frame_add_ref
     rs2_pose_frame_get_pose_data
+    rs2_extract_target_dimensions
 
     rs2_get_option
     rs2_set_option
@@ -138,6 +139,7 @@ EXPORTS
     rs2_camera_info_to_string
     rs2_frame_metadata_to_string
     rs2_frame_metadata_value_to_string
+    rs2_calib_target_type_to_string
     rs2_timestamp_domain_to_string
     rs2_sr300_visual_preset_to_string
     rs2_notification_category_to_string
@@ -147,7 +149,9 @@ EXPORTS
     rs2_log_to_file
     rs2_log_to_callback
     rs2_log_to_callback_cpp
-    
+    rs2_reset_logger
+    rs2_enable_rolling_log_file
+
     rs2_get_log_message_line_number
     rs2_get_log_message_filename
     rs2_get_raw_log_message
@@ -373,6 +377,7 @@ EXPORTS
 
     rs2_create_fw_log_message
     rs2_delete_fw_log_message
+    rs2_get_number_of_fw_logs
     rs2_get_fw_log
     rs2_get_flash_log
     rs2_fw_log_message_severity
@@ -389,10 +394,14 @@ EXPORTS
     rs2_get_fw_log_parsed_severity
     rs2_get_fw_log_parsed_line
     rs2_get_fw_log_parsed_timestamp
+    rs2_get_fw_log_parsed_sequence_id
     
     rs2_create_terminal_parser
     rs2_delete_terminal_parser
     rs2_terminal_parse_command 
     rs2_terminal_parse_response
+    
+    rs2_get_max_usable_depth_range
+    rs2_get_debug_stream_profiles
 
 

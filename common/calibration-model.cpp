@@ -123,7 +123,7 @@ namespace helpers
             oldcrc32 = UPDC32(*buf, oldcrc32);
         return ~oldcrc32;
     }
-};
+}
 
 void calibration_model::update(ux_window& window, std::string& error_message)
 {
@@ -364,7 +364,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
                 resolution_names.push_back(name);
             }
         }
-        for (int i = 0; i < resolution_offset.size(); i++)
+        for (size_t i = 0; i < resolution_offset.size(); i++)
         {
             resolution_names_char.push_back(resolution_names[i].c_str());
         }
@@ -470,7 +470,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
             {
                 dev.as<rs2::auto_calibrated_device>().set_calibration_table(_calibration);
             }
-            catch (const std::exception& ex)
+            catch (const std::exception&)
             {
                 try
                 {

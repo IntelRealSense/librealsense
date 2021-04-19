@@ -61,6 +61,13 @@ constexpr bool metadata_node = false;
 #define V4L2_META_FMT_D4XX      v4l2_fourcc('D', '4', 'X', 'X') /* D400 Payload Header metadata */
 #endif
 
+//#define DEBUG_V4L
+#ifdef DEBUG_V4L
+#define LOG_DEBUG_V4L(...)   do { CLOG(DEBUG   ,"librealsense") << __VA_ARGS__; } while(false)
+#else
+#define LOG_DEBUG_V4L(...)
+#endif //DEBUG_V4L
+
 // Use local definition of buf type to resolve for kernel versions
 constexpr auto LOCAL_V4L2_BUF_TYPE_META_CAPTURE = (v4l2_buf_type)(13);
 
@@ -123,7 +130,7 @@ namespace librealsense
 
             void detach_buffer();
 
-            void request_next_frame(int fd);
+            void request_next_frame(int fd, bool force=false);
 
             uint32_t get_full_length() const { return _length; }
             uint32_t get_length_frame_only() const { return _original_length; }
@@ -176,12 +183,9 @@ namespace librealsense
                     { _md_start = md_start; _md_size = md_size; }
             void    set_md_from_video_node(bool compressed);
             bool    verify_vd_md_sync() const;
+            bool    md_node_present() const;
 
-        private:
-            void*                               _md_start;  // marks the address of metadata blob
-            uint8_t                             _md_size;   // metadata size is bounded by 255 bytes by design
-            bool                                _mmap_bufs;
-
+            //Debug Evgeni
             // RAII for buffer exchange with kernel
             struct kernel_buf_guard
             {
@@ -189,19 +193,24 @@ namespace librealsense
                 {
                     if (_data_buf && (!_managed))
                     {
-                        if ((_file_desc > 0) && (xioctl(_file_desc, (int)VIDIOC_QBUF, &_dq_buf) < 0))
+                        if (_file_desc > 0)
                         {
-                            LOG_ERROR("xioctl(VIDIOC_QBUF) guard failed for fd " << std::dec << _file_desc);
-                            if (xioctl(_file_desc, (int)VIDIOC_DQBUF, &_dq_buf) >= 0)
+                            if (xioctl(_file_desc, (int)VIDIOC_QBUF, &_dq_buf) < 0)
                             {
-                                LOG_WARNING("xioctl(VIDIOC_QBUF) Re-enqueue succeeded for fd " << std::dec << _file_desc);
-                                if (xioctl(_file_desc, (int)VIDIOC_QBUF, &_dq_buf) < 0)
-                                    LOG_WARNING("xioctl(VIDIOC_QBUF) re-deque  failed for fd " << std::dec << _file_desc);
+                                LOG_DEBUG_V4L("xioctl(VIDIOC_QBUF) guard failed for fd " << std::dec << _file_desc);
+                                if (xioctl(_file_desc, (int)VIDIOC_DQBUF, &_dq_buf) >= 0)
+                                {
+                                    LOG_DEBUG_V4L("xioctl(VIDIOC_QBUF) Re-enqueue succeeded for fd " << std::dec << _file_desc);
+                                    if (xioctl(_file_desc, (int)VIDIOC_QBUF, &_dq_buf) < 0)
+                                        LOG_DEBUG_V4L("xioctl(VIDIOC_QBUF) re-deque  failed for fd " << std::dec << _file_desc);
+                                    else
+                                        LOG_DEBUG_V4L("xioctl(VIDIOC_QBUF) re-deque succeeded for fd " << std::dec << _file_desc);
+                                }
                                 else
-                                    LOG_WARNING("xioctl(VIDIOC_QBUF) re-deque succeeded for fd " << std::dec << _file_desc);
+                                    LOG_DEBUG_V4L("xioctl(VIDIOC_QBUF) Re-enqueue failed for fd " << std::dec << _file_desc);
                             }
                             else
-                                LOG_WARNING("xioctl(VIDIOC_QBUF) Re-enqueue failed for fd " << std::dec << _file_desc);
+                                LOG_DEBUG_V4L("Enqueue (e) buf " << std::dec << _dq_buf.index << " for fd " << _file_desc);
                         }
                     }
                 }
@@ -211,6 +220,15 @@ namespace librealsense
                 int                                 _file_desc=-1;
                 bool                                _managed=false;
             };
+
+            std::array<kernel_buf_guard, e_max_kernel_buf_type>& get_buffers()
+                    { return buffers; }
+
+        private:
+            void*                               _md_start;  // marks the address of metadata blob
+            uint8_t                             _md_size;   // metadata size is bounded by 255 bytes by design
+            bool                                _mmap_bufs;
+
 
             std::array<kernel_buf_guard, e_max_kernel_buf_type> buffers;
         };
@@ -319,6 +337,7 @@ namespace librealsense
             bool _use_memory_map;
             int _max_fd = 0;                    // specifies the maximal pipe number the polling process will monitor
             std::vector<int>  _fds;             // list the file descriptors to be monitored during frames polling
+            buffers_mgr     _buf_dispatch;      // Holder for partial (MD only) frames that shall be preserved between 'select' calls when polling v4l buffers
 
         private:
             int _fd = 0;          // prevent unintentional abuse in derived class

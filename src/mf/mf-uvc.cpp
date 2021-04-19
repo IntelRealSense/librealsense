@@ -46,6 +46,7 @@ The library will be compiled without the metadata support!\n")
 #define did_guid  MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK
 
 #define DEVICE_NOT_READY_ERROR _HRESULT_TYPEDEF_(0x80070015L)
+#define MF_E_SHUTDOWN_ERROR _HRESULT_TYPEDEF_(0xC00D3E85)
 
 #define MAX_PINS 5
 
@@ -165,14 +166,22 @@ namespace librealsense
 
         STDMETHODIMP source_reader_callback::OnReadSample(HRESULT hrStatus,
             DWORD dwStreamIndex,
-            DWORD /*dwStreamFlags*/,
+            DWORD dwStreamFlags,
             LONGLONG llTimestamp,
             IMFSample *sample)
         {
             auto owner = _owner.lock();
             if (owner && owner->_reader)
             {
-                if (FAILED(hrStatus)) owner->_readsample_result = hrStatus;
+                if (FAILED(hrStatus))
+                {
+                    owner->_readsample_result = hrStatus;
+                    if (dwStreamFlags == MF_SOURCE_READERF_ERROR)
+                    {
+                        owner->close_all();
+                        return S_OK;
+                    }
+                }
                 owner->_has_started.set();
 
                 LOG_HR(owner->_reader->ReadSample(dwStreamIndex, 0, nullptr, nullptr, nullptr, nullptr));
@@ -1064,12 +1073,7 @@ namespace librealsense
             }
             catch (...)
             {
-                for (auto& elem : _streams)
-                    if (elem.callback)
-                        close(elem.profile);
-
-                _profiles.clear();
-                _frame_callbacks.clear();
+                close_all();
 
                 throw;
             }
@@ -1162,6 +1166,22 @@ namespace librealsense
         {
             if (!is_connected(_info))
                 throw std::runtime_error("Camera is no longer connected!");
+        }
+
+        void wmf_uvc_device::close_all()
+        {
+            for (auto& elem : _streams)
+                if (elem.callback)
+                {
+                    try
+                    {
+                        close(elem.profile);
+                    }
+                    catch (...) {}
+                }
+                       
+            _profiles.clear();
+            _frame_callbacks.clear();
         }
     }
 }

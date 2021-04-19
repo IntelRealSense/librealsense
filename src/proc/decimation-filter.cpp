@@ -510,9 +510,9 @@ namespace librealsense
                 {
                     p = from + scale * (j * w_2 + i) * 4;
                     sum = 0;
-                    for (int n = 0; n < scale; ++n)
+                    for (size_t n = 0; n < scale; ++n)
                     {
-                        for (int m = 0; m < scale; ++m)
+                        for (size_t m = 0; m < scale; ++m)
                             sum += p[m * 2];
 
                         p += w_2 * 4;
@@ -521,9 +521,9 @@ namespace librealsense
 
                     p = from + scale * (j * w_2 + i) * 4 + 1;
                     sum = 0;
-                    for (int n = 0; n < scale; ++n)
+                    for (size_t n = 0; n < scale; ++n)
                     {
-                        for (int m = 0; m < s2; ++m)
+                        for (size_t m = 0; m < s2; ++m)
                             sum += 2 * p[m * 4];
 
                         if (odd)
@@ -535,9 +535,9 @@ namespace librealsense
 
                     p = from + scale * (j * w_2 + i) * 4 + s2 * 4 + (odd ? 2 : 0);
                     sum = 0;
-                    for (int n = 0; n < scale; ++n)
+                    for (size_t n = 0; n < scale; ++n)
                     {
-                        for (int m = 0; m < scale; ++m)
+                        for (size_t m = 0; m < scale; ++m)
                             sum += p[m * 2];
 
                         p += w_2 * 4;
@@ -546,9 +546,9 @@ namespace librealsense
 
                     p = from + scale * (j * w_2 + i) * 4 + 3;
                     sum = 0;
-                    for (int n = 0; n < scale; ++n)
+                    for (size_t n = 0; n < scale; ++n)
                     {
-                        for (int m = 0; m < s2; ++m)
+                        for (size_t m = 0; m < s2; ++m)
                             sum += 2 * p[m * 4];
 
                         if (odd)
@@ -596,9 +596,9 @@ namespace librealsense
                 {
                     p = from + scale * (j * w_2 + i) * 4;
                     sum = 0;
-                    for (int n = 0; n < scale; ++n)
+                    for (size_t n = 0; n < scale; ++n)
                     {
-                        for (int m = 0; m < s2; ++m)
+                        for (size_t m = 0; m < s2; ++m)
                             sum += 2 * p[m * 4];
 
                         if (odd)
@@ -610,9 +610,9 @@ namespace librealsense
 
                     p = from + scale * (j * w_2 + i) * 4 + 1;
                     sum = 0;
-                    for (int n = 0; n < scale; ++n)
+                    for (size_t n = 0; n < scale; ++n)
                     {
-                        for (int m = 0; m < scale; ++m)
+                        for (size_t m = 0; m < scale; ++m)
                             sum += p[m * 2];
 
                         p += w_2 * 4;
@@ -621,9 +621,9 @@ namespace librealsense
 
                     p = from + scale * (j * w_2 + i) * 4 + 2;
                     sum = 0;
-                    for (int n = 0; n < scale; ++n)
+                    for (size_t n = 0; n < scale; ++n)
                     {
-                        for (int m = 0; m < s2; ++m)
+                        for (size_t m = 0; m < s2; ++m)
                             sum += 2 * p[m * 4];
 
                         if (odd)
@@ -635,9 +635,9 @@ namespace librealsense
 
                     p = from + scale * (j * w_2 + i) * 4 + s2 * 4 + (odd ? 3 : 1);
                     sum = 0;
-                    for (int n = 0; n < scale; ++n)
+                    for (size_t n = 0; n < scale; ++n)
                     {
-                        for (int m = 0; m < scale; ++m)
+                        for (size_t m = 0; m < scale; ++m)
                             sum += p[m * 2];
 
                         p += w_2 * 4;
@@ -680,9 +680,9 @@ namespace librealsense
                     {
                         p = from + scale * (j * width_in + i) * 3 + k;
                         sum = 0;
-                        for (int n = 0; n < scale; ++n)
+                        for (size_t n = 0; n < scale; ++n)
                         {
-                            for (int m = 0; m < scale; ++m)
+                            for (size_t m = 0; m < scale; ++m)
                                 sum += p[m * 3];
 
                             p += width_in * 3;
@@ -727,9 +727,9 @@ namespace librealsense
                     {
                         p = from + scale * (j * width_in + i) * 4 + k;
                         sum = 0;
-                        for (int n = 0; n < scale; ++n)
+                        for (size_t n = 0; n < scale; ++n)
                         {
-                            for (int m = 0; m < scale; ++m)
+                            for (size_t m = 0; m < scale; ++m)
                                 sum += p[m * 4];
 
                             p += width_in * 4;
@@ -773,9 +773,9 @@ namespace librealsense
                 {
                     p = from + scale * (j * width_in + i);
                     sum = 0;
-                    for (int n = 0; n < scale; ++n)
+                    for (size_t n = 0; n < scale; ++n)
                     {
-                        for (int m = 0; m < scale; ++m)
+                        for (size_t m = 0; m < scale; ++m)
                             sum += p[m];
 
                         p += width_in;
@@ -808,9 +808,9 @@ namespace librealsense
                 {
                     p = from + scale * (j * width_in + i);
                     sum = 0;
-                    for (int n = 0; n < scale; ++n)
+                    for (size_t n = 0; n < scale; ++n)
                     {
-                        for (int m = 0; m < scale; ++m)
+                        for (size_t m = 0; m < scale; ++m)
                             sum += p[m];
 
                         p += width_in;

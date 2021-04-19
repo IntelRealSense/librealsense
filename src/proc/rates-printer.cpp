@@ -77,7 +77,7 @@ namespace librealsense
         auto curr_time = std::chrono::steady_clock::now();
         _time_points.push_back(curr_time);
         auto oldest = _time_points[0];
-        if (_time_points.size() > _stream_profile.fps())
+        if (_time_points.size() > size_t(_stream_profile.fps()))
             _time_points.erase(_time_points.begin());
         auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(curr_time - oldest).count() / 1000.f;
         if (diff > 0)

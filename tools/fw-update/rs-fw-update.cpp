@@ -20,6 +20,16 @@ using namespace TCLAP;
 
 #define WAIT_FOR_DEVICE_TIMEOUT 10
 
+#if _WIN32
+#include <io.h>
+#define ISATTY _isatty
+#define FILENO _fileno
+#else
+#include <unistd.h>
+#define ISATTY isatty
+#define FILENO fileno
+#endif
+
 std::vector<uint8_t> read_fw_file(std::string file_path)
 {
     std::vector<uint8_t> rv;
@@ -76,10 +86,16 @@ void update(rs2::update_device fwu_dev, std::vector<uint8_t> fw_image)
 {  
     std::cout << std::endl << "firmware update started"<< std::endl << std::endl;
 
-    fwu_dev.update(fw_image, [&](const float progress)
+    if (ISATTY(FILENO(stdout)))
     {
-        printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
-    });
+        fwu_dev.update(fw_image, [&](const float progress)
+            {
+                printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
+            });
+    }
+    else
+        fwu_dev.update(fw_image, [&](const float progress){});
+    
     std::cout << std::endl << std::endl << "firmware update done" << std::endl;
 }
 
@@ -105,7 +121,9 @@ void list_devices(rs2::context ctx)
 
 int main(int argc, char** argv) try
 {
+#ifdef BUILD_EASYLOGGINGPP
     rs2::log_to_console(RS2_LOG_SEVERITY_ERROR);
+#endif
 
     rs2::context ctx;
 
@@ -245,10 +263,15 @@ int main(int argc, char** argv) try
         {
             std::cout << std::endl << "backing-up device flash: " << std::endl;
 
-            auto flash = d.as<rs2::updatable>().create_flash_backup([&](const float progress)
+            std::vector< uint8_t > flash;
+            if( ISATTY( FILENO( stdout )))
             {
-                printf("\rflash backup progress: %d[%%]", (int)(progress * 100));
-            });
+                flash = d.as< rs2::updatable >().create_flash_backup( [&]( const float progress ) {
+                    printf( "\rflash backup progress: %d[%%]", (int)( progress * 100 ) );
+                } );
+            }
+            else
+                flash = d.as<rs2::updatable>().create_flash_backup([&](const float progress){});
 
             auto temp = backup_arg.getValue();
             std::ofstream file(temp.c_str(), std::ios::binary);
@@ -267,10 +290,16 @@ int main(int argc, char** argv) try
         {
             std::cout << std::endl << "firmware update started" << std::endl << std::endl;
 
-            d.as<rs2::updatable>().update_unsigned(fw_image, [&](const float progress)
+            if (ISATTY(FILENO(stdout)))
             {
-                printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
-            });
+                d.as<rs2::updatable>().update_unsigned(fw_image, [&](const float progress)
+                    {
+                        printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
+                    });
+            }
+            else
+                d.as<rs2::updatable>().update_unsigned(fw_image, [&](const float progress){});
+                
             std::cout << std::endl << std::endl << "firmware update done" << std::endl;
         }
         else

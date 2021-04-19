@@ -128,6 +128,8 @@ namespace rs2
             set_common_options(url);
             curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, stream_write_callback);
             curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &output);
+            curl_easy_setopt(_curl, CURLOPT_SSL_VERIFYPEER ,0L);
+            curl_easy_setopt(_curl, CURLOPT_SSL_VERIFYHOST ,0L);
 
             progress_data progress_record; // Should stay here - "curl_easy_perform" use it
             if (user_callback_func)

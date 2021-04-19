@@ -300,9 +300,9 @@ public:
 
 	/* Gets the section visibility for static sections */	
 #if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 19
-	virtual uint64 GetStaticBatchElementVisibility(const class FSceneView& View, const struct FMeshBatch* Batch, const void* InViewCustomData = nullptr) const override;
+	virtual uint64 GetStaticBatchElementVisibility(const class FSceneView& View, const struct FMeshBatch* Batch, const void* InViewCustomData = nullptr) const;
 #else
-	virtual uint64 GetStaticBatchElementVisibility(const class FSceneView& View, const struct FMeshBatch* Batch) const override;
+	virtual uint64 GetStaticBatchElementVisibility(const class FSceneView& View, const struct FMeshBatch* Batch) const;
 #endif
 
 private:

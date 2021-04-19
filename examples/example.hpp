@@ -3,13 +3,11 @@
 
 #pragma once
 
-#include <librealsense2/rs.hpp>
+#include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 
 #define GL_SILENCE_DEPRECATION
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
-
-#include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 
 #include <string>
 #include <sstream>
@@ -20,17 +18,22 @@
 #include <map>
 #include <functional>
 
+#include "../third-party/stb_easy_font.h"
+
 #ifndef PI
-const double PI = 3.14159265358979323846;
+#define PI  3.14159265358979323846
+#define PI_FL  3.141592f
 #endif
-const size_t IMU_FRAME_WIDTH = 1280;
-const size_t IMU_FRAME_HEIGHT = 720;
+const float IMU_FRAME_WIDTH = 1280.f;
+const float IMU_FRAME_HEIGHT = 720.f;
+enum class Priority { high = 0, medium = -1, low = -2 };
+
 //////////////////////////////
 // Basic Data Types         //
 //////////////////////////////
 
-struct float3 { 
-    float x, y, z; 
+struct float3 {
+    float x, y, z;
     float3 operator*(float t)
     {
         return { x * t, y * t, z * t };
@@ -84,24 +87,37 @@ struct rect
     }
 };
 
+struct tile_properties
+{
+   
+    unsigned int x, y; //location of tile in the grid
+    unsigned int w, h; //width and height by number of tiles
+    Priority priority; //when should the tile be drawn?: high priority is on top of all, medium is a layer under top layer, low is a layer under medium layer
+
+};
+
+//name aliasing the map of pairs<frame, tile_properties>
+using frame_and_tile_property = std::pair<rs2::frame, tile_properties>;
+using frames_mosaic = std::map<int, frame_and_tile_property>;
+
+
 //////////////////////////////
 // Simple font loading code //
 //////////////////////////////
 
-#include "../third-party/stb_easy_font.h"
 
-inline void draw_text(int x, int y, const char * text)
+inline void draw_text(int x, int y, const char* text)
 {
-    char buffer[60000]; // ~300 chars
+    std::vector<char> buffer; 
     glEnableClientState(GL_VERTEX_ARRAY);
-    glVertexPointer(2, GL_FLOAT, 16, buffer);
-    glDrawArrays(GL_QUADS, 0, 4 * stb_easy_font_print((float)x, (float)(y - 7), (char *)text, nullptr, buffer, sizeof(buffer)));
+    glVertexPointer(2, GL_FLOAT, 16, &buffer);
+    glDrawArrays(GL_QUADS, 0, 4 * stb_easy_font_print((float)x, (float)(y - 7), (char*)text, nullptr, &buffer, sizeof(buffer)));
     glDisableClientState(GL_VERTEX_ARRAY);
 }
 
 void set_viewport(const rect& r)
 {
-    glViewport( (int)r.x, (int)r.y, (int)r.w, (int)r.h);
+    glViewport((int)r.x, (int)r.y, (int)r.w, (int)r.h);
     glLoadIdentity();
     glMatrixMode(GL_PROJECTION);
     glOrtho(0, r.w, r.h, 0, -1, +1);
@@ -148,7 +164,7 @@ private:
         glRotatef(180, 0.0f, 0.0f, 1.0f);
         glRotatef(-90, 0.0f, 1.0f, 0.0f);
 
-        draw_axes(1,2);
+        draw_axes(1, 2);
 
         draw_circle(1, 0, 0, 0, 1, 0);
         draw_circle(0, 1, 0, 0, 0, 1);
@@ -170,7 +186,7 @@ private:
             int i;
             for (i = 0; i < circle_points; i++)
             {
-                glVertex2d(radius * cos(angle1), radius *sin(angle1));
+                glVertex2d(radius * cos(angle1), radius * sin(angle1));
                 angle1 += angle;
             }
             glEnd();
@@ -219,7 +235,7 @@ private:
             result[i] = 0;
             for (int j = 0; j < N; j++)
             {
-                result[i] += vec[j] * mat[N*j + i];
+                result[i] += vec[j] * mat[N * j + i];
             }
         }
         return;
@@ -236,7 +252,7 @@ private:
         multiply_vector_by_matrix(vec, model, tmp_result);
         multiply_vector_by_matrix(tmp_result, proj, result);
 
-        return{ canvas_size * vec_norm *result[0], canvas_size * vec_norm *result[1] };
+        return{ canvas_size * vec_norm * result[0], canvas_size * vec_norm * result[1] };
     }
 
     void print_text_in_3d(float x, float y, float z, const char* text, bool center_text, GLfloat model[], GLfloat proj[], float vec_norm)
@@ -355,16 +371,16 @@ private:
         auto pose = f.get_pose_data();
         std::stringstream ss;
         ss << "Pos (meter): \t\t" << std::fixed << std::setprecision(2) << pose.translation.x << ", " << pose.translation.y << ", " << pose.translation.z;
-        draw_text(int(0.05f * r.w), int(0.2f*r.h), ss.str().c_str());
+        draw_text(int(0.05f * r.w), int(0.2f * r.h), ss.str().c_str());
         ss.clear(); ss.str("");
         ss << "Orient (quaternion): \t" << pose.rotation.x << ", " << pose.rotation.y << ", " << pose.rotation.z << ", " << pose.rotation.w;
-        draw_text(int(0.05f * r.w), int(0.3f*r.h), ss.str().c_str());
+        draw_text(int(0.05f * r.w), int(0.3f * r.h), ss.str().c_str());
         ss.clear(); ss.str("");
         ss << "Lin Velocity (m/sec): \t" << pose.velocity.x << ", " << pose.velocity.y << ", " << pose.velocity.z;
-        draw_text(int(0.05f * r.w), int(0.4f*r.h), ss.str().c_str());
+        draw_text(int(0.05f * r.w), int(0.4f * r.h), ss.str().c_str());
         ss.clear(); ss.str("");
         ss << "Ang. Velocity (rad/sec): \t" << pose.angular_velocity.x << ", " << pose.angular_velocity.y << ", " << pose.angular_velocity.z;
-        draw_text(int(0.05f * r.w), int(0.5f*r.h), ss.str().c_str());
+        draw_text(int(0.05f * r.w), int(0.5f * r.h), ss.str().c_str());
     }
 };
 
@@ -488,7 +504,7 @@ public:
     std::function<void(int)>            on_key_release = [](int) {};
 
     window(int width, int height, const char* title)
-        : _width(width), _height(height)
+        : _width(width), _height(height), _canvas_left_top_x(0), _canvas_left_top_y(0), _canvas_width(width), _canvas_height(height)
     {
         glfwInit();
         win = glfwCreateWindow(width, height, title, nullptr, nullptr);
@@ -497,32 +513,104 @@ public:
         glfwMakeContextCurrent(win);
 
         glfwSetWindowUserPointer(win, this);
-        glfwSetMouseButtonCallback(win, [](GLFWwindow * w, int button, int action, int mods)
-        {
-            auto s = (window*)glfwGetWindowUserPointer(w);
-            if (button == 0) s->on_left_mouse(action == GLFW_PRESS);
-        });
-
-        glfwSetScrollCallback(win, [](GLFWwindow * w, double xoffset, double yoffset)
-        {
-            auto s = (window*)glfwGetWindowUserPointer(w);
-            s->on_mouse_scroll(xoffset, yoffset);
-        });
-
-        glfwSetCursorPosCallback(win, [](GLFWwindow * w, double x, double y)
-        {
-            auto s = (window*)glfwGetWindowUserPointer(w);
-            s->on_mouse_move(x, y);
-        });
-
-        glfwSetKeyCallback(win, [](GLFWwindow * w, int key, int scancode, int action, int mods)
-        {
-            auto s = (window*)glfwGetWindowUserPointer(w);
-            if (0 == action) // on key release
+        glfwSetMouseButtonCallback(win, [](GLFWwindow* w, int button, int action, int mods)
             {
-                s->on_key_release(key);
-            }
-        });
+                auto s = (window*)glfwGetWindowUserPointer(w);
+                if (button == 0) s->on_left_mouse(action == GLFW_PRESS);
+            });
+
+        glfwSetScrollCallback(win, [](GLFWwindow* w, double xoffset, double yoffset)
+            {
+                auto s = (window*)glfwGetWindowUserPointer(w);
+                s->on_mouse_scroll(xoffset, yoffset);
+            });
+
+        glfwSetCursorPosCallback(win, [](GLFWwindow* w, double x, double y)
+            {
+                auto s = (window*)glfwGetWindowUserPointer(w);
+                s->on_mouse_move(x, y);
+            });
+
+        glfwSetKeyCallback(win, [](GLFWwindow* w, int key, int scancode, int action, int mods)
+            {
+                auto s = (window*)glfwGetWindowUserPointer(w);
+                if (0 == action) // on key release
+                {
+                    s->on_key_release(key);
+                }
+            });
+    }
+
+    //another c'tor for adjusting specific frames in specific tiles, this window is NOT resizeable
+    window(unsigned width, unsigned height, const char* title, unsigned tiles_in_row, unsigned tiles_in_col, float canvas_width = 0.8f,
+        float canvas_height = 0.6f, float canvas_left_top_x = 0.1f, float canvas_left_top_y = 0.075f)
+        : _width(width), _height(height), _tiles_in_row(tiles_in_row), _tiles_in_col(tiles_in_col)
+
+    {
+        //user input verification for mosaic size, if invalid values were given - set to default
+        if (canvas_width < 0 || canvas_width > 1 || canvas_height < 0 || canvas_height > 1 ||
+            canvas_left_top_x < 0 || canvas_left_top_x > 1 || canvas_left_top_y < 0 || canvas_left_top_y > 1)
+        {
+            std::cout << "Invalid window's size parameter entered, setting to default values" << std::endl;
+            canvas_width = 0.8f;
+            canvas_height = 0.6f;
+            canvas_left_top_x = 0.15f;
+            canvas_left_top_y = 0.075f;
+        }
+
+        //user input verification for number of tiles in row and column
+        if (_tiles_in_row <= 0) {
+            _tiles_in_row = 4;
+        }
+        if (_tiles_in_col <= 0) {
+            _tiles_in_col = 2;
+        }
+
+        //calculate canvas size
+        _canvas_width = int(_width * canvas_width);
+        _canvas_height = int(_height * canvas_height);
+        _canvas_left_top_x = _width * canvas_left_top_x;
+        _canvas_left_top_y = _height * canvas_left_top_y;
+
+        //calculate tile size
+        _tile_width_pixels = float(std::floor(_canvas_width / _tiles_in_row));
+        _tile_height_pixels = float(std::floor(_canvas_height / _tiles_in_col));
+
+        glfwInit();
+        // we don't want to enable resizing the window
+        glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+        win = glfwCreateWindow(width, height, title, nullptr, nullptr);
+        if (!win)
+            throw std::runtime_error("Could not open OpenGL window, please check your graphic drivers or use the textual SDK tools");
+        glfwMakeContextCurrent(win);
+
+        glfwSetWindowUserPointer(win, this);
+        glfwSetMouseButtonCallback(win, [](GLFWwindow* w, int button, int action, int mods)
+            {
+                auto s = (window*)glfwGetWindowUserPointer(w);
+                if (button == 0) s->on_left_mouse(action == GLFW_PRESS);
+            });
+
+        glfwSetScrollCallback(win, [](GLFWwindow* w, double xoffset, double yoffset)
+            {
+                auto s = (window*)glfwGetWindowUserPointer(w);
+                s->on_mouse_scroll(xoffset, yoffset);
+            });
+
+        glfwSetCursorPosCallback(win, [](GLFWwindow* w, double x, double y)
+            {
+                auto s = (window*)glfwGetWindowUserPointer(w);
+                s->on_mouse_move(x, y);
+            });
+
+        glfwSetKeyCallback(win, [](GLFWwindow* w, int key, int scancode, int action, int mods)
+            {
+                auto s = (window*)glfwGetWindowUserPointer(w);
+                if (0 == action) // on key release
+                {
+                    s->on_key_release(key);
+                }
+            });
     }
 
     ~window()
@@ -578,40 +666,79 @@ public:
             render_pose_frame(pf, rect);
     }
 
-    void show(const std::map<int, rs2::frame> frames)
+    void show(const std::map<int, rs2::frame>& frames)
     {
         // Render openGl mosaic of frames
-         if (frames.size())
-         {
-             int cols = int(std::ceil(std::sqrt(frames.size())));
-             int rows = int(std::ceil(frames.size() / static_cast<float>(cols)));
+        if (frames.size())
+        {
+            int cols = int(std::ceil(std::sqrt(frames.size())));
+            int rows = int(std::ceil(frames.size() / static_cast<float>(cols)));
 
-             float view_width = float(_width / cols);
-             float view_height = float(_height / rows);
-             int stream_no =0;
-             for (auto& frame : frames)
-             {
-                 rect viewport_loc{ view_width * (stream_no % cols), view_height * (stream_no / cols), view_width, view_height };
-                 show(frame.second, viewport_loc);
-                 stream_no++;
-             }
-         }
-         else
-         {
-             _main_win.put_text("Connect one or more Intel RealSense devices and rerun the example",
-                 0.4f, 0.5f, { 0.f,0.f, float(_width) , float(_height) });
-         }
+            float view_width = float(_width / cols);
+            float view_height = float(_height / rows);
+            unsigned int stream_no = 0;
+            for (auto& frame : frames)
+            {
+                rect viewport_loc{ view_width * (stream_no % cols), view_height * (stream_no / cols), view_width, view_height };
+                show(frame.second, viewport_loc);
+                stream_no++;
+            }
+        }
+        else
+        {
+            _main_win.put_text("Connect one or more Intel RealSense devices and rerun the example",
+                0.4f, 0.5f, { 0.f,0.f, float(_width) , float(_height) });
+        }
     }
 
-    operator GLFWwindow*() { return win; }
+    //gets as argument a map of the -need to be drawn- frames with their tiles properties,
+    //which indicates where and what size should the frame be drawn on the canvas 
+    void show(const frames_mosaic& frames)
+    {
+        // Render openGl mosaic of frames
+        if (frames.size())
+        {
+            // create vector of frames from map, and sort it by priority
+            std::vector <frame_and_tile_property> vector_frames;
+            //copy: map (values) -> vector
+            for (const auto& frame : frames) { vector_frames.push_back(frame.second); }
+            //sort in ascending order of the priority
+            std::sort(vector_frames.begin(), vector_frames.end(),
+                [](const frame_and_tile_property& frame1, const frame_and_tile_property& frame2)
+                {
+                    return frame1.second.priority < frame2.second.priority;
+                });
+            //create margin to the shown frame on tile
+            float frame_width_size_from_tile_width = 0.98f;
+            //iterate over frames in ascending priority order (so that lower priority frame is drawn first, and can be over-written by higher priority frame )
+            for (const auto& frame : vector_frames)
+            {
+                tile_properties attr = frame.second;
+                rect viewport_loc{ _tile_width_pixels * attr.x + _canvas_left_top_x, _tile_height_pixels * attr.y + _canvas_left_top_y,
+                    _tile_width_pixels * attr.w * frame_width_size_from_tile_width, _tile_height_pixels * attr.h };
+                show(frame.first, viewport_loc);
+            }
+        }
+        else
+        {
+            _main_win.put_text("Connect one or more Intel RealSense devices and rerun the example",
+                0.3f, 0.5f, { float(_canvas_left_top_x), float(_canvas_left_top_y), float(_canvas_width) , float(_canvas_height) });
+        }
+    }
+
+    operator GLFWwindow* () { return win; }
 
 private:
-    GLFWwindow * win;
+    GLFWwindow* win;
     std::map<int, texture> _textures;
     std::map<int, imu_renderer> _imus;
     std::map<int, pose_renderer> _poses;
-    text_renderer   _main_win;
+    text_renderer _main_win;
     int _width, _height;
+    float _canvas_left_top_x, _canvas_left_top_y;
+    int _canvas_width, _canvas_height;
+    unsigned _tiles_in_row, _tiles_in_col;
+    float _tile_width_pixels, _tile_height_pixels;
 
     void render_video_frame(const rs2::video_frame& f, const rect& r)
     {
@@ -643,7 +770,7 @@ private:
             return;
 
         std::sort(supported_frames.begin(), supported_frames.end(), [](rs2::frame first, rs2::frame second)
-        { return first.get_profile().stream_type() < second.get_profile().stream_type();  });
+            { return first.get_profile().stream_type() < second.get_profile().stream_type();  });
 
         auto image_grid = calc_grid(r, supported_frames);
 
@@ -683,9 +810,9 @@ private:
         auto h = round(y);
         if (w == 0 || h == 0)
             throw std::runtime_error("invalid window configuration request, failed to calculate window grid");
-        while (w*h > streams)
+        while (w * h > streams)
             h > w ? h-- : w--;
-        while (w*h < streams)
+        while (w* h < streams)
             h > w ? w++ : h++;
         auto new_w = round(r.w / w);
         auto new_h = round(r.h / h);
@@ -776,7 +903,7 @@ void draw_pointcloud(float width, float height, glfw_state& app_state, rs2::poin
     glPushMatrix();
     gluLookAt(0, 0, 0, 0, 0, 1, 0, -1, 0);
 
-    glTranslatef(0, 0, +0.5f + app_state.offset_y*0.05f);
+    glTranslatef(0, 0, +0.5f + app_state.offset_y * 0.05f);
     glRotated(app_state.pitch, 1, 0, 0);
     glRotated(app_state.yaw, 0, 1, 0);
     glTranslatef(0, 0, -0.5f);
@@ -815,9 +942,9 @@ void draw_pointcloud(float width, float height, glfw_state& app_state, rs2::poin
 
 void quat2mat(rs2_quaternion& q, GLfloat H[16])  // to column-major matrix
 {
-    H[0] = 1 - 2*q.y*q.y - 2*q.z*q.z; H[4] = 2*q.x*q.y - 2*q.z*q.w;     H[8] = 2*q.x*q.z + 2*q.y*q.w;     H[12] = 0.0f;
-    H[1] = 2*q.x*q.y + 2*q.z*q.w;     H[5] = 1 - 2*q.x*q.x - 2*q.z*q.z; H[9] = 2*q.y*q.z - 2*q.x*q.w;     H[13] = 0.0f;
-    H[2] = 2*q.x*q.z - 2*q.y*q.w;     H[6] = 2*q.y*q.z + 2*q.x*q.w;     H[10] = 1 - 2*q.x*q.x - 2*q.y*q.y; H[14] = 0.0f;
+    H[0] = 1 - 2 * q.y * q.y - 2 * q.z * q.z; H[4] = 2 * q.x * q.y - 2 * q.z * q.w;     H[8] = 2 * q.x * q.z + 2 * q.y * q.w;     H[12] = 0.0f;
+    H[1] = 2 * q.x * q.y + 2 * q.z * q.w;     H[5] = 1 - 2 * q.x * q.x - 2 * q.z * q.z; H[9] = 2 * q.y * q.z - 2 * q.x * q.w;     H[13] = 0.0f;
+    H[2] = 2 * q.x * q.z - 2 * q.y * q.w;     H[6] = 2 * q.y * q.z + 2 * q.x * q.w;     H[10] = 1 - 2 * q.x * q.x - 2 * q.y * q.y; H[14] = 0.0f;
     H[3] = 0.0f;                      H[7] = 0.0f;                      H[11] = 0.0f;                      H[15] = 1.0f;
 }
 
@@ -844,7 +971,7 @@ void draw_pointcloud_wrt_world(float width, float height, glfw_state& app_state,
     glPushMatrix();
 
     // rotated from depth to world frame: z => -z, y => -y
-    glTranslatef(0, 0, -0.75f-app_state.offset_y*0.05f);
+    glTranslatef(0, 0, -0.75f - app_state.offset_y * 0.05f);
     glRotated(app_state.pitch, 1, 0, 0);
     glRotated(app_state.yaw, 0, -1, 0);
     glTranslatef(0, 0, 0.5f);

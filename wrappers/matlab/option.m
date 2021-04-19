@@ -61,7 +61,7 @@ classdef option < int64
         enable_dynamic_calibration      (58)
         depth_offset                    (59)
         led_power                       (60)
-        zero_order_enabled              (61)
+        zero_order_enabled              (61) % Deprecated
         enable_map_preservation         (62)
         freefall_detection_enabled      (63)
         apd_exposure_time               (64)
@@ -82,6 +82,12 @@ classdef option < int64
         sequence_size                   (78)
         sequence_id                     (79)
         humidity_temperature            (80)
-        count                           (81)
+        max_usable_range                (81)
+        alternate_IR                    (82)
+        noise_estimation                (83)
+        enable_ir_reclectivity          (84)
+        auto_exposure_limit             (85)
+        auto_gain_limit                 (86)
+        count                           (87)
     end
 end

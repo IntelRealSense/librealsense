@@ -82,7 +82,7 @@ namespace rs2
         {
             path = get_folder_path(special_folder::user_documents);
         }
-        catch (const std::exception& e)
+        catch (const std::exception&)
         {
             std::string msg = "Failed to get Documents folder";
             rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());
@@ -483,7 +483,7 @@ namespace rs2
         bool do_200ms = every_200ms;
         if (_query_devices && do_200ms)
         {
-            _missing_device = _ctx.query_devices(RS2_PRODUCT_LINE_ANY).size() == 0;
+            _missing_device = _ctx.query_devices(RS2_PRODUCT_LINE_ANY_INTEL).size() == 0;
             _hourglass_index = (_hourglass_index + 1) % 5;
 
             if (!_missing_device)

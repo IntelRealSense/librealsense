@@ -1,6 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
+
+#include "ds5/ds5-thermal-monitor.h"
 #include "ds5-options.h"
 
 namespace librealsense
@@ -38,7 +40,7 @@ namespace librealsense
     float asic_and_projector_temperature_options::query() const
     {
         if (!is_enabled())
-            throw wrong_api_call_sequence_exception("query option is allow only in streaming!");
+            throw wrong_api_call_sequence_exception("query is available during streaming only");
 
         #pragma pack(push, 1)
         struct temperature
@@ -118,7 +120,7 @@ namespace librealsense
     float motion_module_temperature_option::query() const
     {
         if (!is_enabled())
-            throw wrong_api_call_sequence_exception("query option is allow only in streaming!");
+            throw wrong_api_call_sequence_exception("query is available during streaming only");
 
         static const auto report_field = platform::custom_sensor_report_field::value;
         auto data = _ep.get_custom_report_data(custom_sensor_name, report_name, report_field);
@@ -132,7 +134,7 @@ namespace librealsense
     option_range motion_module_temperature_option::get_range() const
     {
         if (!is_enabled())
-            throw wrong_api_call_sequence_exception("get option range is allow only in streaming!");
+            throw wrong_api_call_sequence_exception("get option range is available during streaming only");
 
         static const auto min_report_field = platform::custom_sensor_report_field::minimum;
         static const auto max_report_field = platform::custom_sensor_report_field::maximum;
@@ -371,13 +373,13 @@ namespace librealsense
         return *_range;
     }
 
-    external_sync_mode::external_sync_mode(hw_monitor& hwm)
-        : _hwm(hwm)
+    external_sync_mode::external_sync_mode(hw_monitor& hwm, sensor_base* ep, int ver)
+        : _hwm(hwm), _sensor(ep), _ver(ver)
     {
         _range = [this]()
         {
             return option_range{ ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT,
-                                 2,
+                                 static_cast<float>(_ver == 3 ? ds::inter_cam_sync_mode::INTERCAM_SYNC_MAX : (_ver == 2 ? 258 : 2)),
                                  1,
                                  ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT};
         };
@@ -386,7 +388,31 @@ namespace librealsense
     void external_sync_mode::set(float value)
     {
         command cmd(ds::SET_CAM_SYNC);
-        cmd.param1 = static_cast<int>(value);
+        if (_ver == 1)
+        {
+            cmd.param1 = static_cast<int>(value);
+        }
+        else
+        {
+            if (_sensor->is_streaming())
+                throw std::runtime_error("Cannot change Inter-camera HW synchronization mode while streaming!");
+
+            if (value < 4)
+                cmd.param1 = static_cast<int>(value);
+            else if (value == 259) // For Sending two frame - First with laser ON, and the other with laser OFF.
+            {
+                cmd.param1 = 0x00010204; // genlock, two frames, on-off
+            }
+            else if (value == 260) // For Sending two frame - First with laser OFF, and the other with laser ON.
+            {
+                cmd.param1 = 0x00030204; // genlock, two frames, off-on
+            }
+            else
+            {
+                cmd.param1 = 4;
+                cmd.param1 |= (static_cast<int>(value - 3)) << 8;
+            }
+        }
 
         _hwm.send(cmd);
         _record_action(*this);
@@ -399,58 +425,21 @@ namespace librealsense
         if (res.empty())
             throw invalid_value_exception("external_sync_mode::query result is empty!");
 
-        return (res.front());
-    }
-
-    option_range external_sync_mode::get_range() const
-    {
-        return *_range;
-    }
-
-    external_sync_mode2::external_sync_mode2(hw_monitor& hwm, sensor_base* ep)
-        : _hwm(hwm), _sensor(ep)
-    {
-        _range = [this]()
-        {
-            return option_range{ ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT,
-                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_MAX,
-                                 1,
-                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT };
-        };
-    }
-
-    void external_sync_mode2::set(float value)
-    {
-        if (_sensor->is_streaming())
-            throw std::runtime_error("Cannot change Inter-camera HW synchronization mode while streaming!");
-
-        command cmd(ds::SET_CAM_SYNC);
-        if (value < 4)
-            cmd.param1 = static_cast<int>(value);
-        else
-        {
-            cmd.param1 = 4;
-            cmd.param1 |= (static_cast<int>(value - 3)) << 8;
-        }
-
-        _hwm.send(cmd);
-        _record_action(*this);
-    }
-
-    float external_sync_mode2::query() const
-    {
-        command cmd(ds::GET_CAM_SYNC);
-        auto res = _hwm.send(cmd);
-        if (res.empty())
-            throw invalid_value_exception("external_sync_mode::query result is empty!");
-
         if (res.front() < 4)
             return (res.front());
+        else if (res[2] == 0x01)
+        {
+            return 259.0f;
+        }
+        else if (res[2] == 0x03)
+        {
+            return 260.0f;
+        }
         else
             return (static_cast<float>(res[1]) + 3.0f);
     }
 
-    option_range external_sync_mode2::get_range() const
+    option_range external_sync_mode::get_range() const
     {
         return *_range;
     }
@@ -491,6 +480,16 @@ namespace librealsense
         return *_range;
     }
 
+    const char* external_sync_mode::get_description() const
+    {
+        if (_ver == 3)
+            return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave, 3:Full Salve, 4-258:Genlock with burst count of 1-255 frames for each trigger, 259 and 260 for two frames per trigger with laser ON-OFF and OFF-ON.";
+        else if (_ver == 2)
+            return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave, 3:Full Salve, 4-258:Genlock with burst count of 1-255 frames for each trigger";
+        else
+            return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave";
+    }
+
     alternating_emitter_option::alternating_emitter_option(hw_monitor& hwm, sensor_base* ep, bool is_fw_version_using_id)
         : _hwm(hwm), _sensor(ep), _is_fw_version_using_id(is_fw_version_using_id)
     {
@@ -505,10 +504,12 @@ namespace librealsense
         std::vector<uint8_t> pattern{};
 
         if (static_cast<int>(value))
+        {
             if (_is_fw_version_using_id)
                 pattern = ds::alternating_emitter_pattern;
             else
                 pattern = ds::alternating_emitter_pattern_with_name;
+        }
 
         command cmd(ds::SETSUBPRESET, static_cast<int>(pattern.size()));
         cmd.data = pattern;
@@ -654,4 +655,139 @@ namespace librealsense
             return _uvc_option->is_enabled();
     }
 
+    auto_exposure_limit_option::auto_exposure_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range)
+        : option_base(range), _hwm(hwm), _sensor(ep)
+    {
+        _range = [range]()
+        {
+            return range;
+        };
+    }
+
+    void auto_exposure_limit_option::set(float value)
+    {
+        if (!is_valid(value))
+            throw invalid_value_exception("set(enable_auto_exposure) failed! Invalid Auto-Exposure mode request " + std::to_string(value));
+
+        command cmd_get(ds::AUTO_CALIB);
+        cmd_get.param1 = 5;
+        std::vector<uint8_t> ret = _hwm.send(cmd_get);
+        if (ret.empty())
+            throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
+
+        command cmd(ds::AUTO_CALIB);
+        cmd.param1 = 4;
+        cmd.param2 = static_cast<int>(value);
+        cmd.param3 = *(reinterpret_cast<uint32_t*>(ret.data() + 4));
+        _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float auto_exposure_limit_option::query() const
+    {
+        command cmd(ds::AUTO_CALIB);
+        cmd.param1 = 5;
+
+        auto res = _hwm.send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
+
+        return static_cast<float>(*(reinterpret_cast<uint32_t*>(res.data())));
+    }
+
+    option_range auto_exposure_limit_option::get_range() const
+    {
+        return *_range;
+    }
+
+    auto_gain_limit_option::auto_gain_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range)
+        : option_base(range), _hwm(hwm), _sensor(ep)
+    {
+        _range = [range]()
+        {
+            return range;
+        };
+    }
+
+    void auto_gain_limit_option::set(float value)
+    {
+        if (!is_valid(value))
+            throw invalid_value_exception("set(enable_auto_gain) failed! Invalid Auto-Gain mode request " + std::to_string(value));
+
+        command cmd_get(ds::AUTO_CALIB);
+        cmd_get.param1 = 5;
+        std::vector<uint8_t> ret = _hwm.send(cmd_get);
+        if (ret.empty())
+            throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
+
+        command cmd(ds::AUTO_CALIB);
+        cmd.param1 = 4;
+        cmd.param2 = *(reinterpret_cast<uint32_t*>(ret.data()));
+        cmd.param3 = static_cast<int>(value);
+        _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float auto_gain_limit_option::query() const
+    {
+        command cmd(ds::AUTO_CALIB);
+        cmd.param1 = 5;
+
+        auto res = _hwm.send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
+
+        return static_cast<float>(*(reinterpret_cast<uint32_t*>(res.data() + 4)));
+    }
+
+    option_range auto_gain_limit_option::get_range() const
+    {
+        return *_range;
+    }
+
+    librealsense::thermal_compensation::thermal_compensation(
+        std::shared_ptr<ds5_thermal_monitor> monitor,
+        std::shared_ptr<option> toggle) :
+        _thermal_monitor(monitor),
+        _thermal_toggle(toggle)
+    {
+    }
+
+    float librealsense::thermal_compensation::query(void) const
+    {
+        auto val = _thermal_toggle->query();
+        return val;
+    }
+
+    void librealsense::thermal_compensation::set(float value)
+    {
+        if (value < 0)
+            throw invalid_value_exception("Invalid input for thermal compensation toggle: " + std::to_string(value));
+
+        _thermal_toggle->set(value);
+        _recording_function(*this);
+    }
+
+    const char* librealsense::thermal_compensation::get_description() const
+    {
+        return "Toggle thermal compensation adjustments mechanism";
+    }
+
+    const char* librealsense::thermal_compensation::get_value_description(float value) const
+    {
+        if (value == 0)
+        {
+            return "Thermal compensation is disabled";
+        }
+        else
+        {
+            return "Thermal compensation is enabled";
+        }
+    }
+
+    //Work-around the control latency
+    void librealsense::thermal_compensation::create_snapshot(std::shared_ptr<option>& snapshot) const
+    {
+        snapshot = std::make_shared<const_value_option>(get_description(), 0.f);
+    }
 }

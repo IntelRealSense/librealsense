@@ -25,6 +25,10 @@
 #include "../common/fw/firmware-version.h"
 #include "ac-trigger.h"
 #include "algo/depth-to-rgb-calibration/debug.h"
+#include "../common/utilities/time/periodic_timer.h"
+#include "../common/utilities/time/work_week.h"
+#include "../common/utilities/time/l500/get-mfr-ww.h"
+
 
 
 namespace librealsense
@@ -34,6 +38,7 @@ namespace librealsense
         { rs_fourcc('Z','1','6',' '), RS2_FORMAT_Z16 },
         { rs_fourcc('C',' ',' ',' '), RS2_FORMAT_RAW8 },
         { rs_fourcc('C','N','F','4'), RS2_FORMAT_RAW8 },
+        { rs_fourcc('F','G',' ',' '), RS2_FORMAT_FG },
     };
 
     std::map<uint32_t, rs2_stream> l500_depth_fourcc_to_rs2_stream = {
@@ -41,6 +46,7 @@ namespace librealsense
         { rs_fourcc('Z','1','6',' '), RS2_STREAM_DEPTH },
         { rs_fourcc('C',' ',' ',' '), RS2_STREAM_CONFIDENCE },
         { rs_fourcc('C','N','F','4'), RS2_STREAM_CONFIDENCE },
+        { rs_fourcc('F','G',' ',' '), RS2_STREAM_DEPTH },
     };
 
     using namespace ivcam2;
@@ -50,7 +56,8 @@ namespace librealsense
         :device(ctx, group), global_time_interface(), 
         _depth_stream(new stream(RS2_STREAM_DEPTH)),
         _ir_stream(new stream(RS2_STREAM_INFRARED)),
-        _confidence_stream(new stream(RS2_STREAM_CONFIDENCE))
+        _confidence_stream(new stream(RS2_STREAM_CONFIDENCE)),
+        _temperatures()
     {
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         auto pid = group.uvc_devices.front().pid;
@@ -98,7 +105,7 @@ namespace librealsense
         _fw_version = firmware_version(fwv);
         firmware_version recommended_fw_version(L5XX_RECOMMENDED_FIRMWARE_VERSION);
 
-        _is_locked = _hw_monitor->get_gvd_field<bool>(gvd_buff, is_camera_locked_offset);
+        _is_locked = _hw_monitor->get_gvd_field<uint8_t>(gvd_buff, is_camera_locked_offset) != 0;
 
         auto pid_hex_str = hexify(group.uvc_devices.front().pid);
 
@@ -122,6 +129,24 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "L500");
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
+
+        // If FW supportes the SET_AGE command, we update the age of the device in weeks to aid projection of aging
+        if( ( _fw_version >= firmware_version( "1.5.4.0" ) ) )
+        {
+            try
+            {
+                auto manufacture
+                    = utilities::time::l500::get_manufacture_work_week( optic_serial );
+                auto age
+                    = utilities::time::get_work_weeks_since( manufacture );
+                command cmd( fw_cmd::UNIT_AGE_SET, (uint8_t)age );
+                _hw_monitor->send( cmd );
+            }
+            catch( ... )
+            {
+                LOG_ERROR( "Failed to set units age" );
+            }
+        }
 
         configure_depth_options();
     }
@@ -200,13 +225,18 @@ namespace librealsense
     {
         synthetic_sensor & depth_sensor = get_depth_sensor();
 
-        auto is_zo_enabled_opt = std::make_shared<bool_option>();
-        auto weak_is_zo_enabled_opt = std::weak_ptr<bool_option>(is_zo_enabled_opt);
-        is_zo_enabled_opt->set(false);
-        depth_sensor.register_option(RS2_OPTION_ZERO_ORDER_ENABLED, is_zo_enabled_opt);
-
         if( _fw_version >= firmware_version( "1.5.0.0" ) )
         {
+            bool usb3mode = (_usb_mode >= platform::usb3_type || _usb_mode == platform::usb_undefined);
+            if (usb3mode)
+            {
+                auto enable_max_usable_range = std::make_shared<max_usable_range_option>(this);
+                depth_sensor.register_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE, enable_max_usable_range);
+
+                auto enable_ir_reflectivity = std::make_shared<ir_reflectivity_option>(this);
+                depth_sensor.register_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY, enable_ir_reflectivity);
+            }
+
             // TODO may not need auto-cal if there's no color sensor, like on the rs500...
             _autocal = std::make_shared< ac_trigger >( *this, _hw_monitor );
 
@@ -216,14 +246,23 @@ namespace librealsense
                 {
                     if( status == RS2_CALIBRATION_SUCCESSFUL )
                     {
+                        rs2_dsm_params new_dsm_params = _autocal->get_dsm_params();
+                        // We update the age of the device in weeks and the time between factory
+                        // calibration and last AC to aid projection
+                        auto manufacture = utilities::time::l500::get_manufacture_work_week(
+                            get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) );
+                        auto age
+                            = utilities::time::get_work_weeks_since( manufacture );
+                        new_dsm_params.weeks_since_calibration = (uint8_t)age;
+                        new_dsm_params.ac_weeks_since_calibaration = (uint8_t)age;
+
                         // We override the DSM params first, because it can throw if the parameters
                         // are exceeding spec! This may throw!!
-                        get_depth_sensor().override_dsm_params( _autocal->get_dsm_params() );
-                     
+                        get_depth_sensor().override_dsm_params( new_dsm_params );
                         auto & color_sensor = *get_color_sensor();
                         color_sensor.override_intrinsics( _autocal->get_raw_intrinsics() );
                         color_sensor.override_extrinsics( _autocal->get_extrinsics() );
-                        color_sensor.set_k_thermal_intrinsics(_autocal->get_thermal_intrinsics());
+                        color_sensor.set_k_thermal_intrinsics( _autocal->get_thermal_intrinsics() );
                     }
                     notify_of_calibration_change( status );
                 } );
@@ -242,17 +281,14 @@ namespace librealsense
             { {RS2_FORMAT_Z16}, {RS2_FORMAT_Y8} },
             { {RS2_FORMAT_Z16, RS2_STREAM_DEPTH, 0, 0, 0, 0, &rotate_resolution} },
             [=]() {
-                auto is_zo_enabled_opt = weak_is_zo_enabled_opt.lock();
                 auto z16rot = std::make_shared<rotation_transform>(RS2_FORMAT_Z16, RS2_STREAM_DEPTH, RS2_EXTENSION_DEPTH_FRAME);
                 auto y8rot = std::make_shared<rotation_transform>(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME);
-                auto sync = std::make_shared<syncer_process_unit>(); // is_zo_enabled_opt );
-                auto zo = std::make_shared<zero_order>(is_zo_enabled_opt);
+                auto sync = std::make_shared<syncer_process_unit>(nullptr, false); // disable logging on this internal syncer
 
                 auto cpb = std::make_shared<composite_processing_block>();
                 cpb->add(z16rot);
                 cpb->add(y8rot);
                 cpb->add(sync);
-                cpb->add(zo);
                 if( _autocal )
                 {
                     //sync->add_enabling_option( _autocal->get_enabler_opt() );
@@ -271,19 +307,16 @@ namespace librealsense
                 {RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE, 0, 0, 0, 0, &l500_confidence_resolution}
             },
             [=]() {
-                auto is_zo_enabled_opt = weak_is_zo_enabled_opt.lock();
                 auto z16rot = std::make_shared<rotation_transform>(RS2_FORMAT_Z16, RS2_STREAM_DEPTH, RS2_EXTENSION_DEPTH_FRAME);
                 auto y8rot = std::make_shared<rotation_transform>(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME);
                 auto conf = std::make_shared<confidence_rotation_transform>();
-                auto sync = std::make_shared<syncer_process_unit>(); // is_zo_enabled_opt );
-                auto zo = std::make_shared<zero_order>(is_zo_enabled_opt);
+                auto sync = std::make_shared<syncer_process_unit>(nullptr, false); // disable logging on this internal syncer
 
                 auto cpb = std::make_shared<composite_processing_block>();
                 cpb->add(z16rot);
                 cpb->add(y8rot);
                 cpb->add(conf);
                 cpb->add(sync);
-                cpb->add(zo);
                 if( _autocal )
                 {
                     //sync->add_enabling_option( _autocal->get_enabler_opt() );
@@ -307,6 +340,8 @@ namespace librealsense
             []() { return std::make_shared<confidence_rotation_transform>(); }
         );
 
+        depth_sensor.register_processing_block(
+            processing_block_factory::create_id_pbf( RS2_FORMAT_FG, RS2_STREAM_DEPTH ) );
 
         std::shared_ptr< freefall_option > freefall_opt;
         if( _fw_version >= firmware_version( "1.3.5.0" ) )
@@ -418,12 +453,26 @@ namespace librealsense
     {
         // Stop all data streaming/exchange pipes with HW
         stop_activity();
+        using namespace std;
+        using namespace std::chrono;
 
         try {
             LOG_INFO("entering to update state, device disconnect is expected");
             command cmd(ivcam2::DFU);
             cmd.param1 = 1;
             _hw_monitor->send(cmd);
+            std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
+            for (auto i = 0; i < 50; i++)
+            {
+
+                _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
+                this_thread::sleep_for(milliseconds(50));
+            }
+            throw std::runtime_error("Device still connected!");
+
+        }
+        catch (std::exception& e) {
+            LOG_WARNING(e.what());
         }
         catch (...) {
             // The set command returns a failure because switching to DFU resets the device while the command is running.
@@ -614,37 +663,139 @@ namespace librealsense
 
         if (command_str == "GET-NEST")
         {
-            // Handle extended temperature command
-            auto nest_response = _hw_monitor->send(command{ ivcam2::TEMPERATURES_GET });
-            if (nest_response.size() < sizeof(extended_temperatures))
+            auto minimal_fw_ver = firmware_version("1.5.0.0");
+            if (_fw_version >= minimal_fw_ver)
             {
-                throw invalid_value_exception(to_string() <<
-                    "Extended temperatures get FW command failed, size expected: " << sizeof(extended_temperatures )
-                    << " , size received: " << nest_response.size() );
+                // Handle extended temperature command
+                LOG_INFO("Nest AVG: " << get_temperatures().nest_avg);
+
+                // Handle other commands (all results log the first byte)
+                log_FW_response_first_byte(*_hw_monitor, "Gain trim",
+                    command(ivcam2::IRB, 0x6C, 0x2, 0x1),
+                    sizeof(uint8_t));
+                log_FW_response_first_byte(*_hw_monitor, "IPF gain",
+                    command(ivcam2::MRD, 0xA003007C, 0xA0030080),
+                    sizeof(uint32_t));
+                log_FW_response_first_byte(*_hw_monitor, "APB VBR",
+                    command(ivcam2::AMCGET, 0x4, 0x0, 0x0),
+                    sizeof(uint32_t));
+                return std::vector< uint8_t >();
             }
-
-            auto const & ext_temp
-                = *(reinterpret_cast<extended_temperatures *>(nest_response.data()));
-            LOG_INFO("Nest AVG: " << ext_temp.nest_avg);
-
-            // Handle other commands (all results log the first byte)
-            log_FW_response_first_byte(*_hw_monitor, "Gain trim",
-                command(ivcam2::IRB, 0x6C, 0x2, 0x1),
-                sizeof(uint8_t));
-            log_FW_response_first_byte(*_hw_monitor, "IPF gain",
-                command(ivcam2::MRD, 0xA003007C, 0xA0030080),
-                sizeof(uint32_t));
-            log_FW_response_first_byte(*_hw_monitor, "APB VBR",
-                command(ivcam2::AMCGET, 0x4, 0x0, 0x0),
-                sizeof(uint32_t));
-            return std::vector< uint8_t >();
+            else
+                throw librealsense::invalid_value_exception(
+                    to_string() << "get-nest command requires FW version >= " << minimal_fw_ver
+                                << ", current version is: " << _fw_version );
         }
 
         return _hw_monitor->send(input);
     }
 
+
+    ivcam2::extended_temperatures l500_device::get_temperatures() const
+    {
+        ivcam2::extended_temperatures rv;
+        if (_have_temperatures)
+        {
+            std::lock_guard<std::mutex> lock(_temperature_mutex);
+            rv = _temperatures;
+        }
+        else
+        {
+            // Noise estimation was added at FW version 1.5.0.0
+            auto fw_version_support_nest = (_fw_version >= firmware_version("1.5.0.0")) ? true : false;
+            auto expected_size = fw_version_support_nest ? sizeof(extended_temperatures)
+                : sizeof(temperatures);
+
+
+            const auto res = _hw_monitor->send(command{ TEMPERATURES_GET });
+            // Verify read
+            if (res.size() < expected_size)
+            {
+                throw std::runtime_error(
+                    to_string() << "TEMPERATURES_GET - Invalid result size! expected: "
+                    << expected_size << " bytes, "
+                    "got: " << res.size() << " bytes");
+            }
+
+            if (fw_version_support_nest)
+                rv = *reinterpret_cast<extended_temperatures const *>(res.data());
+            else
+                *reinterpret_cast<temperatures *>(&rv) = *reinterpret_cast<temperatures const *>(res.data());
+        }
+        return rv;
+    }
+
+    void l500_device::start_temperatures_reader()
+    {
+        LOG_DEBUG("Starting temperature fetcher thread");
+        _keep_reading_temperature = true;
+        _temperature_reader = std::thread( [&]() {
+            try
+            {
+                auto fw_version_support_nest = _fw_version >= firmware_version( "1.5.0.0" );
+
+                auto expected_size = fw_version_support_nest ? sizeof( extended_temperatures )
+                                                             : sizeof( temperatures );
+
+                utilities::time::periodic_timer second_has_passed(std::chrono::seconds(1));
+                second_has_passed.set_expired(); // Force condition true on start
+
+
+                while (_keep_reading_temperature)
+                {
+                    if (second_has_passed) // Update temperatures every second
+                    {
+                        const auto res = _hw_monitor->send(command{ TEMPERATURES_GET });
+                        // Verify read
+                        if (res.size() < expected_size)
+                        {
+                            throw std::runtime_error(
+                                to_string() << "TEMPERATURES_GET - Invalid result size!, expected: "
+                                << expected_size << " bytes, "
+                                "got: " << res.size() << " bytes");
+                        }
+               
+                        std::lock_guard<std::mutex> lock(_temperature_mutex);
+
+                        memset(&_temperatures, sizeof(_temperatures), 0);
+                        if (fw_version_support_nest)
+                            _temperatures = *reinterpret_cast<extended_temperatures const *>(res.data());
+                        else
+                            *reinterpret_cast<temperatures *>(&_temperatures) = *reinterpret_cast<temperatures const *>(res.data());
+                       
+                        _have_temperatures = true;
+                    }
+               
+                    // Do not hold the device alive too long if reader thread was turned off
+                    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+                }
+             }
+             catch (...)
+             {
+                 LOG_WARNING("unable to read temperatures - closing temperatures reader");
+             }
+             _have_temperatures = false;
+         });
+     }
+    
+    void l500_device::stop_temperatures_reader()
+    {
+        if (_keep_reading_temperature)
+        {
+            LOG_DEBUG("Stopping temperature fetcher thread");
+            _keep_reading_temperature = false;
+            _have_temperatures = false;
+        }
+
+        if (_temperature_reader.joinable())
+        {
+            _temperature_reader.join();
+        }
+    }
+
     notification l500_notification_decoder::decode(int value)
     {
+        // Anything listed in l500-private.h on l500_fw_error_report is an error; everything else is a warning
         if (l500_fw_error_report.find(static_cast<uint8_t>(value)) != l500_fw_error_report.end())
             return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, l500_fw_error_report.at(static_cast<uint8_t>(value)) };
 

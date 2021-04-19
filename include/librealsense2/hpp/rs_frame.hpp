@@ -244,6 +244,13 @@ namespace rs2
             return intr;
         }
 
+        bool operator==(const video_stream_profile& other) const
+        {
+            return (((stream_profile&)*this)==other && 
+                    width() == other.width() &&
+                    height() == other.height());
+        }
+
         using stream_profile::clone;
 
         /**
@@ -698,6 +705,22 @@ namespace rs2
         * \return            number of bytes per one pixel
         */
         int get_bytes_per_pixel() const { return get_bits_per_pixel() / 8; }
+
+        /**
+        * Extract the target dimensions on the specific target
+        * \param[in] frame            Left or right camera frame of specified size based on the target type
+        * \param[in] calib_type       Calibration target type
+        * \param[in] target_dims_size Target dimension array size
+        * \param[out] target_dims     The array to hold the result target dimensions calculated. For type RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES, the four rectangle side sizes in pixels with the order of top, bottom, left, and right
+        * \param[out] error           If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+        */
+        bool extract_target_dimensions(rs2_calib_target_type calib_type, float* target_dims, unsigned int target_dims_size) const
+        {
+            rs2_error* e = nullptr;
+            rs2_extract_target_dimensions(get(), calib_type, target_dims, target_dims_size, &e);
+            error::handle(e);
+            return (e == nullptr);
+        }
     };
 
     struct vertex {

@@ -184,7 +184,8 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
 
         AC_LOG( DEBUG, "Optimization successful!" );
         _thermal_intr = _algo.get_calibration().get_intrinsics();
-        _thermal_intr.model = RS2_DISTORTION_INVERSE_BROWN_CONRADY;  // restore LRS model
+
+        _thermal_intr.model = l500_distortion;  // restore LRS model
 
         // Override everything in the raw intrinsics except the focal length (fx and fy)
         // TODO: AC is not "supposed" to change focal length, but we shouldn't assume this! The

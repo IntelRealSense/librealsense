@@ -87,14 +87,40 @@ static void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrin
 
     float x = (pixel[0] - intrin->ppx) / intrin->fx;
     float y = (pixel[1] - intrin->ppy) / intrin->fy;
+
+    float xo = x;
+    float yo = y;
+
     if(intrin->model == RS2_DISTORTION_INVERSE_BROWN_CONRADY)
     {
-        float r2  = x*x + y*y;
-        float f = 1 + intrin->coeffs[0]*r2 + intrin->coeffs[1]*r2*r2 + intrin->coeffs[4]*r2*r2*r2;
-        float ux = x*f + 2*intrin->coeffs[2]*x*y + intrin->coeffs[3]*(r2 + 2*x*x);
-        float uy = y*f + 2*intrin->coeffs[3]*x*y + intrin->coeffs[2]*(r2 + 2*y*y);
-        x = ux;
-        y = uy;
+        // need to loop until convergence 
+        // 10 iterations determined empirically
+        for (int i = 0; i < 10; i++)
+        {
+            float r2 = x * x + y * y;
+            float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1])*r2 + intrin->coeffs[0])*r2);
+            float xq = x / icdist;
+            float yq = y / icdist;
+            float delta_x = 2 * intrin->coeffs[2] * xq*yq + intrin->coeffs[3] * (r2 + 2 * xq*xq);
+            float delta_y = 2 * intrin->coeffs[3] * xq*yq + intrin->coeffs[2] * (r2 + 2 * yq*yq);
+            x = (xo - delta_x)*icdist;
+            y = (yo - delta_y)*icdist;
+        }
+    }
+    if (intrin->model == RS2_DISTORTION_BROWN_CONRADY)
+    {
+        // need to loop until convergence 
+        // 10 iterations determined empirically
+        for (int i = 0; i < 10; i++)
+        {
+            float r2 = x * x + y * y;
+            float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1])*r2 + intrin->coeffs[0])*r2);
+            float delta_x = 2 * intrin->coeffs[2] * x*y + intrin->coeffs[3] * (r2 + 2 * x*x);
+            float delta_y = 2 * intrin->coeffs[3] * x*y + intrin->coeffs[2] * (r2 + 2 * y*y);
+            x = (xo - delta_x)*icdist;
+            y = (yo - delta_y)*icdist;
+        }
+        
     }
     if (intrin->model == RS2_DISTORTION_KANNALA_BRANDT4)
     {
@@ -109,7 +135,7 @@ static void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrin
         for (int i = 0; i < 4; i++)
         {
             float f = theta*(1 + theta2*(intrin->coeffs[0] + theta2*(intrin->coeffs[1] + theta2*(intrin->coeffs[2] + theta2*intrin->coeffs[3])))) - rd;
-            if (abs(f) < FLT_EPSILON)
+            if (fabs(f) < FLT_EPSILON)
             {
                 break;
             }
@@ -219,7 +245,7 @@ static void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
         rs2_transform_point_to_point(transformed_point, depth_to_color, point);
         rs2_project_point_to_pixel(projected_pixel, color_intrin, transformed_point);
 
-        float new_dist = pow((projected_pixel[1] - from_pixel[1]), 2) + pow((projected_pixel[0] - from_pixel[0]), 2);
+        float new_dist = (float)(pow((projected_pixel[1] - from_pixel[1]), 2) + pow((projected_pixel[0] - from_pixel[0]), 2));
         if (new_dist < min_dist || min_dist < 0)
         {
             min_dist = new_dist;

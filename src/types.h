@@ -204,6 +204,8 @@ namespace librealsense
     void log_to_console(rs2_log_severity min_severity);
     void log_to_file( rs2_log_severity min_severity, const char* file_path );
     void log_to_callback( rs2_log_severity min_severity, log_callback_ptr callback );
+    void reset_logger();
+    void enable_rolling_log_file( unsigned max_size );
 
 #if BUILD_EASYLOGGINGPP
 
@@ -544,6 +546,7 @@ namespace librealsense
     RS2_ENUM_HELPERS(rs2_camera_info, CAMERA_INFO)
     RS2_ENUM_HELPERS(rs2_frame_metadata_value, FRAME_METADATA)
     RS2_ENUM_HELPERS(rs2_timestamp_domain, TIMESTAMP_DOMAIN)
+    RS2_ENUM_HELPERS(rs2_calib_target_type, CALIB_TARGET)
     RS2_ENUM_HELPERS(rs2_sr300_visual_preset, SR300_VISUAL_PRESET)
     RS2_ENUM_HELPERS(rs2_extension, EXTENSION)
     RS2_ENUM_HELPERS(rs2_exception_type, EXCEPTION_TYPE)
@@ -1779,7 +1782,6 @@ namespace librealsense
         bool _valid;
         T _value;
     };
-
 }
 
 inline std::ostream& operator<<( std::ostream& out, rs2_extrinsics const & e )
