@@ -39,8 +39,8 @@ namespace time {
 
 work_week::work_week( unsigned year, unsigned ww )
 {
-    if( ww == 0 || ww > work_weeks_between_years( year + 1, year ) )
-    { 
+    if( ww == 0 || ww > unsigned(work_weeks_between_years(year + 1, year)))
+    {
         std::ostringstream message;
         message << "Invalid work week given: " << year << " doesn't have a work week " << ww;
         throw std::runtime_error(message.str());
