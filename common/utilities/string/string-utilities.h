@@ -31,53 +31,86 @@ namespace utilities {
                         if (std::is_same<T, unsigned long>::value)
                     {
                         if (str[0] == '-') return false; //for explanation see 'NOTE for unsigned types'
-                        result = std::stoul(str, &last_char_idx);
+                        result = static_cast<T>(std::stoul(str, &last_char_idx));
                     }
                     else if (std::is_same<T, unsigned long long>::value)
                     {
                             if (str[0] == '-') return false;
-                        result = std::stoull(str, &last_char_idx);
+                        result = static_cast<T>(std::stoull(str, &last_char_idx));
                     }
                     else if (std::is_same<T, long>::value)
                     {
-                        result = std::stol(str, &last_char_idx);
+                        result = static_cast<T>(std::stol(str, &last_char_idx));
                     }
                     else if (std::is_same<T, long long>::value)
                     {
-                        result = std::stoll(str, &last_char_idx);
+                        result = static_cast<T>(std::stoll(str, &last_char_idx));
                     }
-                    else if (std::is_same<T, int>::value || std::is_same<T, short>::value)
+                    else if (std::is_same<T, int>::value)
+                    {
+                        result = static_cast<T>(std::stoi(str, &last_char_idx));
+                    }
+                    else if (std::is_same<T, short>::value)
                     {// no dedicated function fot short in std
-                        result = std::stoi(str, &last_char_idx);
+
+                        int check_value = std::stoi(str, &last_char_idx);
+
+                        if (check_value > std::numeric_limits<short>::max() || check_value < std::numeric_limits<short>::min())
+                            throw std::out_of_range("short");
+
+                        result = static_cast<T>(check_value);
+
                     }
-                    else if (std::is_same<T, unsigned short>::value || std::is_same<T, unsigned int>::value)
-                        { // no dedicated function in std - unsgined corresponds to 16 bit, and unsigned long corresponds to 32 bit
-                            if (str[0] == '-') return false;
-                            result = std::stoul(str, &last_char_idx);
-                        }
+                    else if (std::is_same<T, unsigned int>::value)
+                    {// no dedicated function in std - unsgined corresponds to 16 bit, and unsigned long corresponds to 32 bit
+                        if (str[0] == '-')
+                            return false;
+
+                        unsigned long check_value = std::stoul(str, &last_char_idx);
+
+                        if (check_value > std::numeric_limits<unsigned int>::max())
+                            throw std::out_of_range("unsigned int");
+
+                        result = static_cast<T>(check_value);
+
+                    }
+                    else if (std::is_same<T, unsigned short>::value || std::is_same<T, unsigned short>::value)
+                    { // no dedicated function in std - unsgined corresponds to 16 bit, and unsigned long corresponds to 32 bit
+                        if (str[0] == '-')
+                            return false;
+
+                        unsigned long check_value = std::stoul(str, &last_char_idx);
+
+                        if (check_value > std::numeric_limits<unsigned short>::max())
+                            throw std::out_of_range("unsigned short");
+
+                        result = static_cast<T>(check_value);
+
+                    }
                     else
                     {
-                            return false;
+                        return false;
                     }
                 }
                 else if (std::is_floating_point<T>::value)
-                {/*== !std::isfinite((long double)result)*/ 
+                {
                     if (std::is_same<T, float>::value)
                     {
-                        result = std::stof(str, &last_char_idx);
-                        if (std::isnan((float)result) || std::isinf((float)result) || !std::isfinite((float)result)) return false; // if value is NaN or inf (or -inf), return false
+                        result = static_cast<T>(std::stof(str, &last_char_idx));
+                        if (!std::isfinite((float)result))
+                            return false;
                     }
                     else if (std::is_same<T, double>::value)
                     {
-                        result = std::stod(str, &last_char_idx); 
-                        int res = std::isfinite((double)result);
-                        if (std::isnan((double)result) || std::isinf((double)result) || !std::isfinite((double)result)) 
-                            return false; // if value is NaN or inf (or -inf) or ( 0 < value < min_float/double), return false
+                        result = static_cast<T>(std::stod(str, &last_char_idx));
+                        if (!std::isfinite((double)result))
+                            return false;
                     }
                     else if (std::is_same<T, long double>::value)
                     {
-                        result = std::stold(str, &last_char_idx);
-                        if (std::isnan((long double)result) || std::isinf((long double)result) || !std::isfinite((long double)result)) return false;
+                        result = static_cast<T>(std::stold(str, &last_char_idx));
+                        if (!std::isfinite((long double)result))
+                            return false;
                     }
                     else
                     {
