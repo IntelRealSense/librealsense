@@ -18,6 +18,8 @@
 
 using namespace rs2;
 
+constexpr int ITERATIONS_PER_CONFIG = 10;
+
 TEST_CASE("Sync sanity", "[live][mayfail]") {
 
     rs2::context ctx;
@@ -5913,5 +5915,127 @@ TEST_CASE("l500_presets_set_preset", "[live]")
             ds.set_option(RS2_OPTION_VISUAL_PRESET, RS2_L500_VISUAL_PRESET_LOW_AMBIENT);
         }
        
+    }
+}
+
+TEST_CASE("IR streaming functionality", "[live]")
+{
+    // Require at least one device to be plugged in
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        auto list = ctx.query_devices();
+        REQUIRE(list.size());
+        REQUIRE(list.front().supports(RS2_CAMERA_INFO_PRODUCT_LINE));
+        std::string device_type = list.front().get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
+        int width = 848;
+        int height = 480;
+        if (device_type == "L500")
+            width = 640;
+
+        std::map<int, std::string> stream_names;
+        std::mutex mutex;
+        std::mutex mutex_process;
+        std::map<int, std::vector<unsigned long long>> frames_num;
+
+        auto process_frame = [&](const rs2::frame& f)
+        {
+            std::lock_guard<std::mutex> lock(mutex_process);
+            auto stream_type = f.get_profile().stream_name();
+            auto frame_num = f.get_frame_number();
+            auto unique_id = f.get_profile().unique_id();
+            if (std::find(frames_num[unique_id].begin(), frames_num[unique_id].end(), frame_num) != frames_num[unique_id].end()) // check if frame is already processed
+                return;
+            frames_num[unique_id].push_back(frame_num);
+        };
+        auto frame_callback = [&](const rs2::frame& f)
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            if (rs2::frameset fs = f.as<rs2::frameset>())
+            {
+                // With callbacks, all synchronized stream will arrive in a single frameset
+                for (const rs2::frame& ff : fs)
+                {
+                    process_frame(ff);
+                }
+            }
+            else
+            {
+                // Stream that bypass synchronization (such as IMU) will produce single frames
+                process_frame(f);
+            }
+        };
+
+        bool baseline_cfgs[2] = { true, false };
+        bool depth_cfg[2] = { true, false };
+        rs2::config cfg;
+        cfg.disable_all_streams();
+        cfg.disable_stream(RS2_STREAM_ACCEL);
+        cfg.disable_stream(RS2_STREAM_GYRO);
+        cfg.enable_stream(RS2_STREAM_COLOR, width, height, RS2_FORMAT_ANY, 60);
+        cfg.enable_stream(RS2_STREAM_INFRARED, width, height, RS2_FORMAT_ANY, 60);
+
+
+        for (auto& depth : depth_cfg)
+        {
+            std::map<int, std::vector<unsigned long long>> baseline_frames_num;
+            std::map<int, std::vector<unsigned long long>> test_frames_num;
+
+            std::cout << "==============================================" << std::endl;
+            if (depth)
+                cfg.enable_stream(RS2_STREAM_DEPTH, width, height, RS2_FORMAT_ANY, 60);
+            else
+                cfg.disable_stream(RS2_STREAM_DEPTH);
+
+            for (auto baseline : baseline_cfgs)
+            {
+
+                frames_num.clear();
+                rs2::pipeline pipe;
+                std::cout << std::endl;
+                if (baseline)
+                {
+                    std::cout << "----------- Baseline configuration is running .. -----------" << std::endl;
+                    set_exposure(list, 1); // set exposure to min value
+                }
+                else
+                {
+                    std::cout << "----------- Test configuration is running .. -----------" << std::endl;
+                    set_exposure(list, 9000);
+                }
+
+                rs2::pipeline_profile profiles = pipe.start(cfg, frame_callback);
+                // Collect the enabled streams names
+                for (auto p : profiles.get_streams())
+                    stream_names[p.unique_id()] = p.stream_name();
+
+                for (auto i = 0; i < ITERATIONS_PER_CONFIG; i++)
+                {
+                    std::this_thread::sleep_for(std::chrono::seconds(1));
+                    std::lock_guard<std::mutex> lock(mutex);
+                    for (auto f : frames_num)
+                    {
+                        std::cout << stream_names[f.first] << "[" << f.first << "]: " << f.second.size() << " [frames] ||";
+                    }
+                    std::cout << std::endl;
+                }
+                if (baseline)
+                    baseline_frames_num = frames_num;
+                else
+                    test_frames_num = frames_num;
+            }
+
+            // Analysis
+            for (auto f : baseline_frames_num)
+            {
+                auto unique_id = f.first;
+                auto test_frames_size = test_frames_num[unique_id].size();
+                auto baseline_frames_size = baseline_frames_num[unique_id].size();
+                double ratio = ((double)test_frames_size) / baseline_frames_size;
+                CAPTURE(baseline_frames_size, test_frames_size);
+                CHECK(ratio > 0.5);
+            }
+        }
     }
 }
