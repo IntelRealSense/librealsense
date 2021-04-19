@@ -4933,104 +4933,44 @@ namespace rs2
                                 need_to_check_bundle = false;
                             }
                         }
-                        else
+                        else 
                         {
-                            if (sw_online_update_available)
+                            if (auto viewer_updates = updates_model_protected.lock())
                             {
-                                if (auto nm = notification_model_protected.lock())
+                                // Do not create pop ups if the viewer updates windows is on
+                                if (viewer_updates->has_updates())
                                 {
-                                    dev_updates_profile::version_info recommended_sw_update_info;
-                                    update_profile->get_sw_update(sw_update::RECOMMENDED, recommended_sw_update_info);
-                                    auto n = std::make_shared< sw_recommended_update_alert_model >(
-                                        RS2_API_FULL_VERSION_STR,
-                                        recommended_sw_update_info.ver,
-                                        recommended_sw_update_info.download_link);
-                                    auto name = get_device_name(dev);
-                                    n->delay_id = "update_alert." + name.second;
-                                    n->enable_complex_dismiss = true;  // allow advanced dismiss menu
-
-                                    if (!n->is_delayed())
-                                    {
-                                        nm->add_notification(n);
-                                        related_notifications.push_back(n);
-                                    }
+                                    need_to_check_bundle = false;
                                 }
-                            }
-                            if (fw_online_update_available)
-                            {
-                                if (auto nm = notification_model_protected.lock())
+                                else
                                 {
-                                    std::shared_ptr< firmware_update_manager > manager = nullptr;
-
-                                    std::vector< uint8_t > fw_data;
-                                    http::http_downloader downloader;
-
-                                    // Try to download the recommended FW binary file
-                                    int download_retries = 3;
-                                    dev_updates_profile::version_info recommended_fw_update_info;
-                                    update_profile->get_fw_update(sw_update::RECOMMENDED, recommended_fw_update_info);
-    
-                                    while (download_retries > 0)
+                                    if (sw_online_update_available)
                                     {
-                                        if (downloader.download_to_bytes_vector(
-                                            recommended_fw_update_info.download_link,
-                                            fw_data))
-                                            download_retries = 0;
-                                        else
-                                            --download_retries;
-                                    }
-
-                                    // If the download process finished successfully, pop up a
-                                    // notification for the FW update process
-                                    if (!fw_data.empty())
-                                    {
-                                        manager = std::make_shared< firmware_update_manager >(nm,
-                                            *this,
-                                            dev,
-                                            ctx,
-                                            fw_data,
-                                            true);
-
-                                        auto dev_name = get_device_name(dev);
-                                        std::stringstream msg;
-                                        msg << dev_name.first << " (S/N " << dev_name.second << ")\n"
-                                            << "Current Version: "
-                                            << std::string(update_profile->firmware_version) << "\n";
-
-                                        msg << "Recommended Version: "
-                                            << std::string(recommended_fw_update_info.ver);
-
-                                        auto n = std::make_shared< fw_update_notification_model >(
-                                            msg.str(),
-                                            manager,
-                                            false);
-                                        n->delay_id = "dfu." + dev_name.second;
-                                        n->enable_complex_dismiss = true;
-                                        if (!n->is_delayed())
+                                        if (auto nm = notification_model_protected.lock())
                                         {
-                                            nm->add_notification(n);
-                                            related_notifications.push_back(n);
-                                            need_to_check_bundle = false;
+                                            handle_online_sw_update( nm, update_profile );
                                         }
                                     }
-                                    else
-                                        nm->output.add_log(
-                                            RS2_LOG_SEVERITY_WARN,
-                                            __FILE__,
-                                            __LINE__,
-                                            to_string()
-                                            << "Error in downloading FW binary file: "
-                                            << recommended_fw_update_info.download_link);
+                                    if (fw_online_update_available)
+                                    {
+                                        if (auto nm = notification_model_protected.lock())
+                                        {
+                                            need_to_check_bundle = !handle_online_fw_update( ctx, nm, update_profile );
+                                        }
+                                    }
                                 }
                             }
-                            // For updating current device profile if exists (Could update firmware
-                            // version)
+                            // For updating current device profile if exists (Could update firmware version)
                             if (auto viewer_updates = updates_model_protected.lock())
                             {
                                 viewer_updates->update_profile(updates_profile_model);
                             }
                         }
                     }
+                }
+                else if( auto nm = notification_model_protected.lock() )
+                {
+                    nm->add_log( "No online SW / FW updates available" );
                 }
 
                 // If no on-line updates notification, offer bundled FW update if needed
@@ -5656,6 +5596,93 @@ namespace rs2
         }
     }
 
+    void rs2::device_model::handle_online_sw_update(std::shared_ptr < notifications_model > nm , std::shared_ptr < dev_updates_profile::update_profile >update_profile )
+    {
+        dev_updates_profile::version_info recommended_sw_update_info;
+        update_profile->get_sw_update(sw_update::RECOMMENDED, recommended_sw_update_info);
+        auto n = std::make_shared< sw_recommended_update_alert_model >(
+            RS2_API_FULL_VERSION_STR,
+            recommended_sw_update_info.ver,
+            recommended_sw_update_info.download_link);
+        auto name = get_device_name(dev);
+        n->delay_id = "update_alert." + name.second;
+        n->enable_complex_dismiss = true;  // allow advanced dismiss menu
+
+        if (!n->is_delayed())
+        {
+            nm->add_notification(n);
+            related_notifications.push_back(n);
+        }
+    }
+
+    bool rs2::device_model::handle_online_fw_update( const context& ctx, std::shared_ptr < notifications_model >  nm, std::shared_ptr< dev_updates_profile::update_profile> update_profile )
+    {
+        bool fw_update_notification_raised = false;
+        std::shared_ptr< firmware_update_manager > manager = nullptr;
+
+        std::vector< uint8_t > fw_data;
+        http::http_downloader downloader;
+
+        // Try to download the recommended FW binary file
+        int download_retries = 3;
+        dev_updates_profile::version_info recommended_fw_update_info;
+        update_profile->get_fw_update(sw_update::RECOMMENDED, recommended_fw_update_info);
+
+        while (download_retries > 0)
+        {
+            if (downloader.download_to_bytes_vector(
+                recommended_fw_update_info.download_link,
+                fw_data))
+                download_retries = 0;
+            else
+                --download_retries;
+        }
+
+        // If the download process finished successfully, pop up a
+        // notification for the FW update process
+        if (!fw_data.empty())
+        {
+            manager = std::make_shared< firmware_update_manager >(nm,
+                *this,
+                dev,
+                ctx,
+                fw_data,
+                true);
+
+            auto dev_name = get_device_name(dev);
+            std::stringstream msg;
+            msg << dev_name.first << " (S/N " << dev_name.second << ")\n"
+                << "Current Version: "
+                << std::string(update_profile->firmware_version) << "\n";
+
+            msg << "Recommended Version: "
+                << std::string(recommended_fw_update_info.ver);
+
+            auto n = std::make_shared< fw_update_notification_model >(
+                msg.str(),
+                manager,
+                false);
+            n->delay_id = "dfu." + dev_name.second;
+            n->enable_complex_dismiss = true;
+            if (!n->is_delayed())
+            {
+                nm->add_notification(n);
+                related_notifications.push_back(n);
+                fw_update_notification_raised = true;
+            }
+        }
+        else
+            nm->output.add_log(
+                RS2_LOG_SEVERITY_WARN,
+                __FILE__,
+                __LINE__,
+                to_string()
+                << "Error in downloading FW binary file: "
+                << recommended_fw_update_info.download_link);
+
+        return fw_update_notification_raised;
+    }
+
     // Load viewer configuration for stereo module (depth/infrared streams) only
     void device_model::load_viewer_configurations(const std::string& json_str)
     {
@@ -5996,7 +6023,7 @@ namespace rs2
                                     model.add_log(to_string() << "Setting " << opt_model.opt << " to "
                                         << new_val << " (" << labels[selected] << ")");
 
-                                    opt_model.set_option(opt_model.opt, new_val, error_message);
+                                    opt_model.set_option(opt_model.opt, static_cast<float>(new_val), error_message);
 
                                     // Only apply preset to GUI if set_option was succesful
                                     selected_file_preset = "";

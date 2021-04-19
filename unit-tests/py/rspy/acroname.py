@@ -15,11 +15,12 @@ if __name__ == '__main__':
         print( 'Syntax: acroname [options]' )
         print( '        Control the acroname USB hub' )
         print( 'Options:' )
+        print( '        --enable       Enable all ports' )
         print( '        --recycle      Recycle all ports' )
         sys.exit(2)
     try:
         opts,args = getopt.getopt( sys.argv[1:], '',
-            longopts = [ 'help', 'recycle' ])
+            longopts = [ 'help', 'recycle', 'enable' ])
     except getopt.GetoptError as err:
         print( '-F-', err )   # something like "option -a not recognized"
         usage()
@@ -101,12 +102,19 @@ def disconnect():
     hub = None
 
 
+def all_ports():
+    """
+    :return: a list of all possible ports, even if currently unoccupied or disabled
+    """
+    return range(8)
+
+
 def ports():
     """
     :return: a list of all ports currently occupied (and enabled)
     """
     occupied_ports = []
-    for port in range(8):
+    for port in all_ports():
         if port_power( port ) > 0.0:
             occupied_ports.append( port )
     return occupied_ports
@@ -143,7 +151,7 @@ def enable_ports( ports = None, disable_other_ports = False, sleep_on_change = 0
     global hub
     result = True
     changed = False
-    for port in range(0, 8):
+    for port in all_ports():
         #
         if ports is None or port in ports:
             if not is_port_enabled( port ):
@@ -268,7 +276,10 @@ def get_port_from_usb( first_usb_index, second_usb_index ):
 
 if __name__ == '__main__':
     for opt,arg in opts:
-        if opt in ('--recycle'):
+        if opt in ('--enable'):
+            connect()
+            enable_ports()   # so ports() will return all
+        elif opt in ('--recycle'):
             connect()
             enable_ports()   # so ports() will return all
             recycle_ports()
