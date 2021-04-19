@@ -1072,18 +1072,48 @@ void register_glfw_callbacks(window& app, glfw_state& app_state)
 }
 
 // Find devices with specified streams
-void device_with_streams(rs2_stream type, std::string& out_serial)
+bool device_with_streams(std::vector <rs2_stream> types, std::string& out_serial)
 {
     rs2::context ctx;
-    for (auto dev : ctx.query_devices(RS2_PRODUCT_LINE_DEPTH))
-    {    
-        for (auto sensor : dev.query_sensors())
+    for (auto type : types)
+    {
+        bool stream_found = false;
+        for (auto dev : ctx.query_devices())
         {
-            for (auto profile : sensor.get_stream_profiles())
+            for (auto sensor : dev.query_sensors())
             {
-                if (profile.stream_type() == type)
-                    out_serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+                for (auto profile : sensor.get_stream_profiles())
+                {
+                    if (profile.stream_type() == type && dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
+                    {
+                        stream_found = true;
+                        out_serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+                    }
+                }
+            }
+        }
+        if (!stream_found)
+        {
+            switch (type)
+            {
+            case RS2_STREAM_POSE:
+                std::cerr << "Connect T26X and rerun the demo";
+                return false;
+            case RS2_STREAM_FISHEYE:
+                std::cerr << "Connect T26X and rerun the demo";
+                return false;
+            case RS2_STREAM_DEPTH:
+                std::cerr << "The demo requires Realsense Depth camera with DEPTH sensor";
+                return false;
+            case RS2_STREAM_COLOR:
+                std::cerr << "The demo requires Realsense Depth camera with RGB sensor";
+                return false;
+            default:
+                throw std::runtime_error("The requested stream is not supported by this demo!");
             }
         }
     }
+    if (out_serial.empty())
+        return false;
+    return true;
 }

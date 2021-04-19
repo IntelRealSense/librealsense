@@ -34,12 +34,11 @@ void render_slider(rect location, float* alpha, direction* dir);
 int main(int argc, char * argv[]) try
 {
     std::string serial;
-    device_with_streams(RS2_STREAM_COLOR, serial);
-    if (serial.empty())
-    {
-        std::cerr << "The demo requires Realsense Depth camera with RGB sensor";
+    std::vector <rs2_stream> types;
+    types.push_back(RS2_STREAM_COLOR);
+    types.push_back(RS2_STREAM_DEPTH);
+    if (!device_with_streams(types, serial))
         return EXIT_SUCCESS;
-    }
 
     // Create and initialize GUI related objects
     window app(1280, 720, "RealSense Align Example"); // Simple window handling

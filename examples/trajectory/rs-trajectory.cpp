@@ -440,12 +440,10 @@ private:
 int main(int argc, char * argv[]) try
 {
     std::string serial;
-    device_with_streams(RS2_STREAM_POSE, serial);
-    if (serial.empty())
-    {
-        std::cerr << "Connect T26X and rerun the demo";
+    std::vector <rs2_stream> types;
+    types.push_back(RS2_STREAM_POSE);
+    if (!device_with_streams(types, serial))
         return EXIT_SUCCESS;
-    }
 
     // Initialize window for rendering
     window app(1280, 720, "RealSense Trajectory Example");

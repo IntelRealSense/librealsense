@@ -67,7 +67,6 @@ state = AppState()
 pipeline = rs.pipeline()
 config = rs.config()
 
-# Get device product id to skip SR306
 pipeline_wrapper = rs.pipeline_wrapper(pipeline)
 pipeline_profile = config.resolve(pipeline_wrapper)
 device = pipeline_profile.get_device()
