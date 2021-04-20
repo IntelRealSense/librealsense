@@ -16,6 +16,7 @@ import android.util.Pair;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.ExpandableListView;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -32,6 +33,7 @@ import com.intel.realsense.librealsense.Updatable;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -54,6 +56,7 @@ public class SettingsActivity extends AppCompatActivity {
     private static final int INDEX_TERMINAL = 5;
     private static final int INDEX_FW_LOG = 6;
     private static final int INDEX_CREATE_FLASH_BACKUP = 7;
+
 
     private Device _device;
 
@@ -111,20 +114,29 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void loadInfosList() {
-        final ListView listview = findViewById(R.id.info_list_view);
         String appVersion = "Camera App Version: " + BuildConfig.VERSION_NAME;
         String lrsVersion = "LibRealSense Version: " + RsContext.getVersion();
 
-        final String[] info = { lrsVersion, appVersion};
-        final ArrayAdapter adapter = new ArrayAdapter<>(this, R.layout.files_list_view, info);
-        listview.setAdapter(adapter);
-        adapter.notifyDataSetChanged();
+        HashMap<String, List<String>> expandableListDetail = new HashMap<String, List<String>>();
+
+        List<String> info = new ArrayList<String>();
+        info.add(appVersion);
+        info.add(lrsVersion);
+
+        expandableListDetail.put("Software information", info);
+
+        ExpandableListView expandableListView = findViewById(R.id.info_ex_list_view);
+        List<String> expandableListTitle = new ArrayList<String>(expandableListDetail.keySet());
+        SettingsViewAdapter infoViewAdapter = new SettingsViewAdapter(this, expandableListTitle, expandableListDetail);
+        expandableListView.setAdapter(infoViewAdapter);
+        // Expand Software information by default
+        expandableListView.expandGroup(0);
     }
 
     private void loadSettingsList(final Device device){
-        final ListView listview = findViewById(R.id.settings_list_view);
 
         final Map<Integer,String> settingsMap = new TreeMap<>();
+
         settingsMap.put(INDEX_DEVICE_INFO,"Device info");
 
         if(device.supportsInfo(CameraInfo.ADVANCED_MODE)) {
@@ -157,17 +169,23 @@ public class SettingsActivity extends AppCompatActivity {
 
         final String[] settings = new String[settingsMap.values().size()];
         settingsMap.values().toArray(settings);
-        final ArrayAdapter adapter = new ArrayAdapter<>(this, R.layout.files_list_view, settings);
-        listview.setAdapter(adapter);
 
-        listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        // Create expandable list view
+        ExpandableListView expandableListView = findViewById(R.id.settings_ex_list_view);
+        HashMap<String, List<String>> expandableListDetail = new HashMap<String, List<String>>();
+        List<String> settings_group = Arrays.asList(settings);
+        expandableListDetail.put("Device Settings",settings_group);
+        List<String> expandableListTitle = new ArrayList<String>(expandableListDetail.keySet());
+        SettingsViewAdapter deviceSettingsViewAdapter = new SettingsViewAdapter(this, expandableListTitle, expandableListDetail);
+        expandableListView.setAdapter(deviceSettingsViewAdapter);
+        expandableListView.setOnChildClickListener(new ExpandableListView.OnChildClickListener() {
 
             @Override
-            public void onItemClick(AdapterView<?> parent, final View view,
-                                    int position, long id) {
+            public boolean  onChildClick(ExpandableListView parent, View v,
+                                     int groupPosition, int childPosition, long id) {
                 Object[] keys = settingsMap.keySet().toArray();
 
-                switch ((int)keys[position]){
+                switch ((int)keys[childPosition]){
                     case INDEX_DEVICE_INFO: {
                         Intent intent = new Intent(SettingsActivity.this, InfoActivity.class);
                         startActivity(intent);
@@ -212,6 +230,7 @@ public class SettingsActivity extends AppCompatActivity {
                     default:
                         break;
                 }
+                return true;
             }
         });
     }
@@ -307,9 +326,20 @@ public class SettingsActivity extends AppCompatActivity {
         if(!device.supportsInfo(CameraInfo.PRODUCT_ID))
             throw new RuntimeException("try to config unknown device");
 
-        StreamProfileSelector[] lines = streamProfiles.toArray(new StreamProfileSelector[streamProfiles.size()]);
+        StreamProfileSelector[] streamProfilesArray = streamProfiles.toArray(new StreamProfileSelector[streamProfiles.size()]);
+        List<String> settings_group = new ArrayList<String>();
+        for (int i = 0; i < streamProfilesArray.length ; i++) {
+            settings_group.add(streamProfilesArray[i].getName());
+        }
+        // Create expandable list view
+        ExpandableListView streamListView = findViewById(R.id.configuration_ex_list_view);
+        HashMap<String, List<String>> expandableListDetail = new HashMap<String, List<String>>();
+
+        expandableListDetail.put("Configuration:(default-disable all)",settings_group);
+        List<String> expandableListTitle = new ArrayList<String>(expandableListDetail.keySet());
+
         final String pid = device.getInfo(CameraInfo.PRODUCT_ID);
-        final StreamProfileAdapter adapter = new StreamProfileAdapter(this, lines, new StreamProfileAdapter.Listener() {
+        final StreamProfileAdapter adapter = new StreamProfileAdapter(this, expandableListTitle, expandableListDetail, streamProfilesArray, new StreamProfileAdapter.Listener() {
             @Override
             public void onCheckedChanged(StreamProfileSelector holder) {
                 SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);
@@ -321,7 +351,6 @@ public class SettingsActivity extends AppCompatActivity {
             }
         });
 
-        ListView streamListView = findViewById(R.id.configuration_list_view);
         streamListView.setAdapter(adapter);
         adapter.notifyDataSetChanged();
     }
