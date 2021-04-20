@@ -1072,13 +1072,14 @@ void register_glfw_callbacks(window& app, glfw_state& app_state)
 }
 
 // Find devices with specified streams
-bool device_with_streams(std::vector <rs2_stream> types, std::string& out_serial)
+bool device_with_streams(std::vector <rs2_stream> stream_requests, std::string& out_serial)
 {
     rs2::context ctx;
-    for (auto type : types)
+    auto devs = ctx.query_devices();
+    for (auto type : stream_requests)
     {
         bool stream_found = false;
-        for (auto dev : ctx.query_devices())
+        for (auto& dev : devs)
         {
             for (auto sensor : dev.query_sensors())
             {
@@ -1097,13 +1098,11 @@ bool device_with_streams(std::vector <rs2_stream> types, std::string& out_serial
             switch (type)
             {
             case RS2_STREAM_POSE:
-                std::cerr << "Connect T26X and rerun the demo";
-                return false;
             case RS2_STREAM_FISHEYE:
                 std::cerr << "Connect T26X and rerun the demo";
                 return false;
             case RS2_STREAM_DEPTH:
-                std::cerr << "The demo requires Realsense Depth camera with DEPTH sensor";
+                std::cerr << "The demo requires Realsense camera with DEPTH sensor";
                 return false;
             case RS2_STREAM_COLOR:
                 std::cerr << "The demo requires Realsense Depth camera with RGB sensor";
@@ -1113,7 +1112,5 @@ bool device_with_streams(std::vector <rs2_stream> types, std::string& out_serial
             }
         }
     }
-    if (out_serial.empty())
-        return false;
     return true;
 }

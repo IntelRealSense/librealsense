@@ -440,9 +440,7 @@ private:
 int main(int argc, char * argv[]) try
 {
     std::string serial;
-    std::vector <rs2_stream> types;
-    types.push_back(RS2_STREAM_POSE);
-    if (!device_with_streams(types, serial))
+    if (!device_with_streams({ RS2_STREAM_POSE }, serial))
         return EXIT_SUCCESS;
 
     // Initialize window for rendering
