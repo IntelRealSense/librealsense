@@ -6,7 +6,7 @@
 #define NOMINMAX
 #endif
 #endif
- 
+
 #include <regex>
 
 #include "viewer.h"

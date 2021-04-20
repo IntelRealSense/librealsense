@@ -578,11 +578,8 @@ namespace librealsense
         float x, y;
         float & operator[]( int i )
         {
-#ifdef _DEBUG
-
             assert( i >= 0 );
             assert( i < 2 );
-#endif
             return *( &x + i );
         }
     };
@@ -591,11 +588,8 @@ namespace librealsense
         float x, y, z;
         float & operator[]( int i )
         {
-#ifdef _DEBUG
-
             assert( i >= 0 );
             assert( i < 3 );
-#endif
             return ( *( &x + i ) );
         }
     };
@@ -604,11 +598,8 @@ namespace librealsense
         float x, y, z, w;
         float & operator[]( int i )
         {
-#ifdef _DEBUG
-
             assert( i >= 0 );
             assert( i < 4 );
-#endif
             return ( *( &x + i ) );
         }
     };
@@ -617,13 +608,10 @@ namespace librealsense
         float3 x, y, z;
         float & operator()( int i, int j )
         {
-#ifdef _DEBUG
-
             assert( i >= 0 );
             assert( i < 3 );
             assert( j >= 0 );
             assert( j < 3 );
-#endif
             return ( *( &x[0] + j * sizeof( float3 ) / sizeof( float ) + i ) );
         }
     };  // column-major
