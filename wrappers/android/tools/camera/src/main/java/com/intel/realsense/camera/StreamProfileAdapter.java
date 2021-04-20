@@ -10,24 +10,29 @@ import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
 import android.widget.Spinner;
 import android.widget.Switch;
+import android.widget.TextView;
 
 import com.intel.realsense.librealsense.Extension;
 import com.intel.realsense.librealsense.StreamProfile;
 import com.intel.realsense.librealsense.VideoStreamProfile;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
-public class StreamProfileAdapter extends ArrayAdapter<StreamProfileSelector> {
+public class StreamProfileAdapter extends SettingsViewAdapter {
     private static final int mLayoutResourceId = R.layout.stream_profile_list_view;
     private final StreamProfileSelector mStreamProfileCells[];
     private final LayoutInflater mLayoutInflater;
     private final Listener mListener;
     private Context mContext;
 
-    public StreamProfileAdapter(Context context, StreamProfileSelector[] data, Listener listener){
-        super(context, mLayoutResourceId, data);
+    public StreamProfileAdapter(Context context, List<String> expandableListTitle,
+                                 HashMap<String, List<String>> expandableListDetail,
+                                StreamProfileSelector[] data, Listener listener) {
+        super(context, expandableListTitle, expandableListDetail);
         mLayoutInflater = ((Activity) context).getLayoutInflater();
         mStreamProfileCells = data;
         mListener = listener;
@@ -42,10 +47,12 @@ public class StreamProfileAdapter extends ArrayAdapter<StreamProfileSelector> {
         private Spinner format;
     }
 
+
     @Override
-    public View getView(int position, View rawView, final ViewGroup parent){
-        rawView = mLayoutInflater.inflate(mLayoutResourceId, parent, false);
-        StreamProfileSelector listViewLine = mStreamProfileCells[position];
+    public View getChildView(int listPosition, final int expandedListPosition,
+                             boolean isLastChild, View convertView, ViewGroup parent) {
+        View  rawView = mLayoutInflater.inflate(mLayoutResourceId, parent, false);
+        StreamProfileSelector listViewLine = mStreamProfileCells[expandedListPosition];
 
         final Holder holder;
         holder = new Holder();
@@ -56,9 +63,9 @@ public class StreamProfileAdapter extends ArrayAdapter<StreamProfileSelector> {
 
         holder.type.setText(listViewLine.getName());
         holder.type.setChecked(listViewLine.isEnabled());
-        holder.type.setTag(position);
+        holder.type.setTag(expandedListPosition);
 
-        createSpinners(holder, position, listViewLine);
+        createSpinners(holder, expandedListPosition, listViewLine);
 
         return rawView;
     }
