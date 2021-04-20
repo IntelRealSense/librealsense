@@ -830,7 +830,7 @@ namespace librealsense
                 
                 LOG_INFO("Ground truth: " << ground_truth_mm << "mm");
                 LOG_INFO("Health check numbers from TareCalibrationResult(0x0C): before=" << ph[0] << ", after=" << ph[1]);
-                LOG_INFO("Z calculated from health check numbers : before=" << (ph[0] - 1) * ground_truth_mm << ", after=" << (ph[1] - 1) * ground_truth_mm);
+                LOG_INFO("Z calculated from health check numbers : before=" << (ph[0] + 1) * ground_truth_mm << ", after=" << (ph[1] + 1) * ground_truth_mm);
 
                 int health_1 = static_cast<int>(abs(ph[0]) * 1000.0f + 0.5f);
                 health_1 &= 0xFFF;
