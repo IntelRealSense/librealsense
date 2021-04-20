@@ -504,9 +504,11 @@ namespace rs2
 
             _progress = 10;
         }
+
+        float health[2] = { 0 };
         auto calib_dev = _dev.as<auto_calibrated_device>();
         if (action == RS2_CALIB_ACTION_TARE_CALIB)
-            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, &_health, [&](const float progress) {_progress = int(progress);}, 5000);
+            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, health, [&](const float progress) {_progress = int(progress);}, 5000);
         else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
             _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = int(progress);}, occ_timeout_ms);
 
@@ -597,7 +599,7 @@ namespace rs2
                             ss << "{\n \"depth\":" << depth << "}";
 
                             std::string json = ss.str();
-                            calib_dev.run_tare_calibration(ground_truth, json, &_health, [&](const float progress) {}, 5000);
+                            calib_dev.run_tare_calibration(ground_truth, json, health, [&](const float progress) {}, 5000);
                         }
                     }
 
@@ -626,7 +628,7 @@ namespace rs2
                 ss << "{\n \"depth\":" << -1 << "}";
 
                 std::string json = ss.str();
-                _new_calib = calib_dev.run_tare_calibration(ground_truth, json, &_health, [&](const float progress) {_progress = int(progress); }, 5000);
+                _new_calib = calib_dev.run_tare_calibration(ground_truth, json, health, [&](const float progress) {_progress = int(progress); }, 5000);
                 _progress = 100;
             }
             else if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
@@ -896,7 +898,7 @@ namespace rs2
             }
         }
 
-        if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || action == RS2_CALIB_ACTION_TARE_CALIB)
+        if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
         {
             int h_both = static_cast<int>(_health);
             int h_1 = (h_both & 0x00000FFF);
@@ -910,6 +912,11 @@ namespace rs2
             _health_2 = h_2 / 1000.0f;
             if (sign & 2)
                 _health_2 = -_health_2;
+        }
+        else if (action == RS2_CALIB_ACTION_TARE_CALIB)
+        {
+            _health_1 = health[0] * 100;
+            _health_2 = health[1] * 100;
         }
     }
 
@@ -1747,7 +1754,7 @@ namespace rs2
                     ImGui::Text("%s", "Health-Check Before Calibration: ");
 
                     std::stringstream ss_1;
-                    ss_1 << std::fixed << std::setprecision(2) << health_1;
+                    ss_1 << std::fixed << std::setprecision(4) << health_1 << "%";
                     auto health_str = ss_1.str();
 
                     std::string text_name = to_string() << "##notification_text_1_" << index;
@@ -1760,7 +1767,7 @@ namespace rs2
                     ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
                     ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-                    ImGui::InputTextMultiline(text_name.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 66, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
+                    ImGui::InputTextMultiline(text_name.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 86, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
                     ImGui::PopStyleColor(7);
 
                     if (ImGui::IsItemHovered())
@@ -1770,7 +1777,7 @@ namespace rs2
                     ImGui::Text("%s", "Health-Check After Calibration: ");
 
                     std::stringstream ss_2;
-                    ss_2 << std::fixed << std::setprecision(2) << health_2;
+                    ss_2 << std::fixed << std::setprecision(4) << health_2 << "%";
                     health_str = ss_2.str();
 
                     text_name = to_string() << "##notification_text_2_" << index;
@@ -1783,7 +1790,7 @@ namespace rs2
                     ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
                     ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-                    ImGui::InputTextMultiline(text_name.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 66, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
+                    ImGui::InputTextMultiline(text_name.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 86, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
                     ImGui::PopStyleColor(7);
 
                     if (ImGui::IsItemHovered())
