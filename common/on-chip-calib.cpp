@@ -1487,7 +1487,10 @@ namespace rs2
             else if (update_state == RS2_CALIB_STATE_CALIB_COMPLETE)
             {
                 if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB)
-                    get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);
+                {
+                    if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                        get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);
+                }
             
                 auto health = get_manager().get_health();
 
