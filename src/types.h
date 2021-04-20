@@ -395,8 +395,9 @@ namespace librealsense
         operator T () const
         {
             T le_value = 0;
-            for (unsigned int i = 0; i < sizeof(T); ++i) reinterpret_cast<char *>(&le_value)[i] = reinterpret_cast<const char *>(&be_value)[sizeof(T) - i - 1];
+            for (unsigned int i = 0; i < sizeof(T); ++i) *(reinterpret_cast<char*>(&le_value) + i) = *(reinterpret_cast<const char*>(&be_value) + sizeof(T) - i - 1);
             return le_value;
+
         }
     };
 #pragma pack(pop)
@@ -567,13 +568,58 @@ namespace librealsense
     ////////////////////////////////////////////
     // World's tiniest linear algebra library //
     ////////////////////////////////////////////
-#pragma pack(push, 1)
-    struct int2 { int x, y; };
-    struct float2 { float x, y; float & operator [] (int i) { return (&x)[i]; } };
-    struct float3 { float x, y, z; float & operator [] (int i) { return (&x)[i]; } };
-    struct float4 { float x, y, z, w; float & operator [] (int i) { return (&x)[i]; } };
-    struct float3x3 { float3 x, y, z; float & operator () (int i, int j) { return (&x)[j][i]; } }; // column-major
-    struct pose { float3x3 orientation; float3 position; };
+#pragma pack( push, 1 )
+    struct int2
+    {
+        int x, y;
+    };
+    struct float2
+    {
+        float x, y;
+        float & operator[]( int i )
+        {
+            assert( i >= 0 );
+            assert( i < 2 );
+            return *( &x + i );
+        }
+    };
+    struct float3
+    {
+        float x, y, z;
+        float & operator[]( int i )
+        {
+            assert( i >= 0 );
+            assert( i < 3 );
+            return ( *( &x + i ) );
+        }
+    };
+    struct float4
+    {
+        float x, y, z, w;
+        float & operator[]( int i )
+        {
+            assert( i >= 0 );
+            assert( i < 4 );
+            return ( *( &x + i ) );
+        }
+    };
+    struct float3x3
+    {
+        float3 x, y, z;
+        float & operator()( int i, int j )
+        {
+            assert( i >= 0 );
+            assert( i < 3 );
+            assert( j >= 0 );
+            assert( j < 3 );
+            return ( *( &x[0] + j * sizeof( float3 ) / sizeof( float ) + i ) );
+        }
+    };  // column-major
+    struct pose
+    {
+        float3x3 orientation;
+        float3 position;
+    };
 #pragma pack(pop)
     inline bool operator == (const float3 & a, const float3 & b) { return a.x == b.x && a.y == b.y && a.z == b.z; }
     inline float3 operator + (const float3 & a, const float3 & b) { return{ a.x + b.x, a.y + b.y, a.z + b.z }; }
