@@ -4,7 +4,7 @@
 # we want this test to run first so that all tests run with updated FW versions, so we give it priority 0
 #test:priority 0
 #test:device L500*
-#test:timeout 12
+#test:timeout 25
 
 import pyrealsense2 as rs, sys, os, subprocess
 from rspy import devices, log, test, file, repo
@@ -96,10 +96,6 @@ current_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.fir
 log.d( 'FW version:', current_fw_version )
 bundled_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.recommended_firmware_version ) )
 log.d( 'bundled FW version:', bundled_fw_version )
-
-if recovered and current_fw_version == bundled_fw_version:
-    test.finish()
-    test.print_results_and_exit()
 
 update_counter = get_update_counter( device )
 log.d( 'update counter:', update_counter )
