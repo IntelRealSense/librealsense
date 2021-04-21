@@ -30,20 +30,20 @@ namespace librealsense
 
     struct TareCalibrationResult
     {
-      uint16_t status;  // DscStatus
-      uint32_t tareDepth;  // Tare depth in 1/100 of depth unit
-      uint32_t aveDepth;  // Average depth in 1/100 of depth unit
-      int32_t curPx;    // Current Px in 1/1000000 of normalized unit
-      int32_t calPx;    // Calibrated Px in 1/1000000 of normalized unit
-      float curRightRotation[9]; // Current right rotation
-      float calRightRotation[9]; // Calibrated right rotation
-      uint16_t accuracyLevel;  // [0-3] (Very High/High/Medium/Low)
-      uint16_t iterations;        // Number of iterations it took to converge
-      //int32_t errors[iterations];  // Array of errors in 1/1000000 of a percent
-      //int32_t x[iterations];    // Intrinsic scan: array of Px in 1/1000000 normalized unit
-      //                         // Extrinsic scan: array of Ry in 1/100000 radian
-      //float beforeHealthCheck; // Before health check number
-      //float afterHealthCheck;  // After health check number
+        uint16_t status;  // DscStatus
+        uint32_t tareDepth;  // Tare depth in 1/100 of depth unit
+        uint32_t aveDepth;  // Average depth in 1/100 of depth unit
+        int32_t curPx;    // Current Px in 1/1000000 of normalized unit
+        int32_t calPx;    // Calibrated Px in 1/1000000 of normalized unit
+        float curRightRotation[9]; // Current right rotation
+        float calRightRotation[9]; // Calibrated right rotation
+        uint16_t accuracyLevel;  // [0-3] (Very High/High/Medium/Low)
+        uint16_t iterations;        // Number of iterations it took to converge
+        //int32_t errors[iterations];  // Array of errors in 1/1000000 of a percent
+        //int32_t x[iterations];    // Intrinsic scan: array of Px in 1/1000000 normalized unit
+        //                         // Extrinsic scan: array of Ry in 1/100000 radian
+        //float beforeHealthCheck; // Before health check number
+        //float afterHealthCheck;  // After health check number
     };
 
     struct FocalLengthCalibrationResult
@@ -106,7 +106,8 @@ namespace librealsense
         focal_length_calib_begin = 0x11,
         get_focal_legth_calib_result = 0x12,
         py_rx_plus_fl_calib_begin = 0x13,
-        get_py_rx_plus_fl_calib_result = 0x14
+        get_py_rx_plus_fl_calib_result = 0x14,
+        set_coefficients = 0x19
     };
 
     enum auto_calib_speed
@@ -720,6 +721,7 @@ namespace librealsense
         int data_sampling = DEFAULT_TARE_SAMPLING;
         int apply_preset = 1;
         int depth = 0;
+        std::vector<uint8_t> res;
         int host_assistance = 0;
         std::vector<uint8_t> res;
 
@@ -846,10 +848,10 @@ namespace librealsense
                 if (status != RS2_DSC_STATUS_SUCCESS)
                     handle_calibration_error(status);
 
-                //float health_from_calibration_results = 0.0f;
-                //res = get_calibration_results(&health_from_calibration_results);
-                //LOG_INFO("Health_check from CalibrationResult(0x0D): health=" << health_from_calibration_results);
-                res = get_calibration_results();
+                uint8_t* p = res.data() + sizeof(TareCalibrationResult) + 2 * result.iterations * sizeof(uint32_t);
+                float* ph = reinterpret_cast<float*>(p);
+                health[0] = ph[0];
+                health[1] = ph[1];
 
                 if (depth < 0)
                 {

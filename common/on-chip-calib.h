@@ -90,6 +90,10 @@ namespace rs2
         float corrected_ratio = 0.0f;
         float tilt_angle = 0.0f;
 
+        const float correction_factor = 0.50f;
+        float corrected_ratio = 0.0f;
+        float tilt_angle = 0.0f;
+
         std::shared_ptr<subdevice_model> _sub;
         std::shared_ptr<subdevice_model> _sub_color;
 
