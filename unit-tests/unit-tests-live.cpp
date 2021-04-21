@@ -5994,14 +5994,15 @@ TEST_CASE("D55 frame drops", "[live]")
                     process_frame(f);
                 }
             };
-            rgb_sensor.open(rgb_stream_profiles);
-            rgb_sensor.start(frame_callback);
+            
             for (auto i = 0; i < 3; i++)
             {
                 rgb_frames_num.clear();
+                rgb_sensor.open(rgb_stream_profiles);
+                rgb_sensor.start(frame_callback);
                 int count_drops = 0; //frame drops counter will increase if 2 or more successive frames are missing
                 unsigned long long prev_frame_num = 0;
-                std::this_thread::sleep_for(std::chrono::seconds(30));
+                std::this_thread::sleep_for(std::chrono::seconds(10));
                 std::lock_guard<std::mutex> lock(mutex);
                 // analysis : check of >2 consecutive frames are missing
                 for (auto f : rgb_frames_num)
@@ -6013,8 +6014,12 @@ TEST_CASE("D55 frame drops", "[live]")
                     }
                     prev_frame_num = f;
                 }
-                std::cout << "Iteration " << i << " : Drops num = " << count_drops << std::endl;
+                std::cout << "Iteration " << i << " : frame drops = " << count_drops << std::endl;
+                rgb_sensor.stop();
+                rgb_sensor.close();
             }
+
+            
         }
     }
 }
