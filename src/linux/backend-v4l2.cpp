@@ -1165,6 +1165,7 @@ namespace librealsense
         }
         bool v4l_uvc_device::get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const
         {
+            memset(data, 0, size);
             uvc_xu_control_query q = {static_cast<uint8_t>(xu.unit), control, UVC_GET_CUR,
                                       static_cast<uint16_t>(size), const_cast<uint8_t *>(data)};
             if(xioctl(_fd, UVCIOC_CTRL_QUERY, &q) < 0)
