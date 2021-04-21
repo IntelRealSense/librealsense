@@ -593,23 +593,25 @@ if devices.acroname and len(devices.recovery()) > 0 and pyrs:
         log.e( "Could not find the update tool file (rs-fw-update.exe), can't recover devices" )
 
     # get all necessary image files
-    product_line_and_image_file = set()
+    product_line_and_image_file = {}
     for sn in devices.recovery():
-        print( sn )
         device = devices.get( sn )
         product_line = device.get_info( rs.camera_info.product_line )
-        print( product_line )
+        if product_line in product_line_and_image_file.keys():
+            continue
         image_name = product_line[:-2] + "XX_FW_Image-"
         image_mask = '(^|/)' + image_name + '(\d+\.){4}bin$'
         image_file = None
         for image in file.find( repo.root, image_mask ):
-            product_line_and_image_file.add( (product_line, os.path.join( repo.root, image )) )
+            image_file = image
+        product_line_and_image_file[product_line] = os.path.join( repo.root, image_file )
 
     try:
-        for product_line, image_file in product_line_and_image_file:
-            devices.enable_only( devices.by_product_line( product_line ))
+        for product_line, image_file in product_line_and_image_file.items():
+            recovery_devices_by_product_line = [sn for sn in devices.recovery() if
+                                devices.get( sn ).get_info( rs.camera_info.product_line ) == product_line]
+            devices.enable_only( recovery_devices_by_product_line )
             cmd = [fw_updater_exe, '-r', '-f', image_file]
-            print( cmd )
             log.d( 'running:', cmd )
             subprocess.run( cmd )
     except Exception as e:
