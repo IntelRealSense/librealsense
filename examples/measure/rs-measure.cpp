@@ -100,7 +100,7 @@ void render_simple_distance(const rs2::depth_frame& depth,
 int main(int argc, char * argv[]) try
 {
     std::string serial;
-    if (!device_with_streams({ RS2_STREAM_POSE,RS2_STREAM_FISHEYE }, serial))
+    if (!device_with_streams({ RS2_STREAM_COLOR,RS2_STREAM_DEPTH }, serial))
         return EXIT_SUCCESS;
 
     // OpenGL textures for the color and depth frames
@@ -137,7 +137,8 @@ int main(int argc, char * argv[]) try
     rs2::pipeline pipe;
 
     rs2::config cfg;
-    cfg.enable_device(serial);
+    if (!serial.empty())
+        cfg.enable_device(serial);
     cfg.enable_stream(RS2_STREAM_DEPTH); // Enable default depth
     // For the color stream, set format to RGBA
     // To allow blending of the color frame on top of the depth frame

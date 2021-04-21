@@ -1076,40 +1076,52 @@ bool device_with_streams(std::vector <rs2_stream> stream_requests, std::string& 
 {
     rs2::context ctx;
     auto devs = ctx.query_devices();
-    for (auto type : stream_requests)
+    for (auto& dev : devs)
     {
-        bool stream_found = false;
-        for (auto& dev : devs)
+        std::map<rs2_stream, bool> found_streams;
+        for (auto& type : stream_requests)
         {
-            for (auto sensor : dev.query_sensors())
+            found_streams[type] = false;
+            for (auto& sensor : dev.query_sensors())
             {
-                for (auto profile : sensor.get_stream_profiles())
+                for (auto& profile : sensor.get_stream_profiles())
                 {
                     if (profile.stream_type() == type && dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
                     {
-                        stream_found = true;
+                        found_streams[type] = true;
                         out_serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
                     }
                 }
             }
         }
-        if (!stream_found)
+        // Check if all streams are found in current device
+        bool found_all_streams = true;
+        for (auto& stream : found_streams)
         {
-            switch (type)
+            if (!stream.second)
             {
-            case RS2_STREAM_POSE:
-            case RS2_STREAM_FISHEYE:
-                std::cerr << "Connect T26X and rerun the demo";
-                return false;
-            case RS2_STREAM_DEPTH:
-                std::cerr << "The demo requires Realsense camera with DEPTH sensor";
-                return false;
-            case RS2_STREAM_COLOR:
-                std::cerr << "The demo requires Realsense Depth camera with RGB sensor";
-                return false;
-            default:
-                throw std::runtime_error("The requested stream is not supported by this demo!");
+                found_all_streams = false;
+                break;
             }
+        }
+        if(found_all_streams)
+            return true;
+    }
+    // After scanning all devices, not all requested streams were found
+    for (auto& type : stream_requests)
+    {
+        switch (type)
+        {
+        case RS2_STREAM_POSE:
+        case RS2_STREAM_FISHEYE:
+            std::cerr << "Connect T26X and rerun the demo";
+            return false;
+        case RS2_STREAM_DEPTH:
+        case RS2_STREAM_COLOR:
+            std::cerr << "The demo requires Realsense camera with DEPTH and RGB sensors";
+            return false;
+        default:
+            throw std::runtime_error("The requested stream: " + std::to_string(type) + ", is not supported by this demo!"); // stream type
         }
     }
     return true;
