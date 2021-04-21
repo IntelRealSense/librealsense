@@ -2,9 +2,9 @@
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 # we want this test to run first so that all tests run with updated FW versions, so we give it priority 0
-#test:priority 1
-#test:device each(L500*)
-#test:device each(D400*)
+#test:priority 0
+#test:device L500*
+#test:timeout 12
 
 import pyrealsense2 as rs, sys, os, subprocess
 from rspy import devices, log, test, file, repo
@@ -91,28 +91,6 @@ product_line =  device.get_info( rs.camera_info.product_line )
 log.d( 'product line:', product_line )
 
 test.start( "Update FW" )
-# check if recovery. If so recover
-recovered = False
-if device.is_update_device():
-    log.d( "recovering device ..." )
-    try:
-        image_name = product_line[:-2] + "XX_FW_Image-"
-        image_mask = '(^|/)' + image_name + '(\d+\.){4}bin$'
-        image_file = None
-        for image in file.find( repo.root, image_mask ):
-            image_file = image
-        if not image_file:
-            log.f( "Could not find image file for " + product_line + " recovery device" )
-
-        cmd = [fw_updater_exe, '-r', '-f', image_file]
-        log.d( 'running:', cmd )
-        subprocess.run( cmd )
-        recovered = True
-    except Exception as e:
-        log.f( "Unexpected error while trying to recover device:", e )
-    else:
-        devices.query( monitor_changes=False )
-        device = devices.get( list( devices.all() )[0] )
 
 current_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.firmware_version ))
 log.d( 'FW version:', current_fw_version )
