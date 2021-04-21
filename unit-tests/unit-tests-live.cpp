@@ -5915,3 +5915,106 @@ TEST_CASE("l500_presets_set_preset", "[live]")
        
     }
 }
+
+TEST_CASE("D55 frame drops", "[live]")
+{
+    // Require at least one device to be plugged in
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        auto list = ctx.query_devices();
+        REQUIRE(list.size());
+        REQUIRE(list.front().supports(RS2_CAMERA_INFO_PRODUCT_LINE));
+        auto dev = list.front();
+
+        // 424x240
+        // 480x270
+        std::vector<std::pair<int, int>> resolutions = { { 424,240 }, { 480, 270 } };
+        for (auto& resolution : resolutions)
+        {
+            int width = resolution.first;
+            int height = resolution.second;
+            std::cout << "RGB resolution: " << width << "x" << height << std::endl;
+            std::mutex mutex;
+            std::mutex mutex_process;
+            std::vector<unsigned long long> rgb_frames_num;
+            rs2::sensor rgb_sensor;
+            std::vector<rs2::stream_profile > rgb_stream_profiles;
+            auto res = configure_all_supported_streams(dev, width, height, 90);
+            for (auto& s : res.first)
+            {
+                s.close();
+            }
+            for (auto& profile : res.second)
+            {
+                auto fps = profile.fps;
+                for (auto& s : res.first)
+                {
+                    auto stream_profiles = s.get_stream_profiles();
+                    for (auto& sp : stream_profiles)
+                    {
+                        if (!(sp.stream_type() == profile.stream && sp.fps() == fps && sp.stream_index() == profile.index && sp.format() == profile.format)) continue;
+                        auto vid = sp.as<rs2::video_stream_profile>();
+                        auto h = vid.height();
+                        auto w = vid.width();
+                        if (!(w == profile.width && h == profile.height)) continue;
+                        if (sp.stream_type() == RS2_STREAM_COLOR)
+                        {
+                            rgb_stream_profiles.push_back(sp);
+                            rgb_sensor = s;
+                        }
+                    }
+                }
+            }
+            auto process_frame = [&](const rs2::frame& f)
+            {
+                std::lock_guard<std::mutex> lock(mutex_process);
+                auto stream_type = f.get_profile().stream_name();
+                auto frame_num = f.get_frame_number();
+                auto unique_id = f.get_profile().unique_id();
+                if (std::find(rgb_frames_num.begin(), rgb_frames_num.end(), frame_num) != rgb_frames_num.end()) // check if frame is already processed
+                    return;
+                rgb_frames_num.push_back(frame_num);
+            };
+            auto frame_callback = [&](const rs2::frame& f)
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                if (rs2::frameset fs = f.as<rs2::frameset>())
+                {
+                    // With callbacks, all synchronized stream will arrive in a single frameset
+                    for (const rs2::frame& ff : fs)
+                    {
+                        process_frame(ff);
+                    }
+                }
+                else
+                {
+                    // Stream that bypass synchronization (such as IMU) will produce single frames
+                    process_frame(f);
+                }
+            };
+            rgb_sensor.open(rgb_stream_profiles);
+            rgb_sensor.start(frame_callback);
+            for (auto i = 0; i < 3; i++)
+            {
+                rgb_frames_num.clear();
+                int count_drops = 0; //frame drops counter will increase if 2 or more successive frames are missing
+                unsigned long long prev_frame_num = 0;
+                std::this_thread::sleep_for(std::chrono::seconds(30));
+                std::lock_guard<std::mutex> lock(mutex);
+                // analysis : check of >2 consecutive frames are missing
+                for (auto f : rgb_frames_num)
+                {
+                    if (prev_frame_num > 0)
+                    {
+                        if (f - prev_frame_num > 2)
+                            count_drops += 1;
+                    }
+                    prev_frame_num = f;
+                }
+                std::cout << "Iteration " << i << " : Drops num = " << count_drops << std::endl;
+            }
+        }
+    }
+}
