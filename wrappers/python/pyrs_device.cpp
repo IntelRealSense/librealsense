@@ -55,7 +55,7 @@ void init_device(py::module &m) {
 
     py::class_<rs2::updatable, rs2::device> updatable(m, "updatable"); // No docstring in C++
     updatable.def(py::init<rs2::device>())
-        .def("enter_update_state", &rs2::updatable::enter_update_state, "Move the device to update state, this will cause the updatable device to disconnect and reconnect as an update device.")
+        .def("enter_update_state", &rs2::updatable::enter_update_state, "Move the device to update state, this will cause the updatable device to disconnect and reconnect as an update device.", py::call_guard<py::gil_scoped_release>())
         .def("create_flash_backup", (std::vector<uint8_t>(rs2::updatable::*)() const) &rs2::updatable::create_flash_backup,
              "Create backup of camera flash memory. Such backup does not constitute valid firmware image, and cannot be "
              "loaded back to the device, but it does contain all calibration and device information.", py::call_guard<py::gil_scoped_release>())
