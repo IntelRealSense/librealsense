@@ -1076,6 +1076,7 @@ bool device_with_streams(std::vector <rs2_stream> stream_requests, std::string& 
 {
     rs2::context ctx;
     auto devs = ctx.query_devices();
+    std::vector <rs2_stream> unavailable_streams = stream_requests;
     for (auto& dev : devs)
     {
         std::map<rs2_stream, bool> found_streams;
@@ -1086,10 +1087,12 @@ bool device_with_streams(std::vector <rs2_stream> stream_requests, std::string& 
             {
                 for (auto& profile : sensor.get_stream_profiles())
                 {
-                    if (profile.stream_type() == type && dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
+                    if (profile.stream_type() == type)
                     {
                         found_streams[type] = true;
-                        out_serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+                        unavailable_streams.erase(std::remove(unavailable_streams.begin(), unavailable_streams.end(), type), unavailable_streams.end());
+                        if(dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
+                            out_serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
                     }
                 }
             }
@@ -1108,21 +1111,23 @@ bool device_with_streams(std::vector <rs2_stream> stream_requests, std::string& 
             return true;
     }
     // After scanning all devices, not all requested streams were found
-    for (auto& type : stream_requests)
+    for (auto& type : unavailable_streams)
     {
         switch (type)
         {
         case RS2_STREAM_POSE:
         case RS2_STREAM_FISHEYE:
             std::cerr << "Connect T26X and rerun the demo";
-            return false;
+            break;
         case RS2_STREAM_DEPTH:
+            std::cerr << "The demo requires Realsense camera with DEPTH sensors";
+            break;
         case RS2_STREAM_COLOR:
-            std::cerr << "The demo requires Realsense camera with DEPTH and RGB sensors";
-            return false;
+            std::cerr << "The demo requires Realsense camera with RGB sensors";
+            break;
         default:
-            throw std::runtime_error("The requested stream: " + std::to_string(type) + ", is not supported by this demo!"); // stream type
+            throw std::runtime_error("The requested stream: " + std::to_string(type) + ", for the demo is not supported by connected devices!"); // stream type
         }
     }
-    return true;
+    return false;
 }
