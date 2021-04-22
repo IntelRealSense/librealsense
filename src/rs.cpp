@@ -2411,7 +2411,7 @@ void rs2_extract_target_dimensions(const rs2_frame* frame_ref, rs2_calib_target_
     std::shared_ptr<target_calculator_interface> target_calculator;
     if (calib_type == RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES)
         target_calculator = std::make_shared<rect_gaussian_dots_target_calculator>(vf->get_width(), vf->get_height(), 0, 0, vf->get_width(), vf->get_height());
-    if (calib_type == RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES)
+    else if (calib_type == RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES)
         target_calculator = std::make_shared<rect_gaussian_dots_target_calculator>(vf->get_width(), vf->get_height(), rect_gaussian_dots_target_calculator::_roi_ws, rect_gaussian_dots_target_calculator::_roi_hs, rect_gaussian_dots_target_calculator::_roi_we - rect_gaussian_dots_target_calculator::_roi_ws, rect_gaussian_dots_target_calculator::_roi_he - rect_gaussian_dots_target_calculator::_roi_hs);
     else
         throw std::runtime_error("unsupported calibration target type");
