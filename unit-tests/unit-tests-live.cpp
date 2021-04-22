@@ -5997,12 +5997,13 @@ TEST_CASE("D55 frame drops", "[live]")
             
             for (auto i = 0; i < 3; i++)
             {
+                std::cout << "==================================" << std::endl;
                 rgb_frames_num.clear();
                 rgb_sensor.open(rgb_stream_profiles);
                 rgb_sensor.start(frame_callback);
                 int count_drops = 0; //frame drops counter will increase if 2 or more successive frames are missing
                 unsigned long long prev_frame_num = 0;
-                std::this_thread::sleep_for(std::chrono::seconds(10));
+                std::this_thread::sleep_for(std::chrono::seconds(30));
                 std::lock_guard<std::mutex> lock(mutex);
                 // analysis : check of >2 consecutive frames are missing
                 for (auto f : rgb_frames_num)
@@ -6016,7 +6017,9 @@ TEST_CASE("D55 frame drops", "[live]")
                 }
                 std::cout << "Iteration " << i << " : frame drops = " << count_drops << std::endl;
                 rgb_sensor.stop();
+                std::cout << "stop" << std::endl;
                 rgb_sensor.close();
+                std::cout << "close " << std::endl;
             }
 
             
