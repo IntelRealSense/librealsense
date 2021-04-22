@@ -450,17 +450,18 @@ namespace rs2
                                             if json is nullptr it will be ignored and calibration will use the default parameters
         * \param[in]  content_size        Json string size if its 0 the json will be ignored and calibration will use the default parameters
         * \param[in]  callback            Optional callback to get progress notifications
-        * \param[in] timeout_ms           Timeout in ms
+        * \param[in]  timeout_ms           Timeout in ms
+        * \param[out] health              The health check numbers before and after calibration
         * \return                         New calibration table
         */
         template<class T>
-        calibration_table run_tare_calibration(float ground_truth_mm, std::string json_content, T callback, int timeout_ms = 5000) const
+        calibration_table run_tare_calibration(float ground_truth_mm, std::string json_content, float * health, T callback, int timeout_ms = 5000) const
         {
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, json_content.data(), int(json_content.size()), new update_progress_callback<T>(std::move(callback)), timeout_ms, &e),
+                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, json_content.data(), int(json_content.size()), health, new update_progress_callback<T>(std::move(callback)), timeout_ms, &e),
                 rs2_delete_raw_data);
             error::handle(e);
 
@@ -491,17 +492,18 @@ namespace rs2
                                              scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
                                              data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
                                              if json is nullptr it will be ignored and calibration will use the default parameters
-         * \param[in]  content_size        Json string size if its 0 the json will be ignored and calibration will use the default parameters
-         * \param[in] timeout_ms           Timeout in ms
-         * \return                         New calibration table
+         * \param[in]  content_size       Json string size if its 0 the json will be ignored and calibration will use the default parameters
+         * \param[in] timeout_ms          Timeout in ms
+        * \param[out] health              The health check numbers before and after calibration
+         * \return                        New calibration table
          */
-        calibration_table run_tare_calibration(float ground_truth_mm, std::string json_content, int timeout_ms = 5000) const
+        calibration_table run_tare_calibration(float ground_truth_mm, std::string json_content, float * health, int timeout_ms = 5000) const
         {
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, json_content.data(), static_cast< int >( json_content.size() ), nullptr, timeout_ms, &e),
+                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, json_content.data(), static_cast< int >( json_content.size() ), health, nullptr, timeout_ms, &e),
                 rs2_delete_raw_data);
             error::handle(e);
 

@@ -149,6 +149,49 @@ namespace rs2
                 if (_sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
                     _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
             }
+            else if (action == RS2_CALIB_ACTION_UVMAPPING)
+            {
+                _uid = 1;
+                _uid2 = 2;
+                bool first_done = 0;
+                bool second_done = 0;
+                for (const auto& format : _sub->formats)
+                {
+                    if (format.second[0] == "Y8" && !first_done)
+                    {
+                        _uid = format.first;
+                        first_done = true;
+                    }
+
+                    if (format.second[0] == "Z16" && !second_done)
+                    {
+                        _uid2 = format.first;
+                        second_done = true;
+                    }
+
+                    if (first_done && second_done)
+                        break;
+                }
+
+                for (const auto& format : _sub_color->formats)
+                {
+                    int done = false;
+                    for (int i = 0; i < format.second.size(); ++i)
+                    {
+                        if (format.second[i] == "RGB8")
+                        {
+                            _uid_color = format.first;
+                            done = true;
+                            break;
+                        }
+                    }
+                    if (done)
+                        break;
+                }
+
+                if (_sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                    _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
+            }
             else if (run_fl_calib)
             {
                 _uid = 1;
@@ -190,7 +233,7 @@ namespace rs2
             // Select stream
             _sub->stream_enabled.clear();
             _sub->stream_enabled[_uid] = true;
-            if (run_fl_calib)
+            if (run_fl_calib || action == RS2_CALIB_ACTION_UVMAPPING)
                 _sub->stream_enabled[_uid2] = true;
 
             _sub->ui.selected_format_id.clear();
@@ -237,16 +280,45 @@ namespace rs2
 
             auto profiles = _sub->get_selected_profiles();
 
-            invoke([&]() {
-                if (!_model.dev_syncer)
-                    _model.dev_syncer = _viewer.syncer->create_syncer();
+            std::vector<stream_profile> profiles_color;
+            if (action == RS2_CALIB_ACTION_UVMAPPING)
+            {
+                _sub_color->stream_enabled[_uid_color] = true;
+                _sub_color->ui.selected_format_id.clear();
+                _sub_color->ui.selected_format_id[_uid_color] = 0;
 
-                // Start streaming
-                _sub->play(profiles, _viewer, _model.dev_syncer);
-                for (auto&& profile : profiles)
+                for (int i = 0; i < _sub_color->shared_fps_values.size(); i++)
                 {
-                    _viewer.begin_stream(_sub, profile);
+                    if (_sub_color->shared_fps_values[i] == fps)
+                        _sub_color->ui.selected_shared_fps_id = i;
                 }
+
+                for (int i = 0; i < _sub_color->res_values.size(); i++)
+                {
+                    auto kvp = _sub_color->res_values[i];
+                    if (kvp.first == w && kvp.second == h)
+                        _sub_color->ui.selected_res_id = i;
+                }
+
+                profiles_color = _sub_color->get_selected_profiles();
+            }
+
+            invoke([&]() 
+                {
+                    if (!_model.dev_syncer)
+                        _model.dev_syncer = _viewer.syncer->create_syncer();
+
+                    // Start streaming
+                    _sub->play(profiles, _viewer, _model.dev_syncer);
+                    for (auto&& profile : profiles)
+                        _viewer.begin_stream(_sub, profile);
+
+                    if (action == RS2_CALIB_ACTION_UVMAPPING)
+                    {
+                        _sub_color->play(profiles_color, _viewer, _model.dev_syncer);
+                        for (auto&& profile : profiles_color)
+                            _viewer.begin_stream(_sub_color, profile);
+                    }
                 });
 
             // Wait for frames to arrive
@@ -511,9 +583,10 @@ namespace rs2
         }
         std::string json = ss.str();
 
+        float health[2] = { -1.0f, -1.0f };
         auto calib_dev = _dev.as<auto_calibrated_device>();
         if (action == RS2_CALIB_ACTION_TARE_CALIB)
-            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = int(progress);}, 5000);
+            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, health, [&](const float progress) {_progress = int(progress);}, 5000);
         else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
             _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = int(progress);}, occ_timeout_ms);
 
@@ -531,6 +604,11 @@ namespace rs2
             _health_2 = h_2 / 1000.0f;
             if (sign & 2)
                 _health_2 = -_health_2;
+        }
+        else if (action == RS2_CALIB_ACTION_TARE_CALIB)
+        {
+            _health_1 = health[0] * 100;
+            _health_2 = health[1] * 100;
         }
     }
 
@@ -694,64 +772,231 @@ namespace rs2
         }
     }
 
+    void on_chip_calib_manager::undistort(uint8_t* img, int width, int height, const rs2_intrinsics & intrin)
+    {
+        int size = width * height;
+        std::vector<uint8_t> tmp(size);
+        memset(tmp.data(), 0, size);
+
+        float x = 0;
+        float y = 0;
+        int m = 0;
+        int n = 0;
+        uint8_t* p = img;
+        for (int j = 0; j < height; ++j)
+        {
+            for (int i = 0; i < width; ++i)
+            {
+                x = static_cast<float>(i);
+                y = static_cast<float>(j);
+                assert(intrin.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY);
+
+                if (abs(intrin.fx) > 0.00001f && abs(intrin.fy) > 0.0001f)
+                {
+                    x = (x - intrin.ppx) / intrin.fx;
+                    y = (y - intrin.ppy) / intrin.fy;
+
+                    float r2 = x * x + y * y;
+                    float f = 1 + intrin.coeffs[0] * r2 + intrin.coeffs[1] * r2 * r2 + intrin.coeffs[4] * r2 * r2 * r2;
+                    float ux = x * f + 2 * intrin.coeffs[2] * x * y + intrin.coeffs[3] * (r2 + 2 * x * x);
+                    float uy = y * f + 2 * intrin.coeffs[3] * x * y + intrin.coeffs[2] * (r2 + 2 * y * y);
+                    x = ux;
+                    y = uy;
+
+                    x = x * intrin.fx + intrin.ppx;
+                    y = y * intrin.fy + intrin.ppy;
+                }
+
+                m = static_cast<int>(x + 0.5f);
+                if (m >= 0 && m < width)
+                {
+                    n = static_cast<int>(y + 0.5f);
+                    if (n >= 0 && n < height)
+                        tmp[n * width + m] = *p++;
+                }
+            }
+        }
+
+        memmove(img, tmp.data(), size);
+    }
+
+    void on_chip_calib_manager::FindZatCorners(float left_x[4], float left_y[4], int width, int num, std::vector<std::vector<uint16_t>>& depth, float left_z[4])
+    {
+        int x1[4] = { 0 };
+        int y1[4] = { 0 };
+        int x2[4] = { 0 };
+        int y2[4] = { 0 };
+        int pos_tl[4] = { 0 };
+        int pos_tr[4] = { 0 };
+        int pos_bl[4] = { 0 };
+        int pos_br[4] = { 0 };
+        for (int i = 0; i < 4; ++i)
+        {
+            x1[i] = static_cast<int>(left_x[i]);
+            y1[i] = static_cast<int>(left_y[i]);
+
+            x2[i] = static_cast<int>(left_x[i] + 1.0f);
+            y2[i] = static_cast<int>(left_y[i] + 1.0f);
+
+            pos_tl[i] = y1[i] * width + x1[i];
+            pos_tr[i] = y1[i] * width + x2[i];
+            pos_bl[i] = y2[i] * width + x1[i];
+            pos_br[i] = y2[i] * width + x2[i];
+        }
+
+        float left_z_tl[4] = { 0 };
+        float left_z_tr[4] = { 0 };
+        float left_z_bl[4] = { 0 };
+        float left_z_br[4] = { 0 };
+        for (int j = 0; j < num; ++j)
+        {
+            for (int i = 0; i < 4; ++i)
+            {
+                left_z_tl[i] += static_cast<float>(depth[j][pos_tl[i]]);
+                left_z_tr[i] += static_cast<float>(depth[j][pos_tr[i]]);
+                left_z_bl[i] += static_cast<float>(depth[j][pos_bl[i]]);
+                left_z_br[i] += static_cast<float>(depth[j][pos_br[i]]);
+            }
+        }
+
+        for (int i = 0; i < 4; ++i)
+        {
+            left_z_tl[i] /= num;
+            left_z_tr[i] /= num;
+            left_z_bl[i] /= num;
+            left_z_br[i] /= num;
+        }
+
+        float z_1 = 0.0f;
+        float z_2 = 0.0f;
+        float s = 0.0f;
+        for (int i = 0; i < 4; ++i)
+        {
+            s = left_x[i] - x1[i];
+            z_1 = (1.0f - s) * left_z_bl[i] + s * left_z_br[i];
+            z_2 = (1.0f - s) * left_z_tl[i] + s * left_z_tr[i];
+
+            s = left_y[i] - y1[i];
+            left_z[i] = (1.0f - s) * z_2 + s * z_1;
+            left_z[i] *= 0.001f;
+        }
+    }
+
     void on_chip_calib_manager::calibrate_uvmapping()
     {
         try
         {
             std::shared_ptr<dots_calculator> gt_calculator[2];
-            bool created[2] = { false, false };
+            bool created[3] = { false, false, false };
 
             int counter = 0;
             int limit = dots_calculator::_frame_num << 1;
             int step = limit / dots_calculator::_frame_num;
 
             int ret = { 0 };
-            int id[2] = { _uid, _uid2 }; // 0 for left and 1 for color
-            rs2_intrinsics intrin[2] = { 0 };
+            int id[3] = { _uid, _uid_color, _uid2 }; // 0 for left, 1 for color, and 2 for depth
+            rs2_intrinsics intrin[2];
+            stream_profile profile[2];
             float dots_x[2][4] = { 0 };
             float dots_y[2][4] = { 0 };
 
+            int idx = 0;
+            int depth_frame_size = 0;
+            std::vector<std::vector<uint16_t>> depth(dots_calculator::_frame_num);
+
             rs2::frame f;
-            bool done[2] = { false, false };
+            int width = 0;
+            int height = 0;
+            bool done[3] = { false, false, false };
             while (counter < limit)
             {
-                for (int i = 0; i < 2; ++i)
+                if (!done[2])
                 {
-                    if (!done[i])
+                    f = _viewer.ppf.frames_queue[id[2]].wait_for_frame();
+
+                    if (!created[2])
                     {
-                        f = _viewer.ppf.frames_queue[id[i]].wait_for_frame();
-                        if (f)
-                        {
-                            if (!created[i])
-                            {
-                                stream_profile profile = f.get_profile();
-                                auto vsp = profile.as<video_stream_profile>();
+                        profile[1] = f.get_profile();
+                        auto vsp = profile[1].as<video_stream_profile>();
+                        width = vsp.width();
+                        depth_frame_size = vsp.width() * vsp.height() * sizeof(uint16_t);
+                        created[2] = true;
+                    }
 
-                                gt_calculator[i] = std::make_shared<dots_calculator>();
-                                intrin[i] = vsp.get_intrinsics();
-                                created[i] = true;
-                            }
+                    depth[idx].resize(depth_frame_size);
+                    memmove(depth[idx++].data(), f.get_data(), depth_frame_size);
 
-                            ret = gt_calculator[i]->calculate(f.get(), dots_x[i], dots_y[i]);
-                            if (ret == 0)
-                                ++counter;
-                            else if (ret == 1)
-                                _progress += step;
-                            else if (ret == 2)
-                            {
-                                _progress += step;
-                                done[i] = true;
-                            }
-                        }
+                    if (idx == dots_calculator::_frame_num)
+                        done[2] = true;
+                }
+
+                if (!done[0])
+                {
+                    f = _viewer.ppf.frames_queue[id[0]].wait_for_frame();
+
+                    if (!created[0])
+                    {
+                        profile[0] = f.get_profile();
+                        auto vsp = profile[0].as<video_stream_profile>();
+
+                        gt_calculator[0] = std::make_shared<dots_calculator>();
+                        intrin[0] = vsp.get_intrinsics();
+                        created[0] = true;
+                    }
+
+                    ret = gt_calculator[0]->calculate(f.get(), dots_x[0], dots_y[0]);
+                    if (ret == 0)
+                        ++counter;
+                    else if (ret == 1)
+                        _progress += step;
+                    else if (ret == 2)
+                    {
+                        _progress += step;
+                        done[0] = true;
                     }
                 }
 
-                if (done[0] && done[1])
+                if (!done[1])
+                {
+                    f = _viewer.ppf.frames_queue[id[1]].wait_for_frame();
+
+                    if (!created[1])
+                    {
+                        profile[1] = f.get_profile();
+                        auto vsp = profile[1].as<video_stream_profile>();
+                        width = vsp.width();
+                        height = vsp.height();
+
+                        gt_calculator[1] = std::make_shared<dots_calculator>();
+                        intrin[1] = vsp.get_intrinsics();
+                        created[1] = true;
+                    }
+
+                    undistort(const_cast<uint8_t *>(static_cast<const uint8_t *>(f.get_data())), width, height, intrin[1]);
+                    ret = gt_calculator[1]->calculate(f.get(), dots_x[1], dots_y[1]);
+                    if (ret == 0)
+                        ++counter;
+                    else if (ret == 1)
+                        _progress += step;
+                    else if (ret == 2)
+                    {
+                        _progress += step;
+                        done[1] = true;
+                    }
+                }
+
+                if (done[0] && done[1] && done[2])
                     break;
             }
 
-            if (done[0] && done[1])
+            if (done[0] && done[1] && done[2])
             {
+                rs2_extrinsics extrin = profile[0].get_extrinsics_to(profile[1]);
+
+                float z[4] = { 0 };
+                FindZatCorners(dots_x[0], dots_y[0], width, dots_calculator::_frame_num, depth, z);
+
+                uvmapping_calib calib(4, dots_x[0], dots_y[0], z, dots_x[1], dots_y[1], intrin[0], intrin[1], extrin);
 
 
 
@@ -873,8 +1118,6 @@ namespace rs2
         _in_3d_view = _viewer.is_3d_view;
         _viewer.is_3d_view = (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH ? false : true);
 
-        config_file::instance().set(configurations::viewer::ground_truth_r, ground_truth);
-
         auto calib_dev = _dev.as<auto_calibrated_device>();
         _old_calib = calib_dev.get_calibration_table();
 
@@ -886,11 +1129,11 @@ namespace rs2
 
         _restored = false;
 
-        if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
+        if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH && action != RS2_CALIB_ACTION_UVMAPPING)
         {
             if (!_was_streaming)
             {
-                if (action == RS2_CALIB_ACTION_FL_CALIB || action == RS2_CALIB_ACTION_UVMAPPING)
+                if (action == RS2_CALIB_ACTION_FL_CALIB)
                     try_start_viewer(848, 480, 30, invoke);
                 else
                     try_start_viewer(0, 0, 0, invoke);
@@ -907,11 +1150,11 @@ namespace rs2
         std::this_thread::sleep_for(std::chrono::milliseconds(600));
 
         // Switch into special Auto-Calibration mode
-        if (action == RS2_CALIB_ACTION_FL_CALIB)
+        if (action == RS2_CALIB_ACTION_FL_CALIB || action == RS2_CALIB_ACTION_UVMAPPING)
             _viewer.is_3d_view = false;
 
         if (action == RS2_CALIB_ACTION_UVMAPPING)
-            try_start_viewer(1280, 720, 30, invoke);
+            try_start_viewer(1280, 720, 15, invoke);
         else
             try_start_viewer(256, 144, 90, invoke);
 
@@ -953,7 +1196,7 @@ namespace rs2
         if (_ui.get())
             _sub->ui = *_ui;
 
-        if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
+        if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH && action != RS2_CALIB_ACTION_UVMAPPING)
         {
             if (action == RS2_CALIB_ACTION_FL_CALIB)
                 _viewer.is_3d_view = true;
@@ -980,10 +1223,6 @@ namespace rs2
             if (_restored) return;
 
             _viewer.is_3d_view = _in_3d_view;
-
-            _viewer.ground_truth_r = uint32_t(ground_truth);
-            config_file::instance().set(configurations::viewer::ground_truth_r, ground_truth);
-
             _viewer.synchronization_enable = _synchronized;
 
             stop_viewer(invoke);
@@ -1087,7 +1326,7 @@ namespace rs2
         using namespace std;
         using namespace chrono;
 
-        if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT)
+        if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT || update_state == RS2_CALIB_STATE_CALIB_IN_PROCESS && get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING)
             get_manager().turn_roi_on();
         else
             get_manager().turn_roi_off();
@@ -1689,7 +1928,53 @@ namespace rs2
 
                 if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB)
                 {
-                    ImGui::Text("%s", "Tare calibration complete:");
+                    health_1 = get_manager().get_health_1();
+                    health_2 = get_manager().get_health_2();
+
+                    ImGui::Text("%s", "Health-Check Before Calibration: ");
+
+                    std::stringstream ss_1;
+                    ss_1 << std::fixed << std::setprecision(4) << health_1 << "%";
+                    auto health_str = ss_1.str();
+
+                    std::string text_name = to_string() << "##notification_text_1_" << index;
+
+                    ImGui::SetCursorScreenPos({ float(x + 225), float(y + 30) });
+                    ImGui::PushStyleColor(ImGuiCol_Text, white);
+                    ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+                    ImGui::InputTextMultiline(text_name.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 86, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
+                    ImGui::PopStyleColor(7);
+
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("%s", "Health-check number before Tare Calibration");
+
+                    ImGui::SetCursorScreenPos({ float(x + 10), float(y + 38) + ImGui::GetTextLineHeightWithSpacing() });
+                    ImGui::Text("%s", "Health-Check After Calibration: ");
+
+                    std::stringstream ss_2;
+                    ss_2 << std::fixed << std::setprecision(4) << health_2 << "%";
+                    health_str = ss_2.str();
+
+                    text_name = to_string() << "##notification_text_2_" << index;
+
+                    ImGui::SetCursorScreenPos({ float(x + 225), float(y + 35) + ImGui::GetTextLineHeightWithSpacing() });
+                    ImGui::PushStyleColor(ImGuiCol_Text, white);
+                    ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+                    ImGui::InputTextMultiline(text_name.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 86, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
+                    ImGui::PopStyleColor(7);
+
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("%s", "Health-check number after Tare Calibration");
                 }
                 else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
                 {
@@ -1968,11 +2253,11 @@ namespace rs2
                 }
                 else
                 {
-                    ImGui::SetCursorScreenPos({ float(x + 7), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ? float(y + 105) + ImGui::GetTextLineHeightWithSpacing() : float(y + 100)) });
+                    ImGui::SetCursorScreenPos({ float(x + 7), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ? float(y + 105) + ImGui::GetTextLineHeightWithSpacing() : float(y + 100)) });
                     ImGui::Text("%s", "Please compare new vs old calibration\nand decide if to keep or discard the result...");
                 }
 
-                ImGui::SetCursorScreenPos({ float(x + 20), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ? float(y + 70) + ImGui::GetTextLineHeightWithSpacing() : float(y + 60)) });
+                ImGui::SetCursorScreenPos({ float(x + 20), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ? float(y + 70) + ImGui::GetTextLineHeightWithSpacing() : float(y + 60)) });
 
                 if (ImGui::RadioButton("New", use_new_calib))
                 {
@@ -1980,7 +2265,7 @@ namespace rs2
                     get_manager().apply_calib(true);
                 }
 
-                ImGui::SetCursorScreenPos({ float(x + 150), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ? float(y + 70) + ImGui::GetTextLineHeightWithSpacing() : float(y + 60)) });
+                ImGui::SetCursorScreenPos({ float(x + 150), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ? float(y + 70) + ImGui::GetTextLineHeightWithSpacing() : float(y + 60)) });
                 if (ImGui::RadioButton("Original", !use_new_calib))
                 {
                     use_new_calib = false;
@@ -2258,7 +2543,7 @@ namespace rs2
         else if (update_state == RS2_CALIB_STATE_INITIAL_PROMPT) return 120;
         else if (update_state == RS2_CALIB_STATE_CALIB_COMPLETE)
         {
-            if (get_manager().allow_calib_keep()) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ? 190 : 170);
+            if (get_manager().allow_calib_keep()) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ? 190 : 170);
             else return 80;
         }
         else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 160 : 140);
@@ -2425,4 +2710,22 @@ namespace rs2
             dots_y[i] /= _frame_num;
         }
     }
+
+    uvmapping_calib::uvmapping_calib(int pt_num, const float* left_x, const float* left_y, const float* left_z, const float* color_x, const float* color_y, const rs2_intrinsics& left_intrin, const rs2_intrinsics& color_intrin, rs2_extrinsics& extrin)
+        : _pt_num(pt_num)
+    {
+        for (int i = 0; i < pt_num; ++i)
+        {
+            _left_x.emplace_back(left_x[i]);
+            _left_y.emplace_back(left_y[i]);
+            _left_x.emplace_back(left_z[i]);
+            _color_x.emplace_back(color_x[i]);
+            _color_y.emplace_back(color_y[i]);
+        }
+
+        memmove(&_left_intrin, &left_intrin, sizeof(rs2_intrinsics));
+        memmove(&_color_intrin, &color_intrin, sizeof(rs2_intrinsics));
+        memmove(&_extrin, &extrin, sizeof(rs2_extrinsics));
+    }
+
 }

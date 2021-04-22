@@ -122,6 +122,7 @@ namespace rs2
         bool _in_3d_view = false;
         int _uid = 0;
         int _uid2 = 0;
+        int _uid_color = 0;
 
         viewer_model& _viewer;
 
@@ -134,6 +135,9 @@ namespace rs2
         void stop_viewer(invoker invoke);
         bool start_viewer(int w, int h, int fps, invoker invoke);
         void try_start_viewer(int w, int h, int fps, invoker invoke);
+
+        void undistort(uint8_t* img, int width, int height, const rs2_intrinsics& intrin);
+        void FindZatCorners(float left_x[4], float left_y[4], int width, int num, std::vector<std::vector<uint16_t>> & depth, float left_z[4]);
     };
 
     // Auto-calib notification model is managing the UI state-machine
@@ -224,5 +228,27 @@ namespace rs2
         int _rec_idx = 0;
         int _rec_num = 0;
         const int _reset_limit = 10;
+    };
+
+    class uvmapping_calib
+    {
+    public:
+        uvmapping_calib(int pt_num, const float* left_x, const float* left_y, const float* left_z, const float* color_x, const float* color_y, const rs2_intrinsics& left_intrin, const rs2_intrinsics& color_intrin, rs2_extrinsics& extrin);
+        virtual ~uvmapping_calib() {}
+
+
+
+    private:
+        int _pt_num;
+
+        std::vector<float> _left_x;
+        std::vector<float> _left_y;
+        std::vector<float> _left_z;
+        std::vector<float> _color_x;
+        std::vector<float> _color_y;        
+        
+        rs2_intrinsics _left_intrin;
+        rs2_intrinsics _color_intrin;
+        rs2_extrinsics _extrin;
     };
 }

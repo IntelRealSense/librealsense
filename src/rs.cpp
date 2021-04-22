@@ -2405,19 +2405,41 @@ void rs2_extract_target_dimensions(const rs2_frame* frame_ref, rs2_calib_target_
     VALIDATE_NOT_NULL(target_dims_size);
 
     auto vf = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::video_frame);
-    if (vf->get_stream()->get_format() != RS2_FORMAT_Y8)
-        throw std::runtime_error("wrong video frame format");
+    int width = vf->get_width();
+    int height = vf->get_height();
 
     std::shared_ptr<target_calculator_interface> target_calculator;
     if (calib_type == RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES)
-        target_calculator = std::make_shared<rect_gaussian_dots_target_calculator>(vf->get_width(), vf->get_height(), 0, 0, vf->get_width(), vf->get_height());
+        target_calculator = std::make_shared<rect_gaussian_dots_target_calculator>(width, height, 0, 0, width, height);
     else if (calib_type == RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES)
-        target_calculator = std::make_shared<rect_gaussian_dots_target_calculator>(vf->get_width(), vf->get_height(), rect_gaussian_dots_target_calculator::_roi_ws, rect_gaussian_dots_target_calculator::_roi_hs, rect_gaussian_dots_target_calculator::_roi_we - rect_gaussian_dots_target_calculator::_roi_ws, rect_gaussian_dots_target_calculator::_roi_he - rect_gaussian_dots_target_calculator::_roi_hs);
+        target_calculator = std::make_shared<rect_gaussian_dots_target_calculator>(width, height, rect_gaussian_dots_target_calculator::_roi_ws, rect_gaussian_dots_target_calculator::_roi_hs, rect_gaussian_dots_target_calculator::_roi_we - rect_gaussian_dots_target_calculator::_roi_ws, rect_gaussian_dots_target_calculator::_roi_he - rect_gaussian_dots_target_calculator::_roi_hs);
     else
         throw std::runtime_error("unsupported calibration target type");
-
-    if (!target_calculator->calculate(vf->get_frame_data(), target_dims, target_dims_size))
-        throw std::runtime_error("Failed to find the four rectangle side sizes on the frame");
+    
+    if (vf->get_stream()->get_format() == RS2_FORMAT_Y8)
+    {
+        if (!target_calculator->calculate(vf->get_frame_data(), target_dims, target_dims_size))
+            throw std::runtime_error("Failed to find the four rectangle side sizes on the frame");
+    }
+    else if (vf->get_stream()->get_format() == RS2_FORMAT_RGB8)
+    {
+        int size = width * height;
+        std::vector<uint8_t> buf(size);
+        uint8_t* p = buf.data();
+        const uint8_t* q = vf->get_frame_data();
+        float tmp = 0;
+        for (int i = 0; i < size; ++i)
+        {
+            tmp = static_cast<float>(*q++);
+            tmp += static_cast<float>(*q++);
+            tmp += static_cast<float>(*q++);
+            *p++ = static_cast<uint8_t>(tmp / 3 + 0.5f);
+        }
+        if (!target_calculator->calculate(buf.data(), target_dims, target_dims_size))
+            throw std::runtime_error("Failed to find the four rectangle side sizes on the frame");
+    }
+    else
+        throw std::runtime_error("wrong video frame format");
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, frame_ref, calib_type, target_dims, target_dims_size)
 
@@ -3101,7 +3123,7 @@ const rs2_raw_data_buffer* rs2_run_on_chip_calibration(rs2_device* device, const
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
-const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* device, float ground_truth_mm, const void* json_content, int content_size, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error) BEGIN_API_CALL
+const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* device, float ground_truth_mm, const void* json_content, int content_size, float * health,  rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
 
@@ -3113,15 +3135,15 @@ const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* device, floa
     std::vector<uint8_t> buffer;
     std::string json((char*)json_content, (char*)json_content + content_size);
     if (progress_callback == nullptr)
-        buffer = auto_calib->run_tare_calibration(timeout_ms, ground_truth_mm, json, nullptr);
+        buffer = auto_calib->run_tare_calibration(timeout_ms, ground_truth_mm, json, health, nullptr);
     else
-        buffer = auto_calib->run_tare_calibration(timeout_ms, ground_truth_mm, json, { progress_callback, [](rs2_update_progress_callback* p) { p->release(); } });
+        buffer = auto_calib->run_tare_calibration(timeout_ms, ground_truth_mm, json, health, { progress_callback, [](rs2_update_progress_callback* p) { p->release(); } });
 
     return new rs2_raw_data_buffer{ buffer };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
-const rs2_raw_data_buffer* rs2_run_tare_calibration(rs2_device* device, float ground_truth_mm, const void* json_content, int content_size, rs2_update_progress_callback_ptr progress_callback, void* user, int timeout_ms, rs2_error** error) BEGIN_API_CALL
+const rs2_raw_data_buffer* rs2_run_tare_calibration(rs2_device* device, float ground_truth_mm, const void* json_content, int content_size, float * health, rs2_update_progress_callback_ptr progress_callback, void* user, int timeout_ms, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
 
@@ -3134,13 +3156,13 @@ const rs2_raw_data_buffer* rs2_run_tare_calibration(rs2_device* device, float gr
     std::string json((char*)json_content, (char*)json_content + content_size);
 
     if (progress_callback == nullptr)
-        buffer = auto_calib->run_tare_calibration(timeout_ms, ground_truth_mm, json, nullptr);
+        buffer = auto_calib->run_tare_calibration(timeout_ms, ground_truth_mm, json, health, nullptr);
     else
     {
         librealsense::update_progress_callback_ptr cb(new librealsense::update_progress_callback(progress_callback, user),
             [](update_progress_callback* p) { delete p; });
 
-        buffer = auto_calib->run_tare_calibration(timeout_ms, ground_truth_mm, json, cb);
+        buffer = auto_calib->run_tare_calibration(timeout_ms, ground_truth_mm, json, health, cb);
     }
     return new rs2_raw_data_buffer{ buffer };
 }

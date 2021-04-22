@@ -329,12 +329,13 @@ const rs2_raw_data_buffer* rs2_run_on_chip_calibration(rs2_device* device, const
                                     scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
                                     data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
                                     if json is nullptr it will be ignored and calibration will use the default parameters
-* \param[in]  content_size        Json string size if its 0 the json will be ignored and calibration will use the default parameters
-* \param[in]  callback            Optional callback to get progress notifications
-* \param[in] timeout_ms          Timeout in ms (use 5000 msec unless instructed otherwise)
-* \return                         New calibration table
+* \param[in]  content_size       Json string size if its 0 the json will be ignored and calibration will use the default parameters
+* \param[in]  callback           Optional callback to get progress notifications
+* \param[in]  timeout_ms         Timeout in ms (use 5000 msec unless instructed otherwise)
+* \param[out] health             The health check numbers before and after calibration
+* \return                        New calibration table
 */
-const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* dev, float ground_truth_mm, const void* json_content, int content_size, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error);
+const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* dev, float ground_truth_mm, const void* json_content, int content_size, float* health, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error);
 
 
 /**
@@ -423,9 +424,10 @@ void rs2_trigger_device_calibration( rs2_device* dev, rs2_calibration_type type,
 * \param[in]  callback           Optional callback for update progress notifications, the progress value is normailzed to 1
 * \param[in]  client_data        Optional client data for the callback
 * \param[in] timeout_ms          Timeout in ms (use 5000 msec unless instructed otherwise)
+* \param[out] health             The health check numbers before and after calibration
 * \return                        New calibration table
 */
-const rs2_raw_data_buffer* rs2_run_tare_calibration(rs2_device* dev, float ground_truth_mm, const void* json_content, int content_size, rs2_update_progress_callback_ptr callback, void* client_data, int timeout_ms, rs2_error** error);
+const rs2_raw_data_buffer* rs2_run_tare_calibration(rs2_device* dev, float ground_truth_mm, const void* json_content, int content_size, float* health, rs2_update_progress_callback_ptr callback, void* client_data, int timeout_ms, rs2_error** error);
 
 /**
 *  Read current calibration table from flash.
