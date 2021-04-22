@@ -258,11 +258,6 @@ namespace librealsense
 #endif
     }
 
-#ifdef BUILD_INTERNAL_UNIT_TESTS
-#define PRIVATE_TESTABLE public
-#else
-#define PRIVATE_TESTABLE private
-#endif
     //////////////////////////
     // Exceptions mechanism //
     //////////////////////////
