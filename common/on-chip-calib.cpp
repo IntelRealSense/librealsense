@@ -146,7 +146,8 @@ namespace rs2
                     }
                 }
 
-                _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
+                if (_sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                    _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
             }
             else if (run_fl_calib)
             {
@@ -170,7 +171,8 @@ namespace rs2
                     }
                 }
 
-                _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
+                if (_sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                    _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
             }
             else
             {
@@ -1585,7 +1587,8 @@ namespace rs2
                 ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
                 if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
                 {
-                    get_manager().laser_status_prev = get_manager()._sub->s->get_option(RS2_OPTION_EMITTER_ENABLED);
+                    if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                        get_manager().laser_status_prev = get_manager()._sub->s->get_option(RS2_OPTION_EMITTER_ENABLED);
                     get_manager().restore_workspace([this](std::function<void()> a) { a(); });
                     get_manager().reset();
                     get_manager().retry_times = 0;
@@ -1658,7 +1661,10 @@ namespace rs2
             else if (update_state == RS2_CALIB_STATE_CALIB_COMPLETE)
             {
                 if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB)
-                    get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);
+                {
+                    if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                        get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);
+                }
             
                 auto health = get_manager().get_health();
 
@@ -2001,7 +2007,8 @@ namespace rs2
                     ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
                     if (ImGui::Button(button_name.c_str(), { scale * 3, 20.f }))
                     {
-                        get_manager().laser_status_prev = get_manager()._sub->s->get_option(RS2_OPTION_EMITTER_ENABLED);
+                        if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                            get_manager().laser_status_prev = get_manager()._sub->s->get_option(RS2_OPTION_EMITTER_ENABLED);
                         get_manager().restore_workspace([this](std::function<void()> a) { a(); });
                         get_manager().reset();
                         get_manager().retry_times = 0;
