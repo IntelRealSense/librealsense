@@ -1074,10 +1074,10 @@ namespace rs2
                 if (!ret)
                     fail("Please adjust the camera position\nand make sure the specific target is\ninsid the ROI of the camera images!");
 
-                log(to_string() << "PX: " << intrin[1].ppx << " ---> " << _ppx);
-                log(to_string() << "PY: " << intrin[1].ppy << " ---> " << _ppy);
-                log(to_string() << "FX: " << intrin[1].fx << " ---> " << _fx);
-                log(to_string() << "FY: " << intrin[1].fy << " ---> " << _fy);
+                _viewer.not_model->add_log(to_string() << "PX: " << intrin[1].ppx << " ---> " << _ppx);
+                _viewer.not_model->add_log(to_string() << "PY: " << intrin[1].ppy << " ---> " << _ppy);
+                _viewer.not_model->add_log(to_string() << "FX: " << intrin[1].fx << " ---> " << _fx);
+                _viewer.not_model->add_log(to_string() << "FY: " << intrin[1].fy << " ---> " << _fy);
 
                 get_and_update_color_intrinsics(width, height, _ppx, _ppy, _fx, _fy);
             }
