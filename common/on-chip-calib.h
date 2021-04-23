@@ -31,9 +31,11 @@ namespace rs2
         float get_health() const { return _health; }
         float get_health_1() const { return _health_1; }
         float get_health_2() const { return _health_2; }
+        float get_health_uvmapping(int idx) const { return _health_uvmapping[idx]; }
 
         // Write new calibration to the device
         void keep();
+        void keep_uvmapping_calib();
 
         // Restore Viewer UI to how it was before auto-calib
         void restore_workspace(invoker invoke);
@@ -113,6 +115,10 @@ namespace rs2
         float _health = -1.0f;
         float _health_1 = -1.0f;
         float _health_2 = -1.0f;
+
+        float _health_uvmapping[4] = { -0.1f, -0.1f, -0.1f, -0.1f };
+        std::vector<uint8_t> color_intrin_raw_data;
+
         device _dev;
 
         bool _was_streaming = false;
@@ -123,6 +129,7 @@ namespace rs2
         int _uid = 0;
         int _uid2 = 0;
         int _uid_color = 0;
+        std::shared_ptr<subdevice_ui_selection> _ui_color{ nullptr };
 
         viewer_model& _viewer;
 
@@ -132,12 +139,18 @@ namespace rs2
 
         bool _restored = true;
 
+        float _ppx = 0.0f;
+        float _ppy = 0.0f;
+        float _fx = 0.0f;
+        float _fy = 0.0f;
+
         void stop_viewer(invoker invoke);
         bool start_viewer(int w, int h, int fps, invoker invoke);
         void try_start_viewer(int w, int h, int fps, invoker invoke);
 
-        void undistort(uint8_t* img, int width, int height, const rs2_intrinsics& intrin);
-        void FindZatCorners(float left_x[4], float left_y[4], int width, int num, std::vector<std::vector<uint16_t>> & depth, float left_z[4]);
+        void undistort(uint8_t* img, int width, int height, const rs2_intrinsics& intrin, int roi_ws, int roi_hs, int roi_we, int roi_he);
+        void find_z_at_corners(float left_x[4], float left_y[4], int width, int num, std::vector<std::vector<uint16_t>> & depth, float left_z[4]);
+        void get_and_update_color_intrinsics(uint32_t width, uint32_t height, float ppx, float ppy, float fx, float fy);
     };
 
     // Auto-calib notification model is managing the UI state-machine
@@ -215,7 +228,7 @@ namespace rs2
         int calculate(const rs2_frame* frame_ref, float dots_x[4], float dots_y[4]); // return 0 if the target is not in the center, 1 if found, 2 if dots positions are updated
 
     public:
-        static const int _frame_num = 2;
+        static const int _frame_num = 12;
 
     private:
         void calculate_dots_position(float dots_x[4], float dots_y[4]);

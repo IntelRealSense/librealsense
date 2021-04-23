@@ -163,6 +163,8 @@ namespace librealsense
         static const int _roi_hs = 240;
         static const int _roi_he = 480;
 
+        static const int _patch_size = 20; // in pixels
+
     protected:
         void normalize(const uint8_t* img);
         void calculate_ncc();
@@ -216,7 +218,6 @@ namespace librealsense
         };
 
         const double _thresh = 0.7; // used internally, range from 0 to 1 for normalized image ma
-        const int _patch_size = 20; // in pixels
         std::vector<double> _buf;
 
         std::vector<double> _img;
