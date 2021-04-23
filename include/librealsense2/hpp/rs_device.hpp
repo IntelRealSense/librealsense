@@ -462,7 +462,8 @@ namespace rs2
                                             [0.25, 0.75) - Can be Improved
                                             [0.75, ) - Requires Calibration
         * \param[in]  callback            Optional callback to get progress notifications
-        * \param[in] timeout_ms           Timeout in ms
+        * \param[in]  timeout_ms           Timeout in ms
+        * \param[out] health              The health check numbers before and after calibration
         * \return                         New calibration table
         */
         template<class T>
@@ -507,13 +508,10 @@ namespace rs2
                                              host_assistance: 0 for no assistance, 1 for starting with assistance, 2 for feeding host data to firmware
                                              depth: 0 for not relating to depth, > 0 for feeding depth from host to firmware, -1 for ending to feed depth from host to firmware
                                              if json is nullptr it will be ignored and calibration will use the default parameters
-         * \param[in]  content_size        Json string size if its 0 the json will be ignored and calibration will use the default parameters
-         * \param[out] health           The absolute value of regular calibration Health-Check captures how far camera calibration is from the optimal one
-                                            [0, 0.25) - Good
-                                            [0.25, 0.75) - Can be Improved
-                                            [0.75, ) - Requires Calibration
-         * \param[in] timeout_ms           Timeout in ms
-         * \return                         New calibration table
+         * \param[in]  content_size       Json string size if its 0 the json will be ignored and calibration will use the default parameters
+         * \param[in] timeout_ms          Timeout in ms
+         * \param[out] health             The health check numbers before and after calibration
+         * \return                        New calibration table
          */
         calibration_table run_tare_calibration(float ground_truth_mm, std::string json_content, float * health, int timeout_ms = 5000) const
         {

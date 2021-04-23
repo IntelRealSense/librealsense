@@ -14,7 +14,6 @@ namespace rs2
     class viewer_model;
     class subdevice_model;
     struct subdevice_ui_selection;
-    class rect_calculator;
 
     // On-chip Calibration manager owns the background thread
     // leading the calibration process
@@ -23,14 +22,8 @@ namespace rs2
     class on_chip_calib_manager : public process_manager
     {
     public:
-        on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub,
-            device_model& model, device dev)
-            : process_manager("On-Chip Calibration"), _model(model),
-             _dev(dev), _sub(sub), _viewer(viewer)
-        {
-            auto dev_name = dev.get_info(RS2_CAMERA_INFO_NAME);
-            if (!strcmp(dev_name, "Intel RealSense D415")) { speed = 4; }
-        }
+        on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub, device_model& model, device dev, std::shared_ptr<subdevice_model> sub_color = nullptr);
+        ~on_chip_calib_manager();
 
         bool allow_calib_keep() const { return true; }
 
@@ -38,9 +31,11 @@ namespace rs2
         float get_health() const { return _health; }
         float get_health_1() const { return _health_1; }
         float get_health_2() const { return _health_2; }
+        float get_health_uvmapping(int idx) const { return _health_uvmapping[idx]; }
 
         // Write new calibration to the device
         void keep();
+        void keep_uvmapping_calib();
 
         // Restore Viewer UI to how it was before auto-calib
         void restore_workspace(invoker invoke);
@@ -69,6 +64,8 @@ namespace rs2
             RS2_CALIB_ACTION_ON_CHIP_FL_CALIB,  // On-Chip focal length calibration
             RS2_CALIB_ACTION_TARE_CALIB,        // Tare calibration
             RS2_CALIB_ACTION_TARE_GROUND_TRUTH, // Tare ground truth
+            RS2_CALIB_ACTION_FL_CALIB,          // Focal length calibration
+            RS2_CALIB_ACTION_UVMAPPING,         // UVMapping calibration
         };
 
         auto_calib_action action = RS2_CALIB_ACTION_ON_CHIP_CALIB;
@@ -89,10 +86,23 @@ namespace rs2
         int retry_times = 0;
         bool toggle = false;
 
+        float ratio = 0.0f;
+        float align = 0.0f;
+
+        const float correction_factor = 0.50f;
+        float corrected_ratio = 0.0f;
+        float tilt_angle = 0.0f;
+
         std::shared_ptr<subdevice_model> _sub;
+        std::shared_ptr<subdevice_model> _sub_color;
 
         void calibrate();
+        void calibrate_fl();
+        void calibrate_uvmapping();
         void get_ground_truth();
+
+        void turn_roi_on();
+        void turn_roi_off();
 
     private:
 
@@ -107,6 +117,10 @@ namespace rs2
         float _health = -1.0f;
         float _health_1 = -1.0f;
         float _health_2 = -1.0f;
+
+        float _health_uvmapping[4] = { -0.1f, -0.1f, -0.1f, -0.1f };
+        std::vector<uint8_t> color_intrin_raw_data;
+
         device _dev;
 
         bool _was_streaming = false;
@@ -115,6 +129,9 @@ namespace rs2
         std::shared_ptr<subdevice_ui_selection> _ui { nullptr };
         bool _in_3d_view = false;
         int _uid = 0;
+        int _uid2 = 0;
+        int _uid_color = 0;
+        std::shared_ptr<subdevice_ui_selection> _ui_color{ nullptr };
 
         viewer_model& _viewer;
 
@@ -124,11 +141,19 @@ namespace rs2
 
         bool _restored = true;
 
+        float _ppx = 0.0f;
+        float _ppy = 0.0f;
+        float _fx = 0.0f;
+        float _fy = 0.0f;
+
         void stop_viewer(invoker invoke);
         bool start_viewer(int w, int h, int fps, invoker invoke);
         void try_start_viewer(int w, int h, int fps, invoker invoke);
 
         inline void fill_missing_data(uint16_t data[256], int size);
+        void undistort(uint8_t* img, int width, int height, const rs2_intrinsics& intrin, int roi_ws, int roi_hs, int roi_we, int roi_he);
+        void find_z_at_corners(float left_x[4], float left_y[4], int width, int num, std::vector<std::vector<uint16_t>> & depth, float left_z[4]);
+        void get_and_update_color_intrinsics(uint32_t width, uint32_t height, float ppx, float ppy, float fx, float fy);
     };
 
     // Auto-calib notification model is managing the UI state-machine
@@ -149,6 +174,8 @@ namespace rs2
             RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_IN_PROCESS, // Calculating ground truth in process... Shows progressbar
             RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_COMPLETE,   // Calculating ground truth complete, show succeeded or failed
             RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED,     // Failed to calculating the ground truth
+            RS2_CALIB_STATE_FL_INPUT,        // Collect input parameters for focal length calib
+            RS2_CALIB_STATE_UVMAPPING_INPUT, // Collect input parameters for UVMapping calibration with specific target
         };
 
         autocalib_notification_model(std::string name,
@@ -192,5 +219,54 @@ namespace rs2
         int _rec_idx = 0;
         int _rec_num = 0;
         const int _reset_limit = 10;
+    };
+
+    // Class for calculating the four Gaussian dot center locations on the specific target
+    class dots_calculator
+    {
+    public:
+        dots_calculator() {}
+        virtual ~dots_calculator() {}
+
+        int calculate(const rs2_frame* frame_ref, float dots_x[4], float dots_y[4]); // return 0 if the target is not in the center, 1 if found, 2 if dots positions are updated
+
+    public:
+        static const int _frame_num = 25;
+
+    private:
+        void calculate_dots_position(float dots_x[4], float dots_y[4]);
+
+        int _width = 0;
+        int _height = 0;
+
+        float _dots_x[_frame_num][4];
+        float _dots_y[_frame_num][4];
+        int _rec_idx = 0;
+        int _rec_num = 0;
+        const int _reset_limit = 10;
+    };
+
+    class uvmapping_calib
+    {
+    public:
+        uvmapping_calib(int pt_num, const float* left_x, const float* left_y, const float* left_z, const float* color_x, const float* color_y, const rs2_intrinsics& left_intrin, const rs2_intrinsics& color_intrin, rs2_extrinsics& extrin);
+        virtual ~uvmapping_calib() {}
+
+        bool calibrate(float & err_before, float & err_after, float& ppx, float& ppy, float& fx, float& fy);
+
+    private:
+        const float _max_change = 16.0f;
+
+        int _pt_num;
+
+        std::vector<float> _left_x;
+        std::vector<float> _left_y;
+        std::vector<float> _left_z;
+        std::vector<float> _color_x;
+        std::vector<float> _color_y;        
+        
+        rs2_intrinsics _left_intrin;
+        rs2_intrinsics _color_intrin;
+        rs2_extrinsics _extrin;
     };
 }

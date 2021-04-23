@@ -5392,6 +5392,72 @@ namespace rs2
                             "User needs either to enter the known ground truth or use the get button\n"
                             "with specific target to get the ground truth.");
 
+                    if (ImGui::Selectable("Focal Length Calibration"))
+                    {
+                        try
+                        {
+                            auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
+                            auto n = std::make_shared<autocalib_notification_model>("", manager, false);
+
+                            viewer.not_model->add_notification(n);
+                            n->forced = true;
+                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_FL_INPUT;
+
+                            for (auto&& n : related_notifications)
+                                if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                    n->dismiss(false);
+
+                            related_notifications.push_back(n);
+                        }
+                        catch (const error& e)
+                        {
+                            error_message = error_to_string(e);
+                        }
+                        catch (const std::exception& e)
+                        {
+                            error_message = e.what();
+                        }
+                    }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Focal length calibration is used to adjust camera focal length with specific target.");
+
+                    try
+                    {
+                        for (auto&& sub2 : subdevices)
+                        {
+                            if (sub2->s->is<rs2::color_sensor>())
+                            {
+                                if (ImGui::Selectable("UVMapping Calibration"))
+                                {
+                                    auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub2);
+                                    auto n = std::make_shared<autocalib_notification_model>(
+                                        "", manager, false);
+
+                                    viewer.not_model->add_notification(n);
+                                    n->forced = true;
+                                    n->update_state = autocalib_notification_model::RS2_CALIB_STATE_UVMAPPING_INPUT;
+
+                                    for (auto&& n : related_notifications)
+                                        if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                            n->dismiss(false);
+
+                                    related_notifications.push_back(n);
+                                }
+                            }
+                        }
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("UVMapping calibration is used to improve UVMapping with specific target.");
+
                     if (_calib_model.supports())
                     {
                         if (ImGui::Selectable("Calibration Data"))

@@ -2405,17 +2405,41 @@ void rs2_extract_target_dimensions(const rs2_frame* frame_ref, rs2_calib_target_
     VALIDATE_NOT_NULL(target_dims_size);
 
     auto vf = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::video_frame);
-    if (vf->get_stream()->get_format() != RS2_FORMAT_Y8)
-        throw std::runtime_error("wrong video frame format");
+    int width = vf->get_width();
+    int height = vf->get_height();
 
     std::shared_ptr<target_calculator_interface> target_calculator;
     if (calib_type == RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES)
-        target_calculator = std::make_shared<rect_gaussian_dots_target_calculator>(vf->get_width(), vf->get_height());
+        target_calculator = std::make_shared<rect_gaussian_dots_target_calculator>(width, height, 0, 0, width, height);
+    else if (calib_type == RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES)
+        target_calculator = std::make_shared<rect_gaussian_dots_target_calculator>(width, height, rect_gaussian_dots_target_calculator::_roi_ws, rect_gaussian_dots_target_calculator::_roi_hs, rect_gaussian_dots_target_calculator::_roi_we - rect_gaussian_dots_target_calculator::_roi_ws, rect_gaussian_dots_target_calculator::_roi_he - rect_gaussian_dots_target_calculator::_roi_hs);
     else
         throw std::runtime_error("unsupported calibration target type");
-
-    if (!target_calculator->calculate(vf->get_frame_data(), target_dims, target_dims_size))
-        throw std::runtime_error("Failed to find the four rectangle side sizes on the frame");
+    
+    if (vf->get_stream()->get_format() == RS2_FORMAT_Y8)
+    {
+        if (!target_calculator->calculate(vf->get_frame_data(), target_dims, target_dims_size))
+            throw std::runtime_error("Failed to find the four rectangle side sizes on the frame");
+    }
+    else if (vf->get_stream()->get_format() == RS2_FORMAT_RGB8)
+    {
+        int size = width * height;
+        std::vector<uint8_t> buf(size);
+        uint8_t* p = buf.data();
+        const uint8_t* q = vf->get_frame_data();
+        float tmp = 0;
+        for (int i = 0; i < size; ++i)
+        {
+            tmp = static_cast<float>(*q++);
+            tmp += static_cast<float>(*q++);
+            tmp += static_cast<float>(*q++);
+            *p++ = static_cast<uint8_t>(tmp / 3 + 0.5f);
+        }
+        if (!target_calculator->calculate(buf.data(), target_dims, target_dims_size))
+            throw std::runtime_error("Failed to find the four rectangle side sizes on the frame");
+    }
+    else
+        throw std::runtime_error("wrong video frame format");
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, frame_ref, calib_type, target_dims, target_dims_size)
 
