@@ -5421,13 +5421,13 @@ namespace rs2
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("Focal length calibration is used to adjust camera focal length with specific target.");
 
-                    if (ImGui::Selectable("UVMapping Calibration"))
+                    try
                     {
-                        try
+                        for (auto&& sub2 : subdevices)
                         {
-                            for (auto&& sub2 : subdevices)
+                            if (sub2->s->is<rs2::color_sensor>())
                             {
-                                if (sub2->s->is<rs2::color_sensor>())
+                                if (ImGui::Selectable("UVMapping Calibration"))
                                 {
                                     auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub2);
                                     auto n = std::make_shared<autocalib_notification_model>(
@@ -5445,15 +5445,16 @@ namespace rs2
                                 }
                             }
                         }
-                        catch (const error& e)
-                        {
-                            error_message = error_to_string(e);
-                        }
-                        catch (const std::exception& e)
-                        {
-                            error_message = e.what();
-                        }
                     }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("UVMapping calibration is used to improve UVMapping with specific target.");
 
