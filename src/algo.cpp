@@ -646,7 +646,7 @@ void rect_gaussian_dots_target_calculator::normalize(const uint8_t* img)
         for (int j = 0; j < _height; ++j)
         {
             for (int i = 0; i < _width; ++i)
-                *q++ = 1.0 - (*p++ - min_val) * factor;
+                *q++ = 1.0f - (*p++ - min_val) * factor;
 
             p += jumper;
         }
