@@ -173,6 +173,8 @@ namespace rs2
                         break;
                 }
 
+                _sub_color->ui.selected_format_id.clear();
+                _sub_color->ui.selected_format_id[_uid_color] = 0;
                 for (const auto& format : _sub_color->formats)
                 {
                     int done = false;
@@ -181,6 +183,7 @@ namespace rs2
                         if (format.second[i] == "RGB8")
                         {
                             _uid_color = format.first;
+                            _sub_color->ui.selected_format_id[_uid_color] = i;
                             done = true;
                             break;
                         }
@@ -284,8 +287,6 @@ namespace rs2
             if (action == RS2_CALIB_ACTION_UVMAPPING)
             {
                 _sub_color->stream_enabled[_uid_color] = true;
-                _sub_color->ui.selected_format_id.clear();
-                _sub_color->ui.selected_format_id[_uid_color] = 0;
 
                 for (int i = 0; i < _sub_color->shared_fps_values.size(); i++)
                 {
@@ -626,7 +627,7 @@ namespace rs2
 
             int counter = 0;
             int limit = rect_calculator::_frame_num << 1;
-            int step = limit / rect_calculator::_frame_num;
+            int step = 50 / rect_calculator::_frame_num;
 
             int ret = { 0 };
             int id[2] = { _uid, _uid2 };
@@ -891,7 +892,7 @@ namespace rs2
 
             int counter = 0;
             int limit = dots_calculator::_frame_num << 1;
-            int step = limit / dots_calculator::_frame_num;
+            int step = 50 / dots_calculator::_frame_num;
 
             int ret = { 0 };
             int id[3] = { _uid, _uid_color, _uid2 }; // 0 for left, 1 for color, and 2 for depth
@@ -997,6 +998,14 @@ namespace rs2
                 FindZatCorners(dots_x[0], dots_y[0], width, dots_calculator::_frame_num, depth, z);
 
                 uvmapping_calib calib(4, dots_x[0], dots_y[0], z, dots_x[1], dots_y[1], intrin[0], intrin[1], extrin);
+
+                float err_before = 0.0f;
+                float err_after = 0.0;
+                float ppx = 0.0f;
+                float ppy = 0.0f;
+                float fx = 0.0f;
+                float fy = 0.0f;
+                calib.calibrate(err_before, err_after, ppx, ppy, fx, fy);
 
 
 
@@ -2718,7 +2727,7 @@ namespace rs2
         {
             _left_x.emplace_back(left_x[i]);
             _left_y.emplace_back(left_y[i]);
-            _left_x.emplace_back(left_z[i]);
+            _left_z.emplace_back(left_z[i]);
             _color_x.emplace_back(color_x[i]);
             _color_y.emplace_back(color_y[i]);
         }
@@ -2728,4 +2737,103 @@ namespace rs2
         memmove(&_extrin, &extrin, sizeof(rs2_extrinsics));
     }
 
+    bool uvmapping_calib::calibrate(float& err_before, float& err_after, float& ppx, float& ppy, float& fx, float& fy)
+    {
+        float pixel_left[4][2] = { 0 };
+        float point_left[4][3] = {0};
+
+        float pixel_color[4][2] = { 0 };
+        float pixel_color_norm[4][2] = { 0 };
+        float point_color[4][3] = { 0 };
+
+        for (int i = 0; i < 4; ++i)
+        {
+            pixel_left[i][0] = _left_x[i];
+            pixel_left[i][1] = _left_y[i];
+
+            rs2_deproject_pixel_to_point(point_left[i], &_left_intrin, pixel_left[i], _left_z[i]);
+
+            rs2_transform_point_to_point(point_color[i], &_extrin, point_left[i]);
+
+            assert(_color_intrin.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY);
+            pixel_color_norm[i][0] = point_color[i][0] / point_color[i][2];
+            pixel_color_norm[i][1] = point_color[i][1] / point_color[i][2];
+            pixel_color[i][0] = pixel_color_norm[i][0] * _color_intrin.fx + _color_intrin.ppx;
+            pixel_color[i][1] = pixel_color_norm[i][1] * _color_intrin.fy + _color_intrin.ppy;
+        }
+
+        float diff[4] = { 0 };
+        float tmp = 0.0f;
+        for (int i = 0; i < 4; ++i)
+        {
+            tmp = (pixel_color[i][0] - _color_x[i]);
+            tmp *= tmp;
+            diff[i] = tmp;
+
+            tmp = (pixel_color[i][1] - _color_y[i]);
+            tmp *= tmp;
+            diff[i] += tmp;
+
+            diff[i] = sqrtf(diff[i]);
+        }
+
+        err_before = 0.0f;
+        for (int i = 0; i < 4; ++i)
+            err_before += diff[i];
+        err_before /= 4;
+
+        double x = 0;
+        double y = 0;
+        double c_x = 0;
+        double c_y = 0;
+        double x_2 = 0;
+        double y_2 = 0;
+        double c_xc = 0;
+        double c_yc = 0;
+        for (int i = 0; i < 4; ++i)
+        {
+            x += pixel_color_norm[i][0];
+            y += pixel_color_norm[i][1];
+            c_x += _color_x[i];
+            c_y += _color_y[i];
+            x_2 += pixel_color_norm[i][0] * pixel_color_norm[i][0];
+            y_2 += pixel_color_norm[i][1] * pixel_color_norm[i][1];
+            c_xc += _color_x[i] * pixel_color_norm[i][0];
+            c_yc += _color_y[i] * pixel_color_norm[i][1];
+        }
+
+        double d_x = 4 * x_2 - x * x;
+        if (d_x > 0.01)
+        {
+            d_x = 1 / d_x;
+            fx = static_cast<float>(d_x * (4 * c_xc - x * c_x));
+            ppx = static_cast<float>(d_x * (x_2 * c_x - x * c_xc));
+        }
+
+        double d_y = 4 * y_2 - y * y;
+        if (d_y > 0.01)
+        {
+            d_y = 1 / d_y;
+            fy = static_cast<float>(d_y * (4 * c_yc - y * c_y));
+            ppy = static_cast<float>(d_y * (y_2 * c_y - y * c_yc));
+        }
+
+        err_after = 0.0f;
+        float tmpx = 0;
+        float tmpy = 0;
+        for (int i = 0; i < 4; ++i)
+        {
+            tmpx = pixel_color_norm[i][0] * fx + ppx - _color_x[i];
+            tmpx *= tmpx;
+
+            tmpy = pixel_color_norm[i][1] * fy + ppy - _color_y[i];
+            tmpy *= tmpy;
+
+            err_after += sqrtf(tmpx + tmpy);
+        }
+
+        err_after /= 4.0f;
+
+        return fabs(_color_intrin.ppx - ppx) < _max_change && fabs(_color_intrin.ppy - ppy) < _max_change && fabs(_color_intrin.fx - fx) < _max_change && fabs(_color_intrin.fy - fy) < _max_change;
+    }
 }

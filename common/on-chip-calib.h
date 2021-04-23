@@ -215,7 +215,7 @@ namespace rs2
         int calculate(const rs2_frame* frame_ref, float dots_x[4], float dots_y[4]); // return 0 if the target is not in the center, 1 if found, 2 if dots positions are updated
 
     public:
-        static const int _frame_num = 25;
+        static const int _frame_num = 2;
 
     private:
         void calculate_dots_position(float dots_x[4], float dots_y[4]);
@@ -236,9 +236,11 @@ namespace rs2
         uvmapping_calib(int pt_num, const float* left_x, const float* left_y, const float* left_z, const float* color_x, const float* color_y, const rs2_intrinsics& left_intrin, const rs2_intrinsics& color_intrin, rs2_extrinsics& extrin);
         virtual ~uvmapping_calib() {}
 
-
+        bool calibrate(float & err_before, float & err_after, float& ppx, float& ppy, float& fx, float& fy);
 
     private:
+        const float _max_change = 16.0f;
+
         int _pt_num;
 
         std::vector<float> _left_x;
