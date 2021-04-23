@@ -580,6 +580,7 @@ if not list_only:
         sys.path.append( pyrs_path )
     from rspy import devices
     devices.query()
+    devices.map_unknown_ports()
     #
     # Under Travis, we'll have no devices and no acroname
     skip_live_tests = len(devices.all()) == 0  and  not devices.acroname

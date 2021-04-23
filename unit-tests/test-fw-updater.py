@@ -85,9 +85,9 @@ sn_list = devices.all()
 # acroname should ensure there is always 1 available device
 if len( sn_list ) != 1:
     log.f( "Expected 1 device, got", len( sn_list ) )
-device = devices.get( list( sn_list )[0] )
+device = devices.get_first( sn_list ).handle
 log.d( 'found:', device )
-product_line =  device.get_info( rs.camera_info.product_line )
+product_line = device.get_info( rs.camera_info.product_line )
 log.d( 'product line:', product_line )
 
 test.start( "Update FW" )
@@ -96,13 +96,14 @@ recovered = False
 if device.is_update_device():
     log.d( "recovering device ..." )
     try:
+        # TODO: this needs to improve for L535
         image_name = product_line[:-2] + "XX_FW_Image-"
         image_mask = '(^|/)' + image_name + '(\d+\.){4}bin$'
         image_file = None
         for image in file.find( repo.root, image_mask ):
             image_file = image
         if not image_file:
-            log.f( "Could not find image file for " + product_line + " recovery device" )
+            log.f( "Could not find image file for", product_line, "recovery device" )
 
         cmd = [fw_updater_exe, '-r', '-f', image_file]
         log.d( 'running:', cmd )
@@ -111,8 +112,8 @@ if device.is_update_device():
     except Exception as e:
         log.f( "Unexpected error while trying to recover device:", e )
     else:
-        devices.query( monitor_changes=False )
-        device = devices.get( list( devices.all() )[0] )
+        devices.query( monitor_changes = False )
+        device = devices.get_first( devices.all() ).handle
 
 current_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.firmware_version ))
 log.d( 'FW version:', current_fw_version )
@@ -149,7 +150,7 @@ except Exception as e:
 # make sure update worked
 devices.query( monitor_changes = False )
 sn_list = devices.all()
-device = devices.get( list( sn_list )[0] )
+device = devices.get_first( sn_list ).handle
 current_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.firmware_version ))
 test.check_equal( current_fw_version, bundled_fw_version )
 if update_counter < 19:
