@@ -2040,7 +2040,7 @@ namespace rs2
                     ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
 
-                    ImGui::SetCursorScreenPos({ float(x + 225), float(y + 30) });
+                    ImGui::SetCursorScreenPos({ float(x + 220), float(y + 30) });
                     std::stringstream ss_1;
                     ss_1 << std::fixed << std::setprecision(4) << get_manager().get_health_uvmapping(0);
                     auto health_str = ss_1.str();
@@ -2049,7 +2049,7 @@ namespace rs2
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("%s", "Health check for PX");
 
-                    ImGui::SetCursorScreenPos({ float(x + 225), float(y + 35) + ImGui::GetTextLineHeightWithSpacing() });
+                    ImGui::SetCursorScreenPos({ float(x + 220), float(y + 35) + ImGui::GetTextLineHeightWithSpacing() });
                     std::stringstream ss_2;
                     ss_2 << std::fixed << std::setprecision(4) << get_manager().get_health_uvmapping(1);
                     health_str = ss_2.str();
@@ -2058,7 +2058,7 @@ namespace rs2
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("%s", "Health check for PY");
 
-                    ImGui::SetCursorScreenPos({ float(x + 225), float(y + 40) + 2 * ImGui::GetTextLineHeightWithSpacing() });
+                    ImGui::SetCursorScreenPos({ float(x + 220), float(y + 40) + 2 * ImGui::GetTextLineHeightWithSpacing() });
                     std::stringstream ss_3;
                     ss_3 << std::fixed << std::setprecision(4) << get_manager().get_health_uvmapping(2);
                     health_str = ss_3.str();
@@ -2067,7 +2067,7 @@ namespace rs2
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("%s", "Health check for FX");
 
-                    ImGui::SetCursorScreenPos({ float(x + 225), float(y + 45) + 3 * ImGui::GetTextLineHeightWithSpacing() });
+                    ImGui::SetCursorScreenPos({ float(x + 220), float(y + 45) + 3 * ImGui::GetTextLineHeightWithSpacing() });
                     std::stringstream ss_4;
                     ss_4 << std::fixed << std::setprecision(4) << get_manager().get_health_uvmapping(3);
                     health_str = ss_4.str();
@@ -2860,7 +2860,7 @@ namespace rs2
         int ret = 0;
         rs2_error* e = nullptr;
         float dim[8] = { 0 };
-        rs2_extract_target_dimensions(frame_ref, RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES, dim, 8, &e);
+        rs2_extract_target_dimensions(frame_ref, RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES, dim, 8, &e);
         if (e == nullptr)
         {
             ret = 1;

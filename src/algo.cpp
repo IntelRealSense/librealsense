@@ -617,16 +617,23 @@ void rect_gaussian_dots_target_calculator::normalize(const uint8_t* img)
 {
     uint8_t min_val = 255;
     uint8_t max_val = 0;
-    const uint8_t* p = img;
-    for (int i = 0; i < _size; ++i)
+
+    int jumper = _full_width - _width;
+    const uint8_t* p = img + _roi_start_y * _full_width + _roi_start_x;
+    for (int j = 0; j < _height; ++j)
     {
-        if (*p < min_val)
-            min_val = *p;
+        for (int i = 0; i < _width; ++i)
+        {
+            if (*p < min_val)
+                min_val = *p;
 
-        if (*p > max_val)
-            max_val = *p;
+            if (*p > max_val)
+                max_val = *p;
 
-        ++p;
+            ++p;
+        }
+
+        p += jumper;
     }
 
     if (max_val > min_val)
@@ -635,8 +642,14 @@ void rect_gaussian_dots_target_calculator::normalize(const uint8_t* img)
 
         p = img;
         double* q = _img.data();
-        for (int i = 0; i < _size; ++i)
-            *q++ = 1.0f - (*p++ - min_val) * factor;
+        p = img + _roi_start_y * _full_width + _roi_start_x;
+        for (int j = 0; j < _height; ++j)
+        {
+            for (int i = 0; i < _width; ++i)
+                *q++ = 1.0f - (*p++ - min_val) * factor;
+
+            p += jumper;
+        }
     }
 }
 
