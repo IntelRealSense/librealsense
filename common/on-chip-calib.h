@@ -228,7 +228,7 @@ namespace rs2
         int calculate(const rs2_frame* frame_ref, float dots_x[4], float dots_y[4]); // return 0 if the target is not in the center, 1 if found, 2 if dots positions are updated
 
     public:
-        static const int _frame_num = 30;
+        static const int _frame_num = 25;
 
     private:
         void calculate_dots_position(float dots_x[4], float dots_y[4]);
