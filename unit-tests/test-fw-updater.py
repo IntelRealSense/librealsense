@@ -2,7 +2,7 @@
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 # we want this test to run first so that all tests run with updated FW versions, so we give it priority 0
-#test:priority 1
+#test:priority 0
 #test:device each(L500*)
 #test:device each(D400*)
 
