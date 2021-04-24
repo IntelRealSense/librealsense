@@ -2500,61 +2500,38 @@ namespace rs2
 
                     ImGui::SetCursorScreenPos({ float(x + 20), float(y + 38) + ImGui::GetTextLineHeightWithSpacing() });
                     ImGui::Text("%s", "Health Check Number for PY: ");
-                }
-                else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB)
-                {
-                    health_1 = get_manager().get_health_1();
-                    health_2 = get_manager().get_health_2();
 
-                    ImGui::Text("%s", "Health-Check Before Calibration: ");
+                    ImGui::SetCursorScreenPos({ float(x + 20), float(y + 43) + 2 * ImGui::GetTextLineHeightWithSpacing() });
+                    ImGui::Text("%s", "Health Check Number for FX: ");
 
+                    ImGui::SetCursorScreenPos({ float(x + 20), float(y + 48) + 3 * ImGui::GetTextLineHeightWithSpacing() });
+                    ImGui::Text("%s", "Health Check Number for FY: ");
+
+                    ImGui::PushStyleColor(ImGuiCol_Text, white);
+                    ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+
+                    ImGui::SetCursorScreenPos({ float(x + 220), float(y + 30) });
                     std::stringstream ss_1;
-                    ss_1 << std::fixed << std::setprecision(4) << health_1 << "%";
+                    ss_1 << std::fixed << std::setprecision(4) << get_manager().get_health_uvmapping(0);
                     auto health_str = ss_1.str();
-
-                    std::string text_name = to_string() << "##notification_text_1_" << index;
-
-                    ImGui::SetCursorScreenPos({ float(x + 225), float(y + 30) });
-                    ImGui::PushStyleColor(ImGuiCol_Text, white);
-                    ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
-                    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
-                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
-                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
-                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
-                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-                    ImGui::InputTextMultiline(text_name.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 86, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
-                    ImGui::PopStyleColor(7);
-
+                    std::string text_name_1 = to_string() << "##notification_text_1_" << index;
+                    ImGui::InputTextMultiline(text_name_1.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 86, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("%s", "Health-check number before Tare Calibration");
+                        ImGui::SetTooltip("%s", "Health check for PX");
 
-                    ImGui::SetCursorScreenPos({ float(x + 10), float(y + 38) + ImGui::GetTextLineHeightWithSpacing() });
-                    ImGui::Text("%s", "Health-Check After Calibration: ");
-
+                    ImGui::SetCursorScreenPos({ float(x + 220), float(y + 35) + ImGui::GetTextLineHeightWithSpacing() });
                     std::stringstream ss_2;
-                    ss_2 << std::fixed << std::setprecision(4) << health_2 << "%";
+                    ss_2 << std::fixed << std::setprecision(4) << get_manager().get_health_uvmapping(1);
                     health_str = ss_2.str();
-
-                    text_name = to_string() << "##notification_text_2_" << index;
-
-                    ImGui::SetCursorScreenPos({ float(x + 225), float(y + 35) + ImGui::GetTextLineHeightWithSpacing() });
-                    ImGui::PushStyleColor(ImGuiCol_Text, white);
-                    ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
-                    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
-                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
-                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
-                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
-                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-                    ImGui::InputTextMultiline(text_name.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 86, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
-                    ImGui::PopStyleColor(7);
-
+                    std::string text_name_2 = to_string() << "##notification_text_2_" << index;
+                    ImGui::InputTextMultiline(text_name_2.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 86, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("%s", "Health-check number after Tare Calibration");
-                }
-                else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
-                {
-                    ImGui::Text("%s", "Health-Check: ");
-                    ImGui::SetTooltip("%s", "On-chip calibration");
+                        ImGui::SetTooltip("%s", "Health check for PY");
 
                     ImGui::SetCursorScreenPos({ float(x + 220), float(y + 40) + 2 * ImGui::GetTextLineHeightWithSpacing() });
                     std::stringstream ss_3;
@@ -2957,6 +2934,7 @@ namespace rs2
                     }
 
                     ImGui::SetCursorScreenPos({ float(x + 20), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ? float(y + 70) + ImGui::GetTextLineHeightWithSpacing() : float(y + 60)) });
+
                     if (ImGui::RadioButton("New", use_new_calib))
                     {
                         use_new_calib = true;
