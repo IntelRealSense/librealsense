@@ -1240,29 +1240,31 @@ namespace rs2
 
     void on_chip_calib_manager::undistort(uint8_t* img, int width, int height, const rs2_intrinsics & intrin, int roi_ws, int roi_hs, int roi_we, int roi_he)
     {
+        assert(intrin.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY);
+
         if (roi_ws < 0) roi_ws = 0;
         if (roi_hs < 0) roi_hs = 0;
         if (roi_we > width) roi_we = width;
         if (roi_he > height) roi_he = height;
 
-        int size = width * height;
-        std::vector<uint8_t> tmp(size);
-        memset(tmp.data(), 0, size);
+        int size3 = width * height * 3;
+        std::vector<uint8_t> tmp(size3);
+        memset(tmp.data(), 0, size3);
 
         float x = 0;
         float y = 0;
         int m = 0;
         int n = 0;
-        uint8_t* p = img + roi_hs * width;
-        int width_roi_we = width - roi_we;
+
+        int width3 = width * 3;
+        int idx_from = 0;
+        int idx_to = 0;
         for (int j = roi_hs; j < roi_he; ++j)
         {
-            p += roi_ws;
             for (int i = roi_ws; i < roi_we; ++i)
             {
                 x = static_cast<float>(i);
                 y = static_cast<float>(j);
-                assert(intrin.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY);
 
                 if (abs(intrin.fx) > 0.00001f && abs(intrin.fy) > 0.0001f)
                 {
@@ -1285,14 +1287,18 @@ namespace rs2
                 {
                     n = static_cast<int>(y + 0.5f);
                     if (n >= 0 && n < height)
-                        tmp[n * width + m] = *p++;
+                    {
+                        idx_from = j * width3 + i * 3;
+                        idx_to = n * width3 + m * 3;
+                        tmp[idx_to++] = img[idx_from++];
+                        tmp[idx_to++] = img[idx_from++];
+                        tmp[idx_to++] = img[idx_from++];
+                    }
                 }
             }
-
-            p += width_roi_we;
         }
 
-        memmove(img, tmp.data(), size);
+        memmove(img, tmp.data(), size3);
     }
 
     void on_chip_calib_manager::find_z_at_corners(float left_x[4], float left_y[4], int width, int num, std::vector<std::vector<uint16_t>>& depth, float left_z[4])
@@ -3407,6 +3413,8 @@ namespace rs2
 
     bool uvmapping_calib::calibrate(float& err_before, float& err_after, float& ppx, float& ppy, float& fx, float& fy)
     {
+        assert(_color_intrin.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY);
+        
         float pixel_left[4][2] = { 0 };
         float point_left[4][3] = {0};
 
@@ -3423,7 +3431,6 @@ namespace rs2
 
             rs2_transform_point_to_point(point_color[i], &_extrin, point_left[i]);
 
-            assert(_color_intrin.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY);
             pixel_color_norm[i][0] = point_color[i][0] / point_color[i][2];
             pixel_color_norm[i][1] = point_color[i][1] / point_color[i][2];
             pixel_color[i][0] = pixel_color_norm[i][0] * _color_intrin.fx + _color_intrin.ppx;
