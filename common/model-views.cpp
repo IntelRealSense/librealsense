@@ -5408,6 +5408,7 @@ namespace rs2
                                     n->dismiss(false);
 
                             related_notifications.push_back(n);
+                            manager->start_fl_viewer();
                         }
                         catch (const error& e)
                         {
@@ -5442,6 +5443,7 @@ namespace rs2
                                             n->dismiss(false);
 
                                     related_notifications.push_back(n);
+                                    manager->start_uvmapping_viewer();
                                 }
                             }
                         }

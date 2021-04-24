@@ -135,6 +135,184 @@ namespace rs2
         return res;
     }
 
+    void on_chip_calib_manager::start_fl_viewer()
+    {
+        try
+        {
+            try
+            {
+                _sub->stop(_viewer.not_model);
+            }
+            catch (...) {}
+
+            _uid = 1;
+            _uid2 = 2;
+            bool first_done = 0;
+            for (const auto& format : _sub->formats)
+            {
+                if (format.second[0] == "Y8")
+                {
+                    if (!first_done)
+                    {
+                        _uid = format.first;
+                        first_done = true;
+                    }
+                    else
+                    {
+                        _uid2 = format.first;
+                        break;
+                    }
+                }
+            }
+
+            // Select stream
+            _sub->stream_enabled.clear();
+            _sub->stream_enabled[_uid] = true;
+            _sub->stream_enabled[_uid2] = true;
+
+            _sub->ui.selected_format_id.clear();
+            _sub->ui.selected_format_id[_uid] = 0;
+            _sub->ui.selected_format_id[_uid2] = 0;
+
+            // Select FPS value
+            for (int i = 0; i < _sub->shared_fps_values.size(); i++)
+            {
+                if (_sub->shared_fps_values[i] == 90)
+                    _sub->ui.selected_shared_fps_id = i;
+            }
+
+            // Select Resolution
+            for (int i = 0; i < _sub->res_values.size(); i++)
+            {
+                auto kvp = _sub->res_values[i];
+                if (kvp.first == 256 && kvp.second == 144)
+                    _sub->ui.selected_res_id = i;
+            }
+
+            auto profiles = _sub->get_selected_profiles();
+
+            if (!_model.dev_syncer)
+                _model.dev_syncer = _viewer.syncer->create_syncer();
+
+            _sub->play(profiles, _viewer, _model.dev_syncer);
+            for (auto&& profile : profiles)
+                _viewer.begin_stream(_sub, profile);
+        }
+        catch (...) {}
+    }
+
+    void on_chip_calib_manager::start_uvmapping_viewer()
+    {
+        bool frame_arrived = false;
+        try
+        {
+            try
+            {
+                _sub->stop(_viewer.not_model);
+                if (_sub_color.get())
+                    _sub_color->stop(_viewer.not_model);
+            }
+            catch (...) {}
+
+            _uid = 1;
+            _uid2 = 2;
+            bool first_done = 0;
+            bool second_done = 0;
+            for (const auto& format : _sub->formats)
+            {
+                if (format.second[0] == "Y8" && !first_done)
+                {
+                    _uid = format.first;
+                    first_done = true;
+                }
+
+                if (format.second[0] == "Z16" && !second_done)
+                {
+                    _uid2 = format.first;
+                    second_done = true;
+                }
+
+                if (first_done && second_done)
+                    break;
+            }
+
+            _sub_color->ui.selected_format_id.clear();
+            _sub_color->ui.selected_format_id[_uid_color] = 0;
+            for (const auto& format : _sub_color->formats)
+            {
+                int done = false;
+                for (int i = 0; i < format.second.size(); ++i)
+                {
+                    if (format.second[i] == "RGB8")
+                    {
+                        _uid_color = format.first;
+                        _sub_color->ui.selected_format_id[_uid_color] = i;
+                        done = true;
+                        break;
+                    }
+                }
+                if (done)
+                    break;
+            }
+
+            // Select stream
+            _sub->stream_enabled.clear();
+            _sub->stream_enabled[_uid] = true;
+            _sub->stream_enabled[_uid2] = true;
+
+            _sub->ui.selected_format_id.clear();
+            _sub->ui.selected_format_id[_uid] = 0;
+            _sub->ui.selected_format_id[_uid2] = 0;
+
+            // Select FPS value
+            for (int i = 0; i < _sub->shared_fps_values.size(); i++)
+            {
+                if (_sub->shared_fps_values[i] == 30)
+                    _sub->ui.selected_shared_fps_id = i;
+            }
+
+            // Select Resolution
+            for (int i = 0; i < _sub->res_values.size(); i++)
+            {
+                auto kvp = _sub->res_values[i];
+                if (kvp.first == 1280 && kvp.second == 720)
+                    _sub->ui.selected_res_id = i;
+            }
+
+            auto profiles = _sub->get_selected_profiles();
+
+            std::vector<stream_profile> profiles_color;
+            _sub_color->stream_enabled[_uid_color] = true;
+
+            for (int i = 0; i < _sub_color->shared_fps_values.size(); i++)
+            {
+                if (_sub_color->shared_fps_values[i] == 30)
+                    _sub_color->ui.selected_shared_fps_id = i;
+            }
+
+            for (int i = 0; i < _sub_color->res_values.size(); i++)
+            {
+                auto kvp = _sub_color->res_values[i];
+                if (kvp.first == 1280 && kvp.second == 720)
+                    _sub_color->ui.selected_res_id = i;
+            }
+
+            profiles_color = _sub_color->get_selected_profiles();
+
+            if (!_model.dev_syncer)
+                _model.dev_syncer = _viewer.syncer->create_syncer();
+
+            _sub->play(profiles, _viewer, _model.dev_syncer);
+            for (auto&& profile : profiles)
+                _viewer.begin_stream(_sub, profile);
+
+            _sub_color->play(profiles_color, _viewer, _model.dev_syncer);
+            for (auto&& profile : profiles_color)
+                _viewer.begin_stream(_sub_color, profile);
+        }
+        catch (...) {}
+    }
+
     bool on_chip_calib_manager::start_viewer(int w, int h, int fps, invoker invoke)
     {
         bool frame_arrived = false;
@@ -248,7 +426,7 @@ namespace rs2
 
             _sub->ui.selected_format_id.clear();
             _sub->ui.selected_format_id[_uid] = 0;
-            if (run_fl_calib)
+            if (run_fl_calib || action == RS2_CALIB_ACTION_UVMAPPING)
                 _sub->ui.selected_format_id[_uid2] = 0;
 
             // Select FPS value
@@ -1986,7 +2164,7 @@ namespace rs2
             else if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT)
             {
                 ImGui::SetCursorScreenPos({ float(x + 15), float(y + 33) });
-                ImGui::Text("%s", "Please start left and color streaming with\nresolution 1280x720 and adjust camera\nposition if necessary to make sure the target\nis in the middle of both left and color images.");
+                ImGui::Text("%s", "Please make sure the target is inside yellow\nrectangle on both left and color images. Adjust\ncamera position if necessary before to start.");
 
                 auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
                 ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
@@ -2411,7 +2589,7 @@ namespace rs2
             else if (update_state == RS2_CALIB_STATE_FL_INPUT)
             {
                 ImGui::SetCursorScreenPos({ float(x + 15), float(y + 33) });
-                ImGui::Text("%s", "Please start left and right streaming with\nresolution 256x144 and adjust camera\nposition if necessary to make sure the target\nis in the middle of both left and right images.");
+                ImGui::Text("%s", "Please make sure the target is inside both\nleft and right images. Adjust camera position\nif necessary before to start.");
 
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - 25) });
                 auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
@@ -3235,7 +3413,7 @@ namespace rs2
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH) return 110;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED) return 115;
         else if (update_state == RS2_CALIB_STATE_FAILED) return ((get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB) ? (get_manager().retry_times < 3 ? 0 : 80) : 110);
-        else if (update_state == RS2_CALIB_STATE_FL_INPUT || update_state == RS2_CALIB_STATE_UVMAPPING_INPUT) return 135;
+        else if (update_state == RS2_CALIB_STATE_FL_INPUT || update_state == RS2_CALIB_STATE_UVMAPPING_INPUT) return 120;
         else return 100;
     }
 

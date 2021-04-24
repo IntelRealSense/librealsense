@@ -104,6 +104,9 @@ namespace rs2
         void turn_roi_on();
         void turn_roi_off();
 
+        void start_fl_viewer();
+        void start_uvmapping_viewer();
+
     private:
 
         std::vector<uint8_t> safe_send_command(const std::vector<uint8_t>& cmd, const std::string& name);
