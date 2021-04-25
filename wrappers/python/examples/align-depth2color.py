@@ -28,9 +28,13 @@ device_product_line = str(device.get_info(rs.camera_info.product_line))
 deviceList = context.query_devices()
 dev = deviceList.front()
 sensorsList = dev.query_sensors()
-try:
-    next(s for s in sensorsList if s.get_info(rs.camera_info.name) == 'RGB Camera')
-except Exception as e:
+
+found_rgb = False
+for s in sensorsList:
+    if s.get_info(rs.camera_info.name) == 'RGB Camera':
+        found_rgb = True
+        break
+if not found_rgb:
     print("The connected device does not support RGB stream")
     exit(0)
 

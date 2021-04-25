@@ -73,11 +73,16 @@ device = pipeline_profile.get_device()
 deviceList = context.query_devices()
 dev = deviceList.front()
 sensorsList = dev.query_sensors()
-try:
-    next(s for s in sensorsList if s.get_info(rs.camera_info.name) == 'RGB Camera')
-except Exception as e:
+
+found_rgb = False
+for s in sensorsList:
+    if s.get_info(rs.camera_info.name) == 'RGB Camera':
+        found_rgb = True
+        break
+if not found_rgb:
     print("The connected device does not support RGB stream")
     exit(0)
+
 config.enable_stream(rs.stream.depth, rs.format.z16, 30)
 config.enable_stream(rs.stream.color, rs.format.bgr8, 30)
 
