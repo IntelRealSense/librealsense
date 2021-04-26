@@ -178,6 +178,8 @@ namespace rs2
         try
         {
             stop_viewer();
+            _viewer.is_3d_view = false;
+
             _uid = 1;
             _uid2 = 2;
             bool first_done = 0;
@@ -234,13 +236,15 @@ namespace rs2
         catch (...) {}
     }
 
-    void on_chip_calib_manager::start_uvmapping_viewer()
+    void on_chip_calib_manager::start_uvmapping_viewer(bool b3D)
     {
         for (int i = 0; i < 2; ++i)
         {
             try
             {
                 stop_viewer();
+                _viewer.is_3d_view = b3D;
+
                 _uid = 1;
                 _uid2 = 2;
                 bool first_done = 0;
@@ -1970,9 +1974,10 @@ namespace rs2
             auto metrics_after = get_depth_metrics(invoke);
             _metrics.push_back(metrics_after);
         }
+        else if (action == RS2_CALIB_ACTION_UVMAPPING)
+            start_uvmapping_viewer(true);
 
         _progress = 100;
-
         _done = true;
     }
 
