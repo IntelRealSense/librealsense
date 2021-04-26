@@ -561,7 +561,7 @@ namespace rs2
         bool is_selected_combination_supported();
         std::vector<stream_profile> get_selected_profiles();
         std::vector<stream_profile> get_supported_profiles();
-        void stop(viewer_model& viewer);
+        void stop(std::shared_ptr<notifications_model> not_model);
         void play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer>);
         bool is_synchronized_frame(viewer_model& viewer, const frame& f);
         void update(std::string& error_message, notifications_model& model);
@@ -766,8 +766,9 @@ namespace rs2
         void stop_recording(viewer_model& viewer);
         void pause_record();
         void resume_record();
-
+        
         void refresh_notifications(viewer_model& viewer);
+        void check_for_bundled_fw_update(const rs2::context& ctx, std::shared_ptr<notifications_model> not_model);
 
         int draw_playback_panel(ux_window& window, ImFont* font, viewer_model& view);
         bool draw_advanced_controls(viewer_model& view, ux_window& window, std::string& error_message);
@@ -784,7 +785,7 @@ namespace rs2
         void begin_update(std::vector<uint8_t> data,
             viewer_model& viewer, std::string& error_message);
         void begin_update_unsigned(viewer_model& viewer, std::string& error_message);
-        void check_for_device_updates(rs2::context& ctx, std::shared_ptr<updates_model> updates);
+        void check_for_device_updates(viewer_model& viewer);
 
 
         std::shared_ptr< atomic_objects_in_frame > get_detected_objects() const { return _detected_objects; }
@@ -850,7 +851,14 @@ namespace rs2
 
         void load_viewer_configurations(const std::string& json_str);
         void save_viewer_configurations(std::ofstream& outfile, nlohmann::json& j);
+        void handle_online_sw_update(
+            std::shared_ptr < notifications_model > nm,
+            std::shared_ptr< sw_update::dev_updates_profile::update_profile > update_profile );
 
+        bool handle_online_fw_update(
+            const context & ctx,
+            std::shared_ptr< notifications_model > nm,
+            std::shared_ptr< sw_update::dev_updates_profile::update_profile > update_profile );
 
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;

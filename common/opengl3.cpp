@@ -689,7 +689,6 @@ std::string fbo::get_status()
 
 void _check_gl_error(const char *file, int line) 
 {
-#ifdef _DEBUG
     GLenum err (glGetError());
     std::stringstream ss;
 
@@ -718,7 +717,6 @@ void _check_gl_error(const char *file, int line)
         auto error = ss.str();
         throw std::runtime_error(error);
     }
-#endif
 }
 
 void clear_gl_errors()

@@ -20,12 +20,12 @@ namespace rs2
     class firmware_update_manager : public process_manager
     {
     public:
-        firmware_update_manager(viewer_model& viewer, device_model& model, device dev, context ctx, std::vector<uint8_t> fw, bool is_signed)
-            : process_manager("Firmware Update"), _viewer(viewer), _model(model),
+        firmware_update_manager(std::shared_ptr<notifications_model> not_model, device_model& model, device dev, context ctx, std::vector<uint8_t> fw, bool is_signed)
+            : process_manager("Firmware Update"), _not_model(not_model), _model(model),
               _fw(fw), _is_signed(is_signed), _dev(dev), _ctx(ctx) {}
 
         const device_model& get_device_model() const { return _model; }
-        viewer_model& get_viewer_model() { return _viewer; }
+        std::shared_ptr<notifications_model> get_protected_notification_model() { return _not_model.lock(); };
 
     private:
         void process_flow(std::function<void()> cleanup, 
@@ -34,7 +34,7 @@ namespace rs2
             std::function<bool()> action, std::function<void()> cleanup,
             std::chrono::system_clock::duration delta);
 
-        viewer_model& _viewer;
+        std::weak_ptr<notifications_model> _not_model;
         device _dev;
         context _ctx;
         std::vector<uint8_t> _fw;
