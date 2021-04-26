@@ -1,0 +1,3 @@
+#!/bin/bash
+
+ln -s /lib/systemd/system/rs-server.service /etc/systemd/system/multi-user.target.wants/

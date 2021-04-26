@@ -22,6 +22,4 @@ install(FILES "${CMAKE_SOURCE_DIR}/tools/rs-server/scripts/rs-server.service"
     DESTINATION /lib/systemd/system/
 )
 
-install(CODE "execute_process(COMMAND ln -s /lib/systemd/system/rs-server.service /etc/systemd/system/multi-user.target.wants/)")
-
 

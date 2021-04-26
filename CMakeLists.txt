@@ -122,4 +122,6 @@ set(CPACK_PACKAGE_DESCRIPTION "Intel® RealSense™ SDK 2.0 is a cross-platform 
 
 set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CPACK_DEBIAN_PACKAGE_RELEASE}")
 
+SET(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_SOURCE_DIR}/tools/rs-server/scripts/postinst" "${CMAKE_SOURCE_DIR}/tools/rs-server/scripts/prerm")
+
 INCLUDE(CPack)
