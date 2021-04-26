@@ -34,22 +34,19 @@ if __name__ == '__main__':
                               or (p.as_video_stream_profile().width() == 480 and p.as_video_stream_profile().height() == 270) )
                        )
 
-
-    rgb_sensor.open([rgb_profile])
-    rgb_sensor.start(callback)
-    print ('{}: Collecting frames'.format(time.time()))
-    time.sleep(30)
-    prev_frame_num = 0
-    count_drops = 0;
-    for i in range(len(frames)):
-        if prev_frame_num > 0 :
-            if frames[i] - prev_frame_num > 2 :
-                count_drops += 1;
-        prev_frame_num = frames[i]
-    print("frame drops = ", count_drops)
-
-    print ('\n{}: stopping device'.format(time.time()))
-    rgb_sensor.stop()
-    rgb_sensor.close()
-    print ('stopped')
-    pass
+    for ii in range(4):
+        print("================ Iteration {} ================".format(ii))
+        rgb_sensor.open([rgb_profile])
+        rgb_sensor.start(callback)
+        time.sleep(30)
+        prev_frame_num = 0
+        count_drops = 0;
+        for i in range(len(frames)):
+            if prev_frame_num > 0 :
+                if frames[i] - prev_frame_num > 2 :
+                    count_drops += 1;
+            prev_frame_num = frames[i]
+        print(" frame drops = ", count_drops)
+        rgb_sensor.stop()
+        rgb_sensor.close()
+        print ('RGB sensor is stopped')
