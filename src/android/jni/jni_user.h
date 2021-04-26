@@ -21,5 +21,6 @@ typedef struct rs_jni_userdata rs_jni_userdata;
 
 bool rs_jni_callback_init(JNIEnv *env, jobject jcb, rs_jni_userdata* ud);
 bool rs_jni_cb(rs2::frame f, rs_jni_userdata* ud);
+void rs_jni_cleanup(JNIEnv *env, rs_jni_userdata* ud);
 
 #endif

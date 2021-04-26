@@ -79,6 +79,7 @@ Java_com_intel_realsense_librealsense_Pipeline_nStartWithConfigAndCallback(JNIEn
 extern "C" JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_Pipeline_nStop(JNIEnv *env, jclass type, jlong handle) {
     rs2_error* e = NULL;
+    rs_jni_cleanup(env, &pdata);
     rs2_pipeline_stop(reinterpret_cast<rs2_pipeline *>(handle), &e);
     handle_error(env, e);
 }

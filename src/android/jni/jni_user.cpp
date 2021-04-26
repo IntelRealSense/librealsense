@@ -12,7 +12,7 @@ bool rs_jni_callback_init(JNIEnv *env, jobject jcb, rs_jni_userdata* ud)
     int status = env->GetJavaVM(&(ud->jvm));
     if (status != 0)
     {
-        LRS_JNI_LOGE("Failed to get JVM in Java_com_intel_realsense_librealsense_Sensor_nStart at line %d", __LINE__);
+        LRS_JNI_LOGE("Failed to get JVM in rs_jni_callback_init at line %d", __LINE__);
         return false;
     }
 
@@ -23,7 +23,7 @@ bool rs_jni_callback_init(JNIEnv *env, jobject jcb, rs_jni_userdata* ud)
     jobject callback = env->NewGlobalRef(jcb);
     if (callback == NULL)
     {
-        LRS_JNI_LOGE("Failed to create global reference to java callback in Java_com_intel_realsense_librealsense_Sensor_nStart at line %d", __LINE__);
+        LRS_JNI_LOGE("Failed to create global reference to java callback in rs_jni_callback_init at line %d", __LINE__);
         return false;
     }
     ud->jcb = callback;
@@ -32,7 +32,7 @@ bool rs_jni_callback_init(JNIEnv *env, jobject jcb, rs_jni_userdata* ud)
     jclass frameclass = env->FindClass("com/intel/realsense/librealsense/Frame");
     if(frameclass == NULL)
     {
-        LRS_JNI_LOGE("Failed to find Frame java class in Java_com_intel_realsense_librealsense_Sensor_nStart at line %d", __LINE__);
+        LRS_JNI_LOGE("Failed to find Frame java class in rs_jni_callback_init at line %d", __LINE__);
         return false;
     }
 
@@ -40,7 +40,7 @@ bool rs_jni_callback_init(JNIEnv *env, jobject jcb, rs_jni_userdata* ud)
     jclass fclass = (jclass) env->NewGlobalRef(frameclass);
     if (fclass == NULL)
     {
-        LRS_JNI_LOGE("Failed to global reference to the Frame java class in Java_com_intel_realsense_librealsense_Sensor_nStart at line %d", __LINE__);
+        LRS_JNI_LOGE("Failed to global reference to the Frame java class in rs_jni_callback_init at line %d", __LINE__);
         return false;
     }
     ud->frameclass = fclass;
@@ -100,4 +100,13 @@ bool rs_jni_cb(rs2::frame f, rs_jni_userdata* ud)
 
     cb_thread_env = NULL;
     return true;
+}
+
+void rs_jni_cleanup(JNIEnv *env, rs_jni_userdata* ud)
+{
+    if (ud)
+    {
+        if (ud->jcb) { env->DeleteGlobalRef(ud->jcb); ud->jcb = NULL; }
+        if (ud->frameclass) { env->DeleteGlobalRef(ud->frameclass); ud->frameclass = NULL; }
+    }
 }
