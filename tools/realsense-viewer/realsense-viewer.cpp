@@ -295,6 +295,8 @@ int main(int argc, const char** argv) try
     rs2::log_to_console(RS2_LOG_SEVERITY_INFO);
 #endif
 
+    std::shared_ptr<device_models_list> device_models = std::make_shared<device_models_list>();
+
     context ctx;
     ux_window window("Intel RealSense Viewer", ctx);
 
@@ -305,7 +307,6 @@ int main(int argc, const char** argv) try
     std::string error_message{ "" };
     std::string label{ "" };
 
-    std::shared_ptr<device_models_list> device_models = std::make_shared<device_models_list>();
     device_model* device_to_remove = nullptr;
     bool is_ip_device_connected = false;
     std::string ip_address;
