@@ -102,7 +102,6 @@ namespace rs2
         catch (...) {}
     }
 
-    // Wait for next depth frame and return it
     rs2::depth_frame on_chip_calib_manager::fetch_depth_frame(invoker invoke, int timeout_ms)
     {
         auto profiles = _sub->get_selected_profiles();
@@ -691,8 +690,7 @@ namespace rs2
         return { median_fill_rate, median_rms };
     }
 
-    std::vector<uint8_t> on_chip_calib_manager::safe_send_command(
-        const std::vector<uint8_t>& cmd, const std::string& name)
+    std::vector<uint8_t> on_chip_calib_manager::safe_send_command(const std::vector<uint8_t>& cmd, const std::string& name)
     {
         auto dp = _dev.as<debug_protocol>();
         if (!dp) throw std::runtime_error("Device does not support debug protocol!");
@@ -3469,8 +3467,7 @@ namespace rs2
         }
     }
 
-    autocalib_notification_model::autocalib_notification_model(std::string name,
-        std::shared_ptr<on_chip_calib_manager> manager, bool exp)
+    autocalib_notification_model::autocalib_notification_model(std::string name, std::shared_ptr<on_chip_calib_manager> manager, bool exp)
         : process_notification_model(manager)
     {
         enable_expand = false;

@@ -108,13 +108,9 @@ namespace rs2
         void start_uvmapping_viewer();
 
     private:
-
         std::vector<uint8_t> safe_send_command(const std::vector<uint8_t>& cmd, const std::string& name);
-
-        rs2::depth_frame fetch_depth_frame(invoker invoke, int timeout_ms = 5000);
-
+        rs2::depth_frame fetch_depth_frame(invoker invoke, int timeout_ms = 5000); // Wait for next depth frame and return it
         std::pair<float, float> get_depth_metrics(invoker invoke);
-
         void process_flow(std::function<void()> cleanup, invoker invoke) override;
 
         float _health = -1.0f;
@@ -182,12 +178,9 @@ namespace rs2
             RS2_CALIB_STATE_UVMAPPING_INPUT, // Collect input parameters for UVMapping calibration with specific target
         };
 
-        autocalib_notification_model(std::string name,
-            std::shared_ptr<on_chip_calib_manager> manager, bool expaned);
+        autocalib_notification_model(std::string name, std::shared_ptr<on_chip_calib_manager> manager, bool expaned);
 
-        on_chip_calib_manager& get_manager() { 
-            return *std::dynamic_pointer_cast<on_chip_calib_manager>(update_manager); 
-        }
+        on_chip_calib_manager& get_manager() { return *std::dynamic_pointer_cast<on_chip_calib_manager>(update_manager); }
 
         void set_color_scheme(float t) const override;
         void draw_content(ux_window& win, int x, int y, float t, std::string& error_message) override;
