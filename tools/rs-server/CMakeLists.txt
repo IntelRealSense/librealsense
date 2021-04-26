@@ -13,3 +13,15 @@ include_directories(rs-server ${CMAKE_SOURCE_DIR}/third-party/tclap/include ${CM
 set_target_properties (rs-server PROPERTIES FOLDER "Tools")
 
 install(TARGETS rs-server RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+install(FILES "${CMAKE_SOURCE_DIR}/tools/rs-server/scripts/start-rs-server.sh"
+    DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+install(FILES "${CMAKE_SOURCE_DIR}/tools/rs-server/scripts/rs-server.service"
+    DESTINATION /lib/systemd/system/
+)
+
+install(CODE "execute_process(COMMAND ln -s /lib/systemd/system/rs-server.service /etc/systemd/system/multi-user.target.wants/)")
+
+
