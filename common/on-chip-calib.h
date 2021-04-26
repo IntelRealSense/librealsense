@@ -149,6 +149,7 @@ namespace rs2
         float _fx = 0.0f;
         float _fy = 0.0f;
 
+        void stop_viewer();
         void stop_viewer(invoker invoke);
         bool start_viewer(int w, int h, int fps, invoker invoke);
         void try_start_viewer(int w, int h, int fps, invoker invoke);

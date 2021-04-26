@@ -135,15 +135,46 @@ namespace rs2
         return res;
     }
 
+    void on_chip_calib_manager::stop_viewer()
+    {
+        try
+        {
+            auto profiles = _sub->get_selected_profiles();
+            _sub->stop(_viewer.not_model);
+            if (_sub_color.get())
+                _sub_color->stop(_viewer.not_model);
+
+            // Wait until frames from all active profiles stop arriving
+            bool frame_arrived = false;
+            while (frame_arrived && _viewer.streams.size())
+            {
+                for (auto&& stream : _viewer.streams)
+                {
+                    if (std::find(profiles.begin(), profiles.end(),
+                        stream.second.original_profile) != profiles.end())
+                    {
+                        auto now = std::chrono::high_resolution_clock::now();
+                        if (now - stream.second.last_frame > std::chrono::milliseconds(200))
+                            frame_arrived = false;
+                    }
+                    else frame_arrived = false;
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        }
+        catch (...) {}
+    }
+
     void on_chip_calib_manager::start_fl_viewer()
     {
         try
         {
-            try
-            {
-                _sub->stop(_viewer.not_model);
-            }
-            catch (...) {}
+            stop_viewer();
+            _sub->stream_enabled.clear();
+            if (_sub_color)
+                _sub_color->stream_enabled.clear();
 
             _uid = 1;
             _uid2 = 2;
@@ -206,13 +237,10 @@ namespace rs2
         bool frame_arrived = false;
         try
         {
-            try
-            {
-                _sub->stop(_viewer.not_model);
-                if (_sub_color.get())
-                    _sub_color->stop(_viewer.not_model);
-            }
-            catch (...) {}
+            stop_viewer();
+            _sub->stream_enabled.clear();
+            if (_sub_color)
+                _sub_color->stream_enabled.clear();
 
             _uid = 1;
             _uid2 = 2;

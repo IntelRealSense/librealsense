@@ -5396,7 +5396,17 @@ namespace rs2
                     {
                         try
                         {
-                            auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
+                            std::shared_ptr< subdevice_model> sub_color;
+                            for (auto&& sub2 : subdevices)
+                            {
+                                if (sub2->s->is<rs2::color_sensor>())
+                                {
+                                    sub_color = sub2;
+                                    break;
+                                }
+                            }
+
+                            auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub_color);
                             auto n = std::make_shared<autocalib_notification_model>("", manager, false);
 
                             viewer.not_model->add_notification(n);
