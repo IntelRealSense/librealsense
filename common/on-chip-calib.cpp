@@ -160,6 +160,14 @@ namespace rs2
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
+
+            _sub->stream_enabled.clear();
+            _sub->ui.selected_format_id.clear();
+            if (_sub_color)
+            {
+                _sub_color->stream_enabled.clear();
+                _sub_color->ui.selected_format_id.clear();
+            }
             _viewer.streams.clear();
         }
         catch (...) {}
@@ -170,10 +178,6 @@ namespace rs2
         try
         {
             stop_viewer();
-            _sub->stream_enabled.clear();
-            if (_sub_color)
-                _sub_color->stream_enabled.clear();
-
             _uid = 1;
             _uid2 = 2;
             bool first_done = 0;
@@ -232,111 +236,109 @@ namespace rs2
 
     void on_chip_calib_manager::start_uvmapping_viewer()
     {
-        bool frame_arrived = false;
-        try
+        for (int i = 0; i < 2; ++i)
         {
-            stop_viewer();
-            _sub->stream_enabled.clear();
-            if (_sub_color)
-                _sub_color->stream_enabled.clear();
-
-            _uid = 1;
-            _uid2 = 2;
-            bool first_done = 0;
-            bool second_done = 0;
-            for (const auto& format : _sub->formats)
+            try
             {
-                if (format.second[0] == "Y8" && !first_done)
+                stop_viewer();
+                _uid = 1;
+                _uid2 = 2;
+                bool first_done = 0;
+                bool second_done = 0;
+                for (const auto& format : _sub->formats)
                 {
-                    _uid = format.first;
-                    first_done = true;
-                }
-
-                if (format.second[0] == "Z16" && !second_done)
-                {
-                    _uid2 = format.first;
-                    second_done = true;
-                }
-
-                if (first_done && second_done)
-                    break;
-            }
-
-            _sub_color->ui.selected_format_id.clear();
-            _sub_color->ui.selected_format_id[_uid_color] = 0;
-            for (const auto& format : _sub_color->formats)
-            {
-                int done = false;
-                for (int i = 0; i < format.second.size(); ++i)
-                {
-                    if (format.second[i] == "RGB8")
+                    if (format.second[0] == "Y8" && !first_done)
                     {
-                        _uid_color = format.first;
-                        _sub_color->ui.selected_format_id[_uid_color] = i;
-                        done = true;
-                        break;
+                        _uid = format.first;
+                        first_done = true;
                     }
+
+                    if (format.second[0] == "Z16" && !second_done)
+                    {
+                        _uid2 = format.first;
+                        second_done = true;
+                    }
+
+                    if (first_done && second_done)
+                        break;
                 }
-                if (done)
-                    break;
+
+                _sub_color->ui.selected_format_id.clear();
+                _sub_color->ui.selected_format_id[_uid_color] = 0;
+                for (const auto& format : _sub_color->formats)
+                {
+                    int done = false;
+                    for (int i = 0; i < format.second.size(); ++i)
+                    {
+                        if (format.second[i] == "RGB8")
+                        {
+                            _uid_color = format.first;
+                            _sub_color->ui.selected_format_id[_uid_color] = i;
+                            done = true;
+                            break;
+                        }
+                    }
+                    if (done)
+                        break;
+                }
+
+                // Select stream
+                _sub->stream_enabled.clear();
+                _sub->stream_enabled[_uid] = true;
+                _sub->stream_enabled[_uid2] = true;
+
+                _sub->ui.selected_format_id.clear();
+                _sub->ui.selected_format_id[_uid] = 0;
+                _sub->ui.selected_format_id[_uid2] = 0;
+
+                // Select FPS value
+                for (int i = 0; i < _sub->shared_fps_values.size(); i++)
+                {
+                    if (_sub->shared_fps_values[i] == 30)
+                        _sub->ui.selected_shared_fps_id = i;
+                }
+
+                // Select Resolution
+                for (int i = 0; i < _sub->res_values.size(); i++)
+                {
+                    auto kvp = _sub->res_values[i];
+                    if (kvp.first == 1280 && kvp.second == 720)
+                        _sub->ui.selected_res_id = i;
+                }
+
+                auto profiles = _sub->get_selected_profiles();
+
+                std::vector<stream_profile> profiles_color;
+                _sub_color->stream_enabled[_uid_color] = true;
+
+                for (int i = 0; i < _sub_color->shared_fps_values.size(); i++)
+                {
+                    if (_sub_color->shared_fps_values[i] == 30)
+                        _sub_color->ui.selected_shared_fps_id = i;
+                }
+
+                for (int i = 0; i < _sub_color->res_values.size(); i++)
+                {
+                    auto kvp = _sub_color->res_values[i];
+                    if (kvp.first == 1280 && kvp.second == 720)
+                        _sub_color->ui.selected_res_id = i;
+                }
+
+                profiles_color = _sub_color->get_selected_profiles();
+
+                if (!_model.dev_syncer)
+                    _model.dev_syncer = _viewer.syncer->create_syncer();
+
+                _sub->play(profiles, _viewer, _model.dev_syncer);
+                for (auto&& profile : profiles)
+                    _viewer.begin_stream(_sub, profile);
+
+                _sub_color->play(profiles_color, _viewer, _model.dev_syncer);
+                for (auto&& profile : profiles_color)
+                    _viewer.begin_stream(_sub_color, profile);
             }
-
-            // Select stream
-            _sub->stream_enabled.clear();
-            _sub->stream_enabled[_uid] = true;
-            _sub->stream_enabled[_uid2] = true;
-
-            _sub->ui.selected_format_id.clear();
-            _sub->ui.selected_format_id[_uid] = 0;
-            _sub->ui.selected_format_id[_uid2] = 0;
-
-            // Select FPS value
-            for (int i = 0; i < _sub->shared_fps_values.size(); i++)
-            {
-                if (_sub->shared_fps_values[i] == 30)
-                    _sub->ui.selected_shared_fps_id = i;
-            }
-
-            // Select Resolution
-            for (int i = 0; i < _sub->res_values.size(); i++)
-            {
-                auto kvp = _sub->res_values[i];
-                if (kvp.first == 1280 && kvp.second == 720)
-                    _sub->ui.selected_res_id = i;
-            }
-
-            auto profiles = _sub->get_selected_profiles();
-
-            std::vector<stream_profile> profiles_color;
-            _sub_color->stream_enabled[_uid_color] = true;
-
-            for (int i = 0; i < _sub_color->shared_fps_values.size(); i++)
-            {
-                if (_sub_color->shared_fps_values[i] == 30)
-                    _sub_color->ui.selected_shared_fps_id = i;
-            }
-
-            for (int i = 0; i < _sub_color->res_values.size(); i++)
-            {
-                auto kvp = _sub_color->res_values[i];
-                if (kvp.first == 1280 && kvp.second == 720)
-                    _sub_color->ui.selected_res_id = i;
-            }
-
-            profiles_color = _sub_color->get_selected_profiles();
-
-            if (!_model.dev_syncer)
-                _model.dev_syncer = _viewer.syncer->create_syncer();
-
-            _sub->play(profiles, _viewer, _model.dev_syncer);
-            for (auto&& profile : profiles)
-                _viewer.begin_stream(_sub, profile);
-
-            _sub_color->play(profiles_color, _viewer, _model.dev_syncer);
-            for (auto&& profile : profiles_color)
-                _viewer.begin_stream(_sub_color, profile);
+            catch (...) {}
         }
-        catch (...) {}
     }
 
     bool on_chip_calib_manager::start_viewer(int w, int h, int fps, invoker invoke)
