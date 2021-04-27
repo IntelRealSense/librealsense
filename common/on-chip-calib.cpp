@@ -1747,7 +1747,8 @@ namespace rs2
                 find_z_at_corners(dots_x[0], dots_y[0], width, dots_calculator::_frame_num, depth, z);
 
                 uvmapping_calib calib(4, dots_x[0], dots_y[0], z, dots_x[1], dots_y[1], intrin[0], intrin[1], extrin);
-                bool ret = calib.calibrate(_health_1, _health_2, _ppx, _ppy, _fx, _fy);
+
+                bool ret = calib.calibrate(_health_1, _health_2, _ppx, _ppy, _fx, _fy, py_px_only);
                 if (!ret)
                     fail("Please adjust the camera position\nand make sure the specific target is\ninsid the ROI of the camera images!");
 
@@ -2222,6 +2223,10 @@ namespace rs2
                     ImGui::SetTooltip("%s", "Begin UVMapping calibration after adjusting camera position");
                 }
                 ImGui::PopStyleColor(2);
+
+                string id = to_string() << "Py Px Calibration only##py_px_only" << index;
+                ImGui::SetCursorScreenPos({ float(x + 15), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 32) });
+                ImGui::Checkbox(id.c_str(), &get_manager().py_px_only);
             }
             else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH)
             {
@@ -3445,7 +3450,8 @@ namespace rs2
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH) return 110;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED) return 115;
         else if (update_state == RS2_CALIB_STATE_FAILED) return ((get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB) ? (get_manager().retry_times < 3 ? 0 : 80) : 110);
-        else if (update_state == RS2_CALIB_STATE_FL_INPUT || update_state == RS2_CALIB_STATE_UVMAPPING_INPUT) return 120;
+        else if (update_state == RS2_CALIB_STATE_FL_INPUT) return 120;
+        else if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT) return 140;
         else return 100;
     }
 
@@ -3620,7 +3626,7 @@ namespace rs2
         memmove(&_extrin, &extrin, sizeof(rs2_extrinsics));
     }
 
-    bool uvmapping_calib::calibrate(float& err_before, float& err_after, float& ppx, float& ppy, float& fx, float& fy)
+    bool uvmapping_calib::calibrate(float& err_before, float& err_after, float& ppx, float& ppy, float& fx, float& fy, bool py_px_only)
     {
         assert(_color_intrin.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY);
         
@@ -3637,7 +3643,6 @@ namespace rs2
             pixel_left[i][1] = _left_y[i];
 
             rs2_deproject_pixel_to_point(point_left[i], &_left_intrin, pixel_left[i], _left_z[i]);
-
             rs2_transform_point_to_point(point_color[i], &_extrin, point_left[i]);
 
             pixel_color_norm[i][0] = point_color[i][0] / point_color[i][2];
@@ -3666,40 +3671,58 @@ namespace rs2
             err_before += diff[i];
         err_before /= 4;
 
-        double x = 0;
-        double y = 0;
-        double c_x = 0;
-        double c_y = 0;
-        double x_2 = 0;
-        double y_2 = 0;
-        double c_xc = 0;
-        double c_yc = 0;
-        for (int i = 0; i < 4; ++i)
+        if (py_px_only)
         {
-            x += pixel_color_norm[i][0];
-            y += pixel_color_norm[i][1];
-            c_x += _color_x[i];
-            c_y += _color_y[i];
-            x_2 += pixel_color_norm[i][0] * pixel_color_norm[i][0];
-            y_2 += pixel_color_norm[i][1] * pixel_color_norm[i][1];
-            c_xc += _color_x[i] * pixel_color_norm[i][0];
-            c_yc += _color_y[i] * pixel_color_norm[i][1];
-        }
+            fx = _color_intrin.fx;
+            fy = _color_intrin.fy;
 
-        double d_x = 4 * x_2 - x * x;
-        if (d_x > 0.01)
-        {
-            d_x = 1 / d_x;
-            fx = static_cast<float>(d_x * (4 * c_xc - x * c_x));
-            ppx = static_cast<float>(d_x * (x_2 * c_x - x * c_xc));
+            ppx = 0.0f;
+            ppy = 0.0f;
+            for (int i = 0; i < 4; ++i)
+            {
+                ppx += _color_x[i] - pixel_color_norm[i][0] * _color_intrin.fx;
+                ppy += _color_y[i] - pixel_color_norm[i][1] * _color_intrin.fy;
+            }
+            ppx /= 4.0f;
+            ppy /= 4.0f;
         }
-
-        double d_y = 4 * y_2 - y * y;
-        if (d_y > 0.01)
+        else
         {
-            d_y = 1 / d_y;
-            fy = static_cast<float>(d_y * (4 * c_yc - y * c_y));
-            ppy = static_cast<float>(d_y * (y_2 * c_y - y * c_yc));
+            double x = 0;
+            double y = 0;
+            double c_x = 0;
+            double c_y = 0;
+            double x_2 = 0;
+            double y_2 = 0;
+            double c_xc = 0;
+            double c_yc = 0;
+            for (int i = 0; i < 4; ++i)
+            {
+                x += pixel_color_norm[i][0];
+                y += pixel_color_norm[i][1];
+                c_x += _color_x[i];
+                c_y += _color_y[i];
+                x_2 += pixel_color_norm[i][0] * pixel_color_norm[i][0];
+                y_2 += pixel_color_norm[i][1] * pixel_color_norm[i][1];
+                c_xc += _color_x[i] * pixel_color_norm[i][0];
+                c_yc += _color_y[i] * pixel_color_norm[i][1];
+            }
+
+            double d_x = 4 * x_2 - x * x;
+            if (d_x > 0.01)
+            {
+                d_x = 1 / d_x;
+                fx = static_cast<float>(d_x * (4 * c_xc - x * c_x));
+                ppx = static_cast<float>(d_x * (x_2 * c_x - x * c_xc));
+            }
+
+            double d_y = 4 * y_2 - y * y;
+            if (d_y > 0.01)
+            {
+                d_y = 1 / d_y;
+                fy = static_cast<float>(d_y * (4 * c_yc - y * c_y));
+                ppy = static_cast<float>(d_y * (y_2 * c_y - y * c_yc));
+            }
         }
 
         err_after = 0.0f;

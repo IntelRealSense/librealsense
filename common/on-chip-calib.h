@@ -96,6 +96,8 @@ namespace rs2
         std::shared_ptr<subdevice_model> _sub;
         std::shared_ptr<subdevice_model> _sub_color;
 
+        bool py_px_only = false;
+
         void calibrate();
         void calibrate_fl();
         void calibrate_uvmapping();
@@ -249,7 +251,7 @@ namespace rs2
         uvmapping_calib(int pt_num, const float* left_x, const float* left_y, const float* left_z, const float* color_x, const float* color_y, const rs2_intrinsics& left_intrin, const rs2_intrinsics& color_intrin, rs2_extrinsics& extrin);
         virtual ~uvmapping_calib() {}
 
-        bool calibrate(float & err_before, float & err_after, float& ppx, float& ppy, float& fx, float& fy);
+        bool calibrate(float & err_before, float & err_after, float& ppx, float& ppy, float& fx, float& fy, bool py_px_only);
 
     private:
         const float _max_change = 16.0f;
