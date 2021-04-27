@@ -169,7 +169,7 @@ namespace librealsense
                 if(_is_dfu_locked)
                     throw std::runtime_error("Device: " + sn  + " is locked for update.\nUse firmware version higher than: " + _highest_fw_version);
                 else if (state == RS2_DFU_STATE_DFU_ERROR)
-                    throw std::runtime_error("Device: " + sn + " failed to update firmware\nImage is unsupported for this device");
+                    throw std::runtime_error("Device: " + sn + " failed to update firmware\nImage is unsupported for this device or corrupted");
                 else
                     throw std::runtime_error("Device: " + sn + " failed to download firmware\nPlease verify that no other librealsense application is running");
             }
