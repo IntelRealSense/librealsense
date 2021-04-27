@@ -31,22 +31,28 @@ if __name__ == '__main__':
                          and p.stream_type() == rs.stream.color
                          and p.format() == rs.format.yuyv
                          and ((p.as_video_stream_profile().width() == 424 and p.as_video_stream_profile().height() == 240)
-                              or (p.as_video_stream_profile().width() == 480 and p.as_video_stream_profile().height() == 270) )
-                       )
+                              or (p.as_video_stream_profile().width() == 480 and p.as_video_stream_profile().height() == 270)
+                              or (p.as_video_stream_profile().width() == 640 and p.as_video_stream_profile().height() == 360) )
+                      )
 
-    for ii in range(4):
+    for ii in range(10):
         print("================ Iteration {} ================".format(ii))
         rgb_sensor.open([rgb_profile])
         rgb_sensor.start(callback)
         time.sleep(30)
-        prev_frame_num = 0
-        count_drops = 0;
-        for i in range(len(frames)):
-            if prev_frame_num > 0 :
-                if frames[i] - prev_frame_num > 2 :
-                    count_drops += 1;
-            prev_frame_num = frames[i]
-        print(" frame drops = ", count_drops)
         rgb_sensor.stop()
         rgb_sensor.close()
-        print ('RGB sensor is stopped')
+
+        prev_frame_num = 0
+        count_drops = 0;
+        frame_drops_info = {}
+        for i in range(len(frames)):
+            if prev_frame_num > 0 :
+                missing_frames = frames[i] - prev_frame_num
+                if missing_frames > 2 :
+                    count_drops += 1
+                    frame_drops_info[frames[i]] = missing_frames
+            prev_frame_num = frames[i]
+        print("* frame drops = ", count_drops)
+        for k,v in frame_drops_info:
+            print("Number of dropped frame before frame ", k, ", is :", v)
