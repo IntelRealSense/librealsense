@@ -66,6 +66,7 @@ namespace rs2
             RS2_CALIB_ACTION_TARE_GROUND_TRUTH,     // Tare ground truth
             RS2_CALIB_ACTION_FL_CALIB,              // Focal length calibration
             RS2_CALIB_ACTION_UVMAPPING_CALIB,       // UVMapping calibration
+            RS2_CALIB_ACTION_FL_PLUS_CALIB,     // Focal length plus calibration
         };
 
         auto_calib_action action = RS2_CALIB_ACTION_ON_CHIP_CALIB;
@@ -107,6 +108,7 @@ namespace rs2
         void calibrate();
         void calibrate_fl();
         void calibrate_uv_mapping();
+        void calibrate_fl_plus();
         void get_ground_truth();
 
         void turn_roi_on();
@@ -115,6 +117,7 @@ namespace rs2
         void start_gt_viewer();
         void start_fl_viewer();
         void start_uvmapping_viewer(bool b3D = false);
+        void start_fl_plus_viewer();
         void stop_viewer();
         void reset_device() { _dev.hardware_reset(); }
 
@@ -156,7 +159,6 @@ namespace rs2
         float _fx = 0.0f;
         float _fy = 0.0f;
 
-        void stop_viewer();
         void stop_viewer(invoker invoke);
         bool start_viewer(int w, int h, int fps, invoker invoke);
         void try_start_viewer(int w, int h, int fps, invoker invoke);
@@ -184,6 +186,7 @@ namespace rs2
             RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED,     // Failed to calculating the ground truth
             RS2_CALIB_STATE_FL_INPUT,        // Collect input parameters for focal length calib
             RS2_CALIB_STATE_UVMAPPING_INPUT, // Collect input parameters for UVMapping calibration with specific target
+            RS2_CALIB_STATE_FL_PLUS_INPUT,        // Collect input parameters for focal length plus calib
         };
 
         autocalib_notification_model(std::string name, std::shared_ptr<on_chip_calib_manager> manager, bool expaned);
