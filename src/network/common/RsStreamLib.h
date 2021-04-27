@@ -32,7 +32,7 @@ public:
             vss << vsp.width() << "x" << vsp.height();
         }
         
-        ss << std::setw(10) << vss.str() << ":" << profile.fps() << "\t";
+        ss << std::setw(10) << vss.str() << ":" << profile.fps() << "\t" << (profile.is_default() ? '*' : ' ');
         return ss.str();
     };
 
@@ -72,7 +72,7 @@ public:
         convert_t t;
         t.key = 0;
 
-        // t.values.def    = 0 /* profile.is_default() */ ;
+        t.values.def    = profile.is_default();
         t.values.type   = profile.stream_type();  
         t.values.index  = profile.stream_index(); 
         t.values.uid    = profile.unique_id();    
@@ -96,6 +96,7 @@ public:
         convert_t t;
         t.key = 0;
 
+        t.values.def    = 0;
         t.values.type   = stream.type;  
         t.values.index  = stream.index; 
         t.values.uid    = stream.uid;    
@@ -126,21 +127,19 @@ public:
     };
 
     static bool is_default(uint64_t key) {
-        return false;
+        convert_t t;
+        t.key = key;
+        return t.values.def;
     };
-
-    // static uint64_t strip_default(uint64_t key) {
-    //     return key & 0x0FFFFFFFFFFFFFFF;
-    // };
 
 private:
 #pragma pack (push, 1)
     typedef union convert {
         uint64_t key;
         struct vals {
-            // uint8_t  def   : 4;
+            uint8_t  def   : 2;
             uint8_t  type  : 4;
-            uint8_t  index : 4;
+            uint8_t  index : 2;
             uint8_t  uid   ;
             uint16_t width ;
             uint16_t height;
@@ -149,13 +148,4 @@ private:
         } values;
     } convert_t;
 #pragma pack(pop)
-
-    static const uint64_t MASK_DEFAULT = 0xF000000000000000;
-    static const uint64_t MASK_TYPE    = 0x0F00000000000000;
-    static const uint64_t MASK_INDEX   = 0x00F0000000000000;
-    static const uint64_t MASK_UID     = 0x000F000000000000;
-    static const uint64_t MASK_WIDTH   = 0x0000FFFF00000000;
-    static const uint64_t MASK_HEIGHT  = 0x00000000FFFF0000;
-    static const uint64_t MASK_FPS     = 0x000000000000FF00;
-    static const uint64_t MASK_FORMAT  = 0x00000000000000FF;    
 };

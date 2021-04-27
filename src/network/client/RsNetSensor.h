@@ -52,16 +52,16 @@ public:
             // in case of the color stream add four additional formats
             // we are going to convert them on host from YUYV
             if (vstream.type == RS2_STREAM_COLOR) {
-                vstream.fmt = RS2_FORMAT_RGB8;
-                m_sw_sensor->add_video_stream(vstream, slib::is_default(key));
-
-                vstream.fmt = RS2_FORMAT_BGR8;
+                vstream.fmt = RS2_FORMAT_BGRA8;
                 m_sw_sensor->add_video_stream(vstream, slib::is_default(key));
 
                 vstream.fmt = RS2_FORMAT_RGBA8;
                 m_sw_sensor->add_video_stream(vstream, slib::is_default(key));
 
-                vstream.fmt = RS2_FORMAT_BGRA8;
+                vstream.fmt = RS2_FORMAT_BGR8;
+                m_sw_sensor->add_video_stream(vstream, slib::is_default(key));
+
+                vstream.fmt = RS2_FORMAT_RGB8;
                 m_sw_sensor->add_video_stream(vstream, slib::is_default(key));
             }
             break;

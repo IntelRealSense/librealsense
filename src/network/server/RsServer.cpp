@@ -220,7 +220,7 @@ server::server(rs2::device dev, std::string addr, int port) : m_dev(dev)
                 unique_streams[StreamIndex(profile.stream_type(), profile.stream_index())] = profile;
 
                 sms->addSubsession(RsServerMediaSubsession::createNew(*env, pfq, profile));
-                std::cout << " - ACCEPTED" << std::endl;
+                std::cout << " ACCEPTED" << std::endl;
                 profile_keys << "|" << slib::profile2key(profile) << ",";
 
                 // add intrinsics
@@ -238,7 +238,7 @@ server::server(rs2::device dev, std::string addr, int port) : m_dev(dev)
                 }
                 continue;
             }
-            std::cout << " - ignored" << std::endl;
+            std::cout << " ignored" << std::endl;
         }
 
         srv->addServerMediaSession(sms);
