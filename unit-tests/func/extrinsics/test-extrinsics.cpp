@@ -1,14 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-/////////////////////////////////////////////////////////////////////////////
-// This set of tests is valid for any device that supports the HDR feature //
-/////////////////////////////////////////////////////////////////////////////
-
-#define CATCH_CONFIG_MAIN
-#include "../../catch.h"
-#include "../func-common.h"
-#include <librealsense2/rsutil.h>
 
 #include <easylogging++.h>
 #ifdef BUILD_SHARED_LIBS
@@ -17,6 +9,14 @@
 // to initialize ours if we want to use the APIs!
 INITIALIZE_EASYLOGGINGPP
 #endif
+
+// Let Catch define its own main() function
+#define CATCH_CONFIG_MAIN
+#include "../../catch.h"
+
+
+#include <librealsense2/rs.hpp>
+#include <librealsense2/rsutil.h>
 
 using namespace rs2;
 
@@ -32,6 +32,10 @@ using namespace rs2;
 //
 struct position_and_rotation {
     double pos_and_rot[4][4];
+    // rotation tolerance - units are in cosinus of radians
+    const double rotation_tolerance = 0.000001;
+    // translation tolerance - units are in meters
+    const double translation_tolerance = 0.000001; // 0.001mm
 
     position_and_rotation operator* (const position_and_rotation& other)
     {
@@ -51,15 +55,18 @@ struct position_and_rotation {
         for (int i = 0; i < 4; ++i)
             for (int j = 0; j < 4; ++j)
             {
-                double tolerance = 0.0000001;
-                // lower tolerance needed for translation
-                if (j == 3) tolerance = 0.0005;
+                double tolerance = rotation_tolerance;
+                if (j == 3) tolerance = translation_tolerance;
 
                 if (fabs(pos_and_rot[i][j] - other.pos_and_rot[i][j]) > tolerance)
+                {
+                    std::cout << "i,j = " << i << "," << j << ", pos_and_rot[i][j] = " << (double)pos_and_rot[i][j] << ", tolerance = " << tolerance << std::endl;
                     return false;
+                }
             }
         return true;
     }
+    
     
     bool is_identity()
     {
@@ -69,29 +76,34 @@ struct position_and_rotation {
                 double target = 0.0;
                 if (i == j) target = 1.0;
 
-                double tolerance = 0.0000001;
-                // lower tolerance needed for translation
-                if (j == 3) tolerance = 0.0005;
+                double tolerance = rotation_tolerance;
+                if (j == 3) tolerance = translation_tolerance;
 
                 if (fabs(pos_and_rot[i][j] - target) > tolerance)
+                {
+                    std::cout << "i,j = " << i << "," << j << ", pos_and_rot[i][j] = " << (double)pos_and_rot[i][j] << ", target = " << (double)target << ", tolerance = " << tolerance << std::endl;
                     return false;
+                }
             }
         return true;
     }
 };
+
+
+// This method takes in consideration that the totation array is given in the order of a column major 3x3 matrix
 position_and_rotation matrix_4_by_4_from_translation_and_rotation(const float* position, const float* rotation)
 {
     position_and_rotation pos_rot;
     pos_rot.pos_and_rot[0][0] = static_cast<double>(rotation[0]);
-    pos_rot.pos_and_rot[0][1] = static_cast<double>(rotation[1]);
-    pos_rot.pos_and_rot[0][2] = static_cast<double>(rotation[2]);
+    pos_rot.pos_and_rot[1][0] = static_cast<double>(rotation[1]);
+    pos_rot.pos_and_rot[2][0] = static_cast<double>(rotation[2]);
 
-    pos_rot.pos_and_rot[1][0] = static_cast<double>(rotation[3]);
+    pos_rot.pos_and_rot[0][1] = static_cast<double>(rotation[3]);
     pos_rot.pos_and_rot[1][1] = static_cast<double>(rotation[4]);
-    pos_rot.pos_and_rot[1][2] = static_cast<double>(rotation[5]);
+    pos_rot.pos_and_rot[2][1] = static_cast<double>(rotation[5]);
 
-    pos_rot.pos_and_rot[2][0] = static_cast<double>(rotation[6]);
-    pos_rot.pos_and_rot[2][1] = static_cast<double>(rotation[7]);
+    pos_rot.pos_and_rot[0][2] = static_cast<double>(rotation[6]);
+    pos_rot.pos_and_rot[1][2] = static_cast<double>(rotation[7]);
     pos_rot.pos_and_rot[2][2] = static_cast<double>(rotation[8]);
 
     pos_rot.pos_and_rot[3][0] = 0.0;
