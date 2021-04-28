@@ -71,8 +71,7 @@ def find_first_device_or_exit():
     import pyrealsense2 as rs
     c = rs.context()
     if not c.devices.size():  # if no device is connected we skip the test
-        print("No device found, skipping test")
-        sys.exit( 0 )
+        log.f("No device found")
     dev = c.devices[0]
     log.d( 'found', dev )
     return dev
@@ -89,8 +88,7 @@ def find_devices_by_product_line_or_exit( product_line ):
     c = rs.context()
     devices_list = c.query_devices(product_line)
     if devices_list.size() == 0:
-        print( "No device of the", product_line, "product line was found; skipping test" )
-        sys.exit( 0 )
+        log.f( "No device of the", product_line, "product line was found" )
     log.d( 'found', devices_list.size(), product_line, 'devices:', [dev for dev in devices_list] )
     return devices_list
 
