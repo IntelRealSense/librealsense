@@ -45,7 +45,7 @@ std::string converter_csv::motion_pose_frame_record::to_string() const
 converter_csv::converter_csv(const std::string& filePath, rs2_stream streamType)
     : _filePath(filePath)
     , _streamType(streamType)
-    , _data_collection()
+    , _imu_pose_collection()
     , _sub_workers_joined(false)
     , _m()
     , _cv()
@@ -98,26 +98,40 @@ void converter_csv::convert_depth(rs2::depth_frame& depthframe)
         });
 }
 
+std::string converter_csv::get_time_string() const
+{
+    struct tm newtime;
+    time_t now = time(0);
+    localtime_s(&newtime, &now);
+
+    std::stringstream ss;
+    ss << newtime.tm_hour;
+    ss << newtime.tm_min;
+    ss << newtime.tm_sec;
+    return ss.str();
+}
+
 void converter_csv::output_to_csv()
 {
-    if (!_data_collection.size())
+    if (!_imu_pose_collection.size())
         throw std::runtime_error(stringify() << "No data collected, aborting");
 
     // Report amount of frames collected
     std::vector<uint64_t> frames_per_stream;
-    for (const auto& kv : _data_collection)
+    for (const auto& kv : _imu_pose_collection)
         frames_per_stream.emplace_back(kv.second.size());
 
     std::sort(frames_per_stream.begin(), frames_per_stream.end());
 
     // Serialize and store data into csv-like format
+    static auto time_Str = get_time_string();
     std::stringstream filename;
-    filename << _filePath  << ".csv";
+    filename << _filePath  << "_" << time_Str <<"_imu_pose.csv";
     std::ofstream csv(filename.str());
     if (!csv.is_open())
         throw std::runtime_error(stringify() << "Cannot open the requested output file " << _filePath << ", please check permissions");
 
-    for (const auto& elem : _data_collection)
+    for (const auto& elem : _imu_pose_collection)
     {
         csv << "\n\nStream Type,F#,HW Timestamp (ms),Backend Timestamp(ms),Host Timestamp(ms)"
             << (val_in_range(elem.first.first, { RS2_STREAM_GYRO,RS2_STREAM_ACCEL }) ? ",3DOF_x,3DOF_y,3DOF_z" : "")
@@ -177,7 +191,7 @@ void converter_csv::convert_motion_pose(rs2::frame& f)
                                 pose.rotation.x,pose.rotation.y,pose.rotation.z,pose.rotation.w };
                     }
 
-                    _data_collection[stream_uid].emplace_back(record);
+                    _imu_pose_collection[stream_uid].emplace_back(record);
                 });
             wait_sub_workers();
             _sub_workers_joined = true;
@@ -209,5 +223,3 @@ void converter_csv::convert(rs2::frame& frame)
         return;
     }
 }
-
-

@@ -53,10 +53,11 @@ namespace rs2 {
                     
                     std::string to_string() const;
                 };
+                std::string get_time_string() const;
 
                 rs2_stream _streamType;
                 std::string _filePath;
-                std::map<std::pair<rs2_stream, int>, std::vector<motion_pose_frame_record>> _data_collection;
+                std::map<std::pair<rs2_stream, int>, std::vector<motion_pose_frame_record>> _imu_pose_collection;
                 bool _sub_workers_joined;
                 std::mutex _m;
                 std::condition_variable _cv;
