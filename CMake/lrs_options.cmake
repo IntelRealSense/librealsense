@@ -35,6 +35,7 @@ option(FORCE_LIBUVC "Explicitly turn-on libuvc backend - deprecated, use FORCE_R
 option(FORCE_WINUSB_UVC "Explicitly turn-on winusb_uvc (for win7) backend - deprecated, use FORCE_RSUSB_BACKEND instead" OFF)
 option(ANDROID_USB_HOST_UVC "Build UVC backend for Android - deprecated, use FORCE_RSUSB_BACKEND instead" OFF)
 option(CHECK_FOR_UPDATES "Checks for versions updates" ON)
+option(BUILD_WITH_CPU_EXTENSIONS "Build with CPU extensions support" ON)
 #Performance improvement with Ubuntu 18/20
 if(UNIX AND (NOT ANDROID_NDK_TOOLCHAIN_INCLUDED))
     option(ENABLE_EASYLOGGINGPP_ASYNC "Switch Logger to Asynchronous Mode (set OFF for Synchronous Mode)"  ON)
