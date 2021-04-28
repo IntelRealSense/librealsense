@@ -173,8 +173,6 @@ PYBIND11_MODULE(NAME, m) {
         .value("sensor_resolution_mode", RS2_OPTION_SENSOR_MODE)
         .value("emitter_always_on", RS2_OPTION_EMITTER_ALWAYS_ON)
         .value("thermal_compensation", RS2_OPTION_THERMAL_COMPENSATION)
-        .value("trigger_camera_accuracy_health", RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH)
-        .value("reset_camera_accuracy_health", RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH)
         .value("host_performance", RS2_OPTION_HOST_PERFORMANCE)
         .value("hdr_enabled", RS2_OPTION_HDR_ENABLED)
         .value("sequence_name", RS2_OPTION_SEQUENCE_NAME)
