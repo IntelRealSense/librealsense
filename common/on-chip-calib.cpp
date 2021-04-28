@@ -2242,11 +2242,14 @@ namespace rs2
         else
             log(to_string() << "Calibration completed, health factor = " << _health);
 
-        stop_viewer(invoke);
-        if (_ui.get())
-            _sub->ui = *_ui;
-        if (action == RS2_CALIB_ACTION_UVMAPPING_CALIB && _sub_color.get() && _ui_color.get())
-            _sub_color->ui = *_ui_color;
+        if (action != RS2_CALIB_ACTION_UVMAPPING_CALIB)
+        {
+            stop_viewer(invoke);
+            if (_ui.get())
+                _sub->ui = *_ui;
+            if (_sub_color.get())
+                _sub_color->ui = *_ui_color;
+        }
 
         if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH && action != RS2_CALIB_ACTION_UVMAPPING_CALIB)
         {
@@ -2262,8 +2265,6 @@ namespace rs2
             auto metrics_after = get_depth_metrics(invoke);
             _metrics.push_back(metrics_after);
         }
-        else if (action == RS2_CALIB_ACTION_UVMAPPING_CALIB)
-            start_uvmapping_viewer(true);
 
         _progress = 100;
         _done = true;
