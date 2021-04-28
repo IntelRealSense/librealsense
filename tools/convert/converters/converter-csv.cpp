@@ -20,8 +20,7 @@ converter_csv::motion_pose_frame_record::motion_pose_frame_record(rs2_stream str
     _frame_ts(frame_ts),
     _backend_ts(backend_ts),
     _arrival_time(arrival_time),
-    _params({ p1, p2, p3, p4, p5, p6, p7 })
-{};
+    _params({ p1, p2, p3, p4, p5, p6, p7 }){}
 
 std::string converter_csv::motion_pose_frame_record::to_string() const
 {
@@ -100,7 +99,7 @@ void converter_csv::convert_depth(rs2::depth_frame& depthframe)
 
 std::string converter_csv::get_time_string() const
 {
-    struct tm newtime;
+    /*struct tm newtime;
     time_t now = time(0);
     localtime_s(&newtime, &now);
 
@@ -108,7 +107,14 @@ std::string converter_csv::get_time_string() const
     ss << newtime.tm_hour;
     ss << newtime.tm_min;
     ss << newtime.tm_sec;
-    return ss.str();
+    return ss.str();*/
+    auto t = time(nullptr);
+    char buffer[20] = {};
+    const tm* time = localtime(&t);
+    if (nullptr != time)
+        strftime(buffer, sizeof(buffer), "%Y%m%d%H%M%S", time);
+
+    return std::string(buffer);
 }
 
 void converter_csv::output_to_csv()
