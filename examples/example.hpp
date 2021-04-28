@@ -1120,10 +1120,10 @@ bool device_with_streams(std::vector <rs2_stream> stream_requests, std::string& 
             std::cerr << "Connect T26X and rerun the demo";
             break;
         case RS2_STREAM_DEPTH:
-            std::cerr << "The demo requires Realsense camera with DEPTH sensors";
+            std::cerr << "The demo requires Realsense camera with DEPTH sensor" << std::endl;
             break;
         case RS2_STREAM_COLOR:
-            std::cerr << "The demo requires Realsense camera with RGB sensors";
+            std::cerr << "The demo requires Realsense camera with RGB sensor" << std::endl;
             break;
         default:
             throw std::runtime_error("The requested stream: " + std::to_string(type) + ", for the demo is not supported by connected devices!"); // stream type

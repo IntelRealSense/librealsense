@@ -70,12 +70,9 @@ config = rs.config()
 pipeline_wrapper = rs.pipeline_wrapper(pipeline)
 pipeline_profile = config.resolve(pipeline_wrapper)
 device = pipeline_profile.get_device()
-deviceList = context.query_devices()
-dev = deviceList.front()
-sensorsList = dev.query_sensors()
 
 found_rgb = False
-for s in sensorsList:
+for s in device.sensors:
     if s.get_info(rs.camera_info.name) == 'RGB Camera':
         found_rgb = True
         break
