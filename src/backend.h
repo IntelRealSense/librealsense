@@ -31,6 +31,9 @@ const uint16_t MAX_RETRIES                = 100;
 const uint8_t  DEFAULT_V4L2_FRAME_BUFFERS = 4;
 const uint16_t DELAY_FOR_RETRIES          = 50;
 
+// We allow 6 seconds because on Linux the removal status is updated at a 5 seconds rate.
+const int MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP = 6000 / DELAY_FOR_RETRIES;
+
 const uint8_t MAX_META_DATA_SIZE          = 0xff; // UVC Metadata total length
                                             // is limited by (UVC Bulk) design to 255 bytes
 

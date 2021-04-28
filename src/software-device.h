@@ -52,7 +52,7 @@ namespace librealsense
         {
         }
         
-        std::shared_ptr<device_interface> create_device(bool) const override
+        std::shared_ptr<device_interface> create_device() const override
         {
             return _dev.lock();
         }

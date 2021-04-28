@@ -344,20 +344,18 @@ namespace librealsense
             command cmd( ivcam::GoToDFU );
             cmd.param1 = 1;
             _hw_monitor->send( cmd );
-            std::vector< uint8_t > gvd_buff( HW_MONITOR_BUFFER_SIZE );
-            // 120 iterations = ~6 seconds, we allow 6 seconds because on Linux the removal status is
-            // updated at a 5 seconds rate.
-            for( auto i = 0; i < 120; i++ )
+            for( auto i = 0; i < MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP; i++ )
             {
-                // If the device was detected as removed we assume the device is entering update
-                // mode
+                // If the device was detected as removed we assume the device is entering update mode
+                // Note: if no device status callback is registered we will wait the whole time and it is OK
                 if( ! is_valid() )
                     return;
 
-                this_thread::sleep_for( milliseconds( 50 ) );
+                this_thread::sleep_for( milliseconds( DELAY_FOR_RETRIES ) );
             }
 
-            LOG_WARNING( "Device still connected!" );
+            if (device_changed_notifications_on())
+                LOG_WARNING("Timeout waiting for device disconnect after DFU command!");
         }
         catch( std::exception & e )
         {
@@ -365,7 +363,7 @@ namespace librealsense
         }
         catch( ... )
         {
-            LOG_ERROR( " unknown error during entering DFU state" );
+            LOG_WARNING("Timeout waiting for device disconnect after DFU command!");
         }
     }
 
