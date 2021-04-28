@@ -136,7 +136,7 @@ def subprocess_run(cmd, stdout = None, timeout = 200, append = False):
     """
     Wrapper function for subprocess.run.
     If the child process times out or ends with a non-zero exit status an exception is raised!
-    
+
     :param cmd: the command and argument for the child process, as a list
     :param stdout: path of file to direct the output of the process to (None to disable)
     :param timeout: number of seconds to give the process before forcefully ending it (None to disable)
@@ -464,7 +464,7 @@ class ExeTest(Test):
         if 'custom-args' not in self.config.flags:
             # Assume we're a Catch2 exe, so:
             #if sys.flags.verbose:
-            #    cmd += 
+            #    cmd +=
             if log.is_debug_on():
                 cmd += ['-d', 'yes']  # show durations for each test-case
                 #cmd += ['--success']  # show successful assertions in output
@@ -580,6 +580,7 @@ if not list_only:
         sys.path.append( pyrs_path )
     from rspy import devices
     devices.query()
+    devices.map_unknown_ports()
     #
     # Under Travis, we'll have no devices and no acroname
     skip_live_tests = len(devices.all()) == 0  and  not devices.acroname
