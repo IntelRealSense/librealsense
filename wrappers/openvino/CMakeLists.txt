@@ -11,7 +11,7 @@ if( NOT DEFINED INTEL_OPENVINO_DIR  OR  NOT IS_DIRECTORY ${INTEL_OPENVINO_DIR} )
 endif()
 
 if (NOT BUILD_WITH_CPU_EXTENSIONS)
-    message( STATUS "Disable CPU extensions for OpenVINO" )
+    message( STATUS "Disabling CPU extensions for OpenVINO" )
     set(ENABLE_AVX2    OFF)
     set(ENABLE_AVX512F OFF)
 endif()
