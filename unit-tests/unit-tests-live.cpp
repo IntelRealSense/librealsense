@@ -5985,21 +5985,20 @@ TEST_CASE("D55 frame drops", "[live]")
                     process_frame(f);
             };
             
-            for (auto i = 0; i < 10; i++)
+            for (auto i = 0; i < 20; i++)
             {
-                std::cout << "==================================" << std::endl;
+                std::cout << "============== Iteration " << i << " ==============" << std::endl;
                 rs2::frame_queue frames_queue(1000, true);
                 rgb_frames_num.clear();
                 rgb_sensor.open(rgb_stream_profile);
                 //rgb_sensor.start(frame_callback);
                 rgb_sensor.start(frames_queue);
                 
-                std::this_thread::sleep_for(std::chrono::seconds(5));
+                std::this_thread::sleep_for(std::chrono::seconds(30));
                 rgb_sensor.stop();
                 rgb_sensor.close();
 
-                // =====================================================================================
-                // analysis : check of >2 consecutive frames are missing
+                std::cout << " ** ANALYSIS ** " << std::endl;
                 //#define MICROSEC_IN_SIC = 1000000.0
                 auto delta_tolerance_percent = 95.;
                 float ideal_delta = std::round(1000000.0 / 90); 
@@ -6007,16 +6006,19 @@ TEST_CASE("D55 frame drops", "[live]")
 
                 int count_drops = 0; //frame drops counter will increase if 2 or more successive frames are missing
                 std::map<unsigned long long, int> frame_drops_info;
-                rs2::frame f = frames_queue.wait_for_frame();
+                rs2::frame f;
+                frames_queue.poll_for_frame(&f);
                 auto prev_hw_timestamp = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
                 auto prev_fnum = f.get_frame_number();
                 while (f)
                 {
-                    std::this_thread::sleep_for(std::chrono::seconds(1));
-                    f = frames_queue.wait_for_frame();
+                    //f = frames_queue.wait_for_frame();
+                    frames_queue.poll_for_frame(&f);
                     auto curr_hw_timestamp = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
                     auto delta = curr_hw_timestamp - prev_hw_timestamp;
                     auto fnum = f.get_frame_number();
+                    if (fnum == prev_fnum)
+                        break;
                     if (delta > ideal_delta + delta_tolerance_in_us)
                     {
                         count_drops++;
