@@ -2224,9 +2224,15 @@ namespace rs2
                 log(to_string() << "Calibration failed with exception");
                 stop_viewer(invoke);
                 if (_ui.get())
+                {
                     _sub->ui = *_ui;
+                    _ui.reset();
+                }
                 if (action == RS2_CALIB_ACTION_UVMAPPING_CALIB && _sub_color.get() && _ui_color.get())
+                {
                     _sub_color->ui = *_ui_color;
+                    _ui_color.reset();
+                }
                 if (_was_streaming)
                     start_viewer(0, 0, 0, invoke);
                 throw;
@@ -2245,10 +2251,16 @@ namespace rs2
         if (action != RS2_CALIB_ACTION_UVMAPPING_CALIB)
         {
             stop_viewer(invoke);
-            if (_ui.get())
+            if (_sub.get() && _ui.get())
+            {
                 _sub->ui = *_ui;
-            if (_sub_color.get())
+                _ui.reset();
+            }
+            if (_sub_color.get() && _ui_color.get())
+            {
                 _sub_color->ui = *_ui_color;
+                _ui_color.reset();
+            }
         }
 
         if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH && action != RS2_CALIB_ACTION_UVMAPPING_CALIB)
@@ -2281,7 +2293,7 @@ namespace rs2
 
             stop_viewer(invoke);
 
-            if (_ui.get())
+            if (_sub.get() && _ui.get())
             {
                 _sub->ui = *_ui;
                 _ui.reset();
