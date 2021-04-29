@@ -5941,6 +5941,7 @@ TEST_CASE("D55 frame drops", "[live]")
             std::vector<unsigned long long> rgb_frames_num;
             rs2::sensor rgb_sensor;
             std::vector<rs2::stream_profile > rgb_stream_profile;
+
             auto res = configure_all_supported_streams(dev, width, height, 90);
             for (auto& s : res.first)
             {
@@ -5958,6 +5959,7 @@ TEST_CASE("D55 frame drops", "[live]")
                         auto vid = sp.as<rs2::video_stream_profile>();
                         auto h = vid.height();
                         auto w = vid.width();
+                        auto format = vid.format(); // RS2_FORMAT_YUYV ?
                         if (!(w == profile.width && h == profile.height)) continue;
                         if (sp.stream_type() == RS2_STREAM_COLOR)
                         {
@@ -5985,28 +5987,42 @@ TEST_CASE("D55 frame drops", "[live]")
             for (auto i = 0; i < 10; i++)
             {
                 std::cout << "==================================" << std::endl;
+                rs2::frame_queue frames_queue(1000, true);
                 rgb_frames_num.clear();
                 rgb_sensor.open(rgb_stream_profile);
-                rgb_sensor.start(frame_callback);
-                int count_drops = 0; //frame drops counter will increase if 2 or more successive frames are missing
-                std::map<unsigned long long, int> frame_drops_info;
-                unsigned long long prev_frame_num = 0;
-                std::this_thread::sleep_for(std::chrono::seconds(30));
+                //rgb_sensor.start(frame_callback);
+                rgb_sensor.start(frames_queue);
+                
+                std::this_thread::sleep_for(std::chrono::seconds(5));
                 rgb_sensor.stop();
                 rgb_sensor.close();
+
+                // =====================================================================================
                 // analysis : check of >2 consecutive frames are missing
-                for (auto f : rgb_frames_num)
+                //#define MICROSEC_IN_SIC = 1000000.0
+                auto delta_tolerance_percent = 95.;
+                float ideal_delta = std::round(1000000.0 / 90); 
+                auto delta_tolerance_in_us = ideal_delta * delta_tolerance_percent / 100.0;
+
+                int count_drops = 0; //frame drops counter will increase if 2 or more successive frames are missing
+                std::map<unsigned long long, int> frame_drops_info;
+                rs2::frame f = frames_queue.wait_for_frame();
+                auto prev_hw_timestamp = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
+                auto prev_fnum = f.get_frame_number();
+                while (f)
                 {
-                    if (prev_frame_num > 0)
+                    std::this_thread::sleep_for(std::chrono::seconds(1));
+                    f = frames_queue.wait_for_frame();
+                    auto curr_hw_timestamp = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
+                    auto delta = curr_hw_timestamp - prev_hw_timestamp;
+                    auto fnum = f.get_frame_number();
+                    if (delta > ideal_delta + delta_tolerance_in_us)
                     {
-                        auto missing_frames = f - prev_frame_num;
-                        if (missing_frames > 2)
-                        {
-                            count_drops += 1;
-                            frame_drops_info[f] = missing_frames;
-                        }
+                        count_drops++;
+                        frame_drops_info[fnum] = fnum-prev_fnum;
                     }
-                    prev_frame_num = f;
+                    prev_hw_timestamp = curr_hw_timestamp;
+                    prev_fnum = fnum;
                 }
                 CAPTURE(i, count_drops);
                 REQUIRE(count_drops == 0);
