@@ -465,7 +465,10 @@ TEST_CASE("Emitter on/off - checking sequence id", "[hdr][live][using_pipeline]"
 
                 int iteration = 0;
                 int sequence_id = -1;
-                int iterations_for_preparation = 6;
+
+                // emitter on/off works with PWM (pulse with modulation) in the hardware
+				// this takes some time to configure it
+                int iterations_for_preparation = 10;
                 while (++iteration < 50) // Application still alive?
                 {
                     rs2::frameset data;
