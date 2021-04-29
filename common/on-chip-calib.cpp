@@ -2339,6 +2339,8 @@ namespace rs2
         *psize = static_cast<uint16_t>(cmd.size() - 4);
         const rs2_raw_data_buffer* raw_buf = rs2_send_and_receive_raw_data(_dev.get().get(), cmd.data(), static_cast<unsigned int>(cmd.size()), nullptr);
         rs2_delete_raw_data(raw_buf);
+
+        _dev.hardware_reset(); // Workaround for reloading color calibration table. Othere approach?
     }
 
     void on_chip_calib_manager::apply_calib(bool use_new)
