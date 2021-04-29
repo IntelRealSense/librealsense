@@ -462,7 +462,9 @@ namespace librealsense
             command cmd( ivcam2::DFU );
             cmd.param1 = 1;
             _hw_monitor->send( cmd );
-            
+
+            // We allow 6 seconds because on Linux the removal status is updated at a 5 seconds rate.
+            const int MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP = (POLLING_DEVICES_INTERVAL_MS + 1000) / DELAY_FOR_RETRIES;
             for( auto i = 0; i < MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP; i++ )
             {
                 // If the device was detected as removed we assume the device is entering update mode
