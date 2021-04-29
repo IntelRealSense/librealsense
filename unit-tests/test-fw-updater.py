@@ -85,18 +85,48 @@ sn_list = devices.all()
 # acroname should ensure there is always 1 available device
 if len( sn_list ) != 1:
     log.f( "Expected 1 device, got", len( sn_list ) )
-device = devices.get( list( sn_list )[0] )
+device = devices.get_first( sn_list ).handle
 log.d( 'found:', device )
+product_line = device.get_info( rs.camera_info.product_line )
+log.d( 'product line:', product_line )
+
+test.start( "Update FW" )
+# check if recovery. If so recover
+recovered = False
+if device.is_update_device():
+    log.d( "recovering device ..." )
+    try:
+        # TODO: this needs to improve for L535
+        image_name = product_line[:-2] + "XX_FW_Image-"
+        image_mask = '(^|/)' + image_name + '(\d+\.){4}bin$'
+        image_file = None
+        for image in file.find( repo.root, image_mask ):
+            image_file = image
+        if not image_file:
+            log.f( "Could not find image file for", product_line, "recovery device" )
+
+        cmd = [fw_updater_exe, '-r', '-f', image_file]
+        log.d( 'running:', cmd )
+        subprocess.run( cmd )
+        recovered = True
+    except Exception as e:
+        log.f( "Unexpected error while trying to recover device:", e )
+    else:
+        devices.query( monitor_changes = False )
+        device = devices.get_first( devices.all() ).handle
+
 current_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.firmware_version ))
 log.d( 'FW version:', current_fw_version )
-product_line =  device.get_info( rs.camera_info.product_line )
-log.d( 'product line:', product_line )
 bundled_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.recommended_firmware_version ) )
 log.d( 'bundled FW version:', bundled_fw_version )
 
+if recovered and current_fw_version == bundled_fw_version:
+    test.finish()
+    test.print_results_and_exit()
+
 update_counter = get_update_counter( device )
 log.d( 'update counter:', update_counter )
-if get_update_counter( device ) >= 19:
+if update_counter >= 19:
     log.d( 'resetting update counter' )
     reset_update_counter( device )
 
@@ -108,7 +138,7 @@ for image in file.find( repo.root, image_mask ):
     image_file = os.path.join( repo.root, image)
 if not image_file:
     log.f( "Could not find image file for " + product_line + " device with FW version: " + bundled_fw_version )
-test.start( "Update FW" )
+
 try:
     cmd = [fw_updater_exe, '-f', image_file]
     log.d( 'running:', cmd )
@@ -120,7 +150,7 @@ except Exception as e:
 # make sure update worked
 devices.query( monitor_changes = False )
 sn_list = devices.all()
-device = devices.get( list( sn_list )[0] )
+device = devices.get_first( sn_list ).handle
 current_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.firmware_version ))
 test.check_equal( current_fw_version, bundled_fw_version )
 if update_counter < 19:

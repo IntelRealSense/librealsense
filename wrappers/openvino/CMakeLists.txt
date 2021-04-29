@@ -10,6 +10,12 @@ if( NOT DEFINED INTEL_OPENVINO_DIR  OR  NOT IS_DIRECTORY ${INTEL_OPENVINO_DIR} )
 	message( FATAL_ERROR "Invalid OpenVINO directory specified with INTEL_OPENVINO_DIR" )
 endif()
 
+if (NOT BUILD_WITH_CPU_EXTENSIONS)
+    message( STATUS "Disabling CPU extensions for OpenVINO" )
+    set(ENABLE_AVX2    OFF)
+    set(ENABLE_AVX512F OFF)
+endif()
+           
 # Set dependencies, including a CPU extension
 set(IE_ROOT_DIR "${INTEL_OPENVINO_DIR}/inference_engine")
 include(${INTEL_OPENVINO_DIR}/inference_engine/share/InferenceEngineConfig.cmake)

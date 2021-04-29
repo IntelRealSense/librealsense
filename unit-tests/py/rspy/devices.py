@@ -1,9 +1,35 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-from rspy import log
 import sys, os, re
-
+try:
+    from rspy import log
+except ModuleNotFoundError:
+    if __name__ != '__main__':
+        raise
+    #
+    def usage():
+        ourname = os.path.basename( sys.argv[0] )
+        print( 'Syntax: devices [actions|flags]' )
+        print( '        Control the LibRS devices connected' )
+        print( 'Actions (only one)' )
+        print( '        --list         Enumerate devices (default action)' )
+        print( '        --recycle      Recycle all' )
+        print( 'Flags:' )
+        print( '        --all          Enable all port [requires acroname]' )
+        print( '        --port <#>     Enable only this port [requires acroname]' )
+        sys.exit(2)
+    #
+    # We need to tell Python where to look for rspy
+    rspy_dir = os.path.dirname( os.path.abspath( __file__ ))
+    py_dir   = os.path.dirname( rspy_dir )
+    sys.path.append( py_dir )
+    from rspy import log
+    #
+    # And where to look for pyrealsense2
+    from rspy import repo
+    pyrs_dir = repo.find_pyrs_dir()
+    sys.path.append( pyrs_dir )
 
 
 # We need both pyrealsense2 and acroname. We can work without acroname, but
@@ -105,11 +131,13 @@ def wait_until_all_ports_disabled( timeout = 5 ):
     return False
 
 
-def map_devices_with_unknown_ports():
+def map_unknown_ports():
     """
     Fill in unknown ports in devices by enabling one port at a time, finding out which device
     is there.
     """
+    if not acroname:
+        return
     global _device_by_sn
     devices_with_unknown_ports = [device for device in _device_by_sn.values() if device.port is None]
     if not devices_with_unknown_ports:
@@ -119,7 +147,7 @@ def map_devices_with_unknown_ports():
     known_ports = [device.port for device in _device_by_sn.values() if device.port is not None]
     unknown_ports = [port for port in ports if port not in known_ports]
     try:
-        log.d( 'mapping devices to unknown ports', unknown_ports, '...' )
+        log.d( 'mapping unknown ports', unknown_ports, '...' )
         log.debug_indent()
         #log.d( "active ports:", ports )
         #log.d( "- known ports:", known_ports )
@@ -142,6 +170,7 @@ def map_devices_with_unknown_ports():
         n_identified_ports = 0
         for port in unknown_ports:
             #
+            log.d( 'enabling port', port )
             acroname.enable_ports( [port], disable_other_ports=True )
             sn = None
             for retry in range( 5 ):
@@ -181,8 +210,9 @@ def query( monitor_changes = True ):
     # Before we can start a context and query devices, we need to enable all the ports
     # on the acroname, if any:
     if acroname:
-        acroname.connect()  # MAY THROW!
-        acroname.enable_ports( sleep_on_change = 5 )  # make sure all connected!
+        if not acroname.hub:
+            acroname.connect()  # MAY THROW!
+            acroname.enable_ports( sleep_on_change = 5 )  # make sure all connected!
     #
     # Get all devices, and store by serial-number
     global _device_by_sn, _context, _port_to_sn
@@ -203,21 +233,18 @@ def query( monitor_changes = True ):
                 else:
                     time.sleep( 1 )
         for dev in devices:
-            if dev.is_update_device():
-                sn = dev.get_info( rs.camera_info.firmware_update_id )
-            else:
-                sn = dev.get_info( rs.camera_info.serial_number )
+            # The FW update ID is always available, it seems, and is the ASIC serial number
+            # whereas the Serial Number is the OPTIC serial number and is only available in
+            # non-recovery devices. So we use the former...
+            sn = dev.get_info( rs.camera_info.firmware_update_id )
             device = Device( sn, dev )
             _device_by_sn[sn] = device
-            log.d( '... port {}:'.format( device.port is None and '?' or device.port ), dev )
+            log.d( '... port {}:'.format( device.port is None and '?' or device.port ), sn, dev )
     finally:
         log.debug_unindent()
     #
     if monitor_changes:
         _context.set_devices_changed_callback( _device_change_callback )
-    #
-    if acroname:
-        map_devices_with_unknown_ports()
 
 
 def _device_change_callback( info ):
@@ -230,15 +257,15 @@ def _device_change_callback( info ):
             log.d( 'device removed:', device.serial_number )
             device._removed = True
     for handle in info.get_new_devices():
-        if handle.is_update_device():
-            sn = handle.get_info( rs.camera_info.firmware_update_id )
-        else:
-            sn = handle.get_info( rs.camera_info.serial_number )
-        log.d( 'device added:', handle )
+        sn = handle.get_info( rs.camera_info.firmware_update_id )
+        log.d( 'device added:', sn, handle )
         if sn in _device_by_sn:
-            _device_by_sn[sn]._removed = False
+            device = _device_by_sn[sn]
+            device._removed = False
+            device._dev = handle     # Because it has a new handle!
         else:
-            log.d( 'New device detected!?' )   # shouldn't see new devices...
+            # shouldn't see new devices...
+            log.d( 'new device detected!?' )
             _device_by_sn[sn] = Device( sn, handle )
 
 
@@ -320,26 +347,44 @@ def by_configuration( config ):
             yield sns
 
 
+def get_first( sns ):
+    """
+    Throws if no serial-numbers are available!
+    :param sns: An iterable list of serial-numbers. If None, defaults to all enabled() devices
+    :return: The first Device in the given serial-numbers
+    """
+    return get( next( iter( sns or enabled() )))
+
+
 def get( sn ):
     """
-    NOTE: will raise an exception if the SN is unknown!
-
     :param sn: The serial-number of the requested device
-    :return: The pyrealsense2.device object with the given SN, or None
+    :return: The Device object with the given SN, or None
     """
     global _device_by_sn
-    return _device_by_sn.get(sn).handle
+    return _device_by_sn.get(sn)
 
 
-def get_port( sn ):
+def get_by_port( port ):
     """
-    NOTE: will raise an exception if the SN is unknown!
-
-    :param sn: The serial-number of the requested device
-    :return: The port number (0-7) the device is on, or None if Acroname interface is unavailable
+    Return the Device at the given port number. Note that the device may not be enabled!
+    :param sn: The port of the requested device
+    :return: The Device object, or None
     """
     global _device_by_sn
-    return _device_by_sn.get(sn).port
+    for sn in all():
+        device = get( sn )
+        if device.port == port:
+            return device
+    return None
+
+
+def recovery():
+    """
+    :return: A set of all device serial-numbers that are in recovery mode
+    """
+    global _device_by_sn
+    return { device.serial_number for device in _device_by_sn.values() if device.handle.is_update_device() }
 
 
 def enable_only( serial_numbers, recycle = False, timeout = 5 ):
@@ -359,7 +404,7 @@ def enable_only( serial_numbers, recycle = False, timeout = 5 ):
     """
     if acroname:
         #
-        ports = [ get_port( sn ) for sn in serial_numbers ]
+        ports = [ get( sn ).port for sn in serial_numbers ]
         #
         if recycle:
             #
@@ -463,7 +508,7 @@ def hw_reset( serial_numbers, timeout = 5 ):
     :return: True if all devices have come back online before timeout
     """
     for sn in serial_numbers:
-        dev = get( sn )
+        dev = get( sn ).handle
         dev.hardware_reset()
     #
     _wait_until_removed( serial_numbers )
@@ -550,4 +595,52 @@ else:
             second_port_coordinate = int( split_port_location[-1] )
             port = acroname.get_port_from_usb( first_port_coordinate, second_port_coordinate )
             return port
+
+
+###############################################################################################
+if __name__ == '__main__':
+    import os, sys, getopt
+    try:
+        opts,args = getopt.getopt( sys.argv[1:], '',
+            longopts = [ 'help', 'recycle', 'all', 'list', 'port=' ])
+    except getopt.GetoptError as err:
+        print( '-F-', err )   # something like "option -a not recognized"
+        usage()
+    if args:
+        usage()
+    if acroname:
+        if not acroname.hub:
+            acroname.connect()
+    action = 'list'
+    for opt,arg in opts:
+        if opt in ('--list'):
+            action = 'list'
+        elif opt in ('--all'):
+            if not acroname:
+                log.f( 'No acroname available' )
+            acroname.enable_ports( sleep_on_change = 5 )
+        elif opt in ('--port'):
+            if not acroname:
+                log.f( 'No acroname available' )
+            all_ports = acroname.all_ports()
+            str_ports = arg.split(',')
+            ports = [int(port) for port in str_ports if port.isnumeric() and int(port) in all_ports]
+            if len(ports) != len(str_ports):
+                log.f( 'Invalid ports', str_ports )
+            acroname.enable_ports( ports, disable_other_ports = True, sleep_on_change = 5 )
+        elif opt in ('--recycle'):
+            action = 'recycle'
+    if action == 'list':
+        query()
+        for sn in all():
+            device = get( sn )
+            print( '{port} {name:30} {sn:20} {handle}'.format(
+                sn = sn,
+                name = device.name,
+                port = device.port is None and '?' or device.port,
+                handle = device.handle
+                ))
+    elif action == 'recycle':
+        log.f( 'Not implemented yet' )
+
 
