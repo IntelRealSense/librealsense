@@ -2017,7 +2017,7 @@ namespace rs2
                 _new_calib = _old_calib;
                 auto table = (librealsense::ds::coefficients_table*)_new_calib.data();
 
-                _health_uvmapping[0] = _ppx / intrin[0].ppx;
+                _health_uvmapping[0] = _ppx / intrin[1].ppx;
                 _health_uvmapping[1] = _ppy / intrin[1].ppy;
                 _health_uvmapping[2] = _fx / intrin[1].fx;
                 _health_uvmapping[3] = _fy / intrin[1].fy;
