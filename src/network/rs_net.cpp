@@ -80,10 +80,11 @@ int rs2_destroy_server(int api_version, rs_server* srv, rs2_error** error)
     return 0; // SUCCESS
 }
 
-// #ifdef BUILD_EASYLOGGINGPP
-// #ifdef BUILD_SHARED_LIBS
-// INITIALIZE_EASYLOGGINGPP
-// #endif
-// char log_net_name[] = "librealsense";
-// static librealsense::logger_type<log_net_name> logger_net;
-// #endif
+#ifdef BUILD_EASYLOGGINGPP
+#ifdef BUILD_SHARED_LIBS
+INITIALIZE_EASYLOGGINGPP
+#endif
+char log_net_name[] = "librealsense";
+static librealsense::logger_type<log_net_name> logger_net;
+#endif
+

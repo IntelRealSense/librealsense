@@ -125,7 +125,7 @@ rs_net_device::rs_net_device(rs2::software_device sw_device, std::string ip_addr
                 sensor.erase(0, pos + 1);
 
                 // get intrinsics
-                rs2_intrinsics intrinsics_val;
+                rs2_intrinsics intrinsics_val = {0};
                 pos = sensor.find("|");
                 std::string intrinsics_str = sensor.substr(0, pos);
                 sensor.erase(0, pos + 1);
