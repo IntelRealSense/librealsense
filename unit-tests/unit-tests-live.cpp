@@ -5931,6 +5931,7 @@ TEST_CASE("D55 frame drops", "[live]")
         // 424x240
         // 480x270
         // 640x360
+        std::cout << "============== HW TIMESTAMP FRAME DROPS ==========================" <<std::endl;
         std::vector<std::pair<int, int>> resolutions = { {640, 360}  , { 480, 270 }, { 424,240 } };
         for (auto& resolution : resolutions)
         {
