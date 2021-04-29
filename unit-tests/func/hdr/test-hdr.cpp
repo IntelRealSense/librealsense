@@ -5,6 +5,8 @@
 // This set of tests is valid for any device that supports the HDR feature //
 /////////////////////////////////////////////////////////////////////////////
 
+//#test:device D400*
+
 #define CATCH_CONFIG_MAIN
 #include "../../catch.h"
 #include "../../unit-tests-common.h"
