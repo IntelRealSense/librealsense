@@ -49,7 +49,7 @@ void RSRTSPClient::shutdownStream() {
         m_session = NULL;
     }
 
-    std::cout << "Closing the stream.\n";
+    LOG_INFO("Closing the stream.");
     Medium::close(this);
 }
 
@@ -61,7 +61,7 @@ void RSRTSPClient::continueAfterDESCRIBE(RTSPClient* rtspClient, int resultCode,
 // member
 void RSRTSPClient::continueAfterDESCRIBE(int resultCode, char* resultString) {
     if (resultCode != 0) {
-        std::cout << "Failed to get a SDP description: " << resultString << "\n";
+        LOG_ERROR("Failed to get a SDP description: " << resultString);
         delete[] resultString;
         throw std::runtime_error("Failed to get a SDP description");
     } else {
@@ -77,17 +77,17 @@ void RSRTSPClient::prepareSession() {
     UsageEnvironment& env = envir(); // alias
 
     // Create a media session object from this SDP description:
-    // std::cout << "SDP description:\n" << m_sdp << "\n";
+    LOG_DEBUG("SDP description:\n" << m_sdp);
     m_session = RsMediaSession::createNew(env, m_sdp.c_str());
 
     if (m_session == NULL) {
-        std::cout << "Failed to create a MediaSession object from the SDP description: " << env.getResultMsg() << "\n";
+        LOG_ERROR("Failed to create a MediaSession object from the SDP description: " << env.getResultMsg());
         throw std::runtime_error("Malformed server response");
     } else if (!m_session->hasSubsessions()) {
-        std::cout << "This session has no media subsessions (i.e., no \"m=\" lines)\n";
+        LOG_ERROR("This session has no media subsessions (i.e., no \"m=\" lines)");
         throw std::runtime_error("No profiles found");
     } else {
-        std::cout << "Session created " << m_session->name() << "/" << m_session->sessionDescription() << "/" << m_session->controlPath() << "\n";
+        LOG_INFO("Session created " << m_session->name() << "/" << m_session->sessionDescription() << "/" << m_session->controlPath());
         return;
     }
 
@@ -111,13 +111,13 @@ void RSRTSPClient::playSession() {
         bool profile_found = false;
         MediaSubsessionIterator it(*m_session);
 
-        std::cout << "Looking  for " << slib::profile2key(profile) << "\t" << slib::print_profile(profile) << " => " << profile_key << std::endl;
+        LOG_INFO("Looking  for " << slib::profile2key(profile) << "\t" << slib::print_profile(profile) << " => " << profile_key);
         while (m_subsession = it.next()) {
             uint64_t subsession_key = std::stoull(m_subsession->attrVal_str("key"));
             rs2_video_stream vs = slib::key2stream(subsession_key);
-            std::cout << "Checking for " << subsession_key << "\t" << slib::print_stream(&vs) << std::endl;
+            LOG_INFO("Checking for " << subsession_key << "\t" << slib::print_stream(&vs));
             if (profile_key == subsession_key) {
-                std::cout << "Profile match for " << m_subsession->controlPath() << std::endl;
+                LOG_INFO("Profile match for " << m_subsession->controlPath());
                 profile_found = true;
 
                 int useSpecialRTPoffset = -1; // for supported codecs
@@ -126,18 +126,20 @@ void RSRTSPClient::playSession() {
                 }
 
                 if (!m_subsession->initiate(useSpecialRTPoffset)) {
-                    std::cout << "Failed to initiate the \"" << m_subsession->controlPath() << "\" subsession: " << envir().getResultMsg() << "\n";
+                    LOG_ERROR("Failed to initiate the \"" << m_subsession->controlPath() << "\" subsession: " << envir().getResultMsg());
                 } else {
-                    std::cout << "Initiated the '" << std::setw(10) << m_subsession->controlPath() << "' " 
+                    std::stringstream ss;
+                    ss << "Initiated the '" << std::setw(10) << m_subsession->controlPath() << "' " 
                                                 << m_subsession->mediumName()   << "/" 
                                                 << m_subsession->protocolName() << "/" 
                                                 << m_subsession->videoWidth() << "x" << m_subsession->videoHeight() << "x" << m_subsession->videoFPS() << " subsession (";
                     if (m_subsession->rtcpIsMuxed()) {
-                        std::cout << "client port " << m_subsession->clientPortNum();
+                        ss << "client port " << m_subsession->clientPortNum();
                     } else {
-                        std::cout << "client ports " << m_subsession->clientPortNum() << "-" << m_subsession->clientPortNum() + 1;
+                        ss << "client ports " << m_subsession->clientPortNum() << "-" << m_subsession->clientPortNum() + 1;
                     }
-                    std::cout << ") [" << m_subsession->readSource()->name() << " : " << m_subsession->readSource()->MIMEtype() << "]\n";
+                    ss << ") [" << m_subsession->readSource()->name() << " : " << m_subsession->readSource()->MIMEtype() << "]";
+                    LOG_INFO(ss.str());
 
                     // Continue setting up this subsession, by sending a RTSP "SETUP" command:
                     sendSetupCommand(*m_subsession, RSRTSPClient::continueAfterSETUP);
@@ -145,7 +147,10 @@ void RSRTSPClient::playSession() {
                 }
             }
         }
-        if (!profile_found) throw std::runtime_error("Cannot match a profile");
+        if (!profile_found) {
+            LOG_ERROR("Cannot match a profile");
+            throw std::runtime_error("Cannot match a profile");
+        }
     }
 
     delete m_streams_it;
@@ -173,9 +178,9 @@ void RSRTSPClient::continueAfterSETUP(int resultCode, char* resultString)
     // m_scs.subsession->rtpSource()->setPacketReorderingThresholdTime(0); 
 
     if (m_subsession->sink == NULL) {
-        env << "Failed to create a data sink for the '" << m_subsession->controlPath() << "' subsession: " << env.getResultMsg() << "\n";
+        LOG_ERROR("Failed to create a data sink for the '" << m_subsession->controlPath() << "' subsession: " << env.getResultMsg());
     } else {
-        env << "Created a data sink for the \"" << m_subsession->controlPath() << "\" subsession\n";
+        LOG_DEBUG("Created a data sink for the \"" << m_subsession->controlPath() << "\" subsession");
         m_subsession->miscPtr = this; // a hack to let subsession handler functions get the "RTSPClient" from the subsession
         m_subsession->sink->startPlaying(*(m_subsession->readSource()), subsessionAfterPlaying, m_subsession);
         // Also set a handler to be called if a RTCP "BYE" arrives for this subsession:
@@ -204,12 +209,12 @@ void RSRTSPClient::continueAfterPLAY(int resultCode, char* resultString) {
     UsageEnvironment& env = envir(); // alias
 
     if (resultCode != 0) {
-        env << "Failed to start playing session: " << resultString << "\n";
+        LOG_ERROR("Failed to start playing session: " << resultString);
 
         // An unrecoverable error occurred with this stream.
         shutdownStream();
     } else {
-        env << "Started playing session...\n";
+        LOG_INFO("Started playing session.");
     }
 
     delete[] resultString;
@@ -220,7 +225,7 @@ void RSRTSPClient::subsessionAfterPlaying(void* clientData)
     MediaSubsession* subsession = (MediaSubsession*)clientData;
     RSRTSPClient* rtspClient = (RSRTSPClient*)(subsession->miscPtr);
 
-    std::cout << "Closing " << subsession->controlPath() << "session" << std::endl;
+    LOG_INFO("Closing " << subsession->controlPath() << "session");
 
     // Begin by closing this subsession's stream:
     Medium::close(subsession->sink);
@@ -245,13 +250,15 @@ void RSRTSPClient::subsessionByeHandler(void* clientData, char const* reason)
     RSRTSPClient* rtspClient = (RSRTSPClient*)subsession->miscPtr;
     UsageEnvironment& env = rtspClient->envir(); // alias
 
-    env << "Received RTCP \"BYE\"";
+    std::stringstream ss;
+    ss << "Received RTCP \"BYE\"";
     if(reason != NULL)
     {
-        env << " (reason:\"" << reason << "\")";
+        ss << " (reason:\"" << reason << "\")";
         delete[](char*) reason;
     }
-    env << " on \"" << subsession->controlPath() << "\" subsession\n";
+    ss << " on \"" << subsession->controlPath() << "\" subsession";
+    LOG_INFO(ss.str());
 
     // Now act as if the subsession had closed:
     rtspClient->subsessionAfterPlaying(subsession);

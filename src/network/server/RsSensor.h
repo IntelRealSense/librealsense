@@ -129,7 +129,7 @@ public:
 
                     if (ptr - data == size) {
                         // no SOS marker found
-                        std::cout << "No SOS marker found" << std::endl;
+                        LOG_ERROR("No SOS marker found");
                     } else {
                         // SOS found, jump to the data
                         ptr = ptr + *(ptr+3) + 2;
@@ -139,7 +139,7 @@ public:
                             if (*ptr == 0xFF) {
                                 // marker detected
                                 switch (*(ptr + 1)) {
-                                case 0xD9: // std::cout << " EOI : " << total_marks << std::endl;
+                                case 0xD9:
                                 case 0xD0: 
                                 case 0xD1: 
                                 case 0xD2: 
@@ -289,9 +289,9 @@ public:
                 ss << std::setiosflags(std::ios::right) << std::setiosflags(std::ios::fixed) << std::setprecision(2); 
                 ss << "   compression time " << std::setw(7) << elapsed.count() * 1000 << "ms, ";
                 ss << "size " << std::setw(7) << size << " => " << std::setw(7) << out_size << " (" << (float)(size) / (float)out_size << "), ";
-                ss << "FPS: " << std::setw(7) << fps << std::endl;
+                ss << "FPS: " << std::setw(7) << fps;
 
-                std::cout << ss.str();
+                LOG_DEBUG(ss.str());
                 
                 if (total_time > std::chrono::seconds(1)) {
                     beginning = std::chrono::system_clock::now();

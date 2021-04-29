@@ -28,13 +28,13 @@ protected:
         : FramedSource(t_env), m_queue(pfq), m_stream(stream) 
     {
         m_queue->addStream(m_stream);
-        std::cout << "Source started for stream: " << slib::print_profile(m_stream) << std::endl;
+        LOG_DEBUG("Source started for stream: " << slib::print_profile(m_stream));
     };
 
     virtual ~RsDeviceSource() 
     {
         m_queue->delStream(m_stream);
-        std::cout << "Source stopped for stream: " << slib::print_profile(m_stream) << std::endl;
+        LOG_DEBUG("Source stopped for stream: " << slib::print_profile(m_stream));
     };
 
 protected:
@@ -55,7 +55,7 @@ private:
                 nextTask() = envir().taskScheduler().scheduleDelayedTask(1000, (TaskFunc*)waitForFrame, this);
             }
         } else {
-            std::cout << "Attempting to read the frame out of band" << std::endl;
+            LOG_WARNING("Attempting to read the frame out of band");
         }
     };
 

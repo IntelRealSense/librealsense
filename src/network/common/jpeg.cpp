@@ -224,7 +224,7 @@ int jpeg::compress(uint8_t* in, int width, int height, uint8_t* out, uint32_t si
     // m_cinfo.arith_code == true;        // Huffman coding is much better than arithmetic
     // m_cinfo.write_JFIF_header = false; // no header, RTP should create one
 
-#if 1
+#if 0
 std::cout << "JPEG will be generated using " << ((m_cinfo.arith_code == true) ? "arithmetic" : "Huffman") << " coding, "
                                              << "4:" << m_cinfo.comp_info[0].v_samp_factor << ":" << m_cinfo.comp_info[0].h_samp_factor << " subsumpling, "
                                              << ((m_cinfo.restart_interval == 0) ? "without" : "with") << " restart MCUs, and "

@@ -26,7 +26,7 @@
 using namespace TCLAP;
 
 void server::doHTTP() {
-    std::cout << "Internal HTTP server started." << std::endl;
+    LOG_INFO("Internal HTTP server started.");
 
     httplib::Server svr;
 
@@ -104,7 +104,7 @@ void server::doHTTP() {
     svr.Post("/options",
         [&](const httplib::Request &req, httplib::Response &res, const httplib::ContentReader &content_reader) {
             if (req.is_multipart_form_data()) {
-                std::cout << "No support for multipart messages" << std::endl;
+                LOG_ERROR("No support for multipart messages");
             } else {
                 std::string options;
                 content_reader([&](const char *data, size_t data_length) {
@@ -152,18 +152,18 @@ void server::doHTTP() {
                                 options_mutex.lock();
                                 if (s->supports((rs2_option)idx))
                                 if (s->get_option((rs2_option)idx) != val) {
-                                    // std::cout << "Setting option " << idx << " to " << val << std::endl;
+                                    LOG_DEBUG("Setting option " << idx << " to " << val);
                                     try {
                                         s->set_option((rs2_option)idx, val);
                                     } catch(const rs2::error& e) {
-                                        std::cout << "Failed to set option " << idx << ". (" << e.what() << ")" << std::endl;
+                                        LOG_WARNING("Failed to set option " << idx << ". (" << e.what() << ")");
                                     }
                                 }
                                 options_mutex.unlock();
                             }
                         }
                     } else {
-                        std::cout << "Unknown sensor specified: " << sensor_name << std::endl;
+                        LOG_ERROR("Unknown sensor specified: " << sensor_name);
                     }
                 }
             }
@@ -183,7 +183,7 @@ server::server(rs2::device dev, std::string addr, int port) : m_dev(dev)
 
     srv = RTSPServer::createNew(*env, 8554, NULL);
     if (srv == NULL) {
-        std::cout << "Failed to create RTSP server: " << env->getResultMsg() << std::endl;
+        LOG_FATAL("Failed to create RTSP server: " << env->getResultMsg());
         exit(1);
     }
 
@@ -193,13 +193,14 @@ server::server(rs2::device dev, std::string addr, int port) : m_dev(dev)
 
         std::string sensor_name(sensor.supports(RS2_CAMERA_INFO_NAME) ? sensor.get_info(RS2_CAMERA_INFO_NAME) : "Unknown");
 
-        std::cout << "Sensor\t: " << sensor_name.c_str();
+        std::stringstream ss_sensor;
+        ss_sensor << "Sensor\t: " << sensor_name.c_str();
         if (sensor.get_active_streams().size() > 0) {
-            std::cout << " is streaming, stopping and closing it.";
+            ss_sensor << " is streaming, stopping and closing it.";
             sensor.stop();
             sensor.close();            
         }
-        std::cout << std::endl;
+        LOG_INFO(ss_sensor.str());
 
         std::string sensor_path = sensor_name;
         ServerMediaSession* sms = ServerMediaSession::createNew(*env, sensor_path.c_str(), sensor_name.c_str(), "Session streamed by LRS-Net");
@@ -207,7 +208,8 @@ server::server(rs2::device dev, std::string addr, int port) : m_dev(dev)
         // Prepare profiles
         std::stringstream profile_keys;
         for (auto profile : sensor.get_stream_profiles()) {
-            std::cout <<  "Profile : " << slib::print_profile(profile);
+            std::stringstream ss_profile;
+            ss_profile << "Profile : " << slib::print_profile(profile);
 
             if (profile.format() == RS2_FORMAT_YUYV || 
                 profile.format() == RS2_FORMAT_UYVY || 
@@ -220,7 +222,7 @@ server::server(rs2::device dev, std::string addr, int port) : m_dev(dev)
                 unique_streams[StreamIndex(profile.stream_type(), profile.stream_index())] = profile;
 
                 sms->addSubsession(RsServerMediaSubsession::createNew(*env, pfq, profile));
-                std::cout << " ACCEPTED" << std::endl;
+                ss_profile << " ACCEPTED";
                 profile_keys << "|" << slib::profile2key(profile) << ",";
 
                 // add intrinsics
@@ -236,14 +238,16 @@ server::server(rs2::device dev, std::string addr, int port) : m_dev(dev)
                 } else {
                     profile_keys << "n/a";
                 }
-                continue;
+                // continue;
+            } else {
+                ss_profile << " ignored";
             }
-            std::cout << " ignored" << std::endl;
+            LOG_INFO(ss_profile.str());
         }
 
         srv->addServerMediaSession(sms);
         char* url = srv->rtspURL(sms); // should be deallocated later
-        std::cout << "Access\t: " << url << std::endl << std::endl;
+        LOG_INFO("Access\t: " << url << std::endl);
 
         if (profile_keys.str().size()) m_sensors_desc += sensor_name + "|" + url + profile_keys.str() + "\r\n";
 
@@ -272,7 +276,7 @@ server::server(rs2::device dev, std::string addr, int port) : m_dev(dev)
             try {
                 // Given two streams, use the get_extrinsics_to() function to get the transformation from the stream to the other stream
                 rs2_extrinsics extrinsics = from_profile.get_extrinsics_to(to_profile);
-                // std::cout << "From " << from_name << " to " << to_name << std::endl;
+                LOG_DEBUG("From " << from_name.str() << " to " << to_name.str());
                 for (int t = 0; t < 3; t++) {
                     m_extrinsics << "|" << extrinsics.translation[t];
                 }
@@ -280,7 +284,7 @@ server::server(rs2::device dev, std::string addr, int port) : m_dev(dev)
                     m_extrinsics << "|" << extrinsics.rotation[r];
                 }
             } catch (const std::exception& e) {
-                std::cerr << "Failed to get extrinsics for the streams (" << from_name.str() << " => " << to_name.str() << "): " << e.what() << std::endl;
+                LOG_ERROR("Failed to get extrinsics for the streams (" << from_name.str() << " => " << to_name.str() << "): " << e.what());
             }
 
             m_extrinsics << "\r\n";

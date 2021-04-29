@@ -54,14 +54,12 @@ protected:
         std::string mime(t_inputSource->MIMEtype());
         std::string media = mime.substr(0, mime.find('/'));
         std::string type  = mime.substr(mime.find('/') + 1);
-        // std::cout << "Source provides " << media << "/" << type << "\n";
+        LOG_DEBUG("Source provides " << media << "/" << type);
         if (type == "RS") {
             /// chunked video
-            // std::cout << "Using RsVideoRTPSink\n";
             return RsVideoRTPSink::createNew(envir(), t_rtpGroupsock);
         } else {
             /// RAW
-            // std::cout << "Using RawVideoRTPSink\n";
             rs2::video_stream_profile vsp = m_stream.as<rs2::video_stream_profile>();
             return RawVideoRTPSink::createNew(envir(), t_rtpGroupsock, t_rtpPayloadTypeIfDynamic, 
                 vsp.width(), vsp.height(), 8, "YCbCr-4:2:2", "BT709-2");

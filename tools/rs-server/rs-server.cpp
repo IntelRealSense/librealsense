@@ -11,6 +11,9 @@
 #include "tclap/CmdLine.h"
 #include "tclap/ValueArg.h"
 
+// #include <easylogging++.h>
+
+#ifdef BUILD_EASYLOGGINGPP
 #include <easylogging++.h>
 #ifdef BUILD_SHARED_LIBS
 // With static linkage, ELPP is initialized by librealsense, so doing it here will
@@ -18,11 +21,7 @@
 // to initialize ours if we want to use the APIs!
 INITIALIZE_EASYLOGGINGPP
 #endif
-
-#define DBG CLOG(DEBUG,   "librealsense")
-#define ERR CLOG(ERROR,   "librealsense")
-#define WRN CLOG(WARNING, "librealsense")
-#define INF CLOG(INFO,    "librealsense")
+#endif
 
 // Signal handler
 namespace {
@@ -32,6 +31,9 @@ namespace {
 
 int main(int argc, char** argv)
 {
+    // rs2::log_to_console(RS2_LOG_SEVERITY_INFO);
+
+#if 0
     // Log engine initialization and configuration
 #ifdef BUILD_SHARED_LIBS
     // Configure the logger
@@ -56,8 +58,18 @@ int main(int argc, char** argv)
         std::cout << msg.raw() << "\n";
     });
 #endif
+#else
+#ifdef BUILD_EASYLOGGINGPP
+    rs2::log_to_callback( RS2_LOG_SEVERITY_INFO,
+        [&]( rs2_log_severity severity, rs2::log_message const& msg )
+        {
+            // not_model->output.add_log(severity, msg.filename(), msg.line_number(), msg.raw());
+            std::cout << msg.raw() << "\n";
+        });
+#endif 
+#endif
 
-    INF << "Rs-server is running\n";
+    std::cout << "Rs-server is running\n";
 
     // Handle the command-line parameters
     TCLAP::CmdLine cmd("LRS Network Extentions Server", ' ', RS2_API_VERSION_STR);
@@ -119,7 +131,7 @@ int main(int argc, char** argv)
 
         // Install the exit handler
         shutdown_handler = [&](int signal) {
-            INF << "Exiting\n";
+            std::cout << "Exiting\n";
             rs_server.stop();
             exit(signal);
         };

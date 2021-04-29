@@ -38,7 +38,7 @@ rs_net_device::rs_net_device(rs2::software_device sw_device, std::string ip_addr
         }
         catch(...) // ignore wrong port and use default
         {
-            std::cout << "WARNING: invalid port specified, using default";
+            LOG_WARNING("WARNING: invalid port specified, using default");
         }
 
     uint32_t pos = 0;
@@ -84,7 +84,9 @@ rs_net_device::rs_net_device(rs2::software_device sw_device, std::string ip_addr
             std::string val = devinfo.substr(0, pos);
             devinfo.erase(0, pos + 2);
             if (std::strcmp(val.c_str(), "n/a") != 0) {
-                std::cout << std::left << std::setw(30) << desc << " : " << val << std::endl;
+                std::stringstream ss_devinfo;
+                ss_devinfo << std::left << std::setw(30) << desc << " : " << val;
+                LOG_DEBUG(ss_devinfo.str());
                 m_device.register_info((rs2_camera_info)idx, val);
             }
         }
@@ -233,7 +235,7 @@ rs_net_device::rs_net_device(rs2::software_device sw_device, std::string ip_addr
         }
     }
 
-    std::cout << "Software device is ready" << std::endl;
+    LOG_INFO("Software device is ready");
 
     m_options = std::thread( [this](){ doOptions(); } ); 
 
@@ -243,7 +245,7 @@ rs_net_device::rs_net_device(rs2::software_device sw_device, std::string ip_addr
 }
 
 void rs_net_device::doExtrinsics() {
-    std::cout << "Extrinsics initialization thread started" << std::endl;
+    LOG_INFO("Extrinsics initialization thread started");
 
     // Prepare extrinsics map
     httplib::Client client(m_ip_address, 8080);
@@ -318,11 +320,11 @@ void rs_net_device::doExtrinsics() {
         }
     }
 
-    std::cout << "Extrinsics initialization thread exited" << std::endl;
+    LOG_INFO("Extrinsics initialization thread exited");
 }
 
 void rs_net_device::doOptions() {
-    std::cout << "Options synchronization thread started" << std::endl;
+    LOG_INFO("Options synchronization thread started");
 
     std::string options_prev;
 
@@ -359,5 +361,5 @@ void rs_net_device::doOptions() {
         std::this_thread::sleep_for(std::chrono::milliseconds(100)); 
     }
 
-    std::cout << "Options synchronization thread exited" << std::endl;
+    LOG_INFO("Options synchronization thread exited");
 }

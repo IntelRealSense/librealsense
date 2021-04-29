@@ -32,8 +32,8 @@ using namespace std::placeholders;
 
 void rs_net_sensor::doRTP() {
     std::stringstream ss;
-    ss << std::setiosflags(std::ios::left) << std::setw(14) << m_name << ": RTP support thread started" << std::endl;
-    std::cout << ss.str();
+    ss << std::setiosflags(std::ios::left) << std::setw(14) << m_name << ": RTP support thread started";
+    LOG_INFO(ss.str());
 
     TaskScheduler* scheduler = BasicTaskScheduler::createNew(/* 1000 */); // Check this later
     m_env = BasicUsageEnvironment::createNew(*scheduler);
@@ -44,7 +44,7 @@ void rs_net_sensor::doRTP() {
     // Start the scheduler
     m_env->taskScheduler().doEventLoop(&m_eventLoopWatchVariable);
 
-    std::cout << m_name << " : RTP support thread exited" << std::endl;
+    LOG_INFO(m_name << " : RTP support thread exited");
 }
 
 void rs_net_sensor::doControl() {
@@ -53,16 +53,16 @@ void rs_net_sensor::doControl() {
         // sensor state changed
         m_streaming = streaming;
         if (is_streaming()) {
-            std::cout << "Sensor enabled\n";
+            LOG_INFO("Sensor enabled");
 
             // Create RTSP client
             RTSPClient::responseBufferSize = 100000;
             m_rtspClient = RSRTSPClient::createNew(*m_env, m_mrl.c_str());
             if (m_rtspClient == NULL) {
-                std::cout << "Failed to create a RTSP client for URL '" << m_mrl << "': " << m_env->getResultMsg() << std::endl;
+                LOG_FATAL("Failed to create a RTSP client for URL '" << m_mrl << "': " << m_env->getResultMsg());
                 throw std::runtime_error("Cannot create RTSP client");
             }
-            std::cout << "Connected to " << m_mrl << std::endl;
+            LOG_INFO("Connected to " << m_mrl);
 
             // Prepare profiles list and allocate the queues
             m_streams.clear();
@@ -85,7 +85,7 @@ void rs_net_sensor::doControl() {
             }
             // m_dev = std::thread( [&](){ doDevice(); });
         } else {
-            std::cout << "Sensor disabled\n";
+            LOG_INFO("Sensor disabled");
 
             // Stop SW device thread
             m_dev_flag = false;
@@ -150,7 +150,7 @@ void rs_net_sensor::doDevice(uint64_t key) {
     for (int i = 0; i < rst_num; i++) markers[i] = 0;
 
     // rs2_video_stream s = slib::key2stream(key);
-    std::cout << m_name << "/" << rs2_stream_to_string(net_stream->profile.stream_type()) << "\t: SW device support thread started" << std::endl;
+    LOG_INFO(m_name << "/" << rs2_stream_to_string(net_stream->profile.stream_type()) << "\t: SW device support thread started");
 
     int frame_count = 0; 
     bool prev_sensor_state = false;
@@ -203,7 +203,6 @@ void rs_net_sensor::doDevice(uint64_t key) {
                 break;
             case 3:
 #define HEAD_LEN 41
-                // std::cout << "JPEG not implemented yet" << std::endl;
                 ret = ch->size - CHUNK_HLEN;
 
                 // build the array of RST markers
@@ -218,7 +217,7 @@ void rs_net_sensor::doDevice(uint64_t key) {
                     if (*ptr == 0xFF) {
                         // marker detected
                         switch(*(ptr + 1)) {
-                        case 0xD9: //std::cout << " EOI : " << std::endl;
+                        case 0xD9: // EOI
                         case 0xD0: 
                         case 0xD1: 
                         case 0xD2: 
@@ -360,7 +359,7 @@ void rs_net_sensor::doDevice(uint64_t key) {
                 // }
 
             } catch (...) {
-                std::cout << "Cannot decompress the frame, of size " << total_size << " to the buffer of " << frame_size << std::endl;
+                LOG_ERROR("Cannot decompress the frame, of size " << total_size << " to the buffer of " << frame_size);
             }
         } else {
             memcpy(frame_raw, net_stream->m_frame_raw, frame_size);
@@ -385,16 +384,14 @@ void rs_net_sensor::doDevice(uint64_t key) {
         ss << std::setiosflags(std::ios::right) << std::setiosflags(std::ios::fixed) << std::setprecision(2); 
         ss << " decompression time " << std::setw(7) << elapsed.count() * 1000 << "ms, ";
         ss << "size " << std::setw(7) << total_size << " => " << std::setw(7) << size << ", ";
-        ss << "FPS: " << std::setw(7) << fps << std::endl;
+        ss << "FPS: " << std::setw(7) << fps;
 
-        std::cout << ss.str();
+        LOG_DEBUG(ss.str());
         
         if (total_time > std::chrono::seconds(1)) {
             beginning = std::chrono::system_clock::now();
             fps_frame_count = 0;
         }
-
-        // std::cout << "Chunks: " << chunks_allocated << "\n"; 
 
         // send it into device
         uint8_t* frame_raw_converted = frame_raw;
@@ -525,5 +522,5 @@ void rs_net_sensor::doDevice(uint64_t key) {
 
 out:
     std::this_thread::sleep_for(std::chrono::milliseconds(std::rand()%10)); 
-    std::cout << m_name << "/" << rs2_stream_to_string(net_stream->profile.stream_type()) << "\t: SW device support thread exited" << std::endl;
+    LOG_INFO(m_name << "/" << rs2_stream_to_string(net_stream->profile.stream_type()) << "\t: SW device support thread exited");
 }

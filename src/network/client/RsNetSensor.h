@@ -89,7 +89,7 @@ public:
         } catch (const rs2::error& e) {
             // Some options can only be set while the camera is streaming,
             // and generally the hardware might fail so it is good practice to catch exceptions from set_option
-            std::cout << "Failed to set option " << opt << ". (" << e.what() << ")" << std::endl;
+            LOG_ERROR("Failed to set option " << opt << ". (" << e.what() << ")");
         }
     }
 
