@@ -1,4 +1,6 @@
-//library
+include ':devices_presets'
+project(':devices_presets').projectDir = new File('examples/devices_presets')
+
 include ':librealsense'
 project(':librealsense').projectDir = new File('librealsense')
 
