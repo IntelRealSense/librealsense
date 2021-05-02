@@ -76,7 +76,7 @@ namespace rs2 {
 
                 void convert_depth(rs2::depth_frame& depthframe);
                 void convert_motion_pose(rs2::frame& f);
-                void output_to_csv();
+                void save_motion_pose_data_to_file();
             };
         } // namespace converter
     } // namespace tools

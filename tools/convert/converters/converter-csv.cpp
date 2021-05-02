@@ -99,15 +99,6 @@ void converter_csv::convert_depth(rs2::depth_frame& depthframe)
 
 std::string converter_csv::get_time_string() const
 {
-    /*struct tm newtime;
-    time_t now = time(0);
-    localtime_s(&newtime, &now);
-
-    std::stringstream ss;
-    ss << newtime.tm_hour;
-    ss << newtime.tm_min;
-    ss << newtime.tm_sec;
-    return ss.str();*/
     auto t = time(nullptr);
     char buffer[20] = {};
     const tm* time = localtime(&t);
@@ -117,10 +108,10 @@ std::string converter_csv::get_time_string() const
     return std::string(buffer);
 }
 
-void converter_csv::output_to_csv()
+void converter_csv::save_motion_pose_data_to_file()
 {
     if (!_imu_pose_collection.size())
-        throw std::runtime_error(stringify() << "No data collected, aborting");
+        throw std::runtime_error(stringify() << "No imu or pose data collected, aborting");
 
     // Report amount of frames collected
     std::vector<uint64_t> frames_per_stream;
@@ -206,7 +197,7 @@ void converter_csv::convert_motion_pose(rs2::frame& f)
     std::unique_lock<std::mutex> lck(_m);
     while (!_sub_workers_joined)
         _cv.wait(lck);
-    output_to_csv();
+    save_motion_pose_data_to_file();
 }
 
 void converter_csv::convert(rs2::frame& frame)
