@@ -384,7 +384,7 @@ class Test( ABC ):  # Abstract Base Class
         """
         return self._config and len( self._config.configurations ) > 0
 
-    def get_source_path( self ) :
+    def get_source_path( self ):
         """
         :return: The relative path from unit-tests directory to the test's source file (cpp or py)
         """
@@ -402,28 +402,28 @@ class Test( ABC ):  # Abstract Base Class
         relative_path = ""
         found_test_dir = False
 
-        while not found_test_dir :
+        while not found_test_dir:
             # index 0 should be 'test' as tests always start with it
             found_test_dir = True
             for i in range( 2,
-                            len( split_testname ) ) :  # Checking if the next part of the test name is a sub-directory
-                possible_sub_dir = '-'.join( split_testname[1 :i] )  # The next sub-directory could have several words
+                            len( split_testname ) ):  # Checking if the next part of the test name is a sub-directory
+                possible_sub_dir = '-'.join( split_testname[1:i] )  # The next sub-directory could have several words
                 sub_dir_path = path + os.sep + possible_sub_dir
-                if os.path.isdir( sub_dir_path ) :
+                if os.path.isdir( sub_dir_path ):
                     path = sub_dir_path
                     relative_path += possible_sub_dir + os.sep
-                    del split_testname[1 :i]
+                    del split_testname[1:i]
                     found_test_dir = False
                     break
 
         path += os.sep + '-'.join( split_testname )
         relative_path += '-'.join( split_testname )
-        if os.path.isfile( path + ".cpp" ) :
+        if os.path.isfile( path + ".cpp" ):
             relative_path += ".cpp"
-        elif os.path.isfile( path + ".py" ) :
+        elif os.path.isfile( path + ".py" ):
             relative_path += ".py"
         else :
-            log.w( log.red + testname + log.reset + ':',
+            log.w( log.red + self.name + log.reset + ':',
                    'No matching .cpp or .py file was found; no configuration will be used!' )
             return None
 
