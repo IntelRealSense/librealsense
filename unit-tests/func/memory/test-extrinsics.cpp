@@ -25,7 +25,7 @@ constexpr int DELAY_INCREMENT_THRESHOLD_IMU = 8; //[%]
 constexpr int SPIKE_THRESHOLD = 2; //[stdev]
 
 #ifdef LIGHT_TEST
-constexpr int ITERATIONS_PER_CONFIG = 15;
+constexpr int ITERATIONS_PER_CONFIG = 20;
 constexpr int INNER_ITERATIONS_PER_CONFIG = 1;
 #else
 constexpr int ITERATIONS_PER_CONFIG = 100;
@@ -110,7 +110,12 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
         rs2::log_to_file(RS2_LOG_SEVERITY_DEBUG, "lrs_log.txt");
 
         std::cout << "Extrinsic memory leak detection started" << std::endl;
+
+#ifdef LIGHT_TEST
+        bool is_pipe_test[1] = { true };
+#else
         bool is_pipe_test[2] = { true, false };
+#endif
 
         for (auto is_pipe : is_pipe_test)
         {
