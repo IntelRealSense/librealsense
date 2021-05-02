@@ -972,8 +972,16 @@ namespace librealsense
             depth_sensor->register_option(RS2_OPTION_DEPTH_UNITS, depth_scale);
         }
         else
+        {
+            float default_depth_units = 0.001f;
+            // default depth units is different for D405
+            if (_pid == RS405_PID)
+                default_depth_units = 0.0001f;
             depth_sensor.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
-                lazy<float>([]() { return 0.001f; })));
+                lazy<float>([default_depth_units]()
+                    { return default_depth_units;/* 0.001f;*/ })));
+        }
+            
         // Metadata registration
         depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc_header::timestamp));
 
