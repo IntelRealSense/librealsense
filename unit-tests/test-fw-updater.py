@@ -129,6 +129,7 @@ log.d( 'update counter:', update_counter )
 if update_counter >= 19:
     log.d( 'resetting update counter' )
     reset_update_counter( device )
+    update_counter = 0
 
 # finding file containing image for FW update
 image_name = product_line[0:2] + "XX_FW_Image-" + bundled_fw_version + ".bin"
