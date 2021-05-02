@@ -225,7 +225,7 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
 
                     if (!new_frame[stream_type])
                     {
-                        streams_delay[stream_type].push_back(time_of_arrival - start_time_milli);
+                        streams_delay[stream_type].push_back((double(time_of_arrival - start_time_milli)));
                         new_frame[stream_type] = true;
                     }
                     new_frame[stream_type] += 1;
