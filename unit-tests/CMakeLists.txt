@@ -29,7 +29,7 @@ if(BUILD_UNIT_TESTS)
 endif()
 
 
-if(BUILD_LIVE_TEST)
+if(BUILD_LIVE_TESTS)
     set (unit_tests_sources
         unit-tests-live.cpp
         unit-tests-regressions.cpp
