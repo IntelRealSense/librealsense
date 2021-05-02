@@ -8,7 +8,7 @@ static uint32_t sr305_obj_data [] { 0xc8b328f1,0xfae8c282,0x40c1,0xcccdc0e0,0xcc
 inline void uncompress_sr305_obj(std::vector<float3>& vertex_data, std::vector<float3>& normals, std::vector<short3>& index_data)
 {
     std::vector<char> uncompressed(0x43c5c, 0);
-    LZ4_uncompress((const char*)sr305_obj_data, uncompressed.data(), 0x43c5c);
+    LZ4_decompress_fast((const char*)sr305_obj_data, uncompressed.data(), 0x43c5c);
     const int vertex_size = 0x2625 * sizeof(float3);
     const int index_size = 0x6870 * sizeof(short3);
     vertex_data.resize(0x2625);
