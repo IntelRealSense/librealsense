@@ -153,10 +153,11 @@ sn_list = devices.all()
 device = devices.get_first( sn_list ).handle
 current_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.firmware_version ))
 test.check_equal( current_fw_version, bundled_fw_version )
+new_update_counter = get_update_counter( device )
 if update_counter < 19:
-    test.check_equal( get_update_counter( device ), update_counter + 1)
+    test.check( new_update_counter == update_counter + 1 or new_update_counter == 0 )
 else:
-    test.check_equal( get_update_counter( device ), 1)
+    test.check( new_update_counter == 1 or new_update_counter == 0 )
 
 test.finish()
 
