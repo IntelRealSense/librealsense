@@ -60,12 +60,12 @@ if __name__ == '__main__':
             while not _stop:
                 element = post_process_queue.get(block=True)
                 lrs_frame = element
-                my_process(lrs_frame)
+                first_frame, prev_hw_timestamp, prev_fnum, count_drops = my_process(lrs_frame, first_frame, prev_hw_timestamp, prev_fnum, count_drops)
                 del lrs_frame
                 post_process_queue.task_done()
 
         """User callback to modify"""
-        def my_process(f):
+        def my_process(f, first_frame, prev_hw_timestamp, prev_fnum, count_drops):
             delta_tolerance_percent = 95.
             ideal_delta = round(1000000.0 / 90, 2)
             delta_tolerance_in_us = ideal_delta * delta_tolerance_percent / 100.0
@@ -86,6 +86,7 @@ if __name__ == '__main__':
             print("* frame drops = ", count_drops)
             for k, v in frame_drops_info:
                 print("Number of dropped frame before frame ", k, ", is :", v)
+            return first_frame, prev_hw_timestamp, prev_fnum, count_drops
 
         producer_thread = threading.Thread(target=produce_frames, name="producer_thread")
         producer_thread.start()
