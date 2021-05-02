@@ -367,7 +367,7 @@ namespace librealsense
         }
         catch( ... )
         {
-            LOG_WARNING("Timeout waiting for device disconnect after DFU command!");
+            LOG_ERROR( "Unknown error during entering DFU state" );
         }
     }
 
