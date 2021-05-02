@@ -111,7 +111,10 @@ std::string converter_csv::get_time_string() const
 void converter_csv::save_motion_pose_data_to_file()
 {
     if (!_imu_pose_collection.size())
-        throw std::runtime_error(stringify() << "No imu or pose data collected, aborting");
+    {
+        std::cout << "No imu or pose data collected" << std::endl;
+        return;
+    }
 
     // Report amount of frames collected
     std::vector<uint64_t> frames_per_stream;
@@ -146,7 +149,6 @@ void converter_csv::convert_motion_pose(rs2::frame& f)
     if (frames_map_get_and_set(f.get_profile().stream_type(), f.get_frame_number())) {
         return;
     }
-
 
     start_worker(
         [this, f] {
