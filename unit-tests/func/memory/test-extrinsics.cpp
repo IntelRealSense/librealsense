@@ -3,6 +3,7 @@
 
 //#cmake: static!
 //#test:device D400*
+//#test:device L500*
 //#test:timeout 200
 
 
@@ -25,7 +26,7 @@ constexpr int DELAY_INCREMENT_THRESHOLD_IMU = 8; //[%]
 constexpr int SPIKE_THRESHOLD = 2; //[stdev]
 
 #ifdef LIGHT_TEST
-constexpr int ITERATIONS_PER_CONFIG = 20;
+constexpr int ITERATIONS_PER_CONFIG = 15;
 constexpr int INNER_ITERATIONS_PER_CONFIG = 1;
 #else
 constexpr int ITERATIONS_PER_CONFIG = 100;
