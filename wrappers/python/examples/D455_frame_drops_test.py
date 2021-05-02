@@ -1,13 +1,6 @@
-import os
-import re
-import signal
-import subprocess
-import threading
 import time
-from multiprocessing import Queue
-from datetime import datetime
-from multiprocessing import Process
-
+import threading
+from Queue import Queue
 import pyrealsense2 as rs
 
 
@@ -30,77 +23,86 @@ if __name__ == '__main__':
                               or (p.as_video_stream_profile().width() == 480 and p.as_video_stream_profile().height() == 270)
                               or (p.as_video_stream_profile().width() == 640 and p.as_video_stream_profile().height() == 360) )
                       )
+    class Test:
+        def __init__(self, rgb_sensor):
+            self._stop = False
+            self.frames = []
+            self.count_drops = 0
+            self.frame_drops_info = {}
+            self.prev_hw_timestamp = 0.0
+            self.prev_fnum = 0
+            self.first_frame = True
+            self.lrs_queue = rs.frame_queue(capacity=100000, keep_frames=True)
+            self.post_process_queue = Queue(maxsize=1000000)
+            self.rgb_sensor = rgb_sensor
 
-    for ii in range(10):
-        print("================ Iteration {} ================".format(ii))
-        _stop = False
-        frames = []
-        count_drops = 0
-        frame_drops_info = {}
-        prev_hw_timestamp = 0.0
-        prev_fnum = 0
-        first_frame = True
+        def start_rgb_sensor(self):
+            self.rgb_sensor.start(self.lrs_queue)
+        def stop(self):
+            self._stop = True
 
-        lrs_queue = rs.frame_queue(capacity=100000, keep_frames=True)
-        post_process_queue = Queue(maxsize=1000000)
-        rgb_sensor.set_option(rs.option.global_time_enabled,0)
-
-        rgb_sensor.open([rgb_profile])
-
-        def produce_frames(timeout=1):
-            while not _stop:
+        def produce_frames(self, timeout=1):
+            while not self._stop:
                 try:
-                    lrs_frame = lrs_queue.wait_for_frame(timeout_ms=timeout * 1000)
+                    lrs_frame = self.lrs_queue.wait_for_frame(timeout_ms=timeout * 1000)
                 except Exception as e:
                     print
                     str(e)
                     continue
-                post_process_queue.put(lrs_frame, block=True, timeout=timeout)
-        def consume_frames():
-            while not _stop:
-                element = post_process_queue.get(block=True)
+                self.post_process_queue.put(lrs_frame, block=True, timeout=timeout)
+        def consume_frames(self):
+            while not self._stop:
+                element = self.post_process_queue.get(block=True)
                 lrs_frame = element
-                first_frame, prev_hw_timestamp, prev_fnum, count_drops = my_process(lrs_frame, first_frame, prev_hw_timestamp, prev_fnum, count_drops)
+                self.my_process(lrs_frame)
                 del lrs_frame
-                post_process_queue.task_done()
-
+                self.post_process_queue.task_done()
         """User callback to modify"""
-        def my_process(f, first_frame, prev_hw_timestamp, prev_fnum, count_drops):
+        def my_process(self, f):
+            if not f:
+                return
             delta_tolerance_percent = 95.
             ideal_delta = round(1000000.0 / 90, 2)
             delta_tolerance_in_us = ideal_delta * delta_tolerance_percent / 100.0
-            if first_frame :
-                prev_hw_timestamp = f.get_frame_metadata(rs.frame_metadata_value.frame_timestamp)
-                prev_fnum = f.get_frame_number()
-                first_frame = False
+            if self.first_frame:
+                self.prev_hw_timestamp = f.get_frame_metadata(rs.frame_metadata_value.frame_timestamp)
+                self.prev_fnum = f.get_frame_number()
+                self.first_frame = False
                 return
             curr_hw_timestamp = f.get_frame_metadata(rs.frame_metadata_value.frame_timestamp)
-            delta = curr_hw_timestamp - prev_hw_timestamp
+            delta = curr_hw_timestamp - self.prev_hw_timestamp
             fnum = f.get_frame_number()
             if delta > ideal_delta + delta_tolerance_in_us:
-                count_drops += 1
-                frame_drops_info[fnum] = fnum - prev_fnum
-            prev_hw_timestamp = curr_hw_timestamp
-            prev_fnum = fnum
+                self.count_drops += 1
+                self.frame_drops_info[fnum] = fnum - self.prev_fnum
+            self.prev_hw_timestamp = curr_hw_timestamp
+            self.prev_fnum = fnum
+            #print("* frame drops = ", self.count_drops)
 
-            print("* frame drops = ", count_drops)
-            for k, v in frame_drops_info:
+        def analysis(self):
+            print "Number of frame drops is {}".format(self.count_drops)
+            for k, v in self.frame_drops_info:
                 print("Number of dropped frame before frame ", k, ", is :", v)
-            return first_frame, prev_hw_timestamp, prev_fnum, count_drops
 
-        producer_thread = threading.Thread(target=produce_frames, name="producer_thread")
+    for ii in range(60):
+        print("================ Iteration {} ================".format(ii))
+        test = Test(rgb_sensor)
+        rgb_sensor.set_option(rs.option.global_time_enabled, 0)
+        rgb_sensor.open([rgb_profile])
+
+        producer_thread = threading.Thread(target=test.produce_frames, name="producer_thread")
         producer_thread.start()
-        consumer_thread = threading.Thread(target=consume_frames, name="consumer_thread")
+        consumer_thread = threading.Thread(target=test.consume_frames, name="consumer_thread")
         consumer_thread.start()
 
-        rgb_sensor.start(lrs_queue)
-
-        time.sleep(10)
-        _stop = True  # notify to stop producing-consuming frames
+        test.start_rgb_sensor()
+        time.sleep(60)
+        test.stop()  # notify to stop producing-consuming frames
 
         producer_thread.join(timeout=60)
         consumer_thread.join(timeout=60)
 
+        test.analysis()
         rgb_sensor.stop()
         rgb_sensor.close()
-
+        
