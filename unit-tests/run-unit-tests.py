@@ -235,52 +235,6 @@ def check_log_for_fails( path_to_log, testname, configuration = None ):
     return False
 
 
-def get_relative_path_from_testname( testname ):
-    """
-    :param testname: A name of a test
-    :return: The relative path from unit-tests directory to the test's source file (cpp or py)
-    """
-    # TODO: this is limited to a structure in which .cpp files and directories do not share names
-    # For example:
-    #     unit-tests/
-    #         func/
-    #             ...
-    #         test-func.cpp
-    # test-func.cpp will not be found!
-
-    global current_dir
-    split_testname = testname.split( '-' )
-    path = current_dir
-    relative_path = ""
-    found_test_dir = False
-
-    while not found_test_dir:
-        # index 0 should be 'test' as tests always start with it
-        found_test_dir = True
-        for i in range( 2, len( split_testname ) ):  # Checking if the next part of the test name is a sub-directory
-            possible_sub_dir = '-'.join( split_testname[1:i] )  # The next sub-directory could have several words
-            sub_dir_path = path + os.sep + possible_sub_dir
-            if os.path.isdir( sub_dir_path ):
-                path = sub_dir_path
-                relative_path += possible_sub_dir + os.sep
-                del split_testname[1:i]
-                found_test_dir = False
-                break
-
-    path += os.sep + '-'.join( split_testname )
-    relative_path += '-'.join( split_testname )
-    if os.path.isfile( path + ".cpp" ):
-        relative_path += ".cpp"
-    elif os.path.isfile( path + ".py" ):
-        relative_path += ".py"
-    else:
-        log.w( log.red + testname + log.reset + ':',
-               'No matching .cpp or .py file was found; no configuration will be used!' )
-        return None
-
-    return relative_path
-
-
 class TestConfig( ABC ):  # Abstract Base Class
     """
     Configuration for a test, encompassing any metadata needed to control its run, like retries etc.
@@ -430,6 +384,51 @@ class Test( ABC ):  # Abstract Base Class
         """
         return self._config and len( self._config.configurations ) > 0
 
+    def get_source_path( self ) :
+        """
+        :return: The relative path from unit-tests directory to the test's source file (cpp or py)
+        """
+        # TODO: this is limited to a structure in which .cpp files and directories do not share names
+        # For example:
+        #     unit-tests/
+        #         func/
+        #             ...
+        #         test-func.cpp
+        # test-func.cpp will not be found!
+
+        global current_dir
+        split_testname = self.name.split( '-' )
+        path = current_dir
+        relative_path = ""
+        found_test_dir = False
+
+        while not found_test_dir :
+            # index 0 should be 'test' as tests always start with it
+            found_test_dir = True
+            for i in range( 2,
+                            len( split_testname ) ) :  # Checking if the next part of the test name is a sub-directory
+                possible_sub_dir = '-'.join( split_testname[1 :i] )  # The next sub-directory could have several words
+                sub_dir_path = path + os.sep + possible_sub_dir
+                if os.path.isdir( sub_dir_path ) :
+                    path = sub_dir_path
+                    relative_path += possible_sub_dir + os.sep
+                    del split_testname[1 :i]
+                    found_test_dir = False
+                    break
+
+        path += os.sep + '-'.join( split_testname )
+        relative_path += '-'.join( split_testname )
+        if os.path.isfile( path + ".cpp" ) :
+            relative_path += ".cpp"
+        elif os.path.isfile( path + ".py" ) :
+            relative_path += ".py"
+        else :
+            log.w( log.red + testname + log.reset + ':',
+                   'No matching .cpp or .py file was found; no configuration will be used!' )
+            return None
+
+        return relative_path
+
 
 class PyTest( Test ):
     """
@@ -445,11 +444,11 @@ class PyTest( Test ):
         Test.__init__( self, testname )
         self.path_to_script = current_dir + os.sep + path_to_test
         self._config = TestConfigFromText( self.path_to_script, r'#\s*test:' )
-        relative_test_path = get_relative_path_from_testname( testname )
+        relative_test_path = self.get_source_path()
         if relative_test_path:
             sub_dirs = relative_test_path.split( os.sep )[:-1] # last element will be the test's name
             self._config.tags.update( sub_dirs )
-        self._config.tags.add( "python" )
+        self._config.tags.add( "py" )
 
     def debug_dump( self ):
         log.d( 'script:', self.path_to_script )
@@ -494,7 +493,7 @@ class ExeTest( Test ):
         Test.__init__( self, testname )
         self.exe = exe
 
-        relative_test_path = get_relative_path_from_testname( testname )
+        relative_test_path = self.get_source_path()
         if relative_test_path:
             sub_dirs = relative_test_path.split( os.sep )[:-1]  # last element will be the test's name
             self._config = TestConfigFromText( current_dir + os.sep + relative_test_path, r'//#\s*test:' )
