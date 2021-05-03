@@ -98,28 +98,6 @@ struct device_profiles
     bool sync;
 };
 
-inline void set_exposure(rs2::device_list& list, float value)
-{
-    // set exposure limit to > 1000/fps
-    for (auto&& device : list)
-    {
-        if (std::string(device.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) != "D400")
-            continue;
-        auto sensors = device.query_sensors();
-        for (auto& s : sensors)
-        {
-            std::string val = s.get_info(RS2_CAMERA_INFO_NAME);
-            if (!s.supports(RS2_OPTION_EXPOSURE))
-                continue;
-            auto range = s.get_option_range(RS2_OPTION_EXPOSURE);
-            CAPTURE(val);
-            CAPTURE(range);
-            s.set_option(RS2_OPTION_EXPOSURE, value);
-            auto c_val = s.get_option(RS2_OPTION_EXPOSURE);
-        }
-    }
-}
-
 inline std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor, int width = 640, int height = 480, int fps = 60)
 {
     std::vector<profile> all_profiles =
