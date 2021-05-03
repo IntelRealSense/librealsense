@@ -329,6 +329,71 @@ namespace librealsense
         });
     }
 
+    bool ds5_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
+    {
+        return check_firmware_above_minimum((const void*)image.data());
+    }
+
+    bool ds5_device::check_firmware_above_minimum(const void* fw_image) const
+    {
+        std::string fw_version = get_firmware_version_string(fw_image);
+        std::string min_version = "5.0.0.0";
+        switch (_pid)
+        {
+        case ds::RS430_MM_PID:
+        case ds::RS_USB2_PID:
+        case ds::RS_RECOVERY_PID:
+        case ds::RS_USB2_RECOVERY_PID:
+        case ds::RS400_IMU_PID:
+        case ds::RS420_MM_PID:
+        case ds::RS410_MM_PID:
+        case ds::RS400_MM_PID:
+        case ds::RS430_MM_RGB_PID:
+        case ds::RS460_PID:
+        case ds::RS405U_PID:
+        case ds::RS416_PID:
+        case ds::RS430I_PID:
+        case ds::RS465_PID:
+        case ds::RS416_RGB_PID:
+        case ds::RS405_PID:
+            min_version = "5.0.0.0"; // TBD
+            break;
+
+        case ds::RS400_PID:
+        case ds::RS410_PID:
+        case ds::RS420_PID:
+            min_version = "5.0.0.0"; // TBD
+            break;
+
+        case ds::RS415_PID:
+        case ds::RS430_PID:
+        case ds::RS435_RGB_PID:
+        case ds::RS435I_PID:
+            min_version = "5.9.2.0";
+            break;
+
+        case ds::RS455_PID:
+            min_version = "5.12.7.100";
+            break;
+        }
+        return (firmware_version(fw_version) >= firmware_version(min_version));
+    }
+
+    std::string ds5_device::get_firmware_version_string(const void* fw_image) const
+    {
+        uint32_t version{};
+
+        //NEED TO UNDERSTAND WHY "-2" IS NEEDED IN THE OFFSET
+        memcpy(reinterpret_cast<char*>(&version), reinterpret_cast<const char*>(fw_image) + offsetof(ds::dfu_header, bcdDevice) - 2, sizeof(version));
+
+        uint8_t major = (version & 0xFF000000) >> 24;
+        uint8_t minor = (version & 0x00FF0000) >> 16;
+        uint8_t patch = (version & 0x0000FF00) >> 8;
+        uint8_t build = version & 0x000000FF;
+
+        return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch) + "." + std::to_string(build);
+    }
+
     class ds5_depth_sensor : public synthetic_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
     {
     public:

@@ -3049,6 +3049,24 @@ void rs2_update_firmware_unsigned(const rs2_device* device, const void* image, i
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, image, device)
 
+int rs2_check_firmware_compatibility(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(fw_image);
+    VALIDATE_FIXED_SIZE(fw_image_size, signed_fw_size); // check if the given FW size matches the expected FW size
+
+    auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
+    if (!fwud)
+        throw std::runtime_error("This device does not supports update protocol!");
+
+    std::vector<uint8_t> buffer((uint8_t*)fw_image, (uint8_t*)fw_image + fw_image_size);
+
+    bool res = fwud->check_fw_compatibility(buffer);
+
+    return res ? 1 : 0;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, fw_image, device)
+
 void rs2_enter_update_state(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);

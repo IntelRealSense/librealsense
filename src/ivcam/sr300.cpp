@@ -478,6 +478,7 @@ namespace librealsense
 
         auto fw_version = _hw_monitor->get_firmware_version_string(gvd_buff, fw_version_offset);
         auto serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset);
+        _pid = depth.pid;
         auto pid_hex_str = hexify(depth.pid);
 
         _camer_calib_params = [this]() { return get_calibration(); };
@@ -579,6 +580,42 @@ namespace librealsense
     command sr3xx_camera::get_flash_logs_command() const
     {
         return command{ ivcam::FlashRead, 0x000B6000, 0x3f8 };
+    }
+
+    bool sr3xx_camera::check_fw_compatibility(const std::vector<uint8_t>& image) const
+    {
+        return check_firmware_above_minimum((const void*)image.data());
+    }
+
+    bool sr3xx_camera::check_firmware_above_minimum(const void* fw_image) const
+    {
+        std::string fw_version = get_firmware_version_string(fw_image);
+        std::string min_version = "5.0.0.0";
+        switch (_pid)
+        {
+        case SR306_PID:
+        case SR300_PID:
+        case SR300v2_PID:
+        case SR300_RECOVERY:
+            min_version = "5.0.0.0"; // TBD
+            break;
+        }
+        return (firmware_version(fw_version) >= firmware_version(min_version));
+    }
+
+    std::string sr3xx_camera::get_firmware_version_string(const void* fw_image) const
+    {
+        uint32_t version{};
+
+        //NEED TO UNDERSTAND WHY "-2" IS NEEDED IN THE OFFSET
+        memcpy(reinterpret_cast<char*>(&version), reinterpret_cast<const char*>(fw_image) + offsetof(ds::dfu_header, bcdDevice) - 2, sizeof(version));
+
+        uint8_t major = (version & 0xFF000000) >> 24;
+        uint8_t minor = (version & 0x00FF0000) >> 16;
+        uint8_t patch = (version & 0x0000FF00) >> 8;
+        uint8_t build = version & 0x000000FF;
+
+        return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch) + "." + std::to_string(build);
     }
 
     void sr3xx_camera::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const

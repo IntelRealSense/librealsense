@@ -58,8 +58,8 @@ namespace librealsense
         _temperatures()
     {
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
-        auto pid = group.uvc_devices.front().pid;
-        std::string device_name = (rs500_sku_names.end() != rs500_sku_names.find(pid)) ? rs500_sku_names.at(pid) : "RS5xx";
+        _pid = group.uvc_devices.front().pid;
+        std::string device_name = (rs500_sku_names.end() != rs500_sku_names.find(_pid)) ? rs500_sku_names.at(_pid) : "RS5xx";
 
         using namespace ivcam2;
 
@@ -691,6 +691,44 @@ namespace librealsense
         {
             _temperature_reader.join();
         }
+    }
+
+    bool l500_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
+    {
+        return check_firmware_above_minimum((const void*)image.data());
+    }
+
+    bool l500_device::check_firmware_above_minimum(const void* fw_image) const
+    {
+        std::string fw_version = get_firmware_version_string(fw_image);
+        std::string min_version = "5.0.0.0";
+        switch (_pid)
+        {
+        case L500_RECOVERY_PID:
+        case L500_USB2_RECOVERY_PID_OLD:
+        case L500_PID:
+        case L515_PID_PRE_PRQ:
+        case L515_PID:
+        case L535_PID:
+            min_version = "5.0.0.0";
+            break;
+        }
+        return (firmware_version(fw_version) >= firmware_version(min_version));
+    }
+
+    std::string l500_device::get_firmware_version_string(const void* fw_image) const
+    {
+        uint32_t version{};
+
+        //NEED TO UNDERSTAND WHY "-2" IS NEEDED IN THE OFFSET
+        memcpy(reinterpret_cast<char*>(&version), reinterpret_cast<const char*>(fw_image) + offsetof(ivcam2::dfu_header, bcdDevice) - 2, sizeof(version));
+
+        uint8_t major = (version & 0xFF000000) >> 24;
+        uint8_t minor = (version & 0x00FF0000) >> 16;
+        uint8_t patch = (version & 0x0000FF00) >> 8;
+        uint8_t build = version & 0x000000FF;
+
+        return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch) + "." + std::to_string(build);
     }
 
     notification l500_notification_decoder::decode(int value)

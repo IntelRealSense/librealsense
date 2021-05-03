@@ -64,6 +64,7 @@ namespace librealsense
         void enter_update_state() const override;
         std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback) override;
         void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode) override;
+        bool check_fw_compatibility(const std::vector<uint8_t>& image) const override;
     protected:
 
         std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;
@@ -78,6 +79,9 @@ namespace librealsense
         //TODO - add these to device class as pure virtual methods
         command get_firmware_logs_command() const;
         command get_flash_logs_command() const;
+
+        std::string get_firmware_version_string(const void* fw_image) const;
+        bool check_firmware_above_minimum(const void* fw_image) const;
 
         void init(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);

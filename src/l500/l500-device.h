@@ -67,6 +67,7 @@ namespace librealsense
             update_progress_callback_ptr callback, float continue_from, float ratio);
         void update_flash_internal(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, std::vector<uint8_t>& flash_backup,
             update_progress_callback_ptr callback, int update_mode);
+        bool check_fw_compatibility(const std::vector<uint8_t>& image) const override;
 
         ivcam2::extended_temperatures get_temperatures() const;
 
@@ -75,10 +76,14 @@ namespace librealsense
         void start_temperatures_reader();
         void stop_temperatures_reader();
 
+        std::string get_firmware_version_string(const void* fw_image) const;
+        bool check_firmware_above_minimum(const void* fw_image) const;
+
         friend class l500_depth_sensor;
 
         std::shared_ptr<hw_monitor> _hw_monitor;
         uint8_t _depth_device_idx;
+        uint16_t _pid;
 
         std::shared_ptr<polling_error_handler> _polling_error_handler;
 

@@ -420,11 +420,13 @@ namespace librealsense
         void enter_update_state() const override;
         std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback) override;
         void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode) override;
+        bool check_fw_compatibility(const std::vector<uint8_t>& image) const override;
 
         virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
     private:
         const uint8_t _depth_device_idx;
+        uint16_t _pid;
         bool _is_locked = true;
 
         template<class T>
@@ -471,6 +473,9 @@ namespace librealsense
         //TODO - add these to device class as pure virtual methods
         command get_firmware_logs_command() const;
         command get_flash_logs_command() const;
+
+        std::string get_firmware_version_string(const void* fw_image) const;
+        bool check_firmware_above_minimum(const void* fw_image) const;
 
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _ir_stream;
