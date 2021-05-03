@@ -86,7 +86,7 @@ elseif(BUILD_TOOLS)
     add_subdirectory(tools)
 endif()
 
-if(BUILD_UNIT_TESTS)
+if(BUILD_UNIT_TESTS OR BUILD_LEGACY_LIVE_TEST)
     add_subdirectory(unit-tests)
 endif()
 
