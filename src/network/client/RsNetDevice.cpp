@@ -1,7 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#include <httplib.h>
 
 #include "liveMedia.hh"
 #include "BasicUsageEnvironment.hh"
@@ -21,6 +20,8 @@
 
 #include <stdlib.h>
 #include <math.h>
+
+#include <httplib.h>
 
 using namespace std::placeholders;
 
@@ -241,8 +242,15 @@ rs_net_device::rs_net_device(rs2::software_device sw_device, std::string ip_addr
 
     for (auto netsensor : sensors) netsensor->start();
 
-    m_extrinsics = std::thread( [this](){ doExtrinsics(); } ); 
+    // m_extrinsics = std::thread( [this]() { doExtrinsics(); });
+    doExtrinsics();
 }
+
+rs_net_device::~rs_net_device() {
+    // if (m_extrinsics.joinable()) m_extrinsics.join();
+    if (m_options.joinable()) m_options.join();
+}
+
 
 void rs_net_device::doExtrinsics() {
     LOG_INFO("Extrinsics initialization thread started");
@@ -307,7 +315,7 @@ void rs_net_device::doExtrinsics() {
     // gather the list of all profiles
     std::vector<rs2::stream_profile> profiles;
     for (rs2::sensor sensor : m_device.query_sensors()) {
-        auto sprofiles = sensor.get_stream_profiles(); 
+        auto sprofiles = sensor.get_stream_profiles();
         profiles.insert(profiles.end(), sprofiles.begin(), sprofiles.end());
     }
 

@@ -195,7 +195,13 @@ void rs_net_sensor::doDevice(uint64_t key) {
                 memcpy((void*)(net_stream->m_frame_raw + offset), (void*)(data + CHUNK_HLEN), ret);
                 break;
             case 1: 
-                ret = ZSTD_decompress((void*)(net_stream->m_frame_raw + offset), CHUNK_SIZE, (void*)(data + CHUNK_HLEN), ch->size - CHUNK_HLEN); 
+                try {
+                    ret = ZSTD_decompress((void*)(net_stream->m_frame_raw + offset), CHUNK_SIZE, (void*)(data + CHUNK_HLEN), ch->size - CHUNK_HLEN);
+                }
+                catch (...) {
+                    LOG_ERROR("Error decompressing frame.");
+                    ret = 0;
+                }
                 break;
             case 2: 
                 ret = LZ4_decompress_safe((const char*)(data + CHUNK_HLEN), (char*)(net_stream->m_frame_raw + offset), ch->size - CHUNK_HLEN, CHUNK_SIZE);

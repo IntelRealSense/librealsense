@@ -22,7 +22,7 @@ class rs_net_device
 {
 public:
     rs_net_device(rs2::software_device sw_device, std::string ip_address);
-   ~rs_net_device() {};
+   ~rs_net_device();
 
 private:
     std::string  m_ip_address;
