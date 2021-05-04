@@ -247,19 +247,6 @@ namespace librealsense
             module_asic_serial_size = 6
         };
 
-        struct dfu_header {
-            uint32_t dwCRC;
-            uint8_t  headerSignature[256];
-            uint8_t  cssHeader[128];
-            uint32_t magicNumber;
-            uint32_t prefixLength;
-            uint16_t bcdDFU;
-            uint32_t bcdDevice;
-            uint8_t  reserve[4];
-            uint32_t imageSize;
-            uint16_t nofBlocks;
-        };
-
         static const std::map<std::uint16_t, std::string> rs500_sku_names = {
             { L500_RECOVERY_PID,            "Intel RealSense L5xx Recovery"},
             { L535_RECOVERY_PID,            "Intel RealSense L5xx Recovery"},
