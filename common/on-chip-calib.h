@@ -31,7 +31,7 @@ namespace rs2
         float get_health() const { return _health; }
         float get_health_1() const { return _health_1; }
         float get_health_2() const { return _health_2; }
-        float get_health_uvmapping(int idx) const { return _health_uvmapping[idx]; }
+        float get_health_nums(int idx) const { return _health_nums[idx]; }
 
         // Write new calibration to the device
         void keep();
@@ -122,7 +122,7 @@ namespace rs2
         float _health_1 = -1.0f;
         float _health_2 = -1.0f;
 
-        float _health_uvmapping[4] = { -0.1f, -0.1f, -0.1f, -0.1f };
+        float _health_nums[4] = { -0.1f, -0.1f, -0.1f, -0.1f };
         std::vector<uint8_t> color_intrin_raw_data;
 
         device _dev;
