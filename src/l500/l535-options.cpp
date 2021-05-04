@@ -122,6 +122,9 @@ namespace librealsense
                   { l535_min_distance, "Minimal distance to the target (in mm)" } },
                 { RS2_OPTION_INVALIDATION_BYPASS,
                   { l535_invalidation_bypass, "Enable/disable pixel invalidation" } },
+                { RS2_OPTION_INVALIDATION_BYPASS,
+                  { l535_invalidation_bypass, "Enable/disable pixel invalidation" } },
+                {RS2_OPTION_RX_SENSITIVITY,{ l535_rx_sensitivity, "auto gain"}} //TODO: replace the description
             };
 
             for( auto i : options )

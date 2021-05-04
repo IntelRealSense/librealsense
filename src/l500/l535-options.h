@@ -17,7 +17,8 @@ namespace librealsense
         l535_laser_gain = 5,
         l535_min_distance = 6,
         l535_invalidation_bypass = 7,
-        l535_alternate_ir = 8
+        l535_alternate_ir = 8,
+        l535_rx_sensitivity = 9,
     };
 
     enum l535_command
