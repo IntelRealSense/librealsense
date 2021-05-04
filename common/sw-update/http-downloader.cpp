@@ -214,6 +214,7 @@ namespace rs2
             curl_easy_setopt(_curl, CURLOPT_CONNECTTIMEOUT, CONNECT_TIMEOUT);   // timeout for the connect phase
             curl_easy_setopt(_curl, CURLOPT_FAILONERROR, 1L);                   // request failure on HTTP response >= 400
             curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, 1L);                    // switch off the progress meter
+            curl_easy_setopt(_curl, CURLOPT_NOPROXY, "*");                      // disable the use of proxy
         }
         void http_downloader::register_progress_call_back(progress_data &progress_record, user_callback_func_type user_callback_func)
         {
