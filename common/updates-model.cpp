@@ -5,7 +5,6 @@
 #include "updates-model.h"
 #include "model-views.h"
 #include "os.h"
-#include "res/l515-icon.h"
 #include <stb_image.h>
 #include "sw-update/http-downloader.h"
 
@@ -20,18 +19,6 @@ void updates_model::draw(std::shared_ptr<notifications_model> not_model, ux_wind
     {
         std::lock_guard<std::mutex> lock(_lock);
         updates_copy = _updates;
-    }
-
-    // Prepare camera icon
-    if (!_icon)
-    {
-        _icon = std::make_shared<rs2::texture_buffer>();
-        int x, y, comp;
-        auto data = stbi_load_from_memory(camera_icon_l515_png_data, camera_icon_l515_png_size, &x, &y, &comp, 4);
-        _icon->upload_image(x, y, data);
-        stbi_image_free(data);
-
-        _progress.last_progress_time = std::chrono::system_clock::now();
     }
 
     const auto window_name = "Updates Window";
@@ -96,13 +83,9 @@ void updates_model::draw(std::shared_ptr<notifications_model> not_model, ux_wind
             if (i == selected_index)
             {
                 ImGui::GetWindowDrawList()->AddRectFilled(pos,
-                    { pos.x + 140.f, pos.y + 185.f }, ImColor(header_color));
+                    { pos.x + 140.f, pos.y + 45.f }, ImColor(header_color));
             }
 
-            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 4);
-
-            ImGui::Image((void*)(intptr_t)(_icon->get_gl_handle()), ImVec2{ 128.f, 114.f });
 
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 4);
             ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 140);
@@ -746,6 +729,7 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
             download_thread.detach();
 
             _fw_update_state = fw_update_states::downloading;
+            _progress.last_progress_time = std::chrono::system_clock::now();
         }
         if (ImGui::IsItemHovered())
         {

@@ -103,7 +103,6 @@ namespace rs2
         int selected_firmware_update_index = 0;
         bool ignore = false;
         std::vector<update_profile_model> _updates;
-        std::shared_ptr<texture_buffer> _icon = nullptr;
         mutable std::mutex _lock;
         bool emphasize_dismiss_text = false;
 
