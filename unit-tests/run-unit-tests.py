@@ -48,7 +48,6 @@ else:
     linux = False
 
 # Parse command-line:
-print("options:", sys.argv)
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
