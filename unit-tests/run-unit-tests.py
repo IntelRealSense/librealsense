@@ -32,6 +32,8 @@ def usage():
     print( '        -r, --regex    run all tests that fit the following regular expression' )
     print( '        -s, --stdout   do not redirect stdout to logs' )
     print( '        -t, --tag      run all tests with the following tag' )
+    print( '        tests automatically get tagged with \'exe\' or \'py\' and based on their location inside unit-tests/,' )
+    print( '        e.g. unit-tests/func/test-hdr.py gets [func, py]' )
     print( '        --list-tags    print out all available tags. This option will not run any tests' )
     print( '        --list-tests   print out all available tests. This option will not run any tests' )
     sys.exit( 2 )
@@ -253,7 +255,7 @@ class TestConfig( ABC ):  # Abstract Base Class
         if self._timeout != 200:
             log.d( 'timeout:', self._timeout )
         if len( self._tags ) > 1:
-            log.d( 'tags:', { tag for tag in self._tags if tag != "exe" and tag != "python" } )
+            log.d( 'tags:', { tag for tag in self._tags if tag != "exe" and tag != "py" } )
         if self._flags:
             log.d( 'flags:', self._flags )
         if len( self._configurations ) > 1:
@@ -384,9 +386,10 @@ class Test( ABC ):  # Abstract Base Class
         """
         return self._config and len( self._config.configurations ) > 0
 
-    def get_source_path( self ):
+    def find_source_path( self ):
         """
-        :return: The relative path from unit-tests directory to the test's source file (cpp or py)
+        :return: The relative path from unit-tests directory to the test's source file (cpp or py). If the source
+                 file is not found None will be returned
         """
         # TODO: this is limited to a structure in which .cpp files and directories do not share names
         # For example:
@@ -422,7 +425,7 @@ class Test( ABC ):  # Abstract Base Class
             relative_path += ".cpp"
         elif os.path.isfile( path + ".py" ):
             relative_path += ".py"
-        else :
+        else:
             log.w( log.red + self.name + log.reset + ':',
                    'No matching .cpp or .py file was found; no configuration will be used!' )
             return None
@@ -444,7 +447,7 @@ class PyTest( Test ):
         Test.__init__( self, testname )
         self.path_to_script = current_dir + os.sep + path_to_test
         self._config = TestConfigFromText( self.path_to_script, r'#\s*test:' )
-        relative_test_path = self.get_source_path()
+        relative_test_path = self.find_source_path()
         if relative_test_path:
             sub_dirs = relative_test_path.split( os.sep )[:-1] # last element will be the test's name
             self._config.tags.update( sub_dirs )
@@ -493,7 +496,7 @@ class ExeTest( Test ):
         Test.__init__( self, testname )
         self.exe = exe
 
-        relative_test_path = self.get_source_path()
+        relative_test_path = self.find_source_path()
         if relative_test_path:
             sub_dirs = relative_test_path.split( os.sep )[:-1]  # last element will be the test's name
             self._config = TestConfigFromText( current_dir + os.sep + relative_test_path, r'//#\s*test:' )
