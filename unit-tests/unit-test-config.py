@@ -14,8 +14,13 @@
 # process and so individual tests cannot affect others except through hardware.
 #
 
-import sys, os, subprocess, locale, re
+import sys, os, subprocess, locale, re, getopt
 from glob import glob
+
+current_dir = os.path.dirname( os.path.abspath( __file__ ) )
+sys.path.append( current_dir + os.sep + "py" )
+
+from rspy import file, repo, unittest
 
 def usage():
     ourname = os.path.basename(sys.argv[0])
@@ -28,7 +33,7 @@ def usage():
     print( '                       inside unit-tests/, e.g. unit-tests/func/test-hdr.py gets [func, py]' )
     print( '        --list-tags    print out all available tags. This option will not run any tests' )
     print( '        --list-tests   print out all available tests. This option will not run any tests' )
-    exit(1)
+    exit(2)
 dir=sys.argv[1]
 builddir=sys.argv[2]
 if not os.path.isdir( dir ):
@@ -42,10 +47,10 @@ if not os.path.isdir( builddir ):
 
 # Parse command-line:
 try:
-    opts, args = getopt.getopt( sys.argv[1:], 'hr:t:',
+    opts, args = getopt.getopt( sys.argv[3].split(), 'hr:t:',
                                 longopts=['help', 'regex=', 'tag=', 'list-tags', 'list-tests'] )
 except getopt.GetoptError as err:
-    log.e( err )  # something like "option -a not recognized"
+    print( err )  # something like "option -a not recognized"
     usage()
 regex = None
 required_tags = []
@@ -72,43 +77,7 @@ def error(*args):
     print( '-E-', *args )
     global have_errors
     have_errors = True
-def filesin( root ):
-    # Yield all files found in root, using relative names ('root/a' would be yielded as 'a')
-    for (path,subdirs,leafs) in os.walk( root ):
-        for leaf in leafs:
-            # We have to stick to Unix conventions because CMake on Windows is fubar...
-            yield os.path.relpath( path + '/' + leaf, root ).replace( '\\', '/' )
-def find( dir, mask ):
-    pattern = re.compile( mask )
-    for leaf in filesin( dir ):
-        if pattern.search( leaf ):
-            debug(leaf)
-            yield leaf
 
-
-def remove_newlines (lines):
-    for line in lines:
-        if line[-1] == '\n':
-            line = line[:-1]    # excluding the endline
-        yield line
-
-def grep_( pattern, lines, context ):
-    index = 0
-    matches = 0
-    for line in lines:
-        index = index + 1
-        match = pattern.search( line )
-        if match:
-            context['index'] = index
-            context['line']  = line
-            context['match'] = match
-            yield context
-            matches = matches + 1
-    if matches:
-        del context['index']
-        del context['line']
-        del context['match']
-    # UnicodeDecodeError can be thrown in binary files
 
 def grep( expr, *args ):
     #debug( f"grep {expr} {args}" )
@@ -116,12 +85,11 @@ def grep( expr, *args ):
     context = dict()
     for filename in args:
         context['filename'] = filename
-        with open( filename, errors = 'ignore' ) as file:
-            for line in grep_( pattern, remove_newlines( file ), context ):
+        with open( filename, errors = 'ignore' ) as handle:
+            for line in file._grep( pattern, file.remove_newlines( handle ), context ):
                 yield context
 
-librealsense = os.path.dirname(os.path.dirname(os.path.abspath(__file__))).replace('\\', '/')
-src = librealsense + '/src'
+src = repo.root.replace( '\\' , '/' ) + '/src' # we need to use / because CMake s fubar
 
 def generate_cmake( builddir, testdir, testname, filelist ):
     makefile = builddir + '/' + testdir + '/CMakeLists.txt'
@@ -177,7 +145,7 @@ def process_cpp( dir, builddir ):
     statics = []
     if regex:
         pattern = re.compile( regex )
-    for f in find( dir, '(^|/)test-.*\.cpp$' ):
+    for f in file.find( dir, '(^|/)test-.*\.cpp$' ):
         testdir = os.path.splitext( f )[0]                          # "log/internal/test-all"  <-  "log/internal/test-all.cpp"
         testparent = os.path.dirname(testdir)                       # "log/internal"
         # Each CMakeLists.txt sits in its own directory
