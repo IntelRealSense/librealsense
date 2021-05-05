@@ -32,7 +32,7 @@ def usage():
     print( '        -r, --regex    run all tests that fit the following regular expression' )
     print( '        -s, --stdout   do not redirect stdout to logs' )
     print( '        -t, --tag      run all tests with the following tag. If used multiple times runs all tests matching' )
-    print( '                       all tags. e.g. -t tag1 -t tag will run tests who have both tag1 and tag2' )
+    print( '                       all tags. e.g. -t tag1 -t tag2 will run tests who have both tag1 and tag2' )
     print( '                       tests automatically get tagged with \'exe\' or \'py\' and based on their location' )
     print( '                       inside unit-tests/, e.g. unit-tests/func/test-hdr.py gets [func, py]' )
     print( '        --list-tags    print out all available tags. This option will not run any tests' )
