@@ -12,6 +12,8 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/l500-serializable.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/l500-options.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/l535-options.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/l535-amc-option.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/l535-preset-option.cpp"
 
         "${CMAKE_CURRENT_LIST_DIR}/l500-depth.h"
         "${CMAKE_CURRENT_LIST_DIR}/l500-private.h"
@@ -23,6 +25,8 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/l500-serializable.h"
         "${CMAKE_CURRENT_LIST_DIR}/l500-options.h"
         "${CMAKE_CURRENT_LIST_DIR}/l535-options.h"
+        "${CMAKE_CURRENT_LIST_DIR}/l535-amc-option.h"
+        "${CMAKE_CURRENT_LIST_DIR}/l535-preset-option.h"
 
         "${CMAKE_CURRENT_LIST_DIR}/ac-trigger.h"
         "${CMAKE_CURRENT_LIST_DIR}/ac-trigger.cpp"

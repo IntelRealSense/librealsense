@@ -65,7 +65,7 @@ namespace librealsense
     };
 
     class l535_device : public l500_depth,
-        public l535_options,
+        public l535::l535_options,
         public l500_color,
         public l500_motion,
         public l500_serializable,

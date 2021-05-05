@@ -11,12 +11,12 @@ namespace librealsense
     {
         namespace l535
         {
-            class l535_options : public virtual l500_device
+            class l535_preset_option : public float_option_with_description< rs2_l500_visual_preset >
             {
             public:
-                l535_options(std::shared_ptr<context> ctx,
-                    const platform::backend_device_group& group);
-
+                l535_preset_option(option_range range, std::string description);
+                void set(float value) override;
+                void set_value(float value);
             };
         } // namespace l535
     } // namespace ivcam2
