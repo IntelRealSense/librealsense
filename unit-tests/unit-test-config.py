@@ -17,19 +17,51 @@
 import sys, os, subprocess, locale, re
 from glob import glob
 
-if len(sys.argv) != 3:
+def usage():
     ourname = os.path.basename(sys.argv[0])
-    print( 'Syntax: ' + ourname + ' <dir> <build-dir>' )
+    print( 'Syntax: ' + ourname + ' <dir> <build-dir> [options]' )
     print( '        build unit-testing framework for the tree in $dir' )
+    print( '        -r, --regex    run all tests that fit the following regular expression' )
+    print( '        -t, --tag      run all tests with the following tag. If used multiple times runs all tests matching' )
+    print( '                       all tags. e.g. -t tag1 -t tag2 will run tests who have both tag1 and tag2' )
+    print( '                       tests automatically get tagged with \'exe\' or \'py\' and based on their location' )
+    print( '                       inside unit-tests/, e.g. unit-tests/func/test-hdr.py gets [func, py]' )
+    print( '        --list-tags    print out all available tags. This option will not run any tests' )
+    print( '        --list-tests   print out all available tests. This option will not run any tests' )
     exit(1)
 dir=sys.argv[1]
 builddir=sys.argv[2]
 if not os.path.isdir( dir ):
     print( 'FATAL  Directory not found:', dir )
+    usage()
     exit(1)
 if not os.path.isdir( builddir ):
     print( 'FATAL  Directory not found:', builddir )
+    usage()
     exit(1)
+
+# Parse command-line:
+try:
+    opts, args = getopt.getopt( sys.argv[1:], 'hr:t:',
+                                longopts=['help', 'regex=', 'tag=', 'list-tags', 'list-tests'] )
+except getopt.GetoptError as err:
+    log.e( err )  # something like "option -a not recognized"
+    usage()
+regex = None
+required_tags = []
+list_tags = False
+list_tests = False
+for opt, arg in opts:
+    if opt in ('-h', '--help'):
+        usage()
+    elif opt in ('-r', '--regex'):
+        regex = arg
+    elif opt in ('-t', '--tag'):
+        required_tags.append( arg )
+    elif opt == '--list-tags':
+        list_tags = True
+    elif opt == '--list-tests':
+        list_tests = True
 
 have_errors = False
 
@@ -139,9 +171,12 @@ def find_includes( filepath ):
     return filelist
 
 def process_cpp( dir, builddir ):
+    global regex, required_tags, list_only, available_tags, available_tests
     found = []
     shareds = []
     statics = []
+    if regex:
+        pattern = re.compile( regex )
     for f in find( dir, '(^|/)test-.*\.cpp$' ):
         testdir = os.path.splitext( f )[0]                          # "log/internal/test-all"  <-  "log/internal/test-all.cpp"
         testparent = os.path.dirname(testdir)                       # "log/internal"
@@ -153,6 +188,19 @@ def process_cpp( dir, builddir ):
         #TODO: 1. check if testname matches the regex if -r was used
         #      2. if -t was used, create ExeTest using the testname and check if the tags fit
         #    if either of these don't match, continue
+        if regex and not pattern.search( testname ):
+            continue
+
+        if required_tags or list_tags:
+            test = unittest.ExeTest( testname, None )
+            if not all( tag in test.config.tags for tag in required_tags ):
+                continue
+            available_tags.update( test.config.tags )
+
+        available_tests.append( testname )
+
+        if list_only:
+            continue
 
         # Build the list of files we want in the project:
         # At a minimum, we have the original file, plus any common files
@@ -216,10 +264,26 @@ def process_py( dir, builddir ):
     # TODO
     return [],[],[]
 
+list_only = list_tags or list_tests
+available_tags = set()
+available_tests = []
 normal_tests = []
 shared_tests = []
 static_tests = []
 n,sh,st = process_cpp( dir, builddir )
+
+if list_only:
+    if list_tags:
+        print( "Available tags:" )
+        for t in sorted( list( available_tags ) ):
+            print( t )
+    #
+    if list_tests:
+        print( "Available tests:" )
+        for t in sorted( tests ):
+            print( t )
+    sys.exit( 0 )
+
 normal_tests.extend( n )
 shared_tests.extend( sh )
 static_tests.extend( st )
