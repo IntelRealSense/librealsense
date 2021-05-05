@@ -79,7 +79,6 @@ def grep( expr, *args ):
             for line in _grep( pattern, remove_newlines( file ), context ):
                 yield line
 
-
 def cat( filename ):
     with open( filename, errors = 'ignore' ) as file:
         for line in remove_newlines( file ):
